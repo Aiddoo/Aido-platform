@@ -155,9 +155,9 @@ describe('Todo Integration Tests (Real DB)', () => {
       expect(titles).toContain('세 번째');
 
       // ID가 큰 순서로 정렬되어 있는지 확인 (최신이 먼저)
-      const [first, second, third] = all;
-      expect(first.id).toBeGreaterThan(second.id);
-      expect(second.id).toBeGreaterThan(third.id);
+      expect(all).toHaveLength(3);
+      expect((all[0] as { id: number }).id).toBeGreaterThan((all[1] as { id: number }).id);
+      expect((all[1] as { id: number }).id).toBeGreaterThan((all[2] as { id: number }).id);
 
       // 특정 항목만 삭제
       await service.delete(todo2.id);
