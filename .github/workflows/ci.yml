@@ -83,6 +83,11 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm db:generate
 
+      - name: Run Prisma migrations
+        run: pnpm --filter @aido/api prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
+
       - name: Run unit tests
         run: pnpm test
         env:
