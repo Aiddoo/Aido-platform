@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@aido/jest-config": "workspace:*",
+    "@aido/typescript-config": "workspace:*",
     "@golevelup/ts-jest": "^1.2.0",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",

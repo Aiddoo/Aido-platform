@@ -123,6 +123,9 @@ importers:
       '@aido/jest-config':
         specifier: workspace:*
         version: link:../../tooling/jest
+      '@aido/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       '@golevelup/ts-jest':
         specifier: ^1.2.0
         version: 1.2.0
