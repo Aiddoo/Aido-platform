@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "setupFiles": ["<rootDir>/setup-env.ts"],
   "transform": {
     "^.+\\.ts$": [
       "@swc/jest",
@@ -25,6 +26,7 @@
     ]
   },
   "moduleNameMapper": {
-    "^@/(.*)$": "<rootDir>/../src/$1"
+    "^@/(.*)$": "<rootDir>/../src/$1",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }
