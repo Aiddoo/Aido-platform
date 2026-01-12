@@ -63,6 +63,7 @@
     "@aido/typescript-config": "workspace:*",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.0",
+    "@types/node": "^22.10.7",
     "@types/react": "~19.1.0",
     "jest": "catalog:",
     "jest-expo": "~54.0.0",
