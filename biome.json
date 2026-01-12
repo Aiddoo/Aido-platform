@@ -1,0 +1,20 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "extends": ["./tooling/biome/biome.json"],
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.turbo",
+      "!**/coverage",
+      "!**/.expo",
+      "!**/.next",
+      "!**/*.generated.*",
+      "!**/apps/api/prisma/generated",
+      "!**/apps/api/src/generated",
+      "!**/pnpm-lock.yaml"
+    ]
+  }
+}

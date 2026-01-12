@@ -1,0 +1,85 @@
+name: 🐛 버그 리포트
+description: 버그를 발견하셨나요? 자세히 알려주세요.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: assignee
+    attributes:
+      label: 담당자
+      description: 이 버그를 담당할 팀원을 선택해주세요.
+      options:
+        - 미정
+        - 매튜
+        - 조이
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영향 범위
+      description: 버그가 발생한 영역을 선택해주세요.
+      options:
+        - apps/api
+        - apps/mobile
+        - packages/utils
+        - packages/validators
+        - 전체
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도
+      options:
+        - 🟢 낮음 - 사소한 문제
+        - 🟡 보통 - 불편하지만 사용 가능
+        - 🟠 높음 - 주요 기능에 영향
+        - 🔴 치명적 - 서비스 불가
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 버그 설명
+      description: 어떤 문제가 발생했는지 설명해주세요.
+      placeholder: "예: 로그인 버튼 클릭 시 앱이 크래시됨"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법
+      placeholder: |
+        1. '...'로 이동
+        2. '...'을 클릭
+        3. 오류 발생
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      placeholder: "정상적으로 동작했다면 어떻게 되어야 하나요?"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경 정보
+      placeholder: |
+        - OS: macOS / iOS / Android
+        - Node: v22.x
+        - 기기: iPhone 15 Pro
+      render: markdown
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 에러 로그
+      placeholder: 에러 메시지나 스택 트레이스
+      render: shell

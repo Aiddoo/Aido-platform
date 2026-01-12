@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.turbo/
+.next/
+.expo/
+
+# Environment
+.env*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+.cursor/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+coverage/
+*.spec.ts
+*.e2e-spec.ts
+test/

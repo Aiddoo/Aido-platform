@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 프로젝트 문서
+    url: https://github.com/aido-team/aido#readme
+    about: README에서 프로젝트 정보와 시작 가이드를 확인하세요.
+  - name: 💬 Slack (예정)
+    url: https://slack.com
+    about: 일반적인 논의는 Slack 채널을 이용해주세요. (추후 연결 예정)

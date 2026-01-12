@@ -1,0 +1,16 @@
+{
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "extends": ["@aido/biome-config/biome.json"],
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.expo",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/*.generated.*"
+    ]
+  }
+}

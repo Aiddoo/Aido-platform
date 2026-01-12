@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native platforms (generated)
+/ios/
+/android/
+.eas/
+.easrc
+
+# Native build artifacts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# Metro bundler
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# Environment
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# =============================================================================
+# Firebase Configuration (sensitive - do not commit)
+# TODO: 이 파일들은 Firebase 콘솔에서 다운로드 후 추가
+# =============================================================================
+google-services.json
+google-services-*.json
+GoogleService-Info.plist
+GoogleService-Info-*.plist
+
+# =============================================================================
+# App Store / Play Store Credentials (sensitive - do not commit)
+# =============================================================================
+credentials/
+credentials.json
+play-store-service-account.json
+*.keystore
+
+# =============================================================================
+# Firebase Admin SDK (sensitive - do not commit)
+# =============================================================================
+*-firebase-adminsdk-*.json
+
+# =============================================================================
+# Local Build Outputs (eas build --local)
+# =============================================================================
+*.ipa
+*.apk
+*.aab

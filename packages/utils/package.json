@@ -1,0 +1,27 @@
+{
+  "name": "@aido/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "clean": "rm -rf dist coverage",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@aido/vitest-config": "workspace:*",
+    "@vitest/coverage-v8": "^4.0.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "@aido/monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "check": "biome check .",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "commit": "cz",
+    "db:generate": "pnpm --filter @aido/api prisma:generate",
+    "db:migrate": "pnpm --filter @aido/api prisma:migrate",
+    "db:push": "pnpm --filter @aido/api prisma:push",
+    "dev": "turbo run dev",
+    "docker:build": "docker-compose build",
+    "docker:down": "docker-compose down",
+    "docker:up": "docker-compose up -d",
+    "format": "biome format --write .",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "prepare": "simple-git-hooks",
+    "test": "turbo run test",
+    "test:cov": "turbo run test:cov",
+    "test:e2e": "turbo run test:e2e",
+    "typecheck": "turbo run typecheck"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged",
+    "commit-msg": "pnpm commitlint --edit $1"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true",
+    "package.json": "sort-package-json"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
+    "@commitlint/types": "^20.3.1",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "lint-staged": "^16.2.7",
+    "simple-git-hooks": "^2.13.1",
+    "sort-package-json": "^3.6.0",
+    "tsx": "^4.21.0",
+    "turbo": "^2.5.3"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {}
+  }
+}
