@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "@/database";
-import type { Todo } from "@/generated/prisma/client";
+import type { Prisma, Todo } from "@/generated/prisma/client";
 
 @Injectable()
 export class TodoRepository {
@@ -33,7 +33,7 @@ export class TodoRepository {
 	 * 커서 기반 페이지네이션 조회
 	 */
 	async findAllWithCursor(params: {
-		cursor?: number;
+		cursor?: string;
 		take: number;
 	}): Promise<Todo[]> {
 		return this.database.todo.findMany({
@@ -46,19 +46,19 @@ export class TodoRepository {
 		});
 	}
 
-	async findById(id: number): Promise<Todo | null> {
+	async findById(id: string): Promise<Todo | null> {
 		return this.database.todo.findUnique({ where: { id } });
 	}
 
-	async create(data: { title: string; content?: string }): Promise<Todo> {
+	async create(data: Prisma.TodoUncheckedCreateInput): Promise<Todo> {
 		return this.database.todo.create({ data });
 	}
 
-	async update(id: number, data: Partial<Todo>): Promise<Todo> {
+	async update(id: string, data: Prisma.TodoUpdateInput): Promise<Todo> {
 		return this.database.todo.update({ where: { id }, data });
 	}
 
-	async delete(id: number): Promise<Todo> {
+	async delete(id: string): Promise<Todo> {
 		return this.database.todo.delete({ where: { id } });
 	}
 }

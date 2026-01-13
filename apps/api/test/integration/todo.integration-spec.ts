@@ -19,6 +19,7 @@
  * ```
  */
 
+import { DEFAULT_TODO_COLOR } from "@aido/validators";
 import { NotFoundException } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PaginationService } from "@/common/pagination";
@@ -27,12 +28,38 @@ import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 import { TestDatabase } from "../setup/test-database";
 
+// 테스트용 Todo 생성 헬퍼 (기본값 적용)
+interface CreateTodoInput {
+	title: string;
+	content?: string;
+	color?: string;
+	startDate?: Date;
+	endDate?: Date;
+	scheduledTime?: Date;
+	isAllDay?: boolean;
+	visibility?: "PUBLIC" | "PRIVATE";
+}
+
+function createTodoData(input: CreateTodoInput) {
+	return {
+		title: input.title,
+		content: input.content,
+		color: input.color ?? DEFAULT_TODO_COLOR,
+		startDate: input.startDate ?? new Date(),
+		endDate: input.endDate,
+		scheduledTime: input.scheduledTime,
+		isAllDay: input.isAllDay ?? true,
+		visibility: input.visibility ?? "PUBLIC",
+	};
+}
+
 describe("Todo Integration Tests (Real DB)", () => {
 	let module: TestingModule;
 	let service: TodoService;
 	let repository: TodoRepository;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
+	let testUserId: string; // 각 테스트에서 생성된 User ID
 
 	// 테스트 스위트 시작 시 한 번만 실행
 	beforeAll(async () => {
@@ -57,9 +84,18 @@ describe("Todo Integration Tests (Real DB)", () => {
 		repository = module.get<TodoRepository>(TodoRepository);
 	}, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
-	// 각 테스트 전 데이터 초기화
+	// 각 테스트 전 데이터 초기화 및 테스트 User 생성
 	beforeEach(async () => {
 		await testDb.cleanup();
+
+		// Integration Test: FK 제약조건을 위해 실제 User 생성
+		const testUser = await databaseService.user.create({
+			data: {
+				email: `test-${Date.now()}@example.com`,
+				status: "ACTIVE",
+			},
+		});
+		testUserId = testUser.id;
 	});
 
 	// 테스트 스위트 종료 시 정리
@@ -90,11 +126,15 @@ describe("Todo Integration Tests (Real DB)", () => {
 	describe("Complete CRUD Flow", () => {
 		it("should perform full CRUD lifecycle", async () => {
 			// 1. Create
-			const created = await service.create({
-				title: "통합 테스트 할 일",
-				content: "통합 테스트 내용",
-			});
+			const created = await service.create(
+				testUserId,
+				createTodoData({
+					title: "통합 테스트 할 일",
+					content: "통합 테스트 내용",
+				}),
+			);
 			expect(created.id).toBeDefined();
+			expect(typeof created.id).toBe("string"); // cuid는 문자열
 			expect(created.title).toBe("통합 테스트 할 일");
 			expect(created.completed).toBe(false);
 
@@ -142,11 +182,20 @@ describe("Todo Integration Tests (Real DB)", () => {
 	describe("Multiple Todos Handling", () => {
 		it("should handle multiple todos correctly", async () => {
 			// 여러 Todo 생성 (약간의 지연을 두어 순서 보장)
-			const todo1 = await service.create({ title: "첫 번째" });
+			const todo1 = await service.create(
+				testUserId,
+				createTodoData({ title: "첫 번째" }),
+			);
 			await new Promise((resolve) => setTimeout(resolve, 10));
-			const todo2 = await service.create({ title: "두 번째" });
+			const todo2 = await service.create(
+				testUserId,
+				createTodoData({ title: "두 번째" }),
+			);
 			await new Promise((resolve) => setTimeout(resolve, 10));
-			const todo3 = await service.create({ title: "세 번째" });
+			const todo3 = await service.create(
+				testUserId,
+				createTodoData({ title: "세 번째" }),
+			);
 
 			// 전체 조회
 			const all = await service.findAll();
@@ -158,13 +207,13 @@ describe("Todo Integration Tests (Real DB)", () => {
 			expect(titles).toContain("두 번째");
 			expect(titles).toContain("세 번째");
 
-			// ID가 큰 순서로 정렬되어 있는지 확인 (최신이 먼저)
+			// createdAt 순서로 정렬되어 있는지 확인 (최신이 먼저)
 			expect(all).toHaveLength(3);
-			expect((all[0] as { id: number }).id).toBeGreaterThan(
-				(all[1] as { id: number }).id,
+			expect(all[0]?.createdAt.getTime()).toBeGreaterThanOrEqual(
+				all[1]?.createdAt.getTime() ?? 0,
 			);
-			expect((all[1] as { id: number }).id).toBeGreaterThan(
-				(all[2] as { id: number }).id,
+			expect(all[1]?.createdAt.getTime()).toBeGreaterThanOrEqual(
+				all[2]?.createdAt.getTime() ?? 0,
 			);
 
 			// 특정 항목만 삭제
@@ -181,8 +230,14 @@ describe("Todo Integration Tests (Real DB)", () => {
 
 		it("should update only the targeted todo", async () => {
 			// 여러 Todo 생성
-			const todo1 = await service.create({ title: "Todo 1" });
-			const todo2 = await service.create({ title: "Todo 2" });
+			const todo1 = await service.create(
+				testUserId,
+				createTodoData({ title: "Todo 1" }),
+			);
+			const todo2 = await service.create(
+				testUserId,
+				createTodoData({ title: "Todo 2" }),
+			);
 
 			// todo1만 업데이트
 			await service.update(todo1.id, { completed: true });
@@ -201,29 +256,40 @@ describe("Todo Integration Tests (Real DB)", () => {
 	// ===========================================================================
 
 	describe("Error Handling Integration", () => {
+		const NON_EXISTENT_ID = "clnonexistent0000000000";
+
 		it("should throw NotFoundException for non-existent todo on findById", async () => {
-			await expect(service.findById(99999)).rejects.toThrow(NotFoundException);
-			await expect(service.findById(99999)).rejects.toThrow(
-				"Todo #99999 not found",
+			await expect(service.findById(NON_EXISTENT_ID)).rejects.toThrow(
+				NotFoundException,
+			);
+			await expect(service.findById(NON_EXISTENT_ID)).rejects.toThrow(
+				`Todo #${NON_EXISTENT_ID} not found`,
 			);
 		});
 
 		it("should throw NotFoundException for non-existent todo on update", async () => {
 			await expect(
-				service.update(99999, { title: "수정 시도" }),
+				service.update(NON_EXISTENT_ID, { title: "수정 시도" }),
 			).rejects.toThrow(NotFoundException);
 		});
 
 		it("should throw NotFoundException for non-existent todo on delete", async () => {
-			await expect(service.delete(99999)).rejects.toThrow(NotFoundException);
+			await expect(service.delete(NON_EXISTENT_ID)).rejects.toThrow(
+				NotFoundException,
+			);
 		});
 
 		it("should not affect other todos when operation fails", async () => {
 			// 정상 Todo 생성
-			const validTodo = await service.create({ title: "정상 Todo" });
+			const validTodo = await service.create(
+				testUserId,
+				createTodoData({ title: "정상 Todo" }),
+			);
 
 			// 존재하지 않는 Todo 업데이트 시도
-			await expect(service.update(99999, { title: "실패" })).rejects.toThrow();
+			await expect(
+				service.update(NON_EXISTENT_ID, { title: "실패" }),
+			).rejects.toThrow();
 
 			// 기존 Todo는 영향받지 않음
 			const unchanged = await service.findById(validTodo.id);
@@ -238,10 +304,10 @@ describe("Todo Integration Tests (Real DB)", () => {
 	describe("Data Integrity", () => {
 		it("should maintain data consistency across operations", async () => {
 			// 생성
-			const original = await service.create({
-				title: "원본 제목",
-				content: "원본 내용",
-			});
+			const original = await service.create(
+				testUserId,
+				createTodoData({ title: "원본 제목", content: "원본 내용" }),
+			);
 
 			// 부분 업데이트 (title만)
 			await service.update(original.id, { title: "수정된 제목" });
@@ -262,18 +328,24 @@ describe("Todo Integration Tests (Real DB)", () => {
 		});
 
 		it("should set correct default values on create", async () => {
-			const todo = await service.create({
-				title: "기본값 테스트",
-			});
+			const todo = await service.create(
+				testUserId,
+				createTodoData({ title: "기본값 테스트" }),
+			);
 
 			expect(todo.completed).toBe(false);
 			expect(todo.content).toBeNull();
+			expect(todo.isAllDay).toBe(true);
+			expect(todo.visibility).toBe("PUBLIC");
 			expect(todo.createdAt).toBeInstanceOf(Date);
 			expect(todo.updatedAt).toBeInstanceOf(Date);
 		});
 
 		it("should update updatedAt timestamp on update", async () => {
-			const original = await service.create({ title: "타임스탬프 테스트" });
+			const original = await service.create(
+				testUserId,
+				createTodoData({ title: "타임스탬프 테스트" }),
+			);
 			const originalUpdatedAt = original.updatedAt;
 
 			// 약간의 지연 후 업데이트
@@ -297,9 +369,10 @@ describe("Todo Integration Tests (Real DB)", () => {
 		});
 
 		it("should handle todo with null content", async () => {
-			const todo = await service.create({
-				title: "내용 없음",
-			});
+			const todo = await service.create(
+				testUserId,
+				createTodoData({ title: "내용 없음" }),
+			);
 
 			expect(todo.content).toBeNull();
 
@@ -308,10 +381,10 @@ describe("Todo Integration Tests (Real DB)", () => {
 		});
 
 		it("should handle todo with empty string content", async () => {
-			const todo = await service.create({
-				title: "빈 내용",
-				content: "",
-			});
+			const todo = await service.create(
+				testUserId,
+				createTodoData({ title: "빈 내용", content: "" }),
+			);
 
 			// 빈 문자열이 저장되어야 함
 			expect(todo.content).toBe("");
@@ -323,21 +396,42 @@ describe("Todo Integration Tests (Real DB)", () => {
 	// ===========================================================================
 
 	describe("Database Constraints", () => {
-		it("should auto-increment id for new todos", async () => {
-			const todo1 = await service.create({ title: "First" });
-			const todo2 = await service.create({ title: "Second" });
+		it("should generate cuid for new todos", async () => {
+			const todo1 = await service.create(
+				testUserId,
+				createTodoData({ title: "First" }),
+			);
+			const todo2 = await service.create(
+				testUserId,
+				createTodoData({ title: "Second" }),
+			);
 
-			expect(todo2.id).toBeGreaterThan(todo1.id);
+			// cuid는 문자열이며 고유해야 함
+			expect(typeof todo1.id).toBe("string");
+			expect(typeof todo2.id).toBe("string");
+			expect(todo1.id).not.toBe(todo2.id);
 		});
 
 		it("should set timestamps automatically", async () => {
 			const before = new Date();
-			const todo = await service.create({ title: "Timestamp Test" });
+			const todo = await service.create(
+				testUserId,
+				createTodoData({ title: "Timestamp Test" }),
+			);
 			const after = new Date();
 
 			expect(todo.createdAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
 			expect(todo.createdAt.getTime()).toBeLessThanOrEqual(after.getTime());
 			expect(todo.updatedAt.getTime()).toBe(todo.createdAt.getTime());
+		});
+
+		it("should enforce FK constraint - Todo requires valid userId", async () => {
+			// 존재하지 않는 User ID로 Todo 생성 시도
+			const invalidUserId = "cl_invalid_user_id_12345";
+
+			await expect(
+				service.create(invalidUserId, createTodoData({ title: "FK 테스트" })),
+			).rejects.toThrow();
 		});
 	});
 });
