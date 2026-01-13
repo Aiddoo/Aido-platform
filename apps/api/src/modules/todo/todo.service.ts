@@ -61,22 +61,32 @@ export class TodoService {
 		});
 	}
 
-	async findById(id: number) {
+	async findById(id: string) {
 		const todo = await this.todoRepository.findById(id);
 		if (!todo) throw new NotFoundException(`Todo #${id} not found`);
 		return todo;
 	}
 
-	async create(dto: CreateTodoDto) {
-		return this.todoRepository.create(dto);
+	async create(userId: string, dto: CreateTodoDto) {
+		return this.todoRepository.create({
+			userId,
+			title: dto.title,
+			content: dto.content,
+			color: dto.color,
+			startDate: dto.startDate,
+			endDate: dto.endDate,
+			scheduledTime: dto.scheduledTime,
+			isAllDay: dto.isAllDay,
+			visibility: dto.visibility,
+		});
 	}
 
-	async update(id: number, dto: UpdateTodoDto) {
+	async update(id: string, dto: UpdateTodoDto) {
 		await this.findById(id);
 		return this.todoRepository.update(id, dto);
 	}
 
-	async delete(id: number) {
+	async delete(id: string) {
 		await this.findById(id);
 		return this.todoRepository.delete(id);
 	}
