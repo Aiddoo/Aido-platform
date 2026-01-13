@@ -44,17 +44,28 @@ tooling/* ────> 설정 공유 (extends)
 
 ```
 src/
-├── {feature}/
-│   ├── {feature}.module.ts      # 모듈 정의
-│   ├── {feature}.controller.ts  # HTTP 요청 처리
-│   ├── {feature}.service.ts     # 비즈니스 로직
-│   ├── {feature}.repository.ts  # 데이터 접근
-│   └── dto/                     # 요청/응답 DTO
-│       ├── create-{feature}.dto.ts
-│       ├── update-{feature}.dto.ts
+├── modules/                     # Feature 모듈
+│   └── {feature}/
+│       ├── dtos/
+│       │   ├── request/         # 요청 DTO
+│       │   │   ├── create-{feature}.dto.ts
+│       │   │   └── update-{feature}.dto.ts
+│       │   └── response/        # 응답 DTO
+│       │       └── {feature}-response.dto.ts
+│       ├── {feature}.controller.ts
+│       ├── {feature}.service.ts
+│       ├── {feature}.repository.ts
+│       ├── {feature}.module.ts
 │       └── index.ts             # barrel export
-└── common/
-    └── filters/                 # 글로벌 예외 필터
+│
+├── common/                      # 공통 모듈
+│   ├── exception/               # 예외 처리 (ErrorCode, BusinessException)
+│   ├── response/                # 응답 인터셉터
+│   ├── pagination/              # 페이지네이션 (오프셋/커서)
+│   ├── logger/                  # Pino Logger 래퍼
+│   └── swagger/                 # 커스텀 Swagger 데코레이터
+│
+└── database/                    # Database 모듈 (Prisma v7 + pg driver)
 ```
 
 ## 시작하기

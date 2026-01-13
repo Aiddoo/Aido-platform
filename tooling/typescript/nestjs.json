@@ -2,15 +2,13 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./base.json",
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "noEmit": false,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false,
+    "resolvePackageJsonImports": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "strictNullChecks": true,
-    "strictBindCallApply": true,
+    "removeComments": true,
     "noFallthroughCasesInSwitch": true,
     "incremental": true
   }

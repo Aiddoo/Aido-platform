@@ -1,0 +1,35 @@
+{
+	"moduleFileExtensions": ["js", "json", "ts"],
+	"rootDir": ".",
+	"testEnvironment": "node",
+	"testRegex": ".integration-spec.ts$",
+	"roots": ["<rootDir>/integration"],
+	"setupFiles": ["<rootDir>/setup-env.ts"],
+	"transform": {
+		"^.+\\.ts$": [
+			"@swc/jest",
+			{
+				"jsc": {
+					"parser": {
+						"syntax": "typescript",
+						"decorators": true
+					},
+					"transform": {
+						"legacyDecorator": true,
+						"decoratorMetadata": true
+					},
+					"target": "es2022"
+				},
+				"module": {
+					"type": "commonjs"
+				}
+			}
+		]
+	},
+	"moduleNameMapper": {
+		"^@/(.*)$": "<rootDir>/../src/$1",
+		"^(\\.{1,2}/.*)\\.js$": "$1"
+	},
+	"testTimeout": 60000,
+	"maxWorkers": 1
+}

@@ -1,32 +1,35 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
-  "setupFiles": ["<rootDir>/setup-env.ts"],
-  "transform": {
-    "^.+\\.ts$": [
-      "@swc/jest",
-      {
-        "jsc": {
-          "parser": {
-            "syntax": "typescript",
-            "decorators": true
-          },
-          "transform": {
-            "legacyDecorator": true,
-            "decoratorMetadata": true
-          },
-          "target": "es2022"
-        },
-        "module": {
-          "type": "commonjs"
-        }
-      }
-    ]
-  },
-  "moduleNameMapper": {
-    "^@/(.*)$": "<rootDir>/../src/$1",
-    "^(\\.{1,2}/.*)\\.js$": "$1"
-  }
+	"moduleFileExtensions": ["js", "json", "ts"],
+	"rootDir": ".",
+	"roots": ["<rootDir>/e2e"],
+	"testEnvironment": "node",
+	"testRegex": ".e2e-spec.ts$",
+	"setupFiles": ["<rootDir>/setup-env.ts"],
+	"testTimeout": 60000,
+	"maxWorkers": 1,
+	"transform": {
+		"^.+\\.ts$": [
+			"@swc/jest",
+			{
+				"jsc": {
+					"parser": {
+						"syntax": "typescript",
+						"decorators": true
+					},
+					"transform": {
+						"legacyDecorator": true,
+						"decoratorMetadata": true
+					},
+					"target": "es2022"
+				},
+				"module": {
+					"type": "commonjs"
+				}
+			}
+		]
+	},
+	"moduleNameMapper": {
+		"^@/(.*)$": "<rootDir>/../src/$1",
+		"^(\\.{1,2}/.*)\\.js$": "$1"
+	}
 }

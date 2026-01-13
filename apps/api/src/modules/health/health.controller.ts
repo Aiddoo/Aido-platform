@@ -1,0 +1,23 @@
+import { Controller, Get } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import type { HealthCheckResult } from "@nestjs/terminus";
+import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
+import { DatabaseHealthIndicator } from "./indicators/database.health";
+
+@ApiTags("Health")
+@Controller("health")
+export class HealthController {
+	constructor(
+		private readonly health: HealthCheckService,
+		private readonly databaseHealth: DatabaseHealthIndicator,
+	) {}
+
+	@Get()
+	@HealthCheck()
+	@ApiOperation({ summary: "서버 상태 확인" })
+	@ApiResponse({ status: 200, description: "서버가 정상 동작 중입니다." })
+	@ApiResponse({ status: 503, description: "서버에 문제가 발생했습니다." })
+	check(): Promise<HealthCheckResult> {
+		return this.health.check([() => this.databaseHealth.isHealthy("database")]);
+	}
+}
