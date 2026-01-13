@@ -1,15 +1,24 @@
 # @aido/utils
 
-공유 유틸리티 함수 - API/Mobile 공통 로직
+> 공유 유틸리티 함수 패키지
+
+![Version](https://img.shields.io/badge/version-0.0.0-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 개요
 
-이 패키지는 Aido 모노레포 전체에서 공유되는 유틸리티 함수를 제공합니다.
-트리 쉐이킹을 지원하여 사용하는 함수만 번들에 포함됩니다.
+프론트엔드와 백엔드에서 공유하는 유틸리티 함수 패키지입니다. 타입 안전하고 테스트된 헬퍼 함수들을 제공합니다.
+
+## 주요 기능
+
+- **비동기 유틸리티**: debounce, throttle
+- **완전한 TypeScript 지원**: 제네릭 타입 추론
+- **Vitest 테스트**: 단위 테스트 포함
 
 ## 설치
 
-모노레포 내 패키지에서 workspace 의존성으로 사용:
+이 패키지는 모노레포 내부 패키지로, 워크스페이스에서 자동으로 사용 가능합니다.
 
 ```json
 {
@@ -19,163 +28,145 @@
 }
 ```
 
-## 구조
+## 사용법
+
+### debounce
+
+연속적인 호출 중 마지막 호출만 실행합니다.
+
+```typescript
+import { debounce } from '@aido/utils';
+
+// 검색 입력 디바운스
+const debouncedSearch = debounce((query: string) => {
+  console.log('Searching:', query);
+  fetchResults(query);
+}, 300);
+
+// React Native 예시
+<TextInput onChangeText={debouncedSearch} />
+
+// 연속 호출 시
+debouncedSearch('h');     // 무시됨
+debouncedSearch('he');    // 무시됨
+debouncedSearch('hel');   // 300ms 후 'hel'로 실행
+```
+
+### throttle
+
+일정 간격으로만 함수를 실행합니다.
+
+```typescript
+import { throttle } from '@aido/utils';
+
+// 스크롤 이벤트 쓰로틀
+const throttledScroll = throttle(() => {
+  console.log('Scroll position:', window.scrollY);
+}, 100);
+
+window.addEventListener('scroll', throttledScroll);
+
+// 100ms 내 여러 번 호출해도 첫 번째만 실행
+```
+
+## 프로젝트 구조
 
 ```
 src/
-├── index.ts           # 메인 export
-└── async/             # 비동기 유틸리티
-    ├── index.ts
-    └── retry.ts       # debounce, throttle
+├── async/                  # 비동기 유틸리티
+│   ├── retry.ts           # debounce, throttle
+│   ├── retry.spec.ts      # 테스트
+│   └── index.ts
+└── index.ts               # 메인 진입점
 ```
 
-## API 레퍼런스
+## 제공 함수
 
-### 비동기 유틸리티
+### Async
 
-#### `debounce<T>(fn, ms)`
+| 함수 | 설명 | 용도 |
+|------|------|------|
+| `debounce(fn, ms)` | 연속 호출 중 마지막만 실행 | 검색 입력, 폼 검증 |
+| `throttle(fn, ms)` | 일정 간격으로만 실행 | 스크롤, 리사이즈 이벤트 |
 
-마지막 호출만 실행하는 디바운스 함수를 생성합니다.
+## API 상세
 
-| 파라미터   | 타입                | 설명               |
-| ---------- | ------------------- | ------------------ |
-| `fn`       | `(...args) => void` | 디바운스할 함수    |
-| `ms`       | `number`            | 대기 시간 (밀리초) |
-| **반환값** | `(...args) => void` | 디바운스된 함수    |
-
-**사용 시나리오:**
-
-- 검색 입력 자동완성
-- 윈도우 리사이즈 핸들러
-- 폼 자동 저장
+### debounce
 
 ```typescript
-import { debounce } from "@aido/utils";
-
-// 검색 입력 디바운스 (300ms)
-const debouncedSearch = debounce((query: string) => {
-  fetch(`/api/search?q=${query}`);
-}, 300);
-
-// 연속 입력 시 마지막 값으로만 API 호출
-input.addEventListener("input", (e) => {
-  debouncedSearch(e.target.value);
-});
+function debounce<T extends (...args: Parameters<T>) => void>(
+  fn: T,
+  ms: number
+): (...args: Parameters<T>) => void
 ```
 
----
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `fn` | `Function` | 디바운스할 함수 |
+| `ms` | `number` | 대기 시간 (밀리초) |
 
-#### `throttle<T>(fn, ms)`
+**반환값**: 디바운스된 새 함수
 
-일정 간격으로 최대 한 번만 실행하는 쓰로틀 함수를 생성합니다.
-
-| 파라미터   | 타입                | 설명                    |
-| ---------- | ------------------- | ----------------------- |
-| `fn`       | `(...args) => void` | 쓰로틀할 함수           |
-| `ms`       | `number`            | 최소 실행 간격 (밀리초) |
-| **반환값** | `(...args) => void` | 쓰로틀된 함수           |
-
-**사용 시나리오:**
-
-- 스크롤 이벤트 처리
-- 마우스 이동 추적
-- 실시간 위치 업데이트
+### throttle
 
 ```typescript
-import { throttle } from "@aido/utils";
-
-// 스크롤 이벤트 쓰로틀 (100ms 간격)
-const throttledScroll = throttle(() => {
-  const scrollY = window.scrollY;
-  updateHeaderVisibility(scrollY);
-}, 100);
-
-window.addEventListener("scroll", throttledScroll);
+function throttle<T extends (...args: Parameters<T>) => void>(
+  fn: T,
+  ms: number
+): (...args: Parameters<T>) => void
 ```
 
-## 사용 예시
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `fn` | `Function` | 쓰로틀할 함수 |
+| `ms` | `number` | 최소 실행 간격 (밀리초) |
 
-### React Native (Expo)
+**반환값**: 쓰로틀된 새 함수
 
-```typescript
-import { debounce } from "@aido/utils";
-import { useCallback } from "react";
+## 스크립트
 
-function SearchScreen() {
-  const handleSearch = useCallback(
-    debounce((text: string) => {
-      // API 호출
-    }, 300),
-    []
-  );
-
-  return <TextInput onChangeText={handleSearch} placeholder="검색어 입력..." />;
-}
-```
-
-### NestJS
-
-```typescript
-import { throttle } from "@aido/utils";
-
-// 로깅 쓰로틀 (중복 로그 방지)
-const throttledLog = throttle((message: string) => {
-  this.logger.log(message);
-}, 1000);
-```
-
-## Debounce vs Throttle
-
-| 특성         | Debounce                      | Throttle                      |
-| ------------ | ----------------------------- | ----------------------------- |
-| 실행 시점    | 마지막 호출 후 대기 시간 경과 | 첫 호출 즉시 (이후 간격 유지) |
-| 연속 호출 시 | 계속 지연됨                   | 간격마다 1회 실행             |
-| 적합한 용도  | 입력 완료 감지                | 지속적 이벤트 제어            |
-
-```
-Debounce (300ms):
-호출: ─●──●──●──●──────────────●──────→
-실행: ────────────────●───────────────●→
-                     ↑ 마지막 호출 후 300ms
-
-Throttle (300ms):
-호출: ─●──●──●──●──●──●──●──●──●──●──→
-실행: ─●────────●────────●────────●──→
-       ↑        ↑        ↑        ↑
-      300ms   300ms    300ms    300ms
+```bash
+pnpm build        # TypeScript 빌드
+pnpm dev          # Watch 모드 빌드
+pnpm typecheck    # 타입 체크
+pnpm check        # Biome 린트
+pnpm test         # Vitest 테스트
+pnpm test:watch   # 테스트 Watch 모드
 ```
 
 ## 테스트
 
-```bash
-# 패키지 디렉토리에서
-pnpm test
+Vitest 기반 단위 테스트:
 
-# 루트에서 특정 패키지 테스트
-pnpm --filter @aido/utils test
+```bash
+pnpm test
 ```
 
-## 새 유틸리티 추가 가이드
+```typescript
+// retry.spec.ts
+import { describe, it, expect, vi } from 'vitest';
+import { debounce, throttle } from './retry';
 
-1. **파일 생성** - 카테고리별 폴더에 파일 추가 (`src/{category}/{name}.ts`)
-2. **테스트 작성** - 동일 위치에 `{name}.spec.ts` 추가
-3. **Export** - 카테고리 `index.ts`에서 re-export
-4. **문서화** - JSDoc 주석과 README 업데이트
+describe('debounce', () => {
+  it('should call function after delay', async () => {
+    const fn = vi.fn();
+    const debounced = debounce(fn, 100);
+    
+    debounced();
+    expect(fn).not.toBeCalled();
+    
+    await new Promise(r => setTimeout(r, 150));
+    expect(fn).toBeCalledTimes(1);
+  });
+});
+```
 
-````typescript
-// src/string/capitalize.ts
-/**
- * 문자열 첫 글자를 대문자로 변환
- *
- * @param str - 변환할 문자열
- * @returns 첫 글자가 대문자인 문자열
- *
- * @example
- * ```typescript
- * capitalize('hello'); // 'Hello'
- * ```
- */
-export function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-````
+## 변경 이력
+
+### v0.0.0 (2025-01-13)
+
+- 초기 릴리즈
+- debounce 함수 구현
+- throttle 함수 구현
+- Vitest 테스트 설정
+- TypeScript 제네릭 타입 지원
