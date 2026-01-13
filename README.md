@@ -1,316 +1,232 @@
 # Aido
 
-AI 기반 TodoList 앱 - Turborepo 모노레포
+> AI-powered Todo List Application
 
-## 프로젝트 구조
+[![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-339933?logo=node.js)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-9.15.4-F69220?logo=pnpm)](https://pnpm.io/)
+[![Turborepo](https://img.shields.io/badge/Turborepo-2.5.3-EF4444?logo=turborepo)](https://turbo.build/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Version: 0.1.0** | Last Updated: 2025-01-13
+
+---
+
+## Overview
+
+Aido는 AI 기반 할 일 관리 애플리케이션입니다. 모노레포 구조로 백엔드 API와 모바일 앱을 통합 관리합니다.
+
+## Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Monorepo** | Turborepo + pnpm Workspaces |
+| **Backend** | NestJS 11, Prisma 7, PostgreSQL |
+| **Mobile** | Expo 54, React Native 0.81 |
+| **Validation** | Zod + nestjs-zod |
+| **Testing** | Jest, Vitest, Testcontainers |
+| **Code Quality** | Biome (lint + format) |
+| **CI/CD** | GitHub Actions, Docker |
+
+## Project Structure
 
 ```
-Aido/
+aido/
 ├── apps/
-│   ├── api/          # NestJS 백엔드
-│   └── mobile/       # Expo 모바일 앱
+│   ├── api/                 # NestJS 백엔드 API
+│   └── mobile/              # Expo 모바일 앱
 ├── packages/
-│   ├── utils/        # 공유 유틸리티
-│   └── validators/   # Zod 스키마
-└── tooling/          # 공유 설정 (Biome, TypeScript, Jest, Vitest)
+│   ├── validators/          # Zod 스키마 (공유)
+│   └── utils/               # 유틸리티 함수 (공유)
+├── tooling/
+│   ├── typescript/          # TypeScript 프리셋
+│   ├── jest/                # Jest 프리셋
+│   ├── vitest/              # Vitest 프리셋
+│   └── biome/               # Biome 프리셋
+├── turbo.json               # Turborepo 설정
+├── pnpm-workspace.yaml      # 워크스페이스 설정
+└── package.json             # 루트 패키지
 ```
 
-## 아키텍처
+## Prerequisites
 
-### 패키지 의존성
+- **Node.js** ≥ 20.0.0
+- **pnpm** 9.15.4
+- **Docker** (PostgreSQL용)
 
-```
-apps/api ─────┬──> @aido/validators (Zod 스키마)
-              └──> @aido/utils (유틸리티)
+## Getting Started
 
-apps/mobile ──┬──> @aido/validators
-              └──> @aido/utils
-
-tooling/* ────> 설정 공유 (extends)
-```
-
-### 기술 스택
-
-| 영역       | 기술                          |
-| ---------- | ----------------------------- |
-| Backend    | NestJS, Prisma 7, PostgreSQL  |
-| Mobile     | Expo, React Native            |
-| Validation | Zod (런타임 검증 + 타입 추출) |
-| Testing    | Jest (API), Vitest (packages) |
-| Linting    | Biome                         |
-| Build      | Turborepo                     |
-
-### API 모듈 패턴
-
-```
-src/
-├── modules/                     # Feature 모듈
-│   └── {feature}/
-│       ├── dtos/
-│       │   ├── request/         # 요청 DTO
-│       │   │   ├── create-{feature}.dto.ts
-│       │   │   └── update-{feature}.dto.ts
-│       │   └── response/        # 응답 DTO
-│       │       └── {feature}-response.dto.ts
-│       ├── {feature}.controller.ts
-│       ├── {feature}.service.ts
-│       ├── {feature}.repository.ts
-│       ├── {feature}.module.ts
-│       └── index.ts             # barrel export
-│
-├── common/                      # 공통 모듈
-│   ├── exception/               # 예외 처리 (ErrorCode, BusinessException)
-│   ├── response/                # 응답 인터셉터
-│   ├── pagination/              # 페이지네이션 (오프셋/커서)
-│   ├── logger/                  # Pino Logger 래퍼
-│   └── swagger/                 # 커스텀 Swagger 데코레이터
-│
-└── database/                    # Database 모듈 (Prisma v7 + pg driver)
-```
-
-## 시작하기
-
-### 필수 조건
-
-- Node.js v20.19+
-- pnpm v9.15+
-- Docker Desktop
-- TypeScript 5.4+
-
-### 설치
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/your-org/aido.git
+cd aido
 pnpm install
+```
+
+### 2. Environment Setup
+
+```bash
+# API 환경변수 설정
+cp apps/api/.env.example apps/api/.env
+```
+
+### 3. Database Setup
+
+```bash
+# PostgreSQL 컨테이너 실행
 pnpm docker:up
-pnpm db:generate
+
+# Prisma 마이그레이션
 pnpm db:migrate
+```
+
+### 4. Development
+
+```bash
+# 전체 앱 개발 서버 실행
 pnpm dev
+
+# 개별 앱 실행
+pnpm --filter @aido/api dev      # API만
+pnpm --filter @aido/mobile dev   # Mobile만
 ```
 
-## 주요 명령어
+## Available Scripts
 
-| 명령어           | 설명             |
-| ---------------- | ---------------- |
-| `pnpm dev`       | 개발 서버 시작   |
-| `pnpm build`     | 빌드             |
-| `pnpm test`      | 테스트           |
-| `pnpm lint`      | 린트 검사        |
-| `pnpm lint:fix`  | 린트 자동 수정   |
-| `pnpm typecheck` | 타입 체크        |
-| `pnpm db:push`   | DB 스키마 동기화 |
-| `pnpm docker:up` | PostgreSQL 시작  |
+| Script | Description |
+|--------|-------------|
+| `pnpm dev` | 모든 앱 개발 서버 실행 |
+| `pnpm build` | 모든 패키지 빌드 |
+| `pnpm test` | 테스트 실행 |
+| `pnpm check` | Biome 린트/포맷 검사 |
+| `pnpm format` | 코드 포맷팅 |
+| `pnpm typecheck` | TypeScript 타입 검사 |
+| `pnpm db:migrate` | Prisma 마이그레이션 |
+| `pnpm db:generate` | Prisma Client 생성 |
+| `pnpm docker:up` | Docker 컨테이너 실행 |
+| `pnpm docker:down` | Docker 컨테이너 중지 |
 
-## 코드 스타일
+## Apps & Packages
 
-### 포맷팅 규칙 (Biome)
+| Package | Version | Description |
+|---------|---------|-------------|
+| [@aido/api](./apps/api) | 0.0.1 | NestJS 백엔드 API |
+| [@aido/mobile](./apps/mobile) | 1.0.0 | Expo 모바일 앱 |
+| [@aido/validators](./packages/validators) | 0.0.0 | Zod 스키마 패키지 |
+| [@aido/utils](./packages/utils) | 0.0.0 | 유틸리티 함수 |
 
-| 규칙      | 값           | 설명                    |
-| --------- | ------------ | ----------------------- |
-| 들여쓰기  | 2 spaces     | 탭 대신 스페이스        |
-| 줄 길이   | 100자        | 최대 라인 너비          |
-| 따옴표    | single (`'`) | 작은따옴표 사용         |
-| 세미콜론  | always       | 항상 세미콜론           |
-| 후행 쉼표 | all          | 배열/객체 마지막에 쉼표 |
+## Development Guidelines
 
-> 상세 설정: [tooling/biome/README.md](./tooling/biome/README.md)
+### Commit Convention
 
-### 명명 규칙
-
-| 대상            | 스타일               | 예시                 |
-| --------------- | -------------------- | -------------------- |
-| 파일/폴더       | kebab-case           | `create-todo.dto.ts` |
-| 클래스          | PascalCase           | `TodoService`        |
-| 함수/변수       | camelCase            | `findById()`         |
-| 상수            | SCREAMING_SNAKE_CASE | `MAX_RETRY_COUNT`    |
-| 타입/인터페이스 | PascalCase           | `CreateTodoDto`      |
-
-### Import 규칙
-
-```typescript
-// ✅ type imports 사용
-import type { Todo } from "../generated/prisma/client";
-
-// ✅ 값과 타입 분리
-import { TodoService } from "./todo.service";
-import type { CreateTodoDto } from "./dto";
-
-// ✅ barrel exports 활용
-export * from "./create-todo.dto";
-export * from "./update-todo.dto";
-```
-
-- **Type imports**: 타입만 가져올 때 `import type` 사용
-- **Barrel exports**: 각 모듈의 `index.ts`에서 재export
-- **자동 정렬**: Biome가 import 순서 자동 정리
-
-## 개발 워크플로우
-
-### 브랜치 전략
-
-```
-main              # 프로덕션 브랜치
-└── feature/*     # 기능 개발
-└── fix/*         # 버그 수정
-└── hotfix/*      # 긴급 수정
-```
-
-### 작업 순서
-
-1. 이슈 생성 (버그/기능 요청)
-2. 브랜치 생성: `git checkout -b feature/이슈번호-설명`
-3. 개발 및 커밋
-4. PR 생성 → 코드 리뷰
-5. main 머지
-
-### 커밋 규칙
-
-[Conventional Commits](https://www.conventionalcommits.org/) 스펙을 따르며, [Commitlint](https://commitlint.js.org/)로 자동 검증됩니다.
-
-#### 커밋 메시지 형식
-
-```
-<type>(<scope>): <subject>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**예시:**
+[Conventional Commits](https://www.conventionalcommits.org/) 규칙을 따릅니다.
 
 ```bash
-feat(api): 사용자 인증 API 추가
-fix(mobile): 로그인 화면 크래시 수정
-docs: README 업데이트
-refactor(api): 인증 로직 개선
-```
-
-#### 커밋 타입
-
-| 타입       | 설명                             | 예시                                    |
-| ---------- | -------------------------------- | --------------------------------------- |
-| `feat`     | 새로운 기능 추가                 | `feat(api): 할일 목록 API 구현`         |
-| `fix`      | 버그 수정                        | `fix(mobile): 날짜 표시 오류 수정`      |
-| `docs`     | 문서 변경                        | `docs: API 문서 업데이트`               |
-| `style`    | 코드 포맷팅 (로직 변경 없음)     | `style: 세미콜론 추가`                  |
-| `refactor` | 리팩토링 (기능 변경 없음)        | `refactor(api): 쿼리 최적화`            |
-| `perf`     | 성능 개선                        | `perf(api): 캐싱 적용`                  |
-| `test`     | 테스트 추가/수정                 | `test(api): 인증 테스트 추가`           |
-| `build`    | 빌드 시스템, 외부 종속성 변경    | `build: TypeScript 5.4 업그레이드`      |
-| `ci`       | CI 설정 변경                     | `ci: GitHub Actions 워크플로우 추가`    |
-| `chore`    | 기타 변경사항 (src, test 미영향) | `chore: .gitignore 업데이트`            |
-| `revert`   | 이전 커밋 되돌리기               | `revert: feat(api): 할일 목록 API 구현` |
-
-#### Scope (선택)
-
-변경된 앱/패키지를 명시합니다:
-
-- `api` - apps/api
-- `mobile` - apps/mobile
-- `utils` - packages/utils
-- `validators` - packages/validators
-
-```bash
-feat(api): 새 엔드포인트 추가      # apps/api 변경
-fix(mobile): UI 버그 수정          # apps/mobile 변경
-chore(validators): 스키마 업데이트 # packages/validators 변경
-docs: 전체 문서 정리               # scope 없이 전역 변경
-```
-
-#### 커밋 방법
-
-```bash
-# 방법 1: Commitizen 대화형 (권장)
+# Commitizen 사용
 pnpm commit
-
-# 방법 2: 직접 작성
-git commit -m "feat(api): 새로운 기능 추가"
-
-# 방법 3: 본문 포함
-git commit -m "fix(api): 인증 토큰 만료 처리
-
-- 토큰 갱신 로직 추가
-- 만료 시 자동 로그아웃
-
-Closes #123"
 ```
 
-#### Commitlint 검증
+| Type | Description |
+|------|-------------|
+| `feat` | 새로운 기능 |
+| `fix` | 버그 수정 |
+| `docs` | 문서 변경 |
+| `style` | 코드 스타일 (포맷팅) |
+| `refactor` | 리팩토링 |
+| `test` | 테스트 추가/수정 |
+| `chore` | 빌드, 설정 변경 |
 
-커밋 시 Husky + Commitlint가 자동으로 메시지를 검증합니다.
+### Code Quality
+
+- **Biome**: 린팅 + 포맷팅 통합
+- **TypeScript**: Strict 모드 활성화
+- **Git Hooks**: pre-commit (lint-staged), commit-msg (commitlint)
+
+## Architecture
+
+### Backend (NestJS)
+
+```
+apps/api/src/
+├── common/          # 공통 모듈 (필터, 가드, 인터셉터)
+├── config/          # 환경변수 검증
+├── database/        # Prisma 설정
+└── modules/         # 도메인 모듈
+    ├── health/      # 헬스체크
+    └── todo/        # Todo CRUD
+```
+
+- **3-Layer Architecture**: Controller → Service → Repository
+- **DTO Validation**: Zod + nestjs-zod
+- **Logging**: Pino (구조화된 로깅)
+- **Security**: Helmet, Rate Limiting, CORS
+
+### Mobile (Expo)
+
+```
+apps/mobile/
+├── app/             # Expo Router 페이지
+├── components/      # 재사용 컴포넌트
+├── hooks/           # 커스텀 훅
+└── lib/             # 유틸리티
+```
+
+## API Documentation
+
+개발 환경에서 Swagger UI를 통해 API 문서를 확인할 수 있습니다.
+
+```
+http://localhost:8080/api/docs
+```
+
+## Testing
 
 ```bash
-# ✅ 통과
-git commit -m "feat: 로그인 기능 추가"
-git commit -m "fix(api): 널 포인터 예외 수정"
+# 전체 테스트
+pnpm test
 
-# ❌ 실패 (잘못된 타입)
-git commit -m "feature: 로그인 기능"  # 'feature' → 'feat' 사용
+# 커버리지 포함
+pnpm test:cov
 
-# ❌ 실패 (콜론 누락)
-git commit -m "feat 로그인 기능"      # 'feat:' 형식 필요
+# E2E 테스트
+pnpm test:e2e
 
-# ❌ 실패 (타입 누락)
-git commit -m "로그인 기능 추가"       # 타입 필수
+# API 통합 테스트 (Testcontainers)
+pnpm --filter @aido/api test:integration
 ```
 
-#### Breaking Changes
+## Deployment
 
-하위 호환성이 깨지는 변경은 `!`를 추가하거나 footer에 명시합니다:
+### Docker
 
 ```bash
-# 방법 1: 타입 뒤에 ! 추가
-feat(api)!: 인증 API 응답 형식 변경
+# 이미지 빌드
+pnpm docker:build
 
-# 방법 2: footer에 명시
-feat(api): 인증 API 응답 형식 변경
-
-BREAKING CHANGE: 응답 JSON 구조가 변경되었습니다.
-이전: { token: string }
-이후: { accessToken: string, refreshToken: string }
+# 컨테이너 실행
+pnpm docker:up
 ```
 
-#### 이슈 연결
+### CI/CD
 
-커밋 footer에 이슈 번호를 연결할 수 있습니다:
+GitHub Actions를 통해 자동화된 파이프라인이 실행됩니다:
 
-```bash
-fix(mobile): 로그인 버튼 미동작 수정
+1. **Lint & Format** (Biome)
+2. **Type Check** (TypeScript)
+3. **Test** (Jest + Testcontainers)
+4. **Build** (Turborepo)
 
-Closes #45
-Refs #42, #43
-```
+## License
 
-| 키워드                        | 동작                      |
-| ----------------------------- | ------------------------- |
-| `Closes`, `Fixes`, `Resolves` | PR 머지 시 이슈 자동 종료 |
-| `Refs`, `Related to`, `See`   | 이슈 참조 (종료하지 않음) |
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### 코드 리뷰 가이드
+---
 
-- 로직 정확성 확인
-- 테스트 코드 포함 여부
-- 코드 스타일 일관성
-- 성능/보안 이슈 검토
+## Changelog
 
-## CI/CD
-
-PR 생성 시 자동 실행:
-
-- Biome 린트/포맷 검사
-- TypeScript 타입 체크
-- 단위/통합 테스트
-- 빌드 검증
-
-## 문서
-
-| 앱/패키지  | README                                                           |
-| ---------- | ---------------------------------------------------------------- |
-| API        | [apps/api/README.md](./apps/api/README.md)                       |
-| Mobile     | [apps/mobile/README.md](./apps/mobile/README.md)                 |
-| Utils      | [packages/utils/README.md](./packages/utils/README.md)           |
-| Validators | [packages/validators/README.md](./packages/validators/README.md) |
-
-## 라이선스
-
-MIT License - [LICENSE](./LICENSE)
+### v0.1.0 (2025-01-13)
+- Initial monorepo setup
+- NestJS API with Prisma 7
+- Expo mobile app setup
+- Shared validators package
+- CI/CD pipeline with GitHub Actions
