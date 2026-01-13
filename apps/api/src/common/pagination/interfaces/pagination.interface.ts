@@ -54,7 +54,7 @@ export interface SortParams {
  * 커서 기반 페이지네이션 입력 파라미터
  */
 export interface CursorPaginationParams {
-	cursor?: number;
+	cursor?: string;
 	size?: number;
 }
 
@@ -62,8 +62,8 @@ export interface CursorPaginationParams {
  * 커서 기반 페이지네이션 정보
  */
 export interface CursorPaginationInfo {
-	nextCursor: number | null;
-	prevCursor: number | null;
+	nextCursor: string | null;
+	prevCursor: string | null;
 	hasNext: boolean;
 	hasPrevious: boolean;
 	size: number;

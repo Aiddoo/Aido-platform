@@ -1,31 +1,533 @@
-// Prisma 7+ 설정 (새 방식)
-// prisma-client-js 대신 prisma-client 사용
-// output 필수 명시
+// =============================================================================
+// Prisma Schema - Aido Todo App
+// =============================================================================
+// Prisma 7+ 설정: prisma-client 사용, output 필수 명시
 
 generator client {
-  provider      = "prisma-client"
-  output        = "../src/generated/prisma"
-  moduleFormat  = "cjs"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// 예제 모델
+// =============================================================================
+// 인증 - 사용자
+// =============================================================================
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id    String @id @default(cuid())
+  email String @unique @db.VarChar(255)
+
+  // 상태
+  status          UserStatus @default(PENDING_VERIFY)
+  emailVerifiedAt DateTime?
+
+  // 2FA (TODO)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String? @db.VarChar(255)
+
+  // 구독
+  subscriptionStatus    SubscriptionStatus @default(FREE)
+  subscriptionExpiresAt DateTime?
+  revenueCatUserId      String?            @unique @db.VarChar(255)
+
+  // 타임스탬프
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Soft Delete
+  deletedAt DateTime?
+
+  // 관계: 1:1 분리 모델
+  profile    UserProfile?
+  preference UserPreference?
+  consent    UserConsent?
+
+  // 관계: 인증
+  accounts      Account[]
+  sessions      Session[]
+  securityLogs  SecurityLog[]
+  verifications Verification[]
+
+  // 관계: Todo 앱
+  pushTokens          PushToken[]
+  todos               Todo[]
+  friendshipsAsUser   Friendship[]        @relation("friendships_user")
+  friendshipsAsFriend Friendship[]        @relation("friendships_friend")
+  notifications       Notification[]
+  weeklyAchievements  WeeklyAchievement[]
+  subscriptions       Subscription[]
+
+  @@index([status])
+  @@index([subscriptionStatus])
+  @@index([deletedAt])
 }
 
-model Todo {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  completed Boolean  @default(false)
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  SUSPENDED
+  PENDING_VERIFY
+}
+
+enum SubscriptionStatus {
+  FREE
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// =============================================================================
+// 사용자 - 프로필
+// =============================================================================
+
+model UserProfile {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  name         String? @db.VarChar(100)
+  profileImage String? @db.VarChar(500)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// 사용자 - 설정
+// =============================================================================
+
+model UserPreference {
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  pushEnabled      Boolean @default(false) // 푸시 알림 전체 on/off
+  nightPushEnabled Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// 사용자 - 약관 동의
+// =============================================================================
+
+model UserConsent {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  termsAgreedAt      DateTime? // 서비스 이용약관 동의 시점
+  privacyAgreedAt    DateTime? // 개인정보처리방침 동의 시점
+  agreedTermsVersion String?   @db.VarChar(20) // 동의한 약관 버전 (예: "1.0.0")
+  marketingAgreedAt  DateTime? // 마케팅 수신 동의 시점 (null = 미동의/철회)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// 인증 - 계정 (OAuth / Credential)
+// =============================================================================
+
+model Account {
+  id                Int             @id @default(autoincrement())
+  userId            String
+  provider          AccountProvider
+  providerAccountId String          @db.VarChar(255) // OAuth: 제공자 ID, Credential: "local"
+
+  // Credential 전용
+  password String? @db.VarChar(128) // Argon2id 해시
+
+  // OAuth 전용
+  accessToken          String? // 암호화 저장
+  refreshToken         String? // 암호화 저장
+  accessTokenExpiresAt DateTime?
+  scope                String?   @db.VarChar(500)
+
+  // 타임스탬프
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+}
+
+enum AccountProvider {
+  CREDENTIAL
+  KAKAO
+  APPLE
+  GOOGLE
+  NAVER
+}
+
+// =============================================================================
+// 인증 - 세션
+// =============================================================================
+
+model Session {
+  id     String @id @default(cuid())
+  userId String
+
+  // Refresh Token
+  refreshTokenHash String @unique @db.VarChar(64) // SHA-256 해시
+
+  // 토큰 로테이션
+  tokenFamily       String  @db.VarChar(36) // 세션 계열 식별자 (UUID)
+  tokenVersion      Int     @default(1)
+  previousTokenHash String? @db.VarChar(64) // 이전 토큰 (재사용 감지)
+
+  // 디바이스
+  deviceFingerprint String @db.VarChar(64) // User-Agent + IP 해시
+  userAgent         String @db.VarChar(500)
+  ipAddress         String @db.VarChar(45) // IPv6 max
+
+  // 만료
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokedReason String?   @db.VarChar(200)
+
+  // 타임스탬프
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastUsedAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenFamily])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// 인증 - 로그인 시도
+// =============================================================================
+
+model LoginAttempt {
+  id            Int     @id @default(autoincrement())
+  email         String  @db.VarChar(255)
+  ipAddress     String  @db.VarChar(45)
+  userAgent     String  @db.VarChar(500)
+  success       Boolean
+  failureReason String? @db.VarChar(100) // INVALID_PASSWORD, USER_NOT_FOUND, RATE_LIMITED
+
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([createdAt]) // 정리 배치용 (30일 보관)
+}
+
+// =============================================================================
+// 인증 - 보안 로그
+// =============================================================================
+
+model SecurityLog {
+  id        Int           @id @default(autoincrement())
+  userId    String?
+  event     SecurityEvent
+  ipAddress String        @db.VarChar(45)
+  userAgent String        @db.VarChar(500)
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+enum SecurityEvent {
+  // 인증
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  TOKEN_REFRESH
+  TOKEN_REVOKED
+
+  // 계정
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  EMAIL_VERIFIED
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+
+  // 보안
+  SUSPICIOUS_ACTIVITY
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  SESSION_REVOKED_ALL
+
+  // OAuth
+  OAUTH_LINKED
+  OAUTH_UNLINKED
+}
+
+// =============================================================================
+// 인증 - 이메일 인증 / 비밀번호 재설정
+// =============================================================================
+
+model Verification {
+  id        Int              @id @default(autoincrement())
+  userId    String
+  type      VerificationType
+  token     String           @unique @db.VarChar(64) // SHA-256 해시
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+enum VerificationType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+// =============================================================================
+// 인증 - OAuth 상태 (CSRF/PKCE)
+// =============================================================================
+
+model OAuthState {
+  id           Int             @id @default(autoincrement())
+  state        String          @unique @db.VarChar(64) // CSRF 토큰
+  codeVerifier String?         @db.VarChar(128) // PKCE
+  provider     AccountProvider
+  redirectUri  String          @db.VarChar(500)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// Todo 앱 - 할 일
+// =============================================================================
+
+model Todo {
+  id     String @id @default(cuid())
+  userId String
+
+  // 내용
+  title   String  @db.VarChar(200)
+  content String? @db.VarChar(5000)
+  color   String? @db.VarChar(7) // HEX (#FF5733)
+
+  // 완료
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  // 날짜 (기간 지원)
+  startDate     DateTime  @db.Date // 시작일
+  endDate       DateTime? @db.Date // 종료일 (null = 단일 날짜)
+  scheduledTime DateTime? // 시간 (선택)
+  isAllDay      Boolean   @default(true)
+
+  // 가시성
+  visibility TodoVisibility @default(PUBLIC)
+
+  // 타임스탬프
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate, endDate])
+  @@index([userId, completed, startDate])
+}
+
+enum TodoVisibility {
+  PUBLIC // 친구 공개
+  PRIVATE // 나만 보기
+}
+
+// =============================================================================
+// Todo 앱 - 친구
+// =============================================================================
+
+model Friendship {
+  id          String           @id @default(cuid())
+  userId      String // 이 레코드의 소유자
+  friendId    String // 친구
+  status      FriendshipStatus @default(PENDING)
+  isRequester Boolean // 요청을 보낸 쪽인지
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  acceptedAt DateTime?
+
+  // 관계
+  user   User @relation("friendships_user", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("friendships_friend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId, status])
+  @@index([friendId])
+}
+
+enum FriendshipStatus {
+  PENDING // 대기
+  ACCEPTED // 수락
+  BLOCKED // 차단
+}
+
+// =============================================================================
+// Todo 앱 - 푸시 토큰
+// =============================================================================
+
+model PushToken {
+  id       Int      @id @default(autoincrement())
+  userId   String
+  token    String   @unique @db.VarChar(255) // Expo Push Token
+  deviceId String   @db.VarChar(255) // 기기 식별자
+  platform Platform
+  isActive Boolean  @default(true)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastUsedAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId, isActive])
+}
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+// =============================================================================
+// Todo 앱 - 알림
+// =============================================================================
+
+model Notification {
+  id     Int              @id @default(autoincrement())
+  userId String
+  type   NotificationType
+  title  String           @db.VarChar(200)
+  body   String           @db.VarChar(500)
+  isRead Boolean          @default(false)
+
+  // === 액션/링크 ===
+  actionType   NotificationActionType @default(NONE)
+  actionTarget String?                @db.VarChar(500) // 내부: "/todos/123", 외부: "https://..."
+
+  // === 참조 ID (타입 안전성) ===
+  todoId   String? // VIEW_TODO 시
+  friendId String? // VIEW_FRIEND, FRIEND_REQUEST 시
+
+  // === 메타데이터 (확장용) ===
+  metadata Json? // 추후 확장 데이터
+
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, type])
+  @@index([createdAt]) // 정리 배치용 (90일 보관)
+}
+
+enum NotificationType {
+  // 친구
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+
+  // Todo
+  TODO_REMINDER
+  TODO_SHARED
+
+  // 달성
+  WEEKLY_ACHIEVEMENT
+
+  // 시스템
+  SYSTEM_NOTICE
+}
+
+enum NotificationActionType {
+  NONE // 액션 없음
+  VIEW_TODO // 할 일 상세
+  VIEW_FRIEND // 친구 프로필
+  VIEW_FRIENDS // 친구 목록
+  VIEW_ACHIEVEMENT // 달성 화면
+  OPEN_URL // 외부 URL
+}
+
+// =============================================================================
+// Todo 앱 - 주간 달성 배지
+// =============================================================================
+
+model WeeklyAchievement {
+  id     Int    @id @default(autoincrement())
+  userId String
+
+  // ISO Week
+  year Int // 연도
+  week Int // 주차 (1-53)
+
+  // 달성 정보
+  totalTodos     Int // 총 Todo 수
+  completedTodos Int // 완료 수
+  achievedAt     DateTime // 달성 시점
+
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, week])
+  @@index([userId, year])
+  @@index([year, week]) // 주간 랭킹 조회용
+}
+
+// =============================================================================
+// Todo 앱 - 구독
+// =============================================================================
+
+model Subscription {
+  id     Int    @id @default(autoincrement())
+  userId String
+
+  // RevenueCat
+  revenueCatId String @unique @db.VarChar(255) // 거래 ID
+  productId    String @db.VarChar(100) // 상품 ID
+
+  // 상태
+  status SubscriptionStatus
+
+  // 기간
+  startedAt   DateTime
+  expiresAt   DateTime
+  cancelledAt DateTime?
+
+  // 데이터 보관
+  dataRetentionUntil DateTime? // 해지 후 보관 기한
+
+  // Soft Delete
+  deletedAt DateTime?
+
+  // 타임스탬프
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status, expiresAt])
+  @@index([deletedAt])
 }

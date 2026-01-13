@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 import { PAGINATION_DEFAULT } from "../constants/pagination.constant";
 
 /**
@@ -21,14 +21,12 @@ export class PaginationDto {
 }
 
 /**
- * 커서 기반 페이지네이션 DTO
+ * 커서 기반 페이지네이션 DTO (cuid 기반)
  */
 export class CursorPaginationDto {
 	@IsOptional()
-	@IsInt()
-	@Min(1)
-	@Type(() => Number)
-	cursor?: number;
+	@IsString()
+	cursor?: string;
 
 	@IsOptional()
 	@IsInt()
