@@ -33,14 +33,18 @@ module.exports = {
     ],
   },
 
-  // 루트 디렉토리
+  // 루트 디렉토리 - unit test는 src 내부에서만 실행
   rootDir: '.',
-  roots: ['<rootDir>/src', '<rootDir>/test'],
+  roots: ['<rootDir>/src'],
 
-  // 테스트 패턴 - unit test만 (e2e는 jest-e2e.json에서 별도 설정)
+  // 테스트 패턴 - unit test만 (e2e, integration은 별도 설정)
   testMatch: undefined,
   testRegex: '.*\\.spec\\.ts$',
-  testPathIgnorePatterns: ['/node_modules/', '\\.e2e-spec\\.ts$'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '\\.e2e-spec\\.ts$',
+    '\\.integration-spec\\.ts$',
+  ],
 
   // 커버리지 설정
   collectCoverageFrom: [
