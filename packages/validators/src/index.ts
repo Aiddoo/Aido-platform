@@ -25,10 +25,10 @@
 export { z } from 'zod';
 
 // Common schemas & types
-export * from './common';
+export * from './common/index';
 
 // Domain schemas
-export * from './todo';
+export * from './todo/index';
 
 // 향후 추가 예정
 // export * from './user';
