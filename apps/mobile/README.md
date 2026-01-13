@@ -1,6 +1,15 @@
-# Aido Mobile
+# @aido/mobile
 
-Expo + React Native 모바일 앱
+> Aido 모바일 애플리케이션
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Expo](https://img.shields.io/badge/Expo-54.x-000020.svg)
+![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+## 개요
+
+Expo 54 기반의 크로스 플랫폼 모바일 앱입니다. Expo Router를 사용한 파일 기반 라우팅과 New Architecture를 지원합니다.
 
 ## 시작하기
 
@@ -352,3 +361,19 @@ apps/mobile/
 3. [ ] 스타일 정의 (StyleSheet.create)
 4. [ ] 공유 스키마 사용 (@aido/validators)
 5. [ ] 테스트 작성 (`__tests__/`)
+
+---
+
+## 변경 이력
+
+### v1.0.0 (2025-01-13)
+
+- 초기 릴리즈
+- Expo 54 + React Native 0.81 기반
+- Expo Router 파일 기반 라우팅
+- New Architecture 활성화
+- 푸시 알림 (expo-notifications)
+- 생체 인증 (expo-local-authentication)
+- 오프라인 DB (expo-sqlite)
+- 캘린더 동기화 (expo-calendar)
+- EAS Build 프로필 구성 (development, preview, production)
