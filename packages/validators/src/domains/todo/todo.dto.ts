@@ -15,7 +15,7 @@ export const todoCreateSchema = z.object({
     .max(7)
     .regex(/^#[0-9A-Fa-f]{6}$/, '올바른 HEX 색상 형식이 아닙니다')
     .default(DEFAULT_TODO_COLOR),
-  startDate: z.coerce.date(),
+  startDate: z.coerce.date().default(() => new Date()),
   endDate: z.coerce.date().optional(),
   scheduledTime: z.coerce.date().optional(),
   isAllDay: z.boolean().default(true),

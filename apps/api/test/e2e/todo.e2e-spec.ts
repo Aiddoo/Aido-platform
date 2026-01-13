@@ -25,6 +25,9 @@ import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
 import { TestDatabase } from "../setup/test-database";
 
+// Controller에서 사용하는 임시 사용자 ID와 동일해야 함
+const TEMP_USER_ID = "temp_user_id_for_development";
+
 describe("TodoController (e2e)", () => {
 	let app: INestApplication<App>;
 	let testDatabase: TestDatabase;
@@ -33,6 +36,16 @@ describe("TodoController (e2e)", () => {
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
 		await testDatabase.start();
+
+		// Mock 사용자 생성 (Todo 생성 시 userId FK 참조를 위해 필요)
+		const prisma = testDatabase.getPrisma();
+		await prisma.user.create({
+			data: {
+				id: TEMP_USER_ID,
+				email: "test@example.com",
+			},
+		});
+		console.log("✅ Mock user created for E2E tests");
 
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
@@ -123,7 +136,7 @@ describe("TodoController (e2e)", () => {
 		});
 
 		it("should return 400 for title exceeding max length", async () => {
-			const invalidDto = { title: "a".repeat(101) }; // 100자 초과
+			const invalidDto = { title: "a".repeat(201) }; // 200자 초과
 
 			const response = await request(app.getHttpServer())
 				.post("/todos")
@@ -214,10 +227,11 @@ describe("TodoController (e2e)", () => {
 			expect(response.body.success).toBe(false);
 		});
 
-		it("should return 400 for invalid id format", async () => {
+		it("should return 404 for invalid id format", async () => {
+			// CUID 기반 ID를 사용하므로, 존재하지 않는 형식의 ID는 404 반환
 			const response = await request(app.getHttpServer())
 				.get("/todos/invalid")
-				.expect(400);
+				.expect(404);
 
 			expect(response.body.success).toBe(false);
 		});
