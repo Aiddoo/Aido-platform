@@ -75,7 +75,7 @@ jobs:
     # Test Job에서만 쓸 환경변수
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
-      JWT_SECRET: test-jwt-secret-for-ci
+      JWT_SECRET: test-jwt-secret-for-ci-minimum-32-chars
       JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci
 
     steps:
