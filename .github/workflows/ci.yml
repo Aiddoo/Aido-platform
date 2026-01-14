@@ -72,12 +72,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    # Test Job에서만 쓸 환경변수
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
-      JWT_SECRET: test-jwt-secret-for-ci-minimum-32-chars
-      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci
-
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -94,8 +88,14 @@ jobs:
 
       - name: Run Prisma migrations
         run: pnpm --filter @aido/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
 
       - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
+          JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
         run: |
           pnpm test
           pnpm test:e2e
