@@ -11,6 +11,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
+import { DatabaseService } from "@/database";
 import { TestDatabase } from "../setup/test-database";
 
 describe("AppController (e2e)", () => {
@@ -24,7 +25,10 @@ describe("AppController (e2e)", () => {
 
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
-		}).compile();
+		})
+			.overrideProvider(DatabaseService)
+			.useValue(testDatabase.getPrisma())
+			.compile();
 
 		app = moduleFixture.createNestApplication();
 		await app.init();

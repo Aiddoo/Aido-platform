@@ -1,0 +1,11 @@
+# 테스트 관련
+coverage/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# 기타
+*.md
+LICENSE

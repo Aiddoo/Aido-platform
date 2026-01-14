@@ -28,14 +28,20 @@ import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 import { TestDatabase } from "../setup/test-database";
 
-// 테스트용 Todo 생성 헬퍼 (기본값 적용)
+/**
+ * 테스트용 Todo 생성 헬퍼
+ *
+ * 날짜 필드는 Date 객체가 아닌 ISO 8601 문자열로 전달해야 합니다.
+ * Zod v4의 z.date()가 JSON Schema 변환을 지원하지 않아 nestjs-zod에서 에러 발생.
+ * @see https://github.com/colinhacks/zod/issues/4508
+ */
 interface CreateTodoInput {
 	title: string;
 	content?: string;
 	color?: string;
-	startDate?: Date;
-	endDate?: Date;
-	scheduledTime?: Date;
+	startDate?: string | Date;
+	endDate?: string | Date;
+	scheduledTime?: string | Date;
 	isAllDay?: boolean;
 	visibility?: "PUBLIC" | "PRIVATE";
 }
@@ -45,9 +51,11 @@ function createTodoData(input: CreateTodoInput) {
 		title: input.title,
 		content: input.content,
 		color: input.color ?? DEFAULT_TODO_COLOR,
-		startDate: input.startDate ?? new Date(),
-		endDate: input.endDate,
-		scheduledTime: input.scheduledTime,
+		startDate: input.startDate ? new Date(input.startDate) : new Date(),
+		endDate: input.endDate ? new Date(input.endDate) : undefined,
+		scheduledTime: input.scheduledTime
+			? new Date(input.scheduledTime)
+			: undefined,
 		isAllDay: input.isAllDay ?? true,
 		visibility: input.visibility ?? "PUBLIC",
 	};
