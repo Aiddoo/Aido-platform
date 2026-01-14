@@ -91,14 +91,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
 
-      - name: Run tests
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Run E2E tests
+        working-directory: apps/api
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
           JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
-        run: |
-          pnpm test
-          pnpm test:e2e
+        run: pnpm test:e2e
 
   # ============================================
   # Build (Lint/Test와 병렬로 실행)
