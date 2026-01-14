@@ -94,8 +94,11 @@ jobs:
       - name: Run unit tests
         run: pnpm test
 
+      # E2E 테스트는 validators 등 workspace 패키지를 import하므로 빌드 필요
+      - name: Build packages for E2E
+        run: pnpm build
+
       - name: Run E2E tests
-        working-directory: apps/api
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
           JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
