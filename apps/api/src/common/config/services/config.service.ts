@@ -151,6 +151,19 @@ export class TypedConfigService {
 	}
 
 	// ============================================
+	// Email Config Helpers
+	// ============================================
+
+	get email() {
+		return {
+			apiKey: this.get("RESEND_API_KEY"),
+			from: this.get("EMAIL_FROM"),
+			fromName: this.get("EMAIL_FROM_NAME"),
+			isConfigured: !!this.get("RESEND_API_KEY"),
+		};
+	}
+
+	// ============================================
 	// External Services Helpers
 	// ============================================
 
