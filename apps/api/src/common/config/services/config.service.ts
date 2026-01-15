@@ -112,18 +112,24 @@ export class TypedConfigService {
 	}
 
 	get appleOAuth() {
+		const rawPrivateKey = this.get("APPLE_PRIVATE_KEY");
+		// 환경변수에는 PEM 헤더/푸터 없이 키 내용만 저장되어 있으므로 PEM 형식으로 변환
+		const privateKey = rawPrivateKey
+			? `-----BEGIN PRIVATE KEY-----\n${rawPrivateKey}\n-----END PRIVATE KEY-----`
+			: undefined;
+
 		return {
 			clientId: this.get("APPLE_CLIENT_ID"),
 			serviceId: this.get("APPLE_SERVICE_ID"),
 			teamId: this.get("APPLE_TEAM_ID"),
 			keyId: this.get("APPLE_KEY_ID"),
-			privateKey: this.get("APPLE_PRIVATE_KEY"),
+			privateKey,
 			callbackUrl: this.get("APPLE_CALLBACK_URL"),
 			isConfigured: !!(
 				this.get("APPLE_CLIENT_ID") &&
 				this.get("APPLE_TEAM_ID") &&
 				this.get("APPLE_KEY_ID") &&
-				this.get("APPLE_PRIVATE_KEY")
+				rawPrivateKey
 			),
 		};
 	}

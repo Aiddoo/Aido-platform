@@ -42,7 +42,7 @@ export class BusinessExceptions {
 	// =========================================================================
 	// 공통 (Common)
 	// =========================================================================
-	static userNotFound(userId: number) {
+	static userNotFound(userId: string) {
 		return new BusinessException(ERROR_CODE.USER_NOT_FOUND, { userId });
 	}
 
@@ -118,6 +118,10 @@ export class BusinessExceptions {
 		return new BusinessException(ERROR_CODE.SOCIAL_TOKEN_INVALID, { provider });
 	}
 
+	static socialTokenExpired(provider: string) {
+		return new BusinessException(ERROR_CODE.SOCIAL_TOKEN_EXPIRED, { provider });
+	}
+
 	static socialProviderError(
 		provider: string,
 		details?: Record<string, unknown>,
@@ -143,6 +147,10 @@ export class BusinessExceptions {
 	// =========================================================================
 	// 카카오 로그인 (Kakao Login)
 	// =========================================================================
+	static kakaoAuthFailed(details?: Record<string, unknown>) {
+		return new BusinessException(ERROR_CODE.KAKAO_AUTH_FAILED, details);
+	}
+
 	static kakaoAuthCodeInvalid() {
 		return new BusinessException(ERROR_CODE.KAKAO_AUTH_CODE_INVALID);
 	}
@@ -171,6 +179,10 @@ export class BusinessExceptions {
 	// =========================================================================
 	// 애플 로그인 (Apple Login)
 	// =========================================================================
+	static appleAuthFailed(details?: Record<string, unknown>) {
+		return new BusinessException(ERROR_CODE.APPLE_AUTH_FAILED, details);
+	}
+
 	static appleIdTokenInvalid() {
 		return new BusinessException(ERROR_CODE.APPLE_ID_TOKEN_INVALID);
 	}
@@ -198,6 +210,56 @@ export class BusinessExceptions {
 
 	static appleRevokeTokenFailed(details?: unknown) {
 		return new BusinessException(ERROR_CODE.APPLE_REVOKE_TOKEN_FAILED, details);
+	}
+
+	// =========================================================================
+	// 구글 로그인 (Google Login)
+	// =========================================================================
+	static googleAuthFailed(details?: Record<string, unknown>) {
+		return new BusinessException(ERROR_CODE.GOOGLE_AUTH_FAILED, details);
+	}
+
+	static googleTokenInvalid() {
+		return new BusinessException(ERROR_CODE.GOOGLE_TOKEN_INVALID);
+	}
+
+	static googleEmailNotProvided() {
+		return new BusinessException(ERROR_CODE.GOOGLE_EMAIL_NOT_PROVIDED);
+	}
+
+	static googleAccountAlreadyLinked(googleId: string) {
+		return new BusinessException(ERROR_CODE.GOOGLE_ACCOUNT_ALREADY_LINKED, {
+			googleId,
+		});
+	}
+
+	static googleUnlinkFailed(details?: unknown) {
+		return new BusinessException(ERROR_CODE.GOOGLE_UNLINK_FAILED, details);
+	}
+
+	// =========================================================================
+	// 네이버 로그인 (Naver Login)
+	// =========================================================================
+	static naverAuthFailed(details?: Record<string, unknown>) {
+		return new BusinessException(ERROR_CODE.NAVER_AUTH_FAILED, details);
+	}
+
+	static naverTokenInvalid() {
+		return new BusinessException(ERROR_CODE.NAVER_TOKEN_INVALID);
+	}
+
+	static naverUserInfoFailed(details?: unknown) {
+		return new BusinessException(ERROR_CODE.NAVER_USER_INFO_FAILED, details);
+	}
+
+	static naverAccountAlreadyLinked(naverId: string) {
+		return new BusinessException(ERROR_CODE.NAVER_ACCOUNT_ALREADY_LINKED, {
+			naverId,
+		});
+	}
+
+	static naverUnlinkFailed(details?: unknown) {
+		return new BusinessException(ERROR_CODE.NAVER_UNLINK_FAILED, details);
 	}
 
 	// =========================================================================
@@ -247,6 +309,10 @@ export class BusinessExceptions {
 	// =========================================================================
 	// 계정 관련 (Account)
 	// =========================================================================
+	static accountNotFound(provider?: string) {
+		return new BusinessException(ERROR_CODE.ACCOUNT_NOT_FOUND, { provider });
+	}
+
 	static accountAlreadyExists(details?: unknown) {
 		return new BusinessException(ERROR_CODE.ACCOUNT_ALREADY_EXISTS, details);
 	}
@@ -270,6 +336,10 @@ export class BusinessExceptions {
 		return new BusinessException(ERROR_CODE.ACCOUNT_PENDING_VERIFICATION, {
 			email,
 		});
+	}
+
+	static cannotUnlinkLastAccount() {
+		return new BusinessException(ERROR_CODE.CANNOT_UNLINK_LAST_ACCOUNT);
 	}
 
 	// =========================================================================

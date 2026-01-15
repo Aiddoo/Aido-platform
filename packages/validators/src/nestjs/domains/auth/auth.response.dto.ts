@@ -10,6 +10,7 @@ import {
   changePasswordResponseSchema,
   currentUserSchema,
   forgotPasswordResponseSchema,
+  linkedAccountsResponseSchema,
   logoutResponseSchema,
   refreshTokensSchema,
   registerResponseSchema,
@@ -18,6 +19,7 @@ import {
   sessionInfoSchema,
   sessionListResponseSchema,
   sessionListSchema,
+  unlinkAccountResponseSchema,
   updateProfileResponseSchema,
   userProfileSchema,
 } from '../../../domains/auth/auth.response';
@@ -79,3 +81,13 @@ export class ResendVerificationResponseDto extends createZodDto(resendVerificati
 
 /** 프로필 수정 응답 DTO */
 export class UpdateProfileResponseDto extends createZodDto(updateProfileResponseSchema) {}
+
+// ============================================
+// OAuth 소셜 로그인 응답 DTO
+// ============================================
+
+/** 연결된 소셜 계정 목록 응답 DTO */
+export class LinkedAccountsResponseDto extends createZodDto(linkedAccountsResponseSchema) {}
+
+/** 소셜 계정 연결 해제 응답 DTO */
+export class UnlinkAccountResponseDto extends createZodDto(unlinkAccountResponseSchema) {}
