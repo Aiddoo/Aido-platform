@@ -221,3 +221,134 @@ export const updateProfileSchema = z
   .describe('프로필 수정 요청');
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+// ============================================
+// OAuth 소셜 로그인 요청
+// ============================================
+
+/** OAuth Provider 타입 */
+export const oauthProviderSchema = z
+  .enum(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'])
+  .describe('소셜 로그인 제공자');
+
+export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
+
+/** Apple 로그인 콜백 요청 (모바일) - 서버에서 idToken 검증 */
+export const appleMobileCallbackSchema = z
+  .object({
+    idToken: z
+      .string()
+      .min(1, 'Apple ID 토큰이 필요합니다')
+      .describe('Apple에서 발급받은 ID Token (서버에서 JWKS로 검증)'),
+    userName: z
+      .string()
+      .max(100, '이름은 100자 이내여야 합니다')
+      .trim()
+      .optional()
+      .describe('Apple에서 제공한 사용자 이름 (첫 로그인 시에만 제공)'),
+    deviceName: z.string().max(100).optional().describe('기기 이름 (모바일 앱에서 세션 구분용)'),
+    deviceType: deviceTypeSchema.optional(),
+  })
+  .describe('Apple 모바일 로그인 콜백 요청');
+
+export type AppleMobileCallbackInput = z.infer<typeof appleMobileCallbackSchema>;
+
+/** Google 로그인 콜백 요청 (모바일) - 서버에서 idToken 검증 */
+export const googleMobileCallbackSchema = z
+  .object({
+    idToken: z
+      .string()
+      .min(1, 'Google ID 토큰이 필요합니다')
+      .describe('Google에서 발급받은 ID Token (서버에서 google-auth-library로 검증)'),
+    userName: z
+      .string()
+      .max(100, '이름은 100자 이내여야 합니다')
+      .trim()
+      .optional()
+      .describe('사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)'),
+    deviceName: z.string().max(100).optional().describe('기기 이름 (모바일 앱에서 세션 구분용)'),
+    deviceType: deviceTypeSchema.optional(),
+  })
+  .describe('Google 모바일 로그인 콜백 요청');
+
+export type GoogleMobileCallbackInput = z.infer<typeof googleMobileCallbackSchema>;
+
+/** Kakao 로그인 콜백 요청 (모바일) - 서버에서 accessToken 검증 */
+export const kakaoMobileCallbackSchema = z
+  .object({
+    accessToken: z
+      .string()
+      .min(1, 'Kakao Access Token이 필요합니다')
+      .describe('Kakao에서 발급받은 Access Token (서버에서 /v2/user/me API로 검증)'),
+    userName: z
+      .string()
+      .max(100, '이름은 100자 이내여야 합니다')
+      .trim()
+      .optional()
+      .describe('사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)'),
+    deviceName: z.string().max(100).optional().describe('기기 이름 (모바일 앱에서 세션 구분용)'),
+    deviceType: deviceTypeSchema.optional(),
+  })
+  .describe('Kakao 모바일 로그인 콜백 요청');
+
+export type KakaoMobileCallbackInput = z.infer<typeof kakaoMobileCallbackSchema>;
+
+/** Naver 로그인 콜백 요청 (모바일) - 서버에서 accessToken 검증 */
+export const naverMobileCallbackSchema = z
+  .object({
+    accessToken: z
+      .string()
+      .min(1, 'Naver Access Token이 필요합니다')
+      .describe('Naver에서 발급받은 Access Token (서버에서 /v1/nid/me API로 검증)'),
+    userName: z
+      .string()
+      .max(100, '이름은 100자 이내여야 합니다')
+      .trim()
+      .optional()
+      .describe('사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)'),
+    deviceName: z.string().max(100).optional().describe('기기 이름 (모바일 앱에서 세션 구분용)'),
+    deviceType: deviceTypeSchema.optional(),
+  })
+  .describe('Naver 모바일 로그인 콜백 요청');
+
+export type NaverMobileCallbackInput = z.infer<typeof naverMobileCallbackSchema>;
+
+/** 소셜 계정 연동 요청 (로그인된 사용자가 소셜 계정 추가 연동) */
+export const linkSocialAccountSchema = z
+  .object({
+    provider: oauthProviderSchema.describe('연동할 소셜 로그인 제공자'),
+    idToken: z.string().optional().describe('ID Token (Apple, Google용 - provider에 따라 필수)'),
+    accessToken: z
+      .string()
+      .optional()
+      .describe('Access Token (Kakao, Naver용 - provider에 따라 필수)'),
+  })
+  .refine(
+    (data) => {
+      // Apple, Google은 idToken 필수
+      if (data.provider === 'APPLE' || data.provider === 'GOOGLE') {
+        return !!data.idToken;
+      }
+      // Kakao, Naver는 accessToken 필수
+      if (data.provider === 'KAKAO' || data.provider === 'NAVER') {
+        return !!data.accessToken;
+      }
+      return true;
+    },
+    {
+      message: 'Apple/Google은 idToken, Kakao/Naver는 accessToken이 필요합니다',
+      path: ['idToken'],
+    },
+  )
+  .describe('소셜 계정 연동 요청');
+
+export type LinkSocialAccountInput = z.infer<typeof linkSocialAccountSchema>;
+
+/** 소셜 계정 연결 해제 요청 */
+export const unlinkAccountSchema = z
+  .object({
+    provider: oauthProviderSchema.describe('연결 해제할 소셜 로그인 제공자'),
+  })
+  .describe('소셜 계정 연결 해제 요청');
+
+export type UnlinkAccountInput = z.infer<typeof unlinkAccountSchema>;

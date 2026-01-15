@@ -253,3 +253,56 @@ export const updateProfileResponseSchema = z
   .describe('프로필 수정 응답');
 
 export type UpdateProfileResponse = z.infer<typeof updateProfileResponseSchema>;
+
+// ============================================
+// OAuth 소셜 로그인 응답
+// ============================================
+
+/** OAuth Provider 타입 */
+export const oauthProviderEnumSchema = z
+  .enum(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'])
+  .describe('소셜 로그인 제공자');
+
+/**
+ * Apple 로그인 응답
+ * @description authTokensSchema와 동일 (소셜 로그인도 동일한 토큰 발급)
+ */
+export const appleLoginResponseSchema = authTokensSchema.describe('Apple 로그인 응답');
+
+export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
+
+/**
+ * 연결된 소셜 계정 정보
+ */
+export const linkedAccountSchema = z
+  .object({
+    provider: oauthProviderEnumSchema,
+    providerAccountId: z.string().describe('제공자 측 계정 고유 ID'),
+    linkedAt: datetimeSchema.describe('계정 연결 시각'),
+  })
+  .describe('연결된 소셜 계정 정보');
+
+export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
+
+/**
+ * 연결된 소셜 계정 목록 응답
+ */
+export const linkedAccountsResponseSchema = z
+  .object({
+    accounts: z.array(linkedAccountSchema).describe('연결된 소셜 계정 목록'),
+  })
+  .describe('연결된 소셜 계정 목록 응답');
+
+export type LinkedAccountsResponse = z.infer<typeof linkedAccountsResponseSchema>;
+
+/**
+ * 소셜 계정 연결 해제 응답
+ */
+export const unlinkAccountResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+    provider: oauthProviderEnumSchema.describe('연결 해제된 제공자'),
+  })
+  .describe('소셜 계정 연결 해제 응답');
+
+export type UnlinkAccountResponse = z.infer<typeof unlinkAccountResponseSchema>;
