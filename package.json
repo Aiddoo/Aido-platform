@@ -19,12 +19,13 @@
     "lint:fix": "turbo run lint:fix",
     "prepare": "simple-git-hooks",
     "test": "turbo run test",
+    "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
     "test:e2e": "turbo run test:e2e",
     "typecheck": "turbo run typecheck"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged",
+    "pre-commit": "pnpm lint-staged && pnpm typecheck && pnpm build",
     "commit-msg": "pnpm commitlint --edit $1"
   },
   "lint-staged": {

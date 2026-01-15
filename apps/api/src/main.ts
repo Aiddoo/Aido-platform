@@ -5,24 +5,22 @@ import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 
+import type { EnvConfig } from "@/common/config";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-	const configService = app.get(ConfigService);
-	const port = configService.get<number>("PORT", 8080);
-	const nodeEnv = configService.get<string>("NODE_ENV", "development");
-	const corsOrigins = configService.get<string>(
-		"CORS_ORIGINS",
-		"http://localhost:3000",
-	);
+	const configService = app.get(ConfigService<EnvConfig, true>);
+	const port = configService.get("PORT", { infer: true });
+	const nodeEnv = configService.get("NODE_ENV", { infer: true });
+	const corsOrigins = configService.get("CORS_ORIGINS", { infer: true });
 
 	app.useLogger(app.get(Logger));
 
 	app.use(helmet());
 	app.enableCors({
-		origin: corsOrigins.split(",").map((origin) => origin.trim()),
+		origin: corsOrigins, // 이미 배열로 변환됨
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

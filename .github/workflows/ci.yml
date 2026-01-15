@@ -14,7 +14,7 @@ env:
   NODE_VERSION: 22
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-  # Prisma generate에 필요한 placeholder URL (실제 연결 불필요)
+  # Build/Lint용 가짜 URL
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
@@ -25,29 +25,27 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      # pnpm 설치 및 캐싱을 한 방에 처리
+      - uses: pnpm/action-setup@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          cache: "pnpm" # setup-node가 pnpm store를 알아서 캐싱함 (훨씬 간단)
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ★ 중요: 캐시에서 가져오는 게 아니라 매번 생성 (빠르고 안전함)
       - name: Generate Prisma Client
         run: pnpm db:generate
 
-      - name: Biome Check
-        run: pnpm check
-
-      - name: Lint
-        run: pnpm lint
+      - name: Biome Check & Lint
+        run: |
+          pnpm check
+          pnpm lint
 
       - name: Type Check
         run: pnpm typecheck
@@ -67,26 +65,20 @@ jobs:
           POSTGRES_DB: aido_test
         ports:
           - 5432:5432
+        # DB가 준비될 때까지 기다리는 헬스체크 (필수)
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -96,32 +88,36 @@ jobs:
 
       - name: Run Prisma migrations
         run: pnpm --filter @aido/api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
 
       - name: Run unit tests
         run: pnpm test
 
+      # E2E 테스트는 validators 등 workspace 패키지를 import하므로 빌드 필요
+      - name: Build packages for E2E
+        run: pnpm build
+
       - name: Run E2E tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
+          JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
         run: pnpm test:e2e
 
   # ============================================
-  # Build
+  # Build (Lint/Test와 병렬로 실행)
   # ============================================
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

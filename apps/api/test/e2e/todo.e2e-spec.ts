@@ -23,6 +23,7 @@ import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
+import { DatabaseService } from "@/database";
 import { TestDatabase } from "../setup/test-database";
 
 // Controller에서 사용하는 임시 사용자 ID와 동일해야 함
@@ -49,7 +50,10 @@ describe("TodoController (e2e)", () => {
 
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
-		}).compile();
+		})
+			.overrideProvider(DatabaseService)
+			.useValue(testDatabase.getPrisma())
+			.compile();
 
 		app = moduleFixture.createNestApplication();
 		app.useGlobalPipes(new ZodValidationPipe());

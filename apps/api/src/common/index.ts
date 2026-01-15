@@ -2,6 +2,9 @@
  * Common 모듈 메인 Barrel Export
  */
 
+// Config
+export * from "./config";
+
 // Database (향후 확장용)
 export * from "./database";
 
