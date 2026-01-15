@@ -60,6 +60,11 @@ export const ERROR_CODE = {
 	APPLE_REVOKE_TOKEN_FAILED: "APPLE_REVOKE_TOKEN_FAILED",
 
 	// =========================================================================
+	// 로그인 자격 증명 (Login Credentials)
+	// =========================================================================
+	INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+
+	// =========================================================================
 	// 이메일 인증 (Email Authentication)
 	// =========================================================================
 	EMAIL_ALREADY_REGISTERED: "EMAIL_ALREADY_REGISTERED",
@@ -77,6 +82,33 @@ export const ERROR_CODE = {
 	ACCOUNT_ALREADY_EXISTS: "ACCOUNT_ALREADY_EXISTS",
 	ACCOUNT_SUSPENDED: "ACCOUNT_SUSPENDED",
 	ACCOUNT_DELETED: "ACCOUNT_DELETED",
+	ACCOUNT_LOCKED: "ACCOUNT_LOCKED",
+	ACCOUNT_PENDING_VERIFICATION: "ACCOUNT_PENDING_VERIFICATION",
+
+	// =========================================================================
+	// 로그인 시도 제한 (Login Attempts)
+	// =========================================================================
+	TOO_MANY_LOGIN_ATTEMPTS: "TOO_MANY_LOGIN_ATTEMPTS",
+
+	// =========================================================================
+	// 세션 관련 (Session)
+	// =========================================================================
+	SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
+	SESSION_EXPIRED: "SESSION_EXPIRED",
+	SESSION_REVOKED: "SESSION_REVOKED",
+
+	// =========================================================================
+	// 토큰 보안 (Token Security)
+	// =========================================================================
+	TOKEN_REUSE_DETECTED: "TOKEN_REUSE_DETECTED",
+
+	// =========================================================================
+	// 인증 코드 (Verification)
+	// =========================================================================
+	VERIFICATION_CODE_INVALID: "VERIFICATION_CODE_INVALID",
+	VERIFICATION_CODE_EXPIRED: "VERIFICATION_CODE_EXPIRED",
+	VERIFICATION_RESEND_TOO_SOON: "VERIFICATION_RESEND_TOO_SOON",
+	VERIFICATION_MAX_ATTEMPTS_EXCEEDED: "VERIFICATION_MAX_ATTEMPTS_EXCEEDED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
@@ -135,6 +167,9 @@ export const ERROR_MESSAGE: Record<ErrorCode, string> = {
 	[ERROR_CODE.APPLE_UNLINK_FAILED]: "애플 계정 연동 해제에 실패했습니다.",
 	[ERROR_CODE.APPLE_REVOKE_TOKEN_FAILED]: "애플 로그아웃 처리에 실패했습니다.",
 
+	// 로그인 자격 증명
+	[ERROR_CODE.INVALID_CREDENTIALS]: "이메일 또는 비밀번호가 올바르지 않습니다.",
+
 	// 이메일 인증
 	[ERROR_CODE.EMAIL_ALREADY_REGISTERED]: "이미 등록된 이메일입니다.",
 	[ERROR_CODE.EMAIL_NOT_FOUND]: "등록되지 않은 이메일입니다.",
@@ -150,6 +185,30 @@ export const ERROR_MESSAGE: Record<ErrorCode, string> = {
 	[ERROR_CODE.ACCOUNT_ALREADY_EXISTS]: "이미 가입된 계정입니다.",
 	[ERROR_CODE.ACCOUNT_SUSPENDED]: "정지된 계정입니다. 고객센터에 문의해주세요.",
 	[ERROR_CODE.ACCOUNT_DELETED]: "탈퇴한 계정입니다.",
+	[ERROR_CODE.ACCOUNT_LOCKED]: "계정이 잠겼습니다. 잠시 후 다시 시도해주세요.",
+	[ERROR_CODE.ACCOUNT_PENDING_VERIFICATION]:
+		"이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.",
+
+	// 로그인 시도 제한
+	[ERROR_CODE.TOO_MANY_LOGIN_ATTEMPTS]:
+		"로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.",
+
+	// 세션 관련
+	[ERROR_CODE.SESSION_NOT_FOUND]: "세션을 찾을 수 없습니다.",
+	[ERROR_CODE.SESSION_EXPIRED]: "세션이 만료되었습니다. 다시 로그인해주세요.",
+	[ERROR_CODE.SESSION_REVOKED]: "세션이 종료되었습니다. 다시 로그인해주세요.",
+
+	// 토큰 보안
+	[ERROR_CODE.TOKEN_REUSE_DETECTED]:
+		"보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
+
+	// 인증 코드
+	[ERROR_CODE.VERIFICATION_CODE_INVALID]: "인증 코드가 올바르지 않습니다.",
+	[ERROR_CODE.VERIFICATION_CODE_EXPIRED]: "인증 코드가 만료되었습니다.",
+	[ERROR_CODE.VERIFICATION_RESEND_TOO_SOON]:
+		"인증 코드 재발송은 1분 후에 가능합니다.",
+	[ERROR_CODE.VERIFICATION_MAX_ATTEMPTS_EXCEEDED]:
+		"인증 시도 횟수를 초과했습니다. 새 인증 코드를 요청해주세요.",
 };
 
 /**
@@ -176,14 +235,32 @@ export const ERROR_HTTP_STATUS: Partial<Record<ErrorCode, HttpStatus>> = {
 	[ERROR_CODE.APPLE_ID_TOKEN_INVALID]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.APPLE_AUTH_CODE_INVALID]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.APPLE_TOKEN_VERIFICATION_FAILED]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.INVALID_CREDENTIALS]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.INVALID_PASSWORD]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.EMAIL_NOT_VERIFIED]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.EMAIL_VERIFICATION_CODE_INVALID]: HttpStatus.UNAUTHORIZED,
 	[ERROR_CODE.EMAIL_VERIFICATION_CODE_EXPIRED]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.SESSION_NOT_FOUND]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.SESSION_EXPIRED]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.SESSION_REVOKED]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.TOKEN_REUSE_DETECTED]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.ACCOUNT_PENDING_VERIFICATION]: HttpStatus.UNAUTHORIZED,
 
 	// 403 FORBIDDEN
 	[ERROR_CODE.UNAUTHORIZED_ACCESS]: HttpStatus.FORBIDDEN,
 	[ERROR_CODE.ACCOUNT_SUSPENDED]: HttpStatus.FORBIDDEN,
+
+	// 423 LOCKED
+	[ERROR_CODE.ACCOUNT_LOCKED]: HttpStatus.LOCKED,
+
+	// 401 UNAUTHORIZED (Verification)
+	[ERROR_CODE.VERIFICATION_CODE_INVALID]: HttpStatus.UNAUTHORIZED,
+	[ERROR_CODE.VERIFICATION_CODE_EXPIRED]: HttpStatus.UNAUTHORIZED,
+
+	// 429 TOO_MANY_REQUESTS
+	[ERROR_CODE.TOO_MANY_LOGIN_ATTEMPTS]: HttpStatus.TOO_MANY_REQUESTS,
+	[ERROR_CODE.VERIFICATION_RESEND_TOO_SOON]: HttpStatus.TOO_MANY_REQUESTS,
+	[ERROR_CODE.VERIFICATION_MAX_ATTEMPTS_EXCEEDED]: HttpStatus.TOO_MANY_REQUESTS,
 
 	// 409 CONFLICT
 	[ERROR_CODE.OPTIMISTIC_LOCK_ERROR]: HttpStatus.CONFLICT,

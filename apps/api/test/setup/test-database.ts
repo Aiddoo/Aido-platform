@@ -1,9 +1,10 @@
 /**
- * TestDatabase - Testcontainers를 활용한 통합 테스트용 DB 헬퍼
+ * TestDatabase - 통합 테스트용 DB 헬퍼
  *
  * @description
- * 통합 테스트마다 독립적인 PostgreSQL 컨테이너를 생성하고 관리합니다.
- * - 실제 PostgreSQL 사용으로 프로덕션 환경과 동일한 테스트
+ * 통합 테스트를 위한 PostgreSQL 데이터베이스를 관리합니다.
+ * - Docker 사용 가능 시: Testcontainers로 독립적인 PostgreSQL 컨테이너 생성
+ * - Docker 미사용 시: 기존 DATABASE_URL 사용 (fallback)
  * - 자동 마이그레이션 실행
  * - 테스트 종료 시 자동 정리
  * - Prisma 7+ Driver Adapter 패턴 사용
@@ -21,9 +22,11 @@ export class TestDatabase {
 	private container: StartedPostgreSqlContainer | null = null;
 	private prisma: PrismaClient | null = null;
 	private originalDatabaseUrl: string | undefined;
+	private usingExternalDb = false;
 
 	/**
-	 * PostgreSQL 컨테이너 시작 및 Prisma 클라이언트 초기화
+	 * PostgreSQL 데이터베이스 시작 및 Prisma 클라이언트 초기화
+	 * Docker가 없는 경우 기존 DATABASE_URL 사용
 	 *
 	 * @returns PrismaClient 인스턴스
 	 */
@@ -31,16 +34,41 @@ export class TestDatabase {
 		// 원본 DATABASE_URL 백업
 		this.originalDatabaseUrl = process.env.DATABASE_URL;
 
-		// PostgreSQL 16 컨테이너 시작
-		console.log("🐳 Starting PostgreSQL test container...");
-		this.container = await new PostgreSqlContainer("postgres:16-alpine")
-			.withDatabase("test_db")
-			.withUsername("test_user")
-			.withPassword("test_password")
-			.start();
+		let connectionUri: string;
 
-		const connectionUri = this.container.getConnectionUri();
-		console.log(`📦 Container started: ${connectionUri}`);
+		// USE_EXTERNAL_DB 환경변수가 있으면 외부 DB 사용
+		if (process.env.USE_EXTERNAL_DB === "true" && this.originalDatabaseUrl) {
+			console.log("📦 Using external database (USE_EXTERNAL_DB=true)");
+			connectionUri = this.originalDatabaseUrl;
+			this.usingExternalDb = true;
+		} else {
+			// Docker 컨테이너 시작 시도
+			try {
+				console.log("🐳 Starting PostgreSQL test container...");
+				this.container = await new PostgreSqlContainer("postgres:16-alpine")
+					.withDatabase("test_db")
+					.withUsername("test_user")
+					.withPassword("test_password")
+					.start();
+
+				connectionUri = this.container.getConnectionUri();
+				console.log(`📦 Container started: ${connectionUri}`);
+			} catch (error) {
+				// Docker가 없는 경우 기존 DATABASE_URL 사용
+				if (this.originalDatabaseUrl) {
+					console.warn("⚠️  Docker not available, falling back to DATABASE_URL");
+					console.warn("   To use Testcontainers, ensure Docker is running");
+					connectionUri = this.originalDatabaseUrl;
+					this.usingExternalDb = true;
+				} else {
+					console.error("❌ Docker not available and DATABASE_URL not set");
+					console.error(
+						"   Either start Docker or set DATABASE_URL environment variable",
+					);
+					throw error;
+				}
+			}
+		}
 
 		// 환경 변수 설정
 		process.env.DATABASE_URL = connectionUri;
@@ -83,10 +111,10 @@ export class TestDatabase {
 	 * 컨테이너 연결 URI 반환
 	 */
 	getConnectionUri(): string {
-		if (!this.container) {
+		if (!this.container && !this.usingExternalDb) {
 			throw new Error("TestDatabase not started. Call start() first.");
 		}
-		return this.container.getConnectionUri();
+		return this.container?.getConnectionUri() ?? process.env.DATABASE_URL ?? "";
 	}
 
 	/**
@@ -99,8 +127,14 @@ export class TestDatabase {
 
 		console.log("🧹 Cleaning up test data...");
 
-		// 트랜잭션으로 모든 테이블 데이터 삭제
+		// 트랜잭션으로 모든 테이블 데이터 삭제 (의존성 순서대로)
 		await this.prisma.$transaction([
+			this.prisma.securityLog.deleteMany(),
+			this.prisma.loginAttempt.deleteMany(),
+			this.prisma.verification.deleteMany(),
+			this.prisma.session.deleteMany(),
+			this.prisma.account.deleteMany(),
+			this.prisma.userConsent.deleteMany(),
 			this.prisma.todo.deleteMany(),
 			this.prisma.user.deleteMany(),
 		]);
@@ -121,7 +155,7 @@ export class TestDatabase {
 			console.log("✅ Prisma disconnected");
 		}
 
-		// 컨테이너 중지
+		// 컨테이너 중지 (외부 DB 사용 시 스킵)
 		if (this.container) {
 			await this.container.stop();
 			this.container = null;

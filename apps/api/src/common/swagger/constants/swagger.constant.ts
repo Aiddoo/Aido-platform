@@ -1,4 +1,23 @@
 /**
+ * Swagger 태그 상수
+ * Admin/User/Common으로 API를 분류하여 문서화
+ */
+export const SWAGGER_TAGS = {
+	// User APIs (클라이언트 앱용)
+	USER_AUTH: "User - 인증",
+	USER_TODO: "User - Todo",
+
+	// Admin APIs (관리자/백오피스용) - 추후 확장
+	ADMIN_USERS: "Admin - 사용자 관리",
+	ADMIN_SYSTEM: "Admin - 시스템",
+
+	// Common APIs
+	COMMON_HEALTH: "Common - Health",
+} as const;
+
+export type SwaggerTag = (typeof SWAGGER_TAGS)[keyof typeof SWAGGER_TAGS];
+
+/**
  * Swagger HTTP 상태 코드별 기본 설명
  */
 export const SWAGGER_DESCRIPTION = {

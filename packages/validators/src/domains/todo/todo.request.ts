@@ -10,7 +10,7 @@ import {
   nullableDateInputSchema,
   optionalDateInputSchema,
 } from '../../common/datetime';
-import { todoVisibilitySchema } from './todo.schema';
+import { todoVisibilitySchema } from './todo.response';
 
 export const DEFAULT_TODO_COLOR = '#4A90E2';
 

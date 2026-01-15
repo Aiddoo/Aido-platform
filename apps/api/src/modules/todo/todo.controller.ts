@@ -22,6 +22,7 @@ import {
 	ApiNotFoundError,
 	ApiPaginatedResponse,
 	ApiSuccessResponse,
+	SWAGGER_TAGS,
 } from "@/common/swagger";
 
 import { CreateTodoDto, UpdateTodoDto } from "./dtos/request";
@@ -31,7 +32,7 @@ import { TodoService } from "./todo.service";
 // TODO: 인증 구현 후 제거 - 임시 사용자 ID
 const TEMP_USER_ID = "temp_user_id_for_development";
 
-@ApiTags("todos")
+@ApiTags(SWAGGER_TAGS.USER_TODO)
 @Controller("todos")
 export class TodoController {
 	constructor(

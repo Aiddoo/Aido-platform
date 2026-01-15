@@ -2,9 +2,10 @@ import { Controller, Get } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
+import { SWAGGER_TAGS } from "@/common/swagger";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
 
-@ApiTags("Health")
+@ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
 @Controller("health")
 export class HealthController {
 	constructor(

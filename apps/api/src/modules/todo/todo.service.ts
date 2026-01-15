@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type {
 	CursorPaginatedResponse,
 	CursorPaginationParams,
@@ -63,7 +64,7 @@ export class TodoService {
 
 	async findById(id: string) {
 		const todo = await this.todoRepository.findById(id);
-		if (!todo) throw new NotFoundException(`Todo #${id} not found`);
+		if (!todo) throw BusinessExceptions.todoNotFound(id);
 		return todo;
 	}
 

@@ -8,11 +8,21 @@ export const externalSchema = z.object({
 	// RevenueCat 구독 관리
 	REVENUECAT_API_KEY: z.string().optional(),
 
-	// Redis 캐시/세션 (선택)
-	REDIS_URL: z.string().url().optional(),
+	// Redis 캐시/세션 (선택) - 빈 문자열 허용
+	REDIS_URL: z
+		.string()
+		.optional()
+		.refine((val) => !val || val.startsWith("redis"), {
+			message: "REDIS_URL must be a valid Redis URL (redis:// or rediss://)",
+		}),
 
-	// Sentry 에러 모니터링 (선택)
-	SENTRY_DSN: z.string().url().optional(),
+	// Sentry 에러 모니터링 (선택) - 빈 문자열 허용
+	SENTRY_DSN: z
+		.string()
+		.optional()
+		.refine((val) => !val || val.startsWith("https://"), {
+			message: "SENTRY_DSN must be a valid HTTPS URL",
+		}),
 });
 
 export type ExternalConfig = z.infer<typeof externalSchema>;

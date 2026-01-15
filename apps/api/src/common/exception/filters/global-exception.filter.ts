@@ -81,18 +81,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			};
 		}
 
-		// 에러 로깅
-		const stack = exception instanceof Error ? exception.stack : undefined;
-		this.logger.error(
-			{
-				method: request.method,
-				url: request.url,
-				statusCode,
-				errorCode: errorResponse.error.code,
-				stack,
-			},
-			`${request.method} ${request.url} - ${errorResponse.error.message}`,
-		);
+		// 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
+		const userId = (request as any).user?.userId ?? "anonymous";
+		if (statusCode >= 500) {
+			// 서버 에러: 스택 트레이스 포함
+			const stack = exception instanceof Error ? exception.stack : undefined;
+			this.logger.error(
+				`${request.method} ${request.url} ${statusCode} [${errorResponse.error.code}] ${errorResponse.error.message} [user:${userId}]\n${stack ?? ""}`,
+			);
+		} else {
+			// 클라이언트 에러: 간결하게
+			this.logger.warn(
+				`${request.method} ${request.url} ${statusCode} [${errorResponse.error.code}] ${errorResponse.error.message} [user:${userId}]`,
+			);
+		}
 
 		response.status(statusCode).json(errorResponse);
 	}
