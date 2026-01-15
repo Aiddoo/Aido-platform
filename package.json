@@ -7,7 +7,7 @@
     "check": "biome check .",
     "clean": "turbo run clean && rm -rf node_modules",
     "commit": "cz",
-    "db:generate": "pnpm --filter @aido/api prisma:generate",
+    "db:generate": "pnpm --filter @aido/api db:generate",
     "db:migrate": "pnpm --filter @aido/api prisma:migrate",
     "db:push": "pnpm --filter @aido/api prisma:push",
     "dev": "turbo run dev",

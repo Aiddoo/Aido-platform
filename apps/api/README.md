@@ -102,17 +102,102 @@ pnpm --filter @aido/api dev
 
 ### 환경 변수
 
-```env
-# Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/aido?schema=public"
+`.env.example`을 복사하여 `.env` 파일을 생성하세요:
 
-# Server
-PORT=4000
-NODE_ENV=development
+```bash
+cp .env.example .env
+```
 
-# Rate Limiting
-THROTTLE_TTL=60000
-THROTTLE_LIMIT=100
+주요 환경 변수:
+
+| 변수 | 설명 | 기본값 |
+|------|------|--------|
+| `DATABASE_URL` | PostgreSQL 연결 URL | `postgresql://postgres:postgres@localhost:5432/aido_dev` |
+| `PORT` | 서버 포트 | `8080` |
+| `NODE_ENV` | 실행 환경 | `development` |
+
+## 🚀 Docker 가이드 (초보자용)
+
+Docker를 처음 사용하는 분들을 위한 단계별 가이드입니다.
+
+### 사전 준비
+
+Docker Desktop이 설치되어 있어야 합니다:
+- **macOS/Windows**: [Docker Desktop 다운로드](https://www.docker.com/products/docker-desktop)
+
+### 개발 환경 시작하기
+
+```bash
+# 1. 데이터베이스 컨테이너 시작 (프로젝트 루트에서)
+pnpm docker:up
+
+# 2. 환경 변수 설정 (최초 1회)
+cp .env.example .env
+
+# 3. Prisma Client 생성
+pnpm db:generate
+
+# 4. 데이터베이스 마이그레이션
+pnpm db:migrate
+
+# 5. 개발 서버 실행
+pnpm dev
+```
+
+서버가 시작되면:
+- **API 서버**: http://localhost:8080
+- **Swagger 문서**: http://localhost:8080/api/docs
+
+### 개발 환경 종료하기
+
+```bash
+# 서버 종료
+Ctrl + C
+
+# 데이터베이스 컨테이너 종료 (프로젝트 루트에서)
+pnpm docker:down
+```
+
+### 자주 쓰는 Docker 명령어
+
+| 명령어 | 설명 |
+|--------|------|
+| `pnpm docker:up` | PostgreSQL 컨테이너 시작 (백그라운드) |
+| `pnpm docker:down` | PostgreSQL 컨테이너 종료 |
+| `docker ps` | 실행 중인 컨테이너 확인 |
+| `docker logs aido-db-1` | PostgreSQL 로그 확인 |
+| `docker-compose down -v` | 컨테이너 + 데이터 완전 삭제 |
+
+### 문제 해결
+
+#### 포트 5432가 이미 사용 중인 경우
+
+```bash
+# macOS/Linux: 포트를 사용 중인 프로세스 확인
+lsof -i :5432
+
+# 로컬 PostgreSQL이 실행 중이라면 종료
+brew services stop postgresql  # Homebrew로 설치한 경우
+```
+
+#### 데이터베이스 연결 실패
+
+```bash
+# 컨테이너가 실행 중인지 확인
+docker ps
+
+# 컨테이너 상태 확인
+docker-compose ps
+```
+
+#### 마이그레이션 오류
+
+```bash
+# 스키마 강제 동기화 (개발 환경에서만 사용)
+pnpm db:push
+
+# 또는 마이그레이션 초기화
+pnpm db:migrate --name init
 ```
 
 ## API 문서

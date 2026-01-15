@@ -11,6 +11,7 @@ import {
 } from "@/common";
 import type { EnvConfig } from "@/common/config";
 import { DatabaseModule } from "@/database";
+import { AuthModule } from "@/modules/auth/auth.module";
 import { HealthModule } from "@/modules/health";
 import { TodoModule } from "@/modules/todo";
 import { AppController } from "./app.controller";
@@ -40,6 +41,7 @@ import { AppService } from "./app.service";
 		}),
 
 		// 4. Features
+		AuthModule,
 		TodoModule,
 		HealthModule,
 	],

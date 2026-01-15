@@ -3,9 +3,10 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
-import { ZodValidationPipe } from "nestjs-zod";
+import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 
 import type { EnvConfig } from "@/common/config";
+import { SWAGGER_TAGS } from "@/common/swagger";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -33,23 +34,47 @@ async function bootstrap() {
 			.setTitle("Aido API")
 			.setDescription("AI TodoList 앱을 위한 백엔드 API")
 			.setVersion("1.0.0")
-			.addBearerAuth(
-				{
-					type: "http",
-					scheme: "bearer",
-					bearerFormat: "JWT",
-					description: "JWT 토큰을 입력하세요",
-				},
-				"access-token",
+			// 환경별 서버 URL
+			.addServer("http://localhost:8080", "Local Development")
+			.addServer("https://api-staging.aido.app", "Staging")
+			.addServer("https://api.aido.app", "Production")
+			.addBearerAuth({
+				type: "http",
+				scheme: "bearer",
+				bearerFormat: "JWT",
+				description: "JWT 토큰을 입력하세요",
+			})
+			// User APIs (클라이언트 앱용)
+			.addTag(
+				SWAGGER_TAGS.USER_AUTH,
+				"회원가입, 로그인, 토큰 갱신, 로그아웃 API",
 			)
-			.addTag("Health", "서버 상태 확인 API")
-			.addTag("Todo", "할일 관리 API")
+			.addTag(SWAGGER_TAGS.USER_TODO, "Todo CRUD 및 페이지네이션 API")
+			// Admin APIs (관리자/백오피스용) - 추후 확장 시 주석 해제
+			// .addTag(SWAGGER_TAGS.ADMIN_USERS, "사용자 관리 API")
+			// .addTag(SWAGGER_TAGS.ADMIN_SYSTEM, "시스템 설정 API")
+			// Common APIs
+			.addTag(SWAGGER_TAGS.COMMON_HEALTH, "서버 상태 및 헬스체크 API")
 			.build();
 
 		const document = SwaggerModule.createDocument(app, config);
-		SwaggerModule.setup("api/docs", app, document, {
+		SwaggerModule.setup("api/docs", app, cleanupOpenApiDoc(document), {
+			customSiteTitle: "Aido API Documentation",
 			swaggerOptions: {
 				persistAuthorization: true,
+				docExpansion: "list",
+				filter: true,
+				showRequestDuration: true,
+				tryItOutEnabled: true,
+				operationsSorter: "method",
+				tagsSorter: "alpha",
+				defaultModelsExpandDepth: 1,
+				defaultModelExpandDepth: 2,
+				displayOperationId: false,
+				syntaxHighlight: {
+					activate: true,
+					theme: "monokai",
+				},
 			},
 		});
 	}

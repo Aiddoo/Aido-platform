@@ -103,6 +103,10 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
           JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          EMAIL_FROM: noreply@test.aido.app
+          EMAIL_FROM_NAME: Aido Test
         run: pnpm test:e2e
 
   # ============================================

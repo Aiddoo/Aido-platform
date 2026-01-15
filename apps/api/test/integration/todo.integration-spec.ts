@@ -20,8 +20,9 @@
  */
 
 import { DEFAULT_TODO_COLOR } from "@aido/validators";
-import { NotFoundException } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { BusinessException } from "@/common/exception";
+import { ERROR_CODE } from "@/common/exception/constants/error.constant";
 import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { TodoRepository } from "@/modules/todo/todo.repository";
@@ -174,7 +175,7 @@ describe("Todo Integration Tests (Real DB)", () => {
 
 			// 7. Verify deletion
 			await expect(service.findById(created.id)).rejects.toThrow(
-				NotFoundException,
+				BusinessException,
 			);
 
 			// 8. Verify empty list
@@ -266,24 +267,24 @@ describe("Todo Integration Tests (Real DB)", () => {
 	describe("Error Handling Integration", () => {
 		const NON_EXISTENT_ID = "clnonexistent0000000000";
 
-		it("should throw NotFoundException for non-existent todo on findById", async () => {
+		it("should throw BusinessException for non-existent todo on findById", async () => {
 			await expect(service.findById(NON_EXISTENT_ID)).rejects.toThrow(
-				NotFoundException,
+				BusinessException,
 			);
-			await expect(service.findById(NON_EXISTENT_ID)).rejects.toThrow(
-				`Todo #${NON_EXISTENT_ID} not found`,
-			);
+			await expect(service.findById(NON_EXISTENT_ID)).rejects.toMatchObject({
+				code: ERROR_CODE.TODO_NOT_FOUND,
+			});
 		});
 
-		it("should throw NotFoundException for non-existent todo on update", async () => {
+		it("should throw BusinessException for non-existent todo on update", async () => {
 			await expect(
 				service.update(NON_EXISTENT_ID, { title: "수정 시도" }),
-			).rejects.toThrow(NotFoundException);
+			).rejects.toThrow(BusinessException);
 		});
 
-		it("should throw NotFoundException for non-existent todo on delete", async () => {
+		it("should throw BusinessException for non-existent todo on delete", async () => {
 			await expect(service.delete(NON_EXISTENT_ID)).rejects.toThrow(
-				NotFoundException,
+				BusinessException,
 			);
 		});
 

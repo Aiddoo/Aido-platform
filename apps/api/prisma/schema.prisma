@@ -242,6 +242,7 @@ model SecurityLog {
 
 enum SecurityEvent {
   // 인증
+  REGISTRATION
   LOGIN_SUCCESS
   LOGIN_FAILURE
   LOGOUT
@@ -259,6 +260,7 @@ enum SecurityEvent {
   SUSPICIOUS_ACTIVITY
   ACCOUNT_LOCKED
   ACCOUNT_UNLOCKED
+  SESSION_REVOKED
   SESSION_REVOKED_ALL
 
   // OAuth
@@ -277,6 +279,7 @@ model Verification {
   token     String           @unique @db.VarChar(64) // SHA-256 해시
   expiresAt DateTime
   usedAt    DateTime?
+  attempts  Int              @default(0) // 시도 횟수 (브루트포스 보호)
 
   createdAt DateTime @default(now())
 
