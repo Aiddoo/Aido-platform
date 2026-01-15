@@ -104,3 +104,6 @@ pnpm-debug.log*
 myDocs
 PLAN.md
 settings.local.json
+
+# Turborepo
+.turbo
