@@ -1,18 +1,46 @@
 # Prisma 7 가이드
 
+> Prisma 7.2.0 사용법 및 쿼리 패턴 가이드
+
+## 관련 문서
+
+| 문서 | 설명 |
+|------|------|
+| [architecture.md](./architecture.md) | 전체 아키텍처 개요 |
+| [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 규칙 |
+| [integration-test.md](./integration-test.md) | Testcontainers 통합 테스트 |
+
+---
+
 ## 개요
 
-이 프로젝트는 **Prisma 7.2.0**을 사용합니다. Prisma 7은 Rust에서 TypeScript로 재작성되어 90% 작은 번들, 3배 빠른 쿼리 성능을 제공합니다.
+| 항목 | 값 |
+|------|-----|
+| 버전 | Prisma 7.2.0 |
+| 스키마 위치 | `prisma/schema.prisma` |
+| 생성 클라이언트 | `src/generated/prisma/` |
+| 어댑터 | `@prisma/adapter-pg` (PostgreSQL) |
 
-## 프로젝트 설정
+Prisma 7은 Rust에서 TypeScript로 재작성되어 **90% 작은 번들**, **3배 빠른 쿼리 성능**을 제공합니다.
 
-### 스키마 위치
-- `prisma/schema.prisma`
+---
 
-### 생성된 클라이언트 위치
-- `src/generated/prisma/` (Prisma 7에서 `output` 필수)
+## Prisma 7 핵심 변경사항
 
-### Driver Adapter
+### Generator 설정 (필수)
+
+```prisma
+generator client {
+  provider     = "prisma-client"            // ❌ prisma-client-js 아님
+  output       = "../src/generated/prisma"  // ✅ 필수
+  moduleFormat = "cjs"                      // CommonJS (NestJS 호환)
+}
+```
+
+### Driver Adapter (필수)
+
+모든 DB 연결에 드라이버 어댑터가 필요합니다.
+
 ```typescript
 // src/database/database.service.ts
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -21,55 +49,36 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 ```
 
-## Prisma 7 핵심 변경사항
-
-### 1. Generator 설정 (필수)
-
-```prisma
-generator client {
-  provider     = "prisma-client"      // ❌ prisma-client-js 아님
-  output       = "../src/generated/prisma"  // ✅ 필수
-  moduleFormat = "cjs"                // CommonJS (NestJS 호환)
-}
-```
-
-### 2. Driver Adapter 필수
-
-모든 DB 연결에 드라이버 어댑터가 필요합니다.
-
-```typescript
-// PostgreSQL
-import { PrismaPg } from '@prisma/adapter-pg';
-
-const adapter = new PrismaPg({ connectionString });
-new PrismaClient({ adapter });
-```
-
-### 3. ESM 지원
+### ESM 지원
 
 - `package.json`에 `"type": "module"` 또는
 - `moduleFormat = "cjs"` 설정 (NestJS 권장)
 
-## 자주 사용하는 명령어
+---
+
+## 주요 명령어
 
 | 명령어 | 설명 |
 |--------|------|
 | `pnpm db:generate` | 클라이언트 생성 |
 | `pnpm db:migrate` | 마이그레이션 실행 |
 | `pnpm db:push` | 스키마 즉시 반영 (개발용) |
-| `pnpm --filter @aido/api prisma:studio` | Prisma Studio |
+| `pnpm --filter @aido/api prisma:studio` | Prisma Studio 실행 |
 
-## 쿼리 작성 가이드
+---
 
-### Repository 패턴
+## Repository 패턴
+
+### 기본 구조
 
 ```typescript
 @Injectable()
 export class TodoRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  async findById(id: string) {
-    return this.db.todo.findUnique({ where: { id } });
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.db;
+    return client.todo.findUnique({ where: { id } });
   }
 
   async findByUserId(userId: string) {
@@ -84,7 +93,7 @@ export class TodoRepository {
 ### 관계 조회 (Include)
 
 ```typescript
-// DO: 필요한 관계만 명시
+// ✅ 필요한 관계만 명시
 const user = await this.db.user.findUnique({
   where: { id },
   include: {
@@ -92,14 +101,12 @@ const user = await this.db.user.findUnique({
     todos: { take: 10, orderBy: { createdAt: 'desc' } },
   },
 });
-
-// DON'T: 과도한 중첩 include (N+1 위험)
 ```
 
-### Select로 필드 제한
+### 필드 선택 (Select)
 
 ```typescript
-// 필요한 필드만 조회 (성능 최적화)
+// ✅ 필요한 필드만 조회 (성능 최적화)
 const users = await this.db.user.findMany({
   select: {
     id: true,
@@ -108,6 +115,8 @@ const users = await this.db.user.findMany({
   },
 });
 ```
+
+---
 
 ## 트랜잭션
 
@@ -133,9 +142,11 @@ await this.db.$transaction([
 ]);
 ```
 
+---
+
 ## 성능 최적화
 
-### 1. 인덱스 활용
+### 인덱스 설계
 
 ```prisma
 model Todo {
@@ -145,7 +156,7 @@ model Todo {
 }
 ```
 
-### 2. 페이지네이션
+### 페이지네이션
 
 ```typescript
 // 오프셋 기반 (간단하지만 대량 데이터에 느림)
@@ -162,7 +173,7 @@ const todos = await this.db.todo.findMany({
 });
 ```
 
-### 3. 배치 처리
+### 배치 처리
 
 ```typescript
 // 대량 생성
@@ -178,29 +189,31 @@ await this.db.todo.updateMany({
 });
 ```
 
+---
+
 ## 주의사항
 
-### 1. N+1 문제 방지
+### N+1 문제 방지
 
 ```typescript
-// ❌ BAD: 루프 내 쿼리
+// ❌ 루프 내 쿼리
 for (const user of users) {
   const todos = await this.db.todo.findMany({ where: { userId: user.id } });
 }
 
-// ✅ GOOD: Include 또는 별도 쿼리
+// ✅ Include 사용
 const users = await this.db.user.findMany({
   include: { todos: true },
 });
 
-// 또는
+// ✅ 또는 별도 쿼리로 일괄 조회
 const userIds = users.map(u => u.id);
 const todos = await this.db.todo.findMany({
   where: { userId: { in: userIds } },
 });
 ```
 
-### 2. Soft Delete 처리
+### Soft Delete 처리
 
 ```typescript
 // 삭제 시
@@ -215,38 +228,28 @@ const users = await this.db.user.findMany({
 });
 ```
 
-### 3. 연결 풀 관리
+### 환경변수 로드
 
-Prisma 7은 드라이버별 기본 연결 풀 설정이 다릅니다. 타임아웃 발생 시:
-
-```typescript
-const adapter = new PrismaPg({
-  connectionString,
-  // 필요시 풀 설정 조정
-});
-```
-
-### 4. 환경변수 로드
-
-Prisma 7은 `.env` 자동 로드가 제거되었습니다. NestJS의 `ConfigService` 사용을 권장합니다.
+Prisma 7은 `.env` 자동 로드가 제거되었습니다.
 
 ```typescript
-// ✅ ConfigService로 환경변수 주입
+// ✅ ConfigService 사용
 constructor(configService: ConfigService) {
   const connectionString = configService.get('DATABASE_URL');
 }
 ```
+
+---
 
 ## 마이그레이션 워크플로우
 
 ### 개발 환경
 
 ```bash
-# 1. 스키마 수정 후
-# 2. 마이그레이션 생성 + 적용
+# 스키마 수정 후 마이그레이션 생성 + 적용
 pnpm db:migrate
 
-# 또는 빠른 반영 (마이그레이션 파일 없이)
+# 빠른 반영 (마이그레이션 파일 없이)
 pnpm db:push
 ```
 
@@ -257,14 +260,17 @@ pnpm db:push
 prisma migrate deploy
 ```
 
-## 테스트 환경 (Testcontainers)
+---
+
+## 테스트 환경
+
+Testcontainers로 격리된 PostgreSQL 컨테이너를 사용합니다.
 
 ```typescript
 // test/setup/test-database.ts
 export class TestDatabase {
   async start() {
-    // PostgreSQL 컨테이너 시작
-    // 마이그레이션 적용
+    // PostgreSQL 컨테이너 시작 및 마이그레이션 적용
   }
 
   getPrisma() {
@@ -276,6 +282,10 @@ export class TestDatabase {
   }
 }
 ```
+
+자세한 내용은 [integration-test.md](./integration-test.md) 참고.
+
+---
 
 ## 참고 자료
 
