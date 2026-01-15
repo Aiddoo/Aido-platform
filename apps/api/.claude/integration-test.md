@@ -1,21 +1,37 @@
-# 통합 테스트 작성 가이드
+# 통합 테스트 가이드
 
-## 정의 및 범위
-
-- **통합 테스트**: Service + Repository + 실제 DB 연동 검증
-- **Testcontainers**: Docker로 격리된 PostgreSQL 컨테이너 사용
-- **목적**: 프로덕션과 동일한 환경에서 데이터 흐름 검증
+> Service + Repository + 실제 DB 연동을 검증하는 테스트
 
 ---
 
-## 파일 위치
+## 관련 문서
+
+| 문서 | 내용 |
+|------|------|
+| [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
+| [unit-test.md](./unit-test.md) | 단위 테스트 가이드 |
+| [prisma.md](./prisma.md) | Prisma 7 가이드 |
+
+---
+
+## 개요
+
+| 항목 | 설명 |
+|------|------|
+| **정의** | Service + Repository + 실제 DB 연동 검증 |
+| **도구** | Testcontainers (Docker PostgreSQL) |
+| **목적** | 프로덕션과 동일한 환경에서 데이터 흐름 검증 |
+
+---
+
+## 파일 구조
 
 ```
 test/
 ├── integration/
-│   └── todo.integration-spec.ts    ← 통합 테스트
+│   └── {name}.integration-spec.ts    # 통합 테스트
 └── setup/
-    └── test-database.ts            ← TestDatabase 헬퍼
+    └── test-database.ts              # TestDatabase 헬퍼
 ```
 
 **명명 규칙**: `{도메인}.integration-spec.ts`
@@ -46,7 +62,7 @@ await testDb.stop();
 
 ### 내부 동작
 
-1. **start()**: PostgreSQL 16 컨테이너 시작 → Prisma 마이그레이션 실행 → PrismaClient 연결
+1. **start()**: PostgreSQL 16 컨테이너 시작 → Prisma 마이그레이션 → PrismaClient 연결
 2. **cleanup()**: `$transaction`으로 모든 테이블 데이터 삭제
 3. **stop()**: Prisma 연결 해제 → 컨테이너 종료
 
@@ -55,7 +71,7 @@ await testDb.stop();
 ## 테스트 라이프사이클
 
 ```typescript
-describe("Todo Integration Tests", () => {
+describe("Todo 통합 테스트", () => {
   let module: TestingModule;
   let service: TodoService;
   let testDb: TestDatabase;
@@ -107,7 +123,7 @@ describe("Todo Integration Tests", () => {
 
 ## FK 제약조건 처리
 
-Todo 생성 시 유효한 `userId`가 필요함:
+Todo 생성 시 유효한 `userId`가 필요합니다.
 
 ```typescript
 beforeEach(async () => {
@@ -123,7 +139,7 @@ beforeEach(async () => {
   testUserId = testUser.id;
 });
 
-it("should create todo", async () => {
+it("Todo를 생성해야 한다", async () => {
   const todo = await service.create(testUserId, { title: "Test" });
   expect(todo.userId).toBe(testUserId);
 });
@@ -136,8 +152,8 @@ it("should create todo", async () => {
 ### 전체 라이프사이클 테스트
 
 ```typescript
-it("should perform full CRUD lifecycle", async () => {
-  // 1. Create
+it("전체 CRUD 라이프사이클을 수행해야 한다", async () => {
+  // 1. 생성
   const created = await service.create(testUserId, {
     title: "통합 테스트 할 일",
     content: "통합 테스트 내용",
@@ -145,11 +161,11 @@ it("should perform full CRUD lifecycle", async () => {
   expect(created.id).toBeDefined();
   expect(created.title).toBe("통합 테스트 할 일");
 
-  // 2. Read
+  // 2. 조회
   const found = await service.findById(created.id);
   expect(found.id).toBe(created.id);
 
-  // 3. Update
+  // 3. 수정
   const updated = await service.update(created.id, {
     title: "수정된 제목",
     completed: true,
@@ -157,11 +173,11 @@ it("should perform full CRUD lifecycle", async () => {
   expect(updated.title).toBe("수정된 제목");
   expect(updated.completed).toBe(true);
 
-  // 4. Delete
+  // 4. 삭제
   const deleted = await service.delete(created.id);
   expect(deleted.id).toBe(created.id);
 
-  // 5. Verify deletion
+  // 5. 삭제 확인
   await expect(service.findById(created.id)).rejects.toThrow(NotFoundException);
 });
 ```
@@ -169,7 +185,7 @@ it("should perform full CRUD lifecycle", async () => {
 ### 다중 레코드 테스트
 
 ```typescript
-it("should handle multiple todos correctly", async () => {
+it("여러 개의 Todo를 올바르게 처리해야 한다", async () => {
   // 여러 Todo 생성
   const todo1 = await service.create(testUserId, { title: "첫 번째" });
   const todo2 = await service.create(testUserId, { title: "두 번째" });
@@ -191,10 +207,10 @@ it("should handle multiple todos correctly", async () => {
 ## 에러 케이스 테스트
 
 ```typescript
-describe("Error Handling", () => {
+describe("에러 처리", () => {
   const NON_EXISTENT_ID = "clnonexistent0000000000";
 
-  it("should throw NotFoundException for non-existent todo", async () => {
+  it("존재하지 않는 Todo 조회 시 NotFoundException을 던져야 한다", async () => {
     await expect(service.findById(NON_EXISTENT_ID))
       .rejects.toThrow(NotFoundException);
 
@@ -202,12 +218,12 @@ describe("Error Handling", () => {
       .rejects.toThrow(`Todo #${NON_EXISTENT_ID} not found`);
   });
 
-  it("should throw NotFoundException on update non-existent", async () => {
+  it("존재하지 않는 Todo 수정 시 NotFoundException을 던져야 한다", async () => {
     await expect(service.update(NON_EXISTENT_ID, { title: "수정" }))
       .rejects.toThrow(NotFoundException);
   });
 
-  it("should throw on invalid FK (non-existent userId)", async () => {
+  it("유효하지 않은 FK(존재하지 않는 userId)로 생성 시 에러를 던져야 한다", async () => {
     const invalidUserId = "cl_invalid_user_id";
 
     await expect(service.create(invalidUserId, { title: "FK 테스트" }))
@@ -221,8 +237,8 @@ describe("Error Handling", () => {
 ## 데이터 무결성 테스트
 
 ```typescript
-describe("Data Integrity", () => {
-  it("should maintain data on partial update", async () => {
+describe("데이터 무결성", () => {
+  it("부분 수정 시 다른 데이터를 유지해야 한다", async () => {
     const original = await service.create(testUserId, {
       title: "원본 제목",
       content: "원본 내용",
@@ -236,7 +252,7 @@ describe("Data Integrity", () => {
     expect(afterUpdate.content).toBe("원본 내용"); // 유지됨
   });
 
-  it("should update updatedAt on modification", async () => {
+  it("수정 시 updatedAt이 갱신되어야 한다", async () => {
     const original = await service.create(testUserId, { title: "타임스탬프 테스트" });
 
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -254,10 +270,10 @@ describe("Data Integrity", () => {
 ## 실행 명령어
 
 ```bash
-# 전체 통합 테스트 실행
+# 전체 통합 테스트
 pnpm --filter @aido/api test todo.integration-spec
 
-# 특정 describe 블록만 실행
+# 특정 describe 블록
 pnpm --filter @aido/api test todo.integration-spec -- -t "CRUD"
 ```
 
@@ -265,21 +281,25 @@ pnpm --filter @aido/api test todo.integration-spec -- -t "CRUD"
 
 ## 요구사항
 
-- **Docker 필수**: Testcontainers가 Docker로 PostgreSQL 컨테이너 실행
-- **첫 실행 시간**: 이미지 다운로드로 시간 소요 (`postgres:16-alpine`)
-- **타임아웃**: `beforeAll`에 60초 타임아웃 설정 권장
+| 항목 | 설명 |
+|------|------|
+| **Docker** | Testcontainers가 Docker로 PostgreSQL 실행 |
+| **첫 실행** | 이미지 다운로드로 시간 소요 (`postgres:16-alpine`) |
+| **타임아웃** | `beforeAll`에 60초 타임아웃 설정 권장 |
 
 ---
 
 ## DO / DON'T
 
 ### DO
+
 - 각 테스트 전 `cleanup()`으로 데이터 초기화
 - FK 제약조건이 있는 테이블은 부모 레코드 먼저 생성
 - 실제 DB 동작 검증 (제약조건, 기본값, 타임스탬프)
 - 독립적으로 실행 가능한 테스트 작성
 
 ### DON'T
+
 - 테스트 간 데이터 의존성
 - 하드코딩된 ID 사용 (테스트마다 새로 생성)
 - HTTP 요청 테스트 (E2E 테스트에서 담당)
