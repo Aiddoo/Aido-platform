@@ -29,6 +29,12 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ZodValidationPipe());
 
+	// API 버전 프리픽스 설정 (/v1)
+	// health 엔드포인트는 프리픽스 제외
+	app.setGlobalPrefix("v1", {
+		exclude: ["health"],
+	});
+
 	if (nodeEnv !== "production") {
 		const config = new DocumentBuilder()
 			.setTitle("Aido API")

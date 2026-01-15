@@ -18,5 +18,12 @@ process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 process.env.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
 // 이메일 환경변수 (테스트에서는 mock 사용)
-process.env.EMAIL_FROM = process.env.EMAIL_FROM || "noreply@test.aido.app";
+process.env.EMAIL_FROM = process.env.EMAIL_FROM || "noreply@test.example.com";
 process.env.EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "Aido Test";
+
+// OAuth 환경변수 (테스트용 가짜 값 - 실제 검증은 mock 처리)
+process.env.GOOGLE_CLIENT_ID =
+	process.env.GOOGLE_CLIENT_ID ||
+	"test-google-client-id.apps.googleusercontent.com";
+process.env.APPLE_CLIENT_ID =
+	process.env.APPLE_CLIENT_ID || "com.test.example.app";

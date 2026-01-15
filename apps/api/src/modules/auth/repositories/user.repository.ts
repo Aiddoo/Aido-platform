@@ -180,7 +180,7 @@ export class UserRepository {
 	 */
 	async createProfile(
 		userId: string,
-		data: { name?: string },
+		data: { name?: string; profileImage?: string },
 		tx?: Prisma.TransactionClient,
 	): Promise<void> {
 		const client = tx ?? this.database;
@@ -188,6 +188,7 @@ export class UserRepository {
 			data: {
 				userId,
 				name: data.name ?? null,
+				profileImage: data.profileImage ?? null,
 			},
 		});
 	}
