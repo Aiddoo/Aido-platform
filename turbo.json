@@ -1,8 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["package.json", "pnpm-workspace.yaml", "tsconfig.json", ".env.example"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["src/**", "package.json", "tsconfig.json"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**", ".expo/**"]
     },
     "dev": {
@@ -10,29 +12,36 @@
       "persistent": true
     },
     "test": {
+      "inputs": ["src/**", "test/**", "jest.config.*"],
       "outputs": ["coverage/**"]
     },
     "test:e2e": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"]
+      "inputs": ["src/**", "test/**", "jest.config.*"],
+      "outputs": ["coverage/**"],
+      "passThroughEnv": ["DATABASE_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"]
     },
     "test:cov": {
+      "inputs": ["src/**", "test/**", "jest.config.*"],
       "outputs": ["coverage/**"]
     },
     "lint": {
+      "inputs": ["src/**", "biome.json", "package.json"],
       "outputs": []
     },
     "lint:fix": {
       "cache": false
     },
     "format": {
-      "outputs": []
+      "cache": false
     },
     "typecheck": {
       "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },
     "check": {
+      "inputs": ["src/**", "biome.json"],
       "outputs": []
     },
     "clean": {
