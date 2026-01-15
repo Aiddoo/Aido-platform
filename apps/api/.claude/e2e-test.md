@@ -1,22 +1,38 @@
-# E2E 테스트 작성 가이드
+# E2E 테스트 가이드
 
-## 정의 및 범위
-
-- **E2E 테스트**: 실제 HTTP 요청으로 전체 API 흐름 검증
-- **도구**: supertest 라이브러리
-- **환경**: Testcontainers로 격리된 PostgreSQL 사용
-- **목적**: 사용자 관점에서 API 동작 검증
+> 실제 HTTP 요청으로 전체 API 흐름을 검증하는 테스트
 
 ---
 
-## 파일 위치
+## 관련 문서
+
+| 문서 | 내용 |
+|------|------|
+| [unit-test.md](./unit-test.md) | 단위 테스트 가이드 |
+| [integration-test.md](./integration-test.md) | 통합 테스트 가이드 |
+| [api-conventions.md](./api-conventions.md) | API 코드 규칙 |
+
+---
+
+## 개요
+
+| 항목 | 설명 |
+|------|------|
+| **정의** | 실제 HTTP 요청으로 전체 API 흐름 검증 |
+| **도구** | supertest 라이브러리 |
+| **환경** | Testcontainers로 격리된 PostgreSQL |
+| **목적** | 사용자 관점에서 API 동작 검증 |
+
+---
+
+## 파일 구조
 
 ```
 test/
 ├── e2e/
-│   └── todo.e2e-spec.ts         ← E2E 테스트
+│   └── {name}.e2e-spec.ts       # E2E 테스트
 └── setup/
-    └── test-database.ts         ← TestDatabase 헬퍼
+    └── test-database.ts         # TestDatabase 헬퍼
 ```
 
 **명명 규칙**: `{도메인}.e2e-spec.ts`
@@ -78,15 +94,6 @@ describe("TodoController (e2e)", () => {
 
 ## HTTP 요청 패턴
 
-### 기본 구조
-
-```typescript
-const response = await request(app.getHttpServer())
-  .post("/todos")
-  .send({ title: "Test Todo" })
-  .expect(201);
-```
-
 ### GET 요청
 
 ```typescript
@@ -144,7 +151,7 @@ await request(app.getHttpServer())
 
 ### 표준 응답 구조
 
-모든 응답은 `ResponseTransformInterceptor`에 의해 래핑됨:
+모든 응답은 `ResponseTransformInterceptor`에 의해 래핑됩니다.
 
 ```json
 {
@@ -157,7 +164,7 @@ await request(app.getHttpServer())
 ### 성공 응답 검증
 
 ```typescript
-it("should create a new todo", async () => {
+it("새로운 Todo를 생성해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .post("/todos")
     .send({ title: "E2E Test Todo" })
@@ -180,7 +187,7 @@ it("should create a new todo", async () => {
 ### 에러 응답 검증
 
 ```typescript
-it("should return 404 for non-existent id", async () => {
+it("존재하지 않는 ID로 조회 시 404를 반환해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .get("/todos/non-existent-id")
     .expect(404);
@@ -188,10 +195,10 @@ it("should return 404 for non-existent id", async () => {
   expect(response.body.success).toBe(false);
 });
 
-it("should return 400 for invalid input", async () => {
+it("유효하지 않은 입력 시 400을 반환해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .post("/todos")
-    .send({ title: "" })  // 빈 title
+    .send({ title: "" })
     .expect(400);
 
   expect(response.body.success).toBe(false);
@@ -202,35 +209,35 @@ it("should return 400 for invalid input", async () => {
 
 ## 상태 코드별 테스트
 
-| 상태 코드 | 상황 | 예시 |
-|-----------|------|------|
+| 상태 코드 | 상황 | HTTP 메서드 |
+|-----------|------|-------------|
 | `200` | 조회/수정/삭제 성공 | GET, PUT, DELETE |
 | `201` | 생성 성공 | POST |
-| `400` | 입력 검증 실패 | 빈 title, 길이 초과 |
-| `404` | 리소스 없음 | 존재하지 않는 ID |
+| `400` | 입력 검증 실패 | 모든 메서드 |
+| `404` | 리소스 없음 | GET, PUT, DELETE |
 
 ### 입력 검증 테스트 (400)
 
 ```typescript
-describe("POST /todos validation", () => {
-  it("should return 400 for empty title", async () => {
+describe("POST /todos 입력 검증", () => {
+  it("빈 제목으로 요청 시 400을 반환해야 한다", async () => {
     await request(app.getHttpServer())
       .post("/todos")
       .send({ title: "" })
       .expect(400);
   });
 
-  it("should return 400 for missing title", async () => {
+  it("제목 누락 시 400을 반환해야 한다", async () => {
     await request(app.getHttpServer())
       .post("/todos")
-      .send({ content: "Content without title" })
+      .send({ content: "제목 없는 내용" })
       .expect(400);
   });
 
-  it("should return 400 for title exceeding max length", async () => {
+  it("제목이 최대 길이를 초과하면 400을 반환해야 한다", async () => {
     await request(app.getHttpServer())
       .post("/todos")
-      .send({ title: "a".repeat(201) })  // 200자 초과
+      .send({ title: "a".repeat(201) })
       .expect(400);
   });
 });
@@ -243,7 +250,7 @@ describe("POST /todos validation", () => {
 ### 오프셋 기반
 
 ```typescript
-it("should return paginated todos", async () => {
+it("페이지네이션된 Todo 목록을 반환해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .get("/todos?page=1&size=20")
     .expect(200);
@@ -258,7 +265,7 @@ it("should return paginated todos", async () => {
 ### 커서 기반
 
 ```typescript
-it("should return cursor paginated todos", async () => {
+it("커서 기반 페이지네이션된 Todo 목록을 반환해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .get("/todos/cursor?size=20")
     .expect(200);
@@ -273,39 +280,39 @@ it("should return cursor paginated todos", async () => {
 ## 전체 CRUD 플로우 테스트
 
 ```typescript
-describe("Full CRUD Flow", () => {
-  it("should complete full CRUD cycle", async () => {
-    // 1. Create
+describe("전체 CRUD 플로우", () => {
+  it("CRUD 전체 사이클을 완료해야 한다", async () => {
+    // 1. 생성
     const createResponse = await request(app.getHttpServer())
       .post("/todos")
-      .send({ title: "CRUD Flow Todo", content: "Initial content" })
+      .send({ title: "CRUD 플로우 Todo", content: "초기 내용" })
       .expect(201);
 
     expect(createResponse.body.success).toBe(true);
     const todoId = createResponse.body.data.id;
 
-    // 2. Read
+    // 2. 조회
     const readResponse = await request(app.getHttpServer())
       .get(`/todos/${todoId}`)
       .expect(200);
 
-    expect(readResponse.body.data.title).toBe("CRUD Flow Todo");
+    expect(readResponse.body.data.title).toBe("CRUD 플로우 Todo");
 
-    // 3. Update
+    // 3. 수정
     const updateResponse = await request(app.getHttpServer())
       .put(`/todos/${todoId}`)
-      .send({ title: "Updated Title", completed: true })
+      .send({ title: "수정된 제목", completed: true })
       .expect(200);
 
-    expect(updateResponse.body.data.title).toBe("Updated Title");
+    expect(updateResponse.body.data.title).toBe("수정된 제목");
     expect(updateResponse.body.data.completed).toBe(true);
 
-    // 4. Delete
+    // 4. 삭제
     await request(app.getHttpServer())
       .delete(`/todos/${todoId}`)
       .expect(200);
 
-    // 5. Verify deletion
+    // 5. 삭제 확인
     await request(app.getHttpServer())
       .get(`/todos/${todoId}`)
       .expect(404);
@@ -317,18 +324,18 @@ describe("Full CRUD Flow", () => {
 
 ## 테스트 데이터 정리
 
-각 테스트 후 생성한 데이터 삭제:
+각 테스트 후 생성한 데이터를 삭제합니다.
 
 ```typescript
-it("should create a todo", async () => {
+it("Todo를 생성해야 한다", async () => {
   const response = await request(app.getHttpServer())
     .post("/todos")
-    .send({ title: "Test Todo" })
+    .send({ title: "테스트 Todo" })
     .expect(201);
 
   const createdId = response.body.data.id;
 
-  // ... 테스트 검증 ...
+  // 테스트 검증...
 
   // 정리
   await request(app.getHttpServer())
@@ -341,19 +348,19 @@ it("should create a todo", async () => {
 ## 실행 명령어
 
 ```bash
-# 전체 E2E 테스트 실행
+# 전체 E2E 테스트
 pnpm --filter @aido/api test:e2e
 
-# 특정 파일 실행
+# 특정 파일
 pnpm --filter @aido/api test:e2e -- todo.e2e-spec
 
-# 특정 테스트만 실행
+# 특정 테스트
 pnpm --filter @aido/api test:e2e -- -t "CRUD"
 ```
 
 ---
 
-## 환경변수
+## 환경 변수
 
 | 변수 | 설명 | 비고 |
 |------|------|------|
@@ -361,9 +368,9 @@ pnpm --filter @aido/api test:e2e -- -t "CRUD"
 | `JWT_SECRET` | JWT 서명 키 | CI에서 필요 |
 | `JWT_REFRESH_SECRET` | Refresh 토큰 키 (32자 이상) | CI에서 필요 |
 
-### CI 환경
+### CI 환경 설정
 
-`turbo.json`의 `passThroughEnv` 설정으로 환경변수 전달:
+`turbo.json`의 `passThroughEnv`로 환경변수 전달:
 
 ```json
 {
@@ -379,6 +386,7 @@ pnpm --filter @aido/api test:e2e -- -t "CRUD"
 ## DO / DON'T
 
 ### DO
+
 - 실제 HTTP 요청으로 전체 흐름 테스트
 - 응답 구조 (`success`, `data`, `timestamp`) 검증
 - 상태 코드 검증 (200, 201, 400, 404)
@@ -386,6 +394,7 @@ pnpm --filter @aido/api test:e2e -- -t "CRUD"
 - CRUD 전체 사이클 테스트
 
 ### DON'T
+
 - Service/Repository 직접 호출 (통합 테스트에서 담당)
 - Mock 사용 (실제 DB 연결이 목적)
 - 테스트 간 데이터 의존성
