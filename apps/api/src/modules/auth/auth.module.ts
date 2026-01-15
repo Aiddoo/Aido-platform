@@ -17,6 +17,8 @@ import {
 } from "./repositories";
 import {
 	AuthService,
+	OAuthService,
+	OAuthTokenVerifierService,
 	PasswordService,
 	TokenService,
 	VerificationService,
@@ -55,7 +57,9 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		PasswordService,
 		TokenService,
 		VerificationService,
+		OAuthTokenVerifierService,
 		AuthService,
+		OAuthService,
 		// Strategies
 		JwtStrategy,
 		JwtRefreshStrategy,

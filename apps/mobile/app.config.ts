@@ -61,7 +61,7 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
         bundleIdentifier: BUNDLE_IDENTIFIER,
         packageName: PACKAGE_NAME,
         scheme: SCHEME,
-        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.aido.com',
+        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com',
       };
 
     case 'preview':
@@ -70,7 +70,7 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
         bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
         packageName: `${PACKAGE_NAME}.preview`,
         scheme: `${SCHEME}-preview`,
-        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://preview-api.aido.com',
+        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://preview-api.example.com',
       };
     default:
       return {

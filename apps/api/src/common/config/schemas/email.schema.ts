@@ -8,7 +8,7 @@ export const emailSchema = z.object({
 	RESEND_API_KEY: z.string().optional(),
 
 	/** 발신자 이메일 주소 */
-	EMAIL_FROM: z.string().email().default("noreply@aido.app"),
+	EMAIL_FROM: z.string().email().default("noreply@example.com"),
 
 	/** 발신자 이름 */
 	EMAIL_FROM_NAME: z.string().default("Aido"),

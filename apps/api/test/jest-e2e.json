@@ -8,7 +8,7 @@
 	"testTimeout": 60000,
 	"maxWorkers": 1,
 	"transform": {
-		"^.+\\.ts$": [
+		"^.+\\.(t|j)s$": [
 			"@swc/jest",
 			{
 				"jsc": {
@@ -28,8 +28,12 @@
 			}
 		]
 	},
+	"transformIgnorePatterns": [
+		"node_modules/(?!(.pnpm/jose|.pnpm/google-auth-library|jose|google-auth-library)/)"
+	],
 	"moduleNameMapper": {
 		"^@/(.*)$": "<rootDir>/../src/$1",
-		"^(\\.{1,2}/.*)\\.js$": "$1"
+		"^(\\.{1,2}/.*)\\.js$": "$1",
+		"^jose$": "<rootDir>/mocks/jose.mock.ts"
 	}
 }
