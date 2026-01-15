@@ -24,8 +24,15 @@ describe("AuthService", () => {
 
 	const mockUserRepository = {
 		findByEmail: jest.fn(),
+		findById: jest.fn(),
+		findByIdWithProfile: jest.fn(),
+		findByEmailWithCredential: jest.fn(),
+		existsByEmail: jest.fn(),
 		create: jest.fn(),
+		createProfile: jest.fn(),
 		markEmailVerified: jest.fn(),
+		updateLastLoginAt: jest.fn(),
+		updateStatus: jest.fn(),
 	};
 
 	const mockAccountRepository = {

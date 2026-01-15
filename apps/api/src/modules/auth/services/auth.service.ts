@@ -599,6 +599,11 @@ export class AuthService {
 
 		const { sub: userId, email, sessionId } = payload;
 
+		// sessionId가 없으면 유효하지 않은 토큰
+		if (!sessionId) {
+			throw BusinessExceptions.sessionNotFound();
+		}
+
 		// 2. 리프레시 토큰 해시로 세션 조회
 		const refreshTokenHash = this.tokenService.hashRefreshToken(refreshToken);
 		const session =
