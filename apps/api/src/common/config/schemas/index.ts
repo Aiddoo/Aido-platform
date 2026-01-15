@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { type AppConfig, appSchema } from "./app.schema";
 import { type DatabaseConfig, databaseSchema } from "./database.schema";
+import {
+	type EmailConfig,
+	emailSchema,
+	validateEmailForProduction,
+} from "./email.schema";
 import { type ExternalConfig, externalSchema } from "./external.schema";
 import { type JwtConfig, jwtSchema } from "./jwt.schema";
 import {
@@ -14,6 +19,7 @@ import { type SecurityConfig, securitySchema } from "./security.schema";
 // 스키마 재export
 export * from "./app.schema";
 export * from "./database.schema";
+export * from "./email.schema";
 export * from "./external.schema";
 export * from "./jwt.schema";
 export * from "./oauth.schema";
@@ -27,6 +33,7 @@ export const envSchema = z
 	.object({})
 	.merge(appSchema)
 	.merge(databaseSchema)
+	.merge(emailSchema)
 	.merge(jwtSchema)
 	.merge(oauthSchema)
 	.merge(securitySchema)
@@ -38,6 +45,7 @@ export const envSchema = z
  */
 export type EnvConfig = AppConfig &
 	DatabaseConfig &
+	EmailConfig &
 	JwtConfig &
 	OAuthConfig &
 	SecurityConfig &
@@ -61,11 +69,17 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
 
 	const validatedConfig = result.data;
 
-	// Production 환경에서 OAuth 검증
+	// Production 환경에서 OAuth 및 이메일 검증
 	if (validatedConfig.NODE_ENV === "production") {
 		if (!validateOAuthForProduction(validatedConfig)) {
 			throw new Error(
 				"Production environment requires at least one OAuth provider configured (Google, Apple, Kakao, or Naver)",
+			);
+		}
+
+		if (!validateEmailForProduction(validatedConfig)) {
+			throw new Error(
+				"Production environment requires RESEND_API_KEY to be configured for email verification",
 			);
 		}
 	}

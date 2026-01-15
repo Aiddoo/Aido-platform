@@ -19,7 +19,16 @@
       "dependsOn": ["build"],
       "inputs": ["src/**", "test/**", "jest.config.*"],
       "outputs": ["coverage/**"],
-      "passThroughEnv": ["DATABASE_URL", "JWT_SECRET", "JWT_REFRESH_SECRET"]
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "JWT_EXPIRES_IN",
+        "JWT_REFRESH_EXPIRES_IN",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "EMAIL_FROM_NAME"
+      ]
     },
     "test:cov": {
       "inputs": ["src/**", "test/**", "jest.config.*"],

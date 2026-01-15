@@ -8,6 +8,12 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./nestjs": {
+      "types": "./dist/nestjs/index.d.ts",
+      "import": "./dist/nestjs/index.js",
+      "require": "./dist/nestjs/index.js",
+      "default": "./dist/nestjs/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -25,5 +31,13 @@
   },
   "devDependencies": {
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "nestjs-zod": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "nestjs-zod": {
+      "optional": true
+    }
   }
 }

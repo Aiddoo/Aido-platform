@@ -46,7 +46,7 @@ export class BusinessExceptions {
 		return new BusinessException(ERROR_CODE.USER_NOT_FOUND, { userId });
 	}
 
-	static todoNotFound(todoId: number) {
+	static todoNotFound(todoId: string) {
 		return new BusinessException(ERROR_CODE.TODO_NOT_FOUND, { todoId });
 	}
 
@@ -232,6 +232,10 @@ export class BusinessExceptions {
 		});
 	}
 
+	static invalidCredentials() {
+		return new BusinessException(ERROR_CODE.INVALID_CREDENTIALS);
+	}
+
 	static invalidPassword() {
 		return new BusinessException(ERROR_CODE.INVALID_PASSWORD);
 	}
@@ -247,11 +251,82 @@ export class BusinessExceptions {
 		return new BusinessException(ERROR_CODE.ACCOUNT_ALREADY_EXISTS, details);
 	}
 
-	static accountSuspended(userId: number) {
+	static accountSuspended(userId: string) {
 		return new BusinessException(ERROR_CODE.ACCOUNT_SUSPENDED, { userId });
 	}
 
-	static accountDeleted(userId: number) {
+	static accountDeleted(userId: string) {
 		return new BusinessException(ERROR_CODE.ACCOUNT_DELETED, { userId });
+	}
+
+	static accountLocked(email: string, remainingMinutes?: number) {
+		return new BusinessException(ERROR_CODE.ACCOUNT_LOCKED, {
+			email,
+			remainingMinutes,
+		});
+	}
+
+	static accountPendingVerification(email: string) {
+		return new BusinessException(ERROR_CODE.ACCOUNT_PENDING_VERIFICATION, {
+			email,
+		});
+	}
+
+	// =========================================================================
+	// 로그인 시도 제한 (Login Attempts)
+	// =========================================================================
+	static tooManyLoginAttempts(email: string, remainingMinutes: number) {
+		return new BusinessException(ERROR_CODE.TOO_MANY_LOGIN_ATTEMPTS, {
+			email,
+			remainingMinutes,
+		});
+	}
+
+	// =========================================================================
+	// 세션 관련 (Session)
+	// =========================================================================
+	static sessionNotFound(sessionId?: string) {
+		return new BusinessException(ERROR_CODE.SESSION_NOT_FOUND, { sessionId });
+	}
+
+	static sessionExpired(sessionId?: string) {
+		return new BusinessException(ERROR_CODE.SESSION_EXPIRED, { sessionId });
+	}
+
+	static sessionRevoked(sessionId?: string, reason?: string) {
+		return new BusinessException(ERROR_CODE.SESSION_REVOKED, {
+			sessionId,
+			reason,
+		});
+	}
+
+	// =========================================================================
+	// 토큰 보안 (Token Security)
+	// =========================================================================
+	static tokenReuseDetected(tokenFamily?: string) {
+		return new BusinessException(ERROR_CODE.TOKEN_REUSE_DETECTED, {
+			tokenFamily,
+		});
+	}
+
+	// =========================================================================
+	// 인증 코드 (Verification)
+	// =========================================================================
+	static verificationCodeInvalid() {
+		return new BusinessException(ERROR_CODE.VERIFICATION_CODE_INVALID);
+	}
+
+	static verificationCodeExpired() {
+		return new BusinessException(ERROR_CODE.VERIFICATION_CODE_EXPIRED);
+	}
+
+	static verificationResendTooSoon(remainingSeconds: number) {
+		return new BusinessException(ERROR_CODE.VERIFICATION_RESEND_TOO_SOON, {
+			remainingSeconds,
+		});
+	}
+
+	static verificationMaxAttemptsExceeded() {
+		return new BusinessException(ERROR_CODE.VERIFICATION_MAX_ATTEMPTS_EXCEEDED);
 	}
 }

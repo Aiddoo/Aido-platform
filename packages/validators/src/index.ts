@@ -27,10 +27,6 @@ export { z } from 'zod';
 
 // Common schemas & types
 export * from './common';
-
+export * from './domains/auth';
 // Domain schemas
 export * from './domains/todo';
-
-// 향후 추가 예정
-// export * from './domains/user';
-// export * from './domains/auth';
