@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import {
 	Body,
 	Controller,
@@ -5,15 +6,19 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
+	Logger,
 	Param,
 	Patch,
 	Post,
+	Query,
 	Req,
+	Res,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-import type { Request } from "express";
+import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import type { Request, Response } from "express";
 
+import { BusinessException } from "@/common/exception/services/business-exception.service";
 import {
 	ApiConflictError,
 	ApiCreatedResponse,
@@ -31,6 +36,7 @@ import {
 	AuthTokensDto,
 	ChangePasswordDto,
 	CurrentUserDto,
+	ExchangeCodeDto,
 	ForgotPasswordDto,
 	GoogleMobileCallbackDto,
 	KakaoMobileCallbackDto,
@@ -82,10 +88,37 @@ import type { RefreshTokenPayload } from "./strategies/jwt-refresh.strategy";
 @Controller("auth")
 @UseGuards(JwtAuthGuard)
 export class AuthController {
+	private readonly logger = new Logger(AuthController.name);
+
 	constructor(
 		private readonly authService: AuthService,
 		private readonly oauthService: OAuthService,
 	) {}
+
+	/**
+	 * OAuth 콜백 에러를 URLSearchParams로 변환
+	 * BusinessException인 경우 에러 코드를 포함
+	 */
+	private buildOAuthErrorParams(
+		error: unknown,
+		state: string,
+	): URLSearchParams {
+		let errorCode = "authentication_failed";
+		let errorMessage = "Unknown error";
+
+		if (error instanceof BusinessException) {
+			errorCode = error.errorCode;
+			errorMessage = error.message;
+		} else if (error instanceof Error) {
+			errorMessage = error.message;
+		}
+
+		return new URLSearchParams({
+			error: errorCode,
+			error_description: errorMessage,
+			state,
+		});
+	}
 
 	// ============================================
 	// 회원가입 및 인증
@@ -120,6 +153,20 @@ export class AuthController {
 ### ⚠️ 주의사항
 - 이미 가입된 이메일은 \`EMAIL_ALREADY_REGISTERED\` 에러 반환
 - 인증 코드는 **10분간 유효**합니다
+
+### 🔄 이미 가입한 이메일로 재시도 시
+
+만약 이전에 회원가입을 시도했지만 이메일 인증을 완료하지 않은 경우:
+
+1. **회원가입 시도** → \`EMAIL_ALREADY_REGISTERED\` 에러 반환
+2. **프론트엔드**: "이미 가입된 이메일입니다. 로그인하시겠습니까?" 안내
+3. **사용자**: 로그인 버튼 클릭
+4. **로그인 시도** → \`EMAIL_NOT_VERIFIED\` 에러 반환
+5. **프론트엔드**: 자동으로 이메일 인증 화면으로 이동
+6. **프론트엔드**: 자동으로 \`POST /auth/resend-verification\` 호출
+7. **사용자**: 새로 받은 인증 코드로 인증 완료
+
+이 플로우를 통해 이메일 인증을 완료하지 못한 사용자도 쉽게 복구할 수 있습니다.
 		`,
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
@@ -202,6 +249,26 @@ export class AuthController {
 ### ⚠️ 주의사항
 - 이전에 발송된 인증 코드는 **무효화**됩니다
 - 새로 발송된 코드만 유효합니다
+
+### 🔄 자동 호출 시나리오
+
+프론트엔드는 다음 상황에서 이 API를 **자동으로** 호출해야 합니다:
+
+#### 1. **로그인 시 \`EMAIL_NOT_VERIFIED\` 에러 발생**
+- 사용자를 이메일 인증 화면으로 이동시킨 후
+- 자동으로 이 API를 호출하여 새 인증 코드 발송
+- 사용자는 바로 이메일 인증을 진행할 수 있습니다
+
+#### 2. **회원가입 시 \`EMAIL_ALREADY_REGISTERED\` 에러 → 로그인 → \`EMAIL_NOT_VERIFIED\` 에러 발생**
+- 위와 동일한 플로우로 자동 복구 가능
+- 사용자는 복잡한 단계 없이 바로 이메일 인증을 진행할 수 있습니다
+
+#### 3. **사용자가 명시적으로 "코드 재발송" 버튼 클릭**
+- 인증 화면에서 "코드를 받지 못했나요?" 버튼 제공
+- 해당 버튼 클릭 시 이 API 호출
+- 다만 **1분 쿨다운** 제한이 있으므로, 너무 빈번한 호출 방지
+
+이를 통해 사용자는 복잡한 단계 없이 바로 이메일 인증을 진행할 수 있습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -247,6 +314,34 @@ export class AuthController {
 | \`INVALID_CREDENTIALS\` | 이메일 또는 비밀번호 불일치 |
 | \`ACCOUNT_LOCKED\` | 로그인 시도 초과로 계정 잠금 |
 | \`EMAIL_NOT_VERIFIED\` | 이메일 인증 미완료 |
+
+### 🔄 이메일 미인증 사용자 복구 플로우
+
+\`EMAIL_NOT_VERIFIED\` 에러를 받은 경우, 프론트엔드는 다음과 같이 처리해야 합니다:
+
+**자동 복구 플로우:**
+1. \`EMAIL_NOT_VERIFIED\` 에러 감지
+2. 자동으로 이메일 인증 화면(\`/verify-email\`)으로 이동
+3. 자동으로 \`POST /auth/resend-verification\` 호출하여 인증 코드 재발송
+4. 사용자는 이메일에서 받은 6자리 코드 입력
+5. \`POST /auth/verify-email\`로 인증 완료 → 자동 로그인
+
+**프론트엔드 구현 예시:**
+\`\`\`typescript
+try {
+  const response = await loginApi(email, password);
+} catch (error) {
+  if (error.code === 'EMAIL_NOT_VERIFIED') {
+    // 자동으로 인증 화면으로 이동
+    navigate('/verify-email', { state: { email } });
+    // 자동으로 인증 코드 재발송
+    await resendVerificationApi(email);
+    // 사용자에게 "인증 코드가 재발송되었습니다" 안내
+  }
+}
+\`\`\`
+
+이 방식으로 사용자는 회원가입을 다시 시작할 필요 없이 바로 이메일 인증을 완료할 수 있습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
@@ -674,6 +769,78 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	}
 
 	// ============================================
+	// OAuth 교환 코드 (Exchange Code)
+	// ============================================
+
+	@Post("exchange")
+	@Public()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "OAuth 교환 코드로 토큰 획득",
+		description: `
+## 🔐 OAuth 교환 코드 → JWT 토큰 교환
+
+OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 사용하여 JWT 토큰을 획득합니다.
+
+### 🔄 플로우 개요
+\`\`\`
+1. 소셜 로그인 완료 → 딥링크로 교환 코드 전달
+   aido://auth/callback?code=xxx&state=xxx
+
+2. 앱에서 이 엔드포인트 호출
+   POST /v1/auth/exchange { code: "xxx" }
+
+3. JWT 토큰 반환
+   { accessToken, refreshToken, userId, ... }
+\`\`\`
+
+### 🛡️ 보안 특성
+- **일회용**: 교환 코드는 한 번만 사용 가능
+- **만료 시간**: 10분 이내 사용 필요
+- **토큰 보호**: URL에 JWT 토큰이 노출되지 않음
+
+### 📝 요청 예시
+\`\`\`bash
+curl -X POST https://api.aido.com/v1/auth/exchange \\
+  -H "Content-Type: application/json" \\
+  -d '{"code": "abc123..."}'
+\`\`\`
+
+### ✅ 성공 응답
+\`\`\`json
+{
+  "accessToken": "eyJhbGc...",
+  "refreshToken": "eyJhbGc...",
+  "userId": "user_123",
+  "userName": "홍길동",
+  "profileImage": "https://..."
+}
+\`\`\`
+
+### ❌ 에러 케이스
+| 에러 | 설명 |
+|------|------|
+| \`INVALID_CREDENTIALS\` | 유효하지 않거나 만료/사용된 교환 코드 |
+		`,
+	})
+	@ApiCreatedResponse({
+		description: "토큰 교환 성공",
+		type: AuthTokensDto,
+	})
+	@ApiUnauthorizedError()
+	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
+		const result = await this.oauthService.exchangeCodeForTokens(dto.code);
+
+		return {
+			userId: result.userId,
+			accessToken: result.accessToken,
+			refreshToken: result.refreshToken,
+			name: result.userName ?? null,
+			profileImage: result.profileImage ?? null,
+		};
+	}
+
+	// ============================================
 	// OAuth (소셜 로그인)
 	// ============================================
 
@@ -688,9 +855,57 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 Apple Sign In 인증 후 콜백 처리 엔드포인트입니다.
 Expo 앱에서 Apple 인증 완료 후 받은 데이터를 전송합니다.
 
-### 📦 클라이언트 라이브러리 (Expo)
+### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
 npx expo install expo-apple-authentication
+\`\`\`
+
+### 🔐 왜 expo-apple-authentication을 사용하는가?
+
+**네이티브 SDK 직접 연동의 이점:**
+1. **보안성**: Apple의 네이티브 Sign In 시스템 직접 사용
+2. **UX**: Face ID/Touch ID 자동 지원, 시스템 UI 제공
+3. **간편성**: OAuth 플로우 없이 credential 직접 획득
+4. **신뢰성**: Apple의 공식 인증 흐름 보장
+
+**WebView/브라우저 방식 대비 장점:**
+- 피싱 방지: 시스템 레벨 인증 UI (위조 불가)
+- 자격 증명 보호: 앱이 사용자 Apple ID 비밀번호에 접근 불가
+- 생체 인증 통합: Face ID/Touch ID 자동 연동
+
+### 🔒 서버 측 JWKS 검증이 필요한 이유
+
+**왜 클라이언트가 보낸 데이터를 신뢰하지 않는가?**
+
+클라이언트에서 받은 \`identityToken\`을 서버에서 직접 검증하는 이유:
+
+| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
+|------|---------------------|-------------|
+| 토큰 위조 | ❌ 악의적 앱이 가짜 토큰 생성 가능 | ✅ Apple 공개키로 서명 검증 |
+| 중간자 공격 | ❌ 네트워크에서 토큰 변조 가능 | ✅ 서명 불일치로 탐지 |
+| 재생 공격 | ❌ 이전 토큰 재사용 가능 | ✅ exp/iat 클레임으로 만료 검증 |
+| 권한 상승 | ❌ 다른 사용자 ID 사칭 가능 | ✅ sub 클레임으로 사용자 확인 |
+
+**서버에서 수행하는 검증 (apple-signin-auth 라이브러리):**
+\`\`\`typescript
+// JWKS 검증 과정
+1. Apple의 공개키 조회: https://appleid.apple.com/auth/keys
+2. ID Token의 header에서 kid(Key ID) 추출
+3. 해당 kid에 맞는 공개키로 서명 검증
+4. 클레임 검증:
+   - iss: "https://appleid.apple.com" (발급자)
+   - aud: 앱의 Bundle ID (대상자)
+   - exp: 토큰 만료 시간
+   - sub: Apple 사용자 고유 ID
+\`\`\`
+
+**ID Token 구조 (JWT):**
+\`\`\`
+header.payload.signature
+  │       │        │
+  │       │        └─ Apple 개인키로 서명 (서버가 공개키로 검증)
+  │       └─ 사용자 정보 (sub, email, email_verified 등)
+  └─ 알고리즘 및 키 정보 (alg, kid)
 \`\`\`
 
 ### 🔄 Expo 클라이언트 구현 예시
@@ -805,9 +1020,98 @@ Expo 앱에서 \`expo-auth-session\`을 사용하여 Google OAuth 인증 완료 
 
 ---
 
-### 📦 클라이언트 라이브러리 (Expo)
+### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser
+npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
+\`\`\`
+
+### 🔐 각 라이브러리가 필요한 이유
+
+#### 1. expo-crypto - PKCE 및 CSRF 보안
+**왜 필요한가?**
+- **PKCE (Proof Key for Code Exchange)**: Authorization Code Interception Attack 방지
+- **CSRF (Cross-Site Request Forgery)**: \`state\` 파라미터로 요청 위조 공격 방지
+- 암호학적으로 안전한 난수 생성 (\`randomUUID()\`)
+
+**보안적 이점:**
+| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
+|----------|-----------------|-------------------|
+| Code 가로채기 | ❌ 악성 앱이 Authorization Code 탈취 가능 | ✅ code_verifier 없이는 토큰 교환 불가 |
+| CSRF 공격 | ❌ 공격자가 위조 요청 가능 | ✅ state 불일치로 요청 거부 |
+| 세션 고정 | ❌ 공격자 세션 주입 가능 | ✅ 예측 불가능한 state로 방지 |
+
+\`\`\`typescript
+import * as Crypto from 'expo-crypto';
+const state = Crypto.randomUUID(); // CSRF 방지 토큰
+const codeVerifier = Crypto.randomUUID(); // PKCE용
+\`\`\`
+
+#### 2. expo-linking - 딥링크 및 콜백 URL 처리
+**왜 필요한가?**
+- OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
+- Custom URL Scheme 처리 (\`aido://auth/callback\`)
+- Universal Links(iOS) / App Links(Android) 지원
+
+**보안적 이점:**
+| 기능 | 설명 |
+|------|------|
+| 정확한 앱 라우팅 | 콜백이 정확한 앱으로만 전달되도록 보장 |
+| URL 파싱 | state, code 파라미터 안전하게 추출 |
+| 토큰 보호 | URL에 토큰 직접 노출 방지 (code 교환 방식) |
+
+\`\`\`typescript
+import * as Linking from 'expo-linking';
+const returnUrl = Linking.createURL('auth/callback', { scheme: 'aido' });
+// 결과: aido://auth/callback
+
+const parsed = Linking.parse(callbackUrl);
+// parsed.queryParams.code, parsed.queryParams.state 추출
+\`\`\`
+
+#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
+**왜 필요한가?**
+- **RFC 8252 (OAuth 2.0 for Native Apps) 준수**: 시스템 브라우저 사용 권장
+- 인앱 WebView 대신 별도의 보안 브라우저에서 인증 진행
+- 세션 쿠키, 자동 완성, 비밀번호 관리자 활용 가능
+
+**WebView vs 시스템 브라우저 비교:**
+| 항목 | 인앱 WebView | expo-web-browser |
+|------|-------------|-----------------|
+| 자격증명 접근 | ❌ 앱이 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
+| 피싱 방지 | ❌ 주소창 위조 가능 | ✅ 시스템 주소창 표시 |
+| 세션 재사용 | ❌ 매번 로그인 필요 | ✅ 기존 세션 활용 |
+| 생체 인증 | ❌ 지원 불가 | ✅ Face ID/Touch ID |
+
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+// 앱 시작 시 호출 (딥링크 처리 준비)
+WebBrowser.maybeCompleteAuthSession();
+
+// OAuth 브라우저 열기
+const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+\`\`\`
+
+### 🔒 서버 측 토큰 검증이 필요한 이유
+
+**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
+
+서버에서는 클라이언트가 보낸 Access Token으로 Google API를 **직접 호출**하여 사용자 정보를 검증합니다.
+
+| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
+|------|---------------------|-------------|
+| 프로필 위조 | ❌ 다른 사용자로 사칭 가능 | ✅ Google API로 실제 정보 확인 |
+| 토큰 위조 | ❌ 가짜 토큰으로 로그인 가능 | ✅ 유효하지 않은 토큰은 API 호출 실패 |
+| 이메일 인증 우회 | ❌ verified_email 위조 가능 | ✅ Google이 반환한 값만 신뢰 |
+
+**서버 검증 방식 (google-auth-library):**
+\`\`\`typescript
+// 서버에서 Access Token으로 사용자 정보 직접 조회
+const userInfo = await axios.get(
+  'https://www.googleapis.com/userinfo/v2/me',
+  { headers: { Authorization: \`Bearer \${accessToken}\` } }
+);
+// Google이 반환한 정보만 신뢰
 \`\`\`
 
 ---
@@ -1087,6 +1391,478 @@ export const useGoogleLogin = () => {
 		};
 	}
 
+	// ============================================
+	// Kakao 웹 OAuth (모바일 앱 브라우저 기반)
+	// ============================================
+
+	@Get("kakao/start")
+	@Public()
+	@ApiDoc({
+		summary: "Kakao OAuth 시작 (웹 브라우저 기반)",
+		description: `
+## 🟡 Kakao OAuth 시작점 (웹 브라우저 기반)
+
+모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 카카오 로그인 페이지로 리다이렉트됩니다.
+인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[현재] GET /auth/kakao/start?state=xxx&redirect_uri=xxx  → 카카오 로그인 페이지
+[다음] GET /auth/kakao/web-callback                       → code 처리, 교환 코드 발급
+[완료] {redirect_uri}?code=xxx&state=xxx                  → 클라이언트로 리다이렉트
+\`\`\`
+
+### 📱 모바일 앱에서 호출 방법
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+// 딥링크로 리다이렉트 (기본값)
+const result = await WebBrowser.openAuthSessionAsync(
+  'https://api.aido.kr/v1/auth/kakao/start?state=random-state',
+  'aido://auth/callback'
+);
+
+// 또는 redirect_uri 명시적 지정
+const result = await WebBrowser.openAuthSessionAsync(
+  'https://api.aido.kr/v1/auth/kakao/start?state=random-state&redirect_uri=aido://auth/callback',
+  'aido://auth/callback'
+);
+\`\`\`
+
+### 🌐 웹에서 호출 방법
+\`\`\`typescript
+// 웹 콜백 URL로 리다이렉트
+window.location.href =
+  'https://api.aido.kr/v1/auth/kakao/start?state=random-state&redirect_uri=https://aido.kr/auth/callback';
+\`\`\`
+
+### ✅ 허용된 Redirect URI
+보안을 위해 다음 패턴의 URI만 허용됩니다:
+- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
+- \`https://aido.kr/*\` - aido.kr 도메인
+- \`https://*.aido.kr/*\` - aido.kr 서브도메인
+- \`http://localhost:*/*\` - 로컬 개발 환경
+
+### 🔐 보안
+- \`state\` 파라미터는 CSRF 방지용으로 클라이언트가 생성
+- 콜백 시 동일한 state가 반환되는지 반드시 검증
+- \`redirect_uri\`는 화이트리스트로 검증됨
+		`,
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
+		example: "a1b2c3d4e5f6",
+	})
+	@ApiQuery({
+		name: "redirect_uri",
+		required: false,
+		description: `인증 완료 후 리다이렉트될 URI.
+
+**허용된 URI 패턴:**
+- \`aido://auth/callback\` (기본값) - 모바일 앱
+- \`https://aido.kr/*\` - 웹 프로덕션
+- \`https://*.aido.kr/*\` - 서브도메인
+- \`http://localhost:*/*\` - 로컬 개발
+
+지정하지 않으면 기본값 \`aido://auth/callback\` 사용`,
+		example: "aido://auth/callback",
+	})
+	async kakaoOAuthStart(
+		@Query("state") state: string | undefined,
+		@Query("redirect_uri") redirectUri: string | undefined,
+		@Res() res: Response,
+	): Promise<void> {
+		// state가 없으면 서버에서 자동 생성
+		const effectiveState = state || randomBytes(16).toString("hex");
+		const authUrl = await this.oauthService.generateKakaoAuthUrlWithState(
+			effectiveState,
+			redirectUri,
+		);
+		res.redirect(authUrl);
+	}
+
+	@Get("kakao/web-callback")
+	@Public()
+	@ApiDoc({
+		summary: "Kakao OAuth 콜백 (웹 브라우저 기반)",
+		description: `
+## 🟡 Kakao OAuth 콜백 (웹 브라우저 기반)
+
+카카오 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
+Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
+OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+
+### 🔐 보안 강화 (Exchange Code 패턴)
+JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
+클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[1] GET /auth/kakao/start?state=xxx&redirect_uri=xxx  → 카카오 로그인 페이지로 리다이렉트
+[2] GET /auth/kakao/web-callback                      → code 처리, 교환 코드 발급
+[3] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
+[4] POST /v1/auth/exchange { code: "xxx" }            → 토큰 교환
+[5] { accessToken, refreshToken }                     → 클라이언트에서 토큰 저장
+\`\`\`
+
+### 📱 모바일 앱에서 처리
+\`\`\`typescript
+// aido://auth/callback?code=xxx&state=xxx 수신 후
+const { code, state } = parseDeepLink(url);
+
+// state 검증 후 토큰 교환
+const response = await fetch('https://api.aido.kr/v1/auth/exchange', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ code }),
+});
+
+const { accessToken, refreshToken } = await response.json();
+\`\`\`
+
+### 🌐 웹에서 처리
+\`\`\`typescript
+// https://aido.kr/auth/callback?code=xxx&state=xxx 수신 후
+const urlParams = new URLSearchParams(window.location.search);
+const code = urlParams.get('code');
+const state = urlParams.get('state');
+
+// state 검증 후 토큰 교환
+const response = await fetch('https://api.aido.kr/v1/auth/exchange', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ code }),
+});
+
+const { accessToken, refreshToken } = await response.json();
+\`\`\`
+
+### ⚠️ 에러 처리
+- 인증 실패 시: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
+- state 검증 실패 시: 클라이언트에서 에러 처리
+
+### 🔒 참고
+- 이 엔드포인트는 카카오에서 직접 호출됩니다 (사용자가 직접 호출하지 않음)
+- \`redirect_uri\`는 OAuth 시작 시 DB에 저장된 값을 사용합니다
+		`,
+	})
+	@ApiQuery({
+		name: "code",
+		required: true,
+		description: "카카오에서 받은 authorization code",
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+	})
+	async kakaoOAuthCallback(
+		@Query("code") code: string,
+		@Query("state") state: string,
+		@Req() req: Request,
+		@Res() res: Response,
+	): Promise<void> {
+		// 기본 redirect_uri (state가 없거나 조회 실패 시 사용)
+		const defaultRedirectUri = "aido://auth/callback";
+
+		try {
+			const metadata = this.extractMetadata(req);
+
+			// 토큰 생성 + 교환 코드 발급 (토큰은 DB에 임시 저장)
+			// OAuthState에서 redirect_uri도 함께 반환
+			const result =
+				await this.oauthService.handleKakaoWebCallbackWithExchangeCode(
+					code,
+					state,
+					metadata,
+				);
+
+			// 성공 시 저장된 redirect_uri로 교환 코드 전달 (토큰 노출 방지)
+			const redirectUri = result.redirectUri || defaultRedirectUri;
+			const params = new URLSearchParams({
+				code: result.exchangeCode,
+				state,
+			});
+
+			res.redirect(`${redirectUri}?${params.toString()}`);
+		} catch (error) {
+			// 에러 시 기본 redirect_uri로 에러 정보 전달 (BusinessException인 경우 에러 코드 포함)
+			const params = this.buildOAuthErrorParams(error, state);
+
+			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+		}
+	}
+
+	// ============================================
+	// Google 웹 OAuth (웹 브라우저 기반)
+	// ============================================
+
+	@Get("google/start")
+	@Public()
+	@ApiDoc({
+		summary: "Google OAuth 시작 (웹 브라우저 기반)",
+		description: `
+## 🔵 Google OAuth 시작점 (웹 브라우저 기반)
+
+모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 구글 로그인 페이지로 리다이렉트됩니다.
+인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[현재] GET /auth/google/start?state=xxx&redirect_uri=xxx  → 구글 로그인 페이지
+[다음] GET /auth/google/web-callback                      → code 처리, 교환 코드 발급
+[완료] {redirect_uri}?code=xxx&state=xxx                  → 클라이언트로 리다이렉트
+\`\`\`
+
+### 📱 모바일 앱에서 호출 방법
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+const result = await WebBrowser.openAuthSessionAsync(
+  'https://api.aido.kr/v1/auth/google/start?state=random-state',
+  'aido://auth/callback'
+);
+\`\`\`
+
+### ✅ 허용된 Redirect URI
+- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
+- \`https://aido.kr/*\` - aido.kr 도메인
+- \`https://*.aido.kr/*\` - aido.kr 서브도메인
+- \`http://localhost:*/*\` - 로컬 개발 환경
+		`,
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
+		example: "a1b2c3d4e5f6",
+	})
+	@ApiQuery({
+		name: "redirect_uri",
+		required: false,
+		description: "인증 완료 후 리다이렉트될 URI. 기본값: aido://auth/callback",
+		example: "aido://auth/callback",
+	})
+	async googleOAuthStart(
+		@Query("state") state: string | undefined,
+		@Query("redirect_uri") redirectUri: string | undefined,
+		@Res() res: Response,
+	): Promise<void> {
+		const effectiveState = state || randomBytes(16).toString("hex");
+		const authUrl = await this.oauthService.generateGoogleAuthUrlWithState(
+			effectiveState,
+			redirectUri,
+		);
+		res.redirect(authUrl);
+	}
+
+	@Get("google/web-callback")
+	@Public()
+	@ApiDoc({
+		summary: "Google OAuth 콜백 (웹 브라우저 기반)",
+		description: `
+## 🔵 Google OAuth 콜백 (웹 브라우저 기반)
+
+구글 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
+Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
+OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+
+### 🔐 보안 강화 (Exchange Code 패턴)
+JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
+클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[1] GET /auth/google/start?state=xxx&redirect_uri=xxx → 구글 로그인 페이지로 리다이렉트
+[2] GET /auth/google/web-callback                     → code 처리, 교환 코드 발급
+[3] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
+[4] POST /v1/auth/exchange { code: "xxx" }            → 토큰 교환
+[5] { accessToken, refreshToken }                     → 클라이언트에서 토큰 저장
+\`\`\`
+		`,
+	})
+	@ApiQuery({
+		name: "code",
+		required: true,
+		description: "구글에서 받은 authorization code",
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+	})
+	async googleOAuthCallback(
+		@Query("code") code: string,
+		@Query("state") state: string,
+		@Req() req: Request,
+		@Res() res: Response,
+	): Promise<void> {
+		const defaultRedirectUri = "aido://auth/callback";
+
+		try {
+			const metadata = this.extractMetadata(req);
+
+			const result =
+				await this.oauthService.handleGoogleWebCallbackWithExchangeCode(
+					code,
+					state,
+					metadata,
+				);
+
+			const redirectUri = result.redirectUri || defaultRedirectUri;
+			const params = new URLSearchParams({
+				code: result.exchangeCode,
+				state,
+			});
+
+			res.redirect(`${redirectUri}?${params.toString()}`);
+		} catch (error) {
+			this.logger.error(
+				`Google OAuth callback error: ${error instanceof Error ? error.message : String(error)}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+			const params = this.buildOAuthErrorParams(error, state);
+
+			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+		}
+	}
+
+	// ============================================
+	// Naver 웹 OAuth (웹 브라우저 기반)
+	// ============================================
+
+	@Get("naver/start")
+	@Public()
+	@ApiDoc({
+		summary: "Naver OAuth 시작 (웹 브라우저 기반)",
+		description: `
+## 🟢 Naver OAuth 시작점 (웹 브라우저 기반)
+
+모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 네이버 로그인 페이지로 리다이렉트됩니다.
+인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[현재] GET /auth/naver/start?state=xxx&redirect_uri=xxx  → 네이버 로그인 페이지
+[다음] GET /auth/naver/web-callback                      → code 처리, 교환 코드 발급
+[완료] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
+\`\`\`
+
+### 📱 모바일 앱에서 호출 방법
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+const result = await WebBrowser.openAuthSessionAsync(
+  'https://api.aido.kr/v1/auth/naver/start?state=random-state',
+  'aido://auth/callback'
+);
+\`\`\`
+
+### ✅ 허용된 Redirect URI
+- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
+- \`https://aido.kr/*\` - aido.kr 도메인
+- \`https://*.aido.kr/*\` - aido.kr 서브도메인
+- \`http://localhost:*/*\` - 로컬 개발 환경
+		`,
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
+		example: "a1b2c3d4e5f6",
+	})
+	@ApiQuery({
+		name: "redirect_uri",
+		required: false,
+		description: "인증 완료 후 리다이렉트될 URI. 기본값: aido://auth/callback",
+		example: "aido://auth/callback",
+	})
+	async naverOAuthStart(
+		@Query("state") state: string | undefined,
+		@Query("redirect_uri") redirectUri: string | undefined,
+		@Res() res: Response,
+	): Promise<void> {
+		const effectiveState = state || randomBytes(16).toString("hex");
+		const authUrl = await this.oauthService.generateNaverAuthUrlWithState(
+			effectiveState,
+			redirectUri,
+		);
+		res.redirect(authUrl);
+	}
+
+	@Get("naver/web-callback")
+	@Public()
+	@ApiDoc({
+		summary: "Naver OAuth 콜백 (웹 브라우저 기반)",
+		description: `
+## 🟢 Naver OAuth 콜백 (웹 브라우저 기반)
+
+네이버 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
+Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
+OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+
+### 🔐 보안 강화 (Exchange Code 패턴)
+JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
+클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+
+### 🔄 전체 플로우
+\`\`\`
+[1] GET /auth/naver/start?state=xxx&redirect_uri=xxx → 네이버 로그인 페이지로 리다이렉트
+[2] GET /auth/naver/web-callback                     → code 처리, 교환 코드 발급
+[3] {redirect_uri}?code=xxx&state=xxx                → 클라이언트로 리다이렉트
+[4] POST /v1/auth/exchange { code: "xxx" }           → 토큰 교환
+[5] { accessToken, refreshToken }                    → 클라이언트에서 토큰 저장
+\`\`\`
+		`,
+	})
+	@ApiQuery({
+		name: "code",
+		required: true,
+		description: "네이버에서 받은 authorization code",
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+	})
+	async naverOAuthCallback(
+		@Query("code") code: string,
+		@Query("state") state: string,
+		@Req() req: Request,
+		@Res() res: Response,
+	): Promise<void> {
+		const defaultRedirectUri = "aido://auth/callback";
+
+		try {
+			const metadata = this.extractMetadata(req);
+
+			const result =
+				await this.oauthService.handleNaverWebCallbackWithExchangeCode(
+					code,
+					state,
+					metadata,
+				);
+
+			const redirectUri = result.redirectUri || defaultRedirectUri;
+			const params = new URLSearchParams({
+				code: result.exchangeCode,
+				state,
+			});
+
+			res.redirect(`${redirectUri}?${params.toString()}`);
+		} catch (error) {
+			const params = this.buildOAuthErrorParams(error, state);
+
+			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+		}
+	}
+
+	// ============================================
+	// Kakao 모바일 OAuth (기존 토큰 기반)
+	// ============================================
+
 	@Post("kakao/callback")
 	@Public()
 	@HttpCode(HttpStatus.OK)
@@ -1100,9 +1876,100 @@ Expo 앱에서 \`expo-auth-session\`을 사용하여 Kakao OAuth 인증 완료 �
 
 ---
 
-### 📦 클라이언트 라이브러리 (Expo)
+### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser
+npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
+\`\`\`
+
+### 🔐 각 라이브러리가 필요한 이유
+
+#### 1. expo-crypto - PKCE 및 CSRF 보안
+**왜 필요한가?**
+- **PKCE (Proof Key for Code Exchange)**: 모바일 앱에서 Authorization Code가 탈취되어도 토큰 교환 불가
+- **state 파라미터**: CSRF(Cross-Site Request Forgery) 공격 방지
+- 암호학적으로 안전한 난수 생성으로 예측 불가능한 값 보장
+
+**보안적 이점:**
+| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
+|----------|-----------------|-------------------|
+| Code 가로채기 | ❌ 악성 앱이 code 탈취 후 토큰 획득 | ✅ code_verifier 없이는 토큰 교환 불가 |
+| CSRF 공격 | ❌ 공격자가 악의적 OAuth 요청 주입 | ✅ state 불일치로 즉시 거부 |
+| 세션 고정 | ❌ 공격자 세션으로 사용자 연결 가능 | ✅ 랜덤 state로 세션 고정 불가 |
+
+\`\`\`typescript
+import * as Crypto from 'expo-crypto';
+const state = Crypto.randomUUID(); // CSRF 토큰 - 콜백에서 반드시 검증
+const codeVerifier = Crypto.randomUUID(); // PKCE용 - 토큰 교환 시 필요
+\`\`\`
+
+#### 2. expo-linking - 딥링크 및 콜백 URL 처리
+**왜 필요한가?**
+- Kakao OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
+- Custom URL Scheme 생성 및 파싱 (\`aido://auth/kakao/callback\`)
+- Universal Links(iOS) / App Links(Android) 지원
+
+**보안적 이점:**
+| 기능 | 설명 |
+|------|------|
+| 정확한 앱 라우팅 | Kakao 인증 완료 후 정확한 앱으로만 콜백 전달 |
+| URL 파싱 | code, state 파라미터를 안전하게 추출하여 검증 |
+| 토큰 보호 | Access Token이 URL에 직접 노출되지 않음 (code 교환 방식) |
+
+\`\`\`typescript
+import * as Linking from 'expo-linking';
+const returnUrl = Linking.createURL('auth/kakao/callback', { scheme: 'aido' });
+// 결과: aido://auth/kakao/callback
+
+// 콜백 URL에서 code와 state 추출
+const parsed = Linking.parse(callbackUrl);
+const { code, state: returnedState } = parsed.queryParams;
+// state 검증 후 code로 토큰 교환
+\`\`\`
+
+#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
+**왜 필요한가?**
+- **RFC 8252 준수**: 네이티브 앱에서는 시스템 브라우저 사용 권장
+- 카카오 계정 로그인을 안전한 환경에서 진행
+- 기존 카카오 로그인 세션 재사용으로 UX 향상
+
+**WebView vs 시스템 브라우저 비교:**
+| 항목 | 인앱 WebView | expo-web-browser |
+|------|-------------|-----------------|
+| 자격증명 접근 | ❌ 앱이 카카오 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
+| 피싱 방지 | ❌ 가짜 카카오 로그인 UI 표시 가능 | ✅ 진짜 카카오 도메인 주소창 표시 |
+| 세션 재사용 | ❌ 매번 카카오 로그인 필요 | ✅ 기존 카카오 로그인 세션 활용 |
+| 카카오톡 연동 | ❌ 지원 불가 | ✅ 카카오톡 앱 인증 가능 |
+
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+// 앱 시작 시 호출 - 딥링크로 돌아왔을 때 세션 정리
+WebBrowser.maybeCompleteAuthSession();
+
+// Kakao OAuth 브라우저 열기
+const result = await WebBrowser.openAuthSessionAsync(kakaoAuthUrl, returnUrl);
+\`\`\`
+
+### 🔒 서버 측 Access Token 검증이 필요한 이유
+
+**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
+
+서버에서는 클라이언트가 보낸 Access Token으로 Kakao API(\`/v2/user/me\`)를 **직접 호출**하여 검증합니다.
+
+| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
+|------|---------------------|-------------|
+| 프로필 위조 | ❌ 타인의 카카오 ID로 사칭 가능 | ✅ Kakao API가 실제 토큰 소유자 반환 |
+| 토큰 위조 | ❌ 가짜 토큰으로 로그인 시도 | ✅ Kakao API 호출 실패로 탐지 |
+| 만료된 토큰 | ❌ 이전에 탈취한 토큰 재사용 | ✅ Kakao가 만료 토큰 거부 |
+| 권한 확인 | ❌ 동의하지 않은 정보 조작 | ✅ Kakao가 실제 동의 범위 반환 |
+
+**서버 검증 방식:**
+\`\`\`typescript
+// 서버에서 Access Token으로 Kakao API 직접 호출
+const userInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
+  headers: { Authorization: \`Bearer \${accessToken}\` }
+});
+// Kakao가 반환한 정보만 신뢰하여 사용자 생성/로그인 처리
 \`\`\`
 
 ---
@@ -1455,9 +2322,114 @@ Expo 앱에서 \`expo-auth-session\`을 사용하여 Naver OAuth 인증 완료 �
 
 ---
 
-### 📦 클라이언트 라이브러리 (Expo)
+### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser
+npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
+\`\`\`
+
+### 🔐 각 라이브러리가 필요한 이유
+
+#### 1. expo-crypto - PKCE 및 CSRF 보안
+**왜 필요한가?**
+- **state 파라미터 생성**: CSRF(Cross-Site Request Forgery) 공격 방지의 핵심
+- 암호학적으로 안전한 난수 생성 (\`randomUUID()\`)
+- 예측 불가능한 값으로 세션 고정 공격 방지
+
+**보안적 이점:**
+| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
+|----------|-----------------|-------------------|
+| CSRF 공격 | ❌ 공격자가 악의적 OAuth 요청 주입 가능 | ✅ 랜덤 state 불일치로 즉시 거부 |
+| 세션 고정 | ❌ 공격자 세션으로 사용자 연결 가능 | ✅ 예측 불가능한 state로 방지 |
+| 리플레이 공격 | ❌ 이전 인증 요청 재사용 가능 | ✅ 일회성 state로 재사용 방지 |
+
+\`\`\`typescript
+import * as Crypto from 'expo-crypto';
+// CSRF 방지 토큰 - 콜백에서 반드시 검증 필요!
+const state = Crypto.randomUUID();
+// 저장 후, 콜백에서 returnedState === state 검증
+\`\`\`
+
+#### 2. expo-linking - 딥링크 및 콜백 URL 처리
+**왜 필요한가?**
+- Naver OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
+- Custom URL Scheme 생성 및 파싱 (\`aido://auth/naver/callback\`)
+- Universal Links(iOS) / App Links(Android) 지원
+
+**보안적 이점:**
+| 기능 | 설명 |
+|------|------|
+| 정확한 앱 라우팅 | Naver 인증 완료 후 정확한 앱으로만 콜백 전달 |
+| URL 파싱 | code, state, error 파라미터를 안전하게 추출 |
+| state 검증 | 저장된 state와 반환된 state 비교로 CSRF 방지 |
+
+\`\`\`typescript
+import * as Linking from 'expo-linking';
+const returnUrl = Linking.createURL('auth/naver/callback', { scheme: 'aido' });
+// 결과: aido://auth/naver/callback
+
+// 콜백 URL에서 code와 state 추출
+const parsed = Linking.parse(callbackUrl);
+const { code, state: returnedState, error } = parsed.queryParams;
+
+// 필수! state 검증
+if (returnedState !== savedState) {
+  throw new Error('CSRF attack detected!');
+}
+\`\`\`
+
+#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
+**왜 필요한가?**
+- **RFC 8252 준수**: 네이티브 앱에서는 시스템 브라우저 사용 권장
+- 네이버 계정 로그인을 안전한 환경에서 진행
+- 기존 네이버 로그인 세션 재사용으로 UX 향상
+
+**WebView vs 시스템 브라우저 비교:**
+| 항목 | 인앱 WebView | expo-web-browser |
+|------|-------------|-----------------|
+| 자격증명 접근 | ❌ 앱이 네이버 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
+| 피싱 방지 | ❌ 가짜 네이버 로그인 UI 표시 가능 | ✅ 진짜 nid.naver.com 주소창 표시 |
+| 세션 재사용 | ❌ 매번 네이버 로그인 필요 | ✅ 기존 네이버 로그인 세션 활용 |
+| 2단계 인증 | ❌ 지원 불안정 | ✅ 네이버 앱 OTP 연동 가능 |
+
+\`\`\`typescript
+import * as WebBrowser from 'expo-web-browser';
+
+// 앱 시작 시 호출 - 딥링크로 돌아왔을 때 세션 정리
+WebBrowser.maybeCompleteAuthSession();
+
+// Naver OAuth 브라우저 열기
+const result = await WebBrowser.openAuthSessionAsync(naverAuthUrl, returnUrl);
+\`\`\`
+
+### 🔒 서버 측 검증 및 client_secret 보호가 필요한 이유
+
+**Naver OAuth의 특수성: client_secret 필요**
+
+Naver는 토큰 교환 시 \`client_secret\`이 필수입니다. 이 비밀키는 **절대로 클라이언트에 저장하면 안 됩니다**.
+
+| 위치 | client_secret 노출 시 위험 |
+|------|--------------------------|
+| 모바일 앱 | ❌ 앱 디컴파일로 탈취 → 다른 앱이 우리 앱 사칭 가능 |
+| 서버 | ✅ 환경변수로 안전하게 관리, 외부 접근 불가 |
+
+**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
+
+서버에서는 클라이언트가 보낸 Access Token으로 Naver API(\`/v1/nid/me\`)를 **직접 호출**하여 검증합니다.
+
+| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
+|------|---------------------|-------------|
+| 프로필 위조 | ❌ 타인의 네이버 ID로 사칭 가능 | ✅ Naver API가 실제 토큰 소유자 반환 |
+| 토큰 위조 | ❌ 가짜 토큰으로 로그인 시도 | ✅ Naver API 호출 실패로 탐지 |
+| 만료된 토큰 | ❌ 이전에 탈취한 토큰 재사용 | ✅ Naver가 만료 토큰 거부 |
+| 권한 확인 | ❌ 동의하지 않은 정보 조작 | ✅ Naver가 실제 동의 범위 반환 |
+
+**서버 검증 방식:**
+\`\`\`typescript
+// 서버에서 Access Token으로 Naver API 직접 호출
+const userInfo = await axios.get('https://openapi.naver.com/v1/nid/me', {
+  headers: { Authorization: \`Bearer \${accessToken}\` }
+});
+// Naver가 반환한 response.id, response.email 등만 신뢰
 \`\`\`
 
 ---
