@@ -247,6 +247,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // 라우팅
       'expo-router',
 
+      // 폰트
+      [
+        'expo-font',
+        {
+          fonts: [
+            './assets/fonts/WantedSans-Regular.ttf',
+            './assets/fonts/WantedSans-Medium.ttf',
+            './assets/fonts/WantedSans-SemiBold.ttf',
+            './assets/fonts/WantedSans-Bold.ttf',
+          ],
+        },
+      ],
+
       // 카메라
       [
         'expo-camera',
