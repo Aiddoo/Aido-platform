@@ -10,6 +10,7 @@ import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
 import {
 	AccountRepository,
 	LoginAttemptRepository,
+	OAuthStateRepository,
 	SecurityLogRepository,
 	SessionRepository,
 	UserRepository,
@@ -53,6 +54,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		VerificationRepository,
 		LoginAttemptRepository,
 		SecurityLogRepository,
+		OAuthStateRepository,
 		// Services
 		PasswordService,
 		TokenService,

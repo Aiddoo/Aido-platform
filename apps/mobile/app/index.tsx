@@ -1,20 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-// TODO: Hero UI 설치
-// https://v3.heroui.com/docs/native/getting-started (고민 중)
-// 더 좋은게 있으면 대안을 찾아보자!
-export default function HomeScreen() {
+const HomeScreen = () => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView>
       <Text>홈 페이지</Text>
-    </View>
+    </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default HomeScreen;

@@ -170,8 +170,7 @@ describe("Todo Integration Tests (Real DB)", () => {
 			expect(afterUpdate.title).toBe("수정된 제목");
 
 			// 6. Delete
-			const deleted = await service.delete(created.id);
-			expect(deleted.id).toBe(created.id);
+			await service.delete(created.id);
 
 			// 7. Verify deletion
 			await expect(service.findById(created.id)).rejects.toThrow(
@@ -268,12 +267,15 @@ describe("Todo Integration Tests (Real DB)", () => {
 		const NON_EXISTENT_ID = "clnonexistent0000000000";
 
 		it("should throw BusinessException for non-existent todo on findById", async () => {
-			await expect(service.findById(NON_EXISTENT_ID)).rejects.toThrow(
-				BusinessException,
-			);
-			await expect(service.findById(NON_EXISTENT_ID)).rejects.toMatchObject({
-				code: ERROR_CODE.TODO_NOT_FOUND,
-			});
+			try {
+				await service.findById(NON_EXISTENT_ID);
+				fail("Expected BusinessException to be thrown");
+			} catch (error) {
+				expect(error).toBeInstanceOf(BusinessException);
+				expect((error as BusinessException).errorCode).toBe(
+					ERROR_CODE.TODO_NOT_FOUND,
+				);
+			}
 		});
 
 		it("should throw BusinessException for non-existent todo on update", async () => {

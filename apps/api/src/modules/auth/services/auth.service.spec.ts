@@ -80,6 +80,8 @@ describe("AuthService", () => {
 		createAndSendEmailVerification: jest.fn(),
 		createAndSendPasswordReset: jest.fn(),
 		verifyCode: jest.fn(),
+		createEmailVerification: jest.fn(),
+		sendVerificationEmail: jest.fn(),
 	};
 
 	beforeEach(async () => {
@@ -140,10 +142,14 @@ describe("AuthService", () => {
 			});
 			mockUserRepository.create.mockResolvedValue(mockUser);
 			mockAccountRepository.createCredentialAccount.mockResolvedValue({});
-			mockVerificationService.createAndSendEmailVerification.mockResolvedValue({
+			// 새 아키텍처: createEmailVerification (DB 저장) + sendVerificationEmail (이메일 발송) 분리
+			mockVerificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
 			});
+			mockVerificationService.sendVerificationEmail.mockResolvedValue(
+				undefined,
+			);
 			mockSecurityLogRepository.create.mockResolvedValue({});
 		});
 
@@ -210,12 +216,15 @@ describe("AuthService", () => {
 			await service.register(registerInput);
 
 			// Then
+			// 새 아키텍처: createEmailVerification (DB 저장) + sendVerificationEmail (이메일 발송)
 			expect(
-				mockVerificationService.createAndSendEmailVerification,
+				mockVerificationService.createEmailVerification,
+			).toHaveBeenCalled();
+			expect(
+				mockVerificationService.sendVerificationEmail,
 			).toHaveBeenCalledWith(
-				mockUser.id,
 				registerInput.email,
-				expect.any(Object),
+				expect.any(String), // verification code
 			);
 		});
 
@@ -234,6 +243,57 @@ describe("AuthService", () => {
 				}),
 				expect.any(Object),
 			);
+		});
+
+		it("이메일 전송 실패해도 회원가입은 성공한다", async () => {
+			// Given
+			// - createEmailVerification은 성공 (DB 저장됨)
+			mockVerificationService.createEmailVerification.mockResolvedValue({
+				code: "123456",
+				expiresAt: new Date(),
+			});
+			// - sendVerificationEmail은 실패 (예외 발생)
+			mockVerificationService.sendVerificationEmail.mockRejectedValue(
+				new Error("SMTP connection failed"),
+			);
+			mockUserRepository.create.mockResolvedValue(mockUser);
+			mockAccountRepository.createCredentialAccount.mockResolvedValue({});
+			mockSecurityLogRepository.create.mockResolvedValue({});
+
+			// When
+			const result = await service.register(registerInput);
+
+			// Then
+			// 회원가입은 성공해야 함
+			expect(result.userId).toBe(mockUser.id);
+			expect(result.email).toBe(mockUser.email);
+			// 사용자는 DB에 저장되어야 함
+			expect(mockUserRepository.create).toHaveBeenCalled();
+			// 비록 이메일 전송이 실패했지만 예외를 던지지 않음
+		});
+
+		it("이메일 전송 실패 시 로그가 남는다", async () => {
+			// Given
+			mockVerificationService.createEmailVerification.mockResolvedValue({
+				code: "123456",
+				expiresAt: new Date(),
+			});
+			const emailError = new Error("SMTP connection failed");
+			mockVerificationService.sendVerificationEmail.mockRejectedValue(
+				emailError,
+			);
+			mockUserRepository.create.mockResolvedValue(mockUser);
+			mockAccountRepository.createCredentialAccount.mockResolvedValue({});
+			mockSecurityLogRepository.create.mockResolvedValue({});
+
+			// When
+			await service.register(registerInput);
+
+			// Then
+			// 이메일 전송 시도가 있었고 실패했음을 확인
+			expect(
+				mockVerificationService.sendVerificationEmail,
+			).toHaveBeenCalledWith(registerInput.email, "123456");
 		});
 	});
 
@@ -1219,6 +1279,13 @@ describe("AuthService", () => {
 				code: "123456",
 				expiresAt: new Date(),
 			});
+			mockVerificationService.createEmailVerification.mockResolvedValue({
+				code: "123456",
+				expiresAt: new Date(),
+			});
+			mockVerificationService.sendVerificationEmail.mockResolvedValue(
+				undefined,
+			);
 		});
 
 		it("인증 코드를 재발송한다", async () => {
@@ -1229,9 +1296,16 @@ describe("AuthService", () => {
 			const result = await service.resendVerification(email);
 
 			// Then
+			// 새 아키텍처: createEmailVerification (DB 저장) + sendVerificationEmail (이메일 발송)
 			expect(
-				mockVerificationService.createAndSendEmailVerification,
-			).toHaveBeenCalledWith(mockUser.id, email);
+				mockVerificationService.createEmailVerification,
+			).toHaveBeenCalled();
+			expect(
+				mockVerificationService.sendVerificationEmail,
+			).toHaveBeenCalledWith(
+				email,
+				expect.any(String), // verification code
+			);
 			expect(result.message).toBeDefined();
 		});
 
@@ -1261,6 +1335,31 @@ describe("AuthService", () => {
 			await expect(service.resendVerification(email)).rejects.toThrow(
 				BusinessException,
 			);
+		});
+
+		it("이메일 전송 실패해도 재전송 요청은 성공한다", async () => {
+			// Given
+			mockVerificationService.createEmailVerification.mockResolvedValue({
+				code: "654321",
+				expiresAt: new Date(),
+			});
+			mockVerificationService.sendVerificationEmail.mockRejectedValue(
+				new Error("Email service unavailable"),
+			);
+			mockDatabase.$transaction.mockImplementation(async (callback) => {
+				return callback({});
+			});
+
+			// When
+			const result = await service.resendVerification(email);
+
+			// Then
+			// 재전송 요청은 성공해야 함
+			expect(result.message).toBeDefined();
+			// 이메일 전송 시도가 있었지만 예외를 던지지 않음
+			expect(
+				mockVerificationService.sendVerificationEmail,
+			).toHaveBeenCalledWith(email, "654321");
 		});
 	});
 });

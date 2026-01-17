@@ -120,24 +120,53 @@ export type RevokeReason = (typeof REVOKE_REASON)[keyof typeof REVOKE_REASON];
 
 /** 보안 로그 이벤트 타입 */
 export const SECURITY_EVENT = {
+  // 인증
   /** 회원가입 */
   REGISTRATION: 'REGISTRATION',
-  /** 이메일 인증 완료 */
-  EMAIL_VERIFIED: 'EMAIL_VERIFIED',
   /** 로그인 성공 */
   LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  /** 로그인 실패 */
+  LOGIN_FAILURE: 'LOGIN_FAILURE',
   /** 로그아웃 */
   LOGOUT: 'LOGOUT',
   /** 토큰 갱신 */
   TOKEN_REFRESH: 'TOKEN_REFRESH',
+  /** 토큰 폐기 */
+  TOKEN_REVOKED: 'TOKEN_REVOKED',
+
+  // 계정
   /** 비밀번호 변경 */
   PASSWORD_CHANGED: 'PASSWORD_CHANGED',
+  /** 비밀번호 재설정 요청 */
+  PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
+  /** 이메일 인증 완료 */
+  EMAIL_VERIFIED: 'EMAIL_VERIFIED',
+  /** 2FA 활성화 */
+  TWO_FACTOR_ENABLED: 'TWO_FACTOR_ENABLED',
+  /** 2FA 비활성화 */
+  TWO_FACTOR_DISABLED: 'TWO_FACTOR_DISABLED',
+
+  // 보안
+  /** 의심스러운 활동 감지 */
+  SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
+  /** 계정 잠금 */
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+  /** 계정 잠금 해제 */
+  ACCOUNT_UNLOCKED: 'ACCOUNT_UNLOCKED',
   /** 세션 폐기 */
   SESSION_REVOKED: 'SESSION_REVOKED',
   /** 모든 세션 폐기 */
   SESSION_REVOKED_ALL: 'SESSION_REVOKED_ALL',
-  /** 의심스러운 활동 감지 */
-  SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
+
+  // OAuth
+  /** 소셜 계정 연동 */
+  OAUTH_LINKED: 'OAUTH_LINKED',
+  /** 소셜 계정 연동 해제 */
+  OAUTH_UNLINKED: 'OAUTH_UNLINKED',
+  /** 소셜 계정 자동 연동 (신뢰된 Provider) */
+  OAUTH_AUTO_LINKED: 'OAUTH_AUTO_LINKED',
+  /** 소셜 계정 연동 필요 (이메일 충돌) */
+  OAUTH_LINK_REQUIRED: 'OAUTH_LINK_REQUIRED',
 } as const;
 
 export type SecurityEvent = (typeof SECURITY_EVENT)[keyof typeof SECURITY_EVENT];

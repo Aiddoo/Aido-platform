@@ -3,26 +3,26 @@
  *
  * nestjs-zod의 createZodDto를 사용한 NestJS DTO 클래스
  */
-import { createZodDto } from 'nestjs-zod';
 
 import {
-  authTokensSchema,
-  changePasswordResponseSchema,
-  currentUserSchema,
-  forgotPasswordResponseSchema,
-  linkedAccountsResponseSchema,
-  logoutResponseSchema,
-  refreshTokensSchema,
-  registerResponseSchema,
-  resendVerificationResponseSchema,
-  resetPasswordResponseSchema,
-  sessionInfoSchema,
-  sessionListResponseSchema,
-  sessionListSchema,
-  unlinkAccountResponseSchema,
-  updateProfileResponseSchema,
-  userProfileSchema,
-} from '../../../domains/auth/auth.response';
+	authTokensSchema,
+	changePasswordResponseSchema,
+	currentUserSchema,
+	forgotPasswordResponseSchema,
+	linkedAccountsResponseSchema,
+	logoutResponseSchema,
+	refreshTokensSchema,
+	registerResponseSchema,
+	resendVerificationResponseSchema,
+	resetPasswordResponseSchema,
+	sessionInfoSchema,
+	sessionListResponseSchema,
+	sessionListSchema,
+	unlinkAccountResponseSchema,
+	updateProfileResponseSchema,
+	userProfileSchema,
+} from "@aido/validators";
+import { createZodDto } from "nestjs-zod";
 
 // ============================================
 // 토큰 응답 DTO
@@ -68,26 +68,40 @@ export class MessageResponseDto extends createZodDto(logoutResponseSchema) {}
 export class RegisterResponseDto extends createZodDto(registerResponseSchema) {}
 
 /** 비밀번호 찾기 응답 DTO */
-export class ForgotPasswordResponseDto extends createZodDto(forgotPasswordResponseSchema) {}
+export class ForgotPasswordResponseDto extends createZodDto(
+	forgotPasswordResponseSchema,
+) {}
 
 /** 비밀번호 재설정 응답 DTO */
-export class ResetPasswordResponseDto extends createZodDto(resetPasswordResponseSchema) {}
+export class ResetPasswordResponseDto extends createZodDto(
+	resetPasswordResponseSchema,
+) {}
 
 /** 비밀번호 변경 응답 DTO */
-export class ChangePasswordResponseDto extends createZodDto(changePasswordResponseSchema) {}
+export class ChangePasswordResponseDto extends createZodDto(
+	changePasswordResponseSchema,
+) {}
 
 /** 인증 코드 재발송 응답 DTO */
-export class ResendVerificationResponseDto extends createZodDto(resendVerificationResponseSchema) {}
+export class ResendVerificationResponseDto extends createZodDto(
+	resendVerificationResponseSchema,
+) {}
 
 /** 프로필 수정 응답 DTO */
-export class UpdateProfileResponseDto extends createZodDto(updateProfileResponseSchema) {}
+export class UpdateProfileResponseDto extends createZodDto(
+	updateProfileResponseSchema,
+) {}
 
 // ============================================
 // OAuth 소셜 로그인 응답 DTO
 // ============================================
 
 /** 연결된 소셜 계정 목록 응답 DTO */
-export class LinkedAccountsResponseDto extends createZodDto(linkedAccountsResponseSchema) {}
+export class LinkedAccountsResponseDto extends createZodDto(
+	linkedAccountsResponseSchema,
+) {}
 
 /** 소셜 계정 연결 해제 응답 DTO */
-export class UnlinkAccountResponseDto extends createZodDto(unlinkAccountResponseSchema) {}
+export class UnlinkAccountResponseDto extends createZodDto(
+	unlinkAccountResponseSchema,
+) {}

@@ -72,8 +72,14 @@ export class AuthService {
 	 * 회원가입
 	 *
 	 * 1. 이메일 중복 확인
-	 * 2. User + Account + UserConsent 생성 (트랜잭션)
-	 * 3. 이메일 인증 코드 발송
+	 * 2. User + Account + UserConsent + Verification 생성 (트랜잭션)
+	 * 3. 트랜잭션 후 이메일 인증 코드 발송 (외부 서비스)
+	 *
+	 * 이메일 발송 실패 시:
+	 * - 사용자는 PENDING_VERIFY 상태로 저장됨
+	 * - 로그에만 기록됨
+	 * - 사용자는 resendVerification()을 통해 재발송 가능
+	 * - 외부 서비스 장애가 회원가입을 막지 않음
 	 */
 	async register(input: RegisterInput): Promise<RegisterResult> {
 		const {
@@ -94,8 +100,8 @@ export class AuthService {
 		// 비밀번호 해싱
 		const hashedPassword = await this.passwordService.hash(password);
 
-		// 트랜잭션으로 User + Account + UserConsent 생성
-		const user = await this.database.$transaction(async (tx) => {
+		// 트랜잭션으로 User + Account + UserConsent + Verification 생성
+		const result = await this.database.$transaction(async (tx) => {
 			// User 생성 (PENDING_VERIFY 상태)
 			const newUser = await this.userRepository.create(
 				{
@@ -126,12 +132,9 @@ export class AuthService {
 				},
 			});
 
-			// 이메일 인증 코드 생성 및 발송
-			await this.verificationService.createAndSendEmailVerification(
-				newUser.id,
-				email,
-				tx,
-			);
+			// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
+			const verificationResult =
+				await this.verificationService.createEmailVerification(newUser.id, tx);
 
 			// 보안 로그 기록
 			await this.securityLogRepository.create(
@@ -144,14 +147,31 @@ export class AuthService {
 				tx,
 			);
 
-			return newUser;
+			return {
+				user: newUser,
+				verificationCode: verificationResult.code,
+			};
 		});
 
-		this.logger.log(`User registered: ${user.id} (${email})`);
+		// 트랜잭션 후 이메일 발송 (외부 서비스)
+		// 이메일 발송 실패는 로그만 남고 회원가입은 성공 처리
+		try {
+			await this.verificationService.sendVerificationEmail(
+				email,
+				result.verificationCode,
+			);
+		} catch (error) {
+			this.logger.error(
+				`Unexpected error sending verification email to ${email}:`,
+				error,
+			);
+		}
+
+		this.logger.log(`User registered: ${result.user.id} (${email})`);
 
 		return {
-			userId: user.id,
-			email: user.email,
+			userId: result.user.id,
+			email: result.user.email,
 			message:
 				"회원가입이 완료되었습니다. 이메일로 발송된 인증 코드를 확인해주세요.",
 		};
@@ -283,6 +303,15 @@ export class AuthService {
 
 	/**
 	 * 인증 코드 재발송
+	 *
+	 * 1. 사용자 조회
+	 * 2. 상태 확인 (PENDING_VERIFY만 허용)
+	 * 3. 트랜잭션으로 인증 코드 생성 (쿨다운 확인 포함)
+	 * 4. 트랜잭션 후 이메일 발송
+	 *
+	 * 이메일 발송 실패 시:
+	 * - 로그에만 기록됨
+	 * - 사용자는 다시 재발송 요청 가능
 	 */
 	async resendVerification(email: string): Promise<{ message: string }> {
 		// 사용자 조회
@@ -305,11 +334,26 @@ export class AuthService {
 			this._checkUserStatus(user.status, email);
 		}
 
-		// 인증 코드 발송 (쿨다운 체크는 VerificationService에서 수행)
-		await this.verificationService.createAndSendEmailVerification(
-			user.id,
-			email,
-		);
+		// 트랜잭션으로 인증 코드 생성 (쿨다운 체크 포함)
+		const verificationResult = await this.database.$transaction(async (tx) => {
+			return await this.verificationService.createEmailVerification(
+				user.id,
+				tx,
+			);
+		});
+
+		// 트랜잭션 후 이메일 발송
+		try {
+			await this.verificationService.sendVerificationEmail(
+				email,
+				verificationResult.code,
+			);
+		} catch (error) {
+			this.logger.error(
+				`Unexpected error sending verification email to ${email}:`,
+				error,
+			);
+		}
 
 		this.logger.log(`Verification code resent: ${user.id} (${email})`);
 

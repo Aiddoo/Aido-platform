@@ -138,9 +138,15 @@ export class BusinessExceptions {
 		});
 	}
 
-	static socialAccountNotLinked(provider: string) {
+	static socialAccountNotLinked(
+		provider: string,
+		providerAccountId: string,
+		email: string,
+	) {
 		return new BusinessException(ERROR_CODE.SOCIAL_ACCOUNT_NOT_LINKED, {
 			provider,
+			providerAccountId,
+			email,
 		});
 	}
 

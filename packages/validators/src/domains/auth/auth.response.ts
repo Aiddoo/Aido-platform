@@ -306,3 +306,43 @@ export const unlinkAccountResponseSchema = z
   .describe('소셜 계정 연결 해제 응답');
 
 export type UnlinkAccountResponse = z.infer<typeof unlinkAccountResponseSchema>;
+
+// ============================================
+// 에러 응답
+// ============================================
+
+/** 인증 에러 코드 (주요 코드) */
+export const authErrorCodeSchema = z
+  .enum([
+    // 공통
+    'USER_NOT_FOUND',
+    'INVALID_PARAMETER',
+    'INTERNAL_SERVER_ERROR',
+    // 인증/토큰
+    'INVALID_TOKEN',
+    'TOKEN_EXPIRED',
+    'TOKEN_REVOKED',
+    'AUTHENTICATION_REQUIRED',
+    'INVALID_CREDENTIALS',
+    // 소셜 로그인
+    'SOCIAL_AUTH_FAILED',
+    'SOCIAL_ACCOUNT_NOT_LINKED',
+    'SOCIAL_PROVIDER_ERROR',
+    // 회원가입
+    'EMAIL_ALREADY_REGISTERED',
+    'EMAIL_NOT_VERIFIED',
+  ])
+  .describe('인증 에러 코드');
+
+export type AuthErrorCode = z.infer<typeof authErrorCodeSchema>;
+
+/** 인증 에러 객체 */
+export const authErrorSchema = z
+  .object({
+    code: authErrorCodeSchema.or(z.string()), // Unknown codes fallback
+    message: z.string(),
+    details: z.record(z.string(), z.unknown()).optional(),
+  })
+  .describe('인증 에러 객체');
+
+export type AuthError = z.infer<typeof authErrorSchema>;
