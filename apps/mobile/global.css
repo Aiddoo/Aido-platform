@@ -3,3 +3,83 @@
 @import "heroui-native/styles";
 
 @source "./node_modules/heroui-native/lib";
+
+/* ===== Aido 커스텀 테마 ===== */
+@layer theme {
+  @variant light {
+    /* HeroUI 시맨틱 색상 오버라이드 */
+    --background: oklch(1 0 0); /* white: #FFFFFF */
+    --foreground: oklch(0.2 0.005 285); /* gray10: #212121 */
+    --surface: oklch(0.98 0 0); /* gray1: #FAFAFA */
+    --muted: oklch(0.65 0 0); /* gray6: #9E9E9E */
+    --default: oklch(0.97 0 0); /* gray2: #F6F6F6 */
+    --accent: oklch(0.65 0.2 30); /* main: #FF6843 */
+    --danger: oklch(0.6 0.22 25); /* error: #FF5150 */
+    --warning: oklch(0.85 0.15 85); /* secondary: #FFD260 */
+    --divider: oklch(0.9 0 0); /* gray4: #E0E0E0 */
+
+    /* 커스텀 gray 스케일 */
+    --gray-1: oklch(0.98 0 0); /* #FAFAFA */
+    --gray-2: oklch(0.97 0 0); /* #F6F6F6 */
+    --gray-3: oklch(0.94 0 0); /* #EFEFEF */
+    --gray-4: oklch(0.9 0 0); /* #E0E0E0 */
+    --gray-5: oklch(0.78 0 0); /* #BDBDBD */
+    --gray-6: oklch(0.65 0 0); /* #9E9E9E */
+    --gray-7: oklch(0.5 0 0); /* #767676 */
+    --gray-8: oklch(0.42 0 0); /* #616161 */
+    --gray-9: oklch(0.32 0 0); /* #424242 */
+    --gray-10: oklch(0.2 0.005 285); /* #212121 */
+
+    /* 커스텀 시맨틱 색상 */
+    --main: oklch(0.65 0.2 30); /* #FF6843 */
+    --secondary: oklch(0.85 0.15 85); /* #FFD260 */
+    --error: oklch(0.6 0.22 25); /* #FF5150 */
+  }
+
+  @variant dark {
+    /* HeroUI 시맨틱 색상 오버라이드 */
+    --background: oklch(0.15 0 0); /* white(dark): #121212 */
+    --foreground: oklch(0.98 0 0); /* gray10(dark): #FAFAFA */
+    --surface: oklch(0.2 0.005 285); /* gray1(dark): #212121 */
+    --muted: oklch(0.78 0 0); /* gray6(dark): #BDBDBD */
+    --default: oklch(0.32 0 0); /* gray2(dark): #424242 */
+    --accent: oklch(0.65 0.2 30); /* main */
+    --danger: oklch(0.6 0.22 25); /* error */
+    --warning: oklch(0.85 0.15 85); /* secondary */
+    --divider: oklch(0.5 0 0); /* gray4(dark): #767676 */
+
+    /* 커스텀 gray 스케일 (다크모드에서 반전) */
+    --gray-1: oklch(0.2 0.005 285); /* #212121 */
+    --gray-2: oklch(0.32 0 0); /* #424242 */
+    --gray-3: oklch(0.42 0 0); /* #616161 */
+    --gray-4: oklch(0.5 0 0); /* #767676 */
+    --gray-5: oklch(0.65 0 0); /* #9E9E9E */
+    --gray-6: oklch(0.78 0 0); /* #BDBDBD */
+    --gray-7: oklch(0.9 0 0); /* #E0E0E0 */
+    --gray-8: oklch(0.94 0 0); /* #EFEFEF */
+    --gray-9: oklch(0.97 0 0); /* #F6F6F6 */
+    --gray-10: oklch(0.98 0 0); /* #FAFAFA */
+
+    /* 커스텀 시맨틱 색상 (동일) */
+    --main: oklch(0.65 0.2 30);
+    --secondary: oklch(0.85 0.15 85);
+    --error: oklch(0.6 0.22 25);
+  }
+}
+
+/* Tailwind 커스텀 색상 토큰 등록 */
+@theme inline {
+  --color-main: var(--main);
+  --color-secondary: var(--secondary);
+  --color-error: var(--error);
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-gray-5: var(--gray-5);
+  --color-gray-6: var(--gray-6);
+  --color-gray-7: var(--gray-7);
+  --color-gray-8: var(--gray-8);
+  --color-gray-9: var(--gray-9);
+  --color-gray-10: var(--gray-10);
+}
