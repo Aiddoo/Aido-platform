@@ -90,6 +90,13 @@ describe("Auth (e2e)", () => {
 	}
 
 	beforeAll(async () => {
+		// 테스트용 Kakao OAuth 환경변수 설정 (웹 플로우 테스트용)
+		// 실제 API 호출은 하지 않고 URL 생성/리다이렉트만 테스트
+		process.env.KAKAO_CLIENT_ID = "test-kakao-client-id";
+		process.env.KAKAO_CLIENT_SECRET = "test-kakao-client-secret";
+		process.env.KAKAO_CALLBACK_URL =
+			"http://localhost:3000/auth/kakao/callback";
+
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
 		await testDatabase.start();
