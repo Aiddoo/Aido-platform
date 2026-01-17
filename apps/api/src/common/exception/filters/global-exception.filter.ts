@@ -1,3 +1,4 @@
+import { ErrorCode, Errors } from "@aido/errors";
 import {
 	type ArgumentsHost,
 	Catch,
@@ -7,7 +8,6 @@ import {
 } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
-import { ERROR_CODE, ERROR_MESSAGE } from "../constants/error.constant";
 import type { ErrorResponse } from "../interfaces/error.interface";
 import { BusinessException } from "../services/business-exception.service";
 
@@ -45,7 +45,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 				errorResponse = {
 					success: false,
 					error: {
-						code: ERROR_CODE.INVALID_PARAMETER,
+						code: ErrorCode.SYS_0002,
 						message: Array.isArray(exceptionResponse.message)
 							? exceptionResponse.message.join(", ")
 							: String(exceptionResponse.message),
@@ -57,7 +57,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 				errorResponse = {
 					success: false,
 					error: {
-						code: ERROR_CODE.INTERNAL_SERVER_ERROR,
+						code: ErrorCode.SYS_0001,
 						message: exception.message,
 					},
 					timestamp: Date.now(),
@@ -69,12 +69,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			const errorMessage =
 				exception instanceof Error
 					? exception.message
-					: ERROR_MESSAGE[ERROR_CODE.INTERNAL_SERVER_ERROR];
+					: Errors[ErrorCode.SYS_0001].message;
 			errorResponse = {
 				success: false,
 				error: {
-					code: ERROR_CODE.INTERNAL_SERVER_ERROR,
-					message: ERROR_MESSAGE[ERROR_CODE.INTERNAL_SERVER_ERROR],
+					code: ErrorCode.SYS_0001,
+					message: Errors[ErrorCode.SYS_0001].message,
 					details: errorMessage,
 				},
 				timestamp: Date.now(),

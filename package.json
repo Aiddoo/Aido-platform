@@ -22,6 +22,7 @@
     "test": "turbo run test",
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
+    "test:coverage": "pnpm --filter @aido/api test:coverage && pnpm --filter @aido/mobile test:coverage",
     "test:e2e": "turbo run test:e2e",
     "typecheck": "turbo run typecheck"
   },

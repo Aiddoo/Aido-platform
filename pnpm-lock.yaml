@@ -59,6 +59,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@aido/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@aido/utils':
         specifier: workspace:*
         version: link:../../packages/utils
@@ -107,6 +110,9 @@ importers:
       class-validator:
         specifier: ^0.14.3
         version: 0.14.3
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
       google-auth-library:
         specifier: ^9.15.1
         version: 9.15.1
@@ -423,6 +429,24 @@ importers:
         version: 19.1.0(react@19.1.0)
       typescript:
         specifier: ~5.9.2
+        version: 5.9.3
+
+  packages/errors:
+    devDependencies:
+      '@aido/jest-config':
+        specifier: workspace:*
+        version: link:../../tooling/jest
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@22.19.5)(ts-node@10.9.2(@swc/core@1.15.8)(@types/node@22.19.5)(typescript@5.9.3))
+      ts-jest:
+        specifier: ^29.2.5
+        version: 29.4.6(@babel/core@7.28.5)(@jest/transform@30.2.0)(@jest/types@30.2.0)(babel-jest@30.2.0(@babel/core@7.28.5))(jest-util@30.2.0)(jest@29.7.0(@types/node@22.19.5))(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
         version: 5.9.3
 
   packages/utils:
@@ -4044,6 +4068,9 @@ packages:
 
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
+
+  dayjs@1.11.19:
+    resolution: {integrity: sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -12360,6 +12387,8 @@ snapshots:
       whatwg-url: 11.0.0
 
   dateformat@4.6.3: {}
+
+  dayjs@1.11.19: {}
 
   debug@2.6.9:
     dependencies:
