@@ -1,12 +1,16 @@
 import { Stack } from 'expo-router';
-import QueryProvider from '@/core/providers/query-provider';
+import { HeroUINativeProvider } from 'heroui-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import '../global.css';
 
 export default function RootLayout() {
   return (
-    <QueryProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ title: '홈' }} />
-      </Stack>
-    </QueryProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <HeroUINativeProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ title: '홈' }} />
+        </Stack>
+      </HeroUINativeProvider>
+    </GestureHandlerRootView>
   );
 }
