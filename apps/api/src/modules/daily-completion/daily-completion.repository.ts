@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
-import { DATE_FORMAT } from "@/common";
+import { DATE_FORMAT } from "@/common/date";
 
 // UTC 플러그인 활성화
 dayjs.extend(utc);
