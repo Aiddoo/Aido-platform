@@ -55,7 +55,6 @@ async function bootstrap() {
 				SWAGGER_TAGS.USER_AUTH,
 				"회원가입, 로그인, 토큰 갱신, 로그아웃 API",
 			)
-			.addTag(SWAGGER_TAGS.USER_TODO, "Todo CRUD 및 페이지네이션 API")
 			// Admin APIs (관리자/백오피스용) - 추후 확장 시 주석 해제
 			// .addTag(SWAGGER_TAGS.ADMIN_USERS, "사용자 관리 API")
 			// .addTag(SWAGGER_TAGS.ADMIN_SYSTEM, "시스템 설정 API")

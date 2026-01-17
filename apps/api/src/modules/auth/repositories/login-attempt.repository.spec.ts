@@ -1,35 +1,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { LoginAttempt } from "@/generated/prisma/client";
 
 import { LoginAttemptRepository } from "./login-attempt.repository";
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 타입 정의
- */
-type MockLoginAttemptClient = {
-	loginAttempt: {
-		create?: jest.Mock;
-		count?: jest.Mock;
-		findFirst?: jest.Mock;
-		deleteMany?: jest.Mock;
-	};
-};
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 생성
- */
-function createMockTransactionClient(loginAttemptMethods: {
-	create?: jest.Mock;
-	count?: jest.Mock;
-	findFirst?: jest.Mock;
-	deleteMany?: jest.Mock;
-}): MockLoginAttemptClient {
-	return {
-		loginAttempt: loginAttemptMethods,
-	};
-}
 
 describe("LoginAttemptRepository", () => {
 	let repository: LoginAttemptRepository;
@@ -141,8 +115,8 @@ describe("LoginAttemptRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 기록한다", async () => {
 			// Given
-			const createMock = jest.fn().mockResolvedValue(mockSuccessfulAttempt);
-			const mockTx = createMockTransactionClient({ create: createMock });
+			const mockTx = createMockTxClient();
+			mockTx.loginAttempt.create.mockResolvedValue(mockSuccessfulAttempt);
 			const createData = {
 				email: "user@example.com",
 				ipAddress: "192.168.1.1",
@@ -151,14 +125,11 @@ describe("LoginAttemptRepository", () => {
 			};
 
 			// When
-			const result = await repository.create(
-				createData,
-				mockTx as unknown as Parameters<typeof repository.create>[1],
-			);
+			const result = await repository.create(createData, asTxClient(mockTx));
 
 			// Then
 			expect(result).toEqual(mockSuccessfulAttempt);
-			expect(createMock).toHaveBeenCalled();
+			expect(mockTx.loginAttempt.create).toHaveBeenCalled();
 			expect(mockDatabase.loginAttempt.create).not.toHaveBeenCalled();
 		});
 	});

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { ErrorCode } from "@aido/errors";
 import {
 	Body,
 	Controller,
@@ -170,7 +171,7 @@ export class AuthController {
 		`,
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
-	@ApiConflictError("EMAIL_ALREADY_REGISTERED")
+	@ApiConflictError(ErrorCode.EMAIL_0501)
 	async register(@Body() dto: RegisterDto) {
 		const result = await this.authService.register(dto);
 		return {
@@ -213,8 +214,8 @@ export class AuthController {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "VERIFICATION_CODE_INVALID" })
-	@ApiErrorResponse({ errorCode: "VERIFICATION_CODE_EXPIRED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
 	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.verifyEmail(dto, metadata);
@@ -272,7 +273,7 @@ export class AuthController {
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: "VERIFICATION_RESEND_TOO_SOON" })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async resendVerification(@Body() dto: ResendVerificationDto) {
 		const result = await this.authService.resendVerification(dto.email);
 		return result;
@@ -345,9 +346,9 @@ try {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "INVALID_CREDENTIALS" })
-	@ApiErrorResponse({ errorCode: "ACCOUNT_LOCKED" })
-	@ApiErrorResponse({ errorCode: "EMAIL_NOT_VERIFIED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.login(dto, metadata);
@@ -465,8 +466,8 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: RefreshTokensDto })
-	@ApiErrorResponse({ errorCode: "REFRESH_TOKEN_INVALID" })
-	@ApiErrorResponse({ errorCode: "TOKEN_REUSE_DETECTED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.AUTH_0104 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
 		const result = await this.authService.refreshTokens(payload.refreshToken);
@@ -543,8 +544,8 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: "VERIFICATION_CODE_INVALID" })
-	@ApiErrorResponse({ errorCode: "VERIFICATION_CODE_EXPIRED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
 		const result = await this.authService.resetPassword(
 			dto.email,
@@ -587,7 +588,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError()
-	@ApiErrorResponse({ errorCode: "INVALID_CREDENTIALS" })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	async changePassword(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ChangePasswordDto,
@@ -753,7 +754,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError()
-	@ApiNotFoundError("SESSION_NOT_FOUND")
+	@ApiNotFoundError(ErrorCode.SESSION_0701)
 	async revokeSession(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("sessionId") sessionId: string,
@@ -982,7 +983,7 @@ const handleAppleLogin = async () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "APPLE_TOKEN_VERIFICATION_FAILED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0354 })
 	async appleCallback(
 		@Body() dto: AppleMobileCallbackDto,
 		@Req() req: Request,
@@ -1366,7 +1367,7 @@ export const useGoogleLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "GOOGLE_TOKEN_VERIFICATION_FAILED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.GOOGLE_0403 })
 	async googleCallback(
 		@Body() dto: GoogleMobileCallbackDto,
 		@Req() req: Request,
@@ -2284,7 +2285,7 @@ export const useKakaoLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "KAKAO_TOKEN_VERIFICATION_FAILED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.KAKAO_0308 })
 	async kakaoCallback(
 		@Body() dto: KakaoMobileCallbackDto,
 		@Req() req: Request,
@@ -2800,7 +2801,7 @@ export const useNaverLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: "NAVER_TOKEN_VERIFICATION_FAILED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.NAVER_0453 })
 	async naverCallback(
 		@Body() dto: NaverMobileCallbackDto,
 		@Req() req: Request,
@@ -2853,7 +2854,7 @@ export const useNaverLogin = () => {
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError()
-	@ApiErrorResponse({ errorCode: "APPLE_ACCOUNT_ALREADY_LINKED" })
+	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0355 })
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: LinkSocialAccountDto,
@@ -2911,7 +2912,7 @@ export const useNaverLogin = () => {
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError()
-	@ApiErrorResponse({ errorCode: "CANNOT_UNLINK_LAST_ACCOUNT" })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0610 })
 	async unlinkAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("provider") provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",

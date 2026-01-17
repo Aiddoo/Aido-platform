@@ -1,11 +1,6 @@
+import { type ErrorCodeType, Errors } from "@aido/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiResponse } from "@nestjs/swagger";
-
-import {
-	ERROR_HTTP_STATUS,
-	ERROR_MESSAGE,
-	type ErrorCode,
-} from "@/common/exception";
 
 import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant";
 import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface";
@@ -14,7 +9,7 @@ import { ErrorResponseSchema } from "../schemas/response.schema";
 /**
  * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)
  */
-function createErrorSchema(errorCode: ErrorCode, message: string) {
+function createErrorSchema(errorCode: ErrorCodeType, message: string) {
 	return {
 		type: "object",
 		properties: {
@@ -52,8 +47,9 @@ export function ApiErrorResponse(
 ): MethodDecorator {
 	const { errorCode, description } = options;
 
-	const httpStatus = ERROR_HTTP_STATUS[errorCode] ?? HttpStatus.BAD_REQUEST;
-	const message = description ?? ERROR_MESSAGE[errorCode];
+	const errorDef = Errors[errorCode];
+	const httpStatus = errorDef?.httpStatus ?? HttpStatus.BAD_REQUEST;
+	const message = description ?? errorDef?.message ?? "Unknown error";
 
 	return applyDecorators(
 		ApiResponse({
@@ -74,8 +70,8 @@ export function ApiErrorResponse(
  * findById(@Param('id') id: number) { ... }
  * ```
  */
-export function ApiNotFoundError(errorCode: ErrorCode): MethodDecorator {
-	const message = ERROR_MESSAGE[errorCode];
+export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Not found";
 
 	return applyDecorators(
 		ApiResponse({
@@ -136,8 +132,8 @@ export function ApiForbiddenError(description?: string): MethodDecorator {
  * create(@Body() dto: CreateUserDto) { ... }
  * ```
  */
-export function ApiConflictError(errorCode: ErrorCode): MethodDecorator {
-	const message = ERROR_MESSAGE[errorCode];
+export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Conflict";
 
 	return applyDecorators(
 		ApiResponse({
@@ -158,8 +154,10 @@ export function ApiConflictError(errorCode: ErrorCode): MethodDecorator {
  * verify(@Body() dto: VerifyDto) { ... }
  * ```
  */
-export function ApiUnprocessableError(errorCode: ErrorCode): MethodDecorator {
-	const message = ERROR_MESSAGE[errorCode];
+export function ApiUnprocessableError(
+	errorCode: ErrorCodeType,
+): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Unprocessable";
 
 	return applyDecorators(
 		ApiResponse({

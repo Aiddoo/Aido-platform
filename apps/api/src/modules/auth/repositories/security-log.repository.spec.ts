@@ -1,35 +1,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { SecurityLog } from "@/generated/prisma/client";
 
 import { SecurityLogRepository } from "./security-log.repository";
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 타입 정의
- */
-type MockSecurityLogClient = {
-	securityLog: {
-		create?: jest.Mock;
-		findMany?: jest.Mock;
-		deleteMany?: jest.Mock;
-		groupBy?: jest.Mock;
-	};
-};
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 생성
- */
-function createMockTransactionClient(securityLogMethods: {
-	create?: jest.Mock;
-	findMany?: jest.Mock;
-	deleteMany?: jest.Mock;
-	groupBy?: jest.Mock;
-}): MockSecurityLogClient {
-	return {
-		securityLog: securityLogMethods,
-	};
-}
 
 describe("SecurityLogRepository", () => {
 	let repository: SecurityLogRepository;
@@ -137,18 +111,15 @@ describe("SecurityLogRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const createMock = jest.fn().mockResolvedValue(mockSecurityLog);
-			const mockTx = createMockTransactionClient({ create: createMock });
+			const mockTx = createMockTxClient();
+			mockTx.securityLog.create.mockResolvedValue(mockSecurityLog);
 
 			// When
-			const result = await repository.create(
-				createData,
-				mockTx as unknown as Parameters<typeof repository.create>[1],
-			);
+			const result = await repository.create(createData, asTxClient(mockTx));
 
 			// Then
 			expect(result).toEqual(mockSecurityLog);
-			expect(createMock).toHaveBeenCalled();
+			expect(mockTx.securityLog.create).toHaveBeenCalled();
 			expect(mockDatabase.securityLog.create).not.toHaveBeenCalled();
 		});
 	});

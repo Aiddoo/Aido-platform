@@ -1,2 +1,10 @@
-export { CreateTodoDto, CreateTodoSchema } from "./create-todo.dto";
-export { UpdateTodoDto, UpdateTodoSchema } from "./update-todo.dto";
+export * from "./create-todo.dto";
+export * from "./get-todos-query.dto";
+export * from "./todo-id-param.dto";
+// 액션별 수정 DTOs
+export * from "./toggle-complete.dto";
+export * from "./update-color.dto";
+export * from "./update-content.dto";
+export * from "./update-schedule.dto";
+export * from "./update-todo.dto";
+export * from "./update-visibility.dto";

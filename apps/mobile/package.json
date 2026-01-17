@@ -18,6 +18,7 @@
     "start:android": "expo start --android",
     "start:ios": "expo start --ios",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },

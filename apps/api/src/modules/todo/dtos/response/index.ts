@@ -1,1 +1,1 @@
-export { TodoResponseDto, TodoSchema } from "./todo-response.dto";
+export * from "./todo.response.dto";

@@ -1,3 +1,4 @@
+import type { SubscriptionStatus, UserStatus } from "@/generated/prisma/client";
 import type { TokenPair } from "../services/token.service";
 
 /**
@@ -55,8 +56,14 @@ export interface CurrentUserResult {
 	userId: string;
 	email: string;
 	sessionId: string;
+	userTag: string;
+	status: UserStatus;
+	emailVerifiedAt: string | null;
+	subscriptionStatus: SubscriptionStatus;
+	subscriptionExpiresAt: string | null;
 	name: string | null;
 	profileImage: string | null;
+	createdAt: string;
 }
 
 /**

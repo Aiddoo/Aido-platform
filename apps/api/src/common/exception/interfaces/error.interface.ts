@@ -1,4 +1,4 @@
-import type { ErrorCode } from "../constants/error.constant";
+import type { ErrorCodeType } from "@aido/errors";
 
 /**
  * 에러 응답 인터페이스
@@ -6,7 +6,7 @@ import type { ErrorCode } from "../constants/error.constant";
 export interface ErrorResponse {
 	success: false;
 	error: {
-		code: ErrorCode;
+		code: ErrorCodeType;
 		message: string;
 		details?: unknown;
 	};
@@ -17,7 +17,7 @@ export interface ErrorResponse {
  * 비즈니스 예외 생성 옵션
  */
 export interface BusinessExceptionOptions {
-	errorCode: ErrorCode;
+	errorCode: ErrorCodeType;
 	details?: unknown;
 	message?: string;
 	statusCode?: number;

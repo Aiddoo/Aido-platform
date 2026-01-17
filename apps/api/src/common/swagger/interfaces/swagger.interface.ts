@@ -1,5 +1,5 @@
+import type { ErrorCodeType } from "@aido/errors";
 import type { Type } from "@nestjs/common";
-import type { ErrorCode } from "@/common/exception";
 
 /**
  * @ApiDoc 데코레이터 옵션
@@ -53,8 +53,8 @@ export interface ApiPaginatedResponseOptions<T = unknown> {
  * @ApiErrorResponse 데코레이터 옵션
  */
 export interface ApiErrorResponseOptions {
-	/** 에러 코드 (ERROR_CODE 상수 값) */
-	errorCode: ErrorCode;
+	/** 에러 코드 (ErrorCode 상수 값) */
+	errorCode: ErrorCodeType;
 	/** 커스텀 설명 (생략시 ERROR_MESSAGE 사용) */
 	description?: string;
 }

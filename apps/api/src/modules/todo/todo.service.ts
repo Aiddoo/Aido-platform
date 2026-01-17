@@ -1,15 +1,43 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type {
-	CursorPaginatedResponse,
-	CursorPaginationParams,
-	NormalizedPagination,
-	PaginatedResponse,
-} from "@/common/pagination";
-import { PaginationService } from "@/common/pagination";
+import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
+import { PaginationService } from "@/common/pagination/services/pagination.service";
 import type { Todo } from "@/generated/prisma/client";
-import type { CreateTodoDto, UpdateTodoDto } from "./dtos/request";
-import { TodoRepository } from "./todo.repository";
+
+import { type FindTodosParams, TodoRepository } from "./todo.repository";
+
+export interface CreateTodoData {
+	userId: string;
+	title: string;
+	content?: string | null;
+	color?: string | null;
+	startDate: Date;
+	endDate?: Date | null;
+	scheduledTime?: Date | null;
+	isAllDay?: boolean;
+	visibility?: "PUBLIC" | "PRIVATE";
+}
+
+export interface UpdateTodoData {
+	title?: string;
+	content?: string | null;
+	color?: string | null;
+	startDate?: Date;
+	endDate?: Date | null;
+	scheduledTime?: Date | null;
+	isAllDay?: boolean;
+	visibility?: "PUBLIC" | "PRIVATE";
+	completed?: boolean;
+}
+
+export interface GetTodosParams {
+	userId: string;
+	cursor?: number;
+	size?: number;
+	completed?: boolean;
+	startDate?: Date;
+	endDate?: Date;
+}
 
 @Injectable()
 export class TodoService {
@@ -20,86 +48,265 @@ export class TodoService {
 		private readonly paginationService: PaginationService,
 	) {}
 
-	async findAll() {
-		return this.todoRepository.findAll();
+	/**
+	 * Todo 생성
+	 */
+	async create(data: CreateTodoData): Promise<Todo> {
+		const todo = await this.todoRepository.create({
+			user: { connect: { id: data.userId } },
+			title: data.title,
+			content: data.content,
+			color: data.color,
+			startDate: data.startDate,
+			endDate: data.endDate,
+			scheduledTime: data.scheduledTime,
+			isAllDay: data.isAllDay ?? true,
+			visibility: data.visibility ?? "PUBLIC",
+		});
+
+		this.logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
+
+		return todo;
 	}
 
 	/**
-	 * 오프셋 기반 페이지네이션 조회
+	 * 단일 Todo 조회
 	 */
-	async findAllPaginated(
-		params: NormalizedPagination,
-	): Promise<PaginatedResponse<Todo>> {
-		const { items, total } = await this.todoRepository.findAllWithPagination({
-			skip: params.skip,
-			take: params.take,
-		});
+	async findById(id: number, userId: string): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
-		return this.paginationService.createPaginatedResponse({
-			items,
-			page: params.page,
-			size: params.size,
-			total,
-		});
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		this.logger.debug(`Todo retrieved: ${id} for user: ${userId}`);
+
+		return todo;
 	}
 
 	/**
-	 * 커서 기반 페이지네이션 조회
+	 * Todo 목록 조회 (커서 기반 페이지네이션)
 	 */
-	async findAllWithCursor(
-		params: CursorPaginationParams,
+	async findMany(
+		params: GetTodosParams,
 	): Promise<CursorPaginatedResponse<Todo>> {
-		const { cursor, size, take } =
-			this.paginationService.normalizeCursorPagination(params);
-
-		const items = await this.todoRepository.findAllWithCursor({
-			cursor,
-			take,
+		const { cursor, size } = this.paginationService.normalizeCursorPagination({
+			cursor: params.cursor,
+			size: params.size,
 		});
+
+		const repoParams: FindTodosParams = {
+			userId: params.userId,
+			cursor,
+			size,
+			completed: params.completed,
+			startDate: params.startDate,
+			endDate: params.endDate,
+		};
+
+		const todos = await this.todoRepository.findManyByUserId(repoParams);
+
+		this.logger.debug(
+			`Todos listed: ${todos.length} items for user: ${params.userId}`,
+		);
 
 		return this.paginationService.createCursorPaginatedResponse({
-			items,
+			items: todos,
 			size,
 			cursor,
 		});
 	}
 
-	async findById(id: string) {
-		const todo = await this.todoRepository.findById(id);
-		if (!todo) throw BusinessExceptions.todoNotFound(id);
-		return todo;
+	/**
+	 * Todo 수정
+	 */
+	async update(
+		id: number,
+		userId: string,
+		data: UpdateTodoData,
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		// 완료 상태 변경 시 completedAt 자동 설정
+		const updateData: UpdateTodoData & { completedAt?: Date | null } = {
+			...data,
+		};
+
+		if (data.completed !== undefined) {
+			if (data.completed && !todo.completed) {
+				// 완료로 변경
+				updateData.completedAt = new Date();
+			} else if (!data.completed && todo.completed) {
+				// 미완료로 변경
+				updateData.completedAt = null;
+			}
+		}
+
+		const updatedTodo = await this.todoRepository.update(id, updateData);
+
+		this.logger.log(`Todo updated: ${id} for user: ${userId}`);
+
+		return updatedTodo;
 	}
 
-	async create(userId: string, dto: CreateTodoDto) {
-		const todo = await this.todoRepository.create({
-			userId,
-			title: dto.title,
-			content: dto.content,
-			color: dto.color,
-			startDate: dto.startDate,
-			endDate: dto.endDate,
-			scheduledTime: dto.scheduledTime,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
+	/**
+	 * Todo 삭제
+	 */
+	async delete(id: number, userId: string): Promise<void> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		await this.todoRepository.delete(id);
+
+		this.logger.log(`Todo deleted: ${id} for user: ${userId}`);
+	}
+
+	// ===== 액션별 수정 메서드 (SRP) =====
+
+	/**
+	 * Todo 완료 상태 토글
+	 */
+	async toggleComplete(
+		id: number,
+		userId: string,
+		data: { completed: boolean },
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		const updateData = {
+			completed: data.completed,
+			completedAt: data.completed ? new Date() : null,
+		};
+
+		const updatedTodo = await this.todoRepository.update(id, updateData);
+
+		this.logger.log(
+			`Todo completion toggled: ${id} -> ${data.completed} for user: ${userId}`,
+		);
+
+		return updatedTodo;
+	}
+
+	/**
+	 * Todo 공개 범위 변경
+	 */
+	async updateVisibility(
+		id: number,
+		userId: string,
+		data: { visibility: "PUBLIC" | "PRIVATE" },
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		const updatedTodo = await this.todoRepository.update(id, {
+			visibility: data.visibility,
 		});
 
-		this.logger.log(`할 일 생성 완료: todoId=${todo.id}, userId=${userId}`);
-		return todo;
+		this.logger.log(
+			`Todo visibility updated: ${id} -> ${data.visibility} for user: ${userId}`,
+		);
+
+		return updatedTodo;
 	}
 
-	async update(id: string, dto: UpdateTodoDto) {
-		await this.findById(id);
-		const todo = await this.todoRepository.update(id, dto);
+	/**
+	 * Todo 색상 변경
+	 */
+	async updateColor(
+		id: number,
+		userId: string,
+		data: { color: string | null },
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
-		this.logger.log(`할 일 수정 완료: todoId=${id}`);
-		return todo;
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		const updatedTodo = await this.todoRepository.update(id, {
+			color: data.color,
+		});
+
+		this.logger.log(`Todo color updated: ${id} for user: ${userId}`);
+
+		return updatedTodo;
 	}
 
-	async delete(id: string) {
-		await this.findById(id);
-		const deletedTodo = await this.todoRepository.delete(id);
+	/**
+	 * Todo 일정 변경
+	 */
+	async updateSchedule(
+		id: number,
+		userId: string,
+		data: {
+			startDate: string;
+			endDate?: string | null;
+			scheduledTime?: string | null;
+			isAllDay?: boolean;
+		},
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
-		this.logger.log(`할 일 삭제 완료: todoId=${id}`);
-		return deletedTodo;
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		const updatedTodo = await this.todoRepository.update(id, {
+			startDate: new Date(data.startDate),
+			endDate: data.endDate ? new Date(data.endDate) : null,
+			scheduledTime: data.scheduledTime
+				? new Date(`1970-01-01T${data.scheduledTime}:00Z`)
+				: null,
+			isAllDay: data.isAllDay ?? true,
+		});
+
+		this.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
+
+		return updatedTodo;
+	}
+
+	/**
+	 * Todo 제목/내용 수정
+	 */
+	async updateContent(
+		id: number,
+		userId: string,
+		data: { title?: string; content?: string | null },
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		const updateData: { title?: string; content?: string | null } = {};
+
+		if (data.title !== undefined) {
+			updateData.title = data.title;
+		}
+
+		if (data.content !== undefined) {
+			updateData.content = data.content;
+		}
+
+		const updatedTodo = await this.todoRepository.update(id, updateData);
+
+		this.logger.log(`Todo content updated: ${id} for user: ${userId}`);
+
+		return updatedTodo;
 	}
 }

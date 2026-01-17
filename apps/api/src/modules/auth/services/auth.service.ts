@@ -964,18 +964,27 @@ export class AuthService {
 	 */
 	async getCurrentUser(
 		userId: string,
-		email: string,
+		_email: string,
 		sessionId: string,
 	): Promise<CurrentUserResult> {
-		const userWithProfile =
-			await this.userRepository.findByIdWithProfile(userId);
+		const user = await this.userRepository.findByIdWithProfile(userId);
+
+		if (!user) {
+			throw BusinessExceptions.userNotFound(userId);
+		}
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
 			sessionId,
-			name: userWithProfile?.profile?.name ?? null,
-			profileImage: userWithProfile?.profile?.profileImage ?? null,
+			userTag: user.userTag,
+			status: user.status,
+			emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+			subscriptionStatus: user.subscriptionStatus,
+			subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() ?? null,
+			name: user.profile?.name ?? null,
+			profileImage: user.profile?.profileImage ?? null,
+			createdAt: user.createdAt.toISOString(),
 		};
 	}
 

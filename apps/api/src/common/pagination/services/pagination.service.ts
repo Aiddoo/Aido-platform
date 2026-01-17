@@ -107,7 +107,7 @@ export class PaginationService {
 	 * 커서 기반 페이지네이션 파라미터 정규화
 	 */
 	normalizeCursorPagination(params: CursorPaginationParams): {
-		cursor: string | undefined;
+		cursor: number | undefined;
 		size: number;
 		take: number;
 	} {
@@ -129,10 +129,10 @@ export class PaginationService {
 	/**
 	 * 커서 기반 페이지네이션 정보 생성
 	 */
-	createCursorPaginationInfo<T extends { id: string }>(params: {
+	createCursorPaginationInfo<T extends { id: number }>(params: {
 		items: T[];
 		size: number;
-		cursor?: string;
+		cursor?: number;
 	}): CursorPaginationInfo {
 		const { items, size, cursor } = params;
 		const hasNext = items.length > size;
@@ -155,10 +155,10 @@ export class PaginationService {
 	/**
 	 * 커서 기반 페이지네이션 응답 생성
 	 */
-	createCursorPaginatedResponse<T extends { id: string }>(params: {
+	createCursorPaginatedResponse<T extends { id: number }>(params: {
 		items: T[];
 		size: number;
-		cursor?: string;
+		cursor?: number;
 	}): CursorPaginatedResponse<T> {
 		const { items, size, cursor } = params;
 		const hasNext = items.length > size;
@@ -265,7 +265,7 @@ export class PaginationUtil {
 	 * 커서 기반 페이지네이션 파라미터 정규화
 	 */
 	static normalizeCursorPagination(params: CursorPaginationParams): {
-		cursor: string | undefined;
+		cursor: number | undefined;
 		size: number;
 		take: number;
 	} {
@@ -287,10 +287,10 @@ export class PaginationUtil {
 	/**
 	 * 커서 기반 페이지네이션 정보 생성
 	 */
-	static createCursorPaginationInfo<T extends { id: string }>(params: {
+	static createCursorPaginationInfo<T extends { id: number }>(params: {
 		items: T[];
 		size: number;
-		cursor?: string;
+		cursor?: number;
 	}): CursorPaginationInfo {
 		const { items, size, cursor } = params;
 		const hasNext = items.length > size;
@@ -312,10 +312,10 @@ export class PaginationUtil {
 	/**
 	 * 커서 기반 페이지네이션 응답 생성
 	 */
-	static createCursorPaginatedResponse<T extends { id: string }>(params: {
+	static createCursorPaginatedResponse<T extends { id: number }>(params: {
 		items: T[];
 		size: number;
-		cursor?: string;
+		cursor?: number;
 	}): CursorPaginatedResponse<T> {
 		const { items, size, cursor } = params;
 		const hasNext = items.length > size;

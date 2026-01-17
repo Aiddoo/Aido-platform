@@ -21,6 +21,9 @@ model User {
   id    String @id @default(cuid())
   email String @unique @db.VarChar(255)
 
+  // 사용자 태그 (8자리 영숫자, 예: "ABC12DEF") - 해시태그처럼 다른 사용자가 검색할 수 있는 고유 식별자
+  userTag String @unique @db.VarChar(8)
+
   // 상태
   status          UserStatus @default(PENDING_VERIFY)
   emailVerifiedAt DateTime?
@@ -54,17 +57,21 @@ model User {
   verifications Verification[]
 
   // 관계: Todo 앱
-  pushTokens          PushToken[]
-  todos               Todo[]
-  friendshipsAsUser   Friendship[]        @relation("friendships_user")
-  friendshipsAsFriend Friendship[]        @relation("friendships_friend")
-  notifications       Notification[]
-  weeklyAchievements  WeeklyAchievement[]
-  subscriptions       Subscription[]
+  pushTokens         PushToken[]
+  todos              Todo[]
+  following          Follow[]            @relation("user_following")
+  followers          Follow[]            @relation("user_followers")
+  sentNudges         Nudge[]             @relation("nudge_sender")
+  receivedNudges     Nudge[]             @relation("nudge_receiver")
+  dailyCompletions   DailyCompletion[]
+  notifications      Notification[]
+  weeklyAchievements WeeklyAchievement[]
+  subscriptions      Subscription[]
 
   @@index([status])
   @@index([subscriptionStatus])
   @@index([deletedAt])
+  @@index([userTag])
 }
 
 enum UserStatus {
@@ -341,7 +348,7 @@ model OAuthState {
 // =============================================================================
 
 model Todo {
-  id     String @id @default(cuid())
+  id     Int    @id @default(autoincrement())
   userId String
 
   // 내용
@@ -367,7 +374,8 @@ model Todo {
   updatedAt DateTime @updatedAt
 
   // 관계
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nudges Nudge[]
 
   @@index([userId, startDate, endDate])
   @@index([userId, completed, startDate])
@@ -379,33 +387,69 @@ enum TodoVisibility {
 }
 
 // =============================================================================
-// Todo 앱 - 친구
+// Todo 앱 - 팔로우 (일방향)
 // =============================================================================
 
-model Friendship {
-  id          String           @id @default(cuid())
-  userId      String // 이 레코드의 소유자
-  friendId    String // 친구
-  status      FriendshipStatus @default(PENDING)
-  isRequester Boolean // 요청을 보낸 쪽인지
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String // 팔로우하는 사람
+  followingId String // 팔로우 당하는 사람
+  createdAt   DateTime @default(now())
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  acceptedAt DateTime?
+  follower  User @relation("user_following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("user_followers", fields: [followingId], references: [id], onDelete: Cascade)
 
-  // 관계
-  user   User @relation("friendships_user", fields: [userId], references: [id], onDelete: Cascade)
-  friend User @relation("friendships_friend", fields: [friendId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, friendId])
-  @@index([userId, status])
-  @@index([friendId])
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
-enum FriendshipStatus {
-  PENDING // 대기
-  ACCEPTED // 수락
-  BLOCKED // 차단
+// =============================================================================
+// Todo 앱 - 콕 찌르기 (Nudge)
+// =============================================================================
+// 친구에게 "잊지 마!" 하고 살짝 찔러주는 기능
+// 제한 규칙 (비즈니스 로직에서 처리):
+// - FREE 사용자: 3회/일
+// - ACTIVE 구독자: 무제한
+// - 같은 할 일 재찌르기: 24시간 쿨다운
+
+model Nudge {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  todoId     Int
+  message    String?   @db.VarChar(200) // 응원 메시지 (선택)
+  createdAt  DateTime  @default(now())
+  readAt     DateTime? // 확인 시각
+
+  sender   User @relation("nudge_sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("nudge_receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  todo     Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, createdAt]) // 받은 콕 찌름 목록 조회
+  @@index([senderId, createdAt]) // 보낸 콕 찌름 목록 조회 (일일 제한 체크용)
+  @@index([todoId]) // 특정 할 일에 대한 콕 찌름 조회
+  @@index([senderId, todoId, createdAt]) // 같은 할 일 재찌르기 쿨다운 체크
+}
+
+// =============================================================================
+// Todo 앱 - 일일 완료 (물고기 표시)
+// =============================================================================
+
+model DailyCompletion {
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime @db.Date // 완료 날짜
+  totalTodos     Int // 해당 날짜 총 Todo 수
+  completedTodos Int // 완료한 Todo 수
+  achievedAt     DateTime // 100% 달성 시점
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // 사용자당 날짜별 1개
+  @@index([userId, date]) // 캘린더 조회용
 }
 
 // =============================================================================
@@ -453,8 +497,9 @@ model Notification {
   actionTarget String?                @db.VarChar(500) // 내부: "/todos/123", 외부: "https://..."
 
   // === 참조 ID (타입 안전성) ===
-  todoId   String? // VIEW_TODO 시
-  friendId String? // VIEW_FRIEND, FRIEND_REQUEST 시
+  todoId   Int? // VIEW_TODO 시
+  friendId String? // VIEW_FRIEND, FOLLOW_NEW 시
+  nudgeId  String? // NUDGE_RECEIVED 시
 
   // === 메타데이터 (확장용) ===
   metadata Json? // 추후 확장 데이터
@@ -471,9 +516,14 @@ model Notification {
 }
 
 enum NotificationType {
-  // 친구
-  FRIEND_REQUEST
-  FRIEND_ACCEPTED
+  // 팔로우
+  FOLLOW_NEW // 새 팔로워 알림
+
+  // 독촉
+  NUDGE_RECEIVED // 독촉 받음
+
+  // 일일 완료
+  DAILY_COMPLETE // 일일 완료
 
   // Todo
   TODO_REMINDER

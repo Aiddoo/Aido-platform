@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { now } from "@/common/date/utils";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,
@@ -55,7 +56,7 @@ export class VerificationRepository {
 				userId,
 				type,
 				usedAt: null, // 미사용
-				expiresAt: { gt: new Date() }, // 유효
+				expiresAt: { gt: now() }, // 유효
 			},
 			orderBy: { createdAt: "desc" },
 		});
@@ -78,7 +79,7 @@ export class VerificationRepository {
 				userId,
 				type,
 				usedAt: null,
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 			},
 			orderBy: { createdAt: "desc" },
 		});
@@ -94,7 +95,7 @@ export class VerificationRepository {
 		const client = tx ?? this.database;
 		return client.verification.update({
 			where: { id },
-			data: { usedAt: new Date() },
+			data: { usedAt: now() },
 		});
 	}
 
@@ -141,10 +142,10 @@ export class VerificationRepository {
 				userId,
 				type,
 				usedAt: null,
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 				attempts: { lt: maxAttempts },
 			},
-			data: { usedAt: new Date() },
+			data: { usedAt: now() },
 		});
 
 		if (result.count === 0) {
@@ -172,9 +173,9 @@ export class VerificationRepository {
 				userId,
 				type,
 				usedAt: null,
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 			},
-			data: { expiresAt: new Date() },
+			data: { expiresAt: now() },
 		});
 		return result.count;
 	}
@@ -204,7 +205,7 @@ export class VerificationRepository {
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.verification.deleteMany({
 			where: {
-				OR: [{ expiresAt: { lt: new Date() } }, { usedAt: { not: null } }],
+				OR: [{ expiresAt: { lt: now() } }, { usedAt: { not: null } }],
 			},
 		});
 		return result.count;

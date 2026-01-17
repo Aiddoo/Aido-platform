@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { subtractDays } from "@/common/date/utils";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,
@@ -113,8 +114,7 @@ export class SecurityLogRepository {
 	 * 오래된 로그 정리 (배치 작업용, 90일 보관)
 	 */
 	async deleteOld(retentionDays = 90): Promise<number> {
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - retentionDays);
+		const cutoff = subtractDays(retentionDays);
 
 		const result = await this.database.securityLog.deleteMany({
 			where: {

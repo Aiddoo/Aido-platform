@@ -1,9 +1,18 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { User, UserStatus } from "@/generated/prisma/client";
-
+import * as userTagUtil from "../utils/user-tag.util";
 import { UserRepository } from "./user.repository";
+
+// 유틸리티 함수 모킹
+jest.mock("../utils/user-tag.util");
+const mockGenerateUserTag = userTagUtil.generateUserTag as jest.MockedFunction<
+	typeof userTagUtil.generateUserTag
+>;
+
+// 테스트용 상수
+const TEST_USER_TAG = "XY7Z9W3K";
 
 describe("UserRepository", () => {
 	let repository: UserRepository;
@@ -20,6 +29,7 @@ describe("UserRepository", () => {
 	const mockUser: User = {
 		id: "user-123",
 		email: "test@example.com",
+		userTag: "ABC12DEF",
 		status: "ACTIVE" as UserStatus,
 		emailVerifiedAt: new Date("2024-01-01"),
 		twoFactorEnabled: false,
@@ -55,6 +65,9 @@ describe("UserRepository", () => {
 		}).compile();
 
 		repository = module.get<UserRepository>(UserRepository);
+
+		// 기본 모킹 설정
+		mockGenerateUserTag.mockReturnValue(TEST_USER_TAG);
 	});
 
 	afterEach(() => {
@@ -165,8 +178,11 @@ describe("UserRepository", () => {
 			const userWithProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
+				userTag: mockUser.userTag,
 				status: mockUser.status,
 				emailVerifiedAt: mockUser.emailVerifiedAt,
+				subscriptionStatus: mockUser.subscriptionStatus,
+				subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
 				createdAt: mockUser.createdAt,
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: {
@@ -186,8 +202,11 @@ describe("UserRepository", () => {
 				select: {
 					id: true,
 					email: true,
+					userTag: true,
 					status: true,
 					emailVerifiedAt: true,
+					subscriptionStatus: true,
+					subscriptionExpiresAt: true,
 					createdAt: true,
 					lastLoginAt: true,
 					profile: {
@@ -205,8 +224,11 @@ describe("UserRepository", () => {
 			const userWithoutProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
+				userTag: mockUser.userTag,
 				status: mockUser.status,
 				emailVerifiedAt: mockUser.emailVerifiedAt,
+				subscriptionStatus: mockUser.subscriptionStatus,
+				subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
 				createdAt: mockUser.createdAt,
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: null,
@@ -255,10 +277,13 @@ describe("UserRepository", () => {
 				email: "new@example.com",
 				status: "PENDING_VERIFICATION" as UserStatus,
 			};
+			// userTag 중복 체크용 - null 반환으로 고유한 태그임을 나타냄
+			mockDatabase.user.findUnique.mockResolvedValue(null);
 			mockDatabase.user.create.mockResolvedValue({
 				...mockUser,
 				...createData,
 				id: "new-user-123",
+				userTag: TEST_USER_TAG,
 			});
 
 			// When
@@ -266,8 +291,14 @@ describe("UserRepository", () => {
 
 			// Then
 			expect(result.email).toBe("new@example.com");
+			expect(result.userTag).toBe(TEST_USER_TAG);
+			expect(mockGenerateUserTag).toHaveBeenCalled();
 			expect(mockDatabase.user.create).toHaveBeenCalledWith({
-				data: createData,
+				data: expect.objectContaining({
+					email: createData.email,
+					status: createData.status,
+					userTag: TEST_USER_TAG,
+				}),
 			});
 		});
 
@@ -277,26 +308,29 @@ describe("UserRepository", () => {
 				email: "new@example.com",
 				status: "PENDING_VERIFICATION" as UserStatus,
 			};
-			const mockTx = {
-				user: {
-					create: jest.fn().mockResolvedValue({
-						...mockUser,
-						...createData,
-						id: "tx-user-123",
-					}),
-				},
-			};
+			const mockTx = createMockTxClient();
+			// userTag 중복 체크용
+			mockTx.user.findUnique.mockResolvedValue(null);
+			mockTx.user.create.mockResolvedValue({
+				...mockUser,
+				...createData,
+				id: "tx-user-123",
+				userTag: TEST_USER_TAG,
+			});
 
 			// When
-			const result = await repository.create(
-				createData,
-				mockTx as unknown as Parameters<typeof repository.create>[1],
-			);
+			const result = await repository.create(createData, asTxClient(mockTx));
 
 			// Then
 			expect(result.id).toBe("tx-user-123");
+			expect(result.userTag).toBe(TEST_USER_TAG);
+			expect(mockGenerateUserTag).toHaveBeenCalled();
 			expect(mockTx.user.create).toHaveBeenCalledWith({
-				data: createData,
+				data: expect.objectContaining({
+					email: createData.email,
+					status: createData.status,
+					userTag: TEST_USER_TAG,
+				}),
 			});
 		});
 	});
@@ -320,21 +354,14 @@ describe("UserRepository", () => {
 
 		it("트랜잭션 내에서 상태를 업데이트한다", async () => {
 			// Given
-			const mockTx = {
-				user: {
-					update: jest.fn().mockResolvedValue({
-						...mockUser,
-						status: "ACTIVE" as UserStatus,
-					}),
-				},
-			};
+			const mockTx = createMockTxClient();
+			mockTx.user.update.mockResolvedValue({
+				...mockUser,
+				status: "ACTIVE" as UserStatus,
+			});
 
 			// When
-			await repository.updateStatus(
-				"user-123",
-				"ACTIVE",
-				mockTx as unknown as Parameters<typeof repository.updateStatus>[2],
-			);
+			await repository.updateStatus("user-123", "ACTIVE", asTxClient(mockTx));
 
 			// Then
 			expect(mockTx.user.update).toHaveBeenCalledWith({
@@ -371,21 +398,15 @@ describe("UserRepository", () => {
 
 		it("트랜잭션 내에서 인증 완료 처리한다", async () => {
 			// Given
-			const mockTx = {
-				user: {
-					update: jest.fn().mockResolvedValue({
-						...mockUser,
-						emailVerifiedAt: new Date(),
-						status: "ACTIVE" as UserStatus,
-					}),
-				},
-			};
+			const mockTx = createMockTxClient();
+			mockTx.user.update.mockResolvedValue({
+				...mockUser,
+				emailVerifiedAt: new Date(),
+				status: "ACTIVE" as UserStatus,
+			});
 
 			// When
-			await repository.markEmailVerified(
-				"user-123",
-				mockTx as unknown as Parameters<typeof repository.markEmailVerified>[1],
-			);
+			await repository.markEmailVerified("user-123", asTxClient(mockTx));
 
 			// Then
 			expect(mockTx.user.update).toHaveBeenCalledWith({
@@ -418,20 +439,14 @@ describe("UserRepository", () => {
 
 		it("트랜잭션 내에서 로그인 시간을 업데이트한다", async () => {
 			// Given
-			const mockTx = {
-				user: {
-					update: jest.fn().mockResolvedValue({
-						...mockUser,
-						lastLoginAt: new Date(),
-					}),
-				},
-			};
+			const mockTx = createMockTxClient();
+			mockTx.user.update.mockResolvedValue({
+				...mockUser,
+				lastLoginAt: new Date(),
+			});
 
 			// When
-			await repository.updateLastLoginAt(
-				"user-123",
-				mockTx as unknown as Parameters<typeof repository.updateLastLoginAt>[1],
-			);
+			await repository.updateLastLoginAt("user-123", asTxClient(mockTx));
 
 			// Then
 			expect(mockTx.user.update).toHaveBeenCalledWith({

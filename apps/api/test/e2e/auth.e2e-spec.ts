@@ -164,7 +164,7 @@ describe("Auth (e2e)", () => {
 				.expect(409);
 
 			expect(response.body.success).toBe(false);
-			expect(response.body.error.code).toBe("EMAIL_ALREADY_REGISTERED");
+			expect(response.body.error.code).toBe("EMAIL_0501");
 		});
 
 		it("POST /auth/verify-email - 이메일 인증", async () => {
@@ -207,7 +207,7 @@ describe("Auth (e2e)", () => {
 				.expect(401);
 
 			expect(response.body.success).toBe(false);
-			expect(response.body.error.code).toBe("VERIFICATION_CODE_INVALID");
+			expect(response.body.error.code).toBe("VERIFY_0751");
 		});
 	});
 
@@ -284,7 +284,7 @@ describe("Auth (e2e)", () => {
 				.expect(401);
 
 			expect(response.body.success).toBe(false);
-			expect(response.body.error.code).toBe("INVALID_CREDENTIALS");
+			expect(response.body.error.code).toBe("USER_0602");
 		});
 
 		it("POST /auth/login - 존재하지 않는 이메일 거부", async () => {
@@ -297,7 +297,7 @@ describe("Auth (e2e)", () => {
 				.expect(401);
 
 			expect(response.body.success).toBe(false);
-			expect(response.body.error.code).toBe("INVALID_CREDENTIALS");
+			expect(response.body.error.code).toBe("USER_0602");
 		});
 
 		it("GET /auth/me - 인증된 사용자 정보 조회", async () => {
@@ -605,11 +605,9 @@ describe("Auth (e2e)", () => {
 
 			expect(meRes.body.success).toBe(false);
 			// 세션이 폐기되었거나 토큰이 무효화됨
-			expect([
-				"SESSION_REVOKED",
-				"SESSION_NOT_FOUND",
-				"INVALID_TOKEN",
-			]).toContain(meRes.body.error.code);
+			expect(["SESSION_0703", "SESSION_0701", "AUTH_0101"]).toContain(
+				meRes.body.error.code,
+			);
 		});
 
 		it("세션 폐기 후 Refresh Token 사용 거부", async () => {
@@ -677,7 +675,7 @@ describe("Auth (e2e)", () => {
 				.expect(429);
 
 			expect(res.body.success).toBe(false);
-			expect(res.body.error.code).toBe("VERIFICATION_MAX_ATTEMPTS_EXCEEDED");
+			expect(res.body.error.code).toBe("VERIFY_0754");
 		});
 
 		it("토큰 재사용 감지 및 전체 세션 폐기", async () => {
@@ -707,7 +705,7 @@ describe("Auth (e2e)", () => {
 				.expect(401);
 
 			expect(reuseRes.body.success).toBe(false);
-			expect(reuseRes.body.error.code).toBe("TOKEN_REUSE_DETECTED");
+			expect(reuseRes.body.error.code).toBe("SESSION_0704");
 
 			// 4. 새 토큰도 사용 불가 확인 (전체 패밀리 폐기)
 			const newTokenRes = await request(app.getHttpServer())
@@ -717,11 +715,9 @@ describe("Auth (e2e)", () => {
 
 			expect(newTokenRes.body.success).toBe(false);
 			// 세션 자체가 폐기되었으므로 SESSION_REVOKED 또는 SESSION_NOT_FOUND
-			expect([
-				"SESSION_REVOKED",
-				"SESSION_NOT_FOUND",
-				"TOKEN_REUSE_DETECTED",
-			]).toContain(newTokenRes.body.error.code);
+			expect(["SESSION_0703", "SESSION_0701", "SESSION_0704"]).toContain(
+				newTokenRes.body.error.code,
+			);
 		});
 
 		it("로그인 실패 5회 후 계정 잠금", async () => {
@@ -751,9 +747,9 @@ describe("Auth (e2e)", () => {
 				.expect(423);
 
 			expect(lockRes.body.success).toBe(false);
-			expect(lockRes.body.error.code).toBe("ACCOUNT_LOCKED");
+			expect(lockRes.body.error.code).toBe("USER_0607");
 
-			// 6번째 시도에서도 ACCOUNT_LOCKED 오류 확인
+			// 6번째 시도에서도 USER_0607 (계정 잠금) 오류 확인
 			const res = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -763,7 +759,7 @@ describe("Auth (e2e)", () => {
 				.expect(423);
 
 			expect(res.body.success).toBe(false);
-			expect(res.body.error.code).toBe("ACCOUNT_LOCKED");
+			expect(res.body.error.code).toBe("USER_0607");
 		});
 	});
 
@@ -847,8 +843,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(true);
 			expect(latestAttempt.failureReason).toBeNull();
 		});
@@ -872,8 +869,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(true);
 			expect(latestAttempt.failureReason).toBeNull();
 		});
@@ -897,8 +895,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(true);
 			expect(latestAttempt.failureReason).toBeNull();
 		});
@@ -922,8 +921,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(true);
 			expect(latestAttempt.failureReason).toBeNull();
 		});
@@ -950,8 +950,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(false);
 			expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
 		});
@@ -978,8 +979,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(false);
 			expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
 		});
@@ -1004,8 +1006,9 @@ describe("Auth (e2e)", () => {
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
-			const latestAttempt = loginAttempts[0]!;
+			const latestAttempt = loginAttempts[0];
 			expect(latestAttempt).toBeDefined();
+			if (!latestAttempt) throw new Error("latestAttempt is undefined");
 			expect(latestAttempt.success).toBe(true);
 			// IP와 UserAgent가 기록되었는지 확인 (정확한 값은 프록시 설정에 따라 다를 수 있음)
 			expect(latestAttempt.ipAddress).toBeTruthy();

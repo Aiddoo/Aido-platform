@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 
+import { addMinutes, now } from "@/common/date/utils";
 import { DatabaseService } from "@/database";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
 
@@ -36,9 +37,7 @@ export class OAuthStateRepository {
 			expiresInMinutes?: number;
 		},
 	): Promise<OAuthState> {
-		const expiresAt = new Date(
-			Date.now() + (options?.expiresInMinutes ?? 10) * 60 * 1000,
-		);
+		const expiresAt = addMinutes(options?.expiresInMinutes ?? 10);
 
 		return this.database.oAuthState.create({
 			data: {
@@ -60,7 +59,7 @@ export class OAuthStateRepository {
 		return this.database.oAuthState.findFirst({
 			where: {
 				state,
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 			},
 		});
 	}
@@ -74,7 +73,7 @@ export class OAuthStateRepository {
 			where: {
 				exchangeCode,
 				exchangedAt: null, // 아직 교환되지 않은 것만
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 			},
 		});
 	}
@@ -117,7 +116,7 @@ export class OAuthStateRepository {
 		return this.database.oAuthState.update({
 			where: { id },
 			data: {
-				exchangedAt: new Date(),
+				exchangedAt: now(),
 				// 교환 완료 후 토큰 삭제 (보안)
 				accessToken: null,
 				refreshToken: null,
@@ -140,7 +139,7 @@ export class OAuthStateRepository {
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.oAuthState.deleteMany({
 			where: {
-				expiresAt: { lt: new Date() },
+				expiresAt: { lt: now() },
 			},
 		});
 		return result.count;

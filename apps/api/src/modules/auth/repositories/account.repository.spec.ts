@@ -1,33 +1,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { Account } from "@/generated/prisma/client";
 
 import { AccountRepository } from "./account.repository";
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 타입 정의
- */
-type MockAccountClient = {
-	account: {
-		create?: jest.Mock;
-		update?: jest.Mock;
-		delete?: jest.Mock;
-	};
-};
-
-/**
- * 테스트용 mock 트랜잭션 클라이언트 생성
- */
-function createMockTransactionClient(accountMethods: {
-	create?: jest.Mock;
-	update?: jest.Mock;
-	delete?: jest.Mock;
-}): MockAccountClient {
-	return {
-		account: accountMethods,
-	};
-}
 
 describe("AccountRepository", () => {
 	let repository: AccountRepository;
@@ -191,21 +167,19 @@ describe("AccountRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const createMock = jest.fn().mockResolvedValue(mockCredentialAccount);
-			const mockTx = createMockTransactionClient({ create: createMock });
+			const mockTx = createMockTxClient();
+			mockTx.account.create.mockResolvedValue(mockCredentialAccount);
 
 			// When
 			const result = await repository.createCredentialAccount(
 				"user-123",
 				"hashed-password",
-				mockTx as unknown as Parameters<
-					typeof repository.createCredentialAccount
-				>[2],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(mockCredentialAccount);
-			expect(createMock).toHaveBeenCalledWith({
+			expect(mockTx.account.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
 					provider: "CREDENTIAL",
@@ -246,19 +220,19 @@ describe("AccountRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 업데이트한다", async () => {
 			// Given
-			const updateMock = jest.fn().mockResolvedValue(updatedAccount);
-			const mockTx = createMockTransactionClient({ update: updateMock });
+			const mockTx = createMockTxClient();
+			mockTx.account.update.mockResolvedValue(updatedAccount);
 
 			// When
 			const result = await repository.updatePassword(
 				"user-123",
 				"new-hashed-password",
-				mockTx as unknown as Parameters<typeof repository.updatePassword>[2],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(updatedAccount);
-			expect(updateMock).toHaveBeenCalledWith({
+			expect(mockTx.account.update).toHaveBeenCalledWith({
 				where: {
 					userId_provider: { userId: "user-123", provider: "CREDENTIAL" },
 				},
@@ -339,20 +313,18 @@ describe("AccountRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const createMock = jest.fn().mockResolvedValue(mockOAuthAccount);
-			const mockTx = createMockTransactionClient({ create: createMock });
+			const mockTx = createMockTxClient();
+			mockTx.account.create.mockResolvedValue(mockOAuthAccount);
 
 			// When
 			const result = await repository.createOAuthAccount(
 				oAuthData,
-				mockTx as unknown as Parameters<
-					typeof repository.createOAuthAccount
-				>[1],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
-			expect(createMock).toHaveBeenCalled();
+			expect(mockTx.account.create).toHaveBeenCalled();
 			expect(mockDatabase.account.create).not.toHaveBeenCalled();
 		});
 	});
@@ -427,8 +399,8 @@ describe("AccountRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 갱신한다", async () => {
 			// Given
-			const updateMock = jest.fn().mockResolvedValue(updatedOAuthAccount);
-			const mockTx = createMockTransactionClient({ update: updateMock });
+			const mockTx = createMockTxClient();
+			mockTx.account.update.mockResolvedValue(updatedOAuthAccount);
 			const tokens = {
 				accessToken: "new-access-token",
 				refreshToken: "new-refresh-token",
@@ -439,12 +411,12 @@ describe("AccountRepository", () => {
 				"user-123",
 				"GOOGLE",
 				tokens,
-				mockTx as unknown as Parameters<typeof repository.updateOAuthTokens>[3],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(updatedOAuthAccount);
-			expect(updateMock).toHaveBeenCalled();
+			expect(mockTx.account.update).toHaveBeenCalled();
 			expect(mockDatabase.account.update).not.toHaveBeenCalled();
 		});
 	});
@@ -468,19 +440,19 @@ describe("AccountRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 삭제한다", async () => {
 			// Given
-			const deleteMock = jest.fn().mockResolvedValue(mockOAuthAccount);
-			const mockTx = createMockTransactionClient({ delete: deleteMock });
+			const mockTx = createMockTxClient();
+			mockTx.account.delete.mockResolvedValue(mockOAuthAccount);
 
 			// When
 			const result = await repository.deleteAccount(
 				"user-123",
 				"GOOGLE",
-				mockTx as unknown as Parameters<typeof repository.deleteAccount>[2],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(mockOAuthAccount);
-			expect(deleteMock).toHaveBeenCalledWith({
+			expect(mockTx.account.delete).toHaveBeenCalledWith({
 				where: {
 					userId_provider: { userId: "user-123", provider: "GOOGLE" },
 				},
