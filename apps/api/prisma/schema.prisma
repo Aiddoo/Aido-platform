@@ -266,6 +266,8 @@ enum SecurityEvent {
   // OAuth
   OAUTH_LINKED
   OAUTH_UNLINKED
+  OAUTH_AUTO_LINKED // 소셜 계정 자동 연동 (신뢰된 Provider)
+  OAUTH_LINK_REQUIRED // 소셜 계정 연동 필요 (이메일 충돌)
 }
 
 // =============================================================================
@@ -295,8 +297,11 @@ enum VerificationType {
 }
 
 // =============================================================================
-// 인증 - OAuth 상태 (CSRF/PKCE)
+// 인증 - OAuth 상태 (CSRF/PKCE/교환 코드)
 // =============================================================================
+// 1단계: OAuth 시작 시 state, codeVerifier 저장 (CSRF/PKCE)
+// 2단계: 콜백 성공 시 exchangeCode, tokens 저장
+// 3단계: 앱에서 /exchange 호출 시 코드 검증 후 삭제
 
 model OAuthState {
   id           Int             @id @default(autoincrement())
@@ -305,10 +310,30 @@ model OAuthState {
   provider     AccountProvider
   redirectUri  String          @db.VarChar(500)
 
-  expiresAt DateTime
+  // === 교환 코드 (콜백 성공 후 설정) ===
+  exchangeCode String? @unique @db.VarChar(64) // 일회용 교환 코드
+
+  // 인증 결과 (암호화 저장, 콜백 성공 후 설정)
+  accessToken  String? @db.VarChar(1000)
+  refreshToken String? @db.VarChar(1000)
+
+  // 사용자 정보 (콜백 성공 후 설정)
+  userId       String? @db.VarChar(30)
+  userName     String? @db.VarChar(100)
+  profileImage String? @db.VarChar(500)
+
+  // 요청 메타데이터
+  ipAddress String? @db.VarChar(45)
+  userAgent String? @db.VarChar(500)
+
+  // 만료 및 상태
+  expiresAt   DateTime
+  exchangedAt DateTime? // 교환 완료 시점 (null = 미사용)
+
   createdAt DateTime @default(now())
 
   @@index([expiresAt])
+  @@index([exchangeCode])
 }
 
 // =============================================================================

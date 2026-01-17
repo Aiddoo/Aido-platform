@@ -1,8 +1,8 @@
 import { Controller, Get } from "@nestjs/common";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
-import { SWAGGER_TAGS } from "@/common/swagger";
+import { ApiDoc, SWAGGER_TAGS } from "@/common/swagger";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
 
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
@@ -15,7 +15,11 @@ export class HealthController {
 
 	@Get()
 	@HealthCheck()
-	@ApiOperation({ summary: "서버 상태 확인" })
+	@ApiDoc({
+		summary: "서버 상태 확인",
+		description: "데이터베이스 연결 등 서버 상태를 확인합니다.",
+		includeCommonErrors: false,
+	})
 	@ApiResponse({ status: 200, description: "서버가 정상 동작 중입니다." })
 	@ApiResponse({ status: 503, description: "서버에 문제가 발생했습니다." })
 	check(): Promise<HealthCheckResult> {

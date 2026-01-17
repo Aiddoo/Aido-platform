@@ -34,7 +34,61 @@ export class VerificationService {
 	) {}
 
 	/**
-	 * 이메일 인증 코드 생성 및 발송
+	 * 이메일 인증 코드 생성 (트랜잭션 내부에서만 사용)
+	 *
+	 * 이 메서드는 DB 트랜잭션 내부에서 호출되어 Verification 레코드만 생성합니다.
+	 * 이메일 발송은 트랜잭션 후에 sendVerificationEmail()로 별도 처리합니다.
+	 */
+	async createEmailVerification(
+		userId: string,
+		tx: Prisma.TransactionClient,
+	): Promise<VerificationCodeResult> {
+		// 재발송 쿨다운 확인
+		await this._checkResendCooldown(userId, "EMAIL_VERIFY", tx);
+
+		// 기존 미사용 인증 코드 무효화
+		await this.verificationRepository.invalidateAllByUserIdAndType(
+			userId,
+			"EMAIL_VERIFY",
+			tx,
+		);
+
+		// 새 인증 코드 생성
+		const result = await this._createVerificationCode(
+			userId,
+			"EMAIL_VERIFY",
+			tx,
+		);
+
+		this.logger.log(`Verification code created for user ${userId}`);
+		return result;
+	}
+
+	/**
+	 * 이메일 인증 코드 발송 (트랜잭션 외부)
+	 *
+	 * 이메일 발송 실패는 로그만 남기고 예외를 던지지 않습니다.
+	 * 사용자는 resendVerification()을 통해 재발송할 수 있습니다.
+	 */
+	async sendVerificationEmail(email: string, code: string): Promise<void> {
+		const emailResult = await this.emailService.sendVerificationCode(email, {
+			code,
+			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+		});
+
+		if (!emailResult.success) {
+			this.logger.error(
+				`Failed to send verification email to ${email}: ${emailResult.error}`,
+			);
+			// 이메일 발송 실패해도 예외를 던지지 않음 (사용자는 재발송 가능)
+		}
+	}
+
+	/**
+	 * 이메일 인증 코드 생성 및 발송 (호환성 유지)
+	 *
+	 * @deprecated 새 코드는 createEmailVerification() + sendVerificationEmail()을 분리해서 사용해주세요.
+	 * 이 메서드는 트랜잭션 경계를 무시하고 이메일 발송을 시도하므로 가능한 분리 메서드를 사용해주세요.
 	 */
 	async createAndSendEmailVerification(
 		userId: string,
@@ -58,18 +112,8 @@ export class VerificationService {
 			tx,
 		);
 
-		// 이메일 발송
-		const emailResult = await this.emailService.sendVerificationCode(email, {
-			code: result.code,
-			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-		});
-
-		if (!emailResult.success) {
-			this.logger.error(
-				`Failed to send verification email to ${email}: ${emailResult.error}`,
-			);
-			// 이메일 발송 실패해도 코드는 생성됨 (재시도 가능)
-		}
+		// 이메일 발송 (트랜잭션 외부에서 실행)
+		await this.sendVerificationEmail(email, result.code);
 
 		this.logger.log(`Verification code created for user ${userId}`);
 		return result;
