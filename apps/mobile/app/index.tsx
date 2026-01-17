@@ -16,7 +16,19 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
-      <Text className="mb-6 text-base text-main">홈 페이지</Text>
+      <Text className="mb-6 text-xl text-foreground font-normal">홈 페이지</Text>
+
+      {/* 폰트 테스트 - Tailwind 클래스 사용 */}
+      <View className="mb-8 w-full rounded-2xl bg-surface p-4">
+        <Text className="mb-3 text-sm text-muted">WantedSans 폰트 테스트</Text>
+        <Text className="font-normal text-base text-foreground">font-normal: 가나다라 ABC 123</Text>
+        <Text className="font-medium text-base text-foreground">font-medium: 가나다라 ABC 123</Text>
+        <Text className="font-semibold text-base text-foreground">
+          font-semibold: 가나다라 ABC 123
+        </Text>
+        <Text className="font-bold text-base text-foreground">font-bold: 가나다라 ABC 123</Text>
+        <Text className="mt-3 text-base text-foreground">시스템 기본: 가나다라 ABC 123</Text>
+      </View>
 
       {/* 테마 토글 */}
       <View className="mb-8 flex-row items-center gap-3">

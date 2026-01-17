@@ -67,8 +67,9 @@
   }
 }
 
-/* Tailwind 커스텀 색상 토큰 등록 */
+/* Tailwind 커스텀 토큰 등록 */
 @theme inline {
+  /* 색상 */
   --color-main: var(--main);
   --color-secondary: var(--secondary);
   --color-error: var(--error);
@@ -82,4 +83,10 @@
   --color-gray-8: var(--gray-8);
   --color-gray-9: var(--gray-9);
   --color-gray-10: var(--gray-10);
+
+  /* 폰트 - WantedSans */
+  --font-normal: "WantedSans-Regular";
+  --font-medium: "WantedSans-Medium";
+  --font-semibold: "WantedSans-SemiBold";
+  --font-bold: "WantedSans-Bold";
 }
