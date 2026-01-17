@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type {
 	CursorPaginatedResponse,
@@ -13,6 +13,8 @@ import { TodoRepository } from "./todo.repository";
 
 @Injectable()
 export class TodoService {
+	private readonly logger = new Logger(TodoService.name);
+
 	constructor(
 		private readonly todoRepository: TodoRepository,
 		private readonly paginationService: PaginationService,
@@ -69,7 +71,7 @@ export class TodoService {
 	}
 
 	async create(userId: string, dto: CreateTodoDto) {
-		return this.todoRepository.create({
+		const todo = await this.todoRepository.create({
 			userId,
 			title: dto.title,
 			content: dto.content,
@@ -80,15 +82,24 @@ export class TodoService {
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
 		});
+
+		this.logger.log(`할 일 생성 완료: todoId=${todo.id}, userId=${userId}`);
+		return todo;
 	}
 
 	async update(id: string, dto: UpdateTodoDto) {
 		await this.findById(id);
-		return this.todoRepository.update(id, dto);
+		const todo = await this.todoRepository.update(id, dto);
+
+		this.logger.log(`할 일 수정 완료: todoId=${id}`);
+		return todo;
 	}
 
 	async delete(id: string) {
 		await this.findById(id);
-		return this.todoRepository.delete(id);
+		const deletedTodo = await this.todoRepository.delete(id);
+
+		this.logger.log(`할 일 삭제 완료: todoId=${id}`);
+		return deletedTodo;
 	}
 }

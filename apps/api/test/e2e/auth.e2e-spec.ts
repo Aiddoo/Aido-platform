@@ -13,14 +13,17 @@ import request from "supertest";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
 import { DatabaseService } from "@/database";
+import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { EmailService } from "@/modules/email/email.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
+import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 
 describe("Auth (e2e)", () => {
 	let app: INestApplication<App>;
 	let testDatabase: TestDatabase;
 	let fakeEmailService: FakeEmailService;
+	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
 
 	/**
 	 * 테스트용 사용자 등록 헬퍼
@@ -87,12 +90,22 @@ describe("Auth (e2e)", () => {
 	}
 
 	beforeAll(async () => {
+		// 테스트용 Kakao OAuth 환경변수 설정 (웹 플로우 테스트용)
+		// 실제 API 호출은 하지 않고 URL 생성/리다이렉트만 테스트
+		process.env.KAKAO_CLIENT_ID = "test-kakao-client-id";
+		process.env.KAKAO_CLIENT_SECRET = "test-kakao-client-secret";
+		process.env.KAKAO_CALLBACK_URL =
+			"http://localhost:3000/auth/kakao/callback";
+
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
 		await testDatabase.start();
 
 		// FakeEmailService 인스턴스 생성
 		fakeEmailService = new FakeEmailService();
+
+		// FakeOAuthTokenVerifierService 인스턴스 생성
+		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
 
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
@@ -101,6 +114,8 @@ describe("Auth (e2e)", () => {
 			.useValue(testDatabase.getPrisma())
 			.overrideProvider(EmailService)
 			.useValue(fakeEmailService)
+			.overrideProvider(OAuthTokenVerifierService)
+			.useValue(fakeOAuthTokenVerifierService)
 			.compile();
 
 		app = moduleFixture.createNestApplication();
@@ -194,6 +209,42 @@ describe("Auth (e2e)", () => {
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("VERIFICATION_CODE_INVALID");
 		});
+	});
+
+	describe("회원가입 플로우 - 이메일 전송 실패", () => {
+		const emailFailureEmail = "email-failure@example.com";
+		const emailFailurePassword = "Test1234!";
+
+		beforeEach(() => {
+			// 이메일 서비스에 장애 설정 (전송 실패)
+			fakeEmailService.simulateFailures(999);
+		});
+
+		afterEach(() => {
+			// 각 테스트 후 정상 상태로 복구
+			fakeEmailService.simulateFailures(0);
+		});
+
+		it("이메일 전송 실패해도 회원가입은 성공한다", async () => {
+			const response = await request(app.getHttpServer())
+				.post("/auth/register")
+				.send({
+					email: emailFailureEmail,
+					password: emailFailurePassword,
+					passwordConfirm: emailFailurePassword,
+					termsAgreed: true,
+					privacyAgreed: true,
+				})
+				.expect(201);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.email).toBe(emailFailureEmail);
+			// 메시지는 반환되지만 사용자는 이메일을 받지 못함
+			expect(response.body.data.message).toContain("인증 코드");
+		});
+
+		// NOTE: 재전송 테스트는 Verification 모델이 sentAt 필드가 없어서 제거됨
+		// 재전송 기능은 verification.service.ts 단위 테스트로 검증됨
 	});
 
 	describe("로그인 플로우", () => {
@@ -713,6 +764,278 @@ describe("Auth (e2e)", () => {
 
 			expect(res.body.success).toBe(false);
 			expect(res.body.error.code).toBe("ACCOUNT_LOCKED");
+		});
+	});
+
+	describe("카카오 웹 OAuth 플로우", () => {
+		it("GET /auth/kakao/start - state 파라미터로 요청하면 카카오로 리다이렉트", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/kakao/start")
+				.query({ state: "test-csrf-state-123" })
+				.expect(302);
+
+			// Kakao OAuth 인증 페이지로 리다이렉트 확인
+			expect(response.headers.location).toContain(
+				"https://kauth.kakao.com/oauth/authorize",
+			);
+			expect(response.headers.location).toContain("state=test-csrf-state-123");
+			expect(response.headers.location).toContain("response_type=code");
+		});
+
+		it("GET /auth/kakao/start - state 파라미터 없이도 카카오로 리다이렉트", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/kakao/start")
+				.expect(302);
+
+			// 카카오 인증 페이지로 리다이렉트 (state 없음)
+			expect(response.headers.location).toContain(
+				"https://kauth.kakao.com/oauth/authorize",
+			);
+			expect(response.headers.location).toContain("response_type=code");
+		});
+
+		it("GET /auth/kakao/web-callback - 잘못된 code로 요청하면 딥링크로 에러 리다이렉트", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/kakao/web-callback")
+				.query({ code: "invalid-auth-code", state: "test-state" })
+				.expect(302);
+
+			// 에러 발생 시 딥링크로 리다이렉트 (에러 정보 포함)
+			expect(response.headers.location).toContain("aido://auth/callback");
+			expect(response.headers.location).toContain("error=");
+		});
+
+		it("GET /auth/kakao/web-callback - code 없이 요청하면 딥링크로 에러 리다이렉트", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/kakao/web-callback")
+				.query({ state: "test-state" })
+				.expect(302);
+
+			// code가 없으면 에러로 처리되어 딥링크로 리다이렉트
+			expect(response.headers.location).toContain("aido://auth/callback");
+			expect(response.headers.location).toContain("error=");
+		});
+	});
+
+	describe("OAuth LoginAttempt 기록 (E2E)", () => {
+		const prisma = () => testDatabase.getPrisma();
+
+		beforeEach(async () => {
+			// 각 테스트 전 OAuth 모킹 상태 초기화
+			fakeOAuthTokenVerifierService.clear();
+
+			// LoginAttempt 테이블만 정리 (다른 테스트와 간섭 방지)
+			await prisma().loginAttempt.deleteMany();
+		});
+
+		it("POST /auth/kakao/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			const testToken = "valid-kakao-token-12345";
+
+			// 카카오 로그인 요청
+			const response = await request(app.getHttpServer())
+				.post("/auth/kakao/callback")
+				.send({ accessToken: testToken })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("accessToken");
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(true);
+			expect(latestAttempt.failureReason).toBeNull();
+		});
+
+		it("POST /auth/google/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			const testToken = "valid-google-token-12345";
+
+			// 구글 로그인 요청
+			const response = await request(app.getHttpServer())
+				.post("/auth/google/callback")
+				.send({ idToken: testToken })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("accessToken");
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(true);
+			expect(latestAttempt.failureReason).toBeNull();
+		});
+
+		it("POST /auth/apple/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			const testToken = "valid-apple-token-12345";
+
+			// 애플 로그인 요청
+			const response = await request(app.getHttpServer())
+				.post("/auth/apple/callback")
+				.send({ idToken: testToken })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("accessToken");
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(true);
+			expect(latestAttempt.failureReason).toBeNull();
+		});
+
+		it("POST /auth/naver/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			const testToken = "valid-naver-token-12345";
+
+			// 네이버 로그인 요청
+			const response = await request(app.getHttpServer())
+				.post("/auth/naver/callback")
+				.send({ accessToken: testToken })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("accessToken");
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(true);
+			expect(latestAttempt.failureReason).toBeNull();
+		});
+
+		it("POST /auth/kakao/callback - 토큰 검증 실패 시 LoginAttempt 기록 (success: false)", async () => {
+			// 토큰 검증 실패 시뮬레이션 (파라미터 없이 호출하면 provider별 적절한 BusinessException 사용)
+			fakeOAuthTokenVerifierService.simulateFailure();
+
+			const testToken = "invalid-kakao-token";
+
+			// 카카오 로그인 요청 (실패 예상)
+			const response = await request(app.getHttpServer())
+				.post("/auth/kakao/callback")
+				.send({ accessToken: testToken })
+				.expect(401);
+
+			expect(response.body.success).toBe(false);
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				where: { success: false },
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(false);
+			expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
+		});
+
+		it("POST /auth/google/callback - 토큰 검증 실패 시 LoginAttempt 기록 (success: false)", async () => {
+			// 토큰 검증 실패 시뮬레이션 (파라미터 없이 호출하면 provider별 적절한 BusinessException 사용)
+			fakeOAuthTokenVerifierService.simulateFailure();
+
+			const testToken = "invalid-google-token";
+
+			// 구글 로그인 요청 (실패 예상)
+			const response = await request(app.getHttpServer())
+				.post("/auth/google/callback")
+				.send({ idToken: testToken })
+				.expect(401);
+
+			expect(response.body.success).toBe(false);
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				where: { success: false },
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(false);
+			expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
+		});
+
+		it("OAuth 로그인 시 IP 및 UserAgent 기록", async () => {
+			const testToken = "test-token-with-metadata";
+			const testIp = "192.168.1.100";
+			const testUserAgent = "TestAgent/1.0";
+
+			// 카카오 로그인 요청 (헤더 포함)
+			await request(app.getHttpServer())
+				.post("/auth/kakao/callback")
+				.set("X-Forwarded-For", testIp)
+				.set("User-Agent", testUserAgent)
+				.send({ accessToken: testToken })
+				.expect(200);
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
+
+			const latestAttempt = loginAttempts[0]!;
+			expect(latestAttempt).toBeDefined();
+			expect(latestAttempt.success).toBe(true);
+			// IP와 UserAgent가 기록되었는지 확인 (정확한 값은 프록시 설정에 따라 다를 수 있음)
+			expect(latestAttempt.ipAddress).toBeTruthy();
+			expect(latestAttempt.userAgent).toBeTruthy();
+		});
+
+		it("여러 번 OAuth 로그인 시 각각 LoginAttempt 기록", async () => {
+			// 첫 번째 로그인
+			await request(app.getHttpServer())
+				.post("/auth/kakao/callback")
+				.send({ accessToken: "first-token-12345" })
+				.expect(200);
+
+			// 두 번째 로그인
+			await request(app.getHttpServer())
+				.post("/auth/google/callback")
+				.send({ idToken: "second-token-12345" })
+				.expect(200);
+
+			// DB에서 LoginAttempt 확인
+			const loginAttempts = await prisma().loginAttempt.findMany({
+				orderBy: { createdAt: "asc" },
+			});
+
+			// 최소 2개의 로그인 시도 기록
+			expect(loginAttempts.length).toBeGreaterThanOrEqual(2);
+
+			// 모두 성공으로 기록
+			const successfulAttempts = loginAttempts.filter((a) => a.success);
+			expect(successfulAttempts.length).toBeGreaterThanOrEqual(2);
 		});
 	});
 });

@@ -15,6 +15,7 @@
     "docker:down": "docker-compose down",
     "docker:up": "docker-compose up -d",
     "format": "biome format --write .",
+    "postinstall": "turbo build --filter=./packages/* --filter=./tooling/*",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "prepare": "simple-git-hooks",

@@ -2,6 +2,7 @@
 export type { CreateSessionData } from "../types";
 export { AccountRepository } from "./account.repository";
 export { LoginAttemptRepository } from "./login-attempt.repository";
+export { OAuthStateRepository } from "./oauth-state.repository";
 export type { CreateSecurityLogData } from "./security-log.repository";
 export { SecurityLogRepository } from "./security-log.repository";
 export { SessionRepository } from "./session.repository";
