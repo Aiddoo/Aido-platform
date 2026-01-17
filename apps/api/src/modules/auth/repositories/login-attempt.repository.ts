@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { subtractDays } from "@/common/date/utils";
 import { DatabaseService } from "@/database";
 import type { LoginAttempt, Prisma } from "@/generated/prisma/client";
 
@@ -108,8 +109,7 @@ export class LoginAttemptRepository {
 	 * 오래된 기록 정리 (배치 작업용, 30일 보관)
 	 */
 	async deleteOld(retentionDays = 30): Promise<number> {
-		const cutoff = new Date();
-		cutoff.setDate(cutoff.getDate() - retentionDays);
+		const cutoff = subtractDays(retentionDays);
 
 		const result = await this.database.loginAttempt.deleteMany({
 			where: {

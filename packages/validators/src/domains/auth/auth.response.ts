@@ -34,7 +34,18 @@ export const authTokensSchema = z
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
   })
-  .describe('인증 토큰 정보');
+  .describe('인증 토큰 정보')
+  .meta({
+    example: {
+      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbHo3eDVwOGswMDAxcXowejh6OHo4ejh6IiwiZW1haWwiOiJkeWRhbHMzNDQwQGdtYWlsLmNvbSIsImlhdCI6MTcwNTQ4MzIwMH0.example',
+      refreshToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbHo3eDVwOGswMDAxcXowejh6OHo4ejh6IiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE3MDU0ODMyMDB9.example',
+      name: '매튜',
+      profileImage: 'https://example.com/profiles/matthew.jpg',
+    },
+  });
 
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
@@ -47,7 +58,15 @@ export const refreshTokensSchema = z
     accessToken: z.string().describe('JWT 액세스 토큰'),
     refreshToken: z.string().describe('JWT 리프레시 토큰'),
   })
-  .describe('토큰 갱신 응답');
+  .describe('토큰 갱신 응답')
+  .meta({
+    example: {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbHo3eDVwOGswMDAxcXowejh6OHo4ejh6IiwiZW1haWwiOiJkeWRhbHMzNDQwQGdtYWlsLmNvbSIsImlhdCI6MTcwNTQ4MzIwMH0.newtoken',
+      refreshToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbHo3eDVwOGswMDAxcXowejh6OHo4ejh6IiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE3MDU0ODMyMDB9.newtoken',
+    },
+  });
 
 export type RefreshTokens = z.infer<typeof refreshTokensSchema>;
 
@@ -64,7 +83,17 @@ export const userProfileSchema = z
     createdAt: datetimeSchema.describe('계정 생성 시각'),
     updatedAt: datetimeSchema.describe('계정 정보 수정 시각'),
   })
-  .describe('사용자 프로필 정보');
+  .describe('사용자 프로필 정보')
+  .meta({
+    example: {
+      id: 'clz7x5p8k0001qz0z8z8z8z8z',
+      email: 'dydals3440@gmail.com',
+      emailVerifiedAt: '2026-01-15T10:30:00.000Z',
+      status: 'ACTIVE',
+      createdAt: '2026-01-01T09:00:00.000Z',
+      updatedAt: '2026-01-17T14:00:00.000Z',
+    },
+  });
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
 
@@ -79,20 +108,80 @@ export const currentUserPayloadSchema = z
     email: z.string().email().describe('이메일 주소'),
     sessionId: z.string().cuid().describe('현재 세션 ID'),
   })
-  .describe('JWT 페이로드 사용자 정보');
+  .describe('JWT 페이로드 사용자 정보')
+  .meta({
+    example: {
+      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      email: 'dydals3440@gmail.com',
+      sessionId: 'clz7x5p8k0002qz0z8z8z8z8z',
+    },
+  });
 
 export type CurrentUserPayload = z.infer<typeof currentUserPayloadSchema>;
 
+// ============================================
+// 구독 상태 스키마
+// ============================================
+
+/** 구독 상태 enum */
+export const SUBSCRIPTION_STATUS = ['FREE', 'ACTIVE', 'EXPIRED', 'CANCELLED'] as const;
+
+/** 구독 상태 스키마 */
+export const subscriptionStatusSchema = z
+  .enum(SUBSCRIPTION_STATUS)
+  .describe('구독 상태 (FREE: 무료, ACTIVE: 구독 중, EXPIRED: 만료, CANCELLED: 취소)');
+
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
+
+// ============================================
+// 현재 사용자 정보 (확장)
+// ============================================
+
 /**
  * 현재 세션 사용자 정보 (getMe 응답)
- * @description 현재 인증된 사용자의 기본 정보
+ * @description 현재 인증된 사용자의 전체 정보 (비밀번호 제외)
  */
-export const currentUserSchema = currentUserPayloadSchema
-  .extend({
+export const currentUserSchema = z
+  .object({
+    // === 기본 정보 ===
+    userId: z.string().cuid().describe('사용자 고유 ID'),
+    email: z.string().email().describe('이메일 주소'),
+    sessionId: z.string().cuid().describe('현재 세션 ID'),
+
+    // === 사용자 태그 (검색용) ===
+    userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자, 해시태그 검색용)'),
+
+    // === 계정 상태 ===
+    status: userStatusSchema.describe('계정 상태'),
+    emailVerifiedAt: nullableDatetimeSchema.describe('이메일 인증 완료 시점 (미인증 시 null)'),
+
+    // === 구독 정보 ===
+    subscriptionStatus: subscriptionStatusSchema.describe('구독 상태'),
+    subscriptionExpiresAt: nullableDatetimeSchema.describe('구독 만료 시점 (무료 사용자는 null)'),
+
+    // === 프로필 정보 ===
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
+
+    // === 메타데이터 ===
+    createdAt: datetimeSchema.describe('가입 일시'),
   })
-  .describe('현재 사용자 정보');
+  .describe('현재 사용자 정보')
+  .meta({
+    example: {
+      userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      email: 'dydals3440@gmail.com',
+      sessionId: 'clz7x5p8k0002qz0z8z8z8z8z',
+      userTag: 'MATT2025',
+      status: 'ACTIVE',
+      emailVerifiedAt: '2026-01-15T10:30:00.000Z',
+      subscriptionStatus: 'FREE',
+      subscriptionExpiresAt: null,
+      name: '매튜',
+      profileImage: 'https://example.com/profiles/matthew.jpg',
+      createdAt: '2026-01-01T09:00:00.000Z',
+    },
+  });
 
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 
@@ -111,7 +200,19 @@ export const sessionInfoSchema = z
     createdAt: datetimeSchema.describe('세션 생성 시각'),
     isCurrent: z.boolean().describe('현재 세션 여부'),
   })
-  .describe('세션 정보');
+  .describe('세션 정보')
+  .meta({
+    example: {
+      id: 'clz7x5p8k0002qz0z8z8z8z8z',
+      deviceName: 'iPhone 15 Pro',
+      deviceType: 'MOBILE',
+      ipAddress: '192.168.1.100',
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      lastActiveAt: '2026-01-17T14:25:00.000Z',
+      createdAt: '2026-01-15T10:30:00.000Z',
+      isCurrent: true,
+    },
+  });
 
 export type SessionInfo = z.infer<typeof sessionInfoSchema>;
 
@@ -127,7 +228,33 @@ export const sessionListResponseSchema = z
   .object({
     sessions: z.array(sessionInfoSchema),
   })
-  .describe('활성 세션 목록 응답');
+  .describe('활성 세션 목록 응답')
+  .meta({
+    example: {
+      sessions: [
+        {
+          id: 'clz7x5p8k0002qz0z8z8z8z8z',
+          deviceName: 'iPhone 15 Pro',
+          deviceType: 'MOBILE',
+          ipAddress: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+          lastActiveAt: '2026-01-17T14:25:00.000Z',
+          createdAt: '2026-01-15T10:30:00.000Z',
+          isCurrent: true,
+        },
+        {
+          id: 'clz7x5p8k0003qz0z8z8z8z8z',
+          deviceName: 'MacBook Pro',
+          deviceType: 'DESKTOP',
+          ipAddress: '192.168.1.101',
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+          lastActiveAt: '2026-01-16T20:00:00.000Z',
+          createdAt: '2026-01-10T09:00:00.000Z',
+          isCurrent: false,
+        },
+      ],
+    },
+  });
 
 export type SessionListResponse = z.infer<typeof sessionListResponseSchema>;
 
@@ -152,7 +279,13 @@ export const registerResponseSchema = z
     message: z.string().describe('응답 메시지'),
     email: z.string().email().describe('가입한 이메일 주소'),
   })
-  .describe('회원가입 응답');
+  .describe('회원가입 응답')
+  .meta({
+    example: {
+      message: '인증 코드가 이메일로 발송되었습니다.',
+      email: 'dydals3440@gmail.com',
+    },
+  });
 
 export type RegisterResponse = z.infer<typeof registerResponseSchema>;
 
@@ -189,7 +322,13 @@ export const forgotPasswordResponseSchema = z
     message: z.string().describe('응답 메시지'),
     email: z.string().email().describe('비밀번호 재설정 이메일을 발송한 주소'),
   })
-  .describe('비밀번호 찾기 응답');
+  .describe('비밀번호 찾기 응답')
+  .meta({
+    example: {
+      message: '비밀번호 재설정 링크가 이메일로 발송되었습니다.',
+      email: 'dydals3440@gmail.com',
+    },
+  });
 
 export type ForgotPasswordResponse = z.infer<typeof forgotPasswordResponseSchema>;
 
@@ -197,7 +336,12 @@ export const resetPasswordResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
   })
-  .describe('비밀번호 재설정 완료 응답');
+  .describe('비밀번호 재설정 완료 응답')
+  .meta({
+    example: {
+      message: '비밀번호가 성공적으로 변경되었습니다.',
+    },
+  });
 
 export type ResetPasswordResponse = z.infer<typeof resetPasswordResponseSchema>;
 
@@ -205,7 +349,12 @@ export const changePasswordResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
   })
-  .describe('비밀번호 변경 완료 응답');
+  .describe('비밀번호 변경 완료 응답')
+  .meta({
+    example: {
+      message: '비밀번호가 성공적으로 변경되었습니다.',
+    },
+  });
 
 export type ChangePasswordResponse = z.infer<typeof changePasswordResponseSchema>;
 
@@ -217,7 +366,12 @@ export const logoutResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
   })
-  .describe('로그아웃 응답');
+  .describe('로그아웃 응답')
+  .meta({
+    example: {
+      message: '로그아웃되었습니다.',
+    },
+  });
 
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
@@ -236,7 +390,14 @@ export const resendVerificationResponseSchema = z
       .optional()
       .describe('재발송 가능까지 남은 시간 (초)'),
   })
-  .describe('인증 코드 재발송 응답');
+  .describe('인증 코드 재발송 응답')
+  .meta({
+    example: {
+      message: '인증 코드가 재발송되었습니다.',
+      email: 'dydals3440@gmail.com',
+      retryAfterSeconds: 60,
+    },
+  });
 
 export type ResendVerificationResponse = z.infer<typeof resendVerificationResponseSchema>;
 
@@ -250,7 +411,14 @@ export const updateProfileResponseSchema = z
     name: z.string().nullable().describe('수정된 이름'),
     profileImage: z.string().nullable().describe('수정된 프로필 이미지 URL'),
   })
-  .describe('프로필 수정 응답');
+  .describe('프로필 수정 응답')
+  .meta({
+    example: {
+      message: '프로필이 수정되었습니다.',
+      name: '매튜',
+      profileImage: 'https://example.com/profiles/matthew.jpg',
+    },
+  });
 
 export type UpdateProfileResponse = z.infer<typeof updateProfileResponseSchema>;
 
@@ -280,7 +448,14 @@ export const linkedAccountSchema = z
     providerAccountId: z.string().describe('제공자 측 계정 고유 ID'),
     linkedAt: datetimeSchema.describe('계정 연결 시각'),
   })
-  .describe('연결된 소셜 계정 정보');
+  .describe('연결된 소셜 계정 정보')
+  .meta({
+    example: {
+      provider: 'GOOGLE',
+      providerAccountId: '102938475647382910',
+      linkedAt: '2026-01-15T10:30:00.000Z',
+    },
+  });
 
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
@@ -291,7 +466,23 @@ export const linkedAccountsResponseSchema = z
   .object({
     accounts: z.array(linkedAccountSchema).describe('연결된 소셜 계정 목록'),
   })
-  .describe('연결된 소셜 계정 목록 응답');
+  .describe('연결된 소셜 계정 목록 응답')
+  .meta({
+    example: {
+      accounts: [
+        {
+          provider: 'GOOGLE',
+          providerAccountId: '102938475647382910',
+          linkedAt: '2026-01-15T10:30:00.000Z',
+        },
+        {
+          provider: 'APPLE',
+          providerAccountId: '001234.abcd1234efgh5678.0123',
+          linkedAt: '2026-01-10T09:00:00.000Z',
+        },
+      ],
+    },
+  });
 
 export type LinkedAccountsResponse = z.infer<typeof linkedAccountsResponseSchema>;
 
@@ -303,7 +494,13 @@ export const unlinkAccountResponseSchema = z
     message: z.string().describe('응답 메시지'),
     provider: oauthProviderEnumSchema.describe('연결 해제된 제공자'),
   })
-  .describe('소셜 계정 연결 해제 응답');
+  .describe('소셜 계정 연결 해제 응답')
+  .meta({
+    example: {
+      message: '소셜 계정 연결이 해제되었습니다.',
+      provider: 'GOOGLE',
+    },
+  });
 
 export type UnlinkAccountResponse = z.infer<typeof unlinkAccountResponseSchema>;
 
@@ -343,6 +540,12 @@ export const authErrorSchema = z
     message: z.string(),
     details: z.record(z.string(), z.unknown()).optional(),
   })
-  .describe('인증 에러 객체');
+  .describe('인증 에러 객체')
+  .meta({
+    example: {
+      code: 'INVALID_CREDENTIALS',
+      message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+    },
+  });
 
 export type AuthError = z.infer<typeof authErrorSchema>;

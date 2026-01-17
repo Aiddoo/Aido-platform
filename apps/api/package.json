@@ -21,12 +21,14 @@
 		"start:prod": "NODE_ENV=production node dist/main",
 		"test": "jest",
 		"test:cov": "jest --coverage",
+		"test:coverage": "jest --coverage",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
 		"test:integration": "jest --config ./test/jest-integration.json",
 		"test:watch": "jest --watch",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@aido/errors": "workspace:*",
 		"@aido/utils": "workspace:*",
 		"@aido/validators": "workspace:*",
 		"@nestjs/common": "^11.0.1",
@@ -43,6 +45,7 @@
 		"argon2": "^0.44.0",
 		"class-transformer": "^0.5.1",
 		"class-validator": "^0.14.3",
+		"dayjs": "^1.11.19",
 		"google-auth-library": "^9.15.1",
 		"helmet": "^8.1.0",
 		"jose": "^6.1.3",

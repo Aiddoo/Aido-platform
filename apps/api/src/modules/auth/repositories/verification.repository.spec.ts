@@ -1,30 +1,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import { type Verification, VerificationType } from "@/generated/prisma/client";
 
 import { VerificationRepository } from "./verification.repository";
-
-// 트랜잭션 클라이언트 mock 타입 정의
-type MockVerificationClient = {
-	verification: {
-		create?: jest.Mock;
-		findFirst?: jest.Mock;
-		findUnique?: jest.Mock;
-		update?: jest.Mock;
-		updateMany?: jest.Mock;
-		count?: jest.Mock;
-	};
-};
-
-// mock 트랜잭션 클라이언트 생성 헬퍼
-function createMockTx(
-	overrides: Partial<MockVerificationClient["verification"]> = {},
-): MockVerificationClient {
-	return {
-		verification: overrides,
-	};
-}
 
 describe("VerificationRepository", () => {
 	let repository: VerificationRepository;
@@ -106,18 +85,15 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 생성한다", async () => {
 			// Given
-			const createMock = jest.fn().mockResolvedValue(mockVerification);
-			const mockTx = createMockTx({ create: createMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.create.mockResolvedValue(mockVerification);
 
 			// When
-			const result = await repository.create(
-				createData,
-				mockTx as unknown as Parameters<typeof repository.create>[1],
-			);
+			const result = await repository.create(createData, asTxClient(mockTx));
 
 			// Then
 			expect(result).toEqual(mockVerification);
-			expect(createMock).toHaveBeenCalledWith({
+			expect(mockTx.verification.create).toHaveBeenCalledWith({
 				data: {
 					userId: createData.userId,
 					type: createData.type,
@@ -221,21 +197,19 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 조회한다", async () => {
 			// Given
-			const findFirstMock = jest.fn().mockResolvedValue(mockVerification);
-			const mockTx = createMockTx({ findFirst: findFirstMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.findFirst.mockResolvedValue(mockVerification);
 
 			// When
 			const result = await repository.findValidByUserIdAndType(
 				"user-123",
 				VerificationType.EMAIL_VERIFY,
-				mockTx as unknown as Parameters<
-					typeof repository.findValidByUserIdAndType
-				>[2],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(mockVerification);
-			expect(findFirstMock).toHaveBeenCalled();
+			expect(mockTx.verification.findFirst).toHaveBeenCalled();
 			expect(mockDatabase.verification.findFirst).not.toHaveBeenCalled();
 		});
 	});
@@ -263,18 +237,15 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 업데이트한다", async () => {
 			// Given
-			const updateMock = jest.fn().mockResolvedValue(usedVerification);
-			const mockTx = createMockTx({ update: updateMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.update.mockResolvedValue(usedVerification);
 
 			// When
-			const result = await repository.markAsUsed(
-				1,
-				mockTx as unknown as Parameters<typeof repository.markAsUsed>[1],
-			);
+			const result = await repository.markAsUsed(1, asTxClient(mockTx));
 
 			// Then
 			expect(result).toEqual(usedVerification);
-			expect(updateMock).toHaveBeenCalledWith({
+			expect(mockTx.verification.update).toHaveBeenCalledWith({
 				where: { id: 1 },
 				data: { usedAt: expect.any(Date) },
 			});
@@ -307,18 +278,15 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 증가시킨다", async () => {
 			// Given
-			const updateMock = jest.fn().mockResolvedValue(incrementedVerification);
-			const mockTx = createMockTx({ update: updateMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.update.mockResolvedValue(incrementedVerification);
 
 			// When
-			const result = await repository.incrementAttempts(
-				1,
-				mockTx as unknown as Parameters<typeof repository.incrementAttempts>[1],
-			);
+			const result = await repository.incrementAttempts(1, asTxClient(mockTx));
 
 			// Then
 			expect(result).toEqual(incrementedVerification);
-			expect(updateMock).toHaveBeenCalledWith({
+			expect(mockTx.verification.update).toHaveBeenCalledWith({
 				where: { id: 1 },
 				data: { attempts: { increment: 1 } },
 			});
@@ -382,12 +350,9 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 처리한다", async () => {
 			// Given
-			const updateManyMock = jest.fn().mockResolvedValue({ count: 1 });
-			const findUniqueMock = jest.fn().mockResolvedValue(usedVerification);
-			const mockTx = createMockTx({
-				updateMany: updateManyMock,
-				findUnique: findUniqueMock,
-			});
+			const mockTx = createMockTxClient();
+			mockTx.verification.updateMany.mockResolvedValue({ count: 1 });
+			mockTx.verification.findUnique.mockResolvedValue(usedVerification);
 
 			// When
 			const result = await repository.markAsUsedAtomic(
@@ -395,13 +360,13 @@ describe("VerificationRepository", () => {
 				"user-123",
 				VerificationType.EMAIL_VERIFY,
 				5,
-				mockTx as unknown as Parameters<typeof repository.markAsUsedAtomic>[4],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toEqual(usedVerification);
-			expect(updateManyMock).toHaveBeenCalled();
-			expect(findUniqueMock).toHaveBeenCalled();
+			expect(mockTx.verification.updateMany).toHaveBeenCalled();
+			expect(mockTx.verification.findUnique).toHaveBeenCalled();
 			expect(mockDatabase.verification.updateMany).not.toHaveBeenCalled();
 		});
 	});
@@ -446,21 +411,19 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 무효화한다", async () => {
 			// Given
-			const updateManyMock = jest.fn().mockResolvedValue({ count: 2 });
-			const mockTx = createMockTx({ updateMany: updateManyMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.updateMany.mockResolvedValue({ count: 2 });
 
 			// When
 			const result = await repository.invalidateAllByUserIdAndType(
 				"user-123",
 				VerificationType.EMAIL_VERIFY,
-				mockTx as unknown as Parameters<
-					typeof repository.invalidateAllByUserIdAndType
-				>[2],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toBe(2);
-			expect(updateManyMock).toHaveBeenCalled();
+			expect(mockTx.verification.updateMany).toHaveBeenCalled();
 			expect(mockDatabase.verification.updateMany).not.toHaveBeenCalled();
 		});
 	});
@@ -491,8 +454,8 @@ describe("VerificationRepository", () => {
 
 		it("트랜잭션 클라이언트를 사용하여 카운트한다", async () => {
 			// Given
-			const countMock = jest.fn().mockResolvedValue(5);
-			const mockTx = createMockTx({ count: countMock });
+			const mockTx = createMockTxClient();
+			mockTx.verification.count.mockResolvedValue(5);
 			const since = new Date("2025-01-14T00:00:00Z");
 
 			// When
@@ -500,14 +463,12 @@ describe("VerificationRepository", () => {
 				"user-123",
 				VerificationType.EMAIL_VERIFY,
 				since,
-				mockTx as unknown as Parameters<
-					typeof repository.countRecentByUserIdAndType
-				>[3],
+				asTxClient(mockTx),
 			);
 
 			// Then
 			expect(result).toBe(5);
-			expect(countMock).toHaveBeenCalled();
+			expect(mockTx.verification.count).toHaveBeenCalled();
 			expect(mockDatabase.verification.count).not.toHaveBeenCalled();
 		});
 	});

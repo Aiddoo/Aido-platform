@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 
+import { now } from "@/common/date/utils";
 import { DatabaseService } from "@/database";
 import type { Prisma, Session } from "@/generated/prisma/client";
 
@@ -97,7 +98,7 @@ export class SessionRepository {
 			where: {
 				userId,
 				revokedAt: null,
-				expiresAt: { gt: new Date() },
+				expiresAt: { gt: now() },
 			},
 			orderBy: { lastUsedAt: "desc" },
 		});
@@ -134,7 +135,7 @@ export class SessionRepository {
 				refreshTokenHash: data.refreshTokenHash,
 				tokenVersion: data.tokenVersion,
 				previousTokenHash: data.previousTokenHash,
-				lastUsedAt: new Date(),
+				lastUsedAt: now(),
 			},
 		});
 
@@ -156,7 +157,7 @@ export class SessionRepository {
 		const client = tx ?? this.database;
 		await client.session.update({
 			where: { id },
-			data: { lastUsedAt: new Date() },
+			data: { lastUsedAt: now() },
 		});
 	}
 
@@ -172,7 +173,7 @@ export class SessionRepository {
 		return client.session.update({
 			where: { id },
 			data: {
-				revokedAt: new Date(),
+				revokedAt: now(),
 				revokedReason: reason,
 			},
 		});
@@ -193,7 +194,7 @@ export class SessionRepository {
 				revokedAt: null,
 			},
 			data: {
-				revokedAt: new Date(),
+				revokedAt: now(),
 				revokedReason: reason,
 			},
 		});
@@ -217,7 +218,7 @@ export class SessionRepository {
 				...(excludeSessionId && { id: { not: excludeSessionId } }),
 			},
 			data: {
-				revokedAt: new Date(),
+				revokedAt: now(),
 				revokedReason: reason,
 			},
 		});
@@ -230,7 +231,7 @@ export class SessionRepository {
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.session.deleteMany({
 			where: {
-				OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { not: null } }],
+				OR: [{ expiresAt: { lt: now() } }, { revokedAt: { not: null } }],
 			},
 		});
 		return result.count;

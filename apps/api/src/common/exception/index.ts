@@ -1,20 +1,18 @@
-// Constants
-export {
-	ERROR_CODE,
-	ERROR_HTTP_STATUS,
-	ERROR_MESSAGE,
-	type ErrorCode,
-} from "./constants/error.constant";
+// @aido/errors 패키지에서 직접 import하세요
+// import { ErrorCode, Errors, type ErrorCodeType, type ErrorDefinition } from "@aido/errors";
+
 // Module
 export { ExceptionModule } from "./exception.module";
 
 // Filters
 export { GlobalExceptionFilter } from "./filters/global-exception.filter";
+
 // Interfaces
 export type {
 	BusinessExceptionOptions,
 	ErrorResponse,
 } from "./interfaces/error.interface";
+
 // Services
 export {
 	BusinessException,

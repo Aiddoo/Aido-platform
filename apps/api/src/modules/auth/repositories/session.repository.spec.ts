@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { Session } from "@/generated/prisma/client";
 
@@ -132,17 +132,11 @@ describe("SessionRepository", () => {
 				ipAddress: "127.0.0.1",
 				expiresAt: new Date("2024-12-31"),
 			};
-			const mockTx = {
-				session: {
-					create: jest.fn().mockResolvedValue(mockSession),
-				},
-			};
+			const mockTx = createMockTxClient();
+			mockTx.session.create.mockResolvedValue(mockSession);
 
 			// When
-			await repository.create(
-				createData,
-				mockTx as unknown as Parameters<typeof repository.create>[1],
-			);
+			await repository.create(createData, asTxClient(mockTx));
 
 			// Then
 			expect(mockTx.session.create).toHaveBeenCalled();

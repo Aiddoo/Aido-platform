@@ -63,7 +63,9 @@ export class LoggerModule {
 						// 에러 응답은 GlobalExceptionFilter가 로깅하므로 피노는 성공 응답만
 						autoLogging: autoLogging
 							? {
-									ignore: (req) => ((req as any).res?.statusCode ?? 200) >= 400,
+									ignore: (req) =>
+										((req as { res?: { statusCode?: number } }).res
+											?.statusCode ?? 200) >= 400,
 								}
 							: false,
 						redact: redactPaths,
@@ -74,7 +76,9 @@ export class LoggerModule {
 							responseTime: () => undefined,
 						},
 						customSuccessMessage: (req, res, responseTime) => {
-							const userId = (req as any).user?.userId ?? "anonymous";
+							const userId =
+								(req as { user?: { userId?: string } }).user?.userId ??
+								"anonymous";
 							return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
 						},
 					},
@@ -127,7 +131,8 @@ export class LoggerModule {
 								autoLogging: autoLogging
 									? {
 											ignore: (req) =>
-												((req as any).res?.statusCode ?? 200) >= 400,
+												((req as { res?: { statusCode?: number } }).res
+													?.statusCode ?? 200) >= 400,
 										}
 									: false,
 								redact: redactPaths,
@@ -138,7 +143,9 @@ export class LoggerModule {
 									responseTime: () => undefined,
 								},
 								customSuccessMessage: (req, res, responseTime) => {
-									const userId = (req as any).user?.userId ?? "anonymous";
+									const userId =
+										(req as { user?: { userId?: string } }).user?.userId ??
+										"anonymous";
 									return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
 								},
 							},

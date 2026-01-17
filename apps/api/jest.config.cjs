@@ -61,6 +61,7 @@ module.exports = {
   // 모듈 별칭
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@test/(.*)$': '<rootDir>/test/$1',
     '^@aido/validators$': '<rootDir>/../../packages/validators/src',
     '^@aido/utils$': '<rootDir>/../../packages/utils/src',
     '^(\\.{1,2}/.*)\\.js$': '$1',

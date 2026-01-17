@@ -29,7 +29,7 @@ import type { EmailSendOptions, EmailSendResult } from "./types/email.types";
  */
 @Injectable()
 export class EmailService {
-	private readonly _logger = new Logger(EmailService.name);
+	private readonly logger = new Logger(EmailService.name);
 	private readonly _resend: Resend | null;
 	private readonly _fromEmail: string;
 	private readonly _fromName: string;
@@ -40,10 +40,10 @@ export class EmailService {
 
 		if (emailConfig.isConfigured && emailConfig.apiKey) {
 			this._resend = new Resend(emailConfig.apiKey);
-			this._logger.log("Resend email service initialized");
+			this.logger.log("Resend email service initialized");
 		} else {
 			this._resend = null;
-			this._logger.warn(
+			this.logger.warn(
 				"Resend API key not configured. Emails will be logged only.",
 			);
 		}
@@ -119,13 +119,13 @@ export class EmailService {
 	): Promise<EmailSendResult> {
 		// Development/Test 환경이거나 Resend가 설정되지 않은 경우 로그만 출력
 		if (!this._resend) {
-			this._logger.debug(`[EMAIL MOCK] To: ${options.to}`);
-			this._logger.debug(`[EMAIL MOCK] Subject: ${options.subject}`);
-			this._logger.debug(
+			this.logger.debug(`[EMAIL MOCK] To: ${options.to}`);
+			this.logger.debug(`[EMAIL MOCK] Subject: ${options.subject}`);
+			this.logger.debug(
 				`[EMAIL MOCK] IdempotencyKey: ${options.idempotencyKey || "none"}`,
 			);
-			this._logger.debug(`[EMAIL MOCK] Tags: ${JSON.stringify(options.tags)}`);
-			this._logger.debug(`[EMAIL MOCK] Text:\n${options.text}`);
+			this.logger.debug(`[EMAIL MOCK] Tags: ${JSON.stringify(options.tags)}`);
+			this.logger.debug(`[EMAIL MOCK] Text:\n${options.text}`);
 
 			return {
 				success: true,
@@ -178,14 +178,14 @@ export class EmailService {
 					attempt < EMAIL_CONSTANTS.MAX_RETRIES
 				) {
 					const delay = this._calculateBackoffDelay(attempt);
-					this._logger.warn(
+					this.logger.warn(
 						`Retryable error (${result.error.name}), retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
 					);
 					await this._sleep(delay);
 					return this._sendWithRetry(options, attempt + 1);
 				}
 
-				this._logger.error(
+				this.logger.error(
 					`Failed to send email to ${options.to}: ${result.error.message}`,
 				);
 				return {
@@ -195,7 +195,7 @@ export class EmailService {
 				};
 			}
 
-			this._logger.log(
+			this.logger.log(
 				`Email sent successfully to ${options.to} (ID: ${result.data?.id})`,
 			);
 			return {
@@ -207,7 +207,7 @@ export class EmailService {
 			// 네트워크 에러 등 예외 발생 시 재시도
 			if (attempt < EMAIL_CONSTANTS.MAX_RETRIES) {
 				const delay = this._calculateBackoffDelay(attempt);
-				this._logger.warn(
+				this.logger.warn(
 					`Network error, retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
 				);
 				await this._sleep(delay);
@@ -216,7 +216,7 @@ export class EmailService {
 
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this._logger.error(
+			this.logger.error(
 				`Failed to send email to ${options.to}: ${errorMessage}`,
 			);
 
