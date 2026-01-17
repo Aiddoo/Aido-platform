@@ -257,7 +257,7 @@ describe("Todo (e2e)", () => {
 					.expect(404);
 
 				expect(response.body.success).toBe(false);
-				expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+				expect(response.body.error.code).toBe("TODO_0801");
 			});
 
 			it("인증 없이 조회 시도 시 401 에러", async () => {
@@ -344,7 +344,7 @@ describe("Todo (e2e)", () => {
 					.send({ title: "수정" })
 					.expect(404);
 
-				expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+				expect(response.body.error.code).toBe("TODO_0801");
 			});
 
 			it("인증 없이 수정 시도 시 401 에러", async () => {
@@ -420,7 +420,7 @@ describe("Todo (e2e)", () => {
 					.send({ completed: true })
 					.expect(404);
 
-				expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+				expect(response.body.error.code).toBe("TODO_0801");
 			});
 
 			it("completed 필드 누락 시 400 에러", async () => {
@@ -688,7 +688,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(404);
 
-				expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+				expect(response.body.error.code).toBe("TODO_0801");
 			});
 
 			it("인증 없이 삭제 시도 시 401 에러", async () => {
@@ -731,7 +731,7 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${user2Token}`)
 				.expect(404);
 
-			expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+			expect(response.body.error.code).toBe("TODO_0801");
 		});
 
 		it("다른 사용자의 할 일 수정 시 404 에러", async () => {
@@ -741,7 +741,7 @@ describe("Todo (e2e)", () => {
 				.send({ title: "해킹 시도" })
 				.expect(404);
 
-			expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+			expect(response.body.error.code).toBe("TODO_0801");
 		});
 
 		it("다른 사용자의 할 일 삭제 시 404 에러", async () => {
@@ -750,7 +750,7 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${user2Token}`)
 				.expect(404);
 
-			expect(response.body.error.code).toBe("TODO_NOT_FOUND");
+			expect(response.body.error.code).toBe("TODO_0801");
 		});
 
 		it("각 사용자는 자신의 할 일만 목록에서 조회됨", async () => {

@@ -82,7 +82,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		}
 
 		// 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
-		const userId = (request as any).user?.userId ?? "anonymous";
+		const userId =
+			(request as Request & { user?: { userId?: string } }).user?.userId ??
+			"anonymous";
 		if (statusCode >= 500) {
 			// 서버 에러: 스택 트레이스 포함
 			const stack = exception instanceof Error ? exception.stack : undefined;
