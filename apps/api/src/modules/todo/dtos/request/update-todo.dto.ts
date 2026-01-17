@@ -1,7 +1,8 @@
-import { todoUpdateSchema } from "@aido/validators";
+/**
+ * Todo 수정 요청 DTO
+ */
+
+import { updateTodoSchema } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
 
-// 스키마는 @aido/validators에서 import
-export { todoUpdateSchema as UpdateTodoSchema } from "@aido/validators";
-
-export class UpdateTodoDto extends createZodDto(todoUpdateSchema) {}
+export class UpdateTodoDto extends createZodDto(updateTodoSchema) {}

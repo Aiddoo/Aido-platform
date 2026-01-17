@@ -15,10 +15,10 @@
  * @example
  * ```typescript
  * // 타입 import
- * import type { Todo, TodoCreate, TodoUpdate, PaginationQuery } from '@aido/validators';
+ * import type { FollowUser, Nudge, DailyCompletion } from '@aido/validators';
  *
  * // 스키마 import (런타임 검증용)
- * import { todoSchema, todoCreateSchema, paginationQuerySchema } from '@aido/validators';
+ * import { followByTagSchema, createNudgeSchema, dailyCompletionSchema } from '@aido/validators';
  * ```
  */
 
@@ -27,6 +27,10 @@ export { z } from 'zod';
 
 // Common schemas & types
 export * from './common';
-export * from './domains/auth';
+
 // Domain schemas
+export * from './domains/auth';
+export * from './domains/daily-completion';
+export * from './domains/follow';
+export * from './domains/nudge';
 export * from './domains/todo';
