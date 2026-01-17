@@ -352,3 +352,19 @@ export const unlinkAccountSchema = z
   .describe('소셜 계정 연결 해제 요청');
 
 export type UnlinkAccountInput = z.infer<typeof unlinkAccountSchema>;
+
+// ============================================
+// OAuth 교환 코드 요청
+// ============================================
+
+/** OAuth 교환 코드로 토큰 획득 요청 */
+export const exchangeCodeSchema = z
+  .object({
+    code: z
+      .string()
+      .min(1, '교환 코드가 필요합니다')
+      .describe('OAuth 인증 후 발급된 일회용 교환 코드 (base64url 인코딩)'),
+  })
+  .describe('OAuth 토큰 교환 요청');
+
+export type ExchangeCodeInput = z.infer<typeof exchangeCodeSchema>;
