@@ -7,6 +7,7 @@ export const SWAGGER_TAGS = {
 	USER_AUTH: "User - 인증",
 	USER_TODO: "User - Todo",
 	TODOS: "Todos",
+	FOLLOWS: "Follows",
 	DAILY_COMPLETIONS: "Daily Completions",
 
 	// Admin APIs (관리자/백오피스용) - 추후 확장

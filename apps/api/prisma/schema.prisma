@@ -387,21 +387,31 @@ enum TodoVisibility {
 }
 
 // =============================================================================
-// Todo 앱 - 팔로우 (일방향)
+// Todo 앱 - 친구 요청/팔로우
 // =============================================================================
+// 친구 요청 시스템: A가 B에게 요청 → B가 수락해야 친구 성립 (양방향)
+// PENDING: 친구 요청 대기 중
+// ACCEPTED: 친구 관계 수락됨
+
+enum FollowStatus {
+  PENDING // 친구 요청 대기 중
+  ACCEPTED // 수락됨 (친구)
+}
 
 model Follow {
-  id          String   @id @default(cuid())
-  followerId  String // 팔로우하는 사람
-  followingId String // 팔로우 당하는 사람
-  createdAt   DateTime @default(now())
+  id          String       @id @default(cuid())
+  followerId  String // 요청 보낸 사람
+  followingId String // 요청 받은 사람
+  status      FollowStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   follower  User @relation("user_following", fields: [followerId], references: [id], onDelete: Cascade)
   following User @relation("user_followers", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
+  @@index([followerId, status])
+  @@index([followingId, status])
 }
 
 // =============================================================================

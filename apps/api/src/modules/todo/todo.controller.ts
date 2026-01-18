@@ -19,6 +19,7 @@ import {
 	ApiCreatedResponse,
 	ApiDoc,
 	ApiErrorResponse,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -27,6 +28,7 @@ import {
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { JwtAuthGuard } from "../auth/guards";
+import { UserIdParamDto } from "../follow/dtos";
 
 import {
 	CreateTodoDto,
@@ -44,6 +46,7 @@ import {
 	UpdateTodoScheduleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
+import { mapTodosToResponse, mapTodoToResponse } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 /**
@@ -146,7 +149,7 @@ export class TodoController {
 
 		return {
 			message: "할 일이 생성되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -217,7 +220,69 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 		});
 
 		return {
-			items: result.items.map((todo) => this.mapToResponse(todo)),
+			items: mapTodosToResponse(result.items),
+			pagination: result.pagination,
+		};
+	}
+
+	@Get("friends/:userId")
+	@ApiDoc({
+		summary: "친구의 할 일 목록 조회",
+		description: `
+## 👥 친구의 할 일 목록 조회
+
+친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 경로 파라미터
+- \`userId\`: 친구의 사용자 ID (CUID 문자열)
+
+### 🔍 쿼리 파라미터
+| 파라미터 | 타입 | 기본값 | 설명 |
+|----------|------|--------|------|
+| \`cursor\` | string | - | 페이지네이션 커서 |
+| \`size\` | number | 20 | 페이지 크기 (1-100) |
+| \`startDate\` | string | - | 시작일 필터 (YYYY-MM-DD) |
+| \`endDate\` | string | - | 종료일 필터 (YYYY-MM-DD) |
+
+### 📝 요청 예시
+\`\`\`
+GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
+\`\`\`
+
+### ⚠️ 접근 조건
+- **맞팔 관계**여야만 조회 가능합니다
+- 친구의 PUBLIC 투두만 조회할 수 있습니다
+
+### ⚠️ 에러 케이스
+- \`FOLLOW_0906\`: 친구가 아닌 사용자의 투두를 볼 수 없습니다
+		`,
+	})
+	@ApiSuccessResponse({ type: TodoListResponseDto })
+	@ApiUnauthorizedError()
+	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
+	async findFriendTodos(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: UserIdParamDto,
+		@Query() query: GetTodosQueryDto,
+	): Promise<TodoListResponseDto> {
+		this.logger.debug(
+			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
+		);
+
+		const result = await this.todoService.findFriendTodos({
+			userId: user.userId,
+			friendUserId: params.userId,
+			cursor: query.cursor,
+			size: query.size,
+			startDate: query.startDate ? new Date(query.startDate) : undefined,
+			endDate: query.endDate ? new Date(query.endDate) : undefined,
+		});
+
+		return {
+			items: mapTodosToResponse(result.items),
 			pagination: result.pagination,
 		};
 	}
@@ -251,7 +316,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		const todo = await this.todoService.findById(params.id, user.userId);
 
-		return this.mapToResponse(todo);
+		return mapTodoToResponse(todo);
 	}
 
 	// ============================================
@@ -346,7 +411,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -408,7 +473,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 			message: dto.completed
 				? "할 일이 완료되었습니다."
 				: "할 일이 미완료로 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -460,7 +525,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		return {
 			message: "공개 범위가 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -519,7 +584,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		return {
 			message: dto.color ? "색상이 변경되었습니다." : "색상이 제거되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -580,7 +645,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		return {
 			message: "일정이 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -637,7 +702,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -701,49 +766,5 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 		const date = new Date(dateStr);
 		date.setHours(hours, minutes, 0, 0);
 		return date;
-	}
-
-	/**
-	 * ISO 날짜 문자열에서 날짜 부분만 추출 (YYYY-MM-DD)
-	 */
-	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0] ?? date.toISOString().slice(0, 10);
-	}
-
-	/**
-	 * Prisma Todo 엔티티를 응답 DTO로 변환
-	 */
-	private mapToResponse(todo: {
-		id: number;
-		userId: string;
-		title: string;
-		content: string | null;
-		color: string | null;
-		completed: boolean;
-		completedAt: Date | null;
-		startDate: Date;
-		endDate: Date | null;
-		scheduledTime: Date | null;
-		isAllDay: boolean;
-		visibility: string;
-		createdAt: Date;
-		updatedAt: Date;
-	}): TodoResponseDto {
-		return {
-			id: todo.id,
-			userId: todo.userId,
-			title: todo.title,
-			content: todo.content,
-			color: todo.color,
-			completed: todo.completed,
-			completedAt: todo.completedAt?.toISOString() ?? null,
-			startDate: this.formatDate(todo.startDate),
-			endDate: todo.endDate ? this.formatDate(todo.endDate) : null,
-			scheduledTime: todo.scheduledTime?.toISOString() ?? null,
-			isAllDay: todo.isAllDay,
-			visibility: todo.visibility as "PUBLIC" | "PRIVATE",
-			createdAt: todo.createdAt.toISOString(),
-			updatedAt: todo.updatedAt.toISOString(),
-		};
 	}
 }

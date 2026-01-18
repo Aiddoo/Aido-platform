@@ -16,6 +16,7 @@ import type { ErrorDefinition } from './types';
  * - USER    (0600-0699): 사용자/계정
  * - SESSION (0700-0749): 세션
  * - TODO    (0800-0899): Todo
+ * - FOLLOW  (0900-0999): 친구/팔로우
  */
 export const ErrorCode = {
   // =========================================================================
@@ -137,6 +138,18 @@ export const ErrorCode = {
   // Todo (TODO_0800-0899)
   // =========================================================================
   TODO_0801: 'TODO_0801',
+
+  // =========================================================================
+  // 친구/팔로우 (FOLLOW_0900-0999)
+  // =========================================================================
+  FOLLOW_0901: 'FOLLOW_0901',
+  FOLLOW_0902: 'FOLLOW_0902',
+  FOLLOW_0903: 'FOLLOW_0903',
+  FOLLOW_0904: 'FOLLOW_0904',
+  FOLLOW_0905: 'FOLLOW_0905',
+  FOLLOW_0906: 'FOLLOW_0906',
+  FOLLOW_0907: 'FOLLOW_0907',
+  FOLLOW_0908: 'FOLLOW_0908',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -623,5 +636,57 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'Todo를 찾을 수 없습니다.',
     description: '해당 ID의 Todo가 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // 친구/팔로우 (FOLLOW_0900-0999)
+  // =========================================================================
+  [ErrorCode.FOLLOW_0901]: {
+    code: 'FOLLOW_0901',
+    message: '이미 친구 요청을 보냈습니다.',
+    description: '해당 사용자에게 이미 친구 요청을 보낸 상태입니다.',
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.FOLLOW_0902]: {
+    code: 'FOLLOW_0902',
+    message: '이미 친구 관계입니다.',
+    description: '해당 사용자와 이미 친구 관계입니다.',
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.FOLLOW_0903]: {
+    code: 'FOLLOW_0903',
+    message: '친구 요청을 찾을 수 없습니다.',
+    description: '해당 친구 요청이 존재하지 않거나 이미 처리되었습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.FOLLOW_0904]: {
+    code: 'FOLLOW_0904',
+    message: '자기 자신에게 친구 요청을 보낼 수 없습니다.',
+    description: '자기 자신을 친구로 추가할 수 없습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.FOLLOW_0905]: {
+    code: 'FOLLOW_0905',
+    message: '해당 사용자를 찾을 수 없습니다.',
+    description: '친구 요청 대상 사용자가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.FOLLOW_0906]: {
+    code: 'FOLLOW_0906',
+    message: '친구가 아닌 사용자의 투두를 볼 수 없습니다.',
+    description: '서로 친구 관계인 경우에만 투두를 조회할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.FOLLOW_0907]: {
+    code: 'FOLLOW_0907',
+    message: '친구 관계가 아닙니다.',
+    description: '해당 사용자와 친구 관계가 아닙니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.FOLLOW_0908]: {
+    code: 'FOLLOW_0908',
+    message: '이미 상대방이 친구 요청을 보냈습니다.',
+    description: '상대방의 친구 요청을 수락하거나 거절해주세요.',
+    httpStatus: HttpStatus.CONFLICT,
   },
 };

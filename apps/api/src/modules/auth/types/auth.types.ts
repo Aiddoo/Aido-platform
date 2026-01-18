@@ -74,3 +74,14 @@ export interface UpdateProfileResult {
 	name: string | null;
 	profileImage: string | null;
 }
+
+/**
+ * OAuth 코드 교환 결과
+ */
+export interface ExchangeCodeResult {
+	userId: string;
+	accessToken: string;
+	refreshToken: string;
+	userName?: string;
+	profileImage?: string;
+}

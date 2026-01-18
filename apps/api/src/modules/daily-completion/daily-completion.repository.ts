@@ -3,29 +3,20 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
 import { DATE_FORMAT } from "@/common/date";
+import { DatabaseService } from "@/database/database.service";
+import type {
+	FindTodosByDateRangeParams,
+	TodoAggregateByDate,
+} from "./types/daily-completion.types";
 
 // UTC 플러그인 활성화
 dayjs.extend(utc);
 
-import { DatabaseService } from "@/database/database.service";
-
-/**
- * 날짜 범위 내 Todo 조회를 위한 파라미터
- */
-export interface FindTodosByDateRangeParams {
-	userId: string;
-	startDate: Date;
-	endDate: Date;
-}
-
-/**
- * Todo 집계 결과 (날짜별)
- */
-export interface TodoAggregateByDate {
-	date: Date;
-	total: number;
-	completed: number;
-}
+// 타입 재내보내기 (기존 import 호환성 유지)
+export type {
+	FindTodosByDateRangeParams,
+	TodoAggregateByDate,
+} from "./types/daily-completion.types";
 
 @Injectable()
 export class DailyCompletionRepository {
