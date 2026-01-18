@@ -1,17 +1,20 @@
 import type { ViewProps } from 'react-native';
+import type { VariantProps } from 'tailwind-variants';
 
-export type FlexDirection = 'row' | 'column' | 'row-reverse' | 'column-reverse';
-export type FlexWrap = 'wrap' | 'nowrap' | 'wrap-reverse';
-export type FlexJustify = 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
-export type FlexAlign = 'start' | 'center' | 'end' | 'stretch' | 'baseline';
+import type { flexVariants } from './Flex.variants';
 
-export interface FlexProps extends Omit<ViewProps, 'style'> {
+type FlexVariantProps = VariantProps<typeof flexVariants>;
+
+export type FlexDirection = FlexVariantProps['direction'];
+export type FlexWrap = FlexVariantProps['wrap'];
+export type FlexJustify = FlexVariantProps['justify'];
+export type FlexAlign = FlexVariantProps['align'];
+
+export interface FlexProps extends ViewProps {
   direction?: FlexDirection;
   wrap?: FlexWrap;
   justify?: FlexJustify;
   align?: FlexAlign;
   gap?: number;
   className?: string;
-  style?: ViewProps['style'];
-  children?: React.ReactNode;
 }
