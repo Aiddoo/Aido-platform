@@ -429,4 +429,83 @@ export class BusinessExceptions {
 	static reverseRequestExists(targetUserId: string) {
 		return new BusinessException(ErrorCode.FOLLOW_0908, { targetUserId });
 	}
+
+	// =========================================================================
+	// 알림/푸시 (Notification)
+	// =========================================================================
+	static invalidPushToken(token?: string) {
+		return new BusinessException(ErrorCode.NOTIFICATION_1001, { token });
+	}
+
+	static pushTokenNotFound(userId: string) {
+		return new BusinessException(ErrorCode.NOTIFICATION_1002, { userId });
+	}
+
+	static pushSendFailed(details?: unknown) {
+		return new BusinessException(ErrorCode.NOTIFICATION_1003, details);
+	}
+
+	static notificationNotFound(notificationId: number) {
+		return new BusinessException(ErrorCode.NOTIFICATION_1004, {
+			notificationId,
+		});
+	}
+
+	static notificationAccessDenied(notificationId: number) {
+		return new BusinessException(ErrorCode.NOTIFICATION_1005, {
+			notificationId,
+		});
+	}
+
+	// =========================================================================
+	// 독촉 (Nudge)
+	// =========================================================================
+	static nudgeDailyLimitExceeded(limit: number) {
+		return new BusinessException(ErrorCode.NUDGE_1101, { limit });
+	}
+
+	static nudgeCooldownActive(targetUserId: string, remainingSeconds: number) {
+		return new BusinessException(ErrorCode.NUDGE_1102, {
+			targetUserId,
+			remainingSeconds,
+		});
+	}
+
+	static nudgeNotFriend(targetUserId: string) {
+		return new BusinessException(ErrorCode.NUDGE_1103, { targetUserId });
+	}
+
+	static cannotNudgeSelf() {
+		return new BusinessException(ErrorCode.NUDGE_1104);
+	}
+
+	static nudgeNotFound(nudgeId: number) {
+		return new BusinessException(ErrorCode.NUDGE_1105, { nudgeId });
+	}
+
+	// =========================================================================
+	// 응원 (Cheer)
+	// =========================================================================
+	static cheerDailyLimitExceeded(limit: number) {
+		return new BusinessException(ErrorCode.CHEER_1201, { limit });
+	}
+
+	static cheerCooldownActive(targetUserId: string, remainingSeconds: number) {
+		return new BusinessException(ErrorCode.CHEER_1202, {
+			targetUserId,
+			remainingSeconds,
+		});
+	}
+
+	static cheerNotFriend(targetUserId: string) {
+		return new BusinessException(ErrorCode.CHEER_1203, { targetUserId });
+	}
+
+	static cannotCheerSelf() {
+		return new BusinessException(ErrorCode.CHEER_1204);
+	}
+
+	static cheerNotFound(cheerId: number) {
+		return new BusinessException(ErrorCode.CHEER_1205, { cheerId });
+	}
 }

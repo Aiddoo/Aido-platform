@@ -18,6 +18,7 @@
  */
 
 import { Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -49,6 +50,11 @@ describe("TodoService Integration Tests", () => {
 	// Mock FollowService
 	const mockFollowService = {
 		isMutualFriend: jest.fn(),
+	};
+
+	// Mock EventEmitter
+	const mockEventEmitter = {
+		emit: jest.fn(),
 	};
 
 	// 테스트 데이터
@@ -98,6 +104,10 @@ describe("TodoService Integration Tests", () => {
 				{
 					provide: FollowService,
 					useValue: mockFollowService,
+				},
+				{
+					provide: EventEmitter2,
+					useValue: mockEventEmitter,
 				},
 				{
 					provide: TypedConfigService,

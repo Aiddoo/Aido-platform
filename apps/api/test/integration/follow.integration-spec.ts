@@ -18,6 +18,7 @@
  */
 
 import { Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -62,6 +63,11 @@ describe("FollowService Integration Tests", () => {
 		(callback: (tx: unknown) => Promise<unknown>) =>
 			callback(mockDatabaseService),
 	);
+
+	// Mock EventEmitter
+	const mockEventEmitter = {
+		emit: jest.fn(),
+	};
 
 	// 테스트 데이터
 	const mockUserId = "user-integration-123";
@@ -123,6 +129,10 @@ describe("FollowService Integration Tests", () => {
 							maxPageSize: 100,
 						},
 					},
+				},
+				{
+					provide: EventEmitter2,
+					useValue: mockEventEmitter,
 				},
 			],
 		}).compile();

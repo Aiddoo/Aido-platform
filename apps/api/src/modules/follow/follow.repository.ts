@@ -353,4 +353,19 @@ export class FollowRepository {
 		});
 		return user !== null;
 	}
+
+	/**
+	 * 사용자 이름 조회 (알림용)
+	 */
+	async getUserName(userId: string): Promise<string | null> {
+		const user = await this.database.user.findUnique({
+			where: { id: userId },
+			select: {
+				profile: {
+					select: { name: true },
+				},
+			},
+		});
+		return user?.profile?.name ?? null;
+	}
 }

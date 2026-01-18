@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { now, toDate } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
@@ -6,6 +7,11 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import type { Todo } from "@/generated/prisma/client";
 
 import { FollowService } from "../follow/follow.service";
+import {
+	type FriendCompletedEventPayload,
+	NotificationEvents,
+	type TodoAllCompletedEventPayload,
+} from "../notification/events/notification.events";
 
 import { TodoRepository } from "./todo.repository";
 import type {
@@ -25,6 +31,7 @@ export class TodoService {
 		private readonly todoRepository: TodoRepository,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	/**
@@ -223,7 +230,59 @@ export class TodoService {
 			`Todo completion toggled: ${id} -> ${data.completed} for user: ${userId}`,
 		);
 
+		// 완료로 변경된 경우, 오늘 할일 전체 완료 여부 확인 후 이벤트 발행
+		if (data.completed) {
+			await this.checkAndEmitAllCompletedEvent(userId);
+		}
+
 		return updatedTodo;
+	}
+
+	/**
+	 * 오늘 할일 전체 완료 시 이벤트 발행
+	 * @private
+	 */
+	private async checkAndEmitAllCompletedEvent(userId: string): Promise<void> {
+		try {
+			const stats = await this.todoRepository.getTodayTodoStats(userId);
+
+			// 오늘 할일이 있고, 모두 완료된 경우
+			if (stats.total > 0 && stats.total === stats.completed) {
+				this.logger.log(
+					`User ${userId} completed all ${stats.completed} todos today!`,
+				);
+
+				// 1. 본인에게 전체 완료 이벤트 발행
+				this.eventEmitter.emit(NotificationEvents.TODO_ALL_COMPLETED, {
+					userId,
+					completedCount: stats.completed,
+				} satisfies TodoAllCompletedEventPayload);
+
+				// 2. 친구들에게 알림 이벤트 발행
+				const [friendIds, userName] = await Promise.all([
+					this.todoRepository.getMutualFriendIds(userId),
+					this.todoRepository.getUserName(userId),
+				]);
+
+				if (friendIds.length > 0) {
+					this.eventEmitter.emit(NotificationEvents.FRIEND_COMPLETED, {
+						friendId: userId,
+						friendName: userName ?? "친구",
+						notifyUserIds: friendIds,
+					} satisfies FriendCompletedEventPayload);
+
+					this.logger.log(
+						`Friend completed event emitted to ${friendIds.length} friends`,
+					);
+				}
+			}
+		} catch (error) {
+			// 이벤트 발행 실패가 메인 로직에 영향을 주지 않도록 로깅만 수행
+			this.logger.error(
+				`Failed to check/emit all completed event: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 
 	/**

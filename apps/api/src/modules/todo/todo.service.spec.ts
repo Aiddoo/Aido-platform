@@ -1,3 +1,4 @@
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -32,6 +33,10 @@ describe("TodoService", () => {
 		isMutualFriend: jest.fn(),
 	};
 
+	const mockEventEmitter = {
+		emit: jest.fn(),
+	};
+
 	// 테스트 데이터
 	const mockUserId = "user-123";
 	const mockTodoId = 1;
@@ -62,6 +67,7 @@ describe("TodoService", () => {
 				{ provide: TodoRepository, useValue: mockTodoRepository },
 				{ provide: PaginationService, useValue: mockPaginationService },
 				{ provide: FollowService, useValue: mockFollowService },
+				{ provide: EventEmitter2, useValue: mockEventEmitter },
 			],
 		}).compile();
 

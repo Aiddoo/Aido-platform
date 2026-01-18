@@ -4,7 +4,7 @@
   "languages": {
     "TypeScript": {
       "formatter": "language_server",
-      "language_servers": ["biome", "!vtsls", "!typescript-language-server"],
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
       "code_actions_on_format": {
         "source.organizeImports": false,
         "source.organizeImports.biome": true,
@@ -13,7 +13,7 @@
     },
     "TSX": {
       "formatter": "language_server",
-      "language_servers": ["biome", "!vtsls", "!typescript-language-server"],
+      "language_servers": ["biome", "vtsls", "!typescript-language-server"],
       "code_actions_on_format": {
         "source.organizeImports": false,
         "source.organizeImports.biome": true,

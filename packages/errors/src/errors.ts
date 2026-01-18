@@ -17,6 +17,9 @@ import type { ErrorDefinition } from './types';
  * - SESSION (0700-0749): 세션
  * - TODO    (0800-0899): Todo
  * - FOLLOW  (0900-0999): 친구/팔로우
+ * - NOTIFICATION (1000-1099): 알림/푸시
+ * - NUDGE   (1100-1199): 독촉
+ * - CHEER   (1200-1299): 응원
  */
 export const ErrorCode = {
   // =========================================================================
@@ -150,6 +153,33 @@ export const ErrorCode = {
   FOLLOW_0906: 'FOLLOW_0906',
   FOLLOW_0907: 'FOLLOW_0907',
   FOLLOW_0908: 'FOLLOW_0908',
+
+  // =========================================================================
+  // 알림/푸시 (NOTIFICATION_1000-1099)
+  // =========================================================================
+  NOTIFICATION_1001: 'NOTIFICATION_1001',
+  NOTIFICATION_1002: 'NOTIFICATION_1002',
+  NOTIFICATION_1003: 'NOTIFICATION_1003',
+  NOTIFICATION_1004: 'NOTIFICATION_1004',
+  NOTIFICATION_1005: 'NOTIFICATION_1005',
+
+  // =========================================================================
+  // 독촉 (NUDGE_1100-1199)
+  // =========================================================================
+  NUDGE_1101: 'NUDGE_1101',
+  NUDGE_1102: 'NUDGE_1102',
+  NUDGE_1103: 'NUDGE_1103',
+  NUDGE_1104: 'NUDGE_1104',
+  NUDGE_1105: 'NUDGE_1105',
+
+  // =========================================================================
+  // 응원 (CHEER_1200-1299)
+  // =========================================================================
+  CHEER_1201: 'CHEER_1201',
+  CHEER_1202: 'CHEER_1202',
+  CHEER_1203: 'CHEER_1203',
+  CHEER_1204: 'CHEER_1204',
+  CHEER_1205: 'CHEER_1205',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -688,5 +718,107 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '이미 상대방이 친구 요청을 보냈습니다.',
     description: '상대방의 친구 요청을 수락하거나 거절해주세요.',
     httpStatus: HttpStatus.CONFLICT,
+  },
+
+  // =========================================================================
+  // 알림/푸시 (NOTIFICATION_1000-1099)
+  // =========================================================================
+  [ErrorCode.NOTIFICATION_1001]: {
+    code: 'NOTIFICATION_1001',
+    message: '유효하지 않은 푸시 토큰입니다.',
+    description: '푸시 토큰 형식이 올바르지 않습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NOTIFICATION_1002]: {
+    code: 'NOTIFICATION_1002',
+    message: '등록된 푸시 토큰이 없습니다.',
+    description: '해당 사용자에게 등록된 푸시 토큰이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.NOTIFICATION_1003]: {
+    code: 'NOTIFICATION_1003',
+    message: '푸시 발송에 실패했습니다.',
+    description: '푸시 알림 전송 중 오류가 발생했습니다.',
+    httpStatus: HttpStatus.BAD_GATEWAY,
+  },
+  [ErrorCode.NOTIFICATION_1004]: {
+    code: 'NOTIFICATION_1004',
+    message: '알림을 찾을 수 없습니다.',
+    description: '해당 ID의 알림이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.NOTIFICATION_1005]: {
+    code: 'NOTIFICATION_1005',
+    message: '알림에 대한 접근 권한이 없습니다.',
+    description: '해당 알림은 다른 사용자의 알림입니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+
+  // =========================================================================
+  // 독촉 (NUDGE_1100-1199)
+  // =========================================================================
+  [ErrorCode.NUDGE_1101]: {
+    code: 'NUDGE_1101',
+    message: '일일 독촉 횟수를 초과했습니다.',
+    description: 'FREE 사용자는 하루 3회까지만 독촉을 보낼 수 있습니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.NUDGE_1102]: {
+    code: 'NUDGE_1102',
+    message: '쿨다운 기간입니다. 24시간 후 다시 시도해주세요.',
+    description: '같은 할일에 대해 24시간 내 재독촉은 불가합니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.NUDGE_1103]: {
+    code: 'NUDGE_1103',
+    message: '친구 관계가 아닙니다.',
+    description: '독촉은 친구에게만 보낼 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.NUDGE_1104]: {
+    code: 'NUDGE_1104',
+    message: '자신에게 독촉할 수 없습니다.',
+    description: '자기 자신에게는 독촉을 보낼 수 없습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NUDGE_1105]: {
+    code: 'NUDGE_1105',
+    message: 'Nudge를 찾을 수 없습니다.',
+    description: '해당 ID의 Nudge가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // 응원 (CHEER_1200-1299)
+  // =========================================================================
+  [ErrorCode.CHEER_1201]: {
+    code: 'CHEER_1201',
+    message: '일일 응원 횟수를 초과했습니다.',
+    description: 'FREE 사용자는 하루 3회까지만 응원을 보낼 수 있습니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.CHEER_1202]: {
+    code: 'CHEER_1202',
+    message: '쿨다운 기간입니다. 24시간 후 다시 시도해주세요.',
+    description: '같은 친구에게 24시간 내 재응원은 불가합니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.CHEER_1203]: {
+    code: 'CHEER_1203',
+    message: '친구 관계가 아닙니다.',
+    description: '응원은 친구에게만 보낼 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.CHEER_1204]: {
+    code: 'CHEER_1204',
+    message: '자신에게 응원할 수 없습니다.',
+    description: '자기 자신에게는 응원을 보낼 수 없습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.CHEER_1205]: {
+    code: 'CHEER_1205',
+    message: 'Cheer를 찾을 수 없습니다.',
+    description: '해당 ID의 Cheer가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 };

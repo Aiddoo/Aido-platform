@@ -1,3 +1,4 @@
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -29,6 +30,7 @@ describe("FollowService", () => {
 		countReceivedRequests: jest.fn(),
 		countSentRequests: jest.fn(),
 		userExists: jest.fn(),
+		getUserName: jest.fn(),
 	};
 
 	const mockPaginationService = {
@@ -44,6 +46,10 @@ describe("FollowService", () => {
 		(callback: (tx: unknown) => Promise<unknown>) =>
 			callback(mockDatabaseService),
 	);
+
+	const mockEventEmitter = {
+		emit: jest.fn(),
+	};
 
 	// 테스트 데이터
 	const mockUserId = "user-123";
@@ -87,6 +93,7 @@ describe("FollowService", () => {
 				{ provide: FollowRepository, useValue: mockFollowRepository },
 				{ provide: PaginationService, useValue: mockPaginationService },
 				{ provide: DatabaseService, useValue: mockDatabaseService },
+				{ provide: EventEmitter2, useValue: mockEventEmitter },
 			],
 		}).compile();
 
@@ -259,6 +266,12 @@ describe("FollowService", () => {
 			mockFollowRepository.update.mockResolvedValue({
 				...pendingRequest,
 				status: "ACCEPTED",
+			});
+			// acceptRequest에서 이벤트 발행을 위해 사용자 이름 조회
+			mockFollowRepository.getUserName.mockImplementation((userId: string) => {
+				if (userId === mockUserId) return Promise.resolve("테스트 유저");
+				if (userId === mockTargetUserId) return Promise.resolve("타겟 유저");
+				return Promise.resolve(null);
 			});
 		});
 
