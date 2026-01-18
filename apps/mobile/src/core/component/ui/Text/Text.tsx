@@ -16,7 +16,8 @@ export function Text({
   children,
   ...props
 }: TextProps) {
-  const shadeClass = tone === 'neutral' && shade ? shadeClasses[shade] : '';
+  const isNeutralTone = tone === 'neutral' || tone === undefined;
+  const shadeClass = isNeutralTone && shade ? shadeClasses[shade] : '';
 
   return (
     <RNText
