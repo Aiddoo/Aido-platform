@@ -4,7 +4,6 @@
  * 친구 요청 시스템 응답 검증을 위한 Zod 스키마
  */
 import { z } from 'zod';
-import { datetimeSchema } from '../../common/datetime';
 
 // ============================================
 // 친구 요청 상태 Enum
@@ -26,8 +25,8 @@ export const followSchema = z
     followerId: z.string().cuid().describe('친구 요청을 보낸 사용자 ID'),
     followingId: z.string().cuid().describe('친구 요청을 받은 사용자 ID'),
     status: followStatusSchema.describe('친구 요청 상태'),
-    createdAt: datetimeSchema.describe('친구 요청 시각'),
-    updatedAt: datetimeSchema.describe('마지막 업데이트 시각'),
+    createdAt: z.string().datetime().describe('친구 요청 시각'),
+    updatedAt: z.string().datetime().describe('마지막 업데이트 시각'),
   })
   .describe('팔로우 관계 정보')
   .meta({
@@ -57,7 +56,7 @@ export const followUserSchema = z
     isFollowing: z.boolean().describe('내가 이 사용자에게 친구 요청을 보냈거나 친구인지'),
     isFollower: z.boolean().describe('이 사용자가 나에게 친구 요청을 보냈거나 친구인지'),
     isFriend: z.boolean().describe('서로 친구인지 (맞팔 성립)'),
-    followedAt: datetimeSchema.describe('친구 요청 시각'),
+    followedAt: z.string().datetime().describe('친구 요청 시각'),
   })
   .describe('팔로우 관계의 사용자 정보')
   .meta({
@@ -83,7 +82,7 @@ export const friendUserSchema = z
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
-    friendsSince: datetimeSchema.describe('친구가 된 시각'),
+    friendsSince: z.string().datetime().describe('친구가 된 시각'),
   })
   .describe('친구 사용자 정보')
   .meta({
@@ -106,7 +105,7 @@ export const friendRequestUserSchema = z
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
-    requestedAt: datetimeSchema.describe('친구 요청 시각'),
+    requestedAt: z.string().datetime().describe('친구 요청 시각'),
   })
   .describe('친구 요청 사용자 정보')
   .meta({

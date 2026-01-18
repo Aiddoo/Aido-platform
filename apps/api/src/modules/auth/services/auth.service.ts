@@ -6,6 +6,13 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import {
+	addMilliseconds,
+	now,
+	subtractMinutes,
+	toISOString,
+	toISOStringOrNull,
+} from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { UserStatus } from "@/generated/prisma/client";
@@ -122,13 +129,13 @@ export class AuthService {
 			await this.userRepository.createProfile(newUser.id, { name }, tx);
 
 			// 약관 동의 기록
-			const now = new Date();
+			const currentTime = now();
 			await tx.userConsent.create({
 				data: {
 					userId: newUser.id,
-					termsAgreedAt: termsAgreed ? now : null,
-					privacyAgreedAt: privacyAgreed ? now : null,
-					marketingAgreedAt: marketingAgreed ? now : null,
+					termsAgreedAt: termsAgreed ? currentTime : null,
+					privacyAgreedAt: privacyAgreed ? currentTime : null,
+					marketingAgreedAt: marketingAgreed ? currentTime : null,
 				},
 			});
 
@@ -232,7 +239,7 @@ export class AuthService {
 			// 세션 만료 시간 계산
 			const expiresInSeconds =
 				this.tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
 			// 세션 먼저 생성 (refreshTokenHash 없이)
 			const session = await this.sessionRepository.create(
@@ -380,9 +387,7 @@ export class AuthService {
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
 		// 1. 로그인 시도 횟수 확인
-		const lockoutSince = new Date(
-			Date.now() - LOGIN_ATTEMPT.LOCKOUT_MINUTES * 60 * 1000,
-		);
+		const lockoutSince = subtractMinutes(LOGIN_ATTEMPT.LOCKOUT_MINUTES);
 		const recentFailures =
 			await this.loginAttemptRepository.countRecentFailuresByEmail(
 				email,
@@ -460,7 +465,7 @@ export class AuthService {
 			// 세션 만료 시간 계산
 			const expiresInSeconds =
 				this.tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
 			// 세션 먼저 생성 (refreshTokenHash 없이)
 			const session = await this.sessionRepository.create(
@@ -691,7 +696,7 @@ export class AuthService {
 			throw BusinessExceptions.sessionRevoked();
 		}
 
-		if (session.expiresAt < new Date()) {
+		if (session.expiresAt < now()) {
 			throw BusinessExceptions.sessionExpired();
 		}
 
@@ -979,12 +984,12 @@ export class AuthService {
 			sessionId,
 			userTag: user.userTag,
 			status: user.status,
-			emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+			emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
 			subscriptionStatus: user.subscriptionStatus,
-			subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() ?? null,
+			subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
 			name: user.profile?.name ?? null,
 			profileImage: user.profile?.profileImage ?? null,
-			createdAt: user.createdAt.toISOString(),
+			createdAt: toISOString(user.createdAt),
 		};
 	}
 
