@@ -318,11 +318,11 @@ export class FollowController {
 
 		const totalCount = await this.followService.countFriends(user.userId);
 
-		return {
-			friends: result.items.map((f) => FollowMapper.toFriendUser(f)),
+		return FollowMapper.toFriendsListResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 
 	@Get("requests/received")
@@ -370,11 +370,11 @@ export class FollowController {
 			user.userId,
 		);
 
-		return {
-			requests: result.items.map((f) => FollowMapper.toReceivedRequest(f)),
+		return FollowMapper.toReceivedRequestsResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 
 	@Get("requests/sent")
@@ -420,10 +420,10 @@ export class FollowController {
 
 		const totalCount = await this.followService.countSentRequests(user.userId);
 
-		return {
-			requests: result.items.map((f) => FollowMapper.toSentRequest(f)),
+		return FollowMapper.toSentRequestsResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 }

@@ -21,7 +21,7 @@ import type { Todo as TodoEntity } from "@/generated/prisma/client";
  *
  * Prisma 엔티티를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
  */
-export class TodoMapper {
+export abstract class TodoMapper {
 	/**
 	 * ISO 날짜 문자열에서 날짜 부분만 추출합니다. (YYYY-MM-DD)
 	 *

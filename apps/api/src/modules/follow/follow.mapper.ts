@@ -24,7 +24,7 @@ import type { FollowWithUser } from "./types/follow.types";
  *
  * Prisma 엔티티를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
  */
-export class FollowMapper {
+export abstract class FollowMapper {
 	/**
 	 * Follow 엔티티를 기본 응답 형식으로 변환합니다.
 	 *

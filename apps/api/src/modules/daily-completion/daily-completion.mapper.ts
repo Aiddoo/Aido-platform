@@ -14,7 +14,7 @@ dayjs.extend(utc);
  *
  * Todo 집계 데이터를 일일 완료 요약 정보로 변환합니다.
  */
-export class DailyCompletionMapper {
+export abstract class DailyCompletionMapper {
 	/**
 	 * Todo 집계 데이터를 일일 완료 요약 정보로 변환합니다.
 	 *

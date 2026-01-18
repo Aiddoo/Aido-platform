@@ -22,7 +22,7 @@ import type {
  *
  * 인증 관련 서비스 결과를 API 응답 형식으로 변환합니다.
  */
-export class AuthMapper {
+export abstract class AuthMapper {
 	/**
 	 * 회원가입 결과를 API 응답 형식으로 변환합니다.
 	 *
