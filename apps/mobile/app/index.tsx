@@ -3,7 +3,7 @@ import { Switch } from 'heroui-native';
 import { ScrollView, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { Uniwind, useUniwind, withUniwind } from 'uniwind';
-import { Caption, H1, H2, H3, H4, Label, Paragraph, Text } from './core/component/ui/Text';
+import { H1, H2, H3, H4, Text } from './core/component/ui/Text';
 
 const StyledIonicons = withUniwind(Ionicons);
 
@@ -20,7 +20,7 @@ export default function HomeScreen() {
       <View className="px-6 py-8">
         {/* 테마 토글 */}
         <View className="mb-8 flex-row items-center justify-center gap-3">
-          <Text size="b3" color="gray-6">
+          <Text size="b3" tone="neutral" shade={6}>
             라이트
           </Text>
           <Switch
@@ -61,28 +61,33 @@ export default function HomeScreen() {
               )}
             </Switch.EndContent>
           </Switch>
-          <Text size="b3" color="foreground">
+          <Text size="b3" tone="neutral">
             다크
           </Text>
         </View>
 
-        {/* 시맨틱 컴포넌트 */}
+        {/* Heading 컴포넌트 */}
         <View className="mb-8 rounded-2xl bg-surface p-4">
-          <Caption className="mb-4">시맨틱 컴포넌트</Caption>
+          <Text size="e1" tone="neutral" shade={6} className="mb-4">
+            Heading 컴포넌트
+          </Text>
 
           <H1 className="mb-2">H1 - Large Title (30px)</H1>
           <H2 className="mb-2">H2 - Title 1 (28px)</H2>
           <H3 className="mb-2">H3 - Title 2 (22px)</H3>
           <H4 className="mb-3">H4 - Title 3 (20px)</H4>
 
-          <Paragraph className="mb-2">Paragraph - Body (17px)</Paragraph>
-          <Label className="mb-2">Label - Footnote (13px)</Label>
-          <Caption>Caption - Caption 1 (12px)</Caption>
+          <H1 emphasize className="mb-2">
+            H1 emphasize
+          </H1>
+          <H1 headline="STEP 1">H1 with headline</H1>
         </View>
 
         {/* Text 컴포넌트 직접 사용 */}
         <View className="mb-8 rounded-2xl bg-surface p-4">
-          <Caption className="mb-4">Text 컴포넌트 (size prop)</Caption>
+          <Text size="e1" tone="neutral" shade={6} className="mb-4">
+            Text 컴포넌트 (size prop)
+          </Text>
 
           <Text size="h1" className="mb-1">
             h1 - 30px
@@ -97,13 +102,13 @@ export default function HomeScreen() {
             t3 - 20px
           </Text>
           <Text size="b1" className="mb-1">
-            b1 - 17px (기본값)
+            b1 - 17px
           </Text>
           <Text size="b2" className="mb-1">
             b2 - 16px
           </Text>
           <Text size="b3" className="mb-1">
-            b3 - 15px
+            b3 - 15px (기본값)
           </Text>
           <Text size="b4" className="mb-1">
             b4 - 13px
@@ -116,7 +121,9 @@ export default function HomeScreen() {
 
         {/* Weight 테스트 */}
         <View className="mb-8 rounded-2xl bg-surface p-4">
-          <Caption className="mb-4">Font Weight</Caption>
+          <Text size="e1" tone="neutral" shade={6} className="mb-4">
+            Font Weight
+          </Text>
 
           <Text size="b1" weight="normal" className="mb-1">
             Normal (400)
@@ -132,32 +139,50 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Color 테스트 */}
+        {/* Tone + Shade 테스트 */}
+        <View className="mb-8 rounded-2xl bg-surface p-4">
+          <Text size="e1" tone="neutral" shade={6} className="mb-4">
+            Tone (시맨틱 색상)
+          </Text>
+          <Text size="b2" tone="neutral" className="mb-1">
+            neutral (기본)
+          </Text>
+          <Text size="b2" tone="brand" className="mb-1">
+            brand (메인 컬러)
+          </Text>
+          <Text size="b2" tone="danger" className="mb-1">
+            danger (에러)
+          </Text>
+          <Text size="b2" tone="warning" className="mb-1">
+            warning (경고)
+          </Text>
+          <Text size="b2" tone="success" className="mb-1">
+            success (성공)
+          </Text>
+          <Text size="b2" tone="info">
+            info (정보)
+          </Text>
+        </View>
+
+        {/* Shade 테스트 (neutral only) */}
         <View className="rounded-2xl bg-surface p-4">
-          <Caption className="mb-4">Colors</Caption>
-          <Text size="b2" color="gray-10" className="mb-1">
-            gray-10 (가장 진함)
+          <Text size="e1" tone="neutral" shade={6} className="mb-4">
+            Shade (neutral 전용)
           </Text>
-          <Text size="b2" color="gray-8" className="mb-1">
-            gray-8 (기본)
+          <Text size="b2" tone="neutral" shade={10} className="mb-1">
+            shade 10 (가장 진함)
           </Text>
-          <Text size="b2" color="gray-6" className="mb-1">
-            gray-6 (muted)
+          <Text size="b2" tone="neutral" shade={8} className="mb-1">
+            shade 8
           </Text>
-          <Text size="b2" color="gray-4" className="mb-1">
-            gray-4 (muted)
+          <Text size="b2" tone="neutral" shade={6} className="mb-1">
+            shade 6
           </Text>
-          <Text size="b2" color="gray-2" className="mb-1">
-            gray-2 (muted)
+          <Text size="b2" tone="neutral" shade={4} className="mb-1">
+            shade 4
           </Text>
-          <Text size="b2" color="main" className="mb-1">
-            main (메인 컬러)
-          </Text>
-          <Text size="b2" color="accent" className="mb-1">
-            accent (강조)
-          </Text>
-          <Text size="b2" color="error">
-            error (에러)
+          <Text size="b2" tone="neutral" shade={2}>
+            shade 2 (가장 연함)
           </Text>
         </View>
       </View>

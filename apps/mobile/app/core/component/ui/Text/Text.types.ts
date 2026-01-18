@@ -1,30 +1,14 @@
 import type { TextProps as RNTextProps } from 'react-native';
 
-export type TextColor =
-  | 'foreground'
-  | 'muted'
-  | 'accent'
-  | 'danger'
-  | 'main'
-  | 'secondary'
-  | 'error'
-  | 'gray-1'
-  | 'gray-2'
-  | 'gray-3'
-  | 'gray-4'
-  | 'gray-5'
-  | 'gray-6'
-  | 'gray-7'
-  | 'gray-8'
-  | 'gray-9'
-  | 'gray-10';
-
+export type TextTone = 'neutral' | 'brand' | 'danger' | 'warning' | 'success' | 'info';
+export type TextShade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 export type TextSize = 'h1' | 't1' | 't2' | 't3' | 'b1' | 'b2' | 'b3' | 'b4' | 'e1' | 'e2';
 export type TextAlign = 'left' | 'center' | 'right';
 
 export interface TextProps extends Omit<RNTextProps, 'style'> {
-  color?: TextColor;
+  tone?: TextTone;
+  shade?: TextShade;
   weight?: TextWeight;
   size?: TextSize;
   align?: TextAlign;

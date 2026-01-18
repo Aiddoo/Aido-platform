@@ -7,13 +7,13 @@
 @layer theme {
   @variant light {
     --background: oklch(1 0 0);
-    --foreground: oklch(0.2 0.005 285);
+    --foreground: oklch(0.32 0 0);
     --surface: oklch(0.98 0 0);
     --muted: oklch(0.65 0 0);
     --default: oklch(0.97 0 0);
     --accent: oklch(0.65 0.2 30);
     --danger: oklch(0.6 0.22 25);
-    --warning: oklch(0.85 0.15 85);
+    --warning: oklch(0.87 0.17 85);
     --divider: oklch(0.9 0 0);
 
     --gray-1: oklch(0.98 0 0);
@@ -30,17 +30,19 @@
     --main: oklch(0.65 0.2 30);
     --secondary: oklch(0.85 0.15 85);
     --error: oklch(0.6 0.22 25);
+    --success: oklch(0.65 0.18 155);
+    --info: oklch(0.68 0.17 250);
   }
 
   @variant dark {
     --background: oklch(0.15 0 0);
-    --foreground: oklch(0.98 0 0);
+    --foreground: oklch(0.97 0 0);
     --surface: oklch(0.2 0.005 285);
     --muted: oklch(0.78 0 0);
     --default: oklch(0.32 0 0);
     --accent: oklch(0.65 0.2 30);
     --danger: oklch(0.6 0.22 25);
-    --warning: oklch(0.85 0.15 85);
+    --warning: oklch(0.87 0.17 85);
     --divider: oklch(0.5 0 0);
 
     --gray-1: oklch(0.2 0.005 285);
@@ -57,13 +59,19 @@
     --main: oklch(0.65 0.2 30);
     --secondary: oklch(0.85 0.15 85);
     --error: oklch(0.6 0.22 25);
+    --success: oklch(0.65 0.18 155);
+    --info: oklch(0.68 0.17 250);
   }
 }
 
 @theme inline {
+  --color-foreground: var(--foreground);
   --color-main: var(--main);
   --color-secondary: var(--secondary);
   --color-error: var(--error);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
   --color-gray-1: var(--gray-1);
   --color-gray-2: var(--gray-2);
   --color-gray-3: var(--gray-3);
