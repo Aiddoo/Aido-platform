@@ -31,15 +31,7 @@ import {
 	SWAGGER_TAGS,
 } from "@/common/swagger";
 
-import {
-	mapToAuthTokensResponse,
-	mapToCurrentUserResponse,
-	mapToExchangeCodeResponse,
-	mapToMessageResponse,
-	mapToRefreshTokensResponse,
-	mapToRegisterResponse,
-	mapToUpdateProfileResponse,
-} from "./auth.mapper";
+import { AuthMapper } from "./auth.mapper";
 import { CurrentUser, type CurrentUserPayload, Public } from "./decorators";
 import {
 	AppleMobileCallbackDto,
@@ -183,7 +175,7 @@ export class AuthController {
 	@ApiConflictError(ErrorCode.EMAIL_0501)
 	async register(@Body() dto: RegisterDto) {
 		const result = await this.authService.register(dto);
-		return mapToRegisterResponse(result);
+		return AuthMapper.toRegisterResponse(result);
 	}
 
 	@Post("verify-email")
@@ -227,7 +219,7 @@ export class AuthController {
 	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.verifyEmail(dto, metadata);
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	@Post("resend-verification")
@@ -358,7 +350,7 @@ try {
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.login(dto, metadata);
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	@Post("logout")
@@ -389,7 +381,7 @@ try {
 	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		await this.authService.logout(user.userId, user.sessionId, metadata);
-		return mapToMessageResponse("로그아웃되었습니다.");
+		return AuthMapper.toMessageResponse("로그아웃되었습니다.");
 	}
 
 	@Post("logout-all")
@@ -420,7 +412,7 @@ try {
 	@ApiUnauthorizedError()
 	async logoutAll(@CurrentUser() user: CurrentUserPayload) {
 		await this.authService.logoutAll(user.userId);
-		return mapToMessageResponse("모든 기기에서 로그아웃되었습니다.");
+		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
 	// ============================================
@@ -471,7 +463,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
 		const result = await this.authService.refreshTokens(payload.refreshToken);
-		return mapToRefreshTokensResponse(result);
+		return AuthMapper.toRefreshTokensResponse(result);
 	}
 
 	// ============================================
@@ -639,7 +631,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 			user.email,
 			user.sessionId,
 		);
-		return mapToCurrentUserResponse(result);
+		return AuthMapper.toCurrentUserResponse(result);
 	}
 
 	@Patch("profile")
@@ -671,7 +663,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		@Body() dto: UpdateProfileDto,
 	) {
 		const result = await this.authService.updateProfile(user.userId, dto);
-		return mapToUpdateProfileResponse(result);
+		return AuthMapper.toUpdateProfileResponse(result);
 	}
 
 	// ============================================
@@ -831,7 +823,7 @@ curl -X POST https://api.aido.com/v1/auth/exchange \\
 	@ApiUnauthorizedError()
 	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
 		const result = await this.oauthService.exchangeCodeForTokens(dto.code);
-		return mapToExchangeCodeResponse(result);
+		return AuthMapper.toExchangeCodeResponse(result);
 	}
 
 	// ============================================
@@ -992,7 +984,7 @@ const handleAppleLogin = async () => {
 			},
 		);
 
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	@Post("google/callback")
@@ -1370,7 +1362,7 @@ export const useGoogleLogin = () => {
 			},
 		);
 
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	// ============================================
@@ -2282,7 +2274,7 @@ export const useKakaoLogin = () => {
 			},
 		);
 
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	@Post("naver/callback")
@@ -2792,7 +2784,7 @@ export const useNaverLogin = () => {
 			},
 		);
 
-		return mapToAuthTokensResponse(result);
+		return AuthMapper.toAuthTokensResponse(result);
 	}
 
 	// ============================================

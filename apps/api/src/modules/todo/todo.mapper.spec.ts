@@ -1,11 +1,7 @@
 import { type Todo, TodoVisibility } from "@/generated/prisma/client";
-import {
-	formatDateToString,
-	mapTodosToResponse,
-	mapTodoToResponse,
-} from "./todo.mapper";
+import { TodoMapper } from "./todo.mapper";
 
-describe("Todo Mapper", () => {
+describe("TodoMapper", () => {
 	const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
 		id: 1,
 		userId: "user-123",
@@ -24,24 +20,24 @@ describe("Todo Mapper", () => {
 		...overrides,
 	});
 
-	describe("formatDateToString", () => {
+	describe("formatDate", () => {
 		it("Date 객체를 YYYY-MM-DD 형식의 문자열로 변환해야 한다", () => {
 			const date = new Date("2024-01-15T10:30:00.000Z");
-			const result = formatDateToString(date);
+			const result = TodoMapper.formatDate(date);
 			expect(result).toBe("2024-01-15");
 		});
 
 		it("월과 일이 한 자리수일 때 0을 패딩해야 한다", () => {
 			const date = new Date("2024-03-05T00:00:00.000Z");
-			const result = formatDateToString(date);
+			const result = TodoMapper.formatDate(date);
 			expect(result).toBe("2024-03-05");
 		});
 	});
 
-	describe("mapTodoToResponse", () => {
+	describe("toResponse", () => {
 		it("Todo 엔티티를 올바른 응답 형식으로 변환해야 한다", () => {
 			const todo = createMockTodo();
-			const result = mapTodoToResponse(todo);
+			const result = TodoMapper.toResponse(todo);
 
 			expect(result).toEqual({
 				id: 1,
@@ -67,7 +63,7 @@ describe("Todo Mapper", () => {
 				completed: true,
 				completedAt,
 			});
-			const result = mapTodoToResponse(todo);
+			const result = TodoMapper.toResponse(todo);
 
 			expect(result.completed).toBe(true);
 			expect(result.completedAt).toBe("2024-01-15T15:00:00.000Z");
@@ -80,7 +76,7 @@ describe("Todo Mapper", () => {
 				endDate: null,
 				scheduledTime: null,
 			});
-			const result = mapTodoToResponse(todo);
+			const result = TodoMapper.toResponse(todo);
 
 			expect(result.content).toBeNull();
 			expect(result.color).toBeNull();
@@ -92,7 +88,7 @@ describe("Todo Mapper", () => {
 			const todo = createMockTodo({
 				visibility: TodoVisibility.PRIVATE,
 			});
-			const result = mapTodoToResponse(todo);
+			const result = TodoMapper.toResponse(todo);
 
 			expect(result.visibility).toBe("PRIVATE");
 		});
@@ -102,16 +98,16 @@ describe("Todo Mapper", () => {
 				isAllDay: true,
 				scheduledTime: null,
 			});
-			const result = mapTodoToResponse(todo);
+			const result = TodoMapper.toResponse(todo);
 
 			expect(result.isAllDay).toBe(true);
 			expect(result.scheduledTime).toBeNull();
 		});
 	});
 
-	describe("mapTodosToResponse", () => {
+	describe("toManyResponse", () => {
 		it("빈 배열을 올바르게 처리해야 한다", () => {
-			const result = mapTodosToResponse([]);
+			const result = TodoMapper.toManyResponse([]);
 			expect(result).toEqual([]);
 		});
 
@@ -121,7 +117,7 @@ describe("Todo Mapper", () => {
 				createMockTodo({ id: 2, title: "두 번째 할 일" }),
 				createMockTodo({ id: 3, title: "세 번째 할 일" }),
 			];
-			const result = mapTodosToResponse(todos);
+			const result = TodoMapper.toManyResponse(todos);
 
 			expect(result).toHaveLength(3);
 			expect(result[0]?.id).toBe(1);
@@ -134,7 +130,7 @@ describe("Todo Mapper", () => {
 
 		it("각 Todo가 올바른 형식으로 변환되어야 한다", () => {
 			const todos = [createMockTodo()];
-			const result = mapTodosToResponse(todos);
+			const result = TodoMapper.toManyResponse(todos);
 
 			expect(result[0]).toHaveProperty("id");
 			expect(result[0]).toHaveProperty("userId");

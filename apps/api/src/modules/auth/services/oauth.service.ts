@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { addMilliseconds, now } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { AccountProvider } from "@/generated/prisma/client";
@@ -1104,7 +1104,7 @@ export class OAuthService {
 				{
 					email: data.email,
 					status: data.emailVerified ? "ACTIVE" : "PENDING_VERIFY",
-					emailVerifiedAt: data.emailVerified ? new Date() : null,
+					emailVerifiedAt: data.emailVerified ? now() : null,
 				},
 				tx,
 			);
@@ -1128,12 +1128,12 @@ export class OAuthService {
 			);
 
 			// 기본 약관 동의 (소셜 로그인 시 기본 동의로 처리)
-			const now = new Date();
+			const currentTime = now();
 			await tx.userConsent.create({
 				data: {
 					userId: user.id,
-					termsAgreedAt: now,
-					privacyAgreedAt: now,
+					termsAgreedAt: currentTime,
+					privacyAgreedAt: currentTime,
 					marketingAgreedAt: null,
 				},
 			});
@@ -1173,7 +1173,7 @@ export class OAuthService {
 			// 세션 만료 시간
 			const expiresInSeconds =
 				this._tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
 			// 세션 생성
 			const session = await this._sessionRepository.create(
