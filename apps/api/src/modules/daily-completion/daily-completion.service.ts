@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { mapToCompletionSummaries } from "./daily-completion.mapper";
+import { DailyCompletionMapper } from "./daily-completion.mapper";
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import type {
 	DailyCompletionsRangeResult,
@@ -47,7 +47,7 @@ export class DailyCompletionService {
 				endDate: end,
 			});
 
-		const completions = mapToCompletionSummaries(aggregates);
+		const completions = DailyCompletionMapper.toCompletionSummaries(aggregates);
 		const totalCompleteDays = completions.filter((c) => c.isComplete).length;
 
 		this.logger.debug(

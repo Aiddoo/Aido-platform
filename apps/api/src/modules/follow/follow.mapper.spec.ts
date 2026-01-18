@@ -1,13 +1,5 @@
 import { type Follow, FollowStatus } from "@/generated/prisma/client";
-import {
-	mapFollowsToFriendUsers,
-	mapFollowsToReceivedRequests,
-	mapFollowsToSentRequests,
-	mapFollowToFriendUser,
-	mapFollowToReceivedRequest,
-	mapFollowToResponse,
-	mapFollowToSentRequest,
-} from "./follow.mapper";
+import { FollowMapper } from "./follow.mapper";
 import type { FollowWithUser } from "./types/follow.types";
 
 describe("Follow Mapper", () => {
@@ -44,18 +36,18 @@ describe("Follow Mapper", () => {
 		...overrides,
 	});
 
-	describe("mapFollowToResponse", () => {
+	describe("FollowMapper.toResponse", () => {
 		it("Follow 엔티티를 올바른 응답 형식으로 변환해야 한다", () => {
 			const follow = createMockFollow();
-			const result = mapFollowToResponse(follow);
+			const result = FollowMapper.toResponse(follow);
 
 			expect(result).toEqual({
 				id: "follow-123",
 				followerId: "follower-user-123",
 				followingId: "following-user-456",
 				status: FollowStatus.PENDING,
-				createdAt: new Date("2024-01-01T00:00:00.000Z"),
-				updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+				createdAt: "2024-01-01T00:00:00.000Z",
+				updatedAt: "2024-01-02T00:00:00.000Z",
 			});
 		});
 
@@ -63,19 +55,19 @@ describe("Follow Mapper", () => {
 			const follow = createMockFollow({
 				status: FollowStatus.ACCEPTED,
 			});
-			const result = mapFollowToResponse(follow);
+			const result = FollowMapper.toResponse(follow);
 
 			expect(result.status).toBe(FollowStatus.ACCEPTED);
 		});
 	});
 
-	describe("mapFollowToFriendUser", () => {
+	describe("FollowMapper.toFriendUser", () => {
 		it("FollowWithUser를 친구 정보로 올바르게 변환해야 한다", () => {
 			const followWithUser = createMockFollowWithUser({
 				status: FollowStatus.ACCEPTED,
 				updatedAt: new Date("2024-01-15T00:00:00.000Z"),
 			});
-			const result = mapFollowToFriendUser(followWithUser);
+			const result = FollowMapper.toFriendUser(followWithUser);
 
 			expect(result).toEqual({
 				followId: "follow-123",
@@ -83,7 +75,7 @@ describe("Follow Mapper", () => {
 				userTag: "following_tag",
 				name: "팔로잉 이름",
 				profileImage: "https://example.com/following.jpg",
-				friendsSince: new Date("2024-01-15T00:00:00.000Z"),
+				friendsSince: "2024-01-15T00:00:00.000Z",
 			});
 		});
 
@@ -95,7 +87,7 @@ describe("Follow Mapper", () => {
 					profile: null,
 				},
 			});
-			const result = mapFollowToFriendUser(followWithUser);
+			const result = FollowMapper.toFriendUser(followWithUser);
 
 			expect(result.name).toBeNull();
 			expect(result.profileImage).toBeNull();
@@ -112,26 +104,26 @@ describe("Follow Mapper", () => {
 					},
 				},
 			});
-			const result = mapFollowToFriendUser(followWithUser);
+			const result = FollowMapper.toFriendUser(followWithUser);
 
 			expect(result.name).toBeNull();
 			expect(result.profileImage).toBe("https://example.com/image.jpg");
 		});
 	});
 
-	describe("mapFollowToReceivedRequest", () => {
+	describe("FollowMapper.toReceivedRequest", () => {
 		it("받은 친구 요청을 올바르게 변환해야 한다", () => {
 			const followWithUser = createMockFollowWithUser({
 				createdAt: new Date("2024-01-10T00:00:00.000Z"),
 			});
-			const result = mapFollowToReceivedRequest(followWithUser);
+			const result = FollowMapper.toReceivedRequest(followWithUser);
 
 			expect(result).toEqual({
 				id: "follower-user-123",
 				userTag: "follower_tag",
 				name: "팔로워 이름",
 				profileImage: "https://example.com/follower.jpg",
-				requestedAt: new Date("2024-01-10T00:00:00.000Z"),
+				requestedAt: "2024-01-10T00:00:00.000Z",
 			});
 		});
 
@@ -143,26 +135,26 @@ describe("Follow Mapper", () => {
 					profile: null,
 				},
 			});
-			const result = mapFollowToReceivedRequest(followWithUser);
+			const result = FollowMapper.toReceivedRequest(followWithUser);
 
 			expect(result.name).toBeNull();
 			expect(result.profileImage).toBeNull();
 		});
 	});
 
-	describe("mapFollowToSentRequest", () => {
+	describe("FollowMapper.toSentRequest", () => {
 		it("보낸 친구 요청을 올바르게 변환해야 한다", () => {
 			const followWithUser = createMockFollowWithUser({
 				createdAt: new Date("2024-01-10T00:00:00.000Z"),
 			});
-			const result = mapFollowToSentRequest(followWithUser);
+			const result = FollowMapper.toSentRequest(followWithUser);
 
 			expect(result).toEqual({
 				id: "following-user-456",
 				userTag: "following_tag",
 				name: "팔로잉 이름",
 				profileImage: "https://example.com/following.jpg",
-				requestedAt: new Date("2024-01-10T00:00:00.000Z"),
+				requestedAt: "2024-01-10T00:00:00.000Z",
 			});
 		});
 
@@ -174,16 +166,16 @@ describe("Follow Mapper", () => {
 					profile: null,
 				},
 			});
-			const result = mapFollowToSentRequest(followWithUser);
+			const result = FollowMapper.toSentRequest(followWithUser);
 
 			expect(result.name).toBeNull();
 			expect(result.profileImage).toBeNull();
 		});
 	});
 
-	describe("mapFollowsToFriendUsers", () => {
+	describe("FollowMapper.toFriendUsers", () => {
 		it("빈 배열을 올바르게 처리해야 한다", () => {
-			const result = mapFollowsToFriendUsers([]);
+			const result = FollowMapper.toFriendUsers([]);
 			expect(result).toEqual([]);
 		});
 
@@ -206,7 +198,7 @@ describe("Follow Mapper", () => {
 					},
 				}),
 			];
-			const result = mapFollowsToFriendUsers(follows);
+			const result = FollowMapper.toFriendUsers(follows);
 
 			expect(result).toHaveLength(2);
 			expect(result[0]?.id).toBe("friend-1");
@@ -216,9 +208,9 @@ describe("Follow Mapper", () => {
 		});
 	});
 
-	describe("mapFollowsToReceivedRequests", () => {
+	describe("FollowMapper.toReceivedRequests", () => {
 		it("빈 배열을 올바르게 처리해야 한다", () => {
-			const result = mapFollowsToReceivedRequests([]);
+			const result = FollowMapper.toReceivedRequests([]);
 			expect(result).toEqual([]);
 		});
 
@@ -241,7 +233,7 @@ describe("Follow Mapper", () => {
 					},
 				}),
 			];
-			const result = mapFollowsToReceivedRequests(follows);
+			const result = FollowMapper.toReceivedRequests(follows);
 
 			expect(result).toHaveLength(2);
 			expect(result[0]?.id).toBe("requester-1");
@@ -251,9 +243,9 @@ describe("Follow Mapper", () => {
 		});
 	});
 
-	describe("mapFollowsToSentRequests", () => {
+	describe("FollowMapper.toSentRequests", () => {
 		it("빈 배열을 올바르게 처리해야 한다", () => {
-			const result = mapFollowsToSentRequests([]);
+			const result = FollowMapper.toSentRequests([]);
 			expect(result).toEqual([]);
 		});
 
@@ -276,7 +268,7 @@ describe("Follow Mapper", () => {
 					},
 				}),
 			];
-			const result = mapFollowsToSentRequests(follows);
+			const result = FollowMapper.toSentRequests(follows);
 
 			expect(result).toHaveLength(2);
 			expect(result[0]?.id).toBe("recipient-1");

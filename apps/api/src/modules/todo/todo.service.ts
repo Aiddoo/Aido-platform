@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { now, toDate } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -166,7 +167,7 @@ export class TodoService {
 		if (data.completed !== undefined) {
 			if (data.completed && !todo.completed) {
 				// 완료로 변경
-				updateData.completedAt = new Date();
+				updateData.completedAt = now();
 			} else if (!data.completed && todo.completed) {
 				// 미완료로 변경
 				updateData.completedAt = null;
@@ -213,7 +214,7 @@ export class TodoService {
 
 		const updateData = {
 			completed: data.completed,
-			completedAt: data.completed ? new Date() : null,
+			completedAt: data.completed ? now() : null,
 		};
 
 		const updatedTodo = await this.todoRepository.update(id, updateData);
@@ -293,10 +294,10 @@ export class TodoService {
 		}
 
 		const updatedTodo = await this.todoRepository.update(id, {
-			startDate: new Date(data.startDate),
-			endDate: data.endDate ? new Date(data.endDate) : null,
+			startDate: toDate(data.startDate),
+			endDate: data.endDate ? toDate(data.endDate) : null,
 			scheduledTime: data.scheduledTime
-				? new Date(`1970-01-01T${data.scheduledTime}:00Z`)
+				? toDate(`1970-01-01T${data.scheduledTime}:00Z`)
 				: null,
 			isAllDay: data.isAllDay ?? true,
 		});
