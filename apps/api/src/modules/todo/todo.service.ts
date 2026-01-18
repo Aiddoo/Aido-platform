@@ -4,7 +4,13 @@ import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pag
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import type { Todo } from "@/generated/prisma/client";
 
-import { type FindTodosParams, TodoRepository } from "./todo.repository";
+import { FollowService } from "../follow/follow.service";
+
+import {
+	type FindFriendTodosParams,
+	type FindTodosParams,
+	TodoRepository,
+} from "./todo.repository";
 
 export interface CreateTodoData {
 	userId: string;
@@ -39,6 +45,15 @@ export interface GetTodosParams {
 	endDate?: Date;
 }
 
+export interface GetFriendTodosParams {
+	userId: string;
+	friendUserId: string;
+	cursor?: number;
+	size?: number;
+	startDate?: Date;
+	endDate?: Date;
+}
+
 @Injectable()
 export class TodoService {
 	private readonly logger = new Logger(TodoService.name);
@@ -46,6 +61,7 @@ export class TodoService {
 	constructor(
 		private readonly todoRepository: TodoRepository,
 		private readonly paginationService: PaginationService,
+		private readonly followService: FollowService,
 	) {}
 
 	/**
@@ -89,11 +105,12 @@ export class TodoService {
 	 */
 	async findMany(
 		params: GetTodosParams,
-	): Promise<CursorPaginatedResponse<Todo>> {
-		const { cursor, size } = this.paginationService.normalizeCursorPagination({
-			cursor: params.cursor,
-			size: params.size,
-		});
+	): Promise<CursorPaginatedResponse<Todo, number>> {
+		const { cursor, size } =
+			this.paginationService.normalizeCursorPagination<number>({
+				cursor: params.cursor,
+				size: params.size,
+			});
 
 		const repoParams: FindTodosParams = {
 			userId: params.userId,
@@ -110,10 +127,58 @@ export class TodoService {
 			`Todos listed: ${todos.length} items for user: ${params.userId}`,
 		);
 
-		return this.paginationService.createCursorPaginatedResponse({
+		return this.paginationService.createCursorPaginatedResponse<Todo, number>({
 			items: todos,
 			size,
+		});
+	}
+
+	/**
+	 * 친구의 PUBLIC Todo 목록 조회
+	 *
+	 * 1. 맞팔 관계 확인
+	 * 2. 친구의 PUBLIC 투두만 조회
+	 */
+	async findFriendTodos(
+		params: GetFriendTodosParams,
+	): Promise<CursorPaginatedResponse<Todo, number>> {
+		const { userId, friendUserId } = params;
+
+		// 1. 맞팔 관계 확인
+		const isMutualFriend = await this.followService.isMutualFriend(
+			userId,
+			friendUserId,
+		);
+
+		if (!isMutualFriend) {
+			throw BusinessExceptions.notFriendsCannotViewTodos(friendUserId);
+		}
+
+		// 2. 페이지네이션 정규화
+		const { cursor, size } =
+			this.paginationService.normalizeCursorPagination<number>({
+				cursor: params.cursor,
+				size: params.size,
+			});
+
+		// 3. 친구의 PUBLIC 투두 조회
+		const repoParams: FindFriendTodosParams = {
+			friendUserId,
 			cursor,
+			size,
+			startDate: params.startDate,
+			endDate: params.endDate,
+		};
+
+		const todos = await this.todoRepository.findPublicTodosByUserId(repoParams);
+
+		this.logger.debug(
+			`Friend todos listed: ${todos.length} items for friend: ${friendUserId} by user: ${userId}`,
+		);
+
+		return this.paginationService.createCursorPaginatedResponse<Todo, number>({
+			items: todos,
+			size,
 		});
 	}
 

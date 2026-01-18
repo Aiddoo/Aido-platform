@@ -19,6 +19,7 @@ import {
 	ApiCreatedResponse,
 	ApiDoc,
 	ApiErrorResponse,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -27,6 +28,7 @@ import {
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { JwtAuthGuard } from "../auth/guards";
+import { UserIdParamDto } from "../follow/dtos";
 
 import {
 	CreateTodoDto,
@@ -212,6 +214,68 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 			cursor: query.cursor,
 			size: query.size,
 			completed: query.completed,
+			startDate: query.startDate ? new Date(query.startDate) : undefined,
+			endDate: query.endDate ? new Date(query.endDate) : undefined,
+		});
+
+		return {
+			items: result.items.map((todo) => this.mapToResponse(todo)),
+			pagination: result.pagination,
+		};
+	}
+
+	@Get("friends/:userId")
+	@ApiDoc({
+		summary: "친구의 할 일 목록 조회",
+		description: `
+## 👥 친구의 할 일 목록 조회
+
+친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 경로 파라미터
+- \`userId\`: 친구의 사용자 ID (CUID 문자열)
+
+### 🔍 쿼리 파라미터
+| 파라미터 | 타입 | 기본값 | 설명 |
+|----------|------|--------|------|
+| \`cursor\` | string | - | 페이지네이션 커서 |
+| \`size\` | number | 20 | 페이지 크기 (1-100) |
+| \`startDate\` | string | - | 시작일 필터 (YYYY-MM-DD) |
+| \`endDate\` | string | - | 종료일 필터 (YYYY-MM-DD) |
+
+### 📝 요청 예시
+\`\`\`
+GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
+\`\`\`
+
+### ⚠️ 접근 조건
+- **맞팔 관계**여야만 조회 가능합니다
+- 친구의 PUBLIC 투두만 조회할 수 있습니다
+
+### ⚠️ 에러 케이스
+- \`FOLLOW_0906\`: 친구가 아닌 사용자의 투두를 볼 수 없습니다
+		`,
+	})
+	@ApiSuccessResponse({ type: TodoListResponseDto })
+	@ApiUnauthorizedError()
+	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
+	async findFriendTodos(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: UserIdParamDto,
+		@Query() query: GetTodosQueryDto,
+	): Promise<TodoListResponseDto> {
+		this.logger.debug(
+			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
+		);
+
+		const result = await this.todoService.findFriendTodos({
+			userId: user.userId,
+			friendUserId: params.userId,
+			cursor: query.cursor,
+			size: query.size,
 			startDate: query.startDate ? new Date(query.startDate) : undefined,
 			endDate: query.endDate ? new Date(query.endDate) : undefined,
 		});

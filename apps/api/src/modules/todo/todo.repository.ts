@@ -11,6 +11,14 @@ export interface FindTodosParams {
 	endDate?: Date;
 }
 
+export interface FindFriendTodosParams {
+	friendUserId: string;
+	cursor?: number;
+	size: number;
+	startDate?: Date;
+	endDate?: Date;
+}
+
 @Injectable()
 export class TodoRepository {
 	constructor(private readonly database: DatabaseService) {}
@@ -93,6 +101,41 @@ export class TodoRepository {
 	async delete(id: number): Promise<Todo> {
 		return this.database.todo.delete({
 			where: { id },
+		});
+	}
+
+	/**
+	 * 친구의 PUBLIC Todo 목록 조회 (커서 기반 페이지네이션)
+	 */
+	async findPublicTodosByUserId(
+		params: FindFriendTodosParams,
+	): Promise<Todo[]> {
+		const { friendUserId, cursor, size, startDate, endDate } = params;
+
+		const where: Prisma.TodoWhereInput = {
+			userId: friendUserId,
+			visibility: "PUBLIC",
+		};
+
+		// 날짜 범위 필터
+		if (startDate || endDate) {
+			where.startDate = {};
+			if (startDate) {
+				where.startDate.gte = startDate;
+			}
+			if (endDate) {
+				where.startDate.lte = endDate;
+			}
+		}
+
+		return this.database.todo.findMany({
+			where,
+			take: size + 1, // hasNext 확인을 위해 +1
+			...(cursor && {
+				skip: 1,
+				cursor: { id: cursor },
+			}),
+			orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
 		});
 	}
 }

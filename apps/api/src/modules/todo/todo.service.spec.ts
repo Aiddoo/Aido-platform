@@ -3,6 +3,8 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import type { Todo } from "@/generated/prisma/client";
 
+import { FollowService } from "../follow/follow.service";
+
 import { TodoRepository } from "./todo.repository";
 import { type CreateTodoData, TodoService } from "./todo.service";
 
@@ -15,6 +17,7 @@ describe("TodoService", () => {
 		findById: jest.fn(),
 		findByIdAndUserId: jest.fn(),
 		findManyByUserId: jest.fn(),
+		findPublicTodosByUserId: jest.fn(),
 		update: jest.fn(),
 		delete: jest.fn(),
 	};
@@ -22,6 +25,10 @@ describe("TodoService", () => {
 	const mockPaginationService = {
 		normalizeCursorPagination: jest.fn(),
 		createCursorPaginatedResponse: jest.fn(),
+	};
+
+	const mockFollowService = {
+		isMutualFriend: jest.fn(),
 	};
 
 	// 테스트 데이터
@@ -53,6 +60,7 @@ describe("TodoService", () => {
 				TodoService,
 				{ provide: TodoRepository, useValue: mockTodoRepository },
 				{ provide: PaginationService, useValue: mockPaginationService },
+				{ provide: FollowService, useValue: mockFollowService },
 			],
 		}).compile();
 
@@ -851,6 +859,143 @@ describe("TodoService", () => {
 			await expect(
 				service.updateContent(999, mockUserId, { title: "새 제목" }),
 			).rejects.toThrow(BusinessException);
+		});
+	});
+
+	// ============================================
+	// findFriendTodos
+	// ============================================
+
+	describe("findFriendTodos", () => {
+		const friendUserId = "friend-user-456";
+		const mockFriendTodos: Todo[] = [
+			{
+				...mockTodo,
+				id: 10,
+				userId: friendUserId,
+				title: "친구의 할 일 1",
+				visibility: "PUBLIC",
+			},
+			{
+				...mockTodo,
+				id: 11,
+				userId: friendUserId,
+				title: "친구의 할 일 2",
+				visibility: "PUBLIC",
+			},
+		];
+
+		const mockPaginatedResponse = {
+			items: mockFriendTodos,
+			pagination: {
+				nextCursor: 11,
+				prevCursor: null,
+				hasNext: false,
+				hasPrevious: false,
+			},
+		};
+
+		beforeEach(() => {
+			mockPaginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+			});
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockTodoRepository.findPublicTodosByUserId.mockResolvedValue(
+				mockFriendTodos,
+			);
+			mockPaginationService.createCursorPaginatedResponse.mockReturnValue(
+				mockPaginatedResponse,
+			);
+		});
+
+		it("맞팔 관계일 때 친구의 PUBLIC 투두 목록을 반환한다", async () => {
+			// Given
+			const params = {
+				userId: mockUserId,
+				friendUserId,
+			};
+
+			// When
+			const result = await service.findFriendTodos(params);
+
+			// Then
+			expect(result).toEqual(mockPaginatedResponse);
+			expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
+				mockUserId,
+				friendUserId,
+			);
+			expect(mockTodoRepository.findPublicTodosByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({
+					friendUserId,
+					size: 20,
+				}),
+			);
+		});
+
+		it("맞팔 관계가 아니면 FOLLOW_0906 에러를 던진다", async () => {
+			// Given
+			mockFollowService.isMutualFriend.mockResolvedValue(false);
+			const params = {
+				userId: mockUserId,
+				friendUserId,
+			};
+
+			// When & Then
+			await expect(service.findFriendTodos(params)).rejects.toThrow(
+				BusinessException,
+			);
+			expect(mockTodoRepository.findPublicTodosByUserId).not.toHaveBeenCalled();
+		});
+
+		it("커서와 크기를 지정하여 조회할 수 있다", async () => {
+			// Given
+			const params = {
+				userId: mockUserId,
+				friendUserId,
+				cursor: 5,
+				size: 10,
+			};
+
+			mockPaginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: 5,
+				size: 10,
+			});
+
+			// When
+			await service.findFriendTodos(params);
+
+			// Then
+			expect(mockTodoRepository.findPublicTodosByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({
+					cursor: 5,
+					size: 10,
+				}),
+			);
+		});
+
+		it("날짜 범위로 필터링할 수 있다", async () => {
+			// Given
+			const startDate = new Date("2024-01-01");
+			const endDate = new Date("2024-01-31");
+			const params = {
+				userId: mockUserId,
+				friendUserId,
+				startDate,
+				endDate,
+			};
+
+			// When
+			await service.findFriendTodos(params);
+
+			// Then
+			expect(mockTodoRepository.findPublicTodosByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({
+					friendUserId,
+					startDate,
+					endDate,
+				}),
+			);
 		});
 	});
 });
