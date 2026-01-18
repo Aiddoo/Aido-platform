@@ -60,6 +60,7 @@
     "expo-task-manager": "~14.0.9",
     "expo-web-browser": "~15.0.10",
     "heroui-native": "1.0.0-beta.12",
+    "ky": "^1.14.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.71.1",
@@ -74,7 +75,8 @@
     "tailwind-merge": "^3.4.0",
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.0.0",
-    "uniwind": "^1.2.4"
+    "uniwind": "^1.2.4",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@aido/biome-config": "workspace:*",
