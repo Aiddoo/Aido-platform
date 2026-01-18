@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { DatabaseService } from "@/database/database.service";
 import type { Follow } from "@/generated/prisma/client";
 
 import {
@@ -36,6 +37,7 @@ export class FollowService {
 	constructor(
 		private readonly followRepository: FollowRepository,
 		private readonly paginationService: PaginationService,
+		private readonly database: DatabaseService,
 	) {}
 
 	// =========================================================================
@@ -92,18 +94,24 @@ export class FollowService {
 
 		if (reverseFollow) {
 			if (reverseFollow.status === "PENDING") {
-				// 상대방이 보낸 요청이 PENDING 상태면 자동 수락
-				await this.followRepository.updateByFollowerAndFollowing(
-					targetUserId,
-					userId,
-					{ status: "ACCEPTED" },
-				);
+				// 상대방이 보낸 요청이 PENDING 상태면 자동 수락 (트랜잭션으로 처리)
+				const follow = await this.database.$transaction(async (tx) => {
+					await this.followRepository.updateByFollowerAndFollowing(
+						targetUserId,
+						userId,
+						{ status: "ACCEPTED" },
+						tx,
+					);
 
-				// 내 쪽도 ACCEPTED로 생성
-				const follow = await this.followRepository.create({
-					follower: { connect: { id: userId } },
-					following: { connect: { id: targetUserId } },
-					status: "ACCEPTED",
+					// 내 쪽도 ACCEPTED로 생성
+					return this.followRepository.create(
+						{
+							follower: { connect: { id: userId } },
+							following: { connect: { id: targetUserId } },
+							status: "ACCEPTED",
+						},
+						tx,
+					);
 				});
 
 				this.logger.log(
@@ -138,8 +146,13 @@ export class FollowService {
 	 * 1. 받은 요청 존재 체크 (followingId = 나, status = PENDING)
 	 * 2. status를 ACCEPTED로 업데이트
 	 * 3. 역방향 Follow도 ACCEPTED로 생성 (양방향 친구)
+	 *
+	 * @returns 생성된 역방향 Follow (나 -> 상대방)
 	 */
-	async acceptRequest(userId: string, requesterUserId: string): Promise<void> {
+	async acceptRequest(
+		userId: string,
+		requesterUserId: string,
+	): Promise<FollowWithUser> {
 		// 1. 받은 요청 존재 체크
 		const request = await this.followRepository.findByFollowerAndFollowing(
 			requesterUserId,
@@ -150,33 +163,61 @@ export class FollowService {
 			throw BusinessExceptions.followRequestNotFound(requesterUserId);
 		}
 
-		// 2. 요청을 ACCEPTED로 업데이트
-		await this.followRepository.update(request.id, { status: "ACCEPTED" });
-
-		// 3. 역방향 Follow 생성 (나 -> 상대방)
-		const existingReverse =
-			await this.followRepository.findByFollowerAndFollowing(
-				userId,
-				requesterUserId,
+		// 2, 3. 트랜잭션으로 양방향 관계 처리
+		const myFollow = await this.database.$transaction(async (tx) => {
+			// 상대방의 요청을 ACCEPTED로 업데이트
+			await this.followRepository.update(
+				request.id,
+				{ status: "ACCEPTED" },
+				tx,
 			);
 
-		if (existingReverse) {
-			// 이미 존재하면 ACCEPTED로 업데이트
-			await this.followRepository.update(existingReverse.id, {
-				status: "ACCEPTED",
-			});
-		} else {
-			// 없으면 새로 생성
-			await this.followRepository.create({
-				follower: { connect: { id: userId } },
-				following: { connect: { id: requesterUserId } },
-				status: "ACCEPTED",
-			});
-		}
+			// 역방향 Follow 확인 (나 -> 상대방)
+			const existingReverse =
+				await this.followRepository.findByFollowerAndFollowing(
+					userId,
+					requesterUserId,
+					tx,
+				);
+
+			let createdFollow: Follow;
+			if (existingReverse) {
+				// 이미 존재하면 ACCEPTED로 업데이트
+				createdFollow = await this.followRepository.update(
+					existingReverse.id,
+					{ status: "ACCEPTED" },
+					tx,
+				);
+			} else {
+				// 없으면 새로 생성
+				createdFollow = await this.followRepository.create(
+					{
+						follower: { connect: { id: userId } },
+						following: { connect: { id: requesterUserId } },
+						status: "ACCEPTED",
+					},
+					tx,
+				);
+			}
+
+			// 생성된 Follow에 사용자 정보를 포함하여 반환
+			const followWithUser = await this.followRepository.findByIdWithUser(
+				createdFollow.id,
+				tx,
+			);
+
+			if (!followWithUser) {
+				throw new Error("Failed to retrieve created follow with user info");
+			}
+
+			return followWithUser;
+		});
 
 		this.logger.log(
 			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
 		);
+
+		return myFollow;
 	}
 
 	// =========================================================================
@@ -219,18 +260,23 @@ export class FollowService {
 			throw BusinessExceptions.notFriends(targetUserId);
 		}
 
-		// 내 쪽 삭제
-		await this.followRepository.delete(myFollow.id);
+		// 트랜잭션으로 양방향 삭제 처리
+		await this.database.$transaction(async (tx) => {
+			// 내 쪽 삭제
+			await this.followRepository.delete(myFollow.id, tx);
 
-		// 상대방 쪽도 삭제 (친구 관계였다면)
-		const theirFollow = await this.followRepository.findByFollowerAndFollowing(
-			targetUserId,
-			userId,
-		);
+			// 상대방 쪽도 삭제 (친구 관계였다면)
+			const theirFollow =
+				await this.followRepository.findByFollowerAndFollowing(
+					targetUserId,
+					userId,
+					tx,
+				);
 
-		if (theirFollow) {
-			await this.followRepository.delete(theirFollow.id);
-		}
+			if (theirFollow) {
+				await this.followRepository.delete(theirFollow.id, tx);
+			}
+		});
 
 		this.logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}
