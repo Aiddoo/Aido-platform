@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { Box } from '../Box';
+import { Box } from './Box';
 
 describe('Box 컴포넌트', () => {
   it('children을 렌더링해야 한다', () => {

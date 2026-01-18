@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
-import { Text } from '../Text';
-import { shadeClasses, textVariants } from '../Text.variants';
-import { H1, H2, H3, H4 } from '../Typography';
+import { Text } from './Text';
+import { shadeClasses, textVariants } from './Text.variants';
+import { H1, H2, H3, H4 } from './Typography';
 
 describe('textVariants 함수', () => {
   it('기본 클래스를 포함해야 한다', () => {

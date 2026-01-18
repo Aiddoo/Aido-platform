@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { VStack } from '../VStack';
+import { VStack } from './VStack';
 
 describe('VStack 컴포넌트', () => {
   it('children을 렌더링해야 한다', () => {
