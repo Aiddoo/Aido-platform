@@ -172,19 +172,24 @@ export class FollowController {
 	): Promise<AcceptFriendRequestResponseDto> {
 		this.logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
-		await this.followService.acceptRequest(user.userId, params.userId);
+		const result = await this.followService.acceptRequest(
+			user.userId,
+			params.userId,
+		);
 
 		this.logger.log(`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`);
 
+		// result는 "나 -> 상대방" Follow 레코드
+		// following이 요청을 보낸 사람(상대방)의 정보
 		return {
 			message: "친구 요청을 수락했습니다.",
 			friend: {
-				followId: "", // 실제 구현에서는 Follow ID 조회 필요
-				id: params.userId,
-				userTag: "", // 실제 구현에서는 사용자 정보 조회 필요
-				name: null,
-				profileImage: null,
-				friendsSince: new Date(),
+				followId: result.id,
+				id: result.following.id,
+				userTag: result.following.userTag,
+				name: result.following.profile?.name ?? null,
+				profileImage: result.following.profile?.profileImage ?? null,
+				friendsSince: result.updatedAt,
 			},
 		};
 	}
@@ -378,7 +383,7 @@ export class FollowController {
 
 		return {
 			requests: result.items.map((follow) =>
-				this.mapToFriendRequestUser(follow),
+				this.mapToReceivedRequestUser(follow),
 			),
 			totalCount,
 			hasMore: result.pagination.hasNext,
@@ -429,9 +434,7 @@ export class FollowController {
 		const totalCount = await this.followService.countSentRequests(user.userId);
 
 		return {
-			requests: result.items.map((follow) =>
-				this.mapToFriendRequestUser(follow),
-			),
+			requests: result.items.map((follow) => this.mapToSentRequestUser(follow)),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
@@ -443,6 +446,9 @@ export class FollowController {
 
 	/**
 	 * FollowWithUser를 친구 정보로 변환
+	 *
+	 * findMutualFriends 쿼리에서 followerId = 현재 사용자이므로
+	 * following이 항상 친구(상대방)입니다.
 	 */
 	private mapToFriendUser(follow: FollowWithUser): {
 		followId: string;
@@ -452,33 +458,57 @@ export class FollowController {
 		profileImage: string | null;
 		friendsSince: Date;
 	} {
-		const user = follow.following ?? follow.follower;
+		// 친구 목록 쿼리(findMutualFriends)에서 followerId = 현재 사용자
+		// 따라서 following이 항상 친구(상대방)
+		const friend = follow.following;
 		return {
 			followId: follow.id,
-			id: user.id,
-			userTag: user.userTag,
-			name: user.profile?.name ?? null,
-			profileImage: user.profile?.profileImage ?? null,
+			id: friend.id,
+			userTag: friend.userTag,
+			name: friend.profile?.name ?? null,
+			profileImage: friend.profile?.profileImage ?? null,
 			friendsSince: follow.updatedAt,
 		};
 	}
 
 	/**
-	 * FollowWithUser를 친구 요청 정보로 변환
+	 * 받은 친구 요청을 요청 정보로 변환
+	 * 받은 요청에서는 follower가 요청을 보낸 사람
 	 */
-	private mapToFriendRequestUser(follow: FollowWithUser): {
+	private mapToReceivedRequestUser(follow: FollowWithUser): {
 		id: string;
 		userTag: string;
 		name: string | null;
 		profileImage: string | null;
 		requestedAt: Date;
 	} {
-		const user = follow.following ?? follow.follower;
+		const requester = follow.follower;
 		return {
-			id: user.id,
-			userTag: user.userTag,
-			name: user.profile?.name ?? null,
-			profileImage: user.profile?.profileImage ?? null,
+			id: requester.id,
+			userTag: requester.userTag,
+			name: requester.profile?.name ?? null,
+			profileImage: requester.profile?.profileImage ?? null,
+			requestedAt: follow.createdAt,
+		};
+	}
+
+	/**
+	 * 보낸 친구 요청을 요청 정보로 변환
+	 * 보낸 요청에서는 following이 요청을 받은 사람
+	 */
+	private mapToSentRequestUser(follow: FollowWithUser): {
+		id: string;
+		userTag: string;
+		name: string | null;
+		profileImage: string | null;
+		requestedAt: Date;
+	} {
+		const recipient = follow.following;
+		return {
+			id: recipient.id,
+			userTag: recipient.userTag,
+			name: recipient.profile?.name ?? null,
+			profileImage: recipient.profile?.profileImage ?? null,
 			requestedAt: follow.createdAt,
 		};
 	}
