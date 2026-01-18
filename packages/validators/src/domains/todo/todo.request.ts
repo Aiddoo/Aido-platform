@@ -135,7 +135,14 @@ export const getTodosQuerySchema = z
       .max(100, '페이지 크기는 100 이하여야 합니다')
       .default(20)
       .describe('페이지 크기'),
-    completed: z.coerce.boolean().optional().describe('완료 상태 필터'),
+    completed: z
+      .preprocess((val) => {
+        if (val === 'true') return true;
+        if (val === 'false') return false;
+        return val;
+      }, z.boolean())
+      .optional()
+      .describe('완료 상태 필터'),
     startDate: z.iso.date('유효한 날짜 형식이 아닙니다').optional().describe('시작 날짜 필터'),
     endDate: z.iso.date('유효한 날짜 형식이 아닙니다').optional().describe('종료 날짜 필터'),
   })
