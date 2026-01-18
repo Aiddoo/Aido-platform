@@ -25,6 +25,7 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { Todo } from "@/generated/prisma/client";
 
+import { FollowService } from "@/modules/follow/follow.service";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 
@@ -45,8 +46,14 @@ describe("TodoService Integration Tests", () => {
 		},
 	};
 
+	// Mock FollowService
+	const mockFollowService = {
+		isMutualFriend: jest.fn(),
+	};
+
 	// 테스트 데이터
 	const mockUserId = "user-integration-123";
+	const mockFriendUserId = "friend-user-456";
 	const mockTodoId = 1;
 
 	const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
@@ -87,6 +94,10 @@ describe("TodoService Integration Tests", () => {
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
+				},
+				{
+					provide: FollowService,
+					useValue: mockFollowService,
 				},
 				{
 					provide: TypedConfigService,
@@ -224,7 +235,6 @@ describe("TodoService Integration Tests", () => {
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(result.pagination.hasNext).toBeDefined();
-			expect(result.pagination.hasPrevious).toBeDefined();
 		});
 
 		it("완료 상태 필터가 올바르게 적용된다", async () => {
@@ -871,6 +881,147 @@ describe("TodoService Integration Tests", () => {
 			// Then
 			expect(results).toHaveLength(3);
 			expect(mockDatabaseService.todo.create).toHaveBeenCalledTimes(3);
+		});
+	});
+
+	// ============================================
+	// 친구 투두 조회 통합 테스트
+	// ============================================
+
+	describe("findFriendTodos 통합 테스트", () => {
+		it("맞팔 관계인 친구의 PUBLIC 투두를 조회한다", async () => {
+			// Given
+			const friendTodos = [
+				createMockTodo({
+					id: 1,
+					userId: mockFriendUserId,
+					visibility: "PUBLIC",
+				}),
+				createMockTodo({
+					id: 2,
+					userId: mockFriendUserId,
+					visibility: "PUBLIC",
+				}),
+			];
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockDatabaseService.todo.findMany.mockResolvedValue(friendTodos);
+
+			// When
+			const result = await service.findFriendTodos({
+				userId: mockUserId,
+				friendUserId: mockFriendUserId,
+			});
+
+			// Then
+			expect(result.items).toHaveLength(2);
+			expect(result.pagination).toBeDefined();
+			expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
+				mockUserId,
+				mockFriendUserId,
+			);
+			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: mockFriendUserId,
+						visibility: "PUBLIC",
+					}),
+				}),
+			);
+		});
+
+		it("맞팔이 아닌 경우 BusinessException을 던진다", async () => {
+			// Given
+			mockFollowService.isMutualFriend.mockResolvedValue(false);
+
+			// When & Then
+			await expect(
+				service.findFriendTodos({
+					userId: mockUserId,
+					friendUserId: mockFriendUserId,
+				}),
+			).rejects.toThrow(BusinessException);
+
+			expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
+				mockUserId,
+				mockFriendUserId,
+			);
+			// 맞팔이 아니면 Repository 호출하지 않음
+			expect(mockDatabaseService.todo.findMany).not.toHaveBeenCalled();
+		});
+
+		it("날짜 범위 필터가 올바르게 적용된다", async () => {
+			// Given
+			const startDate = new Date("2024-01-01");
+			const endDate = new Date("2024-01-31");
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockDatabaseService.todo.findMany.mockResolvedValue([]);
+
+			// When
+			await service.findFriendTodos({
+				userId: mockUserId,
+				friendUserId: mockFriendUserId,
+				startDate,
+				endDate,
+			});
+
+			// Then
+			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: mockFriendUserId,
+						visibility: "PUBLIC",
+						startDate: {
+							gte: startDate,
+							lte: endDate,
+						},
+					}),
+				}),
+			);
+		});
+
+		it("커서 기반 페이지네이션이 올바르게 작동한다", async () => {
+			// Given
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockDatabaseService.todo.findMany.mockResolvedValue([]);
+
+			// When
+			await service.findFriendTodos({
+				userId: mockUserId,
+				friendUserId: mockFriendUserId,
+				cursor: 10,
+				size: 10,
+			});
+
+			// Then
+			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					skip: 1,
+					cursor: { id: 10 },
+				}),
+			);
+		});
+
+		it("다음 페이지가 있는지 올바르게 판단한다", async () => {
+			// Given
+			const todos = [
+				createMockTodo({ id: 1, userId: mockFriendUserId }),
+				createMockTodo({ id: 2, userId: mockFriendUserId }),
+				createMockTodo({ id: 3, userId: mockFriendUserId }),
+			];
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			// size + 1개를 반환해서 다음 페이지가 있음을 나타냄
+			mockDatabaseService.todo.findMany.mockResolvedValue(todos);
+
+			// When
+			const result = await service.findFriendTodos({
+				userId: mockUserId,
+				friendUserId: mockFriendUserId,
+				size: 2,
+			});
+
+			// Then
+			expect(result.pagination.hasNext).toBe(true);
+			expect(result.items).toHaveLength(2);
 		});
 	});
 });

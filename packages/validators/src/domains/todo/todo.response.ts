@@ -50,18 +50,21 @@ export const todoSchema = z
 export type Todo = z.infer<typeof todoSchema>;
 
 // =============================================================================
-// 페이지네이션 정보
+// 페이지네이션 정보 (숫자 커서 - Todo용)
 // =============================================================================
 
-export const cursorPaginationInfoSchema = z
+export const numberCursorPaginationInfoSchema = z
   .object({
     nextCursor: z.number().int().nullable().describe('다음 페이지 커서 (Todo ID)'),
-    prevCursor: z.number().int().nullable().describe('이전 페이지 커서 (Todo ID)'),
     hasNext: z.boolean().describe('다음 페이지 존재 여부'),
-    hasPrevious: z.boolean().describe('이전 페이지 존재 여부'),
     size: z.number().describe('페이지 크기'),
   })
-  .describe('커서 기반 페이지네이션 정보');
+  .describe('숫자 커서 기반 페이지네이션 정보');
+
+/**
+ * @deprecated numberCursorPaginationInfoSchema 사용
+ */
+export const cursorPaginationInfoSchema = numberCursorPaginationInfoSchema;
 
 // =============================================================================
 // Todo 목록 응답
@@ -70,7 +73,7 @@ export const cursorPaginationInfoSchema = z
 export const todoListResponseSchema = z
   .object({
     items: z.array(todoSchema).describe('할 일 목록'),
-    pagination: cursorPaginationInfoSchema.describe('페이지네이션 정보'),
+    pagination: numberCursorPaginationInfoSchema.describe('페이지네이션 정보'),
   })
   .describe('할 일 목록 응답')
   .meta({
@@ -95,9 +98,7 @@ export const todoListResponseSchema = z
       ],
       pagination: {
         nextCursor: 2,
-        prevCursor: null,
         hasNext: true,
-        hasPrevious: false,
         size: 20,
       },
     },

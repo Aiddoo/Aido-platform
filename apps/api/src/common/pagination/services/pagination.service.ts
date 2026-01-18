@@ -8,6 +8,8 @@ import type {
 	CursorPaginatedResponse,
 	CursorPaginationInfo,
 	CursorPaginationParams,
+	CursorType,
+	NormalizedCursorPagination,
 	NormalizedPagination,
 	PaginatedResponse,
 	PaginationInfo,
@@ -20,6 +22,10 @@ import type {
  */
 @Injectable()
 export class PaginationService {
+	// ============================================
+	// 오프셋 기반 페이지네이션
+	// ============================================
+
 	/**
 	 * 페이지네이션 정보 생성
 	 */
@@ -62,12 +68,12 @@ export class PaginationService {
 	 * 페이지네이션 파라미터 정규화
 	 */
 	normalizePagination(params: PaginationParams): NormalizedPagination {
-		const page = Math.max(1, params.page || PAGINATION_DEFAULT.PAGE);
+		const page = Math.max(1, params.page ?? PAGINATION_DEFAULT.PAGE);
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
 			Math.max(
 				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size || PAGINATION_DEFAULT.SIZE,
+				params.size ?? PAGINATION_DEFAULT.SIZE,
 			),
 		);
 
@@ -90,7 +96,7 @@ export class PaginationService {
 		const normalizedSortBy =
 			sortBy && allowedFields.includes(sortBy)
 				? sortBy
-				: allowedFields[0] || SORT_DEFAULT.FIELD;
+				: (allowedFields[0] ?? SORT_DEFAULT.FIELD);
 
 		const normalizedSortOrder: SortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
 
@@ -100,22 +106,21 @@ export class PaginationService {
 	}
 
 	// ============================================
-	// 커서 기반 페이지네이션
+	// 커서 기반 페이지네이션 (제네릭)
 	// ============================================
 
 	/**
 	 * 커서 기반 페이지네이션 파라미터 정규화
+	 * @template T - 커서 타입 (string | number)
 	 */
-	normalizeCursorPagination(params: CursorPaginationParams): {
-		cursor: number | undefined;
-		size: number;
-		take: number;
-	} {
+	normalizeCursorPagination<T extends CursorType>(
+		params: CursorPaginationParams<T>,
+	): NormalizedCursorPagination<T> {
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
 			Math.max(
 				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size || PAGINATION_DEFAULT.SIZE,
+				params.size ?? PAGINATION_DEFAULT.SIZE,
 			),
 		);
 
@@ -128,39 +133,40 @@ export class PaginationService {
 
 	/**
 	 * 커서 기반 페이지네이션 정보 생성
+	 * @template TItem - 아이템 타입 (id 필드 필수)
+	 * @template TCursor - 커서 타입 (string | number)
 	 */
-	createCursorPaginationInfo<T extends { id: number }>(params: {
-		items: T[];
-		size: number;
-		cursor?: number;
-	}): CursorPaginationInfo {
-		const { items, size, cursor } = params;
+	createCursorPaginationInfo<
+		TItem extends { id: TCursor },
+		TCursor extends CursorType,
+	>(params: { items: TItem[]; size: number }): CursorPaginationInfo<TCursor> {
+		const { items, size } = params;
 		const hasNext = items.length > size;
-		const hasPrevious = cursor !== undefined;
 
 		// 다음 페이지 존재 확인을 위해 가져온 추가 아이템 제거 후 커서 계산
 		const actualItems = hasNext ? items.slice(0, size) : items;
 		const lastItem = actualItems[actualItems.length - 1];
-		const firstItem = actualItems[0];
 
 		return {
 			nextCursor: hasNext && lastItem ? lastItem.id : null,
-			prevCursor: hasPrevious && firstItem ? firstItem.id : null,
 			hasNext,
-			hasPrevious,
 			size,
 		};
 	}
 
 	/**
 	 * 커서 기반 페이지네이션 응답 생성
+	 * @template TItem - 아이템 타입 (id 필드 필수)
+	 * @template TCursor - 커서 타입 (string | number)
 	 */
-	createCursorPaginatedResponse<T extends { id: number }>(params: {
-		items: T[];
+	createCursorPaginatedResponse<
+		TItem extends { id: TCursor },
+		TCursor extends CursorType,
+	>(params: {
+		items: TItem[];
 		size: number;
-		cursor?: number;
-	}): CursorPaginatedResponse<T> {
-		const { items, size, cursor } = params;
+	}): CursorPaginatedResponse<TItem, TCursor> {
+		const { items, size } = params;
 		const hasNext = items.length > size;
 
 		// 다음 페이지 확인용 추가 아이템 제거
@@ -168,7 +174,10 @@ export class PaginationService {
 
 		return {
 			items: actualItems,
-			pagination: this.createCursorPaginationInfo({ items, size, cursor }),
+			pagination: this.createCursorPaginationInfo<TItem, TCursor>({
+				items,
+				size,
+			}),
 		};
 	}
 }
@@ -178,6 +187,10 @@ export class PaginationService {
  * 서비스 주입이 불가능한 경우 사용
  */
 export class PaginationUtil {
+	// ============================================
+	// 오프셋 기반 페이지네이션
+	// ============================================
+
 	/**
 	 * 페이지네이션 정보 생성
 	 */
@@ -220,12 +233,12 @@ export class PaginationUtil {
 	 * 페이지네이션 파라미터 정규화
 	 */
 	static normalizePagination(params: PaginationParams): NormalizedPagination {
-		const page = Math.max(1, params.page || PAGINATION_DEFAULT.PAGE);
+		const page = Math.max(1, params.page ?? PAGINATION_DEFAULT.PAGE);
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
 			Math.max(
 				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size || PAGINATION_DEFAULT.SIZE,
+				params.size ?? PAGINATION_DEFAULT.SIZE,
 			),
 		);
 
@@ -248,7 +261,7 @@ export class PaginationUtil {
 		const normalizedSortBy =
 			sortBy && allowedFields.includes(sortBy)
 				? sortBy
-				: allowedFields[0] || SORT_DEFAULT.FIELD;
+				: (allowedFields[0] ?? SORT_DEFAULT.FIELD);
 
 		const normalizedSortOrder: SortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
 
@@ -258,22 +271,20 @@ export class PaginationUtil {
 	}
 
 	// ============================================
-	// 커서 기반 페이지네이션
+	// 커서 기반 페이지네이션 (제네릭)
 	// ============================================
 
 	/**
 	 * 커서 기반 페이지네이션 파라미터 정규화
 	 */
-	static normalizeCursorPagination(params: CursorPaginationParams): {
-		cursor: number | undefined;
-		size: number;
-		take: number;
-	} {
+	static normalizeCursorPagination<T extends CursorType>(
+		params: CursorPaginationParams<T>,
+	): NormalizedCursorPagination<T> {
 		const size = Math.min(
 			PAGINATION_DEFAULT.MAX_SIZE,
 			Math.max(
 				PAGINATION_DEFAULT.MIN_SIZE,
-				params.size || PAGINATION_DEFAULT.SIZE,
+				params.size ?? PAGINATION_DEFAULT.SIZE,
 			),
 		);
 
@@ -287,24 +298,19 @@ export class PaginationUtil {
 	/**
 	 * 커서 기반 페이지네이션 정보 생성
 	 */
-	static createCursorPaginationInfo<T extends { id: number }>(params: {
-		items: T[];
-		size: number;
-		cursor?: number;
-	}): CursorPaginationInfo {
-		const { items, size, cursor } = params;
+	static createCursorPaginationInfo<
+		TItem extends { id: TCursor },
+		TCursor extends CursorType,
+	>(params: { items: TItem[]; size: number }): CursorPaginationInfo<TCursor> {
+		const { items, size } = params;
 		const hasNext = items.length > size;
-		const hasPrevious = cursor !== undefined;
 
 		const actualItems = hasNext ? items.slice(0, size) : items;
 		const lastItem = actualItems[actualItems.length - 1];
-		const firstItem = actualItems[0];
 
 		return {
 			nextCursor: hasNext && lastItem ? lastItem.id : null,
-			prevCursor: hasPrevious && firstItem ? firstItem.id : null,
 			hasNext,
-			hasPrevious,
 			size,
 		};
 	}
@@ -312,19 +318,24 @@ export class PaginationUtil {
 	/**
 	 * 커서 기반 페이지네이션 응답 생성
 	 */
-	static createCursorPaginatedResponse<T extends { id: number }>(params: {
-		items: T[];
+	static createCursorPaginatedResponse<
+		TItem extends { id: TCursor },
+		TCursor extends CursorType,
+	>(params: {
+		items: TItem[];
 		size: number;
-		cursor?: number;
-	}): CursorPaginatedResponse<T> {
-		const { items, size, cursor } = params;
+	}): CursorPaginatedResponse<TItem, TCursor> {
+		const { items, size } = params;
 		const hasNext = items.length > size;
 
 		const actualItems = hasNext ? items.slice(0, size) : items;
 
 		return {
 			items: actualItems,
-			pagination: this.createCursorPaginationInfo({ items, size, cursor }),
+			pagination: this.createCursorPaginationInfo<TItem, TCursor>({
+				items,
+				size,
+			}),
 		};
 	}
 }

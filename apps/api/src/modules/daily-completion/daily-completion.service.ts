@@ -3,41 +3,20 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { mapToCompletionSummaries } from "./daily-completion.mapper";
 import { DailyCompletionRepository } from "./daily-completion.repository";
+import type {
+	DailyCompletionsRangeResult,
+	GetDailyCompletionsRangeParams,
+} from "./types/daily-completion.types";
 
 // UTC 플러그인 활성화
 dayjs.extend(utc);
 
-/**
- * 일일 완료 현황 조회 파라미터
- */
-export interface GetDailyCompletionsRangeParams {
-	userId: string;
-	startDate: string;
-	endDate: string;
-}
-
-/**
- * 일일 완료 요약 정보
- */
-export interface DailyCompletionSummary {
-	date: string;
-	totalTodos: number;
-	completedTodos: number;
-	isComplete: boolean;
-	completionRate: number;
-}
-
-/**
- * 일일 완료 현황 조회 결과
- */
-export interface DailyCompletionsRangeResult {
-	completions: DailyCompletionSummary[];
-	totalCompleteDays: number;
-	dateRange: {
-		startDate: string;
-		endDate: string;
-	};
-}
+// 타입 재내보내기 (기존 import 호환성 유지)
+export type {
+	DailyCompletionSummary,
+	DailyCompletionsRangeResult,
+	GetDailyCompletionsRangeParams,
+} from "./types/daily-completion.types";
 
 @Injectable()
 export class DailyCompletionService {

@@ -394,4 +394,39 @@ export class BusinessExceptions {
 	static verificationMaxAttemptsExceeded() {
 		return new BusinessException(ErrorCode.VERIFY_0754);
 	}
+
+	// =========================================================================
+	// 친구/팔로우 (Follow)
+	// =========================================================================
+	static followRequestAlreadySent(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0901, { targetUserId });
+	}
+
+	static alreadyFriends(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0902, { targetUserId });
+	}
+
+	static followRequestNotFound(targetUserId?: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0903, { targetUserId });
+	}
+
+	static cannotFollowSelf() {
+		return new BusinessException(ErrorCode.FOLLOW_0904);
+	}
+
+	static followTargetNotFound(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0905, { targetUserId });
+	}
+
+	static notFriendsCannotViewTodos(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0906, { targetUserId });
+	}
+
+	static notFriends(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0907, { targetUserId });
+	}
+
+	static reverseRequestExists(targetUserId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0908, { targetUserId });
+	}
 }

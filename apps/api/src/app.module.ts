@@ -13,6 +13,7 @@ import type { EnvConfig } from "@/common/config";
 import { DatabaseModule } from "@/database";
 import { AuthModule } from "@/modules/auth/auth.module";
 import { DailyCompletionModule } from "@/modules/daily-completion";
+import { FollowModule } from "@/modules/follow";
 import { HealthModule } from "@/modules/health";
 import { TodoModule } from "@/modules/todo";
 import { AppController } from "./app.controller";
@@ -44,6 +45,7 @@ import { AppService } from "./app.service";
 		// 4. Features
 		AuthModule,
 		DailyCompletionModule,
+		FollowModule,
 		HealthModule,
 		TodoModule,
 	],

@@ -3,7 +3,7 @@ import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 import { PAGINATION_DEFAULT } from "../constants/pagination.constant";
 
 /**
- * 페이지네이션 DTO
+ * 오프셋 기반 페이지네이션 DTO
  */
 export class PaginationDto {
 	@IsOptional()
@@ -21,9 +21,10 @@ export class PaginationDto {
 }
 
 /**
- * 커서 기반 페이지네이션 DTO (cuid 기반)
+ * String 커서 기반 페이지네이션 DTO
+ * CUID, UUID 등 문자열 ID를 사용하는 엔티티용 (예: User)
  */
-export class CursorPaginationDto {
+export class StringCursorPaginationDto {
 	@IsOptional()
 	@IsString()
 	cursor?: string;
@@ -35,3 +36,27 @@ export class CursorPaginationDto {
 	@Type(() => Number)
 	size?: number = PAGINATION_DEFAULT.SIZE;
 }
+
+/**
+ * Number 커서 기반 페이지네이션 DTO
+ * auto-increment 등 숫자 ID를 사용하는 엔티티용 (예: Todo)
+ */
+export class NumberCursorPaginationDto {
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Type(() => Number)
+	cursor?: number;
+
+	@IsOptional()
+	@IsInt()
+	@Min(PAGINATION_DEFAULT.MIN_SIZE)
+	@Max(PAGINATION_DEFAULT.MAX_SIZE)
+	@Type(() => Number)
+	size?: number = PAGINATION_DEFAULT.SIZE;
+}
+
+/**
+ * @deprecated CursorPaginationDto 대신 StringCursorPaginationDto 또는 NumberCursorPaginationDto 사용
+ */
+export class CursorPaginationDto extends StringCursorPaginationDto {}

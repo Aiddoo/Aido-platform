@@ -1,7 +1,7 @@
 /**
  * Database 모듈
- * 향후 데이터베이스 관련 유틸리티 확장용
+ * 데이터베이스 관련 공통 유틸리티와 타입
  */
 
-// 현재 비어있음 - 향후 확장 예정
-// 예: TransactionDecorators, DatabaseUtils, QueryHelpers 등
+// Prisma 관련 타입
+export type { TransactionClient } from "./prisma.types";
