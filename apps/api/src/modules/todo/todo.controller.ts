@@ -14,6 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { toDate } from "@/common/date";
 
 import {
 	ApiCreatedResponse,
@@ -46,7 +47,7 @@ import {
 	UpdateTodoScheduleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
-import { mapTodosToResponse, mapTodoToResponse } from "./todo.mapper";
+import { TodoMapper } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 /**
@@ -136,8 +137,8 @@ export class TodoController {
 			title: dto.title,
 			content: dto.content,
 			color: dto.color,
-			startDate: new Date(dto.startDate),
-			endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+			startDate: toDate(dto.startDate),
+			endDate: dto.endDate ? toDate(dto.endDate) : undefined,
 			scheduledTime: dto.scheduledTime
 				? this.parseScheduledTime(dto.startDate, dto.scheduledTime)
 				: undefined,
@@ -149,7 +150,7 @@ export class TodoController {
 
 		return {
 			message: "할 일이 생성되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -215,12 +216,12 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 			cursor: query.cursor,
 			size: query.size,
 			completed: query.completed,
-			startDate: query.startDate ? new Date(query.startDate) : undefined,
-			endDate: query.endDate ? new Date(query.endDate) : undefined,
+			startDate: query.startDate ? toDate(query.startDate) : undefined,
+			endDate: query.endDate ? toDate(query.endDate) : undefined,
 		});
 
 		return {
-			items: mapTodosToResponse(result.items),
+			items: TodoMapper.toManyResponse(result.items),
 			pagination: result.pagination,
 		};
 	}
@@ -277,12 +278,12 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 			friendUserId: params.userId,
 			cursor: query.cursor,
 			size: query.size,
-			startDate: query.startDate ? new Date(query.startDate) : undefined,
-			endDate: query.endDate ? new Date(query.endDate) : undefined,
+			startDate: query.startDate ? toDate(query.startDate) : undefined,
+			endDate: query.endDate ? toDate(query.endDate) : undefined,
 		});
 
 		return {
-			items: mapTodosToResponse(result.items),
+			items: TodoMapper.toManyResponse(result.items),
 			pagination: result.pagination,
 		};
 	}
@@ -316,7 +317,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		const todo = await this.todoService.findById(params.id, user.userId);
 
-		return mapTodoToResponse(todo);
+		return TodoMapper.toResponse(todo);
 	}
 
 	// ============================================
@@ -389,12 +390,12 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 			title: dto.title,
 			content: dto.content,
 			color: dto.color,
-			startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+			startDate: dto.startDate ? toDate(dto.startDate) : undefined,
 			endDate:
 				dto.endDate === null
 					? null
 					: dto.endDate
-						? new Date(dto.endDate)
+						? toDate(dto.endDate)
 						: undefined,
 			scheduledTime:
 				dto.scheduledTime === null
@@ -411,7 +412,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -473,7 +474,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 			message: dto.completed
 				? "할 일이 완료되었습니다."
 				: "할 일이 미완료로 변경되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -525,7 +526,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "공개 범위가 변경되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -584,7 +585,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: dto.color ? "색상이 변경되었습니다." : "색상이 제거되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -645,7 +646,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "일정이 변경되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -702,7 +703,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: mapTodoToResponse(todo),
+			todo: TodoMapper.toResponse(todo),
 		};
 	}
 
@@ -763,7 +764,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 		const timeParts = timeStr.split(":");
 		const hours = Number(timeParts[0] ?? 0);
 		const minutes = Number(timeParts[1] ?? 0);
-		const date = new Date(dateStr);
+		const date = toDate(dateStr);
 		date.setHours(hours, minutes, 0, 0);
 		return date;
 	}

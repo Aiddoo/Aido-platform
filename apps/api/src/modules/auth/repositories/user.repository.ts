@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { now } from "@/common/date";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,
@@ -210,7 +211,7 @@ export class UserRepository {
 		return client.user.update({
 			where: { id },
 			data: {
-				emailVerifiedAt: new Date(),
+				emailVerifiedAt: now(),
 				status: "ACTIVE",
 			},
 		});
@@ -226,7 +227,7 @@ export class UserRepository {
 		const client = tx ?? this.database;
 		await client.user.update({
 			where: { id },
-			data: { lastLoginAt: new Date() },
+			data: { lastLoginAt: now() },
 		});
 	}
 

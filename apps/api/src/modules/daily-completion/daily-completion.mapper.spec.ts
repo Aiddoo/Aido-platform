@@ -1,7 +1,7 @@
-import { mapToCompletionSummaries } from "./daily-completion.mapper";
+import { DailyCompletionMapper } from "./daily-completion.mapper";
 import type { TodoAggregateByDate } from "./types/daily-completion.types";
 
-describe("DailyCompletion Mapper", () => {
+describe("DailyCompletionMapper", () => {
 	const createMockAggregate = (
 		overrides: Partial<TodoAggregateByDate> = {},
 	): TodoAggregateByDate => ({
@@ -11,11 +11,11 @@ describe("DailyCompletion Mapper", () => {
 		...overrides,
 	});
 
-	describe("mapToCompletionSummaries", () => {
+	describe("toCompletionSummaries", () => {
 		it("단일 집계 데이터를 완료 요약으로 변환한다", () => {
 			const aggregates = [createMockAggregate()];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result).toHaveLength(1);
 			expect(result[0]).toEqual({
@@ -46,7 +46,7 @@ describe("DailyCompletion Mapper", () => {
 				}),
 			];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result).toHaveLength(3);
 			expect(result[0]?.date).toBe("2024-01-15");
@@ -59,7 +59,7 @@ describe("DailyCompletion Mapper", () => {
 				createMockAggregate({ total: 3, completed: 1 }), // 33.33... -> 33%
 			];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.completionRate).toBe(33);
 		});
@@ -69,7 +69,7 @@ describe("DailyCompletion Mapper", () => {
 				createMockAggregate({ total: 3, completed: 2 }), // 66.66... -> 67%
 			];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.completionRate).toBe(67);
 		});
@@ -77,7 +77,7 @@ describe("DailyCompletion Mapper", () => {
 		it("전체 완료 시 isComplete를 true로 설정한다", () => {
 			const aggregates = [createMockAggregate({ total: 5, completed: 5 })];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.isComplete).toBe(true);
 			expect(result[0]?.completionRate).toBe(100);
@@ -86,7 +86,7 @@ describe("DailyCompletion Mapper", () => {
 		it("일부만 완료 시 isComplete를 false로 설정한다", () => {
 			const aggregates = [createMockAggregate({ total: 5, completed: 4 })];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.isComplete).toBe(false);
 		});
@@ -94,7 +94,7 @@ describe("DailyCompletion Mapper", () => {
 		it("0개 완료 시 isComplete를 false로 설정한다", () => {
 			const aggregates = [createMockAggregate({ total: 5, completed: 0 })];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.isComplete).toBe(false);
 			expect(result[0]?.completionRate).toBe(0);
@@ -103,14 +103,14 @@ describe("DailyCompletion Mapper", () => {
 		it("total이 0인 경우 isComplete를 false로, completionRate를 0으로 설정한다", () => {
 			const aggregates = [createMockAggregate({ total: 0, completed: 0 })];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.isComplete).toBe(false);
 			expect(result[0]?.completionRate).toBe(0);
 		});
 
 		it("빈 배열을 입력하면 빈 배열을 반환한다", () => {
-			const result = mapToCompletionSummaries([]);
+			const result = DailyCompletionMapper.toCompletionSummaries([]);
 
 			expect(result).toEqual([]);
 		});
@@ -122,7 +122,7 @@ describe("DailyCompletion Mapper", () => {
 				}),
 			];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.date).toBe("2024-12-25");
 		});
@@ -134,7 +134,7 @@ describe("DailyCompletion Mapper", () => {
 				}),
 			];
 
-			const result = mapToCompletionSummaries(aggregates);
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
 
 			expect(result[0]?.date).toBe("2024-01-01");
 		});

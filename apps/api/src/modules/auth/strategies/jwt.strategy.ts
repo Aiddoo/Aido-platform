@@ -4,6 +4,7 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { now } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { SessionRepository } from "../repositories/session.repository";
 import type { JwtPayload } from "../services/token.service";
@@ -60,7 +61,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			throw BusinessExceptions.sessionRevoked();
 		}
 
-		if (session.expiresAt < new Date()) {
+		if (session.expiresAt < now()) {
 			throw BusinessExceptions.sessionExpired();
 		}
 

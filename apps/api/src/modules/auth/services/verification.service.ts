@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { addMinutes, subtractSeconds } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma, VerificationType } from "@/generated/prisma/client";
 import { EmailService } from "@/modules/email/email.service";
@@ -224,8 +225,8 @@ export class VerificationService {
 		type: VerificationType,
 		tx?: Prisma.TransactionClient,
 	): Promise<void> {
-		const cooldownSince = new Date(
-			Date.now() - VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS * 1000,
+		const cooldownSince = subtractSeconds(
+			VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
 		);
 
 		const recentCount =
@@ -256,9 +257,7 @@ export class VerificationService {
 		const tokenHash = this._hashCode(code);
 
 		// 만료 시간 계산
-		const expiresAt = new Date(
-			Date.now() + VERIFICATION_CODE.EXPIRY_MINUTES * 60 * 1000,
-		);
+		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
 
 		// DB에 저장 (해시된 토큰)
 		await this.verificationRepository.create(

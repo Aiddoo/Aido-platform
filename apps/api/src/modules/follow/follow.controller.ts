@@ -40,12 +40,7 @@ import {
 	SentRequestsResponseDto,
 	UserIdParamDto,
 } from "./dtos";
-import {
-	mapFollowToFriendUser,
-	mapFollowToReceivedRequest,
-	mapFollowToResponse,
-	mapFollowToSentRequest,
-} from "./follow.mapper";
+import { FollowMapper } from "./follow.mapper";
 import { FollowService } from "./follow.service";
 
 /**
@@ -133,7 +128,7 @@ export class FollowController {
 
 		return {
 			message,
-			follow: mapFollowToResponse(result.follow),
+			follow: FollowMapper.toResponse(result.follow),
 			autoAccepted: result.autoAccepted,
 		};
 	}
@@ -184,7 +179,7 @@ export class FollowController {
 		// following이 요청을 보낸 사람(상대방)의 정보
 		return {
 			message: "친구 요청을 수락했습니다.",
-			friend: mapFollowToFriendUser(result),
+			friend: FollowMapper.toFriendUser(result),
 		};
 	}
 
@@ -323,11 +318,11 @@ export class FollowController {
 
 		const totalCount = await this.followService.countFriends(user.userId);
 
-		return {
-			friends: result.items.map(mapFollowToFriendUser),
+		return FollowMapper.toFriendsListResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 
 	@Get("requests/received")
@@ -375,11 +370,11 @@ export class FollowController {
 			user.userId,
 		);
 
-		return {
-			requests: result.items.map(mapFollowToReceivedRequest),
+		return FollowMapper.toReceivedRequestsResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 
 	@Get("requests/sent")
@@ -425,10 +420,10 @@ export class FollowController {
 
 		const totalCount = await this.followService.countSentRequests(user.userId);
 
-		return {
-			requests: result.items.map(mapFollowToSentRequest),
+		return FollowMapper.toSentRequestsResponse(
+			result.items,
 			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
+			result.pagination.hasNext,
+		);
 	}
 }
