@@ -5,26 +5,13 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { Follow } from "@/generated/prisma/client";
 
-import {
-	type FindFollowsParams,
-	FollowRepository,
-	type FollowWithUser,
-} from "./follow.repository";
-
-// =============================================================================
-// 타입 정의
-// =============================================================================
-
-export interface SendFollowRequestResult {
-	follow: Follow;
-	autoAccepted: boolean;
-}
-
-export interface GetFollowsParams {
-	userId: string;
-	cursor?: string;
-	size?: number;
-}
+import { FollowRepository } from "./follow.repository";
+import type {
+	FindFollowsParams,
+	FollowWithUser,
+	GetFollowsParams,
+	SendFollowRequestResult,
+} from "./types/follow.types";
 
 // =============================================================================
 // Service

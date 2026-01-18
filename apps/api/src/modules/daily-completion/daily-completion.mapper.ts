@@ -2,8 +2,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
 import { DATE_FORMAT } from "@/common/date";
-import type { TodoAggregateByDate } from "./daily-completion.repository";
-import type { DailyCompletionSummary } from "./daily-completion.service";
+import type {
+	DailyCompletionSummary,
+	TodoAggregateByDate,
+} from "./types/daily-completion.types";
 
 dayjs.extend(utc);
 

@@ -31,6 +31,15 @@ import {
 	SWAGGER_TAGS,
 } from "@/common/swagger";
 
+import {
+	mapToAuthTokensResponse,
+	mapToCurrentUserResponse,
+	mapToExchangeCodeResponse,
+	mapToMessageResponse,
+	mapToRefreshTokensResponse,
+	mapToRegisterResponse,
+	mapToUpdateProfileResponse,
+} from "./auth.mapper";
 import { CurrentUser, type CurrentUserPayload, Public } from "./decorators";
 import {
 	AppleMobileCallbackDto,
@@ -174,10 +183,7 @@ export class AuthController {
 	@ApiConflictError(ErrorCode.EMAIL_0501)
 	async register(@Body() dto: RegisterDto) {
 		const result = await this.authService.register(dto);
-		return {
-			message: result.message,
-			email: result.email,
-		};
+		return mapToRegisterResponse(result);
 	}
 
 	@Post("verify-email")
@@ -214,18 +220,14 @@ export class AuthController {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0502 })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
 	async verifyEmail(@Body() dto: VerifyEmailDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.verifyEmail(dto, metadata);
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	@Post("resend-verification")
@@ -273,6 +275,9 @@ export class AuthController {
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async resendVerification(@Body() dto: ResendVerificationDto) {
 		const result = await this.authService.resendVerification(dto.email);
@@ -347,18 +352,13 @@ try {
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		const result = await this.authService.login(dto, metadata);
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	@Post("logout")
@@ -389,7 +389,7 @@ try {
 	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		await this.authService.logout(user.userId, user.sessionId, metadata);
-		return { message: "로그아웃되었습니다." };
+		return mapToMessageResponse("로그아웃되었습니다.");
 	}
 
 	@Post("logout-all")
@@ -420,7 +420,7 @@ try {
 	@ApiUnauthorizedError()
 	async logoutAll(@CurrentUser() user: CurrentUserPayload) {
 		await this.authService.logoutAll(user.userId);
-		return { message: "모든 기기에서 로그아웃되었습니다." };
+		return mapToMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
 	// ============================================
@@ -471,10 +471,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
 		const result = await this.authService.refreshTokens(payload.refreshToken);
-		return {
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-		};
+		return mapToRefreshTokensResponse(result);
 	}
 
 	// ============================================
@@ -546,6 +543,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
 		const result = await this.authService.resetPassword(
 			dto.email,
@@ -636,11 +634,12 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	@ApiSuccessResponse({ type: CurrentUserDto })
 	@ApiUnauthorizedError()
 	async getMe(@CurrentUser() user: CurrentUserPayload) {
-		return this.authService.getCurrentUser(
+		const result = await this.authService.getCurrentUser(
 			user.userId,
 			user.email,
 			user.sessionId,
 		);
+		return mapToCurrentUserResponse(result);
 	}
 
 	@Patch("profile")
@@ -671,7 +670,8 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateProfileDto,
 	) {
-		return this.authService.updateProfile(user.userId, dto);
+		const result = await this.authService.updateProfile(user.userId, dto);
+		return mapToUpdateProfileResponse(result);
 	}
 
 	// ============================================
@@ -831,14 +831,7 @@ curl -X POST https://api.aido.com/v1/auth/exchange \\
 	@ApiUnauthorizedError()
 	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
 		const result = await this.oauthService.exchangeCodeForTokens(dto.code);
-
-		return {
-			userId: result.userId,
-			accessToken: result.accessToken,
-			refreshToken: result.refreshToken,
-			name: result.userName ?? null,
-			profileImage: result.profileImage ?? null,
-		};
+		return mapToExchangeCodeResponse(result);
 	}
 
 	// ============================================
@@ -999,13 +992,7 @@ const handleAppleLogin = async () => {
 			},
 		);
 
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	@Post("google/callback")
@@ -1383,13 +1370,7 @@ export const useGoogleLogin = () => {
 			},
 		);
 
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	// ============================================
@@ -2301,13 +2282,7 @@ export const useKakaoLogin = () => {
 			},
 		);
 
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	@Post("naver/callback")
@@ -2817,13 +2792,7 @@ export const useNaverLogin = () => {
 			},
 		);
 
-		return {
-			userId: result.userId,
-			accessToken: result.tokens.accessToken,
-			refreshToken: result.tokens.refreshToken,
-			name: result.name,
-			profileImage: result.profileImage,
-		};
+		return mapToAuthTokensResponse(result);
 	}
 
 	// ============================================

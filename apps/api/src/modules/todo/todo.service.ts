@@ -6,53 +6,15 @@ import type { Todo } from "@/generated/prisma/client";
 
 import { FollowService } from "../follow/follow.service";
 
-import {
-	type FindFriendTodosParams,
-	type FindTodosParams,
-	TodoRepository,
-} from "./todo.repository";
-
-export interface CreateTodoData {
-	userId: string;
-	title: string;
-	content?: string | null;
-	color?: string | null;
-	startDate: Date;
-	endDate?: Date | null;
-	scheduledTime?: Date | null;
-	isAllDay?: boolean;
-	visibility?: "PUBLIC" | "PRIVATE";
-}
-
-export interface UpdateTodoData {
-	title?: string;
-	content?: string | null;
-	color?: string | null;
-	startDate?: Date;
-	endDate?: Date | null;
-	scheduledTime?: Date | null;
-	isAllDay?: boolean;
-	visibility?: "PUBLIC" | "PRIVATE";
-	completed?: boolean;
-}
-
-export interface GetTodosParams {
-	userId: string;
-	cursor?: number;
-	size?: number;
-	completed?: boolean;
-	startDate?: Date;
-	endDate?: Date;
-}
-
-export interface GetFriendTodosParams {
-	userId: string;
-	friendUserId: string;
-	cursor?: number;
-	size?: number;
-	startDate?: Date;
-	endDate?: Date;
-}
+import { TodoRepository } from "./todo.repository";
+import type {
+	CreateTodoData,
+	FindFriendTodosParams,
+	FindTodosParams,
+	GetFriendTodosParams,
+	GetTodosParams,
+	UpdateTodoData,
+} from "./types/todo.types.ts";
 
 @Injectable()
 export class TodoService {

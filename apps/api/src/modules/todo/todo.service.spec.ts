@@ -6,7 +6,8 @@ import type { Todo } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";
 
 import { TodoRepository } from "./todo.repository";
-import { type CreateTodoData, TodoService } from "./todo.service";
+import { TodoService } from "./todo.service";
+import type { CreateTodoData } from "./types/todo.types";
 
 describe("TodoService", () => {
 	let service: TodoService;

@@ -4,8 +4,9 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { Follow } from "@/generated/prisma/client";
 
-import { FollowRepository, type FollowWithUser } from "./follow.repository";
+import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
+import type { FollowWithUser } from "./types/follow.types";
 
 describe("FollowService", () => {
 	let service: FollowService;

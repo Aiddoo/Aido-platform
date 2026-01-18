@@ -46,6 +46,7 @@ import {
 	UpdateTodoScheduleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
+import { mapTodosToResponse, mapTodoToResponse } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 /**
@@ -148,7 +149,7 @@ export class TodoController {
 
 		return {
 			message: "할 일이 생성되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -219,7 +220,7 @@ GET /todos?size=20&completed=false&startDate=2024-01-01&endDate=2024-01-31
 		});
 
 		return {
-			items: result.items.map((todo) => this.mapToResponse(todo)),
+			items: mapTodosToResponse(result.items),
 			pagination: result.pagination,
 		};
 	}
@@ -281,7 +282,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 		});
 
 		return {
-			items: result.items.map((todo) => this.mapToResponse(todo)),
+			items: mapTodosToResponse(result.items),
 			pagination: result.pagination,
 		};
 	}
@@ -315,7 +316,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		const todo = await this.todoService.findById(params.id, user.userId);
 
-		return this.mapToResponse(todo);
+		return mapTodoToResponse(todo);
 	}
 
 	// ============================================
@@ -410,7 +411,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -472,7 +473,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 			message: dto.completed
 				? "할 일이 완료되었습니다."
 				: "할 일이 미완료로 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -524,7 +525,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "공개 범위가 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -583,7 +584,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: dto.color ? "색상이 변경되었습니다." : "색상이 제거되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -644,7 +645,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "일정이 변경되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -701,7 +702,7 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: this.mapToResponse(todo),
+			todo: mapTodoToResponse(todo),
 		};
 	}
 
@@ -765,49 +766,5 @@ GET /todos/friends/clu1234567890?size=20&startDate=2024-01-01
 		const date = new Date(dateStr);
 		date.setHours(hours, minutes, 0, 0);
 		return date;
-	}
-
-	/**
-	 * ISO 날짜 문자열에서 날짜 부분만 추출 (YYYY-MM-DD)
-	 */
-	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0] ?? date.toISOString().slice(0, 10);
-	}
-
-	/**
-	 * Prisma Todo 엔티티를 응답 DTO로 변환
-	 */
-	private mapToResponse(todo: {
-		id: number;
-		userId: string;
-		title: string;
-		content: string | null;
-		color: string | null;
-		completed: boolean;
-		completedAt: Date | null;
-		startDate: Date;
-		endDate: Date | null;
-		scheduledTime: Date | null;
-		isAllDay: boolean;
-		visibility: string;
-		createdAt: Date;
-		updatedAt: Date;
-	}): TodoResponseDto {
-		return {
-			id: todo.id,
-			userId: todo.userId,
-			title: todo.title,
-			content: todo.content,
-			color: todo.color,
-			completed: todo.completed,
-			completedAt: todo.completedAt?.toISOString() ?? null,
-			startDate: this.formatDate(todo.startDate),
-			endDate: todo.endDate ? this.formatDate(todo.endDate) : null,
-			scheduledTime: todo.scheduledTime?.toISOString() ?? null,
-			isAllDay: todo.isAllDay,
-			visibility: todo.visibility as "PUBLIC" | "PRIVATE",
-			createdAt: todo.createdAt.toISOString(),
-			updatedAt: todo.updatedAt.toISOString(),
-		};
 	}
 }

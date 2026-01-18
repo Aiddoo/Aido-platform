@@ -167,3 +167,25 @@ export function ApiUnprocessableError(
 		}),
 	);
 }
+
+/**
+ * 400 Bad Request 에러 데코레이터
+ *
+ * @example
+ * ```typescript
+ * @Post(':userId')
+ * @ApiBadRequestError('CANNOT_FOLLOW_SELF')
+ * sendRequest(@Param('userId') userId: string) { ... }
+ * ```
+ */
+export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Bad request";
+
+	return applyDecorators(
+		ApiResponse({
+			status: HttpStatus.BAD_REQUEST,
+			description: message,
+			schema: createErrorSchema(errorCode, message),
+		}),
+	);
+}

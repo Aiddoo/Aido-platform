@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
+	ApiBadRequestError,
 	ApiConflictError,
 	ApiCreatedResponse,
 	ApiDoc,
@@ -39,7 +40,12 @@ import {
 	SentRequestsResponseDto,
 	UserIdParamDto,
 } from "./dtos";
-import type { FollowWithUser } from "./follow.repository";
+import {
+	mapFollowToFriendUser,
+	mapFollowToReceivedRequest,
+	mapFollowToResponse,
+	mapFollowToSentRequest,
+} from "./follow.mapper";
 import { FollowService } from "./follow.service";
 
 /**
@@ -102,8 +108,10 @@ export class FollowController {
 	})
 	@ApiCreatedResponse({ type: SendFriendRequestResponseDto })
 	@ApiUnauthorizedError()
+	@ApiBadRequestError(ErrorCode.FOLLOW_0904)
 	@ApiNotFoundError(ErrorCode.FOLLOW_0905)
 	@ApiConflictError(ErrorCode.FOLLOW_0901)
+	@ApiConflictError(ErrorCode.FOLLOW_0902)
 	async sendRequest(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
@@ -125,14 +133,7 @@ export class FollowController {
 
 		return {
 			message,
-			follow: {
-				id: result.follow.id,
-				followerId: result.follow.followerId,
-				followingId: result.follow.followingId,
-				status: result.follow.status,
-				createdAt: result.follow.createdAt,
-				updatedAt: result.follow.updatedAt,
-			},
+			follow: mapFollowToResponse(result.follow),
 			autoAccepted: result.autoAccepted,
 		};
 	}
@@ -183,14 +184,7 @@ export class FollowController {
 		// following이 요청을 보낸 사람(상대방)의 정보
 		return {
 			message: "친구 요청을 수락했습니다.",
-			friend: {
-				followId: result.id,
-				id: result.following.id,
-				userTag: result.following.userTag,
-				name: result.following.profile?.name ?? null,
-				profileImage: result.following.profile?.profileImage ?? null,
-				friendsSince: result.updatedAt,
-			},
+			friend: mapFollowToFriendUser(result),
 		};
 	}
 
@@ -330,7 +324,7 @@ export class FollowController {
 		const totalCount = await this.followService.countFriends(user.userId);
 
 		return {
-			friends: result.items.map((follow) => this.mapToFriendUser(follow)),
+			friends: result.items.map(mapFollowToFriendUser),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
@@ -382,9 +376,7 @@ export class FollowController {
 		);
 
 		return {
-			requests: result.items.map((follow) =>
-				this.mapToReceivedRequestUser(follow),
-			),
+			requests: result.items.map(mapFollowToReceivedRequest),
 			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
@@ -434,82 +426,9 @@ export class FollowController {
 		const totalCount = await this.followService.countSentRequests(user.userId);
 
 		return {
-			requests: result.items.map((follow) => this.mapToSentRequestUser(follow)),
+			requests: result.items.map(mapFollowToSentRequest),
 			totalCount,
 			hasMore: result.pagination.hasNext,
-		};
-	}
-
-	// ============================================
-	// Helper Methods
-	// ============================================
-
-	/**
-	 * FollowWithUser를 친구 정보로 변환
-	 *
-	 * findMutualFriends 쿼리에서 followerId = 현재 사용자이므로
-	 * following이 항상 친구(상대방)입니다.
-	 */
-	private mapToFriendUser(follow: FollowWithUser): {
-		followId: string;
-		id: string;
-		userTag: string;
-		name: string | null;
-		profileImage: string | null;
-		friendsSince: Date;
-	} {
-		// 친구 목록 쿼리(findMutualFriends)에서 followerId = 현재 사용자
-		// 따라서 following이 항상 친구(상대방)
-		const friend = follow.following;
-		return {
-			followId: follow.id,
-			id: friend.id,
-			userTag: friend.userTag,
-			name: friend.profile?.name ?? null,
-			profileImage: friend.profile?.profileImage ?? null,
-			friendsSince: follow.updatedAt,
-		};
-	}
-
-	/**
-	 * 받은 친구 요청을 요청 정보로 변환
-	 * 받은 요청에서는 follower가 요청을 보낸 사람
-	 */
-	private mapToReceivedRequestUser(follow: FollowWithUser): {
-		id: string;
-		userTag: string;
-		name: string | null;
-		profileImage: string | null;
-		requestedAt: Date;
-	} {
-		const requester = follow.follower;
-		return {
-			id: requester.id,
-			userTag: requester.userTag,
-			name: requester.profile?.name ?? null,
-			profileImage: requester.profile?.profileImage ?? null,
-			requestedAt: follow.createdAt,
-		};
-	}
-
-	/**
-	 * 보낸 친구 요청을 요청 정보로 변환
-	 * 보낸 요청에서는 following이 요청을 받은 사람
-	 */
-	private mapToSentRequestUser(follow: FollowWithUser): {
-		id: string;
-		userTag: string;
-		name: string | null;
-		profileImage: string | null;
-		requestedAt: Date;
-	} {
-		const recipient = follow.following;
-		return {
-			id: recipient.id,
-			userTag: recipient.userTag,
-			name: recipient.profile?.name ?? null,
-			profileImage: recipient.profile?.profileImage ?? null,
-			requestedAt: follow.createdAt,
 		};
 	}
 }

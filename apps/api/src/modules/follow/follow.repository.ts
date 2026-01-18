@@ -1,38 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "@/database/database.service";
-import {
-	type Follow,
-	FollowStatus,
-	type Prisma,
-	type PrismaClient,
-	type User,
-} from "@/generated/prisma/client";
+import { type Follow, type Prisma } from "@/generated/prisma/client";
 
-// 트랜잭션 클라이언트 타입 정의
-type TransactionClient = Omit<
-	PrismaClient,
-	"$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
-
-// =============================================================================
-// 타입 정의
-// =============================================================================
-
-export interface FollowWithUser extends Follow {
-	follower: Pick<User, "id" | "userTag"> & {
-		profile: { name: string | null; profileImage: string | null } | null;
-	};
-	following: Pick<User, "id" | "userTag"> & {
-		profile: { name: string | null; profileImage: string | null } | null;
-	};
-}
-
-export interface FindFollowsParams {
-	userId: string;
-	status?: FollowStatus;
-	cursor?: string;
-	size: number;
-}
+import type {
+	FindFollowsParams,
+	FollowWithUser,
+	TransactionClient,
+} from "./types/follow.types";
 
 // =============================================================================
 // Repository
