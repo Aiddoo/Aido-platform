@@ -55,10 +55,8 @@ export class ErrorDetailSchema {
  * | `VERIFY_0753` | 404 | 인증 요청 없음 | 회원가입부터 진행 |
  * | `VERIFY_0754` | 400 | 이미 인증 완료 | 로그인 화면으로 이동 |
  * | **소셜 로그인 에러** | | | |
- * | `APPLE_0401` | 401 | Apple 로그인 실패 | 재로그인 유도 |
- * | `GOOGLE_0401` | 401 | Google 로그인 실패 | 재로그인 유도 |
- * | `KAKAO_0401` | 401 | Kakao 로그인 실패 | 재로그인 유도 |
- * | `NAVER_0401` | 401 | Naver 로그인 실패 | 재로그인 유도 |
+ * | `SOCIAL_0202` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 유도 |
+ * | `SOCIAL_0203` | 401 | 소셜 인증 토큰이 만료되었습니다 | 재로그인 유도 |
  * | **시스템 에러** | | | |
  * | `SYS_0001` | 500 | 서버 내부 오류 | 잠시 후 재시도 |
  * | `SYS_0002` | 400 | 잘못된 파라미터 | 입력 값 검증 |
@@ -77,7 +75,7 @@ export class ErrorResponseSchema {
 	error!: ErrorDetailSchema;
 
 	@ApiProperty({
-		description: "응답 타임스탐프 (Unix timestamp)",
+		description: "응답 타임스탬프 (Unix timestamp)",
 		example: 1704067200000,
 	})
 	timestamp!: number;

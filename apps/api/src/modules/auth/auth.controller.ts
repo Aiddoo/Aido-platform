@@ -794,7 +794,7 @@ const handleAppleLogin = async () => {
 
 | 에러 코드 | HTTP | 메시지 | 클라이언트 처리 |
 |----------|------|--------|----------------|
-| \`APPLE_0354\` | 401 | 유효하지 않은 Apple ID Token | 재로그인 요청 |
+| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 요청 |
 | \`USER_0601\` | 400 | 이미 다른 계정으로 가입됨 | 계정 연동 화면 또는 가입 재시도 |
 | \`USER_0602\` | 400 | 가입 불가능한 이메일 | 고객 지원 안내 |
 
@@ -919,7 +919,7 @@ if (decoded.nonce !== expectedNonce) {
 - [ ] 약관에 Apple ID 사용 동의 포함`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0354 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async appleCallback(
 		@Body() dto: AppleMobileCallbackDto,
 		@Req() req: Request,
@@ -1196,8 +1196,8 @@ Content-Type: application/json
 {
   "success": false,
   "error": {
-    "code": "GOOGLE_0401",
-    "message": "구글 로그인에 실패했습니다.",
+    "code": "SOCIAL_0202",
+    "message": "소셜 인증 토큰이 유효하지 않습니다.",
     "details": {
       "reason": "Invalid token",
       "hint": "토큰이 유효하지 않거나 만료되었습니다"
@@ -1292,9 +1292,8 @@ const clientId = {
 
 | 에러 코드 | HTTP | 상황 | 클라이언트 액션 |
 |---------|------|------|----------------|
-| \`GOOGLE_0401\` | 401 | 구글 로그인 실패 | 재로그인 유도 |
-| \`GOOGLE_0402\` | 401 | 토큰이 유효하지 않음 | 재로그인 유도 |
-| \`GOOGLE_0403\` | 401 | 토큰 검증 실패 | 클라이언트 ID 재확인 |
+| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 유도 |
+| \`SOCIAL_0203\` | 401 | 소셜 인증 토큰이 만료되었습니다 | 재로그인 유도 |
 | \`USER_0601\` | 409 | 이미 가입된 이메일 | 로그인 화면 이동 |
 
 ---
@@ -1356,12 +1355,12 @@ const clientId = {
 - [ ] Google.useAuthRequest() 구현
 - [ ] ID Token 추출 및 백엔드로 전송
 - [ ] 백엔드 token 검증 로직 구현 (GoogleAuth 라이브러리)
-- [ ] 에러 처리 (GOOGLE_0401, GOOGLE_0402, GOOGLE_0403) 구현
+- [ ] 에러 처리 (SOCIAL_0202, SOCIAL_0203) 구현
 - [ ] 테스트 디바이스에서 전체 로그인 플로우 검증
 - [ ] Swagger 문서에서 요청/응답 형식 확인`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.GOOGLE_0401 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async googleCallback(
 		@Body() dto: GoogleMobileCallbackDto,
 		@Req() req: Request,
@@ -2086,7 +2085,7 @@ export const useKakaoLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.KAKAO_0308 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async kakaoCallback(
 		@Body() dto: KakaoMobileCallbackDto,
 		@Req() req: Request,
@@ -2596,7 +2595,7 @@ export const useNaverLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.NAVER_0453 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async naverCallback(
 		@Body() dto: NaverMobileCallbackDto,
 		@Req() req: Request,
