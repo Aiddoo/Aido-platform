@@ -4,8 +4,15 @@ import {
 	type Follow,
 	FollowStatus,
 	type Prisma,
+	type PrismaClient,
 	type User,
 } from "@/generated/prisma/client";
+
+// 트랜잭션 클라이언트 타입 정의
+type TransactionClient = Omit<
+	PrismaClient,
+	"$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
 
 // =============================================================================
 // 타입 정의
@@ -54,8 +61,12 @@ export class FollowRepository {
 	/**
 	 * 팔로우 관계 생성
 	 */
-	async create(data: Prisma.FollowCreateInput): Promise<Follow> {
-		return this.database.follow.create({ data });
+	async create(
+		data: Prisma.FollowCreateInput,
+		tx?: TransactionClient,
+	): Promise<Follow> {
+		const client = tx ?? this.database;
+		return client.follow.create({ data });
 	}
 
 	/**
@@ -64,8 +75,10 @@ export class FollowRepository {
 	async findByFollowerAndFollowing(
 		followerId: string,
 		followingId: string,
+		tx?: TransactionClient,
 	): Promise<Follow | null> {
-		return this.database.follow.findUnique({
+		const client = tx ?? this.database;
+		return client.follow.findUnique({
 			where: {
 				followerId_followingId: {
 					followerId,
@@ -78,17 +91,44 @@ export class FollowRepository {
 	/**
 	 * ID로 팔로우 관계 조회
 	 */
-	async findById(id: string): Promise<Follow | null> {
-		return this.database.follow.findUnique({
+	async findById(id: string, tx?: TransactionClient): Promise<Follow | null> {
+		const client = tx ?? this.database;
+		return client.follow.findUnique({
 			where: { id },
+		});
+	}
+
+	/**
+	 * ID로 팔로우 관계 조회 (사용자 정보 포함)
+	 */
+	async findByIdWithUser(
+		id: string,
+		tx?: TransactionClient,
+	): Promise<FollowWithUser | null> {
+		const client = tx ?? this.database;
+		return client.follow.findUnique({
+			where: { id },
+			include: {
+				follower: {
+					select: this.userSelect,
+				},
+				following: {
+					select: this.userSelect,
+				},
+			},
 		});
 	}
 
 	/**
 	 * 팔로우 관계 수정
 	 */
-	async update(id: string, data: Prisma.FollowUpdateInput): Promise<Follow> {
-		return this.database.follow.update({
+	async update(
+		id: string,
+		data: Prisma.FollowUpdateInput,
+		tx?: TransactionClient,
+	): Promise<Follow> {
+		const client = tx ?? this.database;
+		return client.follow.update({
 			where: { id },
 			data,
 		});
@@ -101,8 +141,10 @@ export class FollowRepository {
 		followerId: string,
 		followingId: string,
 		data: Prisma.FollowUpdateInput,
+		tx?: TransactionClient,
 	): Promise<Follow> {
-		return this.database.follow.update({
+		const client = tx ?? this.database;
+		return client.follow.update({
 			where: {
 				followerId_followingId: {
 					followerId,
@@ -116,8 +158,9 @@ export class FollowRepository {
 	/**
 	 * 팔로우 관계 삭제
 	 */
-	async delete(id: string): Promise<Follow> {
-		return this.database.follow.delete({
+	async delete(id: string, tx?: TransactionClient): Promise<Follow> {
+		const client = tx ?? this.database;
+		return client.follow.delete({
 			where: { id },
 		});
 	}
@@ -128,8 +171,10 @@ export class FollowRepository {
 	async deleteByFollowerAndFollowing(
 		followerId: string,
 		followingId: string,
+		tx?: TransactionClient,
 	): Promise<Follow> {
-		return this.database.follow.delete({
+		const client = tx ?? this.database;
+		return client.follow.delete({
 			where: {
 				followerId_followingId: {
 					followerId,
