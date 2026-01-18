@@ -1,6 +1,7 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { DatabaseService } from "@/database/database.service";
 import type { Follow } from "@/generated/prisma/client";
 
 import { FollowRepository, type FollowWithUser } from "./follow.repository";
@@ -14,6 +15,7 @@ describe("FollowService", () => {
 		create: jest.fn(),
 		findByFollowerAndFollowing: jest.fn(),
 		findById: jest.fn(),
+		findByIdWithUser: jest.fn(),
 		update: jest.fn(),
 		updateByFollowerAndFollowing: jest.fn(),
 		delete: jest.fn(),
@@ -32,6 +34,15 @@ describe("FollowService", () => {
 		normalizeCursorPagination: jest.fn(),
 		createCursorPaginatedResponse: jest.fn(),
 	};
+
+	const mockDatabaseService: { $transaction: jest.Mock } = {
+		$transaction: jest.fn(),
+	};
+	// 순환 참조를 피하기 위해 초기화 후 구현 설정
+	mockDatabaseService.$transaction.mockImplementation(
+		(callback: (tx: unknown) => Promise<unknown>) =>
+			callback(mockDatabaseService),
+	);
 
 	// 테스트 데이터
 	const mockUserId = "user-123";
@@ -74,6 +85,7 @@ describe("FollowService", () => {
 				FollowService,
 				{ provide: FollowRepository, useValue: mockFollowRepository },
 				{ provide: PaginationService, useValue: mockPaginationService },
+				{ provide: DatabaseService, useValue: mockDatabaseService },
 			],
 		}).compile();
 
@@ -189,13 +201,17 @@ describe("FollowService", () => {
 			expect(result.follow.status).toBe("ACCEPTED");
 			expect(
 				mockFollowRepository.updateByFollowerAndFollowing,
-			).toHaveBeenCalledWith(mockTargetUserId, mockUserId, {
-				status: "ACCEPTED",
-			});
+			).toHaveBeenCalledWith(
+				mockTargetUserId,
+				mockUserId,
+				{ status: "ACCEPTED" },
+				expect.anything(), // 트랜잭션 컨텍스트
+			);
 			expect(mockFollowRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					status: "ACCEPTED",
 				}),
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 		});
 
@@ -251,13 +267,27 @@ describe("FollowService", () => {
 				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
 				.mockResolvedValueOnce(null); // 역방향 없음
 
-			mockFollowRepository.create.mockResolvedValue({
+			const createdFollow = {
 				id: "new-follow-id",
 				followerId: mockUserId,
 				followingId: mockTargetUserId,
 				status: "ACCEPTED",
 				createdAt: new Date(),
 				updatedAt: new Date(),
+			};
+			mockFollowRepository.create.mockResolvedValue(createdFollow);
+			mockFollowRepository.findByIdWithUser.mockResolvedValue({
+				...createdFollow,
+				follower: {
+					id: mockUserId,
+					userTag: "user123",
+					profile: { name: "테스트 유저", profileImage: null },
+				},
+				following: {
+					id: mockTargetUserId,
+					userTag: "target456",
+					profile: { name: "타겟 유저", profileImage: null },
+				},
 			});
 
 			// When
@@ -267,6 +297,7 @@ describe("FollowService", () => {
 			expect(mockFollowRepository.update).toHaveBeenCalledWith(
 				pendingRequest.id,
 				{ status: "ACCEPTED" },
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(mockFollowRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -274,6 +305,7 @@ describe("FollowService", () => {
 					following: { connect: { id: mockTargetUserId } },
 					status: "ACCEPTED",
 				}),
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 		});
 
@@ -292,6 +324,21 @@ describe("FollowService", () => {
 				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
 				.mockResolvedValueOnce(existingReverseFollow); // 역방향 존재
 
+			mockFollowRepository.findByIdWithUser.mockResolvedValue({
+				...existingReverseFollow,
+				status: "ACCEPTED",
+				follower: {
+					id: mockUserId,
+					userTag: "user123",
+					profile: { name: "테스트 유저", profileImage: null },
+				},
+				following: {
+					id: mockTargetUserId,
+					userTag: "target456",
+					profile: { name: "타겟 유저", profileImage: null },
+				},
+			});
+
 			// When
 			await service.acceptRequest(mockUserId, mockTargetUserId);
 
@@ -301,6 +348,7 @@ describe("FollowService", () => {
 				2,
 				existingReverseFollow.id,
 				{ status: "ACCEPTED" },
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(mockFollowRepository.create).not.toHaveBeenCalled();
 		});
@@ -435,10 +483,12 @@ describe("FollowService", () => {
 			expect(mockFollowRepository.delete).toHaveBeenNthCalledWith(
 				1,
 				myFollow.id,
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(mockFollowRepository.delete).toHaveBeenNthCalledWith(
 				2,
 				theirFollow.id,
+				expect.anything(), // 트랜잭션 컨텍스트
 			);
 		});
 
@@ -454,7 +504,10 @@ describe("FollowService", () => {
 
 			// Then
 			expect(mockFollowRepository.delete).toHaveBeenCalledTimes(1);
-			expect(mockFollowRepository.delete).toHaveBeenCalledWith(myFollow.id);
+			expect(mockFollowRepository.delete).toHaveBeenCalledWith(
+				myFollow.id,
+				expect.anything(), // 트랜잭션 컨텍스트
+			);
 		});
 
 		it("내 관계가 없으면 FOLLOW_0907 에러를 던진다", async () => {

@@ -48,10 +48,20 @@ describe("FollowService Integration Tests", () => {
 		findUnique: jest.fn(),
 	};
 
-	const mockDatabaseService = {
+	const mockDatabaseService: {
+		follow: typeof mockFollowDb;
+		user: typeof mockUserDb;
+		$transaction: jest.Mock;
+	} = {
 		follow: mockFollowDb,
 		user: mockUserDb,
+		$transaction: jest.fn(),
 	};
+	// 순환 참조를 피하기 위해 초기화 후 구현 설정
+	mockDatabaseService.$transaction.mockImplementation(
+		(callback: (tx: unknown) => Promise<unknown>) =>
+			callback(mockDatabaseService),
+	);
 
 	// 테스트 데이터
 	const mockUserId = "user-integration-123";
@@ -243,6 +253,13 @@ describe("FollowService Integration Tests", () => {
 				status: "PENDING",
 			});
 
+			const myFollow = createMockFollow({
+				id: "my-follow-id",
+				followerId: mockUserId,
+				followingId: mockTargetUserId,
+				status: "ACCEPTED",
+			});
+
 			// 첫 번째 호출: 받은 요청 확인
 			mockFollowDb.findUnique.mockResolvedValueOnce(pendingRequest);
 			// 요청 수락
@@ -253,14 +270,17 @@ describe("FollowService Integration Tests", () => {
 			// 두 번째 호출: 역방향 관계 확인 (없음)
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			// 역방향 관계 생성
-			mockFollowDb.create.mockResolvedValue(
-				createMockFollow({ status: "ACCEPTED" }),
-			);
+			mockFollowDb.create.mockResolvedValue(myFollow);
+			// 마지막 호출: findByIdWithUser (생성된 Follow 조회)
+			mockFollowDb.findUnique.mockResolvedValueOnce(myFollow);
 
-			// When - acceptRequest는 void를 반환
-			await service.acceptRequest(mockUserId, mockTargetUserId);
+			// When
+			const result = await service.acceptRequest(mockUserId, mockTargetUserId);
 
-			// Then - update가 호출되었는지 확인
+			// Then
+			expect(result).toBeDefined();
+			expect(result.id).toBe(myFollow.id);
+			expect(result.status).toBe("ACCEPTED");
 			expect(mockFollowDb.update).toHaveBeenCalledWith({
 				where: { id: pendingRequest.id },
 				data: { status: "ACCEPTED" },
