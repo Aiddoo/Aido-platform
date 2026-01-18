@@ -131,44 +131,24 @@ export class AuthController {
 	@ApiDoc({
 		summary: "회원가입",
 		description: `
-## 📋 회원가입 (1/2단계)
+## 📋 회원가입
+이메일/비밀번호로 계정 생성 후 인증 코드가 발송됩니다.
 
-이메일과 비밀번호로 새 계정을 생성합니다.
-성공 시 입력한 이메일로 **6자리 인증 코드**가 발송됩니다.
-
-### 🔄 전체 플로우
-\`\`\`
-[현재] POST /auth/register     → 계정 생성 + 인증 코드 발송
-[다음] POST /auth/verify-email → 인증 완료 + 토큰 발급
-\`\`\`
-
-### 📝 비밀번호 규칙
-- 최소 8자 이상
-- 영문자 1개 이상 포함
-- 숫자 1개 이상 포함
-
-### ✅ 필수 동의 항목
-- \`termsAgreed\`: 서비스 이용약관 동의 (필수)
+### 📝 요청 Body
+- \`email\`: 이메일 주소
+- \`password\`: 비밀번호 (8자 이상, 영문+숫자)
+- \`nickname\`: 닉네임
+- \`termsAgreed\`: 이용약관 동의 (필수)
 - \`privacyAgreed\`: 개인정보처리방침 동의 (필수)
-- \`marketingAgreed\`: 마케팅 정보 수신 동의 (선택)
+- \`marketingAgreed\`: 마케팅 수신 동의 (선택)
 
-### ⚠️ 주의사항
-- 이미 가입된 이메일은 \`EMAIL_ALREADY_REGISTERED\` 에러 반환
-- 인증 코드는 **10분간 유효**합니다
+### 🔄 다음 단계
+\`POST /auth/verify-email\`로 인증 코드 확인 (10분 내)
 
-### 🔄 이미 가입한 이메일로 재시도 시
-
-만약 이전에 회원가입을 시도했지만 이메일 인증을 완료하지 않은 경우:
-
-1. **회원가입 시도** → \`EMAIL_ALREADY_REGISTERED\` 에러 반환
-2. **프론트엔드**: "이미 가입된 이메일입니다. 로그인하시겠습니까?" 안내
-3. **사용자**: 로그인 버튼 클릭
-4. **로그인 시도** → \`EMAIL_NOT_VERIFIED\` 에러 반환
-5. **프론트엔드**: 자동으로 이메일 인증 화면으로 이동
-6. **프론트엔드**: 자동으로 \`POST /auth/resend-verification\` 호출
-7. **사용자**: 새로 받은 인증 코드로 인증 완료
-
-이 플로우를 통해 이메일 인증을 완료하지 못한 사용자도 쉽게 복구할 수 있습니다.
+### ⚠️ 에러 케이스
+| 코드 | 상황 |
+|------|------|
+| EMAIL_0501 | 이미 가입된 이메일 |
 		`,
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
@@ -184,31 +164,26 @@ export class AuthController {
 	@ApiDoc({
 		summary: "이메일 인증",
 		description: `
-## ✉️ 이메일 인증 (2/2단계)
+## ✉️ 이메일 인증
+회원가입 시 발송된 6자리 인증 코드를 검증합니다. 성공 시 토큰이 발급됩니다.
 
-회원가입 시 발송된 6자리 인증 코드를 검증합니다.
-인증 성공 시 **Access Token**과 **Refresh Token**이 발급되어 즉시 로그인 상태가 됩니다.
+### 📝 요청 Body
+- \`email\`: 가입한 이메일 주소
+- \`code\`: 6자리 인증 코드
 
-### 🔄 전체 플로우
-\`\`\`
-[이전] POST /auth/register     → 계정 생성 + 인증 코드 발송
-[현재] POST /auth/verify-email → 인증 완료 + 토큰 발급
-[완료] 이후 API 호출 시 Access Token 사용
-\`\`\`
-
-### 🎫 발급되는 토큰
-| 토큰 | 용도 | 유효기간 |
-|------|------|----------|
-| Access Token | API 인증 헤더에 사용 | 15분 |
-| Refresh Token | Access Token 갱신용 | 7일 |
+### 🎫 응답 토큰
+| 토큰 | 유효기간 |
+|------|----------|
+| accessToken | 15분 |
+| refreshToken | 7일 |
 
 ### ⚠️ 에러 케이스
-- \`VERIFICATION_CODE_INVALID\`: 잘못된 인증 코드
-- \`VERIFICATION_CODE_EXPIRED\`: 만료된 인증 코드 (10분 초과)
-
-### 💡 코드 재발송
-인증 코드가 만료되었거나 수신하지 못한 경우:
-\`POST /auth/resend-verification\` 호출
+| 코드 | 상황 |
+|------|------|
+| EMAIL_0502 | 잘못된 인증 코드 |
+| EMAIL_0504 | 만료된 인증 코드 |
+| EMAIL_0505 | 인증 코드 시도 횟수 초과 |
+| USER_0604 | 이미 인증 완료된 사용자 |
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
@@ -229,41 +204,21 @@ export class AuthController {
 		summary: "인증 코드 재발송",
 		description: `
 ## 🔄 인증 코드 재발송
+인증 코드를 다시 발송합니다. 이전 코드는 무효화됩니다.
 
-회원가입 시 발송된 인증 코드를 다시 발송합니다.
+### 📝 요청 Body
+- \`email\`: 가입한 이메일 주소
 
-### 📋 사용 케이스
-- 인증 코드가 만료된 경우 (10분 초과)
-- 이메일을 수신하지 못한 경우
-- 인증 코드를 분실한 경우
+### ⏱️ 제한사항
+- 마지막 발송 후 **1분 이내** 재요청 불가
 
-### ⏱️ 재발송 제한
-- 마지막 발송 후 **1분 이내** 재요청 시 \`VERIFICATION_RESEND_TOO_SOON\` 에러
-- 스팸 방지를 위한 제한입니다
-
-### ⚠️ 주의사항
-- 이전에 발송된 인증 코드는 **무효화**됩니다
-- 새로 발송된 코드만 유효합니다
-
-### 🔄 자동 호출 시나리오
-
-프론트엔드는 다음 상황에서 이 API를 **자동으로** 호출해야 합니다:
-
-#### 1. **로그인 시 \`EMAIL_NOT_VERIFIED\` 에러 발생**
-- 사용자를 이메일 인증 화면으로 이동시킨 후
-- 자동으로 이 API를 호출하여 새 인증 코드 발송
-- 사용자는 바로 이메일 인증을 진행할 수 있습니다
-
-#### 2. **회원가입 시 \`EMAIL_ALREADY_REGISTERED\` 에러 → 로그인 → \`EMAIL_NOT_VERIFIED\` 에러 발생**
-- 위와 동일한 플로우로 자동 복구 가능
-- 사용자는 복잡한 단계 없이 바로 이메일 인증을 진행할 수 있습니다
-
-#### 3. **사용자가 명시적으로 "코드 재발송" 버튼 클릭**
-- 인증 화면에서 "코드를 받지 못했나요?" 버튼 제공
-- 해당 버튼 클릭 시 이 API 호출
-- 다만 **1분 쿨다운** 제한이 있으므로, 너무 빈번한 호출 방지
-
-이를 통해 사용자는 복잡한 단계 없이 바로 이메일 인증을 진행할 수 있습니다.
+### ⚠️ 에러 케이스
+| 코드 | 상황 |
+|------|------|
+| USER_0602 | 존재하지 않는 사용자 |
+| USER_0604 | 이미 인증 완료된 사용자 |
+| USER_0605 | 인증 요청 정보 없음 |
+| VERIFY_0753 | 재발송 쿨다운 (1분) |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -287,59 +242,24 @@ export class AuthController {
 		summary: "로그인",
 		description: `
 ## 🔑 로그인
+이메일/비밀번호로 로그인 후 토큰을 발급받습니다.
 
-이메일과 비밀번호로 로그인합니다.
-성공 시 **Access Token**과 **Refresh Token**이 발급됩니다.
+### 📝 요청 Body
+- \`email\`: 이메일 주소
+- \`password\`: 비밀번호
 
-### 🎫 발급되는 토큰
-| 토큰 | 용도 | 유효기간 | 저장 위치 권장 |
-|------|------|----------|----------------|
-| Access Token | API 인증 | 15분 | 메모리 |
-| Refresh Token | 토큰 갱신 | 7일 | Secure Storage |
-
-### 🔒 보안 정책
-- **5회 연속 실패** 시 계정이 **15분간 잠금**됩니다
-- 잠금 해제 후 다시 시도하거나 비밀번호 재설정을 이용하세요
-
-### 📱 다중 기기 지원
-- 여러 기기에서 동시 로그인 가능
-- 각 기기별로 독립적인 세션이 생성됩니다
-- \`GET /auth/sessions\`에서 활성 세션 확인 가능
+### 🎫 응답 토큰
+| 토큰 | 유효기간 | 저장 위치 |
+|------|----------|-----------|
+| Access Token | 15분 | 메모리 |
+| Refresh Token | 7일 | Secure Storage |
 
 ### ⚠️ 에러 케이스
-| 에러 코드 | 설명 |
-|-----------|------|
-| \`INVALID_CREDENTIALS\` | 이메일 또는 비밀번호 불일치 |
-| \`ACCOUNT_LOCKED\` | 로그인 시도 초과로 계정 잠금 |
-| \`EMAIL_NOT_VERIFIED\` | 이메일 인증 미완료 |
-
-### 🔄 이메일 미인증 사용자 복구 플로우
-
-\`EMAIL_NOT_VERIFIED\` 에러를 받은 경우, 프론트엔드는 다음과 같이 처리해야 합니다:
-
-**자동 복구 플로우:**
-1. \`EMAIL_NOT_VERIFIED\` 에러 감지
-2. 자동으로 이메일 인증 화면(\`/verify-email\`)으로 이동
-3. 자동으로 \`POST /auth/resend-verification\` 호출하여 인증 코드 재발송
-4. 사용자는 이메일에서 받은 6자리 코드 입력
-5. \`POST /auth/verify-email\`로 인증 완료 → 자동 로그인
-
-**프론트엔드 구현 예시:**
-\`\`\`typescript
-try {
-  const response = await loginApi(email, password);
-} catch (error) {
-  if (error.code === 'EMAIL_NOT_VERIFIED') {
-    // 자동으로 인증 화면으로 이동
-    navigate('/verify-email', { state: { email } });
-    // 자동으로 인증 코드 재발송
-    await resendVerificationApi(email);
-    // 사용자에게 "인증 코드가 재발송되었습니다" 안내
-  }
-}
-\`\`\`
-
-이 방식으로 사용자는 회원가입을 다시 시작할 필요 없이 바로 이메일 인증을 완료할 수 있습니다.
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| USER_0602 | 이메일/비밀번호 불일치 | 재입력 요청 |
+| USER_0605 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
+| USER_0608 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
@@ -377,7 +297,7 @@ try {
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
 		const metadata = this.extractMetadata(req);
 		await this.authService.logout(user.userId, user.sessionId, metadata);
@@ -409,7 +329,7 @@ try {
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async logoutAll(@CurrentUser() user: CurrentUserPayload) {
 		await this.authService.logoutAll(user.userId);
 		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
@@ -428,33 +348,20 @@ try {
 		summary: "토큰 갱신",
 		description: `
 ## 🔄 토큰 갱신
+Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용)
 
-Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
-
-### 🔐 인증 방식
-\`Authorization: Bearer {refreshToken}\`
-
-⚠️ **Access Token이 아닌 Refresh Token**을 사용해야 합니다!
+### 🔐 인증
+\`Authorization: Bearer {refreshToken}\` (**Access Token 아님!**)
 
 ### 📋 동작
-1. Refresh Token 검증
-2. 새 Access Token + Refresh Token 쌍 발급
-3. 기존 Refresh Token 무효화 (Token Rotation)
-
-### 🔒 Token Rotation
-- 매 갱신 시 새로운 Refresh Token이 발급됩니다
-- 이전 Refresh Token은 **즉시 무효화**됩니다
-- 토큰 탈취 시 빠른 감지가 가능합니다
+- 새 Access + Refresh Token 발급
+- 기존 Refresh Token 즉시 무효화
 
 ### ⚠️ 에러 케이스
-| 에러 코드 | 설명 |
-|-----------|------|
-| \`REFRESH_TOKEN_INVALID\` | 유효하지 않은 Refresh Token |
-| \`TOKEN_REUSE_DETECTED\` | 이미 사용된 토큰 재사용 감지 (보안 위협) |
-
-### 🚨 TOKEN_REUSE_DETECTED 발생 시
-토큰 재사용이 감지되면 **해당 토큰 패밀리 전체**가 무효화됩니다.
-사용자는 다시 로그인해야 합니다.
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| AUTH_0104 | 유효하지 않은 토큰 | 재로그인 |
+| SESSION_0704 | 토큰 재사용 감지 | 전체 세션 무효화, 재로그인 |
 		`,
 	})
 	@ApiSuccessResponse({ type: RefreshTokensDto })
@@ -476,23 +383,17 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	@ApiDoc({
 		summary: "비밀번호 찾기",
 		description: `
-## 🔑 비밀번호 찾기 (1/2단계)
+## 🔑 비밀번호 찾기 (1/2)
+비밀번호 재설정용 6자리 인증 코드를 이메일로 발송합니다.
 
-비밀번호 재설정을 위한 6자리 인증 코드를 이메일로 발송합니다.
+### 📝 요청 Body
+- \`email\`: 가입된 이메일
 
-### 🔄 전체 플로우
-\`\`\`
-[현재] POST /auth/forgot-password → 재설정 코드 발송
-[다음] POST /auth/reset-password  → 새 비밀번호 설정
-\`\`\`
-
-### ⏱️ 인증 코드 유효기간
-- **10분**간 유효합니다
-- 만료 시 다시 요청해야 합니다
+### 🔄 다음 단계
+\`POST /auth/reset-password\`로 새 비밀번호 설정 (10분 내)
 
 ### 🔒 보안
-- 존재하지 않는 이메일에도 동일한 응답을 반환합니다
-- 이는 이메일 존재 여부 노출을 방지하기 위함입니다
+존재하지 않는 이메일도 동일 응답 (이메일 노출 방지)
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -507,29 +408,19 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	@ApiDoc({
 		summary: "비밀번호 재설정",
 		description: `
-## 🔑 비밀번호 재설정 (2/2단계)
+## 🔑 비밀번호 재설정 (2/2)
+인증 코드 확인 후 새 비밀번호를 설정합니다.
 
-인증 코드를 확인하고 새 비밀번호를 설정합니다.
-
-### 🔄 전체 플로우
-\`\`\`
-[이전] POST /auth/forgot-password → 재설정 코드 발송
-[현재] POST /auth/reset-password  → 새 비밀번호 설정
-[완료] POST /auth/login으로 새 비밀번호 로그인
-\`\`\`
-
-### 📝 비밀번호 규칙
-- 최소 8자 이상
-- 영문자 1개 이상 포함
-- 숫자 1개 이상 포함
-
-### 📋 비밀번호 변경 후
-- 모든 기존 세션이 **유지**됩니다
-- 보안상 전체 로그아웃을 원하면 \`POST /auth/logout-all\` 호출
+### 📝 요청 Body
+- \`email\`: 이메일
+- \`code\`: 6자리 인증 코드
+- \`newPassword\`: 새 비밀번호 (8자+, 영문+숫자)
 
 ### ⚠️ 에러 케이스
-- \`VERIFICATION_CODE_INVALID\`: 잘못된 인증 코드
-- \`VERIFICATION_CODE_EXPIRED\`: 만료된 인증 코드
+| 코드 | 상황 |
+|------|------|
+| EMAIL_0504 | 잘못된 인증 코드 |
+| EMAIL_0505 | 만료된 인증 코드 |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -552,32 +443,23 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		summary: "비밀번호 변경",
 		description: `
 ## 🔐 비밀번호 변경
-
-로그인된 상태에서 비밀번호를 변경합니다.
+로그인 상태에서 비밀번호를 변경합니다.
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 📝 요청 데이터
-- \`currentPassword\`: 현재 비밀번호 (확인용)
-- \`newPassword\`: 새 비밀번호
-
-### 📝 비밀번호 규칙
-- 최소 8자 이상
-- 영문자 1개 이상 포함
-- 숫자 1개 이상 포함
-
-### 📋 비밀번호 변경 후
-- 현재 세션은 **유지**됩니다
-- 다른 기기 세션도 유지됩니다
-- 전체 로그아웃을 원하면 \`POST /auth/logout-all\` 호출
+### 📝 요청 Body
+- \`currentPassword\`: 현재 비밀번호
+- \`newPassword\`: 새 비밀번호 (8자+, 영문+숫자)
 
 ### ⚠️ 에러 케이스
-- \`INVALID_CREDENTIALS\`: 현재 비밀번호 불일치
+| 코드 | 상황 |
+|------|------|
+| USER_0602 | 현재 비밀번호 불일치 |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	async changePassword(
 		@CurrentUser() user: CurrentUserPayload,
@@ -604,27 +486,17 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		summary: "현재 사용자 정보 조회",
 		description: `
 ## 👤 내 정보 조회
-
-현재 로그인된 사용자의 기본 정보와 프로필을 조회합니다.
+현재 로그인된 사용자 정보를 조회합니다.
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 📋 응답 데이터
-- \`userId\`: 사용자 고유 ID
-- \`email\`: 이메일 주소
-- \`sessionId\`: 현재 세션 ID
-- \`name\`: 사용자 이름 (없으면 null)
-- \`profileImage\`: 프로필 이미지 URL (없으면 null)
-
-### 💡 사용 케이스
-- 로그인 상태 확인
-- 사용자 정보 표시
-- Access Token 유효성 검증
+### 📋 응답 필드
+\`userId\`, \`email\`, \`sessionId\`, \`name\`, \`profileImage\`
 		`,
 	})
 	@ApiSuccessResponse({ type: CurrentUserDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getMe(@CurrentUser() user: CurrentUserPayload) {
 		const result = await this.authService.getCurrentUser(
 			user.userId,
@@ -641,23 +513,18 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		summary: "프로필 수정",
 		description: `
 ## 👤 프로필 수정
-
-사용자의 이름과 프로필 이미지를 수정합니다.
+이름/프로필 이미지를 수정합니다.
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 📝 요청 필드
-- \`name\`: 이름 (100자 이내, 선택)
-- \`profileImage\`: 프로필 이미지 URL (500자 이내, null로 설정 시 삭제)
-
-### ⚠️ 주의사항
-- 최소 하나의 필드는 입력해야 합니다
-- null 값을 전달하면 해당 필드가 삭제됩니다
+### 📝 요청 Body (최소 1개 필수)
+- \`name\`: 이름 (100자 이내, null=삭제)
+- \`profileImage\`: 이미지 URL (500자 이내, null=삭제)
 		`,
 	})
 	@ApiSuccessResponse({ type: UpdateProfileResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async updateProfile(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdateProfileDto,
@@ -699,7 +566,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: SessionListDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSessions(@CurrentUser() user: CurrentUserPayload) {
 		const sessions = await this.authService.getActiveSessions(user.userId);
 
@@ -745,7 +612,7 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 		example: "550e8400-e29b-41d4-a716-446655440000",
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.SESSION_0701)
 	async revokeSession(
 		@CurrentUser() user: CurrentUserPayload,
@@ -770,57 +637,25 @@ Refresh Token을 사용하여 새로운 토큰 쌍을 발급받습니다.
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "OAuth 교환 코드로 토큰 획득",
-		description: `
-## 🔐 OAuth 교환 코드 → JWT 토큰 교환
+		description: `OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 JWT 토큰으로 교환합니다.
 
-OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 사용하여 JWT 토큰을 획득합니다.
+딥링크(\`aido://auth/callback?code=xxx&state=xxx\`)에서 받은 code를 전송하세요.
 
-### 🔄 플로우 개요
-\`\`\`
-1. 소셜 로그인 완료 → 딥링크로 교환 코드 전달
-   aido://auth/callback?code=xxx&state=xxx
+📝 **요청 Body**
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| \`code\` | string | ✅ | 일회용 교환 코드 (10분 내 사용) |
 
-2. 앱에서 이 엔드포인트 호출
-   POST /v1/auth/exchange { code: "xxx" }
-
-3. JWT 토큰 반환
-   { accessToken, refreshToken, userId, ... }
-\`\`\`
-
-### 🛡️ 보안 특성
-- **일회용**: 교환 코드는 한 번만 사용 가능
-- **만료 시간**: 10분 이내 사용 필요
-- **토큰 보호**: URL에 JWT 토큰이 노출되지 않음
-
-### 📝 요청 예시
-\`\`\`bash
-curl -X POST https://api.aido.com/v1/auth/exchange \\
-  -H "Content-Type: application/json" \\
-  -d '{"code": "abc123..."}'
-\`\`\`
-
-### ✅ 성공 응답
-\`\`\`json
-{
-  "accessToken": "eyJhbGc...",
-  "refreshToken": "eyJhbGc...",
-  "userId": "user_123",
-  "userName": "홍길동",
-  "profileImage": "https://..."
-}
-\`\`\`
-
-### ❌ 에러 케이스
-| 에러 | 설명 |
+⚠️ **에러 케이스**
+| 코드 | 상황 |
 |------|------|
-| \`INVALID_CREDENTIALS\` | 유효하지 않거나 만료/사용된 교환 코드 |
-		`,
+| \`AUTH_0107\` | 유효하지 않거나 만료/사용된 교환 코드 |`,
 	})
 	@ApiCreatedResponse({
 		description: "토큰 교환 성공",
 		type: AuthTokensDto,
 	})
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async exchangeCode(@Body() dto: ExchangeCodeDto): Promise<AuthTokensDto> {
 		const result = await this.oauthService.exchangeCodeForTokens(dto.code);
 		return AuthMapper.toExchangeCodeResponse(result);
@@ -835,71 +670,45 @@ curl -X POST https://api.aido.com/v1/auth/exchange \\
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Apple 로그인 콜백",
-		description: `
-## 🍎 Apple 소셜 로그인
+		description: `\`expo-apple-authentication\`으로 Apple Sign In 후 credential을 전송합니다.
 
-Apple Sign In 인증 후 콜백 처리 엔드포인트입니다.
-Expo 앱에서 Apple 인증 완료 후 받은 데이터를 전송합니다.
+## 📦 라이브러리 설치
 
-### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
 npx expo install expo-apple-authentication
 \`\`\`
 
-### 🔐 왜 expo-apple-authentication을 사용하는가?
+## 🔐 보안 특성
 
-**네이티브 SDK 직접 연동의 이점:**
-1. **보안성**: Apple의 네이티브 Sign In 시스템 직접 사용
-2. **UX**: Face ID/Touch ID 자동 지원, 시스템 UI 제공
-3. **간편성**: OAuth 플로우 없이 credential 직접 획득
-4. **신뢰성**: Apple의 공식 인증 흐름 보장
+Apple Sign In은 **시스템 인증 다이얼로그**를 사용하므로 다른 OAuth 제공자와 다릅니다.
 
-**WebView/브라우저 방식 대비 장점:**
-- 피싱 방지: 시스템 레벨 인증 UI (위조 불가)
-- 자격 증명 보호: 앱이 사용자 Apple ID 비밀번호에 접근 불가
-- 생체 인증 통합: Face ID/Touch ID 자동 연동
+| 특성 | 설명 | 보안 이점 |
+|------|------|----------|
+| **인증 방식** | 시스템 수준 API 호출 | WebView 우회 → XSS 불가능 |
+| **Token 유형** | Identity Token (JWT) | 서명 검증 필수, 발급자 확인 가능 |
+| **사용자 정보** | **최초 로그인 시만** 제공 | 중복 계정 방지, 개인정보 보호 |
+| **Redirect URI** | 불필요 | URL Scheme 공격 최소화 |
 
-### 🔒 서버 측 JWKS 검증이 필요한 이유
+## 📱 클라이언트 구현
 
-**왜 클라이언트가 보낸 데이터를 신뢰하지 않는가?**
-
-클라이언트에서 받은 \`identityToken\`을 서버에서 직접 검증하는 이유:
-
-| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
-|------|---------------------|-------------|
-| 토큰 위조 | ❌ 악의적 앱이 가짜 토큰 생성 가능 | ✅ Apple 공개키로 서명 검증 |
-| 중간자 공격 | ❌ 네트워크에서 토큰 변조 가능 | ✅ 서명 불일치로 탐지 |
-| 재생 공격 | ❌ 이전 토큰 재사용 가능 | ✅ exp/iat 클레임으로 만료 검증 |
-| 권한 상승 | ❌ 다른 사용자 ID 사칭 가능 | ✅ sub 클레임으로 사용자 확인 |
-
-**서버에서 수행하는 검증 (apple-signin-auth 라이브러리):**
-\`\`\`typescript
-// JWKS 검증 과정
-1. Apple의 공개키 조회: https://appleid.apple.com/auth/keys
-2. ID Token의 header에서 kid(Key ID) 추출
-3. 해당 kid에 맞는 공개키로 서명 검증
-4. 클레임 검증:
-   - iss: "https://appleid.apple.com" (발급자)
-   - aud: 앱의 Bundle ID (대상자)
-   - exp: 토큰 만료 시간
-   - sub: Apple 사용자 고유 ID
+### App.json 설정
+\`\`\`json
+{
+  "expo": {
+    "ios": { "usesAppleSignIn": true },
+    "plugins": ["expo-apple-authentication"]
+  }
+}
 \`\`\`
 
-**ID Token 구조 (JWT):**
-\`\`\`
-header.payload.signature
-  │       │        │
-  │       │        └─ Apple 개인키로 서명 (서버가 공개키로 검증)
-  │       └─ 사용자 정보 (sub, email, email_verified 등)
-  └─ 알고리즘 및 키 정보 (alg, kid)
-\`\`\`
-
-### 🔄 Expo 클라이언트 구현 예시
+### 로그인 플로우 (TypeScript)
 \`\`\`typescript
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { api } from './api';
 
 const handleAppleLogin = async () => {
   try {
+    // 1️⃣ 시스템 인증 다이얼로그 표시
     const credential = await AppleAuthentication.signInAsync({
       requestedScopes: [
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -907,68 +716,210 @@ const handleAppleLogin = async () => {
       ],
     });
 
-    // 서버로 전송
-    const response = await fetch('/v1/auth/apple/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: {
-          id: credential.user,
-          email: credential.email,
-          emailVerified: !!credential.email,
-        },
-        userName: credential.fullName
-          ? \`\${credential.fullName.familyName || ''}\${credential.fullName.givenName || ''}\`.trim()
-          : undefined,
-      }),
+    // 2️⃣ credential.identityToken 획득 (JWT 형식)
+    const idToken = credential.identityToken;
+
+    // 3️⃣ 서버로 전송 (최초 로그인 시 사용자 정보도 함께)
+    const response = await api.post('/auth/apple/callback', {
+      idToken,
+      // ❌ 최초 로그인 이후 재로그인 시 아래는 undefined
+      userName: credential.user?.name || undefined,
+      deviceName: credential.user?.name || undefined, // 사용 가능한 경우
+      deviceType: 'iOS', // 명시적으로 설정
     });
 
-    const { accessToken, refreshToken } = await response.json();
-    // 토큰 저장 및 로그인 처리
-  } catch (error) {
-    if (error.code === 'ERR_REQUEST_CANCELED') {
-      // 사용자가 취소함
+    // 4️⃣ 토큰 저장
+    await saveTokens(response.data);
+  } catch (e) {
+    if (e.code === 'ERR_REQUEST_CANCELED') {
+      console.log('사용자가 로그인 취소');
+    } else {
+      console.error('Apple 로그인 실패', e);
     }
   }
 };
 \`\`\`
 
-### 🔄 인증 플로우
-\`\`\`
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Expo App   │      │    Apple    │      │   Backend   │
-└──────┬──────┘      └──────┬──────┘      └──────┬──────┘
-       │                    │                    │
-       │ signInAsync()      │                    │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │  credential        │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │   POST /apple/callback                  │
-       │────────────────────────────────────────▶│
-       │                    │                    │
-       │             { accessToken, refreshToken }
-       │◀────────────────────────────────────────│
-       │                    │                    │
+## 🔄 API 플로우
+
+| Step | 역할 | 작업 |
+|------|------|------|
+| 1️⃣ | 클라이언트 | \`AppleAuthentication.signInAsync()\` 호출 |
+| 2️⃣ | Apple 시스템 | 사용자 인증 후 Identity Token 반환 |
+| 3️⃣ | 클라이언트 | Identity Token을 서버로 전송 |
+| 4️⃣ | 백엔드 | Token 검증 → 사용자 생성/업데이트 → JWT 발급 |
+
+## 📝 요청 Body
+
+| 필드 | 타입 | 필수 | 설명 | 예시 |
+|------|------|:----:|------|------|
+| \`idToken\` | string | ✅ | Apple Identity Token (JWT) | \`eyJhbGc...\` |
+| \`userName\` | string | ❌ | 사용자 이름 | \`김영민\` |
+| \`deviceName\` | string | ❌ | 디바이스 이름 | \`iPhone 15 Pro\` |
+| \`deviceType\` | string | ❌ | 디바이스 타입 | \`iOS\` |
+
+### Identity Token 예시 (JWT 디코드)
+\`\`\`json
+{
+  "iss": "https://appleid.apple.com",
+  "aud": "com.example.aido",
+  "sub": "001234.abcd1234e.0987",
+  "nonce_supported": true,
+  "email": "user@example.com",
+  "email_verified": "true",
+  "auth_time": 1704067200,
+  "iat": 1704067200,
+  "exp": 1704067260
+}
 \`\`\`
 
-### 📝 요청 데이터
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| \`profile.id\` | string | ✅ | Apple 고유 사용자 ID (credential.user) |
-| \`profile.email\` | string | ❌ | 이메일 (최초 로그인 시에만) |
-| \`profile.emailVerified\` | boolean | ❌ | 이메일 인증 여부 |
-| \`userName\` | string | ❌ | 사용자 이름 (최초 로그인 시에만) |
+## ✅ 성공 응답 (200)
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGc...",
+    "refreshToken": "eyJhbGc...",
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "nickname": "김영민",
+      "profileImage": null
+    }
+  }
+}
+\`\`\`
 
-### ⚠️ 주의사항
-- Apple은 사용자 이름/이메일을 **최초 로그인 시에만** 제공합니다
-- 이후 로그인에서는 해당 필드가 비어있으므로 서버에서 저장된 정보를 사용합니다
-- iOS 13.0 이상에서만 지원됩니다 (\`AppleAuthentication.isAvailableAsync()\`로 확인)
-		`,
+## ❌ 에러 케이스
+
+| 에러 코드 | HTTP | 메시지 | 클라이언트 처리 |
+|----------|------|--------|----------------|
+| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 요청 |
+| \`USER_0601\` | 400 | 이미 다른 계정으로 가입됨 | 계정 연동 화면 또는 가입 재시도 |
+| \`USER_0602\` | 400 | 가입 불가능한 이메일 | 고객 지원 안내 |
+
+## 🔐 백엔드 검증 프로세스
+
+서버는 다음과 같이 Identity Token을 검증합니다:
+
+\`\`\`typescript
+// 1️⃣ Token 서명 검증 (Apple 공개키 사용)
+const publicKeySet = await fetchApplePublicKeys();
+const decoded = jwt.verify(idToken, publicKeySet);
+
+// 2️⃣ 필드 검증
+if (decoded.iss !== 'https://appleid.apple.com') {
+  throw new InvalidTokenError();
+}
+if (decoded.aud !== process.env.APPLE_BUNDLE_ID) {
+  throw new InvalidTokenError();
+}
+if (decoded.exp < Date.now()) {
+  throw new ExpiredTokenError();
+}
+
+// 3️⃣ 사용자 정보 추출
+const { sub: appleUserId, email } = decoded;
+
+// 4️⃣ 사용자 조회 또는 생성
+const user = await findOrCreateUser(appleUserId, email);
+\`\`\`
+
+## ⚠️ 주의사항
+
+### 1️⃣ 최초 로그인 시에만 사용자 정보 제공
+Apple은 **보안 정책**으로 최초 로그인 시에만 \`email\`과 \`name\`을 제공합니다.
+- ✅ 1차: Apple 시스템 다이얼로그 → 이메일, 이름 전달
+- ❌ 2차 이후: 다시 로그인하면 이메일, 이름 전달 안 함 (서버의 기존 기록 사용)
+
+**클라이언트 처리**: Identity Token의 \`sub\` 필드(사용자 고유 ID)로만 식별
+
+### 2️⃣ Email Masking 사용 가능
+Apple 개인정보 보호 정책으로 사용자가 "Hide My Email" 옵션을 선택할 수 있습니다.
+- 실제 이메일 대신 \`random@privaterelay.appleid.com\` 형식 제공
+- 이 경우 실제 이메일 주소를 얻을 수 없음 (사용자의 선택)
+- **처리 방법**: 닉네임을 다시 입력받도록 유도
+
+### 3️⃣ Team ID와 Bundle ID 설정
+Apple Developer Account에서 다음 설정 필수:
+- **Team ID**: 앱 서명에 필요
+- **Bundle ID**: 요청 시 \`aud\` 필드와 일치해야 함
+
+### 4️⃣ Sub 값 저장 필수
+Apple의 \`sub\` 값(예: \`001234.abcd1234e.0987\`)은 **영구 사용자 ID**입니다.
+- 향후 Apple 로그인 시 동일한 \`sub\` 값으로 사용자 식별
+- 데이터베이스에 \`appleUserId\` 컬럼으로 저장 필수
+
+### 5️⃣ Nonce 검증 (선택사항)
+CSRF 공격 방지를 위해 Nonce 사용 권장:
+\`\`\`typescript
+// 클라이언트
+const nonce = generateRandomString();
+const credential = await AppleAuthentication.signInAsync({
+  requestedScopes: [...],
+  nonce, // 추가
+});
+
+// 서버
+const decoded = jwt.verify(idToken, publicKey);
+if (decoded.nonce !== expectedNonce) {
+  throw new SecurityError('Nonce mismatch');
+}
+\`\`\`
+
+## 🔄 플로우 다이어그램
+
+\`\`\`
+┌─────────────┐                        ┌──────────────┐
+│   클라이언트   │                        │  Apple 시스템  │
+└─────────────┘                        └──────────────┘
+      │                                      │
+      │──────────────────────────────────────>│
+      │  signInAsync(scopes)                 │
+      │                                      │
+      │  ┌──────────────────────────┐        │
+      │  │ 사용자 인증 다이얼로그      │        │
+      │  │ (생체인증/암호)          │        │
+      │  └──────────────────────────┘        │
+      │                                      │
+      │<──────────────────────────────────────│
+      │  credential {                        │
+      │    identityToken: JWT,               │
+      │    user: {                           │
+      │      name: string? (최초만),         │
+      │      email: string? (최초만)         │
+      │    }                                 │
+      │  }                                   │
+      │                                      │
+      ├─────────────────────────────────────>│
+      │  POST /auth/apple/callback           │
+      │  { idToken, userName?, ... }         │
+      │                                      │
+      │  ┌──────────────────────────┐        │
+      │  │ 1. Token 서명 검증         │        │
+      │  │ 2. 필드 검증              │        │
+      │  │ 3. 사용자 조회/생성       │        │
+      │  │ 4. JWT 토큰 발급          │        │
+      │  └──────────────────────────┘        │
+      │                                      │
+      │<─────────────────────────────────────│
+      │  200 OK {                            │
+      │    accessToken, refreshToken, user   │
+      │  }                                   │
+      │                                      │
+\`\`\`
+
+## 📚 Apple Developer 설정 체크리스트
+
+- [ ] Apple Developer Team에 등록
+- [ ] App ID 생성 (Sign In with Apple 활성화)
+- [ ] Certificates 및 Identifiers 설정
+- [ ] app.json에 \`usesAppleSignIn: true\` 추가
+- [ ] Privacy Policy 페이지에 Apple 로그인 명시
+- [ ] 약관에 Apple ID 사용 동의 포함`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0354 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async appleCallback(
 		@Body() dto: AppleMobileCallbackDto,
 		@Req() req: Request,
@@ -992,361 +943,424 @@ const handleAppleLogin = async () => {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Google 로그인 콜백 (모바일)",
-		description: `
-## 🔵 Google 소셜 로그인 (Expo 모바일 앱용)
+		description: `**expo-auth-session**의 Google OAuth 제공자를 통해 ID Token을 받은 후 백엔드로 전송합니다.
 
-Expo 앱에서 \`expo-auth-session\`을 사용하여 Google OAuth 인증 완료 후,
-사용자 프로필 정보를 전송하는 엔드포인트입니다.
+## 📦 필수 라이브러리
 
----
-
-### 📦 필요한 라이브러리 (Expo)
 \`\`\`bash
 npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
 \`\`\`
 
-### 🔐 각 라이브러리가 필요한 이유
+### 라이브러리별 역할
 
-#### 1. expo-crypto - PKCE 및 CSRF 보안
-**왜 필요한가?**
-- **PKCE (Proof Key for Code Exchange)**: Authorization Code Interception Attack 방지
-- **CSRF (Cross-Site Request Forgery)**: \`state\` 파라미터로 요청 위조 공격 방지
-- 암호학적으로 안전한 난수 생성 (\`randomUUID()\`)
+| 라이브러리 | 목적 | 역할 | 보안성 |
+|-----------|------|------|--------|
+| \`expo-auth-session\` | OAuth 2.0 프로토콜 | Google 인증 요청/응답 관리 | ✅ HTTPS + 시스템 브라우저 |
+| \`expo-crypto\` | PKCE 지원 | Code challenge 생성 (선택) | ✅ 로컬 암호화 |
+| \`expo-web-browser\` | 시스템 브라우저 | 보안 인증 UI 제공 | ✅ 시스템 관리 |
+| \`expo-linking\` | Deep link 처리 | Redirect URI 수신 | ✅ 네이티브 통합 |
 
-**보안적 이점:**
-| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
-|----------|-----------------|-------------------|
-| Code 가로채기 | ❌ 악성 앱이 Authorization Code 탈취 가능 | ✅ code_verifier 없이는 토큰 교환 불가 |
-| CSRF 공격 | ❌ 공격자가 위조 요청 가능 | ✅ state 불일치로 요청 거부 |
-| 세션 고정 | ❌ 공격자 세션 주입 가능 | ✅ 예측 불가능한 state로 방지 |
+### 보안 특성
 
-\`\`\`typescript
-import * as Crypto from 'expo-crypto';
-const state = Crypto.randomUUID(); // CSRF 방지 토큰
-const codeVerifier = Crypto.randomUUID(); // PKCE용
-\`\`\`
-
-#### 2. expo-linking - 딥링크 및 콜백 URL 처리
-**왜 필요한가?**
-- OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
-- Custom URL Scheme 처리 (\`aido://auth/callback\`)
-- Universal Links(iOS) / App Links(Android) 지원
-
-**보안적 이점:**
-| 기능 | 설명 |
-|------|------|
-| 정확한 앱 라우팅 | 콜백이 정확한 앱으로만 전달되도록 보장 |
-| URL 파싱 | state, code 파라미터 안전하게 추출 |
-| 토큰 보호 | URL에 토큰 직접 노출 방지 (code 교환 방식) |
-
-\`\`\`typescript
-import * as Linking from 'expo-linking';
-const returnUrl = Linking.createURL('auth/callback', { scheme: 'aido' });
-// 결과: aido://auth/callback
-
-const parsed = Linking.parse(callbackUrl);
-// parsed.queryParams.code, parsed.queryParams.state 추출
-\`\`\`
-
-#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
-**왜 필요한가?**
-- **RFC 8252 (OAuth 2.0 for Native Apps) 준수**: 시스템 브라우저 사용 권장
-- 인앱 WebView 대신 별도의 보안 브라우저에서 인증 진행
-- 세션 쿠키, 자동 완성, 비밀번호 관리자 활용 가능
-
-**WebView vs 시스템 브라우저 비교:**
-| 항목 | 인앱 WebView | expo-web-browser |
-|------|-------------|-----------------|
-| 자격증명 접근 | ❌ 앱이 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
-| 피싱 방지 | ❌ 주소창 위조 가능 | ✅ 시스템 주소창 표시 |
-| 세션 재사용 | ❌ 매번 로그인 필요 | ✅ 기존 세션 활용 |
-| 생체 인증 | ❌ 지원 불가 | ✅ Face ID/Touch ID |
-
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-// 앱 시작 시 호출 (딥링크 처리 준비)
-WebBrowser.maybeCompleteAuthSession();
-
-// OAuth 브라우저 열기
-const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
-\`\`\`
-
-### 🔒 서버 측 토큰 검증이 필요한 이유
-
-**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
-
-서버에서는 클라이언트가 보낸 Access Token으로 Google API를 **직접 호출**하여 사용자 정보를 검증합니다.
-
-| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
-|------|---------------------|-------------|
-| 프로필 위조 | ❌ 다른 사용자로 사칭 가능 | ✅ Google API로 실제 정보 확인 |
-| 토큰 위조 | ❌ 가짜 토큰으로 로그인 가능 | ✅ 유효하지 않은 토큰은 API 호출 실패 |
-| 이메일 인증 우회 | ❌ verified_email 위조 가능 | ✅ Google이 반환한 값만 신뢰 |
-
-**서버 검증 방식 (google-auth-library):**
-\`\`\`typescript
-// 서버에서 Access Token으로 사용자 정보 직접 조회
-const userInfo = await axios.get(
-  'https://www.googleapis.com/userinfo/v2/me',
-  { headers: { Authorization: \`Bearer \${accessToken}\` } }
-);
-// Google이 반환한 정보만 신뢰
-\`\`\`
+- **인증 UI**: 시스템 브라우저 사용 (앱 내 WebView 불가)
+- **토큰 전달**: ID Token만 전송 (Access Token 노출 방지)
+- **토큰 검증**: JWT 서명 검증 필수
+- **만료**: ID Token은 1시간 유효
 
 ---
 
-### 🔧 Google Cloud Console 설정
+## ⚙️ Google Developers Console 설정
+
+### Step 1: OAuth 2.0 클라이언트 생성
 1. [Google Cloud Console](https://console.cloud.google.com)에서 프로젝트 생성
-2. **APIs & Services > Credentials > Create Credentials > OAuth client ID**
-3. OAuth 2.0 클라이언트 ID 생성:
-   - **iOS**: 번들 ID 등록 (예: \`com.yourapp.mobile\`)
-   - **Android**: SHA-1 지문 등록
-   - **웹**: Redirect URI에 \`https://auth.expo.io/@username/appname\` 추가
+2. **OAuth 동의 화면** → \`외부\` 선택 → 기본 정보 입력
+3. **사용자 인증 정보** → \`OAuth 2.0 클라이언트 ID\` 생성
+4. **애플리케이션 유형**: iOS 또는 Android 선택
+
+### Step 2: iOS 설정
+1. Bundle ID 입력 (예: \`com.aido.mobile\`)
+2. 팀 ID 입력 (Apple Developer 계정에서 확인)
+3. **클라이언트 ID** 복사
+
+### Step 3: Android 설정
+1. Package name 입력 (예: \`com.aido.mobile\`)
+2. SHA-1 지문 입력 (앱 서명 인증서에서 확인)
+3. **클라이언트 ID** 복사
 
 ---
 
-### 🌐 호출해야 하는 API 목록
+## 🔄 OAuth 플로우 (Step별)
 
-| 단계 | API | 메서드 | 설명 |
-|------|-----|--------|------|
-| 1 | \`https://accounts.google.com/o/oauth2/v2/auth\` | GET | 사용자 인증 페이지 (expo-auth-session이 자동 처리) |
-| 2 | \`https://oauth2.googleapis.com/token\` | POST | Access Token 교환 (expo-auth-session이 자동 처리) |
-| 3 | \`https://www.googleapis.com/userinfo/v2/me\` | GET | 사용자 정보 조회 (**직접 호출**) |
-| 4 | \`POST /v1/auth/google/callback\` | POST | 백엔드로 프로필 전송 (**직접 호출**) |
-
----
-
-### 📋 Step 1-2: OAuth 인증 (expo-auth-session 자동 처리)
-
-\`expo-auth-session/providers/google\`을 사용하면 1단계, 2단계가 자동으로 처리됩니다.
-
-\`\`\`typescript
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
-
+### Step 1: 인증 요청 (클라이언트)
+\`\`\`javascript
+// Google.useAuthRequest() 설정
 const [request, response, promptAsync] = Google.useAuthRequest({
-  expoClientId: 'YOUR_EXPO_CLIENT_ID.apps.googleusercontent.com',
+  clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
   iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
   androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
   scopes: ['profile', 'email'],
 });
 
-// 호출
-const result = await promptAsync();
-// result.type === 'success' 시 result.authentication.accessToken 획득
-\`\`\`
-
----
-
-### 📋 Step 3: 사용자 정보 조회 API
-
-**엔드포인트**: \`GET https://www.googleapis.com/userinfo/v2/me\`
-
-**요청 헤더**:
-\`\`\`
-Authorization: Bearer {accessToken}
-\`\`\`
-
-**응답 예시**:
-\`\`\`json
-{
-  "id": "123456789012345678901",
-  "email": "user@gmail.com",
-  "verified_email": true,
-  "name": "홍길동",
-  "given_name": "길동",
-  "family_name": "홍",
-  "picture": "https://lh3.googleusercontent.com/..."
-}
-\`\`\`
-
-**응답 필드 설명**:
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`id\` | string | Google 고유 사용자 ID |
-| \`email\` | string | 이메일 주소 |
-| \`verified_email\` | boolean | 이메일 인증 여부 |
-| \`name\` | string | 전체 이름 |
-| \`given_name\` | string | 이름 (First name) |
-| \`family_name\` | string | 성 (Last name) |
-| \`picture\` | string | 프로필 사진 URL |
-
----
-
-### 📋 Step 4: 백엔드 API 호출
-
-**엔드포인트**: \`POST /v1/auth/google/callback\`
-
-**요청 헤더**:
-\`\`\`
-Content-Type: application/json
-\`\`\`
-
-**요청 바디**:
-\`\`\`json
-{
-  "profile": {
-    "id": "123456789012345678901",
-    "email": "user@gmail.com",
-    "emailVerified": true,
-    "name": {
-      "firstName": "길동",
-      "lastName": "홍"
-    },
-    "picture": "https://lh3.googleusercontent.com/..."
+// 로그인 버튼 클릭 시
+const handleGoogleLogin = async () => {
+  const result = await promptAsync();
+  if (result?.type === 'success') {
+    // Step 2로 진행
   }
+};
+\`\`\`
+
+### Step 2: ID Token 획득 (클라이언트)
+\`\`\`javascript
+// response에서 ID Token 추출
+if (response?.type === 'success') {
+  const { id_token: idToken } = response.params;
+
+  // Step 3: 백엔드로 전송
+  await api.post('/auth/google/callback', {
+    idToken,
+    userName: '사용자명', // 최초 로그인 시만
+    deviceName: '디바이스명',
+    deviceType: 'iOS' | 'Android',
+  });
 }
 \`\`\`
 
-**응답 예시**:
-\`\`\`json
-{
-  "userId": "clx123...",
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-  "name": "홍길동",
-  "profileImage": "https://lh3.googleusercontent.com/..."
-}
+### Step 3: ID Token 검증 (백엔드)
+\`\`\`
+클라이언트로부터 받은 idToken:
+├─ JWT 서명 검증 (Google 공개 키로)
+├─ aud 클레임 검증 (클라이언트 ID 일치)
+├─ iss 클레임 검증 (https://accounts.google.com)
+├─ exp 검증 (만료 시간 확인)
+└─ sub 추출 (Google 사용자 ID)
+\`\`\`
+
+### Step 4: 사용자 정보 저장 및 토큰 발급 (백엔드)
+\`\`\`
+ID Token 검증 성공
+├─ 기존 사용자 확인 (sub로)
+├─ 없으면 신규 생성 (이메일은 필수)
+├─ 디바이스 정보 저장
+└─ Access Token + Refresh Token 발급
 \`\`\`
 
 ---
 
-### 🔄 전체 구현 예시
+## 📱 클라이언트 구현 예제
 
 \`\`\`typescript
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import { ResponseType } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
-export const useGoogleLogin = () => {
+export const GoogleLoginScreen = () => {
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: 'YOUR_EXPO_CLIENT_ID.apps.googleusercontent.com',
+    // Google Cloud Console에서 생성한 Client IDs
+    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
     iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
     androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
+
+    // OAuth 2.0 설정
     scopes: ['profile', 'email'],
+    responseType: ResponseType.IdToken,
+    usePKCE: true, // PKCE 사용 권장
   });
 
   const handleGoogleLogin = async () => {
     try {
-      // Step 1-2: OAuth 인증 (자동 처리)
+      // Step 1: 인증 프롬프트 표시
       const result = await promptAsync();
 
-      if (result.type !== 'success' || !result.authentication) {
-        throw new Error('Google OAuth failed');
+      if (result?.type !== 'success') {
+        console.log('Google 로그인 취소됨');
+        return;
       }
 
-      const { accessToken } = result.authentication;
-
-      // Step 3: Google API로 사용자 정보 조회
-      const userInfoResponse = await fetch(
-        'https://www.googleapis.com/userinfo/v2/me',
-        {
-          headers: { Authorization: \`Bearer \${accessToken}\` },
-        }
-      );
-
-      if (!userInfoResponse.ok) {
-        throw new Error('Failed to fetch user info');
+      // Step 2: ID Token 추출
+      const { id_token: idToken } = result.params;
+      if (!idToken) {
+        throw new Error('ID Token을 받지 못했습니다');
       }
 
-      const userInfo = await userInfoResponse.json();
+      // Step 3: 백엔드로 전송
+      const response = await api.post('/auth/google/callback', {
+        idToken,
+        userName: 'User Display Name', // 최초 로그인 시 권장
+        deviceName: 'My Device',
+        deviceType: Platform.os === 'ios' ? 'iOS' : 'Android',
+      });
 
-      // Step 4: 백엔드로 프로필 전송
-      const backendResponse = await fetch(
-        'https://your-api.com/v1/auth/google/callback',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            profile: {
-              id: userInfo.id,
-              email: userInfo.email,
-              emailVerified: userInfo.verified_email,
-              name: {
-                firstName: userInfo.given_name,
-                lastName: userInfo.family_name,
-              },
-              picture: userInfo.picture,
-            },
-          }),
-        }
-      );
-
-      if (!backendResponse.ok) {
-        throw new Error('Backend authentication failed');
+      // Step 4: 토큰 저장 및 로그인 완료
+      if (response.data.success) {
+        await secureStorage.setItem('accessToken', response.data.data.accessToken);
+        await secureStorage.setItem('refreshToken', response.data.data.refreshToken);
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       }
-
-      const { accessToken: jwtAccessToken, refreshToken } =
-        await backendResponse.json();
-
-      // 토큰 저장 (SecureStore 권장)
-      await SecureStore.setItemAsync('accessToken', jwtAccessToken);
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
-
-      return { success: true };
     } catch (error) {
-      console.error('Google login error:', error);
-      return { success: false, error };
+      console.error('Google 로그인 실패:', error.message);
+      // 에러 처리
     }
   };
 
-  return { request, handleGoogleLogin };
+  return (
+    <Button
+      title="Google로 로그인"
+      onPress={handleGoogleLogin}
+      disabled={!request}
+    />
+  );
 };
 \`\`\`
 
 ---
 
-### 🔄 인증 플로우 다이어그램
+## 🔐 ID Token JWT 형식
+
+Google의 ID Token은 다음과 같은 클레임을 포함합니다:
+
+\`\`\`json
+{
+  "iss": "https://accounts.google.com",
+  "aud": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+  "sub": "110123456789...",
+  "email": "user@gmail.com",
+  "email_verified": true,
+  "name": "User Name",
+  "picture": "https://...",
+  "given_name": "User",
+  "family_name": "Name",
+  "iat": 1704067200,
+  "exp": 1704070800,
+  "nonce": "random-string"
+}
 \`\`\`
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Expo App   │      │   Google    │      │   Backend   │
-└──────┬──────┘      └──────┬──────┘      └──────┬──────┘
-       │                    │                    │
-       │ [Step 1] promptAsync()                  │
-       │ (accounts.google.com/o/oauth2/v2/auth)  │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ [Step 2] accessToken                    │
-       │ (oauth2.googleapis.com/token)           │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 3] GET /userinfo/v2/me            │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ userInfo (JSON)    │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 4] POST /v1/auth/google/callback  │
-       │────────────────────────────────────────▶│
-       │                    │                    │
-       │             { accessToken, refreshToken }
-       │◀────────────────────────────────────────│
-       │                    │                    │
+
+### 핵심 클레임 검증
+
+| 클레임 | 검증 방법 | 필수 |
+|--------|----------|:----:|
+| \`iss\` | \`=== "https://accounts.google.com"\` | ✅ |
+| \`aud\` | \`=== 클라이언트 ID\` | ✅ |
+| \`sub\` | Google 사용자 ID (고유값 보관) | ✅ |
+| \`exp\` | 현재 시각 < exp | ✅ |
+| \`email\` | 선택적 사용자 이메일 | ❌ |
+| \`nonce\` | PKCE 사용 시 검증 | ⚠️ |
+
+---
+
+## 📝 API 스펙
+
+### 요청 (Request)
+\`\`\`json
+POST /auth/google/callback
+Content-Type: application/json
+
+{
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...",
+  "userName": "사용자 이름",
+  "deviceName": "iPhone 15",
+  "deviceType": "iOS"
+}
+\`\`\`
+
+| 필드 | 타입 | 필수 | 설명 | 예시 |
+|------|------|:----:|------|------|
+| \`idToken\` | string | ✅ | Google ID Token (JWT) | \`eyJhbGciOi...\` |
+| \`userName\` | string | ❌ | 사용자 이름 (최초 로그인) | \`John Doe\` |
+| \`deviceName\` | string | ❌ | 디바이스 이름 | \`iPhone 15 Pro\` |
+| \`deviceType\` | string | ❌ | 디바이스 유형 | \`iOS\`, \`Android\` |
+
+### 응답 (Response) - 성공 (200 OK)
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": 1,
+      "email": "user@gmail.com",
+      "nickname": "사용자",
+      "profileImage": "https://..."
+    }
+  },
+  "timestamp": 1704067200000
+}
+\`\`\`
+
+### 응답 (Response) - 실패 (401 Unauthorized)
+\`\`\`json
+{
+  "success": false,
+  "error": {
+    "code": "SOCIAL_0202",
+    "message": "소셜 인증 토큰이 유효하지 않습니다.",
+    "details": {
+      "reason": "Invalid token",
+      "hint": "토큰이 유효하지 않거나 만료되었습니다"
+    }
+  },
+  "timestamp": 1704067200000
+}
 \`\`\`
 
 ---
 
-### 📝 백엔드 요청 데이터 상세
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| \`profile.id\` | string | ✅ | Google 고유 사용자 ID |
-| \`profile.email\` | string | ✅ | 이메일 주소 |
-| \`profile.emailVerified\` | boolean | ❌ | 이메일 인증 여부 (기본: false) |
-| \`profile.name.firstName\` | string | ❌ | 이름 (given_name) |
-| \`profile.name.lastName\` | string | ❌ | 성 (family_name) |
-| \`profile.picture\` | string | ❌ | 프로필 사진 URL |
+## 🎯 백엔드 검증 프로세스
 
-### 🔒 권한 범위 (Scopes)
-- \`profile\`: 기본 프로필 정보 (이름, 사진)
-- \`email\`: 이메일 주소
-		`,
+\`\`\`typescript
+// 1. ID Token 검증 (GoogleAuth 라이브러리 사용)
+const ticket = await client.verifyIdToken({
+  idToken,
+  audience: clientIds, // 설정된 모든 Client ID
+});
+
+const payload = ticket.getPayload();
+
+// 2. 필수 클레임 검증
+if (!payload.email) {
+  throw new BadRequestException('Email 정보가 없습니다');
+}
+
+// 3. Google 사용자 ID 추출
+const googleId = payload.sub;
+const email = payload.email;
+
+// 4. 사용자 찾기 또는 생성
+let user = await userService.findByGoogleId(googleId);
+if (!user) {
+  user = await userService.create({
+    email,
+    googleId,
+    nickname: payload.name,
+    profileImage: payload.picture,
+  });
+}
+
+// 5. 토큰 발급
+const tokens = await authService.generateTokens(user.id);
+return { accessToken: tokens.access, refreshToken: tokens.refresh };
+\`\`\`
+
+---
+
+## ⚠️ Google 특화 주의사항
+
+### 1️⃣ **클라이언트 ID 관리**
+- **웹 클라이언트 ID**: 프론트엔드 환경 변수에 저장
+- **iOS/Android 클라이언트 ID**: 앱 설정에 포함
+- 각 플랫폼별 ID가 다르므로 정확히 구분
+
+\`\`\`typescript
+// ❌ 잘못된 예
+const clientId = 'MY_WEB_CLIENT_ID'; // 모든 플랫폼에 동일
+
+// ✅ 올바른 예
+const clientId = {
+  web: 'WEB_CLIENT_ID.apps.googleusercontent.com',
+  ios: 'IOS_CLIENT_ID.apps.googleusercontent.com',
+  android: 'ANDROID_CLIENT_ID.apps.googleusercontent.com',
+};
+\`\`\`
+
+### 2️⃣ **ID Token만 사용**
+- Access Token을 받으면 서버에서 **절대 노출하지 말 것**
+- ID Token만 검증하여 사용자 신원 확인
+- Access Token은 클라이언트에서만 Google API 호출 시 사용
+
+### 3️⃣ **PKCE 권장 (선택사항)**
+- \`usePKCE: true\`로 설정하면 추가 보안 제공
+- Code challenge/verifier 자동 생성
+- Nonce 값도 함께 검증
+
+### 4️⃣ **만료 토큰 처리**
+- ID Token은 1시간 유효
+- 클라이언트에서 만료 후 재인증 필요
+- 백엔드에서는 \`exp\` 클레임으로 검증
+
+### 5️⃣ **이메일 선택사항 처리**
+- Google 계정의 이메일이 공개되지 않을 수 있음
+- 최초 로그인 시 사용자로부터 이메일 입력 받기
+- 또는 Google+ API로 사용자 정보 추가 요청
+
+---
+
+## 🔍 에러 처리
+
+| 에러 코드 | HTTP | 상황 | 클라이언트 액션 |
+|---------|------|------|----------------|
+| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 유도 |
+| \`SOCIAL_0203\` | 401 | 소셜 인증 토큰이 만료되었습니다 | 재로그인 유도 |
+| \`USER_0601\` | 409 | 이미 가입된 이메일 | 로그인 화면 이동 |
+
+---
+
+## 📊 전체 흐름도
+
+\`\`\`
+┌─────────────┐                    ┌──────────────────┐
+│   클라이언트    │                    │   Google 서버      │
+└──────┬──────┘                    └────────┬─────────┘
+       │                                   │
+       │  1. Google.useAuthRequest()       │
+       │─────────────────────────────────> │
+       │                                   │
+       │<──────────────────────────────────│
+       │  2. 시스템 브라우저 인증 UI 표시  │
+       │                                   │
+       │  (사용자 Google 로그인)            │
+       │                                   │
+       │<──────────────────────────────────│
+       │  3. ID Token + 사용자 정보       │
+       │                                   │
+       ├──────────────────────────────────┐│
+       │  4. ID Token 추출                ││
+       │     + 디바이스 정보               ││
+       └──────────────────────────────────┘│
+                                           │
+       ┌───────────────────────────────────┘
+       │
+       ▼
+┌──────────────────┐
+│  Aido 백엔드      │
+└────────┬─────────┘
+         │
+         ├─ 1. ID Token 검증
+         │    └─ JWT 서명 검증 (Google 공개 키)
+         │    └─ aud, iss, exp 클레임 검증
+         │
+         ├─ 2. Google 사용자 ID (sub) 추출
+         │
+         ├─ 3. 기존 사용자 조회 또는 신규 생성
+         │
+         ├─ 4. 디바이스 정보 저장
+         │
+         └─ 5. 토큰 발급 및 응답
+                └─ Access Token
+                └─ Refresh Token
+                └─ 사용자 정보
+\`\`\`
+
+---
+
+## ✅ 개발자 체크리스트
+
+- [ ] Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
+- [ ] iOS Bundle ID / Android Package Name 등록
+- [ ] 각 플랫폼별 Client ID 환경 변수 설정
+- [ ] expo-auth-session 라이브러리 설치 및 설정
+- [ ] Google.useAuthRequest() 구현
+- [ ] ID Token 추출 및 백엔드로 전송
+- [ ] 백엔드 token 검증 로직 구현 (GoogleAuth 라이브러리)
+- [ ] 에러 처리 (SOCIAL_0202, SOCIAL_0203) 구현
+- [ ] 테스트 디바이스에서 전체 로그인 플로우 검증
+- [ ] Swagger 문서에서 요청/응답 형식 확인`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.GOOGLE_0403 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async googleCallback(
 		@Body() dto: GoogleMobileCallbackDto,
 		@Req() req: Request,
@@ -1373,74 +1387,28 @@ export const useGoogleLogin = () => {
 	@Public()
 	@ApiDoc({
 		summary: "Kakao OAuth 시작 (웹 브라우저 기반)",
-		description: `
-## 🟡 Kakao OAuth 시작점 (웹 브라우저 기반)
+		description: `\`expo-web-browser\`로 브라우저를 열어 카카오 로그인 페이지로 리다이렉트합니다.
 
-모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 카카오 로그인 페이지로 리다이렉트됩니다.
-인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+🔄 **플로우**: \`GET /kakao/start\` → 카카오 로그인 → \`GET /kakao/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-### 🔄 전체 플로우
-\`\`\`
-[현재] GET /auth/kakao/start?state=xxx&redirect_uri=xxx  → 카카오 로그인 페이지
-[다음] GET /auth/kakao/web-callback                       → code 처리, 교환 코드 발급
-[완료] {redirect_uri}?code=xxx&state=xxx                  → 클라이언트로 리다이렉트
-\`\`\`
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
+| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-### 📱 모바일 앱에서 호출 방법
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-// 딥링크로 리다이렉트 (기본값)
-const result = await WebBrowser.openAuthSessionAsync(
-  'https://api.aido.kr/v1/auth/kakao/start?state=random-state',
-  'aido://auth/callback'
-);
-
-// 또는 redirect_uri 명시적 지정
-const result = await WebBrowser.openAuthSessionAsync(
-  'https://api.aido.kr/v1/auth/kakao/start?state=random-state&redirect_uri=aido://auth/callback',
-  'aido://auth/callback'
-);
-\`\`\`
-
-### 🌐 웹에서 호출 방법
-\`\`\`typescript
-// 웹 콜백 URL로 리다이렉트
-window.location.href =
-  'https://api.aido.kr/v1/auth/kakao/start?state=random-state&redirect_uri=https://aido.kr/auth/callback';
-\`\`\`
-
-### ✅ 허용된 Redirect URI
-보안을 위해 다음 패턴의 URI만 허용됩니다:
-- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
-- \`https://aido.kr/*\` - aido.kr 도메인
-- \`https://*.aido.kr/*\` - aido.kr 서브도메인
-- \`http://localhost:*/*\` - 로컬 개발 환경
-
-### 🔐 보안
-- \`state\` 파라미터는 CSRF 방지용으로 클라이언트가 생성
-- 콜백 시 동일한 state가 반환되는지 반드시 검증
-- \`redirect_uri\`는 화이트리스트로 검증됨
-		`,
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
 	})
 	@ApiQuery({
 		name: "state",
 		required: true,
-		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
+		description: "CSRF 방지용 상태 값",
 		example: "a1b2c3d4e5f6",
 	})
 	@ApiQuery({
 		name: "redirect_uri",
 		required: false,
-		description: `인증 완료 후 리다이렉트될 URI.
-
-**허용된 URI 패턴:**
-- \`aido://auth/callback\` (기본값) - 모바일 앱
-- \`https://aido.kr/*\` - 웹 프로덕션
-- \`https://*.aido.kr/*\` - 서브도메인
-- \`http://localhost:*/*\` - 로컬 개발
-
-지정하지 않으면 기본값 \`aido://auth/callback\` 사용`,
+		description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
 		example: "aido://auth/callback",
 	})
 	async kakaoOAuthStart(
@@ -1461,76 +1429,29 @@ window.location.href =
 	@Public()
 	@ApiDoc({
 		summary: "Kakao OAuth 콜백 (웹 브라우저 기반)",
-		description: `
-## 🟡 Kakao OAuth 콜백 (웹 브라우저 기반)
+		description: `카카오 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
-카카오 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
-Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
-OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+🔄 **플로우**: \`GET /kakao/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-### 🔐 보안 강화 (Exchange Code 패턴)
-JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
-클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`code\` | ✅ | 카카오 authorization code |
+| \`state\` | ✅ | CSRF 검증용 state |
 
-### 🔄 전체 플로우
-\`\`\`
-[1] GET /auth/kakao/start?state=xxx&redirect_uri=xxx  → 카카오 로그인 페이지로 리다이렉트
-[2] GET /auth/kakao/web-callback                      → code 처리, 교환 코드 발급
-[3] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
-[4] POST /v1/auth/exchange { code: "xxx" }            → 토큰 교환
-[5] { accessToken, refreshToken }                     → 클라이언트에서 토큰 저장
-\`\`\`
+⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
-### 📱 모바일 앱에서 처리
-\`\`\`typescript
-// aido://auth/callback?code=xxx&state=xxx 수신 후
-const { code, state } = parseDeepLink(url);
-
-// state 검증 후 토큰 교환
-const response = await fetch('https://api.aido.kr/v1/auth/exchange', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ code }),
-});
-
-const { accessToken, refreshToken } = await response.json();
-\`\`\`
-
-### 🌐 웹에서 처리
-\`\`\`typescript
-// https://aido.kr/auth/callback?code=xxx&state=xxx 수신 후
-const urlParams = new URLSearchParams(window.location.search);
-const code = urlParams.get('code');
-const state = urlParams.get('state');
-
-// state 검증 후 토큰 교환
-const response = await fetch('https://api.aido.kr/v1/auth/exchange', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ code }),
-});
-
-const { accessToken, refreshToken } = await response.json();
-\`\`\`
-
-### ⚠️ 에러 처리
-- 인증 실패 시: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
-- state 검증 실패 시: 클라이언트에서 에러 처리
-
-### 🔒 참고
-- 이 엔드포인트는 카카오에서 직접 호출됩니다 (사용자가 직접 호출하지 않음)
-- \`redirect_uri\`는 OAuth 시작 시 DB에 저장된 값을 사용합니다
-		`,
+💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
 	})
 	@ApiQuery({
 		name: "code",
 		required: true,
-		description: "카카오에서 받은 authorization code",
+		description: "카카오 authorization code",
 	})
 	@ApiQuery({
 		name: "state",
 		required: true,
-		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+		description: "CSRF 방지용 상태 값",
 	})
 	async kakaoOAuthCallback(
 		@Query("code") code: string,
@@ -1577,47 +1498,17 @@ const { accessToken, refreshToken } = await response.json();
 	@Public()
 	@ApiDoc({
 		summary: "Google OAuth 시작 (웹 브라우저 기반)",
-		description: `
-## 🔵 Google OAuth 시작점 (웹 브라우저 기반)
+		description: `\`expo-web-browser\`로 브라우저를 열어 구글 로그인 페이지로 리다이렉트합니다.
 
-모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 구글 로그인 페이지로 리다이렉트됩니다.
-인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+🔄 **플로우**: \`GET /google/start\` → 구글 로그인 → \`GET /google/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-### 🔄 전체 플로우
-\`\`\`
-[현재] GET /auth/google/start?state=xxx&redirect_uri=xxx  → 구글 로그인 페이지
-[다음] GET /auth/google/web-callback                      → code 처리, 교환 코드 발급
-[완료] {redirect_uri}?code=xxx&state=xxx                  → 클라이언트로 리다이렉트
-\`\`\`
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
+| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-### 📱 모바일 앱에서 호출 방법
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-const result = await WebBrowser.openAuthSessionAsync(
-  'https://api.aido.kr/v1/auth/google/start?state=random-state',
-  'aido://auth/callback'
-);
-\`\`\`
-
-### ✅ 허용된 Redirect URI
-- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
-- \`https://aido.kr/*\` - aido.kr 도메인
-- \`https://*.aido.kr/*\` - aido.kr 서브도메인
-- \`http://localhost:*/*\` - 로컬 개발 환경
-		`,
-	})
-	@ApiQuery({
-		name: "state",
-		required: true,
-		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
-		example: "a1b2c3d4e5f6",
-	})
-	@ApiQuery({
-		name: "redirect_uri",
-		required: false,
-		description: "인증 완료 후 리다이렉트될 URI. 기본값: aido://auth/callback",
-		example: "aido://auth/callback",
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
 	})
 	async googleOAuthStart(
 		@Query("state") state: string | undefined,
@@ -1636,36 +1527,19 @@ const result = await WebBrowser.openAuthSessionAsync(
 	@Public()
 	@ApiDoc({
 		summary: "Google OAuth 콜백 (웹 브라우저 기반)",
-		description: `
-## 🔵 Google OAuth 콜백 (웹 브라우저 기반)
+		description: `구글 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
-구글 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
-Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
-OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+🔄 **플로우**: \`GET /google/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-### 🔐 보안 강화 (Exchange Code 패턴)
-JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
-클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`code\` | ✅ | 구글 authorization code |
+| \`state\` | ✅ | CSRF 검증용 state |
 
-### 🔄 전체 플로우
-\`\`\`
-[1] GET /auth/google/start?state=xxx&redirect_uri=xxx → 구글 로그인 페이지로 리다이렉트
-[2] GET /auth/google/web-callback                     → code 처리, 교환 코드 발급
-[3] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
-[4] POST /v1/auth/exchange { code: "xxx" }            → 토큰 교환
-[5] { accessToken, refreshToken }                     → 클라이언트에서 토큰 저장
-\`\`\`
-		`,
-	})
-	@ApiQuery({
-		name: "code",
-		required: true,
-		description: "구글에서 받은 authorization code",
-	})
-	@ApiQuery({
-		name: "state",
-		required: true,
-		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
+
+💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
 	})
 	async googleOAuthCallback(
 		@Query("code") code: string,
@@ -1711,47 +1585,17 @@ JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 �
 	@Public()
 	@ApiDoc({
 		summary: "Naver OAuth 시작 (웹 브라우저 기반)",
-		description: `
-## 🟢 Naver OAuth 시작점 (웹 브라우저 기반)
+		description: `\`expo-web-browser\`로 브라우저를 열어 네이버 로그인 페이지로 리다이렉트합니다.
 
-모바일 앱 또는 웹에서 이 엔드포인트를 호출하면 네이버 로그인 페이지로 리다이렉트됩니다.
-인증 완료 후 지정한 \`redirect_uri\`로 교환 코드와 함께 리다이렉트됩니다.
+🔄 **플로우**: \`GET /naver/start\` → 네이버 로그인 → \`GET /naver/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
 
-### 🔄 전체 플로우
-\`\`\`
-[현재] GET /auth/naver/start?state=xxx&redirect_uri=xxx  → 네이버 로그인 페이지
-[다음] GET /auth/naver/web-callback                      → code 처리, 교환 코드 발급
-[완료] {redirect_uri}?code=xxx&state=xxx                 → 클라이언트로 리다이렉트
-\`\`\`
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
+| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-### 📱 모바일 앱에서 호출 방법
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-const result = await WebBrowser.openAuthSessionAsync(
-  'https://api.aido.kr/v1/auth/naver/start?state=random-state',
-  'aido://auth/callback'
-);
-\`\`\`
-
-### ✅ 허용된 Redirect URI
-- \`aido://auth/callback\` - 모바일 앱 딥링크 (기본값)
-- \`https://aido.kr/*\` - aido.kr 도메인
-- \`https://*.aido.kr/*\` - aido.kr 서브도메인
-- \`http://localhost:*/*\` - 로컬 개발 환경
-		`,
-	})
-	@ApiQuery({
-		name: "state",
-		required: true,
-		description: "CSRF 방지용 상태 값 (클라이언트가 생성한 랜덤 문자열)",
-		example: "a1b2c3d4e5f6",
-	})
-	@ApiQuery({
-		name: "redirect_uri",
-		required: false,
-		description: "인증 완료 후 리다이렉트될 URI. 기본값: aido://auth/callback",
-		example: "aido://auth/callback",
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
 	})
 	async naverOAuthStart(
 		@Query("state") state: string | undefined,
@@ -1770,36 +1614,19 @@ const result = await WebBrowser.openAuthSessionAsync(
 	@Public()
 	@ApiDoc({
 		summary: "Naver OAuth 콜백 (웹 브라우저 기반)",
-		description: `
-## 🟢 Naver OAuth 콜백 (웹 브라우저 기반)
+		description: `네이버 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
-네이버 인증 완료 후 리다이렉트되는 콜백 엔드포인트입니다.
-Authorization code를 처리하고, **일회용 교환 코드**를 발급하여
-OAuth 시작 시 지정한 \`redirect_uri\`로 리다이렉트합니다.
+🔄 **플로우**: \`GET /naver/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-### 🔐 보안 강화 (Exchange Code 패턴)
-JWT 토큰이 URL에 직접 노출되지 않도록, 일회용 교환 코드만 클라이언트로 전달합니다.
-클라이언트에서 \`POST /v1/auth/exchange\` 엔드포인트를 호출하여 실제 토큰을 획득합니다.
+📝 **쿼리 파라미터**
+| 파라미터 | 필수 | 설명 |
+|----------|:----:|------|
+| \`code\` | ✅ | 네이버 authorization code |
+| \`state\` | ✅ | CSRF 검증용 state |
 
-### 🔄 전체 플로우
-\`\`\`
-[1] GET /auth/naver/start?state=xxx&redirect_uri=xxx → 네이버 로그인 페이지로 리다이렉트
-[2] GET /auth/naver/web-callback                     → code 처리, 교환 코드 발급
-[3] {redirect_uri}?code=xxx&state=xxx                → 클라이언트로 리다이렉트
-[4] POST /v1/auth/exchange { code: "xxx" }           → 토큰 교환
-[5] { accessToken, refreshToken }                    → 클라이언트에서 토큰 저장
-\`\`\`
-		`,
-	})
-	@ApiQuery({
-		name: "code",
-		required: true,
-		description: "네이버에서 받은 authorization code",
-	})
-	@ApiQuery({
-		name: "state",
-		required: true,
-		description: "CSRF 방지용 상태 값 (OAuth 시작 시 전달한 값과 동일)",
+⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
+
+💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
 	})
 	async naverOAuthCallback(
 		@Query("code") code: string,
@@ -2258,7 +2085,7 @@ export const useKakaoLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.KAKAO_0308 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async kakaoCallback(
 		@Body() dto: KakaoMobileCallbackDto,
 		@Req() req: Request,
@@ -2768,7 +2595,7 @@ export const useNaverLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.NAVER_0453 })
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
 	async naverCallback(
 		@Body() dto: NaverMobileCallbackDto,
 		@Req() req: Request,
@@ -2814,7 +2641,7 @@ export const useNaverLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0355 })
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
@@ -2841,7 +2668,7 @@ export const useNaverLogin = () => {
 		`,
 	})
 	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
 		const accounts = await this.oauthService.getLinkedAccounts(user.userId);
 		return { accounts };
@@ -2872,7 +2699,7 @@ export const useNaverLogin = () => {
 		example: "GOOGLE",
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0610 })
 	async unlinkAccount(
 		@CurrentUser() user: CurrentUserPayload,

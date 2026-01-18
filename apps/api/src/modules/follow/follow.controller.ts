@@ -60,6 +60,50 @@ import { FollowService } from "./follow.service";
  * - GET /follows/friends - 내 친구 목록
  * - GET /follows/requests/received - 받은 친구 요청 목록
  * - GET /follows/requests/sent - 보낸 친구 요청 목록
+ *
+ * ### 🔄 친구 요청 상태 전이 다이어그램
+ * ```
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │                        친구 관계 상태 전이                              │
+ * └──────────────────────────────────────────────────────────────────────┘
+ *
+ *   [없음]                    [PENDING]                   [ACCEPTED]
+ *     │                          │                            │
+ *     │  POST /:userId           │                            │
+ *     │  (친구 요청)              │                            │
+ *     ├─────────────────────────▶│                            │
+ *     │                          │                            │
+ *     │                          │  PATCH /:userId/accept     │
+ *     │                          │  (요청 수락)                │
+ *     │                          ├───────────────────────────▶│
+ *     │                          │                            │
+ *     │                          │  PATCH /:userId/reject     │
+ *     │◀─────────────────────────┤  (요청 거절 → 삭제)         │
+ *     │                          │                            │
+ *     │                          │  DELETE /:userId           │
+ *     │◀─────────────────────────┤  (요청 철회)                │
+ *     │                          │                            │
+ *     │  DELETE /:userId         │                            │
+ *     │◀──────────────────────────────────────────────────────┤
+ *     │  (친구 삭제)                                           │
+ *     │                                                       │
+ *
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │                        자동 수락 케이스                               │
+ * └──────────────────────────────────────────────────────────────────────┘
+ *
+ *   A → B (PENDING)    +    B → A (POST 요청)    =    A ↔ B (ACCEPTED)
+ *
+ *   상대방이 이미 나에게 친구 요청을 보낸 상태에서
+ *   내가 그 상대방에게 친구 요청을 보내면 자동으로 친구가 됨
+ * ```
+ *
+ * ### 📊 상태별 설명
+ * | 상태 | 설명 |
+ * |------|------|
+ * | 없음 | 두 사용자 간 아무 관계 없음 |
+ * | PENDING | 친구 요청을 보낸 상태 (대기 중) |
+ * | ACCEPTED | 양방향 친구 관계 성립 |
  */
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
@@ -102,7 +146,7 @@ export class FollowController {
 		`,
 	})
 	@ApiCreatedResponse({ type: SendFriendRequestResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.FOLLOW_0904)
 	@ApiNotFoundError(ErrorCode.FOLLOW_0905)
 	@ApiConflictError(ErrorCode.FOLLOW_0901)
@@ -160,7 +204,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: AcceptFriendRequestResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
 	async acceptRequest(
 		@CurrentUser() user: CurrentUserPayload,
@@ -208,7 +252,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: RejectFriendRequestResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
 	async rejectRequest(
 		@CurrentUser() user: CurrentUserPayload,
@@ -251,7 +295,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: RemoveFriendResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.FOLLOW_0907)
 	async remove(
 		@CurrentUser() user: CurrentUserPayload,
@@ -303,7 +347,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: FriendsListResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getFriends(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFriendsQueryDto,
@@ -318,11 +362,11 @@ export class FollowController {
 
 		const totalCount = await this.followService.countFriends(user.userId);
 
-		return FollowMapper.toFriendsListResponse(
-			result.items,
+		return {
+			friends: result.items.map(FollowMapper.toFriendUser),
 			totalCount,
-			result.pagination.hasNext,
-		);
+			hasMore: result.pagination.hasNext,
+		};
 	}
 
 	@Get("requests/received")
@@ -353,7 +397,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: ReceivedRequestsResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedRequests(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFollowsQueryDto,
@@ -370,11 +414,11 @@ export class FollowController {
 			user.userId,
 		);
 
-		return FollowMapper.toReceivedRequestsResponse(
-			result.items,
+		return {
+			requests: result.items.map(FollowMapper.toReceivedRequest),
 			totalCount,
-			result.pagination.hasNext,
-		);
+			hasMore: result.pagination.hasNext,
+		};
 	}
 
 	@Get("requests/sent")
@@ -405,7 +449,7 @@ export class FollowController {
 		`,
 	})
 	@ApiSuccessResponse({ type: SentRequestsResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentRequests(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFollowsQueryDto,
@@ -420,10 +464,10 @@ export class FollowController {
 
 		const totalCount = await this.followService.countSentRequests(user.userId);
 
-		return FollowMapper.toSentRequestsResponse(
-			result.items,
+		return {
+			requests: result.items.map(FollowMapper.toSentRequest),
 			totalCount,
-			result.pagination.hasNext,
-		);
+			hasMore: result.pagination.hasNext,
+		};
 	}
 }
