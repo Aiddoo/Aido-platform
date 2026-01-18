@@ -1,8 +1,16 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
-    "source.organizeImports": "explicit",
-    "source.sortMembers": "explicit"
+  "[css][javascript][typescript][javascriptreact][typescriptreact][json][jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.biome": "explicit",
+      "source.organizeImports.biome": "explicit",
+      "source.organizeImports": "never"
+    }
   },
-  "css.lint.unknownAtRules": "ignore"
+
+  // Mobile 특화 설정
+  "css.lint.unknownAtRules": "ignore",
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true
 }

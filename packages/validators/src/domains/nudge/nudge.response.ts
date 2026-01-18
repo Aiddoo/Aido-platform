@@ -13,10 +13,10 @@ import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 /** 콕 찌름 정보 스키마 */
 export const nudgeSchema = z
   .object({
-    id: z.string().cuid().describe('콕 찌름 고유 ID'),
+    id: z.number().int().positive().describe('콕 찌름 고유 ID'),
     senderId: z.string().cuid().describe('찌른 사람 ID'),
     receiverId: z.string().cuid().describe('찔린 사람 ID'),
-    todoId: z.string().cuid().describe('관련 할 일 ID'),
+    todoId: z.number().int().positive().describe('관련 할 일 ID'),
     message: z.string().max(200).nullable().describe('응원 메시지'),
     createdAt: datetimeSchema.describe('찌른 시각'),
     readAt: nullableDatetimeSchema.describe('확인 시각 (미확인 시 null)'),
@@ -24,10 +24,10 @@ export const nudgeSchema = z
   .describe('콕 찌름 정보')
   .meta({
     example: {
-      id: 'clz7x5p8k0020qz0z8z8z8z8z',
+      id: 1,
       senderId: 'clz7x5p8k0005qz0z8z8z8z8z',
       receiverId: 'clz7x5p8k0001qz0z8z8z8z8z',
-      todoId: 'clz7x5p8k0030qz0z8z8z8z8z',
+      todoId: 1,
       message: '오늘 할 일 잊지 마세요! 💪',
       createdAt: '2026-01-17T10:00:00.000Z',
       readAt: null,
@@ -61,14 +61,14 @@ export type NudgeSender = z.infer<typeof nudgeSenderSchema>;
 /** 찔러준 할 일 정보 (간략) */
 export const nudgeTodoSchema = z
   .object({
-    id: z.string().cuid().describe('할 일 ID'),
+    id: z.number().int().positive().describe('할 일 ID'),
     title: z.string().max(200).describe('할 일 제목'),
     completed: z.boolean().describe('완료 여부'),
   })
   .describe('찔러준 할 일 정보')
   .meta({
     example: {
-      id: 'clz7x5p8k0030qz0z8z8z8z8z',
+      id: 1,
       title: '운동하기',
       completed: false,
     },
@@ -85,10 +85,10 @@ export const nudgeDetailSchema = nudgeSchema
   .describe('콕 찌름 상세 정보')
   .meta({
     example: {
-      id: 'clz7x5p8k0020qz0z8z8z8z8z',
+      id: 1,
       senderId: 'clz7x5p8k0005qz0z8z8z8z8z',
       receiverId: 'clz7x5p8k0001qz0z8z8z8z8z',
-      todoId: 'clz7x5p8k0030qz0z8z8z8z8z',
+      todoId: 1,
       message: '오늘 할 일 잊지 마세요! 💪',
       createdAt: '2026-01-17T10:00:00.000Z',
       readAt: null,
@@ -98,7 +98,7 @@ export const nudgeDetailSchema = nudgeSchema
         profileImage: 'https://example.com/profiles/john.jpg',
       },
       todo: {
-        id: 'clz7x5p8k0030qz0z8z8z8z8z',
+        id: 1,
         title: '운동하기',
         completed: false,
       },
@@ -124,10 +124,10 @@ export const receivedNudgesResponseSchema = z
     example: {
       nudges: [
         {
-          id: 'clz7x5p8k0020qz0z8z8z8z8z',
+          id: 1,
           senderId: 'clz7x5p8k0005qz0z8z8z8z8z',
           receiverId: 'clz7x5p8k0001qz0z8z8z8z8z',
-          todoId: 'clz7x5p8k0030qz0z8z8z8z8z',
+          todoId: 1,
           message: '오늘 할 일 잊지 마세요! 💪',
           createdAt: '2026-01-17T10:00:00.000Z',
           readAt: null,
@@ -137,7 +137,7 @@ export const receivedNudgesResponseSchema = z
             profileImage: 'https://example.com/profiles/john.jpg',
           },
           todo: {
-            id: 'clz7x5p8k0030qz0z8z8z8z8z',
+            id: 1,
             title: '운동하기',
             completed: false,
           },
@@ -163,10 +163,10 @@ export const sentNudgesResponseSchema = z
     example: {
       nudges: [
         {
-          id: 'clz7x5p8k0021qz0z8z8z8z8z',
+          id: 2,
           senderId: 'clz7x5p8k0001qz0z8z8z8z8z',
           receiverId: 'clz7x5p8k0005qz0z8z8z8z8z',
-          todoId: 'clz7x5p8k0031qz0z8z8z8z8z',
+          todoId: 2,
           message: '같이 힘내요! 🔥',
           createdAt: '2026-01-16T15:00:00.000Z',
           readAt: '2026-01-16T16:00:00.000Z',
@@ -176,7 +176,7 @@ export const sentNudgesResponseSchema = z
             profileImage: 'https://example.com/profiles/matthew.jpg',
           },
           todo: {
-            id: 'clz7x5p8k0031qz0z8z8z8z8z',
+            id: 2,
             title: '책 읽기',
             completed: true,
           },
@@ -204,10 +204,10 @@ export const createNudgeResponseSchema = z
     example: {
       message: '콕! 찔렀습니다 👆',
       nudge: {
-        id: 'clz7x5p8k0022qz0z8z8z8z8z',
+        id: 3,
         senderId: 'clz7x5p8k0001qz0z8z8z8z8z',
         receiverId: 'clz7x5p8k0005qz0z8z8z8z8z',
-        todoId: 'clz7x5p8k0032qz0z8z8z8z8z',
+        todoId: 3,
         message: '화이팅! 💪',
         createdAt: '2026-01-17T15:30:00.000Z',
         readAt: null,
@@ -266,3 +266,25 @@ export const nudgeLimitInfoSchema = z
   });
 
 export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
+
+// ============================================
+// 쿨다운 정보
+// ============================================
+
+/** 쿨다운 상태 정보 */
+export const nudgeCooldownInfoSchema = z
+  .object({
+    isOnCooldown: z.boolean().describe('쿨다운 중 여부'),
+    remainingSeconds: z.number().int().nonnegative().describe('남은 쿨다운 시간 (초)'),
+    canNudgeAt: z.string().datetime().nullable().describe('다시 찌를 수 있는 시각 (ISO 8601)'),
+  })
+  .describe('쿨다운 상태 정보')
+  .meta({
+    example: {
+      isOnCooldown: true,
+      remainingSeconds: 3600,
+      canNudgeAt: '2026-01-17T10:00:00.000Z',
+    },
+  });
+
+export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;

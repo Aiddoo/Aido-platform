@@ -1,9 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import type { Follow } from "@/generated/prisma/client";
+import {
+	type FollowMutualEventPayload,
+	type FollowNewEventPayload,
+	NotificationEvents,
+} from "@/modules/notification/events";
 
 import { FollowRepository } from "./follow.repository";
 import type {
@@ -25,6 +31,7 @@ export class FollowService {
 		private readonly followRepository: FollowRepository,
 		private readonly paginationService: PaginationService,
 		private readonly database: DatabaseService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	// =========================================================================
@@ -105,6 +112,26 @@ export class FollowService {
 					`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
 				);
 
+				// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
+				const [userName, targetUserName] = await Promise.all([
+					this.followRepository.getUserName(userId),
+					this.followRepository.getUserName(targetUserId),
+				]);
+
+				// userId에게 알림 (targetUserId와 친구가 됨)
+				this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+					userId,
+					friendId: targetUserId,
+					friendName: targetUserName ?? "알 수 없음",
+				} satisfies FollowMutualEventPayload);
+
+				// targetUserId에게 알림 (userId와 친구가 됨)
+				this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+					userId: targetUserId,
+					friendId: userId,
+					friendName: userName ?? "알 수 없음",
+				} satisfies FollowMutualEventPayload);
+
 				return { follow, autoAccepted: true };
 			}
 			// 이미 ACCEPTED 상태
@@ -119,6 +146,14 @@ export class FollowService {
 		});
 
 		this.logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
+
+		// 새 친구 요청 이벤트 발행
+		const followerName = await this.followRepository.getUserName(userId);
+		this.eventEmitter.emit(NotificationEvents.FOLLOW_NEW, {
+			followerId: userId,
+			followingId: targetUserId,
+			followerName: followerName ?? "알 수 없음",
+		} satisfies FollowNewEventPayload);
 
 		return { follow, autoAccepted: false };
 	}
@@ -203,6 +238,26 @@ export class FollowService {
 		this.logger.log(
 			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
 		);
+
+		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
+		const [userName, requesterName] = await Promise.all([
+			this.followRepository.getUserName(userId),
+			this.followRepository.getUserName(requesterUserId),
+		]);
+
+		// userId(수락자)에게 알림 (requesterUserId와 친구가 됨)
+		this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+			userId,
+			friendId: requesterUserId,
+			friendName: requesterName ?? "알 수 없음",
+		} satisfies FollowMutualEventPayload);
+
+		// requesterUserId(요청자)에게 알림 (userId와 친구가 됨)
+		this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+			userId: requesterUserId,
+			friendId: userId,
+			friendName: userName ?? "알 수 없음",
+		} satisfies FollowMutualEventPayload);
 
 		return myFollow;
 	}

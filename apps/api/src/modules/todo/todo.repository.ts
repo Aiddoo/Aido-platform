@@ -149,4 +149,90 @@ export class TodoRepository {
 			orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
 		});
 	}
+
+	// =========================================================================
+	// 알림용 집계 메서드
+	// =========================================================================
+
+	/**
+	 * 사용자의 오늘 할일 통계 조회
+	 * @returns { total: 전체 할일 수, completed: 완료된 할일 수 }
+	 */
+	async getTodayTodoStats(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<{ total: number; completed: number }> {
+		const client = tx ?? this.database;
+
+		// 오늘 날짜 범위 계산 (UTC 기준)
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+
+		const [total, completed] = await Promise.all([
+			client.todo.count({
+				where: {
+					userId,
+					startDate: {
+						gte: today,
+						lt: tomorrow,
+					},
+				},
+			}),
+			client.todo.count({
+				where: {
+					userId,
+					startDate: {
+						gte: today,
+						lt: tomorrow,
+					},
+					completed: true,
+				},
+			}),
+		]);
+
+		return { total, completed };
+	}
+
+	/**
+	 * 사용자 이름 조회 (알림용)
+	 */
+	async getUserName(userId: string): Promise<string | null> {
+		const user = await this.database.user.findUnique({
+			where: { id: userId },
+			select: {
+				profile: {
+					select: { name: true },
+				},
+			},
+		});
+		return user?.profile?.name ?? null;
+	}
+
+	/**
+	 * 사용자의 맞팔 친구 ID 목록 조회 (알림 발송용)
+	 */
+	async getMutualFriendIds(userId: string): Promise<string[]> {
+		// 내가 팔로우하고, 상대방도 나를 팔로우한 관계
+		const follows = await this.database.follow.findMany({
+			where: {
+				followerId: userId,
+				status: "ACCEPTED",
+				following: {
+					following: {
+						some: {
+							followingId: userId,
+							status: "ACCEPTED",
+						},
+					},
+				},
+			},
+			select: {
+				followingId: true,
+			},
+		});
+
+		return follows.map((f) => f.followingId);
+	}
 }
