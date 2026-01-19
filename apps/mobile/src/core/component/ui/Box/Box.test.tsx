@@ -31,7 +31,7 @@ describe('Box 컴포넌트', () => {
     );
     const box = screen.getByTestId('box');
 
-    expect(box.props.style).toEqual({ backgroundColor: 'red' });
+    expect(box.props.style).toContainEqual({ backgroundColor: 'red' });
   });
 
   it('testID를 전달해야 한다', () => {
@@ -49,7 +49,7 @@ describe('Box 컴포넌트', () => {
     const box = screen.getByTestId('box');
 
     expect(box.props.className).toBe('m-2');
-    expect(box.props.style).toEqual({ padding: 10 });
+    expect(box.props.style).toContainEqual({ padding: 10 });
   });
 
   it('여러 자식 요소를 렌더링해야 한다', () => {

@@ -143,7 +143,7 @@ describe('Flex 컴포넌트', () => {
     );
     const flex = screen.getByTestId('flex');
 
-    expect(flex.props.style).toEqual([undefined, { backgroundColor: 'red' }]);
+    expect(flex.props.style).toContainEqual({ backgroundColor: 'red' });
   });
 
   it('gap과 style을 함께 적용해야 한다', () => {

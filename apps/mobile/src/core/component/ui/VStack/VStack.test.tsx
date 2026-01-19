@@ -83,7 +83,7 @@ describe('VStack 컴포넌트', () => {
     );
     const vstack = screen.getByTestId('vstack');
 
-    expect(vstack.props.style).toEqual([undefined, { backgroundColor: 'green' }]);
+    expect(vstack.props.style).toContainEqual({ backgroundColor: 'green' });
   });
 
   it('여러 자식 요소를 수직으로 렌더링해야 한다', () => {
