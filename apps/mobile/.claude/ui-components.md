@@ -67,6 +67,27 @@ import { ScrollView, FlatList, Image } from 'react-native';
 </VStack>
 ```
 
+### 예외: 외부 컴포넌트
+
+UniWind는 NativeWind와 달리 `cssInterop`이 없어서 외부 라이브러리 컴포넌트에는 `className`이 적용되지 않습니다.
+
+다음 컴포넌트는 **style prop**을 사용해야 합니다:
+
+```tsx
+// SafeAreaView - className 적용 불가
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+// 올바른 사용
+<SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+  {children}
+</SafeAreaView>
+
+// 작동 안 함
+<SafeAreaView className="flex-1 bg-white">
+  {children}
+</SafeAreaView>
+```
+
 ---
 
 ## 금지 사항

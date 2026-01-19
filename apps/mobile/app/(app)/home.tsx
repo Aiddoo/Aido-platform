@@ -26,7 +26,7 @@ export default function HomeScreen() {
   if (!user) return null;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
       <Text>안녕하세요, {user.name}님!</Text>
       <Text className="mt-2 text-base text-gray-600">{user.email}</Text>
 
