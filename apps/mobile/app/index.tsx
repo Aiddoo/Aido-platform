@@ -1,23 +1,8 @@
-import { useAuth } from '@src/core/auth';
+import type { Href } from 'expo-router';
 import { Redirect } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  // 로그인 안 되어 있으면 로그인 화면으로
-  if (!isAuthenticated) {
-    return <Redirect href="/login" />;
-  }
-
-  // 로그인 되어 있으면 홈 화면으로 (나중에 구현)
-  return <Redirect href="/login" />;
+  // RootLayoutNav에서 인증 상태에 따라 리다이렉트 처리
+  // 이 컴포넌트는 초기 진입점으로만 사용
+  return <Redirect href={'/(auth)/login' as Href} />;
 }
