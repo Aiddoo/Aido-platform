@@ -1,18 +1,10 @@
-import { HttpClientProvider } from '@src/core/providers';
-import QueryProvider from '@src/core/providers/query-provider';
-import {
-  AuthProvider,
-  useAuthClient,
-} from '@src/features/auth/presentations/contexts/auth.context';
-import { useGetMeQueryOptions } from '@src/features/auth/presentations/hooks';
-import { useQuery } from '@tanstack/react-query';
+import { AppProviders } from '@src/core/di/app-providers';
+import { useGetMe } from '@src/features/auth/presentation/hooks/use-get-me';
 import { useFonts } from 'expo-font';
 import { type Href, Slot, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { HeroUINativeProvider } from 'heroui-native';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
@@ -26,12 +18,12 @@ function LoadingScreen() {
 }
 
 function RootLayoutNav() {
-  const authClient = useAuthClient();
-  const { data: user, isPending } = useQuery(useGetMeQueryOptions(authClient));
+  const { data: user, isPending } = useGetMe();
   const isAuthenticated = !!user;
   const segments = useSegments();
   const router = useRouter();
 
+  // TODO: 인증 관련 처리 재설계 필요.
   useEffect(() => {
     if (isPending) return;
 
@@ -68,16 +60,8 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <QueryProvider>
-        <HttpClientProvider>
-          <AuthProvider>
-            <HeroUINativeProvider>
-              <RootLayoutNav />
-            </HeroUINativeProvider>
-          </AuthProvider>
-        </HttpClientProvider>
-      </QueryProvider>
-    </GestureHandlerRootView>
+    <AppProviders>
+      <RootLayoutNav />
+    </AppProviders>
   );
 }

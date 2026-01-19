@@ -1,30 +1,31 @@
-import { VStack } from '@src/core/component/ui/VStack';
-import { useAuthClient } from '@src/features/auth/presentations/contexts/auth.context';
-import { useExchangeCodeMutationOptions } from '@src/features/auth/presentations/hooks';
-import {
-  LoginBranding,
-  LoginFooter,
-  SocialLoginGroup,
-} from '@src/features/auth/presentations/ui/components';
-import { useMutation } from '@tanstack/react-query';
+import { LoginBranding } from '@src/features/auth/presentation/components/login-branding';
+import { LoginFooter } from '@src/features/auth/presentation/components/login-footer';
+import { SocialLoginGroup } from '@src/features/auth/presentation/components/social-login-group';
+import { useExchangeCode } from '@src/features/auth/presentation/hooks/use-exchange-code';
+import { useOpenKakaoLogin } from '@src/features/auth/presentation/hooks/use-open-kakao-login';
+import { VStack } from '@src/shared/ui/VStack/VStack';
+
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
-  const authClient = useAuthClient();
   const router = useRouter();
 
-  const exchangeMutation = useMutation(useExchangeCodeMutationOptions(authClient));
+  const openKakaoLogin = useOpenKakaoLogin();
+  const exchangeCode = useExchangeCode();
 
-  const handleKakaoLogin = async () => {
-    const code = await authClient.authService.openKakaoLogin();
-    if (code) {
-      exchangeMutation.mutate(code, {
-        onSuccess: () => {
-          router.replace('/(app)/home');
-        },
-      });
-    }
+  const handleKakaoLogin = () => {
+    openKakaoLogin.mutate(undefined, {
+      onSuccess: (code) => {
+        if (code) {
+          exchangeCode.mutate(code, {
+            onSuccess: () => {
+              router.replace('/(app)/home');
+            },
+          });
+        }
+      },
+    });
   };
 
   return (
@@ -37,7 +38,11 @@ export default function LoginScreen() {
         />
         <SocialLoginGroup
           primary={[
-            { provider: 'kakao', onPress: handleKakaoLogin, loading: exchangeMutation.isPending },
+            {
+              provider: 'kakao',
+              onPress: handleKakaoLogin,
+              loading: openKakaoLogin.isPending || exchangeCode.isPending,
+            },
             { provider: 'apple', onPress: () => {}, loading: false },
           ]}
           secondary={['google', 'naver']}
