@@ -11,6 +11,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { H1 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { cn } from '@src/shared/utils';
 import { useRouter } from 'expo-router';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
@@ -134,10 +135,8 @@ interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
 }
 
 function SocialLoginIconButton({ icon, className, ...props }: SocialLoginIconButtonProps) {
-  const mergedClassName = ['size-14', className].filter(Boolean).join(' ');
-
   return (
-    <Button display="inline" radius="full" {...props} className={mergedClassName}>
+    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
       {icon}
     </Button>
   );
