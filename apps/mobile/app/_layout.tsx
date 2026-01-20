@@ -1,7 +1,7 @@
 import { AppProviders } from '@src/core/di/app-providers';
-import { useGetMe } from '@src/features/auth/presentation/hooks/use-get-me';
+import { useAuthState } from '@src/core/providers/auth-state-provider';
 import { useFonts } from 'expo-font';
-import { type Href, Slot, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -18,29 +18,23 @@ function LoadingScreen() {
 }
 
 function RootLayoutNav() {
-  const { data: user, isPending } = useGetMe();
-  const isAuthenticated = !!user;
-  const segments = useSegments();
-  const router = useRouter();
+  const { isAuthenticated, isInitialized } = useAuthState();
 
-  // TODO: 인증 관련 처리 재설계 필요.
-  useEffect(() => {
-    if (isPending) return;
-
-    const inAuthGroup = (segments[0] as string) === '(auth)';
-
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login' as Href);
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(app)/home' as Href);
-    }
-  }, [isAuthenticated, isPending, segments, router]);
-
-  if (isPending) {
+  if (!isInitialized) {
     return <LoadingScreen />;
   }
 
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
