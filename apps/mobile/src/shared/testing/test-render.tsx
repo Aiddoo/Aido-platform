@@ -1,3 +1,4 @@
+import { AuthStateProvider } from '@src/core/providers/auth-state-provider';
 import { HttpClientProvider } from '@src/core/providers/http-client-provider';
 import type { AuthRepository } from '@src/features/auth/domain/repositories/auth.repository';
 import { AuthProvider } from '@src/features/auth/presentation/providers/auth.provider';
@@ -8,7 +9,6 @@ import type { ReactElement, ReactNode } from 'react';
 import { View } from 'react-native';
 import { createProviderRegistry } from './provider-registry';
 
-// 의존성 타입 정의
 export interface TestDependencies {
   queryClient?: QueryClient;
   authRepository?: AuthRepository;
@@ -31,20 +31,16 @@ export function AllProvidersWrapper({
 }) {
   const queryClient = createTestQueryClient();
 
-  return (
-    createProviderRegistry()
-      // Base Providers (항상 적용 - AppProviders와 동일한 순서)
-      // 테스트 환경에서는 GestureHandlerRootView 대신 View 사용
-      .add((c) => <View style={{ flex: 1 }}>{c}</View>)
-      .add((c) => <QueryClientProvider client={queryClient}>{c}</QueryClientProvider>)
-      .add((c) => <HttpClientProvider>{c}</HttpClientProvider>)
-      .add((c) => <HeroUINativeProvider>{c}</HeroUINativeProvider>)
-      // Optional Providers (의존성 있을 때만)
-      .addOptional(authRepository, (repo, c) => (
-        <AuthProvider authRepository={repo}>{c}</AuthProvider>
-      ))
-      .compose(children) as ReactElement
-  );
+  return createProviderRegistry()
+    .add((c) => <View style={{ flex: 1 }}>{c}</View>)
+    .add((c) => <QueryClientProvider client={queryClient}>{c}</QueryClientProvider>)
+    .add((c) => <HttpClientProvider>{c}</HttpClientProvider>)
+    .add((c) => <AuthStateProvider>{c}</AuthStateProvider>)
+    .add((c) => <HeroUINativeProvider>{c}</HeroUINativeProvider>)
+    .addOptional(authRepository, (repo, c) => (
+      <AuthProvider authRepository={repo}>{c}</AuthProvider>
+    ))
+    .compose(children) as ReactElement;
 }
 
 // Custom render
