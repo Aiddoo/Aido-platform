@@ -4,22 +4,25 @@
 
 UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:
 
-### 1순위: Core UI 컴포넌트 (필수)
+### 1순위: Shared UI 컴포넌트 (필수)
 
-`src/core/component/ui`에 있는 컴포넌트는 **무조건** 여기서 import합니다.
+`src/shared/ui`에 있는 컴포넌트는 **무조건** 여기서 import합니다.
 
 ```tsx
 // 올바른 사용
-import { Text, H1, H2, H3, H4 } from '@/core/component/ui/Text';
-import { Box } from '@/core/component/ui/Box';
-import { Flex } from '@/core/component/ui/Flex';
-import { HStack } from '@/core/component/ui/HStack';
-import { VStack } from '@/core/component/ui/VStack';
+import { Text, H1, H2, H3, H4 } from '@src/shared/ui/Text/Text';
+import { Button } from '@src/shared/ui/Button/Button';
+import { TextButton } from '@src/shared/ui/TextButton/TextButton';
+import { Box } from '@src/shared/ui/Box/Box';
+import { Flex } from '@src/shared/ui/Flex/Flex';
+import { HStack } from '@src/shared/ui/HStack/HStack';
+import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 ```
 
 ### 2순위: HeroUI Native 컴포넌트
 
-Core UI에 없는 컴포넌트는 **HeroUI Native**를 우선 사용합니다.
+Shared UI에 없는 컴포넌트는 **HeroUI Native**를 우선 사용합니다. (Button 등 기본 컴포넌트는 Shared UI 버전을 사용하세요)
 
 ```tsx
 import { Button } from '@heroui/react-native';
@@ -37,15 +40,18 @@ import { ScrollView, FlatList, Image } from 'react-native';
 
 ---
 
-## Core UI 컴포넌트 목록
+## Shared UI 컴포넌트 목록
 
 | 컴포넌트 | 용도 | 문서 |
 |----------|------|------|
-| `Text`, `H1`, `H2`, `H3`, `H4` | 텍스트, 헤딩 | `src/core/component/ui/Text/README.md` |
-| `Box` | 단순 컨테이너 | `src/core/component/ui/Box/README.md` |
-| `Flex` | Flexbox 레이아웃 | `src/core/component/ui/Flex/README.md` |
-| `HStack` | 수평 레이아웃 | `src/core/component/ui/HStack/README.md` |
-| `VStack` | 수직 레이아웃 | `src/core/component/ui/VStack/README.md` |
+| `Text`, `H1`~`H4` | 텍스트, 헤딩 | `src/shared/ui/Text/README.md` |
+| `Button` | 기본 버튼 | `src/shared/ui/Button/Button.md` |
+| `TextButton` | 텍스트/링크 버튼 | `src/shared/ui/TextButton/TextButton.md` |
+| `Spacing` | 간격 유틸리티 | `src/shared/ui/Spacing/Spacing.md` |
+| `Box` | 단순 컨테이너 | `src/shared/ui/Box/README.md` |
+| `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |
+| `HStack` | 수평 레이아웃 | `src/shared/ui/HStack/README.md` |
+| `VStack` | 수직 레이아웃 | `src/shared/ui/VStack/README.md` |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
 
@@ -92,9 +98,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 ## 금지 사항
 
-Core UI에 있는 컴포넌트를 다른 곳에서 가져오면 안 됩니다.
+Shared UI에 있는 컴포넌트를 다른 곳에서 가져오면 안 됩니다.
 
 ```tsx
-// 금지 - Core에 Text가 있으므로
+// 금지 - Shared UI에 Text가 있으므로
 import { Text, View } from 'react-native';
 ```
