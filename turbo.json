@@ -12,8 +12,8 @@
       "persistent": true
     },
     "test": {
-      "inputs": ["src/**", "test/**", "jest.config.*"],
-      "outputs": ["coverage/**"]
+      "inputs": ["src/**", "test/**", "jest.config.*", "vitest.config.*"],
+      "outputs": []
     },
     "test:e2e": {
       "dependsOn": ["build"],

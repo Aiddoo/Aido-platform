@@ -62,4 +62,7 @@ module.exports = {
   // 클린업
   clearMocks: true,
   restoreMocks: true,
+
+  // watchman 비활성화 (권한 문제 방지)
+  watchman: false,
 };

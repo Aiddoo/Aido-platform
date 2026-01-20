@@ -18,4 +18,5 @@ module.exports = {
     '!**/babel.config.js',
     '!**/jest.config.js',
   ],
+  watchman: false,
 };
