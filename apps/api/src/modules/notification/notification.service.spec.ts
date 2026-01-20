@@ -85,14 +85,16 @@ describe("NotificationService", () => {
 			}),
 			createCursorPaginatedResponse: jest.fn().mockImplementation((params) => {
 				const { items, size } = params;
-				const hasMore = items.length > size;
-				const data = hasMore ? items.slice(0, size) : items;
+				const hasNext = items.length > size;
+				const actualItems = hasNext ? items.slice(0, size) : items;
 				const nextCursor =
-					hasMore && data.length > 0 ? data[data.length - 1].id : null;
+					hasNext && actualItems.length > 0
+						? actualItems[actualItems.length - 1].id
+						: null;
 				return {
-					data,
-					pageInfo: {
-						hasNextPage: hasMore,
+					items: actualItems,
+					pagination: {
+						hasNext,
 						nextCursor,
 					},
 				};

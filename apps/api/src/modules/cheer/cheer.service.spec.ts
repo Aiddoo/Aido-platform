@@ -349,7 +349,32 @@ describe("CheerService", () => {
 						receiver: { connect: { id: validParams.receiverId } },
 						message: validParams.message,
 					},
-					include: { sender: true, receiver: true },
+					include: {
+						sender: {
+							select: {
+								id: true,
+								userTag: true,
+								profile: {
+									select: {
+										name: true,
+										profileImage: true,
+									},
+								},
+							},
+						},
+						receiver: {
+							select: {
+								id: true,
+								userTag: true,
+								profile: {
+									select: {
+										name: true,
+										profileImage: true,
+									},
+								},
+							},
+						},
+					},
 				});
 			});
 
