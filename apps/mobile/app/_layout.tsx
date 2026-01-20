@@ -45,10 +45,10 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'WantedSans-Regular': require('../assets/fonts/WantedSans-Regular.ttf'),
-    'WantedSans-Medium': require('../assets/fonts/WantedSans-Medium.ttf'),
-    'WantedSans-SemiBold': require('../assets/fonts/WantedSans-SemiBold.ttf'),
-    'WantedSans-Bold': require('../assets/fonts/WantedSans-Bold.ttf'),
+    'WantedSans-Regular': require('@assets/fonts/WantedSans-Regular.ttf'),
+    'WantedSans-Medium': require('@assets/fonts/WantedSans-Medium.ttf'),
+    'WantedSans-SemiBold': require('@assets/fonts/WantedSans-SemiBold.ttf'),
+    'WantedSans-Bold': require('@assets/fonts/WantedSans-Bold.ttf'),
   });
 
   useEffect(() => {

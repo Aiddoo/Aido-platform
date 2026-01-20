@@ -1,8 +1,9 @@
 import { useGetMe } from '@src/features/auth/presentation/hooks/use-get-me';
 import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
+import { Button } from '@src/shared/ui/Button/Button';
 import { Text } from '@src/shared/ui/Text/Text';
+import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useRouter } from 'expo-router';
-import { Button } from 'heroui-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -22,12 +23,15 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <Text>안녕하세요, {user.name}님!</Text>
-      <Text className="mt-2 text-base text-gray-600">{user.email}</Text>
-
-      <Button onPress={handleLogout} isDisabled={logout.isPending} className="bg-red-500">
-        로그아웃
-      </Button>
+      <VStack px={16} py={20} gap={16}>
+        <Text>안녕하세요, {user.name}님!</Text>
+        <Text shade={6}>{user.email}</Text>
+      </VStack>
+      <VStack px={16}>
+        <Button onPress={handleLogout} isLoading={logout.isPending} color="danger">
+          로그아웃
+        </Button>
+      </VStack>
     </SafeAreaView>
   );
 }
