@@ -1,12 +1,10 @@
+import { httpClient } from '@src/core/di/container';
 import type { HttpClient } from '@src/shared/api/http-client';
-import { KyHttpClient } from '@src/shared/api/http-client.impl';
-import { createContext, type PropsWithChildren, use, useState } from 'react';
+import { createContext, type PropsWithChildren, use } from 'react';
 
 export const HttpClientContext = createContext<HttpClient | null>(null);
 
 export const HttpClientProvider = ({ children }: PropsWithChildren) => {
-  const [httpClient] = useState<HttpClient>(() => new KyHttpClient());
-
   return <HttpClientContext value={httpClient}>{children}</HttpClientContext>;
 };
 
