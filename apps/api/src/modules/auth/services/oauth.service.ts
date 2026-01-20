@@ -57,6 +57,8 @@ export class OAuthService {
 		/^https:\/\/[a-z0-9-]+\.aido\.kr(\/.*)?$/,
 		// 로컬 개발 환경
 		/^http:\/\/localhost(:\d+)?(\/.*)?$/,
+		// Expo Go 개발 환경 (exp:// scheme)
+		/^exp:\/\/[\d.:]+(\/.*)?$/,
 	];
 
 	/**
