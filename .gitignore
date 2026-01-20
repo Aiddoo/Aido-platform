@@ -92,7 +92,6 @@ pnpm-debug.log*
 **/openapi.json
 **/*.generated.ts
 **/*.generated.js
-**/uniwind-types.d.ts
 
 # =============================================================================
 # MISCELLANEOUS
