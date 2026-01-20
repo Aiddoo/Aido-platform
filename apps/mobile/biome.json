@@ -10,7 +10,8 @@
       "!**/dist",
       "!**/build",
       "!**/coverage",
-      "!**/*.generated.*"
+      "!**/*.generated.*",
+      "!uniwind-types.d.ts"
     ]
   },
   "css": {
