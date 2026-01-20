@@ -33,6 +33,10 @@ function RootLayoutNav() {
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="index" />
+      </Stack.Protected>
     </Stack>
   );
 }

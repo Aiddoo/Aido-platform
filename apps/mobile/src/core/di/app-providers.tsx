@@ -10,15 +10,15 @@ import { authRepository } from './container';
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryProvider>
-        <HttpClientProvider>
-          <AuthStateProvider>
-            <HeroUINativeProvider>
+      <HeroUINativeProvider>
+        <QueryProvider>
+          <HttpClientProvider>
+            <AuthStateProvider>
               <AuthProvider authRepository={authRepository}>{children}</AuthProvider>
-            </HeroUINativeProvider>
-          </AuthStateProvider>
-        </HttpClientProvider>
-      </QueryProvider>
+            </AuthStateProvider>
+          </HttpClientProvider>
+        </QueryProvider>
+      </HeroUINativeProvider>
     </GestureHandlerRootView>
   );
 }
