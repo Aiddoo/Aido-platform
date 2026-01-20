@@ -7,7 +7,7 @@ Flexbox 레이아웃을 위한 기본 컴포넌트입니다. `BoxProps`를 상�
 이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
 
 ```tsx
-import { Flex } from '@src/core/component/ui/Flex';
+import { Flex } from '@src/shared/ui/Flex/Flex';
 ```
 
 ## 기본 사용법

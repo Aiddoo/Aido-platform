@@ -7,7 +7,7 @@
 이 컴포넌트는 `@aido/mobile` 앱에 포함되어 있습니다.
 
 ```tsx
-import { Box } from '@src/core/component/ui/Box';
+import { Box } from '@src/shared/ui/Box/Box';
 ```
 
 ## 기본 사용법
