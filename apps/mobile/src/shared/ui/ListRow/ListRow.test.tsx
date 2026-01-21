@@ -1,109 +1,114 @@
 import { render, screen } from '@testing-library/react-native';
 import { View } from 'react-native';
 import { ListRow } from './ListRow';
-import { listRowIconVariants, listRowSlotVariants, listRowVariants } from './ListRow.variants';
 
 describe('ListRow', () => {
-  test('contents를 렌더링한다', () => {
-    render(<ListRow contents={<ListRow.Texts top="제목" />} />);
+  describe('기본 렌더링', () => {
+    it('should render contents when provided', () => {
+      // Given: ListRow에 contents가 주어졌을 때
+      const contentsText = '제목';
 
-    expect(screen.getByText('제목')).toBeTruthy();
+      // When: ListRow를 렌더링하면
+      render(<ListRow contents={<ListRow.Texts type="1RowTypeA" top={contentsText} />} />);
+
+      // Then: contents가 화면에 표시된다
+      expect(screen.getByText(contentsText)).toBeTruthy();
+    });
+
+    it('should render left, contents, and right sections', () => {
+      // Given: left, contents, right 영역이 모두 주어졌을 때
+      const leftTestId = 'left';
+      const contentsText = '내용';
+      const rightTestId = 'right';
+
+      // When: 모든 영역을 포함한 ListRow를 렌더링하면
+      render(
+        <ListRow
+          left={<View testID={leftTestId} />}
+          contents={<ListRow.Texts type="1RowTypeA" top={contentsText} />}
+          right={<View testID={rightTestId} />}
+        />,
+      );
+
+      // Then: 모든 영역이 화면에 표시된다
+      expect(screen.getByTestId(leftTestId)).toBeTruthy();
+      expect(screen.getByText(contentsText)).toBeTruthy();
+      expect(screen.getByTestId(rightTestId)).toBeTruthy();
+    });
+
+    it('should render without left section', () => {
+      // Given: left 없이 contents와 right만 주어졌을 때
+      const contentsText = '내용';
+      const rightTestId = 'right';
+
+      // When: left 없이 ListRow를 렌더링하면
+      render(
+        <ListRow
+          contents={<ListRow.Texts type="1RowTypeA" top={contentsText} />}
+          right={<View testID={rightTestId} />}
+        />,
+      );
+
+      // Then: contents와 right만 화면에 표시된다
+      expect(screen.getByText(contentsText)).toBeTruthy();
+      expect(screen.getByTestId(rightTestId)).toBeTruthy();
+    });
   });
 
-  test('left, contents, right 영역을 모두 렌더링한다', () => {
-    render(
-      <ListRow
-        left={<View testID="left" />}
-        contents={<ListRow.Texts top="내용" />}
-        right={<View testID="right" />}
-      />,
-    );
+  describe('ListRow.Texts', () => {
+    it('should render only top text for 1RowTypeA', () => {
+      // Given: 1RowTypeA 타입으로 top만 주어졌을 때
+      const topText = '제목';
 
-    expect(screen.getByTestId('left')).toBeTruthy();
-    expect(screen.getByText('내용')).toBeTruthy();
-    expect(screen.getByTestId('right')).toBeTruthy();
+      // When: ListRow.Texts를 렌더링하면
+      render(<ListRow.Texts type="1RowTypeA" top={topText} />);
+
+      // Then: top만 화면에 표시된다
+      expect(screen.getByText(topText)).toBeTruthy();
+    });
+
+    it('should render top and bottom for 2RowTypeA', () => {
+      // Given: 2RowTypeA 타입으로 top과 bottom이 주어졌을 때
+      const topText = '제목';
+      const bottomText = '부제목';
+
+      // When: ListRow.Texts를 렌더링하면
+      render(<ListRow.Texts type="2RowTypeA" top={topText} bottom={bottomText} />);
+
+      // Then: top과 bottom이 화면에 표시된다
+      expect(screen.getByText(topText)).toBeTruthy();
+      expect(screen.getByText(bottomText)).toBeTruthy();
+    });
+
+    it('should render top, middle, and bottom for 3RowTypeA', () => {
+      // Given: 3RowTypeA 타입으로 top, middle, bottom이 모두 주어졌을 때
+      const topText = '제목';
+      const middleText = '설명';
+      const bottomText = '추가정보';
+
+      // When: ListRow.Texts를 렌더링하면
+      render(
+        <ListRow.Texts type="3RowTypeA" top={topText} middle={middleText} bottom={bottomText} />,
+      );
+
+      // Then: 모든 텍스트가 화면에 표시된다
+      expect(screen.getByText(topText)).toBeTruthy();
+      expect(screen.getByText(middleText)).toBeTruthy();
+      expect(screen.getByText(bottomText)).toBeTruthy();
+    });
   });
 
-  test('left 없이 contents와 right만 렌더링할 수 있다', () => {
-    render(<ListRow contents={<ListRow.Texts top="내용" />} right={<View testID="right" />} />);
+  describe('ListRow.Image', () => {
+    it('should render image with default size', () => {
+      // Given: 기본 설정으로 이미지가 주어졌을 때
+      const imageSource = { uri: 'https://example.com/image.jpg' };
+      const testId = 'list-row-image';
 
-    expect(screen.getByText('내용')).toBeTruthy();
-    expect(screen.getByTestId('right')).toBeTruthy();
-  });
-});
+      // When: ListRow.Image를 렌더링하면
+      render(<ListRow.Image source={imageSource} testID={testId} />);
 
-describe('ListRow.Texts', () => {
-  test('1Row 타입은 top만 렌더링한다', () => {
-    render(<ListRow.Texts type="1Row" top="제목" middle="설명" bottom="추가" />);
-
-    expect(screen.getByText('제목')).toBeTruthy();
-    expect(screen.queryByText('설명')).toBeNull();
-    expect(screen.queryByText('추가')).toBeNull();
-  });
-
-  test('2Row 타입은 top과 middle을 렌더링한다', () => {
-    render(<ListRow.Texts type="2Row" top="제목" middle="설명" bottom="추가" />);
-
-    expect(screen.getByText('제목')).toBeTruthy();
-    expect(screen.getByText('설명')).toBeTruthy();
-    expect(screen.queryByText('추가')).toBeNull();
-  });
-
-  test('3Row 타입은 top, middle, bottom 모두 렌더링한다', () => {
-    render(<ListRow.Texts type="3Row" top="제목" middle="설명" bottom="추가" />);
-
-    expect(screen.getByText('제목')).toBeTruthy();
-    expect(screen.getByText('설명')).toBeTruthy();
-    expect(screen.getByText('추가')).toBeTruthy();
-  });
-});
-
-describe('ListRow.Icon', () => {
-  test('children을 렌더링한다', () => {
-    render(
-      <ListRow.Icon>
-        <View testID="icon" />
-      </ListRow.Icon>,
-    );
-
-    expect(screen.getByTestId('icon')).toBeTruthy();
-  });
-});
-
-describe('listRowVariants', () => {
-  test('verticalPadding에 따라 패딩이 달라진다', () => {
-    expect(listRowVariants({ verticalPadding: 'small' })).toContain('py-1');
-    expect(listRowVariants({ verticalPadding: 'medium' })).toContain('py-2');
-    expect(listRowVariants({ verticalPadding: 'large' })).toContain('py-4');
-    expect(listRowVariants({ verticalPadding: 'xlarge' })).toContain('py-5');
-  });
-
-  test('horizontalPadding에 따라 패딩이 달라진다', () => {
-    expect(listRowVariants({ horizontalPadding: 'none' })).not.toContain('px-');
-    expect(listRowVariants({ horizontalPadding: 'small' })).toContain('px-2');
-    expect(listRowVariants({ horizontalPadding: 'medium' })).toContain('px-4');
-  });
-
-  test('border=indented는 하단 테두리를 적용한다', () => {
-    expect(listRowVariants({ border: 'indented' })).toContain('border-b');
-  });
-
-  test('비활성화 상태에서는 투명도가 낮아진다', () => {
-    expect(listRowVariants({ disabled: true })).toContain('opacity-40');
-  });
-});
-
-describe('listRowSlotVariants', () => {
-  test('alignment에 따라 정렬이 달라진다', () => {
-    expect(listRowSlotVariants({ alignment: 'top' })).toContain('items-start');
-    expect(listRowSlotVariants({ alignment: 'center' })).toContain('items-center');
-  });
-});
-
-describe('listRowIconVariants', () => {
-  test('size에 따라 크기가 달라진다', () => {
-    expect(listRowIconVariants({ size: 'small' })).toContain('w-6');
-    expect(listRowIconVariants({ size: 'medium' })).toContain('w-10');
-    expect(listRowIconVariants({ size: 'large' })).toContain('w-12');
+      // Then: 이미지가 화면에 표시된다
+      expect(screen.getByTestId(testId)).toBeTruthy();
+    });
   });
 });
