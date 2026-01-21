@@ -1,23 +1,21 @@
-import CheckIcon from '@assets/icons/ic_check.svg';
-import MenuIcon from '@assets/icons/ic_menu.svg';
-import PersonIcon from '@assets/icons/ic_person.svg';
+import { CheckIcon, MenuIcon, PersonIcon } from '@src/shared/ui/Icon';
 import { Tabs } from 'expo-router';
-import { useCSSVariable } from 'uniwind';
+import { useResolveClassNames } from 'uniwind';
 
 export default function AppLayout() {
-  const borderColor = String(useCSSVariable('--gray-2'));
-  const inactiveColor = String(useCSSVariable('--gray-5'));
-  const activeColor = String(useCSSVariable('--main'));
+  const activeStyle = useResolveClassNames('text-main');
+  const inactiveStyle = useResolveClassNames('text-gray-5');
+  const borderStyle = useResolveClassNames('border-gray-2');
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: activeColor,
-        tabBarInactiveTintColor: inactiveColor,
+        tabBarActiveTintColor: activeStyle.color as string,
+        tabBarInactiveTintColor: inactiveStyle.color as string,
         tabBarStyle: {
           borderTopWidth: 1,
-          borderTopColor: borderColor,
+          borderTopColor: borderStyle.borderColor as string,
         },
       }}
     >

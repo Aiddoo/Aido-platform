@@ -1,11 +1,8 @@
-import AppleIcon from '@assets/icons/ic_apple.svg';
-import GoogleIcon from '@assets/icons/ic_google.svg';
-import KakaoIcon from '@assets/icons/ic_kakao.svg';
-import NaverIcon from '@assets/icons/ic_naver.svg';
 import { useExchangeCode } from '@src/features/auth/presentation/hooks/use-exchange-code';
 import { useOpenKakaoLogin } from '@src/features/auth/presentation/hooks/use-open-kakao-login';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';

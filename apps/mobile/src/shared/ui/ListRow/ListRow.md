@@ -128,7 +128,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 | Prop | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
 | `children` | `ReactNode` | - | 아이콘 컴포넌트 |
-| `size` | `'small' \| 'medium' \| 'large'` | `'medium'` | 아이콘 컨테이너 크기 |
+| `size` | `'small' \| 'medium' \| 'large'` | `'small'` | 아이콘 컨테이너 크기 |
 | `className` | `string` | - | 추가 스타일 |
 
 #### 크기

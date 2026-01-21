@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { SvgProps } from 'react-native-svg';
 import { withUniwind } from 'uniwind';
 
 /**
@@ -6,9 +7,9 @@ import { withUniwind } from 'uniwind';
  *
  * @example
  * const StyledArrowIcon = createStyledIcon(ArrowRightIconSvg);
- * <StyledArrowIcon colorClassName="accent-gray-6" />
+ * <StyledArrowIcon colorClassName="accent-gray-6" width={24} height={24} />
  */
-export function createStyledIcon<P extends { color?: string }>(IconComponent: ComponentType<P>) {
+export function createStyledIcon<P extends SvgProps>(IconComponent: ComponentType<P>) {
   return withUniwind(IconComponent, {
     color: {
       fromClassName: 'colorClassName',

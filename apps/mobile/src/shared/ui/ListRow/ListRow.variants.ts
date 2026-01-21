@@ -56,6 +56,6 @@ export const listRowIconVariants = tv({
   },
 
   defaultVariants: {
-    size: 'medium',
+    size: 'small',
   },
 });
