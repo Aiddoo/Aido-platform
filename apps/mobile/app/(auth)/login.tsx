@@ -6,6 +6,7 @@ import { useExchangeCode } from '@src/features/auth/presentation/hooks/use-excha
 import { useOpenKakaoLogin } from '@src/features/auth/presentation/hooks/use-open-kakao-login';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { H1 } from '@src/shared/ui/Text/Typography';
@@ -15,7 +16,6 @@ import { cn } from '@src/shared/utils';
 import { useRouter } from 'expo-router';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <StyledSafeAreaView className="flex-1 bg-white">
       <VStack flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
           <Avatar alt="Aido logo" size="lg" className="rounded-xl">
@@ -106,7 +106,7 @@ export default function LoginScreen() {
           </TextButton>
         </HStack>
       </VStack>
-    </SafeAreaView>
+    </StyledSafeAreaView>
   );
 }
 

@@ -1,10 +1,10 @@
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FeedScreen() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+    <StyledSafeAreaView className="flex-1 bg-gray-1">
       <Text>Feed</Text>
-    </SafeAreaView>
+    </StyledSafeAreaView>
   );
 }

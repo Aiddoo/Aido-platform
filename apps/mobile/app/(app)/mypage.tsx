@@ -1,9 +1,10 @@
-import ArrowRightIcon from '@assets/icons/ic_arrow_right.svg';
 import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
 import { ProfileCard } from '@src/features/auth/ui/ProfileCard';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
@@ -13,8 +14,6 @@ import { Divider, PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCSSVariable } from 'uniwind';
 export default function MyPageScreen() {
   const router = useRouter();
   const logout = useLogout();
@@ -32,7 +31,7 @@ export default function MyPageScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+    <StyledSafeAreaView className="flex-1 bg-gray-1">
       <ScrollView className="px-4 py-6 flex-1">
         <H3>내 정보</H3>
 
@@ -46,18 +45,24 @@ export default function MyPageScreen() {
 
         <Spacing size={24} />
 
-        <SettingsSection>
-          <SettingsRow label="친구 관리" onPress={() => console.log('친구 관리 클릭')} />
-          <SettingsRow label="구독 관리" onPress={() => console.log('구독 관리 클릭')} />
-        </SettingsSection>
+        <SettingNavigationSection>
+          <SettingNavigationItem label="친구 관리" onPress={() => console.log('친구 관리 클릭')} />
+          <SettingNavigationItem label="구독 관리" onPress={() => console.log('구독 관리 클릭')} />
+        </SettingNavigationSection>
 
         <Spacing size={12} />
 
-        <SettingsSection>
-          <SettingsRow label="공지사항" onPress={() => console.log('공지사항 클릭')} />
-          <SettingsRow label="의견 보내기" onPress={() => console.log('의견 보내기 클릭')} />
-          <SettingsRow label="약관 및 정책" onPress={() => console.log('약관 및 정책 클릭')} />
-        </SettingsSection>
+        <SettingNavigationSection>
+          <SettingNavigationItem label="공지사항" onPress={() => console.log('공지사항 클릭')} />
+          <SettingNavigationItem
+            label="의견 보내기"
+            onPress={() => console.log('의견 보내기 클릭')}
+          />
+          <SettingNavigationItem
+            label="약관 및 정책"
+            onPress={() => console.log('약관 및 정책 클릭')}
+          />
+        </SettingNavigationSection>
 
         <Spacing size={32} />
 
@@ -71,11 +76,11 @@ export default function MyPageScreen() {
           </TextButton>
         </HStack>
       </ScrollView>
-    </SafeAreaView>
+    </StyledSafeAreaView>
   );
 }
 
-function SettingsSection({ children }: { children: ReactNode }) {
+function SettingNavigationSection({ children }: { children: ReactNode }) {
   return (
     <VStack p={8} gap={8} className="bg-white rounded-2xl">
       {children}
@@ -83,14 +88,12 @@ function SettingsSection({ children }: { children: ReactNode }) {
   );
 }
 
-interface SettingsRowProps {
+interface SettingNavigationItemProps {
   label: string;
   onPress: () => void;
 }
 
-function SettingsRow({ label, onPress }: SettingsRowProps) {
-  const gray6 = useCSSVariable('--gray-6');
-
+function SettingNavigationItem({ label, onPress }: SettingNavigationItemProps) {
   return (
     <PressableFeedback onPress={onPress} className="rounded-lg">
       <PressableFeedback.Highlight className="rounded-xl" />
@@ -98,7 +101,7 @@ function SettingsRow({ label, onPress }: SettingsRowProps) {
         contents={<ListRow.Texts top={label} />}
         right={
           <ListRow.Icon>
-            <ArrowRightIcon color={String(gray6)} />
+            <ArrowRightIcon colorClassName="accent-gray-6" />
           </ListRow.Icon>
         }
         horizontalPadding="medium"
