@@ -31,7 +31,7 @@ export const buttonVariants = tv({
       full: 'rounded-full',
     },
     display: {
-      inline: 'self-start',
+      inline: '',
       block: 'self-stretch',
       full: 'w-full',
     },
