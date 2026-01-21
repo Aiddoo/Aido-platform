@@ -29,7 +29,7 @@ const IS_PRODUCTION = APP_ENV === 'production' || APP_ENV === 'preview';
 // 환경변수 스키마
 // ─────────────────────────────────────────────
 const baseEnvSchema = z.object({
-  EXPO_PUBLIC_API_URL: z.string().url().optional(),
+  EXPO_PUBLIC_API_URL: z.url().optional(),
   EXPO_PUBLIC_DEV_PORT: z.string().regex(/^\d+$/).optional(),
   EXPO_PUBLIC_LOCAL_IP: z
     .string()
@@ -46,7 +46,7 @@ const baseEnvSchema = z.object({
 });
 
 const productionEnvSchema = baseEnvSchema.extend({
-  EXPO_PUBLIC_API_URL: z.string().url(),
+  EXPO_PUBLIC_API_URL: z.url(),
 });
 
 // ─────────────────────────────────────────────
