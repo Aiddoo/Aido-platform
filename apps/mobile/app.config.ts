@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 // =============================================================================
@@ -53,6 +55,33 @@ const _NOTIFICATION_ICON = './assets/images/notification-icon.png';
 // Environment Configuration
 // =============================================================================
 
+const PROJECT_ROOT = __dirname;
+
+const restoreBase64File = ({
+  envVar,
+  outputPath,
+  label,
+}: {
+  envVar: string | undefined;
+  outputPath: string;
+  label: string;
+}) => {
+  if (!envVar) {
+    console.warn(`[eas] ${label} env var not set; skipping restore.`);
+    return;
+  }
+
+  try {
+    const cleaned = envVar.replace(/\s+/g, '');
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, Buffer.from(cleaned, 'base64'));
+    console.log(`[eas] Restored ${label} to ${path.relative(PROJECT_ROOT, outputPath)}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`[eas] Failed to restore ${label}: ${message}`);
+  }
+};
+
 const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig => {
   switch (environment) {
     case 'production':
@@ -68,7 +97,7 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
       return {
         name: `${APP_NAME} Preview`,
         bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-        packageName: `${PACKAGE_NAME}.preview`,
+        packageName: PACKAGE_NAME,
         scheme: `${SCHEME}-preview`,
         apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://preview-api.example.com',
       };
@@ -76,7 +105,7 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
       return {
         name: `${APP_NAME} Development`,
         bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-        packageName: `${PACKAGE_NAME}.dev`,
+        packageName: PACKAGE_NAME,
         scheme: `${SCHEME}-dev`,
         apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080',
       };
@@ -94,6 +123,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     rawEnv === 'production' || rawEnv === 'preview' ? rawEnv : 'development';
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
+
+  restoreBase64File({
+    envVar: process.env.GOOGLE_SERVICES_JSON,
+    outputPath: path.resolve(PROJECT_ROOT, 'google-services.json'),
+    label: 'google-services.json',
+  });
+
+  restoreBase64File({
+    envVar: process.env.GOOGLE_SERVICES_INFO_PLIST,
+    outputPath: path.resolve(PROJECT_ROOT, 'GoogleService-Info.plist'),
+    label: 'GoogleService-Info.plist',
+  });
 
   // Get environment-specific config
   const envConfig = getEnvironmentConfig(env);
@@ -149,6 +190,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
+      googleServicesFile: './GoogleService-Info.plist',
       config: {
         // false: HTTPS만 사용, 커스텀 암호화 없음 (App Store 제출 시 수출 규정 질문 스킵)
         usesNonExemptEncryption: false,
@@ -309,6 +351,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
       // 보안 저장소 (토큰 저장)
       'expo-secure-store',
+
+      // 시스템 UI (다크 모드 지원)
+      'expo-system-ui',
 
       // SQLite (오프라인 DB)
       'expo-sqlite',

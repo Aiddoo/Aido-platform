@@ -1,3 +1,4 @@
+import { ENV } from '@src/shared/config/env';
 import { TokenStore } from '@src/shared/storage/token-store';
 import ky, { type AfterResponseHook, type BeforeRequestHook, type KyInstance } from 'ky';
 import type {
@@ -75,7 +76,7 @@ export class KyHttpClient implements HttpClient {
   private readonly client: KyInstance;
 
   constructor(config: HttpClientConfig = {}) {
-    const baseUrl = config.baseUrl || process.env.EXPO_PUBLIC_API_URL || '';
+    const baseUrl = config.baseUrl || ENV.API_URL;
 
     this.client = ky.create({
       prefixUrl: baseUrl,

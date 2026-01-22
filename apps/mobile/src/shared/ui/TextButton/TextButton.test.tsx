@@ -12,13 +12,11 @@ jest.mock('heroui-native', () => {
   };
 });
 
-jest.mock('@assets/icons/ic_arrow_right.svg', () => {
-  const { View } = require('react-native');
-  return () => <View testID="arrow-icon" />;
-});
-
-jest.mock('uniwind', () => ({
-  useCSSVariable: () => '#999999',
+jest.mock('../Icon', () => ({
+  ArrowRightIcon: () => {
+    const { View } = require('react-native');
+    return <View testID="arrow-icon" />;
+  },
 }));
 
 describe('TextButton', () => {

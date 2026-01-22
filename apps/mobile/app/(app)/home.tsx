@@ -1,10 +1,10 @@
 import { useGetMe } from '@src/features/auth/presentation/hooks/use-get-me';
 import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
 import { Button } from '@src/shared/ui/Button/Button';
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function HomeScreen() {
   if (!user) return null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <StyledSafeAreaView className="flex-1 bg-white">
       <VStack px={16} py={20} gap={16}>
         <Text>안녕하세요, {user.name}님!</Text>
         <Text shade={6}>{user.email}</Text>
@@ -32,6 +32,6 @@ export default function HomeScreen() {
           로그아웃
         </Button>
       </VStack>
-    </SafeAreaView>
+    </StyledSafeAreaView>
   );
 }

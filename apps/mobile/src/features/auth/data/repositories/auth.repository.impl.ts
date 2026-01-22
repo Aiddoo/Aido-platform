@@ -1,10 +1,9 @@
 import type { HttpClient } from '@src/shared/api/http-client';
 import type { ApiResponse } from '@src/shared/api/types';
+import { ENV } from '@src/shared/config/env';
 import type { AuthTokens, CurrentUser, ExchangeCodeInput } from '../../domain/models/user.model';
 import { authTokensSchema, currentUserSchema } from '../../domain/models/user.model';
 import type { AuthRepository } from '../../domain/repositories/auth.repository';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 export class AuthRepositoryImpl implements AuthRepository {
   constructor(private readonly httpClient: HttpClient) {}
@@ -41,6 +40,6 @@ export class AuthRepositoryImpl implements AuthRepository {
   }
 
   getKakaoAuthUrl(redirectUri: string): string {
-    return `${API_URL}/v1/auth/kakao/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    return `${ENV.API_URL}/v1/auth/kakao/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
   }
 }

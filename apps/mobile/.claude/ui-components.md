@@ -52,6 +52,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |
 | `HStack` | 수평 레이아웃 | `src/shared/ui/HStack/README.md` |
 | `VStack` | 수직 레이아웃 | `src/shared/ui/VStack/README.md` |
+| `Result` | 결과 화면 (에러, 빈 상태) | `src/shared/ui/Result/Result.md` |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
 
@@ -73,25 +74,91 @@ import { ScrollView, FlatList, Image } from 'react-native';
 </VStack>
 ```
 
-### 예외: 외부 컴포넌트
+### 외부 컴포넌트: withUniwind로 래핑
 
-UniWind는 NativeWind와 달리 `cssInterop`이 없어서 외부 라이브러리 컴포넌트에는 `className`이 적용되지 않습니다.
+외부 라이브러리 컴포넌트에 `className`을 사용하려면 `withUniwind`로 감싸야 합니다.
 
-다음 컴포넌트는 **style prop**을 사용해야 합니다:
+> 참고: https://docs.uniwind.dev/api/with-uniwind
+
+**이미 래핑된 컴포넌트:**
 
 ```tsx
-// SafeAreaView - className 적용 불가
-import { SafeAreaView } from 'react-native-safe-area-context';
+// StyledSafeAreaView - withUniwind로 래핑됨
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 
-// 올바른 사용
-<SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+<StyledSafeAreaView className="flex-1 bg-gray-1">
   {children}
-</SafeAreaView>
+</StyledSafeAreaView>
+```
 
-// 작동 안 함
-<SafeAreaView className="flex-1 bg-white">
-  {children}
-</SafeAreaView>
+**새로운 외부 컴포넌트 래핑:**
+
+```tsx
+import { withUniwind } from 'uniwind';
+import { SomeComponent } from 'some-library';
+
+const StyledComponent = withUniwind(SomeComponent);
+
+<StyledComponent className="flex-1 bg-white" />
+```
+
+---
+
+## 테마 색상 사용
+
+### className으로 색상 적용 (권장)
+
+```tsx
+<Text className="text-gray-6">텍스트</Text>
+<View className="bg-main" />
+```
+
+### JS에서 색상값이 필요한 경우: useResolveClassNames
+
+Tabs의 `tintColor`처럼 **실제 색상 문자열**이 필요할 때 사용합니다.
+
+> 참고: https://docs.uniwind.dev/theming/global-css
+
+```tsx
+import { useResolveClassNames } from 'uniwind';
+
+function MyComponent() {
+  const activeStyle = useResolveClassNames('text-main');
+  const borderStyle = useResolveClassNames('border-gray-2');
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: activeStyle.color as string,
+        tabBarStyle: { borderTopColor: borderStyle.borderColor as string },
+      }}
+    />
+  );
+}
+```
+
+### SVG 아이콘 색상: createStyledIcon
+
+SVG 아이콘에 `colorClassName`으로 색상을 적용하려면 `createStyledIcon`으로 래핑합니다.
+
+```tsx
+import { ArrowRightIcon } from '@src/shared/ui/Icon';
+
+// colorClassName으로 색상 적용 (width/height도 지원)
+<ArrowRightIcon colorClassName="accent-gray-6" width={24} height={24} />
+
+// color prop도 그대로 사용 가능
+<ArrowRightIcon color="#999999" width={24} height={24} />
+```
+
+**새 아이콘 추가 시:**
+
+```tsx
+// src/shared/ui/Icon/icons.ts에 추가
+import NewIconSvg from '@assets/icons/ic_new.svg';
+import { createStyledIcon } from './createStyledIcon';
+
+export const NewIcon = createStyledIcon(NewIconSvg);
 ```
 
 ---

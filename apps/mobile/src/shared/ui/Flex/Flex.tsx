@@ -1,4 +1,4 @@
-import { clsx } from 'clsx';
+import { cn } from '@src/shared/utils';
 import { View } from 'react-native';
 import type { FlexProps } from './Flex.types';
 import { flexVariants } from './Flex.variants';
@@ -30,27 +30,27 @@ export function Flex({
   ...props
 }: FlexProps) {
   const spacingStyle = {
-    flex,
-    gap,
-    padding: p,
-    paddingHorizontal: px,
-    paddingVertical: py,
-    paddingTop: pt,
-    paddingBottom: pb,
-    paddingLeft: pl,
-    paddingRight: pr,
-    margin: m,
-    marginHorizontal: mx,
-    marginVertical: my,
-    marginTop: mt,
-    marginBottom: mb,
-    marginLeft: ml,
-    marginRight: mr,
+    ...(flex !== undefined && { flex }),
+    ...(gap !== undefined && { gap }),
+    ...(p !== undefined && { padding: p }),
+    ...(px !== undefined && { paddingHorizontal: px }),
+    ...(py !== undefined && { paddingVertical: py }),
+    ...(pt !== undefined && { paddingTop: pt }),
+    ...(pb !== undefined && { paddingBottom: pb }),
+    ...(pl !== undefined && { paddingLeft: pl }),
+    ...(pr !== undefined && { paddingRight: pr }),
+    ...(m !== undefined && { margin: m }),
+    ...(mx !== undefined && { marginHorizontal: mx }),
+    ...(my !== undefined && { marginVertical: my }),
+    ...(mt !== undefined && { marginTop: mt }),
+    ...(mb !== undefined && { marginBottom: mb }),
+    ...(ml !== undefined && { marginLeft: ml }),
+    ...(mr !== undefined && { marginRight: mr }),
   };
 
   return (
     <View
-      className={clsx(flexVariants({ direction, wrap, justify, align }), className)}
+      className={cn(flexVariants({ direction, wrap, justify, align }), className)}
       style={[spacingStyle, style]}
       {...props}
     >

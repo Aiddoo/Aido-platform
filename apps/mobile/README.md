@@ -239,13 +239,51 @@ export default function RootLayout() {
 `.env` 파일 (gitignore됨):
 
 ```env
+# 개발 기본
 EXPO_PUBLIC_API_URL=http://localhost:8080
+
+# Android 실기기에서 개발 서버 접근 (PC IP로 교체)
+# EXPO_PUBLIC_LOCAL_IP=192.168.0.10
+
+# 프로덕션/프리뷰 예시
+# EXPO_PUBLIC_API_URL=https://api.aido.kr
 ```
 
 **접두사 규칙:**
 
 - `EXPO_PUBLIC_*`: 클라이언트에서 접근 가능
 - 그 외: 빌드 시에만 사용
+
+### API 접근 설정
+
+개발 환경에서 플랫폼별로 자동으로 올바른 localhost URL을 사용합니다:
+
+| 플랫폼 | API URL | 설명 |
+| --- | --- | --- |
+| iOS 시뮬레이터 | `http://localhost:8080` | 호스트 머신의 localhost 직접 접근 |
+| Android 에뮬레이터 | `http://10.0.2.2:8080` | 에뮬레이터에서 자동 매핑 |
+| Android 실기기 | `http://192.168.x.x:8080` | `EXPO_PUBLIC_LOCAL_IP` 필요 |
+| iOS 실기기 | `http://192.168.x.x:8080` | 동일 네트워크 IP 직접 입력 |
+
+**실제 기기 테스트 시:**
+
+```bash
+# 1. 개발 머신의 로컬 IP 확인
+ifconfig | grep "inet " | grep -v 127.0.0.1
+# 예: 192.168.0.10
+
+# 2. .env 파일에 설정
+echo "EXPO_PUBLIC_LOCAL_IP=192.168.0.10" > .env
+
+# 3. API 서버가 0.0.0.0에서 실행 중인지 확인
+# 4. 기기와 개발 머신이 같은 WiFi에 연결되어 있는지 확인
+```
+
+**환경 변수 옵션:**
+
+- `EXPO_PUBLIC_API_URL`: Production/Preview API URL (설정 시 우선 사용, prod는 `https://api.aido.kr` 권장)
+- `EXPO_PUBLIC_DEV_PORT`: 개발 서버 포트 (기본값: 8080)
+- `EXPO_PUBLIC_LOCAL_IP`: 실제 기기용 로컬 네트워크 IP (Android/iOS 공통)
 
 ---
 

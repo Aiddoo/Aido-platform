@@ -1,8 +1,7 @@
-import ArrowRightIcon from '@assets/icons/ic_arrow_right.svg';
 import { clsx } from 'clsx';
 import { PressableFeedback } from 'heroui-native';
 import { View } from 'react-native';
-import { useCSSVariable } from 'uniwind';
+import { ArrowRightIcon } from '../Icon';
 import { Text } from '../Text/Text';
 import type { TextButtonProps } from './TextButton.types';
 import { textButtonVariants } from './TextButton.variants';
@@ -31,8 +30,6 @@ export function TextButton({
   className,
   ...props
 }: TextButtonProps) {
-  const gray6 = useCSSVariable('--gray-6');
-
   return (
     <PressableFeedback
       isDisabled={isDisabled}
@@ -47,7 +44,7 @@ export function TextButton({
           <ArrowRightIcon
             width={iconSizeMap[size]}
             height={iconSizeMap[size]}
-            color={String(gray6)}
+            colorClassName="accent-gray-6"
           />
         </View>
       )}
