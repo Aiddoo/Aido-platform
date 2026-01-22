@@ -1,7 +1,7 @@
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useResolveClassNames } from 'uniwind';
 
-export default function AppLayout() {
+const AppLayout = () => {
   const activeStyle = useResolveClassNames('text-main');
 
   return (
@@ -22,4 +22,6 @@ export default function AppLayout() {
       </NativeTabs.Trigger>
     </NativeTabs>
   );
-}
+};
+
+export default AppLayout;

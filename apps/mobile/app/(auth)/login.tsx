@@ -1,5 +1,5 @@
-import { useExchangeCode } from '@src/features/auth/presentation/hooks/use-exchange-code';
-import { useOpenKakaoLogin } from '@src/features/auth/presentation/hooks/use-open-kakao-login';
+import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
+import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
@@ -10,25 +10,53 @@ import { H1 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils';
-import { useRouter } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-export default function LoginScreen() {
-  const router = useRouter();
+type ButtonProps = ComponentProps<typeof Button>;
 
-  const openKakaoLogin = useOpenKakaoLogin();
-  const exchangeCode = useExchangeCode();
+interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
+  icon: ReactNode;
+  label: string;
+}
+
+const SocialLoginButton = ({ icon, label, className, ...props }: SocialLoginButtonProps) => {
+  return (
+    <Button {...props} className={className}>
+      <HStack align="center" gap={8}>
+        {icon}
+        <Text size="b4" weight="semibold" shade={9}>
+          {label}
+        </Text>
+      </HStack>
+    </Button>
+  );
+};
+
+interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
+  icon: ReactNode;
+}
+
+const SocialLoginIconButton = ({ icon, className, ...props }: SocialLoginIconButtonProps) => {
+  return (
+    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
+      {icon}
+    </Button>
+  );
+};
+
+const LoginScreen = () => {
+  const kakaoLoginMutation = useMutation(openKakaoLoginMutationOptions());
+  const exchangeCodeMutation = useMutation(exchangeCodeMutationOptions());
 
   const handleKakaoLogin = () => {
-    openKakaoLogin.mutate(undefined, {
+    kakaoLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
         if (code) {
-          exchangeCode.mutate(code, {
-            onSuccess: () => {
-              router.replace('/(app)/home');
-            },
-          });
+          // exchangeCode 성공 시 AuthProvider가 status를 'authenticated'로 변경하고
+          // Stack.Protected가 자동으로 (app) 그룹으로 라우팅 처리
+          exchangeCodeMutation.mutate({ code });
         }
       },
     });
@@ -55,7 +83,7 @@ export default function LoginScreen() {
               icon={<KakaoIcon width={20} height={20} />}
               label="카카오로 계속하기"
               onPress={handleKakaoLogin}
-              isLoading={openKakaoLogin.isPending || exchangeCode.isPending}
+              isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
               className="bg-[#FEE500]"
             />
 
@@ -105,36 +133,6 @@ export default function LoginScreen() {
       </VStack>
     </StyledSafeAreaView>
   );
-}
+};
 
-type ButtonProps = ComponentProps<typeof Button>;
-
-interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-  label: string;
-}
-
-function SocialLoginButton({ icon, label, className, ...props }: SocialLoginButtonProps) {
-  return (
-    <Button {...props} className={className}>
-      <HStack align="center" gap={8}>
-        {icon}
-        <Text size="b4" weight="semibold" shade={9}>
-          {label}
-        </Text>
-      </HStack>
-    </Button>
-  );
-}
-
-interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-}
-
-function SocialLoginIconButton({ icon, className, ...props }: SocialLoginIconButtonProps) {
-  return (
-    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
-      {icon}
-    </Button>
-  );
-}
+export default LoginScreen;

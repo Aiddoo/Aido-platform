@@ -1,10 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
-
-// =============================================================================
-// Types
-// =============================================================================
+import { match } from 'ts-pattern';
 
 type AppEnvironment = 'development' | 'preview' | 'production';
 
@@ -16,34 +13,21 @@ interface EnvironmentConfig {
   apiUrl: string;
 }
 
-// =============================================================================
-// Constants - Project
-// =============================================================================
-
 const EAS_PROJECT_ID = '185abed7-acd2-4d80-b652-cb3846e9806a';
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
 const VERSION = '1.0.0';
-
-// =============================================================================
-// Constants - App
-// =============================================================================
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
 const PACKAGE_NAME = 'com.aido.mobile';
 const SCHEME = 'aido';
 
-// =============================================================================
-// Constants - Branding
-// =============================================================================
-
 const BRAND_COLOR = '#FF6B43';
 
 // =============================================================================
 // Constants - Assets (images must exist in ./assets/images/)
 // =============================================================================
-
 const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
@@ -83,34 +67,38 @@ const restoreBase64File = ({
 };
 
 const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig => {
-  switch (environment) {
-    case 'production':
-      return {
-        name: APP_NAME,
-        bundleIdentifier: BUNDLE_IDENTIFIER,
-        packageName: PACKAGE_NAME,
-        scheme: SCHEME,
-        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com',
-      };
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-    case 'preview':
-      return {
-        name: `${APP_NAME} Preview`,
-        bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-        packageName: PACKAGE_NAME,
-        scheme: `${SCHEME}-preview`,
-        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://preview-api.example.com',
-      };
-    default:
-      return {
-        name: `${APP_NAME} Development`,
-        bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-        packageName: PACKAGE_NAME,
-        scheme: `${SCHEME}-dev`,
-        apiUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080',
-      };
-  }
+  return match(environment)
+    .with('production', () => ({
+      name: APP_NAME,
+      bundleIdentifier: BUNDLE_IDENTIFIER,
+      packageName: PACKAGE_NAME,
+      scheme: SCHEME,
+      apiUrl: apiUrl ?? 'https://api.aido.kr',
+    }))
+    .with('preview', () => ({
+      name: `${APP_NAME} Preview`,
+      bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
+      packageName: PACKAGE_NAME,
+      scheme: `${SCHEME}-preview`,
+      apiUrl: apiUrl ?? 'https://api.aido.kr',
+    }))
+    .with('development', () => ({
+      name: `${APP_NAME} Development`,
+      bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
+      packageName: PACKAGE_NAME,
+      scheme: `${SCHEME}-dev`,
+      apiUrl: apiUrl ?? 'http://localhost:8080',
+    }))
+    .exhaustive();
 };
+
+const resolveEnvironment = (rawEnv: string): AppEnvironment =>
+  match(rawEnv)
+    .with('production', () => 'production' as const)
+    .with('preview', () => 'preview' as const)
+    .otherwise(() => 'development' as const);
 
 // =============================================================================
 // Main Configuration
@@ -119,8 +107,7 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
 export default ({ config }: ConfigContext): ExpoConfig => {
   // Resolve environment
   const rawEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development';
-  const env: AppEnvironment =
-    rawEnv === 'production' || rawEnv === 'preview' ? rawEnv : 'development';
+  const env = resolveEnvironment(rawEnv);
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 

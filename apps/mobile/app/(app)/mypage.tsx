@@ -1,5 +1,5 @@
-import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
-import { ProfileCard } from '@src/features/auth/ui/ProfileCard';
+import { ProfileCard } from '@src/features/auth/presentations/components/ProfileCard';
+import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
@@ -9,21 +9,49 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useRouter } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
 import { Divider, PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-export default function MyPageScreen() {
-  const router = useRouter();
-  const logout = useLogout();
 
+interface SettingNavigationSectionProps {
+  children: ReactNode;
+}
+
+const SettingNavigationSection = ({ children }: SettingNavigationSectionProps) => {
+  return (
+    <VStack p={8} gap={8} className="bg-white rounded-2xl">
+      {children}
+    </VStack>
+  );
+};
+
+interface SettingNavigationItemProps {
+  label: string;
+  onPress: () => void;
+}
+
+const SettingNavigationItem = ({ label, onPress }: SettingNavigationItemProps) => {
+  return (
+    <PressableFeedback onPress={onPress} className="rounded-lg">
+      <PressableFeedback.Highlight className="rounded-xl" />
+      <ListRow
+        contents={<ListRow.Texts type="1RowTypeA" top={label} />}
+        right={<ArrowRightIcon colorClassName="accent-gray-6" />}
+        horizontalPadding="medium"
+      />
+    </PressableFeedback>
+  );
+};
+
+const MyPageScreen = () => {
+  const logout = useMutation(logoutMutationOptions());
+
+  // 로그아웃 성공 시 AuthProvider가 status를 'unauthenticated'로 변경하고
+  // Stack.Protected가 자동으로 (auth) 그룹으로 라우팅 처리
   const handleLogout = () => {
-    logout.mutate(undefined, {
-      onSuccess: () => {
-        router.replace('/(auth)/login');
-      },
-    });
+    logout.mutate();
   };
 
   const handleWithdraw = () => {
@@ -78,30 +106,6 @@ export default function MyPageScreen() {
       </ScrollView>
     </StyledSafeAreaView>
   );
-}
+};
 
-function SettingNavigationSection({ children }: { children: ReactNode }) {
-  return (
-    <VStack p={8} gap={8} className="bg-white rounded-2xl">
-      {children}
-    </VStack>
-  );
-}
-
-interface SettingNavigationItemProps {
-  label: string;
-  onPress: () => void;
-}
-
-function SettingNavigationItem({ label, onPress }: SettingNavigationItemProps) {
-  return (
-    <PressableFeedback onPress={onPress} className="rounded-lg">
-      <PressableFeedback.Highlight className="rounded-xl" />
-      <ListRow
-        contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-        right={<ArrowRightIcon colorClassName="accent-gray-6" />}
-        horizontalPadding="medium"
-      />
-    </PressableFeedback>
-  );
-}
+export default MyPageScreen;

@@ -1,22 +1,19 @@
-import { useGetMe } from '@src/features/auth/presentation/hooks/use-get-me';
-import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
+import { getMeQueryOptions } from '@src/features/auth/presentations/queries/get-me-query-options';
+import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
 import { Button } from '@src/shared/ui/Button/Button';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useRouter } from 'expo-router';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
-export default function HomeScreen() {
-  const router = useRouter();
-  const { data: user } = useGetMe();
-  const logout = useLogout();
+const HomeScreen = () => {
+  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const logout = useMutation(logoutMutationOptions());
 
+  // 로그아웃 성공 시 AuthProvider가 status를 'unauthenticated'로 변경하고
+  // Stack.Protected가 자동으로 (auth) 그룹으로 라우팅 처리
   const handleLogout = () => {
-    logout.mutate(undefined, {
-      onSuccess: () => {
-        router.replace('/(auth)/login');
-      },
-    });
+    logout.mutate();
   };
 
   if (!user) return null;
@@ -34,4 +31,6 @@ export default function HomeScreen() {
       </VStack>
     </StyledSafeAreaView>
   );
-}
+};
+
+export default HomeScreen;
