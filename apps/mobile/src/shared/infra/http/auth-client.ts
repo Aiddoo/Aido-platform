@@ -8,6 +8,8 @@ interface RefreshTokensResponse {
 }
 
 let kyInstance: KyInstance | null = null;
+let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
 
 export const createAuthClient = (storage: Storage): KyInstance => {
   if (kyInstance) {
@@ -31,13 +33,29 @@ export const createAuthClient = (storage: Storage): KyInstance => {
       ],
       afterResponse: [
         async (request, _options, response) => {
-          if (response.status === 401) {
-            const refreshToken = await storage.get<string>('refreshToken');
-            if (!refreshToken) {
-              return response;
-            }
+          if (response.status !== 401) {
+            return response;
+          }
 
+          // 이미 토큰 갱신 중이면 갱신 완료를 기다린 후 재시도
+          if (isRefreshing) {
+            await refreshPromise;
+            const newAccessToken = await storage.get<string>('accessToken');
+            if (newAccessToken) {
+              request.headers.set('Authorization', `Bearer ${newAccessToken}`);
+              return ky(request);
+            }
+            return response;
+          }
+
+          isRefreshing = true;
+          refreshPromise = (async () => {
             try {
+              const refreshToken = await storage.get<string>('refreshToken');
+              if (!refreshToken) {
+                throw new Error('No refresh token available');
+              }
+
               const refreshResponse = await ky.post('v1/auth/refresh', {
                 prefixUrl: ENV.API_URL,
                 headers: {
@@ -55,16 +73,25 @@ export const createAuthClient = (storage: Storage): KyInstance => {
 
               await storage.set('accessToken', tokens.accessToken);
               await storage.set('refreshToken', tokens.refreshToken);
-
-              // 원래 요청 재시도
-              request.headers.set('Authorization', `Bearer ${tokens.accessToken}`);
-              return ky(request);
             } catch {
-              // 리프레시 실패 시 토큰 삭제
               await storage.remove('accessToken');
               await storage.remove('refreshToken');
-              return response;
+              throw new Error('Token refresh failed');
             }
+          })();
+
+          try {
+            await refreshPromise;
+            const newAccessToken = await storage.get<string>('accessToken');
+            if (newAccessToken) {
+              request.headers.set('Authorization', `Bearer ${newAccessToken}`);
+              return ky(request);
+            }
+          } catch {
+            // 토큰 갱신 실패 - 원래 응답 반환
+          } finally {
+            isRefreshing = false;
+            refreshPromise = null;
           }
 
           return response;
@@ -78,4 +105,6 @@ export const createAuthClient = (storage: Storage): KyInstance => {
 
 export const resetAuthClient = () => {
   kyInstance = null;
+  isRefreshing = false;
+  refreshPromise = null;
 };

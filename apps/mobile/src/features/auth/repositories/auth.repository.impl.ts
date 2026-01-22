@@ -48,11 +48,9 @@ export class AuthRepositoryImpl implements AuthRepository {
   }
 
   async logout(): Promise<void> {
-    await Promise.all([
-      this._authHttpClient.post('v1/auth/logout'),
-      this._storage.remove('accessToken'),
-      this._storage.remove('refreshToken'),
-    ]);
+    // API 호출을 먼저 실행한 후 토큰 삭제 (순서 중요)
+    await this._authHttpClient.post('v1/auth/logout');
+    await Promise.all([this._storage.remove('accessToken'), this._storage.remove('refreshToken')]);
   }
 
   getKakaoAuthUrl(redirectUri: string): string {

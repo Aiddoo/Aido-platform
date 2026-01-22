@@ -10,6 +10,7 @@ export const logoutMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: () => authService.logout(),
+    // API 성공/실패 관계없이 항상 로그아웃 처리
     onSuccess: () => {
       setStatus('unauthenticated');
       queryClient.clear();

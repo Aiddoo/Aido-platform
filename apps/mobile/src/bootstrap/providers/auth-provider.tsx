@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = await storage.get<string>('accessToken');
-      console.log(token);
       setStatusState(token ? 'authenticated' : 'unauthenticated');
     };
     checkAuth();
