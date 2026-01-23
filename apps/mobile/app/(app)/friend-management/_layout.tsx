@@ -20,8 +20,8 @@ export default function FriendManagementLayout() {
         },
         headerTitleAlign: 'center',
         headerLeft: () => (
-          <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-            <Pressable onPress={() => router.back()} hitSlop={8} style={{ padding: 8 }}>
+          <View className="justify-center items-center">
+            <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
           </View>
