@@ -24,6 +24,22 @@ export class AuthService {
     return typeof code === 'string' ? code : null;
   };
 
+  openNaverLogin = async (): Promise<string | null> => {
+    const redirectUri = Linking.createURL('auth/naver');
+    const authUrl = this._authRepository.getNaverAuthUrl(redirectUri);
+
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+    if (result.type !== 'success') {
+      return null;
+    }
+
+    const { queryParams } = Linking.parse(result.url);
+    const code = queryParams?.code;
+
+    return typeof code === 'string' ? code : null;
+  };
+
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
     const dto = await this._authRepository.exchangeCode(request);
     return toAuthTokens(dto);

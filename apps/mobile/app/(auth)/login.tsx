@@ -1,5 +1,6 @@
 import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
 import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
+import { openNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/open-naver-login-mutation-options';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
@@ -14,48 +15,27 @@ import { useMutation } from '@tanstack/react-query';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-type ButtonProps = ComponentProps<typeof Button>;
-
-interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-  label: string;
-}
-
-const SocialLoginButton = ({ icon, label, className, ...props }: SocialLoginButtonProps) => {
-  return (
-    <Button {...props} className={className}>
-      <HStack align="center" gap={8}>
-        {icon}
-        <Text size="b4" weight="semibold" shade={9}>
-          {label}
-        </Text>
-      </HStack>
-    </Button>
-  );
-};
-
-interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-}
-
-const SocialLoginIconButton = ({ icon, className, ...props }: SocialLoginIconButtonProps) => {
-  return (
-    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
-      {icon}
-    </Button>
-  );
-};
-
 const LoginScreen = () => {
-  const kakaoLoginMutation = useMutation(openKakaoLoginMutationOptions());
   const exchangeCodeMutation = useMutation(exchangeCodeMutationOptions());
 
+  const kakaoLoginMutation = useMutation(openKakaoLoginMutationOptions());
   const handleKakaoLogin = () => {
     kakaoLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
         if (code) {
           // exchangeCode 성공 시 AuthProvider가 status를 'authenticated'로 변경하고
           // Stack.Protected가 자동으로 (app) 그룹으로 라우팅 처리
+          exchangeCodeMutation.mutate({ code });
+        }
+      },
+    });
+  };
+
+  const naverLoginMutation = useMutation(openNaverLoginMutationOptions());
+  const handleNaverLogin = () => {
+    naverLoginMutation.mutate(undefined, {
+      onSuccess: (code) => {
+        if (code) {
           exchangeCodeMutation.mutate({ code });
         }
       },
@@ -111,7 +91,8 @@ const LoginScreen = () => {
             />
             <SocialLoginIconButton
               icon={<NaverIcon width={16} height={16} />}
-              onPress={() => {}}
+              onPress={handleNaverLogin}
+              isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
               className="bg-[#03C75A]"
             />
           </HStack>
@@ -136,3 +117,35 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
+
+type ButtonProps = ComponentProps<typeof Button>;
+
+interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
+  icon: ReactNode;
+  label: string;
+}
+
+const SocialLoginButton = ({ icon, label, className, ...props }: SocialLoginButtonProps) => {
+  return (
+    <Button {...props} className={className}>
+      <HStack align="center" gap={8}>
+        {icon}
+        <Text size="b4" weight="semibold" shade={9}>
+          {label}
+        </Text>
+      </HStack>
+    </Button>
+  );
+};
+
+interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
+  icon: ReactNode;
+}
+
+const SocialLoginIconButton = ({ icon, className, ...props }: SocialLoginIconButtonProps) => {
+  return (
+    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
+      {icon}
+    </Button>
+  );
+};

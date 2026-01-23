@@ -56,4 +56,8 @@ export class AuthRepositoryImpl implements AuthRepository {
   getKakaoAuthUrl(redirectUri: string): string {
     return `${ENV.API_URL}/v1/auth/kakao/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
   }
+
+  getNaverAuthUrl(redirectUri: string): string {
+    return `${ENV.API_URL}/v1/auth/naver/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+  }
 }
