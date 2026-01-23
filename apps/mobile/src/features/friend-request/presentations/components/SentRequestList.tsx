@@ -6,6 +6,7 @@ import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import type { FriendRequestUser } from '../../models/friend-request.model';
@@ -83,7 +84,7 @@ const SentRequestListLoading = () => (
       <Skeleton className="w-16 h-4" />
     </View>
     <VStack>
-      {[1, 2, 3].map((i) => (
+      {times(3, (i) => (
         <HStack key={i} align="center" className="py-2" gap={12}>
           <Skeleton className="w-10 h-10 rounded-full" />
           <Skeleton className="flex-1 h-5" />
