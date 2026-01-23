@@ -1,5 +1,5 @@
-import { useLogout } from '@src/features/auth/presentation/hooks/use-logout';
-import { ProfileCard } from '@src/features/auth/ui/ProfileCard';
+import { ProfileCard } from '@src/features/auth/presentations/components/ProfileCard';
+import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
@@ -9,25 +9,21 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useRouter } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
 import { Divider, PressableFeedback } from 'heroui-native';
-import type { ReactNode } from 'react';
+import type { PropsWithChildren } from 'react';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
-export default function MyPageScreen() {
-  const router = useRouter();
-  const logout = useLogout();
+
+const MyPageScreen = () => {
+  const logout = useMutation(logoutMutationOptions());
 
   const handleLogout = () => {
-    logout.mutate(undefined, {
-      onSuccess: () => {
-        router.replace('/(auth)/login');
-      },
-    });
+    logout.mutate();
   };
 
   const handleWithdraw = () => {
-    console.log('탈퇴하기 클릭');
+    // TODO: 탈퇴하기 기능 구현
   };
 
   return (
@@ -46,22 +42,16 @@ export default function MyPageScreen() {
         <Spacing size={24} />
 
         <SettingNavigationSection>
-          <SettingNavigationItem label="친구 관리" onPress={() => console.log('친구 관리 클릭')} />
-          <SettingNavigationItem label="구독 관리" onPress={() => console.log('구독 관리 클릭')} />
+          <SettingNavigationItem label="친구 관리" onPress={() => {}} />
+          <SettingNavigationItem label="구독 관리" onPress={() => {}} />
         </SettingNavigationSection>
 
         <Spacing size={12} />
 
         <SettingNavigationSection>
-          <SettingNavigationItem label="공지사항" onPress={() => console.log('공지사항 클릭')} />
-          <SettingNavigationItem
-            label="의견 보내기"
-            onPress={() => console.log('의견 보내기 클릭')}
-          />
-          <SettingNavigationItem
-            label="약관 및 정책"
-            onPress={() => console.log('약관 및 정책 클릭')}
-          />
+          <SettingNavigationItem label="공지사항" onPress={() => {}} />
+          <SettingNavigationItem label="의견 보내기" onPress={() => {}} />
+          <SettingNavigationItem label="약관 및 정책" onPress={() => {}} />
         </SettingNavigationSection>
 
         <Spacing size={32} />
@@ -78,22 +68,24 @@ export default function MyPageScreen() {
       </ScrollView>
     </StyledSafeAreaView>
   );
-}
+};
 
-function SettingNavigationSection({ children }: { children: ReactNode }) {
+export default MyPageScreen;
+
+const SettingNavigationSection = ({ children }: PropsWithChildren) => {
   return (
     <VStack p={8} gap={8} className="bg-white rounded-2xl">
       {children}
     </VStack>
   );
-}
+};
 
 interface SettingNavigationItemProps {
   label: string;
   onPress: () => void;
 }
 
-function SettingNavigationItem({ label, onPress }: SettingNavigationItemProps) {
+const SettingNavigationItem = ({ label, onPress }: SettingNavigationItemProps) => {
   return (
     <PressableFeedback onPress={onPress} className="rounded-lg">
       <PressableFeedback.Highlight className="rounded-xl" />
@@ -104,4 +96,4 @@ function SettingNavigationItem({ label, onPress }: SettingNavigationItemProps) {
       />
     </PressableFeedback>
   );
-}
+};
