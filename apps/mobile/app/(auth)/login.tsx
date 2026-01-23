@@ -64,7 +64,7 @@ const LoginScreen = () => {
               label="카카오로 계속하기"
               onPress={handleKakaoLogin}
               isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-[#FEE500]"
+              className="bg-kakao"
             />
 
             <SocialLoginButton
@@ -93,7 +93,7 @@ const LoginScreen = () => {
               icon={<NaverIcon width={16} height={16} />}
               onPress={handleNaverLogin}
               isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-[#03C75A]"
+              className="bg-naver"
             />
           </HStack>
         </VStack>
