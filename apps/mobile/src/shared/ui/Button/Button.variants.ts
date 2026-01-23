@@ -55,9 +55,9 @@ export const buttonVariants = tv({
     { variant: 'fill', color: 'danger', className: 'bg-error' },
     { variant: 'fill', color: 'dark', className: 'bg-gray-9' },
     // weak variants
-    { variant: 'weak', color: 'primary', className: 'bg-main/20' },
-    { variant: 'weak', color: 'danger', className: 'bg-error/20' },
-    { variant: 'weak', color: 'dark', className: 'bg-gray-9/20' },
+    { variant: 'weak', color: 'primary', className: 'bg-main/5' },
+    { variant: 'weak', color: 'danger', className: 'bg-error/5' },
+    { variant: 'weak', color: 'dark', className: 'bg-gray-9/5' },
   ],
 
   defaultVariants: {

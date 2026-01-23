@@ -10,20 +10,24 @@ import { H3 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { Divider, PressableFeedback } from 'heroui-native';
 import type { PropsWithChildren } from 'react';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
+  const router = useRouter();
   const logout = useMutation(logoutMutationOptions());
 
+  // 로그아웃 성공 시 AuthProvider가 status를 'unauthenticated'로 변경하고
+  // Stack.Protected가 자동으로 (auth) 그룹으로 라우팅 처리
   const handleLogout = () => {
     logout.mutate();
   };
 
   const handleWithdraw = () => {
-    // TODO: 탈퇴하기 기능 구현
+    console.log('탈퇴하기 클릭');
   };
 
   return (
@@ -42,16 +46,25 @@ const MyPageScreen = () => {
         <Spacing size={24} />
 
         <SettingNavigationSection>
-          <SettingNavigationItem label="친구 관리" onPress={() => {}} />
-          <SettingNavigationItem label="구독 관리" onPress={() => {}} />
+          <SettingNavigationItem
+            label="친구 관리"
+            onPress={() => router.push('/friend-management')}
+          />
+          <SettingNavigationItem label="구독 관리" onPress={() => console.log('구독 관리 클릭')} />
         </SettingNavigationSection>
 
         <Spacing size={12} />
 
         <SettingNavigationSection>
-          <SettingNavigationItem label="공지사항" onPress={() => {}} />
-          <SettingNavigationItem label="의견 보내기" onPress={() => {}} />
-          <SettingNavigationItem label="약관 및 정책" onPress={() => {}} />
+          <SettingNavigationItem label="공지사항" onPress={() => console.log('공지사항 클릭')} />
+          <SettingNavigationItem
+            label="의견 보내기"
+            onPress={() => console.log('의견 보내기 클릭')}
+          />
+          <SettingNavigationItem
+            label="약관 및 정책"
+            onPress={() => console.log('약관 및 정책 클릭')}
+          />
         </SettingNavigationSection>
 
         <Spacing size={32} />
