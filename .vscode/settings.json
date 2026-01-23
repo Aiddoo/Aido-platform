@@ -1,25 +1,25 @@
 {
-  // ========== Biome 통합 설정 (nugudi/YOLOG 패턴) ==========
-
-  "[css][javascript][typescript][javascriptreact][typescriptreact][json][jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll.biome": "explicit",
-      "source.organizeImports.biome": "explicit",
-      "source.organizeImports": "never"
-    }
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
   },
 
-  // ESLint/Prettier 비활성화
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit"
+  },
+
+  "biome.enabled": true,
   "eslint.enable": false,
   "prettier.enable": false,
 
-  // TypeScript 설정
-  "typescript.suggest.autoImports": true,
-  "javascript.suggest.autoImports": true,
-
-  // 포맷 설정
-  "editor.formatOnPaste": true,
-  "editor.tabSize": 2
+  // Monorepo 최적화
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }

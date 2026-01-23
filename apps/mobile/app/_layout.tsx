@@ -1,5 +1,8 @@
-import { AppProviders } from '@src/core/di/app-providers';
-import { useAuthState } from '@src/core/providers/auth-state-provider';
+import { AuthProvider, useAuth } from '@src/bootstrap/providers/auth-provider';
+import { DIProvider } from '@src/bootstrap/providers/di-provider';
+import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
+import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
+import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,19 +12,20 @@ import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
-function LoadingScreen() {
+const FullScreenLoader = () => {
   return (
     <View className="flex-1 items-center justify-center bg-white">
       <ActivityIndicator size="large" />
     </View>
   );
-}
+};
 
-function RootLayoutNav() {
-  const { isAuthenticated, isInitialized } = useAuthState();
+const AuthGateLayout = () => {
+  const { status } = useAuth();
+  const isAuthenticated = status === 'authenticated';
 
-  if (!isInitialized) {
-    return <LoadingScreen />;
+  if (status === 'loading') {
+    return <FullScreenLoader />;
   }
 
   return (
@@ -39,9 +43,9 @@ function RootLayoutNav() {
       </Stack.Protected>
     </Stack>
   );
-}
+};
 
-export default function RootLayout() {
+const AppBootstrapLayout = () => {
   const [fontsLoaded] = useFonts({
     'WantedSans-Regular': require('@assets/fonts/WantedSans-Regular.ttf'),
     'WantedSans-Medium': require('@assets/fonts/WantedSans-Medium.ttf'),
@@ -51,15 +55,25 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
 
   return (
-    <AppProviders>
-      <RootLayoutNav />
-    </AppProviders>
+    <GestureHandlerProvider>
+      <HeroUIProvider>
+        <QueryProvider>
+          <DIProvider>
+            <AuthProvider>
+              <AuthGateLayout />
+            </AuthProvider>
+          </DIProvider>
+        </QueryProvider>
+      </HeroUIProvider>
+    </GestureHandlerProvider>
   );
-}
+};
+
+export default AppBootstrapLayout;

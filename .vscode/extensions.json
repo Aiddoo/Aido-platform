@@ -1,4 +1,16 @@
 {
-  "recommendations": ["biomejs.biome"],
-  "unwantedRecommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+  "recommendations": [
+    "biomejs.biome",
+    "prisma.prisma",
+    "apollographql.vscode-apollo",
+    "expo.vscode-expo-tools",
+    "vitest.explorer",
+    "yoavbls.pretty-ts-errors",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "christian-kohler.path-intellisense",
+    "mikestead.dotenv"
+  ],
+  "unwantedRecommendations": ["esbenp.prettier-vscode"]
 }
