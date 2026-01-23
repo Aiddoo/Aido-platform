@@ -48,7 +48,7 @@ describe('Button', () => {
 describe('buttonVariants', () => {
   test('fill variant는 solid 배경색, weak는 투명도 있는 배경색을 적용한다', () => {
     expect(buttonVariants({ variant: 'fill', color: 'primary' })).toContain('bg-main');
-    expect(buttonVariants({ variant: 'weak', color: 'primary' })).toContain('bg-main/20');
+    expect(buttonVariants({ variant: 'weak', color: 'primary' })).toContain('bg-main/5');
   });
 
   test('size에 따라 높이가 달라진다', () => {
