@@ -90,7 +90,7 @@ const LoginScreen = () => {
             <SocialLoginButton
               icon={<GoogleIcon width={20} height={20} />}
               label="Google로 계속하기"
-              onPress={() => console.log('google login')}
+              onPress={() => {}}
               className="bg-white border border-gray-200"
             />
           </VStack>
@@ -106,12 +106,12 @@ const LoginScreen = () => {
           <HStack justify="center" gap={16}>
             <SocialLoginIconButton
               icon={<AppleIcon width={20} height={20} />}
-              onPress={() => console.log('apple login')}
+              onPress={() => {}}
               className="bg-black"
             />
             <SocialLoginIconButton
               icon={<NaverIcon width={16} height={16} />}
-              onPress={() => console.log('naver login')}
+              onPress={() => {}}
               className="bg-[#03C75A]"
             />
           </HStack>
