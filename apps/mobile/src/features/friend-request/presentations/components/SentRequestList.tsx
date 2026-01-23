@@ -32,23 +32,27 @@ const SentRequestListComponent = () => {
         </View>
       }
       data={allRequests}
-      renderItem={({ item }: { item: FriendRequestUser }) => (
-        <FriendRequestRow
-          user={item}
-          actions={
-            <Button
-              variant="weak"
-              color="danger"
-              size="small"
-              display="inline"
-              onPress={() => cancelMutation.mutate(item.id)}
-              disabled={cancelMutation.isPending}
-            >
-              취소
-            </Button>
-          }
-        />
-      )}
+      renderItem={({ item }: { item: FriendRequestUser }) => {
+        const isProcessing = cancelMutation.isPending && cancelMutation.variables === item.id;
+
+        return (
+          <FriendRequestRow
+            user={item}
+            actions={
+              <Button
+                variant="weak"
+                color="danger"
+                size="small"
+                display="inline"
+                onPress={() => cancelMutation.mutate(item.id)}
+                disabled={isProcessing}
+              >
+                취소
+              </Button>
+            }
+          />
+        );
+      }}
       ListEmptyComponent={
         <View className="flex-1 justify-center items-center">
           <Result icon={<DocsIcon width={72} height={72} />} title="아직 보낸 요청이 없어요" />

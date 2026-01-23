@@ -34,35 +34,41 @@ const ReceivedRequestListComponent = () => {
         </View>
       }
       data={allRequests}
-      renderItem={({ item }: { item: FriendRequestUser }) => (
-        <FriendRequestRow
-          user={item}
-          actions={
-            <HStack gap={8}>
-              <Button
-                variant="weak"
-                color="dark"
-                size="small"
-                display="inline"
-                onPress={() => acceptMutation.mutate(item.id)}
-                disabled={acceptMutation.isPending || rejectMutation.isPending}
-              >
-                수락
-              </Button>
-              <Button
-                variant="weak"
-                color="danger"
-                size="small"
-                display="inline"
-                onPress={() => rejectMutation.mutate(item.id)}
-                disabled={acceptMutation.isPending || rejectMutation.isPending}
-              >
-                거절
-              </Button>
-            </HStack>
-          }
-        />
-      )}
+      renderItem={({ item }: { item: FriendRequestUser }) => {
+        const isProcessing =
+          (acceptMutation.isPending && acceptMutation.variables === item.id) ||
+          (rejectMutation.isPending && rejectMutation.variables === item.id);
+
+        return (
+          <FriendRequestRow
+            user={item}
+            actions={
+              <HStack gap={8}>
+                <Button
+                  variant="weak"
+                  color="dark"
+                  size="small"
+                  display="inline"
+                  onPress={() => acceptMutation.mutate(item.id)}
+                  disabled={isProcessing}
+                >
+                  수락
+                </Button>
+                <Button
+                  variant="weak"
+                  color="danger"
+                  size="small"
+                  display="inline"
+                  onPress={() => rejectMutation.mutate(item.id)}
+                  disabled={isProcessing}
+                >
+                  거절
+                </Button>
+              </HStack>
+            }
+          />
+        );
+      }}
       ListEmptyComponent={
         <View className="flex-1 justify-center items-center">
           <Result icon={<DocsIcon width={72} height={72} />} title="아직 받은 요청이 없어요" />
