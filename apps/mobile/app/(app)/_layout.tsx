@@ -1,27 +1,10 @@
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useResolveClassNames } from 'uniwind';
+import { Stack } from 'expo-router';
 
-const AppLayout = () => {
-  const activeStyle = useResolveClassNames('text-main');
-
+export default function AppLayout() {
   return (
-    <NativeTabs tintColor={activeStyle.color}>
-      <NativeTabs.Trigger name="home">
-        <Label>홈</Label>
-        <Icon sf="checkmark.circle.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="feed">
-        <Label>피드</Label>
-        <Icon sf="list.bullet" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="mypage">
-        <Label>마이</Label>
-        <Icon sf="person.fill" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="friend-management" />
+    </Stack>
   );
-};
-
-export default AppLayout;
+}

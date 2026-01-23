@@ -17,14 +17,14 @@ function ResultRoot({ icon, title, description, button, className }: ResultProps
         </>
       )}
 
-      <Text size="b2" weight="semibold" align="center">
+      <Text size="b3" shade={6} align="center">
         {title}
       </Text>
 
       {description && (
         <>
           <Spacing size={8} />
-          <Text size="b3" shade={6} align="center">
+          <Text size="b4" shade={5} align="center">
             {description}
           </Text>
         </>
