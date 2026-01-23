@@ -1,6 +1,8 @@
 import type { Storage } from '@src/core/ports/storage';
 import { AuthRepositoryImpl } from '@src/features/auth/repositories/auth.repository.impl';
 import { AuthService } from '@src/features/auth/services/auth.service';
+import { FriendRequestRepositoryImpl } from '@src/features/friend-request/repositories/friend-request.repository.impl';
+import { FriendRequestService } from '@src/features/friend-request/services/friend-request.service';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-http-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
@@ -14,6 +16,7 @@ export interface DIContainer {
 
   // Services
   authService: AuthService;
+  friendRequestService: FriendRequestService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -33,13 +36,16 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // repositories
     const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient, storage);
+    const friendRequestRepository = new FriendRequestRepositoryImpl(authHttpClient);
 
     // services
     const authService = new AuthService(authRepository);
+    const friendRequestService = new FriendRequestService(friendRequestRepository);
 
     return {
       storage,
       authService,
+      friendRequestService,
     };
   });
 
@@ -61,3 +67,4 @@ export const useStorage = () => useDI().storage;
 
 // Service Hooks
 export const useAuthService = () => useDI().authService;
+export const useFriendRequestService = () => useDI().friendRequestService;

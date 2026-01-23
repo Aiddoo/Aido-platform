@@ -291,6 +291,9 @@ importers:
       '@react-navigation/native':
         specifier: ^7.1.27
         version: 7.1.28(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@shopify/flash-list':
+        specifier: ^2.2.0
+        version: 2.2.0(@babel/runtime@7.28.6)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query':
         specifier: ^5.90.19
         version: 5.90.19(react@19.1.0)
@@ -2768,6 +2771,13 @@ packages:
 
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
+
+  '@shopify/flash-list@2.2.0':
+    resolution: {integrity: sha512-mL61IofcfBNRZ/qazIf+pghGULkcZUQ7EZNldH1JBbIjtDb25ADSiQrt62ZTnRz0H5+bPFEZUmN9+WChHzX8pw==}
+    peerDependencies:
+      '@babel/runtime': '*'
+      react: '*'
+      react-native: '*'
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -11202,6 +11212,12 @@ snapshots:
     optional: true
 
   '@scarf/scarf@1.4.0': {}
+
+  '@shopify/flash-list@2.2.0(@babel/runtime@7.28.6)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@babel/runtime': 7.28.6
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(react@19.1.0)
 
   '@sinclair/typebox@0.27.8': {}
 
