@@ -21,15 +21,17 @@ import type { FriendRepository, PaginationParams } from './friend.repository';
 export class FriendRepositoryImpl implements FriendRepository {
   constructor(private readonly _httpClient: HttpClient) {}
 
-  async getReceivedRequests(params?: PaginationParams): Promise<ReceivedRequestsResponse> {
+  private _buildPaginatedUrl(basePath: string, params?: PaginationParams): string {
     const searchParams = new URLSearchParams();
     if (params?.cursor) searchParams.set('cursor', params.cursor);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
 
     const queryString = searchParams.toString();
-    const url = queryString
-      ? `v1/follows/requests/received?${queryString}`
-      : 'v1/follows/requests/received';
+    return queryString ? `${basePath}?${queryString}` : basePath;
+  }
+
+  async getReceivedRequests(params?: PaginationParams): Promise<ReceivedRequestsResponse> {
+    const url = this._buildPaginatedUrl('v1/follows/requests/received', params);
 
     const { data } = await this._httpClient.get<ReceivedRequestsResponse>(url);
 
@@ -43,14 +45,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async getSentRequests(params?: PaginationParams): Promise<SentRequestsResponse> {
-    const searchParams = new URLSearchParams();
-    if (params?.cursor) searchParams.set('cursor', params.cursor);
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-
-    const queryString = searchParams.toString();
-    const url = queryString
-      ? `v1/follows/requests/sent?${queryString}`
-      : 'v1/follows/requests/sent';
+    const url = this._buildPaginatedUrl('v1/follows/requests/sent', params);
 
     const { data } = await this._httpClient.get<SentRequestsResponse>(url);
 
@@ -106,12 +101,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async getFriends(params?: PaginationParams): Promise<FriendsListResponse> {
-    const searchParams = new URLSearchParams();
-    if (params?.cursor) searchParams.set('cursor', params.cursor);
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-
-    const queryString = searchParams.toString();
-    const url = queryString ? `v1/follows/friends?${queryString}` : 'v1/follows/friends';
+    const url = this._buildPaginatedUrl('v1/follows/friends', params);
 
     const { data } = await this._httpClient.get<FriendsListResponse>(url);
 
