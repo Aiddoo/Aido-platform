@@ -56,6 +56,7 @@ export interface GetFollowsParams {
 	userId: string;
 	cursor?: string;
 	size?: number;
+	search?: string;
 }
 
 // =============================================================================
@@ -70,4 +71,5 @@ export interface FindFollowsParams {
 	status?: FollowStatus;
 	cursor?: string;
 	size: number;
+	search?: string;
 }

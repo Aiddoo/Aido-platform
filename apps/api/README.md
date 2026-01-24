@@ -40,8 +40,14 @@ src/
 ├── database/               # Prisma 서비스 모듈
 ├── generated/              # Prisma Client 생성 파일
 ├── modules/                # 기능 모듈
-│   ├── health/            # 헬스체크 엔드포인트
-│   └── todo/              # Todo CRUD
+│   ├── auth/              # 인증 (JWT, OAuth)
+│   ├── todo/              # Todo CRUD
+│   ├── ai/                # AI 자연어 파싱 (Google Gemini)
+│   ├── follow/            # 팔로우 관계
+│   ├── cheer/             # 응원 메시지
+│   ├── nudge/             # 찌르기 알림
+│   ├── daily-completion/  # 일일 완료 통계
+│   └── health/            # 헬스체크 엔드포인트
 ├── app.module.ts          # 루트 모듈
 ├── app.controller.ts      # 루트 컨트롤러
 ├── app.service.ts         # 루트 서비스
@@ -65,7 +71,7 @@ src/
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 핵심 모듈
+### 공통 모듈
 
 | 모듈 | 설명 |
 |------|------|
@@ -75,6 +81,19 @@ src/
 | `ResponseModule` | 응답 표준화 인터셉터 |
 | `PaginationModule` | 커서/오프셋 페이지네이션 |
 | `ThrottlerModule` | Rate Limiting (100 req/min) |
+
+### 도메인 모듈
+
+| 모듈 | 설명 |
+|------|------|
+| `AuthModule` | 인증 및 회원 관리 (JWT, OAuth) |
+| `TodoModule` | 할 일 CRUD |
+| `AIModule` | AI 자연어 → Todo 파싱 (Google Gemini) |
+| `FollowModule` | 팔로우 관계 관리 |
+| `CheerModule` | 응원 메시지 전송 |
+| `NudgeModule` | 찌르기 알림 |
+| `DailyCompletionModule` | 일일 완료 통계 |
+| `HealthModule` | 헬스체크 엔드포인트 |
 
 ## 시작하기
 
@@ -115,6 +134,9 @@ cp .env.example .env
 | `DATABASE_URL` | PostgreSQL 연결 URL | `postgresql://postgres:postgres@localhost:5432/aido_dev` |
 | `PORT` | 서버 포트 | `8080` |
 | `NODE_ENV` | 실행 환경 | `development` |
+| `JWT_SECRET` | JWT 서명 비밀키 | - |
+| `JWT_EXPIRES_IN` | 액세스 토큰 만료시간 | `15m` |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini API 키 (AI 모듈) | - |
 
 ## 🚀 Docker 가이드 (초보자용)
 
@@ -213,11 +235,15 @@ http://localhost:4000/api/docs
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/health` | 서버 상태 확인 |
-| GET | `/api/todos` | Todo 목록 조회 |
-| POST | `/api/todos` | Todo 생성 |
-| GET | `/api/todos/:id` | Todo 상세 조회 |
-| PATCH | `/api/todos/:id` | Todo 수정 |
-| DELETE | `/api/todos/:id` | Todo 삭제 |
+| POST | `/v1/auth/login` | 로그인 |
+| POST | `/v1/auth/register` | 회원가입 |
+| POST | `/v1/auth/refresh` | 토큰 갱신 |
+| GET | `/v1/todos` | Todo 목록 조회 |
+| POST | `/v1/todos` | Todo 생성 |
+| POST | `/v1/ai/parse-todo` | AI 자연어 → Todo 파싱 |
+| GET | `/v1/follows/followers` | 팔로워 목록 |
+| POST | `/v1/cheers` | 응원 보내기 |
+| POST | `/v1/nudges` | 찌르기 보내기 |
 
 ## 스크립트
 

@@ -14,8 +14,8 @@ import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 export const cheerSchema = z
   .object({
     id: z.number().int().positive().describe('응원 고유 ID'),
-    senderId: z.string().cuid().describe('보낸 사람 ID'),
-    receiverId: z.string().cuid().describe('받은 사람 ID'),
+    senderId: z.cuid().describe('보낸 사람 ID'),
+    receiverId: z.cuid().describe('받은 사람 ID'),
     message: z.string().max(200).nullable().describe('응원 메시지'),
     createdAt: datetimeSchema.describe('보낸 시각'),
     readAt: nullableDatetimeSchema.describe('확인 시각 (미확인 시 null)'),
@@ -41,7 +41,8 @@ export type Cheer = z.infer<typeof cheerSchema>;
 /** 응원 보낸 친구 정보 */
 export const cheerSenderSchema = z
   .object({
-    id: z.string().cuid().describe('친구 ID'),
+    id: z.cuid().describe('친구 ID'),
+    userTag: z.string().length(8).describe('친구 태그'),
     name: z.string().nullable().describe('친구 이름'),
     profileImage: z.string().nullable().describe('친구 프로필 이미지'),
   })
@@ -49,6 +50,7 @@ export const cheerSenderSchema = z
   .meta({
     example: {
       id: 'clz7x5p8k0005qz0z8z8z8z8z',
+      userTag: 'JOHN2026',
       name: '존',
       profileImage: 'https://example.com/profiles/john.jpg',
     },
@@ -72,6 +74,7 @@ export const cheerDetailSchema = cheerSchema
       readAt: null,
       sender: {
         id: 'clz7x5p8k0005qz0z8z8z8z8z',
+        userTag: 'JOHN2026',
         name: '존',
         profileImage: 'https://example.com/profiles/john.jpg',
       },
@@ -105,6 +108,7 @@ export const receivedCheersResponseSchema = z
           readAt: null,
           sender: {
             id: 'clz7x5p8k0005qz0z8z8z8z8z',
+            userTag: 'JOHN2026',
             name: '존',
             profileImage: 'https://example.com/profiles/john.jpg',
           },
@@ -138,6 +142,7 @@ export const sentCheersResponseSchema = z
           readAt: '2026-01-16T16:00:00.000Z',
           sender: {
             id: 'clz7x5p8k0001qz0z8z8z8z8z',
+            userTag: 'MATT2026',
             name: '매튜',
             profileImage: 'https://example.com/profiles/matthew.jpg',
           },
@@ -234,7 +239,7 @@ export type CheerLimitInfo = z.infer<typeof cheerLimitInfoSchema>;
 /** 특정 사용자에 대한 쿨다운 정보 */
 export const cheerCooldownInfoSchema = z
   .object({
-    userId: z.string().cuid().describe('대상 사용자 ID'),
+    userId: z.cuid().describe('대상 사용자 ID'),
     canCheer: z.boolean().describe('응원 가능 여부'),
     cooldownEndsAt: nullableDatetimeSchema.describe('쿨다운 종료 시각 (가능하면 null)'),
     remainingSeconds: z

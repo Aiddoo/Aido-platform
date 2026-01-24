@@ -166,6 +166,10 @@ export class CheerController {
 
 ### 📤 응답 구조
 - \`cheers\`: 응원 목록 (발신자 정보 포함)
+  - \`sender.id\`: 발신자 ID
+  - \`sender.userTag\`: 발신자 태그 (8자리)
+  - \`sender.name\`: 발신자 이름
+  - \`sender.profileImage\`: 발신자 프로필 이미지
 - \`totalCount\`: 조회된 응원 수
 - \`unreadCount\`: 읽지 않은 응원 수
 - \`hasMore\`: 다음 페이지 존재 여부
@@ -224,7 +228,11 @@ export class CheerController {
 | \`cursor\` | number | - | 페이지네이션 커서 (마지막 ID) |
 
 ### 📤 응답 구조
-- \`cheers\`: 응원 목록 (수신자 정보 포함)
+- \`cheers\`: 응원 목록 (발신자 정보 포함)
+  - \`sender.id\`: 발신자 ID
+  - \`sender.userTag\`: 발신자 태그 (8자리)
+  - \`sender.name\`: 발신자 이름
+  - \`sender.profileImage\`: 발신자 프로필 이미지
 - \`totalCount\`: 조회된 응원 수
 - \`hasMore\`: 다음 페이지 존재 여부
     `,

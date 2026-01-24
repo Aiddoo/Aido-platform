@@ -20,6 +20,7 @@ import type { ErrorDefinition } from './types';
  * - NOTIFICATION (1000-1099): 알림/푸시
  * - NUDGE   (1100-1199): 독촉
  * - CHEER   (1200-1299): 응원
+ * - AI      (1300-1399): AI 서비스
  */
 export const ErrorCode = {
   // =========================================================================
@@ -180,6 +181,13 @@ export const ErrorCode = {
   CHEER_1203: 'CHEER_1203',
   CHEER_1204: 'CHEER_1204',
   CHEER_1205: 'CHEER_1205',
+
+  // =========================================================================
+  // AI 서비스 (AI_1300-1399)
+  // =========================================================================
+  AI_0001: 'AI_0001',
+  AI_0002: 'AI_0002',
+  AI_0003: 'AI_0003',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -820,5 +828,27 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'Cheer를 찾을 수 없습니다.',
     description: '해당 ID의 Cheer가 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // AI 서비스 (AI_1300-1399)
+  // =========================================================================
+  [ErrorCode.AI_0001]: {
+    code: 'AI_0001',
+    message: 'AI 서비스를 사용할 수 없습니다.',
+    description: 'AI 서비스가 일시적으로 사용 불가능하거나 API 키가 설정되지 않았습니다.',
+    httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
+  },
+  [ErrorCode.AI_0002]: {
+    code: 'AI_0002',
+    message: '자연어 파싱에 실패했습니다.',
+    description: 'AI가 입력 텍스트를 투두 데이터로 변환하지 못했습니다.',
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  [ErrorCode.AI_0003]: {
+    code: 'AI_0003',
+    message: '일일 AI 사용 횟수를 초과했습니다.',
+    description: '무료 사용자는 하루 5회까지만 AI 기능을 사용할 수 있습니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
 };

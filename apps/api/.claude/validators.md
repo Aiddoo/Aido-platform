@@ -546,16 +546,64 @@ pnpm build
 
 ---
 
+## ⚠️ Zod 4.0 Deprecated 문법
+
+다음 문법은 Zod 4.0에서 deprecated되었습니다. 새 코드 작성 시 신규 문법을 사용하세요.
+
+### Deprecated → 신규 문법
+
+| Deprecated | 신규 문법 | 비고 |
+|------------|----------|------|
+| `z.string().email()` | `z.email()` | 이메일 검증 |
+| `z.string().url()` | `z.url()` | URL 검증 |
+| `z.string().cuid()` | `z.cuid()` | CUID 검증 |
+| `z.string().cuid2()` | `z.cuid2()` | CUID2 검증 |
+| `z.string().uuid()` | `z.uuid()` | UUID 검증 |
+| `z.string().ulid()` | `z.ulid()` | ULID 검증 |
+| `z.string().jwt()` | `z.jwt()` | JWT 검증 |
+| `z.string().base64()` | `z.base64()` | Base64 검증 |
+
+### 예시
+
+```typescript
+// ❌ Deprecated (Zod 4.0에서 경고 발생)
+const schema = z.object({
+  email: z.string().email(),
+  website: z.string().url(),
+  id: z.string().cuid(),
+  uuid: z.string().uuid(),
+});
+
+// ✅ 권장 (Zod 4.0+)
+const schema = z.object({
+  email: z.email(),
+  website: z.url(),
+  id: z.cuid(),
+  uuid: z.uuid(),
+});
+```
+
+### 마이그레이션 팁
+
+1. **점진적 마이그레이션**: 기존 코드는 당장 변경하지 않아도 동작합니다
+2. **새 파일 우선**: 새로 작성하는 스키마부터 신규 문법 사용
+3. **린트 규칙**: Biome에서 deprecated 경고 확인
+
+> **참고**: 현재 프로젝트에서 deprecated 문법 사용 중인 파일은 린트 시 경고가 표시됩니다.
+
+---
+
 ## 자주 사용하는 Zod 패턴
 
 | 패턴 | 코드 |
 |------|------|
-| CUID ID | `z.string().cuid('유효하지 않은 ID입니다')` |
+| CUID ID | `z.cuid('유효하지 않은 ID입니다')` |
 | ISO 날짜 | `z.string().datetime()` |
 | Date 변환 | `z.coerce.date()` |
 | Enum | `z.enum(['A', 'B'] as const)` |
 | 배열 | `z.array(z.string()).min(1)` |
-| URL | `z.string().url('올바른 URL이 아닙니다')` |
+| URL | `z.url('올바른 URL이 아닙니다')` |
+| Email | `z.email('올바른 이메일이 아닙니다')` |
 | 정규식 | `z.string().regex(/pattern/, '에러 메시지')` |
 
 ---

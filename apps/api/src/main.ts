@@ -6,7 +6,7 @@ import { Logger } from "nestjs-pino";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 
 import type { EnvConfig } from "@/common/config";
-import { SWAGGER_TAGS } from "@/common/swagger";
+import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "@/common/swagger";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -38,7 +38,42 @@ async function bootstrap() {
 	if (nodeEnv !== "production") {
 		const config = new DocumentBuilder()
 			.setTitle("Aido API")
-			.setDescription("AI TodoList 앱을 위한 백엔드 API")
+			.setDescription(`AI TodoList 앱을 위한 백엔드 API
+
+## 공통 응답 형식
+
+모든 API 응답은 \`ResponseTransformInterceptor\`에 의해 다음 구조로 래핑됩니다:
+
+### ✅ 성공 응답
+\`\`\`json
+{
+  "success": true,
+  "data": { ... },
+  "timestamp": "2024-01-15T09:00:00.000Z"
+}
+\`\`\`
+
+### ❌ 에러 응답
+\`\`\`json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "에러 메시지"
+  },
+  "timestamp": "2024-01-15T09:00:00.000Z"
+}
+\`\`\`
+
+## 인증
+- **Bearer Token 방식** (JWT)
+- 헤더: \`Authorization: Bearer {token}\`
+- 토큰 갱신: \`POST /v1/auth/refresh\`
+
+## API 버저닝
+- 모든 API는 \`/v1\` 프리픽스 사용
+- Health 체크만 예외: \`GET /health\`
+`)
 			.setVersion("1.0.0")
 			// 환경별 서버 URL
 			.addServer("http://localhost:8080", "Local Development")
@@ -50,16 +85,36 @@ async function bootstrap() {
 				bearerFormat: "JWT",
 				description: "JWT 토큰을 입력하세요",
 			})
-			// User APIs (클라이언트 앱용)
+			// 핵심 기능 APIs
 			.addTag(
 				SWAGGER_TAGS.USER_AUTH,
-				"회원가입, 로그인, 토큰 갱신, 로그아웃 API",
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH],
 			)
-			// Admin APIs (관리자/백오피스용) - 추후 확장 시 주석 해제
-			// .addTag(SWAGGER_TAGS.ADMIN_USERS, "사용자 관리 API")
-			// .addTag(SWAGGER_TAGS.ADMIN_SYSTEM, "시스템 설정 API")
-			// Common APIs
-			.addTag(SWAGGER_TAGS.COMMON_HEALTH, "서버 상태 및 헬스체크 API")
+			.addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
+			.addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
+			// 소셜 기능 APIs
+			.addTag(
+				SWAGGER_TAGS.FOLLOWS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS],
+			)
+			.addTag(
+				SWAGGER_TAGS.CHEERS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS],
+			)
+			.addTag(
+				SWAGGER_TAGS.NUDGES,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES],
+			)
+			// 통계 APIs
+			.addTag(
+				SWAGGER_TAGS.DAILY_COMPLETIONS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.DAILY_COMPLETIONS],
+			)
+			// 시스템 APIs
+			.addTag(
+				SWAGGER_TAGS.COMMON_HEALTH,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH],
+			)
 			.build();
 
 		const document = SwaggerModule.createDocument(app, config);

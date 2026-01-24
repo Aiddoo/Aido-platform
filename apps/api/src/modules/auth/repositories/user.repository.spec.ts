@@ -37,6 +37,8 @@ describe("UserRepository", () => {
 		subscriptionStatus: "FREE",
 		subscriptionExpiresAt: null,
 		revenueCatUserId: null,
+		aiUsageCount: 0,
+		aiUsageResetAt: new Date("2024-01-01"),
 		createdAt: new Date("2024-01-01"),
 		updatedAt: new Date("2024-01-01"),
 		lastLoginAt: null,

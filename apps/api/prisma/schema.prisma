@@ -37,6 +37,10 @@ model User {
   subscriptionExpiresAt DateTime?
   revenueCatUserId      String?            @unique @db.VarChar(255)
 
+  // AI 사용량 추적
+  aiUsageCount   Int      @default(0) // 일일 AI 사용 횟수
+  aiUsageResetAt DateTime @default(now()) // 마지막 리셋 시점 (일일 리셋 기준)
+
   // 타임스탬프
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

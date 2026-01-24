@@ -25,6 +25,7 @@ export class NudgeMapper {
 			readAt: nudge.readAt ?? null,
 			sender: {
 				id: nudge.sender.id,
+				userTag: nudge.sender.userTag,
 				name: nudge.sender.profile?.name ?? null,
 				profileImage: nudge.sender.profile?.profileImage ?? null,
 			},
