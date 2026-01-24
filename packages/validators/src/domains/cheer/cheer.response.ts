@@ -42,6 +42,7 @@ export type Cheer = z.infer<typeof cheerSchema>;
 export const cheerSenderSchema = z
   .object({
     id: z.string().cuid().describe('친구 ID'),
+    userTag: z.string().length(8).describe('친구 태그'),
     name: z.string().nullable().describe('친구 이름'),
     profileImage: z.string().nullable().describe('친구 프로필 이미지'),
   })
@@ -49,6 +50,7 @@ export const cheerSenderSchema = z
   .meta({
     example: {
       id: 'clz7x5p8k0005qz0z8z8z8z8z',
+      userTag: 'JOHN2026',
       name: '존',
       profileImage: 'https://example.com/profiles/john.jpg',
     },
@@ -72,6 +74,7 @@ export const cheerDetailSchema = cheerSchema
       readAt: null,
       sender: {
         id: 'clz7x5p8k0005qz0z8z8z8z8z',
+        userTag: 'JOHN2026',
         name: '존',
         profileImage: 'https://example.com/profiles/john.jpg',
       },
@@ -105,6 +108,7 @@ export const receivedCheersResponseSchema = z
           readAt: null,
           sender: {
             id: 'clz7x5p8k0005qz0z8z8z8z8z',
+            userTag: 'JOHN2026',
             name: '존',
             profileImage: 'https://example.com/profiles/john.jpg',
           },
@@ -138,6 +142,7 @@ export const sentCheersResponseSchema = z
           readAt: '2026-01-16T16:00:00.000Z',
           sender: {
             id: 'clz7x5p8k0001qz0z8z8z8z8z',
+            userTag: 'MATT2026',
             name: '매튜',
             profileImage: 'https://example.com/profiles/matthew.jpg',
           },
