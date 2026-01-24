@@ -9,7 +9,7 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
-import type { FriendRequestUser } from '../../models/friend-request.model';
+import type { FriendRequestUser } from '../../models/friend.model';
 import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
 import { getReceivedRequestsQueryOptions } from '../queries/get-received-requests-query-options';
 import { rejectRequestMutationOptions } from '../queries/reject-request-mutation-options';

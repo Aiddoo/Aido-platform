@@ -1,13 +1,13 @@
-import { useFriendRequestService } from '@src/bootstrap/providers/di-provider';
+import { useFriendService } from '@src/bootstrap/providers/di-provider';
 import { infiniteQueryOptions } from '@tanstack/react-query';
-import { FRIEND_REQUEST_QUERY_KEYS } from '../constants/friend-request-query-keys.constant';
+import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const getReceivedRequestsQueryOptions = () => {
-  const friendRequestService = useFriendRequestService();
+  const friendService = useFriendService();
 
   return infiniteQueryOptions({
-    queryKey: FRIEND_REQUEST_QUERY_KEYS.received(),
-    queryFn: ({ pageParam }) => friendRequestService.getReceivedRequests({ cursor: pageParam }),
+    queryKey: FRIEND_QUERY_KEYS.received(),
+    queryFn: ({ pageParam }) => friendService.getReceivedRequests({ cursor: pageParam }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore || lastPage.requests.length === 0) {
