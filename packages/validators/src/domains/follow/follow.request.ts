@@ -114,7 +114,7 @@ export const getFriendsQuerySchema = z
       .string()
       .max(50, '검색어는 50자 이내여야 합니다')
       .optional()
-      .describe('이름 또는 태그로 검색'),
+      .describe('태그로 검색'),
   })
   .describe('친구 목록 조회 쿼리');
 

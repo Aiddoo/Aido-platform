@@ -491,4 +491,114 @@ describe("Follow (e2e)", () => {
 			expect(secondPage.body.data.hasMore).toBe(false);
 		});
 	});
+
+	describe("친구 목록 검색 (userTag)", () => {
+		const searchUserEmail = "search-main@example.com";
+		const password = "Test1234!";
+
+		let searchUser: { accessToken: string; userId: string };
+		let searchFriend: { accessToken: string; userId: string };
+
+		beforeAll(async () => {
+			searchUser = await createVerifiedUser(searchUserEmail, password);
+
+			// 친구 생성
+			searchFriend = await createVerifiedUser(
+				"search-friend@example.com",
+				password,
+			);
+
+			// 상호 친구 요청 (자동 수락)
+			await request(app.getHttpServer())
+				.post(`/follows/${searchFriend.userId}`)
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(201);
+
+			await request(app.getHttpServer())
+				.post(`/follows/${searchUser.userId}`)
+				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
+				.expect(201);
+		});
+
+		it("userTag로 검색하면 해당 친구만 반환된다", async () => {
+			// 먼저 친구 목록을 조회하여 userTag를 가져옴
+			const allFriends = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+			expect(friendUserTag).toBeDefined();
+
+			// userTag의 일부로 검색
+			const searchTerm = friendUserTag.slice(0, 3);
+
+			const response = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.query({ search: searchTerm })
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(
+				response.body.data.friends.every((f: { userTag: string }) =>
+					f.userTag.toUpperCase().includes(searchTerm.toUpperCase()),
+				),
+			).toBe(true);
+		});
+
+		it("대소문자 구분 없이 검색된다", async () => {
+			// 친구 목록 조회
+			const allFriends = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+			expect(friendUserTag).toBeDefined();
+
+			// 소문자로 검색
+			const searchTerm = friendUserTag.slice(0, 3).toLowerCase();
+
+			const response = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.query({ search: searchTerm })
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			// 대소문자 무시하고 매칭됨
+			expect(response.body.data.friends.length).toBeGreaterThan(0);
+		});
+
+		it("검색 결과가 없으면 빈 배열 반환", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.query({ search: "ZZZZZ999" }) // 존재하지 않는 태그
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.friends).toHaveLength(0);
+		});
+
+		it("검색과 페이지네이션이 함께 동작한다", async () => {
+			// 친구 목록 조회
+			const allFriends = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+			const searchTerm = friendUserTag?.slice(0, 2) || "";
+
+			const response = await request(app.getHttpServer())
+				.get("/follows/friends")
+				.query({ search: searchTerm, limit: 5 })
+				.set("Authorization", `Bearer ${searchUser.accessToken}`)
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.friends.length).toBeLessThanOrEqual(5);
+		});
+	});
 });
