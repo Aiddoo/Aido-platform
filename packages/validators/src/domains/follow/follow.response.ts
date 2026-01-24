@@ -21,9 +21,9 @@ export type FollowStatus = z.infer<typeof followStatusSchema>;
 /** 팔로우 관계 스키마 */
 export const followSchema = z
   .object({
-    id: z.string().cuid().describe('팔로우 관계 고유 ID'),
-    followerId: z.string().cuid().describe('친구 요청을 보낸 사용자 ID'),
-    followingId: z.string().cuid().describe('친구 요청을 받은 사용자 ID'),
+    id: z.cuid().describe('팔로우 관계 고유 ID'),
+    followerId: z.cuid().describe('친구 요청을 보낸 사용자 ID'),
+    followingId: z.cuid().describe('친구 요청을 받은 사용자 ID'),
     status: followStatusSchema.describe('친구 요청 상태'),
     createdAt: z.string().datetime().describe('친구 요청 시각'),
     updatedAt: z.string().datetime().describe('마지막 업데이트 시각'),
@@ -49,7 +49,7 @@ export type Follow = z.infer<typeof followSchema>;
 /** 친구/팔로워 목록에서 보여줄 사용자 정보 */
 export const followUserSchema = z
   .object({
-    id: z.string().cuid().describe('사용자 ID'),
+    id: z.cuid().describe('사용자 ID'),
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
@@ -77,8 +77,8 @@ export type FollowUser = z.infer<typeof followUserSchema>;
 /** 친구 목록에서 보여줄 사용자 정보 (간소화) */
 export const friendUserSchema = z
   .object({
-    followId: z.string().cuid().describe('팔로우 관계 ID (페이지네이션 커서용)'),
-    id: z.string().cuid().describe('사용자 ID'),
+    followId: z.cuid().describe('팔로우 관계 ID (페이지네이션 커서용)'),
+    id: z.cuid().describe('사용자 ID'),
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
@@ -101,7 +101,7 @@ export type FriendUser = z.infer<typeof friendUserSchema>;
 /** 친구 요청 목록에서 보여줄 사용자 정보 */
 export const friendRequestUserSchema = z
   .object({
-    id: z.string().cuid().describe('사용자 ID'),
+    id: z.cuid().describe('사용자 ID'),
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),

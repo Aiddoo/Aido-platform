@@ -13,7 +13,7 @@ import { todoVisibilitySchema } from './todo.common';
 export const todoSchema = z
   .object({
     id: z.number().int().describe('할 일 고유 ID'),
-    userId: z.string().cuid().describe('작성자 ID'),
+    userId: z.cuid().describe('작성자 ID'),
     title: z.string().describe('할 일 제목'),
     content: z.string().nullable().describe('할 일 상세 내용'),
     color: z.string().nullable().describe('색상 코드 (HEX)'),

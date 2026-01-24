@@ -98,6 +98,8 @@ describe("NudgeService Integration Tests", () => {
 		subscriptionStatus,
 		subscriptionExpiresAt: null,
 		revenueCatUserId: null,
+		aiUsageCount: 0,
+		aiUsageResetAt: new Date(),
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		lastLoginAt: new Date(),

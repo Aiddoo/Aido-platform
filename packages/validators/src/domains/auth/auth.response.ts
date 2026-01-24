@@ -28,7 +28,7 @@ export const deviceTypeEnumSchema = z.enum(DEVICE_TYPES).describe('기기 타입
  */
 export const authTokensSchema = z
   .object({
-    userId: z.string().cuid().describe('사용자 고유 ID'),
+    userId: z.cuid().describe('사용자 고유 ID'),
     accessToken: z.string().describe('JWT 액세스 토큰'),
     refreshToken: z.string().describe('JWT 리프레시 토큰'),
     name: z.string().nullable().describe('사용자 이름'),
@@ -76,8 +76,8 @@ export type RefreshTokens = z.infer<typeof refreshTokensSchema>;
 
 export const userProfileSchema = z
   .object({
-    id: z.string().cuid().describe('사용자 고유 ID'),
-    email: z.string().email().describe('이메일 주소'),
+    id: z.cuid().describe('사용자 고유 ID'),
+    email: z.email().describe('이메일 주소'),
     emailVerifiedAt: nullableDatetimeSchema.describe('이메일 인증 완료 시각 (미인증 시 null)'),
     status: userStatusSchema,
     createdAt: datetimeSchema.describe('계정 생성 시각'),
@@ -104,9 +104,9 @@ export type UserProfile = z.infer<typeof userProfileSchema>;
  */
 export const currentUserPayloadSchema = z
   .object({
-    userId: z.string().cuid().describe('사용자 고유 ID'),
-    email: z.string().email().describe('이메일 주소'),
-    sessionId: z.string().cuid().describe('현재 세션 ID'),
+    userId: z.cuid().describe('사용자 고유 ID'),
+    email: z.email().describe('이메일 주소'),
+    sessionId: z.cuid().describe('현재 세션 ID'),
   })
   .describe('JWT 페이로드 사용자 정보')
   .meta({
@@ -144,9 +144,9 @@ export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export const currentUserSchema = z
   .object({
     // === 기본 정보 ===
-    userId: z.string().cuid().describe('사용자 고유 ID'),
-    email: z.string().email().describe('이메일 주소'),
-    sessionId: z.string().cuid().describe('현재 세션 ID'),
+    userId: z.cuid().describe('사용자 고유 ID'),
+    email: z.email().describe('이메일 주소'),
+    sessionId: z.cuid().describe('현재 세션 ID'),
 
     // === 사용자 태그 (검색용) ===
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자, 해시태그 검색용)'),
@@ -191,7 +191,7 @@ export type CurrentUser = z.infer<typeof currentUserSchema>;
 
 export const sessionInfoSchema = z
   .object({
-    id: z.string().cuid().describe('세션 고유 ID'),
+    id: z.cuid().describe('세션 고유 ID'),
     deviceName: z.string().nullable().describe('기기 이름'),
     deviceType: deviceTypeEnumSchema.nullable().describe('기기 타입'),
     ipAddress: z.string().nullable().describe('접속 IP 주소'),
@@ -277,7 +277,7 @@ export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export const registerResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    email: z.string().email().describe('가입한 이메일 주소'),
+    email: z.email().describe('가입한 이메일 주소'),
   })
   .describe('회원가입 응답')
   .meta({

@@ -29,22 +29,19 @@ export const createTodoSchema = z
     content: z
       .string()
       .max(5000, '내용은 5000자 이하로 입력해주세요')
-      .optional()
+      .nullish()
       .describe('할 일 상세 내용'),
     color: z
       .string()
       .regex(hexColorRegex, 'HEX 색상 코드 형식이 아닙니다 (예: #FF5733)')
-      .optional()
+      .nullish()
       .describe('색상 코드 (HEX)'),
     startDate: z.iso.date('유효한 날짜 형식이 아닙니다').describe('시작 날짜 (YYYY-MM-DD)'),
-    endDate: z.iso
-      .date('유효한 날짜 형식이 아닙니다')
-      .optional()
-      .describe('종료 날짜 (YYYY-MM-DD)'),
+    endDate: z.iso.date('유효한 날짜 형식이 아닙니다').nullish().describe('종료 날짜 (YYYY-MM-DD)'),
     scheduledTime: z
       .string()
       .regex(timeRegex, '시간 형식이 올바르지 않습니다 (HH:mm)')
-      .optional()
+      .nullish()
       .describe('예정 시간 (HH:mm)'),
     isAllDay: z.boolean().default(true).describe('종일 여부'),
     visibility: todoVisibilitySchema

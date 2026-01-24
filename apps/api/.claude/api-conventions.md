@@ -444,6 +444,121 @@ export class AuthModule {}
 
 ---
 
+## AI 모듈 패턴
+
+### AI 파싱 → Todo 생성 플로우
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    클라이언트 통합 플로우                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. 사용자 입력        2. AI 파싱           3. 사용자 확인       │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
+│  │ "내일 3시에  │ ───► │ POST        │ ───► │ 파싱 결과   │     │
+│  │  회의하기"   │      │ /v1/ai/     │      │ 미리보기    │     │
+│  └─────────────┘      │ parse-todo  │      └─────────────┘     │
+│                       └─────────────┘             │             │
+│                                                   ▼             │
+│  4. Todo 생성         5. 저장 완료                              │
+│  ┌─────────────┐      ┌─────────────┐                          │
+│  │ POST        │ ───► │ Todo 생성   │                          │
+│  │ /v1/todos   │      │ 완료!       │                          │
+│  └─────────────┘      └─────────────┘                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 패턴 선택 이유
+
+| 이유 | 설명 |
+|------|------|
+| **사용자 확인** | AI 파싱 결과를 사용자가 검토/수정 가능 |
+| **유연성** | 파싱만 사용하거나, 수동 생성도 가능 |
+| **오류 복구** | 파싱 실패 시 사용자가 직접 수정 가능 |
+| **업계 표준** | Gmail 스마트 컴포즈, Notion AI 등과 동일 |
+
+### 클라이언트 구현 예시
+
+```typescript
+// 1단계: AI 파싱
+const parseResult = await api.post('/v1/ai/parse-todo', { 
+  text: '내일 오후 3시 회의' 
+});
+
+// 2단계: 사용자 확인 UI 표시
+const confirmed = await showConfirmDialog(parseResult.data);
+
+// 3단계: 확인 후 Todo 생성
+if (confirmed) {
+  await api.post('/v1/todos', parseResult.data);
+}
+```
+
+### AI 사용량 제한
+
+| 플랜 | 일일 제한 |
+|------|----------|
+| FREE | 10회 |
+| PREMIUM | 100회 |
+
+---
+
+## 소셜 모듈 패턴
+
+### Follow 관계
+
+```typescript
+// 팔로우
+POST /v1/follows/:userId
+
+// 언팔로우
+DELETE /v1/follows/:userId
+
+// 내 팔로워 목록
+GET /v1/follows/followers
+
+// 내가 팔로우하는 목록
+GET /v1/follows/following
+```
+
+### Cheer/Nudge 전송
+
+```typescript
+// 응원 전송 (팔로잉 대상에게만)
+POST /v1/cheers
+{
+  "receiverId": "cuid",
+  "message": "화이팅!"  // Cheer만 메시지 포함
+}
+
+// 찌르기 전송 (팔로잉 대상에게만)
+POST /v1/nudges
+{
+  "receiverId": "cuid"
+}
+```
+
+### 권한 검증 패턴
+
+모든 소셜 기능은 팔로우 관계를 먼저 확인:
+
+```typescript
+// Service 내부 로직
+async sendCheer(senderId: string, receiverId: string) {
+  // 1. 팔로우 관계 확인
+  const isFollowing = await this.followRepository.isFollowing(senderId, receiverId);
+  if (!isFollowing) {
+    throw new ForbiddenException('팔로우한 사용자에게만 응원을 보낼 수 있습니다');
+  }
+  
+  // 2. 응원 생성
+  return this.cheerRepository.create({ senderId, receiverId, ... });
+}
+```
+
+---
+
 ## 응답 형식
 
 ### 성공 응답 (자동 래핑)

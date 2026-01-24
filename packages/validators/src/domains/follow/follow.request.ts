@@ -84,7 +84,7 @@ export type CancelFriendRequestParam = z.infer<typeof cancelFriendRequestParamSc
 /** 친구/요청 목록 조회 쿼리 */
 export const getFollowsQuerySchema = z
   .object({
-    cursor: z.string().cuid().optional().describe('페이지네이션 커서'),
+    cursor: z.cuid().optional().describe('페이지네이션 커서'),
     limit: z
       .string()
       .regex(/^\d+$/, '숫자만 입력 가능합니다')
@@ -101,7 +101,7 @@ export type GetFollowsQuery = z.infer<typeof getFollowsQuerySchema>;
 /** 친구 목록 조회 쿼리 (검색 지원) */
 export const getFriendsQuerySchema = z
   .object({
-    cursor: z.string().cuid().optional().describe('페이지네이션 커서'),
+    cursor: z.cuid().optional().describe('페이지네이션 커서'),
     limit: z
       .string()
       .regex(/^\d+$/, '숫자만 입력 가능합니다')

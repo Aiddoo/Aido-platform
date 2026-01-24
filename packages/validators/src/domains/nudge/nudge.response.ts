@@ -14,8 +14,8 @@ import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 export const nudgeSchema = z
   .object({
     id: z.number().int().positive().describe('콕 찌름 고유 ID'),
-    senderId: z.string().cuid().describe('찌른 사람 ID'),
-    receiverId: z.string().cuid().describe('찔린 사람 ID'),
+    senderId: z.cuid().describe('찌른 사람 ID'),
+    receiverId: z.cuid().describe('찔린 사람 ID'),
     todoId: z.number().int().positive().describe('관련 할 일 ID'),
     message: z.string().max(200).nullable().describe('응원 메시지'),
     createdAt: datetimeSchema.describe('찌른 시각'),
@@ -43,7 +43,7 @@ export type Nudge = z.infer<typeof nudgeSchema>;
 /** 콕 찌른 친구 정보 */
 export const nudgeSenderSchema = z
   .object({
-    id: z.string().cuid().describe('친구 ID'),
+    id: z.cuid().describe('친구 ID'),
     userTag: z.string().length(8).describe('친구 태그'),
     name: z.string().nullable().describe('친구 이름'),
     profileImage: z.string().nullable().describe('친구 프로필 이미지'),
