@@ -54,22 +54,3 @@ export interface FriendsResult {
   totalCount: number;
   hasMore: boolean;
 }
-
-/**
- * 친구 관련 비즈니스 규칙 (Policy)
- */
-export const FriendPolicy = {
-  /** 요청 취소 가능 여부 (본인이 보낸 요청만 취소 가능) */
-  canCancelRequest: (): boolean => true,
-
-  /** 친구 삭제 확인 필요 여부 (7일 이상 친구) */
-  requiresDeleteConfirmation: (friendsSince: Date): boolean => {
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    return Date.now() - friendsSince.getTime() > sevenDays;
-  },
-
-  /** 친구의 표시 이름 */
-  getDisplayName: (user: { name: string | null; userTag: string }): string => {
-    return user.name ?? user.userTag;
-  },
-};
