@@ -273,6 +273,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@aido/errors':
+        specifier: workspace:^
+        version: link:../../packages/errors
       '@aido/utils':
         specifier: workspace:*
         version: link:../../packages/utils

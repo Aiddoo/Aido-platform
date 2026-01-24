@@ -15,7 +15,8 @@ const ProfileCardRoot = () => {
   const handleCopyUserTag = async () => {
     await Clipboard.setStringAsync(user.userTag);
     toast.show({
-      label: '복사 완료!',
+      label: '태그 복사 완료',
+      description: '친구에게 공유해서 친구 요청을 받아보세요',
       actionLabel: '닫기',
       onActionPress: ({ hide }) => hide(),
     });
