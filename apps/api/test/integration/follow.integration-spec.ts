@@ -407,6 +407,44 @@ describe("FollowService Integration Tests", () => {
 			expect(result).toBeDefined();
 			expect(result.items).toHaveLength(1);
 		});
+
+		it("userTag로 검색 시 해당 조건이 쿼리에 포함된다", async () => {
+			// Given
+			const friends = [createMockFollow({ status: "ACCEPTED" })];
+			mockFollowDb.findMany.mockResolvedValue(friends);
+
+			// When
+			const result = await service.getFriends({
+				userId: mockUserId,
+				search: "TGT",
+			});
+
+			// Then
+			expect(result).toBeDefined();
+			expect(mockFollowDb.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						following: expect.objectContaining({
+							userTag: { contains: "TGT", mode: "insensitive" },
+						}),
+					}),
+				}),
+			);
+		});
+
+		it("검색 결과가 없으면 빈 배열을 반환한다", async () => {
+			// Given
+			mockFollowDb.findMany.mockResolvedValue([]);
+
+			// When
+			const result = await service.getFriends({
+				userId: mockUserId,
+				search: "NOTEXIST",
+			});
+
+			// Then
+			expect(result.items).toHaveLength(0);
+		});
 	});
 
 	// ============================================

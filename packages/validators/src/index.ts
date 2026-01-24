@@ -29,6 +29,7 @@ export { z } from 'zod';
 export * from './common';
 
 // Domain schemas
+export * from './domains/ai';
 export * from './domains/auth';
 export * from './domains/cheer';
 export * from './domains/daily-completion';

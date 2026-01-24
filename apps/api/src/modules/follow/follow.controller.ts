@@ -334,7 +334,7 @@ export class FollowController {
 |----------|------|--------|------|
 | \`cursor\` | string | - | 페이지네이션 커서 (CUID) |
 | \`limit\` | number | 20 | 페이지 크기 (1-50) |
-| \`search\` | string | - | 이름 또는 태그로 검색 |
+| \`search\` | string | - | 태그로 검색 |
 
 ### 📤 응답 구조
 \`\`\`json
@@ -358,6 +358,7 @@ export class FollowController {
 			userId: user.userId,
 			cursor: query.cursor,
 			size: query.limit,
+			search: query.search,
 		});
 
 		const totalCount = await this.followService.countFriends(user.userId);

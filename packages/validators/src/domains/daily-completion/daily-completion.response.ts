@@ -6,8 +6,8 @@ import { datetimeSchema } from '../../common/datetime';
  */
 export const dailyCompletionSchema = z
   .object({
-    id: z.string().cuid().describe('일일 완료 고유 ID'),
-    userId: z.string().cuid().describe('사용자 ID'),
+    id: z.cuid().describe('일일 완료 고유 ID'),
+    userId: z.cuid().describe('사용자 ID'),
     date: z.string().describe('완료 날짜 (YYYY-MM-DD)'),
     totalTodos: z.number().int().min(0).describe('해당 날짜 총 Todo 수'),
     completedTodos: z.number().int().min(0).describe('완료한 Todo 수'),

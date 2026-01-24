@@ -24,6 +24,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@aido/errors": "workspace:^",
     "@aido/utils": "workspace:*",
     "@aido/validators": "workspace:*",
     "@expo/vector-icons": "^15.0.3",

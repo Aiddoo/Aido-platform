@@ -1,6 +1,7 @@
 import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
-import { ReceivedRequestList } from '@src/features/friend-request/presentations/components/ReceivedRequestList';
-import { SentRequestList } from '@src/features/friend-request/presentations/components/SentRequestList';
+import { FriendList } from '@src/features/friend/presentations/components/FriendList';
+import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
+import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { Text } from '@src/shared/ui/Text/Text';
 import { useNavigation } from 'expo-router';
@@ -10,8 +11,9 @@ import { View } from 'react-native';
 import { match } from 'ts-pattern';
 
 const TabView = {
-  sender: 'sender',
+  friends: 'friends',
   receiver: 'receiver',
+  sender: 'sender',
 } as const;
 
 type TabValue = (typeof TabView)[keyof typeof TabView];
@@ -30,7 +32,7 @@ const useView = (): UseViewReturn<TabValue> => {
   const route = useRoute<RouteProp<FriendManagementRouteParams, 'friend-management'>>();
   const navigation = useNavigation<NavigationProp<FriendManagementRouteParams>>();
 
-  const view = route.params?.view ?? TabView.sender;
+  const view = route.params?.view ?? TabView.friends;
 
   const setView = useCallback(
     (newView: TabValue) => {
@@ -53,10 +55,19 @@ export default function FriendManagementScreen() {
         variant="line"
         className="flex-1"
       >
-        <Tabs.List>
+        <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
-          <Tabs.Trigger value={TabView.receiver} className="flex-1 py-3">
+          <Tabs.Trigger value={TabView.friends} className="py-3">
+            {({ isSelected }) => (
+              <Tabs.Label>
+                <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+                  친구 목록
+                </Text>
+              </Tabs.Label>
+            )}
+          </Tabs.Trigger>
+          <Tabs.Trigger value={TabView.receiver} className="py-3">
             {({ isSelected }) => (
               <Tabs.Label>
                 <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
@@ -65,7 +76,7 @@ export default function FriendManagementScreen() {
               </Tabs.Label>
             )}
           </Tabs.Trigger>
-          <Tabs.Trigger value={TabView.sender} className="flex-1 py-3">
+          <Tabs.Trigger value={TabView.sender} className="py-3">
             {({ isSelected }) => (
               <Tabs.Label>
                 <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
@@ -76,6 +87,15 @@ export default function FriendManagementScreen() {
           </Tabs.Trigger>
         </Tabs.List>
         {match(view)
+          .with(TabView.friends, () => (
+            <Tabs.Content value={TabView.friends} className="flex-1">
+              <QueryErrorBoundary>
+                <Suspense fallback={<FriendList.Loading />}>
+                  <FriendList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </Tabs.Content>
+          ))
           .with(TabView.receiver, () => (
             <Tabs.Content value={TabView.receiver} className="flex-1">
               <QueryErrorBoundary>

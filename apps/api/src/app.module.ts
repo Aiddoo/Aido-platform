@@ -12,6 +12,7 @@ import {
 } from "@/common";
 import type { EnvConfig } from "@/common/config";
 import { DatabaseModule } from "@/database";
+import { AiModule } from "@/modules/ai";
 import { AuthModule } from "@/modules/auth/auth.module";
 import { CheerModule } from "@/modules/cheer/cheer.module";
 import { DailyCompletionModule } from "@/modules/daily-completion";
@@ -56,6 +57,7 @@ import { AppService } from "./app.service";
 		}),
 
 		// 4. Features
+		AiModule,
 		AuthModule,
 		CheerModule,
 		DailyCompletionModule,

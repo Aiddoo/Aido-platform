@@ -23,6 +23,17 @@ export const externalSchema = z.object({
 		.refine((val) => !val || val.startsWith("https://"), {
 			message: "SENTRY_DSN must be a valid HTTPS URL",
 		}),
+
+	// Google Generative AI (Gemini) 서비스 (선택)
+	GOOGLE_GENERATIVE_AI_API_KEY: z
+		.string()
+		.optional()
+		.refine((val) => !val || val.startsWith("AIza"), {
+			message: "GOOGLE_GENERATIVE_AI_API_KEY must start with 'AIza'",
+		}),
+
+	// AI 일일 사용 제한 (기본값: 5)
+	AI_DAILY_LIMIT: z.coerce.number().int().positive().default(5),
 });
 
 export type ExternalConfig = z.infer<typeof externalSchema>;

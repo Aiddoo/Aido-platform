@@ -6,7 +6,7 @@ import { z } from "zod";
 export const googleOAuthSchema = z.object({
 	GOOGLE_CLIENT_ID: z.string().optional(),
 	GOOGLE_CLIENT_SECRET: z.string().optional(),
-	GOOGLE_CALLBACK_URL: z.string().url().optional(),
+	GOOGLE_CALLBACK_URL: z.url().optional(),
 });
 
 /**
@@ -18,7 +18,7 @@ export const appleOAuthSchema = z.object({
 	APPLE_TEAM_ID: z.string().optional(),
 	APPLE_KEY_ID: z.string().optional(),
 	APPLE_PRIVATE_KEY: z.string().optional(),
-	APPLE_CALLBACK_URL: z.string().url().optional(),
+	APPLE_CALLBACK_URL: z.url().optional(),
 });
 
 /**
@@ -27,7 +27,7 @@ export const appleOAuthSchema = z.object({
 export const kakaoOAuthSchema = z.object({
 	KAKAO_CLIENT_ID: z.string().optional(),
 	KAKAO_CLIENT_SECRET: z.string().optional(),
-	KAKAO_CALLBACK_URL: z.string().url().optional(),
+	KAKAO_CALLBACK_URL: z.url().optional(),
 });
 
 /**
@@ -36,7 +36,7 @@ export const kakaoOAuthSchema = z.object({
 export const naverOAuthSchema = z.object({
 	NAVER_CLIENT_ID: z.string().optional(),
 	NAVER_CLIENT_SECRET: z.string().optional(),
-	NAVER_CALLBACK_URL: z.string().url().optional(),
+	NAVER_CALLBACK_URL: z.url().optional(),
 });
 
 /**

@@ -98,6 +98,8 @@ describe("NudgeService Integration Tests", () => {
 		subscriptionStatus,
 		subscriptionExpiresAt: null,
 		revenueCatUserId: null,
+		aiUsageCount: 0,
+		aiUsageResetAt: new Date(),
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		lastLoginAt: new Date(),
@@ -341,6 +343,19 @@ describe("NudgeService Integration Tests", () => {
 			expect(result.pagination).toBeDefined();
 			expect(mockNudgeDb.findMany).toHaveBeenCalled();
 		});
+
+		it("받은 콕 찌르기 목록에 sender.userTag가 포함되어야 함", async () => {
+			const mockNudges = [createMockNudge({ id: 1 })];
+			mockNudgeDb.findMany.mockResolvedValue(mockNudges);
+			mockNudgeDb.count.mockResolvedValue(1);
+
+			const result = await service.getReceivedNudges({
+				userId: mockReceiverId,
+			});
+
+			expect(result.items[0]?.sender.userTag).toBeDefined();
+			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
+		});
 	});
 
 	describe("보낸 콕 찌르기 목록 조회 통합 테스트", () => {
@@ -357,6 +372,17 @@ describe("NudgeService Integration Tests", () => {
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(mockNudgeDb.findMany).toHaveBeenCalled();
+		});
+
+		it("보낸 콕 찌르기 목록에 sender.userTag가 포함되어야 함", async () => {
+			const mockNudges = [createMockNudge({ id: 1 })];
+			mockNudgeDb.findMany.mockResolvedValue(mockNudges);
+			mockNudgeDb.count.mockResolvedValue(1);
+
+			const result = await service.getSentNudges({ userId: mockSenderId });
+
+			expect(result.items[0]?.sender.userTag).toBeDefined();
+			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 	});
 

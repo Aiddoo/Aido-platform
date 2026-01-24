@@ -189,3 +189,51 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
 		}),
 	);
 }
+
+/**
+ * 503 Service Unavailable 에러 데코레이터
+ *
+ * @example
+ * ```typescript
+ * @Post('parse')
+ * @ApiServiceUnavailableError('AI_SERVICE_UNAVAILABLE')
+ * parse(@Body() dto: ParseDto) { ... }
+ * ```
+ */
+export function ApiServiceUnavailableError(
+	errorCode: ErrorCodeType,
+): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Service unavailable";
+
+	return applyDecorators(
+		ApiResponse({
+			status: HttpStatus.SERVICE_UNAVAILABLE,
+			description: message,
+			schema: createErrorSchema(errorCode, message),
+		}),
+	);
+}
+
+/**
+ * 429 Too Many Requests 에러 데코레이터
+ *
+ * @example
+ * ```typescript
+ * @Post('parse')
+ * @ApiTooManyRequestsError('AI_USAGE_LIMIT_EXCEEDED')
+ * parse(@Body() dto: ParseDto) { ... }
+ * ```
+ */
+export function ApiTooManyRequestsError(
+	errorCode: ErrorCodeType,
+): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "Too many requests";
+
+	return applyDecorators(
+		ApiResponse({
+			status: HttpStatus.TOO_MANY_REQUESTS,
+			description: message,
+			schema: createErrorSchema(errorCode, message),
+		}),
+	);
+}

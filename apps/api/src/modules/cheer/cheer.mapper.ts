@@ -24,6 +24,7 @@ export class CheerMapper {
 			readAt: cheer.readAt ?? null,
 			sender: {
 				id: cheer.sender.id,
+				userTag: cheer.sender.userTag,
 				name: cheer.sender.profile?.name ?? null,
 				profileImage: cheer.sender.profile?.profileImage ?? null,
 			},

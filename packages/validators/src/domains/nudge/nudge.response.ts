@@ -14,8 +14,8 @@ import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 export const nudgeSchema = z
   .object({
     id: z.number().int().positive().describe('콕 찌름 고유 ID'),
-    senderId: z.string().cuid().describe('찌른 사람 ID'),
-    receiverId: z.string().cuid().describe('찔린 사람 ID'),
+    senderId: z.cuid().describe('찌른 사람 ID'),
+    receiverId: z.cuid().describe('찔린 사람 ID'),
     todoId: z.number().int().positive().describe('관련 할 일 ID'),
     message: z.string().max(200).nullable().describe('응원 메시지'),
     createdAt: datetimeSchema.describe('찌른 시각'),
@@ -43,7 +43,8 @@ export type Nudge = z.infer<typeof nudgeSchema>;
 /** 콕 찌른 친구 정보 */
 export const nudgeSenderSchema = z
   .object({
-    id: z.string().cuid().describe('친구 ID'),
+    id: z.cuid().describe('친구 ID'),
+    userTag: z.string().length(8).describe('친구 태그'),
     name: z.string().nullable().describe('친구 이름'),
     profileImage: z.string().nullable().describe('친구 프로필 이미지'),
   })
@@ -51,6 +52,7 @@ export const nudgeSenderSchema = z
   .meta({
     example: {
       id: 'clz7x5p8k0005qz0z8z8z8z8z',
+      userTag: 'JOHN2026',
       name: '존',
       profileImage: 'https://example.com/profiles/john.jpg',
     },
@@ -94,6 +96,7 @@ export const nudgeDetailSchema = nudgeSchema
       readAt: null,
       sender: {
         id: 'clz7x5p8k0005qz0z8z8z8z8z',
+        userTag: 'JOHN2026',
         name: '존',
         profileImage: 'https://example.com/profiles/john.jpg',
       },
@@ -133,6 +136,7 @@ export const receivedNudgesResponseSchema = z
           readAt: null,
           sender: {
             id: 'clz7x5p8k0005qz0z8z8z8z8z',
+            userTag: 'JOHN2026',
             name: '존',
             profileImage: 'https://example.com/profiles/john.jpg',
           },
@@ -172,6 +176,7 @@ export const sentNudgesResponseSchema = z
           readAt: '2026-01-16T16:00:00.000Z',
           sender: {
             id: 'clz7x5p8k0001qz0z8z8z8z8z',
+            userTag: 'MATT2026',
             name: '매튜',
             profileImage: 'https://example.com/profiles/matthew.jpg',
           },

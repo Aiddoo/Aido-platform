@@ -618,6 +618,32 @@ describe("FollowService", () => {
 				}),
 			);
 		});
+
+		it("search 파라미터가 Repository에 전달된다", async () => {
+			// Given
+			const params = { userId: mockUserId, search: "TEST" };
+
+			// When
+			await service.getFriends(params);
+
+			// Then
+			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+				expect.objectContaining({ search: "TEST" }),
+			);
+		});
+
+		it("search가 없으면 undefined로 전달된다", async () => {
+			// Given
+			const params = { userId: mockUserId };
+
+			// When
+			await service.getFriends(params);
+
+			// Then
+			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+				expect.objectContaining({ search: undefined }),
+			);
+		});
 	});
 
 	// ============================================

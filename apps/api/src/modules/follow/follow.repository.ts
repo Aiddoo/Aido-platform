@@ -169,7 +169,12 @@ export class FollowRepository {
 	async findMutualFriends(
 		params: FindFollowsParams,
 	): Promise<FollowWithUser[]> {
-		const { userId, cursor, size } = params;
+		const { userId, cursor, size, search } = params;
+
+		// userTag 검색 조건 (userTag로만 검색)
+		const searchCondition = search
+			? { userTag: { contains: search, mode: "insensitive" as const } }
+			: {};
 
 		// 내가 팔로우하고, 상대방도 나를 팔로우한 관계 (양방향 ACCEPTED)
 		return this.database.follow.findMany({
@@ -178,6 +183,7 @@ export class FollowRepository {
 				status: "ACCEPTED",
 				// 상대방도 나를 팔로우하고 있는지 서브쿼리
 				following: {
+					...searchCondition,
 					following: {
 						some: {
 							followerId: { not: userId }, // 상대방이

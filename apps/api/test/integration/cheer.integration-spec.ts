@@ -92,6 +92,8 @@ describe("CheerService Integration Tests", () => {
 		subscriptionStatus,
 		subscriptionExpiresAt: null,
 		revenueCatUserId: null,
+		aiUsageCount: 0,
+		aiUsageResetAt: new Date(),
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		lastLoginAt: new Date(),
@@ -325,6 +327,19 @@ describe("CheerService Integration Tests", () => {
 			expect(result.pagination).toBeDefined();
 			expect(mockCheerDb.findMany).toHaveBeenCalled();
 		});
+
+		it("받은 응원 목록에 sender.userTag가 포함되어야 함", async () => {
+			const mockCheers = [createMockCheer({ id: 1 })];
+			mockCheerDb.findMany.mockResolvedValue(mockCheers);
+			mockCheerDb.count.mockResolvedValue(1);
+
+			const result = await service.getReceivedCheers({
+				userId: mockReceiverId,
+			});
+
+			expect(result.items[0]?.sender.userTag).toBeDefined();
+			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
+		});
 	});
 
 	describe("보낸 응원 목록 조회 통합 테스트", () => {
@@ -341,6 +356,19 @@ describe("CheerService Integration Tests", () => {
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(mockCheerDb.findMany).toHaveBeenCalled();
+		});
+
+		it("보낸 응원 목록에 sender.userTag가 포함되어야 함", async () => {
+			const mockCheers = [createMockCheer({ id: 1 })];
+			mockCheerDb.findMany.mockResolvedValue(mockCheers);
+			mockCheerDb.count.mockResolvedValue(1);
+
+			const result = await service.getSentCheers({
+				userId: mockSenderId,
+			});
+
+			expect(result.items[0]?.sender.userTag).toBeDefined();
+			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 	});
 

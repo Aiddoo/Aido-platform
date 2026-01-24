@@ -343,6 +343,7 @@ export class FollowService {
 			userId: params.userId,
 			cursor,
 			size,
+			search: params.search,
 		};
 
 		const follows = await this.followRepository.findMutualFriends(repoParams);

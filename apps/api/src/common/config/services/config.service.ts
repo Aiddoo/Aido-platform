@@ -188,4 +188,16 @@ export class TypedConfigService {
 	get sentryDsn(): string | undefined {
 		return this.get("SENTRY_DSN");
 	}
+
+	// ============================================
+	// AI Config Helpers
+	// ============================================
+
+	get aiDailyLimit(): number {
+		return this.get("AI_DAILY_LIMIT");
+	}
+
+	get googleGenerativeAiApiKey(): string | undefined {
+		return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
+	}
 }

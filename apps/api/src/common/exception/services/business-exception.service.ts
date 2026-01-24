@@ -508,4 +508,19 @@ export class BusinessExceptions {
 	static cheerNotFound(cheerId: number) {
 		return new BusinessException(ErrorCode.CHEER_1205, { cheerId });
 	}
+
+	// =========================================================================
+	// AI 서비스 (AI)
+	// =========================================================================
+	static aiServiceUnavailable() {
+		return new BusinessException(ErrorCode.AI_0001);
+	}
+
+	static aiParseFailed(details?: string) {
+		return new BusinessException(ErrorCode.AI_0002, { details });
+	}
+
+	static aiUsageLimitExceeded(used: number, limit: number) {
+		return new BusinessException(ErrorCode.AI_0003, { used, limit });
+	}
 }
