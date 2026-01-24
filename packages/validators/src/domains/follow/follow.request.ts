@@ -110,11 +110,7 @@ export const getFriendsQuerySchema = z
       .optional()
       .default(20)
       .describe('한 페이지당 항목 수 (1-50, 기본값: 20)'),
-    search: z
-      .string()
-      .max(50, '검색어는 50자 이내여야 합니다')
-      .optional()
-      .describe('태그로 검색'),
+    search: z.string().max(50, '검색어는 50자 이내여야 합니다').optional().describe('태그로 검색'),
   })
   .describe('친구 목록 조회 쿼리');
 
