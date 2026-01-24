@@ -1,18 +1,38 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { H4 } from '@src/shared/ui/Text/Typography';
+import { TextButton } from '@src/shared/ui/TextButton/TextButton';
+import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Avatar, SkeletonGroup } from 'heroui-native';
+import * as Clipboard from 'expo-clipboard';
+import { Avatar, SkeletonGroup, useToast } from 'heroui-native';
 import { getMeQueryOptions } from '../queries/get-me-query-options';
 
 const ProfileCardRoot = () => {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
+
+  const { toast } = useToast();
+
+  const handleCopyUserTag = async () => {
+    await Clipboard.setStringAsync(user.userTag);
+    toast.show({
+      label: '복사 완료!',
+      actionLabel: '닫기',
+      onActionPress: ({ hide }) => hide(),
+    });
+  };
 
   return (
     <HStack gap={12} align="center">
       <Avatar size="lg" alt={`${user.name ?? '사용자'} 프로필`}>
         <Avatar.Image source={require('@assets/images/icon.png')} />
       </Avatar>
-      <H4>{user.name ?? '사용자'}</H4>
+
+      <VStack>
+        <H4>{user.name ?? '사용자'}</H4>
+        <TextButton size="medium" onPress={handleCopyUserTag}>
+          {user.userTag}
+        </TextButton>
+      </VStack>
     </HStack>
   );
 };
@@ -22,7 +42,10 @@ const ProfileCardLoading = () => {
     <SkeletonGroup isLoading isSkeletonOnly>
       <HStack gap={12} align="center">
         <SkeletonGroup.Item className="size-12 rounded-full" />
-        <SkeletonGroup.Item className="h-5 w-24 rounded-md" />
+        <VStack>
+          <SkeletonGroup.Item className="h-5 w-24 rounded-md" />
+          <SkeletonGroup.Item className="h-4 w-20 rounded-md" />
+        </VStack>
       </HStack>
     </SkeletonGroup>
   );
