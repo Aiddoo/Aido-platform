@@ -8,4 +8,6 @@ export interface AuthRepository {
   logout(): Promise<void>;
 
   getKakaoAuthUrl(redirectUri: string): string;
+
+  getNaverAuthUrl(redirectUri: string): string;
 }
