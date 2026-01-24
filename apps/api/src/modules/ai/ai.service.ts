@@ -11,6 +11,8 @@
 import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { APICallError } from "ai";
+import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
@@ -19,9 +21,6 @@ import {
 	type AiProvider,
 	type TokenUsage,
 } from "./providers/ai.provider";
-
-/** 일일 AI 사용 제한 (무료 유저) */
-const DAILY_LIMIT = 5;
 
 /** KST 시간대 오프셋 (밀리초) */
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -68,7 +67,13 @@ export class AiService {
 		@Inject(AI_PROVIDER)
 		private readonly aiProvider: AiProvider,
 		private readonly prisma: DatabaseService,
+		private readonly configService: TypedConfigService,
 	) {}
+
+	/** 환경변수에서 일일 사용 제한 가져오기 (기본값: 5) */
+	private get dailyLimit(): number {
+		return this.configService.aiDailyLimit;
+	}
 
 	/**
 	 * 자연어 텍스트를 투두 데이터로 파싱
@@ -123,15 +128,14 @@ export class AiService {
 		} catch (error) {
 			this.logger.error(`AI parsing failed: ${error}`);
 
-			// AI SDK 에러 분류
-			if (error instanceof Error) {
-				// API 키 문제 또는 네트워크 오류
-				if (
-					error.message.includes("API key") ||
-					error.message.includes("network")
-				) {
-					throw BusinessExceptions.aiServiceUnavailable();
-				}
+			// AI SDK 에러 타입 기반 분기 처리
+			if (error instanceof APICallError) {
+				// API 호출 실패 (네트워크, 인증, 서버 오류 등)
+				this.logger.error("AI API call failed", {
+					status: error.statusCode,
+					message: error.message,
+				});
+				throw BusinessExceptions.aiServiceUnavailable();
 			}
 
 			// 기타 에러는 파싱 실패로 처리
@@ -161,7 +165,7 @@ export class AiService {
 
 		return {
 			used: isNewDay ? 0 : user.aiUsageCount,
-			limit: DAILY_LIMIT,
+			limit: this.dailyLimit,
 			resetsAt: this.getNextResetTime(),
 		};
 	}

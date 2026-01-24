@@ -42,7 +42,7 @@ src/
 ├── modules/                # 기능 모듈
 │   ├── auth/              # 인증 (JWT, OAuth)
 │   ├── todo/              # Todo CRUD
-│   ├── ai/                # AI 자연어 파싱 (OpenAI)
+│   ├── ai/                # AI 자연어 파싱 (Google Gemini)
 │   ├── follow/            # 팔로우 관계
 │   ├── cheer/             # 응원 메시지
 │   ├── nudge/             # 찌르기 알림
@@ -88,7 +88,7 @@ src/
 |------|------|
 | `AuthModule` | 인증 및 회원 관리 (JWT, OAuth) |
 | `TodoModule` | 할 일 CRUD |
-| `AIModule` | AI 자연어 → Todo 파싱 (OpenAI) |
+| `AIModule` | AI 자연어 → Todo 파싱 (Google Gemini) |
 | `FollowModule` | 팔로우 관계 관리 |
 | `CheerModule` | 응원 메시지 전송 |
 | `NudgeModule` | 찌르기 알림 |
@@ -136,7 +136,7 @@ cp .env.example .env
 | `NODE_ENV` | 실행 환경 | `development` |
 | `JWT_SECRET` | JWT 서명 비밀키 | - |
 | `JWT_EXPIRES_IN` | 액세스 토큰 만료시간 | `15m` |
-| `OPENAI_API_KEY` | OpenAI API 키 (AI 모듈) | - |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini API 키 (AI 모듈) | - |
 
 ## 🚀 Docker 가이드 (초보자용)
 

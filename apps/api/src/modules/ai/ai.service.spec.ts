@@ -1,4 +1,5 @@
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
@@ -27,6 +28,7 @@ describe("AiService", () => {
 	let service: AiService;
 	let fakeAiProvider: FakeAiProvider;
 	let mockPrisma: MockPrisma;
+	let mockConfigService: { aiDailyLimit: number };
 
 	const mockUser: MockUser = {
 		id: "user-1",
@@ -42,12 +44,16 @@ describe("AiService", () => {
 				update: jest.fn(),
 			},
 		};
+		mockConfigService = {
+			aiDailyLimit: 5,
+		};
 
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				AiService,
 				{ provide: AI_PROVIDER, useValue: fakeAiProvider },
 				{ provide: DatabaseService, useValue: mockPrisma },
+				{ provide: TypedConfigService, useValue: mockConfigService },
 			],
 		}).compile();
 
