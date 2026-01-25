@@ -34,12 +34,12 @@ describe("Follow (e2e)", () => {
 
 	/**
 	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 * @returns { accessToken, userId }
+	 * @returns { accessToken, userId, userTag }
 	 */
 	async function createVerifiedUser(
 		email: string,
 		password: string,
-	): Promise<{ accessToken: string; userId: string }> {
+	): Promise<{ accessToken: string; userId: string; userTag: string }> {
 		// 등록
 		await request(app.getHttpServer())
 			.post("/auth/register")
@@ -62,6 +62,7 @@ describe("Follow (e2e)", () => {
 		return {
 			accessToken: response.body.data.accessToken,
 			userId: response.body.data.userId,
+			userTag: response.body.data.userTag,
 		};
 	}
 
@@ -102,18 +103,18 @@ describe("Follow (e2e)", () => {
 		const userBEmail = "user-b@example.com";
 		const password = "Test1234!";
 
-		let userA: { accessToken: string; userId: string };
-		let userB: { accessToken: string; userId: string };
+		let userA: { accessToken: string; userId: string; userTag: string };
+		let userB: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			userA = await createVerifiedUser(userAEmail, password);
 			userB = await createVerifiedUser(userBEmail, password);
 		});
 
-		describe("POST /follows/:userId - 친구 요청 보내기", () => {
+		describe("POST /follows/:userTag - 친구 요청 보내기", () => {
 			it("친구 요청을 성공적으로 보낸다", async () => {
 				const response = await request(app.getHttpServer())
-					.post(`/follows/${userB.userId}`)
+					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(201);
 
@@ -125,7 +126,7 @@ describe("Follow (e2e)", () => {
 
 			it("이미 요청을 보낸 경우 409 에러 반환", async () => {
 				const response = await request(app.getHttpServer())
-					.post(`/follows/${userB.userId}`)
+					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(409);
 
@@ -135,7 +136,7 @@ describe("Follow (e2e)", () => {
 
 			it("자기 자신에게 요청 시 400 에러 반환", async () => {
 				const response = await request(app.getHttpServer())
-					.post(`/follows/${userA.userId}`)
+					.post(`/follows/${userA.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(400);
 
@@ -144,10 +145,10 @@ describe("Follow (e2e)", () => {
 			});
 
 			it("존재하지 않는 사용자에게 요청 시 404 에러 반환", async () => {
-				// 유효한 CUID 형식이지만 존재하지 않는 사용자 ID
-				const nonExistentUserId = "clz7x5p8k0000qz0z8z8z8z8z";
+				// 유효한 userTag 형식이지만 존재하지 않는 사용자
+				const nonExistentUserTag = "ZZZZ9999";
 				const response = await request(app.getHttpServer())
-					.post(`/follows/${nonExistentUserId}`)
+					.post(`/follows/${nonExistentUserTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(404);
 
@@ -157,7 +158,7 @@ describe("Follow (e2e)", () => {
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
 				await request(app.getHttpServer())
-					.post(`/follows/${userB.userId}`)
+					.post(`/follows/${userB.userTag}`)
 					.expect(401);
 			});
 		});
@@ -221,8 +222,8 @@ describe("Follow (e2e)", () => {
 		const userDEmail = "user-d@example.com";
 		const password = "Test1234!";
 
-		let userC: { accessToken: string; userId: string };
-		let userD: { accessToken: string; userId: string };
+		let userC: { accessToken: string; userId: string; userTag: string };
+		let userD: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			userC = await createVerifiedUser(userCEmail, password);
@@ -232,7 +233,7 @@ describe("Follow (e2e)", () => {
 		it("친구 요청을 철회한다", async () => {
 			// 요청 보내기
 			await request(app.getHttpServer())
-				.post(`/follows/${userD.userId}`)
+				.post(`/follows/${userD.userTag}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(201);
 
@@ -262,8 +263,8 @@ describe("Follow (e2e)", () => {
 		const userFEmail = "user-f@example.com";
 		const password = "Test1234!";
 
-		let userE: { accessToken: string; userId: string };
-		let userF: { accessToken: string; userId: string };
+		let userE: { accessToken: string; userId: string; userTag: string };
+		let userF: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			userE = await createVerifiedUser(userEEmail, password);
@@ -273,7 +274,7 @@ describe("Follow (e2e)", () => {
 		it("친구 요청을 거절한다", async () => {
 			// E가 F에게 요청 보내기
 			await request(app.getHttpServer())
-				.post(`/follows/${userF.userId}`)
+				.post(`/follows/${userF.userTag}`)
 				.set("Authorization", `Bearer ${userE.accessToken}`)
 				.expect(201);
 
@@ -303,8 +304,8 @@ describe("Follow (e2e)", () => {
 		const userHEmail = "user-h@example.com";
 		const password = "Test1234!";
 
-		let userG: { accessToken: string; userId: string };
-		let userH: { accessToken: string; userId: string };
+		let userG: { accessToken: string; userId: string; userTag: string };
+		let userH: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			userG = await createVerifiedUser(userGEmail, password);
@@ -314,13 +315,13 @@ describe("Follow (e2e)", () => {
 		it("상대방이 먼저 요청한 경우 자동으로 친구가 된다", async () => {
 			// G가 H에게 요청 보내기
 			await request(app.getHttpServer())
-				.post(`/follows/${userH.userId}`)
+				.post(`/follows/${userH.userTag}`)
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(201);
 
 			// H가 G에게 요청 보내기 (자동 수락 예상)
 			const response = await request(app.getHttpServer())
-				.post(`/follows/${userG.userId}`)
+				.post(`/follows/${userG.userTag}`)
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(201);
 
@@ -356,8 +357,8 @@ describe("Follow (e2e)", () => {
 		const userJEmail = "user-j@example.com";
 		const password = "Test1234!";
 
-		let userI: { accessToken: string; userId: string };
-		let userJ: { accessToken: string; userId: string };
+		let userI: { accessToken: string; userId: string; userTag: string };
+		let userJ: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			userI = await createVerifiedUser(userIEmail, password);
@@ -377,12 +378,12 @@ describe("Follow (e2e)", () => {
 		it("친구가 되면 PUBLIC 투두만 조회 가능", async () => {
 			// 서로 친구가 되기 (I가 J에게, J가 I에게 요청 → 자동 수락)
 			await request(app.getHttpServer())
-				.post(`/follows/${userJ.userId}`)
+				.post(`/follows/${userJ.userTag}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(201);
 
 			await request(app.getHttpServer())
-				.post(`/follows/${userI.userId}`)
+				.post(`/follows/${userI.userTag}`)
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
@@ -426,8 +427,12 @@ describe("Follow (e2e)", () => {
 		const mainUserEmail = "main-user@example.com";
 		const password = "Test1234!";
 
-		let mainUser: { accessToken: string; userId: string };
-		const friendUsers: Array<{ accessToken: string; userId: string }> = [];
+		let mainUser: { accessToken: string; userId: string; userTag: string };
+		const friendUsers: Array<{
+			accessToken: string;
+			userId: string;
+			userTag: string;
+		}> = [];
 
 		beforeAll(async () => {
 			mainUser = await createVerifiedUser(mainUserEmail, password);
@@ -442,12 +447,12 @@ describe("Follow (e2e)", () => {
 
 				// 상호 친구 요청 (자동 수락)
 				await request(app.getHttpServer())
-					.post(`/follows/${friend.userId}`)
+					.post(`/follows/${friend.userTag}`)
 					.set("Authorization", `Bearer ${mainUser.accessToken}`)
 					.expect(201);
 
 				await request(app.getHttpServer())
-					.post(`/follows/${mainUser.userId}`)
+					.post(`/follows/${mainUser.userTag}`)
 					.set("Authorization", `Bearer ${friend.accessToken}`)
 					.expect(201);
 			}
@@ -496,8 +501,8 @@ describe("Follow (e2e)", () => {
 		const searchUserEmail = "search-main@example.com";
 		const password = "Test1234!";
 
-		let searchUser: { accessToken: string; userId: string };
-		let searchFriend: { accessToken: string; userId: string };
+		let searchUser: { accessToken: string; userId: string; userTag: string };
+		let searchFriend: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			searchUser = await createVerifiedUser(searchUserEmail, password);
@@ -510,12 +515,12 @@ describe("Follow (e2e)", () => {
 
 			// 상호 친구 요청 (자동 수락)
 			await request(app.getHttpServer())
-				.post(`/follows/${searchFriend.userId}`)
+				.post(`/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
 			await request(app.getHttpServer())
-				.post(`/follows/${searchUser.userId}`)
+				.post(`/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
 		});
