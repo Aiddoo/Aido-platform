@@ -556,6 +556,7 @@ describe("AuthService", () => {
 			expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					email: loginInput.email,
+					provider: "CREDENTIAL",
 					success: true,
 				}),
 				expect.any(Object),

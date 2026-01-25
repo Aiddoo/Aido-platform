@@ -677,6 +677,7 @@ export class OAuthService {
 			// 토큰 검증 실패 시 LoginAttempt 기록
 			await this._loginAttemptRepository.create({
 				email: "apple_unknown@social.aido.app",
+				provider: "APPLE",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -727,6 +728,7 @@ export class OAuthService {
 			// 토큰 검증 실패 시 LoginAttempt 기록
 			await this._loginAttemptRepository.create({
 				email: "google_unknown@social.aido.app",
+				provider: "GOOGLE",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -777,6 +779,7 @@ export class OAuthService {
 			// 토큰 검증 실패 시 LoginAttempt 기록
 			await this._loginAttemptRepository.create({
 				email: "kakao_unknown@social.aido.app",
+				provider: "KAKAO",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -827,6 +830,7 @@ export class OAuthService {
 			// 토큰 검증 실패 시 LoginAttempt 기록
 			await this._loginAttemptRepository.create({
 				email: "naver_unknown@social.aido.app",
+				provider: "NAVER",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -1091,6 +1095,21 @@ export class OAuthService {
 	/**
 	 * 소셜 사용자 생성 (트랜잭션)
 	 */
+	/**
+	 * 소셜 로그인으로 신규 사용자 생성
+	 *
+	 * 사용자 상태 결정 로직:
+	 * - emailVerified=true: ACTIVE 상태 (Apple, Google)
+	 * - emailVerified=false: PENDING_VERIFY 상태 (Kakao, Naver 일부)
+	 *
+	 * PENDING_VERIFY 상태의 소셜 사용자:
+	 * - 로그인 및 앱 사용은 가능 (_validateUserStatus에서 허용)
+	 * - 비밀번호 찾기 등 이메일 기반 기능은 제한
+	 * - 나중에 이메일 인증으로 ACTIVE 상태 전환 가능
+	 *
+	 * @param data 소셜 프로필 정보
+	 * @returns 생성된 사용자
+	 */
 	private async _createSocialUser(data: {
 		email: string;
 		provider: AccountProvider;
@@ -1102,6 +1121,8 @@ export class OAuthService {
 	}) {
 		return this._database.$transaction(async (tx) => {
 			// User 생성 (소셜 로그인은 이메일 인증 상태에 따라 상태 결정)
+			// - Apple/Google: emailVerified=true → ACTIVE
+			// - Kakao/Naver: emailVerified 불확실 → PENDING_VERIFY 가능
 			const user = await this._userRepository.create(
 				{
 					email: data.email,
@@ -1226,6 +1247,7 @@ export class OAuthService {
 			await this._loginAttemptRepository.create(
 				{
 					email,
+					provider: options.provider,
 					ipAddress: options.ip,
 					userAgent: options.userAgent,
 					success: true,
@@ -1252,6 +1274,24 @@ export class OAuthService {
 	/**
 	 * 사용자 상태 검증
 	 */
+	/**
+	 * 소셜 로그인 사용자 상태 검증
+	 *
+	 * PENDING_VERIFY 허용 이유:
+	 * - 소셜 로그인은 OAuth Provider가 사용자 신원을 이미 검증함
+	 * - Kakao/Naver의 경우 이메일이 미인증 상태일 수 있으나,
+	 *   소셜 계정 자체의 유효성은 Provider가 보장
+	 * - 이메일 인증은 비밀번호 찾기 등 이메일 기반 기능에만 필요
+	 *
+	 * Provider별 이메일 인증 상태:
+	 * - Apple: emailVerified=true 보장 → ACTIVE 상태로 생성
+	 * - Google: emailVerified=true 보장 → ACTIVE 상태로 생성
+	 * - Kakao: emailVerified 불확실 → PENDING_VERIFY 가능 (로그인 허용)
+	 * - Naver: emailVerified 불확실 → PENDING_VERIFY 가능 (로그인 허용)
+	 *
+	 * @see https://developers.kakao.com/docs/latest/ko/kakaologin/common
+	 * @see https://developers.naver.com/docs/login/api/api.md
+	 */
 	private _validateUserStatus(status: string): void {
 		switch (status) {
 			case "LOCKED":
@@ -1259,7 +1299,9 @@ export class OAuthService {
 			case "SUSPENDED":
 				throw BusinessExceptions.accountSuspended("Social login user");
 			case "PENDING_VERIFY":
-				// 소셜 로그인은 이메일 미인증 상태도 허용 (Apple은 이메일 인증됨)
+				// 의도된 동작: 소셜 로그인은 이메일 미인증 상태도 허용
+				// Apple/Google은 emailVerified=true로 ACTIVE 상태로 생성됨
+				// Kakao/Naver는 이메일 미인증 시 PENDING_VERIFY이지만 로그인 허용
 				break;
 			default:
 				break;

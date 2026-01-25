@@ -378,6 +378,20 @@ export class AuthService {
 	 * 4. 사용자 상태 확인
 	 * 5. 세션 생성 + JWT 토큰 발급
 	 */
+	/**
+	 * 이메일/비밀번호 로그인
+	 *
+	 * 로그인 플로우:
+	 * 1. Rate limiting 확인 (30분 내 5회 실패 시 잠금)
+	 * 2. 사용자 + Credential 계정 조회
+	 * 3. 비밀번호 검증
+	 * 4. 사용자 상태 확인 (PENDING_VERIFY는 이메일 인증 필요)
+	 * 5. 세션 생성 + JWT 토큰 발급
+	 *
+	 * @throws accountLocked - 로그인 시도 횟수 초과
+	 * @throws invalidCredentials - 이메일 또는 비밀번호 불일치
+	 * @throws emailNotVerified - 이메일 미인증 (소셜 로그인과 다르게 처리)
+	 */
 	async login(
 		input: LoginInput,
 		metadata?: RequestMetadata,
@@ -404,6 +418,7 @@ export class AuthService {
 			// 로그인 실패 기록 (사용자 없음)
 			await this.loginAttemptRepository.create({
 				email,
+				provider: "CREDENTIAL",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -420,6 +435,7 @@ export class AuthService {
 			// Credential 계정이 아닌 경우 (소셜 로그인 등)
 			await this.loginAttemptRepository.create({
 				email,
+				provider: "CREDENTIAL",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -436,6 +452,7 @@ export class AuthService {
 		if (!isPasswordValid) {
 			await this.loginAttemptRepository.create({
 				email,
+				provider: "CREDENTIAL",
 				ipAddress: ip,
 				userAgent,
 				success: false,
@@ -504,6 +521,7 @@ export class AuthService {
 			await this.loginAttemptRepository.create(
 				{
 					email,
+					provider: "CREDENTIAL",
 					ipAddress: ip,
 					userAgent,
 					success: true,

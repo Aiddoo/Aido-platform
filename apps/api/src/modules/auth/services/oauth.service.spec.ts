@@ -835,6 +835,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
+					provider: "APPLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -868,6 +869,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: mockUser.email,
+						provider: "APPLE",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -895,6 +897,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "google_unknown@social.aido.app",
+					provider: "GOOGLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -933,6 +936,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@gmail.com",
+						provider: "GOOGLE",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -960,6 +964,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "kakao_unknown@social.aido.app",
+					provider: "KAKAO",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -998,6 +1003,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@kakao.com",
+						provider: "KAKAO",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -1025,6 +1031,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "naver_unknown@social.aido.app",
+					provider: "NAVER",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -1063,6 +1070,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@naver.com",
+						provider: "NAVER",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -1086,6 +1094,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
+					provider: "APPLE",
 					ipAddress: "unknown",
 					userAgent: "unknown",
 					success: false,
