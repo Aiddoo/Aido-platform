@@ -121,6 +121,7 @@ export class FollowController {
 	@Post(":userId")
 	@ApiDoc({
 		summary: "친구 요청 보내기",
+		operationId: "sendFriendRequest",
 		description: `
 ## 👤 친구 요청 보내기
 
@@ -181,6 +182,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "친구 요청 수락",
+		operationId: "acceptFriendRequest",
 		description: `
 ## ✅ 친구 요청 수락
 
@@ -231,6 +233,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "친구 요청 거절",
+		operationId: "rejectFriendRequest",
 		description: `
 ## ❌ 친구 요청 거절
 
@@ -273,6 +276,7 @@ export class FollowController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "친구 삭제 / 요청 철회",
+		operationId: "removeFriend",
 		description: `
 ## 🗑️ 친구 삭제 또는 요청 철회
 
@@ -321,6 +325,7 @@ export class FollowController {
 	@Get("friends")
 	@ApiDoc({
 		summary: "친구 목록 조회",
+		operationId: "getFriends",
 		description: `
 ## 👥 친구 목록 조회
 
@@ -373,6 +378,7 @@ export class FollowController {
 	@Get("requests/received")
 	@ApiDoc({
 		summary: "받은 친구 요청 목록",
+		operationId: "getReceivedFriendRequests",
 		description: `
 ## 📥 받은 친구 요청 목록
 
@@ -425,6 +431,7 @@ export class FollowController {
 	@Get("requests/sent")
 	@ApiDoc({
 		summary: "보낸 친구 요청 목록",
+		operationId: "getSentFriendRequests",
 		description: `
 ## 📤 보낸 친구 요청 목록
 

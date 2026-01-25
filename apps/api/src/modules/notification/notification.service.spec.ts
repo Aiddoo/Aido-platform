@@ -1,18 +1,37 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import type { Notification, PushToken } from "@/generated/prisma/client";
+import type {
+	Notification,
+	PushToken,
+	UserConsent,
+	UserPreference,
+} from "@/generated/prisma/client";
+import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
 import { PUSH_PROVIDER } from "./providers";
 import type { PushProvider } from "./providers/push-provider.interface";
 import type { CreateNotificationData } from "./types/notification.types";
 
+// jest.mock으로 모듈 전체 모킹
+jest.mock("./utils/night-time.util", () => ({
+	isNightTime: jest.fn(() => false),
+	isDayTime: jest.fn(() => true),
+	getKstHour: jest.fn(() => 12),
+}));
+
+// 모킹된 모듈 import
+import * as timeUtils from "./utils/night-time.util";
+
 describe("NotificationService", () => {
 	let service: NotificationService;
 	let mockRepository: jest.Mocked<NotificationRepository>;
 	let mockPaginationService: jest.Mocked<PaginationService>;
 	let mockPushProvider: jest.Mocked<PushProvider>;
+	let mockUserPreferenceRepository: jest.Mocked<UserPreferenceRepository>;
+	let mockUserConsentRepository: jest.Mocked<UserConsentRepository>;
 
 	// ==========================================================================
 	// Mock Factory Functions
@@ -53,11 +72,37 @@ describe("NotificationService", () => {
 		...overrides,
 	});
 
+	const createMockUserPreference = (
+		overrides: Partial<UserPreference> = {},
+	): UserPreference => ({
+		id: "pref-1",
+		userId: "user-1",
+		pushEnabled: true,
+		nightPushEnabled: false,
+		...overrides,
+	});
+
+	// NOTE: 마케팅 알림 필터링 테스트에서 사용할 예정
+	const _createMockUserConsent = (
+		overrides: Partial<UserConsent> = {},
+	): UserConsent => ({
+		id: "consent-1",
+		userId: "user-1",
+		termsAgreedAt: new Date("2024-01-01T00:00:00Z"),
+		privacyAgreedAt: new Date("2024-01-01T00:00:00Z"),
+		agreedTermsVersion: "1.0.0",
+		marketingAgreedAt: null,
+		...overrides,
+	});
+
 	// ==========================================================================
 	// Setup
 	// ==========================================================================
 
 	beforeEach(async () => {
+		// 야간 시간 mock 초기화 (기본값: 낮 시간)
+		(timeUtils.isNightTime as jest.Mock).mockReturnValue(false);
+
 		mockRepository = {
 			createNotification: jest.fn(),
 			createManyNotifications: jest.fn(),
@@ -114,6 +159,21 @@ describe("NotificationService", () => {
 			}),
 		} as unknown as jest.Mocked<PushProvider>;
 
+		mockUserPreferenceRepository = {
+			findByUserId: jest.fn(),
+			create: jest.fn(),
+			upsert: jest.fn(),
+			update: jest.fn(),
+		} as unknown as jest.Mocked<UserPreferenceRepository>;
+
+		mockUserConsentRepository = {
+			findByUserId: jest.fn(),
+			create: jest.fn(),
+			upsert: jest.fn(),
+			updateMarketingConsent: jest.fn(),
+			upsertMarketingConsent: jest.fn(),
+		} as unknown as jest.Mocked<UserConsentRepository>;
+
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				NotificationService,
@@ -129,10 +189,22 @@ describe("NotificationService", () => {
 					provide: PUSH_PROVIDER,
 					useValue: mockPushProvider,
 				},
+				{
+					provide: UserPreferenceRepository,
+					useValue: mockUserPreferenceRepository,
+				},
+				{
+					provide: UserConsentRepository,
+					useValue: mockUserConsentRepository,
+				},
 			],
 		}).compile();
 
 		service = module.get<NotificationService>(NotificationService);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
 	});
 
 	// ==========================================================================
@@ -235,9 +307,11 @@ describe("NotificationService", () => {
 			};
 			const notification = createMockNotification();
 			const pushToken = createMockPushToken();
+			const preference = createMockUserPreference({ pushEnabled: true });
 
 			mockRepository.createNotification.mockResolvedValue(notification);
 			mockRepository.findPushTokensByUser.mockResolvedValue([pushToken]);
+			mockUserPreferenceRepository.findByUserId.mockResolvedValue(preference);
 
 			// When
 			const result = await service.createAndSend(data);
@@ -263,11 +337,13 @@ describe("NotificationService", () => {
 				body: "홍길동님이 친구가 되고 싶어해요",
 			};
 			const notification = createMockNotification();
+			const preference = createMockUserPreference({ pushEnabled: true });
 
 			mockRepository.createNotification.mockResolvedValue(notification);
 			mockRepository.findPushTokensByUser.mockRejectedValue(
 				new Error("Push failed"),
 			);
+			mockUserPreferenceRepository.findByUserId.mockResolvedValue(preference);
 
 			// When
 			const result = await service.createAndSend(data);
@@ -301,6 +377,11 @@ describe("NotificationService", () => {
 
 			mockRepository.createManyNotifications.mockResolvedValue({ count: 2 });
 			mockRepository.findActivePushTokensByUsers.mockResolvedValue(tokens);
+			// 두 사용자 모두 푸시 활성화
+			mockUserPreferenceRepository.findByUserId.mockImplementation(
+				async (userId: string) =>
+					createMockUserPreference({ userId, pushEnabled: true }),
+			);
 
 			// When
 			const result = await service.createAndSendBatch(dataList);
@@ -564,9 +645,11 @@ describe("NotificationService", () => {
 				body: "테스트 알림",
 			};
 			const notification = createMockNotification();
+			const preference = createMockUserPreference({ pushEnabled: true });
 
 			mockRepository.createNotification.mockResolvedValue(notification);
 			mockRepository.findPushTokensByUser.mockResolvedValue([]);
+			mockUserPreferenceRepository.findByUserId.mockResolvedValue(preference);
 
 			// When
 			await service.createAndSend(data);
@@ -588,9 +671,11 @@ describe("NotificationService", () => {
 			};
 			const notification = createMockNotification();
 			const pushToken = createMockPushToken();
+			const preference = createMockUserPreference({ pushEnabled: true });
 
 			mockRepository.createNotification.mockResolvedValue(notification);
 			mockRepository.findPushTokensByUser.mockResolvedValue([pushToken]);
+			mockUserPreferenceRepository.findByUserId.mockResolvedValue(preference);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 1,
 				successCount: 0,

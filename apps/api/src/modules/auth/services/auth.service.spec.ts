@@ -137,6 +137,7 @@ describe("AuthService", () => {
 			mockDatabase.$transaction.mockImplementation(async (callback) => {
 				const mockTx = {
 					userConsent: { create: jest.fn() },
+					userPreference: { create: jest.fn() },
 				};
 				return callback(mockTx);
 			});
@@ -556,6 +557,7 @@ describe("AuthService", () => {
 			expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					email: loginInput.email,
+					provider: "CREDENTIAL",
 					success: true,
 				}),
 				expect.any(Object),

@@ -8,4 +8,6 @@ export { SecurityLogRepository } from "./security-log.repository";
 export { SessionRepository } from "./session.repository";
 export type { UserWithAccount, UserWithProfile } from "./user.repository";
 export { UserRepository } from "./user.repository";
+export { UserConsentRepository } from "./user-consent.repository";
+export { UserPreferenceRepository } from "./user-preference.repository";
 export { VerificationRepository } from "./verification.repository";

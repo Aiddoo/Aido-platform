@@ -37,6 +37,7 @@ import {
 	AppleMobileCallbackDto,
 	AuthTokensDto,
 	ChangePasswordDto,
+	ConsentResponseDto,
 	CurrentUserDto,
 	ExchangeCodeDto,
 	ForgotPasswordDto,
@@ -47,11 +48,16 @@ import {
 	LoginDto,
 	MessageResponseDto,
 	NaverMobileCallbackDto,
+	PreferenceResponseDto,
 	RefreshTokensDto,
 	RegisterDto,
 	ResendVerificationDto,
 	ResetPasswordDto,
 	SessionListDto,
+	UpdateMarketingConsentDto,
+	UpdateMarketingConsentResponseDto,
+	UpdatePreferenceDto,
+	UpdatePreferenceResponseDto,
 	UpdateProfileDto,
 	UpdateProfileResponseDto,
 	VerifyEmailDto,
@@ -59,6 +65,7 @@ import {
 import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
 import { AuthService, type RequestMetadata } from "./services/auth.service";
 import { OAuthService } from "./services/oauth.service";
+import { UserSettingsService } from "./services/user-settings.service";
 import type { RefreshTokenPayload } from "./strategies/jwt-refresh.strategy";
 
 /**
@@ -95,6 +102,7 @@ export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly oauthService: OAuthService,
+		private readonly userSettingsService: UserSettingsService,
 	) {}
 
 	/**
@@ -130,6 +138,7 @@ export class AuthController {
 	@Public()
 	@ApiDoc({
 		summary: "회원가입",
+		operationId: "register",
 		description: `
 ## 📋 회원가입
 이메일/비밀번호로 계정 생성 후 인증 코드가 발송됩니다.
@@ -163,6 +172,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "이메일 인증",
+		operationId: "verifyEmail",
 		description: `
 ## ✉️ 이메일 인증
 회원가입 시 발송된 6자리 인증 코드를 검증합니다. 성공 시 토큰이 발급됩니다.
@@ -202,6 +212,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "인증 코드 재발송",
+		operationId: "resendVerificationCode",
 		description: `
 ## 🔄 인증 코드 재발송
 인증 코드를 다시 발송합니다. 이전 코드는 무효화됩니다.
@@ -240,6 +251,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "로그인",
+		operationId: "login",
 		description: `
 ## 🔑 로그인
 이메일/비밀번호로 로그인 후 토큰을 발급받습니다.
@@ -278,6 +290,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "로그아웃",
+		operationId: "logout",
 		description: `
 ## 🚪 로그아웃
 
@@ -309,6 +322,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "모든 기기에서 로그아웃",
+		operationId: "logoutAll",
 		description: `
 ## 🚪 전체 로그아웃
 
@@ -346,6 +360,7 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "토큰 갱신",
+		operationId: "refreshTokens",
 		description: `
 ## 🔄 토큰 갱신
 Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용)
@@ -382,6 +397,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "비밀번호 찾기",
+		operationId: "forgotPassword",
 		description: `
 ## 🔑 비밀번호 찾기 (1/2)
 비밀번호 재설정용 6자리 인증 코드를 이메일로 발송합니다.
@@ -407,6 +423,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "비밀번호 재설정",
+		operationId: "resetPassword",
 		description: `
 ## 🔑 비밀번호 재설정 (2/2)
 인증 코드 확인 후 새 비밀번호를 설정합니다.
@@ -441,6 +458,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "비밀번호 변경",
+		operationId: "changePassword",
 		description: `
 ## 🔐 비밀번호 변경
 로그인 상태에서 비밀번호를 변경합니다.
@@ -484,6 +502,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "현재 사용자 정보 조회",
+		operationId: "getCurrentUser",
 		description: `
 ## 👤 내 정보 조회
 현재 로그인된 사용자 정보를 조회합니다.
@@ -511,6 +530,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "프로필 수정",
+		operationId: "updateProfile",
 		description: `
 ## 👤 프로필 수정
 이름/프로필 이미지를 수정합니다.
@@ -534,6 +554,134 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	}
 
 	// ============================================
+	// 푸시 알림 설정
+	// ============================================
+
+	@Get("preference")
+	@ApiBearerAuth()
+	@ApiDoc({
+		summary: "푸시 알림 설정 조회",
+		operationId: "getPushPreference",
+		description: `
+## 🔔 푸시 알림 설정 조회
+현재 사용자의 푸시 알림 설정을 조회합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📋 응답 필드
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`pushEnabled\` | boolean | 푸시 알림 전체 ON/OFF |
+| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00) |
+		`,
+	})
+	@ApiSuccessResponse({ type: PreferenceResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getPreference(@CurrentUser() user: CurrentUserPayload) {
+		return this.userSettingsService.getPreference(user.userId);
+	}
+
+	@Patch("preference")
+	@ApiBearerAuth()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "푸시 알림 설정 수정",
+		operationId: "updatePushPreference",
+		description: `
+## 🔔 푸시 알림 설정 수정
+푸시 알림 설정을 수정합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 요청 Body (최소 1개 필수)
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`pushEnabled\` | boolean? | 푸시 알림 전체 ON/OFF |
+| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00) |
+
+### ⚠️ 주의
+- 야간 푸시를 허용하려면 먼저 \`pushEnabled\`가 true여야 합니다.
+		`,
+	})
+	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async updatePreference(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: UpdatePreferenceDto,
+	) {
+		return this.userSettingsService.updatePreference(user.userId, dto);
+	}
+
+	// ============================================
+	// 약관 동의 상태
+	// ============================================
+
+	@Get("consent")
+	@ApiBearerAuth()
+	@ApiDoc({
+		summary: "약관 동의 상태 조회",
+		operationId: "getConsent",
+		description: `
+## 📜 약관 동의 상태 조회
+현재 사용자의 약관 동의 상태를 조회합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📋 응답 필드
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`termsAgreedAt\` | string? | 서비스 이용약관 동의 시점 |
+| \`privacyAgreedAt\` | string? | 개인정보처리방침 동의 시점 |
+| \`agreedTermsVersion\` | string? | 동의한 약관 버전 |
+| \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |
+		`,
+	})
+	@ApiSuccessResponse({ type: ConsentResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getConsent(@CurrentUser() user: CurrentUserPayload) {
+		return this.userSettingsService.getConsent(user.userId);
+	}
+
+	@Patch("consent/marketing")
+	@ApiBearerAuth()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "마케팅 수신 동의 변경",
+		operationId: "updateMarketingConsent",
+		description: `
+## 📢 마케팅 수신 동의 변경
+마케팅 수신 동의를 변경합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 요청 Body
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`agreed\` | boolean | true=동의, false=철회 |
+
+### 📋 응답
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`marketingAgreedAt\` | string? | 동의 시 현재 시점, 철회 시 null |
+		`,
+	})
+	@ApiSuccessResponse({ type: UpdateMarketingConsentResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async updateMarketingConsent(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: UpdateMarketingConsentDto,
+	) {
+		return this.userSettingsService.updateMarketingConsent(
+			user.userId,
+			dto.agreed,
+		);
+	}
+
+	// ============================================
 	// 세션 관리
 	// ============================================
 
@@ -541,6 +689,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "활성 세션 목록 조회",
+		operationId: "getActiveSessions",
 		description: `
 ## 📱 활성 세션 목록
 
@@ -584,6 +733,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "특정 세션 종료",
+		operationId: "revokeSession",
 		description: `
 ## 🔌 세션 종료
 
@@ -637,6 +787,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "OAuth 교환 코드로 토큰 획득",
+		operationId: "exchangeOAuthCode",
 		description: `OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 JWT 토큰으로 교환합니다.
 
 딥링크(\`aido://auth/callback?code=xxx&state=xxx\`)에서 받은 code를 전송하세요.
@@ -670,6 +821,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Apple 로그인 콜백",
+		operationId: "appleCallback",
 		description: `\`expo-apple-authentication\`으로 Apple Sign In 후 credential을 전송합니다.
 
 ## 📦 라이브러리 설치
@@ -943,6 +1095,7 @@ if (decoded.nonce !== expectedNonce) {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Google 로그인 콜백 (모바일)",
+		operationId: "googleMobileCallback",
 		description: `**expo-auth-session**의 Google OAuth 제공자를 통해 ID Token을 받은 후 백엔드로 전송합니다.
 
 ## 📦 필수 라이브러리
@@ -1387,6 +1540,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Kakao OAuth 시작 (웹 브라우저 기반)",
+		operationId: "kakaoOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 카카오 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /kakao/start\` → 카카오 로그인 → \`GET /kakao/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
@@ -1429,6 +1583,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Kakao OAuth 콜백 (웹 브라우저 기반)",
+		operationId: "kakaoOAuthCallback",
 		description: `카카오 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
 🔄 **플로우**: \`GET /kakao/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
@@ -1498,6 +1653,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Google OAuth 시작 (웹 브라우저 기반)",
+		operationId: "googleOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 구글 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /google/start\` → 구글 로그인 → \`GET /google/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
@@ -1527,6 +1683,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Google OAuth 콜백 (웹 브라우저 기반)",
+		operationId: "googleOAuthCallback",
 		description: `구글 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
 🔄 **플로우**: \`GET /google/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
@@ -1585,6 +1742,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Naver OAuth 시작 (웹 브라우저 기반)",
+		operationId: "naverOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 네이버 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /naver/start\` → 네이버 로그인 → \`GET /naver/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
@@ -1614,6 +1772,7 @@ const clientId = {
 	@Public()
 	@ApiDoc({
 		summary: "Naver OAuth 콜백 (웹 브라우저 기반)",
+		operationId: "naverOAuthCallback",
 		description: `네이버 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
 🔄 **플로우**: \`GET /naver/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
@@ -1669,6 +1828,7 @@ const clientId = {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Kakao 로그인 콜백 (모바일)",
+		operationId: "kakaoMobileCallback",
 		description: `
 ## 🟡 Kakao 소셜 로그인 (Expo 모바일 앱용)
 
@@ -2109,6 +2269,7 @@ export const useKakaoLogin = () => {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Naver 로그인 콜백 (모바일)",
+		operationId: "naverMobileCallback",
 		description: `
 ## 🟢 Naver 소셜 로그인 (Expo 모바일 앱용)
 
@@ -2623,6 +2784,7 @@ export const useNaverLogin = () => {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "소셜 계정 연동",
+		operationId: "linkSocialAccount",
 		description: `
 ## 🔗 소셜 계정 연동
 
@@ -2654,6 +2816,7 @@ export const useNaverLogin = () => {
 	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "연결된 소셜 계정 목록",
+		operationId: "getLinkedAccounts",
 		description: `
 ## 🔗 연결된 소셜 계정 조회
 
@@ -2679,6 +2842,7 @@ export const useNaverLogin = () => {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "소셜 계정 연결 해제",
+		operationId: "unlinkSocialAccount",
 		description: `
 ## 🔓 소셜 계정 연결 해제
 

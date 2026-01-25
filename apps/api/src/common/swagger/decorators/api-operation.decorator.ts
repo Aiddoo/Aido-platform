@@ -23,6 +23,7 @@ export function ApiDoc(options: ApiDocOptions): MethodDecorator {
 	const {
 		summary,
 		description,
+		operationId,
 		deprecated,
 		includeCommonErrors = true,
 	} = options;
@@ -33,6 +34,7 @@ export function ApiDoc(options: ApiDocOptions): MethodDecorator {
 		ApiOperation({
 			summary,
 			description,
+			operationId,
 			deprecated,
 		}),
 	];

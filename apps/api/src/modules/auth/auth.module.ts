@@ -13,6 +13,8 @@ import {
 	OAuthStateRepository,
 	SecurityLogRepository,
 	SessionRepository,
+	UserConsentRepository,
+	UserPreferenceRepository,
 	UserRepository,
 	VerificationRepository,
 } from "./repositories";
@@ -22,6 +24,7 @@ import {
 	OAuthTokenVerifierService,
 	PasswordService,
 	TokenService,
+	UserSettingsService,
 	VerificationService,
 } from "./services";
 import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
@@ -55,6 +58,8 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		LoginAttemptRepository,
 		SecurityLogRepository,
 		OAuthStateRepository,
+		UserPreferenceRepository,
+		UserConsentRepository,
 		// Services
 		PasswordService,
 		TokenService,
@@ -62,6 +67,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		OAuthTokenVerifierService,
 		AuthService,
 		OAuthService,
+		UserSettingsService,
 		// Strategies
 		JwtStrategy,
 		JwtRefreshStrategy,

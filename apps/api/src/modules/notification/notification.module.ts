@@ -1,6 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import {
+	UserConsentRepository,
+	UserPreferenceRepository,
+} from "@/modules/auth/repositories";
+
+import {
 	CheerListener,
 	FollowListener,
 	NudgeListener,
@@ -35,6 +40,9 @@ import { PUSH_PROVIDER } from "./providers/push-provider.interface";
 		// Core
 		NotificationRepository,
 		NotificationService,
+		// User Preference/Consent Repositories (푸시 필터링용)
+		UserPreferenceRepository,
+		UserConsentRepository,
 		// Push Provider (Strategy Pattern)
 		{
 			provide: PUSH_PROVIDER,
