@@ -130,10 +130,22 @@ async function bootstrap() {
 				tagsSorter: "alpha",
 				defaultModelsExpandDepth: 1,
 				defaultModelExpandDepth: 2,
-				displayOperationId: false,
+				// NestJS/Swagger 2026 베스트 프랙티스: operationId 표시로 클라이언트 SDK 생성 지원
+				displayOperationId: true,
+				// 요청 시간 표시로 성능 모니터링 지원
+				displayRequestDuration: true,
 				syntaxHighlight: {
 					activate: true,
 					theme: "monokai",
+				},
+				// 코드 스니펫 활성화 - 클라이언트 개발자가 바로 복사해서 사용 가능
+				requestSnippetsEnabled: true,
+				requestSnippets: {
+					generators: {
+						curl_bash: { title: "cURL (bash)", syntax: "bash" },
+						curl_cmd: { title: "cURL (cmd)", syntax: "cmd" },
+					},
+					defaultExpanded: true,
 				},
 			},
 		});

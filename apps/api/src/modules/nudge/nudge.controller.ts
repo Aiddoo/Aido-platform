@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -79,6 +79,7 @@ export class NudgeController {
 	@Post()
 	@ApiDoc({
 		summary: "콕 찌르기",
+		operationId: "sendNudge",
 		description: `
 ## 👆 콕 찌르기
 
@@ -149,6 +150,7 @@ export class NudgeController {
 	@Get("received")
 	@ApiDoc({
 		summary: "받은 콕 찌름 목록 조회",
+		operationId: "getReceivedNudges",
 		description: `
 ## 📥 받은 콕 찌름 목록 조회
 
@@ -176,18 +178,6 @@ export class NudgeController {
 	})
 	@ApiSuccessResponse({ type: ReceivedNudgesResponseDto })
 	@ApiUnauthorizedError()
-	@ApiQuery({
-		name: "limit",
-		required: false,
-		type: Number,
-		description: "조회할 개수 (1-50, 기본값: 20)",
-	})
-	@ApiQuery({
-		name: "cursor",
-		required: false,
-		type: Number,
-		description: "페이지네이션 커서",
-	})
 	async getReceivedNudges(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -212,6 +202,7 @@ export class NudgeController {
 	@Get("sent")
 	@ApiDoc({
 		summary: "보낸 콕 찌름 목록 조회",
+		operationId: "getSentNudges",
 		description: `
 ## 📤 보낸 콕 찌름 목록 조회
 
@@ -238,18 +229,6 @@ export class NudgeController {
 	})
 	@ApiSuccessResponse({ type: SentNudgesResponseDto })
 	@ApiUnauthorizedError()
-	@ApiQuery({
-		name: "limit",
-		required: false,
-		type: Number,
-		description: "조회할 개수 (1-50, 기본값: 20)",
-	})
-	@ApiQuery({
-		name: "cursor",
-		required: false,
-		type: Number,
-		description: "페이지네이션 커서",
-	})
 	async getSentNudges(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -277,6 +256,7 @@ export class NudgeController {
 	@Get("limit")
 	@ApiDoc({
 		summary: "일일 콕 찌르기 제한 정보 조회",
+		operationId: "getNudgeLimitInfo",
 		description: `
 ## 📊 일일 콕 찌르기 제한 정보 조회
 
@@ -311,6 +291,7 @@ export class NudgeController {
 	@Get("cooldown/:userId")
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
+		operationId: "getNudgeCooldownInfo",
 		description: `
 ## ⏱️ 쿨다운 상태 조회
 
@@ -359,6 +340,7 @@ export class NudgeController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "콕 찌름 읽음 처리",
+		operationId: "markNudgeAsRead",
 		description: `
 ## ✅ 콕 찌름 읽음 처리
 

@@ -139,6 +139,15 @@ export class AuthService {
 				},
 			});
 
+			// 푸시 알림 설정 초기화 (기본값: 모두 OFF)
+			await tx.userPreference.create({
+				data: {
+					userId: newUser.id,
+					pushEnabled: false,
+					nightPushEnabled: false,
+				},
+			});
+
 			// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 			const verificationResult =
 				await this.verificationService.createEmailVerification(newUser.id, tx);

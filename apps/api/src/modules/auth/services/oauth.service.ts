@@ -49,8 +49,10 @@ export class OAuthService {
 	 * 보안을 위해 화이트리스트 방식으로 검증합니다.
 	 */
 	private readonly ALLOWED_REDIRECT_PATTERNS = [
-		// 모바일 앱 딥링크 (기본값)
-		/^aido:\/\/auth\/callback$/,
+		// 모바일 앱 딥링크 (프로덕션)
+		/^aido:\/\/auth(\/.*)?$/,
+		// 모바일 앱 딥링크 (개발)
+		/^aido-dev:\/\/auth(\/.*)?$/,
 		// aido.kr 도메인 (프로덕션)
 		/^https:\/\/aido\.kr(\/.*)?$/,
 		// aido.kr 서브도메인
