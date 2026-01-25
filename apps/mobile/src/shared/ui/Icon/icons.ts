@@ -8,6 +8,7 @@ import KakaoIconSvg from '@assets/icons/ic_kakao.svg';
 import MenuIconSvg from '@assets/icons/ic_menu.svg';
 import NaverIconSvg from '@assets/icons/ic_naver.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
+import SearchIconSvg from '@assets/icons/ic_search.svg';
 import { createStyledIcon } from './createStyledIcon';
 
 // 래핑된 아이콘 컴포넌트들
@@ -21,3 +22,4 @@ export const KakaoIcon = createStyledIcon(KakaoIconSvg);
 export const MenuIcon = createStyledIcon(MenuIconSvg);
 export const NaverIcon = createStyledIcon(NaverIconSvg);
 export const PersonIcon = createStyledIcon(PersonIconSvg);
+export const SearchIcon = createStyledIcon(SearchIconSvg);
