@@ -13,12 +13,6 @@ export class LoginAttemptRepository {
 	constructor(private readonly database: DatabaseService) {}
 
 	/**
-	 * 로그인 시도 기록
-	 *
-	 * @param data.provider - 인증 방식 (CREDENTIAL, KAKAO, APPLE, GOOGLE, NAVER)
-	 *                        null인 경우 레거시 데이터 (마이그레이션 이전)
-	 */
-	/**
 	 * 로그인 시도 기록 생성
 	 *
 	 * Rate limiting 및 보안 분석을 위해 모든 로그인 시도를 기록합니다.
