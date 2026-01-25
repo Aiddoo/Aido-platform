@@ -3,6 +3,7 @@ import type {
   FriendsListResponse,
   FriendUser as FriendUserDTO,
   ReceivedRequestsResponse,
+  SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/validators';
 import type {
@@ -10,6 +11,7 @@ import type {
   FriendsResult,
   FriendUser,
   ReceivedRequestsResult,
+  SendRequestResult,
   SentRequestsResult,
 } from '../models/friend.model';
 
@@ -48,4 +50,9 @@ export const toFriendsResult = (dto: FriendsListResponse): FriendsResult => ({
   friends: dto.friends.map(toFriendUser),
   totalCount: dto.totalCount,
   hasMore: dto.hasMore,
+});
+
+export const toSendRequestResult = (dto: SendFriendRequestResponse): SendRequestResult => ({
+  message: dto.message,
+  autoAccepted: dto.autoAccepted,
 });

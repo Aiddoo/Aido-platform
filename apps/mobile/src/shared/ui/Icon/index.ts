@@ -10,4 +10,5 @@ export {
   MenuIcon,
   NaverIcon,
   PersonIcon,
+  SearchIcon,
 } from './icons';

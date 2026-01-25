@@ -11,7 +11,9 @@ import {
   receivedRequestsResponseSchema,
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
+  type SendFriendRequestResponse,
   type SentRequestsResponse,
+  sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
@@ -20,6 +22,20 @@ import type { FriendRepository, PaginationParams } from './friend.repository';
 
 export class FriendRepositoryImpl implements FriendRepository {
   constructor(private readonly _httpClient: HttpClient) {}
+
+  async sendRequest(userTag: string): Promise<SendFriendRequestResponse> {
+    const { data } = await this._httpClient.post<SendFriendRequestResponse>(
+      `v1/follows/${userTag}`,
+    );
+
+    const result = sendFriendRequestResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[FriendRepository] Invalid sendRequest response:', result.error);
+      throw FriendError.invalidResponse();
+    }
+
+    return result.data;
+  }
 
   private _buildPaginatedUrl(basePath: string, params?: PaginationParams): string {
     const searchParams = new URLSearchParams();

@@ -1,13 +1,24 @@
 import type {
   FriendsResult,
   ReceivedRequestsResult,
+  SendRequestResult,
   SentRequestsResult,
 } from '../models/friend.model';
 import type { FriendRepository, PaginationParams } from '../repositories/friend.repository';
-import { toFriendsResult, toReceivedRequestsResult, toSentRequestsResult } from './friend.mapper';
+import {
+  toFriendsResult,
+  toReceivedRequestsResult,
+  toSendRequestResult,
+  toSentRequestsResult,
+} from './friend.mapper';
 
 export class FriendService {
   constructor(private readonly _repository: FriendRepository) {}
+
+  sendRequestByTag = async (userTag: string): Promise<SendRequestResult> => {
+    const dto = await this._repository.sendRequest(userTag);
+    return toSendRequestResult(dto);
+  };
 
   getReceivedRequests = async (params?: PaginationParams): Promise<ReceivedRequestsResult> => {
     const dto = await this._repository.getReceivedRequests(params);

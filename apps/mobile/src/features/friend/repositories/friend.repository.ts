@@ -5,6 +5,7 @@ import type {
   ReceivedRequestsResponse,
   RejectFriendRequestResponse,
   RemoveFriendResponse,
+  SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/validators';
 
@@ -14,6 +15,11 @@ export interface PaginationParams {
 }
 
 export interface FriendRepository {
+  /**
+   * 친구 요청 보내기
+   */
+  sendRequest(userTag: string): Promise<SendFriendRequestResponse>;
+
   /**
    * 받은 친구 요청 목록 조회
    */

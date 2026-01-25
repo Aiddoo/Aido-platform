@@ -54,3 +54,11 @@ export interface FriendsResult {
   totalCount: number;
   hasMore: boolean;
 }
+
+/**
+ * 친구 요청 보내기 결과 도메인 모델
+ */
+export interface SendRequestResult {
+  message: string;
+  autoAccepted: boolean;
+}

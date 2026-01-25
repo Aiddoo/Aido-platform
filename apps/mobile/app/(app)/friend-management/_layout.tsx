@@ -1,3 +1,4 @@
+import { FriendSearchBottomSheet } from '@src/features/friend/presentations/components/FriendSearchBottomSheet';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
 import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
@@ -24,6 +25,11 @@ export default function FriendManagementLayout() {
             <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
+          </View>
+        ),
+        headerRight: () => (
+          <View className="justify-center items-center">
+            <FriendSearchBottomSheet />
           </View>
         ),
       }}
