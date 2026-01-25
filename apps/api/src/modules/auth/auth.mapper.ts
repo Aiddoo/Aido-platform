@@ -58,6 +58,7 @@ export abstract class AuthMapper {
 	static toAuthTokensResponse(result: VerifyEmailResult | LoginResult) {
 		return {
 			userId: result.userId,
+			userTag: result.userTag,
 			accessToken: result.tokens.accessToken,
 			refreshToken: result.tokens.refreshToken,
 			name: result.name,

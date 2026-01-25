@@ -1262,6 +1262,7 @@ export class OAuthService {
 
 			return {
 				userId,
+				userTag: userWithProfile?.userTag ?? "",
 				tokens,
 				sessionId: session.id,
 				name: userWithProfile?.profile?.name ?? null,

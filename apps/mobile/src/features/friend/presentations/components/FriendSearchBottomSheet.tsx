@@ -1,4 +1,4 @@
-import { followByTagSchema } from '@aido/validators';
+import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -19,7 +19,7 @@ export const FriendSearchBottomSheet = () => {
   const sendRequestMutation = useMutation(sendRequestByTagMutationOptions());
   const { toast } = useToast();
 
-  const validationResult = followByTagSchema.safeParse({ userTag });
+  const validationResult = userTagParamSchema.safeParse({ userTag });
 
   const handleSubmit = () => {
     if (!validationResult.success) return;

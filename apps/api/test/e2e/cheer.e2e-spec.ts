@@ -37,7 +37,7 @@ describe("Cheer (e2e)", () => {
 	async function createVerifiedUser(
 		email: string,
 		password: string,
-	): Promise<{ accessToken: string; userId: string }> {
+	): Promise<{ accessToken: string; userId: string; userTag: string }> {
 		await request(app.getHttpServer())
 			.post("/auth/register")
 			.send({
@@ -58,6 +58,7 @@ describe("Cheer (e2e)", () => {
 		return {
 			accessToken: response.body.data.accessToken,
 			userId: response.body.data.userId,
+			userTag: response.body.data.userTag,
 		};
 	}
 
@@ -65,18 +66,18 @@ describe("Cheer (e2e)", () => {
 	 * 두 사용자 간 친구 관계 생성 헬퍼
 	 */
 	async function createFriendship(
-		user1: { accessToken: string; userId: string },
-		user2: { accessToken: string; userId: string },
+		user1: { accessToken: string; userId: string; userTag: string },
+		user2: { accessToken: string; userId: string; userTag: string },
 	): Promise<void> {
 		// user1 -> user2 팔로우 요청
 		await request(app.getHttpServer())
-			.post(`/follows/${user2.userId}`)
+			.post(`/follows/${user2.userTag}`)
 			.set("Authorization", `Bearer ${user1.accessToken}`)
 			.expect(201);
 
 		// user2 -> user1 맞팔로우 (친구 성립)
 		await request(app.getHttpServer())
-			.post(`/follows/${user1.userId}`)
+			.post(`/follows/${user1.userTag}`)
 			.set("Authorization", `Bearer ${user2.accessToken}`)
 			.expect(201);
 	}
@@ -114,8 +115,8 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string };
-		let receiver: { accessToken: string; userId: string };
+		let sender: { accessToken: string; userId: string; userTag: string };
+		let receiver: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			sender = await createVerifiedUser(senderEmail, password);
@@ -215,8 +216,8 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-list-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string };
-		let receiver: { accessToken: string; userId: string };
+		let sender: { accessToken: string; userId: string; userTag: string };
+		let receiver: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			sender = await createVerifiedUser(senderEmail, password);
@@ -281,8 +282,8 @@ describe("Cheer (e2e)", () => {
 		const friendEmail = "cheer-limit-friend@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string };
-		let friend: { accessToken: string; userId: string };
+		let user: { accessToken: string; userId: string; userTag: string };
+		let friend: { accessToken: string; userId: string; userTag: string };
 
 		beforeAll(async () => {
 			user = await createVerifiedUser(userEmail, password);
@@ -331,8 +332,8 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-read-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string };
-		let receiver: { accessToken: string; userId: string };
+		let sender: { accessToken: string; userId: string; userTag: string };
+		let receiver: { accessToken: string; userId: string; userTag: string };
 		let cheerId: number;
 
 		beforeAll(async () => {
