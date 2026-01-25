@@ -1,6 +1,7 @@
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
+import { handleApiErrors } from './error-handler';
 
 interface RefreshTokensResponse {
   accessToken: string;
@@ -32,6 +33,7 @@ export const createAuthClient = (storage: Storage): KyInstance => {
         },
       ],
       afterResponse: [
+        handleApiErrors,
         async (request, _options, response) => {
           if (response.status !== 401) {
             return response;
