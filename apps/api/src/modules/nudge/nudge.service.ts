@@ -55,7 +55,7 @@ export class NudgeService {
 	 * 4. 일일 제한 체크
 	 * 5. 쿨다운 체크
 	 * 6. Nudge 생성
-	 * 7. 이벤트 발행
+	 * 7. 이벤트 발행 (트랜잭션 성공 후)
 	 *
 	 * @note 트랜잭션 사용: Rate Limiting의 TOCTOU 동시성 문제 방지
 	 */
@@ -63,7 +63,7 @@ export class NudgeService {
 		const { senderId, receiverId, todoId, message } = params;
 
 		// 트랜잭션으로 감싸서 check-and-create를 atomic하게 수행
-		return await this.database.$transaction(async (tx) => {
+		const nudge = await this.database.$transaction(async (tx) => {
 			// 1. 자기 자신 체크
 			if (senderId === receiverId) {
 				throw BusinessExceptions.cannotNudgeSelf();
@@ -150,7 +150,7 @@ export class NudgeService {
 			}
 
 			// 6. Nudge 생성
-			const nudge = await tx.nudge.create({
+			const newNudge = await tx.nudge.create({
 				data: {
 					sender: { connect: { id: senderId } },
 					receiver: { connect: { id: receiverId } },
@@ -196,19 +196,21 @@ export class NudgeService {
 				`Nudge sent: senderId=${senderId}, receiverId=${receiverId}, todoId=${todoId}`,
 			);
 
-			// 7. 이벤트 발행 (트랜잭션 밖에서 발행됨)
-			const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
-			this.eventEmitter.emit(NotificationEvents.NUDGE_SENT, {
-				nudgeId: nudge.id,
-				senderId,
-				receiverId,
-				senderName,
-				todoId,
-				todoTitle: todo.title,
-			} satisfies NudgeSentEventPayload);
-
-			return nudge;
+			return newNudge;
 		});
+
+		// 7. 이벤트 발행 (트랜잭션 성공 후 발행)
+		const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
+		this.eventEmitter.emit(NotificationEvents.NUDGE_SENT, {
+			nudgeId: nudge.id,
+			senderId,
+			receiverId,
+			senderName,
+			todoId,
+			todoTitle: nudge.todo.title,
+		} satisfies NudgeSentEventPayload);
+
+		return nudge;
 	}
 
 	// =========================================================================

@@ -217,17 +217,19 @@ model Session {
 // =============================================================================
 
 model LoginAttempt {
-  id            Int     @id @default(autoincrement())
-  email         String  @db.VarChar(255)
-  ipAddress     String  @db.VarChar(45)
-  userAgent     String  @db.VarChar(500)
+  id            Int              @id @default(autoincrement())
+  email         String           @db.VarChar(255)
+  provider      AccountProvider? // CREDENTIAL, KAKAO, APPLE, GOOGLE, NAVER (null = legacy)
+  ipAddress     String           @db.VarChar(45)
+  userAgent     String           @db.VarChar(500)
   success       Boolean
-  failureReason String? @db.VarChar(100) // INVALID_PASSWORD, USER_NOT_FOUND, RATE_LIMITED
+  failureReason String?          @db.VarChar(100) // INVALID_PASSWORD, USER_NOT_FOUND, RATE_LIMITED
 
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
   @@index([ipAddress, createdAt])
+  @@index([provider, createdAt]) // Provider별 분석용
   @@index([createdAt]) // 정리 배치용 (30일 보관)
 }
 

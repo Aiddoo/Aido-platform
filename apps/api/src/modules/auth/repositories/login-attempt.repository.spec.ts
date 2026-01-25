@@ -19,6 +19,7 @@ describe("LoginAttemptRepository", () => {
 	const mockSuccessfulAttempt: LoginAttempt = {
 		id: 1,
 		email: "user@example.com",
+		provider: "CREDENTIAL",
 		ipAddress: "192.168.1.1",
 		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 		success: true,
@@ -29,6 +30,7 @@ describe("LoginAttemptRepository", () => {
 	const mockFailedAttempt: LoginAttempt = {
 		id: 2,
 		email: "user@example.com",
+		provider: "CREDENTIAL",
 		ipAddress: "192.168.1.1",
 		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 		success: false,
@@ -64,6 +66,7 @@ describe("LoginAttemptRepository", () => {
 			// Given
 			const createData = {
 				email: "user@example.com",
+				provider: "CREDENTIAL" as const,
 				ipAddress: "192.168.1.1",
 				userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 				success: true,
@@ -78,6 +81,7 @@ describe("LoginAttemptRepository", () => {
 			expect(mockDatabase.loginAttempt.create).toHaveBeenCalledWith({
 				data: {
 					email: createData.email,
+					provider: createData.provider,
 					ipAddress: createData.ipAddress,
 					userAgent: createData.userAgent,
 					success: createData.success,
@@ -90,6 +94,7 @@ describe("LoginAttemptRepository", () => {
 			// Given
 			const createData = {
 				email: "user@example.com",
+				provider: "CREDENTIAL" as const,
 				ipAddress: "192.168.1.1",
 				userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 				success: false,
@@ -105,6 +110,7 @@ describe("LoginAttemptRepository", () => {
 			expect(mockDatabase.loginAttempt.create).toHaveBeenCalledWith({
 				data: {
 					email: createData.email,
+					provider: createData.provider,
 					ipAddress: createData.ipAddress,
 					userAgent: createData.userAgent,
 					success: createData.success,
@@ -119,6 +125,7 @@ describe("LoginAttemptRepository", () => {
 			mockTx.loginAttempt.create.mockResolvedValue(mockSuccessfulAttempt);
 			const createData = {
 				email: "user@example.com",
+				provider: "CREDENTIAL" as const,
 				ipAddress: "192.168.1.1",
 				userAgent: "Mozilla/5.0",
 				success: true,

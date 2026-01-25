@@ -90,6 +90,18 @@ describe("OAuthService", () => {
 			callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
 			isConfigured: true,
 		},
+		googleOAuth: {
+			clientId: "test-google-client-id",
+			clientSecret: "test-google-client-secret",
+			callbackUrl: "http://localhost:3000/v1/auth/google/web-callback",
+			isConfigured: true,
+		},
+		naverOAuth: {
+			clientId: "test-naver-client-id",
+			clientSecret: "test-naver-client-secret",
+			callbackUrl: "http://localhost:3000/v1/auth/naver/web-callback",
+			isConfigured: true,
+		},
 	};
 
 	const mockOAuthStateRepository = {
@@ -581,6 +593,168 @@ describe("OAuthService", () => {
 	});
 
 	// ============================================
+	// Redirect URI 검증 (개발/프로덕션 환경)
+	// ============================================
+
+	describe("Redirect URI 검증", () => {
+		const testState = "test-state-123";
+
+		describe("모바일 딥링크 - 개발 환경 (aido-dev://)", () => {
+			it("aido-dev://auth/kakao를 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/kakao";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					redirectUri, // 검증 통과하여 원본 URI 유지
+				);
+			});
+
+			it("aido-dev://auth/google을 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/google";
+
+				// When
+				await service.generateGoogleAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"GOOGLE",
+					redirectUri,
+				);
+			});
+
+			it("aido-dev://auth/naver를 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/naver";
+
+				// When
+				await service.generateNaverAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"NAVER",
+					redirectUri,
+				);
+			});
+
+			it.skip("aido-dev://auth/apple을 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/apple";
+
+				// When
+				// Apple은 URL 생성 메서드가 없으므로 테스트 스킵
+				// await service.generateAppleAuthUrl(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"APPLE",
+					redirectUri,
+				);
+			});
+
+			it("aido-dev://auth/callback을 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/callback";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					redirectUri,
+				);
+			});
+		});
+
+		describe("모바일 딥링크 - 프로덕션 환경 (aido://)", () => {
+			it("aido://auth/kakao를 허용한다", async () => {
+				// Given
+				const redirectUri = "aido://auth/kakao";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					redirectUri,
+				);
+			});
+
+			it("aido://auth/callback을 허용한다", async () => {
+				// Given
+				const redirectUri = "aido://auth/callback";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					redirectUri,
+				);
+			});
+		});
+
+		describe("유효하지 않은 URI는 기본값으로 대체", () => {
+			it("잘못된 scheme은 기본값으로 대체된다", async () => {
+				// Given
+				const invalidUri = "invalid-scheme://auth/kakao";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback", // 기본값으로 대체
+				);
+			});
+
+			it("잘못된 경로는 기본값으로 대체된다", async () => {
+				// Given
+				const invalidUri = "aido://wrong/path";
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+				);
+			});
+
+			it("URI가 제공되지 않으면 기본값을 사용한다", async () => {
+				// When
+				await service.generateKakaoAuthUrlWithState(testState);
+
+				// Then
+				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+				);
+			});
+		});
+	});
+
+	// ============================================
 	// handleKakaoWebCallback (Authorization Code → Token 교환)
 	// ============================================
 
@@ -835,6 +1009,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
+					provider: "APPLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -868,6 +1043,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: mockUser.email,
+						provider: "APPLE",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -895,6 +1071,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "google_unknown@social.aido.app",
+					provider: "GOOGLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -933,6 +1110,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@gmail.com",
+						provider: "GOOGLE",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -960,6 +1138,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "kakao_unknown@social.aido.app",
+					provider: "KAKAO",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -998,6 +1177,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@kakao.com",
+						provider: "KAKAO",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -1025,6 +1205,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "naver_unknown@social.aido.app",
+					provider: "NAVER",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
 					success: false,
@@ -1063,6 +1244,7 @@ describe("OAuthService", () => {
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@naver.com",
+						provider: "NAVER",
 						ipAddress: mockMetadata.ip,
 						userAgent: mockMetadata.userAgent,
 						success: true,
@@ -1086,6 +1268,7 @@ describe("OAuthService", () => {
 
 				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
+					provider: "APPLE",
 					ipAddress: "unknown",
 					userAgent: "unknown",
 					success: false,

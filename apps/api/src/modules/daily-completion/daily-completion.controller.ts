@@ -48,6 +48,7 @@ export class DailyCompletionController {
 	@Get()
 	@ApiDoc({
 		summary: "날짜 범위 내 일일 완료 현황 조회",
+		operationId: "getDailyCompletions",
 		description: `
 ## 📊 일일 완료 현황 조회
 

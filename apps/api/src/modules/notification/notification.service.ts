@@ -3,7 +3,13 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import type { Notification, PushToken } from "@/generated/prisma/client";
+import type {
+	Notification,
+	NotificationType,
+	PushToken,
+} from "@/generated/prisma/client";
+import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 
 import { NotificationMapper } from "./notification.mapper";
 import { NotificationRepository } from "./notification.repository";
@@ -17,6 +23,7 @@ import type {
 	FindNotificationsParams,
 	RegisterPushTokenData,
 } from "./types/notification.types";
+import { isNightTime } from "./utils";
 
 // =============================================================================
 // Service
@@ -30,6 +37,16 @@ import type {
  * - 알림 목록 조회 (커서 기반 페이지네이션)
  * - 읽음 처리
  */
+/**
+ * 마케팅 알림 타입 목록
+ * 향후 마케팅 알림이 추가되면 여기에 등록합니다.
+ * 마케팅 알림은 marketingAgreedAt이 있어야만 발송됩니다.
+ */
+const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
+	// 현재는 마케팅 알림 타입이 없음
+	// 향후 추가 예정: "MARKETING_PROMOTION", "MARKETING_EVENT" 등
+]);
+
 @Injectable()
 export class NotificationService {
 	private readonly logger = new Logger(NotificationService.name);
@@ -38,6 +55,8 @@ export class NotificationService {
 		private readonly notificationRepository: NotificationRepository,
 		private readonly paginationService: PaginationService,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
+		private readonly userPreferenceRepository: UserPreferenceRepository,
+		private readonly userConsentRepository: UserConsentRepository,
 	) {}
 
 	// =========================================================================
@@ -98,16 +117,29 @@ export class NotificationService {
 	 * 알림 생성 및 푸시 발송
 	 *
 	 * 1. DB에 알림 레코드 생성
-	 * 2. 사용자의 활성 푸시 토큰 조회
-	 * 3. 푸시 알림 발송
-	 * 4. 실패한 토큰 비활성화
+	 * 2. 사용자 푸시 설정 확인 (pushEnabled, nightPushEnabled, 마케팅 동의)
+	 * 3. 설정에 따라 푸시 발송 여부 결정
+	 * 4. 발송 시 실패한 토큰 비활성화
 	 */
 	async createAndSend(data: CreateNotificationData): Promise<Notification> {
-		// 1. DB에 알림 생성
+		// 1. DB에 알림 생성 (항상 저장)
 		const notification =
 			await this.notificationRepository.createNotification(data);
 
-		// 2. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
+		// 2. 푸시 발송 여부 결정
+		const shouldSend = await this.shouldSendPush(
+			data.userId,
+			data.type as NotificationType,
+		);
+
+		if (!shouldSend) {
+			this.logger.debug(
+				`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
+			);
+			return notification;
+		}
+
+		// 3. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
 		this.sendPushToUser(data.userId, {
 			title: data.title,
 			body: data.body,
@@ -135,17 +167,37 @@ export class NotificationService {
 			return { count: 0 };
 		}
 
-		// 1. DB에 알림 일괄 생성
+		// 1. DB에 알림 일괄 생성 (항상 저장)
 		const result =
 			await this.notificationRepository.createManyNotifications(dataList);
 
-		// 2. 고유 사용자 ID 추출
-		const userIds = [...new Set(dataList.map((d) => d.userId))];
+		// 2. 각 사용자별 푸시 발송 가능 여부 확인
+		const eligibleDataList: CreateNotificationData[] = [];
+		for (const data of dataList) {
+			const shouldSend = await this.shouldSendPush(
+				data.userId,
+				data.type as NotificationType,
+			);
+			if (shouldSend) {
+				eligibleDataList.push(data);
+			} else {
+				this.logger.debug(
+					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
+				);
+			}
+		}
 
-		// 3. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
+		if (eligibleDataList.length === 0) {
+			return result;
+		}
+
+		// 3. 고유 사용자 ID 추출 (발송 대상만)
+		const userIds = [...new Set(eligibleDataList.map((d) => d.userId))];
+
+		// 4. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
 		this.sendPushToUsers(
 			userIds,
-			dataList.map((d) => ({
+			eligibleDataList.map((d) => ({
 				userId: d.userId,
 				title: d.title,
 				body: d.body,
@@ -263,6 +315,65 @@ export class NotificationService {
 		);
 
 		return result;
+	}
+
+	// =========================================================================
+	// 푸시 필터링 (Private)
+	// =========================================================================
+
+	/**
+	 * 푸시 발송 여부 결정
+	 *
+	 * 다음 조건을 순차적으로 확인합니다:
+	 * 1. pushEnabled가 false면 발송 안 함
+	 * 2. 야간 시간(21:00-08:00 KST)이고 nightPushEnabled가 false면 발송 안 함
+	 * 3. 마케팅 알림인데 marketingAgreedAt이 null이면 발송 안 함
+	 *
+	 * @param userId 사용자 ID
+	 * @param type 알림 타입
+	 * @returns 푸시 발송 여부
+	 */
+	private async shouldSendPush(
+		userId: string,
+		type: NotificationType,
+	): Promise<boolean> {
+		// 1. 사용자 푸시 설정 조회
+		const preference = await this.userPreferenceRepository.findByUserId(userId);
+
+		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
+		if (!preference) {
+			this.logger.debug(
+				`No preference found for user ${userId}, skipping push`,
+			);
+			return false;
+		}
+
+		// 2. 푸시 전체 OFF 확인
+		if (!preference.pushEnabled) {
+			return false;
+		}
+
+		// 3. 야간 시간대 확인 (21:00-08:00 KST)
+		if (isNightTime() && !preference.nightPushEnabled) {
+			return false;
+		}
+
+		// 4. 마케팅 알림 확인
+		if (this.isMarketingNotification(type)) {
+			const consent = await this.userConsentRepository.findByUserId(userId);
+			if (!consent?.marketingAgreedAt) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * 마케팅 알림 여부 확인
+	 */
+	private isMarketingNotification(type: NotificationType): boolean {
+		return MARKETING_NOTIFICATION_TYPES.has(type);
 	}
 
 	// =========================================================================

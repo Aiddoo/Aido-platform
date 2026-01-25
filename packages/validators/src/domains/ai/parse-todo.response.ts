@@ -3,7 +3,7 @@
  * @description LLM이 파싱한 구조화된 투두 데이터
  */
 import { z } from 'zod';
-import { tokenUsageSchema } from './ai-usage.schema';
+import { tokenUsageSchema } from './ai-usage.response';
 
 /** 시간 형식 검증 (HH:mm) */
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;

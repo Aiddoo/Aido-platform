@@ -100,6 +100,7 @@ export class AiController {
 	@UseGuards(AiUsageGuard)
 	@ApiDoc({
 		summary: "자연어 텍스트를 투두 데이터로 파싱",
+		operationId: "parseNaturalLanguageTodo",
 		description: `한국어 자연어 입력을 분석하여 구조화된 투두 데이터를 생성합니다.
 
 ## 📝 입력 필드
@@ -241,6 +242,7 @@ if (confirmed) {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "AI 사용량 조회",
+		operationId: "getAiUsage",
 		description: `현재 사용자의 일일 AI 사용량을 조회합니다.
 
 ## 📊 응답 데이터

@@ -1041,4 +1041,183 @@ describe("Auth (e2e)", () => {
 			expect(successfulAttempts.length).toBeGreaterThanOrEqual(2);
 		});
 	});
+
+	describe("푸시 설정 관리", () => {
+		const settingsEmail = "settings-test@example.com";
+		const settingsPassword = "Test1234!";
+		let accessToken: string;
+
+		beforeAll(async () => {
+			accessToken = await createVerifiedUser(settingsEmail, settingsPassword);
+		});
+
+		it("GET /auth/preference - 기본 설정 조회", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("pushEnabled");
+			expect(response.body.data).toHaveProperty("nightPushEnabled");
+			// 기본값은 false
+			expect(response.body.data.pushEnabled).toBe(false);
+			expect(response.body.data.nightPushEnabled).toBe(false);
+		});
+
+		it("PATCH /auth/preference - 푸시 설정 활성화", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ pushEnabled: true })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.pushEnabled).toBe(true);
+			expect(response.body.data.nightPushEnabled).toBe(false);
+		});
+
+		it("PATCH /auth/preference - 야간 푸시 설정 활성화", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ nightPushEnabled: true })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.pushEnabled).toBe(true); // 이전 설정 유지
+			expect(response.body.data.nightPushEnabled).toBe(true);
+		});
+
+		it("PATCH /auth/preference - 여러 설정 동시 변경", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ pushEnabled: false, nightPushEnabled: false })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.pushEnabled).toBe(false);
+			expect(response.body.data.nightPushEnabled).toBe(false);
+		});
+
+		it("GET /auth/preference - 변경된 설정 확인", async () => {
+			// 먼저 설정 변경
+			await request(app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ pushEnabled: true, nightPushEnabled: true })
+				.expect(200);
+
+			// 변경된 설정 조회
+			const response = await request(app.getHttpServer())
+				.get("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response.body.data.pushEnabled).toBe(true);
+			expect(response.body.data.nightPushEnabled).toBe(true);
+		});
+
+		it("GET /auth/preference - 인증 없이 접근 거부", async () => {
+			await request(app.getHttpServer()).get("/auth/preference").expect(401);
+		});
+
+		it("PATCH /auth/preference - 인증 없이 접근 거부", async () => {
+			await request(app.getHttpServer())
+				.patch("/auth/preference")
+				.send({ pushEnabled: true })
+				.expect(401);
+		});
+	});
+
+	describe("약관 동의 관리", () => {
+		const consentEmail = "consent-test@example.com";
+		const consentPassword = "Test1234!";
+		let accessToken: string;
+
+		beforeAll(async () => {
+			accessToken = await createVerifiedUser(consentEmail, consentPassword);
+		});
+
+		it("GET /auth/consent - 동의 상태 조회", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/consent")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("termsAgreedAt");
+			expect(response.body.data).toHaveProperty("privacyAgreedAt");
+			expect(response.body.data).toHaveProperty("marketingAgreedAt");
+			expect(response.body.data).toHaveProperty("agreedTermsVersion");
+			// 회원가입 시 동의했으므로 termsAgreedAt, privacyAgreedAt은 값이 있음
+			expect(response.body.data.termsAgreedAt).not.toBeNull();
+			expect(response.body.data.privacyAgreedAt).not.toBeNull();
+			// 마케팅 동의는 기본적으로 없음
+			expect(response.body.data.marketingAgreedAt).toBeNull();
+		});
+
+		it("PATCH /auth/consent/marketing - 마케팅 동의 활성화", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/consent/marketing")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ agreed: true })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data).toHaveProperty("marketingAgreedAt");
+			expect(response.body.data.marketingAgreedAt).not.toBeNull();
+		});
+
+		it("GET /auth/consent - 마케팅 동의 상태 확인", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/consent")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response.body.data.marketingAgreedAt).not.toBeNull();
+		});
+
+		it("PATCH /auth/consent/marketing - 마케팅 동의 철회", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/consent/marketing")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ agreed: false })
+				.expect(200);
+
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.marketingAgreedAt).toBeNull();
+		});
+
+		it("GET /auth/consent - 마케팅 동의 철회 확인", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/auth/consent")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response.body.data.marketingAgreedAt).toBeNull();
+		});
+
+		it("GET /auth/consent - 인증 없이 접근 거부", async () => {
+			await request(app.getHttpServer()).get("/auth/consent").expect(401);
+		});
+
+		it("PATCH /auth/consent/marketing - 인증 없이 접근 거부", async () => {
+			await request(app.getHttpServer())
+				.patch("/auth/consent/marketing")
+				.send({ agreed: true })
+				.expect(401);
+		});
+
+		it("PATCH /auth/consent/marketing - 잘못된 요청 본문", async () => {
+			const response = await request(app.getHttpServer())
+				.patch("/auth/consent/marketing")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({}) // agreed 필드 누락
+				.expect(400);
+
+			expect(response.body.success).toBe(false);
+		});
+	});
 });

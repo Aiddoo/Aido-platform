@@ -129,6 +129,7 @@ export class NotificationController {
 	@Post("token")
 	@ApiDoc({
 		summary: "푸시 토큰 등록",
+		operationId: "registerPushToken",
 		description: `
 ## 📱 푸시 토큰 등록
 
@@ -181,6 +182,7 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "푸시 토큰 해제",
+		operationId: "unregisterPushToken",
 		description: `
 ## 🔕 푸시 토큰 해제
 
@@ -232,6 +234,7 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@Get()
 	@ApiDoc({
 		summary: "알림 목록 조회",
+		operationId: "getNotifications",
 		description: `
 ## 📋 알림 목록 조회
 
@@ -288,6 +291,7 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@Get("unread-count")
 	@ApiDoc({
 		summary: "읽지 않은 알림 수 조회",
+		operationId: "getUnreadCount",
 		description: `
 ## 🔢 읽지 않은 알림 수 조회
 
@@ -325,6 +329,7 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "단일 알림 읽음 처리",
+		operationId: "markNotificationAsRead",
 		description: `
 ## ✅ 단일 알림 읽음 처리
 
@@ -369,6 +374,7 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "모든 알림 읽음 처리",
+		operationId: "markAllNotificationsAsRead",
 		description: `
 ## ✅ 모든 알림 읽음 처리
 

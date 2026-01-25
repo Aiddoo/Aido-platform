@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -81,6 +81,7 @@ export class CheerController {
 	@Post()
 	@ApiDoc({
 		summary: "응원 보내기",
+		operationId: "sendCheer",
 		description: `
 ## 🎉 응원 보내기
 
@@ -150,6 +151,7 @@ export class CheerController {
 	@Get("received")
 	@ApiDoc({
 		summary: "받은 응원 목록 조회",
+		operationId: "getReceivedCheers",
 		description: `
 ## 📥 받은 응원 목록 조회
 
@@ -177,18 +179,6 @@ export class CheerController {
 	})
 	@ApiSuccessResponse({ type: ReceivedCheersResponseDto })
 	@ApiUnauthorizedError()
-	@ApiQuery({
-		name: "limit",
-		required: false,
-		type: Number,
-		description: "조회할 개수 (1-50, 기본값: 20)",
-	})
-	@ApiQuery({
-		name: "cursor",
-		required: false,
-		type: Number,
-		description: "페이지네이션 커서",
-	})
 	async getReceivedCheers(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -213,6 +203,7 @@ export class CheerController {
 	@Get("sent")
 	@ApiDoc({
 		summary: "보낸 응원 목록 조회",
+		operationId: "getSentCheers",
 		description: `
 ## 📤 보낸 응원 목록 조회
 
@@ -239,18 +230,6 @@ export class CheerController {
 	})
 	@ApiSuccessResponse({ type: SentCheersResponseDto })
 	@ApiUnauthorizedError()
-	@ApiQuery({
-		name: "limit",
-		required: false,
-		type: Number,
-		description: "조회할 개수 (1-50, 기본값: 20)",
-	})
-	@ApiQuery({
-		name: "cursor",
-		required: false,
-		type: Number,
-		description: "페이지네이션 커서",
-	})
 	async getSentCheers(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -278,6 +257,7 @@ export class CheerController {
 	@Get("limit")
 	@ApiDoc({
 		summary: "일일 응원 제한 정보 조회",
+		operationId: "getCheerLimitInfo",
 		description: `
 ## 📊 일일 응원 제한 정보 조회
 
@@ -312,6 +292,7 @@ export class CheerController {
 	@Get("cooldown/:userId")
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
+		operationId: "getCheerCooldownInfo",
 		description: `
 ## ⏱️ 쿨다운 상태 조회
 
@@ -361,6 +342,7 @@ export class CheerController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "응원 읽음 처리",
+		operationId: "markCheerAsRead",
 		description: `
 ## ✅ 응원 읽음 처리
 
@@ -404,6 +386,7 @@ export class CheerController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "여러 응원 읽음 처리",
+		operationId: "markManyCheersAsRead",
 		description: `
 ## ✅ 여러 응원 읽음 처리
 

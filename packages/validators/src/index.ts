@@ -37,3 +37,5 @@ export * from './domains/follow';
 export * from './domains/notification';
 export * from './domains/nudge';
 export * from './domains/todo';
+export * from './domains/user-consent';
+export * from './domains/user-preference';

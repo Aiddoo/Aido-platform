@@ -83,6 +83,7 @@ export class TodoController {
 	@Post()
 	@ApiDoc({
 		summary: "할 일 생성",
+		operationId: "createTodo",
 		description: `새로운 할 일을 생성합니다.
 
 📝 **필수 필드**
@@ -144,6 +145,7 @@ export class TodoController {
 	@Get()
 	@ApiDoc({
 		summary: "할 일 목록 조회",
+		operationId: "getTodos",
 		description: `사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
 
 📝 **쿼리 파라미터**
@@ -191,6 +193,7 @@ export class TodoController {
 	@Get(":id")
 	@ApiDoc({
 		summary: "할 일 상세 조회",
+		operationId: "getTodoById",
 		description: `특정 할 일의 상세 정보를 조회합니다.
 
 📝 **경로 파라미터**: \`:id\` - 할 일 고유 ID (숫자)
@@ -223,6 +226,7 @@ export class TodoController {
 	@Get("friends/:userId")
 	@ApiDoc({
 		summary: "친구의 할 일 목록 조회",
+		operationId: "getFriendTodos",
 		description: `친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
 
 ⚠️ **접근 조건**: 맞팔 관계여야만 조회 가능 (PRIVATE 투두는 조회 불가)
@@ -276,6 +280,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 수정",
+		operationId: "updateTodo",
 		description: `할 일의 정보를 부분 수정합니다.
 
 📝 **수정 가능 필드**: title, content, color, startDate, endDate, scheduledTime, isAllDay, visibility, completed
@@ -334,6 +339,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 완료 상태 토글",
+		operationId: "toggleTodoComplete",
 		description: `할 일의 완료 상태를 변경합니다.
 
 📝 **요청 필드**: \`completed\` (boolean, 필수)
@@ -378,6 +384,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 공개 범위 변경",
+		operationId: "updateTodoVisibility",
 		description: `할 일의 공개 범위를 변경합니다.
 
 📝 **요청 필드**: \`visibility\` (enum: \`PUBLIC\` | \`PRIVATE\`, 필수)
@@ -420,6 +427,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 색상 변경",
+		operationId: "updateTodoColor",
 		description: `할 일의 색상을 변경하거나 제거합니다.
 
 📝 **요청 필드**: \`color\` (HEX string | null, 필수) - 예: \`#FF5733\`, 제거시 \`null\`
@@ -462,6 +470,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 일정 변경",
+		operationId: "updateTodoSchedule",
 		description: `할 일의 날짜와 시간을 변경합니다.
 
 📝 **요청 필드** (모두 선택)
@@ -510,6 +519,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 제목/내용 수정",
+		operationId: "updateTodoContent",
 		description: `할 일의 제목 또는 내용을 수정합니다.
 
 📝 **요청 필드** (최소 1개 필수)
@@ -560,6 +570,7 @@ export class TodoController {
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "할 일 삭제",
+		operationId: "deleteTodo",
 		description: `특정 할 일을 삭제합니다.
 
 ⚠️ **주의**: 삭제된 할 일은 복구할 수 없습니다.

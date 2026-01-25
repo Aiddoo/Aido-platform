@@ -57,6 +57,8 @@ export interface MockTransactionClient {
 	dailyCompletion: MockModelDelegate;
 	follow: MockModelDelegate;
 	nudge: MockModelDelegate;
+	userPreference: MockModelDelegate;
+	userConsent: MockModelDelegate;
 }
 
 /**
@@ -84,6 +86,8 @@ export function createMockTxClient(): MockTransactionClient {
 		dailyCompletion: createMockModelDelegate(),
 		follow: createMockModelDelegate(),
 		nudge: createMockModelDelegate(),
+		userPreference: createMockModelDelegate(),
+		userConsent: createMockModelDelegate(),
 	};
 }
 

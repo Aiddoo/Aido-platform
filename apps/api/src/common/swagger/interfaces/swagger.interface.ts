@@ -9,6 +9,8 @@ export interface ApiDocOptions {
 	summary: string;
 	/** API 상세 설명 */
 	description?: string;
+	/** API 고유 식별자 (클라이언트 SDK 생성 시 사용) */
+	operationId?: string;
 	/** Deprecated 표시 여부 */
 	deprecated?: boolean;
 	/** 공통 에러 응답(400, 500) 자동 포함 여부 (기본값: true) */

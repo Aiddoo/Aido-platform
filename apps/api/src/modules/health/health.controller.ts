@@ -19,6 +19,7 @@ export class HealthController {
 	@HealthCheck()
 	@ApiDoc({
 		summary: "서버 상태 확인",
+		operationId: "healthCheck",
 		description: `
 ## 🏥 헬스 체크
 

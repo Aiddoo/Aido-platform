@@ -1,6 +1,11 @@
 /**
- * AI 도메인 스키마 내보내기
+ * AI Domain
+ *
+ * AI 자연어 처리 및 사용량 관련 스키마 및 타입
  */
-export * from './ai-usage.schema';
+
+// 응답 스키마 (Response)
+export * from './ai-usage.response';
+// 요청 스키마 (Request)
 export * from './parse-todo.request';
 export * from './parse-todo.response';
