@@ -374,4 +374,14 @@ export class FollowRepository {
 		});
 		return user?.profile?.name ?? null;
 	}
+
+	/**
+	 * userTag로 사용자 조회
+	 */
+	async findUserByTag(userTag: string): Promise<{ id: string } | null> {
+		return this.database.user.findUnique({
+			where: { userTag },
+			select: { id: true },
+		});
+	}
 }

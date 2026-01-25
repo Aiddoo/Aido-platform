@@ -22,30 +22,23 @@ export type UserIdParam = z.infer<typeof userIdParamSchema>;
 // 친구 요청 보내기
 // ============================================
 
-/** 사용자 태그로 친구 요청 */
-export const followByTagSchema = z
+/** 사용자 태그 파라미터 스키마 */
+export const userTagParamSchema = z
   .object({
     userTag: z
       .string()
       .length(8, '사용자 태그는 8자리입니다')
       .regex(/^[A-Z0-9]+$/, '사용자 태그는 영문 대문자와 숫자만 허용됩니다')
-      .describe('친구 요청할 사용자의 태그 (8자리 영숫자)'),
+      .describe('사용자 태그 (8자리 영숫자)'),
   })
-  .describe('사용자 태그로 친구 요청');
+  .describe('사용자 태그 파라미터');
 
-export type FollowByTagInput = z.infer<typeof followByTagSchema>;
+export type UserTagParam = z.infer<typeof userTagParamSchema>;
 
-/** 사용자 ID로 친구 요청 */
-export const followByIdSchema = z
-  .object({
-    userId: z.string().cuid('유효하지 않은 사용자 ID입니다').describe('친구 요청할 사용자의 ID'),
-  })
-  .describe('사용자 ID로 친구 요청');
-
-export type FollowByIdInput = z.infer<typeof followByIdSchema>;
-
-/** 친구 요청 보내기 (URL 파라미터) */
-export const sendFriendRequestParamSchema = userIdParamSchema.describe('친구 요청 보내기 파라미터');
+/** 친구 요청 보내기 (URL 파라미터) - userTag 기반 */
+export const sendFriendRequestParamSchema = userTagParamSchema.describe(
+  '친구 요청 보내기 파라미터',
+);
 
 export type SendFriendRequestParam = z.infer<typeof sendFriendRequestParamSchema>;
 
@@ -124,25 +117,3 @@ export type GetFriendsQuery = z.infer<typeof getFriendsQuerySchema>;
 export const getFriendTodosParamSchema = userIdParamSchema.describe('친구 투두 조회 파라미터');
 
 export type GetFriendTodosParam = z.infer<typeof getFriendTodosParamSchema>;
-
-// ============================================
-// 레거시 호환
-// ============================================
-
-/** 언팔로우 요청 (레거시) */
-export const unfollowSchema = z
-  .object({
-    userId: z.string().cuid('유효하지 않은 사용자 ID입니다').describe('언팔로우할 사용자의 ID'),
-  })
-  .describe('언팔로우 요청');
-
-export type UnfollowInput = z.infer<typeof unfollowSchema>;
-
-/** 팔로워 삭제 요청 (나를 팔로우한 사람 삭제) */
-export const removeFollowerSchema = z
-  .object({
-    userId: z.string().cuid('유효하지 않은 사용자 ID입니다').describe('삭제할 팔로워의 사용자 ID'),
-  })
-  .describe('팔로워 삭제 요청');
-
-export type RemoveFollowerInput = z.infer<typeof removeFollowerSchema>;

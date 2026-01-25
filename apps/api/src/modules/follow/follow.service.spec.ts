@@ -31,6 +31,7 @@ describe("FollowService", () => {
 		countSentRequests: jest.fn(),
 		userExists: jest.fn(),
 		getUserName: jest.fn(),
+		findUserByTag: jest.fn(),
 	};
 
 	const mockPaginationService = {
@@ -55,6 +56,7 @@ describe("FollowService", () => {
 	const mockUserId = "user-123";
 	const mockTargetUserId = "user-456";
 	const mockFollowId = "follow-789";
+	const mockTargetUserTag = "JOHN2026";
 
 	const mockFollow: Follow = {
 		id: mockFollowId,
@@ -98,6 +100,96 @@ describe("FollowService", () => {
 		}).compile();
 
 		service = module.get<FollowService>(FollowService);
+	});
+
+	// ============================================
+	// sendRequestByTag
+	// ============================================
+
+	describe("sendRequestByTag", () => {
+		beforeEach(() => {
+			mockFollowRepository.findUserByTag.mockResolvedValue({
+				id: mockTargetUserId,
+			});
+			mockFollowRepository.userExists.mockResolvedValue(true);
+			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(null);
+			mockFollowRepository.create.mockResolvedValue(mockFollow);
+		});
+
+		it("userTag로 친구 요청을 보낼 수 있다", async () => {
+			// Given
+			// - beforeEach에서 기본 mock 설정됨
+
+			// When
+			const result = await service.sendRequestByTag(
+				mockUserId,
+				mockTargetUserTag,
+			);
+
+			// Then
+			expect(result.follow).toEqual(mockFollow);
+			expect(result.autoAccepted).toBe(false);
+			expect(mockFollowRepository.findUserByTag).toHaveBeenCalledWith(
+				mockTargetUserTag,
+			);
+			expect(mockFollowRepository.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					follower: { connect: { id: mockUserId } },
+					following: { connect: { id: mockTargetUserId } },
+					status: "PENDING",
+				}),
+			);
+		});
+
+		it("존재하지 않는 userTag로 요청 시 FOLLOW_0905 에러를 던진다", async () => {
+			// Given
+			mockFollowRepository.findUserByTag.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.sendRequestByTag(mockUserId, "INVALID1"),
+			).rejects.toThrow(BusinessException);
+			expect(mockFollowRepository.findUserByTag).toHaveBeenCalledWith(
+				"INVALID1",
+			);
+		});
+
+		it("기존 sendRequest 로직을 재사용한다 (자동 수락 케이스)", async () => {
+			// Given
+			const reverseFollow: Follow = {
+				id: "reverse-follow-id",
+				followerId: mockTargetUserId,
+				followingId: mockUserId,
+				status: "PENDING",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockFollowRepository.findByFollowerAndFollowing
+				.mockResolvedValueOnce(null) // userId -> targetUserId 조회
+				.mockResolvedValueOnce(reverseFollow); // targetUserId -> userId 조회
+
+			mockFollowRepository.updateByFollowerAndFollowing.mockResolvedValue({
+				...reverseFollow,
+				status: "ACCEPTED",
+			});
+
+			const autoAcceptedFollow: Follow = {
+				...mockFollow,
+				status: "ACCEPTED",
+			};
+			mockFollowRepository.create.mockResolvedValue(autoAcceptedFollow);
+
+			// When
+			const result = await service.sendRequestByTag(
+				mockUserId,
+				mockTargetUserTag,
+			);
+
+			// Then
+			expect(result.autoAccepted).toBe(true);
+			expect(result.follow.status).toBe("ACCEPTED");
+		});
 	});
 
 	// ============================================

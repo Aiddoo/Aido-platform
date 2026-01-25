@@ -39,6 +39,7 @@ import {
 	SendFriendRequestResponseDto,
 	SentRequestsResponseDto,
 	UserIdParamDto,
+	UserTagParamDto,
 } from "./dtos";
 import { FollowMapper } from "./follow.mapper";
 import { FollowService } from "./follow.service";
@@ -51,7 +52,7 @@ import { FollowService } from "./follow.service";
  * 친구 요청 및 친구 관계 관리를 위한 API입니다.
  *
  * ### 친구 요청 엔드포인트
- * - POST /follows/:userId - 친구 요청 보내기
+ * - POST /follows/:userTag - 친구 요청 보내기 (userTag: 8자리 영숫자)
  * - PATCH /follows/:userId/accept - 친구 요청 수락
  * - PATCH /follows/:userId/reject - 친구 요청 거절
  * - DELETE /follows/:userId - 친구 삭제 / 요청 철회
@@ -118,7 +119,7 @@ export class FollowController {
 	// 친구 요청 액션
 	// ============================================
 
-	@Post(":userId")
+	@Post(":userTag")
 	@ApiDoc({
 		summary: "친구 요청 보내기",
 		operationId: "sendFriendRequest",
@@ -131,7 +132,7 @@ export class FollowController {
 \`Authorization: Bearer {accessToken}\`
 
 ### 📝 경로 파라미터
-- \`userId\`: 친구 요청을 보낼 대상 사용자 ID (CUID)
+- \`userTag\`: 친구 요청을 보낼 대상 사용자 태그 (8자리 영숫자, 예: JOHN2026)
 
 ### 💡 동작 방식
 1. 대상 사용자에게 친구 요청을 보냅니다 (status: PENDING)
@@ -154,13 +155,13 @@ export class FollowController {
 	@ApiConflictError(ErrorCode.FOLLOW_0902)
 	async sendRequest(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param() params: UserIdParamDto,
+		@Param() params: UserTagParamDto,
 	): Promise<SendFriendRequestResponseDto> {
-		this.logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userId}`);
+		this.logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
-		const result = await this.followService.sendRequest(
+		const result = await this.followService.sendRequestByTag(
 			user.userId,
-			params.userId,
+			params.userTag,
 		);
 
 		const message = result.autoAccepted
@@ -168,7 +169,7 @@ export class FollowController {
 			: "친구 요청을 보냈습니다.";
 
 		this.logger.log(
-			`친구 요청 완료: ${user.userId} -> ${params.userId}, autoAccepted=${result.autoAccepted}`,
+			`친구 요청 완료: ${user.userId} -> ${params.userTag}, autoAccepted=${result.autoAccepted}`,
 		);
 
 		return {

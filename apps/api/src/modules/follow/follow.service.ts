@@ -39,7 +39,27 @@ export class FollowService {
 	// =========================================================================
 
 	/**
-	 * 친구 요청 보내기
+	 * userTag로 친구 요청 보내기
+	 *
+	 * @param userId 요청자 ID
+	 * @param targetUserTag 대상 사용자 태그 (8자리 영숫자)
+	 */
+	async sendRequestByTag(
+		userId: string,
+		targetUserTag: string,
+	): Promise<SendFollowRequestResult> {
+		// userTag로 사용자 조회
+		const targetUser = await this.followRepository.findUserByTag(targetUserTag);
+		if (!targetUser) {
+			throw BusinessExceptions.followTargetNotFound(targetUserTag);
+		}
+
+		// 기존 sendRequest 로직 재사용
+		return this.sendRequest(userId, targetUser.id);
+	}
+
+	/**
+	 * 친구 요청 보내기 (userId 기반)
 	 *
 	 * 1. 자기 자신 체크
 	 * 2. 대상 사용자 존재 체크
