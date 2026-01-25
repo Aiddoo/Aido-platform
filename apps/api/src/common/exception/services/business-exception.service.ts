@@ -418,6 +418,10 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.FOLLOW_0905, { targetUserId });
 	}
 
+	static followTargetNotFoundByTag(userTag: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0905, { userTag });
+	}
+
 	static notFriendsCannotViewTodos(targetUserId: string) {
 		return new BusinessException(ErrorCode.FOLLOW_0906, { targetUserId });
 	}

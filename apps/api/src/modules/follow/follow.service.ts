@@ -51,7 +51,7 @@ export class FollowService {
 		// userTag로 사용자 조회
 		const targetUser = await this.followRepository.findUserByTag(targetUserTag);
 		if (!targetUser) {
-			throw BusinessExceptions.followTargetNotFound(targetUserTag);
+			throw BusinessExceptions.followTargetNotFoundByTag(targetUserTag);
 		}
 
 		// 기존 sendRequest 로직 재사용
