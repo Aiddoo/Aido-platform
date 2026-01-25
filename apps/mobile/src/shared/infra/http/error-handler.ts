@@ -27,7 +27,8 @@ interface ServerErrorResponse {
 }
 
 export const handleApiErrors: AfterResponseHook = async (_request, _options, response) => {
-  if (!response.ok) {
+  // 401은 refresh 로직에서 처리하므로 건너뜀
+  if (!response.ok && response.status !== 401) {
     const { error } = (await response.json()) as ServerErrorResponse;
     const userMessage =
       MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
