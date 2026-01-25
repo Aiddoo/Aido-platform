@@ -73,6 +73,7 @@ describe("FollowService Integration Tests", () => {
 	const mockUserId = "user-integration-123";
 	const mockTargetUserId = "user-integration-456";
 	const mockFollowId = "follow-integration-789";
+	const mockTargetUserTag = "TGT67890";
 
 	const createMockFollow = (overrides: Partial<Follow> = {}) => ({
 		id: mockFollowId,
@@ -243,6 +244,86 @@ describe("FollowService Integration Tests", () => {
 
 			// When
 			const result = await service.sendRequest(mockUserId, mockTargetUserId);
+
+			// Then
+			expect(result.follow.status).toBe("ACCEPTED");
+			expect(result.autoAccepted).toBe(true);
+		});
+	});
+
+	// ============================================
+	// sendRequestByTag 통합 테스트
+	// ============================================
+
+	describe("sendRequestByTag 통합 테스트", () => {
+		it("userTag로 친구 요청을 보내고 Follow 레코드가 생성된다", async () => {
+			// Given
+			const mockFollow = createMockFollow();
+			// userTag로 사용자 조회
+			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
+			// userId로 사용자 존재 확인 (sendRequest 내부)
+			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
+			// 첫 번째 호출: 내가 보낸 요청 확인 (없음)
+			mockFollowDb.findUnique.mockResolvedValueOnce(null);
+			// 두 번째 호출: 상대방이 보낸 요청 확인 (없음)
+			mockFollowDb.findUnique.mockResolvedValueOnce(null);
+			mockFollowDb.create.mockResolvedValue(mockFollow);
+
+			// When
+			const result = await service.sendRequestByTag(
+				mockUserId,
+				mockTargetUserTag,
+			);
+
+			// Then
+			expect(result).toBeDefined();
+			expect(result.follow.followerId).toBe(mockUserId);
+			expect(result.follow.followingId).toBe(mockTargetUserId);
+			expect(result.follow.status).toBe("PENDING");
+			expect(result.autoAccepted).toBe(false);
+		});
+
+		it("존재하지 않는 userTag로 요청 시 FOLLOW_0905 에러가 발생한다", async () => {
+			// Given
+			mockUserDb.findUnique.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.sendRequestByTag(mockUserId, "NOTEXIST"),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("userTag로 요청 시 기존 sendRequest 로직을 재사용한다 (자동 수락 케이스)", async () => {
+			// Given
+			const reverseFollow = createMockFollow({
+				id: "reverse-follow-id",
+				followerId: mockTargetUserId,
+				followingId: mockUserId,
+				status: "PENDING",
+			});
+
+			// userTag로 사용자 조회
+			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
+			// userId로 사용자 존재 확인 (sendRequest 내부)
+			mockUserDb.findUnique.mockResolvedValueOnce({ id: mockTargetUserId });
+			// 첫 번째 호출: 내가 보낸 요청 확인 (없음)
+			mockFollowDb.findUnique.mockResolvedValueOnce(null);
+			// 두 번째 호출: 상대방이 보낸 요청 확인 (있음 - 자동 수락)
+			mockFollowDb.findUnique.mockResolvedValueOnce(reverseFollow);
+
+			mockFollowDb.update.mockResolvedValue({
+				...reverseFollow,
+				status: "ACCEPTED",
+			});
+			mockFollowDb.create.mockResolvedValue(
+				createMockFollow({ status: "ACCEPTED" }),
+			);
+
+			// When
+			const result = await service.sendRequestByTag(
+				mockUserId,
+				mockTargetUserTag,
+			);
 
 			// Then
 			expect(result.follow.status).toBe("ACCEPTED");

@@ -311,6 +311,7 @@ export class AuthService {
 
 		return {
 			userId: user.id,
+			userTag: user.userTag,
 			tokens: result.tokens,
 			name: result.name,
 			profileImage: result.profileImage,
@@ -558,6 +559,7 @@ export class AuthService {
 
 		return {
 			userId: user.id,
+			userTag: user.userTag,
 			tokens: result.tokens,
 			sessionId: result.sessionId,
 			name: result.name,

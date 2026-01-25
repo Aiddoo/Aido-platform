@@ -207,6 +207,7 @@ describe("OAuthService", () => {
 			// Then
 			expect(result).toEqual({
 				userId: "user-123",
+				userTag: "",
 				tokens: mockTokens,
 				sessionId: "session-123",
 				name: "홍길동",
@@ -845,6 +846,7 @@ describe("OAuthService", () => {
 			// Then
 			expect(result).toEqual({
 				userId: "user-123",
+				userTag: "",
 				tokens: mockTokens,
 				sessionId: "session-123",
 				name: "카카오사용자",

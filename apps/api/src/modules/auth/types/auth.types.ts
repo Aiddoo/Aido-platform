@@ -15,6 +15,7 @@ export interface RegisterResult {
  */
 export interface VerifyEmailResult {
 	userId: string;
+	userTag: string;
 	tokens: TokenPair;
 	name: string | null;
 	profileImage: string | null;
@@ -25,6 +26,7 @@ export interface VerifyEmailResult {
  */
 export interface LoginResult {
 	userId: string;
+	userTag: string;
 	tokens: TokenPair;
 	sessionId: string;
 	name: string | null;
