@@ -1,5 +1,5 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { MenuIcon } from '@src/shared/ui/Icon';
+import { LockIcon, MenuIcon } from '@src/shared/ui/Icon';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
@@ -38,14 +38,19 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
         </Checkbox>
 
         <VStack flex={1} gap={2}>
-          <Text
-            size="b3"
-            weight="medium"
-            strikethrough={todo.completed}
-            shade={todo.completed ? 5 : undefined}
-          >
-            {todo.title}
-          </Text>
+          <HStack gap={4} align="center">
+            <Text
+              size="b3"
+              weight="medium"
+              strikethrough={todo.completed}
+              shade={todo.completed ? 5 : undefined}
+            >
+              {todo.title}
+            </Text>
+            {todo.visibility === 'PRIVATE' && (
+              <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+            )}
+          </HStack>
           {showDateTime && (
             <Text size="e1" shade={6}>
               {todo.formattedTime}
