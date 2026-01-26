@@ -303,10 +303,10 @@ describe("InMemoryCacheAdapter", () => {
 	});
 
 	// ============================================
-	// LRU eviction
+	// FIFO eviction
 	// ============================================
 
-	describe("LRU eviction", () => {
+	describe("FIFO eviction", () => {
 		it("최대 항목 수에 도달하면 가장 오래된 항목을 삭제한다", async () => {
 			// Given
 			const smallCache = new InMemoryCacheAdapter({

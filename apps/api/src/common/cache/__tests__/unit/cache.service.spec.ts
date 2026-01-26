@@ -363,6 +363,34 @@ describe("CacheService", () => {
 			);
 			expect(result).toBe(deletedCount);
 		});
+
+		it("특정 두 사용자 간의 친구 관계 캐시를 무효화한다 (ID 정규화)", async () => {
+			// Given
+			const userA = "user_b"; // 큰 ID
+			const userB = "user_a"; // 작은 ID
+
+			// When
+			await service.invalidateMutualFriend(userA, userB);
+
+			// Then - 작은 ID가 먼저 오도록 정규화됨
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
+				`friends:mutual:user_a:user_b`,
+			);
+		});
+
+		it("이미 정렬된 ID로 친구 관계 캐시를 무효화한다", async () => {
+			// Given
+			const userA = "user_1"; // 작은 ID
+			const userB = "user_2"; // 큰 ID
+
+			// When
+			await service.invalidateMutualFriend(userA, userB);
+
+			// Then
+			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
+				`friends:mutual:user_1:user_2`,
+			);
+		});
 	});
 
 	describe("엣지 케이스", () => {

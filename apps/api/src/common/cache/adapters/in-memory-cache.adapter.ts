@@ -11,7 +11,7 @@ interface CacheEntry<T> {
  *
  * - Map 기반 저장소
  * - TTL 지원
- * - LRU 방식 Eviction (maxItems 초과 시)
+ * - FIFO 방식 Eviction (maxItems 초과 시)
  * - 30초마다 만료된 항목 자동 정리
  */
 @Injectable()
@@ -58,7 +58,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	}
 
 	async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
-		// LRU: 최대 항목 수 초과 시 가장 오래된 항목 삭제
+		// FIFO: 최대 항목 수 초과 시 가장 먼저 삽입된 항목 삭제
 		if (this.cache.size >= this.maxItems) {
 			const oldestKey = this.cache.keys().next().value;
 			if (oldestKey) {

@@ -392,7 +392,7 @@ Repository (데이터 액세스)
 - **에러 처리**: 중앙화된 Exception Filter, 표준화된 에러 코드
 - **로깅**: Pino 구조화 로깅 (개발: pretty, 프로덕션: JSON)
 - **테스트**: Jest + Testcontainers (통합 테스트)
-- **캐싱**: In-memory LRU cache (세션, 프로필, 친구 관계, 일일 통계)
+- **캐싱**: Strategy 패턴 기반 캐시 (In-memory FIFO 또는 Redis 지원) (세션, 프로필, 친구 관계, 일일 통계)
 
 ### 공통 모듈
 

@@ -58,6 +58,7 @@ describe("FollowService", () => {
 		setMutualFriend: jest.fn(),
 		del: jest.fn(),
 		invalidateFriendRelations: jest.fn(),
+		invalidateMutualFriend: jest.fn(),
 	};
 
 	// 테스트 데이터

@@ -155,11 +155,7 @@ export class FollowService {
 				} satisfies FollowMutualEventPayload);
 
 				// 캐시 무효화 (친구 관계 변경)
-				const [smallerId, largerId] =
-					userId < targetUserId
-						? [userId, targetUserId]
-						: [targetUserId, userId];
-				await this.cacheService.del(`friends:mutual:${smallerId}:${largerId}`);
+				await this.cacheService.invalidateMutualFriend(userId, targetUserId);
 
 				return { follow, autoAccepted: true };
 			}
@@ -269,11 +265,7 @@ export class FollowService {
 		);
 
 		// 캐시 무효화 (친구 관계 변경)
-		const [smallerId, largerId] =
-			userId < requesterUserId
-				? [userId, requesterUserId]
-				: [requesterUserId, userId];
-		await this.cacheService.del(`friends:mutual:${smallerId}:${largerId}`);
+		await this.cacheService.invalidateMutualFriend(userId, requesterUserId);
 
 		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
 		const [userName, requesterName] = await Promise.all([
@@ -357,11 +349,7 @@ export class FollowService {
 		});
 
 		// 캐시 무효화 (친구 관계 변경)
-		const [smallerIdRemove, largerIdRemove] =
-			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
-		await this.cacheService.del(
-			`friends:mutual:${smallerIdRemove}:${largerIdRemove}`,
-		);
+		await this.cacheService.invalidateMutualFriend(userId, targetUserId);
 
 		this.logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}

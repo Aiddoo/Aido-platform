@@ -155,4 +155,17 @@ export class CacheService {
 	async invalidateFriendRelations(userId: string): Promise<number> {
 		return this.delByPattern(CacheKeys.mutualFriendPattern(userId));
 	}
+
+	/**
+	 * 특정 두 사용자 간의 친구 관계 캐시 무효화
+	 * 내부적으로 ID를 정규화하여 일관된 캐시 키 생성
+	 */
+	async invalidateMutualFriend(
+		userId: string,
+		targetUserId: string,
+	): Promise<void> {
+		const [smallerId, largerId] =
+			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+		return this.del(CacheKeys.mutualFriend(smallerId, largerId));
+	}
 }
