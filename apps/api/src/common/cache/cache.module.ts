@@ -37,6 +37,7 @@ export class CacheModule {
 	 * - CACHE_TYPE: 'memory' | 'redis' (기본값: 'memory')
 	 * - CACHE_DEFAULT_TTL_MS: 기본 TTL (기본값: 60000)
 	 * - CACHE_MAX_ITEMS: 최대 항목 수 (기본값: 1000, 인메모리 전용)
+	 * - CACHE_CLEANUP_INTERVAL_MS: 만료된 항목 정리 주기 (기본값: 30000, 최소: 1000)
 	 * - REDIS_HOST: Redis 호스트 (redis 사용 시 필수)
 	 * - REDIS_PORT: Redis 포트 (기본값: 6379)
 	 * - REDIS_PASSWORD: Redis 비밀번호 (선택)
@@ -55,6 +56,10 @@ export class CacheModule {
 						60_000,
 					),
 					maxItems: configService.get<number>("CACHE_MAX_ITEMS", 1000),
+					cleanupIntervalMs: configService.get<number>(
+						"CACHE_CLEANUP_INTERVAL_MS",
+						30_000,
+					),
 					redis:
 						cacheType === "redis"
 							? {
@@ -73,6 +78,7 @@ export class CacheModule {
 				return new InMemoryCacheAdapter({
 					defaultTtlMs: config.defaultTtlMs,
 					maxItems: config.maxItems,
+					cleanupIntervalMs: config.cleanupIntervalMs,
 				});
 			},
 			inject: [ConfigService],

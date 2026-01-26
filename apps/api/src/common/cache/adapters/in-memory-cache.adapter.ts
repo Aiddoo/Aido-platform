@@ -1,5 +1,10 @@
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
-import type { CacheStats, ICacheService } from "../interfaces/cache.interface";
+import {
+	type CacheStats,
+	type ICacheService,
+	parseTtl,
+	type TtlValue,
+} from "../interfaces/cache.interface";
 
 interface CacheEntry<T> {
 	value: T;
@@ -10,9 +15,10 @@ interface CacheEntry<T> {
  * 인메모리 캐시 어댑터
  *
  * - Map 기반 저장소
- * - TTL 지원
+ * - TTL 지원 (숫자 밀리초 + shorthand 문자열)
  * - FIFO 방식 Eviction (maxItems 초과 시)
  * - 30초마다 만료된 항목 자동 정리
+ * - wrap, mget, mset, has, ttl, touch 메서드 지원
  */
 @Injectable()
 export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
@@ -24,12 +30,25 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	private stats = { hits: 0, misses: 0 };
 	private cleanupInterval: NodeJS.Timeout;
 
-	constructor(config: { defaultTtlMs: number; maxItems: number }) {
+	constructor(config: {
+		defaultTtlMs: number;
+		maxItems: number;
+		cleanupIntervalMs?: number;
+	}) {
 		this.defaultTtlMs = config.defaultTtlMs;
 		this.maxItems = config.maxItems;
 
-		// 30초마다 만료된 항목 정리
-		this.cleanupInterval = setInterval(() => this.cleanup(), 30_000);
+		// cleanupInterval을 설정 가능하게 (기본값 30초)
+		const cleanupInterval = config.cleanupIntervalMs ?? 30_000;
+
+		// validation 추가: 최소 1초
+		if (cleanupInterval < 1000) {
+			throw new Error(
+				`cleanupIntervalMs must be at least 1000ms (1 second), got ${cleanupInterval}ms`,
+			);
+		}
+
+		this.cleanupInterval = setInterval(() => this.cleanup(), cleanupInterval);
 	}
 
 	onModuleDestroy() {
@@ -57,7 +76,13 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 		return entry.value;
 	}
 
-	async set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
+	async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
+		// TTL이 0이면 즉시 만료 (저장하지 않음)
+		if (ttl === 0) {
+			this.logger.debug(`SET ${key} skipped (TTL: 0, immediate expiration)`);
+			return;
+		}
+
 		// FIFO: 최대 항목 수 초과 시 가장 먼저 삽입된 항목 삭제
 		if (this.cache.size >= this.maxItems) {
 			const oldestKey = this.cache.keys().next().value;
@@ -67,9 +92,10 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 			}
 		}
 
-		const expiresAt = Date.now() + (ttlMs ?? this.defaultTtlMs);
+		const ttlMs = ttl !== undefined ? parseTtl(ttl) : this.defaultTtlMs;
+		const expiresAt = Date.now() + ttlMs;
 		this.cache.set(key, { value, expiresAt });
-		this.logger.debug(`SET ${key} (TTL: ${ttlMs ?? this.defaultTtlMs}ms)`);
+		this.logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
 	}
 
 	async del(key: string): Promise<void> {
@@ -108,6 +134,94 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 			memoryUsage: this.estimateMemoryUsage(),
 		};
 	}
+
+	// === 새로운 메서드 (Cacheable 패턴) ===
+
+	async wrap<T>(
+		key: string,
+		factory: () => Promise<T>,
+		ttl?: TtlValue,
+	): Promise<T> {
+		// 1. 캐시 조회
+		const cached = await this.get<T>(key);
+		if (cached !== undefined) {
+			return cached;
+		}
+
+		// 2. Factory 실행
+		const value = await factory();
+
+		// 3. undefined/null이 아니면 캐싱
+		if (value !== undefined && value !== null) {
+			await this.set(key, value, ttl);
+		}
+
+		return value;
+	}
+
+	async mget<T>(keys: string[]): Promise<(T | undefined)[]> {
+		return Promise.all(keys.map((key) => this.get<T>(key)));
+	}
+
+	async mset<T>(
+		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
+	): Promise<void> {
+		await Promise.all(
+			entries.map(({ key, value, ttl }) => this.set(key, value, ttl)),
+		);
+	}
+
+	async has(key: string): Promise<boolean> {
+		const entry = this.cache.get(key);
+		if (!entry) return false;
+
+		// 만료 체크
+		if (Date.now() > entry.expiresAt) {
+			this.cache.delete(key);
+			return false;
+		}
+
+		return true;
+	}
+
+	async ttl(key: string): Promise<number> {
+		const entry = this.cache.get(key);
+
+		// 키가 없으면 -2 (Redis PTTL 규칙)
+		if (!entry) return -2;
+
+		const remaining = entry.expiresAt - Date.now();
+
+		// 이미 만료되었으면 삭제하고 -2
+		if (remaining <= 0) {
+			this.cache.delete(key);
+			return -2;
+		}
+
+		return remaining;
+	}
+
+	async touch(key: string, ttl: TtlValue): Promise<boolean> {
+		const entry = this.cache.get(key);
+
+		// 키가 없으면 false
+		if (!entry) return false;
+
+		// 만료 체크
+		if (Date.now() > entry.expiresAt) {
+			this.cache.delete(key);
+			return false;
+		}
+
+		// TTL 갱신
+		const ttlMs = parseTtl(ttl);
+		entry.expiresAt = Date.now() + ttlMs;
+		this.logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms)`);
+
+		return true;
+	}
+
+	// === Private 헬퍼 ===
 
 	private cleanup(): void {
 		const now = Date.now();

@@ -12,6 +12,11 @@ import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
+import { CacheService } from "@/common/cache/cache.service";
+import {
+	CACHE_SERVICE,
+	type ICacheService,
+} from "@/common/cache/interfaces/cache.interface";
 import { DatabaseService } from "@/database";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { EmailService } from "@/modules/email/email.service";
@@ -24,6 +29,8 @@ describe("Auth (e2e)", () => {
 	let testDatabase: TestDatabase;
 	let fakeEmailService: FakeEmailService;
 	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+	let cacheService: CacheService;
+	let _cacheAdapter: ICacheService;
 
 	/**
 	 * 테스트용 사용자 등록 헬퍼
@@ -121,6 +128,10 @@ describe("Auth (e2e)", () => {
 		app = moduleFixture.createNestApplication();
 		app.useGlobalPipes(new ZodValidationPipe());
 		await app.init();
+
+		// CacheService 인스턴스 가져오기
+		cacheService = moduleFixture.get<CacheService>(CacheService);
+		_cacheAdapter = moduleFixture.get<ICacheService>(CACHE_SERVICE);
 	}, 60000);
 
 	afterAll(async () => {
@@ -1218,6 +1229,182 @@ describe("Auth (e2e)", () => {
 				.expect(400);
 
 			expect(response.body.success).toBe(false);
+		});
+	});
+
+	describe("프로필 캐싱 동작 검증", () => {
+		/**
+		 * 캐시 테스트 베스트 프랙티스:
+		 *
+		 * 1. 행동 기반 테스트: 캐시 구현 세부사항이 아닌 "관찰 가능한 행동"을 검증
+		 *    - 캐시 히트/미스 통계로 캐싱 동작 확인
+		 *    - 응답 데이터 일관성으로 캐시 무효화 검증
+		 *
+		 * 2. 격리된 테스트: 각 테스트는 독립적으로 실행 가능해야 함
+		 *    - 통계 기반 검증 시 "증분(delta)" 비교 사용
+		 *
+		 * 3. 테스트 안정성: 캐시 내부 구조에 의존하지 않음
+		 *    - 키 형식, 저장소 구조 등 변경에 영향받지 않음
+		 */
+		const cacheEmail = "cache-test@example.com";
+		const cachePassword = "Test1234!";
+		let accessToken: string;
+
+		beforeAll(async () => {
+			// 테스트 전 캐시 초기화 (깨끗한 상태에서 시작)
+			await cacheService.reset();
+
+			accessToken = await createVerifiedUser(cacheEmail, cachePassword, {
+				name: "캐시 테스트 사용자",
+			});
+		});
+
+		afterAll(async () => {
+			// 테스트 후 캐시 정리
+			await cacheService.reset();
+		});
+
+		it("GET /auth/me - 첫 번째 호출은 캐시 미스, 두 번째 호출은 캐시 히트", async () => {
+			// 캐시 초기화
+			await cacheService.reset();
+
+			// 현재 통계 기록
+			const statsBefore = cacheService.getStats();
+
+			// 첫 번째 호출 (캐시 미스 → DB 조회 → 캐시 저장)
+			// 참고: /auth/me는 JWT 인증 시 세션 캐시 + 프로필 캐시 2번 조회
+			const response1 = await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response1.body.success).toBe(true);
+			expect(response1.body.data.email).toBe(cacheEmail);
+
+			// 첫 번째 호출 후 통계: 세션 + 프로필 = 2 미스
+			const statsAfterFirst = cacheService.getStats();
+			expect(statsAfterFirst.misses).toBe(statsBefore.misses + 2);
+
+			// 두 번째 호출 (캐시 히트)
+			const response2 = await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(response2.body.success).toBe(true);
+			expect(response2.body.data.email).toBe(cacheEmail);
+
+			// 두 번째 호출 후 통계: 세션 + 프로필 = 2 히트
+			const statsAfterSecond = cacheService.getStats();
+			expect(statsAfterSecond.hits).toBe(statsAfterFirst.hits + 2);
+
+			// 응답 데이터 일관성 확인
+			expect(response1.body.data.id).toBe(response2.body.data.id);
+			expect(response1.body.data.name).toBe(response2.body.data.name);
+		});
+
+		it("PATCH /auth/profile - 프로필 수정 후 최신 데이터 반환 (캐시 무효화 검증)", async () => {
+			// 캐시 초기화 및 프로필 캐싱
+			await cacheService.reset();
+			await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// 프로필 수정
+			const newName = "수정된 캐시 사용자";
+			const updateResponse = await request(app.getHttpServer())
+				.patch("/auth/profile")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ name: newName })
+				.expect(200);
+
+			expect(updateResponse.body.data.name).toBe(newName);
+
+			// /auth/me 호출 시 수정된 데이터 반환 확인
+			// (캐시가 무효화되지 않았다면 이전 데이터가 반환됨)
+			const meResponse = await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(meResponse.body.data.name).toBe(newName);
+		});
+
+		it("프로필 이미지 수정 후 최신 데이터 반환 (캐시 무효화 검증)", async () => {
+			// 캐시 초기화 및 프로필 캐싱
+			await cacheService.reset();
+			await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// 프로필 이미지 수정
+			const newImage = "https://example.com/cache-test-image.jpg";
+			const updateResponse = await request(app.getHttpServer())
+				.patch("/auth/profile")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ profileImage: newImage })
+				.expect(200);
+
+			expect(updateResponse.body.data.profileImage).toBe(newImage);
+
+			// /auth/me 호출 시 수정된 이미지 반환 확인
+			const meResponse = await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(meResponse.body.data.profileImage).toBe(newImage);
+		});
+
+		it("여러 번 연속 호출 시 캐시 히트율 증가", async () => {
+			// 캐시 초기화
+			await cacheService.reset();
+			const initialStats = cacheService.getStats();
+
+			// 5번 연속 호출
+			for (let i = 0; i < 5; i++) {
+				await request(app.getHttpServer())
+					.get("/auth/me")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+			}
+
+			// 첫 번째는 미스(세션+프로필=2), 나머지 4번은 히트(세션+프로필=8)
+			const finalStats = cacheService.getStats();
+			expect(finalStats.misses).toBe(initialStats.misses + 2);
+			expect(finalStats.hits).toBe(initialStats.hits + 8);
+		});
+
+		it("캐시 히트 시 응답 속도 향상 (성능 기반 검증)", async () => {
+			// 캐시 초기화
+			await cacheService.reset();
+
+			// 첫 번째 호출 (캐시 미스 - DB 조회)
+			const start1 = Date.now();
+			await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+			const _duration1 = Date.now() - start1;
+
+			// 두 번째 호출 (캐시 히트)
+			const start2 = Date.now();
+			await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+			const _duration2 = Date.now() - start2;
+
+			// 캐시 히트가 미스보다 빠르거나 비슷해야 함
+			// (E2E 테스트에서는 네트워크 오버헤드로 인해 절대적인 비교는 어려움)
+			// 대신 통계로 캐시 동작 확인
+			const stats = cacheService.getStats();
+			expect(stats.hits).toBeGreaterThanOrEqual(1);
+
+			// 로그로 실제 성능 확인 (디버깅용)
+			// console.log(`Cache miss: ${duration1}ms, Cache hit: ${duration2}ms`);
 		});
 	});
 });

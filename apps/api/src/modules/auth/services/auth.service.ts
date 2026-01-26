@@ -1003,24 +1003,46 @@ export class AuthService {
 		_email: string,
 		sessionId: string,
 	): Promise<CurrentUserResult> {
-		const user = await this.userRepository.findByIdWithProfile(userId);
+		// wrapUserProfile을 사용하여 캐시된 프로필 조회 또는 DB에서 조회
+		const cachedProfile = await this.cacheService.wrapUserProfile(
+			userId,
+			async () => {
+				const user = await this.userRepository.findByIdWithProfile(userId);
+				if (!user) {
+					return undefined;
+				}
+				return {
+					id: user.id,
+					email: user.email,
+					userTag: user.userTag,
+					status: user.status,
+					emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
+					subscriptionStatus: user.subscriptionStatus,
+					subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
+					name: user.profile?.name ?? null,
+					profileImage: user.profile?.profileImage ?? null,
+					createdAt: toISOString(user.createdAt),
+				};
+			},
+		);
 
-		if (!user) {
+		if (!cachedProfile) {
 			throw BusinessExceptions.userNotFound(userId);
 		}
 
 		return {
-			userId: user.id,
-			email: user.email,
+			userId: cachedProfile.id,
+			email: cachedProfile.email,
 			sessionId,
-			userTag: user.userTag,
-			status: user.status,
-			emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
-			subscriptionStatus: user.subscriptionStatus,
-			subscriptionExpiresAt: toISOStringOrNull(user.subscriptionExpiresAt),
-			name: user.profile?.name ?? null,
-			profileImage: user.profile?.profileImage ?? null,
-			createdAt: toISOString(user.createdAt),
+			userTag: cachedProfile.userTag,
+			status: cachedProfile.status as UserStatus,
+			emailVerifiedAt: cachedProfile.emailVerifiedAt,
+			subscriptionStatus:
+				cachedProfile.subscriptionStatus as CurrentUserResult["subscriptionStatus"],
+			subscriptionExpiresAt: cachedProfile.subscriptionExpiresAt,
+			name: cachedProfile.name,
+			profileImage: cachedProfile.profileImage,
+			createdAt: cachedProfile.createdAt,
 		};
 	}
 
