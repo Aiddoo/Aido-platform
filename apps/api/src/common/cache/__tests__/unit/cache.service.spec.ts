@@ -1,6 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CacheService } from "../../cache.service";
-import { CACHE_SERVICE, ICacheService } from "../../interfaces/cache.interface";
+import {
+	CACHE_SERVICE,
+	ICacheService,
+	TtlValue,
+} from "../../interfaces/cache.interface";
+import { createMockUserProfile } from "../test-utils";
 
 describe("CacheService", () => {
 	let service: CacheService;
@@ -15,6 +20,12 @@ describe("CacheService", () => {
 			delByPattern: jest.fn(),
 			reset: jest.fn(),
 			getStats: jest.fn(),
+			wrap: jest.fn(),
+			mget: jest.fn(),
+			mset: jest.fn(),
+			has: jest.fn(),
+			ttl: jest.fn(),
+			touch: jest.fn(),
 		};
 
 		const module: TestingModule = await Test.createTestingModule({
@@ -107,6 +118,89 @@ describe("CacheService", () => {
 			expect(mockCacheAdapter.getStats).toHaveBeenCalled();
 			expect(result).toEqual(mockStats);
 		});
+
+		it("wrap 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const key = "key";
+			const factory = jest.fn().mockResolvedValue("value");
+			const ttl: TtlValue = "5m";
+			mockCacheAdapter.wrap.mockResolvedValue("value");
+
+			// When
+			const result = await service.wrap(key, factory, ttl);
+
+			// Then
+			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(key, factory, ttl);
+			expect(result).toBe("value");
+		});
+
+		it("mget 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const keys = ["key1", "key2", "key3"];
+			const expectedValues = ["value1", undefined, "value3"];
+			mockCacheAdapter.mget.mockResolvedValue(expectedValues);
+
+			// When
+			const result = await service.mget(keys);
+
+			// Then
+			expect(mockCacheAdapter.mget).toHaveBeenCalledWith(keys);
+			expect(result).toEqual(expectedValues);
+		});
+
+		it("mset 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const entries = [
+				{ key: "key1", value: "value1", ttl: 1000 as TtlValue },
+				{ key: "key2", value: "value2", ttl: "5m" as TtlValue },
+			];
+
+			// When
+			await service.mset(entries);
+
+			// Then
+			expect(mockCacheAdapter.mset).toHaveBeenCalledWith(entries);
+		});
+
+		it("has 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const key = "key";
+			mockCacheAdapter.has.mockResolvedValue(true);
+
+			// When
+			const result = await service.has(key);
+
+			// Then
+			expect(mockCacheAdapter.has).toHaveBeenCalledWith(key);
+			expect(result).toBe(true);
+		});
+
+		it("ttl 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const key = "key";
+			mockCacheAdapter.ttl.mockResolvedValue(5000);
+
+			// When
+			const result = await service.ttl(key);
+
+			// Then
+			expect(mockCacheAdapter.ttl).toHaveBeenCalledWith(key);
+			expect(result).toBe(5000);
+		});
+
+		it("touch 호출을 어댑터에 위임한다", async () => {
+			// Given
+			const key = "key";
+			const ttl: TtlValue = "10m";
+			mockCacheAdapter.touch.mockResolvedValue(true);
+
+			// When
+			const result = await service.touch(key, ttl);
+
+			// Then
+			expect(mockCacheAdapter.touch).toHaveBeenCalledWith(key, ttl);
+			expect(result).toBe(true);
+		});
 	});
 
 	describe("세션 캐싱", () => {
@@ -165,16 +259,45 @@ describe("CacheService", () => {
 			// Then
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(`session:${sessionId}`);
 		});
+
+		it("wrapSession이 wrap을 올바른 키와 TTL로 호출한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(sessionData);
+			mockCacheAdapter.wrap.mockResolvedValue(sessionData);
+
+			// When
+			const result = await service.wrapSession(sessionId, factory);
+
+			// Then
+			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
+				`session:${sessionId}`,
+				factory,
+				30_000,
+			);
+			expect(result).toEqual(sessionData);
+		});
+
+		it("wrapSession이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(undefined);
+			mockCacheAdapter.wrap.mockResolvedValue(undefined);
+
+			// When
+			const result = await service.wrapSession(sessionId, factory);
+
+			// Then
+			expect(result).toBeUndefined();
+		});
 	});
 
 	describe("사용자 프로필 캐싱", () => {
 		const userId = "user_1";
-		const profile = {
+		const profile = createMockUserProfile({
 			id: userId,
 			email: "test@example.com",
 			name: "Test User",
 			userTag: "testuser#1234",
-		};
+		});
 
 		it("올바른 키로 사용자 프로필을 조회한다", async () => {
 			// Given
@@ -227,6 +350,35 @@ describe("CacheService", () => {
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
 				`user:profile:${userId}`,
 			);
+		});
+
+		it("wrapUserProfile이 wrap을 올바른 키와 TTL로 호출한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(profile);
+			mockCacheAdapter.wrap.mockResolvedValue(profile);
+
+			// When
+			const result = await service.wrapUserProfile(userId, factory);
+
+			// Then
+			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
+				`user:profile:${userId}`,
+				factory,
+				5 * 60_000,
+			);
+			expect(result).toEqual(profile);
+		});
+
+		it("wrapUserProfile이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(undefined);
+			mockCacheAdapter.wrap.mockResolvedValue(undefined);
+
+			// When
+			const result = await service.wrapUserProfile(userId, factory);
+
+			// Then
+			expect(result).toBeUndefined();
 		});
 	});
 
@@ -287,6 +439,35 @@ describe("CacheService", () => {
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
 				`user:subscription:${userId}`,
 			);
+		});
+
+		it("wrapSubscription이 wrap을 올바른 키와 TTL로 호출한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(subscription);
+			mockCacheAdapter.wrap.mockResolvedValue(subscription);
+
+			// When
+			const result = await service.wrapSubscription(userId, factory);
+
+			// Then
+			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
+				`user:subscription:${userId}`,
+				factory,
+				10 * 60_000,
+			);
+			expect(result).toEqual(subscription);
+		});
+
+		it("wrapSubscription이 factory가 undefined를 반환하면 undefined를 반환한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(undefined);
+			mockCacheAdapter.wrap.mockResolvedValue(undefined);
+
+			// When
+			const result = await service.wrapSubscription(userId, factory);
+
+			// Then
+			expect(result).toBeUndefined();
 		});
 	});
 
@@ -390,6 +571,43 @@ describe("CacheService", () => {
 			expect(mockCacheAdapter.del).toHaveBeenCalledWith(
 				`friends:mutual:user_1:user_2`,
 			);
+		});
+
+		it("wrapMutualFriend가 wrap을 올바른 키와 TTL로 호출한다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(true);
+			mockCacheAdapter.wrap.mockResolvedValue(true);
+
+			// When
+			const result = await service.wrapMutualFriend(
+				userId,
+				targetUserId,
+				factory,
+			);
+
+			// Then
+			expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(
+				`friends:mutual:${userId}:${targetUserId}`,
+				factory,
+				60_000,
+			);
+			expect(result).toBe(true);
+		});
+
+		it("wrapMutualFriend가 false를 반환할 수 있다", async () => {
+			// Given
+			const factory = jest.fn().mockResolvedValue(false);
+			mockCacheAdapter.wrap.mockResolvedValue(false);
+
+			// When
+			const result = await service.wrapMutualFriend(
+				userId,
+				targetUserId,
+				factory,
+			);
+
+			// Then
+			expect(result).toBe(false);
 		});
 	});
 

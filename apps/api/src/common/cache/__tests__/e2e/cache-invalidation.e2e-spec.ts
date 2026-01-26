@@ -12,7 +12,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { CacheModule } from "../../cache.module";
 import { CacheService } from "../../cache.service";
 import { CacheKeys } from "../../constants/cache-keys";
-import { delay } from "../test-utils";
+import { createMockUserProfile, delay } from "../test-utils";
 
 describe("캐시 무효화 E2E 테스트", () => {
 	let app: INestApplication;
@@ -122,12 +122,12 @@ describe("캐시 무효화 E2E 테스트", () => {
 		it("프로필 수정 시 캐시가 무효화된다", async () => {
 			// Given - 사용자 프로필 캐시
 			const userId = "user_profile_e2e";
-			const originalProfile = {
+			const originalProfile = createMockUserProfile({
 				id: userId,
 				email: "original@test.com",
 				name: "Original Name",
 				userTag: "original#1234",
-			};
+			});
 			await cacheService.setUserProfile(userId, originalProfile);
 
 			// When - 프로필 조회 (캐시 히트)
@@ -142,10 +142,10 @@ describe("캐시 무효화 E2E 테스트", () => {
 			expect(afterUpdate).toBeUndefined();
 
 			// When - 새 프로필 데이터로 캐시 업데이트
-			const updatedProfile = {
+			const updatedProfile = createMockUserProfile({
 				...originalProfile,
 				name: "Updated Name",
-			};
+			});
 			await cacheService.setUserProfile(userId, updatedProfile);
 
 			// Then - 새 데이터로 캐시 히트
@@ -156,9 +156,24 @@ describe("캐시 무효화 E2E 테스트", () => {
 		it("여러 사용자 프로필이 독립적으로 관리된다", async () => {
 			// Given - 여러 사용자 프로필 캐시
 			const users = [
-				{ id: "user_1", email: "u1@test.com", name: "User 1", userTag: "u1#1" },
-				{ id: "user_2", email: "u2@test.com", name: "User 2", userTag: "u2#2" },
-				{ id: "user_3", email: "u3@test.com", name: "User 3", userTag: "u3#3" },
+				createMockUserProfile({
+					id: "user_1",
+					email: "u1@test.com",
+					name: "User 1",
+					userTag: "u1#1",
+				}),
+				createMockUserProfile({
+					id: "user_2",
+					email: "u2@test.com",
+					name: "User 2",
+					userTag: "u2#2",
+				}),
+				createMockUserProfile({
+					id: "user_3",
+					email: "u3@test.com",
+					name: "User 3",
+					userTag: "u3#3",
+				}),
 			];
 
 			for (const user of users) {
@@ -274,12 +289,12 @@ describe("캐시 무효화 E2E 테스트", () => {
 			const id = "same_id_123";
 
 			const session = { userId: id, expiresAt: new Date(), revokedAt: null };
-			const profile = {
+			const profile = createMockUserProfile({
 				id,
 				email: "test@test.com",
 				name: "Test",
 				userTag: "test#123",
-			};
+			});
 			const subscription = { status: "ACTIVE" as const };
 
 			// When - 각 도메인에 저장

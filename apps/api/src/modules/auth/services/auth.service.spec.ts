@@ -34,6 +34,7 @@ describe("AuthService", () => {
 		markEmailVerified: jest.fn(),
 		updateLastLoginAt: jest.fn(),
 		updateStatus: jest.fn(),
+		updateProfile: jest.fn(),
 	};
 
 	const mockAccountRepository = {
@@ -98,6 +99,7 @@ describe("AuthService", () => {
 		getUserProfile: jest.fn(),
 		setUserProfile: jest.fn(),
 		invalidateUserProfile: jest.fn(),
+		wrapUserProfile: jest.fn(),
 		getSubscription: jest.fn(),
 		setSubscription: jest.fn(),
 		invalidateSubscription: jest.fn(),
@@ -1388,6 +1390,216 @@ describe("AuthService", () => {
 			expect(
 				mockVerificationService.sendVerificationEmail,
 			).toHaveBeenCalledWith(email, "654321");
+		});
+	});
+
+	// ============================================
+	// getCurrentUser (캐싱 테스트)
+	// ============================================
+
+	describe("getCurrentUser", () => {
+		const userId = "user-123";
+		const email = "test@example.com";
+		const sessionId = "session-123";
+
+		const mockUserWithProfile = {
+			id: userId,
+			email,
+			userTag: "testuser#1234",
+			status: "ACTIVE",
+			emailVerifiedAt: new Date("2024-01-01T00:00:00Z"),
+			subscriptionStatus: "FREE",
+			subscriptionExpiresAt: null,
+			createdAt: new Date("2024-01-01T00:00:00Z"),
+			profile: {
+				name: "Test User",
+				profileImage: "https://example.com/image.jpg",
+			},
+		};
+
+		const cachedProfile = {
+			id: userId,
+			email,
+			userTag: "testuser#1234",
+			status: "ACTIVE",
+			emailVerifiedAt: "2024-01-01T00:00:00.000Z",
+			subscriptionStatus: "FREE",
+			subscriptionExpiresAt: null,
+			name: "Test User",
+			profileImage: "https://example.com/image.jpg",
+			createdAt: "2024-01-01T00:00:00.000Z",
+		};
+
+		beforeEach(() => {
+			mockUserRepository.findByIdWithProfile.mockResolvedValue(
+				mockUserWithProfile,
+			);
+			// wrapUserProfile mock: factory를 실행하고 결과 반환
+			mockCacheService.wrapUserProfile.mockImplementation(
+				async (_userId, factory) => factory(),
+			);
+		});
+
+		it("캐시된 프로필을 조회하여 사용자 정보를 반환한다", async () => {
+			// Given
+			// wrapUserProfile이 캐시된 값을 반환하도록 설정
+			mockCacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+
+			// When
+			const result = await service.getCurrentUser(userId, email, sessionId);
+
+			// Then
+			expect(result.userId).toBe(userId);
+			expect(result.email).toBe(email);
+			expect(result.sessionId).toBe(sessionId);
+			expect(result.name).toBe("Test User");
+			expect(result.profileImage).toBe("https://example.com/image.jpg");
+			expect(mockCacheService.wrapUserProfile).toHaveBeenCalledWith(
+				userId,
+				expect.any(Function),
+			);
+		});
+
+		it("캐시 미스 시 DB에서 조회하고 캐시에 저장한다", async () => {
+			// Given
+			// wrapUserProfile이 factory를 실행하도록 설정 (캐시 미스 시나리오)
+			mockCacheService.wrapUserProfile.mockImplementation(
+				async (_userId, factory) => factory(),
+			);
+
+			// When
+			const result = await service.getCurrentUser(userId, email, sessionId);
+
+			// Then
+			expect(mockUserRepository.findByIdWithProfile).toHaveBeenCalledWith(
+				userId,
+			);
+			expect(result.userId).toBe(userId);
+			expect(result.email).toBe(email);
+		});
+
+		it("사용자가 존재하지 않으면 USER_NOT_FOUND 에러를 던진다", async () => {
+			// Given
+			mockCacheService.wrapUserProfile.mockImplementation(
+				async (_userId, factory) => factory(),
+			);
+			mockUserRepository.findByIdWithProfile.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.getCurrentUser(userId, email, sessionId),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("프로필이 없는 사용자도 처리한다", async () => {
+			// Given
+			const userWithoutProfile = {
+				...mockUserWithProfile,
+				profile: null,
+			};
+			mockCacheService.wrapUserProfile.mockImplementation(
+				async (_userId, factory) => factory(),
+			);
+			mockUserRepository.findByIdWithProfile.mockResolvedValue(
+				userWithoutProfile,
+			);
+
+			// When
+			const result = await service.getCurrentUser(userId, email, sessionId);
+
+			// Then
+			expect(result.name).toBeNull();
+			expect(result.profileImage).toBeNull();
+		});
+
+		it("sessionId는 캐시되지 않고 항상 파라미터 값을 사용한다", async () => {
+			// Given
+			mockCacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+			const differentSessionId = "different-session-456";
+
+			// When
+			const result = await service.getCurrentUser(
+				userId,
+				email,
+				differentSessionId,
+			);
+
+			// Then
+			expect(result.sessionId).toBe(differentSessionId);
+		});
+	});
+
+	// ============================================
+	// updateProfile (캐시 무효화 테스트)
+	// ============================================
+
+	describe("updateProfile", () => {
+		const userId = "user-123";
+		const updateData = {
+			name: "Updated Name",
+		};
+
+		const updatedProfile = {
+			name: "Updated Name",
+			profileImage: "https://example.com/image.jpg",
+		};
+
+		beforeEach(() => {
+			mockUserRepository.updateProfile = jest
+				.fn()
+				.mockResolvedValue(updatedProfile);
+			mockCacheService.invalidateUserProfile.mockResolvedValue(undefined);
+		});
+
+		it("프로필을 업데이트하고 캐시를 무효화한다", async () => {
+			// Given
+			// - beforeEach에서 기본 mock 설정됨
+
+			// When
+			const result = await service.updateProfile(userId, updateData);
+
+			// Then
+			expect(result.message).toContain("프로필이 수정되었습니다");
+			expect(result.name).toBe("Updated Name");
+			expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				userId,
+			);
+		});
+
+		it("프로필 업데이트 후 캐시 무효화가 호출된다", async () => {
+			// Given
+			// - beforeEach에서 기본 mock 설정됨
+
+			// When
+			await service.updateProfile(userId, updateData);
+
+			// Then
+			// updateProfile -> invalidateUserProfile 순서로 호출되어야 함
+			const updateCallOrder =
+				mockUserRepository.updateProfile.mock.invocationCallOrder[0];
+			const invalidateCallOrder =
+				mockCacheService.invalidateUserProfile.mock.invocationCallOrder[0];
+			expect(invalidateCallOrder).toBeGreaterThan(updateCallOrder as number);
+		});
+
+		it("프로필 이미지를 업데이트할 수 있다", async () => {
+			// Given
+			const imageUpdateData = {
+				profileImage: "https://example.com/new-image.jpg",
+			};
+			mockUserRepository.updateProfile.mockResolvedValue({
+				name: "Test User",
+				profileImage: "https://example.com/new-image.jpg",
+			});
+
+			// When
+			const result = await service.updateProfile(userId, imageUpdateData);
+
+			// Then
+			expect(result.profileImage).toBe("https://example.com/new-image.jpg");
+			expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				userId,
+			);
 		});
 	});
 });

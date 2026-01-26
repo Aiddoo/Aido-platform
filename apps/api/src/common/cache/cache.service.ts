@@ -4,6 +4,7 @@ import {
 	CACHE_SERVICE,
 	type CacheStats,
 	type ICacheService,
+	type TtlValue,
 } from "./interfaces/cache.interface";
 
 /**
@@ -21,8 +22,14 @@ export interface CachedSession {
 export interface CachedUserProfile {
 	id: string;
 	email: string;
-	name: string;
 	userTag: string;
+	status: string;
+	emailVerifiedAt: string | null;
+	subscriptionStatus: string;
+	subscriptionExpiresAt: string | null;
+	name: string | null;
+	profileImage: string | null;
+	createdAt: string;
 }
 
 /**
@@ -49,8 +56,8 @@ export class CacheService {
 		return this.cache.get<T>(key);
 	}
 
-	set<T>(key: string, value: T, ttlMs?: number): Promise<void> {
-		return this.cache.set(key, value, ttlMs);
+	set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
+		return this.cache.set(key, value, ttl);
 	}
 
 	del(key: string): Promise<void> {
@@ -69,6 +76,58 @@ export class CacheService {
 		return this.cache.getStats();
 	}
 
+	// === New Generic Methods ===
+
+	/**
+	 * Cache-aside 패턴 (wrap)
+	 *
+	 * 캐시에 데이터가 있으면 반환, 없으면 factory 실행 후 캐싱
+	 */
+	wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
+		return this.cache.wrap(key, factory, ttl);
+	}
+
+	/**
+	 * 다중 키 조회
+	 */
+	mget<T>(keys: string[]): Promise<(T | undefined)[]> {
+		return this.cache.mget<T>(keys);
+	}
+
+	/**
+	 * 다중 키 저장
+	 */
+	mset<T>(
+		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
+	): Promise<void> {
+		return this.cache.mset(entries);
+	}
+
+	/**
+	 * 키 존재 여부 확인
+	 */
+	has(key: string): Promise<boolean> {
+		return this.cache.has(key);
+	}
+
+	/**
+	 * 키의 남은 TTL 조회 (밀리초)
+	 *
+	 * @returns 남은 밀리초, -1 (TTL 없음), -2 (키 없음)
+	 */
+	ttl(key: string): Promise<number> {
+		return this.cache.ttl(key);
+	}
+
+	/**
+	 * 키의 TTL 갱신
+	 *
+	 * @returns 성공 시 true, 키가 없으면 false
+	 */
+	touch(key: string, ttl: TtlValue): Promise<boolean> {
+		return this.cache.touch(key, ttl);
+	}
+
 	// === Session Methods ===
 
 	async getSession(sessionId: string): Promise<CachedSession | undefined> {
@@ -85,6 +144,20 @@ export class CacheService {
 
 	async invalidateSession(sessionId: string): Promise<void> {
 		return this.del(CacheKeys.session(sessionId));
+	}
+
+	/**
+	 * 세션 wrap - 캐시에 없으면 factory 실행 후 캐싱
+	 */
+	async wrapSession(
+		sessionId: string,
+		factory: () => Promise<CachedSession | undefined>,
+	): Promise<CachedSession | undefined> {
+		return this.wrap(
+			CacheKeys.session(sessionId),
+			factory,
+			CacheKeys.TTL.SESSION,
+		);
 	}
 
 	// === User Profile Methods ===
@@ -108,6 +181,20 @@ export class CacheService {
 		return this.del(CacheKeys.userProfile(userId));
 	}
 
+	/**
+	 * 사용자 프로필 wrap - 캐시에 없으면 factory 실행 후 캐싱
+	 */
+	async wrapUserProfile(
+		userId: string,
+		factory: () => Promise<CachedUserProfile | undefined>,
+	): Promise<CachedUserProfile | undefined> {
+		return this.wrap(
+			CacheKeys.userProfile(userId),
+			factory,
+			CacheKeys.TTL.USER_PROFILE,
+		);
+	}
+
 	// === Subscription Methods ===
 
 	async getSubscription(
@@ -129,6 +216,20 @@ export class CacheService {
 
 	async invalidateSubscription(userId: string): Promise<void> {
 		return this.del(CacheKeys.subscription(userId));
+	}
+
+	/**
+	 * 구독 상태 wrap - 캐시에 없으면 factory 실행 후 캐싱
+	 */
+	async wrapSubscription(
+		userId: string,
+		factory: () => Promise<CachedSubscription | undefined>,
+	): Promise<CachedSubscription | undefined> {
+		return this.wrap(
+			CacheKeys.subscription(userId),
+			factory,
+			CacheKeys.TTL.SUBSCRIPTION,
+		);
 	}
 
 	// === Friend Relation Methods ===
@@ -167,5 +268,20 @@ export class CacheService {
 		const [smallerId, largerId] =
 			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
 		return this.del(CacheKeys.mutualFriend(smallerId, largerId));
+	}
+
+	/**
+	 * 상호 친구 관계 wrap - 캐시에 없으면 factory 실행 후 캐싱
+	 */
+	async wrapMutualFriend(
+		userId: string,
+		targetUserId: string,
+		factory: () => Promise<boolean>,
+	): Promise<boolean> {
+		return this.wrap(
+			CacheKeys.mutualFriend(userId, targetUserId),
+			factory,
+			CacheKeys.TTL.MUTUAL_FRIEND,
+		);
 	}
 }

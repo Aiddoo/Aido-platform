@@ -376,6 +376,397 @@ describe("InMemoryCacheAdapter", () => {
 	});
 
 	// ============================================
+	// TTL shorthand
+	// ============================================
+
+	describe("TTL shorthand", () => {
+		it("초 단위 shorthand를 지원한다", async () => {
+			// Given
+			const key = "key1";
+			const value = "value";
+
+			// When
+			await cache.set(key, value, "1s");
+			const result = await cache.get(key);
+
+			// Then
+			expect(result).toBe(value);
+		});
+
+		it("분 단위 shorthand를 지원한다", async () => {
+			// Given
+			const key = "key1";
+			const value = "value";
+
+			// When
+			await cache.set(key, value, "5m");
+			const result = await cache.get(key);
+
+			// Then
+			expect(result).toBe(value);
+		});
+
+		it("시간 단위 shorthand를 지원한다", async () => {
+			// Given
+			const key = "key1";
+			const value = "value";
+
+			// When
+			await cache.set(key, value, "1h");
+			const result = await cache.get(key);
+
+			// Then
+			expect(result).toBe(value);
+		});
+
+		it("일 단위 shorthand를 지원한다", async () => {
+			// Given
+			const key = "key1";
+			const value = "value";
+
+			// When
+			await cache.set(key, value, "1d");
+			const result = await cache.get(key);
+
+			// Then
+			expect(result).toBe(value);
+		});
+
+		it("숫자 형식의 TTL을 그대로 사용한다", async () => {
+			// Given
+			const key = "key1";
+			const value = "value";
+
+			// When
+			await cache.set(key, value, 5000);
+			const result = await cache.get(key);
+
+			// Then
+			expect(result).toBe(value);
+		});
+	});
+
+	// ============================================
+	// wrap
+	// ============================================
+
+	describe("wrap", () => {
+		it("캐시 미스 시 factory를 호출하고 결과를 캐싱한다", async () => {
+			// Given
+			const key = "key1";
+			const factory = jest.fn().mockResolvedValue("value");
+
+			// When
+			const result = await cache.wrap(key, factory);
+
+			// Then
+			expect(factory).toHaveBeenCalledTimes(1);
+			expect(result).toBe("value");
+			expect(await cache.get(key)).toBe("value");
+		});
+
+		it("캐시 히트 시 factory를 호출하지 않는다", async () => {
+			// Given
+			const key = "key1";
+			await cache.set(key, "cached");
+			const factory = jest.fn().mockResolvedValue("new-value");
+
+			// When
+			const result = await cache.wrap(key, factory);
+
+			// Then
+			expect(factory).not.toHaveBeenCalled();
+			expect(result).toBe("cached");
+		});
+
+		it("factory가 undefined를 반환하면 캐싱하지 않는다", async () => {
+			// Given
+			const key = "key1";
+			const factory = jest.fn().mockResolvedValue(undefined);
+
+			// When
+			const result = await cache.wrap(key, factory);
+
+			// Then
+			expect(result).toBeUndefined();
+			expect(await cache.get(key)).toBeUndefined();
+		});
+
+		it("factory가 null을 반환하면 캐싱하지 않는다", async () => {
+			// Given
+			const key = "key1";
+			const factory = jest.fn().mockResolvedValue(null);
+
+			// When
+			const result = await cache.wrap(key, factory);
+
+			// Then
+			expect(result).toBeNull();
+			expect(await cache.get(key)).toBeUndefined();
+		});
+
+		it("TTL shorthand를 지원한다", async () => {
+			// Given
+			const key = "key1";
+			const factory = jest.fn().mockResolvedValue("value");
+
+			// When
+			await cache.wrap(key, factory, "5m");
+			const ttlResult = await cache.ttl(key);
+
+			// Then
+			expect(ttlResult).toBeGreaterThan(4 * 60 * 1000);
+			expect(ttlResult).toBeLessThanOrEqual(5 * 60 * 1000);
+		});
+
+		it("factory 에러를 전파한다", async () => {
+			// Given
+			const key = "key1";
+			const factory = jest.fn().mockRejectedValue(new Error("factory error"));
+
+			// When & Then
+			await expect(cache.wrap(key, factory)).rejects.toThrow("factory error");
+		});
+	});
+
+	// ============================================
+	// mget
+	// ============================================
+
+	describe("mget", () => {
+		it("여러 키를 한 번에 조회한다", async () => {
+			// Given
+			await cache.set("key1", "a");
+			await cache.set("key2", "b");
+			await cache.set("key3", "c");
+
+			// When
+			const results = await cache.mget<string>(["key1", "key2", "key3"]);
+
+			// Then
+			expect(results).toEqual(["a", "b", "c"]);
+		});
+
+		it("존재하지 않는 키는 undefined를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "a");
+
+			// When
+			const results = await cache.mget<string>(["key1", "missing", "key1"]);
+
+			// Then
+			expect(results).toEqual(["a", undefined, "a"]);
+		});
+
+		it("빈 배열을 전달하면 빈 배열을 반환한다", async () => {
+			// When
+			const results = await cache.mget<string>([]);
+
+			// Then
+			expect(results).toEqual([]);
+		});
+
+		it("만료된 키는 undefined를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "a", 10);
+			await cache.set("key2", "b", 1000);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// When
+			const results = await cache.mget<string>(["key1", "key2"]);
+
+			// Then
+			expect(results).toEqual([undefined, "b"]);
+		});
+	});
+
+	// ============================================
+	// mset
+	// ============================================
+
+	describe("mset", () => {
+		it("여러 키-값 쌍을 한 번에 저장한다", async () => {
+			// Given
+			const entries = [
+				{ key: "key1", value: "a" },
+				{ key: "key2", value: "b" },
+				{ key: "key3", value: "c" },
+			];
+
+			// When
+			await cache.mset(entries);
+
+			// Then
+			expect(await cache.get("key1")).toBe("a");
+			expect(await cache.get("key2")).toBe("b");
+			expect(await cache.get("key3")).toBe("c");
+		});
+
+		it("각 항목에 개별 TTL을 설정할 수 있다", async () => {
+			// Given
+			const entries = [
+				{ key: "key1", value: "a", ttl: 10 as const },
+				{ key: "key2", value: "b", ttl: "10s" as const },
+			];
+
+			// When
+			await cache.mset(entries);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// Then
+			expect(await cache.get("key1")).toBeUndefined();
+			expect(await cache.get("key2")).toBe("b");
+		});
+
+		it("빈 배열을 전달해도 에러가 발생하지 않는다", async () => {
+			// When & Then
+			await expect(cache.mset([])).resolves.not.toThrow();
+		});
+
+		it("대량 데이터를 저장할 수 있다", async () => {
+			// Given
+			const entries = Array.from({ length: 50 }, (_, i) => ({
+				key: `key${i}`,
+				value: `value${i}`,
+			}));
+
+			// When
+			await cache.mset(entries);
+
+			// Then
+			expect(await cache.get("key0")).toBe("value0");
+			expect(await cache.get("key49")).toBe("value49");
+		});
+	});
+
+	// ============================================
+	// has
+	// ============================================
+
+	describe("has", () => {
+		it("키가 존재하면 true를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "value");
+
+			// When
+			const result = await cache.has("key1");
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("키가 존재하지 않으면 false를 반환한다", async () => {
+			// When
+			const result = await cache.has("missing");
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("만료된 키는 false를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "value", 10);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// When
+			const result = await cache.has("key1");
+
+			// Then
+			expect(result).toBe(false);
+		});
+	});
+
+	// ============================================
+	// ttl
+	// ============================================
+
+	describe("ttl", () => {
+		it("키의 남은 TTL을 밀리초로 반환한다", async () => {
+			// Given
+			await cache.set("key1", "value", 5000);
+
+			// When
+			const result = await cache.ttl("key1");
+
+			// Then
+			expect(result).toBeGreaterThan(4000);
+			expect(result).toBeLessThanOrEqual(5000);
+		});
+
+		it("키가 존재하지 않으면 -2를 반환한다", async () => {
+			// When
+			const result = await cache.ttl("missing");
+
+			// Then
+			expect(result).toBe(-2);
+		});
+
+		it("만료된 키는 -2를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "value", 10);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// When
+			const result = await cache.ttl("key1");
+
+			// Then
+			expect(result).toBe(-2);
+		});
+	});
+
+	// ============================================
+	// touch
+	// ============================================
+
+	describe("touch", () => {
+		it("키의 TTL을 갱신한다", async () => {
+			// Given
+			await cache.set("key1", "value", 1000);
+
+			// When
+			const result = await cache.touch("key1", 10000);
+			const ttlResult = await cache.ttl("key1");
+
+			// Then
+			expect(result).toBe(true);
+			expect(ttlResult).toBeGreaterThan(9000);
+		});
+
+		it("TTL shorthand를 지원한다", async () => {
+			// Given
+			await cache.set("key1", "value", 1000);
+
+			// When
+			const result = await cache.touch("key1", "1h");
+			const ttlResult = await cache.ttl("key1");
+
+			// Then
+			expect(result).toBe(true);
+			expect(ttlResult).toBeGreaterThan(59 * 60 * 1000);
+		});
+
+		it("키가 존재하지 않으면 false를 반환한다", async () => {
+			// When
+			const result = await cache.touch("missing", 5000);
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("만료된 키는 false를 반환한다", async () => {
+			// Given
+			await cache.set("key1", "value", 10);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// When
+			const result = await cache.touch("key1", 5000);
+
+			// Then
+			expect(result).toBe(false);
+		});
+	});
+
+	// ============================================
 	// edge cases
 	// ============================================
 
