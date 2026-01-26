@@ -228,6 +228,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: BRAND_COLOR,
       },
       edgeToEdgeEnabled: true,
+      intentFilters: [
+        {
+          action: 'VIEW',
+          data: [
+            {
+              scheme: envConfig.scheme,
+              host: 'auth',
+              pathPrefix: '/kakao',
+            },
+            {
+              scheme: envConfig.scheme,
+              host: 'auth',
+              pathPrefix: '/naver',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
       permissions: [
         // 카메라
         'CAMERA',

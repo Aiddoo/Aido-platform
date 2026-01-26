@@ -38,7 +38,6 @@ export class AuthRepositoryImpl implements AuthRepository {
     const { data } = await this._authHttpClient.get<CurrentUser>('v1/auth/me');
 
     const result = currentUserSchema.safeParse(data);
-
     if (!result.success) {
       console.error('[AuthRepository] Invalid getCurrentUser response:', result.error);
       throw new Error('Invalid API response format');
@@ -48,7 +47,6 @@ export class AuthRepositoryImpl implements AuthRepository {
   }
 
   async logout(): Promise<void> {
-    // API 호출을 먼저 실행한 후 토큰 삭제 (순서 중요)
     await this._authHttpClient.post('v1/auth/logout');
     await Promise.all([this._storage.remove('accessToken'), this._storage.remove('refreshToken')]);
   }
