@@ -1,45 +1,101 @@
 import type { ExchangeCodeInput } from '@aido/validators';
+import { ENV } from '@src/shared/config/env';
+import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { WebBrowserResultType } from 'expo-web-browser';
+import { match } from 'ts-pattern';
+import { AuthClientError } from '../models/auth.error';
 import type { AuthTokens, User } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
 
+type OAuthProvider = 'kakao' | 'naver';
+
 export class AuthService {
   constructor(private readonly _authRepository: AuthRepository) {}
 
-  openKakaoLogin = async (): Promise<string | null> => {
-    const redirectUri = Linking.createURL('auth/kakao');
-    const authUrl = this._authRepository.getKakaoAuthUrl(redirectUri);
+  /**
+   * OAuth Redirect URI 생성
+   * - makeRedirectUri: 환경(Expo Go, Dev Build, Production)에 따라 적절한 URI 생성
+   */
+  private getRedirectUri = (provider: OAuthProvider): string =>
+    makeRedirectUri({
+      scheme: ENV.SCHEME,
+      path: match(provider)
+        .with('kakao', () => 'auth/kakao')
+        .with('naver', () => 'auth/naver')
+        .exhaustive(),
+    });
 
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+  /**
+   * OAuth URL에서 authorization code 추출
+   */
+  private extractCodeFromUrl = (url: string): string | null => {
+    const parsedUrl = Linking.parse(url);
+    const queryParams = parsedUrl.queryParams;
+    const codeParam = queryParams?.code;
 
-    if (result.type !== 'success') {
-      return null;
+    const isSingleCode = typeof codeParam === 'string';
+    const isMultipleCodes = Array.isArray(codeParam);
+
+    if (isSingleCode) {
+      return codeParam;
     }
 
-    const { queryParams } = Linking.parse(result.url);
-    const code = queryParams?.code;
-
-    return typeof code === 'string' ? code : null;
-  };
-
-  openNaverLogin = async (): Promise<string | null> => {
-    const redirectUri = Linking.createURL('auth/naver');
-    const authUrl = this._authRepository.getNaverAuthUrl(redirectUri);
-
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-    if (result.type !== 'success') {
-      return null;
+    if (isMultipleCodes) {
+      const firstCode = codeParam[0];
+      return firstCode ?? null;
     }
 
-    const { queryParams } = Linking.parse(result.url);
-    const code = queryParams?.code;
+    return null;
+  };
+  /**
+   * OAuth 로그인 통합 메서드
+   * @throws {AuthClientError} 로그인 취소, 네트워크 오류 등
+   */
+  private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
+    const redirectUri = this.getRedirectUri(provider);
 
-    return typeof code === 'string' ? code : null;
+    const authUrl = match(provider)
+      .with('kakao', () => this._authRepository.getKakaoAuthUrl(redirectUri))
+      .with('naver', () => this._authRepository.getNaverAuthUrl(redirectUri))
+      .exhaustive();
+
+    // createTask: false → Android에서 새 태스크 생성 안 함 → iOS와 동일하게 URL 캡처
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
+      createTask: false,
+    });
+
+    return match(result)
+      .with({ type: 'success' }, ({ url }) => {
+        const code = this.extractCodeFromUrl(url);
+
+        if (!code) throw new AuthClientError('인증 코드를 찾을 수 없어요', 'validation');
+
+        return code;
+      })
+      .with({ type: WebBrowserResultType.CANCEL }, () => {
+        throw new AuthClientError('로그인이 취소되었어요', 'cancelled');
+      })
+      .with({ type: WebBrowserResultType.DISMISS }, () => {
+        throw new AuthClientError('로그인이 취소되었어요', 'cancelled');
+      })
+      .with({ type: WebBrowserResultType.OPENED }, () => {
+        throw new AuthClientError('브라우저가 열렸지만 응답이 없어요', 'unknown');
+      })
+      .with({ type: WebBrowserResultType.LOCKED }, () => {
+        throw new AuthClientError('다른 인증이 진행 중이에요', 'validation');
+      })
+      .exhaustive();
   };
 
+  // Public OAuth API
+  openKakaoLogin = (): Promise<string> => this.openOAuthLogin('kakao');
+
+  openNaverLogin = (): Promise<string> => this.openOAuthLogin('naver');
+
+  // Auth API Methods
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
     const dto = await this._authRepository.exchangeCode(request);
     return toAuthTokens(dto);
