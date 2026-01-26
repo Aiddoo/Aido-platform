@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -32,6 +33,7 @@ export class FollowService {
 		private readonly paginationService: PaginationService,
 		private readonly database: DatabaseService,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly cacheService: CacheService,
 	) {}
 
 	// =========================================================================
@@ -152,6 +154,13 @@ export class FollowService {
 					friendName: userName ?? "알 수 없음",
 				} satisfies FollowMutualEventPayload);
 
+				// 캐시 무효화 (친구 관계 변경)
+				const [smallerId, largerId] =
+					userId < targetUserId
+						? [userId, targetUserId]
+						: [targetUserId, userId];
+				await this.cacheService.del(`friends:mutual:${smallerId}:${largerId}`);
+
 				return { follow, autoAccepted: true };
 			}
 			// 이미 ACCEPTED 상태
@@ -259,6 +268,13 @@ export class FollowService {
 			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
 		);
 
+		// 캐시 무효화 (친구 관계 변경)
+		const [smallerId, largerId] =
+			userId < requesterUserId
+				? [userId, requesterUserId]
+				: [requesterUserId, userId];
+		await this.cacheService.del(`friends:mutual:${smallerId}:${largerId}`);
+
 		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
 		const [userName, requesterName] = await Promise.all([
 			this.followRepository.getUserName(userId),
@@ -339,6 +355,13 @@ export class FollowService {
 				await this.followRepository.delete(theirFollow.id, tx);
 			}
 		});
+
+		// 캐시 무효화 (친구 관계 변경)
+		const [smallerIdRemove, largerIdRemove] =
+			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+		await this.cacheService.del(
+			`friends:mutual:${smallerIdRemove}:${largerIdRemove}`,
+		);
 
 		this.logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}
@@ -456,7 +479,24 @@ export class FollowService {
 	 * 맞팔 여부 확인
 	 */
 	async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-		return this.followRepository.isMutualFriend(userId, targetUserId);
+		// 1. 캐시 조회 (양방향 키를 정규화하여 하나의 캐시만 사용)
+		const [smallerId, largerId] =
+			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+		const cached = await this.cacheService.getMutualFriend(smallerId, largerId);
+		if (cached !== undefined) {
+			return cached;
+		}
+
+		// 2. 캐시 미스 - DB 조회
+		const isMutual = await this.followRepository.isMutualFriend(
+			userId,
+			targetUserId,
+		);
+
+		// 3. 캐시 저장 (TTL: 1분)
+		await this.cacheService.setMutualFriend(smallerId, largerId, isMutual);
+
+		return isMutual;
 	}
 
 	/**
