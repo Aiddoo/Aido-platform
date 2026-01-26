@@ -1,6 +1,7 @@
 import { CHEER_LIMITS, SUBSCRIPTION_CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -40,6 +41,7 @@ export class CheerService {
 		private readonly paginationService: PaginationService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
+		private readonly cacheService: CacheService,
 	) {}
 
 	// =========================================================================
@@ -269,9 +271,19 @@ export class CheerService {
 	 * 일일 응원 제한 정보 조회
 	 */
 	async getLimitInfo(userId: string): Promise<CheerLimitInfo> {
-		// 구독 상태 조회
-		const subscriptionStatus =
-			await this.cheerRepository.getUserSubscriptionStatus(userId);
+		// 구독 상태 조회 (캐시 우선)
+		let subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null;
+
+		const cachedSubscription = await this.cacheService.getSubscription(userId);
+		if (cachedSubscription !== undefined) {
+			subscriptionStatus = cachedSubscription.status;
+		} else {
+			subscriptionStatus =
+				await this.cheerRepository.getUserSubscriptionStatus(userId);
+			await this.cacheService.setSubscription(userId, {
+				status: subscriptionStatus,
+			});
+		}
 
 		// 구독 상태에 따른 제한
 		const status = subscriptionStatus ?? "FREE";

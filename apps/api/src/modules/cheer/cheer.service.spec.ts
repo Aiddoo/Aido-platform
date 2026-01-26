@@ -1,6 +1,7 @@
 import { CHEER_LIMITS } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, TestingModule } from "@nestjs/testing";
+import { CacheService } from "@/common/cache/cache.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
@@ -127,6 +128,10 @@ describe("CheerService", () => {
 			create: jest.Mock;
 		};
 	};
+	let mockCacheService: {
+		getSubscription: jest.Mock;
+		setSubscription: jest.Mock;
+	};
 
 	beforeEach(async () => {
 		mockCheerRepository = {
@@ -181,6 +186,12 @@ describe("CheerService", () => {
 			},
 		};
 
+		// CacheService mock
+		mockCacheService = {
+			getSubscription: jest.fn().mockResolvedValue(undefined), // 기본: 캐시 미스
+			setSubscription: jest.fn(),
+		};
+
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CheerService,
@@ -189,6 +200,7 @@ describe("CheerService", () => {
 				{ provide: PaginationService, useValue: mockPaginationService },
 				{ provide: EventEmitter2, useValue: mockEventEmitter },
 				{ provide: DatabaseService, useValue: mockDatabase },
+				{ provide: CacheService, useValue: mockCacheService },
 			],
 		}).compile();
 

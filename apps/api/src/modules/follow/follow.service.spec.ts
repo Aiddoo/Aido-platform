@@ -1,5 +1,6 @@
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
@@ -52,6 +53,14 @@ describe("FollowService", () => {
 		emit: jest.fn(),
 	};
 
+	const mockCacheService = {
+		getMutualFriend: jest.fn(),
+		setMutualFriend: jest.fn(),
+		del: jest.fn(),
+		invalidateFriendRelations: jest.fn(),
+		invalidateMutualFriend: jest.fn(),
+	};
+
 	// 테스트 데이터
 	const mockUserId = "user-123";
 	const mockTargetUserId = "user-456";
@@ -96,6 +105,7 @@ describe("FollowService", () => {
 				{ provide: PaginationService, useValue: mockPaginationService },
 				{ provide: DatabaseService, useValue: mockDatabaseService },
 				{ provide: EventEmitter2, useValue: mockEventEmitter },
+				{ provide: CacheService, useValue: mockCacheService },
 			],
 		}).compile();
 
