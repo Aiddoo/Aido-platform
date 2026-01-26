@@ -21,11 +21,15 @@ const TodoListComponent = ({ date }: TodoListProps) => {
     getTodosInfiniteQueryOptions(formatDate(date)),
   );
 
+  // TODO: todo 추가시 레이아웃 개선 필요
   return (
     <FlashList
       data={data.todos}
       renderItem={({ item }) => <TodoItem todo={item} />}
       keyExtractor={(item) => String(item.id)}
+      maintainVisibleContentPosition={{
+        autoscrollToTopThreshold: 100,
+      }}
       ListFooterComponent={
         isFetchingNextPage ? (
           <VStack py={16} align="center">
@@ -39,7 +43,7 @@ const TodoListComponent = ({ date }: TodoListProps) => {
         }
       }}
       onEndReachedThreshold={0.5}
-      contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, flexGrow: 1 }}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
           <Result icon={<DocsIcon width={72} height={72} />} title="할 일이 없어요" />
