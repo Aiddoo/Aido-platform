@@ -30,12 +30,25 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	private stats = { hits: 0, misses: 0 };
 	private cleanupInterval: NodeJS.Timeout;
 
-	constructor(config: { defaultTtlMs: number; maxItems: number }) {
+	constructor(config: {
+		defaultTtlMs: number;
+		maxItems: number;
+		cleanupIntervalMs?: number;
+	}) {
 		this.defaultTtlMs = config.defaultTtlMs;
 		this.maxItems = config.maxItems;
 
-		// 30초마다 만료된 항목 정리
-		this.cleanupInterval = setInterval(() => this.cleanup(), 30_000);
+		// cleanupInterval을 설정 가능하게 (기본값 30초)
+		const cleanupInterval = config.cleanupIntervalMs ?? 30_000;
+
+		// validation 추가: 최소 1초
+		if (cleanupInterval < 1000) {
+			throw new Error(
+				`cleanupIntervalMs must be at least 1000ms (1 second), got ${cleanupInterval}ms`,
+			);
+		}
+
+		this.cleanupInterval = setInterval(() => this.cleanup(), cleanupInterval);
 	}
 
 	onModuleDestroy() {

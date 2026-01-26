@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { SubscriptionStatus, UserStatus } from "@/generated/prisma/enums";
 import { CacheKeys } from "./constants/cache-keys";
 import {
 	CACHE_SERVICE,
@@ -23,9 +24,9 @@ export interface CachedUserProfile {
 	id: string;
 	email: string;
 	userTag: string;
-	status: string;
+	status: UserStatus;
 	emailVerifiedAt: string | null;
-	subscriptionStatus: string;
+	subscriptionStatus: SubscriptionStatus;
 	subscriptionExpiresAt: string | null;
 	name: string | null;
 	profileImage: string | null;
@@ -36,7 +37,7 @@ export interface CachedUserProfile {
  * 구독 상태 캐시 데이터 타입
  */
 export interface CachedSubscription {
-	status: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null;
+	status: SubscriptionStatus | null;
 }
 
 /**

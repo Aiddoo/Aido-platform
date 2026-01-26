@@ -172,6 +172,7 @@ export interface CacheConfig {
 	type: "memory" | "redis";
 	defaultTtlMs: number;
 	maxItems: number;
+	cleanupIntervalMs?: number;
 	redis?: RedisConfig;
 }
 

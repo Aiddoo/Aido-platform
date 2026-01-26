@@ -1,3 +1,4 @@
+import { SubscriptionStatus, UserStatus } from "@/generated/prisma/enums";
 import type { CachedUserProfile } from "../cache.service";
 import {
 	type CacheStats,
@@ -194,9 +195,9 @@ export function createMockUserProfile(
 		id: "user-123",
 		email: "test@example.com",
 		userTag: "ABC123",
-		status: "ACTIVE",
+		status: UserStatus.ACTIVE,
 		emailVerifiedAt: new Date().toISOString(),
-		subscriptionStatus: "FREE",
+		subscriptionStatus: SubscriptionStatus.FREE,
 		subscriptionExpiresAt: null,
 		name: "Test User",
 		profileImage: null,
