@@ -9,7 +9,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Skeleton } from 'heroui-native';
+import { Skeleton, useToast } from 'heroui-native';
 import { ActivityIndicator, ScrollView } from 'react-native';
 import type { FriendRequestUser } from '../../models/friend.model';
 import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
@@ -23,6 +23,31 @@ const ReceivedRequestListComponent = () => {
   );
   const acceptMutation = useMutation(acceptRequestMutationOptions());
   const rejectMutation = useMutation(rejectRequestMutationOptions());
+  const { toast } = useToast();
+
+  const handleAccept = (userId: string) => {
+    acceptMutation.mutate(userId, {
+      onSuccess: () => {
+        toast.show({
+          label: '친구 요청을 수락했어요',
+          actionLabel: '닫기',
+          onActionPress: ({ hide }) => hide(),
+        });
+      },
+    });
+  };
+
+  const handleReject = (userId: string) => {
+    rejectMutation.mutate(userId, {
+      onSuccess: () => {
+        toast.show({
+          label: '친구 요청을 거절했어요',
+          actionLabel: '닫기',
+          onActionPress: ({ hide }) => hide(),
+        });
+      },
+    });
+  };
 
   const allRequests = data.pages.flatMap((page) => page.requests);
   const totalCount = data.pages[0]?.totalCount ?? 0;
@@ -52,7 +77,7 @@ const ReceivedRequestListComponent = () => {
                   color="dark"
                   size="small"
                   display="inline"
-                  onPress={() => acceptMutation.mutate(item.id)}
+                  onPress={() => handleAccept(item.id)}
                   disabled={isProcessing}
                 >
                   수락
@@ -62,7 +87,7 @@ const ReceivedRequestListComponent = () => {
                   color="danger"
                   size="small"
                   display="inline"
-                  onPress={() => rejectMutation.mutate(item.id)}
+                  onPress={() => handleReject(item.id)}
                   disabled={isProcessing}
                 >
                   거절

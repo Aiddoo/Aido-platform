@@ -1,4 +1,4 @@
-import { followByTagSchema } from '@aido/validators';
+import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -17,7 +17,7 @@ import type { z } from 'zod';
 import { FriendError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
-type FormData = z.infer<typeof followByTagSchema>;
+type FormData = z.infer<typeof userTagParamSchema>;
 
 export const FriendSearchBottomSheet = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +25,7 @@ export const FriendSearchBottomSheet = () => {
   const { toast } = useToast();
 
   const { control, handleSubmit, reset, formState } = useForm<FormData>({
-    resolver: zodResolver(followByTagSchema),
+    resolver: zodResolver(userTagParamSchema),
     defaultValues: { userTag: '' },
   });
 
