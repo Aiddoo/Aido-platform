@@ -35,5 +35,6 @@ export const getTodosInfiniteQueryOptions = (date: string) => {
       todos: data.pages.flatMap((page) => page.todos.map(toViewModel)),
       hasNextPage: data.pages.at(-1)?.hasNext ?? false,
     }),
+    placeholderData: (previousData) => previousData,
   });
 };

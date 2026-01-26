@@ -1,3 +1,5 @@
+import type { CreateTodoInput } from '@aido/validators';
+
 import type { TodoCountByDate, TodoItem, TodosResult } from '../models/todo.model';
 import type {
   GetTodoCountsParams,
@@ -27,6 +29,11 @@ export class TodoService {
 
   toggleTodoComplete = async (params: ToggleTodoCompleteParams): Promise<TodoItem> => {
     const todo = await this._todoRepository.toggleTodoComplete(params);
+    return toTodoItem(todo);
+  };
+
+  createTodo = async (params: CreateTodoInput): Promise<TodoItem> => {
+    const todo = await this._todoRepository.createTodo(params);
     return toTodoItem(todo);
   };
 }

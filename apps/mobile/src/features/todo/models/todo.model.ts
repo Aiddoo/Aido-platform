@@ -4,6 +4,18 @@ import { z } from 'zod';
 export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
+/** 시간 형식 검증 (HH:mm) */
+const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Todo 추가 폼 스키마 (startDate 제외 - prop에서 주입) */
+export const addTodoFormSchema = z.object({
+  title: z.string().min(1, '제목을 입력해주세요').max(200, '제목은 200자 이하로 입력해주세요'),
+  scheduledTime: z.string().regex(timeRegex, '시간 형식이 올바르지 않습니다 (HH:mm)').nullish(),
+  isAllDay: z.boolean().default(true),
+  visibility: todoVisibilitySchema.default('PUBLIC'),
+});
+export type AddTodoFormInput = z.input<typeof addTodoFormSchema>;
+
 /** Todo 도메인 모델 스키마 */
 export const TodoItemSchema = z.object({
   id: z.number(),

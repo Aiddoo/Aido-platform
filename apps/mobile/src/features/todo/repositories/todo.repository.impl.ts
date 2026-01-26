@@ -1,4 +1,5 @@
 import {
+  type CreateTodoInput,
   type Todo,
   type TodoListResponse,
   todoListResponseSchema,
@@ -66,13 +67,28 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async toggleTodoComplete(params: ToggleTodoCompleteParams): Promise<Todo> {
-    const { data } = await this._httpClient.patch<Todo>(`v1/todos/${params.todoId}/complete`, {
-      completed: params.completed,
-    });
+    const { data } = await this._httpClient.patch<{ todo: Todo }>(
+      `v1/todos/${params.todoId}/complete`,
+      {
+        completed: params.completed,
+      },
+    );
 
-    const result = todoSchema.safeParse(data);
+    const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
       console.error('[TodoRepository] Invalid toggleTodoComplete response:', result.error);
+      throw TodoError.invalidResponse();
+    }
+
+    return result.data;
+  }
+
+  async createTodo(params: CreateTodoInput): Promise<Todo> {
+    const { data } = await this._httpClient.post<{ todo: Todo }>('v1/todos', params);
+
+    const result = todoSchema.safeParse(data.todo);
+    if (!result.success) {
+      console.error('[TodoRepository] Invalid createTodo response:', result.error);
       throw TodoError.invalidResponse();
     }
 

@@ -18,24 +18,16 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
   const showDateTime = todo.formattedTime && !todo.isAllDay;
 
   return (
-    <PressableFeedback onPress={() => onPress?.(todo.id)} className="py-3">
+    <PressableFeedback onPress={() => onPress?.(todo.id)} className="py-2">
       <HStack gap={12} align="center">
         <Checkbox
+          className="shadow-none border border-main size-5 rounded-md"
           isSelected={todo.completed}
           onSelectedChange={() =>
             toggleMutation.mutate({ todoId: todo.id, completed: !todo.completed })
           }
           isDisabled={toggleMutation.isPending}
-        >
-          <Checkbox.Indicator
-            style={{
-              backgroundColor: todo.completed ? todo.color : 'transparent',
-              borderColor: todo.color,
-            }}
-            className="border-2 rounded"
-            iconProps={{ color: 'white' }}
-          />
-        </Checkbox>
+        />
 
         <VStack flex={1} gap={2}>
           <HStack gap={4} align="center">

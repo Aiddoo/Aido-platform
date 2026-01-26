@@ -1,4 +1,4 @@
-import type { Todo, TodoListResponse } from '@aido/validators';
+import type { CreateTodoInput, Todo, TodoListResponse } from '@aido/validators';
 
 export interface GetTodosParams {
   cursor?: number;
@@ -26,4 +26,5 @@ export interface TodoRepository {
   getTodos(params: GetTodosParams): Promise<TodoListResponse>;
   getTodoCounts(params: GetTodoCountsParams): Promise<TodoCountsResponse>;
   toggleTodoComplete(params: ToggleTodoCompleteParams): Promise<Todo>;
+  createTodo(params: CreateTodoInput): Promise<Todo>;
 }
