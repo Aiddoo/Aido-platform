@@ -7,8 +7,10 @@ export {
   DocsIcon,
   GoogleIcon,
   KakaoIcon,
+  LockIcon,
   MenuIcon,
   NaverIcon,
   PersonIcon,
+  PlusIcon,
   SearchIcon,
 } from './icons';
