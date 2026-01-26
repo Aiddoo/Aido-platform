@@ -1,5 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
+import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
+import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { DocsIcon } from '@src/shared/ui/Icon';
 import { Result } from '@src/shared/ui/Result/Result';
@@ -8,7 +10,7 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView } from 'react-native';
 import type { FriendRequestUser } from '../../models/friend.model';
 import { cancelRequestMutationOptions } from '../queries/cancel-request-mutation-options';
 import { getSentRequestsQueryOptions } from '../queries/get-sent-requests-query-options';
@@ -26,11 +28,11 @@ const SentRequestListComponent = () => {
   return (
     <FlashList
       ListHeaderComponent={
-        <View className="py-3">
+        <Box py={12}>
           <Text size="b4" shade={6}>
             총 {totalCount}개 요청
           </Text>
-        </View>
+        </Box>
       }
       data={allRequests}
       renderItem={({ item }: { item: FriendRequestUser }) => {
@@ -55,15 +57,15 @@ const SentRequestListComponent = () => {
         );
       }}
       ListEmptyComponent={
-        <View className="flex-1 justify-center items-center">
+        <Flex flex={1} justify="center" align="center">
           <Result icon={<DocsIcon width={72} height={72} />} title="아직 보낸 요청이 없어요" />
-        </View>
+        </Flex>
       }
       ListFooterComponent={
         isFetchingNextPage ? (
-          <View className="py-4 items-center">
+          <Flex py={16} align="center">
             <ActivityIndicator />
-          </View>
+          </Flex>
         ) : null
       }
       keyExtractor={(item) => item.id}
@@ -80,9 +82,9 @@ const SentRequestListComponent = () => {
 
 const SentRequestListLoading = () => (
   <ScrollView className="flex-1 px-4">
-    <View className="py-3">
+    <Box py={12}>
       <Skeleton className="w-16 h-4" />
-    </View>
+    </Box>
     <VStack>
       {times(3, (i) => (
         <HStack key={i} align="center" className="py-2" gap={12}>

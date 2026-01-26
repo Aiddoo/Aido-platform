@@ -1,14 +1,16 @@
 import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { SearchIcon } from '@src/shared/ui/Icon';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
+import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, useToast } from 'heroui-native';
 import { useState } from 'react';
-import { Keyboard, Pressable, View } from 'react-native';
+import { Keyboard, Pressable } from 'react-native';
 import { FriendError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
@@ -77,9 +79,9 @@ export const FriendSearchBottomSheet = () => {
 
           <Spacing size={12} />
 
-          <View className="gap-4 pb-4">
+          <VStack gap={16} pb={16}>
             <HStack gap={8} align="center" className="w-full">
-              <View className="flex-1 rounded-lg border border-gray-3 bg-white px-3 py-2">
+              <Box className="flex-1 rounded-lg border border-gray-3 bg-white px-3 py-2">
                 <BottomSheetTextInput
                   placeholder="친구태그 입력 (ABC12345)"
                   value={userTag}
@@ -89,7 +91,7 @@ export const FriendSearchBottomSheet = () => {
                   maxLength={8}
                   style={{ fontSize: 16 }}
                 />
-              </View>
+              </Box>
               <Button
                 display="inline"
                 size="medium"
@@ -100,7 +102,7 @@ export const FriendSearchBottomSheet = () => {
                 친구 요청
               </Button>
             </HStack>
-          </View>
+          </VStack>
         </BottomSheet.Content>
       </BottomSheet.Portal>
     </BottomSheet>
