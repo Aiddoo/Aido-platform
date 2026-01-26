@@ -24,10 +24,10 @@
 
 - [ ] `apps/api` - NestJS 백엔드
 - [ ] `apps/mobile` - Expo 모바일 앱
-- [ ] `packages/shared` - 공유 유틸리티
-- [ ] `packages/typescript-config` - TypeScript 설정
-- [ ] `packages/biome-config` - Biome 설정
-- [ ] `packages/jest-config` - Jest 설정
+- [ ] `packages/validators` - Zod 스키마
+- [ ] `packages/utils` - 공유 유틸리티
+- [ ] `packages/errors` - 에러 정의
+- [ ] `tooling/*` - 개발 도구 설정 (biome, jest, typescript)
 - [ ] 기타:
 
 ## 📝 변경 내용
