@@ -5,6 +5,7 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import {
 	AppConfigModule,
+	CacheModule,
 	ExceptionModule,
 	LoggerModule,
 	PaginationModule,
@@ -32,6 +33,7 @@ import { AppService } from "./app.service";
 
 		// 2. Infrastructure
 		DatabaseModule,
+		CacheModule.forRoot(),
 		EventEmitterModule.forRoot({
 			// 와일드카드 패턴 지원 (e.g., follow.*)
 			wildcard: true,

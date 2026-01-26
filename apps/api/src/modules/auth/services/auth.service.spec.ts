@@ -1,5 +1,6 @@
 import { LOGIN_ATTEMPT } from "@aido/validators";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { Session, User } from "@/generated/prisma/client";
@@ -84,6 +85,30 @@ describe("AuthService", () => {
 		sendVerificationEmail: jest.fn(),
 	};
 
+	const mockCacheService = {
+		get: jest.fn(),
+		set: jest.fn(),
+		del: jest.fn(),
+		delByPattern: jest.fn(),
+		reset: jest.fn(),
+		getStats: jest.fn(),
+		getSession: jest.fn(),
+		setSession: jest.fn(),
+		invalidateSession: jest.fn(),
+		getUserProfile: jest.fn(),
+		setUserProfile: jest.fn(),
+		invalidateUserProfile: jest.fn(),
+		getSubscription: jest.fn(),
+		setSubscription: jest.fn(),
+		invalidateSubscription: jest.fn(),
+		getMutualFriend: jest.fn(),
+		setMutualFriend: jest.fn(),
+		invalidateFriendRelations: jest.fn(),
+		getDailyStats: jest.fn(),
+		setDailyStats: jest.fn(),
+		invalidateDailyStats: jest.fn(),
+	};
+
 	beforeEach(async () => {
 		jest.clearAllMocks();
 
@@ -102,6 +127,7 @@ describe("AuthService", () => {
 				{ provide: PasswordService, useValue: mockPasswordService },
 				{ provide: TokenService, useValue: mockTokenService },
 				{ provide: VerificationService, useValue: mockVerificationService },
+				{ provide: CacheService, useValue: mockCacheService },
 			],
 		}).compile();
 

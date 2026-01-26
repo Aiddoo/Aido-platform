@@ -6,6 +6,7 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
 import {
 	addMilliseconds,
 	now,
@@ -27,7 +28,6 @@ import { LoginAttemptRepository } from "../repositories/login-attempt.repository
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
-
 import type {
 	CurrentUserResult,
 	LoginResult,
@@ -73,6 +73,7 @@ export class AuthService {
 		private readonly passwordService: PasswordService,
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
+		private readonly cacheService: CacheService,
 	) {}
 
 	/**
@@ -594,6 +595,9 @@ export class AuthService {
 		// 세션 만료 처리
 		await this.sessionRepository.revoke(sessionId, REVOKE_REASON.USER_LOGOUT);
 
+		// 캐시 무효화 (로그아웃 즉시 반영)
+		await this.cacheService.invalidateSession(sessionId);
+
 		// 보안 로그 기록
 		await this.securityLogRepository.create({
 			userId,
@@ -624,6 +628,10 @@ export class AuthService {
 			userId,
 			REVOKE_REASON.USER_LOGOUT_ALL,
 		);
+
+		// NOTE: 세션 캐시는 30초 TTL로 자동 만료됨
+		// 개별 세션 ID를 조회하는 추가 쿼리 없이 TTL 만료에 의존
+		// 보안상 30초 지연은 허용 가능한 수준
 
 		// 보안 로그 기록
 		await this.securityLogRepository.create({
@@ -966,6 +974,9 @@ export class AuthService {
 		// 세션 폐기
 		await this.sessionRepository.revoke(sessionId, REVOKE_REASON.USER_REVOKE);
 
+		// 캐시 무효화 (즉시 반영)
+		await this.cacheService.invalidateSession(sessionId);
+
 		// 보안 로그 기록
 		await this.securityLogRepository.create({
 			userId,
@@ -1021,6 +1032,9 @@ export class AuthService {
 		data: UpdateProfileInput,
 	): Promise<UpdateProfileResult> {
 		const profile = await this.userRepository.updateProfile(userId, data);
+
+		// 캐시 무효화 (프로필 변경)
+		await this.cacheService.invalidateUserProfile(userId);
 
 		this.logger.log(`Profile updated for user: ${userId}`);
 
