@@ -5,7 +5,7 @@ export default function TabsLayout() {
   const activeStyle = useResolveClassNames('text-main');
 
   return (
-    <NativeTabs tintColor={activeStyle.color}>
+    <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="home">
         <Label>홈</Label>
         <Icon sf="checkmark.circle.fill" />

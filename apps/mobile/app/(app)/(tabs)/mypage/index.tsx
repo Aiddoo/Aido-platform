@@ -20,8 +20,6 @@ const MyPageScreen = () => {
   const router = useRouter();
   const logout = useMutation(logoutMutationOptions());
 
-  // 로그아웃 성공 시 AuthProvider가 status를 'unauthenticated'로 변경하고
-  // Stack.Protected가 자동으로 (auth) 그룹으로 라우팅 처리
   const handleLogout = () => {
     logout.mutate();
   };
@@ -31,8 +29,8 @@ const MyPageScreen = () => {
   };
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1">
-      <ScrollView className="px-4 py-6 flex-1">
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
         <H3>내 정보</H3>
 
         <Spacing size={20} />
