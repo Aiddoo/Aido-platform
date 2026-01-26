@@ -3,6 +3,7 @@ export {
   AppleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  BellIcon,
   CheckIcon,
   DocsIcon,
   GoogleIcon,
