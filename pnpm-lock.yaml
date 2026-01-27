@@ -9,15 +9,6 @@ catalogs:
     jest:
       specifier: 29.7.0
       version: 29.7.0
-    typescript:
-      specifier: ^5.9.3
-      version: 5.9.3
-    vitest:
-      specifier: ^4.0.0
-      version: 4.0.18
-    zod:
-      specifier: ^4.3.5
-      version: 4.3.6
 
 importers:
 
