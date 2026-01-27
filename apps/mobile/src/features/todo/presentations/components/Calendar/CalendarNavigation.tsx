@@ -36,10 +36,10 @@ export const CalendarNavigation = ({ viewMode, value, onChange }: CalendarNaviga
   return (
     <HStack gap={4}>
       <PressableFeedback onPress={handlePrevious} className="p-1">
-        <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-5" />
+        <ArrowLeftIcon width={20} height={20} colorClassName="accent-gray-6" />
       </PressableFeedback>
       <PressableFeedback onPress={handleNext} className="p-1">
-        <ArrowRightIcon width={20} height={20} colorClassName="text-gray-5" />
+        <ArrowRightIcon width={20} height={20} colorClassName="accent-gray-6" />
       </PressableFeedback>
     </HStack>
   );

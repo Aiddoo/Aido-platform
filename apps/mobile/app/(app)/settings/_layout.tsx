@@ -1,11 +1,10 @@
-import { FriendSearchBottomSheet } from '@src/features/friend/presentations/components/FriendSearchBottomSheet';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
 import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-export default function FriendManagementLayout() {
-  const headerBg = useResolveClassNames('bg-white');
+export default function SettingsLayout() {
+  const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
 
   return (
@@ -15,8 +14,8 @@ export default function FriendManagementLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
-          fontSize: 13,
-          fontWeight: '500',
+          fontSize: 18,
+          fontWeight: '600',
           color: titleColor.color as string,
         },
         headerTitleAlign: 'center',
@@ -27,14 +26,10 @@ export default function FriendManagementLayout() {
             </Pressable>
           </View>
         ),
-        headerRight: () => (
-          <View className="justify-center items-center">
-            <FriendSearchBottomSheet />
-          </View>
-        ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '' }} />
+      <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
+      <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
     </Stack>
   );
 }

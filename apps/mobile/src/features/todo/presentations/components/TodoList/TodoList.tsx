@@ -16,7 +16,7 @@ interface TodoListProps {
   date: Date;
 }
 
-const TodoListComponent = ({ date }: TodoListProps) => {
+export function TodoList({ date }: TodoListProps) {
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
     getTodosInfiniteQueryOptions(formatDate(date)),
   );
@@ -51,22 +51,20 @@ const TodoListComponent = ({ date }: TodoListProps) => {
       }
     />
   );
+}
+
+TodoList.Loading = function Loading() {
+  return (
+    <VStack px={16} gap={12}>
+      {times(5, (i) => (
+        <HStack key={`todo-skeleton-${i}`} gap={12} align="center" className="py-3">
+          <Skeleton className="size-5 rounded" />
+          <VStack flex={1} gap={2}>
+            <Skeleton className="h-5 w-3/4 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+          </VStack>
+        </HStack>
+      ))}
+    </VStack>
+  );
 };
-
-const TodoListLoading = () => (
-  <VStack px={16} gap={12}>
-    {times(5, (i) => (
-      <HStack key={`todo-skeleton-${i}`} gap={12} align="center" className="py-3">
-        <Skeleton className="size-5 rounded" />
-        <VStack flex={1} gap={2}>
-          <Skeleton className="h-5 w-3/4 rounded" />
-          <Skeleton className="h-4 w-16 rounded" />
-        </VStack>
-      </HStack>
-    ))}
-  </VStack>
-);
-
-export const TodoList = Object.assign(TodoListComponent, {
-  Loading: TodoListLoading,
-});

@@ -11,7 +11,8 @@ export default function AppLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="friend-management" />
+      <Stack.Screen name="friends" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

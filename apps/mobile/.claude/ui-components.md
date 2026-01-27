@@ -171,3 +171,32 @@ Shared UI에 있는 컴포넌트를 다른 곳에서 가져오면 안 됩니다.
 // 금지 - Shared UI에 Text가 있으므로
 import { Text, View } from 'react-native';
 ```
+
+---
+
+## Compound Component 패턴
+
+Loading 상태 등 서브컴포넌트가 있는 경우 **Named Function 패턴**을 사용합니다.
+
+```tsx
+// 메인 컴포넌트 - 함수 선언문 사용
+export function MyComponent() {
+  // ...
+}
+
+// 서브컴포넌트 할당
+MyComponent.Loading = function Loading() {
+  // ...
+};
+
+// 사용 예시
+<Suspense fallback={<MyComponent.Loading />}>
+  <MyComponent />
+</Suspense>
+```
+
+### 주의사항
+
+- `Object.assign(Component, { SubComponent })` 패턴은 **사용하지 않습니다**
+- 메인 컴포넌트는 **함수 선언문**(`function`)으로 작성합니다
+- 서브컴포넌트는 `Component.SubName = function SubName()` 형태로 할당합니다

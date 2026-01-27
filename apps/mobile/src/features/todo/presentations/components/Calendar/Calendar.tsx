@@ -17,7 +17,7 @@ interface CalendarProps {
   onChange: (date: Date) => void;
 }
 
-const CalendarComponent = ({ value, onChange }: CalendarProps) => {
+export function Calendar({ value, onChange }: CalendarProps) {
   const initialWeekStart = getWeekStart(value);
 
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
@@ -48,9 +48,9 @@ const CalendarComponent = ({ value, onChange }: CalendarProps) => {
         .exhaustive()}
     </VStack>
   );
-};
+}
 
-const CalendarLoading = () => {
+Calendar.Loading = function Loading() {
   return (
     <VStack className="bg-background" gap={8}>
       <HStack className="px-4 py-2" justify="between" align="center">
@@ -79,7 +79,3 @@ const CalendarLoading = () => {
     </VStack>
   );
 };
-
-export const Calendar = Object.assign(CalendarComponent, {
-  Loading: CalendarLoading,
-});

@@ -22,15 +22,15 @@ type RouteParams = {
   view?: TabValue;
 };
 
-type FriendManagementRouteParams = {
-  'friend-management': RouteParams;
+type FriendsRouteParams = {
+  friends: RouteParams;
 };
 
 type UseViewReturn<T> = readonly [T, (newValue: T) => void];
 
 const useView = (): UseViewReturn<TabValue> => {
-  const route = useRoute<RouteProp<FriendManagementRouteParams, 'friend-management'>>();
-  const navigation = useNavigation<NavigationProp<FriendManagementRouteParams>>();
+  const route = useRoute<RouteProp<FriendsRouteParams, 'friends'>>();
+  const navigation = useNavigation<NavigationProp<FriendsRouteParams>>();
 
   const view = route.params?.view ?? TabView.friends;
 
@@ -44,7 +44,7 @@ const useView = (): UseViewReturn<TabValue> => {
   return [view, setView];
 };
 
-export default function FriendManagementScreen() {
+export default function FriendsScreen() {
   const [view, setView] = useView();
 
   return (
