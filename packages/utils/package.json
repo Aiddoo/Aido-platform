@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@aido/vitest-config": "workspace:*",
-    "@vitest/coverage-v8": "^4.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
