@@ -184,20 +184,25 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       infoPlist: {
         // 카메라 권한
-        NSCameraUsageDescription: '할일에 사진을 첨부하기 위해 카메라 접근이 필요합니다.',
+        NSCameraUsageDescription:
+          '$(PRODUCT_NAME)이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
         // 사진 라이브러리 권한
         NSPhotoLibraryUsageDescription:
-          '할일에 이미지를 첨부하기 위해 사진 라이브러리 접근이 필요합니다.',
+          '$(PRODUCT_NAME)이(가) 사진 선택을 위해 사진 라이브러리에 접근하려고 합니다.',
         // 마이크 권한 (음성 입력)
-        NSMicrophoneUsageDescription: '음성으로 할일을 추가하기 위해 마이크 접근이 필요합니다.',
+        NSMicrophoneUsageDescription:
+          '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
         // 캘린더 권한
-        NSCalendarsUsageDescription: '할일을 캘린더와 동기화하기 위해 접근이 필요합니다.',
-        NSCalendarsWriteUsageDescription: '할일을 캘린더에 추가하기 위해 쓰기 권한이 필요합니다.',
+        NSCalendarsUsageDescription:
+          '$(PRODUCT_NAME)이(가) 일정 동기화를 위해 캘린더에 접근하려고 합니다.',
+        NSCalendarsWriteUsageDescription:
+          '$(PRODUCT_NAME)이(가) 일정 추가를 위해 캘린더 쓰기 권한이 필요합니다.',
         // Face ID 권한
-        NSFaceIDUsageDescription: '앱 잠금 해제를 위해 Face ID를 사용합니다.',
+        NSFaceIDUsageDescription:
+          '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         // 음성 인식 권한
         NSSpeechRecognitionUsageDescription:
-          '음성으로 할일을 추가하기 위해 음성 인식이 필요합니다.',
+          '$(PRODUCT_NAME)이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.',
         // 개발 환경 HTTP 허용
         ...(isDevelopment && {
           NSAppTransportSecurity: {
@@ -311,8 +316,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-camera',
         {
-          cameraPermission: '할일에 사진을 첨부하기 위해 카메라 접근이 필요합니다.',
-          microphonePermission: '음성으로 할일을 추가하기 위해 마이크 접근이 필요합니다.',
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+          cameraPermission: '${PRODUCT_NAME}이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
+          microphonePermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 동영상 녹화를 위해 마이크에 접근하려고 합니다.',
           recordAudioAndroid: true,
         },
       ],
@@ -321,8 +329,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-image-picker',
         {
-          photosPermission: '할일에 이미지를 첨부하기 위해 사진 라이브러리 접근이 필요합니다.',
-          cameraPermission: '할일에 사진을 첨부하기 위해 카메라 접근이 필요합니다.',
+          photosPermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 사진 선택을 위해 사진 라이브러리에 접근하려고 합니다.',
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+          cameraPermission: '${PRODUCT_NAME}이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
         },
       ],
 
@@ -342,7 +353,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-calendar',
         {
-          calendarPermission: '할일을 캘린더와 동기화하기 위해 접근이 필요합니다.',
+          calendarPermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 일정 동기화를 위해 캘린더에 접근하려고 합니다.',
         },
       ],
 
@@ -350,7 +363,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-local-authentication',
         {
-          faceIDPermission: '앱 잠금 해제를 위해 Face ID를 사용합니다.',
+          faceIDPermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         },
       ],
 
@@ -366,6 +381,26 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // 백그라운드 작업
       'expo-task-manager',
       'expo-background-fetch',
+
+      // 음성 인식 (STT)
+      [
+        'expo-speech-recognition',
+        {
+          microphonePermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
+          speechRecognitionPermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 음성을 텍스트로 변환하기 위해 음성 인식에 접근하려고 합니다.',
+          androidSpeechServicePackages: [
+            'com.google.android.googlequicksearchbox',
+            'com.google.android.tts',
+          ],
+        },
+      ],
+
+      // 날짜/시간 선택기
+      '@react-native-community/datetimepicker',
     ],
 
     // ==========================================================================

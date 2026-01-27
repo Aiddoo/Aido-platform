@@ -7,12 +7,8 @@ export const UserSchema = z.object({
   name: z.string().nullable(),
   profileImage: z.string().nullable(),
   userTag: z.string(),
-
-  // 구독 정보
   subscriptionStatus: z.enum(['FREE', 'ACTIVE', 'EXPIRED', 'CANCELLED']),
-  isSubscribed: z.boolean(), // computed: subscriptionStatus === 'ACTIVE'
-
-  // 메타데이터
+  isSubscribed: z.boolean(),
   createdAt: z.date(),
 });
 
@@ -28,9 +24,8 @@ export const AuthTokensSchema = z.object({
 
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 
-// Policy
-const isSubscriptionActive = (status: SubscriptionStatus): boolean => status === 'ACTIVE';
-
+/** Auth 도메인 비즈니스 규칙 */
 export const AuthPolicy = {
-  isSubscriptionActive,
-};
+  /** 구독 상태가 활성 상태인지 확인 */
+  isSubscriptionActive: (status: SubscriptionStatus): boolean => status === 'ACTIVE',
+} as const;

@@ -26,23 +26,18 @@ const DIContext = createContext<DIContainer | null>(null);
 
 export const DIProvider = ({ children }: PropsWithChildren) => {
   const [di] = useState<DIContainer>(() => {
-    // infrastructure
     const storage = new SecureStorage();
 
-    // 공개 API용 클라이언트 (토큰 불필요)
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
 
-    // 인증 API용 클라이언트 (토큰 자동 첨부)
     const authKyInstance = createAuthClient(storage);
     const authHttpClient = new KyHttpClient(authKyInstance);
 
-    // repositories
     const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient, storage);
     const friendRepository = new FriendRepositoryImpl(authHttpClient);
     const todoRepository = new TodoRepositoryImpl(authHttpClient);
 
-    // services
     const authService = new AuthService(authRepository);
     const friendService = new FriendService(friendRepository);
     const todoService = new TodoService(todoRepository);

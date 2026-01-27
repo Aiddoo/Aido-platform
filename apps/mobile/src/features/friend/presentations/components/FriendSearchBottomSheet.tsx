@@ -1,6 +1,8 @@
 import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ApiError } from '@src/shared/errors/api-error';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -9,12 +11,13 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, useToast } from 'heroui-native';
+import { BottomSheet } from 'heroui-native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Pressable } from 'react-native';
 import type { z } from 'zod';
-import { FriendError } from '../../models/friend.error';
+
+import { FriendClientError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -22,7 +25,7 @@ type FormData = z.infer<typeof userTagParamSchema>;
 export const FriendSearchBottomSheet = () => {
   const [isOpen, setIsOpen] = useState(false);
   const sendRequestMutation = useMutation(sendRequestByTagMutationOptions());
-  const { toast } = useToast();
+  const toast = useAppToast();
 
   const { control, handleSubmit, reset, formState } = useForm<FormData>({
     resolver: zodResolver(userTagParamSchema),
@@ -34,21 +37,16 @@ export const FriendSearchBottomSheet = () => {
 
     sendRequestMutation.mutate(data.userTag, {
       onSuccess: () => {
-        toast.show({
-          label: '친구 요청을 보냈어요',
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
+        toast.success('친구 요청을 보냈어요');
         reset();
         setIsOpen(false);
       },
-      onError: (error) => {
-        const message = error instanceof FriendError ? error.message : '친구 요청에 실패했어요';
-        toast.show({
-          label: message,
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
+      onError: (err) => {
+        if (err instanceof ApiError || err instanceof FriendClientError) {
+          toast.error(err.message);
+          return;
+        }
+        toast.error(undefined, { fallback: '친구 요청에 실패했어요' });
       },
     });
   };

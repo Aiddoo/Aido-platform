@@ -28,6 +28,7 @@ export const getTodosInfiniteQueryOptions = (date: string) => {
         startDate: date,
         endDate: date,
         cursor: pageParam,
+        size: 20,
       }),
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),

@@ -8,6 +8,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { AuthClientError } from '../models/auth.error';
 import type { AuthRepository } from './auth.repository';
 
 export class AuthRepositoryImpl implements AuthRepository {
@@ -23,7 +24,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = authTokensSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid exchangeCode response:', result.error);
-      throw new Error('Invalid API response format');
+      throw AuthClientError.validation();
     }
 
     await Promise.all([
@@ -40,7 +41,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = currentUserSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid getCurrentUser response:', result.error);
-      throw new Error('Invalid API response format');
+      throw AuthClientError.validation();
     }
 
     return result.data;

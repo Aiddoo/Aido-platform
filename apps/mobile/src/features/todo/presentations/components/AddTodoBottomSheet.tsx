@@ -1,6 +1,7 @@
 import { createTodoSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
@@ -9,7 +10,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, Tabs, useToast } from 'heroui-native';
+import { BottomSheet, Tabs } from 'heroui-native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, View } from 'react-native';
@@ -35,7 +36,7 @@ export const AddTodoBottomSheet = ({ selectedDate }: AddTodoBottomSheetProps) =>
 
   const visibility = watch('visibility');
   const createMutation = useMutation(createTodoMutationOptions());
-  const { toast } = useToast();
+  const toast = useAppToast();
 
   const onSubmit = (data: AddTodoFormInput) => {
     Keyboard.dismiss();
@@ -46,13 +47,10 @@ export const AddTodoBottomSheet = ({ selectedDate }: AddTodoBottomSheetProps) =>
       onSuccess: () => {
         reset();
         setIsOpen(false);
+        toast.success('할 일이 추가되었어요!');
       },
       onError: () => {
-        toast.show({
-          label: '할 일 추가에 실패했어요',
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
+        toast.error(undefined, { fallback: '할 일 추가에 실패했어요' });
       },
     });
   };

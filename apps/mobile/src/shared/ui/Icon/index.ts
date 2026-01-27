@@ -10,8 +10,11 @@ export {
   KakaoIcon,
   LockIcon,
   MenuIcon,
+  MicIcon,
   NaverIcon,
+  PauseIcon,
   PersonIcon,
   PlusIcon,
   SearchIcon,
+  SendIcon,
 } from './icons';
