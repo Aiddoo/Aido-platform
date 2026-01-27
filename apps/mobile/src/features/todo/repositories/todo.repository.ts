@@ -1,30 +1,17 @@
-import type { CreateTodoInput, Todo, TodoListResponse } from '@aido/validators';
-
-export interface GetTodosParams {
-  cursor?: number;
-  size?: number;
-  completed?: boolean;
-  startDate?: string; // YYYY-MM-DD
-  endDate?: string; // YYYY-MM-DD
-}
-
-export interface GetTodoCountsParams {
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
-}
-
-export interface TodoCountsResponse {
-  counts: Record<string, number>; // date -> count
-}
-
-export interface ToggleTodoCompleteParams {
-  todoId: number;
-  completed: boolean;
-}
+import type {
+  AiUsageResponse,
+  CreateTodoInput,
+  GetTodosQuery,
+  ParseTodoResponse,
+  Todo,
+  TodoListResponse,
+  ToggleTodoCompleteInput,
+} from '@aido/validators';
 
 export interface TodoRepository {
-  getTodos(params: GetTodosParams): Promise<TodoListResponse>;
-  getTodoCounts(params: GetTodoCountsParams): Promise<TodoCountsResponse>;
-  toggleTodoComplete(params: ToggleTodoCompleteParams): Promise<Todo>;
+  getTodos(params: GetTodosQuery): Promise<TodoListResponse>;
+  toggleTodoComplete(todoId: number, body: ToggleTodoCompleteInput): Promise<Todo>;
   createTodo(params: CreateTodoInput): Promise<Todo>;
+  parseTodo(text: string): Promise<ParseTodoResponse>;
+  getAiUsage(): Promise<AiUsageResponse>;
 }

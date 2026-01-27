@@ -71,21 +71,21 @@ export class AuthService {
       .with({ type: 'success' }, ({ url }) => {
         const code = this.extractCodeFromUrl(url);
 
-        if (!code) throw new AuthClientError('인증 코드를 찾을 수 없어요', 'validation');
+        if (!code) throw new AuthClientError('validation', '인증 코드를 찾을 수 없어요');
 
         return code;
       })
       .with({ type: WebBrowserResultType.CANCEL }, () => {
-        throw new AuthClientError('로그인이 취소되었어요', 'cancelled');
+        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
       })
       .with({ type: WebBrowserResultType.DISMISS }, () => {
-        throw new AuthClientError('로그인이 취소되었어요', 'cancelled');
+        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
       })
       .with({ type: WebBrowserResultType.OPENED }, () => {
-        throw new AuthClientError('브라우저가 열렸지만 응답이 없어요', 'unknown');
+        throw new AuthClientError('unknown', '브라우저가 열렸지만 응답이 없어요');
       })
       .with({ type: WebBrowserResultType.LOCKED }, () => {
-        throw new AuthClientError('다른 인증이 진행 중이에요', 'validation');
+        throw new AuthClientError('validation', '다른 인증이 진행 중이에요');
       })
       .exhaustive();
   };

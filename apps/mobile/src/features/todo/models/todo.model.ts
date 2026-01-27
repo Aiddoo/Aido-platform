@@ -1,8 +1,91 @@
 import { z } from 'zod';
 
+// ============================================================
+// Enum Schemas
+// ============================================================
+
 /** Todo 공개 범위 */
 export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
+
+// ============================================================
+// Todo 도메인 스키마 (프론트엔드 전용)
+// ============================================================
+
+/** Todo 아이템 - 프론트엔드 도메인 모델 */
+export const todoItemSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  color: z.string().nullable(),
+  completed: z.boolean(),
+  scheduledTime: z.date().nullable(), // Date 객체 (서버는 string)
+  isAllDay: z.boolean(),
+  visibility: todoVisibilitySchema,
+});
+export type TodoItem = z.infer<typeof todoItemSchema>;
+
+/** 날짜별 Todo 목록 */
+export const todosByDateSchema = z.object({
+  date: z.string(), // YYYY-MM-DD
+  todos: z.array(todoItemSchema),
+});
+export type TodosByDate = z.infer<typeof todosByDateSchema>;
+
+/** Todo 목록 조회 결과 (페이지네이션 포함) */
+export const todosResultSchema = z.object({
+  todos: z.array(todoItemSchema),
+  hasNext: z.boolean(),
+  nextCursor: z.number().nullable(),
+});
+export type TodosResult = z.infer<typeof todosResultSchema>;
+
+// ============================================================
+// AI 파싱 도메인 스키마 (프론트엔드 전용)
+// ============================================================
+
+/** 파싱된 Todo 데이터 - 프론트엔드 도메인 모델 */
+export const parsedTodoDataSchema = z.object({
+  title: z.string(),
+  startDate: z.string(), // YYYY-MM-DD
+  endDate: z.string().nullable(),
+  scheduledTime: z.string().nullable(), // HH:mm
+  isAllDay: z.boolean(),
+});
+export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
+
+/** 토큰 사용량 */
+export const tokenUsageSchema = z.object({
+  input: z.number(),
+  output: z.number(),
+});
+export type TokenUsage = z.infer<typeof tokenUsageSchema>;
+
+/** 파싱 메타데이터 */
+export const parseTodoMetaSchema = z.object({
+  model: z.string(),
+  processingTimeMs: z.number(),
+  tokenUsage: tokenUsageSchema,
+});
+export type ParseTodoMeta = z.infer<typeof parseTodoMetaSchema>;
+
+/** AI 파싱 결과 */
+export const parsedTodoResultSchema = z.object({
+  data: parsedTodoDataSchema,
+  meta: parseTodoMetaSchema,
+});
+export type ParsedTodoResult = z.infer<typeof parsedTodoResultSchema>;
+
+/** AI 사용량 */
+export const aiUsageSchema = z.object({
+  used: z.number(),
+  limit: z.number(),
+  resetsAt: z.string(), // ISO datetime
+});
+export type AiUsage = z.infer<typeof aiUsageSchema>;
+
+// ============================================================
+// Form Schemas
+// ============================================================
 
 /** 시간 형식 검증 (HH:mm) */
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -16,24 +99,9 @@ export const addTodoFormSchema = z.object({
 });
 export type AddTodoFormInput = z.input<typeof addTodoFormSchema>;
 
-/** Todo 도메인 모델 스키마 */
-export const TodoItemSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  color: z.string().nullable(),
-  completed: z.boolean(),
-  scheduledTime: z.date().nullable(),
-  isAllDay: z.boolean(),
-  visibility: todoVisibilitySchema,
-});
-
-export type TodoItem = z.infer<typeof TodoItemSchema>;
-
-/** 날짜별 Todo 목록 */
-export interface TodosByDate {
-  date: string; // YYYY-MM-DD
-  todos: TodoItem[];
-}
+// ============================================================
+// Policy (비즈니스 규칙)
+// ============================================================
 
 /** Todo Policy (비즈니스 규칙) */
 export const TodoPolicy = {
@@ -45,14 +113,4 @@ export const TodoPolicy = {
 
   /** 공개 Todo인지 확인 */
   isPublic: (todo: TodoItem): boolean => todo.visibility === 'PUBLIC',
-};
-
-/** Todo 개수 정보 (캘린더용) - date: YYYY-MM-DD, count */
-export type TodoCountByDate = Record<string, number>;
-
-/** Todo 목록 조회 결과 */
-export interface TodosResult {
-  todos: TodoItem[];
-  hasNext: boolean;
-  nextCursor: number | null;
-}
+} as const;

@@ -8,10 +8,13 @@ import GoogleIconSvg from '@assets/icons/ic_google.svg';
 import KakaoIconSvg from '@assets/icons/ic_kakao.svg';
 import LockIconSvg from '@assets/icons/ic_lock.svg';
 import MenuIconSvg from '@assets/icons/ic_menu.svg';
+import MicIconSvg from '@assets/icons/ic_mic.svg';
 import NaverIconSvg from '@assets/icons/ic_naver.svg';
+import PauseIconSvg from '@assets/icons/ic_pause.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
 import PlusIconSvg from '@assets/icons/ic_plus.svg';
 import SearchIconSvg from '@assets/icons/ic_search.svg';
+import SendIconSvg from '@assets/icons/ic_send.svg';
 import { createStyledIcon } from './createStyledIcon';
 
 // 래핑된 아이콘 컴포넌트들
@@ -25,7 +28,10 @@ export const GoogleIcon = createStyledIcon(GoogleIconSvg);
 export const KakaoIcon = createStyledIcon(KakaoIconSvg);
 export const LockIcon = createStyledIcon(LockIconSvg);
 export const MenuIcon = createStyledIcon(MenuIconSvg);
+export const MicIcon = createStyledIcon(MicIconSvg);
 export const NaverIcon = createStyledIcon(NaverIconSvg);
+export const PauseIcon = createStyledIcon(PauseIconSvg);
 export const PersonIcon = createStyledIcon(PersonIconSvg);
 export const PlusIcon = createStyledIcon(PlusIconSvg);
 export const SearchIcon = createStyledIcon(SearchIconSvg);
+export const SendIcon = createStyledIcon(SendIconSvg);

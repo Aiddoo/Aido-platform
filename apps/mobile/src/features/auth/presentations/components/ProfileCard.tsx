@@ -1,26 +1,22 @@
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { H4 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Avatar, SkeletonGroup, useToast } from 'heroui-native';
+import { Avatar, SkeletonGroup } from 'heroui-native';
 import { getMeQueryOptions } from '../queries/get-me-query-options';
 
 const ProfileCardRoot = () => {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const { toast } = useToast();
+  const toast = useAppToast();
   const { copyToClipboard } = useClipboard();
 
   const handleCopyUserTag = async () => {
     const result = await copyToClipboard(user.userTag);
     if (result.success) {
-      toast.show({
-        label: '태그 복사 완료',
-        description: '친구에게 공유해서 친구 요청을 받아보세요',
-        actionLabel: '닫기',
-        onActionPress: ({ hide }) => hide(),
-      });
+      toast.success('태그 복사 완료', { description: '친구에게 공유해서 친구 요청을 받아보세요' });
     }
   };
 

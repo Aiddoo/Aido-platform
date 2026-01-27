@@ -11,7 +11,7 @@ export class KyHttpClient implements HttpClient {
 
   constructor(configOrInstance?: HttpClientConfig | KyInstance) {
     if (configOrInstance && 'extend' in configOrInstance) {
-      // KyInstance가 전달된 경우
+      // KyInstance가 전달된 경우 - 이미 hooks가 설정되어 있으므로 그대로 사용
       this._client = configOrInstance;
     } else {
       // HttpClientConfig가 전달된 경우

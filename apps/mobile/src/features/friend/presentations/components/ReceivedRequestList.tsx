@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -9,7 +10,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Skeleton, useToast } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, ScrollView } from 'react-native';
 import type { FriendRequestUser } from '../../models/friend.model';
 import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
@@ -23,29 +24,17 @@ const ReceivedRequestListComponent = () => {
   );
   const acceptMutation = useMutation(acceptRequestMutationOptions());
   const rejectMutation = useMutation(rejectRequestMutationOptions());
-  const { toast } = useToast();
+  const toast = useAppToast();
 
   const handleAccept = (userId: string) => {
     acceptMutation.mutate(userId, {
-      onSuccess: () => {
-        toast.show({
-          label: '친구 요청을 수락했어요',
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
-      },
+      onSuccess: () => toast.success('친구 요청을 수락했어요'),
     });
   };
 
   const handleReject = (userId: string) => {
     rejectMutation.mutate(userId, {
-      onSuccess: () => {
-        toast.show({
-          label: '친구 요청을 거절했어요',
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
-      },
+      onSuccess: () => toast.success('친구 요청을 거절했어요'),
     });
   };
 

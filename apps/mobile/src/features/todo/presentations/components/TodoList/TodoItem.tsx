@@ -24,7 +24,7 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
           className="shadow-none border border-main size-5 rounded-md"
           isSelected={todo.completed}
           onSelectedChange={() =>
-            toggleMutation.mutate({ todoId: todo.id, completed: !todo.completed })
+            toggleMutation.mutate({ todoId: todo.id, body: { completed: !todo.completed } })
           }
           isDisabled={toggleMutation.isPending}
         />

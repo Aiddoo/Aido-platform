@@ -10,6 +10,7 @@ import { useResolveClassNames } from 'uniwind';
 export default function TabsLayout() {
   return match(Platform.OS)
     .with('ios', () => <IOSLiquidGlassTabs />)
+    .with('android', () => <AndroidBottomTabs />)
     .otherwise(() => <AndroidBottomTabs />);
 }
 

@@ -1,20 +1,20 @@
 import {
+  type AiUsageResponse,
+  aiUsageResponseSchema,
   type CreateTodoInput,
+  type GetTodosQuery,
+  type ParseTodoResponse,
+  parseTodoResponseSchema,
   type Todo,
   type TodoListResponse,
+  type ToggleTodoCompleteInput,
   todoListResponseSchema,
   todoSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
+import { TodoClientError } from '../models/todo.error';
 
-import { TodoError } from '../models/todo.error';
-import type {
-  GetTodoCountsParams,
-  GetTodosParams,
-  TodoCountsResponse,
-  TodoRepository,
-  ToggleTodoCompleteParams,
-} from './todo.repository';
+import type { TodoRepository } from './todo.repository';
 
 export class TodoRepositoryImpl implements TodoRepository {
   constructor(private readonly _httpClient: HttpClient) {}
@@ -35,7 +35,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     return queryString ? `${basePath}?${queryString}` : basePath;
   }
 
-  async getTodos(params: GetTodosParams): Promise<TodoListResponse> {
+  async getTodos(params: GetTodosQuery): Promise<TodoListResponse> {
     const url = this._buildUrl('v1/todos', {
       cursor: params.cursor,
       size: params.size,
@@ -49,35 +49,22 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = todoListResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[TodoRepository] Invalid getTodos response:', result.error);
-      throw TodoError.invalidResponse();
+      throw TodoClientError.validation();
     }
 
     return result.data;
   }
 
-  async getTodoCounts(params: GetTodoCountsParams): Promise<TodoCountsResponse> {
-    const url = this._buildUrl('v1/todos/counts', {
-      startDate: params.startDate,
-      endDate: params.endDate,
-    });
-
-    const { data } = await this._httpClient.get<TodoCountsResponse>(url);
-
-    return data;
-  }
-
-  async toggleTodoComplete(params: ToggleTodoCompleteParams): Promise<Todo> {
+  async toggleTodoComplete(todoId: number, body: ToggleTodoCompleteInput): Promise<Todo> {
     const { data } = await this._httpClient.patch<{ todo: Todo }>(
-      `v1/todos/${params.todoId}/complete`,
-      {
-        completed: params.completed,
-      },
+      `v1/todos/${todoId}/complete`,
+      body,
     );
 
     const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
       console.error('[TodoRepository] Invalid toggleTodoComplete response:', result.error);
-      throw TodoError.invalidResponse();
+      throw TodoClientError.validation();
     }
 
     return result.data;
@@ -89,7 +76,31 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
       console.error('[TodoRepository] Invalid createTodo response:', result.error);
-      throw TodoError.invalidResponse();
+      throw TodoClientError.validation();
+    }
+
+    return result.data;
+  }
+
+  async parseTodo(text: string): Promise<ParseTodoResponse> {
+    const { data } = await this._httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', { text });
+
+    const result = parseTodoResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[TodoRepository] Invalid parseTodo response:', result.error);
+      throw TodoClientError.validation();
+    }
+
+    return result.data;
+  }
+
+  async getAiUsage(): Promise<AiUsageResponse> {
+    const { data } = await this._httpClient.get<AiUsageResponse>('v1/ai/usage');
+
+    const result = aiUsageResponseSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[TodoRepository] Invalid getAiUsage response:', result.error);
+      throw TodoClientError.validation();
     }
 
     return result.data;
