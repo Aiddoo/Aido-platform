@@ -1,4 +1,14 @@
-import type { AuthTokens, CurrentUser, ExchangeCodeInput } from '@aido/validators';
+import type {
+  AuthTokens,
+  ConsentResponse,
+  CurrentUser,
+  ExchangeCodeInput,
+  PreferenceResponse,
+  UpdateMarketingConsentInput,
+  UpdateMarketingConsentResponse,
+  UpdatePreferenceInput,
+  UpdatePreferenceResponse,
+} from '@aido/validators';
 
 export interface AuthRepository {
   exchangeCode(request: ExchangeCodeInput): Promise<AuthTokens>;
@@ -10,4 +20,14 @@ export interface AuthRepository {
   getKakaoAuthUrl(redirectUri: string): string;
 
   getNaverAuthUrl(redirectUri: string): string;
+
+  getPreference(): Promise<PreferenceResponse>;
+
+  updatePreference(input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse>;
+
+  getConsent(): Promise<ConsentResponse>;
+
+  updateMarketingConsent(
+    input: UpdateMarketingConsentInput,
+  ): Promise<UpdateMarketingConsentResponse>;
 }

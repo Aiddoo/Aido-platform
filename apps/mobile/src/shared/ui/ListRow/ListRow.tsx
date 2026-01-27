@@ -58,7 +58,7 @@ const listRowSlotVariants = ({ alignment = 'center' }: { alignment?: ListRowAlig
   return cn('flex', alignment === 'top' ? 'items-start' : 'items-center');
 };
 
-const ListRowComponent = ({
+export function ListRow({
   left,
   contents,
   right,
@@ -70,7 +70,7 @@ const ListRowComponent = ({
   disabled = false,
   className,
   ...props
-}: ListRowProps) => {
+}: ListRowProps) {
   return (
     <HStack
       align="center"
@@ -86,9 +86,7 @@ const ListRowComponent = ({
       {right && <View className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</View>}
     </HStack>
   );
-};
+}
 
-export const ListRow = Object.assign(ListRowComponent, {
-  Texts: ListRowTexts,
-  Image: ListRowImage,
-});
+ListRow.Texts = ListRowTexts;
+ListRow.Image = ListRowImage;

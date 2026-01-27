@@ -16,7 +16,7 @@ import type { FriendUser } from '../../models/friend.model';
 import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
 
-const FriendListComponent = () => {
+export function FriendList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
     getFriendsQueryOptions(),
   );
@@ -88,25 +88,23 @@ const FriendListComponent = () => {
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );
+}
+
+FriendList.Loading = function Loading() {
+  return (
+    <ScrollView className="flex-1 px-4">
+      <Box py={12}>
+        <Skeleton className="w-12 h-4" />
+      </Box>
+      <VStack>
+        {times(3, (i) => (
+          <HStack key={i} align="center" className="py-2" gap={12}>
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="flex-1 h-5" />
+            <Skeleton className="w-12 h-8 rounded" />
+          </HStack>
+        ))}
+      </VStack>
+    </ScrollView>
+  );
 };
-
-const FriendListLoading = () => (
-  <ScrollView className="flex-1 px-4">
-    <Box py={12}>
-      <Skeleton className="w-12 h-4" />
-    </Box>
-    <VStack>
-      {times(3, (i) => (
-        <HStack key={i} align="center" className="py-2" gap={12}>
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <Skeleton className="flex-1 h-5" />
-          <Skeleton className="w-12 h-8 rounded" />
-        </HStack>
-      ))}
-    </VStack>
-  </ScrollView>
-);
-
-export const FriendList = Object.assign(FriendListComponent, {
-  Loading: FriendListLoading,
-});
