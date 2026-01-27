@@ -10,7 +10,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { H1 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { cn } from '@src/shared/utils';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';

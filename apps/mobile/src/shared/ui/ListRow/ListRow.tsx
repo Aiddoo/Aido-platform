@@ -1,5 +1,5 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { cn } from '@src/shared/utils';
+import { cn } from '@src/shared/utils/cn';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
 import { View } from 'react-native';

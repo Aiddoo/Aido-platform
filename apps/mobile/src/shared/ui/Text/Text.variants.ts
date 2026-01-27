@@ -12,6 +12,7 @@ export const textVariants = tv(
         warning: 'text-warning',
         success: 'text-success',
         info: 'text-info',
+        white: 'text-white',
       },
       weight: {
         normal: 'font-normal',

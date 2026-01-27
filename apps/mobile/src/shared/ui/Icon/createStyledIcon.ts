@@ -13,7 +13,7 @@ export function createStyledIcon<P extends SvgProps>(IconComponent: ComponentTyp
   return withUniwind(IconComponent, {
     color: {
       fromClassName: 'colorClassName',
-      styleProperty: 'accentColor',
+      styleProperty: 'color',
     },
   });
 }

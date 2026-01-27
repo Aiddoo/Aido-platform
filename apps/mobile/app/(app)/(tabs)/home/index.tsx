@@ -10,8 +10,6 @@ const HomeScreen = () => {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
   const logout = useMutation(logoutMutationOptions());
 
-  // 로그아웃 성공 시 AuthProvider가 status를 'unauthenticated'로 변경하고
-  // Stack.Protected가 자동으로 (auth) 그룹으로 라우팅 처리
   const handleLogout = () => {
     logout.mutate();
   };
@@ -19,7 +17,7 @@ const HomeScreen = () => {
   if (!user) return null;
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <VStack px={16} py={20} gap={16}>
         <Text>안녕하세요, {user.name}님!</Text>
         <Text shade={6}>{user.email}</Text>
