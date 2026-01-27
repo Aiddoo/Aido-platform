@@ -12,6 +12,7 @@ export {
   MenuIcon,
   MicIcon,
   NaverIcon,
+  PauseIcon,
   PersonIcon,
   PlusIcon,
   SearchIcon,

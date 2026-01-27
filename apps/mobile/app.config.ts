@@ -392,6 +392,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           speechRecognitionPermission:
             // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
             '${PRODUCT_NAME}이(가) 음성을 텍스트로 변환하기 위해 음성 인식에 접근하려고 합니다.',
+          androidSpeechServicePackages: [
+            'com.google.android.googlequicksearchbox',
+            'com.google.android.tts',
+          ],
         },
       ],
 
