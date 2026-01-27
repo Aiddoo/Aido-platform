@@ -10,6 +10,7 @@ export const acceptRequestMutationOptions = () => {
     mutationFn: (userId: string) => friendService.acceptRequest(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
+      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
   });
 };

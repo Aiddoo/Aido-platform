@@ -3,6 +3,8 @@ import { AuthRepositoryImpl } from '@src/features/auth/repositories/auth.reposit
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { FriendRepositoryImpl } from '@src/features/friend/repositories/friend.repository.impl';
 import { FriendService } from '@src/features/friend/services/friend.service';
+import { TodoRepositoryImpl } from '@src/features/todo/repositories/todo.repository.impl';
+import { TodoService } from '@src/features/todo/services/todo.service';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-http-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
@@ -17,6 +19,7 @@ export interface DIContainer {
   // Services
   authService: AuthService;
   friendService: FriendService;
+  todoService: TodoService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -37,15 +40,18 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // repositories
     const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient, storage);
     const friendRepository = new FriendRepositoryImpl(authHttpClient);
+    const todoRepository = new TodoRepositoryImpl(authHttpClient);
 
     // services
     const authService = new AuthService(authRepository);
     const friendService = new FriendService(friendRepository);
+    const todoService = new TodoService(todoRepository);
 
     return {
       storage,
       authService,
       friendService,
+      todoService,
     };
   });
 
@@ -68,3 +74,4 @@ export const useStorage = () => useDI().storage;
 // Service Hooks
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
+export const useTodoService = () => useDI().todoService;
