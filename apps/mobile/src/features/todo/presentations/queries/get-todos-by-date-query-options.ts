@@ -12,12 +12,12 @@ export interface TodoItemViewModel extends TodoItem {
   color: string;
 }
 
-export const getTodosByDateQueryOptions = (date: string) => {
+export const getTodosByDateQueryOptions = (date: string, size: number) => {
   const todoService = useTodoService();
 
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.byDate(date),
-    queryFn: () => todoService.getTodos({ startDate: date, endDate: date }),
+    queryFn: () => todoService.getTodos({ startDate: date, size }),
     select: (data): { todos: TodoItemViewModel[] } => ({
       todos: data.todos.map((todo) => ({
         ...todo,

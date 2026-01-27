@@ -4,15 +4,29 @@ import type {
   HttpClientResponse,
   RequestConfig,
 } from '@src/core/ports/http';
+import { ApiError } from '@src/shared/errors/api-error';
 import ky, { type KyInstance, type Options } from 'ky';
+
+interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+  };
+  timestamp: number;
+}
 
 export class KyHttpClient implements HttpClient {
   private _client: KyInstance;
 
   constructor(configOrInstance?: HttpClientConfig | KyInstance) {
     if (configOrInstance && 'extend' in configOrInstance) {
-      // KyInstance가 전달된 경우
-      this._client = configOrInstance;
+      // KyInstance가 전달된 경우 - hooks 추가하여 extend
+      this._client = configOrInstance.extend({
+        hooks: {
+          beforeError: [this._handleError],
+        },
+      });
     } else {
       // HttpClientConfig가 전달된 경우
       const config = configOrInstance as HttpClientConfig | undefined;
@@ -20,10 +34,30 @@ export class KyHttpClient implements HttpClient {
         prefixUrl: config?.baseUrl,
         headers: config?.headers,
         timeout: config?.timeout,
+        hooks: {
+          beforeError: [this._handleError],
+        },
       };
       this._client = ky.create(options);
     }
   }
+
+  private _handleError = async (error: Error & { response?: Response }) => {
+    const { response } = error;
+    if (response) {
+      try {
+        const body = (await response.clone().json()) as ApiErrorResponse;
+        if (body.error) {
+          throw new ApiError(body.error.code, body.error.message, response.status);
+        }
+      } catch (e) {
+        // ApiError는 그대로 throw
+        if (e instanceof ApiError) throw e;
+        // JSON 파싱 실패 시 원래 에러 유지
+      }
+    }
+    throw error;
+  };
 
   async get<T>(url: string, config?: RequestConfig): Promise<HttpClientResponse<T>> {
     const response = await this._client.get(url, this._buildOptions(config));

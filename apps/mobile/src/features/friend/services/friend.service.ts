@@ -1,8 +1,10 @@
-import type {
-  FriendsResult,
-  ReceivedRequestsResult,
-  SendRequestResult,
-  SentRequestsResult,
+import { FriendClientError } from '../models/friend.error';
+import {
+  FriendPolicy,
+  type FriendsResult,
+  type ReceivedRequestsResult,
+  type SendRequestResult,
+  type SentRequestsResult,
 } from '../models/friend.model';
 import type { FriendRepository, PaginationParams } from '../repositories/friend.repository';
 import {
@@ -16,6 +18,10 @@ export class FriendService {
   constructor(private readonly _repository: FriendRepository) {}
 
   sendRequestByTag = async (userTag: string): Promise<SendRequestResult> => {
+    if (!FriendPolicy.isValidTag(userTag)) {
+      throw FriendClientError.invalidTag();
+    }
+
     const dto = await this._repository.sendRequest(userTag);
     return toSendRequestResult(dto);
   };

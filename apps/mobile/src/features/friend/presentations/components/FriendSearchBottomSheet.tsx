@@ -1,6 +1,7 @@
 import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ApiError } from '@src/shared/errors/api-error';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -14,7 +15,8 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Pressable } from 'react-native';
 import type { z } from 'zod';
-import { FriendError } from '../../models/friend.error';
+
+import { FriendClientError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -43,9 +45,29 @@ export const FriendSearchBottomSheet = () => {
         setIsOpen(false);
       },
       onError: (error) => {
-        const message = error instanceof FriendError ? error.message : '친구 요청에 실패했어요';
+        // 1. 서버 에러 → 서버 메시지 그대로 표시
+        if (error instanceof ApiError) {
+          toast.show({
+            label: error.message,
+            actionLabel: '닫기',
+            onActionPress: ({ hide }) => hide(),
+          });
+          return;
+        }
+
+        // 2. 클라이언트 에러 → reason별 분기
+        if (error instanceof FriendClientError) {
+          toast.show({
+            label: error.message,
+            actionLabel: '닫기',
+            onActionPress: ({ hide }) => hide(),
+          });
+          return;
+        }
+
+        // 3. 그 외 → 일반 에러
         toast.show({
-          label: message,
+          label: '친구 요청에 실패했어요',
           actionLabel: '닫기',
           onActionPress: ({ hide }) => hide(),
         });
