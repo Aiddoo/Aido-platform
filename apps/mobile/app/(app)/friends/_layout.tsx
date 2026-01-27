@@ -4,7 +4,7 @@ import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-export default function FriendManagementLayout() {
+export default function FriendsLayout() {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
 
