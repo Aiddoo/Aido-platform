@@ -29,7 +29,7 @@ interface UseSpeechRecognitionEventsReturn {
  *   onResult: (transcript) => setInputText(transcript),
  *   onError: (errorCode) => {
  *     const message = SPEECH_RECOGNITION_ERROR_MESSAGES[errorCode];
- *     toast.show({ label: message });
+ *     toast.error(message);
  *   },
  * });
  * ```

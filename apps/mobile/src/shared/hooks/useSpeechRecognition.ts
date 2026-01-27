@@ -39,7 +39,7 @@ export interface UseSpeechRecognitionReturn {
  * ```tsx
  * const { isRecognizing, start, stop } = useSpeechRecognition({
  *   onResult: (text) => setInputText(text),
- *   onError: (message) => toast.show({ label: message }),
+ *   onError: (message) => toast.error(message),
  * });
  *
  * const handleMicPress = () => {

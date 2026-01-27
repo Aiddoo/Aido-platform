@@ -1,9 +1,9 @@
-import { createTodoSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ParsedTodoData } from '@src/features/todo/models/todo.model';
 import { createTodoMutationOptions } from '@src/features/todo/presentations/queries/create-todo-mutation-options';
 import { parseTodoMutationOptions } from '@src/features/todo/presentations/queries/parse-todo-mutation-options';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -12,8 +12,8 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VoiceTextField } from '@src/shared/ui/VoiceTextField/VoiceTextField';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, PressableFeedback, useToast } from 'heroui-native';
-import { type PropsWithChildren, useCallback, useState } from 'react';
+import { BottomSheet, PressableFeedback } from 'heroui-native';
+import { type PropsWithChildren, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { z } from 'zod';
@@ -25,22 +25,11 @@ const HomeScreen = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedTodoData | null>(null);
 
-  const { toast } = useToast();
-
-  const showErrorToast = useCallback(
-    (message: string) => {
-      toast.show({
-        label: message,
-        actionLabel: '닫기',
-        onActionPress: ({ hide }) => hide(),
-      });
-    },
-    [toast],
-  );
+  const toast = useAppToast();
 
   const { isRecognizing, start, stop } = useSpeechRecognition({
     onResult: setInputText,
-    onError: showErrorToast,
+    onError: toast.error,
   });
 
   const parseMutation = useMutation(parseTodoMutationOptions());
@@ -60,9 +49,6 @@ const HomeScreen = () => {
         setParsedData(result.data);
         setIsSheetOpen(true);
       },
-      onError: (error) => {
-        showErrorToast(error.message || 'AI 파싱에 실패했어요. 다시 시도해주세요.');
-      },
     });
   };
 
@@ -70,30 +56,27 @@ const HomeScreen = () => {
     setInputText(text);
   };
 
-  const handleCreateTodo = (data: ParsedTodoData) => {
-    const input = createTodoSchema.parse({
-      title: data.title,
-      startDate: data.startDate,
-      scheduledTime: data.scheduledTime,
-      isAllDay: data.isAllDay,
-      visibility: 'PUBLIC',
-    });
-
-    createMutation.mutate(input, {
-      onSuccess: () => {
-        setInputText('');
-        setParsedData(null);
-        setIsSheetOpen(false);
-        toast.show({
-          label: '할 일이 추가되었어요!',
-          actionLabel: '닫기',
-          onActionPress: ({ hide }) => hide(),
-        });
+  const handleCreateTodo = ({ title, startDate, scheduledTime, isAllDay }: ParsedTodoData) => {
+    createMutation.mutate(
+      {
+        title,
+        startDate,
+        scheduledTime,
+        isAllDay,
+        visibility: 'PUBLIC',
       },
-      onError: (error) => {
-        showErrorToast(error.message || '할 일 추가에 실패했어요');
+      {
+        onSuccess: () => {
+          setInputText('');
+          setParsedData(null);
+          setIsSheetOpen(false);
+          toast.success('할 일이 추가되었어요!');
+        },
+        onError: (err) => {
+          toast.error(err.message, { fallback: '할 일 추가에 실패했어요' });
+        },
       },
-    });
+    );
   };
 
   return (

@@ -37,7 +37,7 @@ const showPermissionDeniedAlert = () => {
  * @example
  * ```tsx
  * const { requestPermissionAndExecute } = useMicrophonePermission(
- *   (message) => toast.show({ label: message }),
+ *   (message) => toast.error(message),
  * );
  *
  * const handleStart = async () => {
