@@ -1,4 +1,12 @@
-import type { ExchangeCodeInput } from '@aido/validators';
+import type {
+  ConsentResponse,
+  ExchangeCodeInput,
+  PreferenceResponse,
+  UpdateMarketingConsentInput,
+  UpdateMarketingConsentResponse,
+  UpdatePreferenceInput,
+  UpdatePreferenceResponse,
+} from '@aido/validators';
 import { ENV } from '@src/shared/config/env';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
@@ -108,5 +116,23 @@ export class AuthService {
 
   logout = async (): Promise<void> => {
     return this._authRepository.logout();
+  };
+
+  getPreference = async (): Promise<PreferenceResponse> => {
+    return this._authRepository.getPreference();
+  };
+
+  updatePreference = async (input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> => {
+    return this._authRepository.updatePreference(input);
+  };
+
+  getConsent = async (): Promise<ConsentResponse> => {
+    return this._authRepository.getConsent();
+  };
+
+  updateMarketingConsent = async (
+    input: UpdateMarketingConsentInput,
+  ): Promise<UpdateMarketingConsentResponse> => {
+    return this._authRepository.updateMarketingConsent(input);
   };
 }
