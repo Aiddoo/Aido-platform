@@ -5,7 +5,7 @@ import { Text } from '../Text/Text';
 import { VStack } from '../VStack/VStack';
 import type { ResultButtonProps, ResultProps } from './Result.types';
 
-function ResultRoot({ icon, title, description, button, className }: ResultProps) {
+export function Result({ icon, title, description, button, className }: ResultProps) {
   return (
     <VStack align="center" justify="center" className={className} flex={1}>
       {icon && (
@@ -40,14 +40,15 @@ function ResultRoot({ icon, title, description, button, className }: ResultProps
   );
 }
 
-function ResultButton({ children, color = 'dark', className, ...props }: ResultButtonProps) {
+Result.Button = function ResultButton({
+  children,
+  color = 'dark',
+  className,
+  ...props
+}: ResultButtonProps) {
   return (
     <Button size="medium" color={color} display="inline" className={className} {...props}>
       {children}
     </Button>
   );
-}
-
-export const Result = Object.assign(ResultRoot, {
-  Button: ResultButton,
-});
+};

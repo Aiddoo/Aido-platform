@@ -16,7 +16,7 @@ import { cancelRequestMutationOptions } from '../queries/cancel-request-mutation
 import { getSentRequestsQueryOptions } from '../queries/get-sent-requests-query-options';
 import { FriendRequestRow } from './FriendRequestRow';
 
-const SentRequestListComponent = () => {
+export function SentRequestList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
     getSentRequestsQueryOptions(),
   );
@@ -78,25 +78,23 @@ const SentRequestListComponent = () => {
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );
+}
+
+SentRequestList.Loading = function Loading() {
+  return (
+    <ScrollView className="flex-1 px-4">
+      <Box py={12}>
+        <Skeleton className="w-16 h-4" />
+      </Box>
+      <VStack>
+        {times(3, (i) => (
+          <HStack key={i} align="center" className="py-2" gap={12}>
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="flex-1 h-5" />
+            <Skeleton className="w-12 h-8 rounded" />
+          </HStack>
+        ))}
+      </VStack>
+    </ScrollView>
+  );
 };
-
-const SentRequestListLoading = () => (
-  <ScrollView className="flex-1 px-4">
-    <Box py={12}>
-      <Skeleton className="w-16 h-4" />
-    </Box>
-    <VStack>
-      {times(3, (i) => (
-        <HStack key={i} align="center" className="py-2" gap={12}>
-          <Skeleton className="w-10 h-10 rounded-full" />
-          <Skeleton className="flex-1 h-5" />
-          <Skeleton className="w-12 h-8 rounded" />
-        </HStack>
-      ))}
-    </VStack>
-  </ScrollView>
-);
-
-export const SentRequestList = Object.assign(SentRequestListComponent, {
-  Loading: SentRequestListLoading,
-});

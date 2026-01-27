@@ -9,7 +9,7 @@ import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Image, ScrollView } from 'react-native';
 
-const UserAvatarListComponent = () => {
+export function UserAvatarList() {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
   const {
     data: friendsData,
@@ -47,9 +47,9 @@ const UserAvatarListComponent = () => {
       ))}
     </ScrollView>
   );
-};
+}
 
-const UserAvatarListLoading = () => {
+UserAvatarList.Loading = function Loading() {
   return (
     <HStack px={16} gap={12}>
       {times(3).map((i) => (
@@ -61,10 +61,6 @@ const UserAvatarListLoading = () => {
     </HStack>
   );
 };
-
-export const UserAvatarList = Object.assign(UserAvatarListComponent, {
-  Loading: UserAvatarListLoading,
-});
 
 interface UserAvatarItemProps {
   name: string;

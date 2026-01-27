@@ -8,7 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Avatar, SkeletonGroup } from 'heroui-native';
 import { getMeQueryOptions } from '../queries/get-me-query-options';
 
-const ProfileCardRoot = () => {
+export function ProfileCard() {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
   const toast = useAppToast();
   const { copyToClipboard } = useClipboard();
@@ -34,9 +34,9 @@ const ProfileCardRoot = () => {
       </VStack>
     </HStack>
   );
-};
+}
 
-const ProfileCardLoading = () => {
+ProfileCard.Loading = function Loading() {
   return (
     <SkeletonGroup isLoading isSkeletonOnly>
       <HStack gap={12} align="center">
@@ -49,7 +49,3 @@ const ProfileCardLoading = () => {
     </SkeletonGroup>
   );
 };
-
-export const ProfileCard = Object.assign(ProfileCardRoot, {
-  Loading: ProfileCardLoading,
-});
