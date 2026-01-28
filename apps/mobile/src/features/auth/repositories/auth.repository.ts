@@ -21,6 +21,8 @@ export interface AuthRepository {
 
   getNaverAuthUrl(redirectUri: string): string;
 
+  getGoogleAuthUrl(redirectUri: string): string;
+
   getPreference(): Promise<PreferenceResponse>;
 
   updatePreference(input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse>;

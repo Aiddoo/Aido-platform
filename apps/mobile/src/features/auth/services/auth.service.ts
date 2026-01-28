@@ -18,7 +18,7 @@ import type { AuthTokens, User } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
 
-type OAuthProvider = 'kakao' | 'naver';
+type OAuthProvider = 'kakao' | 'naver' | 'google';
 
 export class AuthService {
   constructor(private readonly _authRepository: AuthRepository) {}
@@ -33,6 +33,7 @@ export class AuthService {
       path: match(provider)
         .with('kakao', () => 'auth/kakao')
         .with('naver', () => 'auth/naver')
+        .with('google', () => 'auth/google')
         .exhaustive(),
     });
 
@@ -68,6 +69,7 @@ export class AuthService {
     const authUrl = match(provider)
       .with('kakao', () => this._authRepository.getKakaoAuthUrl(redirectUri))
       .with('naver', () => this._authRepository.getNaverAuthUrl(redirectUri))
+      .with('google', () => this._authRepository.getGoogleAuthUrl(redirectUri))
       .exhaustive();
 
     // createTask: false → Android에서 새 태스크 생성 안 함 → iOS와 동일하게 URL 캡처
@@ -102,6 +104,8 @@ export class AuthService {
   openKakaoLogin = (): Promise<string> => this.openOAuthLogin('kakao');
 
   openNaverLogin = (): Promise<string> => this.openOAuthLogin('naver');
+
+  openGoogleLogin = (): Promise<string> => this.openOAuthLogin('google');
 
   // Auth API Methods
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
