@@ -1,4 +1,5 @@
 import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
+import { openGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-google-login-mutation-options';
 import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
 import { openNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/open-naver-login-mutation-options';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -42,6 +43,17 @@ const LoginScreen = () => {
     });
   };
 
+  const googleLoginMutation = useMutation(openGoogleLoginMutationOptions());
+  const handleGoogleLogin = () => {
+    googleLoginMutation.mutate(undefined, {
+      onSuccess: (code) => {
+        if (code) {
+          exchangeCodeMutation.mutate({ code });
+        }
+      },
+    });
+  };
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <VStack flex={1} px={16}>
@@ -70,7 +82,8 @@ const LoginScreen = () => {
             <SocialLoginButton
               icon={<GoogleIcon width={20} height={20} />}
               label="Google로 계속하기"
-              onPress={() => {}}
+              onPress={handleGoogleLogin}
+              isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
               className="bg-white border border-gray-200"
             />
           </VStack>

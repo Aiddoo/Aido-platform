@@ -66,6 +66,10 @@ export class AuthRepositoryImpl implements AuthRepository {
     return `${ENV.API_URL}/v1/auth/naver/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
   }
 
+  getGoogleAuthUrl(redirectUri: string): string {
+    return `${ENV.API_URL}/v1/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+  }
+
   async getPreference() {
     const { data } = await this._authHttpClient.get('v1/auth/preference');
 
