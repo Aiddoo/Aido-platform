@@ -22,6 +22,19 @@ import { toAuthTokens, toUser } from './auth.mapper';
 
 type OAuthProvider = 'kakao' | 'naver' | 'google';
 
+/**
+ * expo-modules-core의 CodedError 타입 정의
+ * - expo-apple-authentication에서 발생하는 에러 타입
+ * - ERR_REQUEST_CANCELED: 사용자가 로그인 창을 닫음
+ * @see https://docs.expo.dev/versions/latest/sdk/apple-authentication/#error-codes
+ */
+interface ExpoCodedError extends Error {
+  code: string;
+}
+
+const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
+  error instanceof Error && 'code' in error && typeof error.code === 'string';
+
 export class AuthService {
   constructor(private readonly _authRepository: AuthRepository) {}
 
@@ -140,8 +153,10 @@ export class AuthService {
       if (error instanceof AuthClientError) {
         throw error;
       }
-      if (error instanceof Error && error.message.includes('canceled')) {
-        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+      // expo-apple-authentication의 CodedError 처리
+      // ERR_REQUEST_CANCELED: 사용자가 로그인 창을 닫음
+      if (isExpoCodedError(error) && error.code === 'ERR_REQUEST_CANCELED') {
+        throw AuthClientError.cancelled();
       }
       throw error;
     }
