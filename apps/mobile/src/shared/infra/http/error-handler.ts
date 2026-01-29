@@ -1,4 +1,5 @@
 import type { ErrorCodeType } from '@aido/errors';
+import { ApiError } from '@src/shared/errors';
 import type { AfterResponseHook } from 'ky';
 
 const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
@@ -182,6 +183,6 @@ export const handleApiErrors: AfterResponseHook = async (_request, _options, res
       MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
       error.message ||
       '알 수 없는 오류가 발생했어요';
-    throw new Error(userMessage);
+    throw new ApiError(error.code, userMessage, response.status);
   }
 };

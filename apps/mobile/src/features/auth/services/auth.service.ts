@@ -15,25 +15,19 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
 import { match } from 'ts-pattern';
-import { AuthClientError } from '../models/auth.error';
+import {
+  AppleAuthError,
+  AuthCancelledError,
+  AuthError,
+  AuthValidationError,
+  isAuthError,
+  isExpoCodedError,
+} from '../models/auth.error';
 import type { AuthTokens, User } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
 
 type OAuthProvider = 'kakao' | 'naver' | 'google';
-
-/**
- * expo-modules-core의 CodedError 타입 정의
- * - expo-apple-authentication에서 발생하는 에러 타입
- * - ERR_REQUEST_CANCELED: 사용자가 로그인 창을 닫음
- * @see https://docs.expo.dev/versions/latest/sdk/apple-authentication/#error-codes
- */
-interface ExpoCodedError extends Error {
-  code: string;
-}
-
-const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
-  error instanceof Error && 'code' in error && typeof error.code === 'string';
 
 export class AuthService {
   constructor(private readonly _authRepository: AuthRepository) {}
@@ -74,9 +68,10 @@ export class AuthService {
 
     return null;
   };
+
   /**
    * OAuth 로그인 통합 메서드
-   * @throws {AuthClientError} 로그인 취소, 네트워크 오류 등
+   * @throws {AuthError} 로그인 취소, 네트워크 오류 등
    */
   private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
     const redirectUri = this.getRedirectUri(provider);
@@ -96,36 +91,43 @@ export class AuthService {
       .with({ type: 'success' }, ({ url }) => {
         const code = this.extractCodeFromUrl(url);
 
-        if (!code) throw new AuthClientError('validation', '인증 코드를 찾을 수 없어요');
+        if (!code) throw new AuthValidationError('인증 코드를 찾을 수 없어요');
 
         return code;
       })
       .with({ type: WebBrowserResultType.CANCEL }, () => {
-        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+        throw new AuthCancelledError();
       })
       .with({ type: WebBrowserResultType.DISMISS }, () => {
-        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+        throw new AuthCancelledError();
       })
       .with({ type: WebBrowserResultType.OPENED }, () => {
-        throw new AuthClientError('unknown', '브라우저가 열렸지만 응답이 없어요');
+        throw new AuthError('브라우저가 열렸지만 응답이 없어요');
       })
       .with({ type: WebBrowserResultType.LOCKED }, () => {
-        throw new AuthClientError('validation', '다른 인증이 진행 중이에요');
+        throw new AuthValidationError('다른 인증이 진행 중이에요');
       })
       .exhaustive();
   };
 
   // Public OAuth API
-  openKakaoLogin = (): Promise<string> => this.openOAuthLogin('kakao');
+  openKakaoLogin = (): Promise<string> => {
+    return this.openOAuthLogin('kakao');
+  };
 
-  openNaverLogin = (): Promise<string> => this.openOAuthLogin('naver');
+  openNaverLogin = (): Promise<string> => {
+    return this.openOAuthLogin('naver');
+  };
 
-  openGoogleLogin = (): Promise<string> => this.openOAuthLogin('google');
+  openGoogleLogin = (): Promise<string> => {
+    return this.openOAuthLogin('google');
+  };
 
   /**
    * Apple 로그인 (iOS only)
    * - expo-apple-authentication 네이티브 SDK 사용
    * - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
+   * @throws {AppleAuthError} 로그인 취소, 인증 실패 등
    */
   openAppleLogin = async (): Promise<AuthTokens> => {
     try {
@@ -138,7 +140,7 @@ export class AuthService {
 
       const idToken = credential.identityToken;
       if (!idToken) {
-        throw new AuthClientError('validation', 'Apple ID 토큰을 받지 못했어요');
+        throw new AuthValidationError('Apple ID 토큰을 받지 못했어요');
       }
 
       const input: AppleMobileCallbackInput = {
@@ -150,15 +152,13 @@ export class AuthService {
       const dto = await this._authRepository.appleLogin(input);
       return toAuthTokens(dto);
     } catch (error) {
-      if (error instanceof AuthClientError) {
+      if (isAuthError(error)) {
         throw error;
       }
-      // expo-apple-authentication의 CodedError 처리
-      // ERR_REQUEST_CANCELED: 사용자가 로그인 창을 닫음
-      if (isExpoCodedError(error) && error.code === 'ERR_REQUEST_CANCELED') {
-        throw AuthClientError.cancelled();
+      if (isExpoCodedError(error)) {
+        throw AppleAuthError.fromExpoError(error);
       }
-      throw error;
+      throw new AuthError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했어요');
     }
   };
 

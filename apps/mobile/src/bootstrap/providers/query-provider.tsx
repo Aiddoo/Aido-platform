@@ -1,3 +1,4 @@
+import { isApiError, isClientError } from '@src/shared/errors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PropsWithChildren } from 'react';
 
@@ -9,11 +10,17 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: MIN_STALE_TIME,
       gcTime: MIN_GC_TIME,
-      // TODO: 추후 프로젝트 특성에 알맞게 고치기
       retry: (failureCount, error) => {
-        if (error instanceof Error && error.message.includes('401')) {
+        // 인증 에러: 재시도 무의미 (토큰 갱신 훅에서 처리)
+        if (isApiError(error) && [401, 403].includes(error.status)) {
           return false;
         }
+
+        // 클라이언트 에러 (취소, 검증 실패): 재시도 무의미
+        if (isClientError(error)) {
+          return false;
+        }
+
         return failureCount < 3;
       },
     },

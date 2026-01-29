@@ -15,7 +15,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
-import { AuthClientError } from '../models/auth.error';
+import { AuthValidationError } from '../models/auth.error';
 import type { AuthRepository } from './auth.repository';
 
 export class AuthRepositoryImpl implements AuthRepository {
@@ -31,7 +31,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = authTokensSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid exchangeCode response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     await Promise.all([
@@ -48,7 +48,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = currentUserSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid getCurrentUser response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     return result.data;
@@ -77,7 +77,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = preferenceResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid getPreference response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     return result.data;
@@ -89,7 +89,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = updatePreferenceResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid updatePreference response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     return result.data;
@@ -101,7 +101,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = consentResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid getConsent response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     return result.data;
@@ -113,7 +113,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = updateMarketingConsentResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid updateMarketingConsent response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     return result.data;
@@ -125,7 +125,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = authTokensSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid appleLogin response:', result.error);
-      throw AuthClientError.validation();
+      throw new AuthValidationError();
     }
 
     await Promise.all([
