@@ -23,6 +23,7 @@ import { NotificationModule } from "@/modules/notification/notification.module";
 import { NudgeModule } from "@/modules/nudge/nudge.module";
 import { SchedulerModule } from "@/modules/scheduler/scheduler.module";
 import { TodoModule } from "@/modules/todo";
+import { TodoCategoryModule } from "@/modules/todo-category";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
@@ -69,6 +70,7 @@ import { AppService } from "./app.service";
 		NudgeModule,
 		SchedulerModule,
 		TodoModule,
+		TodoCategoryModule,
 	],
 	// Controllers
 	controllers: [AppController],
