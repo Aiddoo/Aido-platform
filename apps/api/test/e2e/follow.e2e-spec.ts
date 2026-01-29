@@ -33,6 +33,22 @@ describe("Follow (e2e)", () => {
 	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
 
 	/**
+	 * 기본 카테고리 ID 조회 헬퍼
+	 */
+	async function getDefaultCategoryId(accessToken: string): Promise<number> {
+		const response = await request(app.getHttpServer())
+			.get("/todo-categories")
+			.set("Authorization", `Bearer ${accessToken}`)
+			.expect(200);
+
+		const categories = response.body.data.items;
+		const defaultCategory =
+			categories.find((c: { name: string }) => c.name === "할 일") ||
+			categories[0];
+		return defaultCategory.id;
+	}
+
+	/**
 	 * 테스트용 사용자 등록 및 인증 헬퍼
 	 * @returns { accessToken, userId, userTag }
 	 */
@@ -390,6 +406,9 @@ describe("Follow (e2e)", () => {
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
+			// J의 기본 카테고리 ID 조회
+			const categoryId = await getDefaultCategoryId(userJ.accessToken);
+
 			// J가 PUBLIC 투두 생성
 			await request(app.getHttpServer())
 				.post("/todos")
@@ -398,6 +417,7 @@ describe("Follow (e2e)", () => {
 					title: "J의 공개 할 일",
 					startDate: new Date().toISOString().split("T")[0],
 					visibility: "PUBLIC",
+					categoryId,
 				})
 				.expect(201);
 
@@ -409,6 +429,7 @@ describe("Follow (e2e)", () => {
 					title: "J의 비공개 할 일",
 					startDate: new Date().toISOString().split("T")[0],
 					visibility: "PRIVATE",
+					categoryId,
 				})
 				.expect(201);
 
