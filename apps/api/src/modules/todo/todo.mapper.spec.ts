@@ -1,22 +1,30 @@
-import { type Todo, TodoVisibility } from "@/generated/prisma/client";
 import { TodoMapper } from "./todo.mapper";
+import type { TodoWithCategory } from "./types/todo.types";
 
 describe("TodoMapper", () => {
-	const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
+	const createMockTodo = (
+		overrides: Partial<TodoWithCategory> = {},
+	): TodoWithCategory => ({
 		id: 1,
 		userId: "user-123",
 		title: "테스트 할 일",
 		content: "테스트 내용",
-		color: "#FF5733",
+		categoryId: 1,
+		sortOrder: 0,
 		completed: false,
 		completedAt: null,
 		startDate: new Date("2024-01-15T00:00:00.000Z"),
 		endDate: new Date("2024-01-16T00:00:00.000Z"),
 		scheduledTime: new Date("2024-01-15T10:00:00.000Z"),
 		isAllDay: false,
-		visibility: TodoVisibility.PUBLIC,
+		visibility: "PUBLIC",
 		createdAt: new Date("2024-01-01T00:00:00.000Z"),
 		updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+		category: {
+			id: 1,
+			name: "중요한 일",
+			color: "#FFB3B3",
+		},
 		...overrides,
 	});
 
@@ -44,7 +52,7 @@ describe("TodoMapper", () => {
 				userId: "user-123",
 				title: "테스트 할 일",
 				content: "테스트 내용",
-				color: "#FF5733",
+				sortOrder: 0,
 				completed: false,
 				completedAt: null,
 				startDate: "2024-01-15",
@@ -52,6 +60,11 @@ describe("TodoMapper", () => {
 				scheduledTime: "2024-01-15T10:00:00.000Z",
 				isAllDay: false,
 				visibility: "PUBLIC",
+				category: {
+					id: 1,
+					name: "중요한 일",
+					color: "#FFB3B3",
+				},
 				createdAt: "2024-01-01T00:00:00.000Z",
 				updatedAt: "2024-01-02T00:00:00.000Z",
 			});
@@ -72,21 +85,19 @@ describe("TodoMapper", () => {
 		it("null 값들을 올바르게 처리해야 한다", () => {
 			const todo = createMockTodo({
 				content: null,
-				color: null,
 				endDate: null,
 				scheduledTime: null,
 			});
 			const result = TodoMapper.toResponse(todo);
 
 			expect(result.content).toBeNull();
-			expect(result.color).toBeNull();
 			expect(result.endDate).toBeNull();
 			expect(result.scheduledTime).toBeNull();
 		});
 
 		it("PRIVATE visibility를 올바르게 처리해야 한다", () => {
 			const todo = createMockTodo({
-				visibility: TodoVisibility.PRIVATE,
+				visibility: "PRIVATE",
 			});
 			const result = TodoMapper.toResponse(todo);
 
@@ -102,6 +113,32 @@ describe("TodoMapper", () => {
 
 			expect(result.isAllDay).toBe(true);
 			expect(result.scheduledTime).toBeNull();
+		});
+
+		it("카테고리 정보를 올바르게 변환해야 한다", () => {
+			const todo = createMockTodo({
+				category: {
+					id: 2,
+					name: "할 일",
+					color: "#FF6B43",
+				},
+			});
+			const result = TodoMapper.toResponse(todo);
+
+			expect(result.category).toEqual({
+				id: 2,
+				name: "할 일",
+				color: "#FF6B43",
+			});
+		});
+
+		it("sortOrder를 올바르게 변환해야 한다", () => {
+			const todo = createMockTodo({
+				sortOrder: 5,
+			});
+			const result = TodoMapper.toResponse(todo);
+
+			expect(result.sortOrder).toBe(5);
 		});
 	});
 
@@ -136,7 +173,26 @@ describe("TodoMapper", () => {
 			expect(result[0]).toHaveProperty("userId");
 			expect(result[0]).toHaveProperty("title");
 			expect(result[0]).toHaveProperty("startDate");
+			expect(result[0]).toHaveProperty("category");
+			expect(result[0]).toHaveProperty("sortOrder");
 			expect(typeof result[0]?.startDate).toBe("string");
+		});
+
+		it("각 Todo의 카테고리 정보가 포함되어야 한다", () => {
+			const todos = [
+				createMockTodo({
+					id: 1,
+					category: { id: 1, name: "중요한 일", color: "#FFB3B3" },
+				}),
+				createMockTodo({
+					id: 2,
+					category: { id: 2, name: "할 일", color: "#FF6B43" },
+				}),
+			];
+			const result = TodoMapper.toManyResponse(todos);
+
+			expect(result[0]?.category.name).toBe("중요한 일");
+			expect(result[1]?.category.name).toBe("할 일");
 		});
 	});
 });

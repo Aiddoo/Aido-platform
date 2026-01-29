@@ -4,13 +4,11 @@
  */
 import { z } from 'zod';
 
+import { reorderPositionSchema } from '../todo-category/todo-category.common';
 import { todoVisibilitySchema } from './todo.common';
 
 // Re-export for backward compatibility
 export { todoVisibilitySchema } from './todo.common';
-
-/** HEX 색상 코드 검증 */
-const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
 
 /** 시간 형식 검증 (HH:mm) */
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -31,11 +29,11 @@ export const createTodoSchema = z
       .max(5000, '내용은 5000자 이하로 입력해주세요')
       .nullish()
       .describe('할 일 상세 내용'),
-    color: z
-      .string()
-      .regex(hexColorRegex, 'HEX 색상 코드 형식이 아닙니다 (예: #FF5733)')
-      .nullish()
-      .describe('색상 코드 (HEX)'),
+    categoryId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 카테고리 ID입니다')
+      .describe('카테고리 ID (필수)'),
     startDate: z.iso.date('유효한 날짜 형식이 아닙니다').describe('시작 날짜 (YYYY-MM-DD)'),
     endDate: z.iso.date('유효한 날짜 형식이 아닙니다').nullish().describe('종료 날짜 (YYYY-MM-DD)'),
     scheduledTime: z
@@ -81,11 +79,12 @@ export const updateTodoSchema = z
       .max(5000, '내용은 5000자 이하로 입력해주세요')
       .nullish()
       .describe('할 일 상세 내용'),
-    color: z
-      .string()
-      .regex(hexColorRegex, 'HEX 색상 코드 형식이 아닙니다 (예: #FF5733)')
-      .nullish()
-      .describe('색상 코드 (HEX)'),
+    categoryId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 카테고리 ID입니다')
+      .optional()
+      .describe('카테고리 ID'),
     startDate: z.iso
       .date('유효한 날짜 형식이 아닙니다')
       .optional()
@@ -140,6 +139,7 @@ export const getTodosQuerySchema = z
       }, z.boolean())
       .optional()
       .describe('완료 상태 필터'),
+    categoryId: z.coerce.number().int().positive().optional().describe('카테고리 ID 필터'),
     startDate: z.iso.date('유효한 날짜 형식이 아닙니다').optional().describe('시작 날짜 필터'),
     endDate: z.iso.date('유효한 날짜 형식이 아닙니다').optional().describe('종료 날짜 필터'),
   })
@@ -187,20 +187,19 @@ export const updateTodoVisibilitySchema = z
 export type UpdateTodoVisibilityInput = z.infer<typeof updateTodoVisibilitySchema>;
 
 /**
- * 색상 변경
- * @description null을 전송하면 색상 제거
+ * 카테고리 변경
  */
-export const updateTodoColorSchema = z
+export const changeTodoCategorySchema = z
   .object({
-    color: z
-      .string()
-      .regex(hexColorRegex, 'HEX 색상 코드 형식이 아닙니다 (예: #FF5733)')
-      .nullable()
-      .describe('색상 코드 (HEX), null이면 색상 제거'),
+    categoryId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 카테고리 ID입니다')
+      .describe('변경할 카테고리 ID'),
   })
-  .describe('할 일 색상 변경 요청');
+  .describe('할 일 카테고리 변경 요청');
 
-export type UpdateTodoColorInput = z.infer<typeof updateTodoColorSchema>;
+export type ChangeTodoCategoryInput = z.infer<typeof changeTodoCategorySchema>;
 
 /**
  * 일정 변경
@@ -263,3 +262,25 @@ export const updateTodoContentSchema = z
   });
 
 export type UpdateTodoContentInput = z.infer<typeof updateTodoContentSchema>;
+
+// =============================================================================
+// Todo 순서 변경
+// =============================================================================
+
+/**
+ * 할 일 순서 변경 (개별 이동)
+ * @description 특정 할 일을 다른 할 일의 앞 또는 뒤로 이동
+ */
+export const reorderTodoSchema = z
+  .object({
+    targetTodoId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 Todo ID입니다')
+      .optional()
+      .describe('기준이 되는 할 일 ID (없으면 맨 처음/끝으로 이동)'),
+    position: reorderPositionSchema.describe('기준 할 일의 앞(before) 또는 뒤(after)로 이동'),
+  })
+  .describe('할 일 순서 변경 요청');
+
+export type ReorderTodoInput = z.infer<typeof reorderTodoSchema>;

@@ -10,7 +10,7 @@ import type { AiUsage, ParsedTodoResult, TodoItem } from '../models/todo.model';
 export const toTodoItem = (dto: Todo): TodoItem => ({
   id: dto.id,
   title: dto.title,
-  color: dto.color,
+  category: dto.category,
   completed: dto.completed,
   scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,
   isAllDay: dto.isAllDay,

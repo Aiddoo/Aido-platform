@@ -19,7 +19,8 @@ describe('@aido/errors', () => {
 
     it('에러 코드가 올바른 형식이어야 한다', () => {
       for (const code of Object.values(ErrorCode)) {
-        expect(code).toMatch(/^[A-Z]+_\d{4}$/);
+        // TODO_CATEGORY_0851 같은 복합 도메인 지원
+        expect(code).toMatch(/^[A-Z]+(?:_[A-Z]+)?_\d{4}$/);
       }
     });
   });

@@ -2,13 +2,14 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import type { Todo } from "@/generated/prisma/client";
+import { DatabaseService } from "@/database/database.service";
 
 import { FollowService } from "../follow/follow.service";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
 import { TodoRepository } from "./todo.repository";
 import { TodoService } from "./todo.service";
-import type { CreateTodoData } from "./types/todo.types";
+import type { CreateTodoData, TodoWithCategory } from "./types/todo.types";
 
 describe("TodoService", () => {
 	let service: TodoService;
@@ -22,6 +23,13 @@ describe("TodoService", () => {
 		findPublicTodosByUserId: jest.fn(),
 		update: jest.fn(),
 		delete: jest.fn(),
+		getMaxSortOrder: jest.fn(),
+		shiftSortOrders: jest.fn(),
+		updateSortOrder: jest.fn(),
+	};
+
+	const mockTodoCategoryRepository = {
+		findByIdAndUserId: jest.fn(),
 	};
 
 	const mockPaginationService = {
@@ -37,16 +45,21 @@ describe("TodoService", () => {
 		emit: jest.fn(),
 	};
 
+	const mockDatabase = {
+		$transaction: jest.fn((callback) => callback(mockTodoRepository)),
+	};
+
 	// 테스트 데이터
 	const mockUserId = "user-123";
 	const mockTodoId = 1;
 
-	const mockTodo: Todo = {
+	const mockTodo: TodoWithCategory = {
 		id: mockTodoId,
 		userId: mockUserId,
 		title: "테스트 할 일",
 		content: "테스트 내용",
-		color: "#FF5733",
+		categoryId: 1,
+		sortOrder: 0,
 		startDate: new Date("2024-01-15"),
 		endDate: new Date("2024-01-16"),
 		scheduledTime: null,
@@ -54,6 +67,21 @@ describe("TodoService", () => {
 		visibility: "PUBLIC",
 		completed: false,
 		completedAt: null,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		category: {
+			id: 1,
+			name: "중요한 일",
+			color: "#FFB3B3",
+		},
+	};
+
+	const mockCategory = {
+		id: 1,
+		userId: mockUserId,
+		name: "중요한 일",
+		color: "#FFB3B3",
+		sortOrder: 0,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	};
@@ -65,9 +93,14 @@ describe("TodoService", () => {
 			providers: [
 				TodoService,
 				{ provide: TodoRepository, useValue: mockTodoRepository },
+				{
+					provide: TodoCategoryRepository,
+					useValue: mockTodoCategoryRepository,
+				},
 				{ provide: PaginationService, useValue: mockPaginationService },
 				{ provide: FollowService, useValue: mockFollowService },
 				{ provide: EventEmitter2, useValue: mockEventEmitter },
+				{ provide: DatabaseService, useValue: mockDatabase },
 			],
 		}).compile();
 
@@ -83,7 +116,7 @@ describe("TodoService", () => {
 			userId: mockUserId,
 			title: "새로운 할 일",
 			content: "할 일 내용",
-			color: "#FF5733",
+			categoryId: 1,
 			startDate: new Date("2024-01-15"),
 			endDate: new Date("2024-01-16"),
 			isAllDay: true,
@@ -91,6 +124,10 @@ describe("TodoService", () => {
 		};
 
 		beforeEach(() => {
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
+				mockCategory,
+			);
+			mockTodoRepository.getMaxSortOrder.mockResolvedValue(0);
 			mockTodoRepository.create.mockResolvedValue(mockTodo);
 		});
 
@@ -102,22 +139,27 @@ describe("TodoService", () => {
 			const result = await service.create(createInput);
 
 			// Then
-			expect(result).toEqual(mockTodo);
+			expect(result.title).toBe(mockTodo.title);
+			expect(mockTodoCategoryRepository.findByIdAndUserId).toHaveBeenCalledWith(
+				createInput.categoryId,
+				mockUserId,
+			);
 			expect(mockTodoRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					user: { connect: { id: mockUserId } },
+					category: { connect: { id: createInput.categoryId } },
 					title: createInput.title,
 					content: createInput.content,
-					color: createInput.color,
 				}),
 			);
 		});
 
 		it("선택 필드가 없으면 기본값을 사용한다", async () => {
 			// Given
-			const minimalInput = {
+			const minimalInput: CreateTodoData = {
 				userId: mockUserId,
 				title: "최소 할 일",
+				categoryId: 1,
 				startDate: new Date("2024-01-15"),
 			};
 
@@ -133,14 +175,14 @@ describe("TodoService", () => {
 			);
 		});
 
-		it("content와 color가 null이면 null로 저장한다", async () => {
+		it("content가 null이면 null로 저장한다", async () => {
 			// Given
-			const inputWithNulls = {
+			const inputWithNulls: CreateTodoData = {
 				userId: mockUserId,
 				title: "할 일",
+				categoryId: 1,
 				startDate: new Date("2024-01-15"),
 				content: null,
-				color: null,
 			};
 
 			// When
@@ -150,8 +192,17 @@ describe("TodoService", () => {
 			expect(mockTodoRepository.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					content: null,
-					color: null,
 				}),
+			);
+		});
+
+		it("존재하지 않는 카테고리면 에러를 던진다", async () => {
+			// Given
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
+
+			// When & Then
+			await expect(service.create(createInput)).rejects.toThrow(
+				BusinessException,
 			);
 		});
 	});
@@ -173,7 +224,7 @@ describe("TodoService", () => {
 			const result = await service.findById(mockTodoId, mockUserId);
 
 			// Then
-			expect(result).toEqual(mockTodo);
+			expect(result.id).toBe(mockTodo.id);
 			expect(mockTodoRepository.findByIdAndUserId).toHaveBeenCalledWith(
 				mockTodoId,
 				mockUserId,
@@ -206,7 +257,7 @@ describe("TodoService", () => {
 	// ============================================
 
 	describe("findMany", () => {
-		const mockTodos: Todo[] = [
+		const mockTodos: TodoWithCategory[] = [
 			mockTodo,
 			{ ...mockTodo, id: 2, title: "두 번째 할 일" },
 			{ ...mockTodo, id: 3, title: "세 번째 할 일" },
@@ -316,6 +367,24 @@ describe("TodoService", () => {
 				}),
 			);
 		});
+
+		it("카테고리로 필터링할 수 있다", async () => {
+			// Given
+			const params = {
+				userId: mockUserId,
+				categoryId: 1,
+			};
+
+			// When
+			await service.findMany(params);
+
+			// Then
+			expect(mockTodoRepository.findManyByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({
+					categoryId: 1,
+				}),
+			);
+		});
 	});
 
 	// ============================================
@@ -328,7 +397,7 @@ describe("TodoService", () => {
 			content: "수정된 내용",
 		};
 
-		const updatedTodo: Todo = {
+		const updatedTodo: TodoWithCategory = {
 			...mockTodo,
 			...updateInput,
 			updatedAt: new Date(),
@@ -347,7 +416,7 @@ describe("TodoService", () => {
 			const result = await service.update(mockTodoId, mockUserId, updateInput);
 
 			// Then
-			expect(result).toEqual(updatedTodo);
+			expect(result.title).toBe(updatedTodo.title);
 			expect(mockTodoRepository.update).toHaveBeenCalledWith(
 				mockTodoId,
 				expect.objectContaining({
@@ -396,7 +465,7 @@ describe("TodoService", () => {
 
 		it("완료에서 미완료로 변경 시 completedAt이 null로 설정된다", async () => {
 			// Given
-			const completedTodo: Todo = {
+			const completedTodo: TodoWithCategory = {
 				...mockTodo,
 				completed: true,
 				completedAt: new Date(),
@@ -420,7 +489,7 @@ describe("TodoService", () => {
 
 		it("이미 완료된 상태에서 다시 완료로 설정해도 completedAt이 변경되지 않는다", async () => {
 			// Given
-			const completedTodo: Todo = {
+			const completedTodo: TodoWithCategory = {
 				...mockTodo,
 				completed: true,
 				completedAt: new Date("2024-01-10"),
@@ -442,6 +511,17 @@ describe("TodoService", () => {
 			// completedAt이 새로 설정되지 않아야 함
 			const updateCallArg = mockTodoRepository.update.mock.calls[0][1];
 			expect(updateCallArg.completedAt).toBeUndefined();
+		});
+
+		it("카테고리를 변경할 때 존재하지 않는 카테고리면 에러를 던진다", async () => {
+			// Given
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
+			const updateWithCategory = { categoryId: 999 };
+
+			// When & Then
+			await expect(
+				service.update(mockTodoId, mockUserId, updateWithCategory),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 
@@ -492,13 +572,13 @@ describe("TodoService", () => {
 	// ============================================
 
 	describe("toggleComplete", () => {
-		const uncompletedTodo: Todo = {
+		const uncompletedTodo: TodoWithCategory = {
 			...mockTodo,
 			completed: false,
 			completedAt: null,
 		};
 
-		const completedTodo: Todo = {
+		const completedTodo: TodoWithCategory = {
 			...mockTodo,
 			completed: true,
 			completedAt: new Date("2024-01-10"),
@@ -583,7 +663,7 @@ describe("TodoService", () => {
 	// ============================================
 
 	describe("updateVisibility", () => {
-		const publicTodo: Todo = { ...mockTodo, visibility: "PUBLIC" };
+		const publicTodo: TodoWithCategory = { ...mockTodo, visibility: "PUBLIC" };
 
 		beforeEach(() => {
 			mockTodoRepository.findByIdAndUserId.mockResolvedValue(publicTodo);
@@ -615,7 +695,10 @@ describe("TodoService", () => {
 
 		it("PRIVATE에서 PUBLIC으로 변경한다", async () => {
 			// Given
-			const privateTodo: Todo = { ...mockTodo, visibility: "PRIVATE" };
+			const privateTodo: TodoWithCategory = {
+				...mockTodo,
+				visibility: "PRIVATE",
+			};
 			mockTodoRepository.findByIdAndUserId.mockResolvedValue(privateTodo);
 
 			const input: { visibility: "PUBLIC" | "PRIVATE" } = {
@@ -648,44 +731,57 @@ describe("TodoService", () => {
 	});
 
 	// ============================================
-	// updateColor (SRP)
+	// updateCategory (SRP)
 	// ============================================
 
-	describe("updateColor", () => {
+	describe("updateCategory", () => {
 		beforeEach(() => {
 			mockTodoRepository.findByIdAndUserId.mockResolvedValue(mockTodo);
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
+				mockCategory,
+			);
 			mockTodoRepository.update.mockImplementation((_id, data) => ({
 				...mockTodo,
 				...data,
+				category: {
+					id: data.category?.connect?.id ?? 1,
+					name: "할 일",
+					color: "#FF6B43",
+				},
 			}));
 		});
 
-		it("색상을 변경한다", async () => {
+		it("카테고리를 변경한다", async () => {
 			// Given
-			const input = { color: "#00FF00" };
+			const newCategory = { ...mockCategory, id: 2, name: "할 일" };
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
+				newCategory,
+			);
+			const input = { categoryId: 2 };
 
 			// When
-			const result = await service.updateColor(mockTodoId, mockUserId, input);
+			const result = await service.updateCategory(
+				mockTodoId,
+				mockUserId,
+				input,
+			);
 
 			// Then
-			expect(result.color).toBe("#00FF00");
+			expect(result.category.id).toBe(2);
 			expect(mockTodoRepository.update).toHaveBeenCalledWith(mockTodoId, {
-				color: "#00FF00",
+				category: { connect: { id: 2 } },
 			});
 		});
 
-		it("색상을 null로 설정하여 제거한다", async () => {
+		it("존재하지 않는 카테고리면 에러를 던진다", async () => {
 			// Given
-			const input = { color: null };
+			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
+			const input = { categoryId: 999 };
 
-			// When
-			const result = await service.updateColor(mockTodoId, mockUserId, input);
-
-			// Then
-			expect(result.color).toBeNull();
-			expect(mockTodoRepository.update).toHaveBeenCalledWith(mockTodoId, {
-				color: null,
-			});
+			// When & Then
+			await expect(
+				service.updateCategory(mockTodoId, mockUserId, input),
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("존재하지 않는 Todo면 TODO_NOT_FOUND 에러를 던진다", async () => {
@@ -694,7 +790,7 @@ describe("TodoService", () => {
 
 			// When & Then
 			await expect(
-				service.updateColor(999, mockUserId, { color: "#FF0000" }),
+				service.updateCategory(999, mockUserId, { categoryId: 1 }),
 			).rejects.toThrow(BusinessException);
 		});
 	});
@@ -870,12 +966,55 @@ describe("TodoService", () => {
 	});
 
 	// ============================================
+	// reorder
+	// ============================================
+
+	describe("reorder", () => {
+		beforeEach(() => {
+			mockTodoRepository.findByIdAndUserId.mockResolvedValue(mockTodo);
+			mockTodoRepository.updateSortOrder.mockResolvedValue({
+				...mockTodo,
+				sortOrder: 1,
+			});
+		});
+
+		it("Todo를 특정 위치 앞으로 이동한다", async () => {
+			// Given
+			const targetTodo = { ...mockTodo, id: 2, sortOrder: 2 };
+			mockTodoRepository.findByIdAndUserId
+				.mockResolvedValueOnce(mockTodo) // 이동할 Todo
+				.mockResolvedValueOnce(targetTodo); // 타겟 Todo
+
+			mockTodoRepository.shiftSortOrders.mockResolvedValue(1);
+
+			// When
+			const result = await service.reorder(mockTodoId, mockUserId, {
+				targetTodoId: 2,
+				position: "before",
+			});
+
+			// Then
+			expect(result.sortOrder).toBe(1);
+		});
+
+		it("존재하지 않는 Todo면 TODO_NOT_FOUND 에러를 던진다", async () => {
+			// Given
+			mockTodoRepository.findByIdAndUserId.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.reorder(999, mockUserId, { position: "before" }),
+			).rejects.toThrow(BusinessException);
+		});
+	});
+
+	// ============================================
 	// findFriendTodos
 	// ============================================
 
 	describe("findFriendTodos", () => {
 		const friendUserId = "friend-user-456";
-		const mockFriendTodos: Todo[] = [
+		const mockFriendTodos: TodoWithCategory[] = [
 			{
 				...mockTodo,
 				id: 10,

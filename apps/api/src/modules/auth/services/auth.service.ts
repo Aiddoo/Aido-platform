@@ -17,6 +17,7 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { UserStatus } from "@/generated/prisma/client";
+import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import {
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
@@ -41,6 +42,12 @@ import type {
 import { PasswordService } from "./password.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
+
+/** 기본 카테고리 설정 */
+const DEFAULT_CATEGORIES = [
+	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
+	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
+] as const;
 
 // Re-export types for backward compatibility
 export type {
@@ -70,6 +77,7 @@ export class AuthService {
 		private readonly sessionRepository: SessionRepository,
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly passwordService: PasswordService,
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
@@ -148,6 +156,17 @@ export class AuthService {
 					nightPushEnabled: false,
 				},
 			});
+
+			// 기본 카테고리 생성 ("중요한 일", "할 일")
+			await this.todoCategoryRepository.createMany(
+				DEFAULT_CATEGORIES.map((category) => ({
+					userId: newUser.id,
+					name: category.name,
+					color: category.color,
+					sortOrder: category.sortOrder,
+				})),
+				tx,
+			);
 
 			// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 			const verificationResult =

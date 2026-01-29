@@ -31,22 +31,23 @@ import { JwtAuthGuard } from "../auth/guards";
 import { UserIdParamDto } from "../follow/dtos";
 
 import {
+	ChangeTodoCategoryDto,
 	CreateTodoDto,
 	CreateTodoResponseDto,
 	DeleteTodoResponseDto,
 	GetTodosQueryDto,
+	ReorderTodoDto,
+	ReorderTodoResponseDto,
 	TodoIdParamDto,
 	TodoListResponseDto,
 	TodoResponseDto,
 	ToggleTodoCompleteDto,
-	UpdateTodoColorDto,
 	UpdateTodoContentDto,
 	UpdateTodoDto,
 	UpdateTodoResponseDto,
 	UpdateTodoScheduleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
-import { TodoMapper } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 /**
@@ -90,13 +91,13 @@ export class TodoController {
 | 필드 | 타입 | 제약 | 설명 |
 |------|------|------|------|
 | \`title\` | string | 1-200자 | 할 일 제목 |
+| \`categoryId\` | number | 양수 | 카테고리 ID |
 | \`startDate\` | string | YYYY-MM-DD | 시작 날짜 |
 
 📝 **선택 필드**
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
 | \`content\` | string | null | 상세 내용 (최대 5000자) |
-| \`color\` | string | null | HEX 색상 코드 (#RRGGBB) |
 | \`endDate\` | string | null | 종료 날짜 (YYYY-MM-DD) |
 | \`scheduledTime\` | string | null | 예정 시간 (HH:mm) |
 | \`isAllDay\` | boolean | true | 종일 여부 |
@@ -115,7 +116,7 @@ export class TodoController {
 			userId: user.userId,
 			title: dto.title,
 			content: dto.content,
-			color: dto.color,
+			categoryId: dto.categoryId,
 			startDate: new Date(dto.startDate),
 			endDate: dto.endDate ? new Date(dto.endDate) : undefined,
 			scheduledTime: dto.scheduledTime
@@ -129,7 +130,7 @@ export class TodoController {
 
 		return {
 			message: "할 일이 생성되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			todo,
 		};
 	}
 
@@ -154,10 +155,11 @@ export class TodoController {
 | \`cursor\` | string | - | 페이지네이션 커서 |
 | \`size\` | number | 20 | 페이지 크기 (1-100) |
 | \`completed\` | boolean | - | 완료 상태 필터 |
+| \`categoryId\` | number | - | 카테고리 ID 필터 |
 | \`startDate\` | string | - | 시작일 이후 필터 (YYYY-MM-DD) |
 | \`endDate\` | string | - | 종료일 이전 필터 (YYYY-MM-DD) |
 
-💡 **예시**: \`GET /todos?size=20&completed=false&startDate=2025-01-01\``,
+💡 **예시**: \`GET /todos?size=20&completed=false&categoryId=1&startDate=2025-01-01\``,
 	})
 	@ApiSuccessResponse({ type: TodoListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -175,12 +177,13 @@ export class TodoController {
 			cursor: query.cursor,
 			size: query.size,
 			completed: query.completed,
+			categoryId: query.categoryId,
 			startDate: query.startDate ? new Date(query.startDate) : undefined,
 			endDate: query.endDate ? new Date(query.endDate) : undefined,
 		});
 
 		return {
-			items: TodoMapper.toManyResponse(result.items),
+			items: result.items,
 			pagination: result.pagination,
 		};
 	}
@@ -214,7 +217,7 @@ export class TodoController {
 
 		const todo = await this.todoService.findById(params.id, user.userId);
 
-		return TodoMapper.toResponse(todo);
+		return todo;
 	}
 
 	/**
@@ -262,7 +265,7 @@ export class TodoController {
 		});
 
 		return {
-			items: TodoMapper.toManyResponse(result.items),
+			items: result.items,
 			pagination: result.pagination,
 		};
 	}
@@ -283,13 +286,14 @@ export class TodoController {
 		operationId: "updateTodo",
 		description: `할 일의 정보를 부분 수정합니다.
 
-📝 **수정 가능 필드**: title, content, color, startDate, endDate, scheduledTime, isAllDay, visibility, completed
+📝 **수정 가능 필드**: title, content, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed
 
 ❌ **에러 코드**
 | 코드 | HTTP | 메시지 | 상황 |
 |------|------|--------|------|
 | \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | 형식 오류 (color, startDate 등) |`,
+| \`TODO_CATEGORY_0851\` | 404 | 카테고리를 찾을 수 없습니다 | 카테고리가 존재하지 않음 |
+| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | 형식 오류 (startDate 등) |`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -305,7 +309,7 @@ export class TodoController {
 		const todo = await this.todoService.update(params.id, user.userId, {
 			title: dto.title,
 			content: dto.content,
-			color: dto.color,
+			categoryId: dto.categoryId,
 			startDate: dto.startDate ? new Date(dto.startDate) : undefined,
 			endDate:
 				dto.endDate === null
@@ -328,7 +332,7 @@ export class TodoController {
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			todo,
 		};
 	}
 
@@ -373,7 +377,7 @@ export class TodoController {
 			message: dto.completed
 				? "할 일이 완료되었습니다."
 				: "할 일이 미완료로 변경되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			todo,
 		};
 	}
 
@@ -416,50 +420,50 @@ export class TodoController {
 
 		return {
 			message: `공개 범위가 ${dto.visibility}로 변경되었습니다.`,
-			todo: TodoMapper.toResponse(todo),
+			todo,
 		};
 	}
 
 	/**
 	 * PATCH /todos/:id/color - 할 일 색상 변경
 	 */
-	@Patch(":id/color")
+	@Patch(":id/category")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "할 일 색상 변경",
-		operationId: "updateTodoColor",
-		description: `할 일의 색상을 변경하거나 제거합니다.
+		summary: "할 일 카테고리 변경",
+		operationId: "updateTodoCategory",
+		description: `할 일의 카테고리를 변경합니다.
 
-📝 **요청 필드**: \`color\` (HEX string | null, 필수) - 예: \`#FF5733\`, 제거시 \`null\`
+📝 **요청 필드**: \`categoryId\` (number, 필수) - 변경할 카테고리 ID
 
 ❌ **에러 코드**
 | 코드 | HTTP | 메시지 | 상황 |
 |------|------|--------|------|
 | \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | 올바른 HEX 색상 형식이 아님 |`,
+| \`TODO_CATEGORY_0851\` | 404 | 카테고리를 찾을 수 없습니다 | 카테고리가 존재하지 않음 |`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateColor(
+	async updateCategory(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoColorDto,
+		@Body() dto: ChangeTodoCategoryDto,
 	): Promise<UpdateTodoResponseDto> {
 		this.logger.debug(
-			`Todo 색상 변경: id=${params.id}, color=${dto.color}, user=${user.userId}`,
+			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateColor(
+		const todo = await this.todoService.updateCategory(
 			params.id,
 			user.userId,
 			dto,
 		);
 
 		return {
-			message: dto.color ? "색상이 변경되었습니다." : "색상이 제거되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			message: "카테고리가 변경되었습니다.",
+			todo,
 		};
 	}
 
@@ -508,7 +512,7 @@ export class TodoController {
 
 		return {
 			message: "일정이 변경되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			todo,
 		};
 	}
 
@@ -555,7 +559,66 @@ export class TodoController {
 
 		return {
 			message: "할 일이 수정되었습니다.",
-			todo: TodoMapper.toResponse(todo),
+			todo,
+		};
+	}
+
+	/**
+	 * PATCH /todos/:id/reorder - 할 일 순서 변경
+	 */
+	@Patch(":id/reorder")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "할 일 순서 변경",
+		operationId: "reorderTodo",
+		description: `특정 할 일을 다른 할 일의 앞 또는 뒤로 이동합니다.
+드래그 앤 드롭으로 할 일의 우선순위를 변경할 때 사용합니다.
+
+## 동작 방식
+1. \`targetTodoId\`: 기준이 되는 할 일 ID
+2. \`position\`: 기준 할 일의 앞(\`before\`) 또는 뒤(\`after\`)로 이동
+
+## 예시
+현재 순서: [A, B, C, D, E] (sortOrder: 0, 1, 2, 3, 4)
+
+### Case 1: D를 B 앞으로 이동
+- Request: \`{ targetTodoId: B의 ID, position: "before" }\`
+- 결과: [A, D, B, C, E]
+
+### Case 2: A를 C 뒤로 이동  
+- Request: \`{ targetTodoId: C의 ID, position: "after" }\`
+- 결과: [B, C, A, D, E]
+
+### Case 3: 맨 처음으로 이동 (targetTodoId 없이)
+- Request: \`{ position: "before" }\`
+- 결과: 해당 Todo가 맨 앞으로 이동
+
+### Case 4: 맨 끝으로 이동 (targetTodoId 없이)
+- Request: \`{ position: "after" }\`
+- 결과: 해당 Todo가 맨 뒤로 이동
+
+## 주의사항
+- targetTodoId가 다른 사용자의 할 일이면 404 에러
+- 자기 자신을 targetTodoId로 지정하면 무시 (변경 없음)`,
+	})
+	@ApiSuccessResponse({ type: ReorderTodoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	async reorder(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: TodoIdParamDto,
+		@Body() dto: ReorderTodoDto,
+	): Promise<ReorderTodoResponseDto> {
+		this.logger.debug(
+			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
+		);
+
+		const todo = await this.todoService.reorder(params.id, user.userId, dto);
+
+		return {
+			message: "할 일 순서가 변경되었습니다.",
+			todo,
 		};
 	}
 
