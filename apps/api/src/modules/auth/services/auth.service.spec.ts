@@ -4,6 +4,7 @@ import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { Session, User } from "@/generated/prisma/client";
+import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import { REVOKE_REASON, SECURITY_EVENT } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
 import { LoginAttemptRepository } from "../repositories/login-attempt.repository";
@@ -111,6 +112,11 @@ describe("AuthService", () => {
 		invalidateDailyStats: jest.fn(),
 	};
 
+	const mockTodoCategoryRepository = {
+		createDefaultCategories: jest.fn(),
+		createMany: jest.fn(),
+	};
+
 	beforeEach(async () => {
 		jest.clearAllMocks();
 
@@ -130,6 +136,10 @@ describe("AuthService", () => {
 				{ provide: TokenService, useValue: mockTokenService },
 				{ provide: VerificationService, useValue: mockVerificationService },
 				{ provide: CacheService, useValue: mockCacheService },
+				{
+					provide: TodoCategoryRepository,
+					useValue: mockTodoCategoryRepository,
+				},
 			],
 		}).compile();
 
