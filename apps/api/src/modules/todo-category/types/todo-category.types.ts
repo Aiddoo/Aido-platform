@@ -2,8 +2,26 @@
  * TodoCategory 모듈 타입 정의
  */
 
+import type { TodoCategory } from "@/generated/prisma/client";
+
 // 공통 타입 재내보내기
 export type { TransactionClient } from "@/common/database";
+
+// ===== Entity Types =====
+
+/**
+ * TodoCategory 기본 엔티티 타입 (Prisma 모델)
+ */
+export type TodoCategoryEntity = TodoCategory;
+
+/**
+ * Todo count가 포함된 TodoCategory 엔티티 타입
+ */
+export type TodoCategoryWithCountEntity = TodoCategory & {
+	_count: {
+		todos: number;
+	};
+};
 
 // ===== Service Layer Types =====
 

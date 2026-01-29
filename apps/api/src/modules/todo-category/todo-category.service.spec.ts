@@ -147,7 +147,7 @@ describe("TodoCategoryService", () => {
 		const defaultCategories = [
 			{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
 			{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
-		] as const;
+		];
 
 		it("기본 카테고리를 생성해야 한다", async () => {
 			// Given

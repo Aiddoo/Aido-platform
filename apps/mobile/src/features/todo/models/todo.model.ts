@@ -9,6 +9,18 @@ export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
 // ============================================================
+// Category 스키마
+// ============================================================
+
+/** 카테고리 요약 정보 */
+export const todoCategorySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  color: z.string(),
+});
+export type TodoCategory = z.infer<typeof todoCategorySchema>;
+
+// ============================================================
 // Todo 도메인 스키마 (프론트엔드 전용)
 // ============================================================
 
@@ -16,7 +28,7 @@ export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 export const todoItemSchema = z.object({
   id: z.number(),
   title: z.string(),
-  color: z.string().nullable(),
+  category: todoCategorySchema,
   completed: z.boolean(),
   scheduledTime: z.date().nullable(), // Date 객체 (서버는 string)
   isAllDay: z.boolean(),
@@ -108,8 +120,8 @@ export const TodoPolicy = {
   /** 기본 Todo 색상 */
   DEFAULT_COLOR: '#FF9500',
 
-  /** Todo 색상 반환 (없으면 기본색) */
-  getColor: (todo: TodoItem): string => todo.color ?? TodoPolicy.DEFAULT_COLOR,
+  /** Todo 색상 반환 (카테고리 색상 사용) */
+  getColor: (todo: TodoItem): string => todo.category.color,
 
   /** 공개 Todo인지 확인 */
   isPublic: (todo: TodoItem): boolean => todo.visibility === 'PUBLIC',

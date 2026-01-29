@@ -51,12 +51,15 @@ describe("TodoCategoryService Integration Tests", () => {
 		count: jest.fn(),
 	};
 
-	const mockDatabaseService = {
+	const mockDatabaseService: {
+		todoCategory: typeof mockTodoCategoryDb;
+		todo: typeof mockTodoDb;
+		$transaction: jest.Mock;
+	} = {
 		todoCategory: mockTodoCategoryDb,
 		todo: mockTodoDb,
-		$transaction: jest.fn(
-			(cb: (tx: typeof mockDatabaseService) => Promise<unknown>) =>
-				cb(mockDatabaseService),
+		$transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+			cb(mockDatabaseService),
 		),
 	};
 
@@ -412,7 +415,7 @@ describe("TodoCategoryService Integration Tests", () => {
 		it("카테고리를 특정 카테고리 앞으로 이동한다", async () => {
 			// Given
 			const category1 = createMockCategory({ id: 1, sortOrder: 0 });
-			const category2 = createMockCategory({ id: 2, sortOrder: 1 });
+			const _category2 = createMockCategory({ id: 2, sortOrder: 1 });
 			const category3 = createMockCategory({ id: 3, sortOrder: 2 });
 
 			mockTodoCategoryDb.findFirst

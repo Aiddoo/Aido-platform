@@ -239,8 +239,10 @@ describe("TodoCategory (e2e)", () => {
 
 				// 정렬 확인
 				const isSorted = sortOrders.every(
-					(val: number, i: number, arr: number[]) =>
-						i === 0 || arr[i - 1] <= val,
+					(val: number, i: number, arr: number[]) => {
+						const prev = arr[i - 1];
+						return i === 0 || (prev !== undefined && prev <= val);
+					},
 				);
 				expect(isSorted).toBe(true);
 			});

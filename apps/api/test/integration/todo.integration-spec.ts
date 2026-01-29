@@ -38,23 +38,30 @@ describe("TodoService Integration Tests", () => {
 	let repository: TodoRepository;
 
 	// Mock 데이터베이스 서비스
-	const mockDatabaseService = {
-		todo: {
-			create: jest.fn(),
-			findUnique: jest.fn(),
-			findFirst: jest.fn(),
-			findMany: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
-			updateMany: jest.fn(),
-			aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
-		},
-		todoCategory: {
-			findFirst: jest.fn(),
-		},
-		$transaction: jest.fn(
-			(cb: (tx: typeof mockDatabaseService) => Promise<unknown>) =>
-				cb(mockDatabaseService),
+	const mockTodoDb = {
+		create: jest.fn(),
+		findUnique: jest.fn(),
+		findFirst: jest.fn(),
+		findMany: jest.fn(),
+		update: jest.fn(),
+		delete: jest.fn(),
+		updateMany: jest.fn(),
+		aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
+	};
+
+	const mockTodoCategoryDb = {
+		findFirst: jest.fn(),
+	};
+
+	const mockDatabaseService: {
+		todo: typeof mockTodoDb;
+		todoCategory: typeof mockTodoCategoryDb;
+		$transaction: jest.Mock;
+	} = {
+		todo: mockTodoDb,
+		todoCategory: mockTodoCategoryDb,
+		$transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+			cb(mockDatabaseService),
 		),
 	};
 
