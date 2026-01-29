@@ -1,4 +1,5 @@
 import type {
+  AppleMobileCallbackInput,
   ConsentResponse,
   ExchangeCodeInput,
   PreferenceResponse,
@@ -8,6 +9,7 @@ import type {
   UpdatePreferenceResponse,
 } from '@aido/validators';
 import { ENV } from '@src/shared/config/env';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -106,6 +108,44 @@ export class AuthService {
   openNaverLogin = (): Promise<string> => this.openOAuthLogin('naver');
 
   openGoogleLogin = (): Promise<string> => this.openOAuthLogin('google');
+
+  /**
+   * Apple 로그인 (iOS only)
+   * - expo-apple-authentication 네이티브 SDK 사용
+   * - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
+   */
+  openAppleLogin = async (): Promise<AuthTokens> => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const idToken = credential.identityToken;
+      if (!idToken) {
+        throw new AuthClientError('validation', 'Apple ID 토큰을 받지 못했어요');
+      }
+
+      const input: AppleMobileCallbackInput = {
+        idToken,
+        userName: credential.fullName?.givenName ?? undefined,
+        deviceType: 'IOS',
+      };
+
+      const dto = await this._authRepository.appleLogin(input);
+      return toAuthTokens(dto);
+    } catch (error) {
+      if (error instanceof AuthClientError) {
+        throw error;
+      }
+      if (error instanceof Error && error.message.includes('canceled')) {
+        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+      }
+      throw error;
+    }
+  };
 
   // Auth API Methods
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {

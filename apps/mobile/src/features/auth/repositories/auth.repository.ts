@@ -1,4 +1,5 @@
 import type {
+  AppleMobileCallbackInput,
   AuthTokens,
   ConsentResponse,
   CurrentUser,
@@ -32,4 +33,6 @@ export interface AuthRepository {
   updateMarketingConsent(
     input: UpdateMarketingConsentInput,
   ): Promise<UpdateMarketingConsentResponse>;
+
+  appleLogin(input: AppleMobileCallbackInput): Promise<AuthTokens>;
 }

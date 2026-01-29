@@ -1,4 +1,5 @@
 import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
+import { openAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-apple-login-mutation-options';
 import { openGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-google-login-mutation-options';
 import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
 import { openNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/open-naver-login-mutation-options';
@@ -15,6 +16,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 const LoginScreen = () => {
   const exchangeCodeMutation = useMutation(exchangeCodeMutationOptions());
@@ -52,6 +54,11 @@ const LoginScreen = () => {
         }
       },
     });
+  };
+
+  const appleLoginMutation = useMutation(openAppleLoginMutationOptions());
+  const handleAppleLogin = () => {
+    appleLoginMutation.mutate(undefined);
   };
 
   return (
@@ -97,11 +104,14 @@ const LoginScreen = () => {
           </HStack>
 
           <HStack justify="center" gap={16}>
-            <SocialLoginIconButton
-              icon={<AppleIcon width={20} height={20} />}
-              onPress={() => {}}
-              className="bg-black"
-            />
+            {Platform.OS === 'ios' && (
+              <SocialLoginIconButton
+                icon={<AppleIcon width={20} height={20} />}
+                onPress={handleAppleLogin}
+                isLoading={appleLoginMutation.isPending}
+                className="bg-black"
+              />
+            )}
             <SocialLoginIconButton
               icon={<NaverIcon width={16} height={16} />}
               onPress={handleNaverLogin}

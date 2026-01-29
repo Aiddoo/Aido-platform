@@ -1,4 +1,5 @@
 import {
+  type AppleMobileCallbackInput,
   type AuthTokens,
   authTokensSchema,
   type CurrentUser,
@@ -114,6 +115,23 @@ export class AuthRepositoryImpl implements AuthRepository {
       console.error('[AuthRepository] Invalid updateMarketingConsent response:', result.error);
       throw AuthClientError.validation();
     }
+
+    return result.data;
+  }
+
+  async appleLogin(input: AppleMobileCallbackInput): Promise<AuthTokens> {
+    const { data } = await this._publicHttpClient.post<AuthTokens>('v1/auth/apple/callback', input);
+
+    const result = authTokensSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[AuthRepository] Invalid appleLogin response:', result.error);
+      throw AuthClientError.validation();
+    }
+
+    await Promise.all([
+      this._storage.set('accessToken', result.data.accessToken),
+      this._storage.set('refreshToken', result.data.refreshToken),
+    ]);
 
     return result.data;
   }
