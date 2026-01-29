@@ -63,6 +63,7 @@ model User {
   // 관계: Todo 앱
   pushTokens         PushToken[]
   todos              Todo[]
+  todoCategories     TodoCategory[]
   following          Follow[]            @relation("user_following")
   followers          Follow[]            @relation("user_followers")
   sentNudges         Nudge[]             @relation("nudge_sender")
@@ -352,6 +353,27 @@ model OAuthState {
 }
 
 // =============================================================================
+// Todo 앱 - 카테고리
+// =============================================================================
+
+model TodoCategory {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  name      String   @db.VarChar(50)
+  color     String   @db.VarChar(7) // HEX (#FF6B43)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+
+  @@unique([userId, name])
+  @@index([userId, sortOrder])
+}
+
+// =============================================================================
 // Todo 앱 - 할 일
 // =============================================================================
 
@@ -362,7 +384,13 @@ model Todo {
   // 내용
   title   String  @db.VarChar(200)
   content String? @db.VarChar(5000)
-  color   String? @db.VarChar(7) // HEX (#FF5733)
+
+  // 카테고리 (필수)
+  categoryId Int
+  category   TodoCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  // 순서
+  sortOrder Int @default(0)
 
   // 완료
   completed   Boolean   @default(false)
@@ -387,6 +415,8 @@ model Todo {
 
   @@index([userId, startDate, endDate])
   @@index([userId, completed, startDate])
+  @@index([userId, categoryId])
+  @@index([userId, sortOrder])
 }
 
 enum TodoVisibility {
