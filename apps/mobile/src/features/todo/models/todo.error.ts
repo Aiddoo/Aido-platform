@@ -1,25 +1,28 @@
-/**
- * Todo 도메인 클라이언트 에러
- *
- * - 서버 에러(ApiError)와 분리
- * - reason으로 에러 종류 구분 → UI에서 분기 처리
- */
-export class TodoClientError extends Error {
-  constructor(
-    readonly reason: 'validation' | 'unknown',
-    message: string,
-  ) {
+import { ClientError } from '@src/shared/errors';
+
+// ============================================
+// Todo 도메인 에러 (클라이언트 검증용)
+// ============================================
+
+/** Todo 도메인 기본 에러 */
+export class TodoError extends ClientError {
+  override readonly name: string = 'TodoError';
+  readonly code: string = 'TODO_ERROR';
+
+  constructor(message: string = '할 일 기능에 실패했어요') {
     super(message);
-    this.name = 'TodoClientError';
-  }
-
-  /** Repository: safeParse 실패 */
-  static validation(): TodoClientError {
-    return new TodoClientError('validation', '잘못된 응답 형식이에요');
-  }
-
-  /** 예상치 못한 에러 */
-  static unknown(message?: string): TodoClientError {
-    return new TodoClientError('unknown', message ?? '알 수 없는 오류가 발생했어요');
   }
 }
+
+/** 응답 검증 실패 */
+export class TodoValidationError extends TodoError {
+  override readonly name = 'TodoValidationError';
+  override readonly code = 'TODO_VALIDATION';
+
+  constructor() {
+    super('잘못된 응답 형식이에요');
+  }
+}
+
+// 타입 가드
+export const isTodoError = (error: unknown): error is TodoError => error instanceof TodoError;

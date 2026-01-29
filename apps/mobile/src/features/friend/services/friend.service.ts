@@ -1,4 +1,4 @@
-import { FriendClientError } from '../models/friend.error';
+import { InvalidTagError } from '../models/friend.error';
 import {
   FriendPolicy,
   type FriendsResult,
@@ -19,7 +19,7 @@ export class FriendService {
 
   sendRequestByTag = async (userTag: string): Promise<SendRequestResult> => {
     if (!FriendPolicy.isValidTag(userTag)) {
-      throw FriendClientError.invalidTag();
+      throw new InvalidTagError();
     }
 
     const dto = await this._repository.sendRequest(userTag);
