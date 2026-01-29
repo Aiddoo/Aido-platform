@@ -55,18 +55,36 @@ describe("DailyCompletion (e2e)", () => {
 	}
 
 	/**
+	 * 기본 카테고리 ID 조회 헬퍼
+	 */
+	async function getDefaultCategoryId(accessToken: string): Promise<number> {
+		const response = await request(app.getHttpServer())
+			.get("/todo-categories")
+			.set("Authorization", `Bearer ${accessToken}`)
+			.expect(200);
+
+		const categories = response.body.data.items;
+		const defaultCategory =
+			categories.find((c: { name: string }) => c.name === "할 일") ||
+			categories[0];
+		return defaultCategory.id;
+	}
+
+	/**
 	 * 테스트용 Todo 생성 헬퍼
 	 */
 	async function createTodo(
 		accessToken: string,
 		data: { title: string; startDate: string; completed?: boolean },
 	): Promise<{ id: number }> {
+		const categoryId = await getDefaultCategoryId(accessToken);
 		const response = await request(app.getHttpServer())
 			.post("/todos")
 			.set("Authorization", `Bearer ${accessToken}`)
 			.send({
 				title: data.title,
 				startDate: data.startDate,
+				categoryId,
 			})
 			.expect(201);
 

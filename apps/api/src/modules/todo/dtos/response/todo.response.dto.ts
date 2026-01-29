@@ -5,6 +5,7 @@
 import {
 	createTodoResponseSchema,
 	deleteTodoResponseSchema,
+	reorderTodoResponseSchema,
 	todoListResponseSchema,
 	todoSchema,
 	updateTodoResponseSchema,
@@ -30,4 +31,9 @@ export class UpdateTodoResponseDto extends createZodDto(
 /** Todo 삭제 응답 */
 export class DeleteTodoResponseDto extends createZodDto(
 	deleteTodoResponseSchema,
+) {}
+
+/** Todo 순서 변경 응답 */
+export class ReorderTodoResponseDto extends createZodDto(
+	reorderTodoResponseSchema,
 ) {}

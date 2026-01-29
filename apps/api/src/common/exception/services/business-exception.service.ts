@@ -527,4 +527,38 @@ export class BusinessExceptions {
 	static aiUsageLimitExceeded(used: number, limit: number) {
 		return new BusinessException(ErrorCode.AI_0003, { used, limit });
 	}
+
+	// =========================================================================
+	// Todo 카테고리 (TodoCategory)
+	// =========================================================================
+	static todoCategoryNotFound(categoryId: number) {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
+	}
+
+	static todoCategoryAccessDenied(categoryId: number) {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0852, { categoryId });
+	}
+
+	static todoCategoryNameDuplicate(name: string) {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0853, { name });
+	}
+
+	static todoCategoryMinimumRequired() {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0854);
+	}
+
+	static todoCategoryHasTodos(categoryId: number, todoCount: number) {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0855, {
+			categoryId,
+			todoCount,
+		});
+	}
+
+	static todoCategoryMoveTargetRequired() {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0856);
+	}
+
+	static todoReorderTargetNotFound(targetTodoId: number) {
+		return new BusinessException(ErrorCode.TODO_0810, { targetTodoId });
+	}
 }

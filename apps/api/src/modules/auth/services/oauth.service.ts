@@ -4,6 +4,7 @@ import { addMilliseconds, now } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { AccountProvider } from "@/generated/prisma/client";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 
 import {
 	AUTH_DEFAULTS,
@@ -20,6 +21,12 @@ import { UserRepository } from "../repositories/user.repository";
 import type { LoginResult, RequestMetadata } from "../types";
 import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
 import { TokenService } from "./token.service";
+
+/** 기본 카테고리 설정 (소셜 로그인 회원가입 시) */
+const DEFAULT_CATEGORIES = [
+	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
+	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
+] as const;
 
 /**
  * OAuth 소셜 로그인 서비스
@@ -39,6 +46,7 @@ export class OAuthService {
 		private readonly _securityLogRepository: SecurityLogRepository,
 		private readonly _loginAttemptRepository: LoginAttemptRepository,
 		private readonly _oauthStateRepository: OAuthStateRepository,
+		private readonly _todoCategoryRepository: TodoCategoryRepository,
 		private readonly _tokenService: TokenService,
 		private readonly _tokenVerifier: OAuthTokenVerifierService,
 		private readonly _configService: TypedConfigService,
@@ -1159,6 +1167,17 @@ export class OAuthService {
 					marketingAgreedAt: null,
 				},
 			});
+
+			// 기본 카테고리 생성
+			await this._todoCategoryRepository.createMany(
+				DEFAULT_CATEGORIES.map((category) => ({
+					userId: user.id,
+					name: category.name,
+					color: category.color,
+					sortOrder: category.sortOrder,
+				})),
+				tx,
+			);
 
 			// 보안 로그
 			await this._securityLogRepository.create(

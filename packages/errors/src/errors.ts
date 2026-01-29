@@ -15,7 +15,8 @@ import type { ErrorDefinition } from './types';
  * - EMAIL   (0500-0549): 이메일 인증
  * - USER    (0600-0699): 사용자/계정
  * - SESSION (0700-0749): 세션
- * - TODO    (0800-0899): Todo
+ * - TODO    (0800-0849): Todo
+ * - TODO_CATEGORY (0850-0899): Todo 카테고리
  * - FOLLOW  (0900-0999): 친구/팔로우
  * - NOTIFICATION (1000-1099): 알림/푸시
  * - NUDGE   (1100-1199): 독촉
@@ -139,9 +140,20 @@ export const ErrorCode = {
   VERIFY_0754: 'VERIFY_0754',
 
   // =========================================================================
-  // Todo (TODO_0800-0899)
+  // Todo (TODO_0800-0849)
   // =========================================================================
   TODO_0801: 'TODO_0801',
+  TODO_0810: 'TODO_0810',
+
+  // =========================================================================
+  // Todo 카테고리 (TODO_CATEGORY_0850-0899)
+  // =========================================================================
+  TODO_CATEGORY_0851: 'TODO_CATEGORY_0851',
+  TODO_CATEGORY_0852: 'TODO_CATEGORY_0852',
+  TODO_CATEGORY_0853: 'TODO_CATEGORY_0853',
+  TODO_CATEGORY_0854: 'TODO_CATEGORY_0854',
+  TODO_CATEGORY_0855: 'TODO_CATEGORY_0855',
+  TODO_CATEGORY_0856: 'TODO_CATEGORY_0856',
 
   // =========================================================================
   // 친구/팔로우 (FOLLOW_0900-0999)
@@ -667,13 +679,59 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
 
   // =========================================================================
-  // Todo (TODO_0800-0899)
+  // Todo (TODO_0800-0849)
   // =========================================================================
   [ErrorCode.TODO_0801]: {
     code: 'TODO_0801',
     message: 'Todo를 찾을 수 없습니다.',
     description: '해당 ID의 Todo가 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_0810]: {
+    code: 'TODO_0810',
+    message: '이동할 위치의 할 일을 찾을 수 없습니다.',
+    description: '순서 변경 시 기준이 되는 할 일이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // Todo 카테고리 (TODO_CATEGORY_0850-0899)
+  // =========================================================================
+  [ErrorCode.TODO_CATEGORY_0851]: {
+    code: 'TODO_CATEGORY_0851',
+    message: '카테고리를 찾을 수 없습니다.',
+    description: '해당 ID의 카테고리가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_CATEGORY_0852]: {
+    code: 'TODO_CATEGORY_0852',
+    message: '다른 사용자의 카테고리입니다.',
+    description: '해당 카테고리에 대한 접근 권한이 없습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_CATEGORY_0853]: {
+    code: 'TODO_CATEGORY_0853',
+    message: '동일한 이름의 카테고리가 이미 존재합니다.',
+    description: '같은 이름의 카테고리를 중복으로 생성할 수 없습니다.',
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_CATEGORY_0854]: {
+    code: 'TODO_CATEGORY_0854',
+    message: '최소 1개의 카테고리가 필요합니다.',
+    description: '마지막 카테고리는 삭제할 수 없습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_CATEGORY_0855]: {
+    code: 'TODO_CATEGORY_0855',
+    message: '카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.',
+    description: '할 일이 있는 카테고리는 바로 삭제할 수 없습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_CATEGORY_0856]: {
+    code: 'TODO_CATEGORY_0856',
+    message: '이동할 카테고리를 지정해주세요.',
+    description: '카테고리 삭제 시 할 일을 이동할 카테고리 ID가 필요합니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 
   // =========================================================================

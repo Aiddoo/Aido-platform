@@ -54,6 +54,19 @@ describe("Todo (e2e)", () => {
 		return response.body.data.accessToken;
 	}
 
+	/**
+	 * 테스트용 기본 카테고리 ID 조회 헬퍼
+	 */
+	async function getDefaultCategoryId(accessToken: string): Promise<number> {
+		const response = await request(app.getHttpServer())
+			.get("/todo-categories")
+			.set("Authorization", `Bearer ${accessToken}`)
+			.expect(200);
+
+		// 첫 번째 기본 카테고리 반환 (회원가입 시 "중요한 일", "할 일" 자동 생성됨)
+		return response.body.data.items[0].id;
+	}
+
 	beforeAll(async () => {
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
@@ -90,10 +103,12 @@ describe("Todo (e2e)", () => {
 		const testEmail = "todo-test@example.com";
 		const testPassword = "Test1234!";
 		let accessToken: string;
+		let categoryId: number;
 		let createdTodoId: string;
 
 		beforeAll(async () => {
 			accessToken = await createVerifiedUser(testEmail, testPassword);
+			categoryId = await getDefaultCategoryId(accessToken);
 		});
 
 		describe("POST /todos - 할 일 생성", () => {
@@ -103,6 +118,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "테스트 할 일",
+						categoryId,
 						startDate: "2024-01-15",
 					})
 					.expect(201);
@@ -116,6 +132,8 @@ describe("Todo (e2e)", () => {
 					visibility: "PUBLIC",
 				});
 				expect(response.body.data.todo.id).toBeDefined();
+				expect(response.body.data.todo.category).toBeDefined();
+				expect(response.body.data.todo.category.id).toBe(categoryId);
 
 				createdTodoId = response.body.data.todo.id;
 			});
@@ -127,7 +145,7 @@ describe("Todo (e2e)", () => {
 					.send({
 						title: "운동하기",
 						content: "헬스장에서 1시간 운동",
-						color: "#FF5733",
+						categoryId,
 						startDate: "2024-01-20",
 						endDate: "2024-01-20",
 						scheduledTime: "09:00",
@@ -139,13 +157,13 @@ describe("Todo (e2e)", () => {
 				expect(response.body.data.todo).toMatchObject({
 					title: "운동하기",
 					content: "헬스장에서 1시간 운동",
-					color: "#FF5733",
 					startDate: "2024-01-20",
 					endDate: "2024-01-20",
 					isAllDay: false,
 					visibility: "PRIVATE",
 				});
 				expect(response.body.data.todo.scheduledTime).toBeTruthy();
+				expect(response.body.data.todo.category).toBeDefined();
 			});
 
 			it("인증 없이 생성 시도 시 401 에러", async () => {
@@ -153,16 +171,31 @@ describe("Todo (e2e)", () => {
 					.post("/todos")
 					.send({
 						title: "테스트",
+						categoryId,
 						startDate: "2024-01-15",
 					})
 					.expect(401);
 			});
 
-			it("필수 필드 누락 시 400 에러", async () => {
+			it("필수 필드 누락 시 400 에러 (categoryId 누락)", async () => {
 				const response = await request(app.getHttpServer())
 					.post("/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
+						title: "테스트 할 일",
+						startDate: "2024-01-15",
+					})
+					.expect(400);
+
+				expect(response.body.success).toBe(false);
+			});
+
+			it("필수 필드 누락 시 400 에러 (title 누락)", async () => {
+				const response = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						categoryId,
 						content: "내용만 있음",
 					})
 					.expect(400);
@@ -176,11 +209,26 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "테스트",
+						categoryId,
 						startDate: "invalid-date",
 					})
 					.expect(400);
 
 				expect(response.body.success).toBe(false);
+			});
+
+			it("존재하지 않는 카테고리로 생성 시 404 에러", async () => {
+				const response = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "테스트",
+						categoryId: 999999,
+						startDate: "2024-01-15",
+					})
+					.expect(404);
+
+				expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 			});
 		});
 
@@ -195,6 +243,13 @@ describe("Todo (e2e)", () => {
 				expect(Array.isArray(response.body.data.items)).toBe(true);
 				expect(response.body.data.items.length).toBeGreaterThan(0);
 				expect(response.body.data.pagination).toBeDefined();
+				// 각 항목에 category가 포함되어야 함
+				for (const item of response.body.data.items) {
+					expect(item.category).toBeDefined();
+					expect(item.category.id).toBeDefined();
+					expect(item.category.name).toBeDefined();
+					expect(item.category.color).toBeDefined();
+				}
 			});
 
 			it("페이지 크기 지정하여 조회", async () => {
@@ -234,6 +289,18 @@ describe("Todo (e2e)", () => {
 				expect(response.body.data.items).toBeDefined();
 			});
 
+			it("카테고리로 필터링", async () => {
+				const response = await request(app.getHttpServer())
+					.get("/todos")
+					.query({ categoryId })
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				for (const item of response.body.data.items) {
+					expect(item.category.id).toBe(categoryId);
+				}
+			});
+
 			it("인증 없이 조회 시도 시 401 에러", async () => {
 				await request(app.getHttpServer()).get("/todos").expect(401);
 			});
@@ -248,6 +315,7 @@ describe("Todo (e2e)", () => {
 
 				expect(response.body.data.id).toBe(createdTodoId);
 				expect(response.body.data.title).toBe("테스트 할 일");
+				expect(response.body.data.category).toBeDefined();
 			});
 
 			it("존재하지 않는 ID로 조회 시 404 에러", async () => {
@@ -314,13 +382,11 @@ describe("Todo (e2e)", () => {
 					.send({
 						title: "최종 수정된 제목",
 						content: "새로운 내용",
-						color: "#00FF00",
 					})
 					.expect(200);
 
 				expect(response.body.data.todo.title).toBe("최종 수정된 제목");
 				expect(response.body.data.todo.content).toBe("새로운 내용");
-				expect(response.body.data.todo.color).toBe("#00FF00");
 			});
 
 			it("null 값으로 필드 삭제 성공", async () => {
@@ -329,12 +395,10 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						content: null,
-						color: null,
 					})
 					.expect(200);
 
 				expect(response.body.data.todo.content).toBeNull();
-				expect(response.body.data.todo.color).toBeNull();
 			});
 
 			it("존재하지 않는 ID로 수정 시 404 에러", async () => {
@@ -363,6 +427,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "완료 테스트용 할 일",
+						categoryId,
 						startDate: "2024-01-15",
 					})
 					.expect(201);
@@ -388,6 +453,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "완료 취소 테스트용",
+						categoryId,
 						startDate: "2024-01-15",
 					})
 					.expect(201);
@@ -440,6 +506,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "공개 범위 테스트",
+						categoryId,
 						startDate: "2024-01-15",
 						visibility: "PUBLIC",
 					})
@@ -465,6 +532,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "비공개 할 일",
+						categoryId,
 						startDate: "2024-01-15",
 						visibility: "PRIVATE",
 					})
@@ -492,44 +560,56 @@ describe("Todo (e2e)", () => {
 			});
 		});
 
-		describe("PATCH /todos/:id/color - 색상 변경", () => {
-			it("색상 설정 성공", async () => {
+		describe("PATCH /todos/:id/category - 카테고리 변경", () => {
+			let secondCategoryId: number;
+
+			beforeAll(async () => {
+				// 두 번째 카테고리 생성
+				const response = await request(app.getHttpServer())
+					.post("/todo-categories")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						name: "새 카테고리",
+						color: "#00FF00",
+					})
+					.expect(201);
+
+				secondCategoryId = response.body.data.category.id;
+			});
+
+			it("카테고리 변경 성공", async () => {
+				// Given: Todo 생성
+				const createResponse = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "카테고리 변경 테스트",
+						categoryId,
+						startDate: "2024-01-15",
+					})
+					.expect(201);
+
+				const todoId = createResponse.body.data.todo.id;
+
 				// When
 				const response = await request(app.getHttpServer())
-					.patch(`/todos/${createdTodoId}/color`)
+					.patch(`/todos/${todoId}/category`)
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ color: "#FF5733" })
+					.send({ categoryId: secondCategoryId })
 					.expect(200);
 
 				// Then
-				expect(response.body.data.todo.color).toBe("#FF5733");
+				expect(response.body.data.todo.category.id).toBe(secondCategoryId);
 			});
 
-			it("색상 삭제 (null로 설정) 성공", async () => {
-				// Given: 색상이 설정된 Todo
-				await request(app.getHttpServer())
-					.patch(`/todos/${createdTodoId}/color`)
-					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ color: "#00FF00" })
-					.expect(200);
-
-				// When: null로 설정
+			it("존재하지 않는 카테고리는 404 에러", async () => {
 				const response = await request(app.getHttpServer())
-					.patch(`/todos/${createdTodoId}/color`)
+					.patch(`/todos/${createdTodoId}/category`)
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ color: null })
-					.expect(200);
+					.send({ categoryId: 999999 })
+					.expect(404);
 
-				// Then
-				expect(response.body.data.todo.color).toBeNull();
-			});
-
-			it("잘못된 HEX 색상 코드는 400 에러", async () => {
-				await request(app.getHttpServer())
-					.patch(`/todos/${createdTodoId}/color`)
-					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ color: "not-a-color" })
-					.expect(400);
+				expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 			});
 		});
 
@@ -650,6 +730,106 @@ describe("Todo (e2e)", () => {
 			});
 		});
 
+		describe("PATCH /todos/:id/reorder - 순서 변경", () => {
+			let todo1Id: number;
+			let todo2Id: number;
+			let todo3Id: number;
+
+			beforeAll(async () => {
+				// 테스트용 할 일 3개 생성
+				const res1 = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "순서 테스트 1",
+						categoryId,
+						startDate: "2024-03-01",
+					})
+					.expect(201);
+				todo1Id = res1.body.data.todo.id;
+
+				const res2 = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "순서 테스트 2",
+						categoryId,
+						startDate: "2024-03-01",
+					})
+					.expect(201);
+				todo2Id = res2.body.data.todo.id;
+
+				const res3 = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "순서 테스트 3",
+						categoryId,
+						startDate: "2024-03-01",
+					})
+					.expect(201);
+				todo3Id = res3.body.data.todo.id;
+			});
+
+			it("특정 Todo 앞으로 이동 성공 (before)", async () => {
+				// When: todo3를 todo1 앞으로 이동
+				const response = await request(app.getHttpServer())
+					.patch(`/todos/${todo3Id}/reorder`)
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						targetTodoId: todo1Id,
+						position: "before",
+					})
+					.expect(200);
+
+				// Then
+				expect(response.body.data.message).toBe("할 일 순서가 변경되었습니다.");
+				expect(response.body.data.todo.id).toBe(todo3Id);
+			});
+
+			it("특정 Todo 뒤로 이동 성공 (after)", async () => {
+				// When: todo1을 todo2 뒤로 이동
+				const response = await request(app.getHttpServer())
+					.patch(`/todos/${todo1Id}/reorder`)
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						targetTodoId: todo2Id,
+						position: "after",
+					})
+					.expect(200);
+
+				// Then
+				expect(response.body.data.todo.id).toBe(todo1Id);
+			});
+
+			it("맨 앞으로 이동 성공 (targetTodoId 없이 before)", async () => {
+				// When
+				const response = await request(app.getHttpServer())
+					.patch(`/todos/${todo2Id}/reorder`)
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						position: "before",
+					})
+					.expect(200);
+
+				// Then
+				expect(response.body.data.todo.sortOrder).toBe(0);
+			});
+
+			it("존재하지 않는 Todo로 이동 시도 시 404 에러", async () => {
+				const response = await request(app.getHttpServer())
+					.patch(`/todos/${todo1Id}/reorder`)
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						targetTodoId: 999999,
+						position: "before",
+					})
+					.expect(404);
+
+				expect(response.body.error.code).toBe("TODO_0810");
+			});
+		});
+
 		describe("DELETE /todos/:id - 할 일 삭제", () => {
 			let todoToDelete: number;
 
@@ -660,6 +840,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: "삭제될 할 일",
+						categoryId,
 						startDate: "2024-01-25",
 					})
 					.expect(201);
@@ -705,6 +886,8 @@ describe("Todo (e2e)", () => {
 		const testPassword = "Test1234!";
 		let user1Token: string;
 		let user2Token: string;
+		let user1CategoryId: number;
+		let user2CategoryId: number;
 		let user1TodoId: string;
 
 		beforeAll(async () => {
@@ -712,12 +895,17 @@ describe("Todo (e2e)", () => {
 			user1Token = await createVerifiedUser(user1Email, testPassword);
 			user2Token = await createVerifiedUser(user2Email, testPassword);
 
+			// 각 사용자의 기본 카테고리 ID 조회
+			user1CategoryId = await getDefaultCategoryId(user1Token);
+			user2CategoryId = await getDefaultCategoryId(user2Token);
+
 			// user1의 할 일 생성
 			const response = await request(app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${user1Token}`)
 				.send({
 					title: "User1의 할 일",
+					categoryId: user1CategoryId,
 					startDate: "2024-02-01",
 				})
 				.expect(201);
@@ -760,6 +948,7 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${user2Token}`)
 				.send({
 					title: "User2의 할 일",
+					categoryId: user2CategoryId,
 					startDate: "2024-02-01",
 				})
 				.expect(201);
@@ -796,9 +985,11 @@ describe("Todo (e2e)", () => {
 		const paginationEmail = "pagination@example.com";
 		const testPassword = "Test1234!";
 		let accessToken: string;
+		let categoryId: number;
 
 		beforeAll(async () => {
 			accessToken = await createVerifiedUser(paginationEmail, testPassword);
+			categoryId = await getDefaultCategoryId(accessToken);
 
 			// 10개의 할 일 생성
 			for (let i = 0; i < 10; i++) {
@@ -807,6 +998,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						title: `페이지네이션 테스트 ${i + 1}`,
+						categoryId,
 						startDate: "2024-03-01",
 					})
 					.expect(201);
@@ -851,9 +1043,11 @@ describe("Todo (e2e)", () => {
 		const validationEmail = "validation@example.com";
 		const testPassword = "Test1234!";
 		let accessToken: string;
+		let categoryId: number;
 
 		beforeAll(async () => {
 			accessToken = await createVerifiedUser(validationEmail, testPassword);
+			categoryId = await getDefaultCategoryId(accessToken);
 		});
 
 		it("제목이 200자 초과하면 400 에러", async () => {
@@ -864,21 +1058,8 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: longTitle,
+					categoryId,
 					startDate: "2024-01-15",
-				})
-				.expect(400);
-
-			expect(response.body.success).toBe(false);
-		});
-
-		it("잘못된 HEX 색상 코드는 400 에러", async () => {
-			const response = await request(app.getHttpServer())
-				.post("/todos")
-				.set("Authorization", `Bearer ${accessToken}`)
-				.send({
-					title: "테스트",
-					startDate: "2024-01-15",
-					color: "not-a-hex-color",
 				})
 				.expect(400);
 
@@ -891,6 +1072,7 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "테스트",
+					categoryId,
 					startDate: "2024-01-15",
 					visibility: "INVALID",
 				})
@@ -905,6 +1087,7 @@ describe("Todo (e2e)", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "테스트",
+					categoryId,
 					startDate: "2024-01-15",
 					scheduledTime: "25:00", // 잘못된 시간
 				})

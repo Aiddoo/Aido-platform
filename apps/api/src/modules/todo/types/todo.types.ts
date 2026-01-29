@@ -14,7 +14,7 @@ export interface CreateTodoData {
 	userId: string;
 	title: string;
 	content?: string | null;
-	color?: string | null;
+	categoryId: number;
 	startDate: Date;
 	endDate?: Date | null;
 	scheduledTime?: Date | null;
@@ -28,7 +28,7 @@ export interface CreateTodoData {
 export interface UpdateTodoData {
 	title?: string;
 	content?: string | null;
-	color?: string | null;
+	categoryId?: number;
 	startDate?: Date;
 	endDate?: Date | null;
 	scheduledTime?: Date | null;
@@ -45,6 +45,7 @@ export interface GetTodosParams {
 	cursor?: number;
 	size?: number;
 	completed?: boolean;
+	categoryId?: number;
 	startDate?: Date;
 	endDate?: Date;
 }
@@ -71,6 +72,7 @@ export interface FindTodosParams {
 	cursor?: number;
 	size: number;
 	completed?: boolean;
+	categoryId?: number;
 	startDate?: Date;
 	endDate?: Date;
 }
@@ -84,4 +86,40 @@ export interface FindFriendTodosParams {
 	size: number;
 	startDate?: Date;
 	endDate?: Date;
+}
+
+/**
+ * 카테고리 정보가 포함된 Todo (Repository에서 사용)
+ */
+export interface TodoWithCategory {
+	id: number;
+	userId: string;
+	title: string;
+	content: string | null;
+	categoryId: number;
+	sortOrder: number;
+	completed: boolean;
+	completedAt: Date | null;
+	startDate: Date;
+	endDate: Date | null;
+	scheduledTime: Date | null;
+	isAllDay: boolean;
+	visibility: "PUBLIC" | "PRIVATE";
+	createdAt: Date;
+	updatedAt: Date;
+	category: {
+		id: number;
+		name: string;
+		color: string;
+	};
+}
+
+/**
+ * Todo 순서 변경 파라미터
+ */
+export interface ReorderTodoParams {
+	userId: string;
+	todoId: number;
+	targetTodoId?: number;
+	position: "before" | "after";
 }

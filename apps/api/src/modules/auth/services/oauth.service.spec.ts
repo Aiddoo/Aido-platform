@@ -4,7 +4,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type { Account, User } from "@/generated/prisma/client";
-
+import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import {
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
@@ -112,6 +112,10 @@ describe("OAuthService", () => {
 		markAsExchanged: jest.fn(),
 	};
 
+	const mockTodoCategoryRepository = {
+		createMany: jest.fn(),
+	};
+
 	beforeEach(async () => {
 		jest.clearAllMocks();
 
@@ -131,6 +135,10 @@ describe("OAuthService", () => {
 				{ provide: OAuthTokenVerifierService, useValue: mockTokenVerifier },
 				{ provide: TypedConfigService, useValue: mockConfigService },
 				{ provide: OAuthStateRepository, useValue: mockOAuthStateRepository },
+				{
+					provide: TodoCategoryRepository,
+					useValue: mockTodoCategoryRepository,
+				},
 			],
 		}).compile();
 
