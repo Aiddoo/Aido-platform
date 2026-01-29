@@ -108,6 +108,7 @@ export const addTodoFormSchema = z.object({
   scheduledTime: z.string().regex(timeRegex, '시간 형식이 올바르지 않습니다 (HH:mm)').nullish(),
   isAllDay: z.boolean().default(true),
   visibility: todoVisibilitySchema.default('PUBLIC'),
+  categoryId: z.number().int().default(1),
 });
 export type AddTodoFormInput = z.input<typeof addTodoFormSchema>;
 

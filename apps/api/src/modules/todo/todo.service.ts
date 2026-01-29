@@ -454,60 +454,87 @@ export class TodoService {
 		userId: string,
 		data: { targetTodoId?: number; position: "before" | "after" },
 	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		const { targetTodoId, position } = data;
 
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
 
-		// 자기 자신을 target으로 지정한 경우 무시
-		if (data.targetTodoId === id) {
-			return TodoMapper.toResponse(todo);
-		}
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(id);
+			}
 
-		return await this.database.$transaction(async (tx) => {
+			// 자기 자신을 target으로 지정한 경우 무시
+			if (targetTodoId === id) {
+				return TodoMapper.toResponse(todo);
+			}
+
+			const currentSortOrder = todo.sortOrder;
 			let newSortOrder: number;
 
-			if (data.targetTodoId === undefined) {
-				// targetTodoId가 없는 경우: 맨 처음 또는 맨 끝으로 이동
-				if (data.position === "before") {
-					// 맨 처음으로 이동
-					await this.todoRepository.incrementSortOrdersFrom(userId, 0, tx);
-					newSortOrder = 0;
-				} else {
-					// 맨 끝으로 이동
-					const maxSortOrder = await this.todoRepository.getMaxSortOrder(
-						userId,
-						tx,
-					);
-					newSortOrder = maxSortOrder + 1;
-				}
-			} else {
+			if (targetTodoId) {
 				// targetTodoId가 있는 경우: target 앞 또는 뒤로 이동
 				const targetTodo = await this.todoRepository.findByIdAndUserId(
-					data.targetTodoId,
+					targetTodoId,
 					userId,
 					tx,
 				);
 
 				if (!targetTodo) {
-					throw BusinessExceptions.todoReorderTargetNotFound(data.targetTodoId);
+					throw BusinessExceptions.todoReorderTargetNotFound(targetTodoId);
 				}
 
-				if (data.position === "before") {
-					// target 앞으로 이동
-					newSortOrder = targetTodo.sortOrder;
-					await this.todoRepository.incrementSortOrdersFrom(
+				const targetSortOrder = targetTodo.sortOrder;
+
+				if (position === "before") {
+					newSortOrder = targetSortOrder;
+				} else {
+					newSortOrder = targetSortOrder + 1;
+				}
+
+				if (currentSortOrder < newSortOrder) {
+					// 아래로 이동: 사이의 항목들을 위로 한 칸씩 이동
+					await this.todoRepository.shiftSortOrders(
+						userId,
+						currentSortOrder + 1,
+						newSortOrder - 1,
+						-1,
+						tx,
+					);
+					newSortOrder -= 1;
+				} else {
+					// 위로 이동: 사이의 항목들을 아래로 한 칸씩 이동
+					await this.todoRepository.shiftSortOrders(
 						userId,
 						newSortOrder,
+						currentSortOrder - 1,
+						1,
+						tx,
+					);
+				}
+			} else {
+				// targetTodoId가 없는 경우: 맨 처음 또는 맨 끝으로 이동
+				if (position === "before") {
+					// 맨 앞으로 이동
+					newSortOrder = 0;
+					await this.todoRepository.shiftSortOrders(
+						userId,
+						0,
+						currentSortOrder - 1,
+						1,
 						tx,
 					);
 				} else {
-					// target 뒤로 이동
-					newSortOrder = targetTodo.sortOrder + 1;
-					await this.todoRepository.incrementSortOrdersFrom(
+					// 맨 뒤로 이동
+					const maxSortOrder = await this.todoRepository.getMaxSortOrder(
 						userId,
-						newSortOrder,
+						tx,
+					);
+					newSortOrder = maxSortOrder;
+					await this.todoRepository.shiftSortOrders(
+						userId,
+						currentSortOrder + 1,
+						null,
+						-1,
 						tx,
 					);
 				}

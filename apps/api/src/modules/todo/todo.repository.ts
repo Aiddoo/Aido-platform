@@ -306,23 +306,37 @@ export class TodoRepository {
 	}
 
 	/**
-	 * 특정 sortOrder 이상의 Todo들의 sortOrder를 1씩 증가
+	 * 특정 sortOrder 범위의 Todo들의 sortOrder를 일괄 조정
+	 * @param userId - 사용자 ID
+	 * @param fromSortOrder - 시작 sortOrder (포함)
+	 * @param toSortOrder - 종료 sortOrder (포함), null이면 끝까지
+	 * @param delta - 증감값 (+1 또는 -1)
 	 */
-	async incrementSortOrdersFrom(
+	async shiftSortOrders(
 		userId: string,
 		fromSortOrder: number,
+		toSortOrder: number | null,
+		delta: number,
 		tx?: TransactionClient,
-	): Promise<void> {
+	): Promise<number> {
 		const client = tx ?? this.database;
-		await client.todo.updateMany({
-			where: {
-				userId,
-				sortOrder: { gte: fromSortOrder },
+
+		const where: Prisma.TodoWhereInput = {
+			userId,
+			sortOrder: {
+				gte: fromSortOrder,
+				...(toSortOrder !== null && { lte: toSortOrder }),
 			},
+		};
+
+		const result = await client.todo.updateMany({
+			where,
 			data: {
-				sortOrder: { increment: 1 },
+				sortOrder: { increment: delta },
 			},
 		});
+
+		return result.count;
 	}
 
 	/**

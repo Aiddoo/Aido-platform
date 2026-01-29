@@ -24,7 +24,7 @@ describe("TodoService", () => {
 		update: jest.fn(),
 		delete: jest.fn(),
 		getMaxSortOrder: jest.fn(),
-		incrementSortOrdersFrom: jest.fn(),
+		shiftSortOrders: jest.fn(),
 		updateSortOrder: jest.fn(),
 	};
 
@@ -985,7 +985,7 @@ describe("TodoService", () => {
 				.mockResolvedValueOnce(mockTodo) // 이동할 Todo
 				.mockResolvedValueOnce(targetTodo); // 타겟 Todo
 
-			mockTodoRepository.incrementSortOrdersFrom.mockResolvedValue(undefined);
+			mockTodoRepository.shiftSortOrders.mockResolvedValue(1);
 
 			// When
 			const result = await service.reorder(mockTodoId, mockUserId, {
