@@ -1,10 +1,11 @@
+import type { Todo } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { now, toDate } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import type { Todo } from "@/generated/prisma/client";
+import { DatabaseService } from "@/database/database.service";
 
 import { FollowService } from "../follow/follow.service";
 import {
@@ -12,7 +13,9 @@ import {
 	NotificationEvents,
 	type TodoAllCompletedEventPayload,
 } from "../notification/events/notification.events";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
+import { TodoMapper } from "./todo.mapper";
 import { TodoRepository } from "./todo.repository";
 import type {
 	CreateTodoData,
@@ -29,20 +32,37 @@ export class TodoService {
 
 	constructor(
 		private readonly todoRepository: TodoRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly database: DatabaseService,
 	) {}
 
 	/**
 	 * Todo 생성
 	 */
 	async create(data: CreateTodoData): Promise<Todo> {
+		// 카테고리 존재 및 소유권 확인
+		const category = await this.todoCategoryRepository.findByIdAndUserId(
+			data.categoryId,
+			data.userId,
+		);
+
+		if (!category) {
+			throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
+		}
+
+		// 새 Todo의 sortOrder 결정 (맨 뒤에 추가)
+		const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
+		const newSortOrder = maxSortOrder + 1;
+
 		const todo = await this.todoRepository.create({
 			user: { connect: { id: data.userId } },
+			category: { connect: { id: data.categoryId } },
 			title: data.title,
 			content: data.content,
-			color: data.color,
+			sortOrder: newSortOrder,
 			startDate: data.startDate,
 			endDate: data.endDate,
 			scheduledTime: data.scheduledTime,
@@ -52,7 +72,7 @@ export class TodoService {
 
 		this.logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
 
-		return todo;
+		return TodoMapper.toResponse(todo);
 	}
 
 	/**
@@ -67,7 +87,7 @@ export class TodoService {
 
 		this.logger.debug(`Todo retrieved: ${id} for user: ${userId}`);
 
-		return todo;
+		return TodoMapper.toResponse(todo);
 	}
 
 	/**
@@ -87,6 +107,7 @@ export class TodoService {
 			cursor,
 			size,
 			completed: params.completed,
+			categoryId: params.categoryId,
 			startDate: params.startDate,
 			endDate: params.endDate,
 		};
@@ -98,7 +119,7 @@ export class TodoService {
 		);
 
 		return this.paginationService.createCursorPaginatedResponse<Todo, number>({
-			items: todos,
+			items: TodoMapper.toManyResponse(todos),
 			size,
 		});
 	}
@@ -147,7 +168,7 @@ export class TodoService {
 		);
 
 		return this.paginationService.createCursorPaginatedResponse<Todo, number>({
-			items: todos,
+			items: TodoMapper.toManyResponse(todos),
 			size,
 		});
 	}
@@ -164,6 +185,17 @@ export class TodoService {
 
 		if (!todo) {
 			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		// 카테고리 변경 시 소유권 확인
+		if (data.categoryId !== undefined) {
+			const category = await this.todoCategoryRepository.findByIdAndUserId(
+				data.categoryId,
+				userId,
+			);
+			if (!category) {
+				throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
+			}
 		}
 
 		// 완료 상태 변경 시 completedAt 자동 설정
@@ -185,7 +217,7 @@ export class TodoService {
 
 		this.logger.log(`Todo updated: ${id} for user: ${userId}`);
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
 	}
 
 	/**
@@ -235,7 +267,7 @@ export class TodoService {
 			await this.checkAndEmitAllCompletedEvent(userId);
 		}
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
 	}
 
 	/**
@@ -307,16 +339,16 @@ export class TodoService {
 			`Todo visibility updated: ${id} -> ${data.visibility} for user: ${userId}`,
 		);
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
 	}
 
 	/**
 	 * Todo 색상 변경
 	 */
-	async updateColor(
+	async updateCategory(
 		id: number,
 		userId: string,
-		data: { color: string | null },
+		data: { categoryId: number },
 	): Promise<Todo> {
 		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
@@ -324,13 +356,25 @@ export class TodoService {
 			throw BusinessExceptions.todoNotFound(id);
 		}
 
+		// 새 카테고리 소유권 확인
+		const category = await this.todoCategoryRepository.findByIdAndUserId(
+			data.categoryId,
+			userId,
+		);
+
+		if (!category) {
+			throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
+		}
+
 		const updatedTodo = await this.todoRepository.update(id, {
-			color: data.color,
+			category: { connect: { id: data.categoryId } },
 		});
 
-		this.logger.log(`Todo color updated: ${id} for user: ${userId}`);
+		this.logger.log(
+			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,
+		);
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
 	}
 
 	/**
@@ -363,7 +407,7 @@ export class TodoService {
 
 		this.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
 	}
 
 	/**
@@ -394,6 +438,92 @@ export class TodoService {
 
 		this.logger.log(`Todo content updated: ${id} for user: ${userId}`);
 
-		return updatedTodo;
+		return TodoMapper.toResponse(updatedTodo);
+	}
+
+	/**
+	 * Todo 순서 변경 (개별 이동)
+	 *
+	 * @param id - 이동할 Todo ID
+	 * @param userId - 사용자 ID
+	 * @param data.targetTodoId - 기준이 되는 Todo ID (없으면 맨 처음/끝으로 이동)
+	 * @param data.position - 기준 Todo의 앞('before') 또는 뒤('after')로 이동
+	 */
+	async reorder(
+		id: number,
+		userId: string,
+		data: { targetTodoId?: number; position: "before" | "after" },
+	): Promise<Todo> {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(id);
+		}
+
+		// 자기 자신을 target으로 지정한 경우 무시
+		if (data.targetTodoId === id) {
+			return TodoMapper.toResponse(todo);
+		}
+
+		return await this.database.$transaction(async (tx) => {
+			let newSortOrder: number;
+
+			if (data.targetTodoId === undefined) {
+				// targetTodoId가 없는 경우: 맨 처음 또는 맨 끝으로 이동
+				if (data.position === "before") {
+					// 맨 처음으로 이동
+					await this.todoRepository.incrementSortOrdersFrom(userId, 0, tx);
+					newSortOrder = 0;
+				} else {
+					// 맨 끝으로 이동
+					const maxSortOrder = await this.todoRepository.getMaxSortOrder(
+						userId,
+						tx,
+					);
+					newSortOrder = maxSortOrder + 1;
+				}
+			} else {
+				// targetTodoId가 있는 경우: target 앞 또는 뒤로 이동
+				const targetTodo = await this.todoRepository.findByIdAndUserId(
+					data.targetTodoId,
+					userId,
+					tx,
+				);
+
+				if (!targetTodo) {
+					throw BusinessExceptions.todoReorderTargetNotFound(data.targetTodoId);
+				}
+
+				if (data.position === "before") {
+					// target 앞으로 이동
+					newSortOrder = targetTodo.sortOrder;
+					await this.todoRepository.incrementSortOrdersFrom(
+						userId,
+						newSortOrder,
+						tx,
+					);
+				} else {
+					// target 뒤로 이동
+					newSortOrder = targetTodo.sortOrder + 1;
+					await this.todoRepository.incrementSortOrdersFrom(
+						userId,
+						newSortOrder,
+						tx,
+					);
+				}
+			}
+
+			const updatedTodo = await this.todoRepository.updateSortOrder(
+				id,
+				newSortOrder,
+				tx,
+			);
+
+			this.logger.log(
+				`Todo reordered: ${id} to sortOrder ${newSortOrder} for user: ${userId}`,
+			);
+
+			return TodoMapper.toResponse(updatedTodo);
+		});
 	}
 }

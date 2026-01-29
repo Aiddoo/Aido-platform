@@ -5,6 +5,7 @@ import type { Prisma, Todo } from "@/generated/prisma/client";
 import type {
 	FindFriendTodosParams,
 	FindTodosParams,
+	TodoWithCategory,
 	TransactionClient,
 } from "./types/todo.types.ts";
 
@@ -18,19 +19,34 @@ export class TodoRepository {
 	async create(
 		data: Prisma.TodoCreateInput,
 		tx?: TransactionClient,
-	): Promise<Todo> {
+	): Promise<TodoWithCategory> {
 		const client = tx ?? this.database;
-		return client.todo.create({ data });
+		return client.todo.create({
+			data,
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory>;
 	}
 
 	/**
 	 * ID로 Todo 조회
 	 */
-	async findById(id: number, tx?: TransactionClient): Promise<Todo | null> {
+	async findById(
+		id: number,
+		tx?: TransactionClient,
+	): Promise<TodoWithCategory | null> {
 		const client = tx ?? this.database;
 		return client.todo.findUnique({
 			where: { id },
-		});
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory | null>;
 	}
 
 	/**
@@ -40,11 +56,16 @@ export class TodoRepository {
 		id: number,
 		userId: string,
 		tx?: TransactionClient,
-	): Promise<Todo | null> {
+	): Promise<TodoWithCategory | null> {
 		const client = tx ?? this.database;
 		return client.todo.findFirst({
 			where: { id, userId },
-		});
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory | null>;
 	}
 
 	/**
@@ -53,9 +74,10 @@ export class TodoRepository {
 	async findManyByUserId(
 		params: FindTodosParams,
 		tx?: TransactionClient,
-	): Promise<Todo[]> {
+	): Promise<TodoWithCategory[]> {
 		const client = tx ?? this.database;
-		const { userId, cursor, size, completed, startDate, endDate } = params;
+		const { userId, cursor, size, completed, categoryId, startDate, endDate } =
+			params;
 
 		const where: Prisma.TodoWhereInput = {
 			userId,
@@ -64,6 +86,11 @@ export class TodoRepository {
 		// 완료 상태 필터
 		if (completed !== undefined) {
 			where.completed = completed;
+		}
+
+		// 카테고리 필터
+		if (categoryId !== undefined) {
+			where.categoryId = categoryId;
 		}
 
 		// 날짜 범위 필터
@@ -84,8 +111,17 @@ export class TodoRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-		});
+			orderBy: [
+				{ sortOrder: "asc" },
+				{ startDate: "desc" },
+				{ createdAt: "desc" },
+			],
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory[]>;
 	}
 
 	/**
@@ -95,12 +131,17 @@ export class TodoRepository {
 		id: number,
 		data: Prisma.TodoUpdateInput,
 		tx?: TransactionClient,
-	): Promise<Todo> {
+	): Promise<TodoWithCategory> {
 		const client = tx ?? this.database;
 		return client.todo.update({
 			where: { id },
 			data,
-		});
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory>;
 	}
 
 	/**
@@ -119,7 +160,7 @@ export class TodoRepository {
 	async findPublicTodosByUserId(
 		params: FindFriendTodosParams,
 		tx?: TransactionClient,
-	): Promise<Todo[]> {
+	): Promise<TodoWithCategory[]> {
 		const client = tx ?? this.database;
 		const { friendUserId, cursor, size, startDate, endDate } = params;
 
@@ -146,8 +187,17 @@ export class TodoRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-		});
+			orderBy: [
+				{ sortOrder: "asc" },
+				{ startDate: "desc" },
+				{ createdAt: "desc" },
+			],
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory[]>;
 	}
 
 	// =========================================================================
@@ -234,5 +284,64 @@ export class TodoRepository {
 		});
 
 		return follows.map((f) => f.followingId);
+	}
+
+	// =========================================================================
+	// Todo 순서 변경
+	// =========================================================================
+
+	/**
+	 * 사용자의 Todo 최대 sortOrder 조회
+	 */
+	async getMaxSortOrder(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		const result = await client.todo.aggregate({
+			where: { userId },
+			_max: { sortOrder: true },
+		});
+		return result._max.sortOrder ?? -1;
+	}
+
+	/**
+	 * 특정 sortOrder 이상의 Todo들의 sortOrder를 1씩 증가
+	 */
+	async incrementSortOrdersFrom(
+		userId: string,
+		fromSortOrder: number,
+		tx?: TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.todo.updateMany({
+			where: {
+				userId,
+				sortOrder: { gte: fromSortOrder },
+			},
+			data: {
+				sortOrder: { increment: 1 },
+			},
+		});
+	}
+
+	/**
+	 * Todo의 sortOrder 업데이트
+	 */
+	async updateSortOrder(
+		id: number,
+		sortOrder: number,
+		tx?: TransactionClient,
+	): Promise<TodoWithCategory> {
+		const client = tx ?? this.database;
+		return client.todo.update({
+			where: { id },
+			data: { sortOrder },
+			include: {
+				category: {
+					select: { id: true, name: true, color: true },
+				},
+			},
+		}) as Promise<TodoWithCategory>;
 	}
 }

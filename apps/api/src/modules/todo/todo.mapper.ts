@@ -14,7 +14,7 @@ import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/common/date";
-import type { Todo as TodoEntity } from "@/generated/prisma/client";
+import type { TodoWithCategory } from "./types/todo.types.ts";
 
 /**
  * Todo 매퍼 클래스
@@ -52,13 +52,13 @@ export abstract class TodoMapper {
 	 * // 결과: { id: 1, title: '할 일', startDate: '2024-01-15', ... }
 	 * ```
 	 */
-	static toResponse(entity: TodoEntity): Todo {
+	static toResponse(entity: TodoWithCategory): Todo {
 		return {
 			id: entity.id,
 			userId: entity.userId,
 			title: entity.title,
 			content: entity.content,
-			color: entity.color,
+			sortOrder: entity.sortOrder,
 			completed: entity.completed,
 			completedAt: toISOStringOrNull(entity.completedAt),
 			startDate: toDateString(entity.startDate),
@@ -66,6 +66,11 @@ export abstract class TodoMapper {
 			scheduledTime: toISOStringOrNull(entity.scheduledTime),
 			isAllDay: entity.isAllDay,
 			visibility: entity.visibility as "PUBLIC" | "PRIVATE",
+			category: {
+				id: entity.category.id,
+				name: entity.category.name,
+				color: entity.category.color,
+			},
 			createdAt: toISOString(entity.createdAt),
 			updatedAt: toISOString(entity.updatedAt),
 		};
@@ -84,7 +89,7 @@ export abstract class TodoMapper {
 	 * // 결과: [{ id: 1, ... }, { id: 2, ... }]
 	 * ```
 	 */
-	static toManyResponse(entities: TodoEntity[]): Todo[] {
+	static toManyResponse(entities: TodoWithCategory[]): Todo[] {
 		return entities.map((entity) => TodoMapper.toResponse(entity));
 	}
 }
