@@ -18,7 +18,7 @@ import {
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 
-import { FriendClientError } from '../models/friend.error';
+import { FriendValidationError } from '../models/friend.error';
 import type { FriendRepository, PaginationParams } from './friend.repository';
 
 export class FriendRepositoryImpl implements FriendRepository {
@@ -32,7 +32,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = sendFriendRequestResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid sendRequest response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -55,7 +55,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = receivedRequestsResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid getReceivedRequests response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -69,7 +69,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = sentRequestsResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid getSentRequests response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -83,7 +83,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = acceptFriendRequestResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid acceptRequest response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -97,7 +97,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = rejectFriendRequestResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid rejectRequest response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -111,7 +111,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = cancelFriendRequestResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid cancelRequest response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -125,7 +125,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = friendsListResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid getFriends response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;
@@ -137,7 +137,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     const result = removeFriendResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[FriendRepository] Invalid removeFriend response:', result.error);
-      throw FriendClientError.validation();
+      throw new FriendValidationError();
     }
 
     return result.data;

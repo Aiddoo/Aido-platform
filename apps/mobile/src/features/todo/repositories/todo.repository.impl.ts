@@ -12,7 +12,7 @@ import {
   todoSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
-import { TodoClientError } from '../models/todo.error';
+import { TodoValidationError } from '../models/todo.error';
 
 import type { TodoRepository } from './todo.repository';
 
@@ -49,7 +49,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = todoListResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[TodoRepository] Invalid getTodos response:', result.error);
-      throw TodoClientError.validation();
+      throw new TodoValidationError();
     }
 
     return result.data;
@@ -64,7 +64,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
       console.error('[TodoRepository] Invalid toggleTodoComplete response:', result.error);
-      throw TodoClientError.validation();
+      throw new TodoValidationError();
     }
 
     return result.data;
@@ -76,7 +76,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
       console.error('[TodoRepository] Invalid createTodo response:', result.error);
-      throw TodoClientError.validation();
+      throw new TodoValidationError();
     }
 
     return result.data;
@@ -88,7 +88,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = parseTodoResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[TodoRepository] Invalid parseTodo response:', result.error);
-      throw TodoClientError.validation();
+      throw new TodoValidationError();
     }
 
     return result.data;
@@ -100,7 +100,7 @@ export class TodoRepositoryImpl implements TodoRepository {
     const result = aiUsageResponseSchema.safeParse(data);
     if (!result.success) {
       console.error('[TodoRepository] Invalid getAiUsage response:', result.error);
-      throw TodoClientError.validation();
+      throw new TodoValidationError();
     }
 
     return result.data;

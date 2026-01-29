@@ -1,4 +1,5 @@
 import type {
+  AppleMobileCallbackInput,
   ConsentResponse,
   ExchangeCodeInput,
   PreferenceResponse,
@@ -8,12 +9,20 @@ import type {
   UpdatePreferenceResponse,
 } from '@aido/validators';
 import { ENV } from '@src/shared/config/env';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
 import { match } from 'ts-pattern';
-import { AuthClientError } from '../models/auth.error';
+import {
+  AppleAuthError,
+  AuthCancelledError,
+  AuthError,
+  AuthValidationError,
+  isAuthError,
+  isExpoCodedError,
+} from '../models/auth.error';
 import type { AuthTokens, User } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
@@ -59,9 +68,10 @@ export class AuthService {
 
     return null;
   };
+
   /**
    * OAuth 로그인 통합 메서드
-   * @throws {AuthClientError} 로그인 취소, 네트워크 오류 등
+   * @throws {AuthError} 로그인 취소, 네트워크 오류 등
    */
   private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
     const redirectUri = this.getRedirectUri(provider);
@@ -81,31 +91,76 @@ export class AuthService {
       .with({ type: 'success' }, ({ url }) => {
         const code = this.extractCodeFromUrl(url);
 
-        if (!code) throw new AuthClientError('validation', '인증 코드를 찾을 수 없어요');
+        if (!code) throw new AuthValidationError('인증 코드를 찾을 수 없어요');
 
         return code;
       })
       .with({ type: WebBrowserResultType.CANCEL }, () => {
-        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+        throw new AuthCancelledError();
       })
       .with({ type: WebBrowserResultType.DISMISS }, () => {
-        throw new AuthClientError('cancelled', '로그인이 취소되었어요');
+        throw new AuthCancelledError();
       })
       .with({ type: WebBrowserResultType.OPENED }, () => {
-        throw new AuthClientError('unknown', '브라우저가 열렸지만 응답이 없어요');
+        throw new AuthError('브라우저가 열렸지만 응답이 없어요');
       })
       .with({ type: WebBrowserResultType.LOCKED }, () => {
-        throw new AuthClientError('validation', '다른 인증이 진행 중이에요');
+        throw new AuthValidationError('다른 인증이 진행 중이에요');
       })
       .exhaustive();
   };
 
   // Public OAuth API
-  openKakaoLogin = (): Promise<string> => this.openOAuthLogin('kakao');
+  openKakaoLogin = (): Promise<string> => {
+    return this.openOAuthLogin('kakao');
+  };
 
-  openNaverLogin = (): Promise<string> => this.openOAuthLogin('naver');
+  openNaverLogin = (): Promise<string> => {
+    return this.openOAuthLogin('naver');
+  };
 
-  openGoogleLogin = (): Promise<string> => this.openOAuthLogin('google');
+  openGoogleLogin = (): Promise<string> => {
+    return this.openOAuthLogin('google');
+  };
+
+  /**
+   * Apple 로그인 (iOS only)
+   * - expo-apple-authentication 네이티브 SDK 사용
+   * - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
+   * @throws {AppleAuthError} 로그인 취소, 인증 실패 등
+   */
+  openAppleLogin = async (): Promise<AuthTokens> => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const idToken = credential.identityToken;
+      if (!idToken) {
+        throw new AuthValidationError('Apple ID 토큰을 받지 못했어요');
+      }
+
+      const input: AppleMobileCallbackInput = {
+        idToken,
+        userName: credential.fullName?.givenName ?? undefined,
+        deviceType: 'IOS',
+      };
+
+      const dto = await this._authRepository.appleLogin(input);
+      return toAuthTokens(dto);
+    } catch (error) {
+      if (isAuthError(error)) {
+        throw error;
+      }
+      if (isExpoCodedError(error)) {
+        throw AppleAuthError.fromExpoError(error);
+      }
+      throw new AuthError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했어요');
+    }
+  };
 
   // Auth API Methods
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {

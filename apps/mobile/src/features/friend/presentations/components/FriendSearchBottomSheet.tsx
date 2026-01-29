@@ -17,7 +17,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Pressable } from 'react-native';
 import type { z } from 'zod';
 
-import { FriendClientError } from '../../models/friend.error';
+import { isFriendError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -42,7 +42,7 @@ export const FriendSearchBottomSheet = () => {
         setIsOpen(false);
       },
       onError: (err) => {
-        if (err instanceof ApiError || err instanceof FriendClientError) {
+        if (err instanceof ApiError || isFriendError(err)) {
           toast.error(err.message);
           return;
         }

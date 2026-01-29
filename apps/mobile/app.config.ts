@@ -177,6 +177,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
+      usesAppleSignIn: true,
       googleServicesFile: './GoogleService-Info.plist',
       config: {
         // false: HTTPS만 사용, 커스텀 암호화 없음 (App Store 제출 시 수출 규정 질문 스킵)
@@ -233,6 +234,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: BRAND_COLOR,
       },
       edgeToEdgeEnabled: true,
+      // 개발 환경에서 HTTP 허용 (iOS의 NSAppTransportSecurity와 동일)
+      ...(isDevelopment && {
+        usesCleartextTraffic: true,
+      }),
       intentFilters: [
         {
           action: 'VIEW',
