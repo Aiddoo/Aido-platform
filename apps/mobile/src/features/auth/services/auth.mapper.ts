@@ -9,8 +9,6 @@ export const toUser = (dto: CurrentUser): User => ({
   userTag: dto.userTag,
   subscriptionStatus: dto.subscriptionStatus,
   createdAt: new Date(dto.createdAt),
-
-  // Policy를 통한 computed 속성
   isSubscribed: AuthPolicy.isSubscriptionActive(dto.subscriptionStatus),
 });
 

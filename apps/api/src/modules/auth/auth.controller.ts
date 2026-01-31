@@ -257,8 +257,12 @@ export class AuthController {
 이메일/비밀번호로 로그인 후 토큰을 발급받습니다.
 
 ### 📝 요청 Body
-- \`email\`: 이메일 주소
-- \`password\`: 비밀번호
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| \`email\` | string | ✅ | 이메일 주소 |
+| \`password\` | string | ✅ | 비밀번호 |
+| \`deviceName\` | string | ❌ | 기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro) |
+| \`deviceType\` | enum | ❌ | 디바이스 타입 (IOS, ANDROID, WEB) |
 
 ### 🎫 응답 토큰
 | 토큰 | 유효기간 | 저장 위치 |
@@ -1698,6 +1702,18 @@ const clientId = {
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
 	})
+	@ApiQuery({
+		name: "code",
+		required: true,
+		description: "구글 Authorization Code (인증 완료 후 발급)",
+		example: "4/0AbcDefGhiJkl",
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값",
+		example: "550e8400-e29b-41d4-a716-446655440000",
+	})
 	async googleOAuthCallback(
 		@Query("code") code: string,
 		@Query("state") state: string,
@@ -1786,6 +1802,18 @@ const clientId = {
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
+	})
+	@ApiQuery({
+		name: "code",
+		required: true,
+		description: "네이버 Authorization Code (인증 완료 후 발급)",
+		example: "AbCdEfGh",
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값",
+		example: "550e8400-e29b-41d4-a716-446655440000",
 	})
 	async naverOAuthCallback(
 		@Query("code") code: string,

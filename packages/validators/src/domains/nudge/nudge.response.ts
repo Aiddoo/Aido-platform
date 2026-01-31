@@ -1,27 +1,18 @@
-/**
- * Nudge Response 스키마
- *
- * 콕 찌르기 관련 응답 검증을 위한 Zod 스키마
- */
 import { z } from 'zod';
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 
-// ============================================
-// 콕 찌름 엔티티
-// ============================================
-
-/** 콕 찌름 정보 스키마 */
 export const nudgeSchema = z
   .object({
-    id: z.number().int().positive().describe('콕 찌름 고유 ID'),
-    senderId: z.cuid().describe('찌른 사람 ID'),
-    receiverId: z.cuid().describe('찔린 사람 ID'),
-    todoId: z.number().int().positive().describe('관련 할 일 ID'),
-    message: z.string().max(200).nullable().describe('응원 메시지'),
-    createdAt: datetimeSchema.describe('찌른 시각'),
-    readAt: nullableDatetimeSchema.describe('확인 시각 (미확인 시 null)'),
+    id: z.number().int().positive().describe('찌르기 ID (양의 정수)'),
+    senderId: z.cuid().describe('보낸 사용자 ID (CUID 25자)'),
+    receiverId: z.cuid().describe('받은 사용자 ID (CUID 25자)'),
+    todoId: z.number().int().positive().describe('대상 할 일 ID (양의 정수)'),
+    message: z.string().max(200).nullable().describe('응원 메시지 (최대 200자, 미설정 시 null)'),
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
+    readAt: nullableDatetimeSchema.describe(
+      '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
+    ),
   })
-  .describe('콕 찌름 정보')
   .meta({
     example: {
       id: 1,
@@ -36,19 +27,13 @@ export const nudgeSchema = z
 
 export type Nudge = z.infer<typeof nudgeSchema>;
 
-// ============================================
-// 콕 찌름 상세 정보 (관계 포함)
-// ============================================
-
-/** 콕 찌른 친구 정보 */
 export const nudgeSenderSchema = z
   .object({
-    id: z.cuid().describe('친구 ID'),
-    userTag: z.string().length(8).describe('친구 태그'),
-    name: z.string().nullable().describe('친구 이름'),
-    profileImage: z.string().nullable().describe('친구 프로필 이미지'),
+    id: z.cuid().describe('사용자 ID (CUID 25자)'),
+    userTag: z.string().length(8).describe('사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)'),
+    name: z.string().nullable().describe('사용자 이름 (미설정 시 null)'),
+    profileImage: z.string().nullable().describe('프로필 이미지 URL (미설정 시 null)'),
   })
-  .describe('콕 찌른 친구 정보')
   .meta({
     example: {
       id: 'clz7x5p8k0005qz0z8z8z8z8z',
@@ -60,14 +45,12 @@ export const nudgeSenderSchema = z
 
 export type NudgeSender = z.infer<typeof nudgeSenderSchema>;
 
-/** 찔러준 할 일 정보 (간략) */
 export const nudgeTodoSchema = z
   .object({
-    id: z.number().int().positive().describe('할 일 ID'),
-    title: z.string().max(200).describe('할 일 제목'),
+    id: z.number().int().positive().describe('할 일 ID (양의 정수)'),
+    title: z.string().max(200).describe('할 일 제목 (최대 200자)'),
     completed: z.boolean().describe('완료 여부'),
   })
-  .describe('찔러준 할 일 정보')
   .meta({
     example: {
       id: 1,
@@ -78,13 +61,11 @@ export const nudgeTodoSchema = z
 
 export type NudgeTodo = z.infer<typeof nudgeTodoSchema>;
 
-/** 콕 찌름 상세 정보 (친구 + 할 일 포함) */
 export const nudgeDetailSchema = nudgeSchema
   .extend({
-    sender: nudgeSenderSchema.describe('찌른 친구 정보'),
-    todo: nudgeTodoSchema.describe('관련 할 일 정보'),
+    sender: nudgeSenderSchema,
+    todo: nudgeTodoSchema,
   })
-  .describe('콕 찌름 상세 정보')
   .meta({
     example: {
       id: 1,
@@ -110,19 +91,13 @@ export const nudgeDetailSchema = nudgeSchema
 
 export type NudgeDetail = z.infer<typeof nudgeDetailSchema>;
 
-// ============================================
-// 콕 찌름 목록 응답
-// ============================================
-
-/** 받은 콕 찌름 목록 응답 */
 export const receivedNudgesResponseSchema = z
   .object({
-    nudges: z.array(nudgeDetailSchema).describe('받은 콕 찌름 목록'),
-    totalCount: z.number().int().nonnegative().describe('전체 받은 콕 찌름 수'),
-    unreadCount: z.number().int().nonnegative().describe('아직 확인 안 한 콕 찌름 수'),
+    nudges: z.array(nudgeDetailSchema).describe('받은 찌르기 목록'),
+    totalCount: z.number().int().nonnegative().describe('전체 받은 찌르기 수 (음이 아닌 정수)'),
+    unreadCount: z.number().int().nonnegative().describe('읽지 않은 찌르기 수 (음이 아닌 정수)'),
     hasMore: z.boolean().describe('다음 페이지 존재 여부'),
   })
-  .describe('받은 콕 찌름 목록 응답')
   .meta({
     example: {
       nudges: [
@@ -155,14 +130,12 @@ export const receivedNudgesResponseSchema = z
 
 export type ReceivedNudgesResponse = z.infer<typeof receivedNudgesResponseSchema>;
 
-/** 보낸 콕 찌름 목록 응답 */
 export const sentNudgesResponseSchema = z
   .object({
-    nudges: z.array(nudgeDetailSchema).describe('보낸 콕 찌름 목록'),
-    totalCount: z.number().int().nonnegative().describe('전체 보낸 콕 찌름 수'),
+    nudges: z.array(nudgeDetailSchema).describe('보낸 찌르기 목록'),
+    totalCount: z.number().int().nonnegative().describe('전체 보낸 찌르기 수 (음이 아닌 정수)'),
     hasMore: z.boolean().describe('다음 페이지 존재 여부'),
   })
-  .describe('보낸 콕 찌름 목록 응답')
   .meta({
     example: {
       nudges: [
@@ -194,17 +167,11 @@ export const sentNudgesResponseSchema = z
 
 export type SentNudgesResponse = z.infer<typeof sentNudgesResponseSchema>;
 
-// ============================================
-// 콕 찌르기 액션 응답
-// ============================================
-
-/** 콕 찌르기 성공 응답 */
 export const createNudgeResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    nudge: nudgeSchema.describe('생성된 콕 찌름'),
+    nudge: nudgeSchema.describe('생성된 찌르기 정보'),
   })
-  .describe('콕 찌르기 성공 응답')
   .meta({
     example: {
       message: '콕! 찔렀습니다 👆',
@@ -222,13 +189,11 @@ export const createNudgeResponseSchema = z
 
 export type CreateNudgeResponse = z.infer<typeof createNudgeResponseSchema>;
 
-/** 콕 찌름 확인 응답 */
 export const markNudgeReadResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    readCount: z.number().int().nonnegative().describe('확인 처리된 콕 찌름 수'),
+    readCount: z.number().int().nonnegative().describe('읽음 처리된 찌르기 수 (음이 아닌 정수)'),
   })
-  .describe('콕 찌름 확인 응답')
   .meta({
     example: {
       message: '확인했습니다.',
@@ -238,11 +203,6 @@ export const markNudgeReadResponseSchema = z
 
 export type MarkNudgeReadResponse = z.infer<typeof markNudgeReadResponseSchema>;
 
-// ============================================
-// 콕 찌르기 제한 정보
-// ============================================
-
-/** 일일 콕 찌르기 제한 정보 */
 export const nudgeLimitInfoSchema = z
   .object({
     dailyLimit: z
@@ -250,17 +210,16 @@ export const nudgeLimitInfoSchema = z
       .int()
       .nonnegative()
       .nullable()
-      .describe('하루 제한 횟수 (null = 무제한)'),
-    usedToday: z.number().int().nonnegative().describe('오늘 찌른 횟수'),
+      .describe('일일 찌르기 제한 (음이 아닌 정수, 무제한 시 null)'),
+    usedToday: z.number().int().nonnegative().describe('오늘 사용한 찌르기 수 (음이 아닌 정수)'),
     remainingToday: z
       .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe('오늘 남은 횟수 (null = 무제한)'),
-    isUnlimited: z.boolean().describe('무제한 여부 (프리미엄)'),
+      .describe('오늘 남은 찌르기 수 (음이 아닌 정수, 무제한 시 null)'),
+    isUnlimited: z.boolean().describe('무제한 여부'),
   })
-  .describe('일일 콕 찌르기 제한 정보')
   .meta({
     example: {
       dailyLimit: 10,
@@ -272,23 +231,27 @@ export const nudgeLimitInfoSchema = z
 
 export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
 
-// ============================================
-// 쿨다운 정보
-// ============================================
-
-/** 쿨다운 상태 정보 */
 export const nudgeCooldownInfoSchema = z
   .object({
-    isOnCooldown: z.boolean().describe('쿨다운 중 여부'),
-    remainingSeconds: z.number().int().nonnegative().describe('남은 쿨다운 시간 (초)'),
-    canNudgeAt: z.string().datetime().nullable().describe('다시 찌를 수 있는 시각 (ISO 8601)'),
+    canNudge: z.boolean().describe('찌르기 가능 여부'),
+    cooldownEndsAt: z.iso
+      .datetime()
+      .nullable()
+      .describe(
+        '쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 쿨다운 없으면 null)',
+      ),
+    remainingSeconds: z
+      .number()
+      .int()
+      .nonnegative()
+      .nullable()
+      .describe('남은 쿨다운 시간 (초 단위, 음이 아닌 정수, 쿨다운 없으면 null)'),
   })
-  .describe('쿨다운 상태 정보')
   .meta({
     example: {
-      isOnCooldown: true,
+      canNudge: false,
+      cooldownEndsAt: '2026-01-17T10:00:00.000Z',
       remainingSeconds: 3600,
-      canNudgeAt: '2026-01-17T10:00:00.000Z',
     },
   });
 

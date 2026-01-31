@@ -43,7 +43,6 @@ import { PasswordService } from "./password.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
-/** 기본 카테고리 설정 */
 const DEFAULT_CATEGORIES = [
 	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
 	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
@@ -61,11 +60,6 @@ export type {
 	VerifyEmailResult,
 };
 
-/**
- * 인증 서비스
- *
- * 회원가입, 이메일 인증, 로그인 등 인증 관련 비즈니스 로직을 담당합니다.
- */
 @Injectable()
 export class AuthService {
 	private readonly logger = new Logger(AuthService.name);
@@ -84,19 +78,6 @@ export class AuthService {
 		private readonly cacheService: CacheService,
 	) {}
 
-	/**
-	 * 회원가입
-	 *
-	 * 1. 이메일 중복 확인
-	 * 2. User + Account + UserConsent + Verification 생성 (트랜잭션)
-	 * 3. 트랜잭션 후 이메일 인증 코드 발송 (외부 서비스)
-	 *
-	 * 이메일 발송 실패 시:
-	 * - 사용자는 PENDING_VERIFY 상태로 저장됨
-	 * - 로그에만 기록됨
-	 * - 사용자는 resendVerification()을 통해 재발송 가능
-	 * - 외부 서비스 장애가 회원가입을 막지 않음
-	 */
 	async register(input: RegisterInput): Promise<RegisterResult> {
 		const {
 			email,
@@ -213,15 +194,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 이메일 인증
-	 *
-	 * 1. 이메일로 사용자 조회
-	 * 2. 상태 확인 (PENDING_VERIFY만 허용)
-	 * 3. 인증 코드 검증
-	 * 4. 사용자 상태 ACTIVE로 변경
-	 * 5. 세션 생성 + JWT 토큰 발급
-	 */
 	async verifyEmail(
 		input: VerifyEmailInput,
 		metadata?: { ip?: string; userAgent?: string },
@@ -338,18 +310,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 인증 코드 재발송
-	 *
-	 * 1. 사용자 조회
-	 * 2. 상태 확인 (PENDING_VERIFY만 허용)
-	 * 3. 트랜잭션으로 인증 코드 생성 (쿨다운 확인 포함)
-	 * 4. 트랜잭션 후 이메일 발송
-	 *
-	 * 이메일 발송 실패 시:
-	 * - 로그에만 기록됨
-	 * - 사용자는 다시 재발송 요청 가능
-	 */
 	async resendVerification(email: string): Promise<{ message: string }> {
 		// 사용자 조회
 		const user = await this.userRepository.findByEmail(email);
@@ -399,20 +359,7 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 이메일/비밀번호 로그인
-	 *
-	 * 로그인 플로우:
-	 * 1. Rate limiting 확인 (30분 내 5회 실패 시 잠금)
-	 * 2. 사용자 + Credential 계정 조회
-	 * 3. 비밀번호 검증
-	 * 4. 사용자 상태 확인 (PENDING_VERIFY는 이메일 인증 필요)
-	 * 5. 세션 생성 + JWT 토큰 발급
-	 *
-	 * @throws accountLocked - 로그인 시도 횟수 초과
-	 * @throws invalidCredentials - 이메일 또는 비밀번호 불일치
-	 * @throws emailNotVerified - 이메일 미인증 (소셜 로그인과 다르게 처리)
-	 */
+	// Rate limiting: 30분 내 5회 실패 시 잠금
 	async login(
 		input: LoginInput,
 		metadata?: RequestMetadata,
@@ -587,11 +534,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 로그아웃
-	 *
-	 * 현재 세션만 만료 처리
-	 */
 	async logout(
 		userId: string,
 		sessionId: string,
@@ -630,11 +572,6 @@ export class AuthService {
 		return { message: "로그아웃되었습니다." };
 	}
 
-	/**
-	 * 전체 로그아웃
-	 *
-	 * 모든 세션 만료 처리
-	 */
 	async logoutAll(
 		userId: string,
 		metadata?: RequestMetadata,
@@ -671,15 +608,7 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 토큰 갱신 (Token Rotation)
-	 *
-	 * 1. 리프레시 토큰 검증
-	 * 2. 세션 조회 및 유효성 확인
-	 * 3. 토큰 재사용 감지 (previousTokenHash)
-	 * 4. 새 토큰 쌍 발급
-	 * 5. 세션 업데이트 (Token Rotation)
-	 */
+	// Token Rotation: 토큰 재사용 감지 시 전체 패밀리 폐기
 	async refreshTokens(
 		refreshToken: string,
 		metadata?: RequestMetadata,
@@ -799,13 +728,6 @@ export class AuthService {
 		};
 	}
 
-	// ============================================
-	// 비밀번호 재설정 (Phase 5)
-	// ============================================
-
-	/**
-	 * 비밀번호 찾기 - 재설정 코드 발송
-	 */
 	async forgotPassword(email: string): Promise<{ message: string }> {
 		// 사용자 존재 확인 (존재하지 않아도 보안상 동일한 응답)
 		const user = await this.userRepository.findByEmail(email);
@@ -827,11 +749,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 비밀번호 재설정
-	 *
-	 * 트랜잭션으로 인증 코드 검증, 비밀번호 변경, 세션 무효화를 원자적으로 처리
-	 */
 	async resetPassword(
 		email: string,
 		code: string,
@@ -894,11 +811,6 @@ export class AuthService {
 		return { message: "비밀번호가 재설정되었습니다. 다시 로그인해주세요." };
 	}
 
-	/**
-	 * 비밀번호 변경 (로그인 상태)
-	 *
-	 * 트랜잭션으로 비밀번호 변경과 로그 기록을 원자적으로 처리
-	 */
 	async changePassword(
 		userId: string,
 		currentPassword: string,
@@ -951,13 +863,6 @@ export class AuthService {
 		return { message: "비밀번호가 변경되었습니다." };
 	}
 
-	// ============================================
-	// 세션 관리 (Phase 5)
-	// ============================================
-
-	/**
-	 * 활성 세션 목록 조회
-	 */
 	async getActiveSessions(userId: string): Promise<SessionInfo[]> {
 		const sessions = await this.sessionRepository.findActiveByUserId(userId);
 
@@ -973,9 +878,6 @@ export class AuthService {
 		}));
 	}
 
-	/**
-	 * 특정 세션 종료
-	 */
 	async revokeSession(
 		userId: string,
 		sessionId: string,
@@ -1010,13 +912,6 @@ export class AuthService {
 		return { message: "세션이 종료되었습니다." };
 	}
 
-	// ============================================
-	// 프로필 관리
-	// ============================================
-
-	/**
-	 * 현재 사용자 정보 조회 (프로필 포함)
-	 */
 	async getCurrentUser(
 		userId: string,
 		_email: string,
@@ -1065,9 +960,6 @@ export class AuthService {
 		};
 	}
 
-	/**
-	 * 프로필 수정
-	 */
 	async updateProfile(
 		userId: string,
 		data: UpdateProfileInput,
@@ -1086,13 +978,6 @@ export class AuthService {
 		};
 	}
 
-	// ============================================
-	// Private Helpers
-	// ============================================
-
-	/**
-	 * 사용자 상태 확인 및 예외 처리
-	 */
 	private _checkUserStatus(status: UserStatus, email: string): void {
 		switch (status) {
 			case "LOCKED":

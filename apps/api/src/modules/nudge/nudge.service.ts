@@ -136,11 +136,13 @@ export class NudgeService {
 
 			if (lastNudge) {
 				const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-				const canNudgeAt = new Date(lastNudge.createdAt.getTime() + cooldownMs);
+				const cooldownEndsAt = new Date(
+					lastNudge.createdAt.getTime() + cooldownMs,
+				);
 				const now = new Date();
 
-				if (now < canNudgeAt) {
-					const remainingMs = canNudgeAt.getTime() - now.getTime();
+				if (now < cooldownEndsAt) {
+					const remainingMs = cooldownEndsAt.getTime() - now.getTime();
 					const remainingSeconds = Math.ceil(remainingMs / 1000);
 					throw BusinessExceptions.nudgeCooldownActive(
 						receiverId,
@@ -395,29 +397,29 @@ export class NudgeService {
 			return {
 				isActive: false,
 				remainingSeconds: 0,
-				canNudgeAt: null,
+				cooldownEndsAt: null,
 			};
 		}
 
 		const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-		const canNudgeAt = new Date(lastNudgeTime.getTime() + cooldownMs);
+		const cooldownEndsAt = new Date(lastNudgeTime.getTime() + cooldownMs);
 		const now = new Date();
 
-		if (now >= canNudgeAt) {
+		if (now >= cooldownEndsAt) {
 			return {
 				isActive: false,
 				remainingSeconds: 0,
-				canNudgeAt: null,
+				cooldownEndsAt: null,
 			};
 		}
 
-		const remainingMs = canNudgeAt.getTime() - now.getTime();
+		const remainingMs = cooldownEndsAt.getTime() - now.getTime();
 		const remainingSeconds = Math.ceil(remainingMs / 1000);
 
 		return {
 			isActive: true,
 			remainingSeconds,
-			canNudgeAt,
+			cooldownEndsAt,
 		};
 	}
 }

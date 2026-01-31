@@ -1,35 +1,35 @@
-/**
- * Todo 관련 응답 스키마
- * @description 할 일 응답에 사용되는 Zod 스키마
- */
 import { z } from 'zod';
 
 import { todoCategorySummarySchema } from '../todo-category/todo-category.response';
 import { todoVisibilitySchema } from './todo.common';
 
-// =============================================================================
-// Todo 기본 스키마
-// =============================================================================
-
 export const todoSchema = z
   .object({
-    id: z.number().int().describe('할 일 고유 ID'),
-    userId: z.cuid().describe('작성자 ID'),
+    id: z.number().int().describe('할 일 고유 ID (양의 정수)'),
+    userId: z.cuid().describe('사용자 ID (CUID 25자)'),
     title: z.string().describe('할 일 제목'),
-    content: z.string().nullable().describe('할 일 상세 내용'),
-    sortOrder: z.number().int().describe('정렬 순서'),
-    completed: z.boolean().describe('완료 여부'),
-    completedAt: z.string().datetime().nullable().describe('완료 시각'),
-    startDate: z.string().describe('시작 날짜'),
-    endDate: z.string().nullable().describe('종료 날짜'),
-    scheduledTime: z.string().datetime().nullable().describe('예정 시간'),
-    isAllDay: z.boolean().describe('종일 여부'),
-    visibility: todoVisibilitySchema.describe('공개 범위'),
+    content: z.string().nullable().describe('할 일 내용 (미입력 시 null)'),
+    sortOrder: z.number().int().describe('정렬 순서 (작을수록 위)'),
+    completed: z.boolean().describe('완료 상태'),
+    completedAt: z.iso
+      .datetime()
+      .nullable()
+      .describe('완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미완료 시 null)'),
+    startDate: z.string().describe('시작 날짜 (YYYY-MM-DD, 예: 2024-01-15)'),
+    endDate: z
+      .string()
+      .nullable()
+      .describe('종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)'),
+    scheduledTime: z.iso
+      .datetime()
+      .nullable()
+      .describe('예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)'),
+    isAllDay: z.boolean().describe('종일 일정 여부'),
+    visibility: todoVisibilitySchema.describe('공개 범위 (PUBLIC | FRIENDS | PRIVATE)'),
     category: todoCategorySummarySchema.describe('카테고리 정보'),
-    createdAt: z.string().datetime().describe('생성 시각'),
-    updatedAt: z.string().datetime().describe('수정 시각'),
+    createdAt: z.iso.datetime().describe('생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)'),
+    updatedAt: z.iso.datetime().describe('수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)'),
   })
-  .describe('할 일 정보')
   .meta({
     example: {
       id: 1,
@@ -56,33 +56,20 @@ export const todoSchema = z
 
 export type Todo = z.infer<typeof todoSchema>;
 
-// =============================================================================
-// 페이지네이션 정보 (숫자 커서 - Todo용)
-// =============================================================================
+export const numberCursorPaginationInfoSchema = z.object({
+  nextCursor: z.number().int().nullable(),
+  hasNext: z.boolean(),
+  size: z.number(),
+});
 
-export const numberCursorPaginationInfoSchema = z
-  .object({
-    nextCursor: z.number().int().nullable().describe('다음 페이지 커서 (Todo ID)'),
-    hasNext: z.boolean().describe('다음 페이지 존재 여부'),
-    size: z.number().describe('페이지 크기'),
-  })
-  .describe('숫자 커서 기반 페이지네이션 정보');
-
-/**
- * @deprecated numberCursorPaginationInfoSchema 사용
- */
+/** @deprecated numberCursorPaginationInfoSchema 사용 */
 export const cursorPaginationInfoSchema = numberCursorPaginationInfoSchema;
-
-// =============================================================================
-// Todo 목록 응답
-// =============================================================================
 
 export const todoListResponseSchema = z
   .object({
-    items: z.array(todoSchema).describe('할 일 목록'),
-    pagination: numberCursorPaginationInfoSchema.describe('페이지네이션 정보'),
+    items: z.array(todoSchema),
+    pagination: numberCursorPaginationInfoSchema,
   })
-  .describe('할 일 목록 응답')
   .meta({
     example: {
       items: [
@@ -118,16 +105,11 @@ export const todoListResponseSchema = z
 
 export type TodoListResponse = z.infer<typeof todoListResponseSchema>;
 
-// =============================================================================
-// Todo 생성 응답
-// =============================================================================
-
 export const createTodoResponseSchema = z
   .object({
-    message: z.string().describe('응답 메시지'),
-    todo: todoSchema.describe('생성된 할 일'),
+    message: z.string(),
+    todo: todoSchema,
   })
-  .describe('할 일 생성 응답')
   .meta({
     example: {
       message: '할 일이 생성되었습니다.',
@@ -157,16 +139,11 @@ export const createTodoResponseSchema = z
 
 export type CreateTodoResponse = z.infer<typeof createTodoResponseSchema>;
 
-// =============================================================================
-// Todo 수정 응답
-// =============================================================================
-
 export const updateTodoResponseSchema = z
   .object({
-    message: z.string().describe('응답 메시지'),
-    todo: todoSchema.describe('수정된 할 일'),
+    message: z.string(),
+    todo: todoSchema,
   })
-  .describe('할 일 수정 응답')
   .meta({
     example: {
       message: '할 일이 수정되었습니다.',
@@ -196,15 +173,10 @@ export const updateTodoResponseSchema = z
 
 export type UpdateTodoResponse = z.infer<typeof updateTodoResponseSchema>;
 
-// =============================================================================
-// Todo 삭제 응답
-// =============================================================================
-
 export const deleteTodoResponseSchema = z
   .object({
-    message: z.string().describe('응답 메시지'),
+    message: z.string(),
   })
-  .describe('할 일 삭제 응답')
   .meta({
     example: {
       message: '할 일이 삭제되었습니다.',
@@ -213,16 +185,11 @@ export const deleteTodoResponseSchema = z
 
 export type DeleteTodoResponse = z.infer<typeof deleteTodoResponseSchema>;
 
-// =============================================================================
-// Todo 순서 변경 응답
-// =============================================================================
-
 export const reorderTodoResponseSchema = z
   .object({
-    message: z.string().describe('응답 메시지'),
-    todo: todoSchema.describe('순서가 변경된 할 일'),
+    message: z.string(),
+    todo: todoSchema,
   })
-  .describe('할 일 순서 변경 응답')
   .meta({
     example: {
       message: '할 일 순서가 변경되었습니다.',

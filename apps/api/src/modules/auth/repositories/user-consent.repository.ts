@@ -3,9 +3,6 @@ import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "@/database";
 import type { Prisma, UserConsent } from "@/generated/prisma/client";
 
-/**
- * 약관 동의 업데이트 데이터 (최초 동의 시)
- */
 export interface CreateConsentData {
 	termsAgreedAt?: Date;
 	privacyAgreedAt?: Date;
@@ -13,9 +10,6 @@ export interface CreateConsentData {
 	marketingAgreedAt?: Date | null;
 }
 
-/**
- * 마케팅 동의 업데이트 데이터
- */
 export interface UpdateMarketingConsentData {
 	agreed: boolean;
 }
@@ -24,9 +18,6 @@ export interface UpdateMarketingConsentData {
 export class UserConsentRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 사용자 ID로 약관 동의 상태 조회
-	 */
 	async findByUserId(
 		userId: string,
 		tx?: Prisma.TransactionClient,
@@ -37,9 +28,6 @@ export class UserConsentRepository {
 		});
 	}
 
-	/**
-	 * 약관 동의 레코드 생성 (회원가입 시 사용)
-	 */
 	async create(
 		userId: string,
 		data?: Partial<CreateConsentData>,
@@ -57,9 +45,6 @@ export class UserConsentRepository {
 		});
 	}
 
-	/**
-	 * 약관 동의 업데이트 (없으면 생성)
-	 */
 	async upsert(
 		userId: string,
 		data: CreateConsentData,
@@ -92,10 +77,7 @@ export class UserConsentRepository {
 		});
 	}
 
-	/**
-	 * 마케팅 동의 상태 업데이트
-	 * @param agreed true면 현재 시간으로 설정, false면 null로 설정 (철회)
-	 */
+	// agreed: true면 현재 시간으로 설정, false면 null (철회)
 	async updateMarketingConsent(
 		userId: string,
 		data: UpdateMarketingConsentData,
@@ -110,9 +92,6 @@ export class UserConsentRepository {
 		});
 	}
 
-	/**
-	 * 마케팅 동의 상태 업데이트 (없으면 생성)
-	 */
 	async upsertMarketingConsent(
 		userId: string,
 		data: UpdateMarketingConsentData,

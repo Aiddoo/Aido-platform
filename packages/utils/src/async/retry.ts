@@ -1,9 +1,4 @@
 /**
- * 비동기 유틸리티
- * @packageDocumentation
- */
-
-/**
  * 디바운스된 함수 생성
  *
  * @param fn - 디바운스할 함수

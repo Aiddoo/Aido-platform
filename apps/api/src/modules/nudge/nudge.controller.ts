@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -289,6 +289,12 @@ export class NudgeController {
 	}
 
 	@Get("cooldown/:userId")
+	@ApiParam({
+		name: "userId",
+		description:
+			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
 		operationId: "getNudgeCooldownInfo",
@@ -306,9 +312,9 @@ export class NudgeController {
 ### 📤 응답 구조
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`isOnCooldown\` | boolean | 쿨다운 중 여부 |
-| \`remainingSeconds\` | number | 남은 쿨다운 시간 (초) |
-| \`canNudgeAt\` | string | null | 다시 찌를 수 있는 시각 |
+| \`canNudge\` | boolean | 찌르기 가능 여부 |
+| \`cooldownEndsAt\` | string | null | 쿨다운 종료 시각 (ISO 8601 UTC, 쿨다운 없으면 null) |
+| \`remainingSeconds\` | number | null | 남은 쿨다운 시간 (초, 쿨다운 없으면 null) |
 
 ### 💡 쿨다운 정책
 - 동일 친구에게 24시간 내 재독촉 불가
@@ -326,9 +332,12 @@ export class NudgeController {
 		);
 
 		return {
-			isOnCooldown: cooldownInfo.isActive,
-			remainingSeconds: cooldownInfo.remainingSeconds,
-			canNudgeAt: cooldownInfo.canNudgeAt?.toISOString() ?? null,
+			canNudge: !cooldownInfo.isActive,
+			cooldownEndsAt: cooldownInfo.cooldownEndsAt?.toISOString() ?? null,
+			remainingSeconds:
+				cooldownInfo.remainingSeconds > 0
+					? cooldownInfo.remainingSeconds
+					: null,
 		};
 	}
 
