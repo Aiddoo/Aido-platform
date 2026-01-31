@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { datetimeOutputSchema, nullableDatetimeOutputSchema } from '../../common/datetime';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { NOTIFICATION_TYPE } from './notification.constants';
 
 export const notificationTypeSchema = z.enum([
@@ -32,10 +32,8 @@ export const notificationSchema = z
       .record(z.string(), z.unknown())
       .nullable()
       .describe('추가 메타데이터 (미설정 시 null)'),
-    createdAt: datetimeOutputSchema.describe(
-      '생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)',
-    ),
-    readAt: nullableDatetimeOutputSchema.describe(
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
+    readAt: nullableDatetimeSchema.describe(
       '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
     ),
   })

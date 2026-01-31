@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeOutputSchema, nullableDatetimeOutputSchema } from '../../common/datetime';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { todoCategorySummarySchema } from '../todo-category/todo-category.response';
 import { todoVisibilitySchema } from './todo.common';
 
@@ -12,7 +12,7 @@ export const todoSchema = z
     content: z.string().nullable().describe('할 일 내용 (미입력 시 null)'),
     sortOrder: z.number().int().describe('정렬 순서 (작을수록 위)'),
     completed: z.boolean().describe('완료 상태'),
-    completedAt: nullableDatetimeOutputSchema.describe(
+    completedAt: nullableDatetimeSchema.describe(
       '완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미완료 시 null)',
     ),
     startDate: z.string().describe('시작 날짜 (YYYY-MM-DD, 예: 2024-01-15)'),
@@ -20,18 +20,14 @@ export const todoSchema = z
       .string()
       .nullable()
       .describe('종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)'),
-    scheduledTime: nullableDatetimeOutputSchema.describe(
+    scheduledTime: nullableDatetimeSchema.describe(
       '예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)',
     ),
     isAllDay: z.boolean().describe('종일 일정 여부'),
     visibility: todoVisibilitySchema.describe('공개 범위 (PUBLIC | FRIENDS | PRIVATE)'),
     category: todoCategorySummarySchema.describe('카테고리 정보'),
-    createdAt: datetimeOutputSchema.describe(
-      '생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)',
-    ),
-    updatedAt: datetimeOutputSchema.describe(
-      '수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)',
-    ),
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)'),
+    updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)'),
   })
   .meta({
     example: {

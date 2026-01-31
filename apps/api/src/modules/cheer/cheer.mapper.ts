@@ -20,8 +20,8 @@ export class CheerMapper {
 			senderId: cheer.senderId,
 			receiverId: cheer.receiverId,
 			message: cheer.message,
-			createdAt: cheer.createdAt,
-			readAt: cheer.readAt ?? null,
+			createdAt: cheer.createdAt.toISOString(),
+			readAt: cheer.readAt?.toISOString() ?? null,
 			sender: {
 				id: cheer.sender.id,
 				userTag: cheer.sender.userTag,
@@ -40,8 +40,8 @@ export class CheerMapper {
 			senderId: cheer.senderId,
 			receiverId: cheer.receiverId,
 			message: cheer.message,
-			createdAt: cheer.createdAt,
-			readAt: cheer.readAt ?? null,
+			createdAt: cheer.createdAt.toISOString(),
+			readAt: cheer.readAt?.toISOString() ?? null,
 		};
 	}
 

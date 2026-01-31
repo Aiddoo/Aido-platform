@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeOutputSchema, nullableDatetimeOutputSchema } from '../../common/datetime';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { DEVICE_TYPES, USER_STATUS } from './auth.constants';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
@@ -50,14 +50,14 @@ export const userProfileSchema = z
   .object({
     id: z.cuid().describe('사용자 고유 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)'),
     email: z.email().describe('이메일 주소'),
-    emailVerifiedAt: nullableDatetimeOutputSchema.describe(
+    emailVerifiedAt: nullableDatetimeSchema.describe(
       '이메일 인증 완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미인증 시 null)',
     ),
     status: userStatusSchema,
-    createdAt: datetimeOutputSchema.describe(
+    createdAt: datetimeSchema.describe(
       '계정 생성 시각 (ISO 8601 UTC, 예: 2024-01-01T09:00:00.000Z)',
     ),
-    updatedAt: datetimeOutputSchema.describe(
+    updatedAt: datetimeSchema.describe(
       '계정 정보 수정 시각 (ISO 8601 UTC, 예: 2024-01-17T14:00:00.000Z)',
     ),
   })
@@ -108,16 +108,12 @@ export const currentUserSchema = z
     sessionId: z.cuid().describe('현재 세션 ID'),
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자, 해시태그 검색용)'),
     status: userStatusSchema.describe('계정 상태'),
-    emailVerifiedAt: nullableDatetimeOutputSchema.describe(
-      '이메일 인증 완료 시점 (미인증 시 null)',
-    ),
+    emailVerifiedAt: nullableDatetimeSchema.describe('이메일 인증 완료 시점 (미인증 시 null)'),
     subscriptionStatus: subscriptionStatusSchema.describe('구독 상태'),
-    subscriptionExpiresAt: nullableDatetimeOutputSchema.describe(
-      '구독 만료 시점 (무료 사용자는 null)',
-    ),
+    subscriptionExpiresAt: nullableDatetimeSchema.describe('구독 만료 시점 (무료 사용자는 null)'),
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
-    createdAt: datetimeOutputSchema.describe('가입 일시'),
+    createdAt: datetimeSchema.describe('가입 일시'),
   })
   .describe('현재 사용자 정보')
   .meta({
@@ -145,8 +141,8 @@ export const sessionInfoSchema = z
     deviceType: deviceTypeEnumSchema.nullable().describe('기기 타입'),
     ipAddress: z.string().nullable().describe('접속 IP 주소'),
     userAgent: z.string().nullable().describe('User-Agent 문자열'),
-    lastActiveAt: datetimeOutputSchema.describe('마지막 활동 시각'),
-    createdAt: datetimeOutputSchema.describe('세션 생성 시각'),
+    lastActiveAt: datetimeSchema.describe('마지막 활동 시각'),
+    createdAt: datetimeSchema.describe('세션 생성 시각'),
     isCurrent: z.boolean().describe('현재 세션 여부'),
   })
   .describe('세션 정보')
@@ -331,7 +327,7 @@ export const linkedAccountSchema = z
   .object({
     provider: oauthProviderEnumSchema,
     providerAccountId: z.string().describe('제공자 측 계정 고유 ID'),
-    linkedAt: datetimeOutputSchema.describe(
+    linkedAt: datetimeSchema.describe(
       '계정 연결 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)',
     ),
   })

@@ -1,29 +1,22 @@
 import { z } from 'zod';
 
+import { nullableDatetimeSchema } from '../../common/datetime';
+
 export const userConsentSchema = z
   .object({
-    termsAgreedAt: z.iso
-      .datetime()
-      .nullable()
-      .describe(
-        '서비스 이용약관 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
-      ),
-    privacyAgreedAt: z.iso
-      .datetime()
-      .nullable()
-      .describe(
-        '개인정보처리방침 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
-      ),
+    termsAgreedAt: nullableDatetimeSchema.describe(
+      '서비스 이용약관 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
+    ),
+    privacyAgreedAt: nullableDatetimeSchema.describe(
+      '개인정보처리방침 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
+    ),
     agreedTermsVersion: z
       .string()
       .nullable()
       .describe('동의한 약관 버전 (예: 1.0.0, 미동의 시 null)'),
-    marketingAgreedAt: z.iso
-      .datetime()
-      .nullable()
-      .describe(
-        '마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
-      ),
+    marketingAgreedAt: nullableDatetimeSchema.describe(
+      '마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)',
+    ),
   })
   .meta({
     example: {
@@ -49,10 +42,9 @@ export type ConsentResponse = z.infer<typeof consentResponseSchema>;
 
 export const updateMarketingConsentResponseSchema = z
   .object({
-    marketingAgreedAt: z.iso
-      .datetime()
-      .nullable()
-      .describe('마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 철회 시 null)'),
+    marketingAgreedAt: nullableDatetimeSchema.describe(
+      '마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 철회 시 null)',
+    ),
   })
   .meta({
     example: {

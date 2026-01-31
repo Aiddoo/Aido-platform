@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { datetimeOutputSchema } from '../../common/datetime';
+import { datetimeSchema } from '../../common/datetime';
 
 export const followStatusSchema = z.enum(['PENDING', 'ACCEPTED']);
 
@@ -12,12 +12,8 @@ export const followSchema = z
     followerId: z.cuid().describe('팔로워 사용자 ID (CUID 25자)'),
     followingId: z.cuid().describe('팔로잉 대상 사용자 ID (CUID 25자)'),
     status: followStatusSchema.describe('친구 요청 상태 (PENDING | ACCEPTED)'),
-    createdAt: datetimeOutputSchema.describe(
-      '생성 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)',
-    ),
-    updatedAt: datetimeOutputSchema.describe(
-      '수정 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)',
-    ),
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)'),
+    updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)'),
   })
   .meta({
     example: {
@@ -41,7 +37,7 @@ export const followUserSchema = z
     isFollowing: z.boolean().describe('내가 팔로우 중인지 여부'),
     isFollower: z.boolean().describe('상대가 나를 팔로우 중인지 여부'),
     isFriend: z.boolean().describe('서로 친구인지 여부 (양방향 팔로우)'),
-    followedAt: datetimeOutputSchema.describe(
+    followedAt: datetimeSchema.describe(
       '팔로우 시작 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)',
     ),
   })
@@ -67,7 +63,7 @@ export const friendUserSchema = z
     userTag: z.string().length(8).describe('사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)'),
     name: z.string().nullable().describe('사용자 이름 (미설정 시 null)'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL (미설정 시 null)'),
-    friendsSince: datetimeOutputSchema.describe(
+    friendsSince: datetimeSchema.describe(
       '친구 맺은 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)',
     ),
   })
@@ -90,7 +86,7 @@ export const friendRequestUserSchema = z
     userTag: z.string().length(8).describe('사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)'),
     name: z.string().nullable().describe('사용자 이름 (미설정 시 null)'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL (미설정 시 null)'),
-    requestedAt: datetimeOutputSchema.describe(
+    requestedAt: datetimeSchema.describe(
       '친구 요청 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)',
     ),
   })

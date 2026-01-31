@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { dateSchema, nullableDateSchema } from '../../common/datetime';
 import { tokenUsageSchema } from './ai-usage.response';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -9,13 +11,8 @@ export const parsedTodoDataSchema = z.object({
     .min(1, '제목을 추출하지 못했습니다')
     .max(200, '제목은 200자 이하여야 합니다')
     .describe('AI가 추출한 할 일 제목 (1-200자, 예: "운동하기")'),
-  startDate: z.iso
-    .date('유효한 날짜 형식이 아닙니다')
-    .describe('시작 날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
-  endDate: z.iso
-    .date('유효한 날짜 형식이 아닙니다')
-    .nullable()
-    .describe('종료 날짜 (YYYY-MM-DD, 예: 2026-01-31, 단일 날짜는 null)'),
+  startDate: dateSchema.describe('시작 날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
+  endDate: nullableDateSchema.describe('종료 날짜 (YYYY-MM-DD, 예: 2026-01-31, 단일 날짜는 null)'),
   scheduledTime: z
     .string()
     .regex(timeRegex, '시간 형식이 올바르지 않습니다 (HH:mm)')

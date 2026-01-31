@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { datetimeOutputSchema } from '../../common/datetime';
+import { datetimeSchema } from '../../common/datetime';
 
 export const dailyCompletionSchema = z
   .object({
@@ -8,13 +8,13 @@ export const dailyCompletionSchema = z
     date: z.string().describe('날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
     totalTodos: z.number().int().min(0).describe('해당 날짜 전체 할 일 개수 (0 이상)'),
     completedTodos: z.number().int().min(0).describe('완료한 할 일 개수 (0 이상)'),
-    achievedAt: datetimeOutputSchema.describe(
+    achievedAt: datetimeSchema.describe(
       '100% 달성 시각 (ISO 8601 UTC, 예: 2026-01-17T18:30:00.000Z)',
     ),
-    createdAt: datetimeOutputSchema.describe(
+    createdAt: datetimeSchema.describe(
       '기록 생성 시각 (ISO 8601 UTC, 예: 2026-01-17T09:00:00.000Z)',
     ),
-    updatedAt: datetimeOutputSchema.describe(
+    updatedAt: datetimeSchema.describe(
       '기록 수정 시각 (ISO 8601 UTC, 예: 2026-01-17T18:30:00.000Z)',
     ),
   })

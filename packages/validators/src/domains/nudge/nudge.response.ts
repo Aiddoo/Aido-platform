@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  datetimeOutputSchema,
-  nullableDatetimeOutputSchema,
-  optionalDatetimeOutputSchema,
-} from '../../common/datetime';
+import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 
 export const nudgeSchema = z
   .object({
@@ -12,10 +8,8 @@ export const nudgeSchema = z
     receiverId: z.cuid().describe('받은 사용자 ID (CUID 25자)'),
     todoId: z.number().int().positive().describe('대상 할 일 ID (양의 정수)'),
     message: z.string().max(200).nullable().describe('응원 메시지 (최대 200자, 미설정 시 null)'),
-    createdAt: datetimeOutputSchema.describe(
-      '생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)',
-    ),
-    readAt: nullableDatetimeOutputSchema.describe(
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
+    readAt: nullableDatetimeSchema.describe(
       '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
     ),
   })
@@ -240,7 +234,7 @@ export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
 export const nudgeCooldownInfoSchema = z
   .object({
     canNudge: z.boolean().describe('찌르기 가능 여부'),
-    cooldownEndsAt: nullableDatetimeOutputSchema.describe(
+    cooldownEndsAt: nullableDatetimeSchema.describe(
       '쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 쿨다운 없으면 null)',
     ),
     remainingSeconds: z

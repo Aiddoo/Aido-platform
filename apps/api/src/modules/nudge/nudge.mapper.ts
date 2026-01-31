@@ -21,8 +21,8 @@ export class NudgeMapper {
 			receiverId: nudge.receiverId,
 			todoId: nudge.todoId,
 			message: nudge.message,
-			createdAt: nudge.createdAt,
-			readAt: nudge.readAt ?? null,
+			createdAt: nudge.createdAt.toISOString(),
+			readAt: nudge.readAt?.toISOString() ?? null,
 			sender: {
 				id: nudge.sender.id,
 				userTag: nudge.sender.userTag,
@@ -47,8 +47,8 @@ export class NudgeMapper {
 			receiverId: nudge.receiverId,
 			todoId: nudge.todoId,
 			message: nudge.message,
-			createdAt: nudge.createdAt,
-			readAt: nudge.readAt ?? null,
+			createdAt: nudge.createdAt.toISOString(),
+			readAt: nudge.readAt?.toISOString() ?? null,
 		};
 	}
 

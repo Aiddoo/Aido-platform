@@ -336,7 +336,7 @@ export class CheerController {
 			userId: targetUserId,
 			canCheer: !cooldownInfo.isActive,
 			remainingSeconds: cooldownInfo.remainingSeconds,
-			cooldownEndsAt: cooldownInfo.canCheerAt ?? null,
+			cooldownEndsAt: cooldownInfo.canCheerAt?.toISOString() ?? null,
 		};
 	}
 

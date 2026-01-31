@@ -872,8 +872,8 @@ export class AuthService {
 			deviceType: null, // DB에 미구현 (향후 확장)
 			ipAddress: session.ipAddress,
 			userAgent: session.userAgent,
-			lastActiveAt: session.lastUsedAt, // DB 필드 → API 필드 매핑
-			createdAt: session.createdAt,
+			lastActiveAt: session.lastUsedAt.toISOString(), // DB 필드 → API 필드 매핑
+			createdAt: session.createdAt.toISOString(),
 			isCurrent: false, // 컨트롤러에서 설정
 		}));
 	}
