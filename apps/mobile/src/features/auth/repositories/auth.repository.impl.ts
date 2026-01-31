@@ -15,6 +15,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { Platform } from 'react-native';
 import { AuthValidationError } from '../models/auth.error';
 import type { AuthRepository } from './auth.repository';
 
@@ -31,6 +32,27 @@ export class AuthRepositoryImpl implements AuthRepository {
     const result = authTokensSchema.safeParse(data);
     if (!result.success) {
       console.error('[AuthRepository] Invalid exchangeCode response:', result.error);
+      throw new AuthValidationError();
+    }
+
+    await Promise.all([
+      this._storage.set('accessToken', result.data.accessToken),
+      this._storage.set('refreshToken', result.data.refreshToken),
+    ]);
+
+    return result.data;
+  }
+
+  async emailLogin(email: string, password: string): Promise<AuthTokens> {
+    const { data } = await this._publicHttpClient.post<AuthTokens>('v1/auth/login', {
+      email,
+      password,
+      deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+    });
+
+    const result = authTokensSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[AuthRepository] Invalid emailLogin response:', result.error);
       throw new AuthValidationError();
     }
 

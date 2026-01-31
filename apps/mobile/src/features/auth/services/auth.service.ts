@@ -145,6 +145,11 @@ export class AuthService {
     }
   };
 
+  emailLogin = async (email: string, password: string): Promise<AuthTokens> => {
+    const dto = await this._authRepository.emailLogin(email, password);
+    return toAuthTokens(dto);
+  };
+
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
     const dto = await this._authRepository.exchangeCode(request);
     return toAuthTokens(dto);

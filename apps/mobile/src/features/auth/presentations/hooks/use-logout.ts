@@ -1,15 +1,17 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export const logoutMutationOptions = () => {
+/**
+ * Hook for logout mutation
+ */
+export const useLogout = () => {
   const authService = useAuthService();
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
-
   const { setStatus } = useAuth();
 
-  return mutationOptions({
+  return useMutation({
     mutationFn: async () => {
       // Unregister push token before logout
       try {

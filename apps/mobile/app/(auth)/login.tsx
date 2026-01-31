@@ -3,6 +3,7 @@ import { openAppleLoginMutationOptions } from '@src/features/auth/presentations/
 import { openGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-google-login-mutation-options';
 import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
 import { openNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/open-naver-login-mutation-options';
+
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
@@ -14,6 +15,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Avatar, Divider } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
@@ -22,6 +24,7 @@ const LoginScreen = () => {
   const exchangeCodeMutation = useMutation(exchangeCodeMutationOptions());
 
   const kakaoLoginMutation = useMutation(openKakaoLoginMutationOptions());
+
   const handleKakaoLogin = () => {
     kakaoLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
@@ -130,7 +133,7 @@ const LoginScreen = () => {
 
           <Divider orientation="vertical" className="h-3 bg-gray-6" />
 
-          <TextButton size="medium" onPress={() => {}}>
+          <TextButton size="medium" onPress={() => router.push('/email-login')}>
             이메일로 로그인
           </TextButton>
         </HStack>

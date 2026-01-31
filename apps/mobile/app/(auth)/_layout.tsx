@@ -11,6 +11,7 @@ const AuthLayout = () => {
       }}
     >
       <Stack.Screen name="login" />
+      <Stack.Screen name="email-login" />
     </Stack>
   );
 };

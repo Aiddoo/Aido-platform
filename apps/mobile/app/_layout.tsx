@@ -2,6 +2,7 @@ import { AuthProvider, useAuth } from '@src/bootstrap/providers/auth-provider';
 import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
+import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -74,7 +75,9 @@ const AppBootstrapLayout = () => {
         <QueryProvider>
           <DIProvider>
             <AuthProvider>
-              <AuthGateLayout />
+              <NotificationProvider>
+                <AuthGateLayout />
+              </NotificationProvider>
             </AuthProvider>
           </DIProvider>
         </QueryProvider>
