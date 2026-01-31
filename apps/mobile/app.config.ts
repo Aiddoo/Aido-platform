@@ -252,6 +252,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               host: 'auth',
               pathPrefix: '/naver',
             },
+            {
+              scheme: envConfig.scheme,
+              host: 'auth',
+              pathPrefix: '/google',
+            },
           ],
           category: ['BROWSABLE', 'DEFAULT'],
         },
@@ -433,6 +438,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       env,
       apiUrl: envConfig.apiUrl,
+      devMachineIp: process.env.EXPO_PUBLIC_DEV_MACHINE_IP,
       isDevelopment,
       isProduction,
       eas: {

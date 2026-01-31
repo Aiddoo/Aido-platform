@@ -3,8 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { ParsedTodoData } from '@src/features/todo/models/todo.model';
 import { createTodoMutationOptions } from '@src/features/todo/presentations/queries/create-todo-mutation-options';
 import { parseTodoMutationOptions } from '@src/features/todo/presentations/queries/parse-todo-mutation-options';
-import { TodoCategoryPolicy } from '@src/features/todo-category/models/todo-category.model';
-import { getCategoriesQueryOptions } from '@src/features/todo-category/presentations/queries/get-categories-query-options';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -13,7 +11,7 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VoiceTextField } from '@src/shared/ui/VoiceTextField/VoiceTextField';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, PressableFeedback } from 'heroui-native';
 import { type PropsWithChildren, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -33,11 +31,6 @@ const HomeScreen = () => {
     onResult: setInputText,
     onError: toast.error,
   });
-
-  const { data: categories } = useQuery(getCategoriesQueryOptions());
-  const defaultCategory = categories
-    ? TodoCategoryPolicy.getDefaultCategory(categories)
-    : undefined;
 
   const parseMutation = useMutation(parseTodoMutationOptions());
   const createMutation = useMutation(createTodoMutationOptions());
@@ -64,11 +57,6 @@ const HomeScreen = () => {
   };
 
   const handleCreateTodo = ({ title, startDate, scheduledTime, isAllDay }: ParsedTodoData) => {
-    if (!defaultCategory) {
-      toast.error('카테고리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
-
     createMutation.mutate(
       {
         title,
@@ -76,7 +64,8 @@ const HomeScreen = () => {
         scheduledTime,
         isAllDay,
         visibility: 'PUBLIC',
-        categoryId: defaultCategory.id,
+        // TODO: 카테고리 선택 기능 추가 시 변경 필요, 개발 환경에 따라 다를 수 있습니다.
+        categoryId: 1,
       },
       {
         onSuccess: () => {

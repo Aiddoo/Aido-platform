@@ -1,417 +1,183 @@
-# @aido/mobile
+# Aido Mobile App
 
-> Aido 모바일 애플리케이션
+Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Ports & Adapters 패턴.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Expo](https://img.shields.io/badge/Expo-54.x-000020.svg)
-![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+## 개발 환경 설정
 
-## 개요
-
-Expo 54 기반의 크로스 플랫폼 모바일 앱입니다. Expo Router를 사용한 파일 기반 라우팅과 New Architecture를 지원합니다.
-
-## 시작하기
+### 로컬 개발 (에뮬레이터/시뮬레이터)
 
 ```bash
-# 개발 서버
-pnpm dev
-
-# iOS 시뮬레이터
-pnpm ios
-
-# Android 에뮬레이터
-pnpm android
+pnpm dev          # Metro 번들러 시작 (플랫폼 선택)
+pnpm dev:android  # Android 에뮬레이터 자동 실행
+pnpm dev:ios      # iOS 시뮬레이터 자동 실행
 ```
 
-## 주요 명령어
+### 실제 기기 테스트
 
-| 명령어           | 설명               |
-| ---------------- | ------------------ |
-| `pnpm dev`       | Expo 개발 서버     |
-| `pnpm ios`       | iOS 시뮬레이터     |
-| `pnpm android`   | Android 에뮬레이터 |
-| `pnpm build`     | 빌드               |
-| `pnpm test`      | 테스트             |
-| `pnpm lint`      | 린트               |
-| `pnpm typecheck` | 타입 체크          |
+#### 기본 방법 (자동 IP 감지)
 
----
+앱은 Expo Metro 번들러의 IP를 자동으로 감지하여 실제 기기에서도 동작합니다:
 
-## 아키텍처
+```bash
+# 1. 개발 서버 시작
+pnpm dev:android  # 또는 dev:ios
 
-### Expo Router 구조
-
-파일 기반 라우팅을 사용합니다. `app/` 디렉토리의 파일 구조가 곧 URL 구조입니다.
-
-```
-app/
-├── _layout.tsx      # 루트 레이아웃 (Stack/Tab 네비게이션)
-├── index.tsx        # 홈 화면 (/)
-├── (auth)/          # 인증 그룹 (URL에 미포함)
-│   ├── _layout.tsx
-│   ├── login.tsx    # /login
-│   └── register.tsx # /register
-├── (tabs)/          # 탭 네비게이션 그룹
-│   ├── _layout.tsx  # Tab.Navigator 정의
-│   ├── home.tsx     # /home
-│   └── settings.tsx # /settings
-└── [id].tsx         # 동적 라우트 (/123, /abc)
+# 2. 실제 기기에서 QR 코드 스캔
+# - Android: Expo Go 앱으로 QR 코드 스캔
+# - iOS: 카메라 앱으로 QR 코드 스캔
 ```
 
-### 라우팅 패턴
+**자동으로 동작합니다!** ✨ 별도 설정 없이 에뮬레이터처럼 사용 가능합니다.
 
-| 패턴      | 파일                   | URL                 |
-| --------- | ---------------------- | ------------------- |
-| 정적      | `about.tsx`            | `/about`            |
-| 동적      | `[id].tsx`             | `/123`              |
-| 그룹      | `(auth)/login.tsx`     | `/login`            |
-| 중첩      | `settings/profile.tsx` | `/settings/profile` |
-| Catch-all | `[...missing].tsx`     | 404 처리            |
+#### 고급: 수동 IP 설정 (선택사항)
 
-### 레이아웃 계층
-
-```
-┌─────────────────────────────────────────┐
-│           _layout.tsx (Root)            │
-│  ┌─────────────────────────────────────┐│
-│  │     Stack.Navigator / Slot          ││
-│  │  ┌─────────────────────────────────┐││
-│  │  │    (tabs)/_layout.tsx           │││
-│  │  │  ┌─────────────────────────────┐│││
-│  │  │  │   Tab.Navigator             ││││
-│  │  │  │   - home.tsx                ││││
-│  │  │  │   - settings.tsx            ││││
-│  │  │  └─────────────────────────────┘│││
-│  │  └─────────────────────────────────┘││
-│  └─────────────────────────────────────┘│
-└─────────────────────────────────────────┘
-```
-
----
-
-## 공유 패키지 사용
-
-### @aido/validators
-
-폼 검증에 Zod 스키마를 사용합니다:
-
-```typescript
-import { todoCreateSchema, type TodoCreate } from "@aido/validators";
-
-// 폼 데이터 검증
-const result = todoCreateSchema.safeParse(formData);
-
-if (!result.success) {
-  // Zod 에러 처리
-  const errors = result.error.flatten().fieldErrors;
-  setErrors(errors);
-  return;
-}
-
-// 검증 통과
-await api.createTodo(result.data);
-```
-
-### @aido/utils
-
-유틸리티 함수 사용:
-
-```typescript
-import { debounce } from "@aido/utils";
-
-// 검색 입력 디바운스
-const debouncedSearch = debounce((query: string) => {
-  fetchResults(query);
-}, 300);
-
-<TextInput onChangeText={debouncedSearch} />;
-```
-
----
-
-## 코드 패턴
-
-### 화면 컴포넌트
-
-```typescript
-// app/todos/index.tsx
-import { StyleSheet, Text, View, FlatList } from "react-native";
-import { useEffect, useState } from "react";
-
-export default function TodosScreen() {
-  const [todos, setTodos] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  const fetchTodos = async () => {
-    try {
-      const response = await fetch(`${API_URL}/todos`);
-      const data = await response.json();
-      setTodos(data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={todos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <TodoItem todo={item} />}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-});
-```
-
-### 네비게이션
-
-```typescript
-import { useRouter, useLocalSearchParams } from 'expo-router';
-
-export default function TodoDetailScreen() {
-  const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  const handleEdit = () => {
-    router.push(`/todos/${id}/edit`);
-  };
-
-  const handleBack = () => {
-    router.back();
-  };
-
-  return (
-    // ...
-  );
-}
-```
-
-### 레이아웃 정의
-
-```typescript
-// app/_layout.tsx
-import { Stack } from "expo-router";
-
-export default function RootLayout() {
-  return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "홈" }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: "상세" }} />
-    </Stack>
-  );
-}
-```
-
----
-
-## 환경 설정
-
-### 환경별 빌드
-
-`app.config.ts`에서 환경에 따라 설정이 자동 변경됩니다:
-
-| 환경        | Bundle ID                 | 앱 이름          | API URL              |
-| ----------- | ------------------------- | ---------------- | -------------------- |
-| development | `com.aido.mobile.dev`     | Aido Development | localhost:8080       |
-| preview     | `com.aido.mobile.preview` | Aido Preview     | preview-api.aido.com |
-| production  | `com.aido.mobile`         | Aido             | api.aido.com         |
-
-### 환경 변수
-
-`.env` 파일 (gitignore됨):
-
-```env
-# 개발 기본
-EXPO_PUBLIC_API_URL=http://localhost:8080
-
-# Android 실기기에서 개발 서버 접근 (PC IP로 교체)
-# EXPO_PUBLIC_LOCAL_IP=192.168.0.10
-
-# 프로덕션/프리뷰 예시
-# EXPO_PUBLIC_API_URL=https://api.aido.kr
-```
-
-**접두사 규칙:**
-
-- `EXPO_PUBLIC_*`: 클라이언트에서 접근 가능
-- 그 외: 빌드 시에만 사용
-
-### API 접근 설정
-
-개발 환경에서 플랫폼별로 자동으로 올바른 localhost URL을 사용합니다:
-
-| 플랫폼 | API URL | 설명 |
-| --- | --- | --- |
-| iOS 시뮬레이터 | `http://localhost:8080` | 호스트 머신의 localhost 직접 접근 |
-| Android 에뮬레이터 | `http://10.0.2.2:8080` | 에뮬레이터에서 자동 매핑 |
-| Android 실기기 | `http://192.168.x.x:8080` | `EXPO_PUBLIC_LOCAL_IP` 필요 |
-| iOS 실기기 | `http://192.168.x.x:8080` | 동일 네트워크 IP 직접 입력 |
-
-**실제 기기 테스트 시:**
+자동 감지가 실패하거나 특정 IP를 사용하려면:
 
 ```bash
 # 1. 개발 머신의 로컬 IP 확인
-ifconfig | grep "inet " | grep -v 127.0.0.1
-# 예: 192.168.0.10
+ifconfig | grep "inet " | grep -v 127.0.0.1  # Mac/Linux
+ipconfig | findstr IPv4                       # Windows
 
-# 2. .env 파일에 설정
-echo "EXPO_PUBLIC_LOCAL_IP=192.168.0.10" > .env
+# 2. .env.local 파일에 IP 설정 (선택)
+echo "EXPO_PUBLIC_DEV_MACHINE_IP=192.168.1.100" > .env.local
 
-# 3. API 서버가 0.0.0.0에서 실행 중인지 확인
-# 4. 기기와 개발 머신이 같은 WiFi에 연결되어 있는지 확인
+# 3. 앱 재시작
+pnpm dev:android
 ```
 
-**환경 변수 옵션:**
+### 주의사항
 
-- `EXPO_PUBLIC_API_URL`: Production/Preview API URL (설정 시 우선 사용, prod는 `https://api.aido.kr` 권장)
-- `EXPO_PUBLIC_DEV_PORT`: 개발 서버 포트 (기본값: 8080)
-- `EXPO_PUBLIC_LOCAL_IP`: 실제 기기용 로컬 네트워크 IP (Android/iOS 공통)
+- 실제 기기와 개발 머신이 **같은 Wi-Fi 네트워크**에 연결되어야 합니다
+- 방화벽에서 포트 8080(API 서버), 8081(Metro)이 열려 있어야 합니다
+- 자동 IP 감지가 실패하면 콘솔에 경고 메시지가 표시됩니다
 
----
+## 빌드 및 배포
 
-## 빌드 & 배포
-
-### EAS Build 프로필
-
-| 프로필      | 용도        | 명령어                            |
-| ----------- | ----------- | --------------------------------- |
-| development | 개발용 빌드 | `eas build --profile development` |
-| preview     | 테스터 배포 | `eas build --profile preview`     |
-| production  | 스토어 배포 | `eas build --profile production`  |
-
-### 빌드 명령어
+### 개발 빌드 (Dev Client)
 
 ```bash
-# iOS 개발 빌드
-eas build --profile development --platform ios
+# 로컬 빌드 및 실행 (네이티브 코드 변경 시)
+pnpm run:android
+pnpm run:ios
 
-# Android 프리뷰 빌드
-eas build --profile preview --platform android
-
-# 전체 프로덕션 빌드
-eas build --profile production --platform all
+# EAS 클라우드 빌드 (내부 배포용)
+pnpm build:dev           # Android + iOS
+pnpm build:dev:android   # Android만
+pnpm build:dev:ios       # iOS만
 ```
 
-### 스토어 제출
+### 프리뷰 빌드 (내부 테스팅)
 
 ```bash
-# App Store
-eas submit --platform ios
-
-# Google Play
-eas submit --platform android
+pnpm build:preview           # Android + iOS
+pnpm build:preview:android   # Android만
+pnpm build:preview:ios       # iOS만
 ```
 
----
+빌드 완료 후 QR 코드로 설치 가능
 
-## 테스트
+### 프로덕션 빌드
 
-### 테스트 실행
+#### 방법 1: 빌드만 (수동 제출)
 
 ```bash
-# 전체 테스트
-pnpm test
-
-# Watch 모드
-pnpm test --watch
-
-# 커버리지
-pnpm test --coverage
+pnpm build:prod           # Android + iOS
+pnpm build:prod:android   # Android만
+pnpm build:prod:ios       # iOS만
 ```
 
-### 테스트 작성
+빌드 완료 후 수동으로 제출:
 
-```typescript
-// __tests__/HomeScreen.test.tsx
-import { render, screen } from "@testing-library/react-native";
-import HomeScreen from "../app/index";
-
-describe("HomeScreen", () => {
-  it("renders home text", () => {
-    render(<HomeScreen />);
-    expect(screen.getByText("홈 페이지")).toBeTruthy();
-  });
-});
+```bash
+pnpm submit:prod          # Android + iOS (최신 빌드)
+pnpm submit:prod:android  # Android만
+pnpm submit:prod:ios      # iOS만
 ```
 
----
+#### 방법 2: 빌드 + 자동 제출 (권장)
 
-## 프로젝트 구조
-
-```
-apps/mobile/
-├── app/                    # Expo Router 페이지
-│   ├── _layout.tsx         # 루트 레이아웃
-│   ├── index.tsx           # 홈 화면
-│   └── [id].tsx            # 동적 라우트
-│
-├── assets/                 # 정적 리소스
-│   └── images/
-│       ├── icon.png        # 앱 아이콘
-│       ├── adaptive-icon.png
-│       ├── splash-icon.png
-│       └── favicon.png
-│
-├── __tests__/              # 테스트 파일
-│
-├── app.config.ts           # Expo 설정 (환경별)
-├── eas.json                # EAS 빌드 설정
-├── package.json
-└── tsconfig.json
+```bash
+# 한 번에 빌드하고 스토어에 자동 제출
+pnpm build:prod:auto           # Android + iOS
+pnpm build:prod:android:auto   # Android만
+pnpm build:prod:ios:auto       # iOS만
 ```
 
----
+### OTA 업데이트 (JavaScript 변경만)
 
-## 주요 의존성
+```bash
+pnpm update:preview "버그 수정"
+pnpm update:prod "새 기능 추가"
+```
 
-| 패키지           | 버전      | 용도             |
-| ---------------- | --------- | ---------------- |
-| expo             | ~54.0     | Expo SDK         |
-| expo-router      | ~6.0      | 파일 기반 라우팅 |
-| react-native     | 0.81      | 네이티브 UI      |
-| @aido/validators | workspace | Zod 스키마       |
-| @aido/utils      | workspace | 유틸리티 함수    |
+**참고**: 네이티브 코드 변경이 없는 경우에만 OTA 업데이트 가능
 
----
+## 스크립트 사용 가이드
 
-## 새 화면 추가 체크리스트
+### 개발 워크플로우
 
-1. [ ] `app/` 디렉토리에 파일 생성
-2. [ ] 필요시 `_layout.tsx`에 Screen 옵션 추가
-3. [ ] 스타일 정의 (StyleSheet.create)
-4. [ ] 공유 스키마 사용 (@aido/validators)
-5. [ ] 테스트 작성 (`__tests__/`)
+```bash
+# 1. 로컬 개발
+pnpm dev:android
 
----
+# 2. 네이티브 모듈 추가/변경 시
+pnpm run:android
 
-## 변경 이력
+# 3. 실제 기기 테스트
+pnpm build:dev:android  # EAS로 APK 빌드
+```
 
-### v1.0.0 (2025-01-13)
+### 배포 워크플로우
 
-- 초기 릴리즈
-- Expo 54 + React Native 0.81 기반
-- Expo Router 파일 기반 라우팅
-- New Architecture 활성화
-- 푸시 알림 (expo-notifications)
-- 생체 인증 (expo-local-authentication)
-- 오프라인 DB (expo-sqlite)
-- 캘린더 동기화 (expo-calendar)
-- EAS Build 프로필 구성 (development, preview, production)
+```bash
+# 1. 내부 테스팅
+pnpm build:preview:android
+
+# 2. 프로덕션 배포 (빌드 + 자동 제출)
+pnpm build:prod:auto
+
+# 3. JavaScript만 변경 시 (OTA)
+pnpm update:prod "버그 수정"
+```
+
+## 환경 분기 처리
+
+### API URL 자동 변환
+
+앱은 실행 환경에 따라 API URL을 자동으로 변환합니다:
+
+| 환경 | Platform | isDevice | 입력 URL | 출력 URL |
+|------|----------|----------|----------|----------|
+| Android 에뮬레이터 | android | false | localhost:8080 | 10.0.2.2:8080 |
+| iOS 시뮬레이터 | ios | false | localhost:8080 | localhost:8080 |
+| Android 실제 기기 | android | true | localhost:8080 | {DEV_IP}:8080 |
+| iOS 실제 기기 | ios | true | localhost:8080 | {DEV_IP}:8080 |
+
+### 디버깅
+
+개발 환경에서는 콘솔에 API URL 변환 정보가 출력됩니다:
+
+```
+[env] API URL resolved: {
+  platform: 'android',
+  isDevice: true,
+  original: 'http://localhost:8080',
+  resolved: 'http://192.168.1.100:8080'
+}
+```
+
+## 아키텍처
+
+자세한 아키텍처 가이드는 [CLAUDE.md](./CLAUDE.md)를 참조하세요.
+
+## 기술 스택
+
+| 분류 | 라이브러리 |
+|------|-----------|
+| 프레임워크 | Expo SDK 54, React Native 0.81 |
+| 라우팅 | Expo Router (파일 기반) |
+| 상태관리 | TanStack Query v5 |
+| HTTP | Ky |
+| 검증 | Zod 4.3 |
+| UI | HeroUI Native, NativeWind |
+| DI | React Context (수동 DI) |
