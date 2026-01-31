@@ -21,7 +21,7 @@ async function bootstrap() {
 
 	app.use(helmet());
 	app.enableCors({
-		origin: corsOrigins, // 이미 배열로 변환됨
+		origin: nodeEnv === "development" ? true : corsOrigins, // 개발 환경에서는 모든 origin 허용
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
