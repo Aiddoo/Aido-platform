@@ -1,13 +1,16 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
-import { mutationOptions } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
-export const exchangeCodeMutationOptions = () => {
+/**
+ * Hook for OAuth code exchange mutation
+ */
+export const useExchangeCode = () => {
   const authService = useAuthService();
   const notificationService = useNotificationService();
   const { setStatus } = useAuth();
 
-  return mutationOptions({
+  return useMutation({
     mutationFn: authService.exchangeCode,
     onSuccess: async () => {
       setStatus('authenticated');

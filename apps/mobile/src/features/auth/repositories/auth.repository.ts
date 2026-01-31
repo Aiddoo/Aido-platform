@@ -14,6 +14,8 @@ import type {
 export interface AuthRepository {
   exchangeCode(request: ExchangeCodeInput): Promise<AuthTokens>;
 
+  emailLogin(email: string, password: string): Promise<AuthTokens>;
+
   getCurrentUser(): Promise<CurrentUser>;
 
   logout(): Promise<void>;
