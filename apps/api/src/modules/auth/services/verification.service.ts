@@ -7,24 +7,12 @@ import type { Prisma, VerificationType } from "@/generated/prisma/client";
 import { EmailService } from "@/modules/email/email.service";
 import { VerificationRepository } from "../repositories/verification.repository";
 
-/**
- * 인증 코드 생성 결과
- */
 export interface VerificationCodeResult {
-	/** 평문 인증 코드 (이메일로 발송) */
 	code: string;
-	/** 만료 시간 */
 	expiresAt: Date;
 }
 
-/**
- * 인증 서비스
- *
- * 6자리 숫자 인증 코드 생성, 검증, 이메일 발송을 담당합니다.
- * - SHA-256 해시로 코드 저장 (보안)
- * - 최대 시도 횟수 제한
- * - 재발송 쿨다운 적용
- */
+// 6자리 숫자 인증 코드 생성, 검증, 이메일 발송 (SHA-256 해시 저장, 최대 시도 횟수 제한, 재발송 쿨다운)
 @Injectable()
 export class VerificationService {
 	private readonly logger = new Logger(VerificationService.name);
@@ -34,12 +22,7 @@ export class VerificationService {
 		private readonly emailService: EmailService,
 	) {}
 
-	/**
-	 * 이메일 인증 코드 생성 (트랜잭션 내부에서만 사용)
-	 *
-	 * 이 메서드는 DB 트랜잭션 내부에서 호출되어 Verification 레코드만 생성합니다.
-	 * 이메일 발송은 트랜잭션 후에 sendVerificationEmail()로 별도 처리합니다.
-	 */
+	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
 	async createEmailVerification(
 		userId: string,
 		tx: Prisma.TransactionClient,
@@ -65,12 +48,7 @@ export class VerificationService {
 		return result;
 	}
 
-	/**
-	 * 이메일 인증 코드 발송 (트랜잭션 외부)
-	 *
-	 * 이메일 발송 실패는 로그만 남기고 예외를 던지지 않습니다.
-	 * 사용자는 resendVerification()을 통해 재발송할 수 있습니다.
-	 */
+	// 이메일 발송 실패는 로그만 남기고 예외를 던지지 않음 (재발송 가능)
 	async sendVerificationEmail(email: string, code: string): Promise<void> {
 		const emailResult = await this.emailService.sendVerificationCode(email, {
 			code,
@@ -85,12 +63,7 @@ export class VerificationService {
 		}
 	}
 
-	/**
-	 * 이메일 인증 코드 생성 및 발송 (호환성 유지)
-	 *
-	 * @deprecated 새 코드는 createEmailVerification() + sendVerificationEmail()을 분리해서 사용해주세요.
-	 * 이 메서드는 트랜잭션 경계를 무시하고 이메일 발송을 시도하므로 가능한 분리 메서드를 사용해주세요.
-	 */
+	/** @deprecated createEmailVerification() + sendVerificationEmail() 분리 사용 권장 */
 	async createAndSendEmailVerification(
 		userId: string,
 		email: string,
@@ -120,9 +93,6 @@ export class VerificationService {
 		return result;
 	}
 
-	/**
-	 * 비밀번호 재설정 코드 생성 및 발송
-	 */
 	async createAndSendPasswordReset(
 		userId: string,
 		email: string,
@@ -161,16 +131,7 @@ export class VerificationService {
 		return result;
 	}
 
-	/**
-	 * 인증 코드 검증
-	 *
-	 * 브루트포스 보호:
-	 * - 최대 시도 횟수(MAX_ATTEMPTS) 초과 시 검증 거부
-	 * - 실패 시 시도 횟수 증가
-	 *
-	 * @returns 검증 성공 시 true
-	 * @throws BusinessException 검증 실패 시
-	 */
+	// 브루트포스 보호: 최대 시도 횟수 초과 시 검증 거부, 실패 시 시도 횟수 증가
 	async verifyCode(
 		userId: string,
 		code: string,
@@ -217,9 +178,6 @@ export class VerificationService {
 		return true;
 	}
 
-	/**
-	 * 재발송 쿨다운 확인
-	 */
 	private async _checkResendCooldown(
 		userId: string,
 		type: VerificationType,
@@ -244,9 +202,6 @@ export class VerificationService {
 		}
 	}
 
-	/**
-	 * 인증 코드 생성 및 저장
-	 */
 	private async _createVerificationCode(
 		userId: string,
 		type: VerificationType,
@@ -273,9 +228,6 @@ export class VerificationService {
 		return { code, expiresAt };
 	}
 
-	/**
-	 * 6자리 랜덤 숫자 코드 생성
-	 */
 	private _generateCode(): string {
 		// randomInt는 암호학적으로 안전한 난수 생성
 		const min = 10 ** (VERIFICATION_CODE.LENGTH - 1); // 100000
@@ -283,9 +235,6 @@ export class VerificationService {
 		return randomInt(min, max).toString();
 	}
 
-	/**
-	 * 코드를 SHA-256 해시로 변환
-	 */
 	private _hashCode(code: string): string {
 		return createHash("sha256").update(code).digest("hex");
 	}

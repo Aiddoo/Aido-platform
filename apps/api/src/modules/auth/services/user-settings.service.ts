@@ -12,11 +12,6 @@ import { toISOStringOrNull } from "@/common/date";
 import { UserConsentRepository } from "../repositories/user-consent.repository";
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 
-/**
- * 사용자 설정 서비스
- *
- * 푸시 알림 설정(UserPreference) 및 약관 동의(UserConsent) 관련 비즈니스 로직을 담당합니다.
- */
 @Injectable()
 export class UserSettingsService {
 	private readonly logger = new Logger(UserSettingsService.name);
@@ -26,11 +21,6 @@ export class UserSettingsService {
 		private readonly userConsentRepository: UserConsentRepository,
 	) {}
 
-	/**
-	 * 푸시 알림 설정 조회
-	 *
-	 * 설정이 없으면 기본값(모두 false)을 반환합니다.
-	 */
 	async getPreference(userId: string): Promise<PreferenceResponse> {
 		const preference = await this.userPreferenceRepository.findByUserId(userId);
 
@@ -48,9 +38,6 @@ export class UserSettingsService {
 		};
 	}
 
-	/**
-	 * 푸시 알림 설정 수정
-	 */
 	async updatePreference(
 		userId: string,
 		input: UpdatePreferenceInput,
@@ -71,11 +58,6 @@ export class UserSettingsService {
 		};
 	}
 
-	/**
-	 * 약관 동의 상태 조회
-	 *
-	 * 동의 기록이 없으면 모든 필드가 null인 기본값을 반환합니다.
-	 */
 	async getConsent(userId: string): Promise<ConsentResponse> {
 		const consent = await this.userConsentRepository.findByUserId(userId);
 
@@ -97,9 +79,6 @@ export class UserSettingsService {
 		};
 	}
 
-	/**
-	 * 마케팅 동의 상태 변경
-	 */
 	async updateMarketingConsent(
 		userId: string,
 		agreed: boolean,

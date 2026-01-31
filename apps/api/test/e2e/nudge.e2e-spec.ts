@@ -346,8 +346,11 @@ describe("Nudge (e2e)", () => {
 					.expect(200);
 
 				expect(response.body.success).toBe(true);
-				expect(typeof response.body.data.isOnCooldown).toBe("boolean");
-				expect(typeof response.body.data.remainingSeconds).toBe("number");
+				expect(typeof response.body.data.canNudge).toBe("boolean");
+				expect(
+					response.body.data.remainingSeconds === null ||
+						typeof response.body.data.remainingSeconds === "number",
+				).toBe(true);
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {

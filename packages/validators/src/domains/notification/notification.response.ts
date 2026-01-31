@@ -1,17 +1,7 @@
-/**
- * Notification Response 스키마
- *
- * 알림 관련 응답 검증을 위한 Zod 스키마
- */
 import { z } from 'zod';
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
 import { NOTIFICATION_TYPE } from './notification.constants';
 
-// ============================================
-// 알림 엔티티
-// ============================================
-
-/** 알림 타입 스키마 */
 export const notificationTypeSchema = z.enum([
   NOTIFICATION_TYPE.FOLLOW_NEW,
   NOTIFICATION_TYPE.FOLLOW_ACCEPTED,
@@ -27,21 +17,26 @@ export const notificationTypeSchema = z.enum([
   NOTIFICATION_TYPE.SYSTEM_NOTICE,
 ]);
 
-/** 알림 정보 스키마 */
 export const notificationSchema = z
   .object({
-    id: z.number().int().positive().describe('알림 고유 ID'),
-    userId: z.string().describe('수신자 ID'),
-    type: notificationTypeSchema.describe('알림 타입'),
-    title: z.string().max(200).describe('알림 제목'),
-    body: z.string().max(500).describe('알림 내용'),
+    id: z.number().int().positive().describe('알림 ID (양의 정수)'),
+    userId: z.string().describe('사용자 ID (CUID 25자)'),
+    type: notificationTypeSchema.describe(
+      '알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)',
+    ),
+    title: z.string().max(200).describe('알림 제목 (최대 200자)'),
+    body: z.string().max(500).describe('알림 본문 (최대 500자)'),
     isRead: z.boolean().describe('읽음 여부'),
-    route: z.string().max(200).nullable().describe('인앱 라우팅 경로'),
-    metadata: z.record(z.string(), z.unknown()).nullable().describe('추가 메타데이터 (JSON)'),
-    createdAt: datetimeSchema.describe('생성 시각'),
-    readAt: nullableDatetimeSchema.describe('읽음 시각 (미확인 시 null)'),
+    route: z.string().max(200).nullable().describe('라우트 경로 (최대 200자, 미설정 시 null)'),
+    metadata: z
+      .record(z.string(), z.unknown())
+      .nullable()
+      .describe('추가 메타데이터 (미설정 시 null)'),
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
+    readAt: nullableDatetimeSchema.describe(
+      '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
+    ),
   })
-  .describe('알림 정보')
   .meta({
     example: {
       id: 1,
@@ -59,19 +54,18 @@ export const notificationSchema = z
 
 export type Notification = z.infer<typeof notificationSchema>;
 
-// ============================================
-// 알림 목록 응답
-// ============================================
-
-/** 알림 목록 응답 */
 export const notificationListResponseSchema = z
   .object({
     notifications: z.array(notificationSchema).describe('알림 목록'),
-    unreadCount: z.number().int().nonnegative().describe('읽지 않은 알림 수'),
+    unreadCount: z.number().int().nonnegative().describe('읽지 않은 알림 수 (음이 아닌 정수)'),
     hasMore: z.boolean().describe('다음 페이지 존재 여부'),
-    nextCursor: z.number().int().positive().nullable().describe('다음 페이지 커서'),
+    nextCursor: z
+      .number()
+      .int()
+      .positive()
+      .nullable()
+      .describe('다음 커서 (양의 정수, 마지막 페이지는 null)'),
   })
-  .describe('알림 목록 응답')
   .meta({
     example: {
       notifications: [
@@ -96,16 +90,10 @@ export const notificationListResponseSchema = z
 
 export type NotificationListResponse = z.infer<typeof notificationListResponseSchema>;
 
-// ============================================
-// 읽지 않은 알림 수 응답
-// ============================================
-
-/** 읽지 않은 알림 수 응답 */
 export const unreadCountResponseSchema = z
   .object({
-    unreadCount: z.number().int().nonnegative().describe('읽지 않은 알림 수'),
+    unreadCount: z.number().int().nonnegative().describe('읽지 않은 알림 수 (음이 아닌 정수)'),
   })
-  .describe('읽지 않은 알림 수 응답')
   .meta({
     example: {
       unreadCount: 5,
@@ -114,17 +102,11 @@ export const unreadCountResponseSchema = z
 
 export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
 
-// ============================================
-// 푸시 토큰 등록 응답
-// ============================================
-
-/** 푸시 토큰 등록 응답 */
 export const registerTokenResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    registered: z.boolean().describe('등록 성공 여부'),
+    registered: z.boolean().describe('토큰 등록 성공 여부'),
   })
-  .describe('푸시 토큰 등록 응답')
   .meta({
     example: {
       message: '푸시 토큰이 등록되었습니다.',
@@ -134,17 +116,11 @@ export const registerTokenResponseSchema = z
 
 export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
 
-// ============================================
-// 알림 읽음 처리 응답
-// ============================================
-
-/** 알림 읽음 처리 응답 */
 export const markReadResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    readCount: z.number().int().nonnegative().describe('읽음 처리된 알림 수'),
+    readCount: z.number().int().nonnegative().describe('읽음 처리된 알림 수 (음이 아닌 정수)'),
   })
-  .describe('알림 읽음 처리 응답')
   .meta({
     example: {
       message: '알림을 읽음 처리했습니다.',

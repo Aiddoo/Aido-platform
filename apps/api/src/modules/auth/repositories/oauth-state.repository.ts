@@ -52,9 +52,6 @@ export class OAuthStateRepository {
 		});
 	}
 
-	/**
-	 * State로 OAuth State 조회 (유효성 검증 포함)
-	 */
 	async findByState(state: string): Promise<OAuthState | null> {
 		return this.database.oAuthState.findFirst({
 			where: {
@@ -64,10 +61,7 @@ export class OAuthStateRepository {
 		});
 	}
 
-	/**
-	 * 교환 코드로 OAuth State 조회 (유효성 검증 포함)
-	 * 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
-	 */
+	// 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
 	async findByExchangeCode(exchangeCode: string): Promise<OAuthState | null> {
 		return this.database.oAuthState.findFirst({
 			where: {
@@ -78,11 +72,6 @@ export class OAuthStateRepository {
 		});
 	}
 
-	/**
-	 * OAuth 인증 성공 후 교환 코드 및 토큰 저장
-	 *
-	 * State를 기반으로 해당 레코드에 교환 코드와 암호화된 토큰을 저장합니다.
-	 */
 	async saveExchangeData(
 		id: number,
 		data: {
@@ -107,11 +96,7 @@ export class OAuthStateRepository {
 		});
 	}
 
-	/**
-	 * 교환 완료 처리 (exchangedAt 설정 및 토큰 삭제)
-	 *
-	 * 교환 완료 후 보안을 위해 토큰을 삭제합니다.
-	 */
+	// 교환 완료 후 보안을 위해 토큰 삭제
 	async markAsExchanged(id: number): Promise<OAuthState> {
 		return this.database.oAuthState.update({
 			where: { id },
@@ -124,18 +109,12 @@ export class OAuthStateRepository {
 		});
 	}
 
-	/**
-	 * State 삭제 (인증 완료 또는 만료 시)
-	 */
 	async delete(id: number): Promise<void> {
 		await this.database.oAuthState.delete({
 			where: { id },
 		});
 	}
 
-	/**
-	 * 만료된 State 일괄 삭제 (정리 작업)
-	 */
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.oAuthState.deleteMany({
 			where: {
@@ -145,9 +124,6 @@ export class OAuthStateRepository {
 		return result.count;
 	}
 
-	/**
-	 * 랜덤 교환 코드 생성 (URL-safe)
-	 */
 	generateExchangeCode(): string {
 		return randomBytes(32).toString("base64url");
 	}

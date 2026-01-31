@@ -2,7 +2,7 @@ import { HttpStatus } from './http-status';
 import type { ErrorDefinition } from './types';
 
 /**
- * FAANG 스타일 Numeric 에러 코드
+ * Numeric 에러 코드
  *
  * 도메인별 코드 범위:
  * - SYS     (0001-0099): 시스템/공통

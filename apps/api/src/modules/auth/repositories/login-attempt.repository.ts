@@ -51,9 +51,6 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	/**
-	 * 특정 이메일의 최근 실패 횟수 조회
-	 */
 	async countRecentFailuresByEmail(
 		email: string,
 		since: Date,
@@ -67,9 +64,6 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	/**
-	 * 특정 IP의 최근 실패 횟수 조회
-	 */
 	async countRecentFailuresByIp(
 		ipAddress: string,
 		since: Date,
@@ -83,9 +77,6 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	/**
-	 * 이메일의 마지막 성공 시도 조회
-	 */
 	async findLastSuccessByEmail(email: string): Promise<LoginAttempt | null> {
 		return this.database.loginAttempt.findFirst({
 			where: {
@@ -96,9 +87,6 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	/**
-	 * 이메일의 마지막 실패 시도 조회
-	 */
 	async findLastFailureByEmail(email: string): Promise<LoginAttempt | null> {
 		return this.database.loginAttempt.findFirst({
 			where: {
@@ -109,12 +97,7 @@ export class LoginAttemptRepository {
 		});
 	}
 
-	/**
-	 * 이메일의 특정 기간 내 실패 기록 초기화 (성공적 로그인 후)
-	 *
-	 * 참고: 감사 로그 목적으로 실제 삭제보다 별도 플래그 사용 고려
-	 * 현재는 단순히 카운트만 사용하므로 삭제하지 않음
-	 */
+	// 감사 로그 목적으로 삭제하지 않음
 	async clearRecentFailuresByEmail(
 		_email: string,
 		_since: Date,
@@ -123,9 +106,7 @@ export class LoginAttemptRepository {
 		// 필요시 별도 플래그 추가 가능
 	}
 
-	/**
-	 * 오래된 기록 정리 (배치 작업용, 30일 보관)
-	 */
+	// 배치 작업용, 30일 보관
 	async deleteOld(retentionDays = 30): Promise<number> {
 		const cutoff = subtractDays(retentionDays);
 

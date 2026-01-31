@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -101,7 +101,7 @@ export class TodoController {
 | \`endDate\` | string | null | 종료 날짜 (YYYY-MM-DD) |
 | \`scheduledTime\` | string | null | 예정 시간 (HH:mm) |
 | \`isAllDay\` | boolean | true | 종일 여부 |
-| \`visibility\` | string | PUBLIC | 공개 범위 (PUBLIC/PRIVATE) |`,
+| \`visibility\` | enum | PUBLIC | 공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개) |`,
 	})
 	@ApiCreatedResponse({ type: CreateTodoResponseDto })
 	@ApiUnauthorizedError()
@@ -160,6 +160,48 @@ export class TodoController {
 | \`endDate\` | string | - | 종료일 이전 필터 (YYYY-MM-DD) |
 
 💡 **예시**: \`GET /todos?size=20&completed=false&categoryId=1&startDate=2025-01-01\``,
+	})
+	@ApiQuery({
+		name: "cursor",
+		required: false,
+		description:
+			"페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+		schema: { type: "number" },
+		example: 123,
+	})
+	@ApiQuery({
+		name: "size",
+		required: false,
+		description: "페이지 크기 (1-100)",
+		schema: { type: "number", minimum: 1, maximum: 100, default: 20 },
+		example: 20,
+	})
+	@ApiQuery({
+		name: "completed",
+		required: false,
+		description: "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
+		schema: { type: "boolean" },
+	})
+	@ApiQuery({
+		name: "categoryId",
+		required: false,
+		description: "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
+		schema: { type: "number" },
+		example: 1,
+	})
+	@ApiQuery({
+		name: "startDate",
+		required: false,
+		description: "시작일 이후 필터 (YYYY-MM-DD)",
+		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+		example: "2026-01-01",
+	})
+	@ApiQuery({
+		name: "endDate",
+		required: false,
+		description: "종료일 이전 필터 (YYYY-MM-DD)",
+		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+		example: "2026-01-31",
 	})
 	@ApiSuccessResponse({ type: TodoListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -391,7 +433,10 @@ export class TodoController {
 		operationId: "updateTodoVisibility",
 		description: `할 일의 공개 범위를 변경합니다.
 
-📝 **요청 필드**: \`visibility\` (enum: \`PUBLIC\` | \`PRIVATE\`, 필수)
+### 📝 요청 Body
+| 필드 | 타입 | 필수 | 옵션 | 설명 |
+|------|------|------|------|------|
+| \`visibility\` | enum | ✅ | PUBLIC, PRIVATE | 공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개) |
 
 ❌ **에러 코드**
 | 코드 | HTTP | 메시지 | 상황 |

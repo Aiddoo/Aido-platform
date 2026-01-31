@@ -1,45 +1,27 @@
-/**
- * AI 사용량 관련 스키마
- * @description 사용자의 일일 AI 사용량 추적
- */
 import { z } from 'zod';
 
-// =============================================================================
-// AI 사용량 데이터
-// =============================================================================
+import { datetimeSchema } from '../../common/datetime';
 
-export const aiUsageDataSchema = z
-  .object({
-    used: z.number().int().nonnegative().describe('오늘 사용한 횟수'),
-    limit: z.number().int().positive().describe('일일 최대 사용 횟수'),
-    resetsAt: z.string().datetime().describe('다음 리셋 시간 (ISO 8601)'),
-  })
-  .describe('AI 사용량 정보');
+export const aiUsageDataSchema = z.object({
+  used: z.number().int().nonnegative().describe('현재까지 사용한 AI 요청 횟수 (0 이상)'),
+  limit: z.number().int().positive().describe('일일 최대 AI 요청 횟수 (양의 정수)'),
+  resetsAt: datetimeSchema.describe(
+    '사용량 리셋 시각 (ISO 8601 UTC, 예: 2026-01-18T00:00:00.000Z)',
+  ),
+});
 
 export type AiUsageData = z.infer<typeof aiUsageDataSchema>;
 
-// =============================================================================
-// 토큰 사용량
-// =============================================================================
-
-export const tokenUsageSchema = z
-  .object({
-    input: z.number().int().nonnegative().describe('입력 토큰 수'),
-    output: z.number().int().nonnegative().describe('출력 토큰 수'),
-  })
-  .describe('토큰 사용량');
+export const tokenUsageSchema = z.object({
+  input: z.number().int().nonnegative().describe('입력 토큰 수 (0 이상)'),
+  output: z.number().int().nonnegative().describe('출력 토큰 수 (0 이상)'),
+});
 
 export type TokenUsage = z.infer<typeof tokenUsageSchema>;
 
-// =============================================================================
-// AI 사용량 응답
-// =============================================================================
-
-export const aiUsageResponseSchema = z
-  .object({
-    success: z.literal(true).describe('성공 여부'),
-    data: aiUsageDataSchema.describe('AI 사용량 정보'),
-  })
-  .describe('AI 사용량 조회 응답');
+export const aiUsageResponseSchema = z.object({
+  success: z.literal(true).describe('조회 성공 여부 (항상 true)'),
+  data: aiUsageDataSchema.describe('AI 사용량 정보'),
+});
 
 export type AiUsageResponse = z.infer<typeof aiUsageResponseSchema>;

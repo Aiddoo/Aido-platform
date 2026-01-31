@@ -32,10 +32,6 @@ type OAuthProvider = 'kakao' | 'naver' | 'google';
 export class AuthService {
   constructor(private readonly _authRepository: AuthRepository) {}
 
-  /**
-   * OAuth Redirect URI 생성
-   * - makeRedirectUri: 환경(Expo Go, Dev Build, Production)에 따라 적절한 URI 생성
-   */
   private getRedirectUri = (provider: OAuthProvider): string =>
     makeRedirectUri({
       scheme: ENV.SCHEME,
@@ -46,9 +42,6 @@ export class AuthService {
         .exhaustive(),
     });
 
-  /**
-   * OAuth URL에서 authorization code 추출
-   */
   private extractCodeFromUrl = (url: string): string | null => {
     const parsedUrl = Linking.parse(url);
     const queryParams = parsedUrl.queryParams;
@@ -69,10 +62,6 @@ export class AuthService {
     return null;
   };
 
-  /**
-   * OAuth 로그인 통합 메서드
-   * @throws {AuthError} 로그인 취소, 네트워크 오류 등
-   */
   private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
     const redirectUri = this.getRedirectUri(provider);
 
@@ -110,7 +99,6 @@ export class AuthService {
       .exhaustive();
   };
 
-  // Public OAuth API
   openKakaoLogin = (): Promise<string> => {
     return this.openOAuthLogin('kakao');
   };
@@ -123,12 +111,7 @@ export class AuthService {
     return this.openOAuthLogin('google');
   };
 
-  /**
-   * Apple 로그인 (iOS only)
-   * - expo-apple-authentication 네이티브 SDK 사용
-   * - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
-   * @throws {AppleAuthError} 로그인 취소, 인증 실패 등
-   */
+  // iOS only - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
   openAppleLogin = async (): Promise<AuthTokens> => {
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -162,7 +145,6 @@ export class AuthService {
     }
   };
 
-  // Auth API Methods
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
     const dto = await this._authRepository.exchangeCode(request);
     return toAuthTokens(dto);

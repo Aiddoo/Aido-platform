@@ -1,21 +1,23 @@
 import { z } from 'zod';
 import { datetimeSchema } from '../../common/datetime';
 
-/**
- * 일일 완료 정보 스키마
- */
 export const dailyCompletionSchema = z
   .object({
-    id: z.cuid().describe('일일 완료 고유 ID'),
-    userId: z.cuid().describe('사용자 ID'),
-    date: z.string().describe('완료 날짜 (YYYY-MM-DD)'),
-    totalTodos: z.number().int().min(0).describe('해당 날짜 총 Todo 수'),
-    completedTodos: z.number().int().min(0).describe('완료한 Todo 수'),
-    achievedAt: datetimeSchema.describe('100% 달성 시점'),
-    createdAt: datetimeSchema.describe('생성 시각'),
-    updatedAt: datetimeSchema.describe('수정 시각'),
+    id: z.cuid().describe('데일리 달성 기록 ID (CUID 25자, 예: clz7x5p8k0040qz0z8z8z8z8z)'),
+    userId: z.cuid().describe('사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)'),
+    date: z.string().describe('날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
+    totalTodos: z.number().int().min(0).describe('해당 날짜 전체 할 일 개수 (0 이상)'),
+    completedTodos: z.number().int().min(0).describe('완료한 할 일 개수 (0 이상)'),
+    achievedAt: datetimeSchema.describe(
+      '100% 달성 시각 (ISO 8601 UTC, 예: 2026-01-17T18:30:00.000Z)',
+    ),
+    createdAt: datetimeSchema.describe(
+      '기록 생성 시각 (ISO 8601 UTC, 예: 2026-01-17T09:00:00.000Z)',
+    ),
+    updatedAt: datetimeSchema.describe(
+      '기록 수정 시각 (ISO 8601 UTC, 예: 2026-01-17T18:30:00.000Z)',
+    ),
   })
-  .describe('일일 완료 정보')
   .meta({
     example: {
       id: 'clz7x5p8k0040qz0z8z8z8z8z',
@@ -31,18 +33,14 @@ export const dailyCompletionSchema = z
 
 export type DailyCompletion = z.infer<typeof dailyCompletionSchema>;
 
-/**
- * 캘린더용 간소화된 완료 정보
- */
 export const dailyCompletionSummarySchema = z
   .object({
-    date: z.string().describe('완료 날짜 (YYYY-MM-DD)'),
-    totalTodos: z.number().int().min(0).describe('해당 날짜 총 Todo 수'),
-    completedTodos: z.number().int().min(0).describe('완료한 Todo 수'),
-    isComplete: z.boolean().describe('100% 완료 여부 (물고기 표시)'),
-    completionRate: z.number().min(0).max(100).describe('완료율 (%)'),
+    date: z.string().describe('날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
+    totalTodos: z.number().int().min(0).describe('해당 날짜 전체 할 일 개수 (0 이상)'),
+    completedTodos: z.number().int().min(0).describe('완료한 할 일 개수 (0 이상)'),
+    isComplete: z.boolean().describe('100% 달성 여부 (completedTodos === totalTodos)'),
+    completionRate: z.number().min(0).max(100).describe('완료율 (0-100%, 소수점 포함 가능)'),
   })
-  .describe('캘린더용 일일 완료 요약')
   .meta({
     example: {
       date: '2026-01-17',
@@ -55,21 +53,17 @@ export const dailyCompletionSummarySchema = z
 
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;
 
-/**
- * 날짜 범위 완료 정보 응답
- */
 export const dailyCompletionsRangeResponseSchema = z
   .object({
-    completions: z.array(dailyCompletionSummarySchema).describe('완료 정보 목록'),
-    totalCompleteDays: z.number().int().min(0).describe('100% 완료한 날 수'),
+    completions: z.array(dailyCompletionSummarySchema).describe('기간 내 일별 달성 요약 배열'),
+    totalCompleteDays: z.number().int().min(0).describe('100% 달성한 날 개수 (0 이상)'),
     dateRange: z
       .object({
-        startDate: z.string().describe('시작 날짜'),
-        endDate: z.string().describe('종료 날짜'),
+        startDate: z.string().describe('조회 시작 날짜 (YYYY-MM-DD, 예: 2026-01-15)'),
+        endDate: z.string().describe('조회 종료 날짜 (YYYY-MM-DD, 예: 2026-01-17)'),
       })
       .describe('조회 날짜 범위'),
   })
-  .describe('날짜 범위 완료 정보 응답')
   .meta({
     example: {
       completions: [
@@ -105,20 +99,24 @@ export const dailyCompletionsRangeResponseSchema = z
 
 export type DailyCompletionsRangeResponse = z.infer<typeof dailyCompletionsRangeResponseSchema>;
 
-/**
- * 월간 통계 응답
- */
 export const monthlyStatsResponseSchema = z
   .object({
-    year: z.number().int().describe('연도'),
-    month: z.number().int().min(1).max(12).describe('월'),
-    totalCompleteDays: z.number().int().min(0).describe('100% 완료한 날 수'),
-    totalDaysWithTodos: z.number().int().min(0).describe('Todo가 있던 날 수'),
-    averageCompletionRate: z.number().min(0).max(100).describe('평균 완료율 (%)'),
-    longestStreak: z.number().int().min(0).describe('최장 연속 완료 일수'),
-    currentStreak: z.number().int().min(0).describe('현재 연속 완료 일수'),
+    year: z.number().int().describe('년도 (양의 정수, 예: 2026)'),
+    month: z.number().int().min(1).max(12).describe('월 (1-12)'),
+    totalCompleteDays: z.number().int().min(0).describe('해당 월 100% 달성한 날 개수 (0 이상)'),
+    totalDaysWithTodos: z.number().int().min(0).describe('해당 월 할 일이 있었던 날 개수 (0 이상)'),
+    averageCompletionRate: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe('해당 월 평균 완료율 (0-100%, 소수점 포함 가능)'),
+    longestStreak: z.number().int().min(0).describe('해당 월 최장 연속 달성 일수 (0 이상)'),
+    currentStreak: z
+      .number()
+      .int()
+      .min(0)
+      .describe('해당 월 마지막 날 기준 현재 연속 달성 일수 (0 이상)'),
   })
-  .describe('월간 통계 응답')
   .meta({
     example: {
       year: 2026,

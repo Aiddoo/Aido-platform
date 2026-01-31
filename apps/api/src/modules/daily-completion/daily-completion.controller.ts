@@ -1,5 +1,5 @@
 import { Controller, Get, Logger, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiDoc,
@@ -46,6 +46,18 @@ export class DailyCompletionController {
 	 * 날짜 범위 내 일일 완료 현황 조회 (캘린더용)
 	 */
 	@Get()
+	@ApiQuery({
+		name: "startDate",
+		required: true,
+		description: "조회 시작 날짜 (YYYY-MM-DD)",
+		example: "2026-01-01",
+	})
+	@ApiQuery({
+		name: "endDate",
+		required: true,
+		description: "조회 종료 날짜 (YYYY-MM-DD)",
+		example: "2026-01-31",
+	})
 	@ApiDoc({
 		summary: "날짜 범위 내 일일 완료 현황 조회",
 		operationId: "getDailyCompletions",

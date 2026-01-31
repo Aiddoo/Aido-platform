@@ -22,18 +22,12 @@ import type { LoginResult, RequestMetadata } from "../types";
 import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
 import { TokenService } from "./token.service";
 
-/** 기본 카테고리 설정 (소셜 로그인 회원가입 시) */
 const DEFAULT_CATEGORIES = [
 	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
 	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
 ] as const;
 
-/**
- * OAuth 소셜 로그인 서비스
- *
- * Apple, Google, Kakao, Naver OAuth 제공자를 통한 소셜 로그인을 처리합니다.
- * 모바일 앱에서 받은 토큰을 서버에서 검증하고, 사용자 생성/조회 및 세션 발급을 담당합니다.
- */
+// Apple, Google, Kakao, Naver OAuth 소셜 로그인 처리
 @Injectable()
 export class OAuthService {
 	private readonly _logger = new Logger(OAuthService.name);
@@ -52,10 +46,7 @@ export class OAuthService {
 		private readonly _configService: TypedConfigService,
 	) {}
 
-	/**
-	 * 허용된 Redirect URI 패턴 목록
-	 * 보안을 위해 화이트리스트 방식으로 검증합니다.
-	 */
+	// 보안을 위한 화이트리스트 방식 검증
 	private readonly ALLOWED_REDIRECT_PATTERNS = [
 		// 모바일 앱 딥링크 (프로덕션)
 		/^aido:\/\/auth(\/.*)?$/,
@@ -71,19 +62,8 @@ export class OAuthService {
 		/^exp:\/\/[\d.:]+(\/.*)?$/,
 	];
 
-	/**
-	 * 기본 Redirect URI (모바일 앱)
-	 */
 	private readonly DEFAULT_REDIRECT_URI = "aido://auth/callback";
 
-	/**
-	 * Redirect URI 유효성 검증
-	 *
-	 * 보안을 위해 화이트리스트 패턴만 허용합니다.
-	 *
-	 * @param redirectUri - 검증할 Redirect URI
-	 * @returns 유효한 Redirect URI 또는 기본값
-	 */
 	private validateRedirectUri(redirectUri?: string): string {
 		if (!redirectUri) {
 			return this.DEFAULT_REDIRECT_URI;
@@ -103,16 +83,7 @@ export class OAuthService {
 		return redirectUri;
 	}
 
-	/**
-	 * Kakao OAuth 인증 URL 생성 (웹 브라우저 기반 OAuth 플로우용)
-	 *
-	 * 모바일 앱에서 WebBrowser.openAuthSessionAsync()로 열어
-	 * 카카오 인증 페이지로 리다이렉트합니다.
-	 *
-	 * @param state - CSRF 방지용 상태 값
-	 * @returns Kakao OAuth 인증 URL
-	 * @deprecated generateKakaoAuthUrlWithState 사용을 권장합니다.
-	 */
+	/** @deprecated generateKakaoAuthUrlWithState 사용 권장 */
 	generateKakaoAuthUrl(state: string): string {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.kakaoOAuth;
@@ -132,16 +103,6 @@ export class OAuthService {
 		return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
 	}
 
-	/**
-	 * Kakao OAuth 인증 URL 생성 및 State 저장
-	 *
-	 * 클라이언트가 지정한 redirect_uri를 DB에 저장하여
-	 * 콜백 시 해당 URI로 리다이렉트할 수 있도록 합니다.
-	 *
-	 * @param state - CSRF 방지용 상태 값
-	 * @param clientRedirectUri - 클라이언트가 지정한 Redirect URI (선택)
-	 * @returns Kakao OAuth 인증 URL
-	 */
 	async generateKakaoAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
@@ -174,16 +135,6 @@ export class OAuthService {
 		return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
 	}
 
-	/**
-	 * Kakao 웹 OAuth 콜백 처리 (Authorization Code → Access Token 교환)
-	 *
-	 * 카카오에서 리다이렉트된 authorization code를 access token으로 교환하고,
-	 * 사용자 정보를 검증한 후 세션을 생성합니다.
-	 *
-	 * @param code - Kakao에서 받은 authorization code
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 로그인 결과 (토큰, 사용자 정보)
-	 */
 	async handleKakaoWebCallback(
 		code: string,
 		metadata?: RequestMetadata,
@@ -231,18 +182,7 @@ export class OAuthService {
 		);
 	}
 
-	/**
-	 * Kakao 웹 OAuth 콜백 처리 + 교환 코드 생성
-	 *
-	 * 카카오에서 리다이렉트된 authorization code를 처리하고,
-	 * JWT 토큰을 DB에 임시 저장한 후 일회용 교환 코드를 반환합니다.
-	 * 딥링크 URL에 토큰이 노출되지 않도록 보안을 강화합니다.
-	 *
-	 * @param code - Kakao에서 받은 authorization code
-	 * @param state - CSRF 방지용 상태 값
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 교환 코드 및 사용자 정보
-	 */
+	// 딥링크 URL에 토큰 노출 방지를 위해 일회용 교환 코드 사용
 	async handleKakaoWebCallbackWithExchangeCode(
 		code: string,
 		state: string,
@@ -302,19 +242,6 @@ export class OAuthService {
 		};
 	}
 
-	// ========================================
-	// Google 웹 OAuth
-	// ========================================
-
-	/**
-	 * Google 웹 OAuth 인증 URL 생성
-	 *
-	 * state를 저장하고 Google OAuth 인증 페이지로 리다이렉트할 URL을 생성합니다.
-	 *
-	 * @param state - CSRF 방지용 상태 값
-	 * @param clientRedirectUri - 클라이언트 리다이렉트 URI (딥링크)
-	 * @returns Google OAuth 인증 URL
-	 */
 	async generateGoogleAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
@@ -349,16 +276,6 @@ export class OAuthService {
 		return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 	}
 
-	/**
-	 * Google 웹 OAuth 콜백 처리 (Authorization Code → Access Token 교환)
-	 *
-	 * 구글에서 리다이렉트된 authorization code를 access token으로 교환하고,
-	 * 사용자 정보를 검증한 후 세션을 생성합니다.
-	 *
-	 * @param code - Google에서 받은 authorization code
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 로그인 결과 (토큰, 사용자 정보)
-	 */
 	async handleGoogleWebCallback(
 		code: string,
 		metadata?: RequestMetadata,
@@ -407,18 +324,6 @@ export class OAuthService {
 		);
 	}
 
-	/**
-	 * Google 웹 OAuth 콜백 처리 + 교환 코드 생성
-	 *
-	 * 구글에서 리다이렉트된 authorization code를 처리하고,
-	 * JWT 토큰을 DB에 임시 저장한 후 일회용 교환 코드를 반환합니다.
-	 * 딥링크 URL에 토큰이 노출되지 않도록 보안을 강화합니다.
-	 *
-	 * @param code - Google에서 받은 authorization code
-	 * @param state - CSRF 방지용 상태 값
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 교환 코드 및 사용자 정보
-	 */
 	async handleGoogleWebCallbackWithExchangeCode(
 		code: string,
 		state: string,
@@ -478,19 +383,6 @@ export class OAuthService {
 		};
 	}
 
-	// ========================================
-	// Naver 웹 OAuth
-	// ========================================
-
-	/**
-	 * Naver 웹 OAuth 인증 URL 생성
-	 *
-	 * state를 저장하고 Naver OAuth 인증 페이지로 리다이렉트할 URL을 생성합니다.
-	 *
-	 * @param state - CSRF 방지용 상태 값
-	 * @param clientRedirectUri - 클라이언트 리다이렉트 URI (딥링크)
-	 * @returns Naver OAuth 인증 URL
-	 */
 	async generateNaverAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
@@ -522,16 +414,6 @@ export class OAuthService {
 		return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
 	}
 
-	/**
-	 * Naver 웹 OAuth 콜백 처리 (Authorization Code → Access Token 교환)
-	 *
-	 * 네이버에서 리다이렉트된 authorization code를 access token으로 교환하고,
-	 * 사용자 정보를 검증한 후 세션을 생성합니다.
-	 *
-	 * @param code - Naver에서 받은 authorization code
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 로그인 결과 (토큰, 사용자 정보)
-	 */
 	async handleNaverWebCallback(
 		code: string,
 		metadata?: RequestMetadata,
@@ -579,18 +461,6 @@ export class OAuthService {
 		);
 	}
 
-	/**
-	 * Naver 웹 OAuth 콜백 처리 + 교환 코드 생성
-	 *
-	 * 네이버에서 리다이렉트된 authorization code를 처리하고,
-	 * JWT 토큰을 DB에 임시 저장한 후 일회용 교환 코드를 반환합니다.
-	 * 딥링크 URL에 토큰이 노출되지 않도록 보안을 강화합니다.
-	 *
-	 * @param code - Naver에서 받은 authorization code
-	 * @param state - CSRF 방지용 상태 값
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 * @returns 교환 코드 및 사용자 정보
-	 */
 	async handleNaverWebCallbackWithExchangeCode(
 		code: string,
 		state: string,
@@ -650,16 +520,6 @@ export class OAuthService {
 		};
 	}
 
-	/**
-	 * Apple 모바일 로그인 처리 (서버에서 토큰 검증)
-	 *
-	 * 클라이언트에서 받은 idToken을 서버에서 JWKS로 직접 검증합니다.
-	 * 클라이언트가 제공하는 profile 객체를 신뢰하지 않습니다.
-	 *
-	 * @param idToken - Apple에서 발급받은 ID Token
-	 * @param userName - 사용자 이름 (첫 로그인 시에만 제공)
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 */
 	async handleAppleMobileLogin(
 		idToken: string,
 		userName?: string,
@@ -697,16 +557,6 @@ export class OAuthService {
 		}
 	}
 
-	/**
-	 * Google 모바일 로그인 처리 (서버에서 토큰 검증)
-	 *
-	 * 클라이언트에서 받은 idToken을 서버에서 google-auth-library로 직접 검증합니다.
-	 * 클라이언트가 제공하는 profile 객체를 신뢰하지 않습니다.
-	 *
-	 * @param idToken - Google에서 발급받은 ID Token
-	 * @param userName - 사용자 이름 (프로필 이름 대신 사용할 경우)
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 */
 	async handleGoogleMobileLogin(
 		idToken: string,
 		userName?: string,
@@ -748,16 +598,6 @@ export class OAuthService {
 		}
 	}
 
-	/**
-	 * Kakao 모바일 로그인 처리 (서버에서 토큰 검증)
-	 *
-	 * 클라이언트에서 받은 accessToken으로 Kakao API를 호출하여 사용자 정보를 검증합니다.
-	 * 클라이언트가 제공하는 profile 객체를 신뢰하지 않습니다.
-	 *
-	 * @param accessToken - Kakao에서 발급받은 Access Token
-	 * @param userName - 사용자 이름 (프로필 이름 대신 사용할 경우)
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 */
 	async handleKakaoMobileLogin(
 		accessToken: string,
 		userName?: string,
@@ -799,16 +639,6 @@ export class OAuthService {
 		}
 	}
 
-	/**
-	 * Naver 모바일 로그인 처리 (서버에서 토큰 검증)
-	 *
-	 * 클라이언트에서 받은 accessToken으로 Naver API를 호출하여 사용자 정보를 검증합니다.
-	 * 클라이언트가 제공하는 profile 객체를 신뢰하지 않습니다.
-	 *
-	 * @param accessToken - Naver에서 발급받은 Access Token
-	 * @param userName - 사용자 이름 (프로필 이름 대신 사용할 경우)
-	 * @param metadata - 요청 메타데이터 (IP, User-Agent 등)
-	 */
 	async handleNaverMobileLogin(
 		accessToken: string,
 		userName?: string,
@@ -850,14 +680,6 @@ export class OAuthService {
 		}
 	}
 
-	/**
-	 * 계정 연결 (로그인된 사용자에 소셜 계정 추가)
-	 *
-	 * @param userId - 현재 로그인한 사용자 ID
-	 * @param provider - OAuth 제공자
-	 * @param providerAccountId - 제공자 고유 사용자 ID
-	 * @param refreshToken - OAuth refresh token (선택)
-	 */
 	async linkAccount(
 		userId: string,
 		provider: AccountProvider,
@@ -893,14 +715,6 @@ export class OAuthService {
 		return { message: "계정이 연결되었습니다." };
 	}
 
-	/**
-	 * 토큰 검증 후 소셜 계정 연동
-	 *
-	 * 클라이언트에서 받은 토큰을 서버에서 검증한 후 계정을 연동합니다.
-	 *
-	 * @param userId - 현재 로그인한 사용자 ID
-	 * @param dto - 연동 요청 데이터 (provider, idToken/accessToken)
-	 */
 	async linkSocialAccountWithToken(
 		userId: string,
 		dto: {
@@ -958,12 +772,6 @@ export class OAuthService {
 		return this.linkAccount(userId, provider, providerAccountId);
 	}
 
-	/**
-	 * 계정 연결 해제
-	 *
-	 * @param userId - 현재 로그인한 사용자 ID
-	 * @param provider - OAuth 제공자
-	 */
 	async unlinkAccount(
 		userId: string,
 		provider: AccountProvider,
@@ -992,9 +800,6 @@ export class OAuthService {
 		return { message: "계정 연결이 해제되었습니다." };
 	}
 
-	/**
-	 * 연결된 계정 목록 조회
-	 */
 	async getLinkedAccounts(
 		userId: string,
 	): Promise<{ provider: AccountProvider; linkedAt: Date }[]> {
@@ -1008,9 +813,6 @@ export class OAuthService {
 			}));
 	}
 
-	/**
-	 * 소셜 로그인 공통 처리
-	 */
 	private async _handleSocialLogin(
 		provider: AccountProvider,
 		providerAccountId: string,
@@ -1102,21 +904,7 @@ export class OAuthService {
 		});
 	}
 
-	/**
-	 * 소셜 로그인으로 신규 사용자 생성
-	 *
-	 * 사용자 상태 결정 로직:
-	 * - emailVerified=true: ACTIVE 상태 (Apple, Google)
-	 * - emailVerified=false: PENDING_VERIFY 상태 (Kakao, Naver 일부)
-	 *
-	 * PENDING_VERIFY 상태의 소셜 사용자:
-	 * - 로그인 및 앱 사용은 가능 (_validateUserStatus에서 허용)
-	 * - 비밀번호 찾기 등 이메일 기반 기능은 제한
-	 * - 나중에 이메일 인증으로 ACTIVE 상태 전환 가능
-	 *
-	 * @param data 소셜 프로필 정보
-	 * @returns 생성된 사용자
-	 */
+	// emailVerified=true → ACTIVE, emailVerified=false → PENDING_VERIFY (로그인은 허용)
 	private async _createSocialUser(data: {
 		email: string;
 		provider: AccountProvider;
@@ -1195,9 +983,6 @@ export class OAuthService {
 		});
 	}
 
-	/**
-	 * 세션 생성 및 토큰 발급
-	 */
 	private async _createSessionAndTokens(
 		userId: string,
 		email: string,
@@ -1290,24 +1075,7 @@ export class OAuthService {
 		});
 	}
 
-	/**
-	 * 소셜 로그인 사용자 상태 검증
-	 *
-	 * PENDING_VERIFY 허용 이유:
-	 * - 소셜 로그인은 OAuth Provider가 사용자 신원을 이미 검증함
-	 * - Kakao/Naver의 경우 이메일이 미인증 상태일 수 있으나,
-	 *   소셜 계정 자체의 유효성은 Provider가 보장
-	 * - 이메일 인증은 비밀번호 찾기 등 이메일 기반 기능에만 필요
-	 *
-	 * Provider별 이메일 인증 상태:
-	 * - Apple: emailVerified=true 보장 → ACTIVE 상태로 생성
-	 * - Google: emailVerified=true 보장 → ACTIVE 상태로 생성
-	 * - Kakao: emailVerified 불확실 → PENDING_VERIFY 가능 (로그인 허용)
-	 * - Naver: emailVerified 불확실 → PENDING_VERIFY 가능 (로그인 허용)
-	 *
-	 * @see https://developers.kakao.com/docs/latest/ko/kakaologin/common
-	 * @see https://developers.naver.com/docs/login/api/api.md
-	 */
+	// PENDING_VERIFY 허용: 소셜 로그인은 OAuth Provider가 신원을 이미 검증함
 	private _validateUserStatus(status: string): void {
 		switch (status) {
 			case "LOCKED":
@@ -1324,30 +1092,12 @@ export class OAuthService {
 		}
 	}
 
-	/**
-	 * 신뢰된 이메일 Provider 여부 확인
-	 *
-	 * Google, Apple은 항상 이메일이 검증된 상태로 제공되므로 신뢰할 수 있습니다.
-	 * Kakao, Naver는 이메일 검증이 선택적이므로 신뢰하지 않습니다.
-	 */
+	// Google, Apple은 이메일 검증 보장. Kakao, Naver는 선택적.
 	private _isTrustedProvider(provider: AccountProvider): boolean {
 		return TRUSTED_EMAIL_PROVIDERS.includes(provider);
 	}
 
-	/**
-	 * 이메일 충돌 처리 (기존 사용자 + 새 소셜 계정)
-	 *
-	 * Provider별로 다른 연동 정책을 적용합니다:
-	 * - Google/Apple (신뢰된 Provider): 이메일 검증이 보장되므로 자동 연동
-	 * - Kakao/Naver: 이메일 검증이 선택적이므로 강제 연동 (에러 반환)
-	 *
-	 * @param existingUser - 동일 이메일의 기존 사용자
-	 * @param provider - OAuth Provider
-	 * @param providerAccountId - Provider에서 제공한 계정 ID
-	 * @param options - 추가 옵션 (이메일 검증 여부, IP 등)
-	 * @returns 자동 연동 성공 시 LoginResult
-	 * @throws socialAccountNotLinked - 강제 연동 필요 시
-	 */
+	// Google/Apple: 자동 연동, Kakao/Naver: 강제 연동 필요 (에러 반환)
 	private async _handleEmailConflict(
 		existingUser: { id: string; email: string; status: string },
 		provider: AccountProvider,
@@ -1433,22 +1183,7 @@ export class OAuthService {
 		);
 	}
 
-	// ============================================
-	// OAuth Exchange Code (일회용 교환 코드) 관련
-	// ============================================
-
-	/**
-	 * 교환 코드 생성 및 저장
-	 *
-	 * OAuth 인증 성공 후 JWT 토큰을 DB에 임시 저장하고,
-	 * 일회용 교환 코드를 생성하여 반환합니다.
-	 * 딥링크 URL에는 이 교환 코드만 전달되어 토큰 노출을 방지합니다.
-	 *
-	 * @param oauthStateId - OAuthState 레코드 ID
-	 * @param tokens - JWT 토큰 쌍 (accessToken, refreshToken)
-	 * @param userInfo - 사용자 정보 (userId, userName, profileImage)
-	 * @returns 생성된 교환 코드 (base64url 인코딩)
-	 */
+	// 딥링크 URL에는 교환 코드만 전달하여 토큰 노출 방지
 	async createExchangeCode(
 		oauthStateId: number,
 		tokens: { accessToken: string; refreshToken: string },
@@ -1472,16 +1207,7 @@ export class OAuthService {
 		return exchangeCode;
 	}
 
-	/**
-	 * 교환 코드로 토큰 교환
-	 *
-	 * 일회용 교환 코드를 검증하고, 저장된 JWT 토큰과 사용자 정보를 반환합니다.
-	 * 교환 완료 후 토큰은 DB에서 삭제되어 재사용이 불가능합니다.
-	 *
-	 * @param code - OAuth 인증 후 발급된 일회용 교환 코드
-	 * @returns 저장된 토큰 및 사용자 정보
-	 * @throws InvalidCredentials - 유효하지 않거나 만료/사용된 교환 코드
-	 */
+	// 일회용 교환 코드 검증 후 토큰 반환, 교환 완료 후 DB에서 삭제
 	async exchangeCodeForTokens(code: string): Promise<{
 		accessToken: string;
 		refreshToken: string;

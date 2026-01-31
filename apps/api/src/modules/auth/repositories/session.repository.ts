@@ -12,12 +12,7 @@ import type { CreateSessionData } from "../types";
 export class SessionRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 세션 생성
-	 *
-	 * refreshTokenHash는 선택적이며, 토큰 생성 후 updateRefreshTokenHash로 업데이트 가능
-	 * refreshTokenHash가 없는 경우 unique 제약 조건을 위해 임시 placeholder 해시 사용
-	 */
+	// refreshTokenHash가 없는 경우 unique 제약 조건을 위해 임시 placeholder 해시 사용
 	async create(
 		data: CreateSessionData,
 		tx?: Prisma.TransactionClient,
@@ -45,9 +40,6 @@ export class SessionRepository {
 		});
 	}
 
-	/**
-	 * 리프레시 토큰 해시 업데이트 (세션 생성 후 토큰 발급 시)
-	 */
 	async updateRefreshTokenHash(
 		id: string,
 		refreshTokenHash: string,
@@ -60,27 +52,18 @@ export class SessionRepository {
 		});
 	}
 
-	/**
-	 * ID로 세션 조회
-	 */
 	async findById(id: string): Promise<Session | null> {
 		return this.database.session.findUnique({
 			where: { id },
 		});
 	}
 
-	/**
-	 * Refresh Token 해시로 세션 조회
-	 */
 	async findByRefreshTokenHash(hash: string): Promise<Session | null> {
 		return this.database.session.findUnique({
 			where: { refreshTokenHash: hash },
 		});
 	}
 
-	/**
-	 * 토큰 패밀리로 세션 조회
-	 */
 	async findByTokenFamily(tokenFamily: string): Promise<Session | null> {
 		return this.database.session.findFirst({
 			where: {
@@ -90,9 +73,6 @@ export class SessionRepository {
 		});
 	}
 
-	/**
-	 * 사용자의 활성 세션 목록 조회
-	 */
 	async findActiveByUserId(userId: string): Promise<Session[]> {
 		return this.database.session.findMany({
 			where: {
@@ -147,9 +127,6 @@ export class SessionRepository {
 		return client.session.findUnique({ where: { id } });
 	}
 
-	/**
-	 * 세션 마지막 사용 시간 업데이트
-	 */
 	async updateLastUsedAt(
 		id: string,
 		tx?: Prisma.TransactionClient,
@@ -161,9 +138,6 @@ export class SessionRepository {
 		});
 	}
 
-	/**
-	 * 세션 폐기
-	 */
 	async revoke(
 		id: string,
 		reason: string,
@@ -179,9 +153,7 @@ export class SessionRepository {
 		});
 	}
 
-	/**
-	 * 토큰 패밀리 전체 폐기 (토큰 재사용 감지 시)
-	 */
+	// 토큰 재사용 감지 시 전체 폐기
 	async revokeByTokenFamily(
 		tokenFamily: string,
 		reason: string,
@@ -201,9 +173,6 @@ export class SessionRepository {
 		return result.count;
 	}
 
-	/**
-	 * 사용자의 모든 세션 폐기 (전체 로그아웃)
-	 */
 	async revokeAllByUserId(
 		userId: string,
 		reason: string,
@@ -225,9 +194,6 @@ export class SessionRepository {
 		return result.count;
 	}
 
-	/**
-	 * 만료된 세션 정리 (배치 작업용)
-	 */
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.session.deleteMany({
 			where: {
@@ -237,9 +203,7 @@ export class SessionRepository {
 		return result.count;
 	}
 
-	/**
-	 * 이전 토큰 해시로 세션 조회 (토큰 재사용 감지용)
-	 */
+	// 토큰 재사용 감지용
 	async findByPreviousTokenHash(hash: string): Promise<Session | null> {
 		return this.database.session.findFirst({
 			where: { previousTokenHash: hash },
