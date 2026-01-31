@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { datetimeOutputSchema } from '../../common/datetime';
+
 export const todoCategorySchema = z
   .object({
     id: z.number().int().describe('카테고리 ID (양의 정수)'),
@@ -7,8 +9,12 @@ export const todoCategorySchema = z
     name: z.string().describe('카테고리 이름 (최대 50자)'),
     color: z.string().describe('카테고리 색상 (HEX 7자, 예: #FFB3B3)'),
     sortOrder: z.number().int().describe('정렬 순서 (작을수록 위)'),
-    createdAt: z.iso.datetime().describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)'),
-    updatedAt: z.iso.datetime().describe('수정 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)'),
+    createdAt: datetimeOutputSchema.describe(
+      '생성 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)',
+    ),
+    updatedAt: datetimeOutputSchema.describe(
+      '수정 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)',
+    ),
   })
   .meta({
     example: {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
+import { datetimeOutputSchema, nullableDatetimeOutputSchema } from '../../common/datetime';
 
 export const cheerSchema = z
   .object({
@@ -7,8 +7,10 @@ export const cheerSchema = z
     senderId: z.cuid().describe('보낸 사용자 ID (CUID 25자)'),
     receiverId: z.cuid().describe('받은 사용자 ID (CUID 25자)'),
     message: z.string().max(200).nullable().describe('응원 메시지 (최대 200자, 미설정 시 null)'),
-    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)'),
-    readAt: nullableDatetimeSchema.describe(
+    createdAt: datetimeOutputSchema.describe(
+      '생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)',
+    ),
+    readAt: nullableDatetimeOutputSchema.describe(
       '읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)',
     ),
   })
@@ -197,7 +199,7 @@ export const cheerCooldownInfoSchema = z
   .object({
     userId: z.cuid().describe('대상 사용자 ID (CUID 25자)'),
     canCheer: z.boolean().describe('응원 가능 여부'),
-    cooldownEndsAt: nullableDatetimeSchema.describe(
+    cooldownEndsAt: nullableDatetimeOutputSchema.describe(
       '쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-18T10:00:00.000Z, 쿨다운 없으면 null)',
     ),
     remainingSeconds: z
