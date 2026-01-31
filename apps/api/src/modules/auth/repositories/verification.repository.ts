@@ -12,9 +12,6 @@ import type {
 export class VerificationRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 인증 토큰 생성
-	 */
 	async create(
 		data: {
 			userId: string;
@@ -35,18 +32,12 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 토큰 해시로 인증 조회
-	 */
 	async findByToken(tokenHash: string): Promise<Verification | null> {
 		return this.database.verification.findUnique({
 			where: { token: tokenHash },
 		});
 	}
 
-	/**
-	 * 사용자 + 타입으로 가장 최근 인증 조회
-	 */
 	async findLatestByUserIdAndType(
 		userId: string,
 		type: VerificationType,
@@ -62,12 +53,7 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 사용자 + 타입으로 유효한 인증 조회 (브루트포스 보호용)
-	 *
-	 * 시도 횟수와 관계없이 미사용 + 만료되지 않은 인증 반환
-	 * (시도 횟수 검증은 서비스 레이어에서 수행)
-	 */
+	// 시도 횟수 검증은 서비스 레이어에서 수행
 	async findValidByUserIdAndType(
 		userId: string,
 		type: VerificationType,
@@ -85,9 +71,6 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 인증 토큰 사용 처리
-	 */
 	async markAsUsed(
 		id: number,
 		tx?: Prisma.TransactionClient,
@@ -99,9 +82,6 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 시도 횟수 증가
-	 */
 	async incrementAttempts(
 		id: number,
 		tx?: Prisma.TransactionClient,
@@ -158,9 +138,6 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 사용자의 특정 타입 미사용 인증 모두 만료 처리
-	 */
 	async invalidateAllByUserIdAndType(
 		userId: string,
 		type: VerificationType,
@@ -180,9 +157,6 @@ export class VerificationRepository {
 		return result.count;
 	}
 
-	/**
-	 * 특정 기간 내 발송 횟수 조회 (재발송 제한용)
-	 */
 	async countRecentByUserIdAndType(
 		userId: string,
 		type: VerificationType,
@@ -199,9 +173,6 @@ export class VerificationRepository {
 		});
 	}
 
-	/**
-	 * 만료된 인증 정리 (배치 작업용)
-	 */
 	async deleteExpired(): Promise<number> {
 		const result = await this.database.verification.deleteMany({
 			where: {

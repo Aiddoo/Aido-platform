@@ -10,9 +10,6 @@ import type {
 } from "@/generated/prisma/client";
 import { generateUserTag } from "../utils/user-tag.util";
 
-/**
- * 사용자 조회 결과 (인증용)
- */
 export interface UserWithAccount {
 	id: string;
 	email: string;
@@ -25,10 +22,7 @@ export interface UserWithAccount {
 	}[];
 }
 
-/**
- * 사용자 프로필 조회 결과 (getCurrentUser용)
- * @description 비밀번호 등 민감 정보 제외, 클라이언트에 필요한 모든 정보 포함
- */
+// 비밀번호 등 민감 정보 제외
 export interface UserWithProfile {
 	id: string;
 	email: string;
@@ -52,18 +46,12 @@ export class UserRepository {
 
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 이메일로 사용자 조회
-	 */
 	async findByEmail(email: string): Promise<User | null> {
 		return this.database.user.findUnique({
 			where: { email },
 		});
 	}
 
-	/**
-	 * 이메일로 사용자 + Credential 계정 조회 (로그인용)
-	 */
 	async findByEmailWithCredential(
 		email: string,
 	): Promise<UserWithAccount | null> {
@@ -86,18 +74,12 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * ID로 사용자 조회
-	 */
 	async findById(id: string): Promise<User | null> {
 		return this.database.user.findUnique({
 			where: { id },
 		});
 	}
 
-	/**
-	 * ID로 사용자 + 프로필 조회
-	 */
 	async findByIdWithProfile(
 		id: string,
 		tx?: Prisma.TransactionClient,
@@ -125,9 +107,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 이메일 중복 확인
-	 */
 	async existsByEmail(email: string): Promise<boolean> {
 		const count = await this.database.user.count({
 			where: { email },
@@ -135,11 +114,7 @@ export class UserRepository {
 		return count > 0;
 	}
 
-	/**
-	 * 사용자 생성 (회원가입 트랜잭션 내에서 사용)
-	 *
-	 * userTag가 없으면 자동 생성 (중복 시 재시도)
-	 */
+	// userTag가 없으면 자동 생성 (중복 시 재시도)
 	async create(
 		data: Omit<Prisma.UserCreateInput, "userTag"> & {
 			userTag?: string;
@@ -159,9 +134,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 고유한 사용자 태그 생성 (중복 시 재시도)
-	 */
 	private async generateUniqueUserTag(
 		client: Prisma.TransactionClient | DatabaseService,
 	): Promise<string> {
@@ -185,9 +157,6 @@ export class UserRepository {
 		);
 	}
 
-	/**
-	 * 사용자 상태 업데이트
-	 */
 	async updateStatus(
 		id: string,
 		status: UserStatus,
@@ -200,9 +169,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 이메일 인증 완료 처리
-	 */
 	async markEmailVerified(
 		id: string,
 		tx?: Prisma.TransactionClient,
@@ -217,9 +183,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 마지막 로그인 시간 업데이트
-	 */
 	async updateLastLoginAt(
 		id: string,
 		tx?: Prisma.TransactionClient,
@@ -231,9 +194,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 프로필 생성 (회원가입 시)
-	 */
 	async createProfile(
 		userId: string,
 		data: { name?: string; profileImage?: string },
@@ -249,9 +209,6 @@ export class UserRepository {
 		});
 	}
 
-	/**
-	 * 프로필 업데이트
-	 */
 	async updateProfile(
 		userId: string,
 		data: { name?: string | null; profileImage?: string | null },

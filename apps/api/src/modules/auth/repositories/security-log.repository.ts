@@ -8,9 +8,6 @@ import type {
 	SecurityLog,
 } from "@/generated/prisma/client";
 
-/**
- * 보안 로그 생성 데이터
- */
 export interface CreateSecurityLogData {
 	userId?: string;
 	event: SecurityEvent;
@@ -23,9 +20,6 @@ export interface CreateSecurityLogData {
 export class SecurityLogRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 보안 로그 기록
-	 */
 	async create(
 		data: CreateSecurityLogData,
 		tx?: Prisma.TransactionClient,
@@ -42,9 +36,6 @@ export class SecurityLogRepository {
 		});
 	}
 
-	/**
-	 * 사용자의 보안 로그 조회 (최근 순)
-	 */
 	async findByUserId(
 		userId: string,
 		options?: {
@@ -62,9 +53,6 @@ export class SecurityLogRepository {
 		});
 	}
 
-	/**
-	 * 특정 이벤트 타입의 최근 로그 조회
-	 */
 	async findRecentByEvent(
 		event: SecurityEvent,
 		since: Date,
@@ -86,9 +74,6 @@ export class SecurityLogRepository {
 		});
 	}
 
-	/**
-	 * IP 주소의 의심스러운 활동 조회
-	 */
 	async findSuspiciousActivityByIp(
 		ipAddress: string,
 		since: Date,
@@ -110,9 +95,7 @@ export class SecurityLogRepository {
 		});
 	}
 
-	/**
-	 * 오래된 로그 정리 (배치 작업용, 90일 보관)
-	 */
+	// 배치 작업용, 90일 보관
 	async deleteOld(retentionDays = 90): Promise<number> {
 		const cutoff = subtractDays(retentionDays);
 
@@ -124,9 +107,6 @@ export class SecurityLogRepository {
 		return result.count;
 	}
 
-	/**
-	 * 통계: 이벤트별 카운트
-	 */
 	async countByEvent(
 		since: Date,
 		until?: Date,

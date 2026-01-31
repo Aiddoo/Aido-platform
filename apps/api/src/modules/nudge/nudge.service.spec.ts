@@ -502,7 +502,7 @@ describe("NudgeService", () => {
 			// Then
 			expect(result.isActive).toBe(false);
 			expect(result.remainingSeconds).toBe(0);
-			expect(result.canNudgeAt).toBeNull();
+			expect(result.cooldownEndsAt).toBeNull();
 		});
 
 		it("쿨다운 기간 내이면 활성 상태를 반환한다", async () => {
@@ -518,7 +518,7 @@ describe("NudgeService", () => {
 			// Then
 			expect(result.isActive).toBe(true);
 			expect(result.remainingSeconds).toBeGreaterThan(0);
-			expect(result.canNudgeAt).not.toBeNull();
+			expect(result.cooldownEndsAt).not.toBeNull();
 		});
 
 		it("쿨다운 기간이 지나면 비활성 상태를 반환한다", async () => {

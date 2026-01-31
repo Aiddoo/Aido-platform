@@ -11,9 +11,6 @@ import type {
 export class AccountRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 사용자 ID + 제공자로 계정 조회
-	 */
 	async findByUserIdAndProvider(
 		userId: string,
 		provider: AccountProvider,
@@ -25,9 +22,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * 제공자 계정 ID로 계정 조회 (OAuth 로그인용)
-	 */
 	async findByProviderAccountId(
 		provider: AccountProvider,
 		providerAccountId: string,
@@ -39,9 +33,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * Credential 계정 생성 (회원가입)
-	 */
 	async createCredentialAccount(
 		userId: string,
 		hashedPassword: string,
@@ -58,9 +49,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * 비밀번호 업데이트
-	 */
 	async updatePassword(
 		userId: string,
 		hashedPassword: string,
@@ -75,9 +63,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * OAuth 계정 생성/연결
-	 */
 	async createOAuthAccount(
 		data: {
 			userId: string;
@@ -104,9 +89,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * OAuth 토큰 갱신
-	 */
 	async updateOAuthTokens(
 		userId: string,
 		provider: AccountProvider,
@@ -132,9 +114,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * 계정 연결 해제
-	 */
 	async deleteAccount(
 		userId: string,
 		provider: AccountProvider,
@@ -148,9 +127,6 @@ export class AccountRepository {
 		});
 	}
 
-	/**
-	 * 사용자의 모든 계정 조회
-	 */
 	async findAllByUserId(userId: string): Promise<Account[]> {
 		return this.database.account.findMany({
 			where: { userId },

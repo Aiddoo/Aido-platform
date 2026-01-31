@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -290,6 +290,12 @@ export class CheerController {
 	}
 
 	@Get("cooldown/:userId")
+	@ApiParam({
+		name: "userId",
+		description:
+			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
 		operationId: "getCheerCooldownInfo",
@@ -330,7 +336,7 @@ export class CheerController {
 			userId: targetUserId,
 			canCheer: !cooldownInfo.isActive,
 			remainingSeconds: cooldownInfo.remainingSeconds,
-			cooldownEndsAt: cooldownInfo.canCheerAt ?? null,
+			cooldownEndsAt: cooldownInfo.canCheerAt?.toISOString() ?? null,
 		};
 	}
 

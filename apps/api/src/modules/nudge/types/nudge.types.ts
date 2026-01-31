@@ -88,11 +88,11 @@ export interface NudgeLimitInfo {
 }
 
 /**
- * Nudge 쿨다운 정보
+ * Nudge 쿨다운 정보 (내부용)
  */
 export interface NudgeCooldownInfo {
 	isActive: boolean;
-	canNudgeAt: Date | null;
+	cooldownEndsAt: Date | null;
 	remainingSeconds: number;
 }
 

@@ -14,7 +14,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -46,72 +46,13 @@ import { NotificationService } from "./notification.service";
  *
  * 푸시 알림 토큰 등록, 알림 목록 조회, 읽음 처리를 위한 API입니다.
  *
- * ### 푸시 토큰 관리
- * - POST /notifications/token - 푸시 토큰 등록
- * - DELETE /notifications/token - 푸시 토큰 해제
- *
- * ### 알림 조회
- * - GET /notifications - 알림 목록 조회
- * - GET /notifications/unread-count - 읽지 않은 알림 수 조회
- *
- * ### 읽음 처리
+ * ### 주요 엔드포인트
+ * - POST /notifications/token - 푸시 토큰 등록/갱신
+ * - GET /notifications - 알림 목록 조회 (커서 페이지네이션)
  * - PATCH /notifications/:id/read - 단일 알림 읽음 처리
  * - PATCH /notifications/read-all - 모든 알림 읽음 처리
  *
- * ---
- *
- * ## 📱 알림 링크 처리 가이드 (클라이언트용)
- *
- * ### 1. Internal Link (인앱 링크)
- *
- * `route` 필드에 Expo Router 경로가 포함됩니다.
- *
- * **예시:**
- * - `"/todos/123"` - 특정 할일 상세 페이지로 이동
- * - `"/friends/abc"` - 친구 프로필 페이지로 이동
- * - `"/friends/requests"` - 친구 요청 목록으로 이동
- * - `"/"` - 홈 화면으로 이동
- * - `null` - 이동 없음 (알림 확인만)
- *
- * **클라이언트 처리:**
- * ```typescript
- * if (notification.route) {
- *   router.push(notification.route);
- * }
- * ```
- *
- * ### 2. External Link (외부 링크)
- *
- * `metadata.externalUrl` 필드에 외부 URL이 포함됩니다.
- *
- * **예시:**
- * ```json
- * {
- *   "route": null,
- *   "metadata": {
- *     "externalUrl": "https://example.com/promotion"
- *   }
- * }
- * ```
- *
- * **클라이언트 처리:**
- * ```typescript
- * if (notification.metadata?.externalUrl) {
- *   Linking.openURL(notification.metadata.externalUrl);
- * }
- * ```
- *
- * ### 3. 알림 타입별 route 패턴
- *
- * | 알림 타입 | route 예시 | 설명 |
- * |----------|-----------|------|
- * | FOLLOW_NEW | `/friends/requests` | 친구 요청 목록 |
- * | FOLLOW_ACCEPTED | `/friends/{friendId}` | 친구 프로필 |
- * | NUDGE_RECEIVED | `/todos/{todoId}` | 해당 할일 |
- * | CHEER_RECEIVED | `/friends/{senderId}` | 응원 보낸 친구 |
- * | TODO_REMINDER | `/todos/{todoId}` | 마감 예정 할일 |
- * | FRIEND_COMPLETED | `/friends/{friendId}` | 완료한 친구 |
- * | DAILY_COMPLETE | `/` | 홈 화면 |
+ * 💡 **클라이언트 구현 가이드**: [NOTIFICATION_GUIDE.md](../../docs/NOTIFICATION_GUIDE.md) 참조
  */
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
@@ -327,6 +268,12 @@ Expo 푸시 토큰을 서버에 등록합니다.
 
 	@Patch(":id/read")
 	@HttpCode(HttpStatus.OK)
+	@ApiParam({
+		name: "id",
+		description: "읽음 처리할 알림 ID (양의 정수)",
+		schema: { type: "number" },
+		example: 1,
+	})
 	@ApiDoc({
 		summary: "단일 알림 읽음 처리",
 		operationId: "markNotificationAsRead",

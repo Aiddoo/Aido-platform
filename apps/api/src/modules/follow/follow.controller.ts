@@ -12,7 +12,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -120,6 +120,13 @@ export class FollowController {
 	// ============================================
 
 	@Post(":userTag")
+	@ApiParam({
+		name: "userTag",
+		description:
+			"친구 요청을 보낼 대상 사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+		example: "JOHN2026",
+		schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
+	})
 	@ApiDoc({
 		summary: "친구 요청 보내기",
 		operationId: "sendFriendRequest",
@@ -181,6 +188,12 @@ export class FollowController {
 
 	@Patch(":userId/accept")
 	@HttpCode(HttpStatus.OK)
+	@ApiParam({
+		name: "userId",
+		description:
+			"수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
 	@ApiDoc({
 		summary: "친구 요청 수락",
 		operationId: "acceptFriendRequest",
@@ -275,6 +288,12 @@ export class FollowController {
 
 	@Delete(":userId")
 	@HttpCode(HttpStatus.OK)
+	@ApiParam({
+		name: "userId",
+		description:
+			"삭제할 친구의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
 	@ApiDoc({
 		summary: "친구 삭제 / 요청 철회",
 		operationId: "removeFriend",

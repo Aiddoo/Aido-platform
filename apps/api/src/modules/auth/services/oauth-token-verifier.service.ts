@@ -27,9 +27,6 @@ type JWKSFunction = (
 	token: unknown,
 ) => Promise<unknown>;
 
-/**
- * 검증된 사용자 프로필 (서버에서 검증 후 반환)
- */
 export interface VerifiedProfile {
 	id: string;
 	email?: string | null;
@@ -38,9 +35,6 @@ export interface VerifiedProfile {
 	picture?: string;
 }
 
-/**
- * Apple ID Token Claims
- */
 interface AppleIdTokenClaims {
 	iss: string;
 	aud: string;
@@ -54,13 +48,7 @@ interface AppleIdTokenClaims {
 	nonce_supported: boolean;
 }
 
-/**
- * OAuth 토큰 검증 서비스
- *
- * 모바일 클라이언트에서 받은 토큰을 서버에서 직접 검증합니다.
- * 클라이언트가 제공하는 profile 객체를 신뢰하지 않고,
- * 각 OAuth Provider의 공식 API/JWKS를 통해 토큰을 검증합니다.
- */
+// 모바일 클라이언트 토큰을 서버에서 직접 검증 (각 OAuth Provider의 공식 API/JWKS 사용)
 @Injectable()
 export class OAuthTokenVerifierService implements OnModuleInit {
 	private readonly _logger = new Logger(OAuthTokenVerifierService.name);
@@ -86,17 +74,11 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		this._googleClient = new OAuth2Client(this._config.get("GOOGLE_CLIENT_ID"));
 	}
 
-	/**
-	 * 모듈 초기화 시 jose 라이브러리 동적 로드
-	 */
 	async onModuleInit(): Promise<void> {
 		this._jose = await this._loadJose();
 		this._logger.log("Jose library loaded successfully");
 	}
 
-	/**
-	 * jose 모듈 로드 및 래핑
-	 */
 	private async _loadJose(): Promise<JoseWrapper> {
 		const jose = await import("jose");
 		return {
@@ -121,9 +103,6 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		};
 	}
 
-	/**
-	 * jose 모듈 가져오기 (지연 로딩)
-	 */
 	private async _getJose(): Promise<JoseWrapper> {
 		if (!this._jose) {
 			this._jose = await this._loadJose();
@@ -131,15 +110,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		return this._jose;
 	}
 
-	/**
-	 * Apple ID Token 검증
-	 *
-	 * Apple의 JWKS를 사용하여 id_token을 검증합니다.
-	 * https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
-	 *
-	 * @param idToken - Apple에서 받은 id_token
-	 * @returns 검증된 사용자 프로필
-	 */
+	// @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
 	async verifyAppleToken(idToken: string): Promise<VerifiedProfile> {
 		const jose = await this._getJose();
 
@@ -190,15 +161,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		}
 	}
 
-	/**
-	 * Google ID Token 검증
-	 *
-	 * Google Auth Library를 사용하여 id_token을 검증합니다.
-	 * https://developers.google.com/identity/sign-in/web/backend-auth
-	 *
-	 * @param idToken - Google에서 받은 id_token
-	 * @returns 검증된 사용자 프로필
-	 */
+	// @see https://developers.google.com/identity/sign-in/web/backend-auth
 	async verifyGoogleToken(idToken: string): Promise<VerifiedProfile> {
 		try {
 			const googleClientId = this._config.get<string>("GOOGLE_CLIENT_ID");
@@ -236,15 +199,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		}
 	}
 
-	/**
-	 * Kakao Access Token 검증
-	 *
-	 * Kakao의 사용자 정보 API를 호출하여 access_token을 검증합니다.
-	 * https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
-	 *
-	 * @param accessToken - Kakao에서 받은 access_token
-	 * @returns 검증된 사용자 프로필
-	 */
+	// @see https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
 	async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
 			const response = await fetch(
@@ -300,15 +255,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		}
 	}
 
-	/**
-	 * Naver Access Token 검증
-	 *
-	 * Naver의 사용자 정보 API를 호출하여 access_token을 검증합니다.
-	 * https://developers.naver.com/docs/login/profile/profile.md
-	 *
-	 * @param accessToken - Naver에서 받은 access_token
-	 * @returns 검증된 사용자 프로필
-	 */
+	// @see https://developers.naver.com/docs/login/profile/profile.md
 	async verifyNaverToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
 			const response = await fetch(
