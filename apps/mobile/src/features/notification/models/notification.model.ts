@@ -23,7 +23,6 @@ export const notificationSchema = z.object({
   title: z.string(),
   body: z.string(),
   isRead: z.boolean(),
-  route: z.string().nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date(),
   readAt: z.date().nullable(),
@@ -38,7 +37,6 @@ export const serverNotificationSchema = z.object({
   title: z.string(),
   body: z.string(),
   isRead: z.boolean(),
-  route: z.string().nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.string(),
   readAt: z.string().nullable(),
@@ -86,8 +84,6 @@ export interface GetNotificationsQuery {
 
 export const NotificationPolicy = {
   isUnread: (notification: { isRead: boolean }): boolean => !notification.isRead,
-
-  isActionable: (notification: { route: string | null }): boolean => notification.route !== null,
 
   hasExternalUrl: (notification: { metadata: Record<string, unknown> | null }): boolean =>
     typeof notification.metadata?.externalUrl === 'string',

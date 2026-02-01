@@ -26,7 +26,6 @@ describe("NotificationRepository", () => {
 		title: "새로운 친구 요청",
 		body: "홍길동님이 친구가 되고 싶어해요",
 		isRead: false,
-		route: "/friends",
 		todoId: null,
 		friendId: "friend-1",
 		nudgeId: null,
@@ -105,7 +104,6 @@ describe("NotificationRepository", () => {
 				type: "FOLLOW_NEW",
 				title: "새로운 친구 요청",
 				body: "홍길동님이 친구가 되고 싶어해요",
-				route: "/friends",
 				friendId: "friend-1",
 			};
 			const expectedNotification = createMockNotification();
@@ -123,7 +121,6 @@ describe("NotificationRepository", () => {
 					type: data.type,
 					title: data.title,
 					body: data.body,
-					route: data.route,
 					todoId: undefined,
 					friendId: data.friendId,
 					nudgeId: undefined,
@@ -147,7 +144,6 @@ describe("NotificationRepository", () => {
 				type: "SYSTEM_NOTICE",
 				title: "시스템 공지",
 				body: "시스템 점검 예정",
-				route: null,
 				friendId: null,
 				metadata: { externalUrl: "https://example.com" },
 			});

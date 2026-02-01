@@ -19,7 +19,6 @@ export class NotificationMapper {
 			title: notification.title,
 			body: notification.body,
 			isRead: notification.isRead,
-			route: notification.route,
 			metadata: notification.metadata as Record<string, unknown> | null,
 			createdAt: notification.createdAt.toISOString(),
 			readAt: notification.readAt?.toISOString() ?? null,
