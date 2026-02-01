@@ -1,10 +1,9 @@
-import { FriendSearchBottomSheet } from '@src/features/friend/presentations/components/FriendSearchBottomSheet';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
 import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const FriendsLayout = () => {
+const AchievementsLayout = () => {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
 
@@ -29,25 +28,9 @@ const FriendsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: '',
-          headerTitleStyle: {
-            fontSize: 13,
-            fontWeight: '500',
-            color: titleColor.color as string,
-          },
-          headerRight: () => (
-            <View className="justify-center items-center">
-              <FriendSearchBottomSheet />
-            </View>
-          ),
-        }}
-      />
-      <Stack.Screen name="[id]" options={{ title: '친구 프로필' }} />
+      <Stack.Screen name="index" options={{ title: '달성 배지' }} />
     </Stack>
   );
 };
 
-export default FriendsLayout;
+export default AchievementsLayout;

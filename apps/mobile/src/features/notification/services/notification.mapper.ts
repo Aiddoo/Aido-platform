@@ -13,7 +13,6 @@ export const NotificationMapper = {
     title: server.title,
     body: server.body,
     isRead: server.isRead,
-    route: server.route,
     metadata: server.metadata,
     createdAt: new Date(server.createdAt),
     readAt: server.readAt ? new Date(server.readAt) : null,

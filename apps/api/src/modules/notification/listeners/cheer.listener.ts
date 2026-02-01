@@ -24,6 +24,7 @@ export class CheerListener {
 	 * Cheer 발송 이벤트 처리
 	 *
 	 * 응원을 받은 사용자에게 푸시 알림을 발송합니다.
+	 * 클라이언트가 type(CHEER_RECEIVED) + context(friendId, cheerId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.CHEER_SENT)
 	async handleCheerSent(payload: CheerSentEventPayload): Promise<void> {
@@ -42,7 +43,6 @@ export class CheerListener {
 				type: "CHEER_RECEIVED",
 				title: message.title,
 				body: message.body,
-				route: `/friends/${payload.senderId}`,
 				cheerId: payload.cheerId,
 				friendId: payload.senderId,
 				metadata: payload.message ? { message: payload.message } : undefined,
