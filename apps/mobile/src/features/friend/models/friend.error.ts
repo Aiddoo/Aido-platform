@@ -1,9 +1,5 @@
 import { ClientError } from '@src/shared/errors';
 
-// ============================================
-// Friend 도메인 에러 (클라이언트 검증용)
-// ============================================
-
 /** Friend 도메인 기본 에러 */
 export class FriendError extends ClientError {
   override readonly name: string = 'FriendError';

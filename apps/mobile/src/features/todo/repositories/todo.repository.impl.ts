@@ -17,9 +17,13 @@ import { TodoValidationError } from '../models/todo.error';
 import type { TodoRepository } from './todo.repository';
 
 export class TodoRepositoryImpl implements TodoRepository {
-  constructor(private readonly _httpClient: HttpClient) {}
+  readonly #httpClient: HttpClient;
 
-  private _buildUrl(
+  constructor(httpClient: HttpClient) {
+    this.#httpClient = httpClient;
+  }
+
+  #buildUrl(
     basePath: string,
     params: Record<string, string | number | boolean | undefined>,
   ): string {
@@ -36,7 +40,7 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async getTodos(params: GetTodosQuery): Promise<TodoListResponse> {
-    const url = this._buildUrl('v1/todos', {
+    const url = this.#buildUrl('v1/todos', {
       cursor: params.cursor,
       size: params.size,
       completed: params.completed,
@@ -44,7 +48,7 @@ export class TodoRepositoryImpl implements TodoRepository {
       endDate: params.endDate,
     });
 
-    const { data } = await this._httpClient.get<TodoListResponse>(url);
+    const { data } = await this.#httpClient.get<TodoListResponse>(url);
 
     const result = todoListResponseSchema.safeParse(data);
     if (!result.success) {
@@ -56,7 +60,7 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async toggleTodoComplete(todoId: number, body: ToggleTodoCompleteInput): Promise<Todo> {
-    const { data } = await this._httpClient.patch<{ todo: Todo }>(
+    const { data } = await this.#httpClient.patch<{ todo: Todo }>(
       `v1/todos/${todoId}/complete`,
       body,
     );
@@ -71,7 +75,7 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async createTodo(params: CreateTodoInput): Promise<Todo> {
-    const { data } = await this._httpClient.post<{ todo: Todo }>('v1/todos', params);
+    const { data } = await this.#httpClient.post<{ todo: Todo }>('v1/todos', params);
 
     const result = todoSchema.safeParse(data.todo);
     if (!result.success) {
@@ -83,7 +87,7 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async parseTodo(text: string): Promise<ParseTodoResponse> {
-    const { data } = await this._httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', { text });
+    const { data } = await this.#httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', { text });
 
     const result = parseTodoResponseSchema.safeParse(data);
     if (!result.success) {
@@ -95,7 +99,7 @@ export class TodoRepositoryImpl implements TodoRepository {
   }
 
   async getAiUsage(): Promise<AiUsageResponse> {
-    const { data } = await this._httpClient.get<AiUsageResponse>('v1/ai/usage');
+    const { data } = await this.#httpClient.get<AiUsageResponse>('v1/ai/usage');
 
     const result = aiUsageResponseSchema.safeParse(data);
     if (!result.success) {

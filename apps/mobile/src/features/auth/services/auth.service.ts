@@ -14,11 +14,10 @@ import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
-import { match } from 'ts-pattern';
 import {
-  AppleAuthError,
-  AuthCancelledError,
   AuthError,
+  AuthLoginCancelledError,
+  AuthProviderError,
   AuthValidationError,
   isAuthError,
   isExpoCodedError,
@@ -29,17 +28,23 @@ import { toAuthTokens, toUser } from './auth.mapper';
 
 type OAuthProvider = 'kakao' | 'naver' | 'google';
 
+const OAUTH_PATHS: Record<OAuthProvider, string> = {
+  kakao: 'auth/kakao',
+  naver: 'auth/naver',
+  google: 'auth/google',
+};
+
 export class AuthService {
-  constructor(private readonly _authRepository: AuthRepository) {}
+  readonly #authRepository: AuthRepository;
+
+  constructor(authRepository: AuthRepository) {
+    this.#authRepository = authRepository;
+  }
 
   private getRedirectUri = (provider: OAuthProvider): string =>
     makeRedirectUri({
       scheme: ENV.SCHEME,
-      path: match(provider)
-        .with('kakao', () => 'auth/kakao')
-        .with('naver', () => 'auth/naver')
-        .with('google', () => 'auth/google')
-        .exhaustive(),
+      path: OAUTH_PATHS[provider],
     });
 
   private extractCodeFromUrl = (url: string): string | null => {
@@ -65,38 +70,35 @@ export class AuthService {
   private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
     const redirectUri = this.getRedirectUri(provider);
 
-    const authUrl = match(provider)
-      .with('kakao', () => this._authRepository.getKakaoAuthUrl(redirectUri))
-      .with('naver', () => this._authRepository.getNaverAuthUrl(redirectUri))
-      .with('google', () => this._authRepository.getGoogleAuthUrl(redirectUri))
-      .exhaustive();
+    const authUrlGetters: Record<OAuthProvider, (uri: string) => string> = {
+      kakao: this.#authRepository.getKakaoAuthUrl,
+      naver: this.#authRepository.getNaverAuthUrl,
+      google: this.#authRepository.getGoogleAuthUrl,
+    };
 
-    // createTask: false → Android에서 새 태스크 생성 안 함 → iOS와 동일하게 URL 캡처
+    const authUrl = authUrlGetters[provider](redirectUri);
+
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
       createTask: false,
     });
 
-    return match(result)
-      .with({ type: 'success' }, ({ url }) => {
-        const code = this.extractCodeFromUrl(url);
+    if (result.type === 'success') {
+      const code = this.extractCodeFromUrl(result.url);
+      if (!code) {
+        throw new AuthValidationError(null, null);
+      }
+      return code;
+    }
 
-        if (!code) throw new AuthValidationError('인증 코드를 찾을 수 없어요');
+    if (
+      result.type === WebBrowserResultType.CANCEL ||
+      result.type === WebBrowserResultType.DISMISS
+    ) {
+      throw new AuthLoginCancelledError();
+    }
 
-        return code;
-      })
-      .with({ type: WebBrowserResultType.CANCEL }, () => {
-        throw new AuthCancelledError();
-      })
-      .with({ type: WebBrowserResultType.DISMISS }, () => {
-        throw new AuthCancelledError();
-      })
-      .with({ type: WebBrowserResultType.OPENED }, () => {
-        throw new AuthError('브라우저가 열렸지만 응답이 없어요');
-      })
-      .with({ type: WebBrowserResultType.LOCKED }, () => {
-        throw new AuthValidationError('다른 인증이 진행 중이에요');
-      })
-      .exhaustive();
+    // WebBrowserResultType.OPENED, WebBrowserResultType.LOCKED
+    throw new AuthError('OAuth 인증 중 문제가 발생했어요');
   };
 
   openKakaoLogin = (): Promise<string> => {
@@ -111,7 +113,6 @@ export class AuthService {
     return this.openOAuthLogin('google');
   };
 
-  // iOS only - Android에서는 호출하면 안 됨 (UI에서 Platform.OS 체크 필요)
   openAppleLogin = async (): Promise<AuthTokens> => {
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -123,7 +124,7 @@ export class AuthService {
 
       const idToken = credential.identityToken;
       if (!idToken) {
-        throw new AuthValidationError('Apple ID 토큰을 받지 못했어요');
+        throw new AuthProviderError('apple', 'Apple 인증 토큰을 받지 못했어요');
       }
 
       const input: AppleMobileCallbackInput = {
@@ -132,53 +133,53 @@ export class AuthService {
         deviceType: 'IOS',
       };
 
-      const dto = await this._authRepository.appleLogin(input);
+      const dto = await this.#authRepository.appleLogin(input);
       return toAuthTokens(dto);
     } catch (error) {
       if (isAuthError(error)) {
         throw error;
       }
       if (isExpoCodedError(error)) {
-        throw AppleAuthError.fromExpoError(error);
+        throw AuthError.fromExpoAppleError(error);
       }
-      throw new AuthError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했어요');
+      throw AuthError.fromUnknown(error);
     }
   };
 
   emailLogin = async (email: string, password: string): Promise<AuthTokens> => {
-    const dto = await this._authRepository.emailLogin(email, password);
+    const dto = await this.#authRepository.emailLogin(email, password);
     return toAuthTokens(dto);
   };
 
   exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
-    const dto = await this._authRepository.exchangeCode(request);
+    const dto = await this.#authRepository.exchangeCode(request);
     return toAuthTokens(dto);
   };
 
   getCurrentUser = async (): Promise<User> => {
-    const dto = await this._authRepository.getCurrentUser();
+    const dto = await this.#authRepository.getCurrentUser();
     return toUser(dto);
   };
 
   logout = async (): Promise<void> => {
-    return this._authRepository.logout();
+    return this.#authRepository.logout();
   };
 
   getPreference = async (): Promise<PreferenceResponse> => {
-    return this._authRepository.getPreference();
+    return this.#authRepository.getPreference();
   };
 
   updatePreference = async (input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> => {
-    return this._authRepository.updatePreference(input);
+    return this.#authRepository.updatePreference(input);
   };
 
   getConsent = async (): Promise<ConsentResponse> => {
-    return this._authRepository.getConsent();
+    return this.#authRepository.getConsent();
   };
 
   updateMarketingConsent = async (
     input: UpdateMarketingConsentInput,
   ): Promise<UpdateMarketingConsentResponse> => {
-    return this._authRepository.updateMarketingConsent(input);
+    return this.#authRepository.updateMarketingConsent(input);
   };
 }

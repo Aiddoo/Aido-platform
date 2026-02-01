@@ -1,8 +1,5 @@
 import { ClientError } from '@src/shared/errors';
 
-/**
- * Base error for notification-related operations
- */
 export class NotificationError extends ClientError {
   override readonly name: string = 'NotificationError';
   readonly code: string = 'NOTIFICATION_ERROR';

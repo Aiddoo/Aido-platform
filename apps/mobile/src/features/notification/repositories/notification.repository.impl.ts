@@ -15,10 +15,14 @@ import {
 import type { NotificationRepository } from './notification.repository';
 
 export class NotificationRepositoryImpl implements NotificationRepository {
-  constructor(private readonly _httpClient: HttpClient) {}
+  readonly #httpClient: HttpClient;
+
+  constructor(httpClient: HttpClient) {
+    this.#httpClient = httpClient;
+  }
 
   async registerToken(token: string, deviceId: string): Promise<RegisterTokenResult> {
-    const { data } = await this._httpClient.post<unknown>('v1/notifications/token', {
+    const { data } = await this.#httpClient.post<unknown>('v1/notifications/token', {
       token,
       deviceId,
     });
@@ -33,7 +37,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
   async unregisterToken(deviceId?: string): Promise<void> {
     const params = deviceId ? `?deviceId=${encodeURIComponent(deviceId)}` : '';
-    await this._httpClient.delete(`v1/notifications/token${params}`);
+    await this.#httpClient.delete(`v1/notifications/token${params}`);
   }
 
   async getNotifications(query?: GetNotificationsQuery): Promise<NotificationListResponse> {
@@ -45,7 +49,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
     const queryString = params.toString();
     const url = `v1/notifications${queryString ? `?${queryString}` : ''}`;
 
-    const { data } = await this._httpClient.get<unknown>(url);
+    const { data } = await this.#httpClient.get<unknown>(url);
 
     const result = notificationListResponseSchema.safeParse(data);
     if (!result.success) {
@@ -56,7 +60,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   async getUnreadCount(): Promise<UnreadCountResult> {
-    const { data } = await this._httpClient.get<unknown>('v1/notifications/unread-count');
+    const { data } = await this.#httpClient.get<unknown>('v1/notifications/unread-count');
 
     const result = unreadCountResultSchema.safeParse(data);
     if (!result.success) {
@@ -67,7 +71,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   async markAsRead(notificationId: number): Promise<MarkReadResult> {
-    const { data } = await this._httpClient.patch<unknown>(
+    const { data } = await this.#httpClient.patch<unknown>(
       `v1/notifications/${notificationId}/read`,
     );
 
@@ -80,7 +84,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   async markAllAsRead(): Promise<MarkReadResult> {
-    const { data } = await this._httpClient.patch<unknown>('v1/notifications/read-all');
+    const { data } = await this.#httpClient.patch<unknown>('v1/notifications/read-all');
 
     const result = markReadResultSchema.safeParse(data);
     if (!result.success) {

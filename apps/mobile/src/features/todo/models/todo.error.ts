@@ -1,9 +1,5 @@
 import { ClientError } from '@src/shared/errors';
 
-// ============================================
-// Todo 도메인 에러 (클라이언트 검증용)
-// ============================================
-
 /** Todo 도메인 기본 에러 */
 export class TodoError extends ClientError {
   override readonly name: string = 'TodoError';

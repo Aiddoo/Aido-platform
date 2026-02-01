@@ -1,30 +1,18 @@
 import { ClientError } from '@src/shared/errors';
-import { match } from 'ts-pattern';
+import type { z } from 'zod';
 
-/**
- * expo-modules-core의 CodedError 타입 정의
- * @see https://docs.expo.dev/versions/latest/sdk/apple-authentication/#error-codes
- */
 export interface ExpoCodedError extends Error {
-  code: string;
+  code?: string;
 }
 
-export const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
-  error instanceof Error && 'code' in error && typeof error.code === 'string';
-
-/**
- * expo-apple-authentication 에러 코드
- * @see https://docs.expo.dev/versions/latest/sdk/apple-authentication/#error-codes
- */
-const AppleAuthErrorCode = {
+const EXPO_APPLE_ERROR_CODES = {
   REQUEST_CANCELED: 'ERR_REQUEST_CANCELED',
   REQUEST_FAILED: 'ERR_REQUEST_FAILED',
   INVALID_RESPONSE: 'ERR_INVALID_RESPONSE',
   NOT_AVAILABLE: 'ERR_NOT_AVAILABLE',
 } as const;
 
-type AppleAuthErrorCodeType = (typeof AppleAuthErrorCode)[keyof typeof AppleAuthErrorCode];
-
+/** Auth 도메인 기본 에러 */
 export class AuthError extends ClientError {
   override readonly name: string = 'AuthError';
   readonly code: string = 'AUTH_ERROR';
@@ -32,25 +20,37 @@ export class AuthError extends ClientError {
   constructor(message: string = '인증 작업에 실패했어요') {
     super(message);
   }
-}
 
-/** 로그인 취소 */
-export class AuthCancelledError extends AuthError {
-  override readonly name = 'AuthCancelledError';
-  override readonly code = 'AUTH_CANCELLED';
+  /** Expo Apple 에러 → AuthError 변환 */
+  static fromExpoAppleError(error: ExpoCodedError): AuthError {
+    switch (error.code) {
+      case EXPO_APPLE_ERROR_CODES.REQUEST_CANCELED:
+        return new AuthLoginCancelledError();
+      case EXPO_APPLE_ERROR_CODES.REQUEST_FAILED:
+      case EXPO_APPLE_ERROR_CODES.INVALID_RESPONSE:
+        return new AuthProviderError('apple', 'Apple 인증 응답이 올바르지 않아요');
+      case EXPO_APPLE_ERROR_CODES.NOT_AVAILABLE:
+        return new AuthProviderError('apple', 'Apple 로그인을 사용할 수 없어요');
+      default:
+        return new AuthError(error.message);
+    }
+  }
 
-  constructor() {
-    super('로그인이 취소되었어요');
+  /** 알 수 없는 에러 → AuthError 변환 */
+  static fromUnknown(error: unknown): AuthError {
+    if (error instanceof AuthError) return error;
+    if (error instanceof Error) return new AuthError(error.message);
+    return new AuthError();
   }
 }
 
-/** 네트워크 연결 문제 */
-export class AuthNetworkError extends AuthError {
-  override readonly name = 'AuthNetworkError';
-  override readonly code = 'AUTH_NETWORK';
+/** 로그인 취소 */
+export class AuthLoginCancelledError extends AuthError {
+  override readonly name = 'AuthLoginCancelledError';
+  override readonly code = 'AUTH_LOGIN_CANCELLED';
 
   constructor() {
-    super('네트워크 연결을 확인해주세요');
+    super('로그인이 취소되었어요');
   }
 }
 
@@ -58,50 +58,42 @@ export class AuthNetworkError extends AuthError {
 export class AuthValidationError extends AuthError {
   override readonly name = 'AuthValidationError';
   override readonly code = 'AUTH_VALIDATION';
+  readonly zodError: z.ZodError | null;
+  readonly endpoint: string | null;
 
-  constructor(message: string = '잘못된 응답 형식이에요') {
-    super(message);
+  constructor(zodError: z.ZodError | null = null, endpoint: string | null = null) {
+    super('잘못된 인증 응답이에요');
+    this.zodError = zodError;
+    this.endpoint = endpoint;
+  }
+
+  getValidationDetails(): string | null {
+    if (!this.zodError) return null;
+    return this.zodError.issues
+      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+      .join(', ');
   }
 }
 
-/** Apple 인증 실패 */
-export class AppleAuthError extends AuthError {
-  override readonly name = 'AppleAuthError';
-  override readonly code = 'APPLE_AUTH_FAILED';
+/** Provider별 로그인 실패 (Apple, Google 등) */
+export class AuthProviderError extends AuthError {
+  override readonly name = 'AuthProviderError';
+  override readonly code = 'AUTH_PROVIDER_ERROR';
+  readonly provider: string;
 
-  constructor(message: string = 'Apple 로그인에 실패했어요') {
-    super(message);
-  }
-
-  /** Expo Apple 에러 → AuthError 변환 */
-  static fromExpoError(error: ExpoCodedError): AuthError {
-    return match(error.code as AppleAuthErrorCodeType)
-      .with(AppleAuthErrorCode.REQUEST_CANCELED, () => new AuthCancelledError())
-      .with(
-        AppleAuthErrorCode.REQUEST_FAILED,
-        () => new AppleAuthError('Apple 인증 정보가 올바르지 않아요'),
-      )
-      .with(
-        AppleAuthErrorCode.INVALID_RESPONSE,
-        () => new AppleAuthError('Apple 응답을 처리할 수 없어요'),
-      )
-      .with(
-        AppleAuthErrorCode.NOT_AVAILABLE,
-        () => new AppleAuthError('Apple 로그인을 사용할 수 없어요'),
-      )
-      .otherwise(() => new AuthError(error.message));
+  constructor(provider: string, message?: string) {
+    super(message ?? `${provider} 로그인에 실패했어요`);
+    this.provider = provider;
   }
 }
 
-/** Google 인증 실패 */
-export class GoogleAuthError extends AuthError {
-  override readonly name = 'GoogleAuthError';
-  override readonly code = 'GOOGLE_AUTH_FAILED';
-
-  constructor(message: string = 'Google 로그인에 실패했어요') {
-    super(message);
-  }
-}
-
-// 타입 가드
 export const isAuthError = (error: unknown): error is AuthError => error instanceof AuthError;
+
+export const isExpoCodedError = (error: unknown): error is ExpoCodedError =>
+  error instanceof Error && 'code' in error && typeof error.code === 'string';
+
+export const isCancelledError = (error: unknown): error is AuthLoginCancelledError =>
+  error instanceof AuthLoginCancelledError;
+
+export const isValidationError = (error: unknown): error is AuthValidationError =>
+  error instanceof AuthValidationError;
