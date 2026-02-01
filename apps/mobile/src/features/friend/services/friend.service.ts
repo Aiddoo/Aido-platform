@@ -15,45 +15,49 @@ import {
 } from './friend.mapper';
 
 export class FriendService {
-  constructor(private readonly _repository: FriendRepository) {}
+  readonly #repository: FriendRepository;
+
+  constructor(repository: FriendRepository) {
+    this.#repository = repository;
+  }
 
   sendRequestByTag = async (userTag: string): Promise<SendRequestResult> => {
     if (!FriendPolicy.isValidTag(userTag)) {
       throw new InvalidTagError();
     }
 
-    const dto = await this._repository.sendRequest(userTag);
+    const dto = await this.#repository.sendRequest(userTag);
     return toSendRequestResult(dto);
   };
 
   getReceivedRequests = async (params?: PaginationParams): Promise<ReceivedRequestsResult> => {
-    const dto = await this._repository.getReceivedRequests(params);
+    const dto = await this.#repository.getReceivedRequests(params);
     return toReceivedRequestsResult(dto);
   };
 
   getSentRequests = async (params?: PaginationParams): Promise<SentRequestsResult> => {
-    const dto = await this._repository.getSentRequests(params);
+    const dto = await this.#repository.getSentRequests(params);
     return toSentRequestsResult(dto);
   };
 
   acceptRequest = async (userId: string): Promise<void> => {
-    await this._repository.acceptRequest(userId);
+    await this.#repository.acceptRequest(userId);
   };
 
   rejectRequest = async (userId: string): Promise<void> => {
-    await this._repository.rejectRequest(userId);
+    await this.#repository.rejectRequest(userId);
   };
 
   cancelRequest = async (userId: string): Promise<void> => {
-    await this._repository.cancelRequest(userId);
+    await this.#repository.cancelRequest(userId);
   };
 
   getFriends = async (params?: PaginationParams): Promise<FriendsResult> => {
-    const dto = await this._repository.getFriends(params);
+    const dto = await this.#repository.getFriends(params);
     return toFriendsResult(dto);
   };
 
   removeFriend = async (userId: string): Promise<void> => {
-    await this._repository.removeFriend(userId);
+    await this.#repository.removeFriend(userId);
   };
 }

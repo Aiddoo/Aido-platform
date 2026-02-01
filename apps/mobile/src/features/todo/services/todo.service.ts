@@ -5,10 +5,14 @@ import type { TodoRepository } from '../repositories/todo.repository';
 import { toAiUsage, toParsedTodoResult, toTodoItem, toTodoItems } from './todo.mapper';
 
 export class TodoService {
-  constructor(private readonly _todoRepository: TodoRepository) {}
+  readonly #todoRepository: TodoRepository;
+
+  constructor(todoRepository: TodoRepository) {
+    this.#todoRepository = todoRepository;
+  }
 
   getTodos = async (params: GetTodosQuery): Promise<TodosResult> => {
-    const response = await this._todoRepository.getTodos(params);
+    const response = await this.#todoRepository.getTodos(params);
 
     return {
       todos: toTodoItems(response.items),
@@ -18,22 +22,22 @@ export class TodoService {
   };
 
   toggleTodoComplete = async (todoId: number, body: ToggleTodoCompleteInput): Promise<TodoItem> => {
-    const todo = await this._todoRepository.toggleTodoComplete(todoId, body);
+    const todo = await this.#todoRepository.toggleTodoComplete(todoId, body);
     return toTodoItem(todo);
   };
 
   createTodo = async (params: CreateTodoInput): Promise<TodoItem> => {
-    const todo = await this._todoRepository.createTodo(params);
+    const todo = await this.#todoRepository.createTodo(params);
     return toTodoItem(todo);
   };
 
   parseTodo = async (text: string): Promise<ParsedTodoResult> => {
-    const response = await this._todoRepository.parseTodo(text);
+    const response = await this.#todoRepository.parseTodo(text);
     return toParsedTodoResult(response);
   };
 
   getAiUsage = async (): Promise<AiUsage> => {
-    const response = await this._todoRepository.getAiUsage();
+    const response = await this.#todoRepository.getAiUsage();
     return toAiUsage(response);
   };
 }

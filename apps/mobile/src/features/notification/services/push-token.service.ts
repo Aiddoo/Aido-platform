@@ -34,7 +34,7 @@ export class PushTokenService {
     }
 
     if (Platform.OS === 'android') {
-      await this._setupAndroidChannel();
+      await this.#setupAndroidChannel();
     }
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
@@ -48,12 +48,12 @@ export class PushTokenService {
     return tokenData.data;
   };
 
-  private _setupAndroidChannel = async (): Promise<void> => {
+  async #setupAndroidChannel(): Promise<void> {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
     });
-  };
+  }
 }

@@ -124,16 +124,20 @@ import type { HttpClient } from '@src/core/ports/http';
 import { {feature}Schema } from '@aido/validators';
 
 export class {Feature}RepositoryImpl implements {Feature}Repository {
-  constructor(private readonly _httpClient: HttpClient) {}
+  readonly #httpClient: HttpClient;
+
+  constructor(httpClient: HttpClient) {
+    this.#httpClient = httpClient;
+  }
 
   async getById(id: string): Promise<{Feature}DTO> {
-    const { data } = await this._httpClient.get<{Feature}DTO>(`v1/{feature}s/${id}`);
-    
+    const { data } = await this.#httpClient.get<{Feature}DTO>(`v1/{feature}s/${id}`);
+
     const result = {feature}Schema.safeParse(data);
     if (!result.success) {
       throw new Error('Invalid API response format');
     }
-    
+
     return result.data;
   }
 }
@@ -149,10 +153,14 @@ import type { {Feature}Repository } from '../repositories/{feature}.repository';
 import { to{Feature} } from './{feature}.mapper';
 
 export class {Feature}Service {
-  constructor(private readonly _repository: {Feature}Repository) {}
+  readonly #repository: {Feature}Repository;
+
+  constructor(repository: {Feature}Repository) {
+    this.#repository = repository;
+  }
 
   getById = async (id: string): Promise<{Feature}> => {
-    const dto = await this._repository.getById(id);
+    const dto = await this.#repository.getById(id);
     return to{Feature}(dto);
   };
 
@@ -160,8 +168,8 @@ export class {Feature}Service {
     if (!{Feature}Policy.someRule(input.value)) {
       throw {Feature}ClientError.invalidInput();
     }
-    
-    const dto = await this._repository.create(input);
+
+    const dto = await this.#repository.create(input);
     return to{Feature}(dto);
   };
 }

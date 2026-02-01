@@ -7,12 +7,12 @@ import type {
 import ky, { type KyInstance, type Options } from 'ky';
 
 export class KyHttpClient implements HttpClient {
-  private _client: KyInstance;
+  readonly #client: KyInstance;
 
   constructor(configOrInstance?: HttpClientConfig | KyInstance) {
     if (configOrInstance && 'extend' in configOrInstance) {
       // KyInstance가 전달된 경우 - 이미 hooks가 설정되어 있으므로 그대로 사용
-      this._client = configOrInstance;
+      this.#client = configOrInstance;
     } else {
       // HttpClientConfig가 전달된 경우
       const config = configOrInstance as HttpClientConfig | undefined;
@@ -21,13 +21,13 @@ export class KyHttpClient implements HttpClient {
         headers: config?.headers,
         timeout: config?.timeout,
       };
-      this._client = ky.create(options);
+      this.#client = ky.create(options);
     }
   }
 
   async get<T>(url: string, config?: RequestConfig): Promise<HttpClientResponse<T>> {
-    const response = await this._client.get(url, this._buildOptions(config));
-    return this._buildResponse<T>(response);
+    const response = await this.#client.get(url, this.#buildOptions(config));
+    return this.#buildResponse<T>(response);
   }
 
   async post<T>(
@@ -35,11 +35,11 @@ export class KyHttpClient implements HttpClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<HttpClientResponse<T>> {
-    const response = await this._client.post(url, {
-      ...this._buildOptions(config),
+    const response = await this.#client.post(url, {
+      ...this.#buildOptions(config),
       json: data,
     });
-    return this._buildResponse<T>(response);
+    return this.#buildResponse<T>(response);
   }
 
   async put<T>(
@@ -47,11 +47,11 @@ export class KyHttpClient implements HttpClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<HttpClientResponse<T>> {
-    const response = await this._client.put(url, {
-      ...this._buildOptions(config),
+    const response = await this.#client.put(url, {
+      ...this.#buildOptions(config),
       json: data,
     });
-    return this._buildResponse<T>(response);
+    return this.#buildResponse<T>(response);
   }
 
   async patch<T>(
@@ -59,19 +59,19 @@ export class KyHttpClient implements HttpClient {
     data?: unknown,
     config?: RequestConfig,
   ): Promise<HttpClientResponse<T>> {
-    const response = await this._client.patch(url, {
-      ...this._buildOptions(config),
+    const response = await this.#client.patch(url, {
+      ...this.#buildOptions(config),
       json: data,
     });
-    return this._buildResponse<T>(response);
+    return this.#buildResponse<T>(response);
   }
 
   async delete<T>(url: string, config?: RequestConfig): Promise<HttpClientResponse<T>> {
-    const response = await this._client.delete(url, this._buildOptions(config));
-    return this._buildResponse<T>(response);
+    const response = await this.#client.delete(url, this.#buildOptions(config));
+    return this.#buildResponse<T>(response);
   }
 
-  private _buildOptions(config?: RequestConfig): Options {
+  #buildOptions(config?: RequestConfig): Options {
     const options: Options = {};
 
     if (config?.headers) {
@@ -95,7 +95,7 @@ export class KyHttpClient implements HttpClient {
     return options;
   }
 
-  private async _buildResponse<T>(response: Response): Promise<HttpClientResponse<T>> {
+  async #buildResponse<T>(response: Response): Promise<HttpClientResponse<T>> {
     // 서버 응답: { success, data, timestamp } 에서 data 추출
     const json = (await response.json()) as { success: boolean; data: T; timestamp: number };
     return {

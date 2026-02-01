@@ -12,46 +12,54 @@ import { NotificationMapper } from './notification.mapper';
 import type { PushTokenService } from './push-token.service';
 
 export class NotificationService {
+  readonly #notificationRepository: NotificationRepository;
+  readonly #deviceIdService: DeviceIdService;
+  readonly #pushTokenService: PushTokenService;
+
   constructor(
-    private readonly _notificationRepository: NotificationRepository,
-    private readonly _deviceIdService: DeviceIdService,
-    private readonly _pushTokenService: PushTokenService,
-  ) {}
+    notificationRepository: NotificationRepository,
+    deviceIdService: DeviceIdService,
+    pushTokenService: PushTokenService,
+  ) {
+    this.#notificationRepository = notificationRepository;
+    this.#deviceIdService = deviceIdService;
+    this.#pushTokenService = pushTokenService;
+  }
 
   // 푸시 토큰 등록 (로그인 후 호출)
   setupPushNotifications = async (): Promise<RegisterTokenResult> => {
     const [token, deviceId] = await Promise.all([
-      this._pushTokenService.getExpoPushToken(),
-      this._deviceIdService.get(),
+      this.#pushTokenService.getExpoPushToken(),
+      this.#deviceIdService.get(),
     ]);
 
-    return this._notificationRepository.registerToken(token, deviceId);
+    return this.#notificationRepository.registerToken(token, deviceId);
   };
 
   // 푸시 토큰 해제 (로그아웃 시 호출)
   unregisterPushToken = async (): Promise<void> => {
-    const deviceId = await this._deviceIdService.get();
-    await this._notificationRepository.unregisterToken(deviceId);
+    const deviceId = await this.#deviceIdService.get();
+    await this.#notificationRepository.unregisterToken(deviceId);
   };
 
-  isSupported = (): boolean => this._pushTokenService.isPhysicalDevice();
+  isSupported = (): boolean => this.#pushTokenService.isPhysicalDevice();
 
   getNotifications = async (query?: GetNotificationsQuery): Promise<NotificationListResult> => {
-    const response = await this._notificationRepository.getNotifications(query);
+    const response = await this.#notificationRepository.getNotifications(query);
     return NotificationMapper.toNotificationListResult(response);
   };
 
   getUnreadCount = async (): Promise<number> => {
-    const result = await this._notificationRepository.getUnreadCount();
+    const result = await this.#notificationRepository.getUnreadCount();
     return result.unreadCount;
   };
 
   markAsRead = async (notificationId: number): Promise<MarkReadResult> => {
-    return this._notificationRepository.markAsRead(notificationId);
+    return this.#notificationRepository.markAsRead(notificationId);
   };
 
   markAllAsRead = async (): Promise<MarkReadResult> => {
-    return this._notificationRepository.markAllAsRead();
+    return this.#notificationRepository.markAllAsRead();
   };
 
   setBadgeCount = async (count: number): Promise<void> => {

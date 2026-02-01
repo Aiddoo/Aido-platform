@@ -22,10 +22,14 @@ import { FriendValidationError } from '../models/friend.error';
 import type { FriendRepository, PaginationParams } from './friend.repository';
 
 export class FriendRepositoryImpl implements FriendRepository {
-  constructor(private readonly _httpClient: HttpClient) {}
+  readonly #httpClient: HttpClient;
+
+  constructor(httpClient: HttpClient) {
+    this.#httpClient = httpClient;
+  }
 
   async sendRequest(userTag: string): Promise<SendFriendRequestResponse> {
-    const { data } = await this._httpClient.post<SendFriendRequestResponse>(
+    const { data } = await this.#httpClient.post<SendFriendRequestResponse>(
       `v1/follows/${userTag}`,
     );
 
@@ -38,7 +42,7 @@ export class FriendRepositoryImpl implements FriendRepository {
     return result.data;
   }
 
-  private _buildPaginatedUrl(basePath: string, params?: PaginationParams): string {
+  #buildPaginatedUrl(basePath: string, params?: PaginationParams): string {
     const searchParams = new URLSearchParams();
     if (params?.cursor) searchParams.set('cursor', params.cursor);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
@@ -48,9 +52,9 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async getReceivedRequests(params?: PaginationParams): Promise<ReceivedRequestsResponse> {
-    const url = this._buildPaginatedUrl('v1/follows/requests/received', params);
+    const url = this.#buildPaginatedUrl('v1/follows/requests/received', params);
 
-    const { data } = await this._httpClient.get<ReceivedRequestsResponse>(url);
+    const { data } = await this.#httpClient.get<ReceivedRequestsResponse>(url);
 
     const result = receivedRequestsResponseSchema.safeParse(data);
     if (!result.success) {
@@ -62,9 +66,9 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async getSentRequests(params?: PaginationParams): Promise<SentRequestsResponse> {
-    const url = this._buildPaginatedUrl('v1/follows/requests/sent', params);
+    const url = this.#buildPaginatedUrl('v1/follows/requests/sent', params);
 
-    const { data } = await this._httpClient.get<SentRequestsResponse>(url);
+    const { data } = await this.#httpClient.get<SentRequestsResponse>(url);
 
     const result = sentRequestsResponseSchema.safeParse(data);
     if (!result.success) {
@@ -76,7 +80,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async acceptRequest(userId: string): Promise<AcceptFriendRequestResponse> {
-    const { data } = await this._httpClient.patch<AcceptFriendRequestResponse>(
+    const { data } = await this.#httpClient.patch<AcceptFriendRequestResponse>(
       `v1/follows/${userId}/accept`,
     );
 
@@ -90,7 +94,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async rejectRequest(userId: string): Promise<RejectFriendRequestResponse> {
-    const { data } = await this._httpClient.patch<RejectFriendRequestResponse>(
+    const { data } = await this.#httpClient.patch<RejectFriendRequestResponse>(
       `v1/follows/${userId}/reject`,
     );
 
@@ -104,7 +108,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async cancelRequest(userId: string): Promise<CancelFriendRequestResponse> {
-    const { data } = await this._httpClient.delete<CancelFriendRequestResponse>(
+    const { data } = await this.#httpClient.delete<CancelFriendRequestResponse>(
       `v1/follows/${userId}`,
     );
 
@@ -118,9 +122,9 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async getFriends(params?: PaginationParams): Promise<FriendsListResponse> {
-    const url = this._buildPaginatedUrl('v1/follows/friends', params);
+    const url = this.#buildPaginatedUrl('v1/follows/friends', params);
 
-    const { data } = await this._httpClient.get<FriendsListResponse>(url);
+    const { data } = await this.#httpClient.get<FriendsListResponse>(url);
 
     const result = friendsListResponseSchema.safeParse(data);
     if (!result.success) {
@@ -132,7 +136,7 @@ export class FriendRepositoryImpl implements FriendRepository {
   }
 
   async removeFriend(userId: string): Promise<RemoveFriendResponse> {
-    const { data } = await this._httpClient.delete<RemoveFriendResponse>(`v1/follows/${userId}`);
+    const { data } = await this.#httpClient.delete<RemoveFriendResponse>(`v1/follows/${userId}`);
 
     const result = removeFriendResponseSchema.safeParse(data);
     if (!result.success) {
