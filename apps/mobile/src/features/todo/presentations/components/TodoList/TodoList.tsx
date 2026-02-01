@@ -21,7 +21,6 @@ export function TodoList({ date }: TodoListProps) {
     getTodosInfiniteQueryOptions(formatDate(date)),
   );
 
-  // TODO: todo 추가시 레이아웃 개선 필요
   return (
     <FlashList
       data={data.todos}

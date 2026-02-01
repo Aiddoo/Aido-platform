@@ -8,6 +8,13 @@ export class FriendError extends ClientError {
   constructor(message: string = '친구 기능에 실패했어요') {
     super(message);
   }
+
+  /** 알 수 없는 에러 → FriendError 변환 */
+  static fromUnknown(error: unknown): FriendError {
+    if (error instanceof FriendError) return error;
+    if (error instanceof Error) return new FriendError(error.message);
+    return new FriendError();
+  }
 }
 
 /** 응답 검증 실패 */
@@ -32,3 +39,9 @@ export class InvalidTagError extends FriendError {
 
 // 타입 가드
 export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;
+
+export const isValidationError = (error: unknown): error is FriendValidationError =>
+  error instanceof FriendValidationError;
+
+export const isInvalidTagError = (error: unknown): error is InvalidTagError =>
+  error instanceof InvalidTagError;

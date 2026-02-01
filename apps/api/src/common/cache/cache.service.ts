@@ -8,18 +8,12 @@ import {
 	type TtlValue,
 } from "./interfaces/cache.interface";
 
-/**
- * 세션 캐시 데이터 타입
- */
 export interface CachedSession {
 	userId: string;
 	expiresAt: Date;
 	revokedAt: Date | null;
 }
 
-/**
- * 사용자 프로필 캐시 데이터 타입
- */
 export interface CachedUserProfile {
 	id: string;
 	email: string;
@@ -33,9 +27,6 @@ export interface CachedUserProfile {
 	createdAt: string;
 }
 
-/**
- * 구독 상태 캐시 데이터 타입
- */
 export interface CachedSubscription {
 	status: SubscriptionStatus | null;
 }
@@ -88,25 +79,16 @@ export class CacheService {
 		return this.cache.wrap(key, factory, ttl);
 	}
 
-	/**
-	 * 다중 키 조회
-	 */
 	mget<T>(keys: string[]): Promise<(T | undefined)[]> {
 		return this.cache.mget<T>(keys);
 	}
 
-	/**
-	 * 다중 키 저장
-	 */
 	mset<T>(
 		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
 	): Promise<void> {
 		return this.cache.mset(entries);
 	}
 
-	/**
-	 * 키 존재 여부 확인
-	 */
 	has(key: string): Promise<boolean> {
 		return this.cache.has(key);
 	}

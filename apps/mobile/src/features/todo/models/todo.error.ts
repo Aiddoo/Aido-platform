@@ -8,6 +8,13 @@ export class TodoError extends ClientError {
   constructor(message: string = '할 일 기능에 실패했어요') {
     super(message);
   }
+
+  /** 알 수 없는 에러 → TodoError 변환 */
+  static fromUnknown(error: unknown): TodoError {
+    if (error instanceof TodoError) return error;
+    if (error instanceof Error) return new TodoError(error.message);
+    return new TodoError();
+  }
 }
 
 /** 응답 검증 실패 */
@@ -22,3 +29,6 @@ export class TodoValidationError extends TodoError {
 
 // 타입 가드
 export const isTodoError = (error: unknown): error is TodoError => error instanceof TodoError;
+
+export const isValidationError = (error: unknown): error is TodoValidationError =>
+  error instanceof TodoValidationError;

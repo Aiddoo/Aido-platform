@@ -64,7 +64,6 @@ const HomeScreen = () => {
         scheduledTime,
         isAllDay,
         visibility: 'PUBLIC',
-        // TODO: 카테고리 선택 기능 추가 시 변경 필요, 개발 환경에 따라 다를 수 있습니다.
         categoryId: 1,
       },
       {
