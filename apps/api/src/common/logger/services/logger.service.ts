@@ -20,9 +20,6 @@ export class LoggerService implements NestLoggerService {
 		this.pino.setContext(context);
 	}
 
-	/**
-	 * INFO 레벨 로그
-	 */
 	log(message: string, context?: LogContext | string): void {
 		if (typeof context === "string") {
 			this.pino.setContext(context);
@@ -32,9 +29,6 @@ export class LoggerService implements NestLoggerService {
 		}
 	}
 
-	/**
-	 * ERROR 레벨 로그
-	 */
 	error(message: string, trace?: string, context?: LogContext | string): void {
 		const logData: LogContext = typeof context === "object" ? context : {};
 		if (trace) {
@@ -46,9 +40,6 @@ export class LoggerService implements NestLoggerService {
 		this.pino.error(logData, message);
 	}
 
-	/**
-	 * WARN 레벨 로그
-	 */
 	warn(message: string, context?: LogContext | string): void {
 		if (typeof context === "string") {
 			this.pino.setContext(context);
@@ -58,9 +49,6 @@ export class LoggerService implements NestLoggerService {
 		}
 	}
 
-	/**
-	 * DEBUG 레벨 로그
-	 */
 	debug(message: string, context?: LogContext | string): void {
 		if (typeof context === "string") {
 			this.pino.setContext(context);
@@ -77,9 +65,6 @@ export class LoggerService implements NestLoggerService {
 		this.debug(message, context);
 	}
 
-	/**
-	 * FATAL 레벨 로그
-	 */
 	fatal(message: string, context?: LogContext | string): void {
 		if (typeof context === "string") {
 			this.pino.setContext(context);

@@ -7,6 +7,13 @@ export class NotificationError extends ClientError {
   constructor(message = '알림 작업에 실패했어요') {
     super(message);
   }
+
+  /** 알 수 없는 에러 → NotificationError 변환 */
+  static fromUnknown(error: unknown): NotificationError {
+    if (error instanceof NotificationError) return error;
+    if (error instanceof Error) return new NotificationError(error.message);
+    return new NotificationError();
+  }
 }
 
 /**
@@ -50,3 +57,15 @@ export class NotificationValidationError extends NotificationError {
  */
 export const isNotificationError = (error: unknown): error is NotificationError =>
   error instanceof NotificationError;
+
+export const isPermissionDeniedError = (
+  error: unknown,
+): error is NotificationPermissionDeniedError => error instanceof NotificationPermissionDeniedError;
+
+export const isNotPhysicalDeviceError = (
+  error: unknown,
+): error is NotificationNotPhysicalDeviceError =>
+  error instanceof NotificationNotPhysicalDeviceError;
+
+export const isValidationError = (error: unknown): error is NotificationValidationError =>
+  error instanceof NotificationValidationError;
