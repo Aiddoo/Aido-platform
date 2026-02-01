@@ -26,6 +26,7 @@ export class FollowListener {
 	 * 새로운 팔로우 요청 이벤트 처리
 	 *
 	 * 팔로우 요청을 받은 사용자에게 알림을 발송합니다.
+	 * 클라이언트가 type(FOLLOW_NEW) + context(friendId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.FOLLOW_NEW)
 	async handleFollowNew(payload: FollowNewEventPayload): Promise<void> {
@@ -43,7 +44,6 @@ export class FollowListener {
 				type: "FOLLOW_NEW",
 				title: message.title,
 				body: message.body,
-				route: "/friends/requests",
 				friendId: payload.followerId,
 			});
 
@@ -64,6 +64,7 @@ export class FollowListener {
 	 *
 	 * 친구 성립 알림을 발송합니다.
 	 * 이벤트는 각 사용자에게 개별적으로 발행되므로 단일 알림만 생성합니다.
+	 * 클라이언트가 type(FOLLOW_ACCEPTED) + context(friendId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.FOLLOW_MUTUAL)
 	async handleFollowMutual(payload: FollowMutualEventPayload): Promise<void> {
@@ -81,7 +82,6 @@ export class FollowListener {
 				type: "FOLLOW_ACCEPTED",
 				title: message.title,
 				body: message.body,
-				route: `/friends/${payload.friendId}`,
 				friendId: payload.friendId,
 			});
 

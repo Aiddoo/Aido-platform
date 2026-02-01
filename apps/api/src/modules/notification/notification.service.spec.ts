@@ -46,7 +46,6 @@ describe("NotificationService", () => {
 		title: "새로운 친구 요청",
 		body: "홍길동님이 친구가 되고 싶어해요",
 		isRead: false,
-		route: "/friends",
 		todoId: null,
 		friendId: "friend-1",
 		nudgeId: null,
@@ -302,7 +301,6 @@ describe("NotificationService", () => {
 				type: "FOLLOW_NEW",
 				title: "새로운 친구 요청",
 				body: "홍길동님이 친구가 되고 싶어해요",
-				route: "/friends",
 				friendId: "friend-1",
 			};
 			const notification = createMockNotification();

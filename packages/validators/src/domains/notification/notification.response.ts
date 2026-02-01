@@ -27,7 +27,6 @@ export const notificationSchema = z
     title: z.string().max(200).describe('알림 제목 (최대 200자)'),
     body: z.string().max(500).describe('알림 본문 (최대 500자)'),
     isRead: z.boolean().describe('읽음 여부'),
-    route: z.string().max(200).nullable().describe('라우트 경로 (최대 200자, 미설정 시 null)'),
     metadata: z
       .record(z.string(), z.unknown())
       .nullable()
@@ -45,7 +44,6 @@ export const notificationSchema = z
       title: '친구의 응원이 도착했어요!',
       body: '존님이 당신의 할일을 응원하고 있어요 💪',
       isRead: false,
-      route: '/friends/clz7x5p8k0005qz0z8z8z8z8z',
       metadata: { senderId: 'clz7x5p8k0005qz0z8z8z8z8z' },
       createdAt: '2026-01-17T10:00:00.000Z',
       readAt: null,
@@ -76,7 +74,6 @@ export const notificationListResponseSchema = z
           title: '친구의 응원이 도착했어요!',
           body: '존님이 당신의 할일을 응원하고 있어요 💪',
           isRead: false,
-          route: '/friends/clz7x5p8k0005qz0z8z8z8z8z',
           metadata: { senderId: 'clz7x5p8k0005qz0z8z8z8z8z' },
           createdAt: '2026-01-17T10:00:00.000Z',
           readAt: null,

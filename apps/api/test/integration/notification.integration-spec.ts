@@ -95,7 +95,6 @@ describe("NotificationService Integration Tests", () => {
 		title: "테스트 알림",
 		body: "테스트 알림 내용입니다",
 		isRead: false,
-		route: "/nudges",
 		todoId: null,
 		friendId: null,
 		nudgeId: 1,
@@ -332,7 +331,6 @@ describe("NotificationService Integration Tests", () => {
 				type: "NUDGE_RECEIVED",
 				title: "테스트 알림",
 				body: "테스트 알림 내용입니다",
-				route: "/nudges",
 			});
 
 			expect(result).toEqual(mockNotification);

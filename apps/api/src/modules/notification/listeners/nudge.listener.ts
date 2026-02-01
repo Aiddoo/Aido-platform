@@ -24,6 +24,9 @@ export class NudgeListener {
 	 * Nudge 발송 이벤트 처리
 	 *
 	 * 독촉을 받은 사용자에게 푸시 알림을 발송합니다.
+	 * 클라이언트가 type(NUDGE_RECEIVED) + context(todoId, friendId, nudgeId)로 라우팅 결정
+	 * - todoId가 있으면 해당 할일로
+	 * - 없으면 친구 프로필로
 	 */
 	@OnEvent(NotificationEvents.NUDGE_SENT)
 	async handleNudgeSent(payload: NudgeSentEventPayload): Promise<void> {
@@ -36,17 +39,11 @@ export class NudgeListener {
 				payload.senderName,
 			);
 
-			// route 결정: todoId가 있으면 해당 할일로, 없으면 친구 프로필로
-			const route = payload.todoId
-				? `/todos/${payload.todoId}`
-				: `/friends/${payload.senderId}`;
-
 			await this.notificationService.createAndSend({
 				userId: payload.receiverId,
 				type: "NUDGE_RECEIVED",
 				title: message.title,
 				body: message.body,
-				route,
 				nudgeId: payload.nudgeId,
 				friendId: payload.senderId,
 				todoId: payload.todoId,

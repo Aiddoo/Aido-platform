@@ -1,4 +1,8 @@
-import type { Notification as NotificationDto } from "@aido/validators";
+import {
+	NOTIFICATION_ACTION_TYPE,
+	type Notification as NotificationDto,
+	type PushNotificationData,
+} from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
@@ -139,15 +143,14 @@ export class NotificationService {
 			return notification;
 		}
 
-		// 3. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
+		// 3. 푸시 페이로드 생성 (업계 표준 action.type 기반)
+		const pushData = this.buildPushPayloadData(data, notification.id);
+
+		// 4. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
 		this.sendPushToUser(data.userId, {
 			title: data.title,
 			body: data.body,
-			data: {
-				notificationId: notification.id,
-				type: data.type,
-				route: data.route,
-			},
+			data: pushData,
 		}).catch((error) => {
 			this.logger.error(
 				`Failed to send push notification: userId=${data.userId}, error=${error}`,
@@ -201,10 +204,7 @@ export class NotificationService {
 				userId: d.userId,
 				title: d.title,
 				body: d.body,
-				data: {
-					type: d.type,
-					route: d.route,
-				},
+				data: this.buildPushPayloadData(d),
 			})),
 		).catch((error) => {
 			this.logger.error(
@@ -315,6 +315,46 @@ export class NotificationService {
 		);
 
 		return result;
+	}
+
+	// =========================================================================
+	// 푸시 페이로드 빌드 (Private)
+	// =========================================================================
+
+	/**
+	 * 푸시 알림 페이로드 데이터 생성
+	 *
+	 * 업계 표준 action.type enum 기반으로 페이로드를 구성합니다.
+	 * - action.type: DEEP_LINK, BROWSER, WEBVIEW, NONE
+	 * - action.url: External Link의 경우 URL
+	 * - context: 라우팅에 필요한 ID들 (클라이언트가 결정)
+	 */
+	private buildPushPayloadData(
+		data: CreateNotificationData,
+		notificationId?: number,
+	): PushNotificationData {
+		// action 결정: 명시적 action이 있으면 사용, 없으면 기본값
+		const action = data.action ?? {
+			type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
+			url: undefined,
+		};
+
+		// context 구성: 라우팅에 필요한 ID들
+		const context: PushNotificationData["context"] = {};
+		if (data.todoId) context.todoId = data.todoId;
+		if (data.friendId) context.friendId = data.friendId;
+		if (data.nudgeId) context.nudgeId = data.nudgeId;
+		if (data.cheerId) context.cheerId = data.cheerId;
+
+		return {
+			notificationId: notificationId ?? 0,
+			type: data.type,
+			action: {
+				type: action.type,
+				...(action.url && { url: action.url }),
+			},
+			...(Object.keys(context).length > 0 && { context }),
+		};
 	}
 
 	// =========================================================================

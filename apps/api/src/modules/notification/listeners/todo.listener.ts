@@ -30,6 +30,7 @@ export class TodoListener {
 	 * 사용자에게 완료 축하 알림을 발송하고,
 	 * 친구들에게도 알림을 발송하기 위해 friend.completed 이벤트를 발행합니다.
 	 * (friend.completed 이벤트 발행은 TodoModule에서 담당)
+	 * 클라이언트가 type(DAILY_COMPLETE)으로 라우팅 결정 → 홈 화면
 	 */
 	@OnEvent(NotificationEvents.TODO_ALL_COMPLETED)
 	async handleTodoAllCompleted(
@@ -45,7 +46,6 @@ export class TodoListener {
 				type: "DAILY_COMPLETE",
 				title: "완벽한 하루였어요!",
 				body: `오늘 ${payload.completedCount}개의 할일을 모두 완료했어요 🎉`,
-				route: "/",
 			});
 
 			this.logger.log(
@@ -64,6 +64,7 @@ export class TodoListener {
 	 *
 	 * 마감이 임박한 할일에 대해 알림을 발송합니다.
 	 * SchedulerModule의 크론 작업에서 발행합니다.
+	 * 클라이언트가 type(TODO_REMINDER) + context(todoId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.TODO_REMINDER)
 	async handleTodoReminder(payload: TodoReminderEventPayload): Promise<void> {
@@ -81,7 +82,6 @@ export class TodoListener {
 				type: "TODO_REMINDER",
 				title: message.title,
 				body: message.body,
-				route: `/todos/${payload.todoId}`,
 				todoId: payload.todoId,
 			});
 
@@ -100,6 +100,7 @@ export class TodoListener {
 	 * 친구 할일 완료 이벤트 처리
 	 *
 	 * 친구가 오늘 할일을 모두 완료했을 때, 친구들에게 알림을 발송합니다.
+	 * 클라이언트가 type(FRIEND_COMPLETED) + context(friendId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.FRIEND_COMPLETED)
 	async handleFriendCompleted(
@@ -124,7 +125,6 @@ export class TodoListener {
 				type: "FRIEND_COMPLETED" as const,
 				title: message.title,
 				body: message.body,
-				route: `/friends/${payload.friendId}`,
 				friendId: payload.friendId,
 			}));
 

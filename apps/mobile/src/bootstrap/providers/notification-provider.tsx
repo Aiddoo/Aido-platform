@@ -1,6 +1,7 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
 import { useNotificationService } from './di-provider';
@@ -11,17 +12,20 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
-// 포그라운드 알림 동작 설정
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// 포그라운드 알림 동작 설정 (웹 제외)
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
-export const NotificationProvider = ({ children }: PropsWithChildren) => {
+// Native 전용 Provider 구현
+const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();
   const notificationService = useNotificationService();
   const isAuthenticated = status === 'authenticated';
@@ -93,6 +97,26 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 };
+
+// Web 전용 간단한 Provider
+const WebNotificationProvider = ({ children }: PropsWithChildren) => {
+  const { status } = useAuth();
+  const isAuthenticated = status === 'authenticated';
+
+  const { handleNotificationResponse } = useNotificationHandler({
+    isAuthenticated,
+  });
+
+  const value: NotificationContextValue = {
+    handleNotificationResponse,
+  };
+
+  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
+};
+
+// Platform에 따라 적절한 Provider 선택
+export const NotificationProvider =
+  Platform.OS === 'web' ? WebNotificationProvider : NativeNotificationProvider;
 
 export const useNotificationContext = (): NotificationContextValue => {
   const context = use(NotificationContext);

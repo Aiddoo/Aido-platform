@@ -565,10 +565,6 @@ model Notification {
   body   String           @db.VarChar(500)
   isRead Boolean          @default(false)
 
-  // === 액션/링크 (간소화) ===
-  // Expo Router 패턴: 인앱 경로만 저장, 외부 URL은 metadata에
-  route String? @db.VarChar(200) // 인앱 경로: "/todos/123", "/friends/abc", null = 액션 없음
-
   // === 참조 ID (타입 안전성, 쿼리 성능) ===
   todoId   Int? // Todo 관련 알림
   friendId String? // 친구 관련 알림
