@@ -1,6 +1,10 @@
 export const PASSWORD_RULES = {
   MIN_LENGTH: 8,
   MAX_LENGTH: 72,
+  /** 영문 포함 여부 검사 */
+  HAS_LETTER: /[A-Za-z]/,
+  /** 숫자 포함 여부 검사 */
+  HAS_NUMBER: /\d/,
   /** 8자 이상, 영문과 숫자 필수 조합 */
   PATTERN: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/,
   ERROR_MESSAGE: '비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다',
