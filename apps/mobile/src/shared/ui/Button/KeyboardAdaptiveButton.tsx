@@ -10,10 +10,18 @@ const BUTTON_RADIUS = 12;
 const DEFAULT_BOTTOM_PADDING = 16;
 const STICKY_OFFSET = 0;
 
+interface KeyboardAdaptiveButtonProps extends ButtonProps {
+  enabled?: boolean;
+}
+
 /**
  * 키보드 상태에 따라 스타일이 변하는 버튼 컴포넌트
  */
-export const KeyboardAdaptiveButton = ({ children, ...buttonProps }: ButtonProps) => {
+export const KeyboardAdaptiveButton = ({
+  children,
+  enabled = true,
+  ...buttonProps
+}: KeyboardAdaptiveButtonProps) => {
   const insets = useSafeAreaInsets();
   const isKeyboardOpen = useSharedValue(false);
 
@@ -40,7 +48,7 @@ export const KeyboardAdaptiveButton = ({ children, ...buttonProps }: ButtonProps
   }));
 
   return (
-    <KeyboardStickyView offset={{ closed: STICKY_OFFSET, opened: STICKY_OFFSET }}>
+    <KeyboardStickyView offset={{ closed: STICKY_OFFSET, opened: STICKY_OFFSET }} enabled={enabled}>
       <Animated.View style={containerStyle} className="bg-white pt-3">
         <Animated.View style={buttonStyle} className="overflow-hidden">
           <Button {...buttonProps} className="rounded-none" style={{ borderRadius: undefined }}>
