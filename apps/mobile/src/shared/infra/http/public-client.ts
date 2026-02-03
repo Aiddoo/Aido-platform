@@ -1,6 +1,6 @@
 import { ENV } from '@src/shared/config/env';
 import ky, { type KyInstance } from 'ky';
-import { handleApiErrors } from './error-handler';
+import { handlePublicApiErrors } from './error-handler';
 
 /**
  * 토큰 없이 호출하는 공개 API용 HTTP 클라이언트
@@ -14,7 +14,7 @@ export const createPublicClient = (): KyInstance => {
       'Content-Type': 'application/json',
     },
     hooks: {
-      afterResponse: [handleApiErrors],
+      afterResponse: [handlePublicApiErrors],
     },
   });
 };
