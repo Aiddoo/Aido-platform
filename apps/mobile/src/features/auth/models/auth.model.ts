@@ -1,4 +1,4 @@
-import type { SubscriptionStatus } from '@aido/validators';
+import { emailSchema, passwordSchema, type SubscriptionStatus } from '@aido/validators';
 import { z } from 'zod';
 
 export const UserSchema = z.object({
@@ -23,6 +23,24 @@ export const AuthTokensSchema = z.object({
 });
 
 export type AuthTokens = z.infer<typeof AuthTokensSchema>;
+
+export const signUpFormSchema = z
+  .object({
+    email: emailSchema,
+    password: passwordSchema,
+    passwordConfirm: z.string(),
+    name: z
+      .string()
+      .min(1, '닉네임을 입력해주세요')
+      .max(100, '이름은 100자 이내여야 합니다')
+      .trim(),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: '비밀번호가 일치하지 않습니다',
+    path: ['passwordConfirm'],
+  });
+
+export type SignUpFormData = z.infer<typeof signUpFormSchema>;
 
 /** Auth 도메인 비즈니스 규칙 */
 export const AuthPolicy = {
