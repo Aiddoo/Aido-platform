@@ -1,9 +1,21 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+/**
+ * OAuthService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - Builder 패턴으로 테스트 데이터 생성
+ * - Given/When/Then 주석으로 테스트 구조화
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
 
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import type { Account, User } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import {
 	LOGIN_FAILURE_REASON,
@@ -26,124 +38,187 @@ interface AppleVerifiedProfile {
 	emailVerified: boolean;
 }
 
+/** OAuth 프로필 (Google/Kakao/Naver) */
+interface OAuthProfile {
+	id: string;
+	email: string | null;
+	emailVerified: boolean;
+	name?: string;
+	picture?: string;
+}
+
+// Transaction callback 타입
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TransactionCallback = (tx: any) => Promise<any>;
+
 describe("OAuthService", () => {
 	let service: OAuthService;
+	let database: Mocked<DatabaseService>;
+	let userRepo: Mocked<UserRepository>;
+	let accountRepo: Mocked<AccountRepository>;
+	let sessionRepo: Mocked<SessionRepository>;
+	let securityLogRepo: Mocked<SecurityLogRepository>;
+	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
+	let oauthStateRepo: Mocked<OAuthStateRepository>;
+	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let tokenService: Mocked<TokenService>;
+	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
+	let configService: Mocked<TypedConfigService>;
 
-	// Mock 객체들
-	const mockDatabase = {
-		$transaction: jest.fn((callback) =>
-			callback({
-				userConsent: { create: jest.fn() },
-			}),
-		),
+	// 재사용 가능한 테스트 데이터
+	const mockTokens = {
+		accessToken: "access-token",
+		refreshToken: "refresh-token",
+		expiresIn: 900,
 	};
 
-	const mockUserRepository = {
-		findByEmail: jest.fn(),
-		findById: jest.fn(),
-		findByIdWithProfile: jest.fn(),
-		create: jest.fn(),
-		createProfile: jest.fn(),
-	};
-
-	const mockAccountRepository = {
-		findByProviderAccountId: jest.fn(),
-		findByUserIdAndProvider: jest.fn(),
-		findAllByUserId: jest.fn(),
-		createOAuthAccount: jest.fn(),
-		deleteAccount: jest.fn(),
-	};
-
-	const mockSessionRepository = {
-		create: jest.fn(),
-		updateRefreshTokenHash: jest.fn(),
-	};
-
-	const mockSecurityLogRepository = {
-		create: jest.fn(),
-	};
-
-	const mockLoginAttemptRepository = {
-		create: jest.fn(),
-		countRecentFailuresByEmail: jest.fn(),
-		countRecentFailuresByIp: jest.fn(),
-	};
-
-	const mockTokenService = {
-		generateTokenPair: jest.fn(),
-		generateTokenFamily: jest.fn(),
-		hashRefreshToken: jest.fn(),
-		getRefreshTokenExpiresInSeconds: jest.fn(),
-	};
-
-	const mockTokenVerifier = {
-		verifyAppleToken: jest.fn(),
-		verifyGoogleToken: jest.fn(),
-		verifyKakaoToken: jest.fn(),
-		verifyNaverToken: jest.fn(),
-	};
-
-	const mockConfigService = {
-		kakaoOAuth: {
-			clientId: "test-kakao-client-id",
-			clientSecret: "test-kakao-client-secret",
-			callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
-			isConfigured: true,
-		},
-		googleOAuth: {
-			clientId: "test-google-client-id",
-			clientSecret: "test-google-client-secret",
-			callbackUrl: "http://localhost:3000/v1/auth/google/web-callback",
-			isConfigured: true,
-		},
-		naverOAuth: {
-			clientId: "test-naver-client-id",
-			clientSecret: "test-naver-client-secret",
-			callbackUrl: "http://localhost:3000/v1/auth/naver/web-callback",
-			isConfigured: true,
-		},
-	};
-
-	const mockOAuthStateRepository = {
-		create: jest.fn(),
-		findByState: jest.fn(),
-		findByExchangeCode: jest.fn(),
-		saveExchangeData: jest.fn(),
-		markAsExchanged: jest.fn(),
-	};
-
-	const mockTodoCategoryRepository = {
-		createMany: jest.fn(),
+	const mockMetadata = {
+		ip: "192.168.1.1",
+		userAgent: "Test-User-Agent/1.0",
 	};
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		// Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(OAuthService).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				OAuthService,
-				{ provide: DatabaseService, useValue: mockDatabase },
-				{ provide: UserRepository, useValue: mockUserRepository },
-				{ provide: AccountRepository, useValue: mockAccountRepository },
-				{ provide: SessionRepository, useValue: mockSessionRepository },
-				{ provide: SecurityLogRepository, useValue: mockSecurityLogRepository },
-				{
-					provide: LoginAttemptRepository,
-					useValue: mockLoginAttemptRepository,
-				},
-				{ provide: TokenService, useValue: mockTokenService },
-				{ provide: OAuthTokenVerifierService, useValue: mockTokenVerifier },
-				{ provide: TypedConfigService, useValue: mockConfigService },
-				{ provide: OAuthStateRepository, useValue: mockOAuthStateRepository },
-				{
-					provide: TodoCategoryRepository,
-					useValue: mockTodoCategoryRepository,
-				},
-			],
-		}).compile();
+		service = unit;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
+		accountRepo = unitRef.get(
+			AccountRepository,
+		) as unknown as Mocked<AccountRepository>;
+		sessionRepo = unitRef.get(
+			SessionRepository,
+		) as unknown as Mocked<SessionRepository>;
+		securityLogRepo = unitRef.get(
+			SecurityLogRepository,
+		) as unknown as Mocked<SecurityLogRepository>;
+		loginAttemptRepo = unitRef.get(
+			LoginAttemptRepository,
+		) as unknown as Mocked<LoginAttemptRepository>;
+		oauthStateRepo = unitRef.get(
+			OAuthStateRepository,
+		) as unknown as Mocked<OAuthStateRepository>;
+		todoCategoryRepo = unitRef.get(
+			TodoCategoryRepository,
+		) as unknown as Mocked<TodoCategoryRepository>;
+		tokenService = unitRef.get(TokenService) as unknown as Mocked<TokenService>;
+		tokenVerifier = unitRef.get(
+			OAuthTokenVerifierService,
+		) as unknown as Mocked<OAuthTokenVerifierService>;
+		configService = unitRef.get(
+			TypedConfigService,
+		) as unknown as Mocked<TypedConfigService>;
 
-		service = module.get<OAuthService>(OAuthService);
+		// ConfigService 기본 설정
+		setupDefaultConfigService();
 	});
+
+	/**
+	 * ConfigService 기본 설정 헬퍼
+	 */
+	const setupDefaultConfigService = () => {
+		Object.defineProperty(configService, "kakaoOAuth", {
+			get: () => ({
+				clientId: "test-kakao-client-id",
+				clientSecret: "test-kakao-client-secret",
+				callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
+				isConfigured: true,
+			}),
+			configurable: true,
+		});
+
+		Object.defineProperty(configService, "googleOAuth", {
+			get: () => ({
+				clientId: "test-google-client-id",
+				clientSecret: "test-google-client-secret",
+				callbackUrl: "http://localhost:3000/v1/auth/google/web-callback",
+				isConfigured: true,
+			}),
+			configurable: true,
+		});
+
+		Object.defineProperty(configService, "naverOAuth", {
+			get: () => ({
+				clientId: "test-naver-client-id",
+				clientSecret: "test-naver-client-secret",
+				callbackUrl: "http://localhost:3000/v1/auth/naver/web-callback",
+				isConfigured: true,
+			}),
+			configurable: true,
+		});
+	};
+
+	/**
+	 * OAuth 로그인 성공 시나리오 mock 설정 헬퍼
+	 */
+	const setupSuccessfulOAuthLogin = (
+		mockUser: ReturnType<typeof UserBuilder.prototype.build>,
+	) => {
+		const mockSession = SessionBuilder.create(mockUser.id)
+			.withId("session-123")
+			.withTokenFamily("family-123")
+			.build();
+
+		tokenService.generateTokenFamily.mockReturnValue("family-123");
+		tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(
+			7 * 24 * 60 * 60,
+		);
+		tokenService.generateTokenPair.mockResolvedValue(mockTokens);
+		tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
+		sessionRepo.create.mockResolvedValue(mockSession);
+		sessionRepo.updateRefreshTokenHash.mockResolvedValue(mockSession as never);
+		securityLogRepo.create.mockResolvedValue({
+			id: 1,
+			userId: mockUser.id,
+			event: "LOGIN_SUCCESS",
+			ipAddress: mockMetadata.ip,
+			userAgent: mockMetadata.userAgent,
+			metadata: null,
+			createdAt: new Date(),
+		});
+		loginAttemptRepo.create.mockResolvedValue({
+			id: 1,
+			email: mockUser.email,
+			provider: null,
+			success: true,
+			failureReason: null,
+			ipAddress: mockMetadata.ip,
+			userAgent: mockMetadata.userAgent,
+			createdAt: new Date(),
+		});
+		userRepo.findByIdWithProfile.mockResolvedValue({
+			id: mockUser.id,
+			email: mockUser.email,
+			userTag: mockUser.userTag,
+			role: mockUser.role,
+			status: mockUser.status,
+			emailVerifiedAt: mockUser.emailVerifiedAt,
+			subscriptionStatus: mockUser.subscriptionStatus,
+			subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
+			createdAt: mockUser.createdAt,
+			lastLoginAt: mockUser.lastLoginAt,
+			profile: { name: "테스트유저", profileImage: null },
+		} as never);
+		database.$transaction.mockImplementation(
+			async (callback: TransactionCallback) => {
+				const mockTx = {
+					userConsent: { create: jest.fn() },
+				};
+				return callback(mockTx as never);
+			},
+		);
+		// database.user에 접근할 수 있도록 mock 설정
+		Object.defineProperty(database, "user", {
+			value: {
+				findUnique: jest.fn().mockResolvedValue({ role: "USER" }),
+			},
+			configurable: true,
+			writable: true,
+		});
+	};
 
 	// ============================================
 	// handleAppleMobileLogin (서버에서 토큰 검증)
@@ -156,226 +231,220 @@ describe("OAuthService", () => {
 			emailVerified: true,
 		};
 
-		const mockUser: Partial<User> = {
-			id: "user-123",
-			email: "test@privaterelay.appleid.com",
-			status: "ACTIVE",
-			emailVerifiedAt: new Date(),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
+		describe("기존 사용자 로그인", () => {
+			it("기존 Apple 사용자가 모바일 로그인하면 토큰을 발급한다", async () => {
+				// Given - Builder로 테스트 데이터 생성
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
 
-		const mockSession = {
-			id: "session-123",
-			userId: "user-123",
-			tokenFamily: "family-123",
-			tokenVersion: 1,
-		};
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asApple("apple-user-123")
+					.build();
 
-		const mockTokens = {
-			accessToken: "access-token",
-			refreshToken: "refresh-token",
-		};
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
-		beforeEach(() => {
-			mockTokenService.generateTokenFamily.mockReturnValue("family-123");
-			mockTokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(
-				7 * 24 * 60 * 60,
-			);
-			mockTokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			mockTokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			mockSessionRepository.create.mockResolvedValue(mockSession);
-			mockSessionRepository.updateRefreshTokenHash.mockResolvedValue({});
-			mockSecurityLogRepository.create.mockResolvedValue({});
-			mockUserRepository.findByIdWithProfile.mockResolvedValue({
-				...mockUser,
-				profile: { name: "홍길동", profileImage: null },
-			});
-			// 토큰 검증 mock
-			mockTokenVerifier.verifyAppleToken.mockResolvedValue(
-				appleVerifiedProfile,
-			);
-		});
+				// When
+				const result = await service.handleAppleMobileLogin("valid-id-token");
 
-		it("기존 Apple 사용자가 모바일 로그인하면 토큰을 발급한다", async () => {
-			// Given
-			const existingAccount: Partial<Account> = {
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-user-123",
-			};
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(
-				existingAccount,
-			);
-			mockUserRepository.findById.mockResolvedValue(mockUser);
-
-			// When
-			const result = await service.handleAppleMobileLogin("valid-id-token");
-
-			// Then
-			expect(result).toEqual({
-				userId: "user-123",
-				userTag: "",
-				tokens: mockTokens,
-				sessionId: "session-123",
-				name: "홍길동",
-				profileImage: null,
-			});
-			expect(mockTokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
-				"valid-id-token",
-			);
-			expect(
-				mockAccountRepository.findByProviderAccountId,
-			).toHaveBeenCalledWith("APPLE", "apple-user-123");
-			expect(mockUserRepository.create).not.toHaveBeenCalled();
-		});
-
-		it("신규 Apple 사용자는 자동 회원가입 후 토큰을 발급한다", async () => {
-			// Given
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-			mockUserRepository.findByEmail.mockResolvedValue(null);
-			mockUserRepository.create.mockResolvedValue(mockUser);
-			mockAccountRepository.createOAuthAccount.mockResolvedValue({});
-			mockUserRepository.createProfile.mockResolvedValue({});
-
-			// When
-			const result = await service.handleAppleMobileLogin(
-				"valid-id-token",
-				"홍길동", // userName
-			);
-
-			// Then
-			expect(result.userId).toBe("user-123");
-			expect(result.tokens).toEqual(mockTokens);
-			expect(mockUserRepository.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					email: "test@privaterelay.appleid.com",
-					status: "ACTIVE",
-				}),
-				expect.anything(),
-			);
-			expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith(
-				expect.objectContaining({
+				// Then
+				expect(result).toEqual({
 					userId: "user-123",
-					provider: "APPLE",
-					providerAccountId: "apple-user-123",
-				}),
-				expect.anything(),
-			);
-			expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: "user-123",
-					event: SECURITY_EVENT.REGISTRATION,
-				}),
-				expect.anything(),
-			);
+					userTag: mockUser.userTag,
+					tokens: mockTokens,
+					sessionId: "session-123",
+					name: "테스트유저",
+					profileImage: null,
+				});
+				expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
+					"valid-id-token",
+				);
+				expect(accountRepo.findByProviderAccountId).toHaveBeenCalledWith(
+					"APPLE",
+					"apple-user-123",
+				);
+				expect(userRepo.create).not.toHaveBeenCalled();
+			});
 		});
 
-		it("이메일 없이 신규 로그인 시 플레이스홀더 이메일로 가입된다", async () => {
-			// Given
-			const profileWithoutEmail: AppleVerifiedProfile = {
-				id: "apple-user-456",
-				email: null,
-				emailVerified: false,
-			};
-			mockTokenVerifier.verifyAppleToken.mockResolvedValue(profileWithoutEmail);
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-			mockUserRepository.create.mockResolvedValue({
-				id: "new-user-id",
-				email: "apple_apple-user-456@social.aido.app",
-			});
-			mockAccountRepository.createOAuthAccount.mockResolvedValue({
-				id: "new-account-id",
-			});
-			mockSessionRepository.create.mockResolvedValue({
-				id: "session-id",
-			});
-			mockTokenService.generateTokenPair.mockReturnValue({
-				accessToken: "access",
-				refreshToken: "refresh",
+		describe("신규 사용자 회원가입", () => {
+			it("신규 Apple 사용자는 자동 회원가입 후 토큰을 발급한다", async () => {
+				// Given
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				const result = await service.handleAppleMobileLogin(
+					"valid-id-token",
+					"홍길동",
+				);
+
+				// Then
+				expect(result.userId).toBe("user-123");
+				expect(result.tokens).toEqual(mockTokens);
+				expect(userRepo.create).toHaveBeenCalledWith(
+					expect.objectContaining({
+						email: "test@privaterelay.appleid.com",
+						status: "ACTIVE",
+					}),
+					expect.anything(),
+				);
+				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+					expect.objectContaining({
+						userId: "user-123",
+						provider: "APPLE",
+						providerAccountId: "apple-user-123",
+					}),
+					expect.anything(),
+				);
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
+					expect.objectContaining({
+						userId: "user-123",
+						event: SECURITY_EVENT.REGISTRATION,
+					}),
+					expect.anything(),
+				);
 			});
 
-			// When
-			const result = await service.handleAppleMobileLogin("valid-id-token");
+			it("이메일 없이 신규 로그인 시 플레이스홀더 이메일로 가입된다", async () => {
+				// Given
+				const profileWithoutEmail: AppleVerifiedProfile = {
+					id: "apple-user-456",
+					email: null,
+					emailVerified: false,
+				};
+				const mockUser = UserBuilder.create()
+					.withId("new-user-id")
+					.withEmail("apple_apple-user-456@social.aido.app")
+					.verified()
+					.build();
 
-			// Then
-			expect(result.tokens).toHaveProperty("accessToken");
-			expect(mockUserRepository.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					email: "apple_apple-user-456@social.aido.app",
-				}),
-				expect.anything(), // 트랜잭션 클라이언트
-			);
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(profileWithoutEmail);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				const result = await service.handleAppleMobileLogin("valid-id-token");
+
+				// Then
+				expect(result.tokens).toHaveProperty("accessToken");
+				expect(userRepo.create).toHaveBeenCalledWith(
+					expect.objectContaining({
+						email: "apple_apple-user-456@social.aido.app",
+					}),
+					expect.anything(),
+				);
+			});
 		});
 
-		it("이메일이 이미 존재하는 경우 자동 연동된다 (Apple은 신뢰된 Provider)", async () => {
-			// Given
-			const existingUserWithSameEmail = {
-				id: "other-user",
-				email: "test@privaterelay.appleid.com",
-				status: "ACTIVE",
-			};
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-			mockUserRepository.findByEmail.mockResolvedValue(
-				existingUserWithSameEmail,
-			);
-			mockAccountRepository.createOAuthAccount.mockResolvedValue({});
-			mockUserRepository.findByIdWithProfile.mockResolvedValue({
-				...existingUserWithSameEmail,
-				profile: { name: "기존유저", profileImage: null },
+		describe("자동 계정 연동", () => {
+			it("이메일이 이미 존재하는 경우 자동 연동된다 (Apple은 신뢰된 Provider)", async () => {
+				// Given
+				const existingUser = UserBuilder.create()
+					.withId("other-user")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(existingUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...existingUser,
+					profile: { name: "기존유저", profileImage: null },
+				} as any);
+
+				// When
+				const result = await service.handleAppleMobileLogin("valid-id-token");
+
+				// Then - Apple은 신뢰된 Provider이므로 자동 연동됨
+				expect(result.userId).toBe("other-user");
+				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+					expect.objectContaining({
+						userId: "other-user",
+						provider: "APPLE",
+						providerAccountId: "apple-user-123",
+					}),
+					expect.anything(),
+				);
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
+					expect.objectContaining({
+						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
+					}),
+					expect.anything(),
+				);
 			});
-
-			// When
-			const result = await service.handleAppleMobileLogin("valid-id-token");
-
-			// Then - Apple은 신뢰된 Provider이므로 자동 연동됨
-			expect(result.userId).toBe("other-user");
-			expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: "other-user",
-					provider: "APPLE",
-					providerAccountId: "apple-user-123",
-				}),
-				expect.anything(),
-			);
-			expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
-				}),
-				expect.anything(),
-			);
 		});
 
-		it("계정이 잠긴 사용자는 로그인할 수 없다", async () => {
-			// Given
-			const lockedUser = { ...mockUser, status: "LOCKED" };
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-user-123",
+		describe("계정 상태 검증", () => {
+			it("계정이 잠긴 사용자는 로그인할 수 없다", async () => {
+				// Given - Builder로 잠긴 사용자 생성
+				const lockedUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.locked()
+					.build();
+
+				const existingAccount = AccountBuilder.create(lockedUser.id)
+					.asApple("apple-user-123")
+					.build();
+
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(lockedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
+
+				// When & Then
+				await expect(
+					service.handleAppleMobileLogin("valid-id-token"),
+				).rejects.toThrow(BusinessException);
 			});
-			mockUserRepository.findById.mockResolvedValue(lockedUser);
 
-			// When & Then
-			await expect(
-				service.handleAppleMobileLogin("valid-id-token"),
-			).rejects.toThrow(BusinessException);
-		});
+			it("정지된 사용자는 로그인할 수 없다", async () => {
+				// Given - Builder로 정지된 사용자 생성
+				const suspendedUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.suspended()
+					.build();
 
-		it("정지된 사용자는 로그인할 수 없다", async () => {
-			// Given
-			const suspendedUser = { ...mockUser, status: "SUSPENDED" };
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-user-123",
+				const existingAccount = AccountBuilder.create(suspendedUser.id)
+					.asApple("apple-user-123")
+					.build();
+
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(suspendedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
+
+				// When & Then
+				await expect(
+					service.handleAppleMobileLogin("valid-id-token"),
+				).rejects.toThrow(BusinessException);
 			});
-			mockUserRepository.findById.mockResolvedValue(suspendedUser);
-
-			// When & Then
-			await expect(
-				service.handleAppleMobileLogin("valid-id-token"),
-			).rejects.toThrow(BusinessException);
 		});
 	});
 
@@ -386,8 +455,8 @@ describe("OAuthService", () => {
 	describe("linkAccount", () => {
 		it("새로운 소셜 계정을 연결한다", async () => {
 			// Given
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-			mockAccountRepository.createOAuthAccount.mockResolvedValue({});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as any);
 
 			// When
 			const result = await service.linkAccount(
@@ -398,7 +467,7 @@ describe("OAuthService", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith({
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith({
 				userId: "user-123",
 				provider: "APPLE",
 				providerAccountId: "apple-account-456",
@@ -407,12 +476,12 @@ describe("OAuthService", () => {
 		});
 
 		it("이미 연결된 계정은 메시지를 반환한다", async () => {
-			// Given
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-account-456",
-			});
+			// Given - Builder로 계정 생성
+			const existingAccount = AccountBuilder.create("user-123")
+				.asApple("apple-account-456")
+				.build();
+
+			accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 
 			// When
 			const result = await service.linkAccount(
@@ -423,16 +492,16 @@ describe("OAuthService", () => {
 
 			// Then
 			expect(result).toEqual({ message: "이미 연결된 계정입니다." });
-			expect(mockAccountRepository.createOAuthAccount).not.toHaveBeenCalled();
+			expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 		});
 
 		it("다른 사용자에 연결된 계정은 에러를 발생시킨다", async () => {
-			// Given
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-				userId: "other-user-789",
-				provider: "APPLE",
-				providerAccountId: "apple-account-456",
-			});
+			// Given - Builder로 다른 사용자의 계정 생성
+			const otherUserAccount = AccountBuilder.create("other-user-789")
+				.asApple("apple-account-456")
+				.build();
+
+			accountRepo.findByProviderAccountId.mockResolvedValue(otherUserAccount);
 
 			// When & Then
 			await expect(
@@ -447,24 +516,27 @@ describe("OAuthService", () => {
 
 	describe("unlinkAccount", () => {
 		it("연결된 소셜 계정을 해제한다", async () => {
-			// Given
-			mockAccountRepository.findByUserIdAndProvider.mockResolvedValue({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-account-456",
-			});
-			mockAccountRepository.findAllByUserId.mockResolvedValue([
-				{ provider: "APPLE" },
-				{ provider: "CREDENTIAL" },
+			// Given - Builder로 계정 생성
+			const appleAccount = AccountBuilder.create("user-123")
+				.asApple("apple-account-456")
+				.build();
+			const credentialAccount = AccountBuilder.create("user-123")
+				.asCredential()
+				.build();
+
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				appleAccount,
+				credentialAccount,
 			]);
-			mockAccountRepository.deleteAccount.mockResolvedValue({});
+			accountRepo.deleteAccount.mockResolvedValue({} as any);
 
 			// When
 			const result = await service.unlinkAccount("user-123", "APPLE");
 
 			// Then
 			expect(result).toEqual({ message: "계정 연결이 해제되었습니다." });
-			expect(mockAccountRepository.deleteAccount).toHaveBeenCalledWith(
+			expect(accountRepo.deleteAccount).toHaveBeenCalledWith(
 				"user-123",
 				"APPLE",
 			);
@@ -472,7 +544,7 @@ describe("OAuthService", () => {
 
 		it("연결되지 않은 계정은 에러를 발생시킨다", async () => {
 			// Given
-			mockAccountRepository.findByUserIdAndProvider.mockResolvedValue(null);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.unlinkAccount("user-123", "APPLE")).rejects.toThrow(
@@ -481,15 +553,13 @@ describe("OAuthService", () => {
 		});
 
 		it("마지막 로그인 수단은 해제할 수 없다", async () => {
-			// Given
-			mockAccountRepository.findByUserIdAndProvider.mockResolvedValue({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-account-456",
-			});
-			mockAccountRepository.findAllByUserId.mockResolvedValue([
-				{ provider: "APPLE" },
-			]);
+			// Given - Builder로 단일 계정 생성
+			const appleAccount = AccountBuilder.create("user-123")
+				.asApple("apple-account-456")
+				.build();
+
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
+			accountRepo.findAllByUserId.mockResolvedValue([appleAccount]);
 
 			// When & Then
 			await expect(service.unlinkAccount("user-123", "APPLE")).rejects.toThrow(
@@ -504,11 +574,20 @@ describe("OAuthService", () => {
 
 	describe("getLinkedAccounts", () => {
 		it("연결된 소셜 계정 목록을 반환한다", async () => {
-			// Given
+			// Given - Builder로 계정들 생성
 			const linkedAt = new Date("2024-01-15");
-			mockAccountRepository.findAllByUserId.mockResolvedValue([
-				{ provider: "APPLE", createdAt: linkedAt },
-				{ provider: "CREDENTIAL", createdAt: linkedAt },
+			const appleAccount = AccountBuilder.create("user-123")
+				.asApple("apple-account-456")
+				.withCreatedAt(linkedAt)
+				.build();
+			const credentialAccount = AccountBuilder.create("user-123")
+				.asCredential()
+				.withCreatedAt(linkedAt)
+				.build();
+
+			accountRepo.findAllByUserId.mockResolvedValue([
+				appleAccount,
+				credentialAccount,
 			]);
 
 			// When
@@ -522,11 +601,14 @@ describe("OAuthService", () => {
 		});
 
 		it("소셜 계정이 없으면 빈 배열을 반환한다", async () => {
-			// Given
+			// Given - Builder로 Credential 계정만 생성
 			const linkedAt = new Date("2024-01-15");
-			mockAccountRepository.findAllByUserId.mockResolvedValue([
-				{ provider: "CREDENTIAL", createdAt: linkedAt },
-			]);
+			const credentialAccount = AccountBuilder.create("user-123")
+				.asCredential()
+				.withCreatedAt(linkedAt)
+				.build();
+
+			accountRepo.findAllByUserId.mockResolvedValue([credentialAccount]);
 
 			// When
 			const result = await service.getLinkedAccounts("user-123");
@@ -561,7 +643,15 @@ describe("OAuthService", () => {
 
 		it("Kakao OAuth가 설정되지 않으면 에러를 발생시킨다", () => {
 			// Given
-			mockConfigService.kakaoOAuth.isConfigured = false;
+			Object.defineProperty(configService, "kakaoOAuth", {
+				get: () => ({
+					clientId: "test-kakao-client-id",
+					clientSecret: "test-kakao-client-secret",
+					callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
+					isConfigured: false,
+				}),
+				configurable: true,
+			});
 
 			// When & Then
 			expect(() => service.generateKakaoAuthUrl("test-state")).toThrow(
@@ -569,13 +659,20 @@ describe("OAuthService", () => {
 			);
 
 			// Cleanup
-			mockConfigService.kakaoOAuth.isConfigured = true;
+			setupDefaultConfigService();
 		});
 
 		it("clientId가 없으면 에러를 발생시킨다", () => {
 			// Given
-			const originalClientId = mockConfigService.kakaoOAuth.clientId;
-			mockConfigService.kakaoOAuth.clientId = undefined as unknown as string;
+			Object.defineProperty(configService, "kakaoOAuth", {
+				get: () => ({
+					clientId: undefined,
+					clientSecret: "test-kakao-client-secret",
+					callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
+					isConfigured: true,
+				}),
+				configurable: true,
+			});
 
 			// When & Then
 			expect(() => service.generateKakaoAuthUrl("test-state")).toThrow(
@@ -583,13 +680,20 @@ describe("OAuthService", () => {
 			);
 
 			// Cleanup
-			mockConfigService.kakaoOAuth.clientId = originalClientId;
+			setupDefaultConfigService();
 		});
 
 		it("callbackUrl이 없으면 에러를 발생시킨다", () => {
 			// Given
-			const originalCallbackUrl = mockConfigService.kakaoOAuth.callbackUrl;
-			mockConfigService.kakaoOAuth.callbackUrl = undefined as unknown as string;
+			Object.defineProperty(configService, "kakaoOAuth", {
+				get: () => ({
+					clientId: "test-kakao-client-id",
+					clientSecret: "test-kakao-client-secret",
+					callbackUrl: undefined,
+					isConfigured: true,
+				}),
+				configurable: true,
+			});
 
 			// When & Then
 			expect(() => service.generateKakaoAuthUrl("test-state")).toThrow(
@@ -597,7 +701,7 @@ describe("OAuthService", () => {
 			);
 
 			// Cleanup
-			mockConfigService.kakaoOAuth.callbackUrl = originalCallbackUrl;
+			setupDefaultConfigService();
 		});
 	});
 
@@ -612,27 +716,29 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/kakao를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/kakao";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
-					redirectUri, // 검증 통과하여 원본 URI 유지
+					redirectUri,
 				);
 			});
 
 			it("aido-dev://auth/google을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/google";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateGoogleAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"GOOGLE",
 					redirectUri,
@@ -642,12 +748,13 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/naver를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/naver";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateNaverAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"NAVER",
 					redirectUri,
@@ -660,10 +767,9 @@ describe("OAuthService", () => {
 
 				// When
 				// Apple은 URL 생성 메서드가 없으므로 테스트 스킵
-				// await service.generateAppleAuthUrl(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"APPLE",
 					redirectUri,
@@ -673,12 +779,13 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/callback을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/callback";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
 					redirectUri,
@@ -690,12 +797,13 @@ describe("OAuthService", () => {
 			it("aido://auth/kakao를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido://auth/kakao";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
 					redirectUri,
@@ -705,12 +813,13 @@ describe("OAuthService", () => {
 			it("aido://auth/callback을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido://auth/callback";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
 					redirectUri,
@@ -722,27 +831,29 @@ describe("OAuthService", () => {
 			it("잘못된 scheme은 기본값으로 대체된다", async () => {
 				// Given
 				const invalidUri = "invalid-scheme://auth/kakao";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
-					"aido://auth/callback", // 기본값으로 대체
+					"aido://auth/callback",
 				);
 			});
 
 			it("잘못된 경로는 기본값으로 대체된다", async () => {
 				// Given
 				const invalidUri = "aido://wrong/path";
+				oauthStateRepo.create.mockResolvedValue({} as any);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
@@ -750,11 +861,14 @@ describe("OAuthService", () => {
 			});
 
 			it("URI가 제공되지 않으면 기본값을 사용한다", async () => {
+				// Given
+				oauthStateRepo.create.mockResolvedValue({} as any);
+
 				// When
 				await service.generateKakaoAuthUrlWithState(testState);
 
 				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
@@ -768,7 +882,7 @@ describe("OAuthService", () => {
 	// ============================================
 
 	describe("handleKakaoWebCallback", () => {
-		const mockKakaoProfile = {
+		const mockKakaoProfile: OAuthProfile = {
 			id: "kakao-user-123",
 			email: "test@kakao.com",
 			emailVerified: true,
@@ -776,180 +890,174 @@ describe("OAuthService", () => {
 			picture: "https://kakao.com/profile.jpg",
 		};
 
-		const mockUser: Partial<User> = {
-			id: "user-123",
-			email: "test@kakao.com",
-			status: "ACTIVE",
-			emailVerifiedAt: new Date(),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
+		describe("기존 사용자 로그인", () => {
+			it("authorization code를 토큰으로 교환하고 로그인 결과를 반환한다", async () => {
+				// Given - Builder로 테스트 데이터 생성
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@kakao.com")
+					.verified()
+					.build();
 
-		const mockSession = {
-			id: "session-123",
-			userId: "user-123",
-			tokenFamily: "family-123",
-			tokenVersion: 1,
-		};
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asKakao("kakao-user-123")
+					.build();
 
-		const mockTokens = {
-			accessToken: "jwt-access-token",
-			refreshToken: "jwt-refresh-token",
-		};
+				setupSuccessfulOAuthLogin(mockUser);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...mockUser,
+					profile: {
+						name: "카카오사용자",
+						profileImage: "https://kakao.com/profile.jpg",
+					},
+				} as any);
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(mockKakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
-		beforeEach(() => {
-			mockTokenService.generateTokenFamily.mockReturnValue("family-123");
-			mockTokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(
-				7 * 24 * 60 * 60,
-			);
-			mockTokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			mockTokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			mockSessionRepository.create.mockResolvedValue(mockSession);
-			mockSessionRepository.updateRefreshTokenHash.mockResolvedValue({});
-			mockSecurityLogRepository.create.mockResolvedValue({});
-			mockUserRepository.findByIdWithProfile.mockResolvedValue({
-				...mockUser,
-				profile: {
+				// Mock fetch for token exchange
+				const mockTokenResponse = {
+					access_token: "kakao-access-token",
+					token_type: "bearer",
+					refresh_token: "kakao-refresh-token",
+					expires_in: 21599,
+				};
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () => Promise.resolve(mockTokenResponse),
+				});
+
+				// When
+				const result = await service.handleKakaoWebCallback("test-auth-code");
+
+				// Then
+				expect(result).toEqual({
+					userId: "user-123",
+					userTag: mockUser.userTag,
+					tokens: mockTokens,
+					sessionId: "session-123",
 					name: "카카오사용자",
 					profileImage: "https://kakao.com/profile.jpg",
-				},
-			});
-			mockTokenVerifier.verifyKakaoToken.mockResolvedValue(mockKakaoProfile);
+				});
 
-			// Reset config to valid state
-			mockConfigService.kakaoOAuth.isConfigured = true;
-			mockConfigService.kakaoOAuth.clientId = "test-kakao-client-id";
-			mockConfigService.kakaoOAuth.clientSecret = "test-kakao-client-secret";
-			mockConfigService.kakaoOAuth.callbackUrl =
-				"http://localhost:3000/v1/auth/kakao/web-callback";
+				expect(global.fetch).toHaveBeenCalledWith(
+					"https://kauth.kakao.com/oauth/token",
+					expect.objectContaining({
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-www-form-urlencoded",
+						},
+					}),
+				);
+
+				expect(tokenVerifier.verifyKakaoToken).toHaveBeenCalledWith(
+					"kakao-access-token",
+				);
+			});
 		});
 
-		it("authorization code를 토큰으로 교환하고 로그인 결과를 반환한다", async () => {
-			// Given
-			const existingAccount: Partial<Account> = {
-				userId: "user-123",
-				provider: "KAKAO",
-				providerAccountId: "kakao-user-123",
-			};
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(
-				existingAccount,
-			);
-			mockUserRepository.findById.mockResolvedValue(mockUser);
+		describe("에러 케이스", () => {
+			it("토큰 교환 실패 시 에러를 발생시킨다", async () => {
+				// Given
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: false,
+					text: () => Promise.resolve("Invalid authorization code"),
+				});
 
-			// Mock fetch for token exchange
-			const mockTokenResponse = {
-				access_token: "kakao-access-token",
-				token_type: "bearer",
-				refresh_token: "kakao-refresh-token",
-				expires_in: 21599,
-			};
-			global.fetch = jest.fn().mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve(mockTokenResponse),
+				// When & Then
+				await expect(
+					service.handleKakaoWebCallback("invalid-auth-code"),
+				).rejects.toThrow(BusinessException);
 			});
 
-			// When
-			const result = await service.handleKakaoWebCallback("test-auth-code");
+			it("Kakao OAuth가 설정되지 않으면 에러를 발생시킨다", async () => {
+				// Given
+				Object.defineProperty(configService, "kakaoOAuth", {
+					get: () => ({
+						clientId: "test-kakao-client-id",
+						clientSecret: "test-kakao-client-secret",
+						callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
+						isConfigured: false,
+					}),
+					configurable: true,
+				});
 
-			// Then
-			expect(result).toEqual({
-				userId: "user-123",
-				userTag: "",
-				tokens: mockTokens,
-				sessionId: "session-123",
-				name: "카카오사용자",
-				profileImage: "https://kakao.com/profile.jpg",
+				// When & Then
+				await expect(
+					service.handleKakaoWebCallback("test-auth-code"),
+				).rejects.toThrow(BusinessException);
+
+				// Cleanup
+				setupDefaultConfigService();
 			});
 
-			expect(global.fetch).toHaveBeenCalledWith(
-				"https://kauth.kakao.com/oauth/token",
-				expect.objectContaining({
-					method: "POST",
-					headers: {
-						"Content-Type": "application/x-www-form-urlencoded",
-					},
-				}),
-			);
+			it("clientSecret이 없으면 에러를 발생시킨다", async () => {
+				// Given
+				Object.defineProperty(configService, "kakaoOAuth", {
+					get: () => ({
+						clientId: "test-kakao-client-id",
+						clientSecret: undefined,
+						callbackUrl: "http://localhost:3000/v1/auth/kakao/web-callback",
+						isConfigured: true,
+					}),
+					configurable: true,
+				});
 
-			expect(mockTokenVerifier.verifyKakaoToken).toHaveBeenCalledWith(
-				"kakao-access-token",
-			);
-		});
+				// When & Then
+				await expect(
+					service.handleKakaoWebCallback("test-auth-code"),
+				).rejects.toThrow(BusinessException);
 
-		it("토큰 교환 실패 시 에러를 발생시킨다", async () => {
-			// Given
-			global.fetch = jest.fn().mockResolvedValue({
-				ok: false,
-				text: () => Promise.resolve("Invalid authorization code"),
+				// Cleanup
+				setupDefaultConfigService();
 			});
-
-			// When & Then
-			await expect(
-				service.handleKakaoWebCallback("invalid-auth-code"),
-			).rejects.toThrow(BusinessException);
 		});
 
-		it("Kakao OAuth가 설정되지 않으면 에러를 발생시킨다", async () => {
-			// Given
-			mockConfigService.kakaoOAuth.isConfigured = false;
+		describe("신규 사용자 회원가입", () => {
+			it("신규 사용자일 경우 회원가입 후 토큰을 발급한다", async () => {
+				// Given
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@kakao.com")
+					.verified()
+					.build();
 
-			// When & Then
-			await expect(
-				service.handleKakaoWebCallback("test-auth-code"),
-			).rejects.toThrow(BusinessException);
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(mockKakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
 
-			// Cleanup
-			mockConfigService.kakaoOAuth.isConfigured = true;
-		});
+				const mockTokenResponse = {
+					access_token: "kakao-access-token",
+					token_type: "bearer",
+					refresh_token: "kakao-refresh-token",
+					expires_in: 21599,
+				};
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () => Promise.resolve(mockTokenResponse),
+				});
 
-		it("clientSecret이 없으면 에러를 발생시킨다", async () => {
-			// Given
-			mockConfigService.kakaoOAuth.clientSecret =
-				undefined as unknown as string;
+				// When
+				const result = await service.handleKakaoWebCallback("test-auth-code");
 
-			// When & Then
-			await expect(
-				service.handleKakaoWebCallback("test-auth-code"),
-			).rejects.toThrow(BusinessException);
-
-			// Cleanup
-			mockConfigService.kakaoOAuth.clientSecret = "test-kakao-client-secret";
-		});
-
-		it("신규 사용자일 경우 회원가입 후 토큰을 발급한다", async () => {
-			// Given
-			mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-			mockUserRepository.findByEmail.mockResolvedValue(null);
-			mockUserRepository.create.mockResolvedValue(mockUser);
-			mockAccountRepository.createOAuthAccount.mockResolvedValue({});
-			mockUserRepository.createProfile.mockResolvedValue({});
-
-			const mockTokenResponse = {
-				access_token: "kakao-access-token",
-				token_type: "bearer",
-				refresh_token: "kakao-refresh-token",
-				expires_in: 21599,
-			};
-			global.fetch = jest.fn().mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve(mockTokenResponse),
+				// Then
+				expect(result.userId).toBe("user-123");
+				expect(result.tokens).toEqual(mockTokens);
+				expect(userRepo.create).toHaveBeenCalled();
+				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+					expect.objectContaining({
+						userId: "user-123",
+						provider: "KAKAO",
+						providerAccountId: "kakao-user-123",
+					}),
+					expect.anything(),
+				);
 			});
-
-			// When
-			const result = await service.handleKakaoWebCallback("test-auth-code");
-
-			// Then
-			expect(result.userId).toBe("user-123");
-			expect(result.tokens).toEqual(mockTokens);
-			expect(mockUserRepository.create).toHaveBeenCalled();
-			expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: "user-123",
-					provider: "KAKAO",
-					providerAccountId: "kakao-user-123",
-				}),
-				expect.anything(),
-			);
 		});
 	});
 
@@ -958,55 +1066,13 @@ describe("OAuthService", () => {
 	// ============================================
 
 	describe("LoginAttempt 기록", () => {
-		const mockUser: Partial<User> = {
-			id: "user-123",
-			email: "test@example.com",
-			status: "ACTIVE",
-			emailVerifiedAt: new Date(),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		const mockSession = {
-			id: "session-123",
-			userId: "user-123",
-			tokenFamily: "family-123",
-			tokenVersion: 1,
-		};
-
-		const mockTokens = {
-			accessToken: "access-token",
-			refreshToken: "refresh-token",
-		};
-
-		const mockMetadata = {
-			ip: "192.168.1.1",
-			userAgent: "Test-User-Agent/1.0",
-		};
-
-		beforeEach(() => {
-			mockTokenService.generateTokenFamily.mockReturnValue("family-123");
-			mockTokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(
-				7 * 24 * 60 * 60,
-			);
-			mockTokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			mockTokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			mockSessionRepository.create.mockResolvedValue(mockSession);
-			mockSessionRepository.updateRefreshTokenHash.mockResolvedValue({});
-			mockSecurityLogRepository.create.mockResolvedValue({});
-			mockLoginAttemptRepository.create.mockResolvedValue({});
-			mockUserRepository.findByIdWithProfile.mockResolvedValue({
-				...mockUser,
-				profile: { name: "테스트유저", profileImage: null },
-			});
-		});
-
 		describe("Apple 로그인", () => {
 			it("Apple 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				mockTokenVerifier.verifyAppleToken.mockRejectedValue(
+				tokenVerifier.verifyAppleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1017,7 +1083,7 @@ describe("OAuthService", () => {
 					),
 				).rejects.toThrow();
 
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
 					provider: "APPLE",
 					ipAddress: mockMetadata.ip,
@@ -1029,18 +1095,26 @@ describe("OAuthService", () => {
 
 			it("Apple 로그인 성공 시 LoginAttempt 성공 기록", async () => {
 				// Given
-				const appleProfile = {
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
+
+				const appleProfile: AppleVerifiedProfile = {
 					id: "apple-user-123",
 					email: "test@privaterelay.appleid.com",
 					emailVerified: true,
 				};
-				mockTokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-					userId: "user-123",
-					provider: "APPLE",
-					providerAccountId: "apple-user-123",
-				});
-				mockUserRepository.findById.mockResolvedValue(mockUser);
+
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asApple("apple-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
 				await service.handleAppleMobileLogin(
@@ -1050,7 +1124,7 @@ describe("OAuthService", () => {
 				);
 
 				// Then
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: mockUser.email,
 						provider: "APPLE",
@@ -1058,7 +1132,7 @@ describe("OAuthService", () => {
 						userAgent: mockMetadata.userAgent,
 						success: true,
 					}),
-					expect.anything(), // 트랜잭션 클라이언트
+					expect.anything(),
 				);
 			});
 		});
@@ -1066,9 +1140,10 @@ describe("OAuthService", () => {
 		describe("Google 로그인", () => {
 			it("Google 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				mockTokenVerifier.verifyGoogleToken.mockRejectedValue(
+				tokenVerifier.verifyGoogleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1079,7 +1154,7 @@ describe("OAuthService", () => {
 					),
 				).rejects.toThrow();
 
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "google_unknown@social.aido.app",
 					provider: "GOOGLE",
 					ipAddress: mockMetadata.ip,
@@ -1091,23 +1166,28 @@ describe("OAuthService", () => {
 
 			it("Google 로그인 성공 시 LoginAttempt 성공 기록", async () => {
 				// Given
-				const googleProfile = {
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@gmail.com")
+					.verified()
+					.build();
+
+				const googleProfile: OAuthProfile = {
 					id: "google-user-123",
 					email: "test@gmail.com",
 					emailVerified: true,
 					name: "Test User",
 					picture: "https://example.com/photo.jpg",
 				};
-				mockTokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-					userId: "user-123",
-					provider: "GOOGLE",
-					providerAccountId: "google-user-123",
-				});
-				mockUserRepository.findById.mockResolvedValue({
-					...mockUser,
-					email: "test@gmail.com",
-				});
+
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asGoogle("google-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
 				await service.handleGoogleMobileLogin(
@@ -1117,7 +1197,7 @@ describe("OAuthService", () => {
 				);
 
 				// Then
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@gmail.com",
 						provider: "GOOGLE",
@@ -1133,9 +1213,10 @@ describe("OAuthService", () => {
 		describe("Kakao 로그인", () => {
 			it("Kakao 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				mockTokenVerifier.verifyKakaoToken.mockRejectedValue(
+				tokenVerifier.verifyKakaoToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1146,7 +1227,7 @@ describe("OAuthService", () => {
 					),
 				).rejects.toThrow();
 
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "kakao_unknown@social.aido.app",
 					provider: "KAKAO",
 					ipAddress: mockMetadata.ip,
@@ -1158,23 +1239,28 @@ describe("OAuthService", () => {
 
 			it("Kakao 로그인 성공 시 LoginAttempt 성공 기록", async () => {
 				// Given
-				const kakaoProfile = {
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@kakao.com")
+					.verified()
+					.build();
+
+				const kakaoProfile: OAuthProfile = {
 					id: "kakao-user-123",
 					email: "test@kakao.com",
 					emailVerified: true,
 					name: "테스트",
 					picture: "https://kakao.com/photo.jpg",
 				};
-				mockTokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-					userId: "user-123",
-					provider: "KAKAO",
-					providerAccountId: "kakao-user-123",
-				});
-				mockUserRepository.findById.mockResolvedValue({
-					...mockUser,
-					email: "test@kakao.com",
-				});
+
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asKakao("kakao-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
 				await service.handleKakaoMobileLogin(
@@ -1184,7 +1270,7 @@ describe("OAuthService", () => {
 				);
 
 				// Then
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@kakao.com",
 						provider: "KAKAO",
@@ -1200,9 +1286,10 @@ describe("OAuthService", () => {
 		describe("Naver 로그인", () => {
 			it("Naver 토큰 검증 실패 시 LoginAttempt 실패 기록", async () => {
 				// Given
-				mockTokenVerifier.verifyNaverToken.mockRejectedValue(
+				tokenVerifier.verifyNaverToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1213,7 +1300,7 @@ describe("OAuthService", () => {
 					),
 				).rejects.toThrow();
 
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "naver_unknown@social.aido.app",
 					provider: "NAVER",
 					ipAddress: mockMetadata.ip,
@@ -1225,23 +1312,28 @@ describe("OAuthService", () => {
 
 			it("Naver 로그인 성공 시 LoginAttempt 성공 기록", async () => {
 				// Given
-				const naverProfile = {
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@naver.com")
+					.verified()
+					.build();
+
+				const naverProfile: OAuthProfile = {
 					id: "naver-user-123",
 					email: "test@naver.com",
 					emailVerified: true,
 					name: "테스트",
 					picture: "https://naver.com/photo.jpg",
 				};
-				mockTokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue({
-					userId: "user-123",
-					provider: "NAVER",
-					providerAccountId: "naver-user-123",
-				});
-				mockUserRepository.findById.mockResolvedValue({
-					...mockUser,
-					email: "test@naver.com",
-				});
+
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asNaver("naver-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
 
 				// When
 				await service.handleNaverMobileLogin(
@@ -1251,7 +1343,7 @@ describe("OAuthService", () => {
 				);
 
 				// Then
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith(
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						email: "test@naver.com",
 						provider: "NAVER",
@@ -1267,16 +1359,17 @@ describe("OAuthService", () => {
 		describe("메타데이터 기본값", () => {
 			it("메타데이터가 없으면 기본값을 사용한다", async () => {
 				// Given
-				mockTokenVerifier.verifyAppleToken.mockRejectedValue(
+				tokenVerifier.verifyAppleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
 					service.handleAppleMobileLogin("invalid-token"),
 				).rejects.toThrow();
 
-				expect(mockLoginAttemptRepository.create).toHaveBeenCalledWith({
+				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
 					email: "apple_unknown@social.aido.app",
 					provider: "APPLE",
 					ipAddress: "unknown",
@@ -1293,50 +1386,8 @@ describe("OAuthService", () => {
 	// ============================================
 
 	describe("이메일 충돌 시 자동/강제 연동", () => {
-		const mockMetadata = {
-			ip: "127.0.0.1",
-			userAgent: "TestAgent/1.0",
-		};
-
-		const mockUser: Partial<User> = {
-			id: "existing-user-123",
-			email: "test@example.com",
-			status: "ACTIVE",
-			emailVerifiedAt: new Date(),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		const mockSession = {
-			id: "session-123",
-			userId: "existing-user-123",
-			tokenFamily: "family-123",
-			tokenVersion: 1,
-		};
-
-		const mockTokens = {
-			accessToken: "access-token",
-			refreshToken: "refresh-token",
-		};
-
-		beforeEach(() => {
-			mockTokenService.generateTokenFamily.mockReturnValue("family-123");
-			mockTokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(
-				7 * 24 * 60 * 60,
-			);
-			mockTokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			mockTokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			mockSessionRepository.create.mockResolvedValue(mockSession);
-			mockSessionRepository.updateRefreshTokenHash.mockResolvedValue({});
-			mockSecurityLogRepository.create.mockResolvedValue({});
-			mockUserRepository.findByIdWithProfile.mockResolvedValue({
-				...mockUser,
-				profile: { name: "테스트유저", profileImage: null },
-			});
-		});
-
 		describe("Google (신뢰된 Provider)", () => {
-			const googleProfile = {
+			const googleProfile: OAuthProfile = {
 				id: "google-user-456",
 				email: "test@example.com",
 				emailVerified: true,
@@ -1345,11 +1396,18 @@ describe("OAuthService", () => {
 			};
 
 			it("이메일 검증된 Google 계정은 기존 사용자에 자동 연동된다", async () => {
-				// Given
-				mockTokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-				mockAccountRepository.createOAuthAccount.mockResolvedValue({});
+				// Given - Builder로 기존 사용자 생성
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(existingUser);
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
 
 				// When
 				const result = await service.handleGoogleMobileLogin(
@@ -1363,7 +1421,7 @@ describe("OAuthService", () => {
 				expect(result.tokens).toEqual(mockTokens);
 
 				// 자동 연동 확인
-				expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith(
+				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						provider: "GOOGLE",
@@ -1373,7 +1431,7 @@ describe("OAuthService", () => {
 				);
 
 				// SecurityLog에 OAUTH_AUTO_LINKED 기록 확인
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
@@ -1386,17 +1444,23 @@ describe("OAuthService", () => {
 				);
 
 				// 신규 사용자 생성은 하지 않음
-				expect(mockUserRepository.create).not.toHaveBeenCalled();
+				expect(userRepo.create).not.toHaveBeenCalled();
 			});
 
 			it("이메일 미검증된 Google 계정은 강제 연동 에러를 반환한다", async () => {
 				// Given
 				const unverifiedProfile = { ...googleProfile, emailVerified: false };
-				mockTokenVerifier.verifyGoogleToken.mockResolvedValue(
-					unverifiedProfile,
-				);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(unverifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				securityLogRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1408,7 +1472,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow(BusinessException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
@@ -1420,23 +1484,30 @@ describe("OAuthService", () => {
 				);
 
 				// 계정 생성 안함
-				expect(mockAccountRepository.createOAuthAccount).not.toHaveBeenCalled();
+				expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 			});
 		});
 
 		describe("Apple (신뢰된 Provider)", () => {
-			const appleProfile = {
+			const appleProfile: AppleVerifiedProfile = {
 				id: "apple-user-456",
 				email: "test@example.com",
 				emailVerified: true,
 			};
 
 			it("이메일 검증된 Apple 계정은 기존 사용자에 자동 연동된다", async () => {
-				// Given
-				mockTokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-				mockAccountRepository.createOAuthAccount.mockResolvedValue({});
+				// Given - Builder로 기존 사용자 생성
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(existingUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
 
 				// When
 				const result = await service.handleAppleMobileLogin(
@@ -1449,7 +1520,7 @@ describe("OAuthService", () => {
 				expect(result.userId).toBe("existing-user-123");
 
 				// 자동 연동 확인
-				expect(mockAccountRepository.createOAuthAccount).toHaveBeenCalledWith(
+				expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						provider: "APPLE",
@@ -1459,7 +1530,7 @@ describe("OAuthService", () => {
 				);
 
 				// SecurityLog에 OAUTH_AUTO_LINKED 기록 확인
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
@@ -1474,7 +1545,7 @@ describe("OAuthService", () => {
 		});
 
 		describe("Kakao (신뢰되지 않은 Provider)", () => {
-			const kakaoProfile = {
+			const kakaoProfile: OAuthProfile = {
 				id: "kakao-user-456",
 				email: "test@example.com",
 				emailVerified: true,
@@ -1483,10 +1554,18 @@ describe("OAuthService", () => {
 			};
 
 			it("Kakao 계정은 이메일 충돌 시 항상 강제 연동 에러를 반환한다", async () => {
-				// Given
-				mockTokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+				// Given - Builder로 기존 사용자 생성
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				securityLogRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1498,7 +1577,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow(BusinessException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
@@ -1510,15 +1589,23 @@ describe("OAuthService", () => {
 				);
 
 				// 계정 자동 생성 안함
-				expect(mockAccountRepository.createOAuthAccount).not.toHaveBeenCalled();
+				expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 			});
 
 			it("Kakao 이메일 미검증 시에도 강제 연동 에러를 반환한다", async () => {
 				// Given
 				const unverifiedProfile = { ...kakaoProfile, emailVerified: false };
-				mockTokenVerifier.verifyKakaoToken.mockResolvedValue(unverifiedProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(unverifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				securityLogRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1530,7 +1617,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow(BusinessException);
 
 				// untrusted_provider 이유로 기록
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
 						metadata: expect.objectContaining({
@@ -1542,7 +1629,7 @@ describe("OAuthService", () => {
 		});
 
 		describe("Naver (신뢰되지 않은 Provider)", () => {
-			const naverProfile = {
+			const naverProfile: OAuthProfile = {
 				id: "naver-user-456",
 				email: "test@example.com",
 				emailVerified: true,
@@ -1551,10 +1638,18 @@ describe("OAuthService", () => {
 			};
 
 			it("Naver 계정은 이메일 충돌 시 항상 강제 연동 에러를 반환한다", async () => {
-				// Given
-				mockTokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+				// Given - Builder로 기존 사용자 생성
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("test@example.com")
+					.verified()
+					.build();
+
+				tokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(existingUser);
+				securityLogRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1566,7 +1661,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow(BusinessException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
-				expect(mockSecurityLogRepository.create).toHaveBeenCalledWith(
+				expect(securityLogRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "existing-user-123",
 						event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
@@ -1578,29 +1673,30 @@ describe("OAuthService", () => {
 				);
 
 				// 계정 자동 생성 안함
-				expect(mockAccountRepository.createOAuthAccount).not.toHaveBeenCalled();
+				expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 			});
 		});
 
 		describe("잠긴/정지된 사용자", () => {
-			const googleProfile = {
+			const googleProfile: OAuthProfile = {
 				id: "google-user-789",
 				email: "locked@example.com",
 				emailVerified: true,
 				name: "Locked User",
-				picture: null,
 			};
 
 			it("잠긴 사용자에게는 자동 연동되지 않는다", async () => {
-				// Given
-				const lockedUser = {
-					...mockUser,
-					email: "locked@example.com",
-					status: "LOCKED",
-				};
-				mockTokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(lockedUser);
+				// Given - Builder로 잠긴 사용자 생성
+				const lockedUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("locked@example.com")
+					.locked()
+					.build();
+
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(lockedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(
@@ -1613,19 +1709,22 @@ describe("OAuthService", () => {
 			});
 
 			it("정지된 사용자에게는 자동 연동되지 않는다", async () => {
-				// Given
-				const suspendedUser = {
-					...mockUser,
-					email: "suspended@example.com",
-					status: "SUSPENDED",
-				};
+				// Given - Builder로 정지된 사용자 생성
+				const suspendedUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("suspended@example.com")
+					.suspended()
+					.build();
+
 				const suspendedProfile = {
 					...googleProfile,
 					email: "suspended@example.com",
 				};
-				mockTokenVerifier.verifyGoogleToken.mockResolvedValue(suspendedProfile);
-				mockAccountRepository.findByProviderAccountId.mockResolvedValue(null);
-				mockUserRepository.findByEmail.mockResolvedValue(suspendedUser);
+
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(suspendedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(suspendedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as any);
 
 				// When & Then
 				await expect(

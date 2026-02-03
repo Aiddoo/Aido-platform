@@ -1,66 +1,32 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { SessionBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
-import type { Session } from "@/generated/prisma/client";
 
 import { SessionRepository } from "./session.repository";
 
 describe("SessionRepository", () => {
 	let repository: SessionRepository;
-	let mockDatabase: {
-		session: {
-			create: jest.Mock;
-			findUnique: jest.Mock;
-			findFirst: jest.Mock;
-			findMany: jest.Mock;
-			update: jest.Mock;
-			updateMany: jest.Mock;
-			deleteMany: jest.Mock;
-		};
-	};
+	let db: Mocked<DatabaseService>;
 
-	const mockSession: Session = {
-		id: "session-123",
-		userId: "user-123",
-		refreshTokenHash: "hashed-refresh-token",
-		tokenFamily: "family-123",
-		tokenVersion: 1,
-		previousTokenHash: null,
-		deviceFingerprint: "device-fp-123",
-		userAgent: "Mozilla/5.0",
-		ipAddress: "127.0.0.1",
-		expiresAt: new Date("2024-12-31"),
-		lastUsedAt: new Date("2024-01-01"),
-		revokedAt: null,
-		revokedReason: null,
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-01"),
-	};
+	// Builder로 기본 테스트 세션 생성
+	const mockSession = SessionBuilder.create("user-123")
+		.withId("session-123")
+		.withRefreshTokenHash("hashed-refresh-token")
+		.withTokenFamily("family-123")
+		.withTokenVersion(1)
+		.withDeviceInfo("Mozilla/5.0", "127.0.0.1")
+		.withExpiresAt(new Date("2024-12-31"))
+		.build();
 
 	beforeEach(async () => {
-		mockDatabase = {
-			session: {
-				create: jest.fn(),
-				findUnique: jest.fn(),
-				findFirst: jest.fn(),
-				findMany: jest.fn(),
-				update: jest.fn(),
-				updateMany: jest.fn(),
-				deleteMany: jest.fn(),
-			},
-		};
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } =
+			await TestBed.solitary(SessionRepository).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				SessionRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
-
-		repository = module.get<SessionRepository>(SessionRepository);
+		repository = unit;
+		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
 	afterEach(() => {
@@ -69,7 +35,7 @@ describe("SessionRepository", () => {
 
 	describe("create", () => {
 		it("새 세션을 생성한다", async () => {
-			// Given
+			// Given - 세션 생성 데이터 준비
 			const createData = {
 				userId: "user-123",
 				refreshTokenHash: "hashed-token",
@@ -80,14 +46,14 @@ describe("SessionRepository", () => {
 				ipAddress: "127.0.0.1",
 				expiresAt: new Date("2024-12-31"),
 			};
-			mockDatabase.session.create.mockResolvedValue(mockSession);
+			db.session.create.mockResolvedValue(mockSession);
 
-			// When
+			// When - 세션 생성 실행
 			const result = await repository.create(createData);
 
-			// Then
+			// Then - 생성된 세션 검증
 			expect(result).toEqual(mockSession);
-			expect(mockDatabase.session.create).toHaveBeenCalledWith({
+			expect(db.session.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					userId: createData.userId,
 					tokenFamily: createData.tokenFamily,
@@ -98,7 +64,7 @@ describe("SessionRepository", () => {
 		});
 
 		it("refreshTokenHash가 없으면 임시 해시를 생성한다", async () => {
-			// Given
+			// Given - refreshTokenHash 없이 세션 생성 데이터 준비
 			const createData = {
 				userId: "user-123",
 				tokenFamily: "family-123",
@@ -108,13 +74,13 @@ describe("SessionRepository", () => {
 				ipAddress: "127.0.0.1",
 				expiresAt: new Date("2024-12-31"),
 			};
-			mockDatabase.session.create.mockResolvedValue(mockSession);
+			db.session.create.mockResolvedValue(mockSession);
 
-			// When
+			// When - 세션 생성 실행
 			await repository.create(createData);
 
-			// Then
-			expect(mockDatabase.session.create).toHaveBeenCalledWith({
+			// Then - 임시 해시가 생성되었는지 검증
+			expect(db.session.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					refreshTokenHash: expect.stringContaining("pending_"),
 				}),
@@ -122,7 +88,7 @@ describe("SessionRepository", () => {
 		});
 
 		it("트랜잭션 내에서 세션을 생성한다", async () => {
-			// Given
+			// Given - 트랜잭션 클라이언트와 세션 생성 데이터 준비
 			const createData = {
 				userId: "user-123",
 				tokenFamily: "family-123",
@@ -135,32 +101,33 @@ describe("SessionRepository", () => {
 			const mockTx = createMockTxClient();
 			mockTx.session.create.mockResolvedValue(mockSession);
 
-			// When
+			// When - 트랜잭션 내에서 세션 생성 실행
 			await repository.create(createData, asTxClient(mockTx));
 
-			// Then
+			// Then - 트랜잭션 클라이언트를 통해 생성되었는지 검증
 			expect(mockTx.session.create).toHaveBeenCalled();
 		});
 	});
 
 	describe("updateRefreshTokenHash", () => {
 		it("리프레시 토큰 해시를 업데이트한다", async () => {
-			// Given
+			// Given - 새로운 해시값 준비
 			const newHash = "new-hashed-token";
-			mockDatabase.session.update.mockResolvedValue({
-				...mockSession,
-				refreshTokenHash: newHash,
-			});
+			const updatedSession = SessionBuilder.create("user-123")
+				.withId("session-123")
+				.withRefreshTokenHash(newHash)
+				.build();
+			db.session.update.mockResolvedValue(updatedSession);
 
-			// When
+			// When - 리프레시 토큰 해시 업데이트 실행
 			const result = await repository.updateRefreshTokenHash(
 				"session-123",
 				newHash,
 			);
 
-			// Then
+			// Then - 업데이트된 해시값 검증
 			expect(result.refreshTokenHash).toBe(newHash);
-			expect(mockDatabase.session.update).toHaveBeenCalledWith({
+			expect(db.session.update).toHaveBeenCalledWith({
 				where: { id: "session-123" },
 				data: { refreshTokenHash: newHash },
 			});
@@ -169,42 +136,42 @@ describe("SessionRepository", () => {
 
 	describe("findById", () => {
 		it("ID로 세션을 찾아 반환한다", async () => {
-			// Given
-			mockDatabase.session.findUnique.mockResolvedValue(mockSession);
+			// Given - 세션 조회 Mock 설정
+			db.session.findUnique.mockResolvedValue(mockSession);
 
-			// When
+			// When - ID로 세션 조회 실행
 			const result = await repository.findById("session-123");
 
-			// Then
+			// Then - 조회된 세션 검증
 			expect(result).toEqual(mockSession);
-			expect(mockDatabase.session.findUnique).toHaveBeenCalledWith({
+			expect(db.session.findUnique).toHaveBeenCalledWith({
 				where: { id: "session-123" },
 			});
 		});
 
 		it("세션이 없으면 null을 반환한다", async () => {
-			// Given
-			mockDatabase.session.findUnique.mockResolvedValue(null);
+			// Given - 존재하지 않는 세션 Mock 설정
+			db.session.findUnique.mockResolvedValue(null);
 
-			// When
+			// When - 존재하지 않는 세션 조회 실행
 			const result = await repository.findById("nonexistent");
 
-			// Then
+			// Then - null 반환 검증
 			expect(result).toBeNull();
 		});
 	});
 
 	describe("findByRefreshTokenHash", () => {
 		it("리프레시 토큰 해시로 세션을 찾는다", async () => {
-			// Given
-			mockDatabase.session.findUnique.mockResolvedValue(mockSession);
+			// Given - 세션 조회 Mock 설정
+			db.session.findUnique.mockResolvedValue(mockSession);
 
-			// When
+			// When - 리프레시 토큰 해시로 세션 조회 실행
 			const result = await repository.findByRefreshTokenHash("hashed-token");
 
-			// Then
+			// Then - 조회된 세션 검증
 			expect(result).toEqual(mockSession);
-			expect(mockDatabase.session.findUnique).toHaveBeenCalledWith({
+			expect(db.session.findUnique).toHaveBeenCalledWith({
 				where: { refreshTokenHash: "hashed-token" },
 			});
 		});
@@ -212,15 +179,15 @@ describe("SessionRepository", () => {
 
 	describe("findByTokenFamily", () => {
 		it("토큰 패밀리로 활성 세션을 찾는다", async () => {
-			// Given
-			mockDatabase.session.findFirst.mockResolvedValue(mockSession);
+			// Given - 활성 세션 조회 Mock 설정
+			db.session.findFirst.mockResolvedValue(mockSession);
 
-			// When
+			// When - 토큰 패밀리로 세션 조회 실행
 			const result = await repository.findByTokenFamily("family-123");
 
-			// Then
+			// Then - 조회된 활성 세션 검증
 			expect(result).toEqual(mockSession);
-			expect(mockDatabase.session.findFirst).toHaveBeenCalledWith({
+			expect(db.session.findFirst).toHaveBeenCalledWith({
 				where: {
 					tokenFamily: "family-123",
 					revokedAt: null,
@@ -231,16 +198,19 @@ describe("SessionRepository", () => {
 
 	describe("findActiveByUserId", () => {
 		it("사용자의 활성 세션 목록을 반환한다", async () => {
-			// Given
-			const activeSessions = [mockSession, { ...mockSession, id: "session-2" }];
-			mockDatabase.session.findMany.mockResolvedValue(activeSessions);
+			// Given - 여러 활성 세션 Mock 설정
+			const session2 = SessionBuilder.create("user-123")
+				.withId("session-2")
+				.build();
+			const activeSessions = [mockSession, session2];
+			db.session.findMany.mockResolvedValue(activeSessions);
 
-			// When
+			// When - 사용자 ID로 활성 세션 목록 조회 실행
 			const result = await repository.findActiveByUserId("user-123");
 
-			// Then
+			// Then - 활성 세션 목록 검증
 			expect(result).toHaveLength(2);
-			expect(mockDatabase.session.findMany).toHaveBeenCalledWith({
+			expect(db.session.findMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-123",
 					revokedAt: null,
@@ -251,30 +221,30 @@ describe("SessionRepository", () => {
 		});
 
 		it("활성 세션이 없으면 빈 배열을 반환한다", async () => {
-			// Given
-			mockDatabase.session.findMany.mockResolvedValue([]);
+			// Given - 빈 세션 목록 Mock 설정
+			db.session.findMany.mockResolvedValue([]);
 
-			// When
+			// When - 활성 세션이 없는 사용자 조회 실행
 			const result = await repository.findActiveByUserId("user-123");
 
-			// Then
+			// Then - 빈 배열 반환 검증
 			expect(result).toEqual([]);
 		});
 	});
 
 	describe("rotateToken", () => {
 		it("토큰 로테이션을 수행한다", async () => {
-			// Given
-			const rotatedSession = {
-				...mockSession,
-				refreshTokenHash: "new-hash",
-				tokenVersion: 2,
-				previousTokenHash: "old-hash",
-			};
-			mockDatabase.session.updateMany.mockResolvedValue({ count: 1 });
-			mockDatabase.session.findUnique.mockResolvedValue(rotatedSession);
+			// Given - 토큰 로테이션 데이터 준비
+			const rotatedSession = SessionBuilder.create("user-123")
+				.withId("session-123")
+				.withRefreshTokenHash("new-hash")
+				.withTokenVersion(2)
+				.withPreviousTokenHash("old-hash")
+				.build();
+			db.session.updateMany.mockResolvedValue({ count: 1 });
+			db.session.findUnique.mockResolvedValue(rotatedSession);
 
-			// When
+			// When - 토큰 로테이션 실행
 			const result = await repository.rotateToken("session-123", {
 				refreshTokenHash: "new-hash",
 				tokenVersion: 2,
@@ -282,9 +252,9 @@ describe("SessionRepository", () => {
 				expectedTokenVersion: 1,
 			});
 
-			// Then
+			// Then - 로테이션된 세션 검증
 			expect(result).toEqual(rotatedSession);
-			expect(mockDatabase.session.updateMany).toHaveBeenCalledWith({
+			expect(db.session.updateMany).toHaveBeenCalledWith({
 				where: {
 					id: "session-123",
 					tokenVersion: 1,
@@ -300,10 +270,10 @@ describe("SessionRepository", () => {
 		});
 
 		it("버전 불일치 시 null을 반환한다", async () => {
-			// Given
-			mockDatabase.session.updateMany.mockResolvedValue({ count: 0 });
+			// Given - 버전 불일치 상황 Mock 설정 (업데이트 count: 0)
+			db.session.updateMany.mockResolvedValue({ count: 0 });
 
-			// When
+			// When - 버전 불일치 상태로 토큰 로테이션 실행
 			const result = await repository.rotateToken("session-123", {
 				refreshTokenHash: "new-hash",
 				tokenVersion: 3,
@@ -311,24 +281,25 @@ describe("SessionRepository", () => {
 				expectedTokenVersion: 2, // 실제 버전과 불일치
 			});
 
-			// Then
+			// Then - null 반환 검증
 			expect(result).toBeNull();
 		});
 	});
 
 	describe("updateLastUsedAt", () => {
 		it("마지막 사용 시간을 업데이트한다", async () => {
-			// Given
-			mockDatabase.session.update.mockResolvedValue({
-				...mockSession,
-				lastUsedAt: new Date(),
-			});
+			// Given - 업데이트 Mock 설정
+			const updatedSession = SessionBuilder.create("user-123")
+				.withId("session-123")
+				.withLastUsedAt(new Date())
+				.build();
+			db.session.update.mockResolvedValue(updatedSession);
 
-			// When
+			// When - 마지막 사용 시간 업데이트 실행
 			await repository.updateLastUsedAt("session-123");
 
-			// Then
-			expect(mockDatabase.session.update).toHaveBeenCalledWith({
+			// Then - 업데이트 호출 검증
+			expect(db.session.update).toHaveBeenCalledWith({
 				where: { id: "session-123" },
 				data: { lastUsedAt: expect.any(Date) },
 			});
@@ -337,21 +308,20 @@ describe("SessionRepository", () => {
 
 	describe("revoke", () => {
 		it("세션을 폐기한다", async () => {
-			// Given
-			const revokedSession = {
-				...mockSession,
-				revokedAt: new Date(),
-				revokedReason: "user_logout",
-			};
-			mockDatabase.session.update.mockResolvedValue(revokedSession);
+			// Given - 폐기된 세션 Mock 설정
+			const revokedSession = SessionBuilder.create("user-123")
+				.withId("session-123")
+				.revoked("user_logout")
+				.build();
+			db.session.update.mockResolvedValue(revokedSession);
 
-			// When
+			// When - 세션 폐기 실행
 			const result = await repository.revoke("session-123", "user_logout");
 
-			// Then
+			// Then - 폐기된 세션 검증
 			expect(result.revokedAt).toBeDefined();
 			expect(result.revokedReason).toBe("user_logout");
-			expect(mockDatabase.session.update).toHaveBeenCalledWith({
+			expect(db.session.update).toHaveBeenCalledWith({
 				where: { id: "session-123" },
 				data: {
 					revokedAt: expect.any(Date),
@@ -363,18 +333,18 @@ describe("SessionRepository", () => {
 
 	describe("revokeByTokenFamily", () => {
 		it("토큰 패밀리 전체를 폐기한다", async () => {
-			// Given
-			mockDatabase.session.updateMany.mockResolvedValue({ count: 3 });
+			// Given - 여러 세션 폐기 Mock 설정
+			db.session.updateMany.mockResolvedValue({ count: 3 });
 
-			// When
+			// When - 토큰 패밀리 전체 폐기 실행
 			const result = await repository.revokeByTokenFamily(
 				"family-123",
 				"token_reuse_detected",
 			);
 
-			// Then
+			// Then - 폐기된 세션 수 검증
 			expect(result).toBe(3);
-			expect(mockDatabase.session.updateMany).toHaveBeenCalledWith({
+			expect(db.session.updateMany).toHaveBeenCalledWith({
 				where: {
 					tokenFamily: "family-123",
 					revokedAt: null,
@@ -389,18 +359,18 @@ describe("SessionRepository", () => {
 
 	describe("revokeAllByUserId", () => {
 		it("사용자의 모든 세션을 폐기한다", async () => {
-			// Given
-			mockDatabase.session.updateMany.mockResolvedValue({ count: 5 });
+			// Given - 사용자의 모든 세션 폐기 Mock 설정
+			db.session.updateMany.mockResolvedValue({ count: 5 });
 
-			// When
+			// When - 사용자의 모든 세션 폐기 실행
 			const result = await repository.revokeAllByUserId(
 				"user-123",
 				"password_changed",
 			);
 
-			// Then
+			// Then - 폐기된 세션 수 검증
 			expect(result).toBe(5);
-			expect(mockDatabase.session.updateMany).toHaveBeenCalledWith({
+			expect(db.session.updateMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-123",
 					revokedAt: null,
@@ -413,19 +383,19 @@ describe("SessionRepository", () => {
 		});
 
 		it("특정 세션을 제외하고 폐기한다", async () => {
-			// Given
-			mockDatabase.session.updateMany.mockResolvedValue({ count: 4 });
+			// Given - 특정 세션 제외 폐기 Mock 설정
+			db.session.updateMany.mockResolvedValue({ count: 4 });
 
-			// When
+			// When - 현재 세션을 제외하고 나머지 폐기 실행
 			const result = await repository.revokeAllByUserId(
 				"user-123",
 				"logout_all",
 				"current-session-id",
 			);
 
-			// Then
+			// Then - 제외된 세션을 제외한 폐기 검증
 			expect(result).toBe(4);
-			expect(mockDatabase.session.updateMany).toHaveBeenCalledWith({
+			expect(db.session.updateMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-123",
 					revokedAt: null,
@@ -441,15 +411,15 @@ describe("SessionRepository", () => {
 
 	describe("deleteExpired", () => {
 		it("만료되거나 폐기된 세션을 삭제한다", async () => {
-			// Given
-			mockDatabase.session.deleteMany.mockResolvedValue({ count: 10 });
+			// Given - 만료/폐기된 세션 삭제 Mock 설정
+			db.session.deleteMany.mockResolvedValue({ count: 10 });
 
-			// When
+			// When - 만료된 세션 삭제 실행
 			const result = await repository.deleteExpired();
 
-			// Then
+			// Then - 삭제된 세션 수 검증
 			expect(result).toBe(10);
-			expect(mockDatabase.session.deleteMany).toHaveBeenCalledWith({
+			expect(db.session.deleteMany).toHaveBeenCalledWith({
 				where: {
 					OR: [
 						{ expiresAt: { lt: expect.any(Date) } },
@@ -462,28 +432,28 @@ describe("SessionRepository", () => {
 
 	describe("findByPreviousTokenHash", () => {
 		it("이전 토큰 해시로 세션을 찾는다 (재사용 감지용)", async () => {
-			// Given
-			mockDatabase.session.findFirst.mockResolvedValue(mockSession);
+			// Given - 이전 토큰 해시로 세션 조회 Mock 설정
+			db.session.findFirst.mockResolvedValue(mockSession);
 
-			// When
+			// When - 이전 토큰 해시로 세션 조회 실행
 			const result = await repository.findByPreviousTokenHash("previous-hash");
 
-			// Then
+			// Then - 조회된 세션 검증
 			expect(result).toEqual(mockSession);
-			expect(mockDatabase.session.findFirst).toHaveBeenCalledWith({
+			expect(db.session.findFirst).toHaveBeenCalledWith({
 				where: { previousTokenHash: "previous-hash" },
 			});
 		});
 
 		it("해당 토큰 해시가 없으면 null을 반환한다", async () => {
-			// Given
-			mockDatabase.session.findFirst.mockResolvedValue(null);
+			// Given - 존재하지 않는 토큰 해시 Mock 설정
+			db.session.findFirst.mockResolvedValue(null);
 
-			// When
+			// When - 존재하지 않는 토큰 해시로 조회 실행
 			const result =
 				await repository.findByPreviousTokenHash("nonexistent-hash");
 
-			// Then
+			// Then - null 반환 검증
 			expect(result).toBeNull();
 		});
 	});

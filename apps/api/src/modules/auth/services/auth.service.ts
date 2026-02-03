@@ -261,6 +261,7 @@ export class AuthService {
 				user.id,
 				email,
 				session.id,
+				user.role,
 				tokenFamily,
 				1,
 			);
@@ -471,6 +472,7 @@ export class AuthService {
 				user.id,
 				email,
 				session.id,
+				user.role,
 				tokenFamily,
 				1,
 			);
@@ -622,7 +624,7 @@ export class AuthService {
 			throw BusinessExceptions.sessionExpired();
 		}
 
-		const { sub: userId, email, sessionId } = payload;
+		const { sub: userId, email, sessionId, role } = payload;
 
 		// sessionId가 없으면 유효하지 않은 토큰
 		if (!sessionId) {
@@ -686,6 +688,7 @@ export class AuthService {
 			userId,
 			email,
 			sessionId,
+			role,
 			session.tokenFamily,
 			newTokenVersion,
 		);
@@ -928,6 +931,7 @@ export class AuthService {
 				return {
 					id: user.id,
 					email: user.email,
+					role: user.role,
 					userTag: user.userTag,
 					status: user.status,
 					emailVerifiedAt: toISOStringOrNull(user.emailVerifiedAt),
@@ -948,6 +952,7 @@ export class AuthService {
 			userId: cachedProfile.id,
 			email: cachedProfile.email,
 			sessionId,
+			role: cachedProfile.role,
 			userTag: cachedProfile.userTag,
 			status: cachedProfile.status as UserStatus,
 			emailVerifiedAt: cachedProfile.emailVerifiedAt,

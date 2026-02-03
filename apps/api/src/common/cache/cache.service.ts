@@ -1,5 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { SubscriptionStatus, UserStatus } from "@/generated/prisma/enums";
+import {
+	SubscriptionStatus,
+	UserRole,
+	UserStatus,
+} from "@/generated/prisma/enums";
 import { CacheKeys } from "./constants/cache-keys";
 import {
 	CACHE_SERVICE,
@@ -18,6 +22,7 @@ export interface CachedUserProfile {
 	id: string;
 	email: string;
 	userTag: string;
+	role: UserRole;
 	status: UserStatus;
 	emailVerifiedAt: string | null;
 	subscriptionStatus: SubscriptionStatus;

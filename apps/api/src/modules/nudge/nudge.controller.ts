@@ -80,40 +80,19 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "콕 찌르기",
 		operationId: "sendNudge",
-		description: `
-## 👆 콕 찌르기
+		description: `친구의 할 일을 독촉합니다.
 
-친구의 할 일을 독촉합니다.
+**요청 필드**
+- \`receiverId\` (필수): 콕 찌를 친구 ID
+- \`todoId\` (필수): 찔러줄 할 일 ID
+- \`message\` (선택): 메시지 (최대 200자)
 
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 요청 본문
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| \`receiverId\` | string | ✅ | 콕 찌를 친구의 ID (CUID) |
-| \`todoId\` | number | ✅ | 찔러줄 할 일의 ID |
-| \`message\` | string | ❌ | 응원 메시지 (최대 200자) |
-
-### 💡 동작 방식
-1. 친구 관계 확인 (상호 팔로우)
-2. Todo 존재 및 소유자 확인
-3. 일일 제한 체크 (FREE: 10회, ACTIVE: 무제한)
-4. 쿨다운 체크 (동일 Todo에 24시간)
-5. 콕 찌르기 생성 및 푸시 알림 발송
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| NUDGE_1101 | 일일 독촉 횟수 초과 |
-| NUDGE_1102 | 쿨다운 기간 (24시간 후 다시 시도) |
-| NUDGE_1103 | 친구 관계가 아님 |
-| NUDGE_1104 | 자신에게 독촉 불가 |
-| TODO_0801 | 할 일을 찾을 수 없음 |
-    `,
+**제한**
+- FREE: 일 10회, ACTIVE: 무제한
+- 동일 Todo에 24시간 쿨다운`,
 	})
 	@ApiCreatedResponse({ type: CreateNudgeResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.NUDGE_1104)
 	@ApiForbiddenError(ErrorCode.NUDGE_1103)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
@@ -151,33 +130,14 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "받은 콕 찌름 목록 조회",
 		operationId: "getReceivedNudges",
-		description: `
-## 📥 받은 콕 찌름 목록 조회
+		description: `받은 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
 
-내가 받은 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`limit\` | number | 20 | 조회할 개수 (1-50) |
-| \`cursor\` | number | - | 페이지네이션 커서 (마지막 ID) |
-
-### 📤 응답 구조
-- \`nudges\`: 콕 찌름 목록 (발신자, 할 일 정보 포함)
-  - \`sender.id\`: 발신자 ID
-  - \`sender.userTag\`: 발신자 태그 (8자리)
-  - \`sender.name\`: 발신자 이름
-  - \`sender.profileImage\`: 발신자 프로필 이미지
-- \`totalCount\`: 전체 받은 콕 찌름 수
-- \`unreadCount\`: 읽지 않은 콕 찌름 수
-- \`hasMore\`: 다음 페이지 존재 여부
-    `,
+**쿼리 파라미터**
+- \`limit\` (기본값: 20): 조회 개수 (1-50)
+- \`cursor\`: 페이지네이션 커서`,
 	})
 	@ApiSuccessResponse({ type: ReceivedNudgesResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedNudges(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -203,32 +163,14 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "보낸 콕 찌름 목록 조회",
 		operationId: "getSentNudges",
-		description: `
-## 📤 보낸 콕 찌름 목록 조회
+		description: `보낸 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
 
-내가 보낸 콕 찌름 목록을 커서 기반 페이지네이션으로 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`limit\` | number | 20 | 조회할 개수 (1-50) |
-| \`cursor\` | number | - | 페이지네이션 커서 (마지막 ID) |
-
-### 📤 응답 구조
-- \`nudges\`: 콕 찌름 목록 (발신자, 할 일 정보 포함)
-  - \`sender.id\`: 발신자 ID
-  - \`sender.userTag\`: 발신자 태그 (8자리)
-  - \`sender.name\`: 발신자 이름
-  - \`sender.profileImage\`: 발신자 프로필 이미지
-- \`totalCount\`: 전체 보낸 콕 찌름 수
-- \`hasMore\`: 다음 페이지 존재 여부
-    `,
+**쿼리 파라미터**
+- \`limit\` (기본값: 20): 조회 개수 (1-50)
+- \`cursor\`: 페이지네이션 커서`,
 	})
 	@ApiSuccessResponse({ type: SentNudgesResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentNudges(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("limit") limit?: string,
@@ -257,29 +199,12 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "일일 콕 찌르기 제한 정보 조회",
 		operationId: "getNudgeLimitInfo",
-		description: `
-## 📊 일일 콕 찌르기 제한 정보 조회
+		description: `오늘 사용한 콕 찌르기 횟수와 남은 횟수를 확인합니다.
 
-오늘 사용한 콕 찌르기 횟수와 남은 횟수를 확인합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📤 응답 구조
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`dailyLimit\` | number | null | 하루 제한 횟수 (null = 무제한) |
-| \`usedToday\` | number | 오늘 사용한 횟수 |
-| \`remainingToday\` | number | null | 오늘 남은 횟수 (null = 무제한) |
-| \`isUnlimited\` | boolean | 무제한 여부 (ACTIVE 구독) |
-
-### 💡 제한 정책
-- FREE 구독: 하루 10회
-- ACTIVE 구독: 무제한
-    `,
+**제한 정책**: FREE 일 10회, ACTIVE 무제한`,
 	})
 	@ApiSuccessResponse({ type: NudgeLimitInfoDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLimitInfo(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<NudgeLimitInfoDto> {
@@ -298,30 +223,12 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
 		operationId: "getNudgeCooldownInfo",
-		description: `
-## ⏱️ 쿨다운 상태 조회
+		description: `특정 친구에게 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
 
-특정 친구에게 마지막으로 콕 찌른 후 쿨다운 상태를 확인합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`userId\`: 확인할 친구의 ID (CUID)
-
-### 📤 응답 구조
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`canNudge\` | boolean | 찌르기 가능 여부 |
-| \`cooldownEndsAt\` | string | null | 쿨다운 종료 시각 (ISO 8601 UTC, 쿨다운 없으면 null) |
-| \`remainingSeconds\` | number | null | 남은 쿨다운 시간 (초, 쿨다운 없으면 null) |
-
-### 💡 쿨다운 정책
-- 동일 친구에게 24시간 내 재독촉 불가
-    `,
+**쿨다운 정책**: 동일 친구에게 24시간 내 재독촉 불가`,
 	})
 	@ApiSuccessResponse({ type: NudgeCooldownResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getCooldownInfo(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("userId") targetUserId: string,
@@ -350,30 +257,10 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "콕 찌름 읽음 처리",
 		operationId: "markNudgeAsRead",
-		description: `
-## ✅ 콕 찌름 읽음 처리
-
-받은 콕 찌름을 읽음 상태로 변경합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`id\`: 읽음 처리할 콕 찌름 ID (number)
-
-### 💡 동작 방식
-1. 콕 찌름 존재 확인
-2. 수신자 본인 확인
-3. 읽음 시각 기록
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| NUDGE_1105 | 콕 찌름을 찾을 수 없음 |
-    `,
+		description: `받은 콕 찌름을 읽음 상태로 변경합니다.`,
 	})
 	@ApiSuccessResponse({ type: MarkNudgeReadResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.NUDGE_1105)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,

@@ -337,6 +337,13 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.USER_0610);
 	}
 
+	static userTagGenerationFailed(details?: {
+		userId?: string;
+		attempts?: number;
+	}) {
+		return new BusinessException(ErrorCode.USER_0611, details);
+	}
+
 	// =========================================================================
 	// 로그인 시도 제한 (Login Attempts)
 	// =========================================================================
@@ -560,5 +567,20 @@ export class BusinessExceptions {
 
 	static todoReorderTargetNotFound(targetTodoId: number) {
 		return new BusinessException(ErrorCode.TODO_0810, { targetTodoId });
+	}
+
+	// =========================================================================
+	// 관리자 (Admin)
+	// =========================================================================
+	static adminRequired() {
+		return new BusinessException(ErrorCode.ADMIN_1401);
+	}
+
+	static adminNotificationTargetNotFound() {
+		return new BusinessException(ErrorCode.ADMIN_1402);
+	}
+
+	static adminInvalidFilterCondition(details?: Record<string, unknown>) {
+		return new BusinessException(ErrorCode.ADMIN_1403, details);
 	}
 }

@@ -110,4 +110,18 @@ export class UserConsentRepository {
 			},
 		});
 	}
+
+	/**
+	 * 여러 사용자의 동의 정보 배치 조회 (N+1 방지용)
+	 */
+	async findByUserIds(
+		userIds: string[],
+		tx?: Prisma.TransactionClient,
+	): Promise<UserConsent[]> {
+		if (userIds.length === 0) return [];
+		const client = tx ?? this.database;
+		return client.userConsent.findMany({
+			where: { userId: { in: userIds } },
+		});
+	}
 }

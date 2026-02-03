@@ -71,33 +71,16 @@ export class NotificationController {
 	@ApiDoc({
 		summary: "푸시 토큰 등록",
 		operationId: "registerPushToken",
-		description: `
-## 📱 푸시 토큰 등록
+		description: `Expo 푸시 토큰을 서버에 등록합니다.
 
-Expo 푸시 토큰을 서버에 등록합니다.
+**요청 필드**
+- \`token\` (필수): Expo 푸시 토큰
+- \`deviceId\` (선택): 기기 고유 ID
 
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 요청 본문
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| \`token\` | string | ✅ | Expo 푸시 토큰 (ExponentPushToken[...]) |
-| \`deviceId\` | string | ❌ | 기기 고유 ID (선택) |
-
-### 💡 동작 방식
-1. 토큰 유효성 검증 (Expo 형식 확인)
-2. 동일 deviceId의 기존 토큰이 있으면 갱신
-3. 토큰을 활성 상태로 등록
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| NOTIFICATION_1001 | 유효하지 않은 Expo 푸시 토큰 형식 |
-		`,
+동일 deviceId의 기존 토큰이 있으면 갱신됩니다.`,
 	})
 	@ApiCreatedResponse({ type: RegisterTokenResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
 	async registerToken(
 		@CurrentUser() user: CurrentUserPayload,
@@ -124,26 +107,13 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@ApiDoc({
 		summary: "푸시 토큰 해제",
 		operationId: "unregisterPushToken",
-		description: `
-## 🔕 푸시 토큰 해제
+		description: `등록된 푸시 토큰을 해제합니다.
 
-등록된 푸시 토큰을 해제합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 필수 | 설명 |
-|----------|------|------|------|
-| \`deviceId\` | string | ❌ | 특정 기기의 토큰만 해제 (없으면 모든 토큰 해제) |
-
-### 💡 동작 방식
-- deviceId 지정: 해당 기기의 토큰만 해제
-- deviceId 미지정: 사용자의 모든 토큰 해제 (로그아웃 시)
-		`,
+**쿼리 파라미터**
+- \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제`,
 	})
 	@ApiSuccessResponse({ type: RegisterTokenResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async unregisterToken(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("deviceId") deviceId?: string,
@@ -176,34 +146,15 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@ApiDoc({
 		summary: "알림 목록 조회",
 		operationId: "getNotifications",
-		description: `
-## 📋 알림 목록 조회
+		description: `알림 목록을 커서 기반 페이지네이션으로 조회합니다.
 
-사용자의 알림 목록을 커서 기반 페이지네이션으로 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`limit\` | number | 20 | 조회할 알림 수 (1-50) |
-| \`cursor\` | number | - | 페이지네이션 커서 (마지막 알림 ID) |
-| \`unreadOnly\` | boolean | false | 읽지 않은 알림만 조회 |
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "notifications": [...],
-  "unreadCount": 5,
-  "hasMore": true,
-  "nextCursor": 42
-}
-\`\`\`
-		`,
+**쿼리 파라미터**
+- \`limit\` (기본값: 20): 조회할 알림 수 (1-50)
+- \`cursor\`: 페이지네이션 커서 (이전 응답의 nextCursor)
+- \`unreadOnly\`: 읽지 않은 알림만 조회`,
 	})
 	@ApiSuccessResponse({ type: NotificationListResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getNotifications(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNotificationsQueryDto,
@@ -233,25 +184,10 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@ApiDoc({
 		summary: "읽지 않은 알림 수 조회",
 		operationId: "getUnreadCount",
-		description: `
-## 🔢 읽지 않은 알림 수 조회
-
-사용자의 읽지 않은 알림 개수를 조회합니다.
-앱 배지 카운트 갱신 등에 사용됩니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "unreadCount": 5
-}
-\`\`\`
-		`,
+		description: `읽지 않은 알림 개수를 반환합니다. 앱 배지 카운트 갱신에 사용됩니다.`,
 	})
 	@ApiSuccessResponse({ type: UnreadCountResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getUnreadCount(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<UnreadCountResponseDto> {
@@ -277,31 +213,10 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@ApiDoc({
 		summary: "단일 알림 읽음 처리",
 		operationId: "markNotificationAsRead",
-		description: `
-## ✅ 단일 알림 읽음 처리
-
-특정 알림을 읽음 상태로 변경합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`id\`: 읽음 처리할 알림 ID (number)
-
-### 💡 동작 방식
-1. 알림 존재 및 소유권 확인
-2. 이미 읽은 알림은 무시
-3. 읽음 시각(readAt) 기록
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| NOTIFICATION_1004 | 알림을 찾을 수 없음 |
-| NOTIFICATION_1005 | 다른 사용자의 알림에 접근 |
-		`,
+		description: `특정 알림을 읽음 상태로 변경합니다. 이미 읽은 알림은 무시됩니다.`,
 	})
 	@ApiSuccessResponse({ type: MarkReadResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.NOTIFICATION_1004)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
@@ -322,25 +237,10 @@ Expo 푸시 토큰을 서버에 등록합니다.
 	@ApiDoc({
 		summary: "모든 알림 읽음 처리",
 		operationId: "markAllNotificationsAsRead",
-		description: `
-## ✅ 모든 알림 읽음 처리
-
-사용자의 모든 읽지 않은 알림을 읽음 상태로 변경합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "message": "모든 알림을 읽음 처리했습니다.",
-  "readCount": 5
-}
-\`\`\`
-		`,
+		description: `모든 읽지 않은 알림을 읽음 상태로 변경합니다.`,
 	})
 	@ApiSuccessResponse({ type: MarkReadResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async markAllAsRead(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<MarkReadResponseDto> {

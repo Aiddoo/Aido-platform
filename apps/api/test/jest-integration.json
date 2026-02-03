@@ -28,6 +28,7 @@
 	},
 	"moduleNameMapper": {
 		"^@/(.*)$": "<rootDir>/../src/$1",
+		"^@test/(.*)$": "<rootDir>/$1",
 		"^(\\.{1,2}/.*)\\.js$": "$1"
 	},
 	"testTimeout": 60000,

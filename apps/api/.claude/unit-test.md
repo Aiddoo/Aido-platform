@@ -8,6 +8,7 @@
 
 | 문서 | 내용 |
 |------|------|
+| [testing-guide.md](./testing-guide.md) | 종합 테스팅 가이드 |
 | [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
 | [integration-test.md](./integration-test.md) | 통합 테스트 가이드 |
 | [api-conventions.md](./api-conventions.md) | API 코드 규칙 |
@@ -21,6 +22,7 @@
 | **정의** | 개별 클래스/메서드의 독립적인 동작 검증 |
 | **외부 의존성** | 모두 Mock 처리 (DB, 외부 API 등) |
 | **실행 속도** | 빠름 (실제 DB 연결 없음) |
+| **테스트 도구** | Jest + Suites + Builder 패턴 |
 
 ---
 
@@ -34,9 +36,236 @@ src/
 │       └── {name}.service.spec.ts    # 테스트 대상과 같은 폴더
 ├── app.controller.ts
 └── app.controller.spec.ts
+
+test/
+├── builders/                          # 테스트 데이터 빌더
+│   ├── index.ts
+│   ├── user.builder.ts
+│   ├── notification.builder.ts
+│   └── ...
+└── setup/
+    └── suites.setup.ts                # Suites 유틸리티
 ```
 
 **명명 규칙**: `{파일명}.spec.ts`
+
+---
+
+## Suites 패턴 (권장)
+
+NestJS 공식 권장 [Suites 라이브러리](https://docs.nestjs.com/recipes/suites)를 사용한 테스트 설정입니다.
+
+### 기본 사용법
+
+```typescript
+// Suites 라이브러리 (자동 mock 생성)
+import { TestBed } from "@suites/unit";
+import type { Mocked } from "@suites/doubles.jest";
+
+// 테스트 대상 서비스 (프로젝트 내부)
+import { AuthService } from "@/modules/auth/services/auth.service";
+import { UserRepository } from "@/modules/auth/repositories/user.repository";
+
+describe("AuthService", () => {
+  let service: AuthService;
+  let userRepo: Mocked<UserRepository>;
+
+  beforeEach(async () => {
+    // Suites가 모든 의존성을 자동으로 mock
+    const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
+
+    service = unit;
+    userRepo = unitRef.get(UserRepository);
+  });
+
+  it("사용자를 조회해야 한다", async () => {
+    // Given - Mock 반환값 설정
+    userRepo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
+
+    // When - 테스트 대상 메서드 호출
+    const result = await service.findById("1");
+
+    // Then - 결과 검증
+    expect(result.email).toBe("test@example.com");
+  });
+});
+```
+
+### 수동 Mock 주입 (Provider override)
+
+특정 Provider를 직접 mock해야 할 경우:
+
+```typescript
+beforeEach(async () => {
+  const mockPushProvider = {
+    name: "expo",
+    validateToken: jest.fn().mockReturnValue(true),
+    send: jest.fn(),
+    sendBatch: jest.fn().mockResolvedValue({
+      total: 1,
+      successCount: 1,
+      failureCount: 0,
+      results: [{ success: true, ticketId: "ticket-1" }],
+      invalidTokens: [],
+    }),
+  };
+
+  const { unit, unitRef } = await TestBed.solitary(NotificationService)
+    .mock(PUSH_PROVIDER)
+    .impl(() => mockPushProvider)
+    .compile();
+
+  service = unit;
+  pushProvider = mockPushProvider as unknown as Mocked<PushProvider>;
+});
+```
+
+---
+
+## Builder 패턴
+
+[Prisma 공식 권장](https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing) Builder 패턴으로 테스트 데이터를 생성합니다.
+
+### 사용법
+
+```typescript
+import { UserBuilder, NotificationBuilder } from "@test/builders";
+
+// 기본 사용자
+const user = UserBuilder.create().build();
+
+// 커스텀 사용자
+const admin = UserBuilder.create()
+  .withEmail("admin@example.com")
+  .asAdmin()
+  .verified()
+  .build();
+
+// 알림 데이터
+const notification = NotificationBuilder.create("user-1")
+  .asFollowNew("friend-1")
+  .asUnread()
+  .build();
+```
+
+### Builder 작성 규칙
+
+```typescript
+export class UserBuilder {
+  private data: User;
+
+  private constructor() {
+    const now = new Date();
+    this.data = {
+      id: `user-${crypto.randomUUID().slice(0, 8)}`,
+      email: `test-${Date.now()}@example.com`,
+      userTag: this.generateUserTag(),
+      role: "USER" as UserRole,
+      status: "PENDING_VERIFY" as UserStatus,
+      // ... 기본값 설정
+    };
+  }
+
+  static create(): UserBuilder {
+    return new UserBuilder();
+  }
+
+  // 메서드 체이닝
+  withId(id: string): UserBuilder {
+    this.data.id = id;
+    return this;
+  }
+
+  withEmail(email: string): UserBuilder {
+    this.data.email = email;
+    return this;
+  }
+
+  asAdmin(): UserBuilder {
+    this.data.role = "ADMIN";
+    return this;
+  }
+
+  verified(): UserBuilder {
+    this.data.status = "ACTIVE";
+    this.data.emailVerifiedAt = new Date();
+    return this;
+  }
+
+  build(): User {
+    return { ...this.data };
+  }
+
+  static createMany(count: number): User[] {
+    return Array.from({ length: count }, () => UserBuilder.create().build());
+  }
+}
+```
+
+### ID 카운터 리셋
+
+테스트 간 ID 충돌을 방지하려면 `beforeEach`에서 리셋:
+
+```typescript
+beforeEach(() => {
+  NotificationBuilder.resetIdCounter();
+  PushTokenBuilder.resetIdCounter();
+});
+```
+
+---
+
+## GWT 주석 형식
+
+**Given/When/Then** 패턴으로 테스트 의도를 명확히 표현합니다.
+
+### 형식
+
+```typescript
+it("유효한 토큰을 등록해야 한다", async () => {
+  // Given - 유효한 Expo 푸시 토큰 데이터 준비
+  const data = {
+    userId: mockUserId,
+    token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+    deviceId: "device-1",
+    platform: "IOS" as const,
+  };
+  const expectedToken = PushTokenBuilder.create(mockUserId)
+    .withToken(data.token)
+    .withDeviceId(data.deviceId)
+    .asIos()
+    .build();
+  notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
+
+  // When - 푸시 토큰 등록 요청
+  const result = await service.registerPushToken(data);
+
+  // Then - 토큰 검증 및 저장 확인
+  expect(pushProvider.validateToken).toHaveBeenCalledWith(data.token);
+  expect(notificationRepo.registerPushToken).toHaveBeenCalledWith(data);
+  expect(result).toEqual(expectedToken);
+});
+```
+
+### 예외 케이스
+
+```typescript
+it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
+  // Given - 유효하지 않은 토큰 형식
+  const data = {
+    userId: mockUserId,
+    token: "invalid-token",
+    deviceId: "device-1",
+  };
+  pushProvider.validateToken.mockReturnValue(false);
+
+  // When & Then - 유효성 검사 실패로 예외 발생
+  await expect(service.registerPushToken(data)).rejects.toThrow(
+    BusinessException,
+  );
+  expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
+});
+```
 
 ---
 
@@ -56,99 +285,87 @@ describe("클래스명", () => {
 });
 ```
 
----
-
-## 기본 테스트 패턴
-
-### Controller 테스트
+### 전체 예제
 
 ```typescript
-import { Test, type TestingModule } from "@nestjs/testing";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
+/**
+ * NotificationService 단위 테스트 (Suites + Builder + GWT 패턴)
+ */
+import { TestBed } from "@suites/unit";
+import type { Mocked } from "@suites/doubles.jest";
+import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
+import { NotificationRepository } from "./notification.repository";
+import { NotificationService } from "./notification.service";
+import { PUSH_PROVIDER } from "./providers";
+import type { PushProvider } from "./providers/push-provider.interface";
 
-describe("AppController", () => {
-  let appController: AppController;
+describe("NotificationService", () => {
+  let service: NotificationService;
+  let notificationRepo: Mocked<NotificationRepository>;
+  let pushProvider: Mocked<PushProvider>;
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService],
-    }).compile();
-
-    appController = app.get<AppController>(AppController);
-  });
-
-  describe("root", () => {
-    it('"Hello World!"를 반환해야 한다', () => {
-      expect(appController.getHello()).toBe("Hello World!");
-    });
-  });
-});
-```
-
-### Service 테스트 (의존성 Mock)
-
-```typescript
-import { Test, type TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
-import { TodoService } from "./todo.service";
-import { TodoRepository } from "./todo.repository";
-import { PaginationService } from "@/common/pagination";
-
-describe("TodoService", () => {
-  let service: TodoService;
-  let repository: jest.Mocked<TodoRepository>;
+  const mockUserId = "user-1";
 
   beforeEach(async () => {
-    const mockRepository = {
-      findById: jest.fn(),
-      findAll: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+    // Builder ID 카운터 리셋
+    NotificationBuilder.resetIdCounter();
+    PushTokenBuilder.resetIdCounter();
+
+    // PushProvider mock 객체 생성
+    const mockPushProviderImpl = {
+      name: "expo",
+      validateToken: jest.fn().mockReturnValue(true),
+      send: jest.fn(),
+      sendBatch: jest.fn().mockResolvedValue({
+        total: 1,
+        successCount: 1,
+        failureCount: 0,
+        results: [{ success: true, ticketId: "ticket-1" }],
+        invalidTokens: [],
+      }),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TodoService,
-        PaginationService,
-        { provide: TodoRepository, useValue: mockRepository },
-      ],
-    }).compile();
+    const { unit, unitRef } = await TestBed.solitary(NotificationService)
+      .mock(PUSH_PROVIDER)
+      .impl(() => mockPushProviderImpl)
+      .compile();
 
-    service = module.get<TodoService>(TodoService);
-    repository = module.get(TodoRepository);
+    service = unit;
+    notificationRepo = unitRef.get(NotificationRepository);
+    pushProvider = mockPushProviderImpl as unknown as Mocked<PushProvider>;
   });
 
-  describe("findById", () => {
-    it("Todo를 찾으면 반환해야 한다", async () => {
-      const mockTodo = { id: "1", title: "Test", completed: false };
-      repository.findById.mockResolvedValue(mockTodo);
-
-      const result = await service.findById("1");
-
-      expect(result).toEqual(mockTodo);
-      expect(repository.findById).toHaveBeenCalledWith("1");
-    });
-
-    it("Todo를 찾지 못하면 NotFoundException을 던져야 한다", async () => {
-      repository.findById.mockResolvedValue(null);
-
-      await expect(service.findById("999")).rejects.toThrow(NotFoundException);
-    });
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  describe("create", () => {
-    it("새로운 Todo를 생성하고 반환해야 한다", async () => {
-      const createDto = { title: "New Todo" };
-      const mockTodo = { id: "1", ...createDto, completed: false };
-      repository.create.mockResolvedValue(mockTodo);
+  // ==========================================================================
+  // 푸시 토큰 관리 테스트
+  // ==========================================================================
 
-      const result = await service.create("user-1", createDto);
+  describe("registerPushToken", () => {
+    it("유효한 토큰을 등록해야 한다", async () => {
+      // Given - 유효한 Expo 푸시 토큰 데이터 준비
+      const data = { userId: mockUserId, token: "ExponentPushToken[xxx]", deviceId: "device-1" };
+      const expectedToken = PushTokenBuilder.create(mockUserId).withToken(data.token).build();
+      notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
 
-      expect(result).toEqual(mockTodo);
-      expect(repository.create).toHaveBeenCalled();
+      // When - 푸시 토큰 등록 요청
+      const result = await service.registerPushToken(data);
+
+      // Then - 토큰 검증 및 저장 확인
+      expect(pushProvider.validateToken).toHaveBeenCalledWith(data.token);
+      expect(result).toEqual(expectedToken);
+    });
+
+    it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
+      // Given - 유효하지 않은 토큰
+      pushProvider.validateToken.mockReturnValue(false);
+
+      // When & Then - 예외 발생
+      await expect(service.registerPushToken({ userId: mockUserId, token: "invalid" }))
+        .rejects.toThrow(BusinessException);
     });
   });
 });
@@ -156,7 +373,7 @@ describe("TodoService", () => {
 
 ---
 
-## Mocking 패턴
+## Mock 설정 헬퍼
 
 ### 기본 Mock 객체
 
@@ -167,9 +384,6 @@ const mockRepository = {
   update: jest.fn(),
   delete: jest.fn(),
 };
-
-// 테스트 모듈에 주입
-{ provide: TodoRepository, useValue: mockRepository }
 ```
 
 ### Mock 반환값 설정
@@ -198,51 +412,41 @@ expect(mockRepository.findById).toHaveBeenCalledWith("1");
 
 // 호출 횟수
 expect(mockRepository.findById).toHaveBeenCalledTimes(1);
+
+// 객체 일부만 검증
+expect(mockRepository.create).toHaveBeenCalledWith(
+  expect.objectContaining({ title: "Test" })
+);
 ```
 
 ---
 
-## 테스트 케이스 작성 패턴
+## 테스트 케이스 분류
 
-### 정상 케이스 (AAA 패턴)
-
-```typescript
-it("Todo를 찾으면 반환해야 한다", async () => {
-  // Arrange (준비)
-  const mockTodo = { id: "1", title: "Test" };
-  repository.findById.mockResolvedValue(mockTodo);
-
-  // Act (실행)
-  const result = await service.findById("1");
-
-  // Assert (검증)
-  expect(result).toEqual(mockTodo);
-});
-```
-
-### 예외 케이스
+### 섹션 구분자
 
 ```typescript
-it("Todo를 찾지 못하면 NotFoundException을 던져야 한다", async () => {
-  repository.findById.mockResolvedValue(null);
+// ==========================================================================
+// 푸시 토큰 관리 테스트
+// ==========================================================================
 
-  await expect(service.findById("999")).rejects.toThrow(NotFoundException);
-  await expect(service.findById("999")).rejects.toThrow("Todo #999 not found");
-});
+describe("registerPushToken", () => { ... });
+
+// ==========================================================================
+// 알림 생성 및 발송 테스트
+// ==========================================================================
+
+describe("createAndSend", () => { ... });
 ```
 
-### 경계값 테스트
+### 테스트 케이스 유형
 
-```typescript
-it("빈 문자열 제목을 처리해야 한다", async () => {
-  // 빈 문자열 처리 테스트
-});
-
-it("최대 길이 제목을 처리해야 한다", async () => {
-  const longTitle = "a".repeat(200);
-  // 최대 길이 처리 테스트
-});
-```
+| 유형 | 설명 | 예시 |
+|------|------|------|
+| 정상 케이스 | 성공적인 동작 | "유효한 토큰을 등록해야 한다" |
+| 예외 케이스 | 에러 발생 상황 | "토큰이 없으면 예외를 던져야 한다" |
+| 경계값 테스트 | 극단적인 입력값 | "빈 목록이면 아무 작업도 하지 않아야 한다" |
+| 간접 테스트 | private 메서드 테스트 | "sendPushToUser (간접 테스트)" |
 
 ---
 
@@ -253,7 +457,7 @@ it("최대 길이 제목을 처리해야 한다", async () => {
 pnpm --filter @aido/api test
 
 # 특정 파일
-pnpm --filter @aido/api test todo.service.spec
+pnpm --filter @aido/api test notification.service.spec
 
 # Watch 모드 (파일 변경 시 자동 실행)
 pnpm --filter @aido/api test:watch
@@ -268,14 +472,17 @@ pnpm --filter @aido/api test:cov
 
 ### DO
 
-- 각 테스트 케이스는 독립적으로 실행 가능해야 함
-- Arrange-Act-Assert 패턴 사용
-- 테스트 이름은 행동을 명확히 설명 (한국어)
-- Edge case와 에러 케이스 테스트 포함
+- ✅ Suites `TestBed.solitary()` 패턴 사용
+- ✅ Builder 패턴으로 테스트 데이터 생성
+- ✅ Given/When/Then 주석으로 의도 표현
+- ✅ 각 테스트 케이스는 독립적으로 실행 가능
+- ✅ Edge case와 에러 케이스 테스트 포함
+- ✅ `beforeEach`에서 Builder ID 카운터 리셋
 
 ### DON'T
 
-- 실제 DB 연결 (통합 테스트에서 담당)
-- 테스트 간 상태 공유
-- 구현 세부사항 테스트 (공개 인터페이스만)
-- 테스트에서 비즈니스 로직 재구현
+- ❌ 실제 DB 연결 (통합 테스트에서 담당)
+- ❌ 테스트 간 상태 공유
+- ❌ 구현 세부사항 테스트 (공개 인터페이스만)
+- ❌ 테스트에서 비즈니스 로직 재구현
+- ❌ 하드코딩된 ID 사용 (Builder 사용)

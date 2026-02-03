@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { DEVICE_TYPES, USER_STATUS } from './auth.constants';
+import { DEVICE_TYPES, USER_ROLE, USER_STATUS } from './auth.constants';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
+export const userRoleSchema = z
+  .enum([USER_ROLE.USER, USER_ROLE.ADMIN])
+  .describe('사용자 역할 (USER: 일반 사용자, ADMIN: 관리자)');
 export const deviceTypeEnumSchema = z.enum(DEVICE_TYPES).describe('기기 타입');
 
 export const authTokensSchema = z
@@ -81,6 +84,7 @@ export const currentUserPayloadSchema = z
     userId: z.cuid().describe('사용자 고유 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)'),
     email: z.email().describe('이메일 주소'),
     sessionId: z.cuid().describe('현재 세션 ID (CUID 25자, 예: clz7x5p8k0002qz0z8z8z8z8z)'),
+    role: userRoleSchema.describe('사용자 역할'),
   })
   .describe('JWT 페이로드 사용자 정보')
   .meta({
@@ -88,6 +92,7 @@ export const currentUserPayloadSchema = z
       userId: 'clz7x5p8k0001qz0z8z8z8z8z',
       email: 'dydals3440@gmail.com',
       sessionId: 'clz7x5p8k0002qz0z8z8z8z8z',
+      role: 'USER',
     },
   });
 
@@ -107,6 +112,7 @@ export const currentUserSchema = z
     email: z.email().describe('이메일 주소'),
     sessionId: z.cuid().describe('현재 세션 ID'),
     userTag: z.string().length(8).describe('사용자 태그 (8자리 영숫자, 해시태그 검색용)'),
+    role: userRoleSchema.describe('사용자 역할'),
     status: userStatusSchema.describe('계정 상태'),
     emailVerifiedAt: nullableDatetimeSchema.describe('이메일 인증 완료 시점 (미인증 시 null)'),
     subscriptionStatus: subscriptionStatusSchema.describe('구독 상태'),
@@ -122,6 +128,7 @@ export const currentUserSchema = z
       email: 'dydals3440@gmail.com',
       sessionId: 'clz7x5p8k0002qz0z8z8z8z8z',
       userTag: 'MATT2025',
+      role: 'USER',
       status: 'ACTIVE',
       emailVerifiedAt: '2026-01-15T10:30:00.000Z',
       subscriptionStatus: 'FREE',

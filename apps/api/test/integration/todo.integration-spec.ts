@@ -20,16 +20,15 @@
 import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import type { Todo, TodoCategory } from "@/generated/prisma/client";
-
+import type { TodoCategory } from "@/generated/prisma/client";
 import { FollowService } from "@/modules/follow/follow.service";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
-import type { TodoWithCategory } from "@/modules/todo/types/todo.types";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 
 describe("TodoService Integration Tests", () => {
@@ -86,44 +85,11 @@ describe("TodoService Integration Tests", () => {
 	const mockTodoId = 1;
 	const mockCategoryId = 1;
 
-	const mockCategory: TodoCategory = {
-		id: mockCategoryId,
-		userId: mockUserId,
-		name: "중요한 일",
-		color: "#FFB3B3",
-		sortOrder: 0,
-		createdAt: new Date(),
-		updatedAt: new Date(),
-	};
-
-	const createMockTodo = (overrides: Partial<Todo> = {}): Todo => ({
-		id: mockTodoId,
-		userId: mockUserId,
-		title: "통합 테스트 할 일",
-		content: "통합 테스트 내용",
-		categoryId: mockCategoryId,
-		sortOrder: 0,
-		startDate: new Date("2024-01-15"),
-		endDate: new Date("2024-01-16"),
-		scheduledTime: null,
-		isAllDay: true,
-		visibility: "PUBLIC",
-		completed: false,
-		completedAt: null,
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		...overrides,
-	});
-
-	const createMockTodoWithCategory = (
-		overrides: Partial<TodoWithCategory> = {},
-	): TodoWithCategory => {
-		const { category, ...todoOverrides } = overrides;
-		return {
-			...createMockTodo(todoOverrides),
-			category: category ?? mockCategory,
-		};
-	};
+	const mockCategory: TodoCategory = TodoCategoryBuilder.create(mockUserId)
+		.withId(mockCategoryId)
+		.withName("중요한 일")
+		.withColor("#FFB3B3")
+		.build();
 
 	beforeAll(async () => {
 		// Logger 출력 비활성화
@@ -135,6 +101,8 @@ describe("TodoService Integration Tests", () => {
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
+		TodoBuilder.resetIdCounter();
+		TodoCategoryBuilder.resetIdCounter();
 
 		// NestJS 테스트 모듈 생성 - 실제 DI 컨테이너 사용
 		module = await Test.createTestingModule({
@@ -182,11 +150,21 @@ describe("TodoService Integration Tests", () => {
 
 	describe("DI 통합", () => {
 		it("TodoService가 올바르게 인스턴스화된다", () => {
+			// Given - DI 컨테이너가 구성됨
+
+			// When - 서비스 인스턴스 확인
+
+			// Then - 서비스가 정의되어 있어야 함
 			expect(service).toBeDefined();
 			expect(service).toBeInstanceOf(TodoService);
 		});
 
 		it("TodoRepository가 올바르게 주입된다", () => {
+			// Given - DI 컨테이너가 구성됨
+
+			// When - 레포지토리 인스턴스 확인
+
+			// Then - 레포지토리가 정의되어 있어야 함
 			expect(repository).toBeDefined();
 			expect(repository).toBeInstanceOf(TodoRepository);
 		});
@@ -194,8 +172,18 @@ describe("TodoService Integration Tests", () => {
 
 	describe("create 통합 테스트", () => {
 		it("Todo 생성이 Repository를 통해 올바르게 수행된다", async () => {
-			// Given
-			const mockTodoWithCategory = createMockTodoWithCategory();
+			// Given - 사용자와 카테고리 준비
+			const mockTodoWithCategory = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("통합 테스트 할 일")
+				.withContent("통합 테스트 내용")
+				.withCategoryId(mockCategoryId)
+				.withCategory({
+					id: mockCategoryId,
+					name: mockCategory.name,
+					color: mockCategory.color,
+				})
+				.build();
 			mockDatabaseService.todo.create.mockResolvedValue(mockTodoWithCategory);
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
 				mockCategory,
@@ -209,11 +197,10 @@ describe("TodoService Integration Tests", () => {
 				startDate: new Date("2024-01-15"),
 			};
 
-			// When
+			// When - 서비스 메서드 호출
 			const result = await service.create(createInput);
 
-			// Then
-			// Service는 Mapper를 통해 변환된 결과를 반환하므로 주요 필드만 확인
+			// Then - 결과 검증
 			expect(result.id).toEqual(mockTodoWithCategory.id);
 			expect(result.title).toEqual(mockTodoWithCategory.title);
 			expect(result.category).toBeDefined();
@@ -230,11 +217,12 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("기본값이 올바르게 적용된다", async () => {
-			// Given
-			const mockTodoWithCategory = createMockTodoWithCategory({
-				isAllDay: true,
-				visibility: "PUBLIC",
-			});
+			// Given - 최소 입력값만 준비
+			const mockTodoWithCategory = TodoBuilder.create(mockUserId)
+				.withIsAllDay(true)
+				.withVisibility("PUBLIC")
+				.withCategoryId(mockCategoryId)
+				.build();
 			mockDatabaseService.todo.create.mockResolvedValue(mockTodoWithCategory);
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
 				mockCategory,
@@ -247,10 +235,10 @@ describe("TodoService Integration Tests", () => {
 				startDate: new Date("2024-01-15"),
 			};
 
-			// When
+			// When - 최소 입력으로 생성
 			await service.create(minimalInput);
 
-			// Then
+			// Then - 기본값이 적용됨
 			expect(mockDatabaseService.todo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					data: expect.objectContaining({
@@ -263,7 +251,7 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 카테고리로 생성 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 카테고리
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
 
 			const createInput = {
@@ -273,7 +261,7 @@ describe("TodoService Integration Tests", () => {
 				startDate: new Date("2024-01-15"),
 			};
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(service.create(createInput)).rejects.toThrow(
 				BusinessException,
 			);
@@ -282,17 +270,24 @@ describe("TodoService Integration Tests", () => {
 
 	describe("findById 통합 테스트", () => {
 		it("존재하는 Todo를 조회한다", async () => {
-			// Given
-			const mockTodoWithCategory = createMockTodoWithCategory();
+			// Given - 조회할 Todo 준비
+			const mockTodoWithCategory = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("통합 테스트 할 일")
+				.withCategory({
+					id: mockCategory.id,
+					name: mockCategory.name,
+					color: mockCategory.color,
+				})
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(
 				mockTodoWithCategory,
 			);
 
-			// When
+			// When - 서비스 메서드 호출
 			const result = await service.findById(mockTodoId, mockUserId);
 
-			// Then
-			// Service는 Mapper를 통해 Date를 문자열로 변환하므로 주요 필드만 확인
+			// Then - 결과 검증
 			expect(result.id).toEqual(mockTodoWithCategory.id);
 			expect(result.title).toEqual(mockTodoWithCategory.title);
 			expect(result.userId).toEqual(mockTodoWithCategory.userId);
@@ -303,20 +298,20 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo 조회 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(service.findById(999, mockUserId)).rejects.toThrow(
 				BusinessException,
 			);
 		});
 
 		it("다른 사용자의 Todo 조회 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 다른 사용자의 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(service.findById(mockTodoId, "other-user")).rejects.toThrow(
 				BusinessException,
 			);
@@ -325,37 +320,37 @@ describe("TodoService Integration Tests", () => {
 
 	describe("findMany 통합 테스트", () => {
 		it("Todo 목록을 페이지네이션하여 반환한다", async () => {
-			// Given
+			// Given - Todo 목록 준비
 			const mockTodos = [
-				createMockTodoWithCategory({ id: 1 }),
-				createMockTodoWithCategory({ id: 2 }),
-				createMockTodoWithCategory({ id: 3 }),
+				TodoBuilder.create(mockUserId).withId(1).build(),
+				TodoBuilder.create(mockUserId).withId(2).build(),
+				TodoBuilder.create(mockUserId).withId(3).build(),
 			];
 			mockDatabaseService.todo.findMany.mockResolvedValue(mockTodos);
 
-			// When
+			// When - 서비스 메서드 호출
 			const result = await service.findMany({ userId: mockUserId });
 
-			// Then
+			// Then - 결과 검증
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(result.pagination.hasNext).toBeDefined();
 		});
 
 		it("완료 상태 필터가 올바르게 적용된다", async () => {
-			// Given
+			// Given - 완료된 Todo 목록
 			const completedTodos = [
-				createMockTodoWithCategory({ id: 1, completed: true }),
+				TodoBuilder.create(mockUserId).withId(1).completed().build(),
 			];
 			mockDatabaseService.todo.findMany.mockResolvedValue(completedTodos);
 
-			// When
+			// When - 완료 상태로 필터링
 			await service.findMany({
 				userId: mockUserId,
 				completed: true,
 			});
 
-			// Then
+			// Then - 쿼리에 완료 조건 포함
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
@@ -366,19 +361,19 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("날짜 범위 필터가 올바르게 적용된다", async () => {
-			// Given
+			// Given - 날짜 범위 설정
 			const startDate = new Date("2024-01-01");
 			const endDate = new Date("2024-01-31");
 			mockDatabaseService.todo.findMany.mockResolvedValue([]);
 
-			// When
+			// When - 날짜 범위로 필터링
 			await service.findMany({
 				userId: mockUserId,
 				startDate,
 				endDate,
 			});
 
-			// Then
+			// Then - 쿼리에 날짜 범위 조건 포함
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
@@ -392,17 +387,17 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("커서 기반 페이지네이션이 올바르게 작동한다", async () => {
-			// Given
+			// Given - 페이지네이션 설정
 			mockDatabaseService.todo.findMany.mockResolvedValue([]);
 
-			// When
+			// When - 커서와 사이즈 지정
 			await service.findMany({
 				userId: mockUserId,
 				cursor: 10,
 				size: 10,
 			});
 
-			// Then
+			// Then - 쿼리에 커서 조건 포함
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					skip: 1,
@@ -414,40 +409,42 @@ describe("TodoService Integration Tests", () => {
 
 	describe("update 통합 테스트", () => {
 		it("Todo를 수정하고 반환한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
-			const updatedTodo = createMockTodoWithCategory({
-				title: "수정된 제목",
-				updatedAt: new Date(),
-			});
+			// Given - 수정할 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("수정된 제목")
+				.build();
 
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 서비스 메서드 호출
 			const result = await service.update(mockTodoId, mockUserId, {
 				title: "수정된 제목",
 			});
 
-			// Then
+			// Then - 결과 검증
 			expect(result.title).toBe("수정된 제목");
 		});
 
 		it("완료 상태 변경 시 completedAt이 자동 설정된다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({ completed: false });
+			// Given - 미완료 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.uncompleted()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(
-				createMockTodoWithCategory({
-					completed: true,
-					completedAt: new Date(),
-				}),
+				TodoBuilder.create(mockUserId).withId(mockTodoId).completed().build(),
 			);
 
-			// When
+			// When - 완료 상태로 변경
 			await service.update(mockTodoId, mockUserId, { completed: true });
 
-			// Then
+			// Then - completedAt이 설정됨
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockTodoId },
@@ -460,20 +457,20 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("미완료로 변경 시 completedAt이 null로 설정된다", async () => {
-			// Given
-			const completedTodo = createMockTodoWithCategory({
-				completed: true,
-				completedAt: new Date(),
-			});
+			// Given - 완료된 Todo 준비
+			const completedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.completed()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(completedTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(
-				createMockTodoWithCategory({ completed: false, completedAt: null }),
+				TodoBuilder.create(mockUserId).withId(mockTodoId).uncompleted().build(),
 			);
 
-			// When
+			// When - 미완료 상태로 변경
 			await service.update(mockTodoId, mockUserId, { completed: false });
 
-			// Then
+			// Then - completedAt이 null로 설정됨
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockTodoId },
@@ -486,10 +483,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo 수정 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.update(999, mockUserId, { title: "수정" }),
 			).rejects.toThrow(BusinessException);
@@ -498,35 +495,37 @@ describe("TodoService Integration Tests", () => {
 
 	describe("delete 통합 테스트", () => {
 		it("Todo를 삭제한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
+			// Given - 삭제할 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.delete.mockResolvedValue(mockTodo);
 
-			// When
+			// When - 서비스 메서드 호출
 			await service.delete(mockTodoId, mockUserId);
 
-			// Then
+			// Then - 삭제 메서드 호출 검증
 			expect(mockDatabaseService.todo.delete).toHaveBeenCalledWith({
 				where: { id: mockTodoId },
 			});
 		});
 
 		it("존재하지 않는 Todo 삭제 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(service.delete(999, mockUserId)).rejects.toThrow(
 				BusinessException,
 			);
 		});
 
 		it("다른 사용자의 Todo 삭제 시 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 다른 사용자의 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(service.delete(mockTodoId, "other-user")).rejects.toThrow(
 				BusinessException,
 			);
@@ -535,7 +534,7 @@ describe("TodoService Integration Tests", () => {
 
 	describe("에러 핸들링 통합 테스트", () => {
 		it("Repository 에러가 적절하게 전파된다", async () => {
-			// Given
+			// Given - DB 연결 실패 시뮬레이션
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
 				mockCategory,
 			);
@@ -543,7 +542,7 @@ describe("TodoService Integration Tests", () => {
 				new Error("Database connection failed"),
 			);
 
-			// When & Then
+			// When & Then - 에러 전파 검증
 			await expect(
 				service.create({
 					userId: mockUserId,
@@ -555,10 +554,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("BusinessException이 적절하게 던져진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - BusinessException 검증
 			try {
 				await service.findById(999, mockUserId);
 			} catch (error) {
@@ -574,24 +573,24 @@ describe("TodoService Integration Tests", () => {
 
 	describe("toggleComplete 통합 테스트", () => {
 		it("미완료 Todo를 완료로 변경하면 completedAt이 설정된다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({
-				completed: false,
-				completedAt: null,
-			});
-			const completedTodo = createMockTodoWithCategory({
-				completed: true,
-				completedAt: new Date(),
-			});
+			// Given - 미완료 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.uncompleted()
+				.build();
+			const completedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.completed()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(completedTodo);
 
-			// When
+			// When - 완료 상태로 토글
 			const result = await service.toggleComplete(mockTodoId, mockUserId, {
 				completed: true,
 			});
 
-			// Then
+			// Then - 완료 상태 검증
 			expect(result.completed).toBe(true);
 			expect(result.completedAt).not.toBeNull();
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
@@ -606,24 +605,24 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("완료된 Todo를 미완료로 변경하면 completedAt이 null이 된다", async () => {
-			// Given
-			const completedTodo = createMockTodoWithCategory({
-				completed: true,
-				completedAt: new Date("2024-01-10"),
-			});
-			const uncompletedTodo = createMockTodoWithCategory({
-				completed: false,
-				completedAt: null,
-			});
+			// Given - 완료된 Todo 준비
+			const completedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.completed(new Date("2024-01-10"))
+				.build();
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.uncompleted()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(completedTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(uncompletedTodo);
 
-			// When
+			// When - 미완료 상태로 토글
 			const result = await service.toggleComplete(mockTodoId, mockUserId, {
 				completed: false,
 			});
 
-			// Then
+			// Then - 미완료 상태 검증
 			expect(result.completed).toBe(false);
 			expect(result.completedAt).toBeNull();
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
@@ -638,10 +637,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.toggleComplete(999, mockUserId, { completed: true }),
 			).rejects.toThrow(BusinessException);
@@ -650,9 +649,15 @@ describe("TodoService Integration Tests", () => {
 
 	describe("updateVisibility 통합 테스트", () => {
 		it("PUBLIC에서 PRIVATE로 변경한다", async () => {
-			// Given
-			const publicTodo = createMockTodoWithCategory({ visibility: "PUBLIC" });
-			const privateTodo = createMockTodoWithCategory({ visibility: "PRIVATE" });
+			// Given - PUBLIC Todo 준비
+			const publicTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.asPublic()
+				.build();
+			const privateTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.asPrivate()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(publicTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(privateTodo);
 
@@ -660,14 +665,14 @@ describe("TodoService Integration Tests", () => {
 				visibility: "PRIVATE",
 			};
 
-			// When
+			// When - 비공개로 변경
 			const result = await service.updateVisibility(
 				mockTodoId,
 				mockUserId,
 				input,
 			);
 
-			// Then
+			// Then - 비공개 상태 검증
 			expect(result.visibility).toBe("PRIVATE");
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -678,9 +683,15 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("PRIVATE에서 PUBLIC으로 변경한다", async () => {
-			// Given
-			const privateTodo = createMockTodoWithCategory({ visibility: "PRIVATE" });
-			const publicTodo = createMockTodoWithCategory({ visibility: "PUBLIC" });
+			// Given - PRIVATE Todo 준비
+			const privateTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.asPrivate()
+				.build();
+			const publicTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.asPublic()
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(privateTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(publicTodo);
 
@@ -688,14 +699,14 @@ describe("TodoService Integration Tests", () => {
 				visibility: "PUBLIC",
 			};
 
-			// When
+			// When - 공개로 변경
 			const result = await service.updateVisibility(
 				mockTodoId,
 				mockUserId,
 				input,
 			);
 
-			// Then
+			// Then - 공개 상태 검증
 			expect(result.visibility).toBe("PUBLIC");
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -706,14 +717,14 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
 			const input: { visibility: "PUBLIC" | "PRIVATE" } = {
 				visibility: "PRIVATE",
 			};
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateVisibility(999, mockUserId, input),
 			).rejects.toThrow(BusinessException);
@@ -722,31 +733,37 @@ describe("TodoService Integration Tests", () => {
 
 	describe("updateCategory 통합 테스트", () => {
 		it("카테고리를 변경한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({ categoryId: 1 });
-			const newCategory: TodoCategory = {
-				...mockCategory,
-				id: 2,
-				name: "할 일",
-				color: "#FF6B43",
-			};
-			const updatedTodo = createMockTodoWithCategory({
-				categoryId: 2,
-				category: newCategory,
-			});
+			// Given - 카테고리 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withCategoryId(1)
+				.build();
+			const newCategory = TodoCategoryBuilder.create(mockUserId)
+				.withId(2)
+				.withName("할 일")
+				.withColor("#FF6B43")
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withCategoryId(2)
+				.withCategory({
+					id: 2,
+					name: "할 일",
+					color: "#FF6B43",
+				})
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
 				newCategory,
 			);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 카테고리 변경
 			const result = await service.updateCategory(mockTodoId, mockUserId, {
 				categoryId: 2,
 			});
 
-			// Then
-			// Mapper가 categoryId를 제외하고 category 객체만 반환하므로 category.id로 확인
+			// Then - 변경된 카테고리 검증
 			expect(result.category.id).toBe(2);
 			expect(result.category.name).toBe("할 일");
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
@@ -758,22 +775,24 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 카테고리로 변경 시 BusinessException을 던진다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
+			// Given - 존재하지 않는 카테고리
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateCategory(mockTodoId, mockUserId, { categoryId: 999 }),
 			).rejects.toThrow(BusinessException);
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateCategory(999, mockUserId, { categoryId: 1 }),
 			).rejects.toThrow(BusinessException);
@@ -782,14 +801,17 @@ describe("TodoService Integration Tests", () => {
 
 	describe("updateSchedule 통합 테스트", () => {
 		it("일정을 변경한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
-			const updatedTodo = createMockTodoWithCategory({
-				startDate: new Date("2024-02-01"),
-				endDate: new Date("2024-02-05"),
-				scheduledTime: new Date("2024-02-01T14:30:00"),
-				isAllDay: false,
-			});
+			// Given - 일정 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withStartDate(new Date("2024-02-01"))
+				.withEndDate(new Date("2024-02-05"))
+				.withScheduledTime(new Date("2024-02-01T14:30:00"))
+				.withIsAllDay(false)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
@@ -800,14 +822,14 @@ describe("TodoService Integration Tests", () => {
 				isAllDay: false,
 			};
 
-			// When
+			// When - 일정 변경
 			const result = await service.updateSchedule(
 				mockTodoId,
 				mockUserId,
 				input,
 			);
 
-			// Then
+			// Then - 변경된 일정 검증
 			expect(result.isAllDay).toBe(false);
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -823,14 +845,17 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("endDate와 scheduledTime을 null로 설정할 수 있다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
-			const updatedTodo = createMockTodoWithCategory({
-				startDate: new Date("2024-02-01"),
-				endDate: null,
-				scheduledTime: null,
-				isAllDay: true,
-			});
+			// Given - 일정 초기화 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withStartDate(new Date("2024-02-01"))
+				.withEndDate(null)
+				.withScheduledTime(null)
+				.withIsAllDay(true)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
@@ -841,10 +866,10 @@ describe("TodoService Integration Tests", () => {
 				isAllDay: true,
 			};
 
-			// When
+			// When - 일정 초기화
 			await service.updateSchedule(mockTodoId, mockUserId, input);
 
-			// Then
+			// Then - null 값 설정 검증
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockTodoId },
@@ -859,8 +884,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("isAllDay를 생략하면 기본값 true를 사용한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
+			// Given - 일정 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(mockTodo);
 
@@ -868,10 +895,10 @@ describe("TodoService Integration Tests", () => {
 				startDate: "2024-02-01",
 			};
 
-			// When
+			// When - isAllDay 생략
 			await service.updateSchedule(mockTodoId, mockUserId, input);
 
-			// Then
+			// Then - 기본값 true 적용 검증
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockTodoId },
@@ -883,10 +910,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateSchedule(999, mockUserId, { startDate: "2024-02-01" }),
 			).rejects.toThrow(BusinessException);
@@ -895,18 +922,24 @@ describe("TodoService Integration Tests", () => {
 
 	describe("updateContent 통합 테스트", () => {
 		it("제목만 변경한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({ title: "기존 제목" });
-			const updatedTodo = createMockTodoWithCategory({ title: "새로운 제목" });
+			// Given - 제목 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("기존 제목")
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("새로운 제목")
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 제목 변경
 			const result = await service.updateContent(mockTodoId, mockUserId, {
 				title: "새로운 제목",
 			});
 
-			// Then
+			// Then - 제목 변경 검증
 			expect(result.title).toBe("새로운 제목");
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -917,20 +950,24 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("내용만 변경한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({ content: "기존 내용" });
-			const updatedTodo = createMockTodoWithCategory({
-				content: "새로운 내용",
-			});
+			// Given - 내용 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withContent("기존 내용")
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withContent("새로운 내용")
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 내용 변경
 			const result = await service.updateContent(mockTodoId, mockUserId, {
 				content: "새로운 내용",
 			});
 
-			// Then
+			// Then - 내용 변경 검증
 			expect(result.content).toBe("새로운 내용");
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -941,22 +978,25 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("제목과 내용을 동시에 변경한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory();
-			const updatedTodo = createMockTodoWithCategory({
-				title: "새 제목",
-				content: "새 내용",
-			});
+			// Given - 제목/내용 변경 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("새 제목")
+				.withContent("새 내용")
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 제목/내용 동시 변경
 			await service.updateContent(mockTodoId, mockUserId, {
 				title: "새 제목",
 				content: "새 내용",
 			});
 
-			// Then
+			// Then - 동시 변경 검증
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockTodoId },
@@ -969,18 +1009,24 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("내용을 null로 설정하여 삭제한다", async () => {
-			// Given
-			const mockTodo = createMockTodoWithCategory({ content: "기존 내용" });
-			const updatedTodo = createMockTodoWithCategory({ content: null });
+			// Given - 내용 삭제 대상 Todo 준비
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withContent("기존 내용")
+				.build();
+			const updatedTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withContent(null)
+				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
-			// When
+			// When - 내용 null로 설정
 			const result = await service.updateContent(mockTodoId, mockUserId, {
 				content: null,
 			});
 
-			// Then
+			// Then - 내용 삭제 검증
 			expect(result.content).toBeNull();
 			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -991,10 +1037,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateContent(999, mockUserId, { title: "새 제목" }),
 			).rejects.toThrow(BusinessException);
@@ -1003,17 +1049,19 @@ describe("TodoService Integration Tests", () => {
 
 	describe("동시성 시나리오 테스트", () => {
 		it("여러 Todo를 동시에 생성할 수 있다", async () => {
-			// Given
+			// Given - 동시 생성 준비
 			let createCount = 0;
 			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
 				mockCategory,
 			);
 			mockDatabaseService.todo.create.mockImplementation(() => {
 				createCount++;
-				return Promise.resolve(createMockTodoWithCategory({ id: createCount }));
+				return Promise.resolve(
+					TodoBuilder.create(mockUserId).withId(createCount).build(),
+				);
 			});
 
-			// When
+			// When - 동시에 여러 Todo 생성
 			const promises = [
 				service.create({
 					userId: mockUserId,
@@ -1037,7 +1085,7 @@ describe("TodoService Integration Tests", () => {
 
 			const results = await Promise.all(promises);
 
-			// Then
+			// Then - 모든 생성 완료 검증
 			expect(results).toHaveLength(3);
 			expect(mockDatabaseService.todo.create).toHaveBeenCalledTimes(3);
 		});
@@ -1049,29 +1097,21 @@ describe("TodoService Integration Tests", () => {
 
 	describe("findFriendTodos 통합 테스트", () => {
 		it("맞팔 관계인 친구의 PUBLIC 투두를 조회한다", async () => {
-			// Given
+			// Given - 맞팔 친구의 공개 Todo 준비
 			const friendTodos = [
-				createMockTodoWithCategory({
-					id: 1,
-					userId: mockFriendUserId,
-					visibility: "PUBLIC",
-				}),
-				createMockTodoWithCategory({
-					id: 2,
-					userId: mockFriendUserId,
-					visibility: "PUBLIC",
-				}),
+				TodoBuilder.create(mockFriendUserId).withId(1).asPublic().build(),
+				TodoBuilder.create(mockFriendUserId).withId(2).asPublic().build(),
 			];
 			mockFollowService.isMutualFriend.mockResolvedValue(true);
 			mockDatabaseService.todo.findMany.mockResolvedValue(friendTodos);
 
-			// When
+			// When - 친구 Todo 조회
 			const result = await service.findFriendTodos({
 				userId: mockUserId,
 				friendUserId: mockFriendUserId,
 			});
 
-			// Then
+			// Then - 공개 Todo만 조회됨
 			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
 			expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
@@ -1089,10 +1129,10 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("맞팔이 아닌 경우 BusinessException을 던진다", async () => {
-			// Given
+			// Given - 맞팔이 아닌 관계
 			mockFollowService.isMutualFriend.mockResolvedValue(false);
 
-			// When & Then
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.findFriendTodos({
 					userId: mockUserId,
@@ -1109,13 +1149,13 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("날짜 범위 필터가 올바르게 적용된다", async () => {
-			// Given
+			// Given - 날짜 범위 설정
 			const startDate = new Date("2024-01-01");
 			const endDate = new Date("2024-01-31");
 			mockFollowService.isMutualFriend.mockResolvedValue(true);
 			mockDatabaseService.todo.findMany.mockResolvedValue([]);
 
-			// When
+			// When - 날짜 범위로 필터링
 			await service.findFriendTodos({
 				userId: mockUserId,
 				friendUserId: mockFriendUserId,
@@ -1123,7 +1163,7 @@ describe("TodoService Integration Tests", () => {
 				endDate,
 			});
 
-			// Then
+			// Then - 쿼리에 날짜 범위 조건 포함
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
@@ -1139,11 +1179,11 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("커서 기반 페이지네이션이 올바르게 작동한다", async () => {
-			// Given
+			// Given - 페이지네이션 설정
 			mockFollowService.isMutualFriend.mockResolvedValue(true);
 			mockDatabaseService.todo.findMany.mockResolvedValue([]);
 
-			// When
+			// When - 커서와 사이즈 지정
 			await service.findFriendTodos({
 				userId: mockUserId,
 				friendUserId: mockFriendUserId,
@@ -1151,7 +1191,7 @@ describe("TodoService Integration Tests", () => {
 				size: 10,
 			});
 
-			// Then
+			// Then - 쿼리에 커서 조건 포함
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					skip: 1,
@@ -1161,24 +1201,24 @@ describe("TodoService Integration Tests", () => {
 		});
 
 		it("다음 페이지가 있는지 올바르게 판단한다", async () => {
-			// Given
+			// Given - 다음 페이지 존재 여부 확인용 Todo 목록
 			const todos = [
-				createMockTodoWithCategory({ id: 1, userId: mockFriendUserId }),
-				createMockTodoWithCategory({ id: 2, userId: mockFriendUserId }),
-				createMockTodoWithCategory({ id: 3, userId: mockFriendUserId }),
+				TodoBuilder.create(mockFriendUserId).withId(1).build(),
+				TodoBuilder.create(mockFriendUserId).withId(2).build(),
+				TodoBuilder.create(mockFriendUserId).withId(3).build(),
 			];
 			mockFollowService.isMutualFriend.mockResolvedValue(true);
 			// size + 1개를 반환해서 다음 페이지가 있음을 나타냄
 			mockDatabaseService.todo.findMany.mockResolvedValue(todos);
 
-			// When
+			// When - 페이지 크기 2로 조회
 			const result = await service.findFriendTodos({
 				userId: mockUserId,
 				friendUserId: mockFriendUserId,
 				size: 2,
 			});
 
-			// Then
+			// Then - 다음 페이지 존재 검증
 			expect(result.pagination.hasNext).toBe(true);
 			expect(result.items).toHaveLength(2);
 		});

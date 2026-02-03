@@ -108,6 +108,9 @@ describe("Notification (e2e)", () => {
 
 		describe("POST /notifications/token - 푸시 토큰 등록", () => {
 			it("유효한 Expo 토큰을 등록한다", async () => {
+				// Given - 인증된 사용자와 유효한 Expo 토큰
+
+				// When - 푸시 토큰 등록 API 호출
 				const response = await request(app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -117,11 +120,15 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(201);
 
+				// Then - 토큰 등록 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.registered).toBe(true);
 			});
 
 			it("동일한 deviceId로 토큰을 갱신한다", async () => {
+				// Given - 이미 토큰이 등록된 deviceId
+
+				// When - 동일한 deviceId로 새 토큰 등록 API 호출
 				const response = await request(app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -131,11 +138,15 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(201);
 
+				// Then - 토큰 갱신 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.registered).toBe(true);
 			});
 
 			it("유효하지 않은 토큰 형식은 400 에러 반환", async () => {
+				// Given - 유효하지 않은 토큰 형식
+
+				// When - 유효하지 않은 토큰으로 등록 API 호출
 				const response = await request(app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -145,22 +156,28 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(400);
 
+				// Then - 유효성 검증 에러 검증
 				expect(response.body.success).toBe(false);
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 푸시 토큰 등록 API 호출
 				await request(app.getHttpServer())
 					.post("/notifications/token")
 					.send({
 						token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
 					})
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("DELETE /notifications/token - 푸시 토큰 해제", () => {
 			it("특정 deviceId의 토큰을 해제한다", async () => {
-				// 먼저 토큰 등록
+				// Given - 토큰이 등록된 deviceId
 				await request(app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -170,19 +187,20 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(201);
 
-				// 토큰 해제
+				// When - 특정 deviceId의 토큰 해제 API 호출
 				const response = await request(app.getHttpServer())
 					.delete("/notifications/token")
 					.query({ deviceId: "delete-test-device" })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 토큰 해제 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.registered).toBe(false);
 			});
 
 			it("모든 토큰을 해제한다 (deviceId 미지정)", async () => {
-				// 여러 토큰 등록
+				// Given - 여러 deviceId에 토큰이 등록된 상태
 				await request(app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -201,12 +219,13 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(201);
 
-				// 모든 토큰 해제
+				// When - deviceId 미지정으로 모든 토큰 해제 API 호출
 				const response = await request(app.getHttpServer())
 					.delete("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 모든 토큰 해제 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.registered).toBe(false);
 			});
@@ -225,11 +244,15 @@ describe("Notification (e2e)", () => {
 
 		describe("GET /notifications - 알림 목록 조회", () => {
 			it("알림 목록을 조회한다 (빈 목록)", async () => {
+				// Given - 알림이 없는 상태의 인증된 사용자
+
+				// When - 알림 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/notifications")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 빈 알림 목록 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.notifications).toBeInstanceOf(Array);
 				expect(response.body.data.unreadCount).toBeDefined();
@@ -237,39 +260,56 @@ describe("Notification (e2e)", () => {
 			});
 
 			it("limit 파라미터로 조회 개수를 제한한다", async () => {
+				// Given - 인증된 사용자
+
+				// When - limit을 5로 설정하여 알림 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/notifications")
 					.query({ limit: 5 })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - limit 적용 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.notifications).toBeInstanceOf(Array);
 			});
 
 			it("unreadOnly=true로 읽지 않은 알림만 조회한다", async () => {
+				// Given - 인증된 사용자
+
+				// When - unreadOnly=true로 알림 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/notifications")
 					.query({ unreadOnly: true })
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 읽지 않은 알림만 조회됨 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.notifications).toBeInstanceOf(Array);
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 알림 목록 조회 API 호출
 				await request(app.getHttpServer()).get("/notifications").expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("GET /notifications/unread-count - 읽지 않은 알림 수 조회", () => {
 			it("읽지 않은 알림 수를 조회한다", async () => {
+				// Given - 인증된 사용자
+
+				// When - 읽지 않은 알림 수 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/notifications/unread-count")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 읽지 않은 알림 수 검증
 				expect(response.body.success).toBe(true);
 				expect(typeof response.body.data.unreadCount).toBe("number");
 				expect(response.body.data.unreadCount).toBeGreaterThanOrEqual(0);
@@ -289,29 +329,42 @@ describe("Notification (e2e)", () => {
 
 		describe("PATCH /notifications/:id/read - 단일 알림 읽음 처리", () => {
 			it("존재하지 않는 알림 읽음 처리 시 404 에러 반환", async () => {
+				// Given - 존재하지 않는 알림 ID
+
+				// When - 존재하지 않는 알림 읽음 처리 API 호출
 				const response = await request(app.getHttpServer())
 					.patch("/notifications/99999/read")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
 
+				// Then - 알림 없음 에러 검증
 				expect(response.body.success).toBe(false);
 				expect(response.body.error.code).toBe("NOTIFICATION_1004");
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 단일 알림 읽음 처리 API 호출
 				await request(app.getHttpServer())
 					.patch("/notifications/1/read")
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("PATCH /notifications/read-all - 모든 알림 읽음 처리", () => {
 			it("모든 알림을 읽음 처리한다", async () => {
+				// Given - 인증된 사용자
+
+				// When - 모든 알림 읽음 처리 API 호출
 				const response = await request(app.getHttpServer())
 					.patch("/notifications/read-all")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
 
+				// Then - 모든 알림 읽음 처리 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.message).toBeDefined();
 				expect(typeof response.body.data.readCount).toBe("number");

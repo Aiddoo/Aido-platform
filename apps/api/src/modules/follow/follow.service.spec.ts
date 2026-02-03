@@ -1,5 +1,17 @@
+/**
+ * FollowService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - Builder 패턴으로 테스트 데이터 생성
+ * - Given/When/Then 구조로 명확한 테스트 흐름
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { FollowBuilder } from "@test/builders";
 import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -10,106 +22,49 @@ import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
 import type { FollowWithUser } from "./types/follow.types";
 
+// Transaction callback 타입
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TransactionCallback = (tx: any) => Promise<any>;
+
 describe("FollowService", () => {
 	let service: FollowService;
+	let followRepo: Mocked<FollowRepository>;
+	let paginationService: Mocked<PaginationService>;
+	let database: Mocked<DatabaseService>;
+	let _eventEmitter: Mocked<EventEmitter2>;
+	let cacheService: Mocked<CacheService>;
 
-	// Mock 객체들
-	const mockFollowRepository = {
-		create: jest.fn(),
-		findByFollowerAndFollowing: jest.fn(),
-		findById: jest.fn(),
-		findByIdWithUser: jest.fn(),
-		update: jest.fn(),
-		updateByFollowerAndFollowing: jest.fn(),
-		delete: jest.fn(),
-		deleteByFollowerAndFollowing: jest.fn(),
-		findMutualFriends: jest.fn(),
-		findReceivedRequests: jest.fn(),
-		findSentRequests: jest.fn(),
-		isMutualFriend: jest.fn(),
-		countMutualFriends: jest.fn(),
-		countReceivedRequests: jest.fn(),
-		countSentRequests: jest.fn(),
-		userExists: jest.fn(),
-		getUserName: jest.fn(),
-		findUserByTag: jest.fn(),
-	};
-
-	const mockPaginationService = {
-		normalizeCursorPagination: jest.fn(),
-		createCursorPaginatedResponse: jest.fn(),
-	};
-
-	const mockDatabaseService: { $transaction: jest.Mock } = {
-		$transaction: jest.fn(),
-	};
-	// 순환 참조를 피하기 위해 초기화 후 구현 설정
-	mockDatabaseService.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDatabaseService),
-	);
-
-	const mockEventEmitter = {
-		emit: jest.fn(),
-	};
-
-	const mockCacheService = {
-		getMutualFriend: jest.fn(),
-		setMutualFriend: jest.fn(),
-		del: jest.fn(),
-		invalidateFriendRelations: jest.fn(),
-		invalidateMutualFriend: jest.fn(),
-	};
-
-	// 테스트 데이터
+	// 재사용 가능한 테스트 데이터
 	const mockUserId = "user-123";
 	const mockTargetUserId = "user-456";
-	const mockFollowId = "follow-789";
 	const mockTargetUserTag = "JOHN2026";
 
-	const mockFollow: Follow = {
-		id: mockFollowId,
-		followerId: mockUserId,
-		followingId: mockTargetUserId,
-		status: "PENDING",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-	};
-
-	const mockAcceptedFollow: Follow = {
-		...mockFollow,
-		status: "ACCEPTED",
-	};
-
-	const mockFollowWithUser: FollowWithUser = {
-		...mockFollow,
-		follower: {
-			id: mockUserId,
-			userTag: "user123",
-			profile: { name: "테스트 유저", profileImage: null },
-		},
-		following: {
-			id: mockTargetUserId,
-			userTag: "target456",
-			profile: { name: "타겟 유저", profileImage: null },
-		},
-	};
+	// Transaction mock context (테스트에서 참조 가능)
+	const mockTxContext = {};
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		// Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(FollowService).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				FollowService,
-				{ provide: FollowRepository, useValue: mockFollowRepository },
-				{ provide: PaginationService, useValue: mockPaginationService },
-				{ provide: DatabaseService, useValue: mockDatabaseService },
-				{ provide: EventEmitter2, useValue: mockEventEmitter },
-				{ provide: CacheService, useValue: mockCacheService },
-			],
-		}).compile();
+		service = unit;
+		followRepo = unitRef.get(
+			FollowRepository,
+		) as unknown as Mocked<FollowRepository>;
+		paginationService = unitRef.get(
+			PaginationService,
+		) as unknown as Mocked<PaginationService>;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+		_eventEmitter = unitRef.get(
+			EventEmitter2,
+		) as unknown as Mocked<EventEmitter2>;
+		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
 
-		service = module.get<FollowService>(FollowService);
+		// DatabaseService.$transaction passthrough 구현 (tx context 전달)
+		database.$transaction.mockImplementation((callback: TransactionCallback) =>
+			callback(mockTxContext),
+		);
 	});
 
 	// ============================================
@@ -117,18 +72,22 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("sendRequestByTag", () => {
-		beforeEach(() => {
-			mockFollowRepository.findUserByTag.mockResolvedValue({
-				id: mockTargetUserId,
-			});
-			mockFollowRepository.userExists.mockResolvedValue(true);
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(null);
-			mockFollowRepository.create.mockResolvedValue(mockFollow);
-		});
+		/**
+		 * sendRequestByTag 성공 시나리오 mock 설정 헬퍼
+		 */
+		const setupSendRequestByTagSuccess = (follow: Follow) => {
+			followRepo.findUserByTag.mockResolvedValue({ id: mockTargetUserId });
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
+			followRepo.create.mockResolvedValue(follow);
+		};
 
 		it("userTag로 친구 요청을 보낼 수 있다", async () => {
 			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			const mockFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.pending()
+				.build();
+			setupSendRequestByTagSuccess(mockFollow);
 
 			// When
 			const result = await service.sendRequestByTag(
@@ -139,10 +98,8 @@ describe("FollowService", () => {
 			// Then
 			expect(result.follow).toEqual(mockFollow);
 			expect(result.autoAccepted).toBe(false);
-			expect(mockFollowRepository.findUserByTag).toHaveBeenCalledWith(
-				mockTargetUserTag,
-			);
-			expect(mockFollowRepository.create).toHaveBeenCalledWith(
+			expect(followRepo.findUserByTag).toHaveBeenCalledWith(mockTargetUserTag);
+			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					follower: { connect: { id: mockUserId } },
 					following: { connect: { id: mockTargetUserId } },
@@ -153,42 +110,41 @@ describe("FollowService", () => {
 
 		it("존재하지 않는 userTag로 요청 시 FOLLOW_0905 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findUserByTag.mockResolvedValue(null);
+			followRepo.findUserByTag.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
 				service.sendRequestByTag(mockUserId, "INVALID1"),
 			).rejects.toThrow(BusinessException);
-			expect(mockFollowRepository.findUserByTag).toHaveBeenCalledWith(
-				"INVALID1",
-			);
+			expect(followRepo.findUserByTag).toHaveBeenCalledWith("INVALID1");
 		});
 
 		it("기존 sendRequest 로직을 재사용한다 (자동 수락 케이스)", async () => {
 			// Given
-			const reverseFollow: Follow = {
-				id: "reverse-follow-id",
-				followerId: mockTargetUserId,
-				followingId: mockUserId,
-				status: "PENDING",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
+			const reverseFollow = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("reverse-follow-id")
+				.pending()
+				.build();
 
-			mockFollowRepository.findByFollowerAndFollowing
+			const autoAcceptedFollow = FollowBuilder.create(
+				mockUserId,
+				mockTargetUserId,
+			)
+				.accepted()
+				.build();
+
+			followRepo.findUserByTag.mockResolvedValue({ id: mockTargetUserId });
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing
 				.mockResolvedValueOnce(null) // userId -> targetUserId 조회
 				.mockResolvedValueOnce(reverseFollow); // targetUserId -> userId 조회
-
-			mockFollowRepository.updateByFollowerAndFollowing.mockResolvedValue({
+			followRepo.updateByFollowerAndFollowing.mockResolvedValue({
 				...reverseFollow,
 				status: "ACCEPTED",
 			});
-
-			const autoAcceptedFollow: Follow = {
-				...mockFollow,
-				status: "ACCEPTED",
-			};
-			mockFollowRepository.create.mockResolvedValue(autoAcceptedFollow);
+			followRepo.create.mockResolvedValue(autoAcceptedFollow);
+			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.sendRequestByTag(
@@ -207,15 +163,22 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("sendRequest", () => {
-		beforeEach(() => {
-			mockFollowRepository.userExists.mockResolvedValue(true);
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(null);
-			mockFollowRepository.create.mockResolvedValue(mockFollow);
-		});
+		/**
+		 * sendRequest 성공 시나리오 mock 설정 헬퍼
+		 */
+		const setupSendRequestSuccess = (follow: Follow) => {
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
+			followRepo.create.mockResolvedValue(follow);
+			followRepo.getUserName.mockResolvedValue("테스트 유저");
+		};
 
 		it("새로운 친구 요청을 보내면 PENDING 상태로 생성된다", async () => {
 			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			const mockFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.pending()
+				.build();
+			setupSendRequestSuccess(mockFollow);
 
 			// When
 			const result = await service.sendRequest(mockUserId, mockTargetUserId);
@@ -223,7 +186,7 @@ describe("FollowService", () => {
 			// Then
 			expect(result.follow).toEqual(mockFollow);
 			expect(result.autoAccepted).toBe(false);
-			expect(mockFollowRepository.create).toHaveBeenCalledWith(
+			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					follower: { connect: { id: mockUserId } },
 					following: { connect: { id: mockTargetUserId } },
@@ -233,8 +196,7 @@ describe("FollowService", () => {
 		});
 
 		it("자기 자신에게 요청하면 FOLLOW_0904 에러를 던진다", async () => {
-			// Given
-			// - 자기 자신에게 요청
+			// Given - 자기 자신에게 요청
 
 			// When & Then
 			await expect(service.sendRequest(mockUserId, mockUserId)).rejects.toThrow(
@@ -244,7 +206,7 @@ describe("FollowService", () => {
 
 		it("존재하지 않는 사용자에게 요청하면 FOLLOW_0905 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.userExists.mockResolvedValue(false);
+			followRepo.userExists.mockResolvedValue(false);
 
 			// When & Then
 			await expect(
@@ -254,9 +216,11 @@ describe("FollowService", () => {
 
 		it("이미 친구인 경우 FOLLOW_0902 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				mockAcceptedFollow,
-			);
+			const acceptedFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.accepted()
+				.build();
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(acceptedFollow);
 
 			// When & Then
 			await expect(
@@ -266,9 +230,11 @@ describe("FollowService", () => {
 
 		it("이미 요청을 보낸 경우 FOLLOW_0901 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				mockFollow,
-			); // PENDING 상태
+			const pendingFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.pending()
+				.build();
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(pendingFollow);
 
 			// When & Then
 			await expect(
@@ -278,30 +244,29 @@ describe("FollowService", () => {
 
 		it("상대방이 이미 요청을 보낸 경우 자동 수락된다", async () => {
 			// Given
-			const reverseFollow: Follow = {
-				id: "reverse-follow-id",
-				followerId: mockTargetUserId,
-				followingId: mockUserId,
-				status: "PENDING",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
+			const reverseFollow = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("reverse-follow-id")
+				.pending()
+				.build();
 
-			// 내가 보낸 요청은 없음
-			mockFollowRepository.findByFollowerAndFollowing
+			const autoAcceptedFollow = FollowBuilder.create(
+				mockUserId,
+				mockTargetUserId,
+			)
+				.accepted()
+				.build();
+
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing
 				.mockResolvedValueOnce(null) // userId -> targetUserId 조회
 				.mockResolvedValueOnce(reverseFollow); // targetUserId -> userId 조회
-
-			mockFollowRepository.updateByFollowerAndFollowing.mockResolvedValue({
+			followRepo.updateByFollowerAndFollowing.mockResolvedValue({
 				...reverseFollow,
 				status: "ACCEPTED",
 			});
-
-			const autoAcceptedFollow: Follow = {
-				...mockFollow,
-				status: "ACCEPTED",
-			};
-			mockFollowRepository.create.mockResolvedValue(autoAcceptedFollow);
+			followRepo.create.mockResolvedValue(autoAcceptedFollow);
+			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.sendRequest(mockUserId, mockTargetUserId);
@@ -309,15 +274,13 @@ describe("FollowService", () => {
 			// Then
 			expect(result.autoAccepted).toBe(true);
 			expect(result.follow.status).toBe("ACCEPTED");
-			expect(
-				mockFollowRepository.updateByFollowerAndFollowing,
-			).toHaveBeenCalledWith(
+			expect(followRepo.updateByFollowerAndFollowing).toHaveBeenCalledWith(
 				mockTargetUserId,
 				mockUserId,
 				{ status: "ACCEPTED" },
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
-			expect(mockFollowRepository.create).toHaveBeenCalledWith(
+			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					status: "ACCEPTED",
 				}),
@@ -327,16 +290,16 @@ describe("FollowService", () => {
 
 		it("상대방이 이미 ACCEPTED 상태면 FOLLOW_0902 에러를 던진다", async () => {
 			// Given
-			const acceptedReverseFollow: Follow = {
-				id: "reverse-follow-id",
-				followerId: mockTargetUserId,
-				followingId: mockUserId,
-				status: "ACCEPTED",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
+			const acceptedReverseFollow = FollowBuilder.create(
+				mockTargetUserId,
+				mockUserId,
+			)
+				.withId("reverse-follow-id")
+				.accepted()
+				.build();
 
-			mockFollowRepository.findByFollowerAndFollowing
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing
 				.mockResolvedValueOnce(null)
 				.mockResolvedValueOnce(acceptedReverseFollow);
 
@@ -352,48 +315,44 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("acceptRequest", () => {
-		const pendingRequest: Follow = {
-			id: "pending-request-id",
-			followerId: mockTargetUserId,
-			followingId: mockUserId,
-			status: "PENDING",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		beforeEach(() => {
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				pendingRequest,
-			);
-			mockFollowRepository.update.mockResolvedValue({
+		/**
+		 * acceptRequest 성공 시나리오 mock 설정 헬퍼
+		 */
+		const setupAcceptRequestSuccess = (
+			pendingRequest: Follow,
+			createdFollow: FollowWithUser,
+		) => {
+			followRepo.findByFollowerAndFollowing
+				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
+				.mockResolvedValueOnce(null); // 역방향 없음
+			followRepo.update.mockResolvedValue({
 				...pendingRequest,
 				status: "ACCEPTED",
 			});
-			// acceptRequest에서 이벤트 발행을 위해 사용자 이름 조회
-			mockFollowRepository.getUserName.mockImplementation((userId: string) => {
+			followRepo.create.mockResolvedValue(createdFollow);
+			followRepo.findByIdWithUser.mockResolvedValue(createdFollow);
+			followRepo.getUserName.mockImplementation((userId: string) => {
 				if (userId === mockUserId) return Promise.resolve("테스트 유저");
 				if (userId === mockTargetUserId) return Promise.resolve("타겟 유저");
 				return Promise.resolve(null);
 			});
-		});
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
+		};
 
 		it("친구 요청을 수락하면 양방향 ACCEPTED 관계가 생성된다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing
-				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
-				.mockResolvedValueOnce(null); // 역방향 없음
+			const pendingRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("pending-request-id")
+				.pending()
+				.build();
 
-			const createdFollow = {
+			const createdFollow: FollowWithUser = {
 				id: "new-follow-id",
 				followerId: mockUserId,
 				followingId: mockTargetUserId,
 				status: "ACCEPTED",
 				createdAt: new Date(),
 				updatedAt: new Date(),
-			};
-			mockFollowRepository.create.mockResolvedValue(createdFollow);
-			mockFollowRepository.findByIdWithUser.mockResolvedValue({
-				...createdFollow,
 				follower: {
 					id: mockUserId,
 					userTag: "user123",
@@ -404,18 +363,20 @@ describe("FollowService", () => {
 					userTag: "target456",
 					profile: { name: "타겟 유저", profileImage: null },
 				},
-			});
+			};
+
+			setupAcceptRequestSuccess(pendingRequest, createdFollow);
 
 			// When
 			await service.acceptRequest(mockUserId, mockTargetUserId);
 
 			// Then
-			expect(mockFollowRepository.update).toHaveBeenCalledWith(
+			expect(followRepo.update).toHaveBeenCalledWith(
 				pendingRequest.id,
 				{ status: "ACCEPTED" },
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
-			expect(mockFollowRepository.create).toHaveBeenCalledWith(
+			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					follower: { connect: { id: mockUserId } },
 					following: { connect: { id: mockTargetUserId } },
@@ -427,20 +388,20 @@ describe("FollowService", () => {
 
 		it("역방향 관계가 이미 존재하면 ACCEPTED로 업데이트한다", async () => {
 			// Given
-			const existingReverseFollow: Follow = {
-				id: "existing-reverse-id",
-				followerId: mockUserId,
-				followingId: mockTargetUserId,
-				status: "PENDING",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
+			const pendingRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("pending-request-id")
+				.pending()
+				.build();
 
-			mockFollowRepository.findByFollowerAndFollowing
-				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
-				.mockResolvedValueOnce(existingReverseFollow); // 역방향 존재
+			const existingReverseFollow = FollowBuilder.create(
+				mockUserId,
+				mockTargetUserId,
+			)
+				.withId("existing-reverse-id")
+				.pending()
+				.build();
 
-			mockFollowRepository.findByIdWithUser.mockResolvedValue({
+			const updatedFollow: FollowWithUser = {
 				...existingReverseFollow,
 				status: "ACCEPTED",
 				follower: {
@@ -453,25 +414,36 @@ describe("FollowService", () => {
 					userTag: "target456",
 					profile: { name: "타겟 유저", profileImage: null },
 				},
+			};
+
+			followRepo.findByFollowerAndFollowing
+				.mockResolvedValueOnce(pendingRequest) // 받은 요청 확인
+				.mockResolvedValueOnce(existingReverseFollow); // 역방향 존재
+			followRepo.update.mockResolvedValue({
+				...pendingRequest,
+				status: "ACCEPTED",
 			});
+			followRepo.findByIdWithUser.mockResolvedValue(updatedFollow);
+			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			await service.acceptRequest(mockUserId, mockTargetUserId);
 
 			// Then
-			expect(mockFollowRepository.update).toHaveBeenCalledTimes(2);
-			expect(mockFollowRepository.update).toHaveBeenNthCalledWith(
+			expect(followRepo.update).toHaveBeenCalledTimes(2);
+			expect(followRepo.update).toHaveBeenNthCalledWith(
 				2,
 				existingReverseFollow.id,
 				{ status: "ACCEPTED" },
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
-			expect(mockFollowRepository.create).not.toHaveBeenCalled();
+			expect(followRepo.create).not.toHaveBeenCalled();
 		});
 
 		it("요청이 존재하지 않으면 FOLLOW_0903 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(null);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
@@ -481,13 +453,11 @@ describe("FollowService", () => {
 
 		it("요청이 PENDING 상태가 아니면 FOLLOW_0903 에러를 던진다", async () => {
 			// Given
-			const acceptedRequest: Follow = {
-				...pendingRequest,
-				status: "ACCEPTED",
-			};
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				acceptedRequest,
-			);
+			const acceptedRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("pending-request-id")
+				.accepted()
+				.build();
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(acceptedRequest);
 
 			// When & Then
 			await expect(
@@ -501,38 +471,25 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("rejectRequest", () => {
-		const pendingRequest: Follow = {
-			id: "pending-request-id",
-			followerId: mockTargetUserId,
-			followingId: mockUserId,
-			status: "PENDING",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		beforeEach(() => {
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				pendingRequest,
-			);
-			mockFollowRepository.delete.mockResolvedValue(pendingRequest);
-		});
-
 		it("친구 요청을 거절하면 삭제된다", async () => {
 			// Given
-			// - beforeEach에서 설정됨
+			const pendingRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("pending-request-id")
+				.pending()
+				.build();
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(pendingRequest);
+			followRepo.delete.mockResolvedValue(pendingRequest);
 
 			// When
 			await service.rejectRequest(mockUserId, mockTargetUserId);
 
 			// Then
-			expect(mockFollowRepository.delete).toHaveBeenCalledWith(
-				pendingRequest.id,
-			);
+			expect(followRepo.delete).toHaveBeenCalledWith(pendingRequest.id);
 		});
 
 		it("요청이 존재하지 않으면 FOLLOW_0903 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(null);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
@@ -542,13 +499,11 @@ describe("FollowService", () => {
 
 		it("요청이 PENDING 상태가 아니면 FOLLOW_0903 에러를 던진다", async () => {
 			// Given
-			const acceptedRequest: Follow = {
-				...pendingRequest,
-				status: "ACCEPTED",
-			};
-			mockFollowRepository.findByFollowerAndFollowing.mockResolvedValue(
-				acceptedRequest,
-			);
+			const acceptedRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("pending-request-id")
+				.accepted()
+				.build();
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(acceptedRequest);
 
 			// When & Then
 			await expect(
@@ -562,46 +517,35 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("remove", () => {
-		const myFollow: Follow = {
-			id: "my-follow-id",
-			followerId: mockUserId,
-			followingId: mockTargetUserId,
-			status: "ACCEPTED",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		const theirFollow: Follow = {
-			id: "their-follow-id",
-			followerId: mockTargetUserId,
-			followingId: mockUserId,
-			status: "ACCEPTED",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-
-		beforeEach(() => {
-			mockFollowRepository.findByFollowerAndFollowing
-				.mockResolvedValueOnce(myFollow) // 내 관계 확인
-				.mockResolvedValueOnce(theirFollow); // 상대방 관계 확인
-			mockFollowRepository.delete.mockResolvedValue(myFollow);
-		});
-
 		it("친구 관계를 삭제하면 양방향 모두 삭제된다", async () => {
 			// Given
-			// - beforeEach에서 설정됨
+			const myFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.withId("my-follow-id")
+				.accepted()
+				.build();
+
+			const theirFollow = FollowBuilder.create(mockTargetUserId, mockUserId)
+				.withId("their-follow-id")
+				.accepted()
+				.build();
+
+			followRepo.findByFollowerAndFollowing
+				.mockResolvedValueOnce(myFollow) // 내 관계 확인
+				.mockResolvedValueOnce(theirFollow); // 상대방 관계 확인
+			followRepo.delete.mockResolvedValue(myFollow);
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			await service.remove(mockUserId, mockTargetUserId);
 
 			// Then
-			expect(mockFollowRepository.delete).toHaveBeenCalledTimes(2);
-			expect(mockFollowRepository.delete).toHaveBeenNthCalledWith(
+			expect(followRepo.delete).toHaveBeenCalledTimes(2);
+			expect(followRepo.delete).toHaveBeenNthCalledWith(
 				1,
 				myFollow.id,
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
-			expect(mockFollowRepository.delete).toHaveBeenNthCalledWith(
+			expect(followRepo.delete).toHaveBeenNthCalledWith(
 				2,
 				theirFollow.id,
 				expect.anything(), // 트랜잭션 컨텍스트
@@ -610,17 +554,23 @@ describe("FollowService", () => {
 
 		it("상대방의 관계가 없어도 내 관계만 삭제된다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing
-				.mockReset()
+			const myFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+				.withId("my-follow-id")
+				.accepted()
+				.build();
+
+			followRepo.findByFollowerAndFollowing
 				.mockResolvedValueOnce(myFollow)
 				.mockResolvedValueOnce(null); // 상대방 관계 없음
+			followRepo.delete.mockResolvedValue(myFollow);
+			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			await service.remove(mockUserId, mockTargetUserId);
 
 			// Then
-			expect(mockFollowRepository.delete).toHaveBeenCalledTimes(1);
-			expect(mockFollowRepository.delete).toHaveBeenCalledWith(
+			expect(followRepo.delete).toHaveBeenCalledTimes(1);
+			expect(followRepo.delete).toHaveBeenCalledWith(
 				myFollow.id,
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
@@ -628,9 +578,7 @@ describe("FollowService", () => {
 
 		it("내 관계가 없으면 FOLLOW_0907 에러를 던진다", async () => {
 			// Given
-			mockFollowRepository.findByFollowerAndFollowing
-				.mockReset()
-				.mockResolvedValue(null);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
@@ -644,43 +592,60 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("getFriends", () => {
-		const mockFriends: FollowWithUser[] = [
-			mockFollowWithUser,
-			{
-				...mockFollowWithUser,
-				id: "friend-2",
-				followingId: "user-789",
-				following: {
-					id: "user-789",
-					userTag: "friend789",
-					profile: { name: "친구 2", profileImage: null },
+		/**
+		 * FollowWithUser 테스트 데이터 생성 헬퍼
+		 */
+		const createFollowWithUser = (
+			followerId: string,
+			followingId: string,
+			id?: string,
+		): FollowWithUser => {
+			const follow = FollowBuilder.create(followerId, followingId)
+				.withId(id ?? `follow-${followingId}`)
+				.accepted()
+				.build();
+
+			return {
+				...follow,
+				follower: {
+					id: followerId,
+					userTag: "user123",
+					profile: { name: "테스트 유저", profileImage: null },
 				},
-			},
-		];
-
-		const mockPaginatedResponse = {
-			items: mockFriends,
-			pagination: {
-				nextCursor: "friend-2",
-				prevCursor: null,
-				hasNext: false,
-				hasPrevious: false,
-			},
+				following: {
+					id: followingId,
+					userTag: "target456",
+					profile: { name: "타겟 유저", profileImage: null },
+				},
+			};
 		};
-
-		beforeEach(() => {
-			mockPaginationService.normalizeCursorPagination.mockReturnValue({
-				cursor: undefined,
-				size: 20,
-			});
-			mockFollowRepository.findMutualFriends.mockResolvedValue(mockFriends);
-			mockPaginationService.createCursorPaginatedResponse.mockReturnValue(
-				mockPaginatedResponse,
-			);
-		});
 
 		it("친구 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
+			const mockFriends: FollowWithUser[] = [
+				createFollowWithUser(mockUserId, mockTargetUserId),
+				createFollowWithUser(mockUserId, "user-789", "friend-2"),
+			];
+
+			const mockPaginatedResponse = {
+				items: mockFriends,
+				pagination: {
+					nextCursor: "friend-2",
+					hasNext: false,
+					size: 20,
+				},
+			};
+
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+				take: 21,
+			});
+			followRepo.findMutualFriends.mockResolvedValue(mockFriends);
+			paginationService.createCursorPaginatedResponse.mockReturnValue(
+				mockPaginatedResponse,
+			);
+
 			const params = { userId: mockUserId };
 
 			// When
@@ -688,7 +653,7 @@ describe("FollowService", () => {
 
 			// Then
 			expect(result).toEqual(mockPaginatedResponse);
-			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+			expect(followRepo.findMutualFriends).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
 					size: 20,
@@ -704,16 +669,26 @@ describe("FollowService", () => {
 				size: 10,
 			};
 
-			mockPaginationService.normalizeCursorPagination.mockReturnValue({
+			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: "some-cursor",
 				size: 10,
+				take: 11,
+			});
+			followRepo.findMutualFriends.mockResolvedValue([]);
+			paginationService.createCursorPaginatedResponse.mockReturnValue({
+				items: [],
+				pagination: {
+					nextCursor: null,
+					hasNext: false,
+					size: 10,
+				},
 			});
 
 			// When
 			await service.getFriends(params);
 
 			// Then
-			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+			expect(followRepo.findMutualFriends).toHaveBeenCalledWith(
 				expect.objectContaining({
 					cursor: "some-cursor",
 					size: 10,
@@ -725,11 +700,26 @@ describe("FollowService", () => {
 			// Given
 			const params = { userId: mockUserId, search: "TEST" };
 
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+				take: 21,
+			});
+			followRepo.findMutualFriends.mockResolvedValue([]);
+			paginationService.createCursorPaginatedResponse.mockReturnValue({
+				items: [],
+				pagination: {
+					nextCursor: null,
+					hasNext: false,
+					size: 20,
+				},
+			});
+
 			// When
 			await service.getFriends(params);
 
 			// Then
-			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+			expect(followRepo.findMutualFriends).toHaveBeenCalledWith(
 				expect.objectContaining({ search: "TEST" }),
 			);
 		});
@@ -738,11 +728,26 @@ describe("FollowService", () => {
 			// Given
 			const params = { userId: mockUserId };
 
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+				take: 21,
+			});
+			followRepo.findMutualFriends.mockResolvedValue([]);
+			paginationService.createCursorPaginatedResponse.mockReturnValue({
+				items: [],
+				pagination: {
+					nextCursor: null,
+					hasNext: false,
+					size: 20,
+				},
+			});
+
 			// When
 			await service.getFriends(params);
 
 			// Then
-			expect(mockFollowRepository.findMutualFriends).toHaveBeenCalledWith(
+			expect(followRepo.findMutualFriends).toHaveBeenCalledWith(
 				expect.objectContaining({ search: undefined }),
 			);
 		});
@@ -753,31 +758,28 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("getReceivedRequests", () => {
-		const mockRequests: FollowWithUser[] = [mockFollowWithUser];
-
-		const mockPaginatedResponse = {
-			items: mockRequests,
-			pagination: {
-				nextCursor: null,
-				prevCursor: null,
-				hasNext: false,
-				hasPrevious: false,
-			},
-		};
-
-		beforeEach(() => {
-			mockPaginationService.normalizeCursorPagination.mockReturnValue({
-				cursor: undefined,
-				size: 20,
-			});
-			mockFollowRepository.findReceivedRequests.mockResolvedValue(mockRequests);
-			mockPaginationService.createCursorPaginatedResponse.mockReturnValue(
-				mockPaginatedResponse,
-			);
-		});
-
 		it("받은 친구 요청 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
+			const mockRequests: FollowWithUser[] = [];
+			const mockPaginatedResponse = {
+				items: mockRequests,
+				pagination: {
+					nextCursor: null,
+					hasNext: false,
+					size: 20,
+				},
+			};
+
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+				take: 21,
+			});
+			followRepo.findReceivedRequests.mockResolvedValue(mockRequests);
+			paginationService.createCursorPaginatedResponse.mockReturnValue(
+				mockPaginatedResponse,
+			);
+
 			const params = { userId: mockUserId };
 
 			// When
@@ -785,7 +787,7 @@ describe("FollowService", () => {
 
 			// Then
 			expect(result).toEqual(mockPaginatedResponse);
-			expect(mockFollowRepository.findReceivedRequests).toHaveBeenCalledWith(
+			expect(followRepo.findReceivedRequests).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
 				}),
@@ -798,31 +800,28 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("getSentRequests", () => {
-		const mockRequests: FollowWithUser[] = [mockFollowWithUser];
-
-		const mockPaginatedResponse = {
-			items: mockRequests,
-			pagination: {
-				nextCursor: null,
-				prevCursor: null,
-				hasNext: false,
-				hasPrevious: false,
-			},
-		};
-
-		beforeEach(() => {
-			mockPaginationService.normalizeCursorPagination.mockReturnValue({
-				cursor: undefined,
-				size: 20,
-			});
-			mockFollowRepository.findSentRequests.mockResolvedValue(mockRequests);
-			mockPaginationService.createCursorPaginatedResponse.mockReturnValue(
-				mockPaginatedResponse,
-			);
-		});
-
 		it("보낸 친구 요청 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
+			const mockRequests: FollowWithUser[] = [];
+			const mockPaginatedResponse = {
+				items: mockRequests,
+				pagination: {
+					nextCursor: null,
+					hasNext: false,
+					size: 20,
+				},
+			};
+
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: undefined,
+				size: 20,
+				take: 21,
+			});
+			followRepo.findSentRequests.mockResolvedValue(mockRequests);
+			paginationService.createCursorPaginatedResponse.mockReturnValue(
+				mockPaginatedResponse,
+			);
+
 			const params = { userId: mockUserId };
 
 			// When
@@ -830,7 +829,7 @@ describe("FollowService", () => {
 
 			// Then
 			expect(result).toEqual(mockPaginatedResponse);
-			expect(mockFollowRepository.findSentRequests).toHaveBeenCalledWith(
+			expect(followRepo.findSentRequests).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
 				}),
@@ -845,14 +844,16 @@ describe("FollowService", () => {
 	describe("isMutualFriend", () => {
 		it("맞팔 관계이면 true를 반환한다", async () => {
 			// Given
-			mockFollowRepository.isMutualFriend.mockResolvedValue(true);
+			cacheService.getMutualFriend.mockResolvedValue(undefined);
+			followRepo.isMutualFriend.mockResolvedValue(true);
+			cacheService.setMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.isMutualFriend(mockUserId, mockTargetUserId);
 
 			// Then
 			expect(result).toBe(true);
-			expect(mockFollowRepository.isMutualFriend).toHaveBeenCalledWith(
+			expect(followRepo.isMutualFriend).toHaveBeenCalledWith(
 				mockUserId,
 				mockTargetUserId,
 			);
@@ -860,13 +861,27 @@ describe("FollowService", () => {
 
 		it("맞팔 관계가 아니면 false를 반환한다", async () => {
 			// Given
-			mockFollowRepository.isMutualFriend.mockResolvedValue(false);
+			cacheService.getMutualFriend.mockResolvedValue(undefined);
+			followRepo.isMutualFriend.mockResolvedValue(false);
+			cacheService.setMutualFriend.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.isMutualFriend(mockUserId, mockTargetUserId);
 
 			// Then
 			expect(result).toBe(false);
+		});
+
+		it("캐시된 결과가 있으면 캐시에서 반환한다", async () => {
+			// Given
+			cacheService.getMutualFriend.mockResolvedValue(true);
+
+			// When
+			const result = await service.isMutualFriend(mockUserId, mockTargetUserId);
+
+			// Then
+			expect(result).toBe(true);
+			expect(followRepo.isMutualFriend).not.toHaveBeenCalled();
 		});
 	});
 
@@ -877,16 +892,14 @@ describe("FollowService", () => {
 	describe("countFriends", () => {
 		it("친구 수를 반환한다", async () => {
 			// Given
-			mockFollowRepository.countMutualFriends.mockResolvedValue(5);
+			followRepo.countMutualFriends.mockResolvedValue(5);
 
 			// When
 			const result = await service.countFriends(mockUserId);
 
 			// Then
 			expect(result).toBe(5);
-			expect(mockFollowRepository.countMutualFriends).toHaveBeenCalledWith(
-				mockUserId,
-			);
+			expect(followRepo.countMutualFriends).toHaveBeenCalledWith(mockUserId);
 		});
 	});
 
@@ -897,16 +910,14 @@ describe("FollowService", () => {
 	describe("countReceivedRequests", () => {
 		it("받은 친구 요청 수를 반환한다", async () => {
 			// Given
-			mockFollowRepository.countReceivedRequests.mockResolvedValue(3);
+			followRepo.countReceivedRequests.mockResolvedValue(3);
 
 			// When
 			const result = await service.countReceivedRequests(mockUserId);
 
 			// Then
 			expect(result).toBe(3);
-			expect(mockFollowRepository.countReceivedRequests).toHaveBeenCalledWith(
-				mockUserId,
-			);
+			expect(followRepo.countReceivedRequests).toHaveBeenCalledWith(mockUserId);
 		});
 	});
 
@@ -917,16 +928,14 @@ describe("FollowService", () => {
 	describe("countSentRequests", () => {
 		it("보낸 친구 요청 수를 반환한다", async () => {
 			// Given
-			mockFollowRepository.countSentRequests.mockResolvedValue(2);
+			followRepo.countSentRequests.mockResolvedValue(2);
 
 			// When
 			const result = await service.countSentRequests(mockUserId);
 
 			// Then
 			expect(result).toBe(2);
-			expect(mockFollowRepository.countSentRequests).toHaveBeenCalledWith(
-				mockUserId,
-			);
+			expect(followRepo.countSentRequests).toHaveBeenCalledWith(mockUserId);
 		});
 	});
 });

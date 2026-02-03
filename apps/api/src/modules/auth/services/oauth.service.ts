@@ -992,6 +992,16 @@ export class OAuthService {
 			provider: AccountProvider;
 		},
 	): Promise<LoginResult> {
+		// 사용자 role 조회
+		const user = await this._database.user.findUnique({
+			where: { id: userId },
+			select: { role: true },
+		});
+
+		if (!user) {
+			throw BusinessExceptions.userNotFound(userId);
+		}
+
 		return this._database.$transaction(async (tx) => {
 			// 토큰 패밀리 생성
 			const tokenFamily = this._tokenService.generateTokenFamily();
@@ -1020,6 +1030,7 @@ export class OAuthService {
 				userId,
 				email,
 				session.id,
+				user.role,
 				tokenFamily,
 				1,
 			);

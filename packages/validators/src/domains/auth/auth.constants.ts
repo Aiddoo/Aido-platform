@@ -37,6 +37,12 @@ export type DeviceType = (typeof DEVICE_TYPES)[number];
 export const USER_STATUS = ['ACTIVE', 'LOCKED', 'SUSPENDED', 'PENDING_VERIFY'] as const;
 export type UserStatus = (typeof USER_STATUS)[number];
 
+export const USER_ROLE = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+} as const;
+export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
+
 export const REVOKE_REASON = {
   USER_LOGOUT: 'USER_LOGOUT',
   USER_LOGOUT_ALL: 'USER_LOGOUT_ALL',
