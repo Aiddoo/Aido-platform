@@ -129,11 +129,15 @@ describe("Follow (e2e)", () => {
 
 		describe("POST /follows/:userTag - 친구 요청 보내기", () => {
 			it("친구 요청을 성공적으로 보낸다", async () => {
+				// Given - 두 명의 인증된 사용자가 준비됨 (beforeAll에서 생성)
+
+				// When - 친구 요청 API 호출
 				const response = await request(app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(201);
 
+				// Then - 응답 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.follow).toBeDefined();
 				expect(response.body.data.follow.status).toBe("PENDING");
@@ -141,33 +145,44 @@ describe("Follow (e2e)", () => {
 			});
 
 			it("이미 요청을 보낸 경우 409 에러 반환", async () => {
+				// Given - 이미 친구 요청을 보낸 상태
+
+				// When - 동일한 친구 요청 API 호출
 				const response = await request(app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(409);
 
+				// Then - 중복 요청 에러 검증
 				expect(response.body.success).toBe(false);
 				expect(response.body.error.code).toBe("FOLLOW_0901");
 			});
 
 			it("자기 자신에게 요청 시 400 에러 반환", async () => {
+				// Given - 인증된 사용자
+
+				// When - 자기 자신에게 친구 요청 API 호출
 				const response = await request(app.getHttpServer())
 					.post(`/follows/${userA.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(400);
 
+				// Then - 자기 자신 요청 에러 검증
 				expect(response.body.success).toBe(false);
 				expect(response.body.error.code).toBe("FOLLOW_0904");
 			});
 
 			it("존재하지 않는 사용자에게 요청 시 404 에러 반환", async () => {
-				// 유효한 userTag 형식이지만 존재하지 않는 사용자
+				// Given - 존재하지 않는 userTag
 				const nonExistentUserTag = "ZZZZ9999";
+
+				// When - 존재하지 않는 사용자에게 친구 요청 API 호출
 				const response = await request(app.getHttpServer())
 					.post(`/follows/${nonExistentUserTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(404);
 
+				// Then - 사용자 없음 에러 검증
 				expect(response.body.success).toBe(false);
 				expect(response.body.error.code).toBe("FOLLOW_0905");
 				expect(response.body.error.details).toEqual({
@@ -176,19 +191,28 @@ describe("Follow (e2e)", () => {
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 친구 요청 API 호출
 				await request(app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("GET /follows/requests/sent - 보낸 요청 목록", () => {
 			it("보낸 친구 요청 목록을 조회한다", async () => {
+				// Given - 친구 요청을 보낸 상태 (이전 테스트에서 생성)
+
+				// When - 보낸 요청 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/follows/requests/sent")
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(200);
 
+				// Then - 보낸 요청 목록 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.requests).toBeInstanceOf(Array);
 				expect(response.body.data.requests.length).toBeGreaterThan(0);
@@ -199,11 +223,15 @@ describe("Follow (e2e)", () => {
 
 		describe("GET /follows/requests/received - 받은 요청 목록", () => {
 			it("받은 친구 요청 목록을 조회한다", async () => {
+				// Given - 친구 요청을 받은 상태 (이전 테스트에서 생성)
+
+				// When - 받은 요청 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/follows/requests/received")
 					.set("Authorization", `Bearer ${userB.accessToken}`)
 					.expect(200);
 
+				// Then - 받은 요청 목록 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.requests).toBeInstanceOf(Array);
 				expect(response.body.data.requests.length).toBeGreaterThan(0);
@@ -214,20 +242,28 @@ describe("Follow (e2e)", () => {
 
 		describe("PATCH /follows/:userId/accept - 친구 요청 수락", () => {
 			it("친구 요청을 수락한다", async () => {
+				// Given - 친구 요청을 받은 상태 (userA -> userB)
+
+				// When - 친구 요청 수락 API 호출
 				const response = await request(app.getHttpServer())
 					.patch(`/follows/${userA.userId}/accept`)
 					.set("Authorization", `Bearer ${userB.accessToken}`)
 					.expect(200);
 
+				// Then - 수락 성공 검증
 				expect(response.body.success).toBe(true);
 			});
 
 			it("수락 후 친구 목록에 나타난다", async () => {
+				// Given - 친구 요청을 수락한 상태
+
+				// When - 친구 목록 조회 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/follows/friends")
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(200);
 
+				// Then - 친구 목록 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.friends).toBeInstanceOf(Array);
 				// A -> B 요청 수락 후 맞팔 확인을 위해 B도 A에게 요청을 보내야 함
@@ -250,21 +286,21 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("친구 요청을 철회한다", async () => {
-			// 요청 보내기
+			// Given - 친구 요청을 보낸 상태
 			await request(app.getHttpServer())
 				.post(`/follows/${userD.userTag}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(201);
 
-			// 요청 철회 (DELETE)
+			// When - 친구 요청 철회 API 호출
 			const response = await request(app.getHttpServer())
 				.delete(`/follows/${userD.userId}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(200);
 
+			// Then - 철회 성공 및 보낸 요청 목록에서 제거됨 검증
 			expect(response.body.success).toBe(true);
 
-			// 보낸 요청 목록에서 사라졌는지 확인
 			const sentRequests = await request(app.getHttpServer())
 				.get("/follows/requests/sent")
 				.set("Authorization", `Bearer ${userC.accessToken}`)
@@ -291,21 +327,21 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("친구 요청을 거절한다", async () => {
-			// E가 F에게 요청 보내기
+			// Given - E가 F에게 친구 요청을 보낸 상태
 			await request(app.getHttpServer())
 				.post(`/follows/${userF.userTag}`)
 				.set("Authorization", `Bearer ${userE.accessToken}`)
 				.expect(201);
 
-			// F가 거절
+			// When - F가 친구 요청 거절 API 호출
 			const response = await request(app.getHttpServer())
 				.patch(`/follows/${userE.userId}/reject`)
 				.set("Authorization", `Bearer ${userF.accessToken}`)
 				.expect(200);
 
+			// Then - 거절 성공 및 받은 요청 목록에서 제거됨 검증
 			expect(response.body.success).toBe(true);
 
-			// 받은 요청 목록에서 사라졌는지 확인
 			const receivedRequests = await request(app.getHttpServer())
 				.get("/follows/requests/received")
 				.set("Authorization", `Bearer ${userF.accessToken}`)
@@ -332,23 +368,23 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("상대방이 먼저 요청한 경우 자동으로 친구가 된다", async () => {
-			// G가 H에게 요청 보내기
+			// Given - G가 H에게 친구 요청을 보낸 상태
 			await request(app.getHttpServer())
 				.post(`/follows/${userH.userTag}`)
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(201);
 
-			// H가 G에게 요청 보내기 (자동 수락 예상)
+			// When - H가 G에게 친구 요청 API 호출 (자동 수락 예상)
 			const response = await request(app.getHttpServer())
 				.post(`/follows/${userG.userTag}`)
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(201);
 
+			// Then - 자동 수락 및 양방향 친구 관계 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.autoAccepted).toBe(true);
 			expect(response.body.data.follow.status).toBe("ACCEPTED");
 
-			// 친구 목록에서 서로 확인
 			const gFriends = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${userG.accessToken}`)
@@ -385,17 +421,21 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("친구가 아니면 투두 조회 시 403 에러 반환", async () => {
+			// Given - 친구 관계가 아닌 두 사용자
+
+			// When - 친구 투두 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get(`/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(403);
 
+			// Then - 권한 없음 에러 검증
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("FOLLOW_0906");
 		});
 
 		it("친구가 되면 PUBLIC 투두만 조회 가능", async () => {
-			// 서로 친구가 되기 (I가 J에게, J가 I에게 요청 → 자동 수락)
+			// Given - 서로 친구가 된 상태 및 J의 PUBLIC/PRIVATE 투두 생성
 			await request(app.getHttpServer())
 				.post(`/follows/${userJ.userTag}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
@@ -406,10 +446,8 @@ describe("Follow (e2e)", () => {
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
-			// J의 기본 카테고리 ID 조회
 			const categoryId = await getDefaultCategoryId(userJ.accessToken);
 
-			// J가 PUBLIC 투두 생성
 			await request(app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
@@ -421,7 +459,6 @@ describe("Follow (e2e)", () => {
 				})
 				.expect(201);
 
-			// J가 PRIVATE 투두 생성
 			await request(app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
@@ -433,12 +470,13 @@ describe("Follow (e2e)", () => {
 				})
 				.expect(201);
 
-			// I가 J의 친구 투두 조회
+			// When - I가 J의 친구 투두 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get(`/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(200);
 
+			// Then - PUBLIC 투두만 조회됨 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.items).toBeInstanceOf(Array);
 			expect(response.body.data.items.length).toBe(1);
@@ -483,38 +521,42 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("친구 목록을 페이지네이션하여 조회한다", async () => {
+			// Given - 5명의 친구가 있는 상태
+
+			// When - limit을 3으로 설정하여 친구 목록 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3 })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
 				.expect(200);
 
+			// Then - 페이지네이션 결과 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.friends.length).toBe(3);
 			expect(response.body.data.hasMore).toBe(true);
 		});
 
 		it("커서를 사용하여 다음 페이지를 조회한다", async () => {
-			// 첫 페이지
+			// Given - 첫 페이지 조회 후 커서 획득
 			const firstPage = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3 })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
 				.expect(200);
 
-			// 마지막 친구의 followId를 커서로 사용
 			const lastFriend =
 				firstPage.body.data.friends[firstPage.body.data.friends.length - 1];
 			const cursor = lastFriend.followId;
 			expect(cursor).toBeDefined();
 
-			// 두 번째 페이지
+			// When - 커서를 사용하여 두 번째 페이지 조회 API 호출
 			const secondPage = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3, cursor })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
 				.expect(200);
 
+			// Then - 두 번째 페이지 결과 검증
 			expect(secondPage.body.success).toBe(true);
 			expect(secondPage.body.data.friends.length).toBe(2);
 			expect(secondPage.body.data.hasMore).toBe(false);
@@ -550,7 +592,7 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("userTag로 검색하면 해당 친구만 반환된다", async () => {
-			// 먼저 친구 목록을 조회하여 userTag를 가져옴
+			// Given - 친구 목록을 조회하여 userTag 획득
 			const allFriends = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -559,15 +601,16 @@ describe("Follow (e2e)", () => {
 			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
 			expect(friendUserTag).toBeDefined();
 
-			// userTag의 일부로 검색
 			const searchTerm = friendUserTag.slice(0, 3);
 
+			// When - userTag 일부로 검색 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
+			// Then - 검색 결과 검증
 			expect(response.body.success).toBe(true);
 			expect(
 				response.body.data.friends.every((f: { userTag: string }) =>
@@ -577,7 +620,7 @@ describe("Follow (e2e)", () => {
 		});
 
 		it("대소문자 구분 없이 검색된다", async () => {
-			// 친구 목록 조회
+			// Given - 친구 목록을 조회하여 userTag 획득
 			const allFriends = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -586,32 +629,36 @@ describe("Follow (e2e)", () => {
 			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
 			expect(friendUserTag).toBeDefined();
 
-			// 소문자로 검색
 			const searchTerm = friendUserTag.slice(0, 3).toLowerCase();
 
+			// When - 소문자로 검색 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
-			// 대소문자 무시하고 매칭됨
+			// Then - 대소문자 무시하고 매칭됨 검증
 			expect(response.body.data.friends.length).toBeGreaterThan(0);
 		});
 
 		it("검색 결과가 없으면 빈 배열 반환", async () => {
+			// Given - 존재하지 않는 검색어
+
+			// When - 존재하지 않는 태그로 검색 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/follows/friends")
-				.query({ search: "ZZZZZ999" }) // 존재하지 않는 태그
+				.query({ search: "ZZZZZ999" })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
+			// Then - 빈 배열 반환 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.friends).toHaveLength(0);
 		});
 
 		it("검색과 페이지네이션이 함께 동작한다", async () => {
-			// 친구 목록 조회
+			// Given - 친구 목록을 조회하여 검색어 획득
 			const allFriends = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -620,12 +667,14 @@ describe("Follow (e2e)", () => {
 			const friendUserTag = allFriends.body.data.friends[0]?.userTag;
 			const searchTerm = friendUserTag?.slice(0, 2) || "";
 
+			// When - 검색어와 limit을 함께 사용하여 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm, limit: 5 })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
 
+			// Then - 검색과 페이지네이션 함께 동작 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.friends.length).toBeLessThanOrEqual(5);
 		});

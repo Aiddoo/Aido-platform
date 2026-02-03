@@ -64,6 +64,7 @@ describe("AiController (Integration)", () => {
 		const validRequest = { text: "내일 오후 3시에 팀 미팅" };
 
 		it("성공적으로 자연어를 파싱하여 투두 데이터 반환", async () => {
+			// Given - AI 파싱 결과 설정
 			const mockResult = {
 				data: {
 					title: "팀 미팅",
@@ -78,24 +79,25 @@ describe("AiController (Integration)", () => {
 					processingTimeMs: 245,
 				},
 			};
-
 			aiService.parseTodo.mockResolvedValue(mockResult);
 
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send(validRequest)
 				.expect(200);
 
+			// Then - 파싱 결과 반환
 			expect(response.body).toEqual({
 				message: "자연어 파싱 완료",
 				data: mockResult.data,
 				meta: mockResult.meta,
 			});
-
 			expect(aiService.parseTodo).toHaveBeenCalledWith(validRequest.text);
 		});
 
 		it("종일 일정 파싱 성공", async () => {
+			// Given - 종일 일정 파싱 결과 설정
 			const mockResult = {
 				data: {
 					title: "출장",
@@ -110,79 +112,98 @@ describe("AiController (Integration)", () => {
 					processingTimeMs: 300,
 				},
 			};
-
 			aiService.parseTodo.mockResolvedValue(mockResult);
 
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send({ text: "다음주 월요일부터 금요일까지 출장" })
 				.expect(200);
 
+			// Then - 종일 일정으로 파싱됨
 			expect(response.body.data.isAllDay).toBe(true);
 			expect(response.body.data.endDate).toBe("2025-01-31");
 		});
 
 		it("빈 텍스트 요청 시 400 에러", async () => {
+			// Given - 빈 텍스트 요청
+
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send({ text: "" })
 				.expect(400);
 
+			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
 			expect(aiService.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("text 필드 누락 시 400 에러", async () => {
+			// Given - text 필드 누락
+
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send({})
 				.expect(400);
 
+			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
 			expect(aiService.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("AI 서비스 불가 시 503 에러", async () => {
+			// Given - AI 서비스 에러 설정
 			aiService.parseTodo.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_0001),
 			);
 
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send(validRequest)
 				.expect(503);
 
+			// Then - 503 에러 반환
 			expect(response.body.error.code).toBe(ErrorCode.AI_0001);
 		});
 
 		it("파싱 실패 시 422 에러", async () => {
+			// Given - 파싱 실패 에러 설정
 			aiService.parseTodo.mockRejectedValue(
 				new BusinessException(ErrorCode.AI_0002, {
 					details: "Invalid response format",
 				}),
 			);
 
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send(validRequest)
 				.expect(422);
 
+			// Then - 422 에러 반환
 			expect(response.body.error.code).toBe(ErrorCode.AI_0002);
 		});
 
 		it("너무 긴 텍스트 요청 시 400 에러", async () => {
-			const longText = "a".repeat(501); // 500자 초과
+			// Given - 500자 초과 텍스트
+			const longText = "a".repeat(501);
 
+			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send({ text: longText })
 				.expect(400);
 
+			// Then - 400 에러 반환
 			expect(response.body.message).toBeDefined();
 			expect(aiService.parseTodo).not.toHaveBeenCalled();
 		});
 
 		it("허용되지 않은 필드는 무시되고 정상 처리", async () => {
+			// Given - AI 파싱 결과 설정
 			const mockResult = {
 				data: {
 					title: "테스트",
@@ -197,18 +218,18 @@ describe("AiController (Integration)", () => {
 					processingTimeMs: 100,
 				},
 			};
-
 			aiService.parseTodo.mockResolvedValue(mockResult);
 
+			// When - 허용되지 않은 필드 포함 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.send({
 					text: "테스트",
-					unknownField: "value", // Zod의 기본 동작: strip (무시)
+					unknownField: "value",
 				})
 				.expect(200);
 
-			// 서비스가 호출되었고, unknownField는 무시됨
+			// Then - unknownField는 무시되고 정상 처리
 			expect(aiService.parseTodo).toHaveBeenCalledWith("테스트");
 			expect(response.body.data.title).toBe("테스트");
 		});

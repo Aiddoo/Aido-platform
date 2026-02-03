@@ -1,54 +1,57 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+/**
+ * DailyCompletionService 단위 테스트
+ *
+ * Suites + Builder 패턴 적용
+ * - Suites: 자동 Mock 생성
+ * - Builder: 테스트 데이터 생성
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import { DailyCompletionService } from "./daily-completion.service";
 
 describe("DailyCompletionService", () => {
 	let service: DailyCompletionService;
-	let mockRepository: {
-		aggregateTodosByDateRange: jest.Mock;
-		findByDate: jest.Mock;
-	};
+	let dailyCompletionRepo: Mocked<DailyCompletionRepository>;
+
+	// 테스트 데이터
+	const mockUserId = "user-123";
+	const startDate = "2026-01-01";
+	const endDate = "2026-01-31";
 
 	beforeEach(async () => {
-		mockRepository = {
-			aggregateTodosByDateRange: jest.fn(),
-			findByDate: jest.fn(),
-		};
+		const { unit, unitRef } = await TestBed.solitary(
+			DailyCompletionService,
+		).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				DailyCompletionService,
-				{
-					provide: DailyCompletionRepository,
-					useValue: mockRepository,
-				},
-			],
-		}).compile();
-
-		service = module.get<DailyCompletionService>(DailyCompletionService);
+		service = unit;
+		dailyCompletionRepo = unitRef.get(
+			DailyCompletionRepository,
+		) as unknown as Mocked<DailyCompletionRepository>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
+	// ============================================
+	// getDailyCompletionsRange
+	// ============================================
 
 	describe("getDailyCompletionsRange", () => {
-		const userId = "user-123";
-		const startDate = "2026-01-01";
-		const endDate = "2026-01-31";
-
 		it("날짜 범위 내 완료 현황을 조회하여 반환한다", async () => {
 			// Given
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 3, completed: 3 },
 				{ date: new Date("2026-01-16"), total: 2, completed: 1 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -78,11 +81,13 @@ describe("DailyCompletionService", () => {
 				{ date: new Date("2026-01-16"), total: 2, completed: 1 }, // incomplete
 				{ date: new Date("2026-01-17"), total: 1, completed: 1 }, // complete
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -93,11 +98,11 @@ describe("DailyCompletionService", () => {
 
 		it("날짜 범위를 올바르게 응답에 포함한다", async () => {
 			// Given
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue([]);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue([]);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -108,28 +113,35 @@ describe("DailyCompletionService", () => {
 
 		it("Repository에 올바른 파라미터로 호출한다", async () => {
 			// Given
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue([]);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue([]);
 
 			// When
-			await service.getDailyCompletionsRange({ userId, startDate, endDate });
+			await service.getDailyCompletionsRange({
+				userId: mockUserId,
+				startDate,
+				endDate,
+			});
 
 			// Then
-			expect(mockRepository.aggregateTodosByDateRange).toHaveBeenCalledWith({
-				userId,
+			expect(
+				dailyCompletionRepo.aggregateTodosByDateRange,
+			).toHaveBeenCalledWith({
+				userId: mockUserId,
 				startDate: expect.any(Date),
 				endDate: expect.any(Date),
 			});
 
 			const callArgs =
-				mockRepository.aggregateTodosByDateRange.mock.calls[0][0];
+				dailyCompletionRepo.aggregateTodosByDateRange.mock.calls[0]?.[0];
 
 			// startDate와 endDate가 Date 객체인지 확인
-			expect(callArgs.startDate).toBeInstanceOf(Date);
-			expect(callArgs.endDate).toBeInstanceOf(Date);
+			expect(callArgs?.startDate).toBeInstanceOf(Date);
+			expect(callArgs?.endDate).toBeInstanceOf(Date);
 
 			// endDate는 startDate보다 31일 후 (1월 전체 범위 + 1일)
 			const daysDiff = Math.round(
-				(callArgs.endDate.getTime() - callArgs.startDate.getTime()) /
+				((callArgs?.endDate?.getTime() ?? 0) -
+					(callArgs?.startDate?.getTime() ?? 0)) /
 					(1000 * 60 * 60 * 24),
 			);
 			expect(daysDiff).toBe(31);
@@ -137,11 +149,11 @@ describe("DailyCompletionService", () => {
 
 		it("Todo가 없는 경우 빈 배열과 0을 반환한다", async () => {
 			// Given
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue([]);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue([]);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -158,11 +170,13 @@ describe("DailyCompletionService", () => {
 				{ date: new Date("2026-01-10"), total: 2, completed: 2 },
 				{ date: new Date("2026-01-15"), total: 3, completed: 3 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -176,22 +190,24 @@ describe("DailyCompletionService", () => {
 		});
 	});
 
-	describe("completionRate 계산", () => {
-		const userId = "user-123";
-		const startDate = "2026-01-01";
-		const endDate = "2026-01-31";
+	// ============================================
+	// completionRate 계산
+	// ============================================
 
+	describe("completionRate 계산", () => {
 		it("완료율을 퍼센트로 반올림하여 계산한다", async () => {
 			// Given
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 3, completed: 1 }, // 33.33% → 33%
 				{ date: new Date("2026-01-16"), total: 3, completed: 2 }, // 66.66% → 67%
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -208,11 +224,13 @@ describe("DailyCompletionService", () => {
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 5, completed: 0 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -229,11 +247,13 @@ describe("DailyCompletionService", () => {
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 5, completed: 5 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -246,21 +266,23 @@ describe("DailyCompletionService", () => {
 		});
 	});
 
-	describe("isComplete 플래그", () => {
-		const userId = "user-123";
-		const startDate = "2026-01-01";
-		const endDate = "2026-01-31";
+	// ============================================
+	// isComplete 플래그
+	// ============================================
 
+	describe("isComplete 플래그", () => {
 		it("모든 Todo가 완료되면 isComplete는 true이다", async () => {
 			// Given
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 3, completed: 3 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -276,11 +298,13 @@ describe("DailyCompletionService", () => {
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 3, completed: 2 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});
@@ -296,11 +320,13 @@ describe("DailyCompletionService", () => {
 			const aggregates = [
 				{ date: new Date("2026-01-15"), total: 3, completed: 0 },
 			];
-			mockRepository.aggregateTodosByDateRange.mockResolvedValue(aggregates);
+			dailyCompletionRepo.aggregateTodosByDateRange.mockResolvedValue(
+				aggregates,
+			);
 
 			// When
 			const result = await service.getDailyCompletionsRange({
-				userId,
+				userId: mockUserId,
 				startDate,
 				endDate,
 			});

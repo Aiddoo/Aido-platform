@@ -6,6 +6,7 @@ import type {
 	Prisma,
 	SubscriptionStatus,
 	User,
+	UserRole,
 	UserStatus,
 } from "@/generated/prisma/client";
 import { generateUserTag } from "../utils/user-tag.util";
@@ -27,6 +28,7 @@ export interface UserWithProfile {
 	id: string;
 	email: string;
 	userTag: string;
+	role: UserRole;
 	status: UserStatus;
 	emailVerifiedAt: Date | null;
 	subscriptionStatus: SubscriptionStatus;
@@ -91,6 +93,7 @@ export class UserRepository {
 				id: true,
 				email: true,
 				userTag: true,
+				role: true,
 				status: true,
 				emailVerifiedAt: true,
 				subscriptionStatus: true,

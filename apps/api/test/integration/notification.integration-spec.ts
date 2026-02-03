@@ -20,16 +20,11 @@
 
 import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import type {
-	Notification,
-	NotificationType,
-	PushToken,
-} from "@/generated/prisma/client";
-
 import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
@@ -86,40 +81,6 @@ describe("NotificationService Integration Tests", () => {
 	const mockNotificationId = 1;
 	const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 
-	const createMockNotification = (
-		overrides: Partial<Notification> = {},
-	): Notification => ({
-		id: mockNotificationId,
-		userId: mockUserId,
-		type: "NUDGE_RECEIVED" as NotificationType,
-		title: "테스트 알림",
-		body: "테스트 알림 내용입니다",
-		isRead: false,
-		todoId: null,
-		friendId: null,
-		nudgeId: 1,
-		cheerId: null,
-		metadata: null,
-		createdAt: new Date(),
-		readAt: null,
-		...overrides,
-	});
-
-	const createMockPushToken = (
-		overrides: Partial<PushToken> = {},
-	): PushToken => ({
-		id: 1,
-		userId: mockUserId,
-		token: mockPushToken,
-		deviceId: "test-device-id",
-		platform: "IOS",
-		isActive: true,
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		lastUsedAt: new Date(),
-		...overrides,
-	});
-
 	beforeAll(async () => {
 		// Logger 출력 비활성화
 		jest.spyOn(Logger.prototype, "log").mockImplementation();
@@ -160,15 +121,27 @@ describe("NotificationService Integration Tests", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
+		NotificationBuilder.resetIdCounter();
+		PushTokenBuilder.resetIdCounter();
 	});
 
 	describe("DI 통합 테스트", () => {
 		it("NotificationService가 정상적으로 주입되어야 함", () => {
+			// Given - DI 컨테이너가 구성됨
+
+			// When - 서비스 인스턴스 확인
+
+			// Then - 서비스가 정의되어 있어야 함
 			expect(service).toBeDefined();
 			expect(service).toBeInstanceOf(NotificationService);
 		});
 
 		it("NotificationRepository가 정상적으로 주입되어야 함", () => {
+			// Given - DI 컨테이너가 구성됨
+
+			// When - 레포지토리 인스턴스 확인
+
+			// Then - 레포지토리가 정의되어 있어야 함
 			expect(repository).toBeDefined();
 			expect(repository).toBeInstanceOf(NotificationRepository);
 		});
@@ -176,23 +149,31 @@ describe("NotificationService Integration Tests", () => {
 
 	describe("푸시 토큰 등록 통합 테스트", () => {
 		it("새 푸시 토큰을 등록해야 함", async () => {
-			const mockToken = createMockPushToken();
+			// Given - 유효한 푸시 토큰 준비
+			const mockToken = PushTokenBuilder.create(mockUserId)
+				.withToken(mockPushToken)
+				.asIos()
+				.build();
 			mockPushTokenDb.upsert.mockResolvedValue(mockToken);
 			mockPushProvider.validateToken.mockReturnValue(true);
 
+			// When - 푸시 토큰 등록
 			const result = await service.registerPushToken({
 				userId: mockUserId,
 				token: mockPushToken,
 				platform: "IOS",
 			});
 
+			// Then - 등록 결과 검증
 			expect(result).toEqual(mockToken);
 			expect(mockPushTokenDb.upsert).toHaveBeenCalled();
 		});
 
 		it("유효하지 않은 토큰이면 예외를 발생시켜야 함", async () => {
+			// Given - 유효하지 않은 토큰
 			mockPushProvider.validateToken.mockReturnValue(false);
 
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.registerPushToken({
 					userId: mockUserId,
@@ -205,27 +186,41 @@ describe("NotificationService Integration Tests", () => {
 
 	describe("알림 목록 조회 통합 테스트", () => {
 		it("알림 목록을 조회해야 함", async () => {
+			// Given - 알림 목록 준비
 			const mockNotifications = [
-				createMockNotification({ id: 1 }),
-				createMockNotification({ id: 2 }),
+				NotificationBuilder.create(mockUserId)
+					.withId(1)
+					.asNudgeReceived("friend-1", 1)
+					.build(),
+				NotificationBuilder.create(mockUserId)
+					.withId(2)
+					.asCheerReceived("friend-2", 1)
+					.build(),
 			];
 			mockNotificationDb.findMany.mockResolvedValue(mockNotifications);
 			mockNotificationDb.count.mockResolvedValue(2);
 
+			// When - 알림 목록 조회
 			const result = await service.getNotifications({ userId: mockUserId });
 
+			// Then - 목록 및 페이지네이션 검증
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(mockNotificationDb.findMany).toHaveBeenCalled();
 		});
 
 		it("읽지 않은 알림만 필터링해야 함", async () => {
-			const mockNotifications = [createMockNotification()];
+			// Given - 읽지 않은 알림만 필터링
+			const mockNotifications = [
+				NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
+			];
 			mockNotificationDb.findMany.mockResolvedValue(mockNotifications);
 			mockNotificationDb.count.mockResolvedValue(1);
 
+			// When - 읽지 않은 알림만 조회
 			await service.getNotifications({ userId: mockUserId, unreadOnly: true });
 
+			// Then - 필터 조건 검증
 			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
@@ -239,10 +234,13 @@ describe("NotificationService Integration Tests", () => {
 
 	describe("읽지 않은 알림 수 조회 통합 테스트", () => {
 		it("읽지 않은 알림 수를 반환해야 함", async () => {
+			// Given - 읽지 않은 알림 수 설정
 			mockNotificationDb.count.mockResolvedValue(5);
 
+			// When - 읽지 않은 알림 수 조회
 			const result = await service.getUnreadCount(mockUserId);
 
+			// Then - 알림 수 검증
 			expect(result).toBe(5);
 			expect(mockNotificationDb.count).toHaveBeenCalledWith({
 				where: {
@@ -255,19 +253,25 @@ describe("NotificationService Integration Tests", () => {
 
 	describe("알림 읽음 처리 통합 테스트", () => {
 		it("단일 알림을 읽음 처리해야 함", async () => {
-			const mockNotification = createMockNotification();
+			// Given - 읽음 처리할 알림 준비
+			const mockNotification = NotificationBuilder.create(mockUserId)
+				.withId(mockNotificationId)
+				.asUnread()
+				.build();
 			mockNotificationDb.findUnique.mockResolvedValue(mockNotification);
-			mockNotificationDb.update.mockResolvedValue({
-				...mockNotification,
-				isRead: true,
-				readAt: new Date(),
-			});
+			mockNotificationDb.update.mockResolvedValue(
+				NotificationBuilder.create(mockUserId)
+					.withId(mockNotificationId)
+					.asRead()
+					.build(),
+			);
 
-			// markAsRead는 void를 반환하므로 에러 없이 완료되면 성공
+			// When - 알림 읽음 처리
 			await expect(
 				service.markAsRead(mockUserId, mockNotificationId),
 			).resolves.toBeUndefined();
 
+			// Then - 읽음 처리 검증
 			expect(mockNotificationDb.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { id: mockNotificationId },
@@ -279,27 +283,36 @@ describe("NotificationService Integration Tests", () => {
 		});
 
 		it("존재하지 않는 알림이면 예외를 발생시켜야 함", async () => {
+			// Given - 존재하지 않는 알림
 			mockNotificationDb.findUnique.mockResolvedValue(null);
 
+			// When & Then - 예외 발생 검증
 			await expect(service.markAsRead(mockUserId, 999)).rejects.toThrow(
 				BusinessException,
 			);
 		});
 
 		it("다른 사용자의 알림이면 예외를 발생시켜야 함", async () => {
-			const mockNotification = createMockNotification({ userId: "other-user" });
+			// Given - 다른 사용자의 알림
+			const mockNotification = NotificationBuilder.create("other-user")
+				.withId(mockNotificationId)
+				.build();
 			mockNotificationDb.findUnique.mockResolvedValue(mockNotification);
 
+			// When & Then - 예외 발생 검증
 			await expect(
 				service.markAsRead(mockUserId, mockNotificationId),
 			).rejects.toThrow(BusinessException);
 		});
 
 		it("전체 알림을 읽음 처리해야 함", async () => {
+			// Given - 전체 읽음 처리 준비
 			mockNotificationDb.updateMany.mockResolvedValue({ count: 5 });
 
+			// When - 전체 알림 읽음 처리
 			const result = await service.markAllAsRead(mockUserId);
 
+			// Then - 전체 읽음 처리 검증
 			expect(result.count).toBe(5);
 			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith({
 				where: {
@@ -316,8 +329,14 @@ describe("NotificationService Integration Tests", () => {
 
 	describe("알림 생성 및 발송 통합 테스트", () => {
 		it("알림을 생성하고 푸시를 발송해야 함", async () => {
-			const mockNotification = createMockNotification();
-			const mockToken = createMockPushToken();
+			// Given - 알림 및 푸시 토큰 준비
+			const mockNotification = NotificationBuilder.create(mockUserId)
+				.withId(mockNotificationId)
+				.asNudgeReceived("friend-1", 1)
+				.build();
+			const mockToken = PushTokenBuilder.create(mockUserId)
+				.withToken(mockPushToken)
+				.build();
 
 			mockNotificationDb.create.mockResolvedValue(mockNotification);
 			mockPushTokenDb.findMany.mockResolvedValue([mockToken]);
@@ -326,6 +345,7 @@ describe("NotificationService Integration Tests", () => {
 				failed: [],
 			});
 
+			// When - 알림 생성 및 발송
 			const result = await service.createAndSend({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
@@ -333,17 +353,23 @@ describe("NotificationService Integration Tests", () => {
 				body: "테스트 알림 내용입니다",
 			});
 
+			// Then - 알림 생성 및 푸시 발송 검증
 			expect(result).toEqual(mockNotification);
 			expect(mockNotificationDb.create).toHaveBeenCalled();
 			expect(mockPushTokenDb.findMany).toHaveBeenCalled();
 		});
 
 		it("푸시 토큰이 없어도 알림을 생성해야 함", async () => {
-			const mockNotification = createMockNotification();
+			// Given - 푸시 토큰 없음
+			const mockNotification = NotificationBuilder.create(mockUserId)
+				.withId(mockNotificationId)
+				.asNudgeReceived("friend-1", 1)
+				.build();
 
 			mockNotificationDb.create.mockResolvedValue(mockNotification);
 			mockPushTokenDb.findMany.mockResolvedValue([]);
 
+			// When - 알림 생성 (푸시 토큰 없음)
 			const result = await service.createAndSend({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
@@ -351,6 +377,7 @@ describe("NotificationService Integration Tests", () => {
 				body: "테스트 알림 내용입니다",
 			});
 
+			// Then - 알림 생성만 수행됨
 			expect(result).toEqual(mockNotification);
 			expect(mockPushProvider.sendBatch).not.toHaveBeenCalled();
 		});

@@ -67,16 +67,19 @@ describe("EmailService", () => {
 
 	describe("sendVerificationCode", () => {
 		it("성공적으로 인증 코드 이메일을 발송한다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.messageId).toBe("msg-12345");
 			expect(result.retryCount).toBe(0);
@@ -92,17 +95,20 @@ describe("EmailService", () => {
 		});
 
 		it("idempotencyKey가 헤더에 포함된다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			await service.sendVerificationCode(
 				testEmail,
 				{ code: testCode, expiryMinutes: testExpiryMinutes },
 				testIdempotencyKey,
 			);
 
+			// Then
 			expect(resendMock.emails.send).toHaveBeenCalledWith(
 				expect.objectContaining({
 					headers: { "Idempotency-Key": testIdempotencyKey },
@@ -111,16 +117,19 @@ describe("EmailService", () => {
 		});
 
 		it("idempotencyKey가 없으면 헤더가 undefined이다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(resendMock.emails.send).toHaveBeenCalledWith(
 				expect.objectContaining({
 					headers: undefined,
@@ -131,16 +140,19 @@ describe("EmailService", () => {
 
 	describe("sendPasswordResetCode", () => {
 		it("성공적으로 비밀번호 재설정 이메일을 발송한다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-67890" },
 				error: null,
 			});
 
+			// When
 			const result = await service.sendPasswordResetCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.messageId).toBe("msg-67890");
 			expect(resendMock.emails.send).toHaveBeenCalledWith(
@@ -156,6 +168,7 @@ describe("EmailService", () => {
 
 	describe("retry 로직", () => {
 		it("application_error 발생 시 재시도한다", async () => {
+			// Given
 			resendMock.emails.send
 				.mockResolvedValueOnce({
 					data: null,
@@ -174,11 +187,13 @@ describe("EmailService", () => {
 				)
 				.mockResolvedValue(undefined);
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.retryCount).toBe(1);
 			expect(resendMock.emails.send).toHaveBeenCalledTimes(2);
@@ -186,6 +201,7 @@ describe("EmailService", () => {
 		});
 
 		it("rate_limit_exceeded 발생 시 재시도한다", async () => {
+			// Given
 			resendMock.emails.send
 				.mockResolvedValueOnce({
 					data: null,
@@ -203,26 +219,31 @@ describe("EmailService", () => {
 				)
 				.mockResolvedValue(undefined);
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.retryCount).toBe(1);
 		});
 
 		it("validation_error 발생 시 재시도하지 않는다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: null,
 				error: { name: "validation_error", message: "Invalid email" },
 			});
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Invalid email");
 			expect(result.retryCount).toBe(0);
@@ -230,6 +251,7 @@ describe("EmailService", () => {
 		});
 
 		it("최대 재시도 횟수 초과 시 실패를 반환한다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: null,
 				error: { name: "application_error", message: "Persistent error" },
@@ -242,11 +264,13 @@ describe("EmailService", () => {
 				)
 				.mockResolvedValue(undefined);
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(false);
 			expect(result.error).toBe("Persistent error");
 			// 최초 시도(0) + MAX_RETRIES(3) 횟수만큼 호출
@@ -257,6 +281,7 @@ describe("EmailService", () => {
 		});
 
 		it("지수 백오프를 적용하여 재시도한다", async () => {
+			// Given
 			resendMock.emails.send
 				.mockResolvedValueOnce({
 					data: null,
@@ -278,11 +303,13 @@ describe("EmailService", () => {
 				)
 				.mockResolvedValue(undefined);
 
+			// When
 			await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			// 지수 백오프 확인: 1초, 2초
 			expect(sleepSpy).toHaveBeenNthCalledWith(
 				1,
@@ -295,6 +322,7 @@ describe("EmailService", () => {
 		});
 
 		it("네트워크 에러 발생 시 재시도한다", async () => {
+			// Given
 			resendMock.emails.send
 				.mockRejectedValueOnce(new Error("Network error"))
 				.mockResolvedValueOnce({
@@ -309,11 +337,13 @@ describe("EmailService", () => {
 				)
 				.mockResolvedValue(undefined);
 
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.retryCount).toBe(1);
 		});
@@ -344,11 +374,15 @@ describe("EmailService", () => {
 		});
 
 		it("mock 결과를 반환한다", async () => {
+			// Given - Resend가 설정되지 않은 상태 (beforeEach에서 설정됨)
+
+			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			expect(result.success).toBe(true);
 			expect(result.messageId).toMatch(/^mock-\d+$/);
 			expect(result.retryCount).toBe(0);
@@ -357,16 +391,19 @@ describe("EmailService", () => {
 
 	describe("tags", () => {
 		it("verification 타입 태그가 포함된다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([{ name: "type", value: "verification" }]),
@@ -374,16 +411,19 @@ describe("EmailService", () => {
 		});
 
 		it("password-reset 타입 태그가 포함된다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			await service.sendPasswordResetCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([{ name: "type", value: "password-reset" }]),
@@ -391,16 +431,19 @@ describe("EmailService", () => {
 		});
 
 		it("environment 태그가 포함된다", async () => {
+			// Given
 			resendMock.emails.send.mockResolvedValue({
 				data: { id: "msg-12345" },
 				error: null,
 			});
 
+			// When
 			await service.sendVerificationCode(testEmail, {
 				code: testCode,
 				expiryMinutes: testExpiryMinutes,
 			});
 
+			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([

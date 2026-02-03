@@ -122,6 +122,7 @@ export const ErrorCode = {
   USER_0608: 'USER_0608',
   USER_0609: 'USER_0609',
   USER_0610: 'USER_0610',
+  USER_0611: 'USER_0611',
 
   // =========================================================================
   // 세션 (SESSION_0700-0749)
@@ -200,6 +201,16 @@ export const ErrorCode = {
   AI_0001: 'AI_0001',
   AI_0002: 'AI_0002',
   AI_0003: 'AI_0003',
+
+  // =========================================================================
+  // 관리자 (ADMIN_1400-1499)
+  // =========================================================================
+  /** 관리자 권한이 필요합니다 */
+  ADMIN_1401: 'ADMIN_1401',
+  /** 알림 대상 사용자가 없습니다 */
+  ADMIN_1402: 'ADMIN_1402',
+  /** 유효하지 않은 필터 조건입니다 */
+  ADMIN_1403: 'ADMIN_1403',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -621,6 +632,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description: '최소 하나의 로그인 수단이 유지되어야 합니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
   },
+  [ErrorCode.USER_0611]: {
+    code: 'USER_0611',
+    message: '사용자 태그 생성에 실패했습니다.',
+    description: '최대 시도 횟수 초과로 고유 태그 생성에 실패했습니다.',
+    httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
 
   // =========================================================================
   // 세션 (SESSION_0700-0749)
@@ -908,5 +925,27 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '일일 AI 사용 횟수를 초과했습니다.',
     description: '무료 사용자는 하루 5회까지만 AI 기능을 사용할 수 있습니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+
+  // =========================================================================
+  // 관리자 (ADMIN_1400-1499)
+  // =========================================================================
+  [ErrorCode.ADMIN_1401]: {
+    code: 'ADMIN_1401',
+    message: '관리자 권한이 필요합니다.',
+    description: '해당 작업은 관리자만 수행할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.ADMIN_1402]: {
+    code: 'ADMIN_1402',
+    message: '알림 대상 사용자가 없습니다.',
+    description: '주어진 조건에 해당하는 사용자가 없습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.ADMIN_1403]: {
+    code: 'ADMIN_1403',
+    message: '유효하지 않은 필터 조건입니다.',
+    description: '알림 대상 필터 조건이 올바르지 않습니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 };

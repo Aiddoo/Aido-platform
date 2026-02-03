@@ -1,5 +1,15 @@
+/**
+ * VerificationService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - GWT 주석으로 테스트 의도 명확화
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
 import { VERIFICATION_CODE } from "@aido/validators";
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { VerificationType } from "@/generated/prisma/client";
 import { EmailService } from "@/modules/email/email.service";
@@ -8,43 +18,19 @@ import { VerificationService } from "./verification.service";
 
 describe("VerificationService", () => {
 	let service: VerificationService;
-
-	const mockVerificationRepository = {
-		create: jest.fn(),
-		findByToken: jest.fn(),
-		findLatestByUserIdAndType: jest.fn(),
-		findValidByUserIdAndType: jest.fn(),
-		markAsUsed: jest.fn(),
-		incrementAttempts: jest.fn(),
-		markAsUsedAtomic: jest.fn(),
-		invalidateAllByUserIdAndType: jest.fn(),
-		countRecentByUserIdAndType: jest.fn(),
-		deleteExpired: jest.fn(),
-	};
-
-	const mockEmailService = {
-		sendVerificationCode: jest.fn(),
-		sendPasswordResetCode: jest.fn(),
-	};
+	let verificationRepo: Mocked<VerificationRepository>;
+	let emailService: Mocked<EmailService>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } =
+			await TestBed.solitary(VerificationService).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				VerificationService,
-				{
-					provide: VerificationRepository,
-					useValue: mockVerificationRepository,
-				},
-				{
-					provide: EmailService,
-					useValue: mockEmailService,
-				},
-			],
-		}).compile();
-
-		service = module.get<VerificationService>(VerificationService);
+		service = unit;
+		verificationRepo = unitRef.get(
+			VerificationRepository,
+		) as unknown as Mocked<VerificationRepository>;
+		emailService = unitRef.get(EmailService) as unknown as Mocked<EmailService>;
 	});
 
 	describe("createAndSendEmailVerification", () => {
@@ -52,15 +38,14 @@ describe("VerificationService", () => {
 		const email = "test@example.com";
 
 		beforeEach(() => {
-			mockVerificationRepository.countRecentByUserIdAndType.mockResolvedValue(
-				0,
-			);
-			mockVerificationRepository.invalidateAllByUserIdAndType.mockResolvedValue(
-				{
-					count: 0,
-				},
-			);
-			mockVerificationRepository.create.mockResolvedValue({
+			// Given - 기본 성공 시나리오 설정
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(0);
+			(
+				verificationRepo.invalidateAllByUserIdAndType as jest.Mock
+			).mockResolvedValue({ count: 0 });
+			(verificationRepo.create as jest.Mock).mockResolvedValue({
 				id: "verification-id",
 				userId,
 				type: "EMAIL_VERIFY" as VerificationType,
@@ -70,22 +55,19 @@ describe("VerificationService", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			mockEmailService.sendVerificationCode.mockResolvedValue({
+			(emailService.sendVerificationCode as jest.Mock).mockResolvedValue({
 				success: true,
 			});
 		});
 
 		it("재발송 쿨다운을 확인한다", async () => {
-			// Given
-			// - beforeEach에서 쿨다운 카운트가 0으로 설정됨
+			// Given - beforeEach에서 쿨다운 카운트가 0으로 설정됨
 
 			// When
 			await service.createAndSendEmailVerification(userId, email);
 
 			// Then
-			expect(
-				mockVerificationRepository.countRecentByUserIdAndType,
-			).toHaveBeenCalledWith(
+			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
 				userId,
 				"EMAIL_VERIFY",
 				expect.any(Date),
@@ -94,21 +76,19 @@ describe("VerificationService", () => {
 		});
 
 		it("기존 미사용 인증 코드를 무효화한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			await service.createAndSendEmailVerification(userId, email);
 
 			// Then
 			expect(
-				mockVerificationRepository.invalidateAllByUserIdAndType,
+				verificationRepo.invalidateAllByUserIdAndType,
 			).toHaveBeenCalledWith(userId, "EMAIL_VERIFY", undefined);
 		});
 
 		it("6자리 인증 코드를 생성한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			const result = await service.createAndSendEmailVerification(
@@ -122,14 +102,13 @@ describe("VerificationService", () => {
 		});
 
 		it("인증 코드를 해시하여 저장한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			await service.createAndSendEmailVerification(userId, email);
 
 			// Then
-			expect(mockVerificationRepository.create).toHaveBeenCalledWith(
+			expect(verificationRepo.create).toHaveBeenCalledWith(
 				{
 					userId,
 					type: "EMAIL_VERIFY",
@@ -140,7 +119,8 @@ describe("VerificationService", () => {
 			);
 
 			// 저장된 토큰은 해시값 (64자 hex)
-			const createCall = mockVerificationRepository.create.mock.calls[0][0];
+			const createCall = (verificationRepo.create as jest.Mock).mock
+				.calls[0][0];
 			expect(createCall.token.length).toBe(64);
 		});
 
@@ -168,20 +148,16 @@ describe("VerificationService", () => {
 		});
 
 		it("인증 코드 이메일을 발송한다", async () => {
-			// Given
-			// - beforeEach에서 이메일 서비스 mock 설정됨
+			// Given - beforeEach에서 이메일 서비스 mock 설정됨
 
 			// When
 			await service.createAndSendEmailVerification(userId, email);
 
 			// Then
-			expect(mockEmailService.sendVerificationCode).toHaveBeenCalledWith(
-				email,
-				{
-					code: expect.any(String),
-					expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-				},
-			);
+			expect(emailService.sendVerificationCode).toHaveBeenCalledWith(email, {
+				code: expect.any(String),
+				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+			});
 		});
 
 		it("트랜잭션을 전달한다", async () => {
@@ -194,13 +170,16 @@ describe("VerificationService", () => {
 			await service.createAndSendEmailVerification(userId, email, mockTx);
 
 			// Then
+			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"EMAIL_VERIFY",
+				expect.any(Date),
+				mockTx,
+			);
 			expect(
-				mockVerificationRepository.countRecentByUserIdAndType,
-			).toHaveBeenCalledWith(userId, "EMAIL_VERIFY", expect.any(Date), mockTx);
-			expect(
-				mockVerificationRepository.invalidateAllByUserIdAndType,
+				verificationRepo.invalidateAllByUserIdAndType,
 			).toHaveBeenCalledWith(userId, "EMAIL_VERIFY", mockTx);
-			expect(mockVerificationRepository.create).toHaveBeenCalledWith(
+			expect(verificationRepo.create).toHaveBeenCalledWith(
 				expect.any(Object),
 				mockTx,
 			);
@@ -208,9 +187,9 @@ describe("VerificationService", () => {
 
 		it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
 			// Given
-			mockVerificationRepository.countRecentByUserIdAndType.mockResolvedValue(
-				1,
-			);
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(1);
 
 			// When & Then
 			await expect(
@@ -220,7 +199,7 @@ describe("VerificationService", () => {
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
 			// Given
-			mockEmailService.sendVerificationCode.mockResolvedValue({
+			(emailService.sendVerificationCode as jest.Mock).mockResolvedValue({
 				success: false,
 				error: "SMTP error",
 			});
@@ -242,15 +221,14 @@ describe("VerificationService", () => {
 		const email = "test@example.com";
 
 		beforeEach(() => {
-			mockVerificationRepository.countRecentByUserIdAndType.mockResolvedValue(
-				0,
-			);
-			mockVerificationRepository.invalidateAllByUserIdAndType.mockResolvedValue(
-				{
-					count: 0,
-				},
-			);
-			mockVerificationRepository.create.mockResolvedValue({
+			// Given - 기본 성공 시나리오 설정
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(0);
+			(
+				verificationRepo.invalidateAllByUserIdAndType as jest.Mock
+			).mockResolvedValue({ count: 0 });
+			(verificationRepo.create as jest.Mock).mockResolvedValue({
 				id: "verification-id",
 				userId,
 				type: "PASSWORD_RESET" as VerificationType,
@@ -260,38 +238,33 @@ describe("VerificationService", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			mockEmailService.sendPasswordResetCode.mockResolvedValue({
+			(emailService.sendPasswordResetCode as jest.Mock).mockResolvedValue({
 				success: true,
 			});
 		});
 
 		it("비밀번호 재설정 코드를 생성하고 발송한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			const result = await service.createAndSendPasswordReset(userId, email);
 
 			// Then
 			expect(result.code).toMatch(/^\d{6}$/);
-			expect(mockEmailService.sendPasswordResetCode).toHaveBeenCalledWith(
-				email,
-				{
-					code: expect.any(String),
-					expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
-				},
-			);
+			expect(emailService.sendPasswordResetCode).toHaveBeenCalledWith(email, {
+				code: expect.any(String),
+				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+			});
 		});
 
 		it("PASSWORD_RESET 타입으로 저장한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			await service.createAndSendPasswordReset(userId, email);
 
 			// Then
-			expect(mockVerificationRepository.create).toHaveBeenCalledWith(
+			expect(verificationRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId,
 					type: "PASSWORD_RESET",
@@ -301,16 +274,13 @@ describe("VerificationService", () => {
 		});
 
 		it("재발송 쿨다운을 확인한다", async () => {
-			// Given
-			// - beforeEach에서 쿨다운 카운트가 0으로 설정됨
+			// Given - beforeEach에서 쿨다운 카운트가 0으로 설정됨
 
 			// When
 			await service.createAndSendPasswordReset(userId, email);
 
 			// Then
-			expect(
-				mockVerificationRepository.countRecentByUserIdAndType,
-			).toHaveBeenCalledWith(
+			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
 				userId,
 				"PASSWORD_RESET",
 				expect.any(Date),
@@ -319,23 +289,22 @@ describe("VerificationService", () => {
 		});
 
 		it("기존 미사용 코드를 무효화한다", async () => {
-			// Given
-			// - beforeEach에서 기본 mock 설정됨
+			// Given - beforeEach에서 기본 mock 설정됨
 
 			// When
 			await service.createAndSendPasswordReset(userId, email);
 
 			// Then
 			expect(
-				mockVerificationRepository.invalidateAllByUserIdAndType,
+				verificationRepo.invalidateAllByUserIdAndType,
 			).toHaveBeenCalledWith(userId, "PASSWORD_RESET", undefined);
 		});
 
 		it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
 			// Given
-			mockVerificationRepository.countRecentByUserIdAndType.mockResolvedValue(
-				1,
-			);
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(1);
 
 			// When & Then
 			await expect(
@@ -365,23 +334,25 @@ describe("VerificationService", () => {
 		};
 
 		beforeEach(() => {
-			mockVerificationRepository.findValidByUserIdAndType.mockResolvedValue(
-				mockVerification,
+			// Given - 기본 성공 시나리오 설정
+			(
+				verificationRepo.findValidByUserIdAndType as jest.Mock
+			).mockResolvedValue(mockVerification);
+			(verificationRepo.markAsUsed as jest.Mock).mockResolvedValue(undefined);
+			(verificationRepo.incrementAttempts as jest.Mock).mockResolvedValue(
+				undefined,
 			);
-			mockVerificationRepository.markAsUsed.mockResolvedValue(undefined);
-			mockVerificationRepository.incrementAttempts.mockResolvedValue(undefined);
 		});
 
 		it("올바른 코드로 인증에 성공한다", async () => {
-			// Given
-			// - beforeEach에서 유효한 인증 코드가 설정됨
+			// Given - beforeEach에서 유효한 인증 코드가 설정됨
 
 			// When
 			const result = await service.verifyCode(userId, code, type);
 
 			// Then
 			expect(result).toBe(true);
-			expect(mockVerificationRepository.markAsUsed).toHaveBeenCalledWith(
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
 				undefined,
 			);
@@ -389,9 +360,9 @@ describe("VerificationService", () => {
 
 		it("유효한 인증 코드가 없으면 VERIFICATION_CODE_NOT_FOUND 에러를 던진다", async () => {
 			// Given
-			mockVerificationRepository.findValidByUserIdAndType.mockResolvedValue(
-				null,
-			);
+			(
+				verificationRepo.findValidByUserIdAndType as jest.Mock
+			).mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
@@ -401,7 +372,9 @@ describe("VerificationService", () => {
 
 		it("최대 시도 횟수 초과 시 VERIFICATION_MAX_ATTEMPTS 에러를 던진다", async () => {
 			// Given
-			mockVerificationRepository.findValidByUserIdAndType.mockResolvedValue({
+			(
+				verificationRepo.findValidByUserIdAndType as jest.Mock
+			).mockResolvedValue({
 				...mockVerification,
 				attempts: VERIFICATION_CODE.MAX_ATTEMPTS,
 			});
@@ -421,20 +394,19 @@ describe("VerificationService", () => {
 				BusinessException,
 			);
 
-			expect(mockVerificationRepository.incrementAttempts).toHaveBeenCalledWith(
+			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
 				mockVerification.id,
 			);
 		});
 
 		it("인증 성공 시 코드를 사용됨으로 표시한다", async () => {
-			// Given
-			// - beforeEach에서 유효한 인증 코드가 설정됨
+			// Given - beforeEach에서 유효한 인증 코드가 설정됨
 
 			// When
 			await service.verifyCode(userId, code, type);
 
 			// Then
-			expect(mockVerificationRepository.markAsUsed).toHaveBeenCalledWith(
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
 				undefined,
 			);
@@ -448,10 +420,12 @@ describe("VerificationService", () => {
 			await service.verifyCode(userId, code, type, mockTx);
 
 			// Then
-			expect(
-				mockVerificationRepository.findValidByUserIdAndType,
-			).toHaveBeenCalledWith(userId, type, mockTx);
-			expect(mockVerificationRepository.markAsUsed).toHaveBeenCalledWith(
+			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				type,
+				mockTx,
+			);
+			expect(verificationRepo.markAsUsed).toHaveBeenCalledWith(
 				mockVerification.id,
 				mockTx,
 			);
@@ -468,7 +442,7 @@ describe("VerificationService", () => {
 			).rejects.toThrow(BusinessException);
 
 			// incrementAttempts는 트랜잭션 없이 호출됨 (롤백 방지)
-			expect(mockVerificationRepository.incrementAttempts).toHaveBeenCalledWith(
+			expect(verificationRepo.incrementAttempts).toHaveBeenCalledWith(
 				mockVerification.id,
 			);
 		});
@@ -476,7 +450,9 @@ describe("VerificationService", () => {
 		it("PASSWORD_RESET 타입도 검증한다", async () => {
 			// Given
 			const passwordResetType: VerificationType = "PASSWORD_RESET";
-			mockVerificationRepository.findValidByUserIdAndType.mockResolvedValue({
+			(
+				verificationRepo.findValidByUserIdAndType as jest.Mock
+			).mockResolvedValue({
 				...mockVerification,
 				type: passwordResetType,
 			});
@@ -486,9 +462,11 @@ describe("VerificationService", () => {
 
 			// Then
 			expect(result).toBe(true);
-			expect(
-				mockVerificationRepository.findValidByUserIdAndType,
-			).toHaveBeenCalledWith(userId, passwordResetType, undefined);
+			expect(verificationRepo.findValidByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				passwordResetType,
+				undefined,
+			);
 		});
 	});
 });

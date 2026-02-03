@@ -158,6 +158,7 @@ describe("AI (e2e)", () => {
 	describe("POST /ai/parse-todo", () => {
 		describe("성공 케이스", () => {
 			it("인증된 사용자가 자연어를 성공적으로 파싱", async () => {
+				// Given - 인증된 사용자와 AI 응답 설정
 				fakeAiProvider.setResponse({
 					title: "팀 미팅",
 					startDate: "2025-01-26",
@@ -165,13 +166,14 @@ describe("AI (e2e)", () => {
 					isAllDay: false,
 				});
 
+				// When - 자연어 파싱 API 호출
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "내일 오후 3시에 팀 미팅" })
-					.expect(200);
+					.send({ text: "내일 오후 3시에 팀 미팅" });
 
-				// 글로벌 인터셉터 응답 형식 검증
+				// Then - 파싱 결과와 메타데이터 검증
+				expect(response.status).toBe(200);
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.success).toBe(true);
 				expect(response.body.data.data).toMatchObject({
@@ -198,6 +200,7 @@ describe("AI (e2e)", () => {
 			});
 
 			it("종일 일정을 올바르게 파싱", async () => {
+				// Given - 종일 일정 AI 응답 설정
 				fakeAiProvider.setResponse({
 					title: "출장",
 					startDate: "2025-01-27",
@@ -206,25 +209,28 @@ describe("AI (e2e)", () => {
 					isAllDay: true,
 				});
 
+				// When - 종일 일정 자연어 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "다음주 월요일부터 금요일까지 출장" })
-					.expect(200);
+					.send({ text: "다음주 월요일부터 금요일까지 출장" });
 
+				// Then - 종일 일정 파싱 결과 검증
+				expect(response.status).toBe(200);
 				expect(response.body.data.data.isAllDay).toBe(true);
 				expect(response.body.data.data.endDate).toBe("2025-01-31");
 				expect(response.body.data.data.scheduledTime).toBeNull();
 			});
 
 			it("연속 요청 시 사용량이 증가", async () => {
+				// Given - 기본 AI 응답 설정
 				fakeAiProvider.setDefaultResponse({
 					title: "테스트",
 					startDate: "2025-01-26",
 					isAllDay: true,
 				});
 
-				// 3회 요청
+				// When - 3회 연속 파싱 요청
 				for (let i = 0; i < 3; i++) {
 					await request(app.getHttpServer())
 						.post("/ai/parse-todo")
@@ -233,7 +239,7 @@ describe("AI (e2e)", () => {
 						.expect(200);
 				}
 
-				// 사용량 확인
+				// Then - 사용량이 3으로 증가
 				const usageResponse = await request(app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`)
@@ -245,6 +251,7 @@ describe("AI (e2e)", () => {
 			});
 
 			it("다양한 한국어 자연어 입력을 파싱", async () => {
+				// Given - 다양한 테스트 케이스 준비
 				const testCases = [
 					{
 						input: "아침 9시에 운동",
@@ -278,12 +285,14 @@ describe("AI (e2e)", () => {
 				for (const testCase of testCases) {
 					fakeAiProvider.setResponse(testCase.expected);
 
+					// When - 각 자연어 입력 파싱 요청
 					const response = await request(app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
-						.send({ text: testCase.input })
-						.expect(200);
+						.send({ text: testCase.input });
 
+					// Then - 예상 결과와 일치하는 파싱 결과
+					expect(response.status).toBe(200);
 					expect(response.body.data.data.title).toBe(testCase.expected.title);
 					expect(response.body.data.data.scheduledTime).toBe(
 						testCase.expected.scheduledTime,
@@ -296,15 +305,17 @@ describe("AI (e2e)", () => {
 
 		describe("사용량 제한", () => {
 			it("5회 초과 시 429 에러 반환 (AI_0003)", async () => {
-				// 5회 사용 완료 상태로 설정
+				// Given - 5회 사용 완료 상태 설정
 				await setUsage(testUserId, 5);
 
+				// When - 6번째 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "테스트" })
-					.expect(429);
+					.send({ text: "테스트" });
 
+				// Then - 429 에러와 AI_0003 코드 반환
+				expect(response.status).toBe(429);
 				expect(response.body.error.code).toBe("AI_0003");
 				expect(response.body.error.message).toContain(
 					"일일 AI 사용 횟수를 초과",
@@ -315,13 +326,14 @@ describe("AI (e2e)", () => {
 			});
 
 			it("정확히 5회까지는 성공, 6회째에 429 에러", async () => {
+				// Given - 기본 AI 응답 설정
 				fakeAiProvider.setDefaultResponse({
 					title: "테스트",
 					startDate: "2025-01-26",
 					isAllDay: true,
 				});
 
-				// 5회 성공
+				// When - 5회 연속 요청
 				for (let i = 0; i < 5; i++) {
 					await request(app.getHttpServer())
 						.post("/ai/parse-todo")
@@ -330,13 +342,13 @@ describe("AI (e2e)", () => {
 						.expect(200);
 				}
 
-				// 6회째 실패
+				// Then - 6회째 요청 시 429 에러
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "테스트 6" })
-					.expect(429);
+					.send({ text: "테스트 6" });
 
+				expect(response.status).toBe(429);
 				expect(response.body.error.code).toBe("AI_0003");
 				expect(fakeAiProvider.getCallCount()).toBe(5);
 			});
@@ -344,57 +356,76 @@ describe("AI (e2e)", () => {
 
 		describe("인증 에러", () => {
 			it("인증 토큰 없이 요청 시 401 에러", async () => {
-				await request(app.getHttpServer())
-					.post("/ai/parse-todo")
-					.send({ text: "내일 회의" })
-					.expect(401);
+				// Given - 인증 토큰 없음
 
+				// When - 토큰 없이 파싱 요청
+				const response = await request(app.getHttpServer())
+					.post("/ai/parse-todo")
+					.send({ text: "내일 회의" });
+
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 				expect(fakeAiProvider.getCallCount()).toBe(0);
 			});
 
 			it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 유효하지 않은 토큰
+
+				// When - 잘못된 토큰으로 파싱 요청
+				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", "Bearer invalid-token")
-					.send({ text: "내일 회의" })
-					.expect(401);
+					.send({ text: "내일 회의" });
 
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 				expect(fakeAiProvider.getCallCount()).toBe(0);
 			});
 		});
 
 		describe("유효성 검증 에러", () => {
 			it("빈 텍스트 요청 시 400 에러", async () => {
+				// Given - 인증된 사용자
+
+				// When - 빈 텍스트로 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "" })
-					.expect(400);
+					.send({ text: "" });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 				expect(fakeAiProvider.getCallCount()).toBe(0);
 			});
 
 			it("text 필드 누락 시 400 에러", async () => {
+				// Given - 인증된 사용자
+
+				// When - text 필드 없이 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({})
-					.expect(400);
+					.send({});
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 				expect(fakeAiProvider.getCallCount()).toBe(0);
 			});
 
 			it("500자 초과 텍스트 요청 시 400 에러", async () => {
+				// Given - 500자 초과 텍스트 준비
 				const longText = "가".repeat(501);
 
+				// When - 긴 텍스트로 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: longText })
-					.expect(400);
+					.send({ text: longText });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 				expect(fakeAiProvider.getCallCount()).toBe(0);
 			});
@@ -402,32 +433,39 @@ describe("AI (e2e)", () => {
 
 		describe("AI 서비스 에러", () => {
 			it("AI 서비스 불가 시 503 에러 (AI_0001)", async () => {
+				// Given - AI 서비스 비활성화 설정
 				fakeAiProvider.setAvailable(false);
 
+				// When - 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "내일 회의" })
-					.expect(503);
+					.send({ text: "내일 회의" });
 
+				// Then - 503 Service Unavailable 반환
+				expect(response.status).toBe(503);
 				expect(response.body.error.code).toBe("AI_0001");
 			});
 
 			it("AI 파싱 실패 시 422 에러 (AI_0002)", async () => {
+				// Given - AI 파싱 실패 설정
 				fakeAiProvider.setInvalidResponse(new Error("파싱 실패"));
 
+				// When - 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "알 수 없는 입력" })
-					.expect(422);
+					.send({ text: "알 수 없는 입력" });
 
+				// Then - 422 Unprocessable Entity 반환
+				expect(response.status).toBe(422);
 				expect(response.body.error.code).toBe("AI_0002");
 			});
 		});
 
 		describe("토큰 사용량 추적", () => {
 			it("응답에 토큰 사용량이 포함됨", async () => {
+				// Given - 커스텀 토큰 사용량과 AI 응답 설정
 				fakeAiProvider.setTokenUsage({ input: 200, output: 80 });
 				fakeAiProvider.setResponse({
 					title: "테스트",
@@ -435,12 +473,14 @@ describe("AI (e2e)", () => {
 					isAllDay: true,
 				});
 
+				// When - 파싱 요청
 				const response = await request(app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.send({ text: "테스트" })
-					.expect(200);
+					.send({ text: "테스트" });
 
+				// Then - 설정한 토큰 사용량이 응답에 포함
+				expect(response.status).toBe(200);
 				expect(response.body.data.meta.tokenUsage).toEqual({
 					input: 200,
 					output: 80,
@@ -456,11 +496,15 @@ describe("AI (e2e)", () => {
 	describe("GET /ai/usage", () => {
 		describe("성공 케이스", () => {
 			it("사용량이 0인 경우", async () => {
+				// Given - 사용량 0인 상태 (beforeEach에서 리셋됨)
+
+				// When - 사용량 조회
 				const response = await request(app.getHttpServer())
 					.get("/ai/usage")
-					.set("Authorization", `Bearer ${accessToken}`)
-					.expect(200);
+					.set("Authorization", `Bearer ${accessToken}`);
 
+				// Then - 0/5 사용량 반환
+				expect(response.status).toBe(200);
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.success).toBe(true);
 				expect(response.body.data.data).toMatchObject({
@@ -471,13 +515,16 @@ describe("AI (e2e)", () => {
 			});
 
 			it("사용량이 있는 경우", async () => {
+				// Given - 3회 사용 상태 설정
 				await setUsage(testUserId, 3);
 
+				// When - 사용량 조회
 				const response = await request(app.getHttpServer())
 					.get("/ai/usage")
-					.set("Authorization", `Bearer ${accessToken}`)
-					.expect(200);
+					.set("Authorization", `Bearer ${accessToken}`);
 
+				// Then - 3/5 사용량 반환
+				expect(response.status).toBe(200);
 				expect(response.body.data.data).toMatchObject({
 					used: 3,
 					limit: 5,
@@ -485,13 +532,16 @@ describe("AI (e2e)", () => {
 			});
 
 			it("사용량이 최대인 경우", async () => {
+				// Given - 5회 사용 완료 상태 설정
 				await setUsage(testUserId, 5);
 
+				// When - 사용량 조회
 				const response = await request(app.getHttpServer())
 					.get("/ai/usage")
-					.set("Authorization", `Bearer ${accessToken}`)
-					.expect(200);
+					.set("Authorization", `Bearer ${accessToken}`);
 
+				// Then - 5/5 사용량 반환
+				expect(response.status).toBe(200);
 				expect(response.body.data.data).toMatchObject({
 					used: 5,
 					limit: 5,
@@ -499,11 +549,15 @@ describe("AI (e2e)", () => {
 			});
 
 			it("리셋 시간이 ISO 8601 형식임", async () => {
+				// Given - 인증된 사용자
+
+				// When - 사용량 조회
 				const response = await request(app.getHttpServer())
 					.get("/ai/usage")
-					.set("Authorization", `Bearer ${accessToken}`)
-					.expect(200);
+					.set("Authorization", `Bearer ${accessToken}`);
 
+				// Then - ISO 8601 형식의 리셋 시간 반환
+				expect(response.status).toBe(200);
 				const resetsAt = response.body.data.data.resetsAt;
 				expect(resetsAt).toMatch(
 					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
@@ -517,14 +571,25 @@ describe("AI (e2e)", () => {
 
 		describe("인증 에러", () => {
 			it("인증 토큰 없이 요청 시 401 에러", async () => {
-				await request(app.getHttpServer()).get("/ai/usage").expect(401);
+				// Given - 인증 토큰 없음
+
+				// When - 토큰 없이 사용량 조회
+				const response = await request(app.getHttpServer()).get("/ai/usage");
+
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 			});
 
 			it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 유효하지 않은 토큰
+
+				// When - 잘못된 토큰으로 사용량 조회
+				const response = await request(app.getHttpServer())
 					.get("/ai/usage")
-					.set("Authorization", "Bearer invalid-token")
-					.expect(401);
+					.set("Authorization", "Bearer invalid-token");
+
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 			});
 		});
 	});
@@ -535,21 +600,23 @@ describe("AI (e2e)", () => {
 
 	describe("통합 시나리오", () => {
 		it("파싱 요청 후 사용량이 정확히 반영됨", async () => {
+			// Given - 기본 AI 응답 설정
 			fakeAiProvider.setDefaultResponse({
 				title: "테스트",
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
 
-			// 초기 사용량 확인
+			// When - 초기 사용량 확인
 			const initialUsage = await request(app.getHttpServer())
 				.get("/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 초기 사용량 0
 			expect(initialUsage.body.data.data.used).toBe(0);
 
-			// 파싱 요청 2회
+			// When - 파싱 요청 2회
 			await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -562,7 +629,7 @@ describe("AI (e2e)", () => {
 				.send({ text: "테스트 2" })
 				.expect(200);
 
-			// 사용량 다시 확인
+			// Then - 사용량 2로 증가
 			const finalUsage = await request(app.getHttpServer())
 				.get("/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -572,32 +639,32 @@ describe("AI (e2e)", () => {
 		});
 
 		it("사용량 제한 후 리셋되면 다시 사용 가능", async () => {
+			// Given - 기본 AI 응답과 5회 사용 완료 상태 설정
 			fakeAiProvider.setDefaultResponse({
 				title: "테스트",
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-
-			// 5회 사용으로 설정
 			await setUsage(testUserId, 5);
 
-			// 6번째 요청 실패
-			await request(app.getHttpServer())
+			// When - 6번째 요청 시도
+			const failedResponse = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
-				.send({ text: "테스트" })
-				.expect(429);
+				.send({ text: "테스트" });
 
-			// 사용량 리셋 (자정이 지난 것처럼)
+			// Then - 429 에러 반환
+			expect(failedResponse.status).toBe(429);
+
+			// When - 사용량 리셋 후 다시 요청
 			await resetUsage(testUserId);
-
-			// 다시 요청 성공
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
-				.send({ text: "테스트" })
-				.expect(200);
+				.send({ text: "테스트" });
 
+			// Then - 요청 성공
+			expect(response.status).toBe(200);
 			expect(response.body.data.data.title).toBe("테스트");
 		});
 	});

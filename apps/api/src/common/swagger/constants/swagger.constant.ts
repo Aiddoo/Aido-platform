@@ -48,6 +48,9 @@ export const SWAGGER_TAGS = {
 	/** 👤 사용자 관리 - 회원 조회, 정지, 삭제 */
 	ADMIN_USERS: "Admin - 사용자 관리",
 
+	/** 📢 알림 발송 - 전체/조건부/특정 사용자 알림 발송 */
+	ADMIN_NOTIFICATIONS: "Admin - 알림 발송",
+
 	/** ⚙️ 시스템 관리 - 설정, 공지, 점검 */
 	ADMIN_SYSTEM: "Admin - 시스템",
 
@@ -68,233 +71,59 @@ export type SwaggerTag = (typeof SWAGGER_TAGS)[keyof typeof SWAGGER_TAGS];
  * DocumentBuilder.addTag()에서 사용됩니다.
  */
 export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
-	// User APIs
-	[SWAGGER_TAGS.USER_AUTH]: `
-## 🔐 인증 API
+	[SWAGGER_TAGS.USER_AUTH]: `사용자 인증 API입니다.
 
-사용자 인증 관련 API입니다.
+**로그인 방식별 차이점**
 
-### 주요 기능
-- **소셜 로그인**: Apple, Google, Kakao 소셜 계정으로 로그인
-- **토큰 관리**: Access Token 갱신, 로그아웃
-- **회원 탈퇴**: 계정 삭제 및 데이터 정리
+| 방식 | 클라이언트 전송 | 서버 엔드포인트 | 특징 |
+|------|---------------|----------------|------|
+| Apple | idToken (JWT) | POST /auth/apple/callback | 네이티브 인증, 1단계 |
+| Google/Kakao/Naver | code (교환코드) | GET /auth/{provider}/start → POST /auth/exchange | 웹 브라우저 인증, 2단계 |
+| Email | email + password | POST /auth/login | 직접 입력, 1단계 |
 
-### 인증 방식
-- JWT Bearer Token 사용
-- Access Token: 1시간 유효
-- Refresh Token: 30일 유효
-  `,
+**모바일 플로우**
+- Apple: 네이티브 API → idToken 획득 → 서버 직접 전송
+- Google/Kakao/Naver: 웹 브라우저 → 딥링크 콜백(code) → exchangeCode로 토큰 교환
+- Email: 직접 입력 → 서버 검증
 
-	[SWAGGER_TAGS.USER_TODO]: `
-## 📝 할 일 API (레거시)
+**웹 플로우** (동일)
+- Apple/Google/Kakao/Naver: OAuth 리다이렉트 → 콜백 URL에서 code 획득 → exchangeCode
+- Email: 직접 입력 → 서버 검증`,
 
-기존 Todo 관련 API입니다. 새로운 구현에서는 Todos 태그를 사용하세요.
-  `,
+	[SWAGGER_TAGS.USER_TODO]: "레거시 API입니다. Todos 태그를 사용하세요.",
 
-	[SWAGGER_TAGS.TODOS]: `
-## ✅ 할 일 관리 API
+	[SWAGGER_TAGS.TODOS]:
+		"할 일 CRUD, 완료 처리, 순서 변경, 친구 할 일 조회 (공개 설정 시)",
 
-할 일(Todo) CRUD 및 관리 API입니다.
+	[SWAGGER_TAGS.TODO_CATEGORIES]:
+		"카테고리 CRUD, 순서/색상 관리. 회원가입 시 기본 카테고리 2개 자동 생성",
 
-### 주요 기능
-- **생성/조회/수정/삭제**: 할 일 CRUD
-- **완료 처리**: 할 일 완료/미완료 토글
-- **순서 변경**: 드래그 앤 드롭으로 순서 조정
-- **카테고리**: 카테고리별 할 일 분류
+	[SWAGGER_TAGS.FOLLOWS]:
+		"친구 요청/수락/거절, 친구 목록 조회. 맞팔 시 친구 관계 성립",
 
-### 권한
-- 본인의 할 일만 CRUD 가능
-- 친구의 할 일은 조회만 가능 (공개 설정 시)
-  `,
+	[SWAGGER_TAGS.DAILY_COMPLETIONS]:
+		"일일 할 일 완료율, 주간/월간 통계, 친구 달성 현황",
 
-	[SWAGGER_TAGS.TODO_CATEGORIES]: `
-## 📁 할 일 카테고리 API
+	[SWAGGER_TAGS.NOTIFICATIONS]:
+		"푸시 토큰 등록/해제, 알림 목록 조회, 읽음 처리",
 
-할 일을 분류하는 카테고리 관리 API입니다.
+	[SWAGGER_TAGS.NUDGES]:
+		"친구 할 일에 콕 찌르기. FREE: 10회/일, 동일 할 일 24시간 쿨다운",
 
-### 주요 기능
-- **생성/조회/수정/삭제**: 카테고리 CRUD
-- **순서 변경**: 드래그 앤 드롭으로 카테고리 순서 조정
-- **색상 관리**: 카테고리별 색상 지정
+	[SWAGGER_TAGS.CHEERS]:
+		"친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
 
-### 기본 카테고리
-회원가입 시 자동 생성:
-- **중요한 일** (#FFB3B3, 빨간색 파스텔톤)
-- **할 일** (#FF6B43, 앱 메인 주황색)
+	[SWAGGER_TAGS.AI]:
+		"자연어 텍스트를 할 일 데이터로 파싱. 스마트 시간 해석 지원",
 
-### 삭제 규칙
-- 최소 1개의 카테고리 필요
-- 할 일이 있는 카테고리 삭제 시 다른 카테고리로 이동 필수
-  `,
+	[SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 
-	[SWAGGER_TAGS.FOLLOWS]: `
-## 👥 팔로우/친구 API
+	[SWAGGER_TAGS.ADMIN_NOTIFICATIONS]:
+		"관리자용: 전체/조건부/특정 사용자 알림 발송. 대상 필터링 지원",
 
-친구 관계 관리 API입니다.
+	[SWAGGER_TAGS.ADMIN_SYSTEM]: "관리자용: 앱 설정, 공지사항, 점검 모드",
 
-### 친구 관계 정의
-- **팔로우**: 일방적 관계 (A→B)
-- **친구**: 상호 팔로우 관계 (A↔B)
-
-### 주요 기능
-- **팔로우 요청**: 다른 사용자에게 친구 요청
-- **요청 수락/거절**: 받은 요청 처리
-- **친구 목록**: 현재 친구 목록 조회
-- **팔로워/팔로잉**: 단방향 관계 목록
-
-### 제한
-- 최대 친구 수: 500명
-  `,
-
-	[SWAGGER_TAGS.DAILY_COMPLETIONS]: `
-## 📊 일일 달성 API
-
-하루 할 일 완료 현황 및 통계 API입니다.
-
-### 주요 기능
-- **일일 현황**: 오늘 할 일 완료율
-- **주간/월간 통계**: 기간별 달성 현황
-- **친구 현황**: 친구들의 오늘 달성률
-- **연속 달성**: 연속 100% 달성 일수
-
-### 집계 기준
-- 자정(00:00) 기준으로 일일 집계
-- 사용자 타임존 고려 (추후 지원 예정)
-  `,
-
-	[SWAGGER_TAGS.NOTIFICATIONS]: `
-## 🔔 알림 API
-
-푸시 알림 및 인앱 알림 관리 API입니다.
-
-### 주요 기능
-- **푸시 토큰**: Expo Push Token 등록/해제
-- **알림 목록**: 받은 알림 조회 (페이지네이션)
-- **읽음 처리**: 개별/전체 읽음 처리
-- **읽지 않은 수**: 뱃지 표시용 카운트
-
-### 알림 종류
-| 종류 | 설명 |
-|------|------|
-| FOLLOW_NEW | 새 친구 요청 |
-| FOLLOW_ACCEPTED | 친구 요청 수락됨 |
-| NUDGE_RECEIVED | 콕 찌름 받음 |
-| CHEER_RECEIVED | 응원 받음 |
-| TODO_REMINDER | 할 일 마감 알림 |
-| MORNING_REMINDER | 아침 알림 |
-| EVENING_REMINDER | 저녁 알림 |
-  `,
-
-	[SWAGGER_TAGS.NUDGES]: `
-## 👆 콕 찌르기 API
-
-친구의 할 일을 독촉하는 기능입니다.
-
-### 주요 기능
-- **콕 찌르기**: 친구의 특정 할 일에 독촉 보내기
-- **받은/보낸 목록**: 콕 찌름 내역 조회
-- **제한 정보**: 오늘 남은 횟수 확인
-- **쿨다운 확인**: 특정 친구에게 다시 찌를 수 있는 시간
-
-### 제한 정책
-| 구독 | 일일 제한 | 쿨다운 |
-|------|----------|--------|
-| FREE | 10회/일 | 24시간 (동일 할 일) |
-| ACTIVE | 무제한 | 24시간 (동일 할 일) |
-
-### 알림
-콕 찌르면 상대방에게 푸시 알림이 발송됩니다.
-  `,
-
-	[SWAGGER_TAGS.CHEERS]: `
-## 🎉 응원하기 API
-
-친구에게 응원 메시지를 보내는 기능입니다.
-
-### 주요 기능
-- **응원 보내기**: 친구에게 응원 메시지 전송
-- **받은/보낸 목록**: 응원 내역 조회
-- **제한 정보**: 오늘 남은 횟수 확인
-- **쿨다운 확인**: 특정 친구에게 다시 응원할 수 있는 시간
-
-### 제한 정책
-| 구독 | 일일 제한 | 쿨다운 |
-|------|----------|--------|
-| FREE | 3회/일 | 24시간 (동일 사용자) |
-| ACTIVE | 무제한 | 24시간 (동일 사용자) |
-
-### 콕 찌르기와의 차이
-- **콕 찌르기**: 특정 할 일에 대한 독촉 (할 일 ID 필요)
-- **응원하기**: 친구 자체에 대한 응원 (메시지만)
-  `,
-
-	[SWAGGER_TAGS.AI]: `
-## 🤖 AI API
-
-자연어 처리 및 스마트 입력 API입니다.
-
-### 주요 기능
-- **자연어 파싱**: 자연어 텍스트를 할 일 데이터로 변환
-- **스마트 시간 해석**: 현재 시간 기반 문맥 파악
-
-### 시간 해석 규칙
-| 입력 | 현재 시간 | 해석 결과 |
-|------|----------|-----------|
-| "11시" | 14:30 | 오늘 23:00 (오전은 지남) |
-| "아침 9시" | 14:30 | 내일 09:00 |
-| "내일 오후 3시" | 14:30 | 내일 15:00 |
-| "다음주 월요일" | 토요일 | 월요일 (종일) |
-
-### 제한 사항
-- 인증된 사용자만 사용 가능
-- 요청당 처리 시간: 평균 200-500ms
-  `,
-
-	// Admin APIs
-	[SWAGGER_TAGS.ADMIN_USERS]: `
-## 👤 사용자 관리 API (관리자용)
-
-관리자가 사용자를 관리하는 API입니다.
-
-### 주요 기능
-- 회원 목록 조회 및 검색
-- 회원 상세 정보 조회
-- 회원 정지/정지 해제
-- 회원 강제 탈퇴
-
-### 권한
-관리자(ADMIN) 역할 필요
-  `,
-
-	[SWAGGER_TAGS.ADMIN_SYSTEM]: `
-## ⚙️ 시스템 관리 API (관리자용)
-
-시스템 설정 및 운영 관련 API입니다.
-
-### 주요 기능
-- 앱 설정 관리
-- 공지사항 관리
-- 서버 점검 모드
-
-### 권한
-관리자(ADMIN) 역할 필요
-  `,
-
-	// Common APIs
-	[SWAGGER_TAGS.COMMON_HEALTH]: `
-## 💓 헬스체크 API
-
-서버 상태 확인용 API입니다.
-
-### 용도
-- 로드밸런서 헬스체크
-- 모니터링 시스템 연동
-- 배포 후 서버 상태 확인
-
-### 응답
-- 200 OK: 서버 정상
-- 503 Service Unavailable: 서버 점검 중
-  `,
+	[SWAGGER_TAGS.COMMON_HEALTH]: "로드밸런서/모니터링용 서버 상태 확인",
 };
 
 /**

@@ -17,35 +17,37 @@ export interface NotificationTemplate {
 
 /**
  * 일정 기반 알림 템플릿
+ *
+ * 듀오링고 스타일: 짧고 임팩트 있게, 긴급성 + 성취감
  */
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
-		title: "할일 알림",
-		body: '"{todoTitle}" 마감이 1시간 남았어요!',
+		title: "1시간 남았어요",
+		body: "{todoTitle}",
 		type: "TODO_REMINDER" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
 	MORNING_REMINDER: {
-		title: "좋은 아침이에요!",
-		body: "오늘 {count}개의 할일이 기다리고 있어요 💪",
+		title: "오늘의 할일 {count}개",
+		body: "지금 시작하면 오늘도 완벽해요",
 		type: "MORNING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
 	},
 	EVENING_COMPLETE: {
-		title: "완벽한 하루였어요!",
-		body: "오늘 할일을 모두 완료했어요 🎉",
+		title: "오늘 전부 해냈어요!",
+		body: "내일도 이 기세로 가볼까요?",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/",
 	},
 	EVENING_PARTIAL: {
-		title: "조금만 더 힘내요!",
-		body: "{remaining}개만 더 완료하면 돼요. 할 수 있어요!",
+		title: "{remaining}개만 더!",
+		body: "오늘 안에 끝낼 수 있어요",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
 	},
 	EVENING_NONE: {
-		title: "아직 늦지 않았어요",
-		body: "지금 시작해볼까요? 작은 것부터 하나씩!",
+		title: "하나만 해볼까요?",
+		body: "5분이면 충분해요",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
 	},
@@ -53,41 +55,43 @@ export const SCHEDULER_TEMPLATES = {
 
 /**
  * 친구 상호작용 알림 템플릿
+ *
+ * 듀오링고 스타일: 개인화 + 사회적 연결감
  */
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
-		title: "새로운 친구 요청",
-		body: "{senderName}님이 친구가 되고 싶어해요",
+		title: "{senderName}님의 친구 요청",
+		body: "함께 할일을 응원해요",
 		type: "FOLLOW_NEW" as NotificationType,
 		defaultRoute: "/friends/requests",
 	},
 	FOLLOW_ACCEPTED: {
-		title: "친구가 되었어요!",
-		body: "{senderName}님과 이제 서로의 할일을 응원할 수 있어요",
+		title: "{senderName}님과 친구가 됐어요",
+		body: "서로의 할일을 확인해보세요",
 		type: "FOLLOW_ACCEPTED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	NUDGE_RECEIVED: {
-		title: "친구의 응원이 도착했어요!",
-		body: "{senderName}님이 당신의 할일을 응원하고 있어요 💪",
+		title: "{senderName}님이 콕!",
+		body: "할일 끝내고 자랑해보세요",
 		type: "NUDGE_RECEIVED" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
 	CHEER_RECEIVED: {
-		title: "축하 메시지가 도착했어요!",
-		body: '{senderName}님이 "{message}" 라고 응원을 보냈어요 🎉',
+		title: "{senderName}님의 응원",
+		body: "{message}",
 		type: "CHEER_RECEIVED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	CHEER_RECEIVED_NO_MESSAGE: {
-		title: "축하 메시지가 도착했어요!",
-		body: "{senderName}님이 응원을 보냈어요 🎉",
+		title: "{senderName}님이 응원해요",
+		body: "답장으로 화답해볼까요?",
 		type: "CHEER_RECEIVED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	FRIEND_COMPLETED: {
-		title: "{friendName}님 대단해요!",
-		body: "오늘 할일을 모두 완료했어요. 축하해주세요!",
+		title: "{friendName}님이 오늘 다 해냈어요",
+		body: "축하 메시지를 보내볼까요?",
 		type: "FRIEND_COMPLETED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
@@ -98,13 +102,13 @@ export const SOCIAL_TEMPLATES = {
  */
 export const SYSTEM_TEMPLATES = {
 	WEEKLY_ACHIEVEMENT: {
-		title: "주간 달성 리포트",
-		body: "이번 주 {completedCount}개의 할일을 완료했어요!",
+		title: "이번 주 {completedCount}개 완료!",
+		body: "다음 주도 기대돼요",
 		type: "WEEKLY_ACHIEVEMENT" as NotificationType,
 		defaultRoute: "/stats",
 	},
 	SYSTEM_NOTICE: {
-		title: "공지사항",
+		title: "Aido",
 		body: "{message}",
 		type: "SYSTEM_NOTICE" as NotificationType,
 		defaultRoute: null,
@@ -137,8 +141,8 @@ export class NotificationMessageBuilder {
 	 */
 	static followNew(senderName: string): { title: string; body: string } {
 		return {
-			title: SOCIAL_TEMPLATES.FOLLOW_NEW.title,
-			body: fillTemplate(SOCIAL_TEMPLATES.FOLLOW_NEW.body, { senderName }),
+			title: fillTemplate(SOCIAL_TEMPLATES.FOLLOW_NEW.title, { senderName }),
+			body: SOCIAL_TEMPLATES.FOLLOW_NEW.body,
 		};
 	}
 
@@ -147,8 +151,10 @@ export class NotificationMessageBuilder {
 	 */
 	static followAccepted(senderName: string): { title: string; body: string } {
 		return {
-			title: SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.title,
-			body: fillTemplate(SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.body, { senderName }),
+			title: fillTemplate(SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.title, {
+				senderName,
+			}),
+			body: SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.body,
 		};
 	}
 
@@ -157,8 +163,10 @@ export class NotificationMessageBuilder {
 	 */
 	static nudgeReceived(senderName: string): { title: string; body: string } {
 		return {
-			title: SOCIAL_TEMPLATES.NUDGE_RECEIVED.title,
-			body: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED.body, { senderName }),
+			title: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED.title, {
+				senderName,
+			}),
+			body: SOCIAL_TEMPLATES.NUDGE_RECEIVED.body,
 		};
 	}
 
@@ -171,18 +179,17 @@ export class NotificationMessageBuilder {
 	): { title: string; body: string } {
 		if (message) {
 			return {
-				title: SOCIAL_TEMPLATES.CHEER_RECEIVED.title,
-				body: fillTemplate(SOCIAL_TEMPLATES.CHEER_RECEIVED.body, {
+				title: fillTemplate(SOCIAL_TEMPLATES.CHEER_RECEIVED.title, {
 					senderName,
-					message,
 				}),
+				body: fillTemplate(SOCIAL_TEMPLATES.CHEER_RECEIVED.body, { message }),
 			};
 		}
 		return {
-			title: SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE.title,
-			body: fillTemplate(SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE.body, {
+			title: fillTemplate(SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE.title, {
 				senderName,
 			}),
+			body: SOCIAL_TEMPLATES.CHEER_RECEIVED_NO_MESSAGE.body,
 		};
 	}
 
@@ -205,6 +212,19 @@ export class NotificationMessageBuilder {
 		return {
 			title: SCHEDULER_TEMPLATES.TODO_REMINDER.title,
 			body: fillTemplate(SCHEDULER_TEMPLATES.TODO_REMINDER.body, { todoTitle }),
+		};
+	}
+
+	/**
+	 * 일일 완료 알림 메시지 생성
+	 */
+	static dailyComplete(_completedCount: number): {
+		title: string;
+		body: string;
+	} {
+		return {
+			title: SCHEDULER_TEMPLATES.EVENING_COMPLETE.title,
+			body: SCHEDULER_TEMPLATES.EVENING_COMPLETE.body,
 		};
 	}
 

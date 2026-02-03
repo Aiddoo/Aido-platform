@@ -7,7 +7,7 @@ body:
     id: assignee
     attributes:
       label: 담당자
-      description: 이 기능을 담당할 팀원을 선택해주세요.
+      description: 이 기능P을 담당할 팀원을 선택해주세요.
       options:
         - 미정
         - 매튜

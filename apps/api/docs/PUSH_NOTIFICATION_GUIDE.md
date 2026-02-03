@@ -808,27 +808,56 @@ const handleLogout = async () => {
 | | `CHEER_RECEIVED` | 응원 받음 |
 | 할일 관련 | `DAILY_COMPLETE` | 오늘 할일 전부 완료 |
 | | `TODO_REMINDER` | 마감 1시간 전 리마인더 |
+| | `TODO_SHARED` | 할일 공유 받음 |
 | | `MORNING_REMINDER` | 아침 할일 알림 |
 | | `EVENING_REMINDER` | 저녁 진행상황 알림 |
 | 친구 활동 | `FRIEND_COMPLETED` | 친구가 할일 완료 |
 | 시스템 | `WEEKLY_ACHIEVEMENT` | 주간 달성 리포트 |
 | | `SYSTEM_NOTICE` | 공지사항 |
+| 관리자 발송 | `ADMIN_BROADCAST` | 관리자 전체 알림 |
+| | `ADMIN_TARGETED` | 관리자 타겟 알림 |
 
-### 4.2 Internal Link (인앱 라우팅)
+### 4.2 알림 스키마
 
-**`route` 필드**를 사용하여 Expo Router로 앱 내 화면 이동:
+알림은 `metadata` 필드를 통해 추가 정보를 전달합니다:
 
-| 알림 타입 | route 예시 | 설명 |
-|----------|-----------|------|
+```typescript
+interface Notification {
+  id: number;
+  userId: string;
+  type: NotificationType;
+  title: string;       // 최대 200자
+  body: string;        // 최대 500자
+  isRead: boolean;
+  metadata: {          // 추가 메타데이터 (nullable)
+    senderId?: string;
+    friendId?: string;
+    todoId?: string;
+    externalUrl?: string;
+    // ... 타입별 추가 필드
+  } | null;
+  createdAt: string;   // ISO 8601 UTC
+  readAt: string | null;
+}
+```
+
+### 4.3 템플릿 기반 라우팅
+
+서버에서 알림 템플릿의 `defaultRoute`를 사용하여 앱 내 화면 이동을 지원합니다:
+
+| 알림 타입 | defaultRoute 패턴 | 설명 |
+|----------|------------------|------|
 | `FOLLOW_NEW` | `/friends/requests` | 친구 요청 목록 |
 | `FOLLOW_ACCEPTED` | `/friends/{friendId}` | 친구 프로필 |
 | `NUDGE_RECEIVED` | `/todos/{todoId}` | 해당 할일 상세 |
-| `CHEER_RECEIVED` | `/friends/{senderId}` | 응원 보낸 친구 |
+| `CHEER_RECEIVED` | `/friends/{friendId}` | 응원 보낸 친구 |
 | `TODO_REMINDER` | `/todos/{todoId}` | 마감 예정 할일 |
 | `FRIEND_COMPLETED` | `/friends/{friendId}` | 완료한 친구 프로필 |
-| `DAILY_COMPLETE` | `/` | 홈 화면 |
+| `MORNING_REMINDER` | `/todos` | 할일 목록 |
+| `EVENING_REMINDER` | `/todos` 또는 `/` | 진행 상황에 따라 |
+| `WEEKLY_ACHIEVEMENT` | `/stats` | 통계 화면 |
 
-### 4.3 External Link (외부 URL)
+### 4.4 External Link (외부 URL)
 
 **`metadata.externalUrl` 필드**를 사용하여 외부 웹페이지 열기:
 
@@ -837,14 +866,13 @@ const handleLogout = async () => {
   "type": "SYSTEM_NOTICE",
   "title": "새로운 이벤트 안내",
   "body": "지금 참여하고 혜택 받으세요!",
-  "route": null,
   "metadata": {
     "externalUrl": "https://aido.kr/events/new-year"
   }
 }
 ```
 
-### 4.4 클라이언트 통합 처리
+### 4.5 클라이언트 통합 처리
 
 ```typescript
 import type { Notification } from 'expo-notifications';
@@ -852,9 +880,14 @@ import type { Notification } from 'expo-notifications';
 function handleNotificationResponse(notification: Notification): void {
   const data = notification.request.content.data;
 
-  // 1. Internal link: route 필드
-  if (data.route && typeof data.route === 'string') {
-    router.push(data.route as any);
+  // 1. Internal link: metadata 기반 라우팅
+  if (data.metadata?.friendId) {
+    router.push(`/friends/${data.metadata.friendId}`);
+    return;
+  }
+
+  if (data.metadata?.todoId) {
+    router.push(`/todos/${data.metadata.todoId}`);
     return;
   }
 
@@ -862,6 +895,19 @@ function handleNotificationResponse(notification: Notification): void {
   if (data.metadata?.externalUrl && typeof data.metadata.externalUrl === 'string') {
     Linking.openURL(data.metadata.externalUrl);
     return;
+  }
+
+  // 3. 타입별 기본 라우팅
+  switch (data.type) {
+    case 'FOLLOW_NEW':
+      router.push('/friends/requests');
+      break;
+    case 'MORNING_REMINDER':
+    case 'EVENING_REMINDER':
+      router.push('/todos');
+      break;
+    default:
+      router.push('/');
   }
 }
 ```
