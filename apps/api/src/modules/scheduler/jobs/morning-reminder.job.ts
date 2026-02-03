@@ -1,10 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 
 import { DatabaseService } from "@/database/database.service";
 
-import { NotificationService } from "../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
+import { NotificationService } from "@/modules/notification/notification.service";
+import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+
+dayjs.extend(utc);
 
 /**
  * 아침 리마인더 크론 작업
@@ -28,11 +32,9 @@ export class MorningReminderJob {
 		this.logger.log("Starting morning reminder job...");
 
 		try {
-			// 오늘 날짜 범위 계산
-			const today = new Date();
-			today.setHours(0, 0, 0, 0);
-			const tomorrow = new Date(today);
-			tomorrow.setDate(tomorrow.getDate() + 1);
+			// 오늘 날짜 범위 계산 (UTC 기준으로 일관성 보장)
+			const today = dayjs.utc().startOf("day").toDate();
+			const tomorrow = dayjs.utc().add(1, "day").startOf("day").toDate();
 
 			// 오늘 할일이 있는 사용자 조회 (푸시 토큰이 있는 사용자만)
 			const usersWithTodos = await this.database.user.findMany({

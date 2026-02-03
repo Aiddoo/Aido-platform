@@ -14,6 +14,7 @@ describe("AuthController - Settings API", () => {
 		userId: "user-123",
 		email: "test@example.com",
 		sessionId: "session-123",
+		role: "USER",
 	};
 
 	beforeEach(async () => {

@@ -1,4 +1,5 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { SecurityLog } from "@/generated/prisma/client";
@@ -7,14 +8,7 @@ import { SecurityLogRepository } from "./security-log.repository";
 
 describe("SecurityLogRepository", () => {
 	let repository: SecurityLogRepository;
-	let mockDatabase: {
-		securityLog: {
-			create: jest.Mock;
-			findMany: jest.Mock;
-			deleteMany: jest.Mock;
-			groupBy: jest.Mock;
-		};
-	};
+	let db: Mocked<DatabaseService>;
 
 	const mockSecurityLog: SecurityLog = {
 		id: 1,
@@ -27,26 +21,13 @@ describe("SecurityLogRepository", () => {
 	};
 
 	beforeEach(async () => {
-		mockDatabase = {
-			securityLog: {
-				create: jest.fn(),
-				findMany: jest.fn(),
-				deleteMany: jest.fn(),
-				groupBy: jest.fn(),
-			},
-		};
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(
+			SecurityLogRepository,
+		).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				SecurityLogRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
-
-		repository = module.get<SecurityLogRepository>(SecurityLogRepository);
+		repository = unit;
+		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
 	describe("create", () => {
@@ -60,14 +41,14 @@ describe("SecurityLogRepository", () => {
 
 		it("보안 로그를 생성한다", async () => {
 			// Given
-			mockDatabase.securityLog.create.mockResolvedValue(mockSecurityLog);
+			db.securityLog.create.mockResolvedValue(mockSecurityLog);
 
 			// When
 			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockSecurityLog);
-			expect(mockDatabase.securityLog.create).toHaveBeenCalledWith({
+			expect(db.securityLog.create).toHaveBeenCalledWith({
 				data: {
 					userId: createData.userId,
 					event: createData.event,
@@ -91,14 +72,14 @@ describe("SecurityLogRepository", () => {
 				event: "LOGIN_FAILURE",
 				metadata: null,
 			};
-			mockDatabase.securityLog.create.mockResolvedValue(anonymousLog);
+			db.securityLog.create.mockResolvedValue(anonymousLog);
 
 			// When
 			const result = await repository.create(anonymousLogData);
 
 			// Then
 			expect(result).toEqual(anonymousLog);
-			expect(mockDatabase.securityLog.create).toHaveBeenCalledWith({
+			expect(db.securityLog.create).toHaveBeenCalledWith({
 				data: {
 					userId: undefined,
 					event: anonymousLogData.event,
@@ -120,7 +101,7 @@ describe("SecurityLogRepository", () => {
 			// Then
 			expect(result).toEqual(mockSecurityLog);
 			expect(mockTx.securityLog.create).toHaveBeenCalled();
-			expect(mockDatabase.securityLog.create).not.toHaveBeenCalled();
+			expect(db.securityLog.create).not.toHaveBeenCalled();
 		});
 	});
 
@@ -137,14 +118,14 @@ describe("SecurityLogRepository", () => {
 
 		it("사용자의 보안 로그를 최신순으로 조회한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue(securityLogs);
+			db.securityLog.findMany.mockResolvedValue(securityLogs);
 
 			// When
 			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(securityLogs);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				orderBy: { createdAt: "desc" },
 				take: 50,
@@ -153,14 +134,14 @@ describe("SecurityLogRepository", () => {
 
 		it("limit 옵션을 적용하여 조회한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
 			const result = await repository.findByUserId("user-123", { limit: 10 });
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				orderBy: { createdAt: "desc" },
 				take: 10,
@@ -169,7 +150,7 @@ describe("SecurityLogRepository", () => {
 
 		it("특정 이벤트 타입만 필터링하여 조회한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
 			const result = await repository.findByUserId("user-123", {
@@ -178,7 +159,7 @@ describe("SecurityLogRepository", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-123",
 					event: { in: ["LOGIN_SUCCESS", "LOGIN_FAILURE"] },
@@ -194,14 +175,14 @@ describe("SecurityLogRepository", () => {
 
 		it("특정 이벤트 타입의 최근 로그를 조회한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
 			const result = await repository.findRecentByEvent("LOGIN_SUCCESS", since);
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					event: "LOGIN_SUCCESS",
 					createdAt: { gte: since },
@@ -213,7 +194,7 @@ describe("SecurityLogRepository", () => {
 
 		it("userId 옵션으로 필터링한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
 			const result = await repository.findRecentByEvent(
@@ -226,7 +207,7 @@ describe("SecurityLogRepository", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					event: "LOGIN_SUCCESS",
 					createdAt: { gte: since },
@@ -239,7 +220,7 @@ describe("SecurityLogRepository", () => {
 
 		it("ipAddress 옵션으로 필터링한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
 
 			// When
 			const result = await repository.findRecentByEvent(
@@ -252,7 +233,7 @@ describe("SecurityLogRepository", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					event: "LOGIN_FAILURE",
 					createdAt: { gte: since },
@@ -265,13 +246,13 @@ describe("SecurityLogRepository", () => {
 
 		it("limit 옵션을 적용한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([]);
+			db.securityLog.findMany.mockResolvedValue([]);
 
 			// When
 			await repository.findRecentByEvent("LOGIN_SUCCESS", since, { limit: 10 });
 
 			// Then
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					event: "LOGIN_SUCCESS",
 					createdAt: { gte: since },
@@ -291,7 +272,7 @@ describe("SecurityLogRepository", () => {
 
 		it("IP 주소의 의심스러운 활동을 조회한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue(suspiciousLogs);
+			db.securityLog.findMany.mockResolvedValue(suspiciousLogs);
 
 			// When
 			const result = await repository.findSuspiciousActivityByIp(
@@ -301,7 +282,7 @@ describe("SecurityLogRepository", () => {
 
 			// Then
 			expect(result).toEqual(suspiciousLogs);
-			expect(mockDatabase.securityLog.findMany).toHaveBeenCalledWith({
+			expect(db.securityLog.findMany).toHaveBeenCalledWith({
 				where: {
 					ipAddress: "192.168.1.1",
 					createdAt: { gte: since },
@@ -320,7 +301,7 @@ describe("SecurityLogRepository", () => {
 
 		it("의심스러운 활동이 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			mockDatabase.securityLog.findMany.mockResolvedValue([]);
+			db.securityLog.findMany.mockResolvedValue([]);
 
 			// When
 			const result = await repository.findSuspiciousActivityByIp(
@@ -336,14 +317,14 @@ describe("SecurityLogRepository", () => {
 	describe("deleteOld", () => {
 		it("기본 90일 이전 로그를 삭제한다", async () => {
 			// Given
-			mockDatabase.securityLog.deleteMany.mockResolvedValue({ count: 100 });
+			db.securityLog.deleteMany.mockResolvedValue({ count: 100 });
 
 			// When
 			const result = await repository.deleteOld();
 
 			// Then
 			expect(result).toBe(100);
-			expect(mockDatabase.securityLog.deleteMany).toHaveBeenCalledWith({
+			expect(db.securityLog.deleteMany).toHaveBeenCalledWith({
 				where: {
 					createdAt: { lt: expect.any(Date) },
 				},
@@ -352,14 +333,14 @@ describe("SecurityLogRepository", () => {
 
 		it("지정된 보관 기간으로 삭제한다", async () => {
 			// Given
-			mockDatabase.securityLog.deleteMany.mockResolvedValue({ count: 50 });
+			db.securityLog.deleteMany.mockResolvedValue({ count: 50 });
 
 			// When
 			const result = await repository.deleteOld(30);
 
 			// Then
 			expect(result).toBe(50);
-			expect(mockDatabase.securityLog.deleteMany).toHaveBeenCalledWith({
+			expect(db.securityLog.deleteMany).toHaveBeenCalledWith({
 				where: {
 					createdAt: { lt: expect.any(Date) },
 				},
@@ -368,7 +349,7 @@ describe("SecurityLogRepository", () => {
 
 		it("삭제할 로그가 없으면 0을 반환한다", async () => {
 			// Given
-			mockDatabase.securityLog.deleteMany.mockResolvedValue({ count: 0 });
+			db.securityLog.deleteMany.mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.deleteOld();
@@ -384,7 +365,7 @@ describe("SecurityLogRepository", () => {
 
 		it("기간 내 이벤트별 카운트를 반환한다", async () => {
 			// Given
-			mockDatabase.securityLog.groupBy.mockResolvedValue([
+			db.securityLog.groupBy.mockResolvedValue([
 				{ event: "LOGIN_SUCCESS", _count: { event: 100 } },
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
@@ -399,7 +380,7 @@ describe("SecurityLogRepository", () => {
 				{ event: "LOGIN_FAILURE", count: 20 },
 				{ event: "PASSWORD_CHANGED", count: 5 },
 			]);
-			expect(mockDatabase.securityLog.groupBy).toHaveBeenCalledWith({
+			expect(db.securityLog.groupBy).toHaveBeenCalledWith({
 				by: ["event"],
 				where: {
 					createdAt: {
@@ -413,7 +394,7 @@ describe("SecurityLogRepository", () => {
 
 		it("until 없이 since부터 현재까지 카운트한다", async () => {
 			// Given
-			mockDatabase.securityLog.groupBy.mockResolvedValue([
+			db.securityLog.groupBy.mockResolvedValue([
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
 			]);
 
@@ -422,7 +403,7 @@ describe("SecurityLogRepository", () => {
 
 			// Then
 			expect(result).toEqual([{ event: "LOGIN_SUCCESS", count: 50 }]);
-			expect(mockDatabase.securityLog.groupBy).toHaveBeenCalledWith({
+			expect(db.securityLog.groupBy).toHaveBeenCalledWith({
 				by: ["event"],
 				where: {
 					createdAt: {
@@ -435,7 +416,7 @@ describe("SecurityLogRepository", () => {
 
 		it("이벤트가 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			mockDatabase.securityLog.groupBy.mockResolvedValue([]);
+			db.securityLog.groupBy.mockResolvedValue([]);
 
 			// When
 			const result = await repository.countByEvent(since);

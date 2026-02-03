@@ -1,7 +1,8 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { UserPreferenceBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
-import type { UserPreference } from "@/generated/prisma/client";
 import {
 	type UpdatePreferenceData,
 	UserPreferenceRepository,
@@ -9,43 +10,26 @@ import {
 
 describe("UserPreferenceRepository", () => {
 	let repository: UserPreferenceRepository;
-	let mockDatabase: {
-		userPreference: {
-			findUnique: jest.Mock;
-			create: jest.Mock;
-			update: jest.Mock;
-			upsert: jest.Mock;
-		};
-	};
+	let db: Mocked<DatabaseService>;
 
-	const mockUserPreference: UserPreference = {
-		id: "pref-123",
-		userId: "user-123",
-		pushEnabled: true,
-		nightPushEnabled: false,
-	};
+	// Builder로 기본 테스트 설정 생성
+	const mockUserPreference = UserPreferenceBuilder.create("user-123")
+		.withId("pref-123")
+		.withPushEnabled(true)
+		.withNightPushEnabled(false)
+		.build();
 
 	beforeEach(async () => {
-		mockDatabase = {
-			userPreference: {
-				findUnique: jest.fn(),
-				create: jest.fn(),
-				update: jest.fn(),
-				upsert: jest.fn(),
-			},
-		};
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(
+			UserPreferenceRepository,
+		).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				UserPreferenceRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
+		repository = unit;
+		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 
-		repository = module.get<UserPreferenceRepository>(UserPreferenceRepository);
+		// ID 카운터 리셋
+		UserPreferenceBuilder.resetIdCounter();
 	});
 
 	afterEach(() => {
@@ -55,23 +39,21 @@ describe("UserPreferenceRepository", () => {
 	describe("findByUserId", () => {
 		it("사용자 ID로 푸시 설정을 조회한다", async () => {
 			// Given
-			mockDatabase.userPreference.findUnique.mockResolvedValue(
-				mockUserPreference,
-			);
+			db.userPreference.findUnique.mockResolvedValue(mockUserPreference);
 
 			// When
 			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(mockUserPreference);
-			expect(mockDatabase.userPreference.findUnique).toHaveBeenCalledWith({
+			expect(db.userPreference.findUnique).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 			});
 		});
 
 		it("설정이 없으면 null을 반환한다", async () => {
 			// Given
-			mockDatabase.userPreference.findUnique.mockResolvedValue(null);
+			db.userPreference.findUnique.mockResolvedValue(null);
 
 			// When
 			const result = await repository.findByUserId("nonexistent-user");
@@ -96,27 +78,26 @@ describe("UserPreferenceRepository", () => {
 			expect(mockTx.userPreference.findUnique).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 			});
-			expect(mockDatabase.userPreference.findUnique).not.toHaveBeenCalled();
+			expect(db.userPreference.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("create", () => {
 		it("기본값으로 푸시 설정을 생성한다", async () => {
 			// Given
-			const expectedPreference: UserPreference = {
-				id: "new-pref-123",
-				userId: "user-123",
-				pushEnabled: false,
-				nightPushEnabled: false,
-			};
-			mockDatabase.userPreference.create.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("new-pref-123")
+				.withPushDisabled()
+				.withNightPushEnabled(false)
+				.build();
+			db.userPreference.create.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.create("user-123");
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.create).toHaveBeenCalledWith({
+			expect(db.userPreference.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
 					pushEnabled: false,
@@ -131,20 +112,19 @@ describe("UserPreferenceRepository", () => {
 				pushEnabled: true,
 				nightPushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "new-pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: true,
-			};
-			mockDatabase.userPreference.create.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("new-pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
+				.build();
+			db.userPreference.create.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.create("user-123", createData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.create).toHaveBeenCalledWith({
+			expect(db.userPreference.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
 					pushEnabled: true,
@@ -156,12 +136,11 @@ describe("UserPreferenceRepository", () => {
 		it("트랜잭션 내에서 생성한다", async () => {
 			// Given
 			const mockTx = createMockTxClient();
-			const expectedPreference: UserPreference = {
-				id: "tx-pref-123",
-				userId: "user-123",
-				pushEnabled: false,
-				nightPushEnabled: false,
-			};
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("tx-pref-123")
+				.withPushDisabled()
+				.withNightPushEnabled(false)
+				.build();
 			mockTx.userPreference.create.mockResolvedValue(expectedPreference);
 
 			// When
@@ -180,7 +159,7 @@ describe("UserPreferenceRepository", () => {
 					nightPushEnabled: false,
 				},
 			});
-			expect(mockDatabase.userPreference.create).not.toHaveBeenCalled();
+			expect(db.userPreference.create).not.toHaveBeenCalled();
 		});
 	});
 
@@ -190,20 +169,19 @@ describe("UserPreferenceRepository", () => {
 			const updateData: UpdatePreferenceData = {
 				pushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "new-pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: false,
-			};
-			mockDatabase.userPreference.upsert.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("new-pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(false)
+				.build();
+			db.userPreference.upsert.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.upsert).toHaveBeenCalledWith({
+			expect(db.userPreference.upsert).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				create: {
 					userId: "user-123",
@@ -221,20 +199,19 @@ describe("UserPreferenceRepository", () => {
 			const updateData: UpdatePreferenceData = {
 				nightPushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: true,
-			};
-			mockDatabase.userPreference.upsert.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
+				.build();
+			db.userPreference.upsert.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.upsert).toHaveBeenCalledWith({
+			expect(db.userPreference.upsert).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				create: {
 					userId: "user-123",
@@ -254,12 +231,11 @@ describe("UserPreferenceRepository", () => {
 				pushEnabled: true,
 				nightPushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "tx-pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: true,
-			};
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("tx-pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
+				.build();
 			mockTx.userPreference.upsert.mockResolvedValue(expectedPreference);
 
 			// When
@@ -272,7 +248,7 @@ describe("UserPreferenceRepository", () => {
 			// Then
 			expect(result).toEqual(expectedPreference);
 			expect(mockTx.userPreference.upsert).toHaveBeenCalled();
-			expect(mockDatabase.userPreference.upsert).not.toHaveBeenCalled();
+			expect(db.userPreference.upsert).not.toHaveBeenCalled();
 		});
 	});
 
@@ -282,20 +258,19 @@ describe("UserPreferenceRepository", () => {
 			const updateData: UpdatePreferenceData = {
 				pushEnabled: false,
 			};
-			const expectedPreference: UserPreference = {
-				id: "pref-123",
-				userId: "user-123",
-				pushEnabled: false,
-				nightPushEnabled: false,
-			};
-			mockDatabase.userPreference.update.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("pref-123")
+				.withPushDisabled()
+				.withNightPushEnabled(false)
+				.build();
+			db.userPreference.update.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.update).toHaveBeenCalledWith({
+			expect(db.userPreference.update).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				data: {
 					pushEnabled: false,
@@ -308,20 +283,19 @@ describe("UserPreferenceRepository", () => {
 			const updateData: UpdatePreferenceData = {
 				nightPushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: true,
-			};
-			mockDatabase.userPreference.update.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
+				.build();
+			db.userPreference.update.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.update).toHaveBeenCalledWith({
+			expect(db.userPreference.update).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				data: {
 					nightPushEnabled: true,
@@ -335,20 +309,19 @@ describe("UserPreferenceRepository", () => {
 				pushEnabled: true,
 				nightPushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: true,
-			};
-			mockDatabase.userPreference.update.mockResolvedValue(expectedPreference);
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
+				.build();
+			db.userPreference.update.mockResolvedValue(expectedPreference);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(mockDatabase.userPreference.update).toHaveBeenCalledWith({
+			expect(db.userPreference.update).toHaveBeenCalledWith({
 				where: { userId: "user-123" },
 				data: {
 					pushEnabled: true,
@@ -363,12 +336,11 @@ describe("UserPreferenceRepository", () => {
 			const updateData: UpdatePreferenceData = {
 				pushEnabled: true,
 			};
-			const expectedPreference: UserPreference = {
-				id: "tx-pref-123",
-				userId: "user-123",
-				pushEnabled: true,
-				nightPushEnabled: false,
-			};
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("tx-pref-123")
+				.withPushEnabled(true)
+				.withNightPushEnabled(false)
+				.build();
 			mockTx.userPreference.update.mockResolvedValue(expectedPreference);
 
 			// When
@@ -386,7 +358,7 @@ describe("UserPreferenceRepository", () => {
 					pushEnabled: true,
 				},
 			});
-			expect(mockDatabase.userPreference.update).not.toHaveBeenCalled();
+			expect(db.userPreference.update).not.toHaveBeenCalled();
 		});
 	});
 });

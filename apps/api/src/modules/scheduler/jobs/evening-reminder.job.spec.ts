@@ -1,5 +1,4 @@
-import type { TestingModule } from "@nestjs/testing";
-import { Test } from "@nestjs/testing";
+import { type StubbedInstance, TestBed } from "@suites/unit";
 
 import { DatabaseService } from "@/database/database.service";
 
@@ -41,44 +40,21 @@ function createMockUserWithTodoStats(
 }
 
 // =============================================================================
-// Mock Setup
-// =============================================================================
-
-const mockDatabaseService = {
-	user: {
-		findMany: jest.fn(),
-	},
-};
-
-const mockNotificationService = {
-	createAndSendBatch: jest.fn(),
-};
-
-// =============================================================================
 // Tests
 // =============================================================================
 
 describe("EveningReminderJob", () => {
 	let job: EveningReminderJob;
+	let databaseService: StubbedInstance<DatabaseService>;
+	let notificationService: StubbedInstance<NotificationService>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
+		const { unit, unitRef } =
+			await TestBed.solitary(EveningReminderJob).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				EveningReminderJob,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
-				},
-				{
-					provide: NotificationService,
-					useValue: mockNotificationService,
-				},
-			],
-		}).compile();
-
-		job = module.get<EveningReminderJob>(EveningReminderJob);
+		job = unit;
+		databaseService = unitRef.get(DatabaseService);
+		notificationService = unitRef.get(NotificationService);
 	});
 
 	// =========================================================================
@@ -88,7 +64,7 @@ describe("EveningReminderJob", () => {
 	describe("handleEveningReminder", () => {
 		describe("완료 상태별 알림", () => {
 			it("모든 할일을 완료한 사용자에게 완료 알림을 보낸다", async () => {
-				// Given - 5개 중 5개 완료
+				// Given - 5개 중 5개 완료한 사용자 준비
 				const users: UserWithTodoStats[] = [
 					createMockUserWithTodoStats({
 						id: "user-1",
@@ -97,20 +73,18 @@ describe("EveningReminderJob", () => {
 					}),
 				];
 
-				mockDatabaseService.user.findMany.mockResolvedValue(users);
-				mockNotificationService.createAndSendBatch.mockResolvedValue({
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 1,
 				});
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).toHaveBeenCalledTimes(1);
+				// Then - 완료 알림이 전송됨
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 				const batchCallArg =
-					mockNotificationService.createAndSendBatch.mock.calls[0][0];
+					notificationService.createAndSendBatch.mock.calls[0][0];
 				expect(batchCallArg).toHaveLength(1);
 				expect(batchCallArg[0]).toMatchObject({
 					userId: "user-1",
@@ -120,7 +94,7 @@ describe("EveningReminderJob", () => {
 			});
 
 			it("일부 할일만 완료한 사용자에게 부분 완료 알림을 보낸다", async () => {
-				// Given - 5개 중 3개 완료
+				// Given - 5개 중 3개 완료한 사용자 준비
 				const users: UserWithTodoStats[] = [
 					createMockUserWithTodoStats({
 						id: "user-1",
@@ -129,26 +103,24 @@ describe("EveningReminderJob", () => {
 					}),
 				];
 
-				mockDatabaseService.user.findMany.mockResolvedValue(users);
-				mockNotificationService.createAndSendBatch.mockResolvedValue({
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 1,
 				});
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).toHaveBeenCalledTimes(1);
+				// Then - 부분 완료 알림이 전송됨
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 				const batchCallArg =
-					mockNotificationService.createAndSendBatch.mock.calls[0][0];
+					notificationService.createAndSendBatch.mock.calls[0][0];
 				expect(batchCallArg[0].userId).toBe("user-1");
 				expect(batchCallArg[0].type).toBe("EVENING_REMINDER");
 			});
 
 			it("할일을 하나도 완료하지 않은 사용자에게 미완료 알림을 보낸다", async () => {
-				// Given - 5개 중 0개 완료
+				// Given - 5개 중 0개 완료한 사용자 준비
 				const users: UserWithTodoStats[] = [
 					createMockUserWithTodoStats({
 						id: "user-1",
@@ -157,20 +129,18 @@ describe("EveningReminderJob", () => {
 					}),
 				];
 
-				mockDatabaseService.user.findMany.mockResolvedValue(users);
-				mockNotificationService.createAndSendBatch.mockResolvedValue({
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 1,
 				});
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).toHaveBeenCalledTimes(1);
+				// Then - 미완료 알림이 전송됨
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 				const batchCallArg =
-					mockNotificationService.createAndSendBatch.mock.calls[0][0];
+					notificationService.createAndSendBatch.mock.calls[0][0];
 				expect(batchCallArg[0].userId).toBe("user-1");
 				expect(batchCallArg[0].type).toBe("EVENING_REMINDER");
 			});
@@ -178,7 +148,7 @@ describe("EveningReminderJob", () => {
 
 		describe("다수 사용자 처리", () => {
 			it("여러 사용자에게 각자의 완료 상태에 맞는 알림을 보낸다", async () => {
-				// Given
+				// Given - 완료/부분완료/미완료 사용자 각 1명씩 준비
 				const users: UserWithTodoStats[] = [
 					createMockUserWithTodoStats({
 						id: "user-complete",
@@ -197,22 +167,20 @@ describe("EveningReminderJob", () => {
 					}),
 				];
 
-				mockDatabaseService.user.findMany.mockResolvedValue(users);
-				mockNotificationService.createAndSendBatch.mockResolvedValue({
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 3,
 				});
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				expect(mockDatabaseService.user.findMany).toHaveBeenCalledTimes(1);
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).toHaveBeenCalledTimes(1);
+				// Then - 모든 사용자에게 알림이 전송됨
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(1);
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
 				const batchCallArg =
-					mockNotificationService.createAndSendBatch.mock.calls[0][0];
+					notificationService.createAndSendBatch.mock.calls[0][0];
 				expect(batchCallArg).toHaveLength(3);
 
 				const userIds = batchCallArg.map((n: { userId: string }) => n.userId);
@@ -224,58 +192,54 @@ describe("EveningReminderJob", () => {
 
 		describe("알림 대상 없음", () => {
 			it("오늘 할일이 있는 사용자가 없으면 알림을 발송하지 않는다", async () => {
-				// Given
-				mockDatabaseService.user.findMany.mockResolvedValue([]);
+				// Given - 대상 사용자 없음
+				databaseService.user.findMany.mockResolvedValue([] as never);
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				expect(mockDatabaseService.user.findMany).toHaveBeenCalledTimes(1);
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).not.toHaveBeenCalled();
+				// Then - 알림 발송이 호출되지 않음
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(1);
+				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 			});
 		});
 
 		describe("에러 처리", () => {
 			it("데이터베이스 조회 실패 시 에러를 로깅하고 종료한다", async () => {
-				// Given
+				// Given - 데이터베이스 에러 발생
 				const error = new Error("Database connection failed");
-				mockDatabaseService.user.findMany.mockRejectedValue(error);
+				databaseService.user.findMany.mockRejectedValue(error);
 
-				// When & Then
+				// When & Then - 에러가 throw되지 않고 내부에서 처리됨
 				await expect(job.handleEveningReminder()).resolves.not.toThrow();
-				expect(
-					mockNotificationService.createAndSendBatch,
-				).not.toHaveBeenCalled();
+				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 			});
 
 			it("알림 발송 실패 시 에러를 로깅하고 종료한다", async () => {
-				// Given
+				// Given - 사용자는 있지만 알림 발송 실패
 				const users: UserWithTodoStats[] = [
 					createMockUserWithTodoStats({ id: "user-1" }),
 				];
-				mockDatabaseService.user.findMany.mockResolvedValue(users);
+				databaseService.user.findMany.mockResolvedValue(users as never);
 
 				const error = new Error("Push notification failed");
-				mockNotificationService.createAndSendBatch.mockRejectedValue(error);
+				notificationService.createAndSendBatch.mockRejectedValue(error);
 
-				// When & Then
+				// When & Then - 에러가 throw되지 않고 내부에서 처리됨
 				await expect(job.handleEveningReminder()).resolves.not.toThrow();
 			});
 		});
 
 		describe("날짜 범위 계산", () => {
 			it("오늘 날짜 범위로 사용자를 조회한다", async () => {
-				// Given
-				mockDatabaseService.user.findMany.mockResolvedValue([]);
+				// Given - 빈 결과 반환
+				databaseService.user.findMany.mockResolvedValue([] as never);
 
-				// When
+				// When - 저녁 리마인더 job 실행
 				await job.handleEveningReminder();
 
-				// Then
-				const findManyCall = mockDatabaseService.user.findMany.mock.calls[0][0];
+				// Then - 올바른 쿼리 조건으로 조회됨
+				const findManyCall = databaseService.user.findMany.mock.calls[0][0];
 
 				// where 조건 확인
 				expect(findManyCall.where).toBeDefined();

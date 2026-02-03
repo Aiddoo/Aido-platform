@@ -1,6 +1,19 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+/**
+ * NotificationRepository 단위 테스트
+ *
+ * Suites + Builder + GWT 패턴 적용
+ * - Suites: 자동 Mock 생성
+ * - Builder: 테스트 데이터 생성
+ * - GWT: Given/When/Then 주석
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { DatabaseService } from "@/database/database.service";
-import type { Notification, PushToken } from "@/generated/prisma/client";
+
 import { NotificationRepository } from "./notification.repository";
 import type {
 	CreateNotificationData,
@@ -9,87 +22,25 @@ import type {
 	RegisterPushTokenData,
 } from "./types/notification.types";
 
+// =============================================================================
+// Test Suite
+// =============================================================================
+
 describe("NotificationRepository", () => {
 	let repository: NotificationRepository;
-	let mockDatabaseService: jest.Mocked<DatabaseService>;
-
-	// ==========================================================================
-	// Mock Factory Functions
-	// ==========================================================================
-
-	const createMockNotification = (
-		overrides: Partial<Notification> = {},
-	): Notification => ({
-		id: 1,
-		userId: "user-1",
-		type: "FOLLOW_NEW",
-		title: "새로운 친구 요청",
-		body: "홍길동님이 친구가 되고 싶어해요",
-		isRead: false,
-		todoId: null,
-		friendId: "friend-1",
-		nudgeId: null,
-		cheerId: null,
-		metadata: null,
-		createdAt: new Date("2024-01-15T10:00:00Z"),
-		readAt: null,
-		...overrides,
-	});
-
-	const createMockPushToken = (
-		overrides: Partial<PushToken> = {},
-	): PushToken => ({
-		id: 1,
-		userId: "user-1",
-		token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-		deviceId: "device-1",
-		platform: "IOS",
-		isActive: true,
-		createdAt: new Date("2024-01-15T10:00:00Z"),
-		updatedAt: new Date("2024-01-15T10:00:00Z"),
-		lastUsedAt: new Date("2024-01-15T10:00:00Z"),
-		...overrides,
-	});
-
-	// ==========================================================================
-	// Setup
-	// ==========================================================================
+	let db: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
-		mockDatabaseService = {
-			notification: {
-				create: jest.fn(),
-				createMany: jest.fn(),
-				findUnique: jest.fn(),
-				findMany: jest.fn(),
-				update: jest.fn(),
-				updateMany: jest.fn(),
-				delete: jest.fn(),
-				deleteMany: jest.fn(),
-				count: jest.fn(),
-			},
-			pushToken: {
-				upsert: jest.fn(),
-				findFirst: jest.fn(),
-				findMany: jest.fn(),
-				update: jest.fn(),
-				updateMany: jest.fn(),
-				delete: jest.fn(),
-				deleteMany: jest.fn(),
-			},
-		} as unknown as jest.Mocked<DatabaseService>;
+		// ID 카운터 리셋
+		NotificationBuilder.resetIdCounter();
+		PushTokenBuilder.resetIdCounter();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				NotificationRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
-				},
-			],
-		}).compile();
+		const { unit, unitRef } = await TestBed.solitary(
+			NotificationRepository,
+		).compile();
 
-		repository = module.get<NotificationRepository>(NotificationRepository);
+		repository = unit;
+		db = unitRef.get(DatabaseService) as Mocked<DatabaseService>;
 	});
 
 	// ==========================================================================
@@ -106,8 +57,11 @@ describe("NotificationRepository", () => {
 				body: "홍길동님이 친구가 되고 싶어해요",
 				friendId: "friend-1",
 			};
-			const expectedNotification = createMockNotification();
-			(mockDatabaseService.notification.create as jest.Mock).mockResolvedValue(
+			const expectedNotification = NotificationBuilder.create("user-1")
+				.asFollowNew("friend-1")
+				.withContent("새로운 친구 요청", "홍길동님이 친구가 되고 싶어해요")
+				.build();
+			(db.notification.create as jest.Mock).mockResolvedValue(
 				expectedNotification,
 			);
 
@@ -115,7 +69,7 @@ describe("NotificationRepository", () => {
 			const result = await repository.createNotification(data);
 
 			// Then
-			expect(mockDatabaseService.notification.create).toHaveBeenCalledWith({
+			expect(db.notification.create).toHaveBeenCalledWith({
 				data: {
 					userId: data.userId,
 					type: data.type,
@@ -140,14 +94,12 @@ describe("NotificationRepository", () => {
 				body: "시스템 점검 예정",
 				metadata: { externalUrl: "https://example.com" },
 			};
-			const expectedNotification = createMockNotification({
-				type: "SYSTEM_NOTICE",
-				title: "시스템 공지",
-				body: "시스템 점검 예정",
-				friendId: null,
-				metadata: { externalUrl: "https://example.com" },
-			});
-			(mockDatabaseService.notification.create as jest.Mock).mockResolvedValue(
+			const expectedNotification = NotificationBuilder.create("user-1")
+				.asSystemNotice()
+				.withContent("시스템 공지", "시스템 점검 예정")
+				.withMetadata({ externalUrl: "https://example.com" })
+				.build();
+			(db.notification.create as jest.Mock).mockResolvedValue(
 				expectedNotification,
 			);
 
@@ -155,7 +107,7 @@ describe("NotificationRepository", () => {
 			const result = await repository.createNotification(data);
 
 			// Then
-			expect(mockDatabaseService.notification.create).toHaveBeenCalledWith({
+			expect(db.notification.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					metadata: { externalUrl: "https://example.com" },
 				}),
@@ -181,15 +133,13 @@ describe("NotificationRepository", () => {
 					body: "오늘 5개의 할일이 기다리고 있어요",
 				},
 			];
-			(
-				mockDatabaseService.notification.createMany as jest.Mock
-			).mockResolvedValue({ count: 2 });
+			(db.notification.createMany as jest.Mock).mockResolvedValue({ count: 2 });
 
 			// When
 			const result = await repository.createManyNotifications(dataList);
 
 			// Then
-			expect(mockDatabaseService.notification.createMany).toHaveBeenCalledWith({
+			expect(db.notification.createMany).toHaveBeenCalledWith({
 				data: expect.arrayContaining([
 					expect.objectContaining({ userId: "user-1" }),
 					expect.objectContaining({ userId: "user-2" }),
@@ -202,16 +152,16 @@ describe("NotificationRepository", () => {
 	describe("findNotificationById", () => {
 		it("ID로 알림을 조회해야 한다", async () => {
 			// Given
-			const notification = createMockNotification();
-			(
-				mockDatabaseService.notification.findUnique as jest.Mock
-			).mockResolvedValue(notification);
+			const notification = NotificationBuilder.create("user-1")
+				.withId(1)
+				.build();
+			(db.notification.findUnique as jest.Mock).mockResolvedValue(notification);
 
 			// When
 			const result = await repository.findNotificationById(1);
 
 			// Then
-			expect(mockDatabaseService.notification.findUnique).toHaveBeenCalledWith({
+			expect(db.notification.findUnique).toHaveBeenCalledWith({
 				where: { id: 1 },
 			});
 			expect(result).toEqual(notification);
@@ -219,9 +169,7 @@ describe("NotificationRepository", () => {
 
 		it("알림이 없으면 null을 반환해야 한다", async () => {
 			// Given
-			(
-				mockDatabaseService.notification.findUnique as jest.Mock
-			).mockResolvedValue(null);
+			(db.notification.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findNotificationById(999);
@@ -239,18 +187,16 @@ describe("NotificationRepository", () => {
 				size: 10,
 			};
 			const notifications = [
-				createMockNotification({ id: 1 }),
-				createMockNotification({ id: 2 }),
+				NotificationBuilder.create("user-1").withId(1).build(),
+				NotificationBuilder.create("user-1").withId(2).build(),
 			];
-			(
-				mockDatabaseService.notification.findMany as jest.Mock
-			).mockResolvedValue(notifications);
+			(db.notification.findMany as jest.Mock).mockResolvedValue(notifications);
 
 			// When
 			const result = await repository.findNotificationsByUser(params);
 
 			// Then
-			expect(mockDatabaseService.notification.findMany).toHaveBeenCalledWith({
+			expect(db.notification.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 				take: 11, // size + 1 for pagination check
 				orderBy: { createdAt: "desc" },
@@ -265,16 +211,16 @@ describe("NotificationRepository", () => {
 				cursor: 5,
 				size: 10,
 			};
-			const notifications = [createMockNotification({ id: 4 })];
-			(
-				mockDatabaseService.notification.findMany as jest.Mock
-			).mockResolvedValue(notifications);
+			const notifications = [
+				NotificationBuilder.create("user-1").withId(4).build(),
+			];
+			(db.notification.findMany as jest.Mock).mockResolvedValue(notifications);
 
 			// When
 			const result = await repository.findNotificationsByUser(params);
 
 			// Then
-			expect(mockDatabaseService.notification.findMany).toHaveBeenCalledWith({
+			expect(db.notification.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 				take: 11,
 				skip: 1,
@@ -291,16 +237,16 @@ describe("NotificationRepository", () => {
 				size: 10,
 				unreadOnly: true,
 			};
-			const notifications = [createMockNotification({ isRead: false })];
-			(
-				mockDatabaseService.notification.findMany as jest.Mock
-			).mockResolvedValue(notifications);
+			const notifications = [
+				NotificationBuilder.create("user-1").asUnread().build(),
+			];
+			(db.notification.findMany as jest.Mock).mockResolvedValue(notifications);
 
 			// When
 			await repository.findNotificationsByUser(params);
 
 			// Then
-			expect(mockDatabaseService.notification.findMany).toHaveBeenCalledWith(
+			expect(db.notification.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { userId: "user-1", isRead: false },
 				}),
@@ -311,19 +257,17 @@ describe("NotificationRepository", () => {
 	describe("markAsRead", () => {
 		it("알림을 읽음 처리해야 한다", async () => {
 			// Given
-			const readNotification = createMockNotification({
-				isRead: true,
-				readAt: new Date(),
-			});
-			(mockDatabaseService.notification.update as jest.Mock).mockResolvedValue(
-				readNotification,
-			);
+			const readNotification = NotificationBuilder.create("user-1")
+				.withId(1)
+				.asRead()
+				.build();
+			(db.notification.update as jest.Mock).mockResolvedValue(readNotification);
 
 			// When
 			const result = await repository.markAsRead(1);
 
 			// Then
-			expect(mockDatabaseService.notification.update).toHaveBeenCalledWith({
+			expect(db.notification.update).toHaveBeenCalledWith({
 				where: { id: 1 },
 				data: {
 					isRead: true,
@@ -337,15 +281,13 @@ describe("NotificationRepository", () => {
 	describe("markAllAsRead", () => {
 		it("사용자의 모든 알림을 읽음 처리해야 한다", async () => {
 			// Given
-			(
-				mockDatabaseService.notification.updateMany as jest.Mock
-			).mockResolvedValue({ count: 5 });
+			(db.notification.updateMany as jest.Mock).mockResolvedValue({ count: 5 });
 
 			// When
 			const result = await repository.markAllAsRead("user-1");
 
 			// Then
-			expect(mockDatabaseService.notification.updateMany).toHaveBeenCalledWith({
+			expect(db.notification.updateMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-1",
 					isRead: false,
@@ -362,15 +304,13 @@ describe("NotificationRepository", () => {
 	describe("countUnread", () => {
 		it("읽지 않은 알림 수를 반환해야 한다", async () => {
 			// Given
-			(mockDatabaseService.notification.count as jest.Mock).mockResolvedValue(
-				3,
-			);
+			(db.notification.count as jest.Mock).mockResolvedValue(3);
 
 			// When
 			const result = await repository.countUnread("user-1");
 
 			// Then
-			expect(mockDatabaseService.notification.count).toHaveBeenCalledWith({
+			expect(db.notification.count).toHaveBeenCalledWith({
 				where: {
 					userId: "user-1",
 					isRead: false,
@@ -383,16 +323,16 @@ describe("NotificationRepository", () => {
 	describe("deleteNotification", () => {
 		it("알림을 삭제해야 한다", async () => {
 			// Given
-			const notification = createMockNotification();
-			(mockDatabaseService.notification.delete as jest.Mock).mockResolvedValue(
-				notification,
-			);
+			const notification = NotificationBuilder.create("user-1")
+				.withId(1)
+				.build();
+			(db.notification.delete as jest.Mock).mockResolvedValue(notification);
 
 			// When
 			const result = await repository.deleteNotification(1);
 
 			// Then
-			expect(mockDatabaseService.notification.delete).toHaveBeenCalledWith({
+			expect(db.notification.delete).toHaveBeenCalledWith({
 				where: { id: 1 },
 			});
 			expect(result).toEqual(notification);
@@ -402,15 +342,15 @@ describe("NotificationRepository", () => {
 	describe("deleteOldNotifications", () => {
 		it("90일 이상 된 알림을 삭제해야 한다", async () => {
 			// Given
-			(
-				mockDatabaseService.notification.deleteMany as jest.Mock
-			).mockResolvedValue({ count: 10 });
+			(db.notification.deleteMany as jest.Mock).mockResolvedValue({
+				count: 10,
+			});
 
 			// When
 			const result = await repository.deleteOldNotifications();
 
 			// Then
-			expect(mockDatabaseService.notification.deleteMany).toHaveBeenCalledWith({
+			expect(db.notification.deleteMany).toHaveBeenCalledWith({
 				where: {
 					createdAt: {
 						lt: expect.any(Date),
@@ -422,15 +362,13 @@ describe("NotificationRepository", () => {
 
 		it("지정된 일수 이상 된 알림을 삭제해야 한다", async () => {
 			// Given
-			(
-				mockDatabaseService.notification.deleteMany as jest.Mock
-			).mockResolvedValue({ count: 5 });
+			(db.notification.deleteMany as jest.Mock).mockResolvedValue({ count: 5 });
 
 			// When
 			const result = await repository.deleteOldNotifications(30);
 
 			// Then
-			expect(mockDatabaseService.notification.deleteMany).toHaveBeenCalled();
+			expect(db.notification.deleteMany).toHaveBeenCalled();
 			expect(result.count).toBe(5);
 		});
 	});
@@ -448,16 +386,18 @@ describe("NotificationRepository", () => {
 				deviceId: "device-1",
 				platform: "IOS",
 			};
-			const expectedToken = createMockPushToken();
-			(mockDatabaseService.pushToken.upsert as jest.Mock).mockResolvedValue(
-				expectedToken,
-			);
+			const expectedToken = PushTokenBuilder.create("user-1")
+				.withToken("ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]")
+				.withDeviceId("device-1")
+				.withPlatform("IOS")
+				.build();
+			(db.pushToken.upsert as jest.Mock).mockResolvedValue(expectedToken);
 
 			// When
 			const result = await repository.registerPushToken(data);
 
 			// Then
-			expect(mockDatabaseService.pushToken.upsert).toHaveBeenCalledWith({
+			expect(db.pushToken.upsert).toHaveBeenCalledWith({
 				where: {
 					userId_deviceId: {
 						userId: "user-1",
@@ -487,16 +427,16 @@ describe("NotificationRepository", () => {
 				userId: "user-1",
 				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
 			};
-			const expectedToken = createMockPushToken({ deviceId: "default" });
-			(mockDatabaseService.pushToken.upsert as jest.Mock).mockResolvedValue(
-				expectedToken,
-			);
+			const expectedToken = PushTokenBuilder.create("user-1")
+				.withDeviceId("default")
+				.build();
+			(db.pushToken.upsert as jest.Mock).mockResolvedValue(expectedToken);
 
 			// When
 			await repository.registerPushToken(data);
 
 			// Then
-			expect(mockDatabaseService.pushToken.upsert).toHaveBeenCalledWith(
+			expect(db.pushToken.upsert).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: {
 						userId_deviceId: {
@@ -512,16 +452,14 @@ describe("NotificationRepository", () => {
 	describe("findPushTokenByToken", () => {
 		it("토큰 값으로 푸시 토큰을 조회해야 한다", async () => {
 			// Given
-			const token = createMockPushToken();
-			(mockDatabaseService.pushToken.findFirst as jest.Mock).mockResolvedValue(
-				token,
-			);
+			const token = PushTokenBuilder.create("user-1").build();
+			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(token);
 
 			// When
 			const result = await repository.findPushTokenByToken(token.token);
 
 			// Then
-			expect(mockDatabaseService.pushToken.findFirst).toHaveBeenCalledWith({
+			expect(db.pushToken.findFirst).toHaveBeenCalledWith({
 				where: { token: token.token },
 			});
 			expect(result).toEqual(token);
@@ -529,9 +467,7 @@ describe("NotificationRepository", () => {
 
 		it("토큰이 없으면 null을 반환해야 한다", async () => {
 			// Given
-			(mockDatabaseService.pushToken.findFirst as jest.Mock).mockResolvedValue(
-				null,
-			);
+			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findPushTokenByToken("nonexistent-token");
@@ -548,18 +484,19 @@ describe("NotificationRepository", () => {
 				userId: "user-1",
 			};
 			const tokens = [
-				createMockPushToken({ id: 1 }),
-				createMockPushToken({ id: 2, deviceId: "device-2" }),
+				PushTokenBuilder.create("user-1").withId(1).build(),
+				PushTokenBuilder.create("user-1")
+					.withId(2)
+					.withDeviceId("device-2")
+					.build(),
 			];
-			(mockDatabaseService.pushToken.findMany as jest.Mock).mockResolvedValue(
-				tokens,
-			);
+			(db.pushToken.findMany as jest.Mock).mockResolvedValue(tokens);
 
 			// When
 			const result = await repository.findPushTokensByUser(params);
 
 			// Then
-			expect(mockDatabaseService.pushToken.findMany).toHaveBeenCalledWith({
+			expect(db.pushToken.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 				orderBy: { updatedAt: "desc" },
 			});
@@ -572,16 +509,14 @@ describe("NotificationRepository", () => {
 				userId: "user-1",
 				activeOnly: true,
 			};
-			const tokens = [createMockPushToken({ isActive: true })];
-			(mockDatabaseService.pushToken.findMany as jest.Mock).mockResolvedValue(
-				tokens,
-			);
+			const tokens = [PushTokenBuilder.create("user-1").asActive().build()];
+			(db.pushToken.findMany as jest.Mock).mockResolvedValue(tokens);
 
 			// When
 			await repository.findPushTokensByUser(params);
 
 			// Then
-			expect(mockDatabaseService.pushToken.findMany).toHaveBeenCalledWith(
+			expect(db.pushToken.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { userId: "user-1", isActive: true },
 				}),
@@ -594,18 +529,16 @@ describe("NotificationRepository", () => {
 			// Given
 			const userIds = ["user-1", "user-2"];
 			const tokens = [
-				createMockPushToken({ userId: "user-1" }),
-				createMockPushToken({ id: 2, userId: "user-2" }),
+				PushTokenBuilder.create("user-1").build(),
+				PushTokenBuilder.create("user-2").withId(2).build(),
 			];
-			(mockDatabaseService.pushToken.findMany as jest.Mock).mockResolvedValue(
-				tokens,
-			);
+			(db.pushToken.findMany as jest.Mock).mockResolvedValue(tokens);
 
 			// When
 			const result = await repository.findActivePushTokensByUsers(userIds);
 
 			// Then
-			expect(mockDatabaseService.pushToken.findMany).toHaveBeenCalledWith({
+			expect(db.pushToken.findMany).toHaveBeenCalledWith({
 				where: {
 					userId: { in: userIds },
 					isActive: true,
@@ -618,23 +551,21 @@ describe("NotificationRepository", () => {
 	describe("deactivatePushToken", () => {
 		it("푸시 토큰을 비활성화해야 한다", async () => {
 			// Given
-			const existingToken = createMockPushToken();
-			const deactivatedToken = createMockPushToken({ isActive: false });
-			(mockDatabaseService.pushToken.findFirst as jest.Mock).mockResolvedValue(
-				existingToken,
-			);
-			(mockDatabaseService.pushToken.update as jest.Mock).mockResolvedValue(
-				deactivatedToken,
-			);
+			const existingToken = PushTokenBuilder.create("user-1").build();
+			const deactivatedToken = PushTokenBuilder.create("user-1")
+				.asInactive()
+				.build();
+			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(existingToken);
+			(db.pushToken.update as jest.Mock).mockResolvedValue(deactivatedToken);
 
 			// When
 			const result = await repository.deactivatePushToken(existingToken.token);
 
 			// Then
-			expect(mockDatabaseService.pushToken.findFirst).toHaveBeenCalledWith({
+			expect(db.pushToken.findFirst).toHaveBeenCalledWith({
 				where: { token: existingToken.token },
 			});
-			expect(mockDatabaseService.pushToken.update).toHaveBeenCalledWith({
+			expect(db.pushToken.update).toHaveBeenCalledWith({
 				where: { id: existingToken.id },
 				data: { isActive: false },
 			});
@@ -643,32 +574,28 @@ describe("NotificationRepository", () => {
 
 		it("토큰이 없으면 null을 반환해야 한다", async () => {
 			// Given
-			(mockDatabaseService.pushToken.findFirst as jest.Mock).mockResolvedValue(
-				null,
-			);
+			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.deactivatePushToken("nonexistent-token");
 
 			// Then
 			expect(result).toBeNull();
-			expect(mockDatabaseService.pushToken.update).not.toHaveBeenCalled();
+			expect(db.pushToken.update).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("deletePushToken", () => {
 		it("푸시 토큰을 삭제해야 한다", async () => {
 			// Given
-			const token = createMockPushToken();
-			(mockDatabaseService.pushToken.delete as jest.Mock).mockResolvedValue(
-				token,
-			);
+			const token = PushTokenBuilder.create("user-1").build();
+			(db.pushToken.delete as jest.Mock).mockResolvedValue(token);
 
 			// When
 			const result = await repository.deletePushToken("user-1", "device-1");
 
 			// Then
-			expect(mockDatabaseService.pushToken.delete).toHaveBeenCalledWith({
+			expect(db.pushToken.delete).toHaveBeenCalledWith({
 				where: {
 					userId_deviceId: {
 						userId: "user-1",
@@ -683,15 +610,13 @@ describe("NotificationRepository", () => {
 	describe("deleteAllPushTokensByUser", () => {
 		it("사용자의 모든 푸시 토큰을 삭제해야 한다", async () => {
 			// Given
-			(mockDatabaseService.pushToken.deleteMany as jest.Mock).mockResolvedValue(
-				{ count: 3 },
-			);
+			(db.pushToken.deleteMany as jest.Mock).mockResolvedValue({ count: 3 });
 
 			// When
 			const result = await repository.deleteAllPushTokensByUser("user-1");
 
 			// Then
-			expect(mockDatabaseService.pushToken.deleteMany).toHaveBeenCalledWith({
+			expect(db.pushToken.deleteMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 			});
 			expect(result.count).toBe(3);
@@ -702,15 +627,13 @@ describe("NotificationRepository", () => {
 		it("잘못된 토큰들을 일괄 비활성화해야 한다", async () => {
 			// Given
 			const invalidTokens = ["invalid-token-1", "invalid-token-2"];
-			(mockDatabaseService.pushToken.updateMany as jest.Mock).mockResolvedValue(
-				{ count: 2 },
-			);
+			(db.pushToken.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
 
 			// When
 			const result = await repository.deactivateInvalidTokens(invalidTokens);
 
 			// Then
-			expect(mockDatabaseService.pushToken.updateMany).toHaveBeenCalledWith({
+			expect(db.pushToken.updateMany).toHaveBeenCalledWith({
 				where: {
 					token: { in: invalidTokens },
 				},

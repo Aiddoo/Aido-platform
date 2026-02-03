@@ -12,83 +12,80 @@ jest.mock("@ai-sdk/google", () => ({
 	createGoogleGenerativeAI: jest.fn(() => jest.fn(() => "mock-model")),
 }));
 
+// =============================================================================
+// Mock Setup
+// =============================================================================
+
+const mockConfigService = {
+	get: jest.fn(),
+};
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+async function createProvider(): Promise<GeminiProvider> {
+	const module: TestingModule = await Test.createTestingModule({
+		providers: [
+			GeminiProvider,
+			{ provide: ConfigService, useValue: mockConfigService },
+		],
+	}).compile();
+
+	return module.get<GeminiProvider>(GeminiProvider);
+}
+
+// =============================================================================
+// Tests
+// =============================================================================
+
 describe("GeminiProvider", () => {
-	let _provider: GeminiProvider;
-	let _configService: ConfigService;
-
-	const mockConfigService = {
-		get: jest.fn(),
-	};
-
-	beforeEach(async () => {
+	beforeEach(() => {
 		jest.clearAllMocks();
-
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				GeminiProvider,
-				{ provide: ConfigService, useValue: mockConfigService },
-			],
-		}).compile();
-
-		_provider = module.get<GeminiProvider>(GeminiProvider);
-		_configService = module.get<ConfigService>(ConfigService);
 	});
+
+	// =========================================================================
+	// isAvailable
+	// =========================================================================
 
 	describe("isAvailable", () => {
-		it("API 키가 설정되어 있으면 true를 반환한다", () => {
-			// Given
+		it("API 키가 설정되어 있으면 true를 반환한다", async () => {
+			// Given - API 키가 설정됨
 			mockConfigService.get.mockReturnValue("test-api-key");
 
-			// 새 인스턴스 생성 (생성자에서 API 키를 읽음)
-			const module = Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
+			// When - 새 인스턴스 생성 (생성자에서 API 키를 읽음)
+			const provider = await createProvider();
 
-			return module.then((m) => {
-				const newProvider = m.get<GeminiProvider>(GeminiProvider);
-				expect(newProvider.isAvailable()).toBe(true);
-			});
+			// Then - isAvailable이 true 반환
+			expect(provider.isAvailable()).toBe(true);
 		});
 
-		it("API 키가 없으면 false를 반환한다", () => {
-			// Given
+		it("API 키가 없으면 false를 반환한다", async () => {
+			// Given - API 키가 설정되지 않음
 			mockConfigService.get.mockReturnValue(undefined);
 
-			// 새 인스턴스 생성
-			const module = Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
+			// When - 새 인스턴스 생성
+			const provider = await createProvider();
 
-			return module.then((m) => {
-				const newProvider = m.get<GeminiProvider>(GeminiProvider);
-				expect(newProvider.isAvailable()).toBe(false);
-			});
+			// Then - isAvailable이 false 반환
+			expect(provider.isAvailable()).toBe(false);
 		});
 
-		it("API 키가 빈 문자열이면 false를 반환한다", () => {
-			// Given
+		it("API 키가 빈 문자열이면 false를 반환한다", async () => {
+			// Given - API 키가 빈 문자열
 			mockConfigService.get.mockReturnValue("");
 
-			// 새 인스턴스 생성
-			const module = Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
+			// When - 새 인스턴스 생성
+			const provider = await createProvider();
 
-			return module.then((m) => {
-				const newProvider = m.get<GeminiProvider>(GeminiProvider);
-				expect(newProvider.isAvailable()).toBe(false);
-			});
+			// Then - isAvailable이 false 반환
+			expect(provider.isAvailable()).toBe(false);
 		});
 	});
+
+	// =========================================================================
+	// generateStructured
+	// =========================================================================
 
 	describe("generateStructured", () => {
 		const testSchema = z.object({
@@ -97,26 +94,14 @@ describe("GeminiProvider", () => {
 			isAllDay: z.boolean(),
 		});
 
-		beforeEach(() => {
-			mockConfigService.get.mockReturnValue("test-api-key");
-		});
-
 		it("API 키가 없으면 에러를 던진다", async () => {
-			// Given
+			// Given - API 키가 설정되지 않음
 			mockConfigService.get.mockReturnValue(undefined);
+			const provider = await createProvider();
 
-			const module = await Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
-
-			const newProvider = module.get<GeminiProvider>(GeminiProvider);
-
-			// When & Then
+			// When & Then - 에러가 발생함
 			await expect(
-				newProvider.generateStructured({
+				provider.generateStructured({
 					prompt: "테스트 프롬프트",
 					schema: testSchema,
 				}),
@@ -124,7 +109,7 @@ describe("GeminiProvider", () => {
 		});
 
 		it("Vercel AI SDK generateObject를 호출한다", async () => {
-			// Given
+			// Given - API 키가 설정되고 generateObject가 결과 반환
 			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
 				object: {
@@ -139,25 +124,17 @@ describe("GeminiProvider", () => {
 			});
 
 			mockConfigService.get.mockReturnValue("test-api-key");
+			const provider = await createProvider();
 
-			const module = await Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
-
-			const newProvider = module.get<GeminiProvider>(GeminiProvider);
-
-			// When
-			const result = await newProvider.generateStructured({
+			// When - generateStructured 호출
+			const result = await provider.generateStructured({
 				prompt: "내일 회의",
 				schema: testSchema,
 				maxTokens: 200,
 				temperature: 0.5,
 			});
 
-			// Then
+			// Then - 올바른 인자로 generateObject가 호출됨
 			expect(generateObject).toHaveBeenCalledWith(
 				expect.objectContaining({
 					prompt: "내일 회의",
@@ -178,7 +155,7 @@ describe("GeminiProvider", () => {
 		});
 
 		it("기본값으로 maxTokens=150, temperature=0.1을 사용한다", async () => {
-			// Given
+			// Given - API 키가 설정됨
 			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
 				object: { title: "테스트", startDate: "2025-01-26", isAllDay: true },
@@ -186,23 +163,15 @@ describe("GeminiProvider", () => {
 			});
 
 			mockConfigService.get.mockReturnValue("test-api-key");
+			const provider = await createProvider();
 
-			const module = await Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
-
-			const newProvider = module.get<GeminiProvider>(GeminiProvider);
-
-			// When
-			await newProvider.generateStructured({
+			// When - 기본 옵션으로 호출
+			await provider.generateStructured({
 				prompt: "테스트",
 				schema: testSchema,
 			});
 
-			// Then
+			// Then - 기본값이 사용됨
 			expect(generateObject).toHaveBeenCalledWith(
 				expect.objectContaining({
 					maxTokens: 150,
@@ -212,24 +181,16 @@ describe("GeminiProvider", () => {
 		});
 
 		it("generateObject 에러를 전파한다", async () => {
-			// Given
+			// Given - generateObject가 에러를 던짐
 			const { generateObject } = require("ai");
 			generateObject.mockRejectedValue(new Error("API error"));
 
 			mockConfigService.get.mockReturnValue("test-api-key");
+			const provider = await createProvider();
 
-			const module = await Test.createTestingModule({
-				providers: [
-					GeminiProvider,
-					{ provide: ConfigService, useValue: mockConfigService },
-				],
-			}).compile();
-
-			const newProvider = module.get<GeminiProvider>(GeminiProvider);
-
-			// When & Then
+			// When & Then - 에러가 전파됨
 			await expect(
-				newProvider.generateStructured({
+				provider.generateStructured({
 					prompt: "테스트",
 					schema: testSchema,
 				}),

@@ -130,29 +130,9 @@ export class FollowController {
 	@ApiDoc({
 		summary: "친구 요청 보내기",
 		operationId: "sendFriendRequest",
-		description: `
-## 👤 친구 요청 보내기
+		description: `특정 사용자에게 친구 요청을 보냅니다.
 
-특정 사용자에게 친구 요청을 보냅니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`userTag\`: 친구 요청을 보낼 대상 사용자 태그 (8자리 영숫자, 예: JOHN2026)
-
-### 💡 동작 방식
-1. 대상 사용자에게 친구 요청을 보냅니다 (status: PENDING)
-2. 만약 상대방이 이미 나에게 친구 요청을 보낸 상태라면, 자동으로 친구가 됩니다
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| FOLLOW_0901 | 이미 친구 요청을 보낸 상태 |
-| FOLLOW_0902 | 이미 친구 관계 |
-| FOLLOW_0904 | 자기 자신에게 요청 |
-| FOLLOW_0905 | 대상 사용자가 존재하지 않음 |
-		`,
+상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).`,
 	})
 	@ApiCreatedResponse({ type: SendFriendRequestResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -197,27 +177,9 @@ export class FollowController {
 	@ApiDoc({
 		summary: "친구 요청 수락",
 		operationId: "acceptFriendRequest",
-		description: `
-## ✅ 친구 요청 수락
+		description: `받은 친구 요청을 수락합니다.
 
-받은 친구 요청을 수락합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`userId\`: 친구 요청을 보낸 사용자 ID (CUID)
-
-### 💡 동작 방식
-1. 상대방의 요청을 ACCEPTED 상태로 변경
-2. 내 쪽에서도 ACCEPTED 상태의 Follow 레코드 생성
-3. 양방향 친구 관계가 성립됩니다
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| FOLLOW_0903 | 해당 사용자로부터 받은 친구 요청이 없음 |
-		`,
+수락 시 양방향 친구 관계가 성립됩니다.`,
 	})
 	@ApiSuccessResponse({ type: AcceptFriendRequestResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -248,25 +210,9 @@ export class FollowController {
 	@ApiDoc({
 		summary: "친구 요청 거절",
 		operationId: "rejectFriendRequest",
-		description: `
-## ❌ 친구 요청 거절
+		description: `받은 친구 요청을 거절합니다.
 
-받은 친구 요청을 거절합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`userId\`: 친구 요청을 보낸 사용자 ID (CUID)
-
-### 💡 동작 방식
-- 상대방이 보낸 친구 요청을 삭제합니다
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| FOLLOW_0903 | 해당 사용자로부터 받은 친구 요청이 없음 |
-		`,
+거절된 요청은 삭제되며 상대방은 다시 요청을 보낼 수 있습니다.`,
 	})
 	@ApiSuccessResponse({ type: RejectFriendRequestResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -297,26 +243,9 @@ export class FollowController {
 	@ApiDoc({
 		summary: "친구 삭제 / 요청 철회",
 		operationId: "removeFriend",
-		description: `
-## 🗑️ 친구 삭제 또는 요청 철회
+		description: `친구 관계를 삭제하거나 보낸 친구 요청을 철회합니다.
 
-친구 관계를 삭제하거나 보낸 친구 요청을 철회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 📝 경로 파라미터
-- \`userId\`: 친구 삭제할 사용자 또는 요청을 철회할 대상 사용자 ID (CUID)
-
-### 💡 동작 방식
-- 친구 관계인 경우: 양방향 친구 관계를 모두 삭제
-- 요청만 보낸 경우: 보낸 요청을 삭제 (철회)
-
-### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| FOLLOW_0907 | 친구 관계가 아니고 보낸 요청도 없음 |
-		`,
+친구인 경우 양방향 관계가 모두 삭제되고, 요청만 보낸 상태라면 요청이 철회됩니다.`,
 	})
 	@ApiSuccessResponse({ type: RemoveFriendResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -346,30 +275,12 @@ export class FollowController {
 	@ApiDoc({
 		summary: "친구 목록 조회",
 		operationId: "getFriends",
-		description: `
-## 👥 친구 목록 조회
+		description: `나와 맞팔 관계인 친구 목록을 조회합니다.
 
-나와 맞팔 관계인 친구 목록을 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`cursor\` | string | - | 페이지네이션 커서 (CUID) |
-| \`limit\` | number | 20 | 페이지 크기 (1-50) |
-| \`search\` | string | - | 태그로 검색 |
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "friends": [...],
-  "totalCount": 10,
-  "hasMore": false
-}
-\`\`\`
-		`,
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)
+- \`search\`: 사용자 태그로 검색`,
 	})
 	@ApiSuccessResponse({ type: FriendsListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -399,29 +310,11 @@ export class FollowController {
 	@ApiDoc({
 		summary: "받은 친구 요청 목록",
 		operationId: "getReceivedFriendRequests",
-		description: `
-## 📥 받은 친구 요청 목록
+		description: `나에게 친구 요청을 보낸 사용자 목록을 조회합니다.
 
-나에게 친구 요청을 보낸 사용자 목록을 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`cursor\` | string | - | 페이지네이션 커서 (CUID) |
-| \`limit\` | number | 20 | 페이지 크기 (1-50) |
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "requests": [...],
-  "totalCount": 3,
-  "hasMore": false
-}
-\`\`\`
-		`,
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
 	})
 	@ApiSuccessResponse({ type: ReceivedRequestsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -452,29 +345,11 @@ export class FollowController {
 	@ApiDoc({
 		summary: "보낸 친구 요청 목록",
 		operationId: "getSentFriendRequests",
-		description: `
-## 📤 보낸 친구 요청 목록
+		description: `내가 친구 요청을 보낸 사용자 목록을 조회합니다.
 
-내가 친구 요청을 보낸 사용자 목록을 조회합니다.
-
-### 🔐 인증 필요
-\`Authorization: Bearer {accessToken}\`
-
-### 🔍 쿼리 파라미터
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`cursor\` | string | - | 페이지네이션 커서 (CUID) |
-| \`limit\` | number | 20 | 페이지 크기 (1-50) |
-
-### 📤 응답 구조
-\`\`\`json
-{
-  "requests": [...],
-  "totalCount": 2,
-  "hasMore": false
-}
-\`\`\`
-		`,
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
 	})
 	@ApiSuccessResponse({ type: SentRequestsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

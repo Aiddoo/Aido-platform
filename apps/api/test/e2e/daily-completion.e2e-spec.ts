@@ -153,18 +153,28 @@ describe("DailyCompletion (e2e)", () => {
 	describe("GET /daily-completions - 일일 완료 현황 조회", () => {
 		describe("인증", () => {
 			it("인증 없이 접근 시 401 반환", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증되지 않은 상태
+
+				// When - 인증 토큰 없이 API 호출
+				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
-					.query({ startDate: "2026-01-01", endDate: "2026-01-31" })
-					.expect(401);
+					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
+
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 			});
 
 			it("잘못된 토큰으로 접근 시 401 반환", async () => {
-				await request(app.getHttpServer())
+				// Given - 유효하지 않은 토큰 준비
+
+				// When - 잘못된 토큰으로 API 호출
+				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", "Bearer invalid-token")
-					.query({ startDate: "2026-01-01", endDate: "2026-01-31" })
-					.expect(401);
+					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
+
+				// Then - 401 Unauthorized 반환
+				expect(response.status).toBe(401);
 			});
 		});
 
@@ -179,42 +189,58 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("startDate 누락 시 400 반환", async () => {
+				// Given - 인증된 사용자 준비
+
+				// When - startDate 없이 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ endDate: "2026-01-31" })
-					.expect(400);
+					.query({ endDate: "2026-01-31" });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 			});
 
 			it("endDate 누락 시 400 반환", async () => {
+				// Given - 인증된 사용자 준비
+
+				// When - endDate 없이 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-01-01" })
-					.expect(400);
+					.query({ startDate: "2026-01-01" });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 			});
 
 			it("잘못된 날짜 형식 시 400 반환", async () => {
+				// Given - 인증된 사용자 준비
+
+				// When - 잘못된 날짜 형식으로 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026/01/01", endDate: "2026-01-31" })
-					.expect(400);
+					.query({ startDate: "2026/01/01", endDate: "2026-01-31" });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 			});
 
 			it("endDate가 startDate보다 이전인 경우 400 반환", async () => {
+				// Given - 인증된 사용자 준비
+
+				// When - endDate가 startDate보다 이전인 값으로 API 호출
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-01-31", endDate: "2026-01-01" })
-					.expect(400);
+					.query({ startDate: "2026-01-31", endDate: "2026-01-01" });
 
+				// Then - 400 Bad Request 반환
+				expect(response.status).toBe(400);
 				expect(response.body.success).toBe(false);
 			});
 		});
@@ -243,12 +269,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("날짜 범위 내 완료 현황 조회 성공", async () => {
+				// Given - 인증된 사용자와 4개 날짜에 Todo 데이터 준비 (100% 완료 2일)
+
+				// When - 1월 전체 기간 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-01-01", endDate: "2026-01-31" })
-					.expect(200);
+					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
+				// Then - 성공 응답과 완료 현황 데이터 반환
+				expect(response.status).toBe(200);
 				expect(response.body.success).toBe(true);
 				expect(response.body.data).toHaveProperty("completions");
 				expect(response.body.data).toHaveProperty("totalCompleteDays");
@@ -269,12 +299,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("완료 현황 상세 데이터 검증", async () => {
+				// Given - 인증된 사용자와 3일간의 Todo 데이터 준비
+
+				// When - 특정 3일 기간 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-01-15", endDate: "2026-01-17" })
-					.expect(200);
+					.query({ startDate: "2026-01-15", endDate: "2026-01-17" });
 
+				// Then - 각 날짜별 상세 완료 현황 검증
+				expect(response.status).toBe(200);
 				const { completions } = response.body.data;
 
 				// 날짜순 정렬 확인
@@ -311,12 +345,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("특정 날짜만 조회", async () => {
+				// Given - 인증된 사용자와 2026-01-20에 100% 완료된 Todo 준비
+
+				// When - 단일 날짜 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-01-20", endDate: "2026-01-20" })
-					.expect(200);
+					.query({ startDate: "2026-01-20", endDate: "2026-01-20" });
 
+				// Then - 해당 날짜의 완료 현황 반환
+				expect(response.status).toBe(200);
 				const { completions, totalCompleteDays } = response.body.data;
 
 				expect(completions.length).toBe(1);
@@ -326,12 +364,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("Todo가 없는 날짜 범위 조회 시 빈 배열 반환", async () => {
+				// Given - 인증된 사용자 준비 (2월에는 Todo 없음)
+
+				// When - Todo가 없는 2월 기간 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-02-01", endDate: "2026-02-28" })
-					.expect(200);
+					.query({ startDate: "2026-02-01", endDate: "2026-02-28" });
 
+				// Then - 빈 completions 배열과 0개의 완료일 반환
+				expect(response.status).toBe(200);
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.completions).toEqual([]);
 				expect(response.body.data.totalCompleteDays).toBe(0);
@@ -359,12 +401,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("사용자 1은 자신의 데이터만 조회", async () => {
+				// Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
+
+				// When - 사용자 1이 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${user1Token}`)
-					.query({ startDate: "2026-03-01", endDate: "2026-03-01" })
-					.expect(200);
+					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
+				// Then - 사용자 1의 데이터만 반환 (3개 중 3개 완료)
+				expect(response.status).toBe(200);
 				const { completions } = response.body.data;
 				expect(completions.length).toBe(1);
 				expect(completions[0].totalTodos).toBe(3);
@@ -373,12 +419,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("사용자 2는 자신의 데이터만 조회", async () => {
+				// Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
+
+				// When - 사용자 2가 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${user2Token}`)
-					.query({ startDate: "2026-03-01", endDate: "2026-03-01" })
-					.expect(200);
+					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
+				// Then - 사용자 2의 데이터만 반환 (2개 중 1개 완료)
+				expect(response.status).toBe(200);
 				const { completions } = response.body.data;
 				expect(completions.length).toBe(1);
 				expect(completions[0].totalTodos).toBe(2);
@@ -398,7 +448,7 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("Todo 완료 상태 변경 시 완료 현황 즉시 반영", async () => {
-				// 초기 상태: 2개 미완료
+				// Given - 2개의 미완료 Todo 생성
 				await createTodo(accessToken, {
 					title: "할 일 1",
 					startDate: "2026-04-01",
@@ -410,30 +460,31 @@ describe("DailyCompletion (e2e)", () => {
 					completed: false,
 				});
 
-				// 초기 조회: 0% 완료
+				// When - 초기 완료 현황 조회
 				let response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-04-01", endDate: "2026-04-01" })
-					.expect(200);
+					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
+				// Then - 0% 완료 상태 확인
+				expect(response.status).toBe(200);
 				expect(response.body.data.completions[0].completedTodos).toBe(0);
 				expect(response.body.data.completions[0].isComplete).toBe(false);
 
-				// Todo 하나 완료 처리
+				// When - Todo 하나 완료 처리 후 다시 조회
 				await request(app.getHttpServer())
 					.patch(`/todos/${todoId2}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ completed: true })
 					.expect(200);
 
-				// 변경 후 조회: 50% 완료
 				response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-04-01", endDate: "2026-04-01" })
-					.expect(200);
+					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
+				// Then - 50% 완료 상태로 변경 확인
+				expect(response.status).toBe(200);
 				expect(response.body.data.completions[0].completedTodos).toBe(1);
 				expect(response.body.data.completions[0].completionRate).toBe(50);
 			});
@@ -459,12 +510,16 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("월간 조회 시 물고기 개수 정확히 계산", async () => {
+				// Given - 5월에 7일간 다양한 완료율의 Todo 준비 (100% 완료 4일)
+
+				// When - 5월 전체 기간 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-05-01", endDate: "2026-05-31" })
-					.expect(200);
+					.query({ startDate: "2026-05-01", endDate: "2026-05-31" });
 
+				// Then - 7개 날짜와 4일의 100% 완료일 반환
+				expect(response.status).toBe(200);
 				const { completions, totalCompleteDays } = response.body.data;
 
 				// 7개 날짜에 Todo가 있음
@@ -481,15 +536,18 @@ describe("DailyCompletion (e2e)", () => {
 			});
 
 			it("UI 매핑 데이터 검증 - 물고기/미완료 표시", async () => {
+				// Given - 5월에 다양한 완료율의 Todo 준비
+
+				// When - 5월 전체 기간 완료 현황 조회
 				const response = await request(app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
-					.query({ startDate: "2026-05-01", endDate: "2026-05-31" })
-					.expect(200);
+					.query({ startDate: "2026-05-01", endDate: "2026-05-31" });
 
+				// Then - 각 날짜별 UI 표시 로직에 맞는 데이터 검증
+				expect(response.status).toBe(200);
 				const { completions } = response.body.data;
 
-				// 각 날짜별 UI 표시 로직 검증
 				for (const completion of completions) {
 					const incompleteTodos =
 						completion.totalTodos - completion.completedTodos;

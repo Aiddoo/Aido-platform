@@ -5,6 +5,7 @@ export { z } from 'zod';
 export * from './common';
 
 // Domain schemas
+export * from './domains/admin';
 export * from './domains/ai';
 export * from './domains/auth';
 export * from './domains/cheer';

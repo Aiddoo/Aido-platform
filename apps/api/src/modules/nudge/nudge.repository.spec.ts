@@ -1,96 +1,37 @@
-import { Test } from "@nestjs/testing";
+/**
+ * NudgeRepository 단위 테스트
+ *
+ * Suites + Builder + GWT 패턴 적용
+ * - Suites: 자동 Mock 생성
+ * - Builder: 테스트 데이터 생성
+ * - GWT: Given/When/Then 주석
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { NudgeBuilder } from "@test/builders";
 import { DatabaseService } from "@/database/database.service";
-import type { Nudge } from "@/generated/prisma/client";
 
 import { NudgeRepository } from "./nudge.repository";
-import type { NudgeWithRelations } from "./types";
 
 // =============================================================================
-// Mock Factory Functions
-// =============================================================================
-
-function createMockNudge(overrides: Partial<Nudge> = {}): Nudge {
-	return {
-		id: 1,
-		senderId: "sender-id",
-		receiverId: "receiver-id",
-		todoId: 100,
-		message: "할일 화이팅!",
-		readAt: null,
-		createdAt: new Date("2024-01-15T10:00:00Z"),
-		...overrides,
-	};
-}
-
-function createMockNudgeWithRelations(
-	overrides: Partial<NudgeWithRelations> = {},
-): NudgeWithRelations {
-	const nudge = createMockNudge();
-	return {
-		...nudge,
-		sender: {
-			id: nudge.senderId,
-			userTag: "sender_tag",
-			profile: {
-				name: "보내는 사람",
-				profileImage: "https://example.com/sender.jpg",
-			},
-		},
-		receiver: {
-			id: nudge.receiverId,
-			userTag: "receiver_tag",
-			profile: {
-				name: "받는 사람",
-				profileImage: "https://example.com/receiver.jpg",
-			},
-		},
-		todo: {
-			id: nudge.todoId,
-			title: "테스트 할일",
-			completed: false,
-		},
-		...overrides,
-	};
-}
-
-// =============================================================================
-// Tests
+// Test Suite
 // =============================================================================
 
 describe("NudgeRepository", () => {
 	let repository: NudgeRepository;
-	let database: jest.Mocked<DatabaseService>;
+	let db: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
-		const mockDatabase = {
-			nudge: {
-				create: jest.fn(),
-				findUnique: jest.fn(),
-				findFirst: jest.fn(),
-				findMany: jest.fn(),
-				update: jest.fn(),
-				count: jest.fn(),
-			},
-			user: {
-				findUnique: jest.fn(),
-			},
-			todo: {
-				findUnique: jest.fn(),
-			},
-		};
+		// ID 카운터 리셋
+		NudgeBuilder.resetIdCounter();
 
-		const module = await Test.createTestingModule({
-			providers: [
-				NudgeRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
+		const { unit, unitRef } = await TestBed.solitary(NudgeRepository).compile();
 
-		repository = module.get(NudgeRepository);
-		database = module.get(DatabaseService);
+		repository = unit;
+		db = unitRef.get(DatabaseService) as Mocked<DatabaseService>;
 	});
 
 	// =========================================================================
@@ -100,26 +41,32 @@ describe("NudgeRepository", () => {
 	describe("create", () => {
 		it("Nudge를 생성한다", async () => {
 			// Given
-			const mockNudge = createMockNudge();
+			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withMessage("할일 화이팅!")
+				.build();
 			const createInput = {
 				sender: { connect: { id: "sender-id" } },
 				receiver: { connect: { id: "receiver-id" } },
 				todo: { connect: { id: 100 } },
 				message: "할일 화이팅!",
 			};
-			(database.nudge.create as jest.Mock).mockResolvedValue(mockNudge);
+			(db.nudge.create as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.create(createInput);
 
 			// Then
-			expect(database.nudge.create).toHaveBeenCalledWith({ data: createInput });
+			expect(db.nudge.create).toHaveBeenCalledWith({ data: createInput });
 			expect(result).toEqual(mockNudge);
 		});
 
 		it("트랜잭션 클라이언트를 사용하여 Nudge를 생성한다", async () => {
 			// Given
-			const mockNudge = createMockNudge();
+			const mockNudge = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			).build();
 			const createInput = {
 				sender: { connect: { id: "sender-id" } },
 				receiver: { connect: { id: "receiver-id" } },
@@ -141,20 +88,31 @@ describe("NudgeRepository", () => {
 	describe("createWithRelations", () => {
 		it("관계 정보가 포함된 Nudge를 생성한다", async () => {
 			// Given
-			const mockNudge = createMockNudgeWithRelations();
+			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withMessage("할일 화이팅!")
+				.withSenderProfile({
+					name: "보내는 사람",
+					profileImage: "https://example.com/sender.jpg",
+				})
+				.withReceiverProfile({
+					name: "받는 사람",
+					profileImage: "https://example.com/receiver.jpg",
+				})
+				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
+				.buildWithRelations();
 			const createInput = {
 				sender: { connect: { id: "sender-id" } },
 				receiver: { connect: { id: "receiver-id" } },
 				todo: { connect: { id: 100 } },
 				message: "할일 화이팅!",
 			};
-			(database.nudge.create as jest.Mock).mockResolvedValue(mockNudge);
+			(db.nudge.create as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.createWithRelations(createInput);
 
 			// Then
-			expect(database.nudge.create).toHaveBeenCalledWith({
+			expect(db.nudge.create).toHaveBeenCalledWith({
 				data: createInput,
 				include: expect.objectContaining({
 					sender: expect.any(Object),
@@ -169,14 +127,16 @@ describe("NudgeRepository", () => {
 	describe("findById", () => {
 		it("ID로 Nudge를 조회한다", async () => {
 			// Given
-			const mockNudge = createMockNudge();
-			(database.nudge.findUnique as jest.Mock).mockResolvedValue(mockNudge);
+			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withId(1)
+				.build();
+			(db.nudge.findUnique as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findById(1);
 
 			// Then
-			expect(database.nudge.findUnique).toHaveBeenCalledWith({
+			expect(db.nudge.findUnique).toHaveBeenCalledWith({
 				where: { id: 1 },
 			});
 			expect(result).toEqual(mockNudge);
@@ -184,7 +144,7 @@ describe("NudgeRepository", () => {
 
 		it("존재하지 않는 Nudge는 null을 반환한다", async () => {
 			// Given
-			(database.nudge.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.nudge.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findById(999);
@@ -197,14 +157,16 @@ describe("NudgeRepository", () => {
 	describe("findByIdWithRelations", () => {
 		it("관계 정보가 포함된 Nudge를 ID로 조회한다", async () => {
 			// Given
-			const mockNudge = createMockNudgeWithRelations();
-			(database.nudge.findUnique as jest.Mock).mockResolvedValue(mockNudge);
+			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withId(1)
+				.buildWithRelations();
+			(db.nudge.findUnique as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findByIdWithRelations(1);
 
 			// Then
-			expect(database.nudge.findUnique).toHaveBeenCalledWith({
+			expect(db.nudge.findUnique).toHaveBeenCalledWith({
 				where: { id: 1 },
 				include: expect.objectContaining({
 					sender: expect.any(Object),
@@ -219,14 +181,17 @@ describe("NudgeRepository", () => {
 	describe("markAsRead", () => {
 		it("Nudge를 읽음 처리한다", async () => {
 			// Given
-			const mockNudge = createMockNudge({ readAt: new Date() });
-			(database.nudge.update as jest.Mock).mockResolvedValue(mockNudge);
+			const mockNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withId(1)
+				.asRead()
+				.build();
+			(db.nudge.update as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.markAsRead(1);
 
 			// Then
-			expect(database.nudge.update).toHaveBeenCalledWith({
+			expect(db.nudge.update).toHaveBeenCalledWith({
 				where: { id: 1 },
 				data: { readAt: expect.any(Date) },
 			});
@@ -242,10 +207,14 @@ describe("NudgeRepository", () => {
 		it("받은 Nudge 목록을 조회한다", async () => {
 			// Given
 			const mockNudges = [
-				createMockNudgeWithRelations({ id: 1 }),
-				createMockNudgeWithRelations({ id: 2 }),
+				NudgeBuilder.create("sender-1", "receiver-id", 100)
+					.withId(1)
+					.buildWithRelations(),
+				NudgeBuilder.create("sender-2", "receiver-id", 101)
+					.withId(2)
+					.buildWithRelations(),
 			];
-			(database.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findReceivedNudges({
@@ -254,7 +223,7 @@ describe("NudgeRepository", () => {
 			});
 
 			// Then
-			expect(database.nudge.findMany).toHaveBeenCalledWith({
+			expect(db.nudge.findMany).toHaveBeenCalledWith({
 				where: { receiverId: "receiver-id" },
 				include: expect.objectContaining({
 					sender: expect.any(Object),
@@ -269,8 +238,12 @@ describe("NudgeRepository", () => {
 
 		it("커서 기반 페이지네이션을 적용한다", async () => {
 			// Given
-			const mockNudges = [createMockNudgeWithRelations({ id: 3 })];
-			(database.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			const mockNudges = [
+				NudgeBuilder.create("sender-1", "receiver-id", 100)
+					.withId(3)
+					.buildWithRelations(),
+			];
+			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findReceivedNudges({
@@ -280,7 +253,7 @@ describe("NudgeRepository", () => {
 			});
 
 			// Then
-			expect(database.nudge.findMany).toHaveBeenCalledWith({
+			expect(db.nudge.findMany).toHaveBeenCalledWith({
 				where: { receiverId: "receiver-id" },
 				include: expect.any(Object),
 				take: 11,
@@ -296,10 +269,14 @@ describe("NudgeRepository", () => {
 		it("보낸 Nudge 목록을 조회한다", async () => {
 			// Given
 			const mockNudges = [
-				createMockNudgeWithRelations({ id: 1 }),
-				createMockNudgeWithRelations({ id: 2 }),
+				NudgeBuilder.create("sender-id", "receiver-1", 100)
+					.withId(1)
+					.buildWithRelations(),
+				NudgeBuilder.create("sender-id", "receiver-2", 101)
+					.withId(2)
+					.buildWithRelations(),
 			];
-			(database.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
+			(db.nudge.findMany as jest.Mock).mockResolvedValue(mockNudges);
 
 			// When
 			const result = await repository.findSentNudges({
@@ -308,7 +285,7 @@ describe("NudgeRepository", () => {
 			});
 
 			// Then
-			expect(database.nudge.findMany).toHaveBeenCalledWith({
+			expect(db.nudge.findMany).toHaveBeenCalledWith({
 				where: { senderId: "sender-id" },
 				include: expect.any(Object),
 				take: 21,
@@ -326,7 +303,7 @@ describe("NudgeRepository", () => {
 		it("오늘 보낸 Nudge 수를 조회한다", async () => {
 			// Given
 			const today = new Date("2024-01-15T12:00:00Z");
-			(database.nudge.count as jest.Mock).mockResolvedValue(3);
+			(db.nudge.count as jest.Mock).mockResolvedValue(3);
 
 			// When
 			const result = await repository.countTodayNudges({
@@ -335,7 +312,7 @@ describe("NudgeRepository", () => {
 			});
 
 			// Then
-			expect(database.nudge.count).toHaveBeenCalledWith({
+			expect(db.nudge.count).toHaveBeenCalledWith({
 				where: {
 					senderId: "sender-id",
 					createdAt: {
@@ -351,8 +328,12 @@ describe("NudgeRepository", () => {
 	describe("findLastNudgeForTodo", () => {
 		it("특정 Todo에 대한 마지막 Nudge를 조회한다", async () => {
 			// Given
-			const mockNudge = createMockNudge();
-			(database.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
+			const mockNudge = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			).build();
+			(db.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findLastNudgeForTodo({
@@ -361,7 +342,7 @@ describe("NudgeRepository", () => {
 			});
 
 			// Then
-			expect(database.nudge.findFirst).toHaveBeenCalledWith({
+			expect(db.nudge.findFirst).toHaveBeenCalledWith({
 				where: {
 					senderId: "sender-id",
 					todoId: 100,
@@ -373,7 +354,7 @@ describe("NudgeRepository", () => {
 
 		it("Nudge가 없으면 null을 반환한다", async () => {
 			// Given
-			(database.nudge.findFirst as jest.Mock).mockResolvedValue(null);
+			(db.nudge.findFirst as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findLastNudgeForTodo({
@@ -389,8 +370,12 @@ describe("NudgeRepository", () => {
 	describe("findLastNudgeToUser", () => {
 		it("특정 사용자에게 보낸 마지막 Nudge를 조회한다", async () => {
 			// Given
-			const mockNudge = createMockNudge();
-			(database.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
+			const mockNudge = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			).build();
+			(db.nudge.findFirst as jest.Mock).mockResolvedValue(mockNudge);
 
 			// When
 			const result = await repository.findLastNudgeToUser(
@@ -399,7 +384,7 @@ describe("NudgeRepository", () => {
 			);
 
 			// Then
-			expect(database.nudge.findFirst).toHaveBeenCalledWith({
+			expect(db.nudge.findFirst).toHaveBeenCalledWith({
 				where: {
 					senderId: "sender-id",
 					receiverId: "receiver-id",
@@ -417,7 +402,7 @@ describe("NudgeRepository", () => {
 	describe("userExists", () => {
 		it("사용자가 존재하면 true를 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(db.user.findUnique as jest.Mock).mockResolvedValue({
 				id: "user-id",
 			});
 
@@ -425,7 +410,7 @@ describe("NudgeRepository", () => {
 			const result = await repository.userExists("user-id");
 
 			// Then
-			expect(database.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { id: "user-id" },
 				select: { id: true },
 			});
@@ -434,7 +419,7 @@ describe("NudgeRepository", () => {
 
 		it("사용자가 존재하지 않으면 false를 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.userExists("non-existent");
@@ -447,7 +432,7 @@ describe("NudgeRepository", () => {
 	describe("getUserName", () => {
 		it("사용자 이름을 조회한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(db.user.findUnique as jest.Mock).mockResolvedValue({
 				profile: { name: "테스트 유저" },
 			});
 
@@ -455,7 +440,7 @@ describe("NudgeRepository", () => {
 			const result = await repository.getUserName("user-id");
 
 			// Then
-			expect(database.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { id: "user-id" },
 				select: {
 					profile: { select: { name: true } },
@@ -466,7 +451,7 @@ describe("NudgeRepository", () => {
 
 		it("프로필이 없으면 null을 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(db.user.findUnique as jest.Mock).mockResolvedValue({
 				profile: null,
 			});
 
@@ -479,7 +464,7 @@ describe("NudgeRepository", () => {
 
 		it("사용자가 없으면 null을 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.getUserName("non-existent");
@@ -492,7 +477,7 @@ describe("NudgeRepository", () => {
 	describe("getUserSubscriptionStatus", () => {
 		it("사용자 구독 상태를 조회한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(db.user.findUnique as jest.Mock).mockResolvedValue({
 				subscriptionStatus: "ACTIVE",
 			});
 
@@ -500,7 +485,7 @@ describe("NudgeRepository", () => {
 			const result = await repository.getUserSubscriptionStatus("user-id");
 
 			// Then
-			expect(database.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { id: "user-id" },
 				select: { subscriptionStatus: true },
 			});
@@ -509,7 +494,7 @@ describe("NudgeRepository", () => {
 
 		it("사용자가 없으면 null을 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.getUserSubscriptionStatus("non-existent");
@@ -523,13 +508,13 @@ describe("NudgeRepository", () => {
 		it("Todo와 소유자 정보를 조회한다", async () => {
 			// Given
 			const mockTodo = { id: 100, userId: "user-id", title: "테스트 할일" };
-			(database.todo.findUnique as jest.Mock).mockResolvedValue(mockTodo);
+			(db.todo.findUnique as jest.Mock).mockResolvedValue(mockTodo);
 
 			// When
 			const result = await repository.findTodoWithOwner(100);
 
 			// Then
-			expect(database.todo.findUnique).toHaveBeenCalledWith({
+			expect(db.todo.findUnique).toHaveBeenCalledWith({
 				where: { id: 100 },
 				select: { id: true, userId: true, title: true },
 			});
@@ -538,7 +523,7 @@ describe("NudgeRepository", () => {
 
 		it("Todo가 없으면 null을 반환한다", async () => {
 			// Given
-			(database.todo.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.todo.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.findTodoWithOwner(999);
@@ -551,7 +536,7 @@ describe("NudgeRepository", () => {
 	describe("isTodoPublic", () => {
 		it("PUBLIC Todo는 true를 반환한다", async () => {
 			// Given
-			(database.todo.findUnique as jest.Mock).mockResolvedValue({
+			(db.todo.findUnique as jest.Mock).mockResolvedValue({
 				visibility: "PUBLIC",
 			});
 
@@ -559,7 +544,7 @@ describe("NudgeRepository", () => {
 			const result = await repository.isTodoPublic(100);
 
 			// Then
-			expect(database.todo.findUnique).toHaveBeenCalledWith({
+			expect(db.todo.findUnique).toHaveBeenCalledWith({
 				where: { id: 100 },
 				select: { visibility: true },
 			});
@@ -568,7 +553,7 @@ describe("NudgeRepository", () => {
 
 		it("PRIVATE Todo는 false를 반환한다", async () => {
 			// Given
-			(database.todo.findUnique as jest.Mock).mockResolvedValue({
+			(db.todo.findUnique as jest.Mock).mockResolvedValue({
 				visibility: "PRIVATE",
 			});
 
@@ -581,7 +566,7 @@ describe("NudgeRepository", () => {
 
 		it("Todo가 없으면 false를 반환한다", async () => {
 			// Given
-			(database.todo.findUnique as jest.Mock).mockResolvedValue(null);
+			(db.todo.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When
 			const result = await repository.isTodoPublic(999);

@@ -1,7 +1,9 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { UserBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
-import type { User, UserStatus } from "@/generated/prisma/client";
+import type { UserStatus } from "@/generated/prisma/client";
 import * as userTagUtil from "../utils/user-tag.util";
 import { UserRepository } from "./user.repository";
 
@@ -16,57 +18,22 @@ const TEST_USER_TAG = "XY7Z9W3K";
 
 describe("UserRepository", () => {
 	let repository: UserRepository;
-	let mockDatabase: {
-		user: {
-			findUnique: jest.Mock;
-			findFirst: jest.Mock;
-			count: jest.Mock;
-			create: jest.Mock;
-			update: jest.Mock;
-		};
-	};
+	let db: Mocked<DatabaseService>;
 
-	const mockUser: User = {
-		id: "user-123",
-		email: "test@example.com",
-		userTag: "ABC12DEF",
-		status: "ACTIVE" as UserStatus,
-		emailVerifiedAt: new Date("2024-01-01"),
-		twoFactorEnabled: false,
-		twoFactorSecret: null,
-		subscriptionStatus: "FREE",
-		subscriptionExpiresAt: null,
-		revenueCatUserId: null,
-		aiUsageCount: 0,
-		aiUsageResetAt: new Date("2024-01-01"),
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-01"),
-		lastLoginAt: null,
-		deletedAt: null,
-	};
+	// Builder로 기본 테스트 사용자 생성
+	const mockUser = UserBuilder.create()
+		.withId("user-123")
+		.withEmail("test@example.com")
+		.withUserTag("ABC12DEF")
+		.verified()
+		.build();
 
 	beforeEach(async () => {
-		mockDatabase = {
-			user: {
-				findUnique: jest.fn(),
-				findFirst: jest.fn(),
-				count: jest.fn(),
-				create: jest.fn(),
-				update: jest.fn(),
-			},
-		};
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(UserRepository).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				UserRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
-
-		repository = module.get<UserRepository>(UserRepository);
+		repository = unit;
+		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 
 		// 기본 모킹 설정
 		mockGenerateUserTag.mockReturnValue(TEST_USER_TAG);
@@ -78,34 +45,34 @@ describe("UserRepository", () => {
 
 	describe("findByEmail", () => {
 		it("이메일로 사용자를 찾아 반환한다", async () => {
-			// Given
-			mockDatabase.user.findUnique.mockResolvedValue(mockUser);
+			// Given - 사용자가 존재하는 경우를 모킹
+			db.user.findUnique.mockResolvedValue(mockUser);
 
-			// When
+			// When - 이메일로 사용자 조회
 			const result = await repository.findByEmail("test@example.com");
 
-			// Then
+			// Then - 사용자 정보를 반환하고 올바른 쿼리가 실행됨
 			expect(result).toEqual(mockUser);
-			expect(mockDatabase.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { email: "test@example.com" },
 			});
 		});
 
 		it("사용자가 없으면 null을 반환한다", async () => {
-			// Given
-			mockDatabase.user.findUnique.mockResolvedValue(null);
+			// Given - 사용자가 존재하지 않는 경우를 모킹
+			db.user.findUnique.mockResolvedValue(null);
 
-			// When
+			// When - 존재하지 않는 이메일로 조회
 			const result = await repository.findByEmail("notfound@example.com");
 
-			// Then
+			// Then - null 반환
 			expect(result).toBeNull();
 		});
 	});
 
 	describe("findByEmailWithCredential", () => {
 		it("이메일로 사용자와 Credential 계정을 조회한다", async () => {
-			// Given
+			// Given - Credential 계정을 가진 사용자 데이터 준비
 			const userWithAccount = {
 				id: mockUser.id,
 				email: mockUser.email,
@@ -119,15 +86,15 @@ describe("UserRepository", () => {
 					},
 				],
 			};
-			mockDatabase.user.findUnique.mockResolvedValue(userWithAccount);
+			db.user.findUnique.mockResolvedValue(userWithAccount);
 
-			// When
+			// When - 이메일로 사용자와 Credential 계정 조회
 			const result =
 				await repository.findByEmailWithCredential("test@example.com");
 
-			// Then
+			// Then - 사용자와 계정 정보가 함께 반환되고 올바른 select 쿼리가 실행됨
 			expect(result).toEqual(userWithAccount);
-			expect(mockDatabase.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { email: "test@example.com" },
 				select: {
 					id: true,
@@ -149,38 +116,39 @@ describe("UserRepository", () => {
 
 	describe("findById", () => {
 		it("ID로 사용자를 찾아 반환한다", async () => {
-			// Given
-			mockDatabase.user.findUnique.mockResolvedValue(mockUser);
+			// Given - 사용자가 존재하는 경우를 모킹
+			db.user.findUnique.mockResolvedValue(mockUser);
 
-			// When
+			// When - ID로 사용자 조회
 			const result = await repository.findById("user-123");
 
-			// Then
+			// Then - 사용자 정보를 반환하고 올바른 쿼리가 실행됨
 			expect(result).toEqual(mockUser);
-			expect(mockDatabase.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 			});
 		});
 
 		it("사용자가 없으면 null을 반환한다", async () => {
-			// Given
-			mockDatabase.user.findUnique.mockResolvedValue(null);
+			// Given - 사용자가 존재하지 않는 경우를 모킹
+			db.user.findUnique.mockResolvedValue(null);
 
-			// When
+			// When - 존재하지 않는 ID로 조회
 			const result = await repository.findById("nonexistent-id");
 
-			// Then
+			// Then - null 반환
 			expect(result).toBeNull();
 		});
 	});
 
 	describe("findByIdWithProfile", () => {
 		it("ID로 사용자와 프로필을 조회한다", async () => {
-			// Given
+			// Given - 프로필이 있는 사용자 데이터 준비
 			const userWithProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
+				role: mockUser.role,
 				status: mockUser.status,
 				emailVerifiedAt: mockUser.emailVerifiedAt,
 				subscriptionStatus: mockUser.subscriptionStatus,
@@ -192,19 +160,20 @@ describe("UserRepository", () => {
 					profileImage: null,
 				},
 			};
-			mockDatabase.user.findUnique.mockResolvedValue(userWithProfile);
+			db.user.findUnique.mockResolvedValue(userWithProfile);
 
-			// When
+			// When - ID로 사용자와 프로필 조회
 			const result = await repository.findByIdWithProfile("user-123");
 
-			// Then
+			// Then - 사용자와 프로필 정보가 함께 반환되고 올바른 select 쿼리가 실행됨
 			expect(result).toEqual(userWithProfile);
-			expect(mockDatabase.user.findUnique).toHaveBeenCalledWith({
+			expect(db.user.findUnique).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				select: {
 					id: true,
 					email: true,
 					userTag: true,
+					role: true,
 					status: true,
 					emailVerifiedAt: true,
 					subscriptionStatus: true,
@@ -222,11 +191,12 @@ describe("UserRepository", () => {
 		});
 
 		it("프로필이 없는 사용자도 조회한다", async () => {
-			// Given
+			// Given - 프로필이 없는 사용자 데이터 준비
 			const userWithoutProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
+				role: mockUser.role,
 				status: mockUser.status,
 				emailVerifiedAt: mockUser.emailVerifiedAt,
 				subscriptionStatus: mockUser.subscriptionStatus,
@@ -235,67 +205,68 @@ describe("UserRepository", () => {
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: null,
 			};
-			mockDatabase.user.findUnique.mockResolvedValue(userWithoutProfile);
+			db.user.findUnique.mockResolvedValue(userWithoutProfile);
 
-			// When
+			// When - ID로 프로필이 없는 사용자 조회
 			const result = await repository.findByIdWithProfile("user-123");
 
-			// Then
+			// Then - 프로필이 null인 상태로 반환
 			expect(result?.profile).toBeNull();
 		});
 	});
 
 	describe("existsByEmail", () => {
 		it("이메일이 존재하면 true를 반환한다", async () => {
-			// Given
-			mockDatabase.user.count.mockResolvedValue(1);
+			// Given - 해당 이메일의 사용자가 1명 존재하는 경우를 모킹
+			db.user.count.mockResolvedValue(1);
 
-			// When
+			// When - 이메일 존재 여부 확인
 			const result = await repository.existsByEmail("test@example.com");
 
-			// Then
+			// Then - true 반환하고 올바른 count 쿼리가 실행됨
 			expect(result).toBe(true);
-			expect(mockDatabase.user.count).toHaveBeenCalledWith({
+			expect(db.user.count).toHaveBeenCalledWith({
 				where: { email: "test@example.com" },
 			});
 		});
 
 		it("이메일이 존재하지 않으면 false를 반환한다", async () => {
-			// Given
-			mockDatabase.user.count.mockResolvedValue(0);
+			// Given - 해당 이메일의 사용자가 없는 경우를 모킹
+			db.user.count.mockResolvedValue(0);
 
-			// When
+			// When - 존재하지 않는 이메일로 확인
 			const result = await repository.existsByEmail("notfound@example.com");
 
-			// Then
+			// Then - false 반환
 			expect(result).toBe(false);
 		});
 	});
 
 	describe("create", () => {
 		it("새 사용자를 생성한다", async () => {
-			// Given
+			// Given - 사용자 생성 데이터 준비 및 userTag 중복 없음 모킹
 			const createData = {
 				email: "new@example.com",
 				status: "PENDING_VERIFICATION" as UserStatus,
 			};
-			// userTag 중복 체크용 - null 반환으로 고유한 태그임을 나타냄
-			mockDatabase.user.findUnique.mockResolvedValue(null);
-			mockDatabase.user.create.mockResolvedValue({
-				...mockUser,
-				...createData,
-				id: "new-user-123",
-				userTag: TEST_USER_TAG,
-			});
+			const newUser = UserBuilder.create()
+				.withId("new-user-123")
+				.withEmail(createData.email)
+				.withUserTag(TEST_USER_TAG)
+				.withStatus(createData.status)
+				.build();
 
-			// When
+			db.user.findUnique.mockResolvedValue(null);
+			db.user.create.mockResolvedValue(newUser);
+
+			// When - 새 사용자 생성
 			const result = await repository.create(createData);
 
-			// Then
+			// Then - 생성된 사용자 반환하고 userTag가 자동 생성됨
 			expect(result.email).toBe("new@example.com");
 			expect(result.userTag).toBe(TEST_USER_TAG);
 			expect(mockGenerateUserTag).toHaveBeenCalled();
-			expect(mockDatabase.user.create).toHaveBeenCalledWith({
+			expect(db.user.create).toHaveBeenCalledWith({
 				data: expect.objectContaining({
 					email: createData.email,
 					status: createData.status,
@@ -305,25 +276,26 @@ describe("UserRepository", () => {
 		});
 
 		it("트랜잭션 내에서 사용자를 생성한다", async () => {
-			// Given
+			// Given - 트랜잭션 클라이언트와 사용자 생성 데이터 준비
 			const createData = {
 				email: "new@example.com",
 				status: "PENDING_VERIFICATION" as UserStatus,
 			};
-			const mockTx = createMockTxClient();
-			// userTag 중복 체크용
-			mockTx.user.findUnique.mockResolvedValue(null);
-			mockTx.user.create.mockResolvedValue({
-				...mockUser,
-				...createData,
-				id: "tx-user-123",
-				userTag: TEST_USER_TAG,
-			});
+			const txUser = UserBuilder.create()
+				.withId("tx-user-123")
+				.withEmail(createData.email)
+				.withUserTag(TEST_USER_TAG)
+				.withStatus(createData.status)
+				.build();
 
-			// When
+			const mockTx = createMockTxClient();
+			mockTx.user.findUnique.mockResolvedValue(null);
+			mockTx.user.create.mockResolvedValue(txUser);
+
+			// When - 트랜잭션 내에서 사용자 생성
 			const result = await repository.create(createData, asTxClient(mockTx));
 
-			// Then
+			// Then - 트랜잭션 클라이언트를 통해 생성되고 userTag가 자동 생성됨
 			expect(result.id).toBe("tx-user-123");
 			expect(result.userTag).toBe(TEST_USER_TAG);
 			expect(mockGenerateUserTag).toHaveBeenCalled();
@@ -339,33 +311,37 @@ describe("UserRepository", () => {
 
 	describe("updateStatus", () => {
 		it("사용자 상태를 업데이트한다", async () => {
-			// Given
-			const updatedUser = { ...mockUser, status: "SUSPENDED" as UserStatus };
-			mockDatabase.user.update.mockResolvedValue(updatedUser);
+			// Given - 상태가 업데이트된 사용자 데이터 모킹
+			const updatedUser = UserBuilder.create()
+				.withId("user-123")
+				.suspended()
+				.build();
+			db.user.update.mockResolvedValue(updatedUser);
 
-			// When
+			// When - 사용자 상태를 SUSPENDED로 업데이트
 			const result = await repository.updateStatus("user-123", "SUSPENDED");
 
-			// Then
+			// Then - 업데이트된 사용자 반환하고 올바른 update 쿼리가 실행됨
 			expect(result.status).toBe("SUSPENDED");
-			expect(mockDatabase.user.update).toHaveBeenCalledWith({
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { status: "SUSPENDED" },
 			});
 		});
 
 		it("트랜잭션 내에서 상태를 업데이트한다", async () => {
-			// Given
+			// Given - 트랜잭션 클라이언트와 업데이트 결과 모킹
+			const activeUser = UserBuilder.create()
+				.withId("user-123")
+				.verified()
+				.build();
 			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue({
-				...mockUser,
-				status: "ACTIVE" as UserStatus,
-			});
+			mockTx.user.update.mockResolvedValue(activeUser);
 
-			// When
+			// When - 트랜잭션 내에서 상태 업데이트
 			await repository.updateStatus("user-123", "ACTIVE", asTxClient(mockTx));
 
-			// Then
+			// Then - 트랜잭션 클라이언트를 통해 업데이트됨
 			expect(mockTx.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { status: "ACTIVE" },
@@ -375,21 +351,20 @@ describe("UserRepository", () => {
 
 	describe("markEmailVerified", () => {
 		it("이메일 인증을 완료 처리한다", async () => {
-			// Given
-			const verifiedUser = {
-				...mockUser,
-				emailVerifiedAt: new Date(),
-				status: "ACTIVE" as UserStatus,
-			};
-			mockDatabase.user.update.mockResolvedValue(verifiedUser);
+			// Given - 이메일 인증 완료된 사용자 데이터 모킹
+			const verifiedUser = UserBuilder.create()
+				.withId("user-123")
+				.verified()
+				.build();
+			db.user.update.mockResolvedValue(verifiedUser);
 
-			// When
+			// When - 이메일 인증 완료 처리
 			const result = await repository.markEmailVerified("user-123");
 
-			// Then
+			// Then - 인증 완료된 사용자 반환하고 상태가 ACTIVE로 변경됨
 			expect(result.status).toBe("ACTIVE");
 			expect(result.emailVerifiedAt).toBeDefined();
-			expect(mockDatabase.user.update).toHaveBeenCalledWith({
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: {
 					emailVerifiedAt: expect.any(Date),
@@ -399,18 +374,18 @@ describe("UserRepository", () => {
 		});
 
 		it("트랜잭션 내에서 인증 완료 처리한다", async () => {
-			// Given
+			// Given - 트랜잭션 클라이언트와 인증 완료 결과 모킹
+			const verifiedUser = UserBuilder.create()
+				.withId("user-123")
+				.verified()
+				.build();
 			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue({
-				...mockUser,
-				emailVerifiedAt: new Date(),
-				status: "ACTIVE" as UserStatus,
-			});
+			mockTx.user.update.mockResolvedValue(verifiedUser);
 
-			// When
+			// When - 트랜잭션 내에서 이메일 인증 완료 처리
 			await repository.markEmailVerified("user-123", asTxClient(mockTx));
 
-			// Then
+			// Then - 트랜잭션 클라이언트를 통해 인증 완료 처리됨
 			expect(mockTx.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: {
@@ -423,34 +398,36 @@ describe("UserRepository", () => {
 
 	describe("updateLastLoginAt", () => {
 		it("마지막 로그인 시간을 업데이트한다", async () => {
-			// Given
-			mockDatabase.user.update.mockResolvedValue({
-				...mockUser,
-				lastLoginAt: new Date(),
-			});
+			// Given - 로그인 시간이 업데이트된 사용자 데이터 모킹
+			const userWithLogin = UserBuilder.create()
+				.withId("user-123")
+				.withLastLoginAt(new Date())
+				.build();
+			db.user.update.mockResolvedValue(userWithLogin);
 
-			// When
+			// When - 마지막 로그인 시간 업데이트
 			await repository.updateLastLoginAt("user-123");
 
-			// Then
-			expect(mockDatabase.user.update).toHaveBeenCalledWith({
+			// Then - 올바른 update 쿼리가 실행됨
+			expect(db.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { lastLoginAt: expect.any(Date) },
 			});
 		});
 
 		it("트랜잭션 내에서 로그인 시간을 업데이트한다", async () => {
-			// Given
+			// Given - 트랜잭션 클라이언트와 업데이트 결과 모킹
+			const userWithLogin = UserBuilder.create()
+				.withId("user-123")
+				.withLastLoginAt(new Date())
+				.build();
 			const mockTx = createMockTxClient();
-			mockTx.user.update.mockResolvedValue({
-				...mockUser,
-				lastLoginAt: new Date(),
-			});
+			mockTx.user.update.mockResolvedValue(userWithLogin);
 
-			// When
+			// When - 트랜잭션 내에서 로그인 시간 업데이트
 			await repository.updateLastLoginAt("user-123", asTxClient(mockTx));
 
-			// Then
+			// Then - 트랜잭션 클라이언트를 통해 업데이트됨
 			expect(mockTx.user.update).toHaveBeenCalledWith({
 				where: { id: "user-123" },
 				data: { lastLoginAt: expect.any(Date) },

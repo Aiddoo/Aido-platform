@@ -5,7 +5,7 @@ import {
 	Injectable,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { BusinessExceptions } from "../../../common/exception/services/business-exception.service";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { UsageInfo } from "../ai.service";
 import { AiService } from "../ai.service";
 

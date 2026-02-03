@@ -109,6 +109,11 @@
 - 야간 알림 필터링 (21:00-08:00)
 - 알림 타입별 라우팅
 
+### 🔧 관리자 (Admin)
+- 전체/조건부 알림 발송 (브로드캐스트)
+- 특정 사용자 알림 발송 (타겟팅)
+- 대상 필터: ALL, WITH_PUSH_TOKEN, ACTIVE_LAST_7_DAYS, ACTIVE_LAST_30_DAYS, SUBSCRIBERS
+
 ---
 
 ## 📡 API 엔드포인트 요약
@@ -208,6 +213,20 @@
 |--------|----------|------|------|---------|
 | GET | `/daily-completions` | 날짜 범위 완료 현황 | ✅ | startDate~endDate 필수 |
 
+### Admin (`/admin`) - 관리자 전용
+
+| Method | Endpoint | 설명 | 인증 | 권한 |
+|--------|----------|------|------|------|
+| POST | `/admin/notifications/broadcast` | 전체/조건부 알림 발송 | ✅ | ADMIN |
+| POST | `/admin/notifications/targeted` | 특정 사용자 알림 발송 | ✅ | ADMIN |
+
+**대상 필터 옵션** (`target` 파라미터):
+- `ALL`: 모든 활성 사용자
+- `WITH_PUSH_TOKEN`: 푸시 토큰이 등록된 사용자
+- `ACTIVE_LAST_7_DAYS`: 최근 7일 내 활동한 사용자
+- `ACTIVE_LAST_30_DAYS`: 최근 30일 내 활동한 사용자
+- `SUBSCRIBERS`: 유료 구독 사용자
+
 **Swagger 문서**: `http://localhost:8080/api/docs`
 
 ---
@@ -286,6 +305,16 @@
 - `nightPushEnabled`: 야간(21:00-08:00 KST) 푸시 동의
 - `marketingAgreedAt`: 마케팅 알림 동의 시각
 
+### 4.7 사용자 역할 (UserRole)
+
+| 역할 | 설명 | 권한 |
+|------|------|------|
+| `USER` | 일반 사용자 | 기본 기능 사용 |
+| `ADMIN` | 관리자 | 브로드캐스트 알림 발송, 관리자 전용 API 접근 |
+
+- `@Admin()` 데코레이터로 관리자 전용 엔드포인트 보호
+- JWT 토큰에 `role` 필드 포함
+
 ---
 
 ## 🗄️ 데이터 모델 핵심 관계
@@ -319,7 +348,7 @@ erDiagram
 
 | 엔티티 | 설명 | 핵심 필드 |
 |--------|------|-----------|
-| User | 사용자 기본 정보 | id, email, userTag, status, subscriptionStatus |
+| User | 사용자 기본 정보 | id, email, userTag, role, status, subscriptionStatus |
 | UserProfile | 사용자 프로필 (1:1) | name, profileImage |
 | UserPreference | 사용자 설정 (1:1) | pushEnabled, nightPushEnabled |
 | UserConsent | 약관 동의 (1:1) | termsAgreedAt, privacyAgreedAt, marketingAgreedAt |
@@ -327,7 +356,7 @@ erDiagram
 | Follow | 친구 관계 | followerId, followingId, status (PENDING/ACCEPTED) |
 | Nudge | 콕 찌르기 | senderId, receiverId, todoId, message, readAt |
 | Cheer | 응원 | senderId, receiverId, message, readAt |
-| Notification | 알림 | userId, type, title, body, route, isRead |
+| Notification | 알림 | userId, type, title, body, metadata, isRead |
 | DailyCompletion | 일일 완료 | userId, date, totalTodos, completedTodos, achievedAt |
 | Session | 세션 | userId, refreshTokenHash, tokenFamily, expiresAt |
 | Account | 인증 계정 | userId, provider (CREDENTIAL/KAKAO/APPLE/GOOGLE/NAVER), password |

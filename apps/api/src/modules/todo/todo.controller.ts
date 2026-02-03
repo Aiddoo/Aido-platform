@@ -87,21 +87,17 @@ export class TodoController {
 		operationId: "createTodo",
 		description: `새로운 할 일을 생성합니다.
 
-📝 **필수 필드**
-| 필드 | 타입 | 제약 | 설명 |
-|------|------|------|------|
-| \`title\` | string | 1-200자 | 할 일 제목 |
-| \`categoryId\` | number | 양수 | 카테고리 ID |
-| \`startDate\` | string | YYYY-MM-DD | 시작 날짜 |
+**필수 필드**
+- \`title\`: 할 일 제목 (1-200자)
+- \`categoryId\`: 카테고리 ID
+- \`startDate\`: 시작 날짜 (YYYY-MM-DD)
 
-📝 **선택 필드**
-| 필드 | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| \`content\` | string | null | 상세 내용 (최대 5000자) |
-| \`endDate\` | string | null | 종료 날짜 (YYYY-MM-DD) |
-| \`scheduledTime\` | string | null | 예정 시간 (HH:mm) |
-| \`isAllDay\` | boolean | true | 종일 여부 |
-| \`visibility\` | enum | PUBLIC | 공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개) |`,
+**선택 필드**
+- \`content\`: 상세 내용 (최대 5000자)
+- \`endDate\`: 종료 날짜 (YYYY-MM-DD)
+- \`scheduledTime\`: 예정 시간 (HH:mm)
+- \`isAllDay\`: 종일 여부 (기본값: true)
+- \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)`,
 	})
 	@ApiCreatedResponse({ type: CreateTodoResponseDto })
 	@ApiUnauthorizedError()
@@ -149,17 +145,13 @@ export class TodoController {
 		operationId: "getTodos",
 		description: `사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
 
-📝 **쿼리 파라미터**
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| \`cursor\` | string | - | 페이지네이션 커서 |
-| \`size\` | number | 20 | 페이지 크기 (1-100) |
-| \`completed\` | boolean | - | 완료 상태 필터 |
-| \`categoryId\` | number | - | 카테고리 ID 필터 |
-| \`startDate\` | string | - | 시작일 이후 필터 (YYYY-MM-DD) |
-| \`endDate\` | string | - | 종료일 이전 필터 (YYYY-MM-DD) |
-
-💡 **예시**: \`GET /todos?size=20&completed=false&categoryId=1&startDate=2025-01-01\``,
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`size\`: 페이지 크기 (1-100, 기본값: 20)
+- \`completed\`: 완료 상태 필터
+- \`categoryId\`: 카테고리 ID 필터
+- \`startDate\`: 시작일 이후 필터 (YYYY-MM-DD)
+- \`endDate\`: 종료일 이전 필터 (YYYY-MM-DD)`,
 	})
 	@ApiQuery({
 		name: "cursor",
@@ -241,12 +233,7 @@ export class TodoController {
 		operationId: "getTodoById",
 		description: `특정 할 일의 상세 정보를 조회합니다.
 
-📝 **경로 파라미터**: \`:id\` - 할 일 고유 ID (숫자)
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |`,
+본인 소유의 할 일만 조회할 수 있습니다.`,
 	})
 	@ApiSuccessResponse({ type: TodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -274,16 +261,9 @@ export class TodoController {
 		operationId: "getFriendTodos",
 		description: `친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
 
-⚠️ **접근 조건**: 맞팔 관계여야만 조회 가능 (PRIVATE 투두는 조회 불가)
+맞팔 관계여야만 조회 가능하며, PRIVATE 할 일은 표시되지 않습니다.
 
-📝 **경로 파라미터**: \`:userId\` - 친구의 사용자 ID
-
-📝 **쿼리 파라미터**: 할 일 목록 조회와 동일 (cursor, size, startDate, endDate)
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`FOLLOW_0906\` | 403 | 친구가 아닌 사용자의 투두를 볼 수 없습니다 | 맞팔 관계 아님 |`,
+**쿼리 파라미터**: cursor, size, startDate, endDate`,
 	})
 	@ApiSuccessResponse({ type: TodoListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -328,14 +308,7 @@ export class TodoController {
 		operationId: "updateTodo",
 		description: `할 일의 정보를 부분 수정합니다.
 
-📝 **수정 가능 필드**: title, content, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`TODO_CATEGORY_0851\` | 404 | 카테고리를 찾을 수 없습니다 | 카테고리가 존재하지 않음 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | 형식 오류 (startDate 등) |`,
+**수정 가능 필드**: title, content, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -388,13 +361,7 @@ export class TodoController {
 		operationId: "toggleTodoComplete",
 		description: `할 일의 완료 상태를 변경합니다.
 
-📝 **요청 필드**: \`completed\` (boolean, 필수)
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | completed 필드 누락/타입 오류 |`,
+**요청 필드**: \`completed\` (boolean, 필수)`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -433,16 +400,7 @@ export class TodoController {
 		operationId: "updateTodoVisibility",
 		description: `할 일의 공개 범위를 변경합니다.
 
-### 📝 요청 Body
-| 필드 | 타입 | 필수 | 옵션 | 설명 |
-|------|------|------|------|------|
-| \`visibility\` | enum | ✅ | PUBLIC, PRIVATE | 공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개) |
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | visibility가 PUBLIC/PRIVATE가 아님 |`,
+**요청 필드**: \`visibility\` (PUBLIC/PRIVATE, 필수)`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -479,13 +437,7 @@ export class TodoController {
 		operationId: "updateTodoCategory",
 		description: `할 일의 카테고리를 변경합니다.
 
-📝 **요청 필드**: \`categoryId\` (number, 필수) - 변경할 카테고리 ID
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`TODO_CATEGORY_0851\` | 404 | 카테고리를 찾을 수 없습니다 | 카테고리가 존재하지 않음 |`,
+**요청 필드**: \`categoryId\` (number, 필수)`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -522,19 +474,11 @@ export class TodoController {
 		operationId: "updateTodoSchedule",
 		description: `할 일의 날짜와 시간을 변경합니다.
 
-📝 **요청 필드** (모두 선택)
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| startDate | YYYY-MM-DD | 시작일 |
-| endDate | YYYY-MM-DD | 종료일 |
-| scheduledTime | HH:mm | 예정 시간 |
-| isAllDay | boolean | 종일 여부 |
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | 날짜/시간 형식 오류 |`,
+**요청 필드** (모두 선택)
+- \`startDate\`: 시작일 (YYYY-MM-DD)
+- \`endDate\`: 종료일 (YYYY-MM-DD)
+- \`scheduledTime\`: 예정 시간 (HH:mm)
+- \`isAllDay\`: 종일 여부`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -571,17 +515,9 @@ export class TodoController {
 		operationId: "updateTodoContent",
 		description: `할 일의 제목 또는 내용을 수정합니다.
 
-📝 **요청 필드** (최소 1개 필수)
-| 필드 | 타입 | 제한 |
-|------|------|------|
-| title | string | 1-200자 |
-| content | string | 0-5000자 |
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |
-| \`SYS_0002\` | 400 | 잘못된 파라미터입니다 | title 200자 초과/content 5000자 초과 |`,
+**요청 필드** (최소 1개 필수)
+- \`title\`: 할 일 제목 (1-200자)
+- \`content\`: 상세 내용 (0-5000자)`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -616,35 +552,11 @@ export class TodoController {
 	@ApiDoc({
 		summary: "할 일 순서 변경",
 		operationId: "reorderTodo",
-		description: `특정 할 일을 다른 할 일의 앞 또는 뒤로 이동합니다.
-드래그 앤 드롭으로 할 일의 우선순위를 변경할 때 사용합니다.
+		description: `할 일을 다른 할 일의 앞 또는 뒤로 이동합니다. 드래그 앤 드롭 UI에 적합합니다.
 
-## 동작 방식
-1. \`targetTodoId\`: 기준이 되는 할 일 ID
-2. \`position\`: 기준 할 일의 앞(\`before\`) 또는 뒤(\`after\`)로 이동
-
-## 예시
-현재 순서: [A, B, C, D, E] (sortOrder: 0, 1, 2, 3, 4)
-
-### Case 1: D를 B 앞으로 이동
-- Request: \`{ targetTodoId: B의 ID, position: "before" }\`
-- 결과: [A, D, B, C, E]
-
-### Case 2: A를 C 뒤로 이동  
-- Request: \`{ targetTodoId: C의 ID, position: "after" }\`
-- 결과: [B, C, A, D, E]
-
-### Case 3: 맨 처음으로 이동 (targetTodoId 없이)
-- Request: \`{ position: "before" }\`
-- 결과: 해당 Todo가 맨 앞으로 이동
-
-### Case 4: 맨 끝으로 이동 (targetTodoId 없이)
-- Request: \`{ position: "after" }\`
-- 결과: 해당 Todo가 맨 뒤로 이동
-
-## 주의사항
-- targetTodoId가 다른 사용자의 할 일이면 404 에러
-- 자기 자신을 targetTodoId로 지정하면 무시 (변경 없음)`,
+**요청 필드**
+- \`targetTodoId\` (선택): 기준이 되는 할 일 ID. 생략 시 맨 앞/뒤로 이동
+- \`position\` (필수): 기준 할 일의 앞(\`before\`) 또는 뒤(\`after\`)`,
 	})
 	@ApiSuccessResponse({ type: ReorderTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -679,14 +591,7 @@ export class TodoController {
 	@ApiDoc({
 		summary: "할 일 삭제",
 		operationId: "deleteTodo",
-		description: `특정 할 일을 삭제합니다.
-
-⚠️ **주의**: 삭제된 할 일은 복구할 수 없습니다.
-
-❌ **에러 코드**
-| 코드 | HTTP | 메시지 | 상황 |
-|------|------|--------|------|
-| \`TODO_0801\` | 404 | Todo를 찾을 수 없습니다 | 존재하지 않거나 본인 소유가 아님 |`,
+		description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.`,
 	})
 	@ApiSuccessResponse({ type: DeleteTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

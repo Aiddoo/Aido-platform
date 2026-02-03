@@ -144,6 +144,9 @@ describe("Auth (e2e)", () => {
 		const testPassword = "Test1234!";
 
 		it("POST /auth/register - 새 사용자 등록", async () => {
+			// Given - 새 이메일 주소 준비
+
+			// When - 회원가입 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/register")
 				.send({
@@ -156,6 +159,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(201);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.email).toBe(testEmail);
 			expect(response.body.data.message).toContain("인증 코드");
@@ -163,6 +167,9 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/register - 중복 이메일 거부", async () => {
+			// Given - 이미 등록된 이메일
+
+			// When - 동일 이메일로 회원가입 시도
 			const response = await request(app.getHttpServer())
 				.post("/auth/register")
 				.send({
@@ -174,14 +181,17 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(409);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("EMAIL_0501");
 		});
 
 		it("POST /auth/verify-email - 이메일 인증", async () => {
+			// Given - 등록된 사용자와 인증 코드
 			const code = fakeEmailService.getLastCode(testEmail);
 			expect(code).toBeTruthy();
 
+			// When - 이메일 인증 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/verify-email")
 				.send({
@@ -190,13 +200,14 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 			expect(response.body.data).toHaveProperty("refreshToken");
 		});
 
 		it("POST /auth/verify-email - 잘못된 코드 거부", async () => {
-			// 새 사용자로 테스트
+			// Given - 새 사용자 등록
 			const newEmail = "verify-test@example.com";
 			await request(app.getHttpServer())
 				.post("/auth/register")
@@ -209,6 +220,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(201);
 
+			// When - 잘못된 코드로 인증 시도
 			const response = await request(app.getHttpServer())
 				.post("/auth/verify-email")
 				.send({
@@ -217,6 +229,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(401);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("VERIFY_0751");
 		});
@@ -237,6 +250,9 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("이메일 전송 실패해도 회원가입은 성공한다", async () => {
+			// Given - 이메일 전송 실패 상태 설정됨
+
+			// When - 회원가입 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/register")
 				.send({
@@ -248,6 +264,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(201);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.email).toBe(emailFailureEmail);
 			// 메시지는 반환되지만 사용자는 이메일을 받지 못함
@@ -269,6 +286,9 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/login - 올바른 자격증명으로 로그인", async () => {
+			// Given - 인증된 사용자 준비됨
+
+			// When - 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -277,6 +297,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 			expect(response.body.data).toHaveProperty("refreshToken");
@@ -286,6 +307,9 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/login - 잘못된 비밀번호 거부", async () => {
+			// Given - 인증된 사용자 준비됨
+
+			// When - 잘못된 비밀번호로 로그인 시도
 			const response = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -294,11 +318,15 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(401);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("USER_0602");
 		});
 
 		it("POST /auth/login - 존재하지 않는 이메일 거부", async () => {
+			// Given - 존재하지 않는 이메일
+
+			// When - 로그인 시도
 			const response = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -307,37 +335,50 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(401);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("USER_0602");
 		});
 
 		it("GET /auth/me - 인증된 사용자 정보 조회", async () => {
+			// Given - 로그인된 사용자의 accessToken
+
+			// When - 사용자 정보 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.email).toBe(loginEmail);
 		});
 
 		it("GET /auth/me - 토큰 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 사용자 정보 조회 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer()).get("/auth/me").expect(401);
 		});
 
 		it("POST /auth/refresh - 토큰 갱신", async () => {
+			// Given - 유효한 refreshToken
+
+			// When - 토큰 갱신 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${refreshToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 			expect(response.body.data).toHaveProperty("refreshToken");
 		});
 
 		it("POST /auth/logout - 로그아웃", async () => {
-			// 새로운 로그인 수행
+			// Given - 새로운 로그인 수행
 			const loginRes = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -347,11 +388,13 @@ describe("Auth (e2e)", () => {
 
 			const token = loginRes.body.data.accessToken;
 
+			// When - 로그아웃 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/logout")
 				.set("Authorization", `Bearer ${token}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 		});
 	});
@@ -366,18 +409,24 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/forgot-password - 재설정 코드 발송", async () => {
+			// Given - 인증된 사용자 준비됨
+
+			// When - 비밀번호 재설정 요청 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/forgot-password")
 				.send({ email: resetEmail })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(fakeEmailService.hasSentTo(resetEmail)).toBe(true);
 		});
 
 		it("POST /auth/reset-password - 비밀번호 재설정", async () => {
+			// Given - 재설정 코드 발송됨
 			const code = fakeEmailService.getLastCode(resetEmail);
 
+			// When - 비밀번호 재설정 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/reset-password")
 				.send({
@@ -388,10 +437,14 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 		});
 
 		it("POST /auth/login - 새 비밀번호로 로그인", async () => {
+			// Given - 비밀번호 재설정 완료됨
+
+			// When - 새 비밀번호로 로그인 시도
 			const response = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -400,6 +453,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 		});
 	});
@@ -416,11 +470,15 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/sessions - 활성 세션 목록 조회", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 세션 목록 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/sessions")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(Array.isArray(response.body.data.sessions)).toBe(true);
 			expect(response.body.data.sessions.length).toBeGreaterThan(0);
@@ -439,7 +497,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/verify-email - 이메일 인증 응답에 프로필 정보 포함", async () => {
-			// 새 사용자로 프로필 응답 확인
+			// Given - 새 사용자 등록
 			const newEmail = "profile-verify-test@example.com";
 
 			await request(app.getHttpServer())
@@ -455,16 +513,22 @@ describe("Auth (e2e)", () => {
 				.expect(201);
 
 			const code = fakeEmailService.getLastCode(newEmail);
+
+			// When - 이메일 인증 API 호출
 			const verifyRes = await request(app.getHttpServer())
 				.post("/auth/verify-email")
 				.send({ email: newEmail, code })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(verifyRes.body.data).toHaveProperty("name", "인증 테스트");
 			expect(verifyRes.body.data).toHaveProperty("profileImage", null);
 		});
 
 		it("POST /auth/login - 로그인 응답에 프로필 정보 포함", async () => {
+			// Given - 인증된 사용자 준비됨
+
+			// When - 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -473,6 +537,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data).toHaveProperty("name", "테스트 사용자");
 			expect(response.body.data).toHaveProperty("profileImage", null);
 
@@ -481,33 +546,45 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/me - 프로필 정보 포함", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 사용자 정보 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data).toHaveProperty("name", "테스트 사용자");
 			expect(response.body.data).toHaveProperty("profileImage", null);
 		});
 
 		it("PATCH /auth/profile - 이름 수정", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 프로필 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "수정된 이름" })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.name).toBe("수정된 이름");
 		});
 
 		it("PATCH /auth/profile - 프로필 이미지 설정", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 프로필 이미지 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ profileImage: "https://example.com/profile.jpg" })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.profileImage).toBe(
 				"https://example.com/profile.jpg",
@@ -515,17 +592,24 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/profile - 프로필 이미지 삭제 (null)", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 프로필 이미지 null로 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ profileImage: null })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.profileImage).toBeNull();
 		});
 
 		it("PATCH /auth/profile - 이름과 프로필 이미지 동시 수정", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 프로필 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -535,6 +619,7 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.name).toBe("최종 이름");
 			expect(response.body.data.profileImage).toBe(
@@ -543,16 +628,24 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/profile - 필드 없으면 400", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 빈 요청으로 프로필 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({})
 				.expect(400);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 		});
 
 		it("PATCH /auth/profile - 인증 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 프로필 수정 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.send({ name: "테스트" })
@@ -560,21 +653,29 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/profile - 잘못된 URL 형식 거부", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 잘못된 URL로 프로필 이미지 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/profile")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ profileImage: "not-a-valid-url" })
 				.expect(400);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 		});
 
 		it("GET /auth/me - 수정된 프로필 정보 확인", async () => {
+			// Given - 프로필 수정 완료된 상태
+
+			// When - 사용자 정보 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data.name).toBe("최종 이름");
 			expect(response.body.data.profileImage).toBe(
 				"https://example.com/final.jpg",
@@ -591,7 +692,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("로그아웃 후 Access Token 사용 거부", async () => {
-			// 1. 로그인
+			// Given - 로그인된 사용자
 			const loginRes = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -602,18 +703,18 @@ describe("Auth (e2e)", () => {
 
 			const { accessToken } = loginRes.body.data;
 
-			// 2. 로그아웃
+			// When - 로그아웃 후 이전 토큰으로 접근 시도
 			await request(app.getHttpServer())
 				.post("/auth/logout")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// 3. 이전 accessToken으로 /auth/me 접근 시 401 확인
 			const meRes = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(401);
 
+			// Then - 응답 검증
 			expect(meRes.body.success).toBe(false);
 			// 세션이 폐기되었거나 토큰이 무효화됨
 			expect(["SESSION_0703", "SESSION_0701", "AUTH_0101"]).toContain(
@@ -622,7 +723,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("세션 폐기 후 Refresh Token 사용 거부", async () => {
-			// 1. 로그인
+			// Given - 로그인된 사용자
 			const loginRes = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -633,7 +734,7 @@ describe("Auth (e2e)", () => {
 
 			const { accessToken, refreshToken } = loginRes.body.data;
 
-			// 2. 세션 목록 조회
+			// When - 세션 폐기 후 refreshToken으로 갱신 시도
 			const sessionsRes = await request(app.getHttpServer())
 				.get("/auth/sessions")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -645,27 +746,26 @@ describe("Auth (e2e)", () => {
 			);
 			expect(currentSession).toBeDefined();
 
-			// 3. 세션 폐기
 			await request(app.getHttpServer())
 				.delete(`/auth/sessions/${currentSession.id}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// 4. refreshToken으로 갱신 시도 시 실패 확인
 			const refreshRes = await request(app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${refreshToken}`)
 				.expect(401);
 
+			// Then - 응답 검증
 			expect(refreshRes.body.success).toBe(false);
 		});
 
 		it("인증 코드 5회 초과 시도 시 잠금", async () => {
-			// 새 사용자 등록 (인증 전 상태)
+			// Given - 새 사용자 등록 (인증 전 상태)
 			const bruteForceEmail = "bruteforce-test@example.com";
 			await registerUser(bruteForceEmail, securityPassword);
 
-			// 잘못된 코드로 5회 시도
+			// When - 잘못된 코드로 5회 시도 후 6번째 시도
 			for (let i = 0; i < 5; i++) {
 				await request(app.getHttpServer())
 					.post("/auth/verify-email")
@@ -676,7 +776,6 @@ describe("Auth (e2e)", () => {
 					.expect(401);
 			}
 
-			// 6번째 시도에서 MAX_ATTEMPTS 오류 확인
 			const res = await request(app.getHttpServer())
 				.post("/auth/verify-email")
 				.send({
@@ -685,12 +784,13 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(429);
 
+			// Then - 응답 검증
 			expect(res.body.success).toBe(false);
 			expect(res.body.error.code).toBe("VERIFY_0754");
 		});
 
 		it("토큰 재사용 감지 및 전체 세션 폐기", async () => {
-			// 1. 로그인
+			// Given - 로그인된 사용자
 			const loginRes = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -701,7 +801,7 @@ describe("Auth (e2e)", () => {
 
 			const originalRefreshToken = loginRes.body.data.refreshToken;
 
-			// 2. refreshToken으로 갱신 (새 토큰 획득)
+			// When - refreshToken으로 갱신 후 이전 토큰 재사용 시도
 			const refreshRes = await request(app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${originalRefreshToken}`)
@@ -709,16 +809,16 @@ describe("Auth (e2e)", () => {
 
 			const newRefreshToken = refreshRes.body.data.refreshToken;
 
-			// 3. 이전 refreshToken으로 다시 갱신 시도 (재사용 감지)
 			const reuseRes = await request(app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${originalRefreshToken}`)
 				.expect(401);
 
+			// Then - 재사용 감지 응답 검증
 			expect(reuseRes.body.success).toBe(false);
 			expect(reuseRes.body.error.code).toBe("SESSION_0704");
 
-			// 4. 새 토큰도 사용 불가 확인 (전체 패밀리 폐기)
+			// 새 토큰도 사용 불가 확인 (전체 패밀리 폐기)
 			const newTokenRes = await request(app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${newRefreshToken}`)
@@ -732,12 +832,13 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("로그인 실패 5회 후 계정 잠금", async () => {
+			// Given - 인증된 사용자
 			const lockoutEmail = "lockout-test@example.com";
 			const lockoutPassword = "Test1234!";
 
 			await createVerifiedUser(lockoutEmail, lockoutPassword);
 
-			// 잘못된 비밀번호로 4회 시도 (401 응답)
+			// When - 잘못된 비밀번호로 5회 시도
 			for (let i = 0; i < 4; i++) {
 				await request(app.getHttpServer())
 					.post("/auth/login")
@@ -757,10 +858,11 @@ describe("Auth (e2e)", () => {
 				})
 				.expect(423);
 
+			// Then - 응답 검증
 			expect(lockRes.body.success).toBe(false);
 			expect(lockRes.body.error.code).toBe("USER_0607");
 
-			// 6번째 시도에서도 USER_0607 (계정 잠금) 오류 확인
+			// 6번째 시도에서도 계정 잠금 오류 확인
 			const res = await request(app.getHttpServer())
 				.post("/auth/login")
 				.send({
@@ -776,12 +878,15 @@ describe("Auth (e2e)", () => {
 
 	describe("카카오 웹 OAuth 플로우", () => {
 		it("GET /auth/kakao/start - state 파라미터로 요청하면 카카오로 리다이렉트", async () => {
+			// Given - state 파라미터 준비
+
+			// When - 카카오 로그인 시작 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/kakao/start")
 				.query({ state: "test-csrf-state-123" })
 				.expect(302);
 
-			// Kakao OAuth 인증 페이지로 리다이렉트 확인
+			// Then - 응답 검증
 			expect(response.headers.location).toContain(
 				"https://kauth.kakao.com/oauth/authorize",
 			);
@@ -790,11 +895,14 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/kakao/start - state 파라미터 없이도 카카오로 리다이렉트", async () => {
+			// Given - state 파라미터 없음
+
+			// When - 카카오 로그인 시작 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/kakao/start")
 				.expect(302);
 
-			// 카카오 인증 페이지로 리다이렉트 (state 없음)
+			// Then - 응답 검증
 			expect(response.headers.location).toContain(
 				"https://kauth.kakao.com/oauth/authorize",
 			);
@@ -802,23 +910,29 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/kakao/web-callback - 잘못된 code로 요청하면 딥링크로 에러 리다이렉트", async () => {
+			// Given - 잘못된 authorization code
+
+			// When - 카카오 콜백 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/kakao/web-callback")
 				.query({ code: "invalid-auth-code", state: "test-state" })
 				.expect(302);
 
-			// 에러 발생 시 딥링크로 리다이렉트 (에러 정보 포함)
+			// Then - 응답 검증
 			expect(response.headers.location).toContain("aido://auth/callback");
 			expect(response.headers.location).toContain("error=");
 		});
 
 		it("GET /auth/kakao/web-callback - code 없이 요청하면 딥링크로 에러 리다이렉트", async () => {
+			// Given - code 파라미터 없음
+
+			// When - 카카오 콜백 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/kakao/web-callback")
 				.query({ state: "test-state" })
 				.expect(302);
 
-			// code가 없으면 에러로 처리되어 딥링크로 리다이렉트
+			// Then - 응답 검증
 			expect(response.headers.location).toContain("aido://auth/callback");
 			expect(response.headers.location).toContain("error=");
 		});
@@ -836,18 +950,19 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/kakao/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			// Given - 유효한 카카오 토큰
 			const testToken = "valid-kakao-token-12345";
 
-			// 카카오 로그인 요청
+			// When - 카카오 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/kakao/callback")
 				.send({ accessToken: testToken })
 				.expect(200);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "desc" },
 			});
@@ -862,18 +977,19 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/google/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			// Given - 유효한 구글 토큰
 			const testToken = "valid-google-token-12345";
 
-			// 구글 로그인 요청
+			// When - 구글 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/google/callback")
 				.send({ idToken: testToken })
 				.expect(200);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "desc" },
 			});
@@ -888,18 +1004,19 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/apple/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			// Given - 유효한 애플 토큰
 			const testToken = "valid-apple-token-12345";
 
-			// 애플 로그인 요청
+			// When - 애플 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/apple/callback")
 				.send({ idToken: testToken })
 				.expect(200);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "desc" },
 			});
@@ -914,18 +1031,19 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/naver/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
+			// Given - 유효한 네이버 토큰
 			const testToken = "valid-naver-token-12345";
 
-			// 네이버 로그인 요청
+			// When - 네이버 로그인 API 호출
 			const response = await request(app.getHttpServer())
 				.post("/auth/naver/callback")
 				.send({ accessToken: testToken })
 				.expect(200);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "desc" },
 			});
@@ -940,20 +1058,20 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/kakao/callback - 토큰 검증 실패 시 LoginAttempt 기록 (success: false)", async () => {
-			// 토큰 검증 실패 시뮬레이션 (파라미터 없이 호출하면 provider별 적절한 BusinessException 사용)
+			// Given - 토큰 검증 실패 시뮬레이션
 			fakeOAuthTokenVerifierService.simulateFailure();
 
 			const testToken = "invalid-kakao-token";
 
-			// 카카오 로그인 요청 (실패 예상)
+			// When - 카카오 로그인 API 호출 (실패 예상)
 			const response = await request(app.getHttpServer())
 				.post("/auth/kakao/callback")
 				.send({ accessToken: testToken })
 				.expect(401);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(false);
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				where: { success: false },
 				orderBy: { createdAt: "desc" },
@@ -969,20 +1087,20 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("POST /auth/google/callback - 토큰 검증 실패 시 LoginAttempt 기록 (success: false)", async () => {
-			// 토큰 검증 실패 시뮬레이션 (파라미터 없이 호출하면 provider별 적절한 BusinessException 사용)
+			// Given - 토큰 검증 실패 시뮬레이션
 			fakeOAuthTokenVerifierService.simulateFailure();
 
 			const testToken = "invalid-google-token";
 
-			// 구글 로그인 요청 (실패 예상)
+			// When - 구글 로그인 API 호출 (실패 예상)
 			const response = await request(app.getHttpServer())
 				.post("/auth/google/callback")
 				.send({ idToken: testToken })
 				.expect(401);
 
+			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(false);
 
-			// DB에서 LoginAttempt 확인
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				where: { success: false },
 				orderBy: { createdAt: "desc" },
@@ -998,11 +1116,12 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("OAuth 로그인 시 IP 및 UserAgent 기록", async () => {
+			// Given - 테스트 토큰 및 헤더
 			const testToken = "test-token-with-metadata";
 			const testIp = "192.168.1.100";
 			const testUserAgent = "TestAgent/1.0";
 
-			// 카카오 로그인 요청 (헤더 포함)
+			// When - 카카오 로그인 API 호출 (헤더 포함)
 			await request(app.getHttpServer())
 				.post("/auth/kakao/callback")
 				.set("X-Forwarded-For", testIp)
@@ -1010,7 +1129,7 @@ describe("Auth (e2e)", () => {
 				.send({ accessToken: testToken })
 				.expect(200);
 
-			// DB에서 LoginAttempt 확인
+			// Then - DB 검증
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "desc" },
 			});
@@ -1027,19 +1146,21 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("여러 번 OAuth 로그인 시 각각 LoginAttempt 기록", async () => {
-			// 첫 번째 로그인
+			// Given - 테스트 토큰들
+
+			// When - 첫 번째 로그인
 			await request(app.getHttpServer())
 				.post("/auth/kakao/callback")
 				.send({ accessToken: "first-token-12345" })
 				.expect(200);
 
-			// 두 번째 로그인
+			// When - 두 번째 로그인
 			await request(app.getHttpServer())
 				.post("/auth/google/callback")
 				.send({ idToken: "second-token-12345" })
 				.expect(200);
 
-			// DB에서 LoginAttempt 확인
+			// Then - DB 검증
 			const loginAttempts = await prisma().loginAttempt.findMany({
 				orderBy: { createdAt: "asc" },
 			});
@@ -1063,11 +1184,15 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/preference - 기본 설정 조회", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 설정 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("pushEnabled");
 			expect(response.body.data).toHaveProperty("nightPushEnabled");
@@ -1077,64 +1202,85 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/preference - 푸시 설정 활성화", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 설정 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ pushEnabled: true })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.pushEnabled).toBe(true);
 			expect(response.body.data.nightPushEnabled).toBe(false);
 		});
 
 		it("PATCH /auth/preference - 야간 푸시 설정 활성화", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 설정 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ nightPushEnabled: true })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.pushEnabled).toBe(true); // 이전 설정 유지
 			expect(response.body.data.nightPushEnabled).toBe(true);
 		});
 
 		it("PATCH /auth/preference - 여러 설정 동시 변경", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 설정 수정 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ pushEnabled: false, nightPushEnabled: false })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.pushEnabled).toBe(false);
 			expect(response.body.data.nightPushEnabled).toBe(false);
 		});
 
 		it("GET /auth/preference - 변경된 설정 확인", async () => {
-			// 먼저 설정 변경
+			// Given - 설정 변경
 			await request(app.getHttpServer())
 				.patch("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ pushEnabled: true, nightPushEnabled: true })
 				.expect(200);
 
-			// 변경된 설정 조회
+			// When - 설정 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/preference")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data.pushEnabled).toBe(true);
 			expect(response.body.data.nightPushEnabled).toBe(true);
 		});
 
 		it("GET /auth/preference - 인증 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 설정 조회 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer()).get("/auth/preference").expect(401);
 		});
 
 		it("PATCH /auth/preference - 인증 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 설정 수정 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer())
 				.patch("/auth/preference")
 				.send({ pushEnabled: true })
@@ -1152,11 +1298,15 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/consent - 동의 상태 조회", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 동의 상태 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/consent")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("termsAgreedAt");
 			expect(response.body.data).toHaveProperty("privacyAgreedAt");
@@ -1170,51 +1320,75 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/consent/marketing - 마케팅 동의 활성화", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 마케팅 동의 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/consent/marketing")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ agreed: true })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("marketingAgreedAt");
 			expect(response.body.data.marketingAgreedAt).not.toBeNull();
 		});
 
 		it("GET /auth/consent - 마케팅 동의 상태 확인", async () => {
+			// Given - 마케팅 동의 완료됨
+
+			// When - 동의 상태 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/consent")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data.marketingAgreedAt).not.toBeNull();
 		});
 
 		it("PATCH /auth/consent/marketing - 마케팅 동의 철회", async () => {
+			// Given - 마케팅 동의 상태
+
+			// When - 마케팅 동의 철회 API 호출
 			const response = await request(app.getHttpServer())
 				.patch("/auth/consent/marketing")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ agreed: false })
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.marketingAgreedAt).toBeNull();
 		});
 
 		it("GET /auth/consent - 마케팅 동의 철회 확인", async () => {
+			// Given - 마케팅 동의 철회됨
+
+			// When - 동의 상태 조회 API 호출
 			const response = await request(app.getHttpServer())
 				.get("/auth/consent")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 응답 검증
 			expect(response.body.data.marketingAgreedAt).toBeNull();
 		});
 
 		it("GET /auth/consent - 인증 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 동의 상태 조회 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer()).get("/auth/consent").expect(401);
 		});
 
 		it("PATCH /auth/consent/marketing - 인증 없이 접근 거부", async () => {
+			// Given - 토큰 없음
+
+			// When - 마케팅 동의 API 호출
+			// Then - 401 응답
 			await request(app.getHttpServer())
 				.patch("/auth/consent/marketing")
 				.send({ agreed: true })
@@ -1222,12 +1396,16 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/consent/marketing - 잘못된 요청 본문", async () => {
+			// Given - 로그인된 사용자
+
+			// When - agreed 필드 누락된 요청
 			const response = await request(app.getHttpServer())
 				.patch("/auth/consent/marketing")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({}) // agreed 필드 누락
 				.expect(400);
 
+			// Then - 응답 검증
 			expect(response.body.success).toBe(false);
 		});
 	});
@@ -1265,19 +1443,18 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/me - 첫 번째 호출은 캐시 미스, 두 번째 호출은 캐시 히트", async () => {
-			// 캐시 초기화
+			// Given - 캐시 초기화
 			await cacheService.reset();
 
-			// 현재 통계 기록
 			const statsBefore = cacheService.getStats();
 
-			// 첫 번째 호출 (캐시 미스 → DB 조회 → 캐시 저장)
-			// 참고: /auth/me는 JWT 인증 시 세션 캐시 + 프로필 캐시 2번 조회
+			// When - 첫 번째 호출 (캐시 미스)
 			const response1 = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 첫 번째 호출 검증
 			expect(response1.body.success).toBe(true);
 			expect(response1.body.data.email).toBe(cacheEmail);
 
@@ -1285,12 +1462,13 @@ describe("Auth (e2e)", () => {
 			const statsAfterFirst = cacheService.getStats();
 			expect(statsAfterFirst.misses).toBe(statsBefore.misses + 2);
 
-			// 두 번째 호출 (캐시 히트)
+			// When - 두 번째 호출 (캐시 히트)
 			const response2 = await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - 두 번째 호출 검증
 			expect(response2.body.success).toBe(true);
 			expect(response2.body.data.email).toBe(cacheEmail);
 
@@ -1304,14 +1482,14 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/profile - 프로필 수정 후 최신 데이터 반환 (캐시 무효화 검증)", async () => {
-			// 캐시 초기화 및 프로필 캐싱
+			// Given - 캐시 초기화 및 프로필 캐싱
 			await cacheService.reset();
 			await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// 프로필 수정
+			// When - 프로필 수정
 			const newName = "수정된 캐시 사용자";
 			const updateResponse = await request(app.getHttpServer())
 				.patch("/auth/profile")
@@ -1319,6 +1497,7 @@ describe("Auth (e2e)", () => {
 				.send({ name: newName })
 				.expect(200);
 
+			// Then - 수정된 데이터 반환 확인
 			expect(updateResponse.body.data.name).toBe(newName);
 
 			// /auth/me 호출 시 수정된 데이터 반환 확인
@@ -1332,14 +1511,14 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("프로필 이미지 수정 후 최신 데이터 반환 (캐시 무효화 검증)", async () => {
-			// 캐시 초기화 및 프로필 캐싱
+			// Given - 캐시 초기화 및 프로필 캐싱
 			await cacheService.reset();
 			await request(app.getHttpServer())
 				.get("/auth/me")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// 프로필 이미지 수정
+			// When - 프로필 이미지 수정
 			const newImage = "https://example.com/cache-test-image.jpg";
 			const updateResponse = await request(app.getHttpServer())
 				.patch("/auth/profile")
@@ -1347,6 +1526,7 @@ describe("Auth (e2e)", () => {
 				.send({ profileImage: newImage })
 				.expect(200);
 
+			// Then - 수정된 이미지 반환 확인
 			expect(updateResponse.body.data.profileImage).toBe(newImage);
 
 			// /auth/me 호출 시 수정된 이미지 반환 확인
@@ -1359,11 +1539,11 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("여러 번 연속 호출 시 캐시 히트율 증가", async () => {
-			// 캐시 초기화
+			// Given - 캐시 초기화
 			await cacheService.reset();
 			const initialStats = cacheService.getStats();
 
-			// 5번 연속 호출
+			// When - 5번 연속 호출
 			for (let i = 0; i < 5; i++) {
 				await request(app.getHttpServer())
 					.get("/auth/me")
@@ -1371,6 +1551,7 @@ describe("Auth (e2e)", () => {
 					.expect(200);
 			}
 
+			// Then - 캐시 통계 검증
 			// 첫 번째는 미스(세션+프로필=2), 나머지 4번은 히트(세션+프로필=8)
 			const finalStats = cacheService.getStats();
 			expect(finalStats.misses).toBe(initialStats.misses + 2);
@@ -1378,10 +1559,10 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("캐시 히트 시 응답 속도 향상 (성능 기반 검증)", async () => {
-			// 캐시 초기화
+			// Given - 캐시 초기화
 			await cacheService.reset();
 
-			// 첫 번째 호출 (캐시 미스 - DB 조회)
+			// When - 첫 번째 호출 (캐시 미스 - DB 조회)
 			const start1 = Date.now();
 			await request(app.getHttpServer())
 				.get("/auth/me")
@@ -1389,7 +1570,7 @@ describe("Auth (e2e)", () => {
 				.expect(200);
 			const _duration1 = Date.now() - start1;
 
-			// 두 번째 호출 (캐시 히트)
+			// When - 두 번째 호출 (캐시 히트)
 			const start2 = Date.now();
 			await request(app.getHttpServer())
 				.get("/auth/me")
@@ -1397,6 +1578,7 @@ describe("Auth (e2e)", () => {
 				.expect(200);
 			const _duration2 = Date.now() - start2;
 
+			// Then - 캐시 동작 확인
 			// 캐시 히트가 미스보다 빠르거나 비슷해야 함
 			// (E2E 테스트에서는 네트워크 오버헤드로 인해 절대적인 비교는 어려움)
 			// 대신 통계로 캐시 동작 확인

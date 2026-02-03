@@ -1,4 +1,17 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+/**
+ * TodoCategoryService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - Builder 패턴으로 테스트 데이터 생성
+ * - Given/When/Then 주석으로 명확한 테스트 구조
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { TodoCategoryBuilder } from "@test/builders";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
@@ -9,105 +22,59 @@ import type { TodoCategoryWithCount } from "./types/todo-category.types";
 
 describe("TodoCategoryService", () => {
 	let service: TodoCategoryService;
-	let mockRepository: {
-		create: jest.Mock;
-		createMany: jest.Mock;
-		findById: jest.Mock;
-		findByIdAndUserId: jest.Mock;
-		findByIdWithCount: jest.Mock;
-		findManyByUserId: jest.Mock;
-		update: jest.Mock;
-		delete: jest.Mock;
-		countByUserId: jest.Mock;
-		existsByUserIdAndName: jest.Mock;
-		getMaxSortOrder: jest.Mock;
-		getTodoCount: jest.Mock;
-		moveTodosToCategory: jest.Mock;
-		shiftSortOrders: jest.Mock;
-	};
-	let mockDatabase: { $transaction: jest.Mock };
+	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let database: Mocked<DatabaseService>;
 
 	const userId = "user-123";
 
-	const createMockCategory = (overrides = {}) => ({
-		id: 1,
-		userId,
-		name: "중요한 일",
-		color: "#FFB3B3",
-		sortOrder: 0,
-		createdAt: new Date("2026-01-01T00:00:00.000Z"),
-		updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-		...overrides,
-	});
-
-	const createMockCategoryWithCount = (
-		overrides = {},
-	): TodoCategoryWithCount => ({
-		...createMockCategory(overrides),
-		_count: { todos: 5 },
-		...overrides,
-	});
-
 	beforeEach(async () => {
-		mockRepository = {
-			create: jest.fn(),
-			createMany: jest.fn(),
-			findById: jest.fn(),
-			findByIdAndUserId: jest.fn(),
-			findByIdWithCount: jest.fn(),
-			findManyByUserId: jest.fn(),
-			update: jest.fn(),
-			delete: jest.fn(),
-			countByUserId: jest.fn(),
-			existsByUserIdAndName: jest.fn(),
-			getMaxSortOrder: jest.fn(),
-			getTodoCount: jest.fn(),
-			moveTodosToCategory: jest.fn(),
-			shiftSortOrders: jest.fn(),
-		};
+		// ID 카운터 리셋 (테스트 간 격리)
+		TodoCategoryBuilder.resetIdCounter();
 
-		mockDatabase = {
-			$transaction: jest.fn((callback) => callback(mockRepository)),
-		};
+		// Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } =
+			await TestBed.solitary(TodoCategoryService).compile();
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				TodoCategoryService,
-				{
-					provide: TodoCategoryRepository,
-					useValue: mockRepository,
-				},
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
+		service = unit;
+		todoCategoryRepo = unitRef.get(
+			TodoCategoryRepository,
+		) as unknown as Mocked<TodoCategoryRepository>;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
 
-		service = module.get<TodoCategoryService>(TodoCategoryService);
+		// $transaction 기본 mock 설정
+		database.$transaction.mockImplementation(async (callback) =>
+			callback(todoCategoryRepo),
+		);
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
+	// ============================================
+	// create
+	// ============================================
 
 	describe("create", () => {
 		const createData = { userId, name: "새 카테고리", color: "#FF6B43" };
 
 		it("새 카테고리를 생성해야 한다", async () => {
 			// Given
-			mockRepository.existsByUserIdAndName.mockResolvedValue(false);
-			mockRepository.getMaxSortOrder.mockResolvedValue(1);
-			mockRepository.create.mockResolvedValue(
-				createMockCategory({ id: 3, name: "새 카테고리", sortOrder: 2 }),
-			);
+			const expectedCategory = TodoCategoryBuilder.create(userId)
+				.withId(3)
+				.withName("새 카테고리")
+				.withColor("#FF6B43")
+				.withSortOrder(2)
+				.build();
+
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+			todoCategoryRepo.getMaxSortOrder.mockResolvedValue(1);
+			todoCategoryRepo.create.mockResolvedValue(expectedCategory);
 
 			// When
 			const result = await service.create(createData);
 
 			// Then
 			expect(result.name).toBe("새 카테고리");
-			expect(mockRepository.create).toHaveBeenCalledWith({
+			expect(todoCategoryRepo.create).toHaveBeenCalledWith({
 				user: { connect: { id: userId } },
 				name: "새 카테고리",
 				color: "#FF6B43",
@@ -117,7 +84,7 @@ describe("TodoCategoryService", () => {
 
 		it("동일 이름의 카테고리가 존재하면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.existsByUserIdAndName.mockResolvedValue(true);
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(true);
 
 			// When & Then
 			await expect(service.create(createData)).rejects.toThrow(
@@ -127,21 +94,27 @@ describe("TodoCategoryService", () => {
 
 		it("sortOrder는 기존 최대값 + 1이어야 한다", async () => {
 			// Given
-			mockRepository.existsByUserIdAndName.mockResolvedValue(false);
-			mockRepository.getMaxSortOrder.mockResolvedValue(5);
-			mockRepository.create.mockResolvedValue(
-				createMockCategory({ sortOrder: 6 }),
-			);
+			const expectedCategory = TodoCategoryBuilder.create(userId)
+				.withSortOrder(6)
+				.build();
+
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+			todoCategoryRepo.getMaxSortOrder.mockResolvedValue(5);
+			todoCategoryRepo.create.mockResolvedValue(expectedCategory);
 
 			// When
 			await service.create(createData);
 
 			// Then
-			expect(mockRepository.create).toHaveBeenCalledWith(
+			expect(todoCategoryRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ sortOrder: 6 }),
 			);
 		});
 	});
+
+	// ============================================
+	// createDefaultCategories
+	// ============================================
 
 	describe("createDefaultCategories", () => {
 		const defaultCategories = [
@@ -151,7 +124,7 @@ describe("TodoCategoryService", () => {
 
 		it("기본 카테고리를 생성해야 한다", async () => {
 			// Given
-			mockRepository.createMany.mockResolvedValue(2);
+			todoCategoryRepo.createMany.mockResolvedValue(2);
 
 			// When
 			const result = await service.createDefaultCategories(
@@ -161,18 +134,30 @@ describe("TodoCategoryService", () => {
 
 			// Then
 			expect(result).toBe(2);
-			expect(mockRepository.createMany).toHaveBeenCalledWith([
+			expect(todoCategoryRepo.createMany).toHaveBeenCalledWith([
 				{ userId, name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
 				{ userId, name: "할 일", color: "#FF6B43", sortOrder: 1 },
 			]);
 		});
 	});
 
+	// ============================================
+	// findById
+	// ============================================
+
 	describe("findById", () => {
 		it("카테고리를 조회해야 한다", async () => {
 			// Given
-			const categoryWithCount = createMockCategoryWithCount();
-			mockRepository.findByIdWithCount.mockResolvedValue(categoryWithCount);
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+			const categoryWithCount: TodoCategoryWithCount = {
+				...category,
+				_count: { todos: 5 },
+			};
+
+			todoCategoryRepo.findByIdWithCount.mockResolvedValue(categoryWithCount);
 
 			// When
 			const result = await service.findById(1, userId);
@@ -183,7 +168,7 @@ describe("TodoCategoryService", () => {
 
 		it("카테고리가 없으면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdWithCount.mockResolvedValue(null);
+			todoCategoryRepo.findByIdWithCount.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.findById(999, userId)).rejects.toThrow(
@@ -193,10 +178,15 @@ describe("TodoCategoryService", () => {
 
 		it("다른 사용자의 카테고리면 예외를 던져야 한다", async () => {
 			// Given
-			const otherUserCategory = createMockCategoryWithCount({
-				userId: "other-user",
-			});
-			mockRepository.findByIdWithCount.mockResolvedValue(otherUserCategory);
+			const otherUserCategory = TodoCategoryBuilder.create("other-user")
+				.withId(1)
+				.build();
+			const categoryWithCount: TodoCategoryWithCount = {
+				...otherUserCategory,
+				_count: { todos: 0 },
+			};
+
+			todoCategoryRepo.findByIdWithCount.mockResolvedValue(categoryWithCount);
 
 			// When & Then
 			await expect(service.findById(1, userId)).rejects.toThrow(
@@ -205,26 +195,39 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
+	// ============================================
+	// findMany
+	// ============================================
+
 	describe("findMany", () => {
 		it("사용자의 모든 카테고리를 조회해야 한다", async () => {
 			// Given
-			const categories = [
-				createMockCategoryWithCount({ id: 1, name: "중요한 일" }),
-				createMockCategoryWithCount({ id: 2, name: "할 일" }),
+			const category1 = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+			const category2 = TodoCategoryBuilder.create(userId)
+				.withId(2)
+				.withName("할 일")
+				.build();
+			const categories: TodoCategoryWithCount[] = [
+				{ ...category1, _count: { todos: 3 } },
+				{ ...category2, _count: { todos: 2 } },
 			];
-			mockRepository.findManyByUserId.mockResolvedValue(categories);
+
+			todoCategoryRepo.findManyByUserId.mockResolvedValue(categories);
 
 			// When
 			const result = await service.findMany(userId);
 
 			// Then
 			expect(result).toHaveLength(2);
-			expect(mockRepository.findManyByUserId).toHaveBeenCalledWith(userId);
+			expect(todoCategoryRepo.findManyByUserId).toHaveBeenCalledWith(userId);
 		});
 
 		it("카테고리가 없으면 빈 배열을 반환해야 한다", async () => {
 			// Given
-			mockRepository.findManyByUserId.mockResolvedValue([]);
+			todoCategoryRepo.findManyByUserId.mockResolvedValue([]);
 
 			// When
 			const result = await service.findMany(userId);
@@ -234,16 +237,28 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
+	// ============================================
+	// update
+	// ============================================
+
 	describe("update", () => {
 		const updateData = { name: "수정된 카테고리", color: "#00FF00" };
 
 		it("카테고리를 수정해야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.existsByUserIdAndName.mockResolvedValue(false);
-			mockRepository.update.mockResolvedValue(
-				createMockCategory({ name: "수정된 카테고리" }),
-			);
+			const existingCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+			const updatedCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("수정된 카테고리")
+				.withColor("#00FF00")
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(existingCategory);
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
 			const result = await service.update(1, userId, updateData);
@@ -254,7 +269,7 @@ describe("TodoCategoryService", () => {
 
 		it("카테고리가 없으면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.update(999, userId, updateData)).rejects.toThrow(
@@ -264,8 +279,13 @@ describe("TodoCategoryService", () => {
 
 		it("이름 변경 시 중복되면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.existsByUserIdAndName.mockResolvedValue(true);
+			const existingCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(existingCategory);
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(true);
 
 			// When & Then
 			await expect(service.update(1, userId, updateData)).rejects.toThrow(
@@ -275,37 +295,49 @@ describe("TodoCategoryService", () => {
 
 		it("같은 이름으로 수정하면 중복 확인을 건너뛰어야 한다", async () => {
 			// Given
-			const category = createMockCategory({ name: "중요한 일" });
-			mockRepository.findByIdAndUserId.mockResolvedValue(category);
-			mockRepository.update.mockResolvedValue(category);
+			const existingCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(existingCategory);
+			todoCategoryRepo.update.mockResolvedValue(existingCategory);
 
 			// When
 			await service.update(1, userId, { name: "중요한 일" });
 
 			// Then
-			expect(mockRepository.existsByUserIdAndName).not.toHaveBeenCalled();
+			expect(todoCategoryRepo.existsByUserIdAndName).not.toHaveBeenCalled();
 		});
 	});
+
+	// ============================================
+	// delete
+	// ============================================
 
 	describe("delete", () => {
 		it("Todo가 없는 카테고리를 삭제해야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.countByUserId.mockResolvedValue(3);
-			mockRepository.getTodoCount.mockResolvedValue(0);
-			mockRepository.delete.mockResolvedValue(undefined);
+			const category = TodoCategoryBuilder.create(userId).withId(1).build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.countByUserId.mockResolvedValue(3);
+			todoCategoryRepo.getTodoCount.mockResolvedValue(0);
+			todoCategoryRepo.delete.mockResolvedValue(undefined);
 
 			// When
 			await service.delete({ userId, categoryId: 1 });
 
 			// Then
-			expect(mockRepository.delete).toHaveBeenCalledWith(1, mockRepository);
+			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1, todoCategoryRepo);
 		});
 
 		it("마지막 카테고리 삭제 시 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.countByUserId.mockResolvedValue(1);
+			const category = TodoCategoryBuilder.create(userId).withId(1).build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.countByUserId.mockResolvedValue(1);
 
 			// When & Then
 			await expect(service.delete({ userId, categoryId: 1 })).rejects.toThrow(
@@ -315,9 +347,11 @@ describe("TodoCategoryService", () => {
 
 		it("Todo가 있으면 이동 대상이 필수여야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.countByUserId.mockResolvedValue(2);
-			mockRepository.getTodoCount.mockResolvedValue(5);
+			const category = TodoCategoryBuilder.create(userId).withId(1).build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.countByUserId.mockResolvedValue(2);
+			todoCategoryRepo.getTodoCount.mockResolvedValue(5);
 
 			// When & Then
 			await expect(service.delete({ userId, categoryId: 1 })).rejects.toThrow(
@@ -327,11 +361,20 @@ describe("TodoCategoryService", () => {
 
 		it("Todo가 있으면 이동 후 삭제해야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(createMockCategory());
-			mockRepository.countByUserId.mockResolvedValue(2);
-			mockRepository.getTodoCount.mockResolvedValue(5);
-			mockRepository.moveTodosToCategory.mockResolvedValue(undefined);
-			mockRepository.delete.mockResolvedValue(undefined);
+			const sourceCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.build();
+			const targetCategory = TodoCategoryBuilder.create(userId)
+				.withId(2)
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId
+				.mockResolvedValueOnce(sourceCategory) // 삭제할 카테고리
+				.mockResolvedValueOnce(targetCategory); // 이동 대상 카테고리
+			todoCategoryRepo.countByUserId.mockResolvedValue(2);
+			todoCategoryRepo.getTodoCount.mockResolvedValue(5);
+			todoCategoryRepo.moveTodosToCategory.mockResolvedValue(undefined);
+			todoCategoryRepo.delete.mockResolvedValue(undefined);
 
 			// When
 			await service.delete({
@@ -341,21 +384,25 @@ describe("TodoCategoryService", () => {
 			});
 
 			// Then
-			expect(mockRepository.moveTodosToCategory).toHaveBeenCalledWith(
+			expect(todoCategoryRepo.moveTodosToCategory).toHaveBeenCalledWith(
 				1,
 				2,
-				mockRepository,
+				todoCategoryRepo,
 			);
-			expect(mockRepository.delete).toHaveBeenCalledWith(1, mockRepository);
+			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1, todoCategoryRepo);
 		});
 
 		it("이동 대상 카테고리가 없으면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId
-				.mockResolvedValueOnce(createMockCategory()) // 삭제할 카테고리
-				.mockResolvedValueOnce(null); // 이동 대상 카테고리
-			mockRepository.countByUserId.mockResolvedValue(2);
-			mockRepository.getTodoCount.mockResolvedValue(5);
+			const sourceCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId
+				.mockResolvedValueOnce(sourceCategory) // 삭제할 카테고리
+				.mockResolvedValueOnce(null); // 이동 대상 카테고리 없음
+			todoCategoryRepo.countByUserId.mockResolvedValue(2);
+			todoCategoryRepo.getTodoCount.mockResolvedValue(5);
 
 			// When & Then
 			await expect(
@@ -364,19 +411,31 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
+	// ============================================
+	// reorder
+	// ============================================
+
 	describe("reorder", () => {
 		it("카테고리를 특정 카테고리 앞으로 이동해야 한다 (before)", async () => {
 			// Given
-			const category = createMockCategory({ id: 3, sortOrder: 2 });
-			const targetCategory = createMockCategory({ id: 1, sortOrder: 0 });
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(3)
+				.withSortOrder(2)
+				.build();
+			const targetCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(0)
+				.build();
+			const updatedCategory = TodoCategoryBuilder.create(userId)
+				.withId(3)
+				.withSortOrder(0)
+				.build();
 
-			mockRepository.findByIdAndUserId
+			todoCategoryRepo.findByIdAndUserId
 				.mockResolvedValueOnce(category)
 				.mockResolvedValueOnce(targetCategory);
-			mockRepository.shiftSortOrders.mockResolvedValue(undefined);
-			mockRepository.update.mockResolvedValue(
-				createMockCategory({ id: 3, sortOrder: 0 }),
-			);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
 			const result = await service.reorder({
@@ -388,21 +447,29 @@ describe("TodoCategoryService", () => {
 
 			// Then
 			expect(result.sortOrder).toBe(0);
-			expect(mockRepository.shiftSortOrders).toHaveBeenCalled();
+			expect(todoCategoryRepo.shiftSortOrders).toHaveBeenCalled();
 		});
 
 		it("카테고리를 특정 카테고리 뒤로 이동해야 한다 (after)", async () => {
 			// Given
-			const category = createMockCategory({ id: 1, sortOrder: 0 });
-			const targetCategory = createMockCategory({ id: 2, sortOrder: 1 });
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(0)
+				.build();
+			const targetCategory = TodoCategoryBuilder.create(userId)
+				.withId(2)
+				.withSortOrder(1)
+				.build();
+			const updatedCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(1)
+				.build();
 
-			mockRepository.findByIdAndUserId
+			todoCategoryRepo.findByIdAndUserId
 				.mockResolvedValueOnce(category)
 				.mockResolvedValueOnce(targetCategory);
-			mockRepository.shiftSortOrders.mockResolvedValue(undefined);
-			mockRepository.update.mockResolvedValue(
-				createMockCategory({ id: 1, sortOrder: 1 }),
-			);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
 			const result = await service.reorder({
@@ -418,12 +485,18 @@ describe("TodoCategoryService", () => {
 
 		it("맨 앞으로 이동해야 한다 (targetCategoryId 없이 before)", async () => {
 			// Given
-			const category = createMockCategory({ id: 2, sortOrder: 2 });
-			mockRepository.findByIdAndUserId.mockResolvedValue(category);
-			mockRepository.shiftSortOrders.mockResolvedValue(undefined);
-			mockRepository.update.mockResolvedValue(
-				createMockCategory({ id: 2, sortOrder: 0 }),
-			);
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(2)
+				.withSortOrder(2)
+				.build();
+			const updatedCategory = TodoCategoryBuilder.create(userId)
+				.withId(2)
+				.withSortOrder(0)
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
 			const result = await service.reorder({
@@ -438,13 +511,19 @@ describe("TodoCategoryService", () => {
 
 		it("맨 뒤로 이동해야 한다 (targetCategoryId 없이 after)", async () => {
 			// Given
-			const category = createMockCategory({ id: 1, sortOrder: 0 });
-			mockRepository.findByIdAndUserId.mockResolvedValue(category);
-			mockRepository.getMaxSortOrder.mockResolvedValue(3);
-			mockRepository.shiftSortOrders.mockResolvedValue(undefined);
-			mockRepository.update.mockResolvedValue(
-				createMockCategory({ id: 1, sortOrder: 3 }),
-			);
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(0)
+				.build();
+			const updatedCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(3)
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.getMaxSortOrder.mockResolvedValue(3);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
 			const result = await service.reorder({
@@ -459,8 +538,12 @@ describe("TodoCategoryService", () => {
 
 		it("같은 카테고리로 이동하면 변경 없이 반환해야 한다", async () => {
 			// Given
-			const category = createMockCategory({ id: 1, sortOrder: 0 });
-			mockRepository.findByIdAndUserId.mockResolvedValue(category);
+			const category = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withSortOrder(0)
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
 
 			// When
 			const result = await service.reorder({
@@ -472,12 +555,12 @@ describe("TodoCategoryService", () => {
 
 			// Then
 			expect(result).toEqual(category);
-			expect(mockRepository.update).not.toHaveBeenCalled();
+			expect(todoCategoryRepo.update).not.toHaveBeenCalled();
 		});
 
 		it("카테고리가 없으면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
 
 			// When & Then
 			await expect(
@@ -486,11 +569,16 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
+	// ============================================
+	// validateOwnership
+	// ============================================
+
 	describe("validateOwnership", () => {
 		it("소유권이 확인된 카테고리를 반환해야 한다", async () => {
 			// Given
-			const category = createMockCategory();
-			mockRepository.findByIdAndUserId.mockResolvedValue(category);
+			const category = TodoCategoryBuilder.create(userId).withId(1).build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
 
 			// When
 			const result = await service.validateOwnership(1, userId);
@@ -501,7 +589,7 @@ describe("TodoCategoryService", () => {
 
 		it("카테고리가 없으면 예외를 던져야 한다", async () => {
 			// Given
-			mockRepository.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.validateOwnership(999, userId)).rejects.toThrow(
