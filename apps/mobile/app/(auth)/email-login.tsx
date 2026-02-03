@@ -1,4 +1,5 @@
 import { emailLoginMutationOptions } from '@src/features/auth/presentations/queries/email-login-mutation-options';
+import { isApiError } from '@src/shared/errors';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
@@ -47,6 +48,10 @@ const EmailLoginScreen = () => {
       { email: email.trim(), password },
       {
         onError: (error) => {
+          if (isApiError(error) && error.hasCode('EMAIL_0503')) {
+            router.push({ pathname: './verify-email', params: { email: email.trim() } });
+            return;
+          }
           showError('로그인 실패', error.message || '로그인에 실패했습니다');
         },
       },

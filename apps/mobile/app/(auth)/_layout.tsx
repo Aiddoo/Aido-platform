@@ -12,6 +12,8 @@ const AuthLayout = () => {
     >
       <Stack.Screen name="login" />
       <Stack.Screen name="email-login" />
+      <Stack.Screen name="sign-up" />
+      <Stack.Screen name="verify-email" />
     </Stack>
   );
 };
