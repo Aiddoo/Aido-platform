@@ -69,6 +69,7 @@ describe("OAuthService", () => {
 	const mockTokens = {
 		accessToken: "access-token",
 		refreshToken: "refresh-token",
+		expiresIn: 900,
 	};
 
 	const mockMetadata = {
@@ -168,24 +169,55 @@ describe("OAuthService", () => {
 		tokenService.generateTokenPair.mockResolvedValue(mockTokens);
 		tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
 		sessionRepo.create.mockResolvedValue(mockSession);
-		sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as any);
-		securityLogRepo.create.mockResolvedValue({} as any);
-		loginAttemptRepo.create.mockResolvedValue({} as any);
+		sessionRepo.updateRefreshTokenHash.mockResolvedValue(mockSession as never);
+		securityLogRepo.create.mockResolvedValue({
+			id: 1,
+			userId: mockUser.id,
+			event: "LOGIN_SUCCESS",
+			ipAddress: mockMetadata.ip,
+			userAgent: mockMetadata.userAgent,
+			metadata: null,
+			createdAt: new Date(),
+		});
+		loginAttemptRepo.create.mockResolvedValue({
+			id: 1,
+			email: mockUser.email,
+			provider: null,
+			success: true,
+			failureReason: null,
+			ipAddress: mockMetadata.ip,
+			userAgent: mockMetadata.userAgent,
+			createdAt: new Date(),
+		});
 		userRepo.findByIdWithProfile.mockResolvedValue({
-			...mockUser,
+			id: mockUser.id,
+			email: mockUser.email,
+			userTag: mockUser.userTag,
+			role: mockUser.role,
+			status: mockUser.status,
+			emailVerifiedAt: mockUser.emailVerifiedAt,
+			subscriptionStatus: mockUser.subscriptionStatus,
+			subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
+			createdAt: mockUser.createdAt,
+			lastLoginAt: mockUser.lastLoginAt,
 			profile: { name: "테스트유저", profileImage: null },
-		} as any);
+		} as never);
 		database.$transaction.mockImplementation(
 			async (callback: TransactionCallback) => {
 				const mockTx = {
 					userConsent: { create: jest.fn() },
 				};
-				return callback(mockTx as any);
+				return callback(mockTx as never);
 			},
 		);
-		database.user = {
-			findUnique: jest.fn().mockResolvedValue({ role: "USER" }),
-		} as any;
+		// database.user에 접근할 수 있도록 mock 설정
+		Object.defineProperty(database, "user", {
+			value: {
+				findUnique: jest.fn().mockResolvedValue({ role: "USER" }),
+			},
+			configurable: true,
+			writable: true,
+		});
 	};
 
 	// ============================================

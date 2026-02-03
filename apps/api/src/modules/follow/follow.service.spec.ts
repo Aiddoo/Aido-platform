@@ -631,15 +631,15 @@ describe("FollowService", () => {
 				items: mockFriends,
 				pagination: {
 					nextCursor: "friend-2",
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			};
 
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
+				take: 21,
 			});
 			followRepo.findMutualFriends.mockResolvedValue(mockFriends);
 			paginationService.createCursorPaginatedResponse.mockReturnValue(
@@ -672,15 +672,15 @@ describe("FollowService", () => {
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: "some-cursor",
 				size: 10,
+				take: 11,
 			});
 			followRepo.findMutualFriends.mockResolvedValue([]);
 			paginationService.createCursorPaginatedResponse.mockReturnValue({
 				items: [],
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 10,
 				},
 			});
 
@@ -703,15 +703,15 @@ describe("FollowService", () => {
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
+				take: 21,
 			});
 			followRepo.findMutualFriends.mockResolvedValue([]);
 			paginationService.createCursorPaginatedResponse.mockReturnValue({
 				items: [],
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			});
 
@@ -731,15 +731,15 @@ describe("FollowService", () => {
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
+				take: 21,
 			});
 			followRepo.findMutualFriends.mockResolvedValue([]);
 			paginationService.createCursorPaginatedResponse.mockReturnValue({
 				items: [],
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			});
 
@@ -765,15 +765,15 @@ describe("FollowService", () => {
 				items: mockRequests,
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			};
 
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
+				take: 21,
 			});
 			followRepo.findReceivedRequests.mockResolvedValue(mockRequests);
 			paginationService.createCursorPaginatedResponse.mockReturnValue(
@@ -807,15 +807,15 @@ describe("FollowService", () => {
 				items: mockRequests,
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			};
 
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
+				take: 21,
 			});
 			followRepo.findSentRequests.mockResolvedValue(mockRequests);
 			paginationService.createCursorPaginatedResponse.mockReturnValue(

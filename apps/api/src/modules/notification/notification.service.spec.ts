@@ -96,6 +96,7 @@ describe("NotificationService", () => {
 		paginationService.normalizeCursorPagination.mockReturnValue({
 			cursor: undefined,
 			size: 20,
+			take: 21,
 		});
 		paginationService.createCursorPaginatedResponse.mockImplementation(
 			(params) => {
@@ -104,13 +105,14 @@ describe("NotificationService", () => {
 				const actualItems = hasNext ? items.slice(0, size) : items;
 				const nextCursor =
 					hasNext && actualItems.length > 0
-						? actualItems[actualItems.length - 1].id
+						? (actualItems[actualItems.length - 1]?.id ?? null)
 						: null;
 				return {
 					items: actualItems,
 					pagination: {
 						hasNext,
 						nextCursor,
+						size,
 					},
 				};
 			},

@@ -11,14 +11,15 @@
  */
 
 import { JwtService } from "@nestjs/jwt";
-import { type StubbedInstance, TestBed } from "@suites/unit";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { TokenService } from "./token.service";
 
 describe("TokenService", () => {
 	let service: TokenService;
-	let jwtService: StubbedInstance<JwtService>;
-	let configService: StubbedInstance<TypedConfigService>;
+	let jwtService: Mocked<JwtService>;
+	let configService: Mocked<TypedConfigService>;
 
 	// 테스트용 설정 값
 	const mockConfig = {
@@ -33,8 +34,10 @@ describe("TokenService", () => {
 		const { unit, unitRef } = await TestBed.solitary(TokenService).compile();
 
 		service = unit;
-		jwtService = unitRef.get(JwtService);
-		configService = unitRef.get(TypedConfigService);
+		jwtService = unitRef.get(JwtService) as unknown as Mocked<JwtService>;
+		configService = unitRef.get(
+			TypedConfigService,
+		) as unknown as Mocked<TypedConfigService>;
 
 		// JwtService 외부 라이브러리 mock 수동 설정
 		jwtService.signAsync.mockImplementation((payload, _options) => {

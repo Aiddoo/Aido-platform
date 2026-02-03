@@ -6,6 +6,20 @@ import type { SecurityLog } from "@/generated/prisma/client";
 
 import { SecurityLogRepository } from "./security-log.repository";
 
+// =============================================================================
+// Type Definitions for Test
+// =============================================================================
+
+/**
+ * groupBy 결과 타입 (Prisma groupBy 결과의 부분 타입)
+ */
+interface SecurityLogGroupByResult {
+	event: string;
+	_count: {
+		event: number;
+	};
+}
+
 describe("SecurityLogRepository", () => {
 	let repository: SecurityLogRepository;
 	let db: Mocked<DatabaseService>;
@@ -365,11 +379,12 @@ describe("SecurityLogRepository", () => {
 
 		it("기간 내 이벤트별 카운트를 반환한다", async () => {
 			// Given
-			db.securityLog.groupBy.mockResolvedValue([
+			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 100 } },
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
-			]);
+			];
+			db.securityLog.groupBy.mockResolvedValue(groupByResult as never);
 
 			// When
 			const result = await repository.countByEvent(since, until);
@@ -394,9 +409,10 @@ describe("SecurityLogRepository", () => {
 
 		it("until 없이 since부터 현재까지 카운트한다", async () => {
 			// Given
-			db.securityLog.groupBy.mockResolvedValue([
+			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
-			]);
+			];
+			db.securityLog.groupBy.mockResolvedValue(groupByResult as never);
 
 			// When
 			const result = await repository.countByEvent(since);

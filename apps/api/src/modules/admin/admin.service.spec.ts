@@ -18,6 +18,17 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../notification/notification.service";
 import { AdminService } from "./admin.service";
 
+// =============================================================================
+// Type Definitions for Test
+// =============================================================================
+
+/**
+ * user.findMany의 select: { id: true } 결과 타입
+ */
+interface UserIdOnly {
+	id: string;
+}
+
 describe("AdminService", () => {
 	let service: AdminService;
 	let database: Mocked<DatabaseService>;
@@ -55,9 +66,8 @@ describe("AdminService", () => {
 				UserBuilder.create().withId("user-3").verified().build(),
 			];
 
-			database.user.findMany.mockResolvedValue(
-				mockUsers.map((u) => ({ id: u.id })),
-			);
+			const userIds: UserIdOnly[] = mockUsers.map((u) => ({ id: u.id }));
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 3,
 			});
@@ -115,9 +125,8 @@ describe("AdminService", () => {
 				UserBuilder.create().withId("user-2").verified().build(),
 			];
 
-			database.user.findMany.mockResolvedValue(
-				mockUsers.map((u) => ({ id: u.id })),
-			);
+			const userIds: UserIdOnly[] = mockUsers.map((u) => ({ id: u.id }));
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 2,
 			});
@@ -168,7 +177,8 @@ describe("AdminService", () => {
 				.withLastLoginAt(new Date())
 				.build();
 
-			database.user.findMany.mockResolvedValue([{ id: recentUser.id }]);
+			const userIds: UserIdOnly[] = [{ id: recentUser.id }];
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 1,
 			});
@@ -203,7 +213,8 @@ describe("AdminService", () => {
 				.asPremium()
 				.build();
 
-			database.user.findMany.mockResolvedValue([{ id: subscriber.id }]);
+			const userIds: UserIdOnly[] = [{ id: subscriber.id }];
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 1,
 			});
@@ -241,9 +252,8 @@ describe("AdminService", () => {
 				UserBuilder.create().withId("user-2").verified().build(),
 			];
 
-			database.user.findMany.mockResolvedValue(
-				mockUsers.map((u) => ({ id: u.id })),
-			);
+			const userIds: UserIdOnly[] = mockUsers.map((u) => ({ id: u.id }));
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 2,
 			});
@@ -296,7 +306,8 @@ describe("AdminService", () => {
 				.build();
 
 			// user-1만 존재
-			database.user.findMany.mockResolvedValue([{ id: existingUser.id }]);
+			const userIds: UserIdOnly[] = [{ id: existingUser.id }];
+			database.user.findMany.mockResolvedValue(userIds as never);
 			notificationService.createAndSendBatch.mockResolvedValue({
 				count: 1,
 			});

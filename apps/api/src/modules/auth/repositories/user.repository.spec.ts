@@ -3,9 +3,52 @@ import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
-import type { UserStatus } from "@/generated/prisma/client";
+import type {
+	SubscriptionStatus,
+	UserRole,
+	UserStatus,
+} from "@/generated/prisma/client";
 import * as userTagUtil from "../utils/user-tag.util";
 import { UserRepository } from "./user.repository";
+
+// =============================================================================
+// Type Definitions for Test
+// =============================================================================
+
+/**
+ * findByEmailWithCredential의 select 결과 타입
+ */
+interface UserWithCredential {
+	id: string;
+	email: string;
+	status: UserStatus;
+	emailVerifiedAt: Date | null;
+	accounts: Array<{
+		id: number;
+		provider: string;
+		password: string | null;
+	}>;
+}
+
+/**
+ * findByIdWithProfile의 select 결과 타입
+ */
+interface UserWithProfile {
+	id: string;
+	email: string;
+	userTag: string;
+	role: UserRole;
+	status: UserStatus;
+	emailVerifiedAt: Date | null;
+	subscriptionStatus: SubscriptionStatus;
+	subscriptionExpiresAt: Date | null;
+	createdAt: Date;
+	lastLoginAt: Date | null;
+	profile: {
+		name: string;
+		profileImage: string | null;
+	} | null;
+}
 
 // 유틸리티 함수 모킹
 jest.mock("../utils/user-tag.util");
@@ -73,7 +116,7 @@ describe("UserRepository", () => {
 	describe("findByEmailWithCredential", () => {
 		it("이메일로 사용자와 Credential 계정을 조회한다", async () => {
 			// Given - Credential 계정을 가진 사용자 데이터 준비
-			const userWithAccount = {
+			const userWithAccount: UserWithCredential = {
 				id: mockUser.id,
 				email: mockUser.email,
 				status: mockUser.status,
@@ -86,7 +129,7 @@ describe("UserRepository", () => {
 					},
 				],
 			};
-			db.user.findUnique.mockResolvedValue(userWithAccount);
+			db.user.findUnique.mockResolvedValue(userWithAccount as never);
 
 			// When - 이메일로 사용자와 Credential 계정 조회
 			const result =
@@ -144,7 +187,7 @@ describe("UserRepository", () => {
 	describe("findByIdWithProfile", () => {
 		it("ID로 사용자와 프로필을 조회한다", async () => {
 			// Given - 프로필이 있는 사용자 데이터 준비
-			const userWithProfile = {
+			const userWithProfile: UserWithProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
@@ -160,7 +203,7 @@ describe("UserRepository", () => {
 					profileImage: null,
 				},
 			};
-			db.user.findUnique.mockResolvedValue(userWithProfile);
+			db.user.findUnique.mockResolvedValue(userWithProfile as never);
 
 			// When - ID로 사용자와 프로필 조회
 			const result = await repository.findByIdWithProfile("user-123");
@@ -192,7 +235,7 @@ describe("UserRepository", () => {
 
 		it("프로필이 없는 사용자도 조회한다", async () => {
 			// Given - 프로필이 없는 사용자 데이터 준비
-			const userWithoutProfile = {
+			const userWithoutProfile: UserWithProfile = {
 				id: mockUser.id,
 				email: mockUser.email,
 				userTag: mockUser.userTag,
@@ -205,7 +248,7 @@ describe("UserRepository", () => {
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: null,
 			};
-			db.user.findUnique.mockResolvedValue(userWithoutProfile);
+			db.user.findUnique.mockResolvedValue(userWithoutProfile as never);
 
 			// When - ID로 프로필이 없는 사용자 조회
 			const result = await repository.findByIdWithProfile("user-123");

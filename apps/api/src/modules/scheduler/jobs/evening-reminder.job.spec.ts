@@ -1,4 +1,5 @@
-import { type StubbedInstance, TestBed } from "@suites/unit";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 
 import { DatabaseService } from "@/database/database.service";
 
@@ -40,21 +41,98 @@ function createMockUserWithTodoStats(
 }
 
 // =============================================================================
+// Type-safe Test Helpers
+// =============================================================================
+
+interface NotificationBatchItem {
+	userId: string;
+	type: string;
+	title: string;
+	body: string;
+	route: string;
+}
+
+/**
+ * mock.calls에서 첫 번째 호출의 첫 번째 인자를 타입 안전하게 가져옴
+ */
+function getFirstBatchCallArg(mock: jest.Mock): NotificationBatchItem[] {
+	const calls = mock.mock.calls;
+	if (calls.length === 0) {
+		throw new Error("Expected mock to have been called at least once");
+	}
+	const firstCall = calls[0];
+	if (!firstCall || firstCall.length === 0) {
+		throw new Error("Expected first call to have arguments");
+	}
+	return firstCall[0] as NotificationBatchItem[];
+}
+
+/**
+ * 배열에서 첫 번째 요소를 타입 안전하게 가져옴
+ */
+function getFirstNotification(
+	batch: NotificationBatchItem[],
+): NotificationBatchItem {
+	const first = batch[0];
+	if (!first) {
+		throw new Error("Expected batch to have at least one notification");
+	}
+	return first;
+}
+
+interface UserFindManyArgs {
+	where?: {
+		pushTokens?: unknown;
+		todos?: {
+			some?: {
+				startDate?: {
+					gte?: Date;
+					lt?: Date;
+				};
+			};
+		};
+	};
+	select?: {
+		id?: boolean;
+		todos?: unknown;
+	};
+}
+
+/**
+ * user.findMany mock 호출 인자를 타입 안전하게 가져옴
+ */
+function getUserFindManyCallArg(mock: jest.Mock): UserFindManyArgs {
+	const calls = mock.mock.calls;
+	if (calls.length === 0) {
+		throw new Error("Expected mock to have been called at least once");
+	}
+	const firstCall = calls[0];
+	if (!firstCall || firstCall.length === 0) {
+		throw new Error("Expected first call to have arguments");
+	}
+	return firstCall[0] as UserFindManyArgs;
+}
+
+// =============================================================================
 // Tests
 // =============================================================================
 
 describe("EveningReminderJob", () => {
 	let job: EveningReminderJob;
-	let databaseService: StubbedInstance<DatabaseService>;
-	let notificationService: StubbedInstance<NotificationService>;
+	let databaseService: Mocked<DatabaseService>;
+	let notificationService: Mocked<NotificationService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } =
 			await TestBed.solitary(EveningReminderJob).compile();
 
 		job = unit;
-		databaseService = unitRef.get(DatabaseService);
-		notificationService = unitRef.get(NotificationService);
+		databaseService = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+		notificationService = unitRef.get(
+			NotificationService,
+		) as unknown as Mocked<NotificationService>;
 	});
 
 	// =========================================================================
@@ -83,8 +161,9 @@ describe("EveningReminderJob", () => {
 
 				// Then - 완료 알림이 전송됨
 				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
-				const batchCallArg =
-					notificationService.createAndSendBatch.mock.calls[0][0];
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
 				expect(batchCallArg).toHaveLength(1);
 				expect(batchCallArg[0]).toMatchObject({
 					userId: "user-1",
@@ -113,10 +192,12 @@ describe("EveningReminderJob", () => {
 
 				// Then - 부분 완료 알림이 전송됨
 				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
-				const batchCallArg =
-					notificationService.createAndSendBatch.mock.calls[0][0];
-				expect(batchCallArg[0].userId).toBe("user-1");
-				expect(batchCallArg[0].type).toBe("EVENING_REMINDER");
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				const firstNotification = getFirstNotification(batchCallArg);
+				expect(firstNotification.userId).toBe("user-1");
+				expect(firstNotification.type).toBe("EVENING_REMINDER");
 			});
 
 			it("할일을 하나도 완료하지 않은 사용자에게 미완료 알림을 보낸다", async () => {
@@ -139,10 +220,12 @@ describe("EveningReminderJob", () => {
 
 				// Then - 미완료 알림이 전송됨
 				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
-				const batchCallArg =
-					notificationService.createAndSendBatch.mock.calls[0][0];
-				expect(batchCallArg[0].userId).toBe("user-1");
-				expect(batchCallArg[0].type).toBe("EVENING_REMINDER");
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				const firstNotification = getFirstNotification(batchCallArg);
+				expect(firstNotification.userId).toBe("user-1");
+				expect(firstNotification.type).toBe("EVENING_REMINDER");
 			});
 		});
 
@@ -179,11 +262,12 @@ describe("EveningReminderJob", () => {
 				expect(databaseService.user.findMany).toHaveBeenCalledTimes(1);
 				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
-				const batchCallArg =
-					notificationService.createAndSendBatch.mock.calls[0][0];
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
 				expect(batchCallArg).toHaveLength(3);
 
-				const userIds = batchCallArg.map((n: { userId: string }) => n.userId);
+				const userIds = batchCallArg.map((n) => n.userId);
 				expect(userIds).toContain("user-complete");
 				expect(userIds).toContain("user-partial");
 				expect(userIds).toContain("user-none");
@@ -239,23 +323,25 @@ describe("EveningReminderJob", () => {
 				await job.handleEveningReminder();
 
 				// Then - 올바른 쿼리 조건으로 조회됨
-				const findManyCall = databaseService.user.findMany.mock.calls[0][0];
+				const findManyCall = getUserFindManyCallArg(
+					databaseService.user.findMany as unknown as jest.Mock,
+				);
 
 				// where 조건 확인
 				expect(findManyCall.where).toBeDefined();
-				expect(findManyCall.where.pushTokens).toEqual({ some: {} });
-				expect(findManyCall.where.todos).toBeDefined();
-				expect(findManyCall.where.todos.some).toBeDefined();
-				expect(findManyCall.where.todos.some.startDate).toBeDefined();
-				expect(findManyCall.where.todos.some.startDate.gte).toBeInstanceOf(
-					Date,
-				);
-				expect(findManyCall.where.todos.some.startDate.lt).toBeInstanceOf(Date);
+				expect(findManyCall.where?.pushTokens).toEqual({ some: {} });
+				expect(findManyCall.where?.todos).toBeDefined();
+
+				const todosFilter = findManyCall.where?.todos;
+				expect(todosFilter?.some).toBeDefined();
+				expect(todosFilter?.some?.startDate).toBeDefined();
+				expect(todosFilter?.some?.startDate?.gte).toBeInstanceOf(Date);
+				expect(todosFilter?.some?.startDate?.lt).toBeInstanceOf(Date);
 
 				// select 조건 확인
 				expect(findManyCall.select).toBeDefined();
-				expect(findManyCall.select.id).toBe(true);
-				expect(findManyCall.select.todos).toBeDefined();
+				expect(findManyCall.select?.id).toBe(true);
+				expect(findManyCall.select?.todos).toBeDefined();
 			});
 		});
 	});

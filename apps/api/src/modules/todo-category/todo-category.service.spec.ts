@@ -18,7 +18,10 @@ import { DatabaseService } from "@/database/database.service";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
 import { TodoCategoryService } from "./todo-category.service";
-import type { TodoCategoryWithCount } from "./types/todo-category.types";
+import type {
+	TodoCategoryWithCount,
+	TransactionClient,
+} from "./types/todo-category.types";
 
 describe("TodoCategoryService", () => {
 	let service: TodoCategoryService;
@@ -44,8 +47,10 @@ describe("TodoCategoryService", () => {
 		) as unknown as Mocked<DatabaseService>;
 
 		// $transaction 기본 mock 설정
+		// Note: 테스트에서는 repository mock을 TransactionClient로 사용
+		// 실제로는 서비스가 tx를 repository에 전달하고, mock이 tx 없이도 동작하도록 설정됨
 		database.$transaction.mockImplementation(async (callback) =>
-			callback(todoCategoryRepo),
+			callback(todoCategoryRepo as unknown as TransactionClient),
 		);
 	});
 
@@ -323,7 +328,7 @@ describe("TodoCategoryService", () => {
 			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
 			todoCategoryRepo.countByUserId.mockResolvedValue(3);
 			todoCategoryRepo.getTodoCount.mockResolvedValue(0);
-			todoCategoryRepo.delete.mockResolvedValue(undefined);
+			todoCategoryRepo.delete.mockResolvedValue(category);
 
 			// When
 			await service.delete({ userId, categoryId: 1 });
@@ -373,8 +378,8 @@ describe("TodoCategoryService", () => {
 				.mockResolvedValueOnce(targetCategory); // 이동 대상 카테고리
 			todoCategoryRepo.countByUserId.mockResolvedValue(2);
 			todoCategoryRepo.getTodoCount.mockResolvedValue(5);
-			todoCategoryRepo.moveTodosToCategory.mockResolvedValue(undefined);
-			todoCategoryRepo.delete.mockResolvedValue(undefined);
+			todoCategoryRepo.moveTodosToCategory.mockResolvedValue(5); // 이동된 Todo 개수
+			todoCategoryRepo.delete.mockResolvedValue(sourceCategory);
 
 			// When
 			await service.delete({
@@ -434,7 +439,7 @@ describe("TodoCategoryService", () => {
 			todoCategoryRepo.findByIdAndUserId
 				.mockResolvedValueOnce(category)
 				.mockResolvedValueOnce(targetCategory);
-			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(2); // 이동된 개수
 			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
@@ -468,7 +473,7 @@ describe("TodoCategoryService", () => {
 			todoCategoryRepo.findByIdAndUserId
 				.mockResolvedValueOnce(category)
 				.mockResolvedValueOnce(targetCategory);
-			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(1); // 이동된 개수
 			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
@@ -495,7 +500,7 @@ describe("TodoCategoryService", () => {
 				.build();
 
 			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
-			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(2); // 이동된 개수
 			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
@@ -522,7 +527,7 @@ describe("TodoCategoryService", () => {
 
 			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
 			todoCategoryRepo.getMaxSortOrder.mockResolvedValue(3);
-			todoCategoryRepo.shiftSortOrders.mockResolvedValue(undefined);
+			todoCategoryRepo.shiftSortOrders.mockResolvedValue(0); // 이동된 개수 (맨 뒤로 이동 시 0)
 			todoCategoryRepo.update.mockResolvedValue(updatedCategory);
 
 			// When
