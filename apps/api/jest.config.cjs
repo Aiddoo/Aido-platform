@@ -58,6 +58,9 @@ module.exports = {
   // 타임아웃 (Testcontainers용)
   testTimeout: 60000,
 
+  // Jest 전역 설정 파일
+  setupFilesAfterEnv: ['<rootDir>/test/setup/jest.setup.ts'],
+
   // 모듈 별칭
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

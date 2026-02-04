@@ -8,6 +8,7 @@
 
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { PinoLogger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 import type { App } from "supertest/types";
@@ -21,6 +22,7 @@ import { DatabaseService } from "@/database";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { EmailService } from "@/modules/email/email.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
+import { FakeLogger } from "../mocks/fake-logger.service";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 
@@ -123,6 +125,8 @@ describe("Auth (e2e)", () => {
 			.useValue(fakeEmailService)
 			.overrideProvider(OAuthTokenVerifierService)
 			.useValue(fakeOAuthTokenVerifierService)
+			.overrideProvider(PinoLogger)
+			.useClass(FakeLogger)
 			.compile();
 
 		app = moduleFixture.createNestApplication();
