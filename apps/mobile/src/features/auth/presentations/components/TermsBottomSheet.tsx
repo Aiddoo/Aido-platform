@@ -7,7 +7,6 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
@@ -16,6 +15,7 @@ import { BottomSheet, Checkbox, Divider, FormField } from 'heroui-native';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface TermsBottomSheetProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ interface TermsBottomSheetProps {
 export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
   const { handleSubmit } = useFormContext<SignUpFormData>();
   const toast = useAppToast();
+  const insets = useSafeAreaInsets();
 
   const [agreements, setAgreements] = useState(() => ({
     terms: false,
@@ -84,8 +85,14 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <BottomSheet.Portal>
         <BottomSheet.Overlay />
-        <BottomSheet.Content enableDynamicSizing>
-          <VStack className="flex-1" justify="between">
+        <BottomSheet.Content
+          enableDynamicSizing
+          detached
+          bottomInset={insets.bottom}
+          className="mx-4"
+          backgroundClassName="rounded-[24px]"
+        >
+          <VStack gap={32}>
             <VStack gap={16}>
               <FormField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
                 <FormField.Indicator>
@@ -120,8 +127,6 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
                 />
               </VStack>
             </VStack>
-
-            <Spacing size={40} />
 
             <Button
               color="dark"
