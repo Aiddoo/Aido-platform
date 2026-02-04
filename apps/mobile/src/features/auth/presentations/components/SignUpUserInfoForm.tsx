@@ -155,7 +155,7 @@ const SuggestedEmailDomainList = () => {
 
   const normalizedEmail = email ?? '';
   const [localPart, domainPart] = splitEmail(normalizedEmail);
-  const suggestedDomains = getSuggestedDomains(localPart, domainPart);
+  const suggestedDomains = getSuggestedDomains(normalizedEmail, domainPart);
 
   if (suggestedDomains.length === 0) {
     return null;
@@ -181,16 +181,15 @@ const SuggestedEmailDomainList = () => {
 };
 
 const splitEmail = (value: string): [string, string] => {
-  if (!value.includes('@')) {
-    return ['', ''];
+  const atIndex = value.lastIndexOf('@');
+  if (atIndex === -1) {
+    return [value, ''];
   }
-
-  const [local = '', domain = ''] = value.split('@');
-  return [local, domain];
+  return [value.substring(0, atIndex), value.substring(atIndex + 1)];
 };
 
-const getSuggestedDomains = (localPart: string, domainPart: string) => {
-  if (!localPart) {
+const getSuggestedDomains = (rawEmail: string, domainPart: string) => {
+  if (!rawEmail.includes('@')) {
     return [];
   }
 
