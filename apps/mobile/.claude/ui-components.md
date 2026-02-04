@@ -46,7 +46,9 @@ import { ScrollView, FlatList, Image } from 'react-native';
 |----------|------|------|
 | `Text`, `H1`~`H4` | 텍스트, 헤딩 | `src/shared/ui/Text/README.md` |
 | `Button` | 기본 버튼 | `src/shared/ui/Button/Button.md` |
+| `KeyboardAdaptiveButton` | 키보드 반응 버튼 | `src/shared/ui/Button/Button.md` |
 | `TextButton` | 텍스트/링크 버튼 | `src/shared/ui/TextButton/TextButton.md` |
+| `Input` | 입력 필드 | `src/shared/ui/Input/Input.md` |
 | `Spacing` | 간격 유틸리티 | `src/shared/ui/Spacing/Spacing.md` |
 | `Box` | 단순 컨테이너 | `src/shared/ui/Box/README.md` |
 | `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |

@@ -5,10 +5,15 @@ import type {
   CurrentUser,
   ExchangeCodeInput,
   PreferenceResponse,
+  RegisterInput,
+  RegisterResponse,
+  ResendVerificationInput,
+  ResendVerificationResponse,
   UpdateMarketingConsentInput,
   UpdateMarketingConsentResponse,
   UpdatePreferenceInput,
   UpdatePreferenceResponse,
+  VerifyEmailInput,
 } from '@aido/validators';
 
 export interface AuthRepository {
@@ -37,4 +42,10 @@ export interface AuthRepository {
   ): Promise<UpdateMarketingConsentResponse>;
 
   appleLogin(input: AppleMobileCallbackInput): Promise<AuthTokens>;
+
+  register(input: RegisterInput): Promise<RegisterResponse>;
+
+  verifyEmail(input: VerifyEmailInput): Promise<AuthTokens>;
+
+  resendVerification(input: ResendVerificationInput): Promise<ResendVerificationResponse>;
 }

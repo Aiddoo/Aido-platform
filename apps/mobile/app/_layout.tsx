@@ -9,6 +9,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
@@ -71,17 +72,19 @@ const AppBootstrapLayout = () => {
 
   return (
     <GestureHandlerProvider>
-      <HeroUIProvider>
-        <QueryProvider>
-          <DIProvider>
-            <AuthProvider>
-              <NotificationProvider>
-                <AuthGateLayout />
-              </NotificationProvider>
-            </AuthProvider>
-          </DIProvider>
-        </QueryProvider>
-      </HeroUIProvider>
+      <KeyboardProvider>
+        <HeroUIProvider>
+          <QueryProvider>
+            <DIProvider>
+              <AuthProvider>
+                <NotificationProvider>
+                  <AuthGateLayout />
+                </NotificationProvider>
+              </AuthProvider>
+            </DIProvider>
+          </QueryProvider>
+        </HeroUIProvider>
+      </KeyboardProvider>
     </GestureHandlerProvider>
   );
 };

@@ -7,10 +7,17 @@ import {
   currentUserSchema,
   type ExchangeCodeInput,
   preferenceResponseSchema,
+  type RegisterInput,
+  type RegisterResponse,
+  type ResendVerificationInput,
+  type ResendVerificationResponse,
+  registerResponseSchema,
+  resendVerificationResponseSchema,
   type UpdateMarketingConsentInput,
   type UpdatePreferenceInput,
   updateMarketingConsentResponseSchema,
   updatePreferenceResponseSchema,
+  type VerifyEmailInput,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
@@ -150,6 +157,48 @@ export class AuthRepositoryImpl implements AuthRepository {
       this.#storage.set('accessToken', result.data.accessToken),
       this.#storage.set('refreshToken', result.data.refreshToken),
     ]);
+
+    return result.data;
+  }
+
+  async register(input: RegisterInput): Promise<RegisterResponse> {
+    const { data } = await this.#publicHttpClient.post<RegisterResponse>('v1/auth/register', input);
+
+    const result = registerResponseSchema.safeParse(data);
+    if (!result.success) {
+      throw new AuthValidationError(result.error, 'v1/auth/register');
+    }
+
+    return result.data;
+  }
+
+  async verifyEmail(input: VerifyEmailInput): Promise<AuthTokens> {
+    const { data } = await this.#publicHttpClient.post<AuthTokens>('v1/auth/verify-email', input);
+
+    const result = authTokensSchema.safeParse(data);
+    if (!result.success) {
+      throw new AuthValidationError(result.error, 'v1/auth/verify-email');
+    }
+
+    // Store tokens on successful verification
+    await Promise.all([
+      this.#storage.set('accessToken', result.data.accessToken),
+      this.#storage.set('refreshToken', result.data.refreshToken),
+    ]);
+
+    return result.data;
+  }
+
+  async resendVerification(input: ResendVerificationInput): Promise<ResendVerificationResponse> {
+    const { data } = await this.#publicHttpClient.post<ResendVerificationResponse>(
+      'v1/auth/resend-verification',
+      input,
+    );
+
+    const result = resendVerificationResponseSchema.safeParse(data);
+    if (!result.success) {
+      throw new AuthValidationError(result.error, 'v1/auth/resend-verification');
+    }
 
     return result.data;
   }

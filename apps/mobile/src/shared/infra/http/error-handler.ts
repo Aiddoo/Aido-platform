@@ -175,9 +175,21 @@ interface ServerErrorResponse {
   error: { code: string; message: string };
 }
 
+/** auth-client용: 401은 refresh 로직에서 처리하므로 건너뜀 */
 export const handleApiErrors: AfterResponseHook = async (_request, _options, response) => {
-  // 401은 refresh 로직에서 처리하므로 건너뜀
   if (!response.ok && response.status !== 401) {
+    const { error } = (await response.json()) as ServerErrorResponse;
+    const userMessage =
+      MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
+      error.message ||
+      '알 수 없는 오류가 발생했어요';
+    throw new ApiError(error.code, userMessage, response.status);
+  }
+};
+
+/** public-client용: 401 포함 모든 에러 처리 */
+export const handlePublicApiErrors: AfterResponseHook = async (_request, _options, response) => {
+  if (!response.ok) {
     const { error } = (await response.json()) as ServerErrorResponse;
     const userMessage =
       MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
