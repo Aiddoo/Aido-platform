@@ -8,6 +8,8 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class FakeLogger {
+	private context = "FakeLogger";
+
 	setContext(context: string): void {
 		this.context = context;
 	}
