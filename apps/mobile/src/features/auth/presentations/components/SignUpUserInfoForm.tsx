@@ -9,7 +9,7 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { Chip } from 'heroui-native';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -35,13 +35,20 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   const { step, setStep } = useStepper<typeof USER_INFO_STEPS>(USER_INFO_STEPS);
   const emailInputRef = useRef<TextInput>(null);
 
+  useEffect(() => {
+    if (step !== 'email') return;
+
+    const emailFocusTimeoutId = setTimeout(() => {
+      emailInputRef.current?.focus();
+    }, 300);
+
+    return () => clearTimeout(emailFocusTimeoutId);
+  }, [step]);
+
   const handleNext = () => {
     match(step)
       .with('name', () => {
         setStep('email');
-        setTimeout(() => {
-          emailInputRef.current?.focus();
-        }, 300);
       })
       .with('email', () => onNextStep())
       .exhaustive();
@@ -73,7 +80,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
 
         {step === 'email' && (
           <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
+            entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
           >
             <Controller
               control={control}

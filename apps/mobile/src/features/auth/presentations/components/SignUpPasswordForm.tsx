@@ -9,7 +9,7 @@ import { Input } from '@src/shared/ui/Input';
 import { Text } from '@src/shared/ui/Text/Text';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard, Pressable, ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -34,6 +34,16 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const passwordConfirmInputRef = useRef<TextInput>(null);
 
+  useEffect(() => {
+    if (step !== 'passwordConfirm') return;
+
+    const passwordConfirmFocusTimeoutId = setTimeout(() => {
+      passwordConfirmInputRef.current?.focus();
+    }, 350);
+
+    return () => clearTimeout(passwordConfirmFocusTimeoutId);
+  }, [step]);
+
   const isPasswordValid = passwordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
 
@@ -45,9 +55,6 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
     match(step)
       .with('password', () => {
         setStep('passwordConfirm');
-        setTimeout(() => {
-          passwordConfirmInputRef.current?.focus();
-        }, 350);
       })
       .with('passwordConfirm', () => {
         Keyboard.dismiss();
@@ -80,7 +87,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
 
           {step === 'passwordConfirm' && (
             <Animated.View
-              entering={FadeInUp.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
+              entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
             >
               <VStack mb={20}>
                 <Controller
