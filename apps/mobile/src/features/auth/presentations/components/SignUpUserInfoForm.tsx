@@ -10,7 +10,7 @@ import { H3 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { Chip } from 'heroui-native';
 import { useRef } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -29,10 +29,10 @@ interface SignUpUserInfoFormProps {
 export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   const {
     control,
-    watch,
     formState: { errors },
   } = useFormContext<SignUpFormData>();
-  const { step, setStep } = useStepper(USER_INFO_STEPS);
+  const [email, name] = useWatch({ control, name: ['email', 'name'] });
+  const { step, setStep } = useStepper<typeof USER_INFO_STEPS>(USER_INFO_STEPS);
   const emailInputRef = useRef<TextInput>(null);
 
   const handleNext = () => {
@@ -46,9 +46,6 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
       .with('email', () => onNextStep())
       .exhaustive();
   };
-
-  const email = watch('email');
-  const name = watch('name');
 
   const isNameValid = signUpFormSchema.shape.name.safeParse(name).success;
   const isEmailValid = emailSchema.safeParse(email).success;
@@ -76,7 +73,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
 
         {step === 'email' && (
           <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+            entering={FadeInUp.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
           >
             <Controller
               control={control}
@@ -153,8 +150,8 @@ const EMAIL_DOMAINS = [
 const MAX_SUGGESTED_DOMAINS = 3;
 
 const SuggestedEmailDomainList = () => {
-  const { watch, setValue } = useFormContext<SignUpFormData>();
-  const email = watch('email');
+  const { setValue, control } = useFormContext<SignUpFormData>();
+  const email = useWatch({ control, name: 'email' });
 
   const normalizedEmail = email ?? '';
   const [localPart, domainPart] = splitEmail(normalizedEmail);

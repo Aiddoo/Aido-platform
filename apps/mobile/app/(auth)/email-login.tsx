@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import { emailLoginMutationOptions } from '@src/features/auth/presentations/queries/email-login-mutation-options';
 import { isApiError } from '@src/shared/errors';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -48,7 +49,7 @@ const EmailLoginScreen = () => {
       { email: email.trim(), password },
       {
         onError: (error) => {
-          if (isApiError(error) && error.hasCode('EMAIL_0503')) {
+          if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
             router.push({ pathname: './verify-email', params: { email: email.trim() } });
             return;
           }

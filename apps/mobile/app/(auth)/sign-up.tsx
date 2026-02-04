@@ -1,8 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type SignUpFormData, signUpFormSchema } from '@src/features/auth/models/auth.model';
-
-const SIGN_UP_STEPS = ['정보_입력', '비밀번호_설정', '이메일_인증'] as const;
-
 import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
 import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';
 import { SignUpVerificationForm } from '@src/features/auth/presentations/components/SignUpVerificationForm';
@@ -16,6 +13,8 @@ import { PressableFeedback } from 'heroui-native';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { match } from 'ts-pattern';
+
+const SIGN_UP_STEPS = ['정보_입력', '비밀번호_설정', '이메일_인증'] as const;
 
 const SignUpScreen = () => {
   const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);

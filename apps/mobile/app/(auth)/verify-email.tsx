@@ -5,9 +5,9 @@ import { resendVerificationMutationOptions } from '@src/features/auth/presentati
 import { verifyEmailMutationOptions } from '@src/features/auth/presentations/queries/verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
+import { Result } from '@src/shared/ui/Result/Result';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
 import { H3 } from '@src/shared/ui/Text/Typography';
@@ -24,11 +24,10 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 /**
  * 독립적인 이메일 인증 화면
  * - 로그인 시 미인증 에러(EMAIL_0503) 발생 시 이동
- * - 회원가입 시 이미 등록된 미인증 이메일(EMAIL_0501) 발생 시 이동
  */
 const VerifyEmailScreen = () => {
   const { email } = useLocalSearchParams<{ email: string }>();
-  const { error: showError, success: showSuccess } = useAppToast();
+  const toast = useAppToast();
 
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [cooldown, setCooldown] = useCooldown(0);
@@ -45,14 +44,11 @@ const VerifyEmailScreen = () => {
   const onSubmit = (data: VerifyEmailInput) => {
     setIsInvalid(false);
     verify.mutate(data, {
-      onSuccess: () => {
-        // AuthProvider가 status를 'authenticated'로 변경하고 자동으로 메인 화면으로 이동
-      },
       onError: (error) => {
         setIsInvalid(true);
         setValue('code', '');
         inputOTPRef.current?.clear();
-        showError(error, { fallback: '인증 코드가 올바르지 않습니다' });
+        toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
       },
     });
   };
@@ -73,25 +69,28 @@ const VerifyEmailScreen = () => {
           reset({ email, code: '' });
           inputOTPRef.current?.clear();
           setIsInvalid(false);
-          showSuccess('인증 코드가 재발송되었습니다');
+          toast.success('인증 코드가 재발송되었습니다');
         },
         onError: (error) => {
-          showError(error, { fallback: '인증 코드 재발송에 실패했습니다' });
+          toast.error(error, { fallback: '인증 코드 재발송에 실패했습니다' });
         },
       },
     );
   };
 
-  // Format email for display (mask middle part)
   const maskedEmail = email?.replace(/(.{2})(.*)(@.*)/, '$1****$3') ?? '';
 
   if (!email) {
     return (
       <StyledSafeAreaView className="flex-1 bg-white items-center justify-center">
-        <Text>이메일 정보가 없습니다</Text>
-        <Button onPress={() => router.back()} className="mt-4">
-          돌아가기
-        </Button>
+        <Result
+          title="이메일 정보가 없습니다"
+          button={
+            <Result.Button color="dark" onPress={() => router.back()}>
+              돌아가기
+            </Result.Button>
+          }
+        />
       </StyledSafeAreaView>
     );
   }

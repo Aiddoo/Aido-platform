@@ -10,7 +10,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useRef, useState } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard, Pressable, ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -25,17 +25,14 @@ interface SignUpPasswordFormProps {
 export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
   const {
     control,
-    watch,
     formState: { errors },
   } = useFormContext<SignUpFormData>();
+  const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
   const { step, setStep } = useStepper(PASSWORD_STEPS);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const passwordConfirmInputRef = useRef<TextInput>(null);
-
-  const password = watch('password');
-  const passwordConfirm = watch('passwordConfirm');
 
   const isPasswordValid = passwordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
@@ -83,7 +80,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
 
           {step === 'passwordConfirm' && (
             <Animated.View
-              entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+              entering={FadeInUp.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
             >
               <VStack mb={20}>
                 <Controller
@@ -93,7 +90,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                     <Input
                       ref={passwordConfirmInputRef}
                       label="비밀번호 확인"
-                      placeholder="비밀번호를 다시 입력하세요"
+                      placeholder="비밀번호를 다시 입력해주세요"
                       value={value}
                       onChangeText={onChange}
                       secureTextEntry={!showPasswordConfirm}
@@ -127,7 +124,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                 <VStack gap={8}>
                   <Input
                     label="비밀번호"
-                    placeholder="8자 이상, 영문+숫자 조합"
+                    placeholder="비밀번호를 입력해주세요"
                     value={value}
                     onChangeText={onChange}
                     secureTextEntry={!showPassword}

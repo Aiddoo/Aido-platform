@@ -20,7 +20,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 export const SignUpVerificationForm = () => {
   const { getValues } = useFormContext<SignUpFormData>();
-  const { error: showError, success: showSuccess } = useAppToast();
+  const toast = useAppToast();
   const email = getValues('email');
 
   const inputOTPRef = useRef<InputOTPRef>(null);
@@ -42,7 +42,7 @@ export const SignUpVerificationForm = () => {
         setIsInvalid(true);
         setValue('code', '');
         inputOTPRef.current?.clear();
-        showError(error, { fallback: '인증 코드가 올바르지 않습니다' });
+        toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
       },
     });
   };
@@ -63,10 +63,10 @@ export const SignUpVerificationForm = () => {
           reset({ email, code: '' });
           inputOTPRef.current?.clear();
           setIsInvalid(false);
-          showSuccess('인증 코드가 재발송되었습니다');
+          toast.success('인증 코드가 재발송되었습니다');
         },
         onError: (error) => {
-          showError(error, { fallback: '인증 코드 재발송에 실패했습니다' });
+          toast.error(error, { fallback: '인증 코드 재발송에 실패했습니다' });
         },
       },
     );
