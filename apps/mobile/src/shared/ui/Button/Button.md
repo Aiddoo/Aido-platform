@@ -22,6 +22,25 @@ import { Button } from '@src/shared/ui/Button/Button';
 <Button aria-label="좋아요"><HeartIcon /></Button>
 ```
 
+## KeyboardAdaptiveButton
+
+키보드 상태에 따라 하단 버튼의 여백과 모서리를 자동으로 조정하는 컴포넌트입니다.
+
+### 사용법
+
+```tsx
+import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveButton';
+
+<KeyboardAdaptiveButton onPress={handleSubmit}>
+  회원가입
+</KeyboardAdaptiveButton>
+```
+
+### 동작 방식
+
+- 키보드 닫힘: 좌우 패딩과 하단 안전영역 여백 적용, 둥근 모서리
+- 키보드 열림: 패딩 제거, 하단에 꽉 차는 직사각형 버튼
+
 ## Props
 
 | Prop | 타입 | 기본값 | 설명 |

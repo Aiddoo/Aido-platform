@@ -3,10 +3,15 @@ import type {
   ConsentResponse,
   ExchangeCodeInput,
   PreferenceResponse,
+  RegisterInput,
+  RegisterResponse,
+  ResendVerificationInput,
+  ResendVerificationResponse,
   UpdateMarketingConsentInput,
   UpdateMarketingConsentResponse,
   UpdatePreferenceInput,
   UpdatePreferenceResponse,
+  VerifyEmailInput,
 } from '@aido/validators';
 import { ENV } from '@src/shared/config/env';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -22,7 +27,8 @@ import {
   isAuthError,
   isExpoCodedError,
 } from '../models/auth.error';
-import type { AuthTokens, User } from '../models/auth.model';
+import type { AuthTokens } from '../models/auth-tokens.model';
+import type { User } from '../models/user.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
 
@@ -181,5 +187,20 @@ export class AuthService {
     input: UpdateMarketingConsentInput,
   ): Promise<UpdateMarketingConsentResponse> => {
     return this.#authRepository.updateMarketingConsent(input);
+  };
+
+  register = async (input: RegisterInput): Promise<RegisterResponse> => {
+    return this.#authRepository.register(input);
+  };
+
+  verifyEmail = async (input: VerifyEmailInput): Promise<AuthTokens> => {
+    const dto = await this.#authRepository.verifyEmail(input);
+    return toAuthTokens(dto);
+  };
+
+  resendVerification = async (
+    input: ResendVerificationInput,
+  ): Promise<ResendVerificationResponse> => {
+    return this.#authRepository.resendVerification(input);
   };
 }

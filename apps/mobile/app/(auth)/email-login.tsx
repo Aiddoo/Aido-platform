@@ -1,4 +1,6 @@
+import { ErrorCode } from '@aido/errors';
 import { emailLoginMutationOptions } from '@src/features/auth/presentations/queries/email-login-mutation-options';
+import { isApiError } from '@src/shared/errors';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
@@ -47,6 +49,10 @@ const EmailLoginScreen = () => {
       { email: email.trim(), password },
       {
         onError: (error) => {
+          if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
+            router.push({ pathname: './verify-email', params: { email: email.trim() } });
+            return;
+          }
           showError('로그인 실패', error.message || '로그인에 실패했습니다');
         },
       },
@@ -116,7 +122,7 @@ const EmailLoginScreen = () => {
             계정이 없으신가요?
           </Text>
           <Divider orientation="vertical" className="mx-2 h-3 bg-gray-4" />
-          <PressableFeedback onPress={() => {}}>
+          <PressableFeedback onPress={() => router.push('/sign-up')}>
             <Text size="e1" shade={9} weight="semibold">
               회원가입
             </Text>

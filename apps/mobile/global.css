@@ -134,3 +134,12 @@
   --text-e2--line-height: 16px;
   --text-e2--letter-spacing: -0.3px;
 }
+
+@layer utilities {
+  .text-input-lg {
+    font-size: var(--text-b2);
+  }
+  .text-input-md {
+    font-size: var(--text-b3);
+  }
+}
