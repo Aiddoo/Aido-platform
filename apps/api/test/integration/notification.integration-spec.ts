@@ -25,6 +25,8 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
+import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
@@ -58,9 +60,26 @@ describe("NotificationService Integration Tests", () => {
 		deleteMany: jest.fn(),
 	};
 
+	const mockUserPreferenceDb = {
+		findUnique: jest.fn(),
+		findFirst: jest.fn(),
+		create: jest.fn(),
+		update: jest.fn(),
+		upsert: jest.fn(),
+	};
+
+	const mockUserConsentDb = {
+		findUnique: jest.fn(),
+		findFirst: jest.fn(),
+		create: jest.fn(),
+		update: jest.fn(),
+	};
+
 	const mockDatabaseService = {
 		notification: mockNotificationDb,
 		pushToken: mockPushTokenDb,
+		userPreference: mockUserPreferenceDb,
+		userConsent: mockUserConsentDb,
 		$transaction: jest.fn(),
 	};
 
@@ -93,6 +112,8 @@ describe("NotificationService Integration Tests", () => {
 				NotificationService,
 				NotificationRepository,
 				PaginationService,
+				UserPreferenceRepository,
+				UserConsentRepository,
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
@@ -338,6 +359,12 @@ describe("NotificationService Integration Tests", () => {
 				.withToken(mockPushToken)
 				.build();
 
+			// UserPreference mock - pushEnabled가 true여야 푸시 발송
+			mockUserPreferenceDb.findUnique.mockResolvedValue({
+				userId: mockUserId,
+				pushEnabled: true,
+				nightPushEnabled: true,
+			});
 			mockNotificationDb.create.mockResolvedValue(mockNotification);
 			mockPushTokenDb.findMany.mockResolvedValue([mockToken]);
 			mockPushProvider.sendBatch.mockResolvedValue({

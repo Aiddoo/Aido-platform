@@ -21,6 +21,7 @@ import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { FollowBuilder, UserBuilder } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -66,6 +67,14 @@ describe("FollowService Integration Tests", () => {
 	// Mock EventEmitter
 	const mockEventEmitter = {
 		emit: jest.fn(),
+	};
+
+	// Mock CacheService
+	const mockCacheService = {
+		getMutualFriend: jest.fn(),
+		setMutualFriend: jest.fn(),
+		invalidateMutualFriend: jest.fn(),
+		invalidateFriendRelations: jest.fn(),
 	};
 
 	// 테스트 데이터
@@ -116,6 +125,10 @@ describe("FollowService Integration Tests", () => {
 				{
 					provide: EventEmitter2,
 					useValue: mockEventEmitter,
+				},
+				{
+					provide: CacheService,
+					useValue: mockCacheService,
 				},
 			],
 		}).compile();

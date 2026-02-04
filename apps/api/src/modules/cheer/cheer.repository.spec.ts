@@ -39,10 +39,6 @@ describe("CheerRepository", () => {
 		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	// ===========================================================================
 	// 기본 CRUD 테스트
 	// ===========================================================================

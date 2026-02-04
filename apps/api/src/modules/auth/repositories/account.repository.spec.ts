@@ -44,10 +44,6 @@ describe("AccountRepository", () => {
 		AccountBuilder.resetIdCounter();
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe("findByUserIdAndProvider", () => {
 		it("사용자 ID와 제공자로 계정을 찾는다", async () => {
 			// Given

@@ -101,10 +101,6 @@ describe("CheerService", () => {
 		(cacheService.getSubscription as jest.Mock).mockResolvedValue(undefined);
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	// ===========================================================================
 	// sendCheer 테스트
 	// ===========================================================================

@@ -43,10 +43,6 @@ describe("NotificationRepository", () => {
 		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	// ==========================================================================
 	// Notification CRUD Tests
 	// ==========================================================================

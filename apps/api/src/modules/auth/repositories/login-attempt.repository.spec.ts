@@ -42,10 +42,6 @@ describe("LoginAttemptRepository", () => {
 		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe("create", () => {
 		it("성공한 로그인 시도를 기록한다", async () => {
 			// Given

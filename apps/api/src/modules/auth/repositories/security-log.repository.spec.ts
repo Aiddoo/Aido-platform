@@ -44,10 +44,6 @@ describe("SecurityLogRepository", () => {
 		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe("create", () => {
 		const createData = {
 			userId: "user-123",

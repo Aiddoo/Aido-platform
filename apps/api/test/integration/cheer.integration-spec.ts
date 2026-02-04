@@ -23,6 +23,7 @@ import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { CheerBuilder, UserBuilder } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -73,6 +74,13 @@ describe("CheerService Integration Tests", () => {
 		emit: jest.fn(),
 	};
 
+	// Mock CacheService
+	const mockCacheService = {
+		getSubscription: jest.fn(),
+		setSubscription: jest.fn(),
+		invalidateSubscription: jest.fn(),
+	};
+
 	// 테스트 데이터
 	const mockSenderId = "user-cheer-sender-123";
 	const mockReceiverId = "user-cheer-receiver-456";
@@ -107,6 +115,10 @@ describe("CheerService Integration Tests", () => {
 				{
 					provide: EventEmitter2,
 					useValue: mockEventEmitter,
+				},
+				{
+					provide: CacheService,
+					useValue: mockCacheService,
 				},
 			],
 		}).compile();
