@@ -127,7 +127,7 @@ const LoginScreen = () => {
         <Spacing size={32} />
 
         <HStack justify="center" align="center" gap={8} pb={40}>
-          <TextButton size="medium" onPress={() => router.push('./sign-up')}>
+          <TextButton size="medium" onPress={() => router.push('/sign-up')}>
             회원가입
           </TextButton>
 

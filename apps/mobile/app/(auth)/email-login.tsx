@@ -122,7 +122,7 @@ const EmailLoginScreen = () => {
             계정이 없으신가요?
           </Text>
           <Divider orientation="vertical" className="mx-2 h-3 bg-gray-4" />
-          <PressableFeedback onPress={() => router.push('/(auth)/sign-up')}>
+          <PressableFeedback onPress={() => router.push('/sign-up')}>
             <Text size="e1" shade={9} weight="semibold">
               회원가입
             </Text>
