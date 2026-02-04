@@ -7,6 +7,7 @@ import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
 
 import type { EnvConfig } from "@/common/config";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "@/common/swagger";
+import { AdminModule } from "@/modules/admin/admin.module";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -20,8 +21,18 @@ async function bootstrap() {
 	app.useLogger(app.get(Logger));
 
 	app.use(helmet());
+
+	// 개발 환경에서도 허용된 origin만 허용 (보안 강화)
+	const devOrigins = [
+		"http://localhost:3000",
+		"http://localhost:8080",
+		"http://localhost:8081",
+		"http://localhost:19000",
+		"http://localhost:19006",
+	];
+
 	app.enableCors({
-		origin: nodeEnv === "development" ? true : corsOrigins, // 개발 환경에서는 모든 origin 허용
+		origin: nodeEnv === "development" ? devOrigins : corsOrigins,
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -91,6 +102,10 @@ async function bootstrap() {
 				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH],
 			)
 			.addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
+			.addTag(
+				SWAGGER_TAGS.TODO_CATEGORIES,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES],
+			)
 			.addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
 			// 소셜 기능 APIs
 			.addTag(
@@ -105,6 +120,10 @@ async function bootstrap() {
 				SWAGGER_TAGS.NUDGES,
 				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES],
 			)
+			.addTag(
+				SWAGGER_TAGS.NOTIFICATIONS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NOTIFICATIONS],
+			)
 			// 통계 APIs
 			.addTag(
 				SWAGGER_TAGS.DAILY_COMPLETIONS,
@@ -117,8 +136,9 @@ async function bootstrap() {
 			)
 			.build();
 
-		const document = SwaggerModule.createDocument(app, config);
-		SwaggerModule.setup("api/docs", app, cleanupOpenApiDoc(document), {
+		// App API 문서 (일반 클라이언트용)
+		const appDocument = SwaggerModule.createDocument(app, config);
+		SwaggerModule.setup("api/docs", app, cleanupOpenApiDoc(appDocument), {
 			customSiteTitle: "Aido API Documentation",
 			swaggerOptions: {
 				persistAuthorization: true,
@@ -149,6 +169,76 @@ async function bootstrap() {
 				},
 			},
 		});
+
+		// Admin API 문서 (관리자 전용)
+		const adminConfig = new DocumentBuilder()
+			.setTitle("Aido Admin API")
+			.setDescription(`관리자 전용 API
+
+## 인증
+- **Bearer Token 방식** (JWT)
+- **ADMIN 역할 필수**: role이 ADMIN인 사용자만 접근 가능
+- 헤더: \`Authorization: Bearer {token}\`
+
+## 에러 코드
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| ADMIN_1401 | 403 | 관리자 권한이 필요합니다 |
+| ADMIN_1402 | 404 | 알림 대상 사용자가 없습니다 |
+| ADMIN_1403 | 400 | 유효하지 않은 필터 조건입니다 |
+`)
+			.setVersion("1.0.0")
+			.addServer("http://localhost:8080", "Local Development")
+			.addServer("https://api-staging.aido.app", "Staging")
+			.addServer("https://api.aido.app", "Production")
+			.addBearerAuth({
+				type: "http",
+				scheme: "bearer",
+				bearerFormat: "JWT",
+				description: "관리자 JWT 토큰을 입력하세요 (role: ADMIN)",
+			})
+			.addTag(
+				SWAGGER_TAGS.ADMIN_NOTIFICATIONS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_NOTIFICATIONS],
+			)
+			.addTag(
+				SWAGGER_TAGS.ADMIN_USERS,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_USERS],
+			)
+			.addTag(
+				SWAGGER_TAGS.ADMIN_SYSTEM,
+				SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_SYSTEM],
+			)
+			.build();
+
+		const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
+			include: [AdminModule],
+		});
+		SwaggerModule.setup(
+			"api/admin/docs",
+			app,
+			cleanupOpenApiDoc(adminDocument),
+			{
+				customSiteTitle: "Aido Admin API Documentation",
+				swaggerOptions: {
+					persistAuthorization: true,
+					docExpansion: "list",
+					filter: true,
+					showRequestDuration: true,
+					tryItOutEnabled: true,
+					operationsSorter: "method",
+					tagsSorter: "alpha",
+					defaultModelsExpandDepth: 1,
+					defaultModelExpandDepth: 2,
+					displayOperationId: true,
+					displayRequestDuration: true,
+					syntaxHighlight: {
+						activate: true,
+						theme: "monokai",
+					},
+				},
+			},
+		);
 	}
 
 	await app.listen(port);
@@ -156,6 +246,7 @@ async function bootstrap() {
 	const logger = app.get(Logger);
 	logger.log(`🚀 Server running on http://localhost:${port}`);
 	logger.log(`📚 API Docs: http://localhost:${port}/api/docs`);
+	logger.log(`📚 Admin API Docs: http://localhost:${port}/api/admin/docs`);
 	logger.log(`💊 Health Check: http://localhost:${port}/health`);
 }
 

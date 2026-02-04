@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Resend } from "resend";
-import { TypedConfigService } from "../../common/config/services/config.service";
+import { TypedConfigService } from "@/common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "./constants/email.constants";
 import {
 	getPasswordResetHtml,

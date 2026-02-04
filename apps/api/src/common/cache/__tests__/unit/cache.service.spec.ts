@@ -1,19 +1,30 @@
-import { Test, TestingModule } from "@nestjs/testing";
+/**
+ * CacheService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - Given/When/Then 주석으로 테스트 구조화
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
+
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 import { CacheService } from "../../cache.service";
 import {
 	CACHE_SERVICE,
-	ICacheService,
-	TtlValue,
+	type ICacheService,
+	type TtlValue,
 } from "../../interfaces/cache.interface";
 import { createMockUserProfile } from "../test-utils";
 
 describe("CacheService", () => {
 	let service: CacheService;
-	let mockCacheAdapter: jest.Mocked<ICacheService>;
+	let mockCacheAdapter: Mocked<ICacheService>;
 
 	beforeEach(async () => {
-		// Given - Mock 캐시 어댑터 설정
-		mockCacheAdapter = {
+		// Given - Mock 캐시 어댑터 설정 (테스트에서 직접 참조하기 위해 별도 변수로 관리)
+		const mockCacheAdapterImpl = {
 			get: jest.fn(),
 			set: jest.fn(),
 			del: jest.fn(),
@@ -28,14 +39,14 @@ describe("CacheService", () => {
 			touch: jest.fn(),
 		};
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				CacheService,
-				{ provide: CACHE_SERVICE, useValue: mockCacheAdapter },
-			],
-		}).compile();
+		// Suites가 모든 의존성을 자동으로 mock (CACHE_SERVICE는 impl()로 수동 설정)
+		const { unit } = await TestBed.solitary(CacheService)
+			.mock(CACHE_SERVICE)
+			.impl(() => mockCacheAdapterImpl)
+			.compile();
 
-		service = module.get<CacheService>(CacheService);
+		service = unit;
+		mockCacheAdapter = mockCacheAdapterImpl as unknown as Mocked<ICacheService>;
 	});
 
 	afterEach(() => {

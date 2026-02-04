@@ -102,6 +102,7 @@ export abstract class AuthMapper {
 			userId: result.userId,
 			email: result.email,
 			sessionId: result.sessionId,
+			role: result.role,
 			userTag: result.userTag,
 			status: result.status,
 			emailVerifiedAt: result.emailVerifiedAt,

@@ -10,6 +10,7 @@ import type {
 	User,
 	UserPreference,
 	UserProfile,
+	UserRole,
 	UserStatus,
 } from "@/generated/prisma/client";
 
@@ -42,6 +43,7 @@ export const UserFixture = {
 			id: overrides.id ?? `user-${id}`,
 			email: overrides.email ?? `test-${id}@example.com`,
 			userTag: overrides.userTag ?? `USR${String(id).padStart(5, "0")}`,
+			role: overrides.role ?? ("USER" as UserRole),
 			status: overrides.status ?? ("ACTIVE" as UserStatus),
 			emailVerifiedAt: overrides.emailVerifiedAt ?? now,
 			twoFactorEnabled: overrides.twoFactorEnabled ?? false,

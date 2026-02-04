@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
+
+dayjs.extend(utc);
 
 import type {
 	FindFriendTodosParams,
@@ -214,11 +219,9 @@ export class TodoRepository {
 	): Promise<{ total: number; completed: number }> {
 		const client = tx ?? this.database;
 
-		// 오늘 날짜 범위 계산 (UTC 기준)
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
+		// 오늘 날짜 범위 계산 (UTC 기준으로 일관성 보장)
+		const today = dayjs.utc().startOf("day").toDate();
+		const tomorrow = dayjs.utc().add(1, "day").startOf("day").toDate();
 
 		const [total, completed] = await Promise.all([
 			client.todo.count({
@@ -262,28 +265,23 @@ export class TodoRepository {
 
 	/**
 	 * 사용자의 맞팔 친구 ID 목록 조회 (알림 발송용)
+	 *
+	 * 최적화: 3단계 중첩 쿼리 대신 Raw SQL JOIN으로 성능 개선
 	 */
 	async getMutualFriendIds(userId: string): Promise<string[]> {
-		// 내가 팔로우하고, 상대방도 나를 팔로우한 관계
-		const follows = await this.database.follow.findMany({
-			where: {
-				followerId: userId,
-				status: "ACCEPTED",
-				following: {
-					following: {
-						some: {
-							followingId: userId,
-							status: "ACCEPTED",
-						},
-					},
-				},
-			},
-			select: {
-				followingId: true,
-			},
-		});
+		// Raw SQL로 최적화된 JOIN 쿼리 (3단계 중첩 쿼리 대신)
+		const result = await this.database.$queryRaw<{ followingId: string }[]>`
+			SELECT DISTINCT f1."followingId"
+			FROM "Follow" f1
+			INNER JOIN "Follow" f2
+				ON f1."followingId" = f2."followerId"
+				AND f2."followingId" = f1."followerId"
+			WHERE f1."followerId" = ${userId}
+				AND f1."status" = 'ACCEPTED'
+				AND f2."status" = 'ACCEPTED'
+		`;
 
-		return follows.map((f) => f.followingId);
+		return result.map((r) => r.followingId);
 	}
 
 	// =========================================================================

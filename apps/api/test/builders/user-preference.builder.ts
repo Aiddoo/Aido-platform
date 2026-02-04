@@ -1,0 +1,77 @@
+/**
+ * UserPreference 모델 테스트 데이터 빌더
+ *
+ * @example
+ * ```typescript
+ * // 기본 설정
+ * const pref = UserPreferenceBuilder.create('user-123').build();
+ *
+ * // 푸시 비활성화
+ * const noPush = UserPreferenceBuilder.create('user-123').withPushDisabled().build();
+ *
+ * // 야간 푸시 허용
+ * const nightPush = UserPreferenceBuilder.create('user-123').withNightPushEnabled().build();
+ * ```
+ */
+import type { UserPreference } from "@/generated/prisma/client";
+
+export class UserPreferenceBuilder {
+	private data: UserPreference;
+	private static idCounter = 0;
+
+	private constructor(userId: string) {
+		UserPreferenceBuilder.idCounter += 1;
+		this.data = {
+			id: `pref-${UserPreferenceBuilder.idCounter}`,
+			userId,
+			pushEnabled: true,
+			nightPushEnabled: false,
+		};
+	}
+
+	static create(userId: string): UserPreferenceBuilder {
+		return new UserPreferenceBuilder(userId);
+	}
+
+	/** ID 카운터 리셋 (테스트 간 격리용) */
+	static resetIdCounter(): void {
+		UserPreferenceBuilder.idCounter = 0;
+	}
+
+	// === ID 관련 ===
+
+	withId(id: string): UserPreferenceBuilder {
+		this.data.id = id;
+		return this;
+	}
+
+	// === 푸시 설정 ===
+
+	withPushEnabled(enabled = true): UserPreferenceBuilder {
+		this.data.pushEnabled = enabled;
+		return this;
+	}
+
+	withPushDisabled(): UserPreferenceBuilder {
+		this.data.pushEnabled = false;
+		return this;
+	}
+
+	withNightPushEnabled(enabled = true): UserPreferenceBuilder {
+		this.data.nightPushEnabled = enabled;
+		return this;
+	}
+
+	// === 빌드 ===
+
+	build(): UserPreference {
+		return { ...this.data };
+	}
+
+	/** 여러 개 생성 */
+	static createMany(userIds: string[]): UserPreference[] {
+		return userIds.map((userId) =>
+			UserPreferenceBuilder.create(userId).build(),
+		);
+	}
+}

@@ -1,6 +1,6 @@
 # 통합 테스트 가이드
 
-> Service + Repository + 실제 DB 연동을 검증하는 테스트
+> Service + Repository + Mock DB 연동을 검증하는 테스트
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 문서 | 내용 |
 |------|------|
+| [testing-guide.md](./testing-guide.md) | 종합 테스팅 가이드 |
 | [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
 | [unit-test.md](./unit-test.md) | 단위 테스트 가이드 |
 | [prisma.md](./prisma.md) | Prisma 7 가이드 |
@@ -18,9 +19,9 @@
 
 | 항목 | 설명 |
 |------|------|
-| **정의** | Service + Repository + 실제 DB 연동 검증 |
-| **도구** | Testcontainers (Docker PostgreSQL) |
-| **목적** | 프로덕션과 동일한 환경에서 데이터 흐름 검증 |
+| **정의** | Service + Repository + Mock DB 연동 검증 |
+| **도구** | NestJS TestingModule + Mock DatabaseService |
+| **목적** | NestJS DI와 서비스 계층 통합 검증 |
 
 ---
 
@@ -30,89 +31,111 @@
 test/
 ├── integration/
 │   └── {name}.integration-spec.ts    # 통합 테스트
+├── builders/                          # 테스트 데이터 빌더
+│   ├── index.ts
+│   ├── user.builder.ts
+│   ├── cheer.builder.ts
+│   └── ...
 └── setup/
-    └── test-database.ts              # TestDatabase 헬퍼
+    ├── test-database.ts               # TestDatabase 헬퍼 (E2E용)
+    ├── test-database.service.ts       # TestDatabaseService
+    └── suites.setup.ts                # Suites 유틸리티
 ```
 
 **명명 규칙**: `{도메인}.integration-spec.ts`
 
 ---
 
-## TestDatabase 클래스
+## 테스트 구조 패턴
 
-### 주요 메서드
-
-```typescript
-import { TestDatabase } from "../setup/test-database";
-
-const testDb = new TestDatabase();
-
-// 컨테이너 시작 + Prisma 마이그레이션
-const prisma = await testDb.start();
-
-// PrismaClient 인스턴스 반환
-const prisma = testDb.getPrisma();
-
-// 모든 테이블 데이터 삭제
-await testDb.cleanup();
-
-// 컨테이너 종료
-await testDb.stop();
-```
-
-### 내부 동작
-
-1. **start()**: PostgreSQL 16 컨테이너 시작 → Prisma 마이그레이션 → PrismaClient 연결
-2. **cleanup()**: `$transaction`으로 모든 테이블 데이터 삭제
-3. **stop()**: Prisma 연결 해제 → 컨테이너 종료
-
----
-
-## 테스트 라이프사이클
+### 기본 구조
 
 ```typescript
-describe("Todo 통합 테스트", () => {
+/**
+ * CheerService 통합 테스트
+ *
+ * @description
+ * CheerService가 CheerRepository, FollowService, PaginationService와 함께
+ * 올바르게 작동하는지 검증합니다.
+ */
+import { Logger } from "@nestjs/common";
+import { Test, type TestingModule } from "@nestjs/testing";
+import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { DatabaseService } from "@/database/database.service";
+import { CheerRepository } from "@/modules/cheer/cheer.repository";
+import { CheerService } from "@/modules/cheer/cheer.service";
+import { CheerBuilder, UserBuilder } from "@test/builders";
+
+describe("CheerService Integration Tests", () => {
   let module: TestingModule;
-  let service: TodoService;
-  let testDb: TestDatabase;
-  let databaseService: DatabaseService;
-  let testUserId: string;
+  let service: CheerService;
+  let repository: CheerRepository;
 
-  // 테스트 스위트 시작 시 한 번만 실행
+  // Mock 데이터베이스 서비스
+  const mockCheerDb = {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  };
+
+  const mockUserDb = {
+    findUnique: jest.fn(),
+  };
+
+  const mockDatabaseService = {
+    cheer: mockCheerDb,
+    user: mockUserDb,
+    $transaction: jest.fn(),
+  };
+
+  // $transaction mock 구현
+  mockDatabaseService.$transaction.mockImplementation(
+    (callback: (tx: unknown) => Promise<unknown>) =>
+      callback(mockDatabaseService),
+  );
+
+  // 테스트 데이터
+  const mockSenderId = "user-sender-123";
+  const mockReceiverId = "user-receiver-456";
+
   beforeAll(async () => {
-    testDb = new TestDatabase();
-    databaseService = await testDb.start();
+    // Logger 출력 비활성화
+    jest.spyOn(Logger.prototype, "log").mockImplementation();
+    jest.spyOn(Logger.prototype, "warn").mockImplementation();
+    jest.spyOn(Logger.prototype, "error").mockImplementation();
+    jest.spyOn(Logger.prototype, "debug").mockImplementation();
 
     module = await Test.createTestingModule({
       providers: [
-        TodoService,
-        TodoRepository,
+        CheerService,
+        CheerRepository,
         PaginationService,
-        { provide: DatabaseService, useValue: databaseService },
+        {
+          provide: DatabaseService,
+          useValue: mockDatabaseService,
+        },
+        // 다른 의존성들...
       ],
     }).compile();
 
-    service = module.get<TodoService>(TodoService);
-  }, 60000); // 컨테이너 시작 타임아웃
-
-  // 각 테스트 전 데이터 초기화
-  beforeEach(async () => {
-    await testDb.cleanup();
-
-    // FK 제약조건을 위해 테스트 User 생성
-    const testUser = await databaseService.user.create({
-      data: {
-        email: `test-${Date.now()}@example.com`,
-        status: "ACTIVE",
-      },
-    });
-    testUserId = testUser.id;
+    service = module.get<CheerService>(CheerService);
+    repository = module.get<CheerRepository>(CheerRepository);
   });
 
-  // 테스트 스위트 종료 시 정리
   afterAll(async () => {
-    await testDb.stop();
     await module.close();
+    jest.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    CheerBuilder.resetIdCounter();
   });
 
   // 테스트 케이스들...
@@ -121,148 +144,272 @@ describe("Todo 통합 테스트", () => {
 
 ---
 
+## Mock DatabaseService 패턴
+
+### 기본 Mock 구조
+
+```typescript
+// 각 테이블별 Mock 객체 생성
+const mockCheerDb = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  update: jest.fn(),
+  updateMany: jest.fn(),
+  delete: jest.fn(),
+  count: jest.fn(),
+};
+
+const mockUserDb = {
+  findUnique: jest.fn(),
+};
+
+const mockDatabaseService = {
+  cheer: mockCheerDb,
+  user: mockUserDb,
+  $transaction: jest.fn(),
+};
+```
+
+### $transaction Mock
+
+```typescript
+// 트랜잭션 내부에서 같은 mock을 사용하도록 설정
+mockDatabaseService.$transaction.mockImplementation(
+  (callback: (tx: unknown) => Promise<unknown>) =>
+    callback(mockDatabaseService),
+);
+```
+
+---
+
+## Builder 패턴 활용
+
+### 기본 사용
+
+```typescript
+import { CheerBuilder, UserBuilder } from "@test/builders";
+
+// 사용자 생성
+const mockSender = UserBuilder.create()
+  .withId(mockSenderId)
+  .verified()
+  .build();
+
+const mockReceiver = UserBuilder.create()
+  .withId(mockReceiverId)
+  .verified()
+  .build();
+
+// 응원 생성 (관계 포함)
+const mockCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
+  .withId(1)
+  .withMessage("축하해요!")
+  .withSenderInfo({
+    id: mockSenderId,
+    userTag: "SENDER12",
+    profile: { name: "Sender User", profileImage: null },
+  })
+  .withReceiverInfo({
+    id: mockReceiverId,
+    userTag: "RECEIVER",
+    profile: { name: "Receiver User", profileImage: null },
+  })
+  .buildWithRelations();
+```
+
+### ID 카운터 리셋
+
+```typescript
+beforeEach(() => {
+  jest.clearAllMocks();
+  CheerBuilder.resetIdCounter();
+  UserBuilder.resetIdCounter();  // 필요한 경우
+});
+```
+
+---
+
+## GWT 형식 테스트 케이스
+
+### 정상 케이스
+
+```typescript
+it("친구에게 응원을 전송해야 함", async () => {
+  // Given - 친구 관계의 두 사용자 준비
+  const mockSender = UserBuilder.create()
+    .withId(mockSenderId)
+    .verified()
+    .build();
+  const mockReceiver = UserBuilder.create()
+    .withId(mockReceiverId)
+    .verified()
+    .build();
+  const mockCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
+    .withId(1)
+    .withMessage("축하해요!")
+    .buildWithRelations();
+
+  mockFollowService.isMutualFriend.mockResolvedValue(true);
+  mockUserDb.findUnique
+    .mockResolvedValueOnce({ ...mockSender, profile: { name: "Sender" } })
+    .mockResolvedValueOnce({ ...mockReceiver, profile: { name: "Receiver" } });
+  mockCheerDb.count.mockResolvedValue(0);
+  mockCheerDb.findFirst.mockResolvedValue(null);
+  mockCheerDb.create.mockResolvedValue(mockCheer);
+
+  // When - 응원 전송
+  const result = await service.sendCheer({
+    senderId: mockSenderId,
+    receiverId: mockReceiverId,
+    message: "축하해요!",
+  });
+
+  // Then - 응원이 성공적으로 전송되어야 함
+  expect(result.id).toBe(1);
+  expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
+    mockSenderId,
+    mockReceiverId,
+  );
+  expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+    "cheer.sent",
+    expect.any(Object),
+  );
+});
+```
+
+### 예외 케이스
+
+```typescript
+it("친구가 아니면 예외를 발생시켜야 함", async () => {
+  // Given - 친구가 아닌 상태로 설정
+  mockFollowService.isMutualFriend.mockResolvedValue(false);
+
+  // When & Then - 친구가 아니면 예외 발생
+  await expect(
+    service.sendCheer({
+      senderId: mockSenderId,
+      receiverId: mockReceiverId,
+    }),
+  ).rejects.toThrow(BusinessException);
+});
+```
+
+---
+
+## 테스트 케이스 그룹화
+
+### DI 통합 테스트
+
+```typescript
+describe("DI 통합 테스트", () => {
+  it("CheerService가 정상적으로 주입되어야 함", () => {
+    // Given - NestJS 테스트 모듈 설정 완료
+
+    // When - 서비스 인스턴스 확인
+
+    // Then - 서비스가 정의되어 있어야 함
+    expect(service).toBeDefined();
+    expect(service).toBeInstanceOf(CheerService);
+  });
+
+  it("CheerRepository가 정상적으로 주입되어야 함", () => {
+    expect(repository).toBeDefined();
+    expect(repository).toBeInstanceOf(CheerRepository);
+  });
+});
+```
+
+### 도메인별 테스트
+
+```typescript
+describe("응원 전송 통합 테스트", () => {
+  it("친구에게 응원을 전송해야 함", async () => { ... });
+  it("메시지 없이도 응원을 전송해야 함", async () => { ... });
+  it("자기 자신에게 전송하면 예외를 발생시켜야 함", async () => { ... });
+  it("일일 제한 초과시 예외를 발생시켜야 함", async () => { ... });
+});
+
+describe("받은 응원 목록 조회 통합 테스트", () => {
+  it("받은 응원 목록을 조회해야 함", async () => { ... });
+  it("sender.userTag가 포함되어야 함", async () => { ... });
+});
+```
+
+---
+
 ## FK 제약조건 처리
 
-Todo 생성 시 유효한 `userId`가 필요합니다.
+통합 테스트에서 FK 관계가 있는 데이터를 설정할 때:
 
 ```typescript
-beforeEach(async () => {
-  await testDb.cleanup();
+it("응원 목록에 sender 정보가 포함되어야 함", async () => {
+  // Given - sender/receiver 관계가 포함된 응원 데이터 준비
+  const mockCheers = [
+    CheerBuilder.create(mockSenderId, mockReceiverId)
+      .withId(1)
+      .withSenderInfo({
+        id: mockSenderId,
+        userTag: "SENDER12",
+        profile: { name: "Sender User", profileImage: null },
+      })
+      .withReceiverInfo({
+        id: mockReceiverId,
+        userTag: "RECEIVER",
+        profile: { name: "Receiver User", profileImage: null },
+      })
+      .buildWithRelations(),  // 관계 포함 빌드
+  ];
+  mockCheerDb.findMany.mockResolvedValue(mockCheers);
+  mockCheerDb.count.mockResolvedValue(1);
 
-  // 테스트용 User 먼저 생성
-  const testUser = await databaseService.user.create({
-    data: {
-      email: `test-${Date.now()}@example.com`,
-      status: "ACTIVE",
-    },
+  // When - 받은 응원 목록 조회
+  const result = await service.getReceivedCheers({
+    userId: mockReceiverId,
   });
-  testUserId = testUser.id;
-});
 
-it("Todo를 생성해야 한다", async () => {
-  const todo = await service.create(testUserId, { title: "Test" });
-  expect(todo.userId).toBe(testUserId);
+  // Then - sender.userTag가 포함되어야 함
+  expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 });
 ```
 
 ---
 
-## CRUD 테스트 패턴
+## 외부 서비스 Mock
 
-### 전체 라이프사이클 테스트
+### EventEmitter Mock
 
 ```typescript
-it("전체 CRUD 라이프사이클을 수행해야 한다", async () => {
-  // 1. 생성
-  const created = await service.create(testUserId, {
-    title: "통합 테스트 할 일",
-    content: "통합 테스트 내용",
-  });
-  expect(created.id).toBeDefined();
-  expect(created.title).toBe("통합 테스트 할 일");
+const mockEventEmitter = {
+  emit: jest.fn(),
+};
 
-  // 2. 조회
-  const found = await service.findById(created.id);
-  expect(found.id).toBe(created.id);
+// 모듈에 주입
+{
+  provide: EventEmitter2,
+  useValue: mockEventEmitter,
+}
 
-  // 3. 수정
-  const updated = await service.update(created.id, {
-    title: "수정된 제목",
-    completed: true,
-  });
-  expect(updated.title).toBe("수정된 제목");
-  expect(updated.completed).toBe(true);
-
-  // 4. 삭제
-  const deleted = await service.delete(created.id);
-  expect(deleted.id).toBe(created.id);
-
-  // 5. 삭제 확인
-  await expect(service.findById(created.id)).rejects.toThrow(NotFoundException);
-});
+// 검증
+expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+  "cheer.sent",
+  expect.any(Object),
+);
 ```
 
-### 다중 레코드 테스트
+### 다른 서비스 Mock
 
 ```typescript
-it("여러 개의 Todo를 올바르게 처리해야 한다", async () => {
-  // 여러 Todo 생성
-  const todo1 = await service.create(testUserId, { title: "첫 번째" });
-  const todo2 = await service.create(testUserId, { title: "두 번째" });
-  const todo3 = await service.create(testUserId, { title: "세 번째" });
+const mockFollowService = {
+  isMutualFriend: jest.fn(),
+};
 
-  // 전체 조회
-  const all = await service.findAll();
-  expect(all).toHaveLength(3);
-
-  // 특정 항목만 삭제
-  await service.delete(todo2.id);
-  const afterDelete = await service.findAll();
-  expect(afterDelete).toHaveLength(2);
-});
-```
-
----
-
-## 에러 케이스 테스트
-
-```typescript
-describe("에러 처리", () => {
-  const NON_EXISTENT_ID = "clnonexistent0000000000";
-
-  it("존재하지 않는 Todo 조회 시 NotFoundException을 던져야 한다", async () => {
-    await expect(service.findById(NON_EXISTENT_ID))
-      .rejects.toThrow(NotFoundException);
-
-    await expect(service.findById(NON_EXISTENT_ID))
-      .rejects.toThrow(`Todo #${NON_EXISTENT_ID} not found`);
-  });
-
-  it("존재하지 않는 Todo 수정 시 NotFoundException을 던져야 한다", async () => {
-    await expect(service.update(NON_EXISTENT_ID, { title: "수정" }))
-      .rejects.toThrow(NotFoundException);
-  });
-
-  it("유효하지 않은 FK(존재하지 않는 userId)로 생성 시 에러를 던져야 한다", async () => {
-    const invalidUserId = "cl_invalid_user_id";
-
-    await expect(service.create(invalidUserId, { title: "FK 테스트" }))
-      .rejects.toThrow();
-  });
-});
-```
-
----
-
-## 데이터 무결성 테스트
-
-```typescript
-describe("데이터 무결성", () => {
-  it("부분 수정 시 다른 데이터를 유지해야 한다", async () => {
-    const original = await service.create(testUserId, {
-      title: "원본 제목",
-      content: "원본 내용",
-    });
-
-    // title만 수정
-    await service.update(original.id, { title: "수정된 제목" });
-
-    const afterUpdate = await service.findById(original.id);
-    expect(afterUpdate.title).toBe("수정된 제목");
-    expect(afterUpdate.content).toBe("원본 내용"); // 유지됨
-  });
-
-  it("수정 시 updatedAt이 갱신되어야 한다", async () => {
-    const original = await service.create(testUserId, { title: "타임스탬프 테스트" });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const updated = await service.update(original.id, { title: "수정됨" });
-
-    expect(updated.updatedAt.getTime()).toBeGreaterThan(
-      original.updatedAt.getTime()
-    );
-  });
-});
+// 모듈에 주입
+{
+  provide: FollowService,
+  useValue: mockFollowService,
+}
 ```
 
 ---
@@ -271,21 +418,14 @@ describe("데이터 무결성", () => {
 
 ```bash
 # 전체 통합 테스트
-pnpm --filter @aido/api test todo.integration-spec
+pnpm --filter @aido/api test:integration
+
+# 특정 파일
+pnpm --filter @aido/api test cheer.integration-spec
 
 # 특정 describe 블록
-pnpm --filter @aido/api test todo.integration-spec -- -t "CRUD"
+pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 ```
-
----
-
-## 요구사항
-
-| 항목 | 설명 |
-|------|------|
-| **Docker** | Testcontainers가 Docker로 PostgreSQL 실행 |
-| **첫 실행** | 이미지 다운로드로 시간 소요 (`postgres:16-alpine`) |
-| **타임아웃** | `beforeAll`에 60초 타임아웃 설정 권장 |
 
 ---
 
@@ -293,14 +433,17 @@ pnpm --filter @aido/api test todo.integration-spec -- -t "CRUD"
 
 ### DO
 
-- 각 테스트 전 `cleanup()`으로 데이터 초기화
-- FK 제약조건이 있는 테이블은 부모 레코드 먼저 생성
-- 실제 DB 동작 검증 (제약조건, 기본값, 타임스탬프)
-- 독립적으로 실행 가능한 테스트 작성
+- ✅ `beforeAll`에서 TestingModule 생성 (성능)
+- ✅ `beforeEach`에서 `jest.clearAllMocks()` 호출
+- ✅ Builder 패턴으로 테스트 데이터 생성
+- ✅ GWT 주석으로 테스트 의도 표현
+- ✅ Logger 출력 비활성화 (노이즈 제거)
+- ✅ 서비스 계층 통합 검증에 집중
 
 ### DON'T
 
-- 테스트 간 데이터 의존성
-- 하드코딩된 ID 사용 (테스트마다 새로 생성)
-- HTTP 요청 테스트 (E2E 테스트에서 담당)
-- Mock 사용 (실제 DB 연결이 목적)
+- ❌ 실제 DB 연결 (E2E 테스트에서 담당)
+- ❌ HTTP 요청 테스트 (E2E 테스트에서 담당)
+- ❌ 테스트 간 상태 공유
+- ❌ 하드코딩된 ID 사용 (Builder 사용)
+- ❌ 외부 서비스 직접 호출 (Mock 사용)

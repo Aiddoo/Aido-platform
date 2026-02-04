@@ -79,4 +79,18 @@ export class UserPreferenceRepository {
 			},
 		});
 	}
+
+	/**
+	 * 여러 사용자의 푸시 설정 배치 조회 (N+1 방지용)
+	 */
+	async findByUserIds(
+		userIds: string[],
+		tx?: Prisma.TransactionClient,
+	): Promise<UserPreference[]> {
+		if (userIds.length === 0) return [];
+		const client = tx ?? this.database;
+		return client.userPreference.findMany({
+			where: { userId: { in: userIds } },
+		});
+	}
 }

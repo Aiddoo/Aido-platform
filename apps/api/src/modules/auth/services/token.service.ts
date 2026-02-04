@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
 
@@ -12,6 +13,7 @@ import {
 export interface JwtPayload {
 	sub: string;
 	email: string;
+	role: UserRole;
 	type: "access" | "refresh";
 	sessionId?: string;
 	tokenFamily?: string;
@@ -44,6 +46,7 @@ export class TokenService {
 		userId: string,
 		email: string,
 		sessionId: string,
+		role: UserRole,
 		tokenFamily?: string,
 		tokenVersion = 1,
 	): Promise<TokenPair> {
@@ -53,11 +56,13 @@ export class TokenService {
 			userId,
 			email,
 			sessionId,
+			role,
 		);
 		const refreshToken = await this._generateRefreshToken(
 			userId,
 			email,
 			sessionId,
+			role,
 			family,
 			tokenVersion,
 		);
@@ -73,10 +78,12 @@ export class TokenService {
 		userId: string,
 		email: string,
 		sessionId: string,
+		role: UserRole,
 	): Promise<string> {
 		const payload: JwtPayload = {
 			sub: userId,
 			email,
+			role,
 			type: "access",
 			sessionId,
 		};
@@ -91,12 +98,14 @@ export class TokenService {
 		userId: string,
 		email: string,
 		sessionId: string,
+		role: UserRole,
 		tokenFamily: string,
 		tokenVersion: number,
 	): Promise<string> {
 		const payload: JwtPayload = {
 			sub: userId,
 			email,
+			role,
 			type: "refresh",
 			sessionId,
 			tokenFamily,

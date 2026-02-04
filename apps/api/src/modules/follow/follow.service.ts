@@ -254,7 +254,10 @@ export class FollowService {
 			);
 
 			if (!followWithUser) {
-				throw new Error("Failed to retrieve created follow with user info");
+				throw BusinessExceptions.internalServerError({
+					detail: "Failed to retrieve created follow with user info",
+					context: { followId: createdFollow.id, userId, requesterUserId },
+				});
 			}
 
 			return followWithUser;

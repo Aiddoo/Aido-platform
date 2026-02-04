@@ -24,7 +24,8 @@ model User {
   // 사용자 태그 (8자리 영숫자, 예: "ABC12DEF") - 해시태그처럼 다른 사용자가 검색할 수 있는 고유 식별자
   userTag String @unique @db.VarChar(8)
 
-  // 상태
+  // 역할 및 상태
+  role            UserRole   @default(USER)
   status          UserStatus @default(PENDING_VERIFY)
   emailVerifiedAt DateTime?
 
@@ -79,6 +80,11 @@ model User {
   @@index([subscriptionStatus])
   @@index([deletedAt])
   @@index([userTag])
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 enum UserStatus {
@@ -613,6 +619,10 @@ enum NotificationType {
 
   // 시스템
   SYSTEM_NOTICE
+
+  // 관리자 발송
+  ADMIN_BROADCAST // 관리자 전체/조건부 알림
+  ADMIN_TARGETED // 관리자 특정 사용자 알림
 }
 
 // =============================================================================

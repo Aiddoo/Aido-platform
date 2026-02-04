@@ -162,6 +162,8 @@ export class NotificationService {
 
 	/**
 	 * 여러 사용자에게 알림 생성 및 발송
+	 *
+	 * N+1 쿼리 최적화: 사용자별 설정을 배치로 한 번에 조회
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
@@ -174,12 +176,25 @@ export class NotificationService {
 		const result =
 			await this.notificationRepository.createManyNotifications(dataList);
 
-		// 2. 각 사용자별 푸시 발송 가능 여부 확인
+		// 2. 고유 사용자 ID 추출
+		const userIds = [...new Set(dataList.map((d) => d.userId))];
+
+		// 3. 모든 사용자의 설정을 배치로 한 번에 조회 (N+1 방지)
+		const [preferences, consents] = await Promise.all([
+			this.userPreferenceRepository.findByUserIds(userIds),
+			this.userConsentRepository.findByUserIds(userIds),
+		]);
+
+		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
+		const consentMap = new Map(consents.map((c) => [c.userId, c]));
+
+		// 4. 각 사용자별 푸시 발송 가능 여부 확인 (DB 조회 없이 메모리에서)
 		const eligibleDataList: CreateNotificationData[] = [];
 		for (const data of dataList) {
-			const shouldSend = await this.shouldSendPush(
-				data.userId,
+			const shouldSend = this.canSendPushWithCachedData(
 				data.type as NotificationType,
+				prefMap.get(data.userId),
+				consentMap.get(data.userId),
 			);
 			if (shouldSend) {
 				eligibleDataList.push(data);
@@ -194,12 +209,12 @@ export class NotificationService {
 			return result;
 		}
 
-		// 3. 고유 사용자 ID 추출 (발송 대상만)
-		const userIds = [...new Set(eligibleDataList.map((d) => d.userId))];
+		// 5. 고유 사용자 ID 추출 (발송 대상만)
+		const eligibleUserIds = [...new Set(eligibleDataList.map((d) => d.userId))];
 
-		// 4. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
+		// 6. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
 		this.sendPushToUsers(
-			userIds,
+			eligibleUserIds,
 			eligibleDataList.map((d) => ({
 				userId: d.userId,
 				title: d.title,
@@ -208,7 +223,7 @@ export class NotificationService {
 			})),
 		).catch((error) => {
 			this.logger.error(
-				`Failed to send batch push notifications: userIds=${userIds.join(",")}, error=${error}`,
+				`Failed to send batch push notifications: userIds=${eligibleUserIds.join(",")}, error=${error}`,
 			);
 		});
 
@@ -414,6 +429,43 @@ export class NotificationService {
 	 */
 	private isMarketingNotification(type: NotificationType): boolean {
 		return MARKETING_NOTIFICATION_TYPES.has(type);
+	}
+
+	/**
+	 * 캐시된 데이터로 푸시 발송 여부 결정 (배치 처리용, DB 조회 없음)
+	 *
+	 * @param type 알림 타입
+	 * @param preference 사용자 푸시 설정 (없으면 발송 안 함)
+	 * @param consent 사용자 동의 정보 (마케팅 알림 확인용)
+	 */
+	private canSendPushWithCachedData(
+		type: NotificationType,
+		preference: { pushEnabled: boolean; nightPushEnabled: boolean } | undefined,
+		consent: { marketingAgreedAt: Date | null } | undefined,
+	): boolean {
+		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
+		if (!preference) {
+			return false;
+		}
+
+		// 푸시 전체 OFF 확인
+		if (!preference.pushEnabled) {
+			return false;
+		}
+
+		// 야간 시간대 확인 (21:00-08:00 KST)
+		if (isNightTime() && !preference.nightPushEnabled) {
+			return false;
+		}
+
+		// 마케팅 알림 확인
+		if (this.isMarketingNotification(type)) {
+			if (!consent?.marketingAgreedAt) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// =========================================================================

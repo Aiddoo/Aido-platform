@@ -1,63 +1,24 @@
+/**
+ * NudgeService 테스트 (Suites 패턴)
+ *
+ * NestJS 공식 권장 Suites 라이브러리 사용
+ * - 자동 Mock 생성으로 보일러플레이트 제거
+ * - Builder 패턴으로 테스트 데이터 생성
+ * - Given/When/Then 패턴으로 테스트 구조화
+ *
+ * @see https://docs.nestjs.com/recipes/suites
+ */
 import { NUDGE_LIMITS } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { Test } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { NudgeBuilder } from "@test/builders";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import type { Nudge } from "@/generated/prisma/client";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationEvents } from "@/modules/notification/events";
-
 import { NudgeRepository } from "./nudge.repository";
 import { NudgeService } from "./nudge.service";
-import type { NudgeWithRelations } from "./types";
-
-// =============================================================================
-// Mock Factory Functions
-// =============================================================================
-
-function createMockNudge(overrides: Partial<Nudge> = {}): Nudge {
-	return {
-		id: 1,
-		senderId: "sender-id",
-		receiverId: "receiver-id",
-		todoId: 100,
-		message: "할일 화이팅!",
-		readAt: null,
-		createdAt: new Date("2024-01-15T10:00:00Z"),
-		...overrides,
-	};
-}
-
-function createMockNudgeWithRelations(
-	overrides: Partial<NudgeWithRelations> = {},
-): NudgeWithRelations {
-	const nudge = createMockNudge();
-	return {
-		...nudge,
-		sender: {
-			id: nudge.senderId,
-			userTag: "sender_tag",
-			profile: {
-				name: "보내는 사람",
-				profileImage: "https://example.com/sender.jpg",
-			},
-		},
-		receiver: {
-			id: nudge.receiverId,
-			userTag: "receiver_tag",
-			profile: {
-				name: "받는 사람",
-				profileImage: "https://example.com/receiver.jpg",
-			},
-		},
-		todo: {
-			id: nudge.todoId,
-			title: "테스트 할일",
-			completed: false,
-		},
-		...overrides,
-	};
-}
 
 // =============================================================================
 // Tests
@@ -65,67 +26,22 @@ function createMockNudgeWithRelations(
 
 describe("NudgeService", () => {
 	let service: NudgeService;
-	let nudgeRepository: jest.Mocked<NudgeRepository>;
-	let followService: jest.Mocked<FollowService>;
-	let paginationService: jest.Mocked<PaginationService>;
-	let eventEmitter: jest.Mocked<EventEmitter2>;
-	let mockDatabase: {
-		$transaction: jest.Mock;
-		user: {
-			findUnique: jest.Mock;
-		};
-		todo: {
-			findUnique: jest.Mock;
-		};
-		nudge: {
-			count: jest.Mock;
-			findFirst: jest.Mock;
-			create: jest.Mock;
-		};
-	};
+	let nudgeRepository: Mocked<NudgeRepository>;
+	let followService: Mocked<FollowService>;
+	let paginationService: Mocked<PaginationService>;
+	let eventEmitter: Mocked<EventEmitter2>;
+	let database: Mocked<DatabaseService>;
+
+	// Mock database transaction passthrough
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let mockDatabase: any;
 
 	beforeEach(async () => {
-		const mockNudgeRepository = {
-			create: jest.fn(),
-			createWithRelations: jest.fn(),
-			findById: jest.fn(),
-			findByIdWithRelations: jest.fn(),
-			markAsRead: jest.fn(),
-			findReceivedNudges: jest.fn(),
-			findSentNudges: jest.fn(),
-			countTodayNudges: jest.fn(),
-			findLastNudgeForTodo: jest.fn(),
-			findLastNudgeToUser: jest.fn(),
-			userExists: jest.fn(),
-			getUserName: jest.fn(),
-			getUserSubscriptionStatus: jest.fn(),
-			findTodoWithOwner: jest.fn(),
-			isTodoPublic: jest.fn(),
-		};
-
-		const mockFollowService = {
-			isMutualFriend: jest.fn(),
-		};
-
-		const mockPaginationService = {
-			normalizeCursorPagination: jest
-				.fn()
-				.mockReturnValue({ cursor: undefined, size: 20 }),
-			createCursorPaginatedResponse: jest
-				.fn()
-				.mockImplementation(({ items, size }) => ({
-					items: items.slice(0, size),
-					nextCursor: items.length > size ? items[size - 1].id : null,
-					hasMore: items.length > size,
-				})),
-		};
-
-		const mockEventEmitter = {
-			emit: jest.fn(),
-		};
-
+		// Mock database 초기화
 		mockDatabase = {
-			$transaction: jest.fn((callback) => callback(mockDatabase)),
+			$transaction: jest.fn((callback: (tx: unknown) => unknown) =>
+				callback(mockDatabase),
+			),
 			user: {
 				findUnique: jest.fn(),
 			},
@@ -139,22 +55,51 @@ describe("NudgeService", () => {
 			},
 		};
 
-		const module = await Test.createTestingModule({
-			providers: [
-				NudgeService,
-				{ provide: NudgeRepository, useValue: mockNudgeRepository },
-				{ provide: FollowService, useValue: mockFollowService },
-				{ provide: PaginationService, useValue: mockPaginationService },
-				{ provide: EventEmitter2, useValue: mockEventEmitter },
-				{ provide: DatabaseService, useValue: mockDatabase },
-			],
-		}).compile();
+		// Given - Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } = await TestBed.solitary(NudgeService).compile();
 
-		service = module.get(NudgeService);
-		nudgeRepository = module.get(NudgeRepository);
-		followService = module.get(FollowService);
-		paginationService = module.get(PaginationService);
-		eventEmitter = module.get(EventEmitter2);
+		service = unit;
+		nudgeRepository = unitRef.get(
+			NudgeRepository,
+		) as unknown as Mocked<NudgeRepository>;
+		followService = unitRef.get(
+			FollowService,
+		) as unknown as Mocked<FollowService>;
+		paginationService = unitRef.get(
+			PaginationService,
+		) as unknown as Mocked<PaginationService>;
+		eventEmitter = unitRef.get(
+			EventEmitter2,
+		) as unknown as Mocked<EventEmitter2>;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+
+		// DatabaseService.$transaction passthrough mock 설정
+		database.$transaction.mockImplementation((callback) =>
+			callback(mockDatabase),
+		);
+
+		// 기본 paginationService mock 설정
+		paginationService.normalizeCursorPagination.mockReturnValue({
+			cursor: undefined,
+			size: 20,
+			take: 21,
+		});
+		paginationService.createCursorPaginatedResponse.mockImplementation(
+			({ items, size }) => ({
+				items: items.slice(0, size),
+				pagination: {
+					nextCursor:
+						items.length > size ? (items[size - 1]?.id ?? null) : null,
+					hasNext: items.length > size,
+					size,
+				},
+			}),
+		);
+
+		// ID 카운터 리셋
+		NudgeBuilder.resetIdCounter();
 	});
 
 	afterEach(() => {
@@ -173,8 +118,10 @@ describe("NudgeService", () => {
 			message: "할일 화이팅!",
 		};
 
-		beforeEach(() => {
-			// 기본 성공 조건 설정
+		/**
+		 * 성공 시나리오 mock 설정 헬퍼
+		 */
+		const setupSuccessfulSend = () => {
 			followService.isMutualFriend.mockResolvedValue(true);
 			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 			mockDatabase.user.findUnique.mockResolvedValue({
@@ -187,12 +134,33 @@ describe("NudgeService", () => {
 			});
 			mockDatabase.nudge.count.mockResolvedValue(0);
 			mockDatabase.nudge.findFirst.mockResolvedValue(null);
-			mockDatabase.nudge.create.mockResolvedValue(
-				createMockNudgeWithRelations(),
-			);
-		});
+
+			const nudgeWithRelations = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			)
+				.withMessage("할일 화이팅!")
+				.withSenderInfo({
+					id: "sender-id",
+					userTag: "sender_tag",
+					profile: { name: "보내는 사람", profileImage: null },
+				})
+				.withReceiverInfo({
+					id: "receiver-id",
+					userTag: "receiver_tag",
+					profile: { name: "받는 사람", profileImage: null },
+				})
+				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
+				.buildWithRelations();
+
+			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
+		};
 
 		it("Nudge를 성공적으로 발송한다", async () => {
+			// Given
+			setupSuccessfulSend();
+
 			// When
 			const result = await service.sendNudge(defaultParams);
 
@@ -241,6 +209,9 @@ describe("NudgeService", () => {
 		});
 
 		it("Nudge 발송 후 이벤트를 발행한다", async () => {
+			// Given
+			setupSuccessfulSend();
+
 			// When
 			await service.sendNudge(defaultParams);
 
@@ -276,6 +247,7 @@ describe("NudgeService", () => {
 
 		it("존재하지 않는 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
 			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
 			mockDatabase.todo.findUnique.mockResolvedValue(null);
 
 			// When & Then
@@ -284,6 +256,7 @@ describe("NudgeService", () => {
 
 		it("다른 사용자의 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
 			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
 			mockDatabase.todo.findUnique.mockResolvedValue({
 				id: 100,
 				userId: "other-user-id",
@@ -296,6 +269,12 @@ describe("NudgeService", () => {
 
 		it("일일 제한을 초과하면 에러를 발생시킨다", async () => {
 			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "테스트 할일",
+			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "FREE",
 			});
@@ -307,10 +286,33 @@ describe("NudgeService", () => {
 
 		it("ACTIVE 구독자는 무제한 Nudge를 보낼 수 있다", async () => {
 			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "테스트 할일",
+			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "ACTIVE",
 			});
 			mockDatabase.nudge.count.mockResolvedValue(100);
+			mockDatabase.nudge.findFirst.mockResolvedValue(null);
+
+			const nudgeWithRelations = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			)
+				.withSenderInfo({
+					id: "sender-id",
+					userTag: "sender_tag",
+					profile: { name: "보내는 사람", profileImage: null },
+				})
+				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
+				.buildWithRelations();
+
+			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -321,9 +323,20 @@ describe("NudgeService", () => {
 
 		it("쿨다운 기간에는 같은 Todo에 Nudge를 보낼 수 없다", async () => {
 			// Given
-			const recentNudge = createMockNudge({
-				createdAt: new Date(), // 방금 보낸 Nudge
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "테스트 할일",
 			});
+			mockDatabase.user.findUnique.mockResolvedValue({
+				subscriptionStatus: "FREE",
+			});
+			mockDatabase.nudge.count.mockResolvedValue(0);
+
+			const recentNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withCreatedAt(new Date()) // 방금 보낸 Nudge
+				.build();
 			mockDatabase.nudge.findFirst.mockResolvedValue(recentNudge);
 
 			// When & Then
@@ -332,12 +345,40 @@ describe("NudgeService", () => {
 
 		it("쿨다운이 지나면 같은 Todo에 다시 Nudge를 보낼 수 있다", async () => {
 			// Given
-			const oldNudge = createMockNudge({
-				createdAt: new Date(
-					Date.now() - (NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
-				),
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "테스트 할일",
 			});
+			mockDatabase.user.findUnique.mockResolvedValue({
+				subscriptionStatus: "FREE",
+			});
+			mockDatabase.nudge.count.mockResolvedValue(0);
+
+			const oldNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withCreatedAt(
+					new Date(
+						Date.now() - (NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
+					),
+				)
+				.build();
 			mockDatabase.nudge.findFirst.mockResolvedValue(oldNudge);
+
+			const nudgeWithRelations = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			)
+				.withSenderInfo({
+					id: "sender-id",
+					userTag: "sender_tag",
+					profile: { name: "보내는 사람", profileImage: null },
+				})
+				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
+				.buildWithRelations();
+			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -355,8 +396,12 @@ describe("NudgeService", () => {
 		it("받은 Nudge 목록을 조회한다", async () => {
 			// Given
 			const mockNudges = [
-				createMockNudgeWithRelations({ id: 1 }),
-				createMockNudgeWithRelations({ id: 2 }),
+				NudgeBuilder.create("sender-1", "receiver-id", 1)
+					.withId(1)
+					.buildWithRelations(),
+				NudgeBuilder.create("sender-2", "receiver-id", 2)
+					.withId(2)
+					.buildWithRelations(),
 			];
 			nudgeRepository.findReceivedNudges.mockResolvedValue(mockNudges);
 
@@ -380,7 +425,11 @@ describe("NudgeService", () => {
 
 		it("커서와 사이즈를 지정하여 조회한다", async () => {
 			// Given
-			const mockNudges = [createMockNudgeWithRelations({ id: 3 })];
+			const mockNudges = [
+				NudgeBuilder.create("sender-1", "receiver-id", 3)
+					.withId(3)
+					.buildWithRelations(),
+			];
 			nudgeRepository.findReceivedNudges.mockResolvedValue(mockNudges);
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: 5,
@@ -412,8 +461,12 @@ describe("NudgeService", () => {
 		it("보낸 Nudge 목록을 조회한다", async () => {
 			// Given
 			const mockNudges = [
-				createMockNudgeWithRelations({ id: 1 }),
-				createMockNudgeWithRelations({ id: 2 }),
+				NudgeBuilder.create("sender-id", "receiver-1", 1)
+					.withId(1)
+					.buildWithRelations(),
+				NudgeBuilder.create("sender-id", "receiver-2", 2)
+					.withId(2)
+					.buildWithRelations(),
 			];
 			nudgeRepository.findSentNudges.mockResolvedValue(mockNudges);
 
@@ -511,9 +564,9 @@ describe("NudgeService", () => {
 
 		it("쿨다운 기간 내이면 활성 상태를 반환한다", async () => {
 			// Given
-			const recentNudge = createMockNudge({
-				createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30분 전
-			});
+			const recentNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withCreatedAt(new Date(Date.now() - 30 * 60 * 1000)) // 30분 전
+				.build();
 			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(recentNudge);
 
 			// When
@@ -527,11 +580,13 @@ describe("NudgeService", () => {
 
 		it("쿨다운 기간이 지나면 비활성 상태를 반환한다", async () => {
 			// Given
-			const oldNudge = createMockNudge({
-				createdAt: new Date(
-					Date.now() - (NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
-				),
-			});
+			const oldNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
+				.withCreatedAt(
+					new Date(
+						Date.now() - (NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
+					),
+				)
+				.build();
 			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(oldNudge);
 
 			// When
@@ -574,11 +629,16 @@ describe("NudgeService", () => {
 	describe("markAsRead", () => {
 		it("Nudge를 읽음 처리한다", async () => {
 			// Given
-			const mockNudge = createMockNudge({ receiverId: "user-id" });
+			const mockNudge = NudgeBuilder.create("sender-id", "user-id", 100)
+				.withId(1)
+				.build();
 			nudgeRepository.findById.mockResolvedValue(mockNudge);
-			nudgeRepository.markAsRead.mockResolvedValue(
-				createMockNudge({ readAt: new Date() }),
-			);
+
+			const readNudge = NudgeBuilder.create("sender-id", "user-id", 100)
+				.withId(1)
+				.asRead()
+				.build();
+			nudgeRepository.markAsRead.mockResolvedValue(readNudge);
 
 			// When
 			await service.markAsRead("user-id", 1);
@@ -598,7 +658,9 @@ describe("NudgeService", () => {
 
 		it("본인이 받지 않은 Nudge는 에러를 발생시킨다", async () => {
 			// Given
-			const mockNudge = createMockNudge({ receiverId: "other-user-id" });
+			const mockNudge = NudgeBuilder.create("sender-id", "other-user-id", 100)
+				.withId(1)
+				.build();
 			nudgeRepository.findById.mockResolvedValue(mockNudge);
 
 			// When & Then
@@ -607,11 +669,11 @@ describe("NudgeService", () => {
 
 		it("이미 읽은 Nudge는 무시한다", async () => {
 			// Given
-			const mockNudge = createMockNudge({
-				receiverId: "user-id",
-				readAt: new Date(),
-			});
-			nudgeRepository.findById.mockResolvedValue(mockNudge);
+			const readNudge = NudgeBuilder.create("sender-id", "user-id", 100)
+				.withId(1)
+				.asRead()
+				.build();
+			nudgeRepository.findById.mockResolvedValue(readNudge);
 
 			// When
 			await service.markAsRead("user-id", 1);
