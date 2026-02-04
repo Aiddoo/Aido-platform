@@ -49,6 +49,10 @@ describe("SecurityLogRepository", () => {
 		repository = module.get<SecurityLogRepository>(SecurityLogRepository);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	describe("create", () => {
 		const createData = {
 			userId: "user-123",

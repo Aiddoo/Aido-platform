@@ -8,10 +8,12 @@
 
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { PinoLogger } from "nestjs-pino";
 import request from "supertest";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
 import { DatabaseService } from "@/database";
+import { FakeLogger } from "../mocks/fake-logger.service";
 import { TestDatabase } from "../setup/test-database";
 
 describe("AppController (e2e)", () => {
@@ -28,6 +30,8 @@ describe("AppController (e2e)", () => {
 		})
 			.overrideProvider(DatabaseService)
 			.useValue(testDatabase.getPrisma())
+			.overrideProvider(PinoLogger)
+			.useClass(FakeLogger)
 			.compile();
 
 		app = moduleFixture.createNestApplication();

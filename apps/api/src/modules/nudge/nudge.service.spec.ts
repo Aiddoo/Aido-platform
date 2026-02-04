@@ -157,6 +157,10 @@ describe("NudgeService", () => {
 		eventEmitter = module.get(EventEmitter2);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	// =========================================================================
 	// sendNudge
 	// =========================================================================

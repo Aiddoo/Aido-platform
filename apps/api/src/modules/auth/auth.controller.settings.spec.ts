@@ -39,6 +39,10 @@ describe("AuthController - Settings API", () => {
 		controller = module.get<AuthController>(AuthController);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	describe("getPreference", () => {
 		it("사용자의 푸시 설정을 반환해야 한다", async () => {
 			const expectedResult = { pushEnabled: true, nightPushEnabled: false };

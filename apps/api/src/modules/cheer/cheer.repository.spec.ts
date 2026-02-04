@@ -133,6 +133,10 @@ describe("CheerRepository", () => {
 		repository = module.get<CheerRepository>(CheerRepository);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	// ===========================================================================
 	// 기본 CRUD 테스트
 	// ===========================================================================

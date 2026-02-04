@@ -654,21 +654,8 @@ describe("OAuthService", () => {
 				);
 			});
 
-			it.skip("aido-dev://auth/apple을 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev://auth/apple";
-
-				// When
-				// Apple은 URL 생성 메서드가 없으므로 테스트 스킵
-				// await service.generateAppleAuthUrl(testState, redirectUri);
-
-				// Then
-				expect(mockOAuthStateRepository.create).toHaveBeenCalledWith(
-					testState,
-					"APPLE",
-					redirectUri,
-				);
-			});
+			// Note: Apple은 URL 기반 OAuth가 아닌 토큰 기반 모바일 로그인만 지원
+			// handleAppleMobileLogin에서 redirectUri를 사용하지 않으므로 이 테스트 그룹에서 제외
 
 			it("aido-dev://auth/callback을 허용한다", async () => {
 				// Given

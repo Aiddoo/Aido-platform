@@ -56,6 +56,10 @@ describe("VerificationRepository", () => {
 		repository = module.get<VerificationRepository>(VerificationRepository);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	describe("create", () => {
 		const createData = {
 			userId: "user-123",

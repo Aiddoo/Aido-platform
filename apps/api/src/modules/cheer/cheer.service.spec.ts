@@ -207,6 +207,10 @@ describe("CheerService", () => {
 		service = module.get<CheerService>(CheerService);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	// ===========================================================================
 	// sendCheer 테스트
 	// ===========================================================================

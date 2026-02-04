@@ -92,6 +92,10 @@ describe("NotificationRepository", () => {
 		repository = module.get<NotificationRepository>(NotificationRepository);
 	});
 
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
 	// ==========================================================================
 	// Notification CRUD Tests
 	// ==========================================================================
