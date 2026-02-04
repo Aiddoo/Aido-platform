@@ -35,6 +35,7 @@ import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { OAuthService } from "@/modules/auth/services/oauth.service";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { TokenService } from "@/modules/auth/services/token.service";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 
@@ -74,6 +75,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				OAuthStateRepository,
+				TodoCategoryRepository,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,

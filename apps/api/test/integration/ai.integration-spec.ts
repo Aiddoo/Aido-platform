@@ -7,6 +7,7 @@ import request from "supertest";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { AiController } from "@/modules/ai/ai.controller";
 import { AiService } from "@/modules/ai/ai.service";
+import { AiUsageGuard } from "@/modules/ai/guards/ai-usage.guard";
 import { JwtAuthGuard } from "@/modules/auth/guards";
 
 describe("AiController (Integration)", () => {
@@ -41,6 +42,10 @@ describe("AiController (Integration)", () => {
 					req.user = mockUser;
 					return true;
 				},
+			})
+			.overrideGuard(AiUsageGuard)
+			.useValue({
+				canActivate: () => true,
 			})
 			.compile();
 
@@ -89,11 +94,14 @@ describe("AiController (Integration)", () => {
 
 			// Then - 파싱 결과 반환
 			expect(response.body).toEqual({
-				message: "자연어 파싱 완료",
+				success: true,
 				data: mockResult.data,
 				meta: mockResult.meta,
 			});
-			expect(aiService.parseTodo).toHaveBeenCalledWith(validRequest.text);
+			expect(aiService.parseTodo).toHaveBeenCalledWith(
+				validRequest.text,
+				mockUser.userId,
+			);
 		});
 
 		it("종일 일정 파싱 성공", async () => {
@@ -230,7 +238,10 @@ describe("AiController (Integration)", () => {
 				.expect(200);
 
 			// Then - unknownField는 무시되고 정상 처리
-			expect(aiService.parseTodo).toHaveBeenCalledWith("테스트");
+			expect(aiService.parseTodo).toHaveBeenCalledWith(
+				"테스트",
+				mockUser.userId,
+			);
 			expect(response.body.data.title).toBe("테스트");
 		});
 	});
