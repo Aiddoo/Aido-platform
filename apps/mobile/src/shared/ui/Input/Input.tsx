@@ -3,7 +3,7 @@ import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { Text } from '../Text/Text';
 import type { InputProps } from './Input.types';
-import { inputContainerVariants, inputLabelVariants } from './Input.variants';
+import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './Input.variants';
 
 export const Input = forwardRef<TextInput, InputProps>(
   (
@@ -43,10 +43,8 @@ export const Input = forwardRef<TextInput, InputProps>(
           <TextInput
             ref={ref}
             placeholder={placeholder}
-            placeholderTextColor="#9CA3AF"
             editable={!isDisabled}
-            className={clsx('flex-1 text-gray-8', !leftContent && 'pl-0')}
-            style={{ fontSize: size === 'large' ? 16 : 14 }}
+            className={inputTextVariants({ size, hasLeftContent: !!leftContent })}
             onFocus={(e) => {
               setIsFocused(true);
               onFocus?.(e);

@@ -44,3 +44,20 @@ export const inputContainerVariants = tv({
     size: 'large',
   },
 });
+
+export const inputTextVariants = tv({
+  base: 'flex-1 text-gray-8 placeholder:text-gray-5',
+  variants: {
+    size: {
+      medium: 'text-sm',
+      large: 'text-base',
+    },
+    hasLeftContent: {
+      false: 'pl-0',
+    },
+  },
+  defaultVariants: {
+    size: 'large',
+    hasLeftContent: false,
+  },
+});
