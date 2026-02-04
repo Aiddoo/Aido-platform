@@ -1,9 +1,9 @@
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { SignUpFormData } from '@src/features/auth/models/auth.model';
 import { useCooldown } from '@src/features/auth/presentations/hooks/useCooldown';
 import { resendVerificationMutationOptions } from '@src/features/auth/presentations/queries/resend-verification-mutation-options';
 import { verifyEmailMutationOptions } from '@src/features/auth/presentations/queries/verify-email-mutation-options';
+import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { HStack } from '@src/shared/ui/HStack/HStack';

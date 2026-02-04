@@ -1,8 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type SignUpFormData, signUpFormSchema } from '@src/features/auth/models/auth.model';
 import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
 import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';
 import { SignUpVerificationForm } from '@src/features/auth/presentations/components/SignUpVerificationForm';
+import {
+  type SignUpFormData,
+  signUpFormSchema,
+} from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';

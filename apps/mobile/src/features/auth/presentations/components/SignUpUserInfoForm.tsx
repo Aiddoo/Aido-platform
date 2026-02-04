@@ -1,5 +1,8 @@
 import { emailSchema } from '@aido/validators';
-import { type SignUpFormData, signUpFormSchema } from '@src/features/auth/models/auth.model';
+import {
+  type SignUpFormData,
+  signUpFormSchema,
+} from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';

@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import type { RegisterInput } from '@aido/validators';
-import type { SignUpFormData } from '@src/features/auth/models/auth.model';
 import { registerMutationOptions } from '@src/features/auth/presentations/queries/register-mutation-options';
+import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';

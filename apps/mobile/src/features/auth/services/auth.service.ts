@@ -27,7 +27,8 @@ import {
   isAuthError,
   isExpoCodedError,
 } from '../models/auth.error';
-import type { AuthTokens, User } from '../models/auth.model';
+import type { AuthTokens } from '../models/auth-tokens.model';
+import type { User } from '../models/user.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 import { toAuthTokens, toUser } from './auth.mapper';
 
