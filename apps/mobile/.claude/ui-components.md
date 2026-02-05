@@ -203,6 +203,34 @@ export const NewIcon = createStyledIcon(NewIconSvg);
 
 ---
 
+## 애니메이션 상수
+
+React Native Reanimated 애니메이션에서 duration, delay 값은 **반드시** `ANIMATION` 상수를 사용합니다.
+
+```tsx
+import { ANIMATION } from '@src/shared/constants/animation.constants';
+
+// ✅ 올바름
+withTiming(value, { duration: ANIMATION.duration.slow });
+withTiming(value, { duration: ANIMATION.duration.normal });
+withDelay(ANIMATION.delay.short, withTiming(...));
+
+// ❌ 금지 - 매직 넘버 하드코딩
+withTiming(value, { duration: 300 });
+withTiming(value, { duration: 200 });
+```
+
+| 상수 | 값 | 용도 |
+|------|-----|------|
+| `ANIMATION.duration.fast` | 150ms | 빠른 전환 |
+| `ANIMATION.duration.normal` | 200ms | 일반 전환 |
+| `ANIMATION.duration.slow` | 300ms | 느린 전환 |
+| `ANIMATION.delay.short` | 50ms | 짧은 지연 |
+| `ANIMATION.delay.medium` | 100ms | 중간 지연 |
+| `ANIMATION.delay.long` | 200ms | 긴 지연 |
+
+---
+
 ## 금지 사항
 
 ### 1. 색상 하드코딩 금지 (중요!)
