@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants';
+import { tv } from '@src/shared/utils/tv';
 
 export const highlightVariants = tv({
   variants: {
@@ -53,7 +53,7 @@ export const buttonVariants = tv({
     // fill variants
     { variant: 'fill', color: 'primary', className: 'bg-main' },
     { variant: 'fill', color: 'danger', className: 'bg-error' },
-    { variant: 'fill', color: 'dark', className: 'bg-gray-9' },
+    { variant: 'fill', color: 'dark', className: 'bg-gray-9 dark:bg-gray-3' },
     // weak variants
     { variant: 'weak', color: 'primary', className: 'bg-main/5' },
     { variant: 'weak', color: 'danger', className: 'bg-error/5' },

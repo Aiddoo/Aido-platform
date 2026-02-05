@@ -1,4 +1,4 @@
-import { clsx } from 'clsx';
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { Text } from '../Text/Text';
 import type { ButtonProps } from './Button.types';
@@ -27,7 +27,11 @@ export function Button({
   const isTextChild = typeof children === 'string';
 
   const textColorMap = {
-    fill: 'text-white',
+    fill: {
+      primary: 'text-white',
+      danger: 'text-white',
+      dark: 'text-white dark:text-gray-9',
+    },
     weak: {
       primary: 'text-main',
       danger: 'text-error',
@@ -35,7 +39,7 @@ export function Button({
     },
   } as const;
 
-  const textColor = variant === 'fill' ? textColorMap.fill : textColorMap.weak[color];
+  const textColor = variant === 'fill' ? textColorMap.fill[color] : textColorMap.weak[color];
 
   const renderContent = () => {
     if (isLoading) {
@@ -54,7 +58,7 @@ export function Button({
   return (
     <PressableFeedback
       isDisabled={disabled}
-      className={clsx(
+      className={cn(
         buttonVariants({ size, variant, color, display, radius, isDisabled: disabled }),
         className,
       )}
