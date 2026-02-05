@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { mmkvStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   createContext,
   type PropsWithChildren,
@@ -14,39 +14,29 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'aido_theme_mode';
+const VALID_MODES: ThemeMode[] = ['light', 'dark', 'system'];
+
+function readSavedMode(): ThemeMode {
+  const saved = mmkvStorage.getString(THEME_STORAGE_KEY);
+  if (saved && VALID_MODES.includes(saved as ThemeMode)) {
+    return saved as ThemeMode;
+  }
+  return 'system';
+}
 
 interface ThemeContextValue {
   mode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   setMode: (mode: ThemeMode) => void;
-  isLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export const ThemeProvider = ({ children }: PropsWithChildren) => {
   const systemColorScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
-  const [isLoading, setIsLoading] = useState(true);
+  const [mode, setModeState] = useState<ThemeMode>(readSavedMode);
 
   const resolvedTheme: ResolvedTheme = mode === 'system' ? (systemColorScheme ?? 'light') : mode;
-
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedMode = await SecureStore.getItemAsync(THEME_STORAGE_KEY);
-        if (savedMode && ['light', 'dark', 'system'].includes(savedMode)) {
-          setModeState(savedMode as ThemeMode);
-        }
-      } catch {
-        // Ignore errors, use default
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadTheme();
-  }, []);
 
   useEffect(() => {
     Uniwind.setTheme(mode);
@@ -54,11 +44,11 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
 
   const setMode = useCallback((newMode: ThemeMode) => {
     setModeState(newMode);
-    void SecureStore.setItemAsync(THEME_STORAGE_KEY, newMode);
+    mmkvStorage.set(THEME_STORAGE_KEY, newMode);
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode, isLoading }}>
+    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode }}>
       {children}
     </ThemeContext.Provider>
   );

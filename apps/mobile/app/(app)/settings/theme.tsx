@@ -3,23 +3,12 @@ import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
 import { DeviceIcon, MoonIcon, type StyledIconType, SunIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { RadioGroup, Spinner } from 'heroui-native';
+import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 const ThemeSettingsScreen = () => {
-  const { mode, setMode, isLoading } = useTheme();
-
-  if (isLoading) {
-    return (
-      <StyledSafeAreaView
-        className="flex-1 bg-gray-1 items-center justify-center"
-        edges={['bottom']}
-      >
-        <Spinner />
-      </StyledSafeAreaView>
-    );
-  }
+  const { mode, setMode } = useTheme();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
