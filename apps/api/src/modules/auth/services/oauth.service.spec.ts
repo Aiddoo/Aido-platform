@@ -1725,4 +1725,248 @@ describe("OAuthService", () => {
 			});
 		});
 	});
+
+	describe("기본 카테고리 생성", () => {
+		describe("신규 소셜 로그인 사용자", () => {
+			it("Apple 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
+				// Given - 신규 Apple 사용자
+				const appleProfile: AppleVerifiedProfile = {
+					id: "apple-new-user",
+					email: "apple@example.com",
+					emailVerified: true,
+				};
+				const mockUser = UserBuilder.create()
+					.withId("new-apple-user")
+					.withEmail("apple@example.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				await service.handleAppleMobileLogin("valid-id-token");
+
+				// Then - 기본 카테고리 2개 생성 확인
+				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
+					expect.arrayContaining([
+						expect.objectContaining({
+							userId: "new-apple-user",
+							name: "중요한 일",
+							color: "#FFB3B3",
+							sortOrder: 0,
+						}),
+						expect.objectContaining({
+							userId: "new-apple-user",
+							name: "할 일",
+							color: "#FF6B43",
+							sortOrder: 1,
+						}),
+					]),
+					expect.anything(),
+				);
+			});
+
+			it("Google 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
+				// Given - 신규 Google 사용자
+				const googleProfile: OAuthProfile = {
+					id: "google-new-user",
+					email: "google@example.com",
+					emailVerified: true,
+					name: "Google User",
+				};
+				const mockUser = UserBuilder.create()
+					.withId("new-google-user")
+					.withEmail("google@example.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				await service.handleGoogleMobileLogin("valid-id-token");
+
+				// Then - 기본 카테고리 2개 생성 확인
+				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
+					expect.arrayContaining([
+						expect.objectContaining({
+							userId: "new-google-user",
+							name: "중요한 일",
+							color: "#FFB3B3",
+							sortOrder: 0,
+						}),
+						expect.objectContaining({
+							userId: "new-google-user",
+							name: "할 일",
+							color: "#FF6B43",
+							sortOrder: 1,
+						}),
+					]),
+					expect.anything(),
+				);
+			});
+
+			it("Kakao 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
+				// Given - 신규 Kakao 사용자
+				const kakaoProfile: OAuthProfile = {
+					id: "kakao-new-user",
+					email: "kakao@example.com",
+					emailVerified: false,
+					name: "Kakao User",
+				};
+				const mockUser = UserBuilder.create()
+					.withId("new-kakao-user")
+					.withEmail("kakao@example.com")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				await service.handleKakaoMobileLogin("valid-access-token");
+
+				// Then - 기본 카테고리 2개 생성 확인
+				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
+					expect.arrayContaining([
+						expect.objectContaining({
+							userId: "new-kakao-user",
+							name: "중요한 일",
+							color: "#FFB3B3",
+							sortOrder: 0,
+						}),
+						expect.objectContaining({
+							userId: "new-kakao-user",
+							name: "할 일",
+							color: "#FF6B43",
+							sortOrder: 1,
+						}),
+					]),
+					expect.anything(),
+				);
+			});
+
+			it("Naver 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
+				// Given - 신규 Naver 사용자
+				const naverProfile: OAuthProfile = {
+					id: "naver-new-user",
+					email: "naver@example.com",
+					emailVerified: false,
+					name: "Naver User",
+				};
+				const mockUser = UserBuilder.create()
+					.withId("new-naver-user")
+					.withEmail("naver@example.com")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				userRepo.createProfile.mockResolvedValue({} as any);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				await service.handleNaverMobileLogin("valid-access-token");
+
+				// Then - 기본 카테고리 2개 생성 확인
+				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
+					expect.arrayContaining([
+						expect.objectContaining({
+							userId: "new-naver-user",
+							name: "중요한 일",
+							color: "#FFB3B3",
+							sortOrder: 0,
+						}),
+						expect.objectContaining({
+							userId: "new-naver-user",
+							name: "할 일",
+							color: "#FF6B43",
+							sortOrder: 1,
+						}),
+					]),
+					expect.anything(),
+				);
+			});
+		});
+
+		describe("기존 소셜 로그인 사용자", () => {
+			it("기존 사용자 로그인 시 카테고리가 추가 생성되지 않아야 한다", async () => {
+				// Given - 기존 Apple 사용자
+				const appleProfile: AppleVerifiedProfile = {
+					id: "apple-existing-user",
+					email: "existing@example.com",
+					emailVerified: true,
+				};
+				const existingUser = UserBuilder.create()
+					.withId("existing-user-id")
+					.withEmail("existing@example.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(existingUser.id)
+					.asApple("apple-existing-user")
+					.build();
+
+				setupSuccessfulOAuthLogin(existingUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(existingUser);
+
+				// When
+				await service.handleAppleMobileLogin("valid-id-token");
+
+				// Then - 카테고리 생성 호출되지 않음
+				expect(todoCategoryRepo.createMany).not.toHaveBeenCalled();
+			});
+
+			it("기존 사용자 재로그인 시 새 카테고리가 생성되지 않아야 한다 (Google)", async () => {
+				// Given - 기존 Google 사용자
+				const googleProfile: OAuthProfile = {
+					id: "google-existing-user",
+					email: "existing-google@example.com",
+					emailVerified: true,
+					name: "Existing Google User",
+				};
+				const existingUser = UserBuilder.create()
+					.withId("existing-google-user-id")
+					.withEmail("existing-google@example.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(existingUser.id)
+					.asGoogle("google-existing-user")
+					.build();
+
+				setupSuccessfulOAuthLogin(existingUser);
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(existingUser);
+
+				// When
+				await service.handleGoogleMobileLogin("valid-id-token");
+
+				// Then - 카테고리 생성 호출되지 않음
+				expect(todoCategoryRepo.createMany).not.toHaveBeenCalled();
+			});
+		});
+	});
 });
