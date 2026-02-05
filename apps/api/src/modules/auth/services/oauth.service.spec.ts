@@ -1728,157 +1728,112 @@ describe("OAuthService", () => {
 
 	describe("기본 카테고리 생성", () => {
 		describe("신규 소셜 로그인 사용자", () => {
-			it("Apple 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
-				// Given - 신규 Apple 사용자
-				const appleProfile: AppleVerifiedProfile = {
-					id: "apple-new-user",
+			const newUserTestCases = [
+				{
+					provider: "Apple",
+					profile: {
+						id: "apple-new-user",
+						email: "apple@example.com",
+						emailVerified: true,
+					} as AppleVerifiedProfile,
+					userId: "new-apple-user",
 					email: "apple@example.com",
-					emailVerified: true,
-				};
-				const mockUser = UserBuilder.create()
-					.withId("new-apple-user")
-					.withEmail("apple@example.com")
-					.verified()
-					.build();
-
-				setupSuccessfulOAuthLogin(mockUser);
-				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
-				accountRepo.findByProviderAccountId.mockResolvedValue(null);
-				userRepo.findByEmail.mockResolvedValue(null);
-				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
-				userRepo.createProfile.mockResolvedValue({} as never);
-				todoCategoryRepo.createMany.mockResolvedValue(2);
-
-				// When
-				await service.handleAppleMobileLogin("valid-id-token");
-
-				// Then - 기본 카테고리 2개 생성 확인
-				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
-					expect.arrayContaining([
-						expect.objectContaining({
-							userId: "new-apple-user",
-							name: "중요한 일",
-							color: "#FFB3B3",
-							sortOrder: 0,
-						}),
-						expect.objectContaining({
-							userId: "new-apple-user",
-							name: "할 일",
-							color: "#FF6B43",
-							sortOrder: 1,
-						}),
-					]),
-					expect.anything(),
-				);
-			});
-
-			it("Google 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
-				// Given - 신규 Google 사용자
-				const googleProfile: OAuthProfile = {
-					id: "google-new-user",
+					verified: true,
+					setupMock: (
+						verifier: Mocked<OAuthTokenVerifierService>,
+						profile: AppleVerifiedProfile | OAuthProfile,
+					) =>
+						verifier.verifyAppleToken.mockResolvedValue(
+							profile as AppleVerifiedProfile,
+						),
+					login: (svc: OAuthService) =>
+						svc.handleAppleMobileLogin("valid-id-token"),
+				},
+				{
+					provider: "Google",
+					profile: {
+						id: "google-new-user",
+						email: "google@example.com",
+						emailVerified: true,
+						name: "Google User",
+					} as OAuthProfile,
+					userId: "new-google-user",
 					email: "google@example.com",
-					emailVerified: true,
-					name: "Google User",
-				};
-				const mockUser = UserBuilder.create()
-					.withId("new-google-user")
-					.withEmail("google@example.com")
-					.verified()
-					.build();
-
-				setupSuccessfulOAuthLogin(mockUser);
-				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
-				accountRepo.findByProviderAccountId.mockResolvedValue(null);
-				userRepo.findByEmail.mockResolvedValue(null);
-				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
-				userRepo.createProfile.mockResolvedValue({} as never);
-				todoCategoryRepo.createMany.mockResolvedValue(2);
-
-				// When
-				await service.handleGoogleMobileLogin("valid-id-token");
-
-				// Then - 기본 카테고리 2개 생성 확인
-				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
-					expect.arrayContaining([
-						expect.objectContaining({
-							userId: "new-google-user",
-							name: "중요한 일",
-							color: "#FFB3B3",
-							sortOrder: 0,
-						}),
-						expect.objectContaining({
-							userId: "new-google-user",
-							name: "할 일",
-							color: "#FF6B43",
-							sortOrder: 1,
-						}),
-					]),
-					expect.anything(),
-				);
-			});
-
-			it("Kakao 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
-				// Given - 신규 Kakao 사용자
-				const kakaoProfile: OAuthProfile = {
-					id: "kakao-new-user",
+					verified: true,
+					setupMock: (
+						verifier: Mocked<OAuthTokenVerifierService>,
+						profile: AppleVerifiedProfile | OAuthProfile,
+					) =>
+						verifier.verifyGoogleToken.mockResolvedValue(
+							profile as OAuthProfile,
+						),
+					login: (svc: OAuthService) =>
+						svc.handleGoogleMobileLogin("valid-id-token"),
+				},
+				{
+					provider: "Kakao",
+					profile: {
+						id: "kakao-new-user",
+						email: "kakao@example.com",
+						emailVerified: false,
+						name: "Kakao User",
+					} as OAuthProfile,
+					userId: "new-kakao-user",
 					email: "kakao@example.com",
-					emailVerified: false,
-					name: "Kakao User",
-				};
-				const mockUser = UserBuilder.create()
-					.withId("new-kakao-user")
-					.withEmail("kakao@example.com")
-					.build();
-
-				setupSuccessfulOAuthLogin(mockUser);
-				tokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
-				accountRepo.findByProviderAccountId.mockResolvedValue(null);
-				userRepo.findByEmail.mockResolvedValue(null);
-				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
-				userRepo.createProfile.mockResolvedValue({} as never);
-				todoCategoryRepo.createMany.mockResolvedValue(2);
-
-				// When
-				await service.handleKakaoMobileLogin("valid-access-token");
-
-				// Then - 기본 카테고리 2개 생성 확인
-				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
-					expect.arrayContaining([
-						expect.objectContaining({
-							userId: "new-kakao-user",
-							name: "중요한 일",
-							color: "#FFB3B3",
-							sortOrder: 0,
-						}),
-						expect.objectContaining({
-							userId: "new-kakao-user",
-							name: "할 일",
-							color: "#FF6B43",
-							sortOrder: 1,
-						}),
-					]),
-					expect.anything(),
-				);
-			});
-
-			it("Naver 로그인 시 기본 카테고리 2개가 생성되어야 한다", async () => {
-				// Given - 신규 Naver 사용자
-				const naverProfile: OAuthProfile = {
-					id: "naver-new-user",
+					verified: false,
+					setupMock: (
+						verifier: Mocked<OAuthTokenVerifierService>,
+						profile: AppleVerifiedProfile | OAuthProfile,
+					) =>
+						verifier.verifyKakaoToken.mockResolvedValue(
+							profile as OAuthProfile,
+						),
+					login: (svc: OAuthService) =>
+						svc.handleKakaoMobileLogin("valid-access-token"),
+				},
+				{
+					provider: "Naver",
+					profile: {
+						id: "naver-new-user",
+						email: "naver@example.com",
+						emailVerified: false,
+						name: "Naver User",
+					} as OAuthProfile,
+					userId: "new-naver-user",
 					email: "naver@example.com",
-					emailVerified: false,
-					name: "Naver User",
-				};
-				const mockUser = UserBuilder.create()
-					.withId("new-naver-user")
-					.withEmail("naver@example.com")
-					.build();
+					verified: false,
+					setupMock: (
+						verifier: Mocked<OAuthTokenVerifierService>,
+						profile: AppleVerifiedProfile | OAuthProfile,
+					) =>
+						verifier.verifyNaverToken.mockResolvedValue(
+							profile as OAuthProfile,
+						),
+					login: (svc: OAuthService) =>
+						svc.handleNaverMobileLogin("valid-access-token"),
+				},
+			];
+
+			it.each(
+				newUserTestCases,
+			)("$provider 로그인 시 기본 카테고리 2개가 생성되어야 한다", async ({
+				profile,
+				userId,
+				email,
+				verified,
+				setupMock,
+				login,
+			}) => {
+				// Given - 신규 사용자
+				const mockUserBuilder = UserBuilder.create()
+					.withId(userId)
+					.withEmail(email);
+				const mockUser = verified
+					? mockUserBuilder.verified().build()
+					: mockUserBuilder.build();
 
 				setupSuccessfulOAuthLogin(mockUser);
-				tokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
+				setupMock(tokenVerifier, profile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
@@ -1887,19 +1842,19 @@ describe("OAuthService", () => {
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
-				await service.handleNaverMobileLogin("valid-access-token");
+				await login(service);
 
 				// Then - 기본 카테고리 2개 생성 확인
 				expect(todoCategoryRepo.createMany).toHaveBeenCalledWith(
 					expect.arrayContaining([
 						expect.objectContaining({
-							userId: "new-naver-user",
+							userId,
 							name: "중요한 일",
 							color: "#FFB3B3",
 							sortOrder: 0,
 						}),
 						expect.objectContaining({
-							userId: "new-naver-user",
+							userId,
 							name: "할 일",
 							color: "#FF6B43",
 							sortOrder: 1,
