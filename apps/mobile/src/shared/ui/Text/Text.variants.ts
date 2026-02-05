@@ -1,65 +1,60 @@
-import { tv } from 'tailwind-variants';
+import { tv } from '@src/shared/utils/tv';
 
-export const textVariants = tv(
-  {
-    base: 'font-normal',
+export const textVariants = tv({
+  base: 'font-normal',
 
-    variants: {
-      tone: {
-        neutral: 'text-foreground',
-        brand: 'text-main',
-        danger: 'text-error',
-        warning: 'text-warning',
-        success: 'text-success',
-        info: 'text-info',
-        white: 'text-white',
-      },
-      weight: {
-        normal: 'font-normal',
-        medium: 'font-medium',
-        semibold: 'font-semibold',
-        bold: 'font-bold',
-      },
-      size: {
-        h1: 'text-h1',
-        t1: 'text-t1',
-        t2: 'text-t2',
-        t3: 'text-t3',
-        b1: 'text-b1',
-        b2: 'text-b2',
-        b3: 'text-b3',
-        b4: 'text-b4',
-        e1: 'text-e1',
-        e2: 'text-e2',
-      },
-      align: {
-        left: 'text-left',
-        center: 'text-center',
-        right: 'text-right',
-      },
-      strikethrough: {
-        true: 'line-through',
-        false: '',
-      },
-      underline: {
-        true: 'underline',
-        false: '',
-      },
+  variants: {
+    tone: {
+      neutral: 'text-foreground',
+      brand: 'text-main',
+      danger: 'text-error',
+      warning: 'text-warning',
+      success: 'text-success',
+      info: 'text-info',
+      white: 'text-white',
     },
-
-    defaultVariants: {
-      weight: 'normal',
-      tone: 'neutral',
-      size: 'b3',
-      align: 'left',
-      strikethrough: false,
-      underline: false,
+    weight: {
+      normal: 'font-normal',
+      medium: 'font-medium',
+      semibold: 'font-semibold',
+      bold: 'font-bold',
+    },
+    size: {
+      h1: 'text-h1',
+      t1: 'text-t1',
+      t2: 'text-t2',
+      t3: 'text-t3',
+      b1: 'text-b1',
+      b2: 'text-b2',
+      b3: 'text-b3',
+      b4: 'text-b4',
+      e1: 'text-e1',
+      e2: 'text-e2',
+    },
+    align: {
+      left: 'text-left',
+      center: 'text-center',
+      right: 'text-right',
+    },
+    strikethrough: {
+      true: 'line-through',
+      false: '',
+    },
+    underline: {
+      true: 'underline',
+      false: '',
     },
   },
-  {
-    twMerge: false,
+
+  defaultVariants: {
+    weight: 'normal',
+    tone: 'neutral',
+    size: 'b3',
+    align: 'left',
+    strikethrough: false,
+    underline: false,
   },
-);
+});
 
 export const shadeClasses: Record<number, string> = {
   1: 'text-gray-1',

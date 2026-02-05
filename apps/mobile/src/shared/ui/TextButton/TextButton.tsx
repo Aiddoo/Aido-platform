@@ -1,4 +1,4 @@
-import { clsx } from 'clsx';
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { View } from 'react-native';
 import { ArrowRightIcon } from '../Icon';
@@ -33,7 +33,7 @@ export function TextButton({
   return (
     <PressableFeedback
       isDisabled={isDisabled}
-      className={clsx(textButtonVariants({ size, variant, isDisabled }), className)}
+      className={cn(textButtonVariants({ size, variant, isDisabled }), className)}
       {...props}
     >
       <Text size={textSizeMap[size]} shade={6} underline={variant === 'underline'}>
@@ -44,7 +44,7 @@ export function TextButton({
           <ArrowRightIcon
             width={iconSizeMap[size]}
             height={iconSizeMap[size]}
-            colorClassName="accent-gray-6"
+            colorClassName="text-gray-6"
           />
         </View>
       )}

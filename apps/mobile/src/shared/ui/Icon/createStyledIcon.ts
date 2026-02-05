@@ -7,7 +7,7 @@ import { withUniwind } from 'uniwind';
  *
  * @example
  * const StyledArrowIcon = createStyledIcon(ArrowRightIconSvg);
- * <StyledArrowIcon colorClassName="accent-gray-6" width={24} height={24} />
+ * <StyledArrowIcon colorClassName="text-gray-6" width={24} height={24} />
  */
 export function createStyledIcon<P extends SvgProps>(IconComponent: ComponentType<P>) {
   return withUniwind(IconComponent, {
@@ -17,3 +17,5 @@ export function createStyledIcon<P extends SvgProps>(IconComponent: ComponentTyp
     },
   });
 }
+
+export type StyledIcon = ReturnType<typeof createStyledIcon>;

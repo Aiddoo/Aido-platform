@@ -1,6 +1,7 @@
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { TextInput, type TextInputProps, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useResolveClassNames } from 'uniwind';
 
 import { useBlinkAnimation } from '../../hooks/useBlinkAnimation';
 import { HStack } from '../HStack/HStack';
@@ -33,20 +34,31 @@ export const VoiceTextField = ({
   isLoading = false,
   placeholder,
   recognizingPlaceholder = '듣고 있어요...',
-  recognizingPlaceholderColor = '#EF4444',
-  micIconColor = '#F97316',
-  recordingIconColor = '#EF4444',
+  recognizingPlaceholderColor,
+  micIconColor,
+  recordingIconColor,
   hideMicButton = false,
   hideSendButton = false,
   maxLength = 500,
   containerClassName,
   ...textInputProps
 }: VoiceTextFieldProps) => {
+  const errorColor = useResolveClassNames('text-error');
+  const mainColor = useResolveClassNames('text-main');
+  const mutedColor = useResolveClassNames('text-gray-5');
+
+  const resolvedRecognizingPlaceholderColor =
+    recognizingPlaceholderColor ?? (errorColor.color as string);
+  const resolvedMicIconColor = micIconColor ?? (mainColor.color as string);
+  const resolvedRecordingIconColor = recordingIconColor ?? (errorColor.color as string);
+
   const hasText = value.trim().length > 0;
   const isInputDisabled = isLoading || isRecognizing;
 
   const displayPlaceholder = isRecognizing ? recognizingPlaceholder : placeholder;
-  const placeholderColor = isRecognizing ? recognizingPlaceholderColor : '#9CA3AF';
+  const placeholderColor = isRecognizing
+    ? resolvedRecognizingPlaceholderColor
+    : (mutedColor.color as string);
 
   return (
     <HStack
@@ -63,7 +75,7 @@ export const VoiceTextField = ({
         onChangeText={onChangeText}
         placeholder={displayPlaceholder}
         placeholderTextColor={placeholderColor}
-        className="flex-1"
+        className="flex-1 text-foreground"
         style={{ fontSize: 15, flex: 1 }}
         maxLength={maxLength}
         editable={!isInputDisabled}
@@ -75,8 +87,8 @@ export const VoiceTextField = ({
           onPress={onMicPress}
           isRecognizing={isRecognizing}
           isDisabled={isLoading}
-          micIconColor={micIconColor}
-          recordingIconColor={recordingIconColor}
+          micIconColor={resolvedMicIconColor}
+          recordingIconColor={resolvedRecordingIconColor}
         />
       )}
 
@@ -114,8 +126,8 @@ const MicButton = ({
   onPress,
   isRecognizing,
   isDisabled = false,
-  micIconColor = '#F97316',
-  recordingIconColor = '#EF4444',
+  micIconColor,
+  recordingIconColor,
   iconSize = 22,
 }: MicButtonProps) => {
   return (

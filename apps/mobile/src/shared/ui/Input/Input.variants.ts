@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants';
+import { tv } from '@src/shared/utils/tv';
 
 export const inputLabelVariants = tv({
   base: 'text-gray-6',

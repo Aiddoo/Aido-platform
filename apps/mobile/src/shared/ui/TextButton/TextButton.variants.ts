@@ -1,4 +1,4 @@
-import { tv } from 'tailwind-variants';
+import { tv } from '@src/shared/utils/tv';
 
 export const textButtonVariants = tv({
   base: 'items-center justify-center flex-row',

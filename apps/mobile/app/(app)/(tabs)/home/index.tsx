@@ -84,7 +84,8 @@ const HomeScreen = () => {
     <>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1, backgroundColor: 'white' }}
+        style={{ flex: 1 }}
+        className="bg-white"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
