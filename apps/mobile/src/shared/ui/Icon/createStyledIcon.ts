@@ -17,3 +17,5 @@ export function createStyledIcon<P extends SvgProps>(IconComponent: ComponentTyp
     },
   });
 }
+
+export type StyledIcon = ReturnType<typeof createStyledIcon>;

@@ -4,6 +4,7 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
+import { ThemeProvider, useTheme } from '@src/shared/providers/theme-provider';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,14 +17,20 @@ SplashScreen.preventAutoHideAsync();
 
 const FullScreenLoader = () => {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
+    <View className="flex-1 items-center justify-center bg-background">
       <ActivityIndicator size="large" />
     </View>
   );
 };
 
+const THEME_COLORS = {
+  light: '#ffffff',
+  dark: '#262626',
+} as const;
+
 const AuthGateLayout = () => {
   const { status } = useAuth();
+  const { resolvedTheme } = useTheme();
   const isAuthenticated = status === 'authenticated';
 
   if (status === 'loading') {
@@ -37,6 +44,7 @@ const AuthGateLayout = () => {
         animation: 'fade',
         animationDuration: 250,
         animationTypeForReplace: 'pop',
+        contentStyle: { backgroundColor: THEME_COLORS[resolvedTheme] },
       }}
     >
       <Stack.Protected guard={isAuthenticated}>
@@ -74,15 +82,17 @@ const AppBootstrapLayout = () => {
     <GestureHandlerProvider>
       <KeyboardProvider>
         <HeroUIProvider>
-          <QueryProvider>
-            <DIProvider>
-              <AuthProvider>
-                <NotificationProvider>
-                  <AuthGateLayout />
-                </NotificationProvider>
-              </AuthProvider>
-            </DIProvider>
-          </QueryProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              <DIProvider>
+                <AuthProvider>
+                  <NotificationProvider>
+                    <AuthGateLayout />
+                  </NotificationProvider>
+                </AuthProvider>
+              </DIProvider>
+            </QueryProvider>
+          </ThemeProvider>
         </HeroUIProvider>
       </KeyboardProvider>
     </GestureHandlerProvider>

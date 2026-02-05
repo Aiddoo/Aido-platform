@@ -1,20 +1,23 @@
-export { createStyledIcon } from './createStyledIcon';
+export { createStyledIcon, type StyledIcon as StyledIconType } from './createStyledIcon';
 export {
   AppleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   BellIcon,
   CheckIcon,
+  DeviceIcon,
   DocsIcon,
   GoogleIcon,
   KakaoIcon,
   LockIcon,
   MenuIcon,
   MicIcon,
+  MoonIcon,
   NaverIcon,
   PauseIcon,
   PersonIcon,
   PlusIcon,
   SearchIcon,
   SendIcon,
+  SunIcon,
 } from './icons';

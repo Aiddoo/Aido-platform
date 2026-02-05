@@ -61,6 +61,12 @@ const MyPageScreen = () => {
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
           />
+          <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
+        </SettingNavigationSection>
+
+        <Spacing size={12} />
+
+        <SettingNavigationSection>
           <SettingNavigationItem label="공지사항" onPress={() => console.log('공지사항 클릭')} />
           <SettingNavigationItem
             label="의견 보내기"
@@ -144,7 +150,7 @@ const SettingNavigationItem = ({ label, onPress }: SettingNavigationItemProps) =
     <PressableFeedback.Highlight className="rounded-xl" />
     <ListRow
       contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-      right={<ArrowRightIcon colorClassName="accent-gray-6" />}
+      right={<ArrowRightIcon colorClassName="text-gray-6" />}
       horizontalPadding="medium"
     />
   </PressableFeedback>
