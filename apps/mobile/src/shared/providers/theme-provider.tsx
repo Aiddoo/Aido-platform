@@ -49,8 +49,8 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
   }, []);
 
   useEffect(() => {
-    Uniwind.setTheme(resolvedTheme);
-  }, [resolvedTheme]);
+    Uniwind.setTheme(mode);
+  }, [mode]);
 
   const setMode = useCallback((newMode: ThemeMode) => {
     setModeState(newMode);
