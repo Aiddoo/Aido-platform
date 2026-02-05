@@ -286,8 +286,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
@@ -340,8 +340,8 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(profileWithoutEmail);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
@@ -371,11 +371,11 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 				userRepo.findByIdWithProfile.mockResolvedValue({
 					...existingUser,
 					profile: { name: "기존유저", profileImage: null },
-				} as any);
+				} as never);
 
 				// When
 				const result = await service.handleAppleMobileLogin("valid-id-token");
@@ -415,7 +415,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(lockedUser);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -438,7 +438,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(suspendedUser);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -456,7 +456,7 @@ describe("OAuthService", () => {
 		it("새로운 소셜 계정을 연결한다", async () => {
 			// Given
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
-			accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.linkAccount(
@@ -529,7 +529,7 @@ describe("OAuthService", () => {
 				appleAccount,
 				credentialAccount,
 			]);
-			accountRepo.deleteAccount.mockResolvedValue({} as any);
+			accountRepo.deleteAccount.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.unlinkAccount("user-123", "APPLE");
@@ -716,7 +716,7 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/kakao를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/kakao";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
@@ -732,7 +732,7 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/google을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/google";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateGoogleAuthUrlWithState(testState, redirectUri);
@@ -748,7 +748,7 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/naver를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/naver";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateNaverAuthUrlWithState(testState, redirectUri);
@@ -767,7 +767,7 @@ describe("OAuthService", () => {
 			it("aido-dev://auth/callback을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido-dev://auth/callback";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
@@ -785,7 +785,7 @@ describe("OAuthService", () => {
 			it("aido://auth/kakao를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido://auth/kakao";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
@@ -801,7 +801,7 @@ describe("OAuthService", () => {
 			it("aido://auth/callback을 허용한다", async () => {
 				// Given
 				const redirectUri = "aido://auth/callback";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
@@ -819,7 +819,7 @@ describe("OAuthService", () => {
 			it("잘못된 scheme은 기본값으로 대체된다", async () => {
 				// Given
 				const invalidUri = "invalid-scheme://auth/kakao";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
@@ -835,7 +835,7 @@ describe("OAuthService", () => {
 			it("잘못된 경로는 기본값으로 대체된다", async () => {
 				// Given
 				const invalidUri = "aido://wrong/path";
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
@@ -850,7 +850,7 @@ describe("OAuthService", () => {
 
 			it("URI가 제공되지 않으면 기본값을 사용한다", async () => {
 				// Given
-				oauthStateRepo.create.mockResolvedValue({} as any);
+				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
 				await service.generateKakaoAuthUrlWithState(testState);
@@ -898,7 +898,7 @@ describe("OAuthService", () => {
 						name: "카카오사용자",
 						profileImage: "https://kakao.com/profile.jpg",
 					},
-				} as any);
+				} as never);
 				tokenVerifier.verifyKakaoToken.mockResolvedValue(mockKakaoProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
@@ -1015,8 +1015,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				const mockTokenResponse = {
@@ -1060,7 +1060,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1131,7 +1131,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyGoogleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1204,7 +1204,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyKakaoToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1277,7 +1277,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyNaverToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1350,7 +1350,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockRejectedValue(
 					new Error("Invalid token"),
 				);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1395,7 +1395,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 
 				// When
 				const result = await service.handleGoogleMobileLogin(
@@ -1447,8 +1447,8 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyGoogleToken.mockResolvedValue(unverifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				securityLogRepo.create.mockResolvedValue({} as any);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				securityLogRepo.create.mockResolvedValue({} as never);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1495,7 +1495,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
 
 				// When
 				const result = await service.handleAppleMobileLogin(
@@ -1552,8 +1552,8 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyKakaoToken.mockResolvedValue(kakaoProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				securityLogRepo.create.mockResolvedValue({} as any);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				securityLogRepo.create.mockResolvedValue({} as never);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1592,8 +1592,8 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyKakaoToken.mockResolvedValue(unverifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				securityLogRepo.create.mockResolvedValue({} as any);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				securityLogRepo.create.mockResolvedValue({} as never);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1636,8 +1636,8 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyNaverToken.mockResolvedValue(naverProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(existingUser);
-				securityLogRepo.create.mockResolvedValue({} as any);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				securityLogRepo.create.mockResolvedValue({} as never);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1684,7 +1684,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyGoogleToken.mockResolvedValue(googleProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(lockedUser);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1712,7 +1712,7 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyGoogleToken.mockResolvedValue(suspendedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(suspendedUser);
-				loginAttemptRepo.create.mockResolvedValue({} as any);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
 				await expect(
@@ -1746,8 +1746,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
@@ -1792,8 +1792,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
@@ -1837,8 +1837,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
@@ -1882,8 +1882,8 @@ describe("OAuthService", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(null);
 				userRepo.findByEmail.mockResolvedValue(null);
 				userRepo.create.mockResolvedValue(mockUser);
-				accountRepo.createOAuthAccount.mockResolvedValue({} as any);
-				userRepo.createProfile.mockResolvedValue({} as any);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
 				todoCategoryRepo.createMany.mockResolvedValue(2);
 
 				// When
