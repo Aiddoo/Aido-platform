@@ -4,13 +4,14 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
-import { ThemeProvider, useTheme } from '@src/shared/providers/theme-provider';
+import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { useResolveClassNames } from 'uniwind';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,14 +24,9 @@ const FullScreenLoader = () => {
   );
 };
 
-const THEME_COLORS = {
-  light: '#ffffff',
-  dark: '#262626',
-} as const;
-
 const AuthGateLayout = () => {
   const { status } = useAuth();
-  const { resolvedTheme } = useTheme();
+  const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
 
   if (status === 'loading') {
@@ -44,7 +40,7 @@ const AuthGateLayout = () => {
         animation: 'fade',
         animationDuration: 250,
         animationTypeForReplace: 'pop',
-        contentStyle: { backgroundColor: THEME_COLORS[resolvedTheme] },
+        contentStyle: { backgroundColor: backgroundColor as string },
       }}
     >
       <Stack.Protected guard={isAuthenticated}>

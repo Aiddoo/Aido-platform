@@ -1,14 +1,9 @@
-import { useTheme } from '@src/shared/providers/theme-provider';
 import { Stack } from 'expo-router';
 import { Platform } from 'react-native';
-
-const THEME_COLORS = {
-  light: '#ffffff',
-  dark: '#262626',
-} as const;
+import { useResolveClassNames } from 'uniwind';
 
 const AppLayout = () => {
-  const { resolvedTheme } = useTheme();
+  const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
     <Stack
@@ -16,7 +11,7 @@ const AppLayout = () => {
         headerShown: false,
         animation: Platform.OS === 'ios' ? 'slide_from_right' : 'slide_from_bottom',
         animationTypeForReplace: 'push',
-        contentStyle: { backgroundColor: THEME_COLORS[resolvedTheme] },
+        contentStyle: { backgroundColor: backgroundColor as string },
       }}
     >
       <Stack.Screen name="(tabs)" />

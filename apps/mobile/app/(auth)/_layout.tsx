@@ -1,16 +1,10 @@
-import { useTheme } from '@src/shared/providers/theme-provider';
 import { ArrowLeftIcon } from '@src/shared/ui/Icon';
 import { router, Stack } from 'expo-router';
 import { Platform, Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const THEME_COLORS = {
-  light: '#ffffff',
-  dark: '#262626',
-} as const;
-
 const AuthLayout = () => {
-  const { resolvedTheme } = useTheme();
+  const { backgroundColor } = useResolveClassNames('bg-white');
   const headerBg = useResolveClassNames('bg-background');
   const titleColor = useResolveClassNames('text-gray-9');
 
@@ -20,7 +14,7 @@ const AuthLayout = () => {
         headerShown: false,
         animation: Platform.OS === 'ios' ? 'default' : 'fade_from_bottom',
         animationDuration: 200,
-        contentStyle: { backgroundColor: THEME_COLORS[resolvedTheme] },
+        contentStyle: { backgroundColor: backgroundColor as string },
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
