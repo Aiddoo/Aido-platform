@@ -87,6 +87,7 @@ const LoginScreen = () => {
               onPress={handleKakaoLogin}
               isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
               className="bg-kakao"
+              labelClassName="dark:text-gray-1"
             />
 
             <SocialLoginButton
@@ -94,7 +95,8 @@ const LoginScreen = () => {
               label="Google로 계속하기"
               onPress={handleGoogleLogin}
               isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-white border border-gray-200"
+              className="bg-white border border-gray-2 dark:border-gray-2 dark:bg-gray-2"
+              labelClassName="dark:text-gray-9"
             />
           </VStack>
 
@@ -112,7 +114,7 @@ const LoginScreen = () => {
                 icon={<AppleIcon width={20} height={20} />}
                 onPress={handleAppleLogin}
                 isLoading={appleLoginMutation.isPending}
-                className="bg-black"
+                className="bg-black dark:border dark:border-gray-2"
               />
             )}
             <SocialLoginIconButton
@@ -149,14 +151,21 @@ type ButtonProps = ComponentProps<typeof Button>;
 interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
   icon: ReactNode;
   label: string;
+  labelClassName?: string;
 }
 
-const SocialLoginButton = ({ icon, label, className, ...props }: SocialLoginButtonProps) => {
+const SocialLoginButton = ({
+  icon,
+  label,
+  className,
+  labelClassName,
+  ...props
+}: SocialLoginButtonProps) => {
   return (
     <Button {...props} className={className}>
       <HStack align="center" gap={8}>
         {icon}
-        <Text size="b4" weight="semibold" shade={9}>
+        <Text size="b4" weight="semibold" shade={9} className={labelClassName}>
           {label}
         </Text>
       </HStack>

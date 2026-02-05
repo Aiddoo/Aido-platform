@@ -28,8 +28,8 @@ export function Button({
 
   const textColorMap = {
     fill: {
-      primary: 'text-white',
-      danger: 'text-white',
+      primary: 'text-white dark:text-gray-9',
+      danger: 'text-white dark:text-gray-9',
       dark: 'text-white dark:text-gray-9',
     },
     weak: {

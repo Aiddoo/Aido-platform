@@ -44,7 +44,7 @@ export function TextButton({
           <ArrowRightIcon
             width={iconSizeMap[size]}
             height={iconSizeMap[size]}
-            colorClassName="accent-gray-6"
+            colorClassName="text-gray-6"
           />
         </View>
       )}

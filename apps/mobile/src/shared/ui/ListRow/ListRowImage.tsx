@@ -8,7 +8,7 @@ export interface ListRowImageProps extends Omit<ImageProps, 'style'> {
 
 export const ListRowImage = ({ size = 'medium', rounded = true, ...props }: ListRowImageProps) => {
   return (
-    <View style={[styles.container, styles[size], rounded && styles.rounded]}>
+    <View style={[styles.container, styles[size], rounded && styles.rounded]} className="bg-gray-3">
       <Image style={styles.image} resizeMode="cover" {...props} />
     </View>
   );
@@ -17,7 +17,6 @@ export const ListRowImage = ({ size = 'medium', rounded = true, ...props }: List
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: '#F5F5F5',
   },
   image: {
     width: '100%',
