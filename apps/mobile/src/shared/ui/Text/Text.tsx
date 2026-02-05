@@ -1,4 +1,4 @@
-import { clsx } from 'clsx';
+import { cn } from '@src/shared/utils/cn';
 import { Text as RNText } from 'react-native';
 import type { TextProps } from './Text.types';
 import { shadeClasses, textVariants } from './Text.variants';
@@ -21,7 +21,7 @@ export function Text({
 
   return (
     <RNText
-      className={clsx(
+      className={cn(
         textVariants({ tone, size, weight, align, strikethrough, underline }),
         shadeClass,
         className,

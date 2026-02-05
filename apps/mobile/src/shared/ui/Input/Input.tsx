@@ -1,9 +1,12 @@
-import { clsx } from 'clsx';
+import { cn } from '@src/shared/utils/cn';
 import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
+import { withUniwind } from 'uniwind';
 import { Text } from '../Text/Text';
 import type { InputProps } from './Input.types';
 import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './Input.variants';
+
+const StyledTextInput = withUniwind(TextInput);
 
 export const Input = forwardRef<TextInput, InputProps>(
   (
@@ -34,13 +37,13 @@ export const Input = forwardRef<TextInput, InputProps>(
           </Text>
         )}
         <View
-          className={clsx(
+          className={cn(
             inputContainerVariants({ variant, size, isFocused, isDisabled, isInvalid }),
             className,
           )}
         >
           {leftContent && <View className="mr-3">{leftContent}</View>}
-          <TextInput
+          <StyledTextInput
             ref={ref}
             placeholder={placeholder}
             editable={!isDisabled}

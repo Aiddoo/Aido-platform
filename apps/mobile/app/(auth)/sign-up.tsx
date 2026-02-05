@@ -7,12 +7,7 @@ import {
   signUpFormSchema,
 } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/useStepper';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowLeftIcon } from '@src/shared/ui/Icon';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Text } from '@src/shared/ui/Text/Text';
-import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
+import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { match } from 'ts-pattern';
@@ -41,16 +36,8 @@ const SignUpScreen = () => {
   });
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <HStack align="center" px={16} py={12}>
-        <PressableFeedback onPress={() => router.back()}>
-          <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-8" />
-        </PressableFeedback>
-        <Text size="b2" weight="semibold" align="center" className="flex-1">
-          {SIGN_UP_STEP_TITLES[step]}
-        </Text>
-        <View className="w-6" />
-      </HStack>
+    <View className="flex-1 bg-background">
+      <Stack.Screen options={{ title: SIGN_UP_STEP_TITLES[step] }} />
 
       <FormProvider {...form}>
         {match(step)
@@ -63,7 +50,7 @@ const SignUpScreen = () => {
           .with('이메일_인증', () => <SignUpVerificationForm />)
           .exhaustive()}
       </FormProvider>
-    </StyledSafeAreaView>
+    </View>
   );
 };
 

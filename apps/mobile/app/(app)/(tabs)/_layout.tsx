@@ -39,12 +39,13 @@ function IOSLiquidGlassTabs() {
 
 function AndroidBottomTabs() {
   const activeStyle = useResolveClassNames('text-main');
+  const inactiveStyle = useResolveClassNames('text-gray-6');
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeStyle.color as string,
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarInactiveTintColor: inactiveStyle.color as string,
         headerShown: false,
         animation: 'shift',
       }}

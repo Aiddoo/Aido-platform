@@ -106,13 +106,49 @@ const StyledComponent = withUniwind(SomeComponent);
 
 ---
 
-## 테마 색상 사용
+## 테마 색상 사용 (다크/라이트 모드)
+
+### 필수: CSS 변수(Tailwind 클래스)만 사용
+
+다크/라이트 모드가 제대로 작동하려면 **반드시** `global.css`에 정의된 CSS 변수를 사용해야 합니다.
+
+**하드코딩된 색상은 테마가 변경되어도 바뀌지 않습니다!**
+
+```tsx
+// ❌ 금지 - 다크 모드에서 안 바뀜
+backgroundColor: '#F5F5F5'
+backgroundColor: 'white'
+color: '#9CA3AF'
+tabBarInactiveTintColor: '#8E8E93'
+
+// ✅ 올바름 - 다크 모드에서 자동 변환
+className="bg-gray-3"
+className="bg-white"
+className="text-gray-5"
+```
+
+### 사용 가능한 색상 변수
+
+| 변수 | 용도 |
+|------|------|
+| `bg-white` | 카드, 섹션 배경 (다크 모드에서 #121212) |
+| `bg-gray-1` ~ `bg-gray-10` | 배경색 계열 |
+| `text-gray-1` ~ `text-gray-10` | 텍스트 색상 계열 |
+| `bg-main`, `text-main` | 메인 브랜드 색상 |
+| `bg-error`, `text-error` | 에러 색상 |
+| `bg-success`, `text-success` | 성공 색상 |
+| `bg-warning`, `text-warning` | 경고 색상 |
+| `bg-background` | 전체 화면 배경 |
+| `bg-surface` | 컴포넌트 표면 |
+| `text-foreground` | 기본 텍스트 |
+| `text-muted` | 보조 텍스트 |
 
 ### className으로 색상 적용 (권장)
 
 ```tsx
 <Text className="text-gray-6">텍스트</Text>
 <View className="bg-main" />
+<View className="bg-white rounded-2xl" />  // 다크 모드에서 자동 변환
 ```
 
 ### JS에서 색상값이 필요한 경우: useResolveClassNames
@@ -126,12 +162,14 @@ import { useResolveClassNames } from 'uniwind';
 
 function MyComponent() {
   const activeStyle = useResolveClassNames('text-main');
+  const inactiveStyle = useResolveClassNames('text-gray-6');
   const borderStyle = useResolveClassNames('border-gray-2');
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeStyle.color as string,
+        tabBarInactiveTintColor: inactiveStyle.color as string,  // ✅ 하드코딩 금지
         tabBarStyle: { borderTopColor: borderStyle.borderColor as string },
       }}
     />
@@ -165,12 +203,59 @@ export const NewIcon = createStyledIcon(NewIconSvg);
 
 ---
 
+## 애니메이션 상수
+
+React Native Reanimated 애니메이션에서 duration, delay 값은 **반드시** `ANIMATION` 상수를 사용합니다.
+
+```tsx
+import { ANIMATION } from '@src/shared/constants/animation.constants';
+
+// ✅ 올바름
+withTiming(value, { duration: ANIMATION.duration.slow });
+withTiming(value, { duration: ANIMATION.duration.normal });
+withDelay(ANIMATION.delay.short, withTiming(...));
+
+// ❌ 금지 - 매직 넘버 하드코딩
+withTiming(value, { duration: 300 });
+withTiming(value, { duration: 200 });
+```
+
+| 상수 | 값 | 용도 |
+|------|-----|------|
+| `ANIMATION.duration.fast` | 150ms | 빠른 전환 |
+| `ANIMATION.duration.normal` | 200ms | 일반 전환 |
+| `ANIMATION.duration.slow` | 300ms | 느린 전환 |
+| `ANIMATION.delay.short` | 50ms | 짧은 지연 |
+| `ANIMATION.delay.medium` | 100ms | 중간 지연 |
+| `ANIMATION.delay.long` | 200ms | 긴 지연 |
+
+---
+
 ## 금지 사항
+
+### 1. 색상 하드코딩 금지 (중요!)
+
+**다크/라이트 모드 지원을 위해 색상은 반드시 Tailwind 클래스를 사용해야 합니다.**
+
+```tsx
+// ❌ 금지 - 다크 모드에서 안 바뀜
+backgroundColor: '#F5F5F5'
+backgroundColor: 'white'
+color: '#9CA3AF'
+style={{ backgroundColor: 'white' }}
+
+// ✅ 올바름
+className="bg-gray-3"
+className="bg-white"
+className="text-gray-5"
+```
+
+### 2. Shared UI 컴포넌트 중복 import 금지
 
 Shared UI에 있는 컴포넌트를 다른 곳에서 가져오면 안 됩니다.
 
 ```tsx
-// 금지 - Shared UI에 Text가 있으므로
+// ❌ 금지 - Shared UI에 Text가 있으므로
 import { Text, View } from 'react-native';
 ```
 

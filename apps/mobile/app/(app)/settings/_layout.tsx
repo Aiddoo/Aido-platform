@@ -14,7 +14,7 @@ export default function SettingsLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: '600',
           color: titleColor.color as string,
         },
@@ -29,6 +29,7 @@ export default function SettingsLayout() {
       }}
     >
       <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
+      <Stack.Screen name="theme" options={{ title: '화면 테마' }} />
       <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
     </Stack>
   );

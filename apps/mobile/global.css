@@ -3,6 +3,7 @@
 @import "heroui-native/styles";
 
 @source "./node_modules/heroui-native/lib";
+@source "./src/shared/ui/**/*.variants.ts";
 
 @layer theme {
   @variant light {
@@ -15,6 +16,7 @@
     --danger: oklch(0.6 0.22 25);
     --warning: oklch(0.87 0.17 85);
     --divider: oklch(0.9 0 0);
+    --white: oklch(1 0 0);
 
     --gray-1: oklch(0.98 0 0);
     --gray-2: oklch(0.97 0 0);
@@ -44,6 +46,7 @@
     --danger: oklch(0.6 0.22 25);
     --warning: oklch(0.87 0.17 85);
     --divider: oklch(0.5 0 0);
+    --white: oklch(0.14 0 0);
 
     --gray-1: oklch(0.2 0.005 285);
     --gray-2: oklch(0.32 0 0);
@@ -72,6 +75,7 @@
   --color-success: var(--success);
   --color-info: var(--info);
   --color-warning: var(--warning);
+  --color-white: var(--white);
   --color-gray-1: var(--gray-1);
   --color-gray-2: var(--gray-2);
   --color-gray-3: var(--gray-3);
