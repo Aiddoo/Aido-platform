@@ -5,6 +5,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database";
 import type { AccountProvider } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 
 import {
 	AUTH_DEFAULTS,
@@ -21,11 +22,6 @@ import { UserRepository } from "../repositories/user.repository";
 import type { LoginResult, RequestMetadata } from "../types";
 import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
 import { TokenService } from "./token.service";
-
-const DEFAULT_CATEGORIES = [
-	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
-	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
-] as const;
 
 // Apple, Google, Kakao, Naver OAuth 소셜 로그인 처리
 @Injectable()

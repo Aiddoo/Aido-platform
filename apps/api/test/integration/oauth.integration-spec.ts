@@ -1184,4 +1184,129 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(secondResult.userId).toBe(firstResult.userId);
 		});
 	});
+
+	// ===========================================================================
+	// 기본 카테고리 생성 테스트
+	// ===========================================================================
+
+	describe("기본 카테고리 생성 (실제 DB)", () => {
+		const categoryTestCases = [
+			{
+				provider: "Apple" as const,
+				token: "apple-category-test-token",
+				profile: {
+					id: "apple-category-user",
+					email: "apple-category@example.com",
+					emailVerified: true,
+				},
+				login: (svc: OAuthService, token: string) =>
+					svc.handleAppleMobileLogin(token),
+			},
+			{
+				provider: "Google" as const,
+				token: "google-category-test-token",
+				profile: {
+					id: "google-category-user",
+					email: "google-category@example.com",
+					emailVerified: true,
+					name: "Google Category User",
+				},
+				login: (svc: OAuthService, token: string) =>
+					svc.handleGoogleMobileLogin(token),
+			},
+			{
+				provider: "Kakao" as const,
+				token: "kakao-category-test-token",
+				profile: {
+					id: "kakao-category-user",
+					email: "kakao-category@example.com",
+					emailVerified: false,
+					name: "Kakao Category User",
+				},
+				login: (svc: OAuthService, token: string) =>
+					svc.handleKakaoMobileLogin(token),
+			},
+			{
+				provider: "Naver" as const,
+				token: "naver-category-test-token",
+				profile: {
+					id: "naver-category-user",
+					email: "naver-category@example.com",
+					emailVerified: false,
+					name: "Naver Category User",
+				},
+				login: (svc: OAuthService, token: string) =>
+					svc.handleNaverMobileLogin(token),
+			},
+		];
+
+		it.each(
+			categoryTestCases,
+		)("$provider 로그인 시 기본 카테고리가 DB에 생성되어야 한다", async ({
+			provider,
+			token,
+			profile,
+			login,
+		}) => {
+			// Given: 토큰 설정
+			fakeTokenVerifier.setCustomProfile(
+				provider.toLowerCase() as "apple" | "google" | "kakao" | "naver",
+				token,
+				profile,
+			);
+
+			// When: 로그인
+			const result = await login(oauthService, token);
+
+			// Then: DB에서 카테고리 2개 확인
+			const categories = await databaseService.todoCategory.findMany({
+				where: { userId: result.userId },
+				orderBy: { sortOrder: "asc" },
+			});
+
+			expect(categories).toHaveLength(2);
+			expect(categories[0]).toMatchObject({
+				name: "중요한 일",
+				color: "#FFB3B3",
+				sortOrder: 0,
+			});
+			expect(categories[1]).toMatchObject({
+				name: "할 일",
+				color: "#FF6B43",
+				sortOrder: 1,
+			});
+		});
+
+		it("기존 사용자 재로그인 시 카테고리가 중복 생성되지 않아야 한다", async () => {
+			// Given: 첫 번째 로그인으로 사용자 생성
+			const token = "duplicate-category-test-token";
+			fakeTokenVerifier.setCustomProfile("google", token, {
+				id: "duplicate-category-user",
+				email: "duplicate-category@example.com",
+				emailVerified: true,
+				name: "Duplicate Test User",
+			});
+
+			const firstResult = await oauthService.handleGoogleMobileLogin(token);
+
+			// 첫 로그인 후 카테고리 개수 확인
+			const categoriesAfterFirst = await databaseService.todoCategory.findMany({
+				where: { userId: firstResult.userId },
+			});
+			expect(categoriesAfterFirst).toHaveLength(2);
+
+			// When: 같은 사용자로 재로그인
+			const secondResult = await oauthService.handleGoogleMobileLogin(token);
+
+			// Then: 같은 사용자이고 카테고리 개수가 여전히 2개
+			expect(secondResult.userId).toBe(firstResult.userId);
+
+			const categoriesAfterSecond = await databaseService.todoCategory.findMany(
+				{
+					where: { userId: secondResult.userId },
+				},
+			);
+			expect(categoriesAfterSecond).toHaveLength(2);
+		});
+	});
 });

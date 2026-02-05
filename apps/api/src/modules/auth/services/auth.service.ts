@@ -18,6 +18,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database";
 import type { UserStatus } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
+import { DEFAULT_CATEGORIES } from "../../todo-category/types/todo-category.types";
 import {
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
@@ -42,11 +43,6 @@ import type {
 import { PasswordService } from "./password.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
-
-const DEFAULT_CATEGORIES = [
-	{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
-	{ name: "할 일", color: "#FF6B43", sortOrder: 1 },
-] as const;
 
 // Re-export types for backward compatibility
 export type {
