@@ -115,18 +115,18 @@ describe("AuthService", () => {
 						userConsent: { create: jest.fn() },
 						userPreference: { create: jest.fn() },
 					};
-					return callback(mockTx as any);
+					return callback(mockTx as never);
 				},
 			);
 			userRepo.create.mockResolvedValue(mockUser);
-			userRepo.createProfile.mockResolvedValue({} as any);
-			accountRepo.createCredentialAccount.mockResolvedValue({} as any);
+			userRepo.createProfile.mockResolvedValue({} as never);
+			accountRepo.createCredentialAccount.mockResolvedValue({} as never);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
 			});
 			verificationService.sendVerificationEmail.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 			todoCategoryRepo.createMany.mockResolvedValue(2);
 		};
 
@@ -281,24 +281,24 @@ describe("AuthService", () => {
 		) => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as any);
-			userRepo.markEmailVerified.mockResolvedValue({} as any);
+			verificationService.verifyCode.mockResolvedValue(true as never);
+			userRepo.markEmailVerified.mockResolvedValue({} as never);
 			tokenService.generateTokenFamily.mockReturnValue("family-id");
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
 			sessionRepo.create.mockResolvedValue({
 				id: "session-id",
 				userId: mockUser.id,
-			} as any);
+			} as never);
 			tokenService.generateTokenPair.mockResolvedValue(mockTokens);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 			userRepo.findByIdWithProfile.mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
-			} as any);
+			} as never);
 		};
 
 		it("올바른 코드로 이메일 인증에 성공한다", async () => {
@@ -425,26 +425,26 @@ describe("AuthService", () => {
 				userId: mockUser.id,
 				type: "CREDENTIAL",
 				password: "hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(true);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
 			tokenService.generateTokenFamily.mockReturnValue("family-id");
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
 			sessionRepo.create.mockResolvedValue({
 				id: "session-id",
 				userId: mockUser.id,
-			} as any);
+			} as never);
 			tokenService.generateTokenPair.mockResolvedValue(mockTokens);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as any);
-			loginAttemptRepo.create.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as never);
+			loginAttemptRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 			userRepo.findByIdWithProfile.mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
-			} as any);
+			} as never);
 		};
 
 		it("올바른 자격 증명으로 토큰을 반환한다", async () => {
@@ -470,7 +470,7 @@ describe("AuthService", () => {
 			// Given
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(null);
-			loginAttemptRepo.create.mockResolvedValue({} as any);
+			loginAttemptRepo.create.mockResolvedValue({} as never);
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -494,9 +494,9 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(false);
-			loginAttemptRepo.create.mockResolvedValue({} as any);
+			loginAttemptRepo.create.mockResolvedValue({} as never);
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -520,7 +520,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: pendingUser.id,
 				password: "hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -602,7 +602,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: lockedUser.id,
 				password: "hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -627,8 +627,8 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			sessionRepo.revoke.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -649,8 +649,8 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			sessionRepo.revoke.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -715,7 +715,7 @@ describe("AuthService", () => {
 		it("사용자의 모든 세션을 비활성화한다", async () => {
 			// Given
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.logoutAll(userId);
@@ -731,7 +731,7 @@ describe("AuthService", () => {
 		it("보안 이벤트를 기록한다", async () => {
 			// Given
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			await service.logoutAll(userId);
@@ -777,7 +777,7 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -785,8 +785,8 @@ describe("AuthService", () => {
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.refreshTokens(refreshToken);
@@ -804,7 +804,7 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -812,8 +812,8 @@ describe("AuthService", () => {
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			await service.refreshTokens(refreshToken);
@@ -845,12 +845,12 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When & Then
 			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
@@ -876,7 +876,7 @@ describe("AuthService", () => {
 				.revoked()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
 
@@ -893,7 +893,7 @@ describe("AuthService", () => {
 				.expired()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
 
@@ -911,7 +911,7 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as any);
+			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -993,15 +993,15 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as any);
+			} as never);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as any);
-			accountRepo.updatePassword.mockResolvedValue({} as any);
+			verificationService.verifyCode.mockResolvedValue(true as never);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.resetPassword(email, code, newPassword);
@@ -1052,14 +1052,14 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
-			accountRepo.updatePassword.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.changePassword(
@@ -1079,7 +1079,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
@@ -1104,14 +1104,14 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as any);
+			} as never);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
-			accountRepo.updatePassword.mockResolvedValue({} as any);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			await service.changePassword(userId, currentPassword, newPassword);
@@ -1191,9 +1191,9 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as any);
+			sessionRepo.revoke.mockResolvedValue({} as never);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			const result = await service.revokeSession(userId, sessionId);
@@ -1213,9 +1213,9 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as any);
+			sessionRepo.revoke.mockResolvedValue({} as never);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as any);
+			securityLogRepo.create.mockResolvedValue({} as never);
 
 			// When
 			await service.revokeSession(userId, sessionId);
@@ -1272,7 +1272,7 @@ describe("AuthService", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
@@ -1328,7 +1328,7 @@ describe("AuthService", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as any),
+				async (callback: TransactionCallback) => callback({} as never),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "654321",
@@ -1445,7 +1445,7 @@ describe("AuthService", () => {
 			userRepo.updateProfile.mockResolvedValue({
 				name: "Updated Name",
 				profileImage: null,
-			} as any);
+			} as never);
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
@@ -1462,7 +1462,7 @@ describe("AuthService", () => {
 			userRepo.updateProfile.mockResolvedValue({
 				name: "Updated Name",
 				profileImage: null,
-			} as any);
+			} as never);
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
@@ -1484,7 +1484,7 @@ describe("AuthService", () => {
 			userRepo.updateProfile.mockResolvedValue({
 				name: "Test User",
 				profileImage: "https://example.com/new-image.jpg",
-			} as any);
+			} as never);
 			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 
 			// When
