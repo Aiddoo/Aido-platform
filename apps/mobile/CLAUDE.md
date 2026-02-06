@@ -34,7 +34,8 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Por
 ├─────────────────────────────────────────────────────────────┤
 │  🔌 Infrastructure Layer                                     │
 │  ├── repositories/         ← Repository 인터페이스 + 구현체    │
-│  └── shared/infra/         ← HTTP 클라이언트, Storage 구현     │
+│  ├── shared/infra/         ← HTTP 클라이언트, Storage 구현     │
+│  └── shared/types/         ← 공통 타입 (Page<T> 등)           │
 ├─────────────────────────────────────────────────────────────┤
 │  🎯 Core Layer                                               │
 │  └── core/ports/           ← 외부 의존성 추상화 인터페이스       │
@@ -52,7 +53,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Por
 features/{feature}/
 ├── models/
 │   ├── {feature}.model.ts      # Zod 스키마 + 타입 + Policy
-│   └── {feature}.error.ts      # ClientError 클래스
+│   └── {feature}.error.ts      # {Feature}Error 클래스 (BusinessError 구현)
 ├── repositories/
 │   ├── {feature}.mapper.ts          # DTO → Domain 변환
 │   ├── {feature}.repository.ts      # 인터페이스 (도메인 타입 반환)
@@ -458,7 +459,7 @@ if (!parsed.success) {
   - Policy 정의 (비즈니스 규칙)
 - [ ] `features/{feature}/models/{feature}.error.ts` 생성
   - ErrorReason 타입 정의
-  - ClientError 클래스 정의
+  - {Feature}Error 클래스 정의 (BusinessError 구현)
 
 ### 2단계: 데이터 레이어
 - [ ] `features/{feature}/repositories/{feature}.mapper.ts` 생성
