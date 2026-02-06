@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { toDateOnly, toScheduledTime } from "@/common/date";
 import { Timezone } from "@/common/decorators/timezone.decorator";
 
@@ -84,6 +84,12 @@ export class TodoController {
 	 * 새로운 할 일을 생성합니다.
 	 */
 	@Post()
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 생성",
 		operationId: "createTodo",
@@ -378,6 +384,12 @@ export class TodoController {
 	 */
 	@Patch(":id")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 수정",
 		operationId: "updateTodo",
@@ -432,6 +444,12 @@ export class TodoController {
 	 */
 	@Patch(":id/complete")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 완료 상태 토글",
 		operationId: "toggleTodoComplete",
@@ -547,6 +565,12 @@ export class TodoController {
 	 */
 	@Patch(":id/schedule")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 일정 변경",
 		operationId: "updateTodoSchedule",

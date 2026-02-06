@@ -7,7 +7,7 @@ NestJS 11 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
 | 분류 | 기술 |
 |------|------|
 | Framework | NestJS 11 |
-| ORM | Prisma 7 |
+| ORM | Prisma 7 + @prisma/adapter-pg |
 | Database | PostgreSQL 16 |
 | Validation | Zod + nestjs-zod |
 | Documentation | Swagger/OpenAPI |
@@ -20,6 +20,8 @@ NestJS 11 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
 src/
 ├── common/           # 공통 모듈
 │   ├── database/     # DB 유틸리티
+│   ├── date/         # 날짜/타임존 유틸리티
+│   ├── decorators/   # 커스텀 데코레이터 (@Timezone 등)
 │   ├── exception/    # 예외 처리
 │   ├── logger/       # 로깅
 │   ├── pagination/   # 페이지네이션
@@ -78,7 +80,7 @@ pnpm --filter @aido/api dev
 - **OpenAPI JSON**: http://localhost:8080/api-docs-json
 
 ### 클라이언트 가이드
-- [📱 알림 구현 가이드](./docs/NOTIFICATION_GUIDE.md)
+- [📱 알림 구현 가이드](./docs/PUSH_NOTIFICATION_GUIDE.md)
 
 ## 배포
 

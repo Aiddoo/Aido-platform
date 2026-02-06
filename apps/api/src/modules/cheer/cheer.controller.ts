@@ -13,7 +13,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
@@ -79,6 +79,12 @@ export class CheerController {
 	// ============================================
 
 	@Post()
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "응원 보내기",
 		operationId: "sendCheer",
@@ -199,6 +205,12 @@ export class CheerController {
 	// ============================================
 
 	@Get("limit")
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "일일 응원 제한 정보 조회",
 		operationId: "getCheerLimitInfo",
