@@ -1,5 +1,6 @@
 import type { ToggleTodoCompleteInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
@@ -14,8 +15,10 @@ export const toggleTodoMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: ({ todoId, body }: ToggleTodoMutationParams) =>
-      todoService.toggleTodoComplete(todoId, body),
+    mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
+      const result = await todoService.toggleTodoComplete(todoId, body);
+      return unwrap(result);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
     },

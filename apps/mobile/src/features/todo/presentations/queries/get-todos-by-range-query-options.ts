@@ -1,7 +1,7 @@
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { formatTime } from '@src/shared/utils/date';
-import { infiniteQueryOptions } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 
 import type { TodoItem } from '../../models/todo.model';
 import { TodoPolicy } from '../../models/todo.model';
@@ -18,25 +18,21 @@ const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
   color: TodoPolicy.getColor(todo),
 });
 
-export const getTodosInfiniteQueryOptions = (date: string) => {
+export const getTodosByRangeQueryOptions = (rangeStart: string, rangeEnd: string) => {
   const todoService = useTodoService();
 
-  return infiniteQueryOptions({
-    queryKey: TODO_QUERY_KEYS.listByDate(date),
-    queryFn: async ({ pageParam }) => {
+  return queryOptions({
+    queryKey: TODO_QUERY_KEYS.byRange(rangeStart, rangeEnd),
+    queryFn: async () => {
       const result = await todoService.getTodos({
-        startDate: date,
-        endDate: date,
-        cursor: pageParam,
-        size: 20,
+        startDate: rangeStart,
+        endDate: rangeEnd,
+        size: 200,
       });
       return unwrap(result);
     },
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     select: (data) => ({
-      todos: data.pages.flatMap((page) => page.todos.map(toViewModel)),
-      hasNextPage: data.pages.at(-1)?.hasNext ?? false,
+      todos: data.todos.map(toViewModel),
     }),
     staleTime: 30_000,
   });

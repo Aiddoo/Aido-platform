@@ -19,7 +19,7 @@ export function UserAvatarList() {
   } = useSuspenseInfiniteQuery(getFriendsQueryOptions());
 
   const friends = useMemo(
-    () => friendsData.pages.flatMap((page) => page.friends),
+    () => friendsData.pages.flatMap((page) => page.items),
     [friendsData.pages],
   );
 
