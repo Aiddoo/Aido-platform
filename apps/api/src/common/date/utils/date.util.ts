@@ -1,8 +1,12 @@
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { DATE_FORMAT, type DateFormatType } from "../constants";
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const DEFAULT_TIMEZONE = "UTC";
 
 // ============================================
 // 현재 시각
@@ -38,6 +42,15 @@ export function parseDate(dateString: string): Date {
  */
 export function toDate(dateString: string): Date {
 	return dayjs.utc(dateString).toDate();
+}
+
+/**
+ * DATE 타입 필드용 날짜 변환
+ * PostgreSQL DATE(@db.Date)와 호환되는 UTC 자정 Date 반환
+ * @example toDateOnly("2026-02-06") // 2026-02-06T00:00:00.000Z
+ */
+export function toDateOnly(dateString: string): Date {
+	return dayjs.utc(dateString).startOf("day").toDate();
 }
 
 // ============================================
@@ -248,4 +261,48 @@ export function diffInDays(date: Date, compare: Date): number {
  */
 export function diffInSeconds(date: Date, compare: Date): number {
 	return dayjs.utc(date).diff(dayjs.utc(compare), "second");
+}
+
+// ============================================
+// 타임존
+// ============================================
+
+/**
+ * 지정된 타임존의 "오늘" 날짜를 UTC midnight Date로 반환
+ * @example getUserToday('Asia/Seoul') at 2026-02-06 23:00 KST → 2026-02-06T00:00:00.000Z
+ * @example getUserToday('America/New_York') at 2026-02-06 23:00 EST → 2026-02-06T00:00:00.000Z
+ */
+export function getUserToday(tz: string = DEFAULT_TIMEZONE): Date {
+	const localDateStr = dayjs().tz(tz).format("YYYY-MM-DD");
+	return dayjs.utc(localDateStr).startOf("day").toDate();
+}
+
+/**
+ * 지정된 타임존에서 특정 시점의 날짜 시작(자정)을 UTC Date로 반환
+ * @example startOfDayInTimezone(new Date(), 'Asia/Seoul') → 해당 시점의 KST 자정을 UTC로 표현
+ */
+/**
+ * 사용자의 로컬 시간(날짜 + HH:mm)을 UTC Date 객체로 변환
+ * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
+ * @example toScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
+ * @example toScheduledTime("2026-01-15", "14:00", "America/New_York") → 2026-01-15T19:00:00.000Z
+ */
+export function toScheduledTime(
+	dateStr: string,
+	timeStr: string,
+	tz: string = DEFAULT_TIMEZONE,
+): Date {
+	return dayjs.tz(`${dateStr}T${timeStr}:00`, tz).utc().toDate();
+}
+
+/**
+ * 지정된 타임존에서 특정 시점의 날짜 시작(자정)을 UTC Date로 반환
+ * @example startOfDayInTimezone(new Date(), 'Asia/Seoul') → 해당 시점의 KST 자정을 UTC로 표현
+ */
+export function startOfDayInTimezone(
+	date: Date = now(),
+	tz: string = DEFAULT_TIMEZONE,
+): Date {
+	const localDateStr = dayjs(date).tz(tz).format("YYYY-MM-DD");
+	return dayjs.utc(localDateStr).startOf("day").toDate();
 }
