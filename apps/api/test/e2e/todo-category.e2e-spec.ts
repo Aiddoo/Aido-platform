@@ -510,7 +510,37 @@ describe("TodoCategory (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(400);
 
-				expect(response.body.error.code).toBe("TODO_CATEGORY_0856");
+				expect(response.body.error.code).toBe("TODO_CATEGORY_0855");
+			});
+
+			it("moveToCategoryId가 삭제 대상과 같으면 400을 반환해야 한다", async () => {
+				// 카테고리 생성
+				const catRes = await request(app.getHttpServer())
+					.post("/todo-categories")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ name: "셀프 이동 테스트", color: "#FF0000" })
+					.expect(201);
+				const categoryId = catRes.body.data.category.id;
+
+				// Todo 생성
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "셀프 이동 할 일",
+						categoryId,
+						startDate: "2024-01-15",
+					})
+					.expect(201);
+
+				// 자기 자신으로 이동 시도
+				const response = await request(app.getHttpServer())
+					.delete(`/todo-categories/${categoryId}`)
+					.set("Authorization", `Bearer ${accessToken}`)
+					.query({ moveToCategoryId: categoryId })
+					.expect(400);
+
+				expect(response.body.error.code).toBe("SYS_0002");
 			});
 
 			it("Todo가 있는 카테고리를 이동 대상과 함께 삭제 성공", async () => {
