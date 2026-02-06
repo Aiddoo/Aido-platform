@@ -19,6 +19,7 @@ import {
 } from "@test/builders";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { Prisma } from "@/generated/prisma/client";
 import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
 import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 import { NotificationRepository } from "./notification.repository";
@@ -185,16 +186,49 @@ describe("NotificationService", () => {
 			);
 		});
 
-		it("토큰이 없어도 예외를 던지지 않아야 한다", async () => {
-			// Given - 토큰이 존재하지 않는 상황
+		it("P2025 에러(토큰 미존재)는 무시하고 정상 반환해야 한다", async () => {
+			// Given - 토큰이 존재하지 않아 Prisma P2025 발생
 			notificationRepo.deletePushToken.mockRejectedValue(
-				new Error("Not found"),
+				new Prisma.PrismaClientKnownRequestError("Record not found", {
+					code: "P2025",
+					meta: { cause: "Record to delete does not exist." },
+					clientVersion: "7.0.0",
+				}),
 			);
 
 			// When & Then - 예외 없이 정상 처리
 			await expect(
 				service.unregisterPushToken(mockUserId, "device-1"),
 			).resolves.not.toThrow();
+		});
+
+		it("P2025가 아닌 Prisma 에러는 re-throw해야 한다", async () => {
+			// Given - P2002 등 다른 Prisma 에러
+			const prismaError = new Prisma.PrismaClientKnownRequestError(
+				"Connection error",
+				{
+					code: "P2010",
+					meta: {},
+					clientVersion: "7.0.0",
+				},
+			);
+			notificationRepo.deletePushToken.mockRejectedValue(prismaError);
+
+			// When & Then - 에러가 re-throw 되어야 함
+			await expect(
+				service.unregisterPushToken(mockUserId, "device-1"),
+			).rejects.toThrow(prismaError);
+		});
+
+		it("일반 에러(DB 연결 실패 등)는 re-throw해야 한다", async () => {
+			// Given - 일반 에러 (네트워크 장애 등)
+			const error = new Error("Connection refused");
+			notificationRepo.deletePushToken.mockRejectedValue(error);
+
+			// When & Then - 에러가 re-throw 되어야 함
+			await expect(
+				service.unregisterPushToken(mockUserId, "device-1"),
+			).rejects.toThrow(error);
 		});
 	});
 
