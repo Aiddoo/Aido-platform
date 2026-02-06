@@ -1,11 +1,13 @@
 import {
   type AppleMobileCallbackInput,
-  type AuthTokens,
-  authTokensSchema,
+  type AuthTokens as AuthTokensDTO,
+  authTokensSchema as authTokensDtoSchema,
+  type ConsentResponse,
   type CurrentUser,
   consentResponseSchema,
   currentUserSchema,
   type ExchangeCodeInput,
+  type PreferenceResponse,
   preferenceResponseSchema,
   type RegisterInput,
   type RegisterResponse,
@@ -14,79 +16,117 @@ import {
   registerResponseSchema,
   resendVerificationResponseSchema,
   type UpdateMarketingConsentInput,
+  type UpdateMarketingConsentResponse,
   type UpdatePreferenceInput,
   updateMarketingConsentResponseSchema,
   updatePreferenceResponseSchema,
   type VerifyEmailInput,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
-import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import type { ApiError } from '@src/shared/errors/api-error';
+import { ParseError } from '@src/shared/errors/infra-error';
+import { ok, type Result } from '@src/shared/errors/result';
 import { Platform } from 'react-native';
-import { AuthValidationError } from '../models/auth.error';
+
+import type {
+  AuthTokens,
+  Consent,
+  Preference,
+  RegisterResult,
+  ResendVerificationResult,
+  UpdateMarketingConsentResult,
+  User,
+} from '../models/auth.model';
+import {
+  toAuthTokens,
+  toConsent,
+  toPreference,
+  toRegisterResult,
+  toResendVerificationResult,
+  toUpdateMarketingConsentResult,
+  toUser,
+} from './auth.mapper';
 import type { AuthRepository } from './auth.repository';
 
 export class AuthRepositoryImpl implements AuthRepository {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
-  readonly #storage: Storage;
 
-  constructor(publicHttpClient: HttpClient, authHttpClient: HttpClient, storage: Storage) {
+  constructor(publicHttpClient: HttpClient, authHttpClient: HttpClient) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
-    this.#storage = storage;
   }
 
-  async exchangeCode(request: ExchangeCodeInput): Promise<AuthTokens> {
-    const { data } = await this.#publicHttpClient.post<AuthTokens>('v1/auth/exchange', request);
+  async exchangeCode(request: ExchangeCodeInput): Promise<Result<AuthTokens, ApiError>> {
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/exchange', request);
 
-    const result = authTokensSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/exchange');
+    if (!result.ok) return result;
+
+    const parsed = authTokensDtoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid exchangeCode response:', parsed.error);
+      throw new ParseError();
     }
 
-    await Promise.all([
-      this.#storage.set('accessToken', result.data.accessToken),
-      this.#storage.set('refreshToken', result.data.refreshToken),
-    ]);
-
-    return result.data;
+    return ok(toAuthTokens(parsed.data));
   }
 
-  async emailLogin(email: string, password: string): Promise<AuthTokens> {
-    const { data } = await this.#publicHttpClient.post<AuthTokens>('v1/auth/login', {
+  async emailLogin(email: string, password: string): Promise<Result<AuthTokens, ApiError>> {
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/login', {
       email,
       password,
       deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
     });
 
-    const result = authTokensSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/login');
+    if (!result.ok) return result;
+
+    const parsed = authTokensDtoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid emailLogin response:', parsed.error);
+      throw new ParseError();
     }
 
-    await Promise.all([
-      this.#storage.set('accessToken', result.data.accessToken),
-      this.#storage.set('refreshToken', result.data.refreshToken),
-    ]);
-
-    return result.data;
+    return ok(toAuthTokens(parsed.data));
   }
 
-  async getCurrentUser(): Promise<CurrentUser> {
-    const { data } = await this.#authHttpClient.get<CurrentUser>('v1/auth/me');
+  async appleLogin(input: AppleMobileCallbackInput): Promise<Result<AuthTokens, ApiError>> {
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>(
+      'v1/auth/apple/callback',
+      input,
+    );
 
-    const result = currentUserSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/me');
+    if (!result.ok) return result;
+
+    const parsed = authTokensDtoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid appleLogin response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toAuthTokens(parsed.data));
   }
 
-  async logout(): Promise<void> {
-    await this.#authHttpClient.post('v1/auth/logout');
-    await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
+  async getCurrentUser(): Promise<Result<User, ApiError>> {
+    const result = await this.#authHttpClient.get<CurrentUser>('v1/auth/me');
+
+    if (!result.ok) return result;
+
+    const parsed = currentUserSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid getCurrentUser response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toUser(parsed.data));
+  }
+
+  async logout(): Promise<Result<void, ApiError>> {
+    const result = await this.#authHttpClient.post('v1/auth/logout');
+
+    if (!result.ok) return result;
+
+    return ok(undefined);
   }
 
   getKakaoAuthUrl(redirectUri: string): string {
@@ -101,105 +141,114 @@ export class AuthRepositoryImpl implements AuthRepository {
     return `${ENV.API_URL}/v1/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
   }
 
-  async getPreference() {
-    const { data } = await this.#authHttpClient.get('v1/auth/preference');
+  async getPreference(): Promise<Result<Preference, ApiError>> {
+    const result = await this.#authHttpClient.get<PreferenceResponse>('v1/auth/preference');
 
-    const result = preferenceResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/preference');
+    if (!result.ok) return result;
+
+    const parsed = preferenceResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid getPreference response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toPreference(parsed.data));
   }
 
-  async updatePreference(input: UpdatePreferenceInput) {
-    const { data } = await this.#authHttpClient.patch('v1/auth/preference', input);
+  async updatePreference(input: UpdatePreferenceInput): Promise<Result<Preference, ApiError>> {
+    const result = await this.#authHttpClient.patch<PreferenceResponse>(
+      'v1/auth/preference',
+      input,
+    );
 
-    const result = updatePreferenceResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/preference');
+    if (!result.ok) return result;
+
+    const parsed = updatePreferenceResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid updatePreference response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toPreference(parsed.data));
   }
 
-  async getConsent() {
-    const { data } = await this.#authHttpClient.get('v1/auth/consent');
+  async getConsent(): Promise<Result<Consent, ApiError>> {
+    const result = await this.#authHttpClient.get<ConsentResponse>('v1/auth/consent');
 
-    const result = consentResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/consent');
+    if (!result.ok) return result;
+
+    const parsed = consentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid getConsent response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toConsent(parsed.data));
   }
 
-  async updateMarketingConsent(input: UpdateMarketingConsentInput) {
-    const { data } = await this.#authHttpClient.patch('v1/auth/consent/marketing', input);
+  async updateMarketingConsent(
+    input: UpdateMarketingConsentInput,
+  ): Promise<Result<UpdateMarketingConsentResult, ApiError>> {
+    const result = await this.#authHttpClient.patch<UpdateMarketingConsentResponse>(
+      'v1/auth/consent/marketing',
+      input,
+    );
 
-    const result = updateMarketingConsentResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/consent/marketing');
+    if (!result.ok) return result;
+
+    const parsed = updateMarketingConsentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid updateMarketingConsent response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toUpdateMarketingConsentResult(parsed.data));
   }
 
-  async appleLogin(input: AppleMobileCallbackInput): Promise<AuthTokens> {
-    const { data } = await this.#publicHttpClient.post<AuthTokens>('v1/auth/apple/callback', input);
+  async register(input: RegisterInput): Promise<Result<RegisterResult, ApiError>> {
+    const result = await this.#publicHttpClient.post<RegisterResponse>('v1/auth/register', input);
 
-    const result = authTokensSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/apple/callback');
+    if (!result.ok) return result;
+
+    const parsed = registerResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid register response:', parsed.error);
+      throw new ParseError();
     }
 
-    await Promise.all([
-      this.#storage.set('accessToken', result.data.accessToken),
-      this.#storage.set('refreshToken', result.data.refreshToken),
-    ]);
-
-    return result.data;
+    return ok(toRegisterResult(parsed.data));
   }
 
-  async register(input: RegisterInput): Promise<RegisterResponse> {
-    const { data } = await this.#publicHttpClient.post<RegisterResponse>('v1/auth/register', input);
+  async verifyEmail(input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> {
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/verify-email', input);
 
-    const result = registerResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/register');
+    if (!result.ok) return result;
+
+    const parsed = authTokensDtoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid verifyEmail response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toAuthTokens(parsed.data));
   }
 
-  async verifyEmail(input: VerifyEmailInput): Promise<AuthTokens> {
-    const { data } = await this.#publicHttpClient.post<AuthTokens>('v1/auth/verify-email', input);
-
-    const result = authTokensSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/verify-email');
-    }
-
-    // Store tokens on successful verification
-    await Promise.all([
-      this.#storage.set('accessToken', result.data.accessToken),
-      this.#storage.set('refreshToken', result.data.refreshToken),
-    ]);
-
-    return result.data;
-  }
-
-  async resendVerification(input: ResendVerificationInput): Promise<ResendVerificationResponse> {
-    const { data } = await this.#publicHttpClient.post<ResendVerificationResponse>(
+  async resendVerification(
+    input: ResendVerificationInput,
+  ): Promise<Result<ResendVerificationResult, ApiError>> {
+    const result = await this.#publicHttpClient.post<ResendVerificationResponse>(
       'v1/auth/resend-verification',
       input,
     );
 
-    const result = resendVerificationResponseSchema.safeParse(data);
-    if (!result.success) {
-      throw new AuthValidationError(result.error, 'v1/auth/resend-verification');
+    if (!result.ok) return result;
+
+    const parsed = resendVerificationResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid resendVerification response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toResendVerificationResult(parsed.data));
   }
 }
