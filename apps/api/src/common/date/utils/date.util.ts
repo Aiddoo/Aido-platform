@@ -278,10 +278,6 @@ export function getUserToday(tz: string = DEFAULT_TIMEZONE): Date {
 }
 
 /**
- * 지정된 타임존에서 특정 시점의 날짜 시작(자정)을 UTC Date로 반환
- * @example startOfDayInTimezone(new Date(), 'Asia/Seoul') → 해당 시점의 KST 자정을 UTC로 표현
- */
-/**
  * 사용자의 로컬 시간(날짜 + HH:mm)을 UTC Date 객체로 변환
  * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
  * @example toScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
