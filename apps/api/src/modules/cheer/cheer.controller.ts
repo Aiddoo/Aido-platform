@@ -36,6 +36,7 @@ import {
 	CheerCooldownResponseDto,
 	CheerLimitInfoDto,
 	CreateCheerResponseDto,
+	GetCheersQueryDto,
 	MarkCheerReadResponseDto,
 	MarkCheersReadDto,
 	ReceivedCheersResponseDto,
@@ -149,15 +150,14 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedCheers(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query("limit") limit?: string,
-		@Query("cursor") cursor?: string,
+		@Query() query: GetCheersQueryDto,
 	): Promise<ReceivedCheersResponseDto> {
 		this.logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
 		const result = await this.cheerService.getReceivedCheers({
 			userId: user.userId,
-			cursor: cursor ? Number(cursor) : undefined,
-			size: limit ? Number(limit) : undefined,
+			cursor: query.cursor,
+			size: query.limit,
 		});
 
 		return {
@@ -182,15 +182,14 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentCheers(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query("limit") limit?: string,
-		@Query("cursor") cursor?: string,
+		@Query() query: GetCheersQueryDto,
 	): Promise<SentCheersResponseDto> {
 		this.logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
 		const result = await this.cheerService.getSentCheers({
 			userId: user.userId,
-			cursor: cursor ? Number(cursor) : undefined,
-			size: limit ? Number(limit) : undefined,
+			cursor: query.cursor,
+			size: query.limit,
 		});
 
 		return {

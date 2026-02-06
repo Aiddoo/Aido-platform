@@ -7,10 +7,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import type {
-	Notification,
-	NotificationType,
-	PushToken,
+import {
+	type Notification,
+	type NotificationType,
+	Prisma,
+	type PushToken,
 } from "@/generated/prisma/client";
 import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
 import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
@@ -94,11 +95,18 @@ export class NotificationService {
 			this.logger.log(
 				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
 			);
-		} catch (_error) {
-			// 토큰이 없는 경우 무시
-			this.logger.warn(
-				`Push token not found for unregister: userId=${userId}, deviceId=${deviceId}`,
-			);
+		} catch (error) {
+			// 토큰이 없는 경우(P2025)만 무시, 그 외는 re-throw
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2025"
+			) {
+				this.logger.warn(
+					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
+				);
+				return;
+			}
+			throw error;
 		}
 	}
 

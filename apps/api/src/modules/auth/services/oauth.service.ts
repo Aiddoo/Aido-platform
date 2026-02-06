@@ -1,9 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { addMilliseconds, now } from "@/common/date";
-import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import type { AccountProvider } from "@/generated/prisma/client";
+import { type AccountProvider, Prisma } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 
@@ -690,7 +693,10 @@ export class OAuthService {
 			);
 
 		if (existingAccount && existingAccount.userId !== userId) {
-			throw BusinessExceptions.appleAccountAlreadyLinked(providerAccountId);
+			throw this.getAlreadyLinkedExceptionForProvider(
+				provider,
+				providerAccountId,
+			);
 		}
 
 		// 이미 연결된 경우
@@ -699,12 +705,25 @@ export class OAuthService {
 		}
 
 		// 계정 연결
-		await this._accountRepository.createOAuthAccount({
-			userId,
-			provider,
-			providerAccountId,
-			refreshToken,
-		});
+		try {
+			await this._accountRepository.createOAuthAccount({
+				userId,
+				provider,
+				providerAccountId,
+				refreshToken,
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw this.getAlreadyLinkedExceptionForProvider(
+					provider,
+					providerAccountId,
+				);
+			}
+			throw error;
+		}
 
 		this._logger.log(`Account linked: ${provider} for user ${userId}`);
 
@@ -1097,6 +1116,25 @@ export class OAuthService {
 			default:
 				break;
 		}
+	}
+
+	private getAlreadyLinkedExceptionForProvider(
+		provider: AccountProvider,
+		providerAccountId: string,
+	): BusinessException {
+		const exceptionMap: Record<string, (id: string) => BusinessException> = {
+			KAKAO: BusinessExceptions.kakaoAccountAlreadyLinked,
+			APPLE: BusinessExceptions.appleAccountAlreadyLinked,
+			GOOGLE: BusinessExceptions.googleAccountAlreadyLinked,
+			NAVER: BusinessExceptions.naverAccountAlreadyLinked,
+		};
+		const factory = exceptionMap[provider];
+		return factory
+			? factory(providerAccountId)
+			: BusinessExceptions.accountAlreadyExists({
+					provider,
+					providerAccountId,
+				});
 	}
 
 	// Google, Apple은 이메일 검증 보장. Kakao, Naver는 선택적.

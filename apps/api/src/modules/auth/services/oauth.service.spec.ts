@@ -14,8 +14,12 @@ import { TestBed } from "@suites/unit";
 import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
 
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
+import { Prisma } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import {
 	LOGIN_FAILURE_REASON,
@@ -493,6 +497,25 @@ describe("OAuthService", () => {
 			// Then
 			expect(result).toEqual({ message: "이미 연결된 계정입니다." });
 			expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
+		});
+
+		it("P2002 unique constraint 시 provider별 alreadyLinked를 던져야 한다", async () => {
+			// Given - 계정 없음 + createOAuthAccount에서 P2002 발생
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					meta: { target: ["provider", "providerAccountId"] },
+					clientVersion: "7.0.0",
+				}),
+			);
+
+			// When & Then - KAKAO provider
+			await expect(
+				service.linkAccount("user-123", "KAKAO", "kakao-account-789"),
+			).rejects.toThrow(
+				BusinessExceptions.kakaoAccountAlreadyLinked("kakao-account-789"),
+			);
 		});
 
 		it("다른 사용자에 연결된 계정은 에러를 발생시킨다", async () => {

@@ -32,3 +32,21 @@ export const markCheersReadSchema = z.object({
 });
 
 export type MarkCheersReadInput = z.infer<typeof markCheersReadSchema>;
+
+export const getCheersQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1, '최소 1개 이상 조회해야 합니다')
+    .max(50, '최대 50개까지 조회 가능합니다')
+    .default(20)
+    .describe('조회할 개수 (1-50, 기본값: 20)'),
+  cursor: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 커서입니다')
+    .optional()
+    .describe('페이지네이션 커서 (양의 정수)'),
+});
+
+export type GetCheersQuery = z.infer<typeof getCheersQuerySchema>;
