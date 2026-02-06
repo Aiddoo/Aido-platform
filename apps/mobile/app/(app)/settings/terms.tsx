@@ -32,9 +32,8 @@ function TermsSettingsForm() {
   const { data: consent } = useSuspenseQuery(getConsentQueryOptions());
   const updateMutation = useMutation(updateMarketingConsentMutationOptions());
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '미동의';
-    const date = new Date(dateString);
+  const formatDate = (date: Date | null) => {
+    if (!date) return '미동의';
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
