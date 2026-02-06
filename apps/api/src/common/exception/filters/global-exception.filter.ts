@@ -8,8 +8,12 @@ import {
 } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
+import { Prisma } from "@/generated/prisma/client";
 import type { ErrorResponse } from "../interfaces/error.interface";
-import { BusinessException } from "../services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "../services/business-exception.service";
 
 /**
  * 전역 예외 필터
@@ -63,6 +67,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 					timestamp: Date.now(),
 				};
 			}
+		} else if (
+			exception instanceof Prisma.PrismaClientKnownRequestError &&
+			exception.code === "P2002"
+		) {
+			// Prisma unique constraint 위반 처리
+			const businessException = this.mapP2002ToBusinessException(exception);
+			statusCode = businessException.getStatus();
+			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {
 			// 알 수 없는 예외 처리
 			statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -99,5 +111,53 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		}
 
 		response.status(statusCode).json(errorResponse);
+	}
+
+	/**
+	 * Prisma P2002 (unique constraint violation) → BusinessException 매핑
+	 *
+	 * 알려진 constraint는 구체적인 에러 코드로, 미지의 constraint는 SYS_0004로 폴백
+	 */
+	private mapP2002ToBusinessException(
+		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
+	): BusinessException {
+		const target = error.meta?.target;
+		const constraintKey = Array.isArray(target)
+			? target.join("_")
+			: String(target ?? "unknown");
+
+		const constraintMap: Record<string, () => BusinessException> = {
+			User_email_key: () => BusinessExceptions.emailAlreadyRegistered(""),
+			email: () => BusinessExceptions.emailAlreadyRegistered(""),
+			User_userTag_key: () =>
+				BusinessExceptions.internalServerError({ detail: "userTag collision" }),
+			userTag: () =>
+				BusinessExceptions.internalServerError({ detail: "userTag collision" }),
+			TodoCategory_userId_name_key: () =>
+				BusinessExceptions.todoCategoryNameDuplicate(""),
+			userId_name: () => BusinessExceptions.todoCategoryNameDuplicate(""),
+			Follow_followerId_followingId_key: () =>
+				BusinessExceptions.followRequestAlreadySent(""),
+			followerId_followingId: () =>
+				BusinessExceptions.followRequestAlreadySent(""),
+			Account_provider_providerAccountId_key: () =>
+				BusinessExceptions.accountAlreadyExists(),
+			provider_providerAccountId: () =>
+				BusinessExceptions.accountAlreadyExists(),
+			Account_userId_provider_key: () =>
+				BusinessExceptions.accountAlreadyExists(),
+			userId_provider: () => BusinessExceptions.accountAlreadyExists(),
+		};
+
+		const factory = constraintMap[constraintKey];
+		if (factory) {
+			return factory();
+		}
+
+		// 알 수 없는 constraint → warn 로그 + SYS_0004 폴백
+		this.logger.warn(
+			`Unknown P2002 constraint: ${constraintKey} (meta: ${JSON.stringify(error.meta)})`,
+		);
+		return BusinessExceptions.concurrentModification();
 	}
 }

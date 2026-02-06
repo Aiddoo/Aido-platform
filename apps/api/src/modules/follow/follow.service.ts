@@ -5,7 +5,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import type { Follow } from "@/generated/prisma/client";
+import { type Follow, Prisma } from "@/generated/prisma/client";
 import {
 	type FollowMutualEventPayload,
 	type FollowNewEventPayload,
@@ -111,24 +111,35 @@ export class FollowService {
 		if (reverseFollow) {
 			if (reverseFollow.status === "PENDING") {
 				// 상대방이 보낸 요청이 PENDING 상태면 자동 수락 (트랜잭션으로 처리)
-				const follow = await this.database.$transaction(async (tx) => {
-					await this.followRepository.updateByFollowerAndFollowing(
-						targetUserId,
-						userId,
-						{ status: "ACCEPTED" },
-						tx,
-					);
+				let follow: Follow;
+				try {
+					follow = await this.database.$transaction(async (tx) => {
+						await this.followRepository.updateByFollowerAndFollowing(
+							targetUserId,
+							userId,
+							{ status: "ACCEPTED" },
+							tx,
+						);
 
-					// 내 쪽도 ACCEPTED로 생성
-					return this.followRepository.create(
-						{
-							follower: { connect: { id: userId } },
-							following: { connect: { id: targetUserId } },
-							status: "ACCEPTED",
-						},
-						tx,
-					);
-				});
+						// 내 쪽도 ACCEPTED로 생성
+						return this.followRepository.create(
+							{
+								follower: { connect: { id: userId } },
+								following: { connect: { id: targetUserId } },
+								status: "ACCEPTED",
+							},
+							tx,
+						);
+					});
+				} catch (error) {
+					if (
+						error instanceof Prisma.PrismaClientKnownRequestError &&
+						error.code === "P2002"
+					) {
+						throw BusinessExceptions.followRequestAlreadySent(targetUserId);
+					}
+					throw error;
+				}
 
 				this.logger.log(
 					`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
@@ -164,11 +175,22 @@ export class FollowService {
 		}
 
 		// 5. 새 친구 요청 생성
-		const follow = await this.followRepository.create({
-			follower: { connect: { id: userId } },
-			following: { connect: { id: targetUserId } },
-			status: "PENDING",
-		});
+		let follow: Follow;
+		try {
+			follow = await this.followRepository.create({
+				follower: { connect: { id: userId } },
+				following: { connect: { id: targetUserId } },
+				status: "PENDING",
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw BusinessExceptions.followRequestAlreadySent(targetUserId);
+			}
+			throw error;
+		}
 
 		this.logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
 

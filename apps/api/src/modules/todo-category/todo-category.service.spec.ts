@@ -15,6 +15,7 @@ import { TodoCategoryBuilder } from "@test/builders";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
+import { Prisma } from "@/generated/prisma/client";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
 import { TodoCategoryService } from "./todo-category.service";
@@ -90,6 +91,24 @@ describe("TodoCategoryService", () => {
 		it("동일 이름의 카테고리가 존재하면 예외를 던져야 한다", async () => {
 			// Given
 			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(true);
+
+			// When & Then
+			await expect(service.create(createData)).rejects.toThrow(
+				BusinessExceptions.todoCategoryNameDuplicate("새 카테고리"),
+			);
+		});
+
+		it("P2002 unique constraint 위반 시 todoCategoryNameDuplicate를 던져야 한다", async () => {
+			// Given
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+			todoCategoryRepo.getMaxSortOrder.mockResolvedValue(0);
+			todoCategoryRepo.create.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					meta: { target: ["userId", "name"] },
+					clientVersion: "7.0.0",
+				}),
+			);
 
 			// When & Then
 			await expect(service.create(createData)).rejects.toThrow(
@@ -298,6 +317,31 @@ describe("TodoCategoryService", () => {
 			);
 		});
 
+		it("P2002 unique constraint 위반 시 todoCategoryNameDuplicate를 던져야 한다", async () => {
+			// Given
+			const existingCategory = TodoCategoryBuilder.create(userId)
+				.withId(1)
+				.withName("중요한 일")
+				.build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(existingCategory);
+			todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+			todoCategoryRepo.update.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					meta: { target: ["userId", "name"] },
+					clientVersion: "7.0.0",
+				}),
+			);
+
+			// When & Then
+			await expect(
+				service.update(1, userId, { name: "수정된 카테고리" }),
+			).rejects.toThrow(
+				BusinessExceptions.todoCategoryNameDuplicate("수정된 카테고리"),
+			);
+		});
+
 		it("같은 이름으로 수정하면 중복 확인을 건너뛰어야 한다", async () => {
 			// Given
 			const existingCategory = TodoCategoryBuilder.create(userId)
@@ -360,8 +404,22 @@ describe("TodoCategoryService", () => {
 
 			// When & Then
 			await expect(service.delete({ userId, categoryId: 1 })).rejects.toThrow(
-				BusinessExceptions.todoCategoryMoveTargetRequired(),
+				BusinessExceptions.todoCategoryHasTodos(1, 5),
 			);
+		});
+
+		it("moveToCategoryId가 삭제 대상과 같으면 invalidParameter를 던져야 한다", async () => {
+			// Given
+			const category = TodoCategoryBuilder.create(userId).withId(1).build();
+
+			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(category);
+			todoCategoryRepo.countByUserId.mockResolvedValue(2);
+			todoCategoryRepo.getTodoCount.mockResolvedValue(3);
+
+			// When & Then
+			await expect(
+				service.delete({ userId, categoryId: 1, moveToCategoryId: 1 }),
+			).rejects.toThrow(BusinessExceptions.invalidParameter());
 		});
 
 		it("Todo가 있으면 이동 후 삭제해야 한다", async () => {

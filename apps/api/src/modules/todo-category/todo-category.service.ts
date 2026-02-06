@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
-import type { TodoCategory } from "@/generated/prisma/client";
+import { Prisma, type TodoCategory } from "@/generated/prisma/client";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
 import type {
@@ -41,12 +41,23 @@ export class TodoCategoryService {
 			data.userId,
 		);
 
-		const category = await this.todoCategoryRepository.create({
-			user: { connect: { id: data.userId } },
-			name: data.name,
-			color: data.color,
-			sortOrder: maxSortOrder + 1,
-		});
+		let category: TodoCategory;
+		try {
+			category = await this.todoCategoryRepository.create({
+				user: { connect: { id: data.userId } },
+				name: data.name,
+				color: data.color,
+				sortOrder: maxSortOrder + 1,
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw BusinessExceptions.todoCategoryNameDuplicate(data.name);
+			}
+			throw error;
+		}
 
 		this.logger.log(
 			`TodoCategory created: ${category.id} for user: ${data.userId}`,
@@ -139,7 +150,18 @@ export class TodoCategoryService {
 			}
 		}
 
-		const updatedCategory = await this.todoCategoryRepository.update(id, data);
+		let updatedCategory: TodoCategory;
+		try {
+			updatedCategory = await this.todoCategoryRepository.update(id, data);
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw BusinessExceptions.todoCategoryNameDuplicate(data.name ?? "");
+			}
+			throw error;
+		}
 
 		this.logger.log(`TodoCategory updated: ${id} for user: ${userId}`);
 
@@ -187,7 +209,16 @@ export class TodoCategoryService {
 			if (todoCount > 0) {
 				// Todo가 있으면 이동 대상 카테고리 필수
 				if (!moveToCategoryId) {
-					throw BusinessExceptions.todoCategoryMoveTargetRequired();
+					throw BusinessExceptions.todoCategoryHasTodos(categoryId, todoCount);
+				}
+
+				// 삭제 대상과 이동 대상이 같으면 에러
+				if (moveToCategoryId === categoryId) {
+					throw BusinessExceptions.invalidParameter({
+						message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
+						categoryId,
+						moveToCategoryId,
+					});
 				}
 
 				// 이동 대상 카테고리 확인

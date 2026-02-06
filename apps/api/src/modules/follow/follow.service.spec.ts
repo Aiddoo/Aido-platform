@@ -13,10 +13,13 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { FollowBuilder } from "@test/builders";
 import { CacheService } from "@/common/cache/cache.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import type { Follow } from "@/generated/prisma/client";
+import { type Follow, Prisma } from "@/generated/prisma/client";
 
 import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
@@ -285,6 +288,26 @@ describe("FollowService", () => {
 					status: "ACCEPTED",
 				}),
 				expect.anything(), // 트랜잭션 컨텍스트
+			);
+		});
+
+		it("P2002 unique constraint(중복 요청) 시 followRequestAlreadySent를 던져야 한다", async () => {
+			// Given - create에서 P2002 발생 (동시 요청 race condition)
+			followRepo.userExists.mockResolvedValue(true);
+			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
+			followRepo.create.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					meta: { target: ["followerId", "followingId"] },
+					clientVersion: "7.0.0",
+				}),
+			);
+
+			// When & Then
+			await expect(
+				service.sendRequest(mockUserId, mockTargetUserId),
+			).rejects.toThrow(
+				BusinessExceptions.followRequestAlreadySent(mockTargetUserId),
 			);
 		});
 

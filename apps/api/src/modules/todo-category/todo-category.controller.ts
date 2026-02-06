@@ -326,14 +326,16 @@ DELETE /todo-categories/3?moveToCategoryId=1
 | 상황 | 에러 코드 | 메시지 |
 |------|-----------|--------|
 | 마지막 카테고리 삭제 시도 | \`TODO_CATEGORY_0854\` | 최소 1개의 카테고리가 필요합니다 |
-| 할 일이 있는데 moveToCategoryId 없음 | \`TODO_CATEGORY_0856\` | 이동할 카테고리를 지정해주세요 |
+| 할 일이 있는데 moveToCategoryId 없음 | \`TODO_CATEGORY_0855\` | 카테고리에 할 일이 있습니다 (details에 todoCount 포함) |
+| moveToCategoryId가 삭제 대상과 같음 | \`SYS_0002\` | 삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다 |
 | moveToCategoryId 카테고리 없음 | \`TODO_CATEGORY_0851\` | 카테고리를 찾을 수 없습니다 |`,
 	})
 	@ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
 	@ApiUnauthorizedError()
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0854)
-	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0856)
+	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0855)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async delete(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoCategoryIdParamDto,

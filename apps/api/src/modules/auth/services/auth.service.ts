@@ -16,7 +16,7 @@ import {
 } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import type { UserStatus } from "@/generated/prisma/client";
+import { Prisma, type UserStatus } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "../../todo-category/types/todo-category.types";
 import {
@@ -94,77 +94,97 @@ export class AuthService {
 		const hashedPassword = await this.passwordService.hash(password);
 
 		// 트랜잭션으로 User + Account + UserConsent + Verification 생성
-		const result = await this.database.$transaction(async (tx) => {
-			// User 생성 (PENDING_VERIFY 상태)
-			const newUser = await this.userRepository.create(
-				{
-					email,
-					status: "PENDING_VERIFY",
-				},
-				tx,
-			);
+		let result: {
+			user: { id: string; email: string };
+			verificationCode: string;
+		};
+		try {
+			result = await this.database.$transaction(async (tx) => {
+				// User 생성 (PENDING_VERIFY 상태)
+				const newUser = await this.userRepository.create(
+					{
+						email,
+						status: "PENDING_VERIFY",
+					},
+					tx,
+				);
 
-			// Credential Account 생성
-			await this.accountRepository.createCredentialAccount(
-				newUser.id,
-				hashedPassword,
-				tx,
-			);
+				// Credential Account 생성
+				await this.accountRepository.createCredentialAccount(
+					newUser.id,
+					hashedPassword,
+					tx,
+				);
 
-			// 프로필 생성
-			await this.userRepository.createProfile(newUser.id, { name }, tx);
+				// 프로필 생성
+				await this.userRepository.createProfile(newUser.id, { name }, tx);
 
-			// 약관 동의 기록
-			const currentTime = now();
-			await tx.userConsent.create({
-				data: {
-					userId: newUser.id,
-					termsAgreedAt: termsAgreed ? currentTime : null,
-					privacyAgreedAt: privacyAgreed ? currentTime : null,
-					marketingAgreedAt: marketingAgreed ? currentTime : null,
-				},
+				// 약관 동의 기록
+				const currentTime = now();
+				await tx.userConsent.create({
+					data: {
+						userId: newUser.id,
+						termsAgreedAt: termsAgreed ? currentTime : null,
+						privacyAgreedAt: privacyAgreed ? currentTime : null,
+						marketingAgreedAt: marketingAgreed ? currentTime : null,
+					},
+				});
+
+				// 푸시 알림 설정 초기화 (기본값: 모두 OFF)
+				await tx.userPreference.create({
+					data: {
+						userId: newUser.id,
+						pushEnabled: false,
+						nightPushEnabled: false,
+					},
+				});
+
+				// 기본 카테고리 생성 ("중요한 일", "할 일")
+				await this.todoCategoryRepository.createMany(
+					DEFAULT_CATEGORIES.map((category) => ({
+						userId: newUser.id,
+						name: category.name,
+						color: category.color,
+						sortOrder: category.sortOrder,
+					})),
+					tx,
+				);
+
+				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
+				const verificationResult =
+					await this.verificationService.createEmailVerification(
+						newUser.id,
+						tx,
+					);
+
+				// 보안 로그 기록
+				await this.securityLogRepository.create(
+					{
+						userId: newUser.id,
+						event: SECURITY_EVENT.REGISTRATION,
+						ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
+						userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+					},
+					tx,
+				);
+
+				return {
+					user: newUser,
+					verificationCode: verificationResult.code,
+				};
 			});
-
-			// 푸시 알림 설정 초기화 (기본값: 모두 OFF)
-			await tx.userPreference.create({
-				data: {
-					userId: newUser.id,
-					pushEnabled: false,
-					nightPushEnabled: false,
-				},
-			});
-
-			// 기본 카테고리 생성 ("중요한 일", "할 일")
-			await this.todoCategoryRepository.createMany(
-				DEFAULT_CATEGORIES.map((category) => ({
-					userId: newUser.id,
-					name: category.name,
-					color: category.color,
-					sortOrder: category.sortOrder,
-				})),
-				tx,
-			);
-
-			// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
-			const verificationResult =
-				await this.verificationService.createEmailVerification(newUser.id, tx);
-
-			// 보안 로그 기록
-			await this.securityLogRepository.create(
-				{
-					userId: newUser.id,
-					event: SECURITY_EVENT.REGISTRATION,
-					ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-					userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
-				},
-				tx,
-			);
-
-			return {
-				user: newUser,
-				verificationCode: verificationResult.code,
-			};
-		});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				const target = error.meta?.target as string[] | undefined;
+				if (target?.includes("email")) {
+					throw BusinessExceptions.emailAlreadyRegistered(email);
+				}
+			}
+			throw error;
+		}
 
 		// 트랜잭션 후 이메일 발송 (외부 서비스)
 		// 이메일 발송 실패는 로그만 남고 회원가입은 성공 처리

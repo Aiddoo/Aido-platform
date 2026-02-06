@@ -32,6 +32,7 @@ import { JwtAuthGuard } from "../auth/guards";
 
 import {
 	CreateNudgeResponseDto,
+	GetNudgesQueryDto,
 	MarkNudgeReadResponseDto,
 	NudgeCooldownResponseDto,
 	NudgeLimitInfoDto,
@@ -150,15 +151,14 @@ export class NudgeController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getReceivedNudges(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query("limit") limit?: string,
-		@Query("cursor") cursor?: string,
+		@Query() query: GetNudgesQueryDto,
 	): Promise<ReceivedNudgesResponseDto> {
 		this.logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
 
 		const result = await this.nudgeService.getReceivedNudges({
 			userId: user.userId,
-			cursor: cursor ? Number(cursor) : undefined,
-			size: limit ? Number(limit) : undefined,
+			cursor: query.cursor,
+			size: query.limit,
 		});
 
 		return {
@@ -183,15 +183,14 @@ export class NudgeController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getSentNudges(
 		@CurrentUser() user: CurrentUserPayload,
-		@Query("limit") limit?: string,
-		@Query("cursor") cursor?: string,
+		@Query() query: GetNudgesQueryDto,
 	): Promise<SentNudgesResponseDto> {
 		this.logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
 
 		const result = await this.nudgeService.getSentNudges({
 			userId: user.userId,
-			cursor: cursor ? Number(cursor) : undefined,
-			size: limit ? Number(limit) : undefined,
+			cursor: query.cursor,
+			size: query.limit,
 		});
 
 		return {

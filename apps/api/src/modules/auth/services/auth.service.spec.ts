@@ -18,8 +18,12 @@ import { SessionBuilder, UserBuilder } from "@test/builders";
 type TransactionCallback = (tx: any) => Promise<any>;
 
 import { CacheService } from "@/common/cache/cache.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
+import { Prisma } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import { REVOKE_REASON, SECURITY_EVENT } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
@@ -239,6 +243,40 @@ describe("AuthService", () => {
 					event: SECURITY_EVENT.REGISTRATION,
 				}),
 				expect.any(Object),
+			);
+		});
+
+		it("P2002 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
+			// Given - 트랜잭션에서 P2002 발생 (동시 가입 race condition)
+			database.$transaction.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					meta: { target: ["email"] },
+					clientVersion: "7.0.0",
+				}),
+			);
+
+			// When & Then
+			await expect(service.register(registerInput)).rejects.toThrow(
+				BusinessExceptions.emailAlreadyRegistered(registerInput.email),
+			);
+		});
+
+		it("P2002 unique constraint(이메일 외) 시 원본 에러를 re-throw해야 한다", async () => {
+			// Given - userTag 충돌 등 email이 아닌 P2002
+			const prismaError = new Prisma.PrismaClientKnownRequestError(
+				"Unique constraint",
+				{
+					code: "P2002",
+					meta: { target: ["userTag"] },
+					clientVersion: "7.0.0",
+				},
+			);
+			database.$transaction.mockRejectedValue(prismaError);
+
+			// When & Then - emailAlreadyRegistered가 아닌 원본 에러가 던져져야 함
+			await expect(service.register(registerInput)).rejects.toThrow(
+				prismaError,
 			);
 		});
 
