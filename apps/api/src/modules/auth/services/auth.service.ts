@@ -178,7 +178,10 @@ export class AuthService {
 				error instanceof Prisma.PrismaClientKnownRequestError &&
 				error.code === "P2002"
 			) {
-				throw BusinessExceptions.emailAlreadyRegistered(email);
+				const target = error.meta?.target as string[] | undefined;
+				if (target?.includes("email")) {
+					throw BusinessExceptions.emailAlreadyRegistered(email);
+				}
 			}
 			throw error;
 		}

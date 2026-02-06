@@ -262,6 +262,24 @@ describe("AuthService", () => {
 			);
 		});
 
+		it("P2002 unique constraint(이메일 외) 시 원본 에러를 re-throw해야 한다", async () => {
+			// Given - userTag 충돌 등 email이 아닌 P2002
+			const prismaError = new Prisma.PrismaClientKnownRequestError(
+				"Unique constraint",
+				{
+					code: "P2002",
+					meta: { target: ["userTag"] },
+					clientVersion: "7.0.0",
+				},
+			);
+			database.$transaction.mockRejectedValue(prismaError);
+
+			// When & Then - emailAlreadyRegistered가 아닌 원본 에러가 던져져야 함
+			await expect(service.register(registerInput)).rejects.toThrow(
+				prismaError,
+			);
+		});
+
 		it("이메일 전송 실패해도 회원가입은 성공한다", async () => {
 			// Given
 			const mockUser = UserBuilder.create()
