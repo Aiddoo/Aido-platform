@@ -1,4 +1,4 @@
-import { isApiError, isClientError } from '@src/shared/errors';
+import { isApiError, isBusinessError } from '@src/shared/errors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PropsWithChildren } from 'react';
 
@@ -16,8 +16,8 @@ const queryClient = new QueryClient({
           return false;
         }
 
-        // 클라이언트 에러 (취소, 검증 실패): 재시도 무의미
-        if (isClientError(error)) {
+        // 비즈니스 에러 (취소, 검증 실패 등): 재시도 무의미
+        if (isBusinessError(error)) {
           return false;
         }
 

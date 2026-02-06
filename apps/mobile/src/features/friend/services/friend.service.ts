@@ -1,18 +1,17 @@
-import { InvalidTagError } from '../models/friend.error';
+import type { ApiError } from '@src/shared/errors/api-error';
+import { err, type Result } from '@src/shared/errors/result';
+import type { Page } from '@src/shared/types/page.type';
+
+import { type FriendError, FriendErrors } from '../models/friend.error';
 import {
   FriendPolicy,
-  type FriendsResult,
-  type ReceivedRequestsResult,
+  type FriendRequest,
+  type FriendUser,
   type SendRequestResult,
-  type SentRequestsResult,
 } from '../models/friend.model';
 import type { FriendRepository, PaginationParams } from '../repositories/friend.repository';
-import {
-  toFriendsResult,
-  toReceivedRequestsResult,
-  toSendRequestResult,
-  toSentRequestsResult,
-} from './friend.mapper';
+
+export type FriendServiceError = ApiError | FriendError;
 
 export class FriendService {
   readonly #repository: FriendRepository;
@@ -21,43 +20,52 @@ export class FriendService {
     this.#repository = repository;
   }
 
-  sendRequestByTag = async (userTag: string): Promise<SendRequestResult> => {
-    if (!FriendPolicy.isValidTag(userTag)) {
-      throw new InvalidTagError();
+  sendRequestByTag = async (
+    userTag: string,
+  ): Promise<Result<SendRequestResult, FriendServiceError>> => {
+    // 1. 빈 값 검증
+    if (!userTag.trim()) {
+      return err(FriendErrors.emptyTag());
     }
 
-    const dto = await this.#repository.sendRequest(userTag);
-    return toSendRequestResult(dto);
+    // 2. 태그 형식 검증
+    if (!FriendPolicy.isValidTag(userTag)) {
+      return err(FriendErrors.invalidTag());
+    }
+
+    // 3. Repository 호출
+    return this.#repository.sendRequest(userTag);
   };
 
-  getReceivedRequests = async (params?: PaginationParams): Promise<ReceivedRequestsResult> => {
-    const dto = await this.#repository.getReceivedRequests(params);
-    return toReceivedRequestsResult(dto);
+  getReceivedRequests = async (
+    params?: PaginationParams,
+  ): Promise<Result<Page<FriendRequest>, ApiError>> => {
+    return this.#repository.getReceivedRequests(params);
   };
 
-  getSentRequests = async (params?: PaginationParams): Promise<SentRequestsResult> => {
-    const dto = await this.#repository.getSentRequests(params);
-    return toSentRequestsResult(dto);
+  getSentRequests = async (
+    params?: PaginationParams,
+  ): Promise<Result<Page<FriendRequest>, ApiError>> => {
+    return this.#repository.getSentRequests(params);
   };
 
-  acceptRequest = async (userId: string): Promise<void> => {
-    await this.#repository.acceptRequest(userId);
+  acceptRequest = async (userId: string): Promise<Result<void, ApiError>> => {
+    return this.#repository.acceptRequest(userId);
   };
 
-  rejectRequest = async (userId: string): Promise<void> => {
-    await this.#repository.rejectRequest(userId);
+  rejectRequest = async (userId: string): Promise<Result<void, ApiError>> => {
+    return this.#repository.rejectRequest(userId);
   };
 
-  cancelRequest = async (userId: string): Promise<void> => {
-    await this.#repository.cancelRequest(userId);
+  cancelRequest = async (userId: string): Promise<Result<void, ApiError>> => {
+    return this.#repository.cancelRequest(userId);
   };
 
-  getFriends = async (params?: PaginationParams): Promise<FriendsResult> => {
-    const dto = await this.#repository.getFriends(params);
-    return toFriendsResult(dto);
+  getFriends = async (params?: PaginationParams): Promise<Result<Page<FriendUser>, ApiError>> => {
+    return this.#repository.getFriends(params);
   };
 
-  removeFriend = async (userId: string): Promise<void> => {
-    await this.#repository.removeFriend(userId);
+  removeFriend = async (userId: string): Promise<Result<void, ApiError>> => {
+    return this.#repository.removeFriend(userId);
   };
 }

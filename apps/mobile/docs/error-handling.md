@@ -1,327 +1,401 @@
-# 모바일 에러 처리 가이드
+# 에러 처리 가이드
 
-이 문서는 모바일 앱의 에러 처리 체계를 설명합니다.
+## 핵심 원칙
+
+> **"이 에러를 UI가 예상하고 있는가?"**
+
+```
+예상한 에러 (Result로 전달)
+├── Track 1: ApiError (서버 4xx)      — 이미 친구, 인증 코드 만료, 중복 가입
+└── Track 2: BusinessError (클라이언트) — 태그 형식 오류, 로그인 취소, SDK 에러
+
+예상하지 못한 에러 (throw)
+└── Track 3: InfraError               — 5xx, 네트워크 끊김, 타임아웃, 파싱 실패
+```
+
+| 트랙 | 에러 타입 | 전달 방식 | 처리 위치 |
+|------|----------|----------|----------|
+| Track 1 | `ApiError` (4xx) | `err()` → `unwrap()` → throw | Mutation `onError` |
+| Track 2 | `{Feature}Error` (Policy/SDK) | `err()` → `unwrap()` → throw | Mutation `onError` |
+| Track 3 | `InfraError` (5xx/네트워크) | 직접 `throw` | `<QueryErrorBoundary>` |
+
+- 예상한 에러: 사용자에게 구체적 안내 가능 → `err()`로 반환
+- 예상하지 못한 에러: 구체적 안내 불가, "재시도"만 가능 → `throw`로 ErrorBoundary 위임
+
+> Result 타입(`ok`, `err`, `unwrap`)과 레이어별 에러 처리 패턴은 [CLAUDE.md](../CLAUDE.md)를 참고하세요.
 
 ---
 
-## 에러 분류 체계
+## 레이어별 데이터 흐름
 
-### 1. 서버 에러 (ApiError)
+이메일 로그인 플로우를 예시로 성공/실패 경로를 추적합니다.
 
-서버 HTTP 응답(4xx, 5xx)에서 발생하는 에러입니다.
+### 성공 경로
+
+```
+KyHttpClient.post('v1/auth/login', { email, password })
+  → 200 OK
+  → return ok(data)
+      │
+      ▼
+AuthRepositoryImpl.emailLogin()
+  → result.ok === true
+  → safeParse(result.value) 성공
+  → return ok(toAuthTokens(parsed.data))
+      │
+      ▼
+AuthService.emailLogin()
+  → result.ok === true
+  → saveTokens(accessToken, refreshToken)
+  → return result
+      │
+      ▼
+emailLoginMutationOptions.mutationFn()
+  → unwrap(result) → result.value 반환
+      │
+      ▼
+onSuccess()
+  → setStatus('authenticated')
+```
+
+### 실패 경로 — 4xx 서버 에러 (예: 잘못된 비밀번호)
+
+```
+KyHttpClient.post('v1/auth/login', { email, password })
+  → 401 Unauthorized
+  → AfterResponseHook: MOBILE_ERROR_MESSAGES 한국어 매핑
+  → return err(new ApiError('AUTH_0401', '이메일 또는 비밀번호가 틀렸어요', 401))
+      │
+      ▼
+AuthRepositoryImpl.emailLogin()
+  → result.ok === false
+  → return result  (에러 그대로 전파)
+      │
+      ▼
+AuthService.emailLogin()
+  → result.ok === false
+  → return result  (에러 그대로 전파, saveTokens 호출 안 됨)
+      │
+      ▼
+emailLoginMutationOptions.mutationFn()
+  → unwrap(result) → throw result.error
+      │
+      ▼
+onError(error)
+  → error.message === '이메일 또는 비밀번호가 틀렸어요'
+  → toast.error(error) 또는 특수 처리
+```
+
+### 실패 경로 — 인프라 에러 (예: 서버 다운)
+
+```
+KyHttpClient.post('v1/auth/login', { email, password })
+  → 500 Internal Server Error
+  → throw new ServerError(500)   ← 여기서 바로 throw
+      │
+      ▼
+  (Repository, Service, mutationFn 모두 거치지 않음)
+      │
+      ▼
+  <QueryErrorBoundary>가 잡음
+  → "오류가 발생했어요" + [재시도] 버튼
+```
+
+### 요약 다이어그램
+
+```
+HttpClient          Repository           Service            Mutation Options       UI
+─────────────────────────────────────────────────────────────────────────────────────────
+성공:
+  ok(data)  ──→  safeParse + mapper ──→  saveTokens  ──→  unwrap → value  ──→  onSuccess
+                 ok(domain)              ok(domain)
+
+4xx 에러:
+  err(ApiError) ──→  return result  ──→  return result  ──→  unwrap → throw  ──→  onError
+                     (그대로 전파)       (그대로 전파)
+
+InfraError:
+  throw  ──────────────────────────────────────────────────────────────────→  ErrorBoundary
+  (5xx/네트워크/타임아웃)                 (catch 없이 전파)
+```
+
+---
+
+## 예상한 에러: ApiError (Track 1)
+
+서버가 4xx 응답을 보낼 때 발생. 사용자에게 구체적 안내가 가능한 에러.
 
 ```typescript
-// 위치: shared/errors/api-error.ts
-export class ApiError extends Error {
-  readonly name = 'ApiError';
+// shared/errors/api-error.ts
+class ApiError extends Error implements BusinessError {
   constructor(
-    public readonly code: string,    // 서버 에러 코드 (AUTH_0101, TODO_0801 등)
-    message: string,                  // 사용자 메시지
-    public readonly status: number,   // HTTP 상태 코드
-  ) {
-    super(message);
-  }
+    public readonly code: string,       // 서버 에러 코드 (AUTH_0101 등)
+    message: string,                     // 한국어 사용자 메시지
+    public readonly status: number,      // HTTP 상태 코드
+    public readonly details?: Record<string, unknown>,
+  ) { super(message); }
+
+  hasCode<C extends ErrorCodeType>(code: C): this is ApiError & { code: C };
+  isDomain(prefix: string): boolean;
 }
 ```
 
-**특징:**
-- `code`: 서버에서 정의한 에러 코드 (예: `AUTH_0101`, `FOLLOW_0901`)
-- `message`: 사용자에게 표시할 메시지 (error-handler.ts에서 매핑)
-- `status`: HTTP 상태 코드 (401, 404, 500 등)
+### 에러 코드 → 사용자 메시지 매핑
 
-**헬퍼 메서드:**
-- `hasCode(code)`: 특정 에러 코드인지 확인
-- `isDomain(prefix)`: 특정 도메인 에러인지 확인 (예: `err.isDomain('AUTH_')`)
-
-### 2. 클라이언트 에러 (ClientError)
-
-앱 내부에서 발생하는 에러입니다 (네이티브 SDK, 입력 검증, 네트워크 등).
+서버 에러 코드를 Ky AfterResponseHook에서 한국어 메시지로 변환합니다.
 
 ```typescript
-// 위치: shared/errors/client-error.ts
-export abstract class ClientError extends Error {
-  abstract readonly name: string;
-  abstract readonly code: string;  // UPPER_SNAKE_CASE
-  
-  constructor(message: string) {
-    super(message);
-  }
-}
-```
-
----
-
-## 에러 흐름도
-
-```
-서버 에러 흐름:
-┌──────────────────────────────────────────────────────────────┐
-│  HTTP 응답 (4xx/5xx)                                         │
-│       ↓                                                      │
-│  error-handler.ts (AfterResponseHook)                        │
-│       ↓ MOBILE_ERROR_MESSAGES[code] 매핑                     │
-│  throw new ApiError(code, userMessage, status)               │
-│       ↓                                                      │
-│  TanStack Query onError → UI 처리                            │
-└──────────────────────────────────────────────────────────────┘
-
-클라이언트 에러 흐름:
-┌──────────────────────────────────────────────────────────────┐
-│  네이티브 SDK (Expo)      Repository (Zod)      Service      │
-│       ↓                        ↓                   ↓         │
-│  fromExpoError()         validation 실패      cancelled      │
-│       ↓                        ↓                   ↓         │
-│  throw DomainError (AuthCancelledError, ValidationError 등)  │
-│       ↓                                                      │
-│  TanStack Query onError → UI 처리                            │
-└──────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 도메인 에러 작성 규칙
-
-### 디렉토리 구조
-
-```
-features/
-└── {domain}/
-    └── models/
-        └── {domain}.error.ts
-```
-
-### 기본 패턴
-
-```typescript
-import { ClientError } from '@src/shared/errors';
-
-// ============================================
-// {Domain} 도메인 에러 (클라이언트 검증용)
-// ============================================
-
-/** 도메인 기본 에러 */
-export class {Domain}Error extends ClientError {
-  override readonly name: string = '{Domain}Error';
-  readonly code: string = '{DOMAIN}_ERROR';
-
-  constructor(message: string = '기본 에러 메시지') {
-    super(message);
-  }
-}
-
-/** 구체적인 에러 서브클래스 */
-export class {Domain}ValidationError extends {Domain}Error {
-  override readonly name = '{Domain}ValidationError';
-  override readonly code = '{DOMAIN}_VALIDATION';
-
-  constructor() {
-    super('잘못된 응답 형식이에요');
-  }
-}
-
-// 타입 가드
-export const is{Domain}Error = (error: unknown): error is {Domain}Error =>
-  error instanceof {Domain}Error;
-```
-
-### 네이밍 컨벤션
-
-| 요소 | 규칙 | 예시 |
-|------|------|------|
-| 클래스명 | PascalCase | `AuthCancelledError`, `InvalidTagError` |
-| code 필드 | UPPER_SNAKE_CASE | `AUTH_CANCELLED`, `INVALID_TAG` |
-| 타입 가드 | is + 클래스명 | `isAuthError`, `isFriendError` |
-
-### 일반적인 클라이언트 에러 카테고리
-
-| 카테고리 | 설명 | code 접미사 예시 |
-|---------|------|-----------------|
-| Validation | 입력/응답 검증 실패 | `_VALIDATION` |
-| Network | 네트워크 연결 문제 | `_NETWORK` |
-| Cancelled | 사용자 작업 취소 | `_CANCELLED` |
-| Permission | 권한 부족 (로컬) | `_PERMISSION` |
-
----
-
-## SDK 에러 변환 패턴
-
-외부 SDK 에러를 도메인 에러로 변환할 때 사용합니다.
-
-```typescript
-import { match } from 'ts-pattern';
-
-/** Expo 에러 코드 정의 */
-const SdkErrorCode = {
-  REQUEST_CANCELED: 'ERR_REQUEST_CANCELED',
-  REQUEST_FAILED: 'ERR_REQUEST_FAILED',
+// shared/infra/http/error-handler.ts
+const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
+  FOLLOW_0901: '이미 친구 요청을 보냈어요',
+  FOLLOW_0904: '자기 자신에게는 친구 요청을 보낼 수 없어요',
+  VERIFY_0752: '인증 코드가 만료되었어요. 다시 요청해주세요.',
+  TODO_0801:   '할 일을 찾을 수 없어요',
   // ...
+};
+```
+
+`ApiError.message`가 이미 사용자 친화적이므로, UI에서는 `toast.error(err)`만 하면 됩니다.
+
+---
+
+## 예상한 에러: BusinessError (Track 2)
+
+### Policy 에러
+
+서버 요청 전에 클라이언트에서 검증하는 에러. 불필요한 네트워크 요청을 방지합니다.
+
+```typescript
+// features/friend/services/friend.service.ts
+sendRequestByTag = async (userTag: string): Promise<Result<SendRequestResult, FriendServiceError>> => {
+  if (!userTag.trim()) return err(FriendErrors.emptyTag());           // 즉시 반환
+  if (!FriendPolicy.isValidTag(userTag)) return err(FriendErrors.invalidTag()); // 즉시 반환
+  return this.#repository.sendRequest(userTag);                        // 검증 통과 후 서버 요청
+};
+```
+
+### SDK 에러 변환
+
+외부 SDK 에러를 도메인 에러로 변환. SDK 에러가 앱 외부로 유출되지 않도록 합니다.
+
+```typescript
+// features/auth/services/auth.service.ts
+openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
+  try {
+    const credential = await AppleAuthentication.signInAsync({ ... });
+    const result = await this.#authRepository.appleLogin(input);
+    if (!result.ok) return result;
+    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
+    return result;
+  } catch (error) {
+    if (isAuthError(error)) return err(error);
+    if (isExpoCodedError(error)) return err(AuthErrors.fromExpoAppleError(error));
+    return err(AuthErrors.fromUnknown(error));  // 마지막 방어선
+  }
+};
+```
+
+### 도메인 에러 정의 패턴
+
+```typescript
+// features/{domain}/models/{domain}.error.ts
+// 1) 에러 코드 상수
+export const FriendErrorCode = {
+  INVALID_TAG: 'FRIEND_INVALID_TAG',
+  EMPTY_TAG: 'FRIEND_EMPTY_TAG',
 } as const;
 
-type SdkErrorCodeType = (typeof SdkErrorCode)[keyof typeof SdkErrorCode];
+// 2) 에러 클래스 (Error + BusinessError 구현)
+export class FriendError extends Error implements BusinessError {
+  override readonly name = 'FriendError';
+  constructor(public readonly code: FriendErrorCode, message: string) { super(message); }
+}
 
-export class SomeAuthError extends AuthError {
-  /** SDK 에러 → 도메인 에러 변환 */
-  static fromSdkError(error: SdkCodedError): AuthError {
-    return match(error.code as SdkErrorCodeType)
-      .with(SdkErrorCode.REQUEST_CANCELED, () => new AuthCancelledError())
-      .with(SdkErrorCode.REQUEST_FAILED, () => 
-        new SomeAuthError('인증 정보가 올바르지 않아요'))
-      .otherwise(() => new AuthError(error.message));
+// 3) 팩토리 객체
+export const FriendErrors = {
+  invalidTag: () => new FriendError(FriendErrorCode.INVALID_TAG, '올바른 태그 형식이 아니에요'),
+  emptyTag: () => new FriendError(FriendErrorCode.EMPTY_TAG, '태그를 입력해주세요'),
+} as const;
+
+// 4) 타입 가드
+export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;
+```
+
+---
+
+## 예상하지 못한 에러: InfraError (Track 3)
+
+복구 불가능한 에러. ErrorBoundary에서 일괄 처리하고 "재시도"만 제공합니다.
+
+| 서브클래스 | 발생 시점 | 메시지 |
+|-----------|----------|--------|
+| `ServerError(status)` | HTTP 5xx | "서버에 문제가 발생했어요" |
+| `NetworkError` | 네트워크 끊김 | "네트워크 연결을 확인해주세요" |
+| `TimeoutError` | 요청 시간 초과 | "요청 시간이 초과되었어요" |
+| `ParseError` | Zod safeParse 실패 | "응답 형식이 올바르지 않아요" |
+
+### InfraError가 throw되는 곳
+
+```typescript
+// KyHttpClient.#request() — 4xx만 err(), 나머지는 throw
+try {
+  const response = await request();
+  return ok((await response.json()).data);
+} catch (error) {
+  if (error instanceof KyTimeoutError) throw new TimeoutError();
+  if (error instanceof HTTPError) {
+    if (error.response.status >= 500) throw new ServerError(status);
+    return err(new ApiError(...));  // 4xx만 err()
   }
+  if (error instanceof TypeError) throw new NetworkError();
+  throw error;
 }
 ```
 
-**핵심 포인트:**
-- `ts-pattern`의 `match`로 에러 코드별 분기
-- 취소는 별도 에러 클래스 (`AuthCancelledError`)로 분리
-- `otherwise()`로 예상치 못한 에러 처리
+```typescript
+// Repository — Zod 검증 실패도 InfraError
+const parsed = todoListResponseSchema.safeParse(result.value);
+if (!parsed.success) throw new ParseError();  // 서버 응답이 깨진 건 인프라 문제
+```
+
+### QueryErrorBoundary
+
+```typescript
+// shared/ui/QueryErrorBoundary/QueryErrorBoundary.tsx
+export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryProps) {
+  return (
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <ErrorBoundary
+          onReset={reset}
+          fallbackRender={({ error, resetErrorBoundary }) =>
+            fallback ? fallback({ error, reset: resetErrorBoundary }) : (
+              <Result
+                title="오류가 발생했어요"
+                button={<Result.Button onPress={resetErrorBoundary}>재시도</Result.Button>}
+              />
+            )
+          }
+        >
+          {children}
+        </ErrorBoundary>
+      )}
+    </QueryErrorResetBoundary>
+  );
+}
+```
+
+`QueryErrorResetBoundary`는 에러 reset 시 쿼리 에러 상태도 초기화하여, 재시도가 실제로 데이터를 다시 fetch합니다.
+
+### ErrorBoundary 배치 전략
+
+독립된 데이터 영역마다 개별 ErrorBoundary를 배치하여 부분 실패를 허용합니다:
+
+```typescript
+// app/(app)/(tabs)/feed/index.tsx
+<VStack flex={1}>
+  {/* 아바타 실패해도 캘린더와 투두는 동작 */}
+  <QueryErrorBoundary>
+    <Suspense fallback={<UserAvatarList.Loading />}>
+      <UserAvatarList />
+    </Suspense>
+  </QueryErrorBoundary>
+
+  <Calendar value={selectedDate} onChange={setSelectedDate} />
+
+  {/* 투두 실패해도 아바타와 캘린더는 동작 */}
+  <QueryErrorBoundary key={formatDate(selectedDate)}>
+    <Suspense fallback={<TodoList.Loading />}>
+      <TodoList date={selectedDate} />
+    </Suspense>
+  </QueryErrorBoundary>
+</VStack>
+```
+
+배치 원칙:
+1. 독립된 데이터 영역마다 개별 ErrorBoundary
+2. `ErrorBoundary` → `Suspense` → `Component` 순서
+3. `key` prop으로 데이터 변경 시 에러 상태 초기화
 
 ---
 
 ## UI 에러 처리 패턴
 
-### TanStack Query Mutation onError
+### 패턴 1: toast.error 기본 처리
+
+대부분의 경우. `error.message`에 이미 한국어 메시지가 있으므로:
 
 ```typescript
-import { isApiError, isClientError } from '@src/shared/errors';
-import { AuthCancelledError, isAuthError } from '@src/features/auth/models/auth.error';
+mutation.mutate(data, {
+  onError: (error) => toast.error(error, { fallback: '작업에 실패했어요' }),
+});
+```
 
-const mutation = useMutation({
-  mutationFn: someAsyncFunction,
-  onError: (err) => {
-    // 1. 사용자 취소: 토스트 생략
-    if (err instanceof AuthCancelledError) {
-      return;
+### 패턴 2: 에러 코드별 분기
+
+특정 에러에 페이지 이동, 다이얼로그 등 특수 동작이 필요할 때:
+
+```typescript
+onError: (error) => {
+  if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
+    router.push({ pathname: './verify-email', params: { email } });
+    return;
+  }
+  toast.error(error, { fallback: '로그인에 실패했어요' });
+},
+```
+
+### 패턴 3: Optimistic Update 롤백
+
+```typescript
+return mutationOptions({
+  mutationFn: async (input) => unwrap(await authService.updateMarketingConsent(input)),
+  onMutate: async (input) => {
+    await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.consent() });
+    const previousData = queryClient.getQueryData(AUTH_QUERY_KEYS.consent());
+    queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), (old) => ({ ...old, ... }));
+    return { previousData };
+  },
+  onError: (_error, _input, context) => {
+    if (context?.previousData) {
+      queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
     }
-    
-    // 2. 서버 에러: 사용자 메시지 표시
-    if (isApiError(err)) {
-      toast.error(err.message);
-      
-      // 필요시 특정 에러 코드 처리
-      if (err.hasCode('FOLLOW_0901')) {
-        // 이미 친구 요청을 보낸 경우 특수 처리
-      }
-      return;
-    }
-    
-    // 3. 클라이언트 에러: 사용자 메시지 표시
-    if (isClientError(err)) {
-      toast.error(err.message);
-      return;
-    }
-    
-    // 4. 예상치 못한 에러
-    toast.error('알 수 없는 오류가 발생했어요');
   },
 });
 ```
 
-### 에러 처리 우선순위
-
-1. **사용자 취소** → 무시 (토스트 없음)
-2. **서버 에러 (ApiError)** → `err.message` 표시
-3. **클라이언트 에러 (ClientError)** → `err.message` 표시
-4. **예상치 못한 에러** → 기본 메시지 표시
-
-### 서버 에러 도메인별 분기
+### 패턴 4: retry 제어
 
 ```typescript
-if (isApiError(err)) {
-  // 인증 관련 서버 에러
-  if (err.isDomain('AUTH_')) {
-    // 로그아웃 처리 등
+retry: (failureCount, error) => {
+  if (isNotificationError(error)) {
+    if (isNotPhysicalDeviceError(error)) return false;
+    if (isPermissionDeniedError(error)) return false;
   }
-  
-  // 특정 에러 코드
-  if (err.hasCode('USER_0607')) {
-    // 계정 잠김 처리
-  }
-  
-  toast.error(err.message);
-}
+  return failureCount < MAX_RETRY_COUNT;
+},
 ```
 
 ---
 
-## 서비스 레이어 에러 처리
+## 도메인 에러 현황
 
-### Repository에서 에러 throw
+| 도메인 | 에러 코드 | 추가 기능 |
+|--------|----------|----------|
+| Auth | `LOGIN_CANCELLED`, `PROVIDER_ERROR`, `VALIDATION_FAILED`, `NO_CODE_RECEIVED`, `UNKNOWN` | `fromExpoAppleError()`, `fromUnknown()` |
+| Friend | `INVALID_TAG`, `EMPTY_TAG` | - |
+| Todo | `VALIDATION_FAILED` | - |
+| Notification | `PERMISSION_DENIED`, `NOT_PHYSICAL_DEVICE`, `VALIDATION_FAILED` | `isPermissionDeniedError()` 등 |
 
-```typescript
-// features/{domain}/infra/{domain}.repository.impl.ts
+### 네이밍 규칙
 
-async function fetchData(): Promise<Data> {
-  const response = await api.get('endpoint').json<unknown>();
-  
-  // Zod 파싱 실패 시 ValidationError throw
-  const result = DataSchema.safeParse(response);
-  if (!result.success) {
-    throw new DomainValidationError();
-  }
-  
-  return result.data;
-}
-```
-
-### Service에서 에러 변환
-
-```typescript
-// features/{domain}/services/{domain}.service.ts
-
-async function performSdkAction(): Promise<Result> {
-  try {
-    const sdkResult = await nativeSdk.doSomething();
-    return transformResult(sdkResult);
-  } catch (error) {
-    // SDK 에러 → 도메인 에러 변환
-    if (isSdkCodedError(error)) {
-      throw DomainError.fromSdkError(error);
-    }
-    throw error;
-  }
-}
-```
-
----
-
-## 타입 가드 사용
-
-### 기본 타입 가드
-
-```typescript
-import { isApiError, isClientError } from '@src/shared/errors';
-import { isAuthError } from '@src/features/auth/models/auth.error';
-
-function handleError(error: unknown) {
-  if (isApiError(error)) {
-    // error는 ApiError 타입
-    console.log(error.code, error.status);
-  }
-  
-  if (isClientError(error)) {
-    // error는 ClientError 타입
-    console.log(error.code);
-  }
-  
-  if (isAuthError(error)) {
-    // error는 AuthError 타입 (또는 서브클래스)
-    console.log(error.code);
-  }
-}
-```
-
-### instanceof로 구체적 분기
-
-```typescript
-if (error instanceof AuthCancelledError) {
-  // 취소 처리
-} else if (error instanceof AuthNetworkError) {
-  // 네트워크 에러 처리
-} else if (error instanceof AuthValidationError) {
-  // 검증 에러 처리
-}
-```
+| 요소 | 패턴 | 예시 |
+|------|------|------|
+| 에러 코드 상수 | `{Feature}ErrorCode` | `AuthErrorCode` |
+| 에러 클래스 | `{Feature}Error` | `AuthError` |
+| 팩토리 객체 | `{Feature}Errors` | `AuthErrors` |
+| 타입 가드 | `is{Feature}Error` | `isAuthError` |
+| 파일 위치 | `features/{domain}/models/{domain}.error.ts` | `auth.error.ts` |
 
 ---
 
@@ -329,26 +403,19 @@ if (error instanceof AuthCancelledError) {
 
 ### 새 도메인 에러 추가 시
 
-- [ ] `features/{domain}/models/{domain}.error.ts` 파일 생성
-- [ ] 기본 에러 클래스가 `ClientError` 상속
-- [ ] `name`, `code` 필드 정의 (override)
-- [ ] 타입 가드 함수 export (`is{Domain}Error`)
-- [ ] 필요한 서브클래스 정의 (Validation, Cancelled 등)
-
-### SDK 에러 변환 추가 시
-
-- [ ] SDK 에러 코드 상수 정의
-- [ ] `ExpoCodedError` 유사 인터페이스 정의
-- [ ] `fromSdkError` 정적 메서드 구현
-- [ ] `ts-pattern` match로 코드별 분기
-- [ ] 취소는 별도 에러 클래스로 분리
+- [ ] `features/{domain}/models/{domain}.error.ts` 생성
+- [ ] `{Feature}ErrorCode` 상수 + 타입 정의
+- [ ] `{Feature}Error` 클래스 — `Error` 상속, `BusinessError` 구현
+- [ ] `{Feature}Errors` 팩토리 객체
+- [ ] `is{Feature}Error` 타입 가드
 
 ### UI 에러 처리 시
 
-- [ ] 사용자 취소 먼저 체크 (토스트 생략)
-- [ ] `isApiError` → `isClientError` 순서로 체크
-- [ ] 예상치 못한 에러용 기본 메시지 제공
-- [ ] 필요시 `hasCode()`, `isDomain()`으로 특수 처리
+- [ ] `mutationFn`에서 `unwrap(result)` 사용
+- [ ] `onError`에서 `toast.error(err, { fallback })` 사용
+- [ ] 특수 처리 필요하면 `isApiError` + `hasCode()` 분기
+- [ ] Suspense Query 영역은 `<QueryErrorBoundary>`로 감싸기
+- [ ] 독립 데이터 섹션마다 개별 ErrorBoundary 배치
 
 ---
 
@@ -356,7 +423,10 @@ if (error instanceof AuthCancelledError) {
 
 | 파일 | 설명 |
 |------|------|
-| `shared/errors/client-error.ts` | ClientError 추상 클래스 |
-| `shared/errors/api-error.ts` | ApiError 클래스 |
-| `shared/infra/http/error-handler.ts` | 서버 에러 매핑 |
-| `features/auth/models/auth.error.ts` | Auth 도메인 에러 (참고용) |
+| `shared/errors/result.ts` | Result 타입, ok/err/unwrap |
+| `shared/errors/api-error.ts` | ApiError (4xx) |
+| `shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
+| `shared/infra/http/ky-client.ts` | KyHttpClient 구현 |
+| `shared/infra/http/error-handler.ts` | 에러 코드 → 메시지 매핑 |
+| `shared/ui/QueryErrorBoundary/` | QueryErrorBoundary 컴포넌트 |
+| `features/*/models/*.error.ts` | 각 도메인 에러 정의 |

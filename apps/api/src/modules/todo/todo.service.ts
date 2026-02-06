@@ -1,7 +1,7 @@
 import type { Todo } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { now, toDate } from "@/common/date";
+import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -38,6 +38,24 @@ export class TodoService {
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
 	) {}
+
+	/**
+	 * 날짜 범위 파라미터 검증
+	 * startDate와 endDate가 모두 존재할 때 startDate <= endDate 여야 합니다.
+	 */
+	private validateDateRange(startDate?: Date, endDate?: Date): void {
+		if (!startDate || !endDate) {
+			return;
+		}
+
+		if (startDate.getTime() > endDate.getTime()) {
+			throw BusinessExceptions.invalidParameter({
+				message: "startDate must be less than or equal to endDate",
+				startDate,
+				endDate,
+			});
+		}
+	}
 
 	/**
 	 * Todo 생성
@@ -96,6 +114,8 @@ export class TodoService {
 	async findMany(
 		params: GetTodosParams,
 	): Promise<CursorPaginatedResponse<Todo, number>> {
+		this.validateDateRange(params.startDate, params.endDate);
+
 		const { cursor, size } =
 			this.paginationService.normalizeCursorPagination<number>({
 				cursor: params.cursor,
@@ -134,6 +154,7 @@ export class TodoService {
 		params: GetFriendTodosParams,
 	): Promise<CursorPaginatedResponse<Todo, number>> {
 		const { userId, friendUserId } = params;
+		this.validateDateRange(params.startDate, params.endDate);
 
 		// 1. 맞팔 관계 확인
 		const isMutualFriend = await this.followService.isMutualFriend(
@@ -244,6 +265,7 @@ export class TodoService {
 		id: number,
 		userId: string,
 		data: { completed: boolean },
+		tz: string = "UTC",
 	): Promise<Todo> {
 		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
@@ -264,7 +286,7 @@ export class TodoService {
 
 		// 완료로 변경된 경우, 오늘 할일 전체 완료 여부 확인 후 이벤트 발행
 		if (data.completed) {
-			await this.checkAndEmitAllCompletedEvent(userId);
+			await this.checkAndEmitAllCompletedEvent(userId, tz);
 		}
 
 		return TodoMapper.toResponse(updatedTodo);
@@ -274,9 +296,13 @@ export class TodoService {
 	 * 오늘 할일 전체 완료 시 이벤트 발행
 	 * @private
 	 */
-	private async checkAndEmitAllCompletedEvent(userId: string): Promise<void> {
+	private async checkAndEmitAllCompletedEvent(
+		userId: string,
+		tz: string = "UTC",
+	): Promise<void> {
 		try {
-			const stats = await this.todoRepository.getTodayTodoStats(userId);
+			const today = getUserToday(tz);
+			const stats = await this.todoRepository.getTodayTodoStats(userId, today);
 
 			// 오늘 할일이 있고, 모두 완료된 경우
 			if (stats.total > 0 && stats.total === stats.completed) {
@@ -389,6 +415,7 @@ export class TodoService {
 			scheduledTime?: string | null;
 			isAllDay?: boolean;
 		},
+		tz: string = "UTC",
 	): Promise<Todo> {
 		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
@@ -397,10 +424,10 @@ export class TodoService {
 		}
 
 		const updatedTodo = await this.todoRepository.update(id, {
-			startDate: toDate(data.startDate),
-			endDate: data.endDate ? toDate(data.endDate) : null,
+			startDate: toDateOnly(data.startDate),
+			endDate: data.endDate ? toDateOnly(data.endDate) : null,
 			scheduledTime: data.scheduledTime
-				? toDate(`1970-01-01T${data.scheduledTime}:00Z`)
+				? toScheduledTime(data.startDate, data.scheduledTime, tz)
 				: null,
 			isAllDay: data.isAllDay ?? true,
 		});

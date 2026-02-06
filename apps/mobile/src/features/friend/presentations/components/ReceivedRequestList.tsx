@@ -12,7 +12,7 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, ScrollView } from 'react-native';
-import type { FriendRequestUser } from '../../models/friend.model';
+import type { FriendRequest } from '../../models/friend.model';
 import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
 import { getReceivedRequestsQueryOptions } from '../queries/get-received-requests-query-options';
 import { rejectRequestMutationOptions } from '../queries/reject-request-mutation-options';
@@ -38,7 +38,7 @@ export function ReceivedRequestList() {
     });
   };
 
-  const allRequests = data.pages.flatMap((page) => page.requests);
+  const allRequests = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
   return (
@@ -51,7 +51,7 @@ export function ReceivedRequestList() {
         </Box>
       }
       data={allRequests}
-      renderItem={({ item }: { item: FriendRequestUser }) => {
+      renderItem={({ item }: { item: FriendRequest }) => {
         const isProcessing =
           (acceptMutation.isPending && acceptMutation.variables === item.id) ||
           (rejectMutation.isPending && rejectMutation.variables === item.id);

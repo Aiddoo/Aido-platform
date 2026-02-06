@@ -145,7 +145,7 @@ POST /v1/ai/parse-todo
 │  AI Service                                             │
 │  - Google Gemini API 호출                                      │
 │  - 토큰 최적화 프롬프트 (~200 tokens)                   │
-│  - 일일 사용량 제한 (FREE: 10회, PREMIUM: 100회)        │
+│  - 일일 사용량 제한 (FREE: 5회, PREMIUM: 100회)         │
 └─────────────────────────────────────────────────────────┘
      │
      ▼
@@ -204,7 +204,7 @@ POST /v1/ai/parse-todo
 {
   "success": true,
   "data": { ... },
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2026-02-06T10:30:00.000Z"
 }
 ```
 
@@ -219,7 +219,7 @@ POST /v1/ai/parse-todo
     "code": "ERROR_CODE",
     "message": "에러 메시지"
   },
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2026-02-06T10:30:00.000Z"
 }
 ```
 

@@ -1,17 +1,16 @@
-import type {
-  AiUsageResponse,
-  CreateTodoInput,
-  GetTodosQuery,
-  ParseTodoResponse,
-  Todo,
-  TodoListResponse,
-  ToggleTodoCompleteInput,
-} from '@aido/validators';
+import type { CreateTodoInput, GetTodosQuery, ToggleTodoCompleteInput } from '@aido/validators';
+import type { ApiError } from '@src/shared/errors/api-error';
+import type { Result } from '@src/shared/errors/result';
+
+import type { AiUsage, ParsedTodoResult, TodoItem, TodosResult } from '../models/todo.model';
 
 export interface TodoRepository {
-  getTodos(params: GetTodosQuery): Promise<TodoListResponse>;
-  toggleTodoComplete(todoId: number, body: ToggleTodoCompleteInput): Promise<Todo>;
-  createTodo(params: CreateTodoInput): Promise<Todo>;
-  parseTodo(text: string): Promise<ParseTodoResponse>;
-  getAiUsage(): Promise<AiUsageResponse>;
+  getTodos(params: GetTodosQuery): Promise<Result<TodosResult, ApiError>>;
+  toggleTodoComplete(
+    todoId: number,
+    body: ToggleTodoCompleteInput,
+  ): Promise<Result<TodoItem, ApiError>>;
+  createTodo(params: CreateTodoInput): Promise<Result<TodoItem, ApiError>>;
+  parseTodo(text: string): Promise<Result<ParsedTodoResult, ApiError>>;
+  getAiUsage(): Promise<Result<AiUsage, ApiError>>;
 }

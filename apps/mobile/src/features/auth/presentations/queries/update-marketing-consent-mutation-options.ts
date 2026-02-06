@@ -1,7 +1,9 @@
-import type { ConsentResponse, UpdateMarketingConsentInput } from '@aido/validators';
+import type { UpdateMarketingConsentInput } from '@aido/validators';
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import type { Consent } from '../../models/auth.model';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const updateMarketingConsentMutationOptions = () => {
@@ -9,18 +11,21 @@ export const updateMarketingConsentMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: (input: UpdateMarketingConsentInput) => authService.updateMarketingConsent(input),
+    mutationFn: async (input: UpdateMarketingConsentInput) => {
+      const result = await authService.updateMarketingConsent(input);
+      return unwrap(result);
+    },
 
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.consent() });
 
-      const previousData = queryClient.getQueryData<ConsentResponse>(AUTH_QUERY_KEYS.consent());
+      const previousData = queryClient.getQueryData<Consent>(AUTH_QUERY_KEYS.consent());
 
-      queryClient.setQueryData<ConsentResponse>(AUTH_QUERY_KEYS.consent(), (old) => {
+      queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (old) => {
         if (!old) return old;
         return {
           ...old,
-          marketingAgreedAt: input.agreed ? new Date().toISOString() : null,
+          marketingAgreedAt: input.agreed ? new Date() : null,
         };
       });
 
@@ -28,7 +33,7 @@ export const updateMarketingConsentMutationOptions = () => {
     },
 
     onSuccess: (data) => {
-      queryClient.setQueryData<ConsentResponse>(AUTH_QUERY_KEYS.consent(), (old) => {
+      queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (old) => {
         if (!old) return old;
         return {
           ...old,

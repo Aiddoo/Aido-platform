@@ -293,6 +293,120 @@ describe("Todo (e2e)", () => {
 				expect(response.body.data.items).toBeDefined();
 			});
 
+			it("다중일 투두가 범위 필터에서 정상 노출된다", async () => {
+				// 다중일 투두 생성 (1/15 ~ 1/20)
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "다중일 할 일",
+						categoryId,
+						startDate: "2024-01-15",
+						endDate: "2024-01-20",
+					})
+					.expect(201);
+
+				// 1/18로 필터 → 다중일 투두 포함 확인
+				const response = await request(app.getHttpServer())
+					.get("/todos")
+					.query({
+						startDate: "2024-01-18",
+						endDate: "2024-01-18",
+					})
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				const titles = response.body.data.items.map(
+					(t: { title: string }) => t.title,
+				);
+				expect(titles).toContain("다중일 할 일");
+			});
+
+			it("특정 하루(2월 1일)만 조회할 수 있다", async () => {
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "2월1일 단건",
+						categoryId,
+						startDate: "2024-02-01",
+					})
+					.expect(201);
+
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "2월2일 단건",
+						categoryId,
+						startDate: "2024-02-02",
+					})
+					.expect(201);
+
+				const response = await request(app.getHttpServer())
+					.get("/todos")
+					.query({
+						startDate: "2024-02-01",
+						endDate: "2024-02-01",
+					})
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				const titles = response.body.data.items.map(
+					(t: { title: string }) => t.title,
+				);
+				expect(titles).toContain("2월1일 단건");
+				expect(titles).not.toContain("2월2일 단건");
+			});
+
+			it("기간(2월 2일~2월 3일) 조회가 가능하다", async () => {
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "2월2일 포함",
+						categoryId,
+						startDate: "2024-02-02",
+					})
+					.expect(201);
+
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "2월3일 포함",
+						categoryId,
+						startDate: "2024-02-03",
+					})
+					.expect(201);
+
+				await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({
+						title: "2월4일 제외",
+						categoryId,
+						startDate: "2024-02-04",
+					})
+					.expect(201);
+
+				const response = await request(app.getHttpServer())
+					.get("/todos")
+					.query({
+						startDate: "2024-02-02",
+						endDate: "2024-02-03",
+					})
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				const titles = response.body.data.items.map(
+					(t: { title: string }) => t.title,
+				);
+				expect(titles).toContain("2월2일 포함");
+				expect(titles).toContain("2월3일 포함");
+				expect(titles).not.toContain("2월4일 제외");
+			});
+
 			it("카테고리로 필터링", async () => {
 				const response = await request(app.getHttpServer())
 					.get("/todos")

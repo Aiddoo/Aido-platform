@@ -1,5 +1,8 @@
+import type { ApiError } from '@src/shared/errors/api-error';
+import { ok, type Result } from '@src/shared/errors/result';
 import * as Notifications from 'expo-notifications';
 
+import type { NotificationError } from '../models/notification.error';
 import type {
   GetNotificationsQuery,
   MarkReadResult,
@@ -8,8 +11,9 @@ import type {
 } from '../models/notification.model';
 import type { NotificationRepository } from '../repositories/notification.repository';
 import type { DeviceIdService } from './device-id.service';
-import { NotificationMapper } from './notification.mapper';
 import type { PushTokenService } from './push-token.service';
+
+export type NotificationServiceError = ApiError | NotificationError;
 
 export class NotificationService {
   readonly #notificationRepository: NotificationRepository;
@@ -27,38 +31,45 @@ export class NotificationService {
   }
 
   // 푸시 토큰 등록 (로그인 후 호출)
-  setupPushNotifications = async (): Promise<RegisterTokenResult> => {
-    const [token, deviceId] = await Promise.all([
+  setupPushNotifications = async (): Promise<
+    Result<RegisterTokenResult, NotificationServiceError>
+  > => {
+    const [tokenResult, deviceId] = await Promise.all([
       this.#pushTokenService.getExpoPushToken(),
       this.#deviceIdService.get(),
     ]);
 
-    return this.#notificationRepository.registerToken(token, deviceId);
+    if (!tokenResult.ok) return tokenResult;
+
+    return this.#notificationRepository.registerToken(tokenResult.value, deviceId);
   };
 
   // 푸시 토큰 해제 (로그아웃 시 호출)
-  unregisterPushToken = async (): Promise<void> => {
+  unregisterPushToken = async (): Promise<Result<void, ApiError>> => {
     const deviceId = await this.#deviceIdService.get();
-    await this.#notificationRepository.unregisterToken(deviceId);
+    return this.#notificationRepository.unregisterToken(deviceId);
   };
 
   isSupported = (): boolean => this.#pushTokenService.isPhysicalDevice();
 
-  getNotifications = async (query?: GetNotificationsQuery): Promise<NotificationListResult> => {
-    const response = await this.#notificationRepository.getNotifications(query);
-    return NotificationMapper.toNotificationListResult(response);
+  getNotifications = async (
+    query?: GetNotificationsQuery,
+  ): Promise<Result<NotificationListResult, ApiError>> => {
+    return this.#notificationRepository.getNotifications(query);
   };
 
-  getUnreadCount = async (): Promise<number> => {
+  getUnreadCount = async (): Promise<Result<number, ApiError>> => {
     const result = await this.#notificationRepository.getUnreadCount();
-    return result.unreadCount;
+    if (!result.ok) return result;
+
+    return ok(result.value.unreadCount);
   };
 
-  markAsRead = async (notificationId: number): Promise<MarkReadResult> => {
+  markAsRead = async (notificationId: number): Promise<Result<MarkReadResult, ApiError>> => {
     return this.#notificationRepository.markAsRead(notificationId);
   };
 
-  markAllAsRead = async (): Promise<MarkReadResult> => {
+  markAllAsRead = async (): Promise<Result<MarkReadResult, ApiError>> => {
     return this.#notificationRepository.markAllAsRead();
   };
 
@@ -71,7 +82,9 @@ export class NotificationService {
   };
 
   syncBadgeCount = async (): Promise<void> => {
-    const unreadCount = await this.getUnreadCount();
-    await this.setBadgeCount(unreadCount);
+    const result = await this.getUnreadCount();
+    if (result.ok) {
+      await this.setBadgeCount(result.value);
+    }
   };
 }

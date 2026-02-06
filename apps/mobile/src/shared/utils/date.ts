@@ -109,3 +109,33 @@ export const getCurrentWeekStart = (): Date => {
 export const getCurrentMonthStart = (): Date => {
   return dayjs().startOf('month').toDate();
 };
+
+// Todo 날짜 유틸
+
+/** 투두가 특정 날짜에 해당하는지 (YYYY-MM-DD 문자열 사전순 비교) */
+export const todoOverlapsDate = (
+  todoStartDate: string,
+  todoEndDate: string | null,
+  targetDate: string,
+): boolean => {
+  const effectiveEnd = todoEndDate ?? todoStartDate;
+  return todoStartDate <= targetDate && effectiveEnd >= targetDate;
+};
+
+/** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */
+export const getCalendarRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
+  const d = dayjs(displayDate);
+  return {
+    rangeStart: d.startOf('month').startOf('week').format('YYYY-MM-DD'),
+    rangeEnd: d.endOf('month').endOf('week').format('YYYY-MM-DD'),
+  };
+};
+
+/** 주간 뷰 범위 */
+export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
+  const d = dayjs(displayDate);
+  return {
+    rangeStart: d.startOf('week').format('YYYY-MM-DD'),
+    rangeEnd: d.endOf('week').format('YYYY-MM-DD'),
+  };
+};

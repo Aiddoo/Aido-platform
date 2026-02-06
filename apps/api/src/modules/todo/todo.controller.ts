@@ -13,7 +13,9 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { toDateOnly, toScheduledTime } from "@/common/date";
+import { Timezone } from "@/common/decorators/timezone.decorator";
 
 import {
 	ApiBadRequestError,
@@ -82,6 +84,12 @@ export class TodoController {
 	 * 새로운 할 일을 생성합니다.
 	 */
 	@Post()
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 생성",
 		operationId: "createTodo",
@@ -95,7 +103,7 @@ export class TodoController {
 **선택 필드**
 - \`content\`: 상세 내용 (최대 5000자)
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm)
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)`,
 	})
@@ -105,6 +113,7 @@ export class TodoController {
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateTodoDto,
+		@Timezone() tz: string,
 	): Promise<CreateTodoResponseDto> {
 		this.logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
@@ -113,10 +122,10 @@ export class TodoController {
 			title: dto.title,
 			content: dto.content,
 			categoryId: dto.categoryId,
-			startDate: new Date(dto.startDate),
-			endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+			startDate: toDateOnly(dto.startDate),
+			endDate: dto.endDate ? toDateOnly(dto.endDate) : undefined,
 			scheduledTime: dto.scheduledTime
-				? this.parseScheduledTime(dto.startDate, dto.scheduledTime)
+				? this.parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
 				: undefined,
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
@@ -150,8 +159,56 @@ export class TodoController {
 - \`size\`: 페이지 크기 (1-100, 기본값: 20)
 - \`completed\`: 완료 상태 필터
 - \`categoryId\`: 카테고리 ID 필터
-- \`startDate\`: 시작일 이후 필터 (YYYY-MM-DD)
-- \`endDate\`: 종료일 이전 필터 (YYYY-MM-DD)`,
+- \`startDate\`: 시작일 필터 (YYYY-MM-DD)
+- \`endDate\`: 종료일 필터 (YYYY-MM-DD)
+
+---
+
+### 날짜 필터링 (Overlapping Intervals)
+
+날짜 필터는 **DATE(날짜) 기준**으로 동작합니다. 타임존 변환이 적용되지 않는 floating date입니다.
+
+#### 사용 시나리오
+
+| startDate | endDate | 결과 |
+|-----------|---------|------|
+| 미지정 | 미지정 | 전체 할 일 반환 |
+| 2026-01-15 | 2026-01-15 | **특정 날짜**에 해당하는 할 일 (단일 날짜 조회) |
+| 2026-01-01 | 2026-01-31 | **기간 범위**에 걸쳐 있는 할 일 (월간/주간 뷰) |
+| 2026-01-15 | 미지정 | **해당 날짜**에 해당하는 할 일 (exact match) |
+| 미지정 | 2026-01-31 | **해당 날짜**에 해당하는 할 일 (exact match) |
+
+#### 필터링 로직 상세
+
+- **다일(multi-day) 할 일**: \`todo.startDate <= endDate\` AND \`todo.endDate >= startDate\`
+- **단일 날짜 할 일** (endDate가 없는 경우): \`todo.startDate\`가 필터 범위 내에 있는지 확인
+
+#### 시간 처리 (scheduledTime)
+
+- **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
+- **시간 이벤트** (\`isAllDay=false\`): \`scheduledTime\`은 UTC ISO 8601 형식
+  - 생성/수정 시 \`X-Timezone\` 헤더 기반으로 로컬→UTC 변환하여 저장
+  - 응답은 UTC로 반환, 클라이언트에서 로컬 시간으로 표시
+
+#### 에러 케이스
+
+| 케이스 | 응답 |
+|--------|------|
+| startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
+| 잘못된 날짜 형식 (예: 2026-13-01) | \`400 Bad Request\` (SYS_0002) |
+| 유효하지 않은 날짜 (예: 2026-02-30) | \`400 Bad Request\` (SYS_0002) |
+
+#### 예시
+
+1. **2026-01-10에 시작하여 2026-01-20에 끝나는 할 일**이 있을 때:
+   - \`startDate=2026-01-15&endDate=2026-01-15\` → ✅ 반환 (기간이 겹침)
+   - \`startDate=2026-01-01&endDate=2026-01-05\` → ❌ 미반환 (기간이 겹치지 않음)
+   - \`startDate=2026-01-25&endDate=2026-01-31\` → ❌ 미반환 (기간이 겹치지 않음)
+
+2. **2026-01-15에만 해당하는 단일 날짜 할 일**이 있을 때:
+   - \`startDate=2026-01-15&endDate=2026-01-15\` → ✅ 반환
+   - \`startDate=2026-01-10&endDate=2026-01-20\` → ✅ 반환 (범위 내에 포함)
+   - \`startDate=2026-01-16&endDate=2026-01-20\` → ❌ 미반환`,
 	})
 	@ApiQuery({
 		name: "cursor",
@@ -184,14 +241,16 @@ export class TodoController {
 	@ApiQuery({
 		name: "startDate",
 		required: false,
-		description: "시작일 이후 필터 (YYYY-MM-DD)",
+		description:
+			"시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
 		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
 		example: "2026-01-01",
 	})
 	@ApiQuery({
 		name: "endDate",
 		required: false,
-		description: "종료일 이전 필터 (YYYY-MM-DD)",
+		description:
+			"종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
 		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
 		example: "2026-01-31",
 	})
@@ -212,8 +271,9 @@ export class TodoController {
 			size: query.size,
 			completed: query.completed,
 			categoryId: query.categoryId,
-			startDate: query.startDate ? new Date(query.startDate) : undefined,
-			endDate: query.endDate ? new Date(query.endDate) : undefined,
+			// DATE 타입 필드는 시간 정보가 없으므로 toDateOnly 사용
+			startDate: query.startDate ? toDateOnly(query.startDate) : undefined,
+			endDate: query.endDate ? toDateOnly(query.endDate) : undefined,
 		});
 
 		return {
@@ -263,7 +323,27 @@ export class TodoController {
 
 맞팔 관계여야만 조회 가능하며, PRIVATE 할 일은 표시되지 않습니다.
 
-**쿼리 파라미터**: cursor, size, startDate, endDate`,
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`size\`: 페이지 크기 (1-100, 기본값: 20)
+- \`startDate\`: 시작일 필터 (YYYY-MM-DD)
+- \`endDate\`: 종료일 필터 (YYYY-MM-DD)
+
+---
+
+### 날짜 필터링
+
+날짜 필터링은 \`GET /todos\` API와 동일한 Overlapping Intervals 로직을 사용합니다.
+단일 날짜만 전달 시 해당 날짜의 할 일만 반환합니다 (exact match).
+자세한 내용은 해당 API 문서를 참조하세요.
+
+#### 에러 케이스
+
+| 케이스 | 응답 |
+|--------|------|
+| 맞팔 관계가 아닌 경우 | \`403 Forbidden\` (FOLLOW_0906) |
+| startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
+| 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |`,
 	})
 	@ApiSuccessResponse({ type: TodoListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -282,8 +362,9 @@ export class TodoController {
 			friendUserId: params.userId,
 			cursor: query.cursor,
 			size: query.size,
-			startDate: query.startDate ? new Date(query.startDate) : undefined,
-			endDate: query.endDate ? new Date(query.endDate) : undefined,
+			// DATE 타입 필드는 시간 정보가 없으므로 toDateOnly 사용
+			startDate: query.startDate ? toDateOnly(query.startDate) : undefined,
+			endDate: query.endDate ? toDateOnly(query.endDate) : undefined,
 		});
 
 		return {
@@ -303,6 +384,12 @@ export class TodoController {
 	 */
 	@Patch(":id")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 수정",
 		operationId: "updateTodo",
@@ -318,6 +405,7 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 		@Body() dto: UpdateTodoDto,
+		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
 
@@ -325,18 +413,18 @@ export class TodoController {
 			title: dto.title,
 			content: dto.content,
 			categoryId: dto.categoryId,
-			startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+			startDate: dto.startDate ? toDateOnly(dto.startDate) : undefined,
 			endDate:
 				dto.endDate === null
 					? null
 					: dto.endDate
-						? new Date(dto.endDate)
+						? toDateOnly(dto.endDate)
 						: undefined,
 			scheduledTime:
 				dto.scheduledTime === null
 					? null
 					: dto.scheduledTime && dto.startDate
-						? this.parseScheduledTime(dto.startDate, dto.scheduledTime)
+						? this.parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
 						: undefined,
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
@@ -356,6 +444,12 @@ export class TodoController {
 	 */
 	@Patch(":id/complete")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 완료 상태 토글",
 		operationId: "toggleTodoComplete",
@@ -371,6 +465,7 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 		@Body() dto: ToggleTodoCompleteDto,
+		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.logger.debug(
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
@@ -380,6 +475,7 @@ export class TodoController {
 			params.id,
 			user.userId,
 			dto,
+			tz,
 		);
 
 		return {
@@ -469,6 +565,12 @@ export class TodoController {
 	 */
 	@Patch(":id/schedule")
 	@HttpCode(HttpStatus.OK)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "할 일 일정 변경",
 		operationId: "updateTodoSchedule",
@@ -477,7 +579,7 @@ export class TodoController {
 **요청 필드** (모두 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
-- \`scheduledTime\`: 예정 시간 (HH:mm)
+- \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
 - \`isAllDay\`: 종일 여부`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
@@ -488,6 +590,7 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 		@Body() dto: UpdateTodoScheduleDto,
+		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.logger.debug(
 			`Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
@@ -497,6 +600,7 @@ export class TodoController {
 			params.id,
 			user.userId,
 			dto,
+			tz,
 		);
 
 		return {
@@ -616,14 +720,21 @@ export class TodoController {
 	// ============================================
 
 	/**
-	 * HH:mm 형식의 시간을 Date 객체로 변환
+	 * HH:mm 형식의 시간을 UTC Date 객체로 변환
+	 *
+	 * 사용자의 로컬 시간을 X-Timezone 헤더 기반으로 UTC 변환하여 저장합니다.
+	 * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
+	 *
+	 * @param dateStr - YYYY-MM-DD 형식의 날짜 문자열
+	 * @param timeStr - HH:mm 형식의 시간 문자열
+	 * @param tz - IANA 타임존 (예: "Asia/Seoul", "America/New_York")
+	 * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
 	 */
-	private parseScheduledTime(dateStr: string, timeStr: string): Date {
-		const timeParts = timeStr.split(":");
-		const hours = Number(timeParts[0] ?? 0);
-		const minutes = Number(timeParts[1] ?? 0);
-		const date = new Date(dateStr);
-		date.setHours(hours, minutes, 0, 0);
-		return date;
+	private parseScheduledTime(
+		dateStr: string,
+		timeStr: string,
+		tz: string,
+	): Date {
+		return toScheduledTime(dateStr, timeStr, tz);
 	}
 }

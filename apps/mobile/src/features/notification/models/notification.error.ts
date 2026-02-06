@@ -1,71 +1,45 @@
-import { ClientError } from '@src/shared/errors';
+import type { BusinessError } from '@src/shared/errors';
 
-export class NotificationError extends ClientError {
-  override readonly name: string = 'NotificationError';
-  readonly code: string = 'NOTIFICATION_ERROR';
+export const NotificationErrorCode = {
+  PERMISSION_DENIED: 'NOTIFICATION_PERMISSION_DENIED',
+  NOT_PHYSICAL_DEVICE: 'NOTIFICATION_NOT_PHYSICAL_DEVICE',
+  VALIDATION_FAILED: 'NOTIFICATION_VALIDATION_FAILED',
+} as const;
 
-  constructor(message = '알림 작업에 실패했어요') {
-    super(message);
-  }
+export type NotificationErrorCode =
+  (typeof NotificationErrorCode)[keyof typeof NotificationErrorCode];
 
-  /** 알 수 없는 에러 → NotificationError 변환 */
-  static fromUnknown(error: unknown): NotificationError {
-    if (error instanceof NotificationError) return error;
-    if (error instanceof Error) return new NotificationError(error.message);
-    return new NotificationError();
-  }
-}
+export class NotificationError extends Error implements BusinessError {
+  override readonly name = 'NotificationError';
 
-/**
- * Thrown when user denies notification permission
- */
-export class NotificationPermissionDeniedError extends NotificationError {
-  override readonly name: string = 'NotificationPermissionDeniedError';
-  override readonly code: string = 'NOTIFICATION_PERMISSION_DENIED';
-
-  constructor() {
-    super('알림 권한이 거부되었어요. 설정에서 알림을 허용해주세요.');
-  }
-}
-
-/**
- * Thrown when push notifications are not available (simulator/emulator)
- */
-export class NotificationNotPhysicalDeviceError extends NotificationError {
-  override readonly name: string = 'NotificationNotPhysicalDeviceError';
-  override readonly code: string = 'NOTIFICATION_NOT_PHYSICAL_DEVICE';
-
-  constructor() {
-    super('푸시 알림은 실제 기기에서만 사용할 수 있어요.');
-  }
-}
-
-/**
- * Thrown when push token validation fails
- */
-export class NotificationValidationError extends NotificationError {
-  override readonly name: string = 'NotificationValidationError';
-  override readonly code: string = 'NOTIFICATION_VALIDATION_ERROR';
-
-  constructor(message = '알림 데이터 검증에 실패했어요') {
+  constructor(
+    public readonly code: NotificationErrorCode,
+    message: string,
+  ) {
     super(message);
   }
 }
 
-/**
- * Type guard for notification errors
- */
+export const NotificationErrors = {
+  permissionDenied: () =>
+    new NotificationError(
+      NotificationErrorCode.PERMISSION_DENIED,
+      '알림 권한이 거부되었어요. 설정에서 알림을 허용해주세요.',
+    ),
+  notPhysicalDevice: () =>
+    new NotificationError(
+      NotificationErrorCode.NOT_PHYSICAL_DEVICE,
+      '푸시 알림은 실제 기기에서만 사용할 수 있어요.',
+    ),
+  validationFailed: () =>
+    new NotificationError(NotificationErrorCode.VALIDATION_FAILED, '알림 데이터 검증에 실패했어요'),
+} as const;
+
 export const isNotificationError = (error: unknown): error is NotificationError =>
   error instanceof NotificationError;
 
-export const isPermissionDeniedError = (
-  error: unknown,
-): error is NotificationPermissionDeniedError => error instanceof NotificationPermissionDeniedError;
+export const isPermissionDeniedError = (error: unknown): boolean =>
+  error instanceof NotificationError && error.code === NotificationErrorCode.PERMISSION_DENIED;
 
-export const isNotPhysicalDeviceError = (
-  error: unknown,
-): error is NotificationNotPhysicalDeviceError =>
-  error instanceof NotificationNotPhysicalDeviceError;
-
-export const isValidationError = (error: unknown): error is NotificationValidationError =>
-  error instanceof NotificationValidationError;
+export const isNotPhysicalDeviceError = (error: unknown): boolean =>
+  error instanceof NotificationError && error.code === NotificationErrorCode.NOT_PHYSICAL_DEVICE;
