@@ -2,6 +2,7 @@ import { CHEER_LIMITS, SUBSCRIPTION_CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
+import { addMilliseconds, now, startOfDayInTimezone } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -60,7 +61,10 @@ export class CheerService {
 	 *
 	 * @note 트랜잭션으로 감싸서 TOCTOU 경합 조건을 방지합니다.
 	 */
-	async sendCheer(params: SendCheerParams): Promise<CheerWithRelations> {
+	async sendCheer(
+		params: SendCheerParams,
+		tz: string = "UTC",
+	): Promise<CheerWithRelations> {
 		const { senderId, receiverId, message } = params;
 
 		// 1. 자기 자신 체크
@@ -80,12 +84,7 @@ export class CheerService {
 		// 트랜잭션으로 감싸서 check-and-create를 atomic하게 수행
 		const cheer = await this.database.$transaction(async (tx) => {
 			// 3. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
-			const today = new Date();
-			const startOfDay = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
+			const todayStart = startOfDayInTimezone(now(), tz);
 
 			const subscriptionStatus = await tx.user.findUnique({
 				where: { id: senderId },
@@ -103,7 +102,7 @@ export class CheerService {
 				where: {
 					senderId,
 					createdAt: {
-						gte: startOfDay,
+						gte: todayStart,
 					},
 				},
 			});
@@ -125,11 +124,11 @@ export class CheerService {
 
 			if (lastCheer) {
 				const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-				const canCheerAt = new Date(lastCheer.createdAt.getTime() + cooldownMs);
-				const now = new Date();
+				const canCheerAt = addMilliseconds(cooldownMs, lastCheer.createdAt);
+				const currentTime = now();
 
-				if (now < canCheerAt) {
-					const remainingMs = canCheerAt.getTime() - now.getTime();
+				if (currentTime < canCheerAt) {
+					const remainingMs = canCheerAt.getTime() - currentTime.getTime();
 					const remainingSeconds = Math.ceil(remainingMs / 1000);
 					throw BusinessExceptions.cheerCooldownActive(
 						receiverId,
@@ -270,7 +269,10 @@ export class CheerService {
 	/**
 	 * 일일 응원 제한 정보 조회
 	 */
-	async getLimitInfo(userId: string): Promise<CheerLimitInfo> {
+	async getLimitInfo(
+		userId: string,
+		tz: string = "UTC",
+	): Promise<CheerLimitInfo> {
 		// 구독 상태 조회 (캐시 우선)
 		let subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null;
 
@@ -295,7 +297,7 @@ export class CheerService {
 				: CHEER_LIMITS.FREE_DAILY_LIMIT;
 
 		// 오늘 사용량 조회
-		const today = new Date();
+		const today = startOfDayInTimezone(now(), tz);
 		const used = await this.cheerRepository.countTodayCheers({
 			senderId: userId,
 			date: today,
@@ -386,10 +388,10 @@ export class CheerService {
 		}
 
 		const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-		const canCheerAt = new Date(lastCheerTime.getTime() + cooldownMs);
-		const now = new Date();
+		const canCheerAt = addMilliseconds(cooldownMs, lastCheerTime);
+		const currentTime = now();
 
-		if (now >= canCheerAt) {
+		if (currentTime >= canCheerAt) {
 			return {
 				isActive: false,
 				remainingSeconds: 0,
@@ -397,7 +399,7 @@ export class CheerService {
 			};
 		}
 
-		const remainingMs = canCheerAt.getTime() - now.getTime();
+		const remainingMs = canCheerAt.getTime() - currentTime.getTime();
 		const remainingSeconds = Math.ceil(remainingMs / 1000);
 
 		return {

@@ -14,7 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-
+import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -100,16 +100,20 @@ export class CheerController {
 	async sendCheer(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: SendCheerDto,
+		@Timezone() tz: string,
 	): Promise<CreateCheerResponseDto> {
 		this.logger.debug(
 			`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
 		);
 
-		const cheer = await this.cheerService.sendCheer({
-			senderId: user.userId,
-			receiverId: dto.receiverId,
-			message: dto.message,
-		});
+		const cheer = await this.cheerService.sendCheer(
+			{
+				senderId: user.userId,
+				receiverId: dto.receiverId,
+				message: dto.message,
+			},
+			tz,
+		);
 
 		this.logger.log(
 			`응원 완료: id=${cheer.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
@@ -206,8 +210,9 @@ export class CheerController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLimitInfo(
 		@CurrentUser() user: CurrentUserPayload,
+		@Timezone() tz: string,
 	): Promise<CheerLimitInfoDto> {
-		const limitInfo = await this.cheerService.getLimitInfo(user.userId);
+		const limitInfo = await this.cheerService.getLimitInfo(user.userId, tz);
 
 		return CheerMapper.toLimitInfoDto(limitInfo);
 	}

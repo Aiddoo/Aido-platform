@@ -1,6 +1,7 @@
 import { NUDGE_LIMITS, SUBSCRIPTION_NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { addMilliseconds, now, startOfDayInTimezone } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -59,7 +60,10 @@ export class NudgeService {
 	 *
 	 * @note 트랜잭션 사용: Rate Limiting의 TOCTOU 동시성 문제 방지
 	 */
-	async sendNudge(params: SendNudgeParams): Promise<NudgeWithRelations> {
+	async sendNudge(
+		params: SendNudgeParams,
+		tz: string = "UTC",
+	): Promise<NudgeWithRelations> {
 		const { senderId, receiverId, todoId, message } = params;
 
 		// 트랜잭션으로 감싸서 check-and-create를 atomic하게 수행
@@ -105,16 +109,11 @@ export class NudgeService {
 					? SUBSCRIPTION_NUDGE_LIMITS[limitKey]
 					: NUDGE_LIMITS.FREE_DAILY_LIMIT;
 
-			const today = new Date();
-			const startOfDay = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
+			const todayStart = startOfDayInTimezone(now(), tz);
 			const used = await tx.nudge.count({
 				where: {
 					senderId,
-					createdAt: { gte: startOfDay },
+					createdAt: { gte: todayStart },
 				},
 			});
 
@@ -136,13 +135,11 @@ export class NudgeService {
 
 			if (lastNudge) {
 				const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-				const cooldownEndsAt = new Date(
-					lastNudge.createdAt.getTime() + cooldownMs,
-				);
-				const now = new Date();
+				const cooldownEndsAt = addMilliseconds(cooldownMs, lastNudge.createdAt);
+				const currentTime = now();
 
-				if (now < cooldownEndsAt) {
-					const remainingMs = cooldownEndsAt.getTime() - now.getTime();
+				if (currentTime < cooldownEndsAt) {
+					const remainingMs = cooldownEndsAt.getTime() - currentTime.getTime();
 					const remainingSeconds = Math.ceil(remainingMs / 1000);
 					throw BusinessExceptions.nudgeCooldownActive(
 						receiverId,
@@ -292,7 +289,10 @@ export class NudgeService {
 	/**
 	 * 일일 독촉 제한 정보 조회
 	 */
-	async getLimitInfo(userId: string): Promise<NudgeLimitInfo> {
+	async getLimitInfo(
+		userId: string,
+		tz: string = "UTC",
+	): Promise<NudgeLimitInfo> {
 		// 구독 상태 조회
 		const subscriptionStatus =
 			await this.nudgeRepository.getUserSubscriptionStatus(userId);
@@ -307,7 +307,7 @@ export class NudgeService {
 				: NUDGE_LIMITS.FREE_DAILY_LIMIT;
 
 		// 오늘 사용량 조회
-		const today = new Date();
+		const today = startOfDayInTimezone(now(), tz);
 		const used = await this.nudgeRepository.countTodayNudges({
 			senderId: userId,
 			date: today,
@@ -402,10 +402,10 @@ export class NudgeService {
 		}
 
 		const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-		const cooldownEndsAt = new Date(lastNudgeTime.getTime() + cooldownMs);
-		const now = new Date();
+		const cooldownEndsAt = addMilliseconds(cooldownMs, lastNudgeTime);
+		const currentTime = now();
 
-		if (now >= cooldownEndsAt) {
+		if (currentTime >= cooldownEndsAt) {
 			return {
 				isActive: false,
 				remainingSeconds: 0,
@@ -413,7 +413,7 @@ export class NudgeService {
 			};
 		}
 
-		const remainingMs = cooldownEndsAt.getTime() - now.getTime();
+		const remainingMs = cooldownEndsAt.getTime() - currentTime.getTime();
 		const remainingSeconds = Math.ceil(remainingMs / 1000);
 
 		return {

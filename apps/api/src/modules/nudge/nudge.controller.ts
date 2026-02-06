@@ -14,7 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-
+import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -100,17 +100,21 @@ export class NudgeController {
 	async sendNudge(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: SendNudgeDto,
+		@Timezone() tz: string,
 	): Promise<CreateNudgeResponseDto> {
 		this.logger.debug(
 			`콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}, todoId=${dto.todoId}`,
 		);
 
-		const nudge = await this.nudgeService.sendNudge({
-			senderId: user.userId,
-			receiverId: dto.receiverId,
-			todoId: dto.todoId,
-			message: dto.message,
-		});
+		const nudge = await this.nudgeService.sendNudge(
+			{
+				senderId: user.userId,
+				receiverId: dto.receiverId,
+				todoId: dto.todoId,
+				message: dto.message,
+			},
+			tz,
+		);
 
 		this.logger.log(
 			`콕 찌르기 완료: id=${nudge.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
@@ -207,8 +211,9 @@ export class NudgeController {
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLimitInfo(
 		@CurrentUser() user: CurrentUserPayload,
+		@Timezone() tz: string,
 	): Promise<NudgeLimitInfoDto> {
-		const limitInfo = await this.nudgeService.getLimitInfo(user.userId);
+		const limitInfo = await this.nudgeService.getLimitInfo(user.userId, tz);
 
 		return NudgeMapper.toLimitInfoDto(limitInfo);
 	}
