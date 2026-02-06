@@ -13,15 +13,6 @@ interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
 }
 
-/**
- * 클라이언트 중심 라우팅 결정
- * type + context 기반으로 Internal route 생성
- *
- * 장점:
- * - 라우트 변경 시 클라이언트만 수정
- * - 타입별 fallback 로직 유연하게 처리
- * - 서버는 context만 전달하면 됨
- */
 const getInternalRoute = (type: NotificationType, context?: NotificationContext): string | null => {
   switch (type) {
     // 친구 요청
@@ -68,12 +59,6 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
 
-  /**
-   * 알림 탭 시 실행
-   *
-   * 1. 읽음 처리 (markAsRead → syncBadgeCount → invalidateQueries)
-   * 2. 라우팅 (action.type enum 기반 분기)
-   */
   const handleNotificationResponse = useCallback(
     async (response: Notifications.NotificationResponse): Promise<void> => {
       const rawData = response.notification.request.content.data;
@@ -129,10 +114,6 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
     [isAuthenticated, notificationService, queryClient],
   );
 
-  /**
-   * 포그라운드 알림 수신 시 실행
-   * 읽음 처리 없이 배지/쿼리만 갱신
-   */
   const handleForegroundNotification = useCallback(() => {
     if (isAuthenticated) {
       notificationService.syncBadgeCount().catch(console.error);

@@ -1,12 +1,9 @@
+import { err, ok, type Result } from '@src/shared/errors/result';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-
-import {
-  NotificationNotPhysicalDeviceError,
-  NotificationPermissionDeniedError,
-} from '../models/notification.error';
+import { type NotificationError, NotificationErrors } from '../models/notification.error';
 
 export class PushTokenService {
   isPhysicalDevice = (): boolean => Device.isDevice;
@@ -23,14 +20,14 @@ export class PushTokenService {
     return status === 'granted';
   };
 
-  getExpoPushToken = async (): Promise<string> => {
+  getExpoPushToken = async (): Promise<Result<string, NotificationError>> => {
     if (!this.isPhysicalDevice()) {
-      throw new NotificationNotPhysicalDeviceError();
+      return err(NotificationErrors.notPhysicalDevice());
     }
 
     const isGranted = await this.requestPermission();
     if (!isGranted) {
-      throw new NotificationPermissionDeniedError();
+      return err(NotificationErrors.permissionDenied());
     }
 
     if (Platform.OS === 'android') {
@@ -45,7 +42,7 @@ export class PushTokenService {
       console.log('[PushToken]', tokenData.data);
     }
 
-    return tokenData.data;
+    return ok(tokenData.data);
   };
 
   async #setupAndroidChannel(): Promise<void> {
