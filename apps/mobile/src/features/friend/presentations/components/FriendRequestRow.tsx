@@ -1,10 +1,10 @@
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { Avatar } from 'heroui-native';
 import type { ReactNode } from 'react';
-import type { FriendRequestUser } from '../../models/friend.model';
+import type { FriendRequest } from '../../models/friend.model';
 
 interface FriendRequestRowProps {
-  user: FriendRequestUser;
+  user: FriendRequest;
   actions: ReactNode;
 }
 

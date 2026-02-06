@@ -17,8 +17,13 @@ import {
   sentRequestsResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
+import type { ApiError } from '@src/shared/errors/api-error';
+import { ParseError } from '@src/shared/errors/infra-error';
+import { ok, type Result } from '@src/shared/errors/result';
+import type { Page } from '@src/shared/types/page.type';
 
-import { FriendValidationError } from '../models/friend.error';
+import type { FriendRequest, FriendUser, SendRequestResult } from '../models/friend.model';
+import { toFriendRequestsPage, toFriendsPage, toSendRequestResult } from './friend.mapper';
 import type { FriendRepository, PaginationParams } from './friend.repository';
 
 export class FriendRepositoryImpl implements FriendRepository {
@@ -28,122 +33,134 @@ export class FriendRepositoryImpl implements FriendRepository {
     this.#httpClient = httpClient;
   }
 
-  async sendRequest(userTag: string): Promise<SendFriendRequestResponse> {
-    const { data } = await this.#httpClient.post<SendFriendRequestResponse>(
-      `v1/follows/${userTag}`,
+  async sendRequest(userTag: string): Promise<Result<SendRequestResult, ApiError>> {
+    const result = await this.#httpClient.post<SendFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userTag)}`,
     );
 
-    const result = sendFriendRequestResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid sendRequest response:', result.error);
-      throw new FriendValidationError();
+    if (!result.ok) return result;
+
+    const parsed = sendFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid sendRequest response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toSendRequestResult(parsed.data));
   }
 
-  #buildPaginatedUrl(basePath: string, params?: PaginationParams): string {
-    const searchParams = new URLSearchParams();
-    if (params?.cursor) searchParams.set('cursor', params.cursor);
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-
-    const queryString = searchParams.toString();
-    return queryString ? `${basePath}?${queryString}` : basePath;
-  }
-
-  async getReceivedRequests(params?: PaginationParams): Promise<ReceivedRequestsResponse> {
-    const url = this.#buildPaginatedUrl('v1/follows/requests/received', params);
-
-    const { data } = await this.#httpClient.get<ReceivedRequestsResponse>(url);
-
-    const result = receivedRequestsResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid getReceivedRequests response:', result.error);
-      throw new FriendValidationError();
-    }
-
-    return result.data;
-  }
-
-  async getSentRequests(params?: PaginationParams): Promise<SentRequestsResponse> {
-    const url = this.#buildPaginatedUrl('v1/follows/requests/sent', params);
-
-    const { data } = await this.#httpClient.get<SentRequestsResponse>(url);
-
-    const result = sentRequestsResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid getSentRequests response:', result.error);
-      throw new FriendValidationError();
-    }
-
-    return result.data;
-  }
-
-  async acceptRequest(userId: string): Promise<AcceptFriendRequestResponse> {
-    const { data } = await this.#httpClient.patch<AcceptFriendRequestResponse>(
-      `v1/follows/${userId}/accept`,
+  async getReceivedRequests(
+    params?: PaginationParams,
+  ): Promise<Result<Page<FriendRequest>, ApiError>> {
+    const result = await this.#httpClient.get<ReceivedRequestsResponse>(
+      'v1/follows/requests/received',
+      { params: { cursor: params?.cursor, limit: params?.limit } },
     );
 
-    const result = acceptFriendRequestResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid acceptRequest response:', result.error);
-      throw new FriendValidationError();
+    if (!result.ok) return result;
+
+    const parsed = receivedRequestsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid getReceivedRequests response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toFriendRequestsPage(parsed.data));
   }
 
-  async rejectRequest(userId: string): Promise<RejectFriendRequestResponse> {
-    const { data } = await this.#httpClient.patch<RejectFriendRequestResponse>(
-      `v1/follows/${userId}/reject`,
+  async getSentRequests(params?: PaginationParams): Promise<Result<Page<FriendRequest>, ApiError>> {
+    const result = await this.#httpClient.get<SentRequestsResponse>('v1/follows/requests/sent', {
+      params: { cursor: params?.cursor, limit: params?.limit },
+    });
+
+    if (!result.ok) return result;
+
+    const parsed = sentRequestsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid getSentRequests response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toFriendRequestsPage(parsed.data));
+  }
+
+  async acceptRequest(userId: string): Promise<Result<void, ApiError>> {
+    const result = await this.#httpClient.patch<AcceptFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}/accept`,
     );
 
-    const result = rejectFriendRequestResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid rejectRequest response:', result.error);
-      throw new FriendValidationError();
+    if (!result.ok) return result;
+
+    const parsed = acceptFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid acceptRequest response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(undefined);
   }
 
-  async cancelRequest(userId: string): Promise<CancelFriendRequestResponse> {
-    const { data } = await this.#httpClient.delete<CancelFriendRequestResponse>(
-      `v1/follows/${userId}`,
+  async rejectRequest(userId: string): Promise<Result<void, ApiError>> {
+    const result = await this.#httpClient.patch<RejectFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}/reject`,
     );
 
-    const result = cancelFriendRequestResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid cancelRequest response:', result.error);
-      throw new FriendValidationError();
+    if (!result.ok) return result;
+
+    const parsed = rejectFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid rejectRequest response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(undefined);
   }
 
-  async getFriends(params?: PaginationParams): Promise<FriendsListResponse> {
-    const url = this.#buildPaginatedUrl('v1/follows/friends', params);
+  async cancelRequest(userId: string): Promise<Result<void, ApiError>> {
+    const result = await this.#httpClient.delete<CancelFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}`,
+    );
 
-    const { data } = await this.#httpClient.get<FriendsListResponse>(url);
+    if (!result.ok) return result;
 
-    const result = friendsListResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid getFriends response:', result.error);
-      throw new FriendValidationError();
+    const parsed = cancelFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid cancelRequest response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(undefined);
   }
 
-  async removeFriend(userId: string): Promise<RemoveFriendResponse> {
-    const { data } = await this.#httpClient.delete<RemoveFriendResponse>(`v1/follows/${userId}`);
+  async getFriends(params?: PaginationParams): Promise<Result<Page<FriendUser>, ApiError>> {
+    const result = await this.#httpClient.get<FriendsListResponse>('v1/follows/friends', {
+      params: { cursor: params?.cursor, limit: params?.limit },
+    });
 
-    const result = removeFriendResponseSchema.safeParse(data);
-    if (!result.success) {
-      console.error('[FriendRepository] Invalid removeFriend response:', result.error);
-      throw new FriendValidationError();
+    if (!result.ok) return result;
+
+    const parsed = friendsListResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid getFriends response:', parsed.error);
+      throw new ParseError();
     }
 
-    return result.data;
+    return ok(toFriendsPage(parsed.data));
+  }
+
+  async removeFriend(userId: string): Promise<Result<void, ApiError>> {
+    const result = await this.#httpClient.delete<RemoveFriendResponse>(
+      `v1/follows/${encodeURIComponent(userId)}`,
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = removeFriendResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[FriendRepository] Invalid removeFriend response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(undefined);
   }
 }
