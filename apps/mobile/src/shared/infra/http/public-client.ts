@@ -1,4 +1,5 @@
 import { ENV } from '@src/shared/config/env';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
 import { handlePublicApiErrors } from './error-handler';
 
@@ -12,6 +13,7 @@ export const createPublicClient = (): KyInstance => {
     timeout: 10_000,
     headers: {
       'Content-Type': 'application/json',
+      'X-Timezone': getDeviceTimezone(),
     },
     hooks: {
       afterResponse: [handlePublicApiErrors],
