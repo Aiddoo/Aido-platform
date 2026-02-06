@@ -374,6 +374,100 @@ describe("NotificationRepository", () => {
 	});
 
 	// ==========================================================================
+	// Deduplication Queries
+	// ==========================================================================
+
+	describe("existsNotification", () => {
+		const since = new Date("2026-02-06T00:00:00.000Z");
+
+		it("해당 타입의 알림이 존재하면 true를 반환해야 한다", async () => {
+			// Given
+			(db.notification.count as jest.Mock).mockResolvedValue(1);
+
+			// When
+			const result = await repository.existsNotification({
+				userId: "user-1",
+				type: "DAILY_COMPLETE",
+				since,
+			});
+
+			// Then
+			expect(db.notification.count).toHaveBeenCalledWith({
+				where: {
+					userId: "user-1",
+					type: "DAILY_COMPLETE",
+					createdAt: { gte: since },
+				},
+			});
+			expect(result).toBe(true);
+		});
+
+		it("해당 타입의 알림이 없으면 false를 반환해야 한다", async () => {
+			// Given
+			(db.notification.count as jest.Mock).mockResolvedValue(0);
+
+			// When
+			const result = await repository.existsNotification({
+				userId: "user-1",
+				type: "DAILY_COMPLETE",
+				since,
+			});
+
+			// Then
+			expect(result).toBe(false);
+		});
+	});
+
+	describe("findAlreadyNotifiedUserIds", () => {
+		const since = new Date("2026-02-06T00:00:00.000Z");
+
+		it("이미 알림을 받은 사용자 ID Set을 반환해야 한다", async () => {
+			// Given
+			(db.notification.findMany as jest.Mock).mockResolvedValue([
+				{ userId: "user-1" },
+				{ userId: "user-3" },
+			]);
+
+			// When
+			const result = await repository.findAlreadyNotifiedUserIds({
+				userIds: ["user-1", "user-2", "user-3"],
+				type: "FRIEND_COMPLETED",
+				since,
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(db.notification.findMany).toHaveBeenCalledWith({
+				where: {
+					userId: { in: ["user-1", "user-2", "user-3"] },
+					type: "FRIEND_COMPLETED",
+					friendId: "friend-1",
+					createdAt: { gte: since },
+				},
+				select: { userId: true },
+				distinct: ["userId"],
+			});
+			expect(result).toEqual(new Set(["user-1", "user-3"]));
+		});
+
+		it("아무도 알림을 받지 않았으면 빈 Set을 반환해야 한다", async () => {
+			// Given
+			(db.notification.findMany as jest.Mock).mockResolvedValue([]);
+
+			// When
+			const result = await repository.findAlreadyNotifiedUserIds({
+				userIds: ["user-1", "user-2"],
+				type: "FRIEND_COMPLETED",
+				since,
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(result).toEqual(new Set());
+		});
+	});
+
+	// ==========================================================================
 	// PushToken CRUD Tests
 	// ==========================================================================
 

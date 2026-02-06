@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "@/database/database.service";
-import type { Notification, PushToken } from "@/generated/prisma/client";
+import type {
+	Notification,
+	NotificationType,
+	PushToken,
+} from "@/generated/prisma/client";
 
 import type {
 	CreateNotificationData,
@@ -187,6 +191,48 @@ export class NotificationRepository {
 				},
 			},
 		});
+	}
+
+	/**
+	 * 특정 타입의 알림이 지정 시각 이후 존재하는지 확인
+	 * - DAILY_COMPLETE 중복 방지용 (단건)
+	 */
+	async existsNotification(params: {
+		userId: string;
+		type: NotificationType;
+		since: Date;
+	}): Promise<boolean> {
+		const count = await this.database.notification.count({
+			where: {
+				userId: params.userId,
+				type: params.type,
+				createdAt: { gte: params.since },
+			},
+		});
+		return count > 0;
+	}
+
+	/**
+	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
+	 * - FRIEND_COMPLETED 중복 방지용 — N+1 방지를 위해 단일 쿼리로 처리
+	 */
+	async findAlreadyNotifiedUserIds(params: {
+		userIds: string[];
+		type: NotificationType;
+		since: Date;
+		friendId: string;
+	}): Promise<Set<string>> {
+		const rows = await this.database.notification.findMany({
+			where: {
+				userId: { in: params.userIds },
+				type: params.type,
+				friendId: params.friendId,
+				createdAt: { gte: params.since },
+			},
+			select: { userId: true },
+			distinct: ["userId"],
+		});
+		return new Set(rows.map((r) => r.userId));
 	}
 
 	// =========================================================================
