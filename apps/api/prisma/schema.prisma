@@ -405,7 +405,7 @@ model Todo {
   // 날짜 (기간 지원)
   startDate     DateTime  @db.Date // 시작일
   endDate       DateTime? @db.Date // 종료일 (null = 단일 날짜)
-  scheduledTime DateTime? // 시간 (선택)
+  scheduledTime DateTime? @db.Timestamptz(3) // 예정 시각 (UTC, 시간 이벤트 전용)
   isAllDay      Boolean   @default(true)
 
   // 가시성

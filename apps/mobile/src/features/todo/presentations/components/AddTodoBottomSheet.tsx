@@ -14,8 +14,8 @@ import { BottomSheet, Tabs } from 'heroui-native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, View } from 'react-native';
-import { type AddTodoFormInput, addTodoFormSchema } from '../../models/todo.model';
 import { createTodoMutationOptions } from '../queries/create-todo-mutation-options';
+import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 
 interface AddTodoBottomSheetProps {
   selectedDate: Date;

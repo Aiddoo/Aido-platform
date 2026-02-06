@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCooldown } from '@src/features/auth/presentations/hooks/useCooldown';
@@ -5,6 +6,7 @@ import { resendVerificationMutationOptions } from '@src/features/auth/presentati
 import { verifyEmailMutationOptions } from '@src/features/auth/presentations/queries/verify-email-mutation-options';
 import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ApiError } from '@src/shared/errors/api-error';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -66,6 +68,13 @@ export const SignUpVerificationForm = () => {
           toast.success('인증 코드가 재발송되었습니다');
         },
         onError: (error) => {
+          // 타입 세이프: VERIFY_0753 쿨다운 에러 처리
+          if (error instanceof ApiError && error.hasCode(ErrorCode.VERIFY_0753)) {
+            const remaining = error.details?.remainingSeconds;
+            if (typeof remaining === 'number') {
+              setCooldown(remaining);
+            }
+          }
           toast.error(error, { fallback: '인증 코드 재발송에 실패했습니다' });
         },
       },

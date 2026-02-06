@@ -1,11 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
-
-dayjs.extend(utc);
 
 import type {
 	FindFriendTodosParams,
@@ -13,6 +9,64 @@ import type {
 	TodoWithCategory,
 	TransactionClient,
 } from "./types/todo.types.ts";
+
+/**
+ * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)
+ *
+ * 투두의 기간 [todo.startDate, todo.endDate]가 필터 범위 [filterStart, filterEnd]와 겹치는지 확인합니다.
+ *
+ * ### 동작 방식
+ *
+ * **다일(multi-day) 투두** (endDate가 있는 경우):
+ * - 두 구간이 겹치려면: todo.startDate <= filterEnd AND todo.endDate >= filterStart
+ *
+ * **단일 날짜 투두** (endDate가 null인 경우):
+ * - todo.startDate가 필터 범위 내에 있어야 함: filterStart <= todo.startDate <= filterEnd
+ *
+ * ### 단일 날짜 파라미터 처리
+ *
+ * startDate 또는 endDate 중 하나만 전달되면 해당 날짜를 **exact match**로 처리합니다.
+ * (오픈 레인지 방지 — Google Calendar 패턴 준수)
+ *
+ * ### 사용 시나리오
+ *
+ * | filterStart | filterEnd | 결과 |
+ * |-------------|-----------|------|
+ * | 미지정 | 미지정 | undefined (필터 없음) |
+ * | 2026-01-15 | 2026-01-15 | 해당 날짜에 해당하는 투두 |
+ * | 2026-01-01 | 2026-01-31 | 해당 기간에 걸쳐 있는 투두 |
+ * | 2026-01-15 | 미지정 | 해당 날짜에 해당하는 투두 (exact match) |
+ * | 미지정 | 2026-01-31 | 해당 날짜에 해당하는 투두 (exact match) |
+ */
+function buildDateRangeFilter(
+	startDate?: Date,
+	endDate?: Date,
+): Prisma.TodoWhereInput | undefined {
+	if (!startDate && !endDate) {
+		return undefined;
+	}
+
+	// 단일 날짜만 전달 시 → exact match (오픈 레인지 방지)
+	const effectiveStart = startDate ?? (endDate as Date);
+	const effectiveEnd = endDate ?? (startDate as Date);
+
+	// 다일 투두 (endDate가 있는 경우): Overlapping Intervals
+	const multiDayCondition: Prisma.TodoWhereInput = {
+		AND: [
+			{ endDate: { not: null } },
+			{ startDate: { lte: effectiveEnd } },
+			{ endDate: { gte: effectiveStart } },
+		],
+	};
+
+	// 단일 날짜 투두 (endDate가 null인 경우): startDate가 필터 범위 내에 있는지 확인
+	const singleDayCondition: Prisma.TodoWhereInput = {
+		endDate: null,
+		startDate: { gte: effectiveStart, lte: effectiveEnd },
+	};
+
+	return { OR: [multiDayCondition, singleDayCondition] };
+}
 
 @Injectable()
 export class TodoRepository {
@@ -99,14 +153,9 @@ export class TodoRepository {
 		}
 
 		// 날짜 범위 필터
-		if (startDate || endDate) {
-			where.startDate = {};
-			if (startDate) {
-				where.startDate.gte = startDate;
-			}
-			if (endDate) {
-				where.startDate.lte = endDate;
-			}
+		const dateFilter = buildDateRangeFilter(startDate, endDate);
+		if (dateFilter) {
+			where.AND = [dateFilter];
 		}
 
 		return client.todo.findMany({
@@ -175,14 +224,9 @@ export class TodoRepository {
 		};
 
 		// 날짜 범위 필터
-		if (startDate || endDate) {
-			where.startDate = {};
-			if (startDate) {
-				where.startDate.gte = startDate;
-			}
-			if (endDate) {
-				where.startDate.lte = endDate;
-			}
+		const dateFilter = buildDateRangeFilter(startDate, endDate);
+		if (dateFilter) {
+			where.AND = [dateFilter];
 		}
 
 		return client.todo.findMany({
@@ -211,38 +255,27 @@ export class TodoRepository {
 
 	/**
 	 * 사용자의 오늘 할일 통계 조회
+	 * @param userId - 사용자 ID
+	 * @param today - 오늘 날짜 (타임존 고려하여 호출부에서 전달)
 	 * @returns { total: 전체 할일 수, completed: 완료된 할일 수 }
 	 */
 	async getTodayTodoStats(
 		userId: string,
+		today: Date,
 		tx?: TransactionClient,
 	): Promise<{ total: number; completed: number }> {
 		const client = tx ?? this.database;
 
-		// 오늘 날짜 범위 계산 (UTC 기준으로 일관성 보장)
-		const today = dayjs.utc().startOf("day").toDate();
-		const tomorrow = dayjs.utc().add(1, "day").startOf("day").toDate();
+		// 오늘 날짜에 해당하는 투두 필터
+		const dateFilter = buildDateRangeFilter(today, today);
+		const where: Prisma.TodoWhereInput = {
+			userId,
+			...(dateFilter && { AND: [dateFilter] }),
+		};
 
 		const [total, completed] = await Promise.all([
-			client.todo.count({
-				where: {
-					userId,
-					startDate: {
-						gte: today,
-						lt: tomorrow,
-					},
-				},
-			}),
-			client.todo.count({
-				where: {
-					userId,
-					startDate: {
-						gte: today,
-						lt: tomorrow,
-					},
-					completed: true,
-				},
-			}),
+			client.todo.count({ where }),
+			client.todo.count({ where: { ...where, completed: true } }),
 		]);
 
 		return { total, completed };

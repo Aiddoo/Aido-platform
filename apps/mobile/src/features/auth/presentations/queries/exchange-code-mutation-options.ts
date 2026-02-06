@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const exchangeCodeMutationOptions = () => {
@@ -8,16 +9,22 @@ export const exchangeCodeMutationOptions = () => {
   const { setStatus } = useAuth();
 
   return mutationOptions({
-    mutationFn: authService.exchangeCode,
+    mutationFn: async (request: Parameters<typeof authService.exchangeCode>[0]) => {
+      const result = await authService.exchangeCode(request);
+      return unwrap(result);
+    },
     onSuccess: async () => {
       setStatus('authenticated');
 
       // Register push token after successful authentication
       try {
-        await notificationService.setupPushNotifications();
+        const tokenResult = await notificationService.setupPushNotifications();
+        if (!tokenResult.ok) {
+          console.log('[PushNotification] Setup skipped:', tokenResult.error);
+        }
       } catch (error) {
         // Silently fail - push notification is optional
-        console.log('[PushNotification] Setup skipped:', error);
+        console.log('[PushNotification] Setup error:', error);
       }
     },
   });

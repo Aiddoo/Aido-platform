@@ -12,7 +12,7 @@ import { TodoRepositoryImpl } from '@src/features/todo/repositories/todo.reposit
 import { TodoService } from '@src/features/todo/services/todo.service';
 
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
-import { KyHttpClient } from '@src/shared/infra/http/ky-http-client';
+import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 
@@ -42,8 +42,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const authHttpClient = new KyHttpClient(authKyInstance);
 
     // Auth
-    const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient, storage);
-    const authService = new AuthService(authRepository);
+    const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient);
+    const authService = new AuthService(authRepository, storage);
 
     // Friend
     const friendRepository = new FriendRepositoryImpl(authHttpClient);

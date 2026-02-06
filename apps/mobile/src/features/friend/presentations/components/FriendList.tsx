@@ -22,7 +22,7 @@ export function FriendList() {
   );
   const removeMutation = useMutation(removeFriendMutationOptions());
 
-  const allFriends = data.pages.flatMap((page) => page.friends);
+  const allFriends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
   return (

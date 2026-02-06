@@ -1,6 +1,7 @@
 import type { VerifyEmailInput } from '@aido/validators';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const verifyEmailMutationOptions = () => {
@@ -8,7 +9,10 @@ export const verifyEmailMutationOptions = () => {
   const { setStatus } = useAuth();
 
   return mutationOptions({
-    mutationFn: (input: VerifyEmailInput) => authService.verifyEmail(input),
+    mutationFn: async (input: VerifyEmailInput) => {
+      const result = await authService.verifyEmail(input);
+      return unwrap(result);
+    },
     onSuccess: () => {
       setStatus('authenticated');
     },

@@ -1,4 +1,5 @@
 import { useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { notificationQueryKeys } from '../constants/notification-query-keys.constant';
@@ -8,7 +9,10 @@ export const markAllAsReadMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: () => notificationService.markAllAsRead(),
+    mutationFn: async () => {
+      const result = await notificationService.markAllAsRead();
+      return unwrap(result);
+    },
     onSuccess: async () => {
       // Invalidate notification queries to refresh data
       await queryClient.invalidateQueries({

@@ -1,12 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
+import { startOfDay } from "@/common/date/utils/date.util";
+
 import {
 	type FriendCompletedEventPayload,
 	NotificationEvents,
 	type TodoAllCompletedEventPayload,
 	type TodoReminderEventPayload,
 } from "../events/notification.events";
+import { NotificationRepository } from "../notification.repository";
 import { NotificationService } from "../notification.service";
 import { NotificationMessageBuilder } from "../templates/notification-templates";
 
@@ -22,7 +25,10 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
 export class TodoListener {
 	private readonly logger = new Logger(TodoListener.name);
 
-	constructor(private readonly notificationService: NotificationService) {}
+	constructor(
+		private readonly notificationService: NotificationService,
+		private readonly notificationRepository: NotificationRepository,
+	) {}
 
 	/**
 	 * 오늘 할일 전체 완료 이벤트 처리
@@ -41,6 +47,19 @@ export class TodoListener {
 		);
 
 		try {
+			const alreadySent = await this.notificationRepository.existsNotification({
+				userId: payload.userId,
+				type: "DAILY_COMPLETE",
+				since: startOfDay(),
+			});
+
+			if (alreadySent) {
+				this.logger.debug(
+					`Daily completion already sent today: userId=${payload.userId}`,
+				);
+				return;
+			}
+
 			await this.notificationService.createAndSend({
 				userId: payload.userId,
 				type: "DAILY_COMPLETE",
@@ -116,11 +135,30 @@ export class TodoListener {
 		}
 
 		try {
+			const alreadyNotified =
+				await this.notificationRepository.findAlreadyNotifiedUserIds({
+					userIds: payload.notifyUserIds,
+					type: "FRIEND_COMPLETED",
+					since: startOfDay(),
+					friendId: payload.friendId,
+				});
+
+			const newUserIds = payload.notifyUserIds.filter(
+				(id) => !alreadyNotified.has(id),
+			);
+
+			if (newUserIds.length === 0) {
+				this.logger.debug(
+					`Friend completion already sent today: friendId=${payload.friendId}`,
+				);
+				return;
+			}
+
 			const message = NotificationMessageBuilder.friendCompleted(
 				payload.friendName,
 			);
 
-			const notifications = payload.notifyUserIds.map((userId) => ({
+			const notifications = newUserIds.map((userId) => ({
 				userId,
 				type: "FRIEND_COMPLETED" as const,
 				title: message.title,
@@ -131,7 +169,7 @@ export class TodoListener {
 			await this.notificationService.createAndSendBatch(notifications);
 
 			this.logger.log(
-				`Friend completion notifications sent: friendId=${payload.friendId}, count=${payload.notifyUserIds.length}`,
+				`Friend completion notifications sent: friendId=${payload.friendId}, count=${newUserIds.length}`,
 			);
 		} catch (error) {
 			this.logger.error(

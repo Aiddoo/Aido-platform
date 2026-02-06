@@ -499,7 +499,7 @@ if (confirmed) {
 
 | 플랜 | 일일 제한 |
 |------|----------|
-| FREE | 10회 |
+| FREE | 5회 |
 | PREMIUM | 100회 |
 
 ---
@@ -569,7 +569,7 @@ async sendCheer(senderId: string, receiverId: string) {
 {
   "success": true,
   "data": { ... },
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2026-02-06T10:30:00.000Z"
 }
 ```
 
@@ -584,7 +584,7 @@ async sendCheer(senderId: string, receiverId: string) {
     "code": "USER_NOT_FOUND",
     "message": "사용자를 찾을 수 없습니다"
   },
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2026-02-06T10:30:00.000Z"
 }
 ```
 
@@ -602,7 +602,7 @@ async sendCheer(senderId: string, receiverId: string) {
       "totalPages": 5
     }
   },
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "timestamp": "2026-02-06T10:30:00.000Z"
 }
 ```
 
@@ -788,3 +788,82 @@ pnpm start:prod
 - [ ] Repository 단위 테스트
 - [ ] Service 단위 테스트
 - [ ] E2E 테스트
+
+---
+
+## 타임존 처리 규칙
+
+### 개요
+
+서버는 **모든 날짜를 UTC**로 저장하며, 클라이언트가 `X-Timezone` 헤더로 사용자의 타임존을 전달한다.
+
+| 항목 | 규칙 |
+|------|------|
+| 저장 | UTC (PostgreSQL TIMESTAMPTZ) |
+| 전송 | ISO 8601 UTC (`2026-02-06T10:30:00.000Z`) |
+| 날짜 경계 판단 | 클라이언트 `X-Timezone` 헤더 기준 |
+| 기본값 | `X-Timezone` 미전송 시 `UTC` |
+
+### X-Timezone 헤더
+
+```
+X-Timezone: Asia/Seoul
+```
+
+- IANA 타임존 식별자 사용 (예: `Asia/Seoul`, `America/New_York`)
+- 날짜 경계 판단이 필요한 API에서만 사용
+- 헤더가 없으면 `UTC`로 fallback
+
+### @Timezone 데코레이터
+
+```typescript
+import { Timezone } from '@/common/decorators';
+
+@Post()
+async create(
+  @Body() dto: CreateTodoDto,
+  @Timezone() timezone: string,  // X-Timezone 헤더 값 추출
+) {
+  return this.service.create(dto, timezone);
+}
+```
+
+### Swagger 문서화
+
+`@Timezone()`을 사용하는 메서드에는 반드시 `@ApiHeader`를 추가:
+
+```typescript
+import { ApiHeader } from '@nestjs/swagger';
+
+@ApiHeader({
+  name: 'X-Timezone',
+  required: false,
+  description: '사용자 타임존 (IANA, 기본값: UTC)',
+  example: 'Asia/Seoul',
+})
+@Post()
+async create(@Timezone() timezone: string) { ... }
+```
+
+### 타임존이 필요한 API
+
+| 모듈 | 엔드포인트 | 용도 |
+|------|-----------|------|
+| Todo | `POST /todos`, `PATCH /todos/:id`, `PATCH /todos/:id/complete`, `PATCH /todos/:id/schedule` | 날짜 경계 판단, 스케줄 시간 변환 |
+| Cheer | `POST /cheers`, `GET /cheers/limit` | 일일 제한 리셋 기준 |
+| Nudge | `POST /nudges`, `GET /nudges/limit` | 일일 제한 리셋 기준 |
+
+### 날짜 유틸리티 (`@common/date`)
+
+```typescript
+import { getUserToday, toScheduledTime, startOfDayInTimezone } from '@common/date';
+
+// 사용자의 "오늘" 시작 시각 (UTC)
+const today = getUserToday(timezone);
+
+// 사용자의 로컬 시간 → UTC 변환
+const scheduledAt = toScheduledTime('2026-02-06', '14:00', timezone);
+
+// 특정 시점의 타임존 기준 자정 (UTC)
+const dayStart = startOfDayInTimezone(date, timezone);
+```

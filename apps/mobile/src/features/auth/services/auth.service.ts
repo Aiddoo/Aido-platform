@@ -1,36 +1,32 @@
 import type {
-  AppleMobileCallbackInput,
-  ConsentResponse,
   ExchangeCodeInput,
-  PreferenceResponse,
   RegisterInput,
-  RegisterResponse,
   ResendVerificationInput,
-  ResendVerificationResponse,
   UpdateMarketingConsentInput,
-  UpdateMarketingConsentResponse,
   UpdatePreferenceInput,
-  UpdatePreferenceResponse,
   VerifyEmailInput,
 } from '@aido/validators';
+import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import type { ApiError } from '@src/shared/errors/api-error';
+import { err, ok, type Result } from '@src/shared/errors/result';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
-import {
-  AuthError,
-  AuthLoginCancelledError,
-  AuthProviderError,
-  AuthValidationError,
-  isAuthError,
-  isExpoCodedError,
-} from '../models/auth.error';
-import type { AuthTokens } from '../models/auth-tokens.model';
-import type { User } from '../models/user.model';
+
+import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../models/auth.error';
+import type {
+  AuthTokens,
+  Consent,
+  Preference,
+  RegisterResult,
+  ResendVerificationResult,
+  UpdateMarketingConsentResult,
+  User,
+} from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
-import { toAuthTokens, toUser } from './auth.mapper';
 
 type OAuthProvider = 'kakao' | 'naver' | 'google';
 
@@ -40,11 +36,15 @@ const OAUTH_PATHS: Record<OAuthProvider, string> = {
   google: 'auth/google',
 };
 
+export type AuthServiceError = ApiError | AuthError;
+
 export class AuthService {
   readonly #authRepository: AuthRepository;
+  readonly #storage: Storage;
 
-  constructor(authRepository: AuthRepository) {
+  constructor(authRepository: AuthRepository, storage: Storage) {
     this.#authRepository = authRepository;
+    this.#storage = storage;
   }
 
   private getRedirectUri = (provider: OAuthProvider): string =>
@@ -73,7 +73,18 @@ export class AuthService {
     return null;
   };
 
-  private openOAuthLogin = async (provider: OAuthProvider): Promise<string> => {
+  private saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
+    await Promise.all([
+      this.#storage.set('accessToken', accessToken),
+      this.#storage.set('refreshToken', refreshToken),
+    ]);
+  };
+
+  private clearTokens = async (): Promise<void> => {
+    await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
+  };
+
+  private openOAuthLogin = async (provider: OAuthProvider): Promise<Result<string, AuthError>> => {
     const redirectUri = this.getRedirectUri(provider);
 
     const authUrlGetters: Record<OAuthProvider, (uri: string) => string> = {
@@ -91,35 +102,35 @@ export class AuthService {
     if (result.type === 'success') {
       const code = this.extractCodeFromUrl(result.url);
       if (!code) {
-        throw new AuthValidationError(null, null);
+        return err(AuthErrors.noCodeReceived());
       }
-      return code;
+      return ok(code);
     }
 
     if (
       result.type === WebBrowserResultType.CANCEL ||
       result.type === WebBrowserResultType.DISMISS
     ) {
-      throw new AuthLoginCancelledError();
+      return err(AuthErrors.loginCancelled());
     }
 
     // WebBrowserResultType.OPENED, WebBrowserResultType.LOCKED
-    throw new AuthError('OAuth 인증 중 문제가 발생했어요');
+    return err(AuthErrors.unknown('OAuth 인증 중 문제가 발생했어요'));
   };
 
-  openKakaoLogin = (): Promise<string> => {
+  openKakaoLogin = (): Promise<Result<string, AuthError>> => {
     return this.openOAuthLogin('kakao');
   };
 
-  openNaverLogin = (): Promise<string> => {
+  openNaverLogin = (): Promise<Result<string, AuthError>> => {
     return this.openOAuthLogin('naver');
   };
 
-  openGoogleLogin = (): Promise<string> => {
+  openGoogleLogin = (): Promise<Result<string, AuthError>> => {
     return this.openOAuthLogin('google');
   };
 
-  openAppleLogin = async (): Promise<AuthTokens> => {
+  openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
     try {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -130,77 +141,91 @@ export class AuthService {
 
       const idToken = credential.identityToken;
       if (!idToken) {
-        throw new AuthProviderError('apple', 'Apple 인증 토큰을 받지 못했어요');
+        return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
       }
 
-      const input: AppleMobileCallbackInput = {
+      const result = await this.#authRepository.appleLogin({
         idToken,
         userName: credential.fullName?.givenName ?? undefined,
         deviceType: 'IOS',
-      };
+      });
+      if (!result.ok) return result;
 
-      const dto = await this.#authRepository.appleLogin(input);
-      return toAuthTokens(dto);
+      await this.saveTokens(result.value.accessToken, result.value.refreshToken);
+      return result;
     } catch (error) {
       if (isAuthError(error)) {
-        throw error;
+        return err(error);
       }
       if (isExpoCodedError(error)) {
-        throw AuthError.fromExpoAppleError(error);
+        return err(AuthErrors.fromExpoAppleError(error));
       }
-      throw AuthError.fromUnknown(error);
+      return err(AuthErrors.fromUnknown(error));
     }
   };
 
-  emailLogin = async (email: string, password: string): Promise<AuthTokens> => {
-    const dto = await this.#authRepository.emailLogin(email, password);
-    return toAuthTokens(dto);
+  emailLogin = async (email: string, password: string): Promise<Result<AuthTokens, ApiError>> => {
+    const result = await this.#authRepository.emailLogin(email, password);
+    if (!result.ok) return result;
+
+    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
+    return result;
   };
 
-  exchangeCode = async (request: ExchangeCodeInput): Promise<AuthTokens> => {
-    const dto = await this.#authRepository.exchangeCode(request);
-    return toAuthTokens(dto);
+  exchangeCode = async (request: ExchangeCodeInput): Promise<Result<AuthTokens, ApiError>> => {
+    const result = await this.#authRepository.exchangeCode(request);
+    if (!result.ok) return result;
+
+    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
+    return result;
   };
 
-  getCurrentUser = async (): Promise<User> => {
-    const dto = await this.#authRepository.getCurrentUser();
-    return toUser(dto);
+  getCurrentUser = async (): Promise<Result<User, ApiError>> => {
+    return this.#authRepository.getCurrentUser();
   };
 
-  logout = async (): Promise<void> => {
-    return this.#authRepository.logout();
+  logout = async (): Promise<Result<void, ApiError>> => {
+    const result = await this.#authRepository.logout();
+    // 성공/실패 관계없이 로컬 토큰은 삭제
+    await this.clearTokens();
+    return result;
   };
 
-  getPreference = async (): Promise<PreferenceResponse> => {
+  getPreference = async (): Promise<Result<Preference, ApiError>> => {
     return this.#authRepository.getPreference();
   };
 
-  updatePreference = async (input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> => {
+  updatePreference = async (
+    input: UpdatePreferenceInput,
+  ): Promise<Result<Preference, ApiError>> => {
     return this.#authRepository.updatePreference(input);
   };
 
-  getConsent = async (): Promise<ConsentResponse> => {
+  getConsent = async (): Promise<Result<Consent, ApiError>> => {
     return this.#authRepository.getConsent();
   };
 
   updateMarketingConsent = async (
     input: UpdateMarketingConsentInput,
-  ): Promise<UpdateMarketingConsentResponse> => {
+  ): Promise<Result<UpdateMarketingConsentResult, ApiError>> => {
     return this.#authRepository.updateMarketingConsent(input);
   };
 
-  register = async (input: RegisterInput): Promise<RegisterResponse> => {
+  register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {
     return this.#authRepository.register(input);
   };
 
-  verifyEmail = async (input: VerifyEmailInput): Promise<AuthTokens> => {
-    const dto = await this.#authRepository.verifyEmail(input);
-    return toAuthTokens(dto);
+  verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {
+    const result = await this.#authRepository.verifyEmail(input);
+    if (!result.ok) return result;
+
+    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
+    return result;
   };
 
   resendVerification = async (
     input: ResendVerificationInput,
-  ): Promise<ResendVerificationResponse> => {
+  ): Promise<Result<ResendVerificationResult, ApiError>> => {
     return this.#authRepository.resendVerification(input);
   };
 }

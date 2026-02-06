@@ -377,10 +377,15 @@ describe("TodoService Integration Tests", () => {
 			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: expect.objectContaining({
-						startDate: {
-							gte: startDate,
-							lte: endDate,
-						},
+						AND: expect.arrayContaining([
+							{ startDate: { lte: endDate } },
+							{
+								OR: [
+									{ endDate: { gte: startDate } },
+									{ endDate: null, startDate: { gte: startDate } },
+								],
+							},
+						]),
 					}),
 				}),
 			);
@@ -1169,10 +1174,15 @@ describe("TodoService Integration Tests", () => {
 					where: expect.objectContaining({
 						userId: mockFriendUserId,
 						visibility: "PUBLIC",
-						startDate: {
-							gte: startDate,
-							lte: endDate,
-						},
+						AND: expect.arrayContaining([
+							{ startDate: { lte: endDate } },
+							{
+								OR: [
+									{ endDate: { gte: startDate } },
+									{ endDate: null, startDate: { gte: startDate } },
+								],
+							},
+						]),
 					}),
 				}),
 			);

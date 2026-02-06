@@ -1,5 +1,6 @@
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
 import { handleApiErrors } from './error-handler';
 
@@ -22,6 +23,7 @@ export const createAuthClient = (storage: Storage): KyInstance => {
     timeout: 10_000,
     headers: {
       'Content-Type': 'application/json',
+      'X-Timezone': getDeviceTimezone(),
     },
     hooks: {
       beforeRequest: [

@@ -1,51 +1,54 @@
 import type {
   AppleMobileCallbackInput,
-  AuthTokens,
-  ConsentResponse,
-  CurrentUser,
   ExchangeCodeInput,
-  PreferenceResponse,
   RegisterInput,
-  RegisterResponse,
   ResendVerificationInput,
-  ResendVerificationResponse,
   UpdateMarketingConsentInput,
-  UpdateMarketingConsentResponse,
   UpdatePreferenceInput,
-  UpdatePreferenceResponse,
   VerifyEmailInput,
 } from '@aido/validators';
+import type { ApiError } from '@src/shared/errors/api-error';
+import type { Result } from '@src/shared/errors/result';
+
+import type {
+  AuthTokens,
+  Consent,
+  Preference,
+  RegisterResult,
+  ResendVerificationResult,
+  UpdateMarketingConsentResult,
+  User,
+} from '../models/auth.model';
 
 export interface AuthRepository {
-  exchangeCode(request: ExchangeCodeInput): Promise<AuthTokens>;
+  // 인증
+  exchangeCode(request: ExchangeCodeInput): Promise<Result<AuthTokens, ApiError>>;
+  emailLogin(email: string, password: string): Promise<Result<AuthTokens, ApiError>>;
+  appleLogin(input: AppleMobileCallbackInput): Promise<Result<AuthTokens, ApiError>>;
+  logout(): Promise<Result<void, ApiError>>;
 
-  emailLogin(email: string, password: string): Promise<AuthTokens>;
+  // 사용자 정보
+  getCurrentUser(): Promise<Result<User, ApiError>>;
 
-  getCurrentUser(): Promise<CurrentUser>;
+  // 설정
+  getPreference(): Promise<Result<Preference, ApiError>>;
+  updatePreference(input: UpdatePreferenceInput): Promise<Result<Preference, ApiError>>;
 
-  logout(): Promise<void>;
-
-  getKakaoAuthUrl(redirectUri: string): string;
-
-  getNaverAuthUrl(redirectUri: string): string;
-
-  getGoogleAuthUrl(redirectUri: string): string;
-
-  getPreference(): Promise<PreferenceResponse>;
-
-  updatePreference(input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse>;
-
-  getConsent(): Promise<ConsentResponse>;
-
+  // 동의
+  getConsent(): Promise<Result<Consent, ApiError>>;
   updateMarketingConsent(
     input: UpdateMarketingConsentInput,
-  ): Promise<UpdateMarketingConsentResponse>;
+  ): Promise<Result<UpdateMarketingConsentResult, ApiError>>;
 
-  appleLogin(input: AppleMobileCallbackInput): Promise<AuthTokens>;
+  // 회원가입
+  register(input: RegisterInput): Promise<Result<RegisterResult, ApiError>>;
+  verifyEmail(input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>>;
+  resendVerification(
+    input: ResendVerificationInput,
+  ): Promise<Result<ResendVerificationResult, ApiError>>;
 
-  register(input: RegisterInput): Promise<RegisterResponse>;
-
-  verifyEmail(input: VerifyEmailInput): Promise<AuthTokens>;
-
-  resendVerification(input: ResendVerificationInput): Promise<ResendVerificationResponse>;
+  // OAuth URL 생성 (동기 메서드)
+  getKakaoAuthUrl(redirectUri: string): string;
+  getNaverAuthUrl(redirectUri: string): string;
+  getGoogleAuthUrl(redirectUri: string): string;
 }

@@ -1,4 +1,5 @@
 import { useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { notificationQueryKeys } from '../constants/notification-query-keys.constant';
@@ -8,12 +9,14 @@ export const getNotificationsInfiniteQueryOptions = (unreadOnly = false) => {
 
   return infiniteQueryOptions({
     queryKey: notificationQueryKeys.list({ unreadOnly }),
-    queryFn: ({ pageParam }) =>
-      notificationService.getNotifications({
+    queryFn: async ({ pageParam }) => {
+      const result = await notificationService.getNotifications({
         cursor: pageParam,
         limit: 20,
         unreadOnly,
-      }),
+      });
+      return unwrap(result);
+    },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,

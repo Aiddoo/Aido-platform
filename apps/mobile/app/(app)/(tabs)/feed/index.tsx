@@ -6,6 +6,7 @@ import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryError
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { formatDate } from '@src/shared/utils/date';
 import { Suspense, useState } from 'react';
 import { View } from 'react-native';
 
@@ -29,7 +30,7 @@ const FeedScreen = () => {
         <Spacing size={16} />
 
         <View style={{ flex: 1 }}>
-          <QueryErrorBoundary>
+          <QueryErrorBoundary key={formatDate(selectedDate)}>
             <Suspense fallback={<TodoList.Loading />}>
               <TodoList date={selectedDate} />
             </Suspense>
