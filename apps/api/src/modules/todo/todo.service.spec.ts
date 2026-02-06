@@ -329,6 +329,47 @@ describe("TodoService", () => {
 			);
 		});
 
+		it("startDate만 전달하면 해당 날짜로 필터링한다", async () => {
+			// Given: startDate만 전달
+			const startDate = new Date("2024-01-15");
+			const params = { userId: mockUserId, startDate };
+
+			// When: startDate만으로 필터링
+			await service.findMany(params);
+
+			// Then: startDate가 전달됨 (repository에서 exact match 처리)
+			expect(todoRepo.findManyByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({ startDate, endDate: undefined }),
+			);
+		});
+
+		it("endDate만 전달하면 해당 날짜로 필터링한다", async () => {
+			// Given: endDate만 전달
+			const endDate = new Date("2024-01-15");
+			const params = { userId: mockUserId, endDate };
+
+			// When: endDate만으로 필터링
+			await service.findMany(params);
+
+			// Then: endDate가 전달됨 (repository에서 exact match 처리)
+			expect(todoRepo.findManyByUserId).toHaveBeenCalledWith(
+				expect.objectContaining({ startDate: undefined, endDate }),
+			);
+		});
+
+		it("startDate가 endDate보다 이후면 SYS_0002 에러를 던진다", async () => {
+			// Given: 잘못된 날짜 범위
+			const params = {
+				userId: mockUserId,
+				startDate: new Date("2024-02-03"),
+				endDate: new Date("2024-02-02"),
+			};
+
+			// When & Then: BusinessException 발생
+			await expect(service.findMany(params)).rejects.toThrow(BusinessException);
+			expect(todoRepo.findManyByUserId).not.toHaveBeenCalled();
+		});
+
 		it("카테고리로 필터링할 수 있다", async () => {
 			// Given: 카테고리 필터 파라미터
 			const params = { userId: mockUserId, categoryId: 1 };
@@ -629,6 +670,37 @@ describe("TodoService", () => {
 					completed: true,
 				}),
 			).rejects.toThrow(BusinessException);
+		});
+
+		it("완료 시 타임존이 checkAndEmitAllCompletedEvent에 전달된다", async () => {
+			// Given: 미완료 상태의 Todo
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...uncompletedTodo,
+						...data,
+					}) as any,
+			);
+			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 1 });
+
+			// When: KST 타임존으로 완료 변경
+			await service.toggleComplete(
+				uncompletedTodo.id,
+				mockUserId,
+				{ completed: true },
+				"Asia/Seoul",
+			);
+
+			// Then: getTodayTodoStats가 KST 기준 오늘 날짜로 호출됨
+			expect(todoRepo.getTodayTodoStats).toHaveBeenCalledWith(
+				mockUserId,
+				expect.any(Date),
+			);
 		});
 	});
 
@@ -1198,6 +1270,24 @@ describe("TodoService", () => {
 			expect(todoRepo.findPublicTodosByUserId).toHaveBeenCalledWith(
 				expect.objectContaining({ friendUserId, startDate, endDate }),
 			);
+		});
+
+		it("startDate가 endDate보다 이후면 SYS_0002 에러를 던진다", async () => {
+			// Given: 잘못된 날짜 범위
+			const startDate = new Date("2024-02-03");
+			const endDate = new Date("2024-02-02");
+
+			// When & Then: BusinessException 발생
+			await expect(
+				service.findFriendTodos({
+					userId: mockUserId,
+					friendUserId,
+					startDate,
+					endDate,
+				}),
+			).rejects.toThrow(BusinessException);
+			expect(followService.isMutualFriend).not.toHaveBeenCalled();
+			expect(todoRepo.findPublicTodosByUserId).not.toHaveBeenCalled();
 		});
 	});
 });
