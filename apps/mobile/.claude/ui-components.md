@@ -77,6 +77,21 @@ import { ScrollView, FlatList, Image } from 'react-native';
 </VStack>
 ```
 
+### 조건부 className: cn 유틸리티 사용
+
+조건에 따라 className을 조합할 때 **반드시** `cn` 유틸리티를 사용합니다. 템플릿 리터럴로 직접 조합하지 않습니다.
+
+```tsx
+import { cn } from '@src/shared/utils/cn';
+
+// ✅ 올바름 - cn 사용
+<View className={cn('rounded-full', isSelected && 'border-2')} />
+<View className={cn('w-8 h-8', isActive ? 'bg-main' : 'bg-gray-3')} />
+
+// ❌ 금지 - 템플릿 리터럴 직접 조합
+<View className={`rounded-full ${isSelected ? 'border-2' : ''}`} />
+```
+
 ### 외부 컴포넌트: withUniwind로 래핑
 
 외부 라이브러리 컴포넌트에 `className`을 사용하려면 `withUniwind`로 감싸야 합니다.
