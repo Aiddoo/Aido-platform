@@ -168,6 +168,55 @@ describe("NotificationService", () => {
 			);
 			expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
 		});
+
+		it("timezone이 제공되면 upsertTimezone을 호출해야 한다", async () => {
+			// Given - 타임존 정보가 포함된 토큰 등록 데이터
+			const data = {
+				userId: mockUserId,
+				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+				deviceId: "device-1",
+				platform: "IOS" as const,
+				timezone: "Asia/Seoul",
+			};
+			const expectedToken = PushTokenBuilder.create(mockUserId)
+				.withToken(data.token)
+				.withDeviceId(data.deviceId)
+				.asIos()
+				.build();
+			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
+			userPreferenceRepo.upsertTimezone.mockResolvedValue(undefined as never);
+
+			// When - 타임존 포함 토큰 등록 요청
+			await service.registerPushToken(data);
+
+			// Then - upsertTimezone이 호출됨
+			expect(userPreferenceRepo.upsertTimezone).toHaveBeenCalledWith(
+				mockUserId,
+				"Asia/Seoul",
+			);
+		});
+
+		it("timezone이 없으면 upsertTimezone을 호출하지 않아야 한다", async () => {
+			// Given - 타임존 정보가 없는 토큰 등록 데이터
+			const data = {
+				userId: mockUserId,
+				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+				deviceId: "device-1",
+				platform: "IOS" as const,
+			};
+			const expectedToken = PushTokenBuilder.create(mockUserId)
+				.withToken(data.token)
+				.withDeviceId(data.deviceId)
+				.asIos()
+				.build();
+			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
+
+			// When - 타임존 미포함 토큰 등록 요청
+			await service.registerPushToken(data);
+
+			// Then - upsertTimezone이 호출되지 않음
+			expect(userPreferenceRepo.upsertTimezone).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("unregisterPushToken", () => {
