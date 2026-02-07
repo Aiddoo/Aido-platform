@@ -1,7 +1,7 @@
 /**
  * Nudge 모듈 타입 정의
  *
- * 독촉(콕 찌르기) 기능 관련 인터페이스와 타입들
+ * 콕 찌르기 기능 관련 인터페이스와 타입들
  */
 
 import type { Nudge, Todo, User } from "@/generated/prisma/client";

@@ -20,7 +20,7 @@ import { CheerService } from "./cheer.service";
  * - 동일 친구에게 24시간 쿨다운
  *
  * 콕 찌르기(Nudge)와의 차이:
- * - Nudge: 특정 할 일에 대한 독촉 (todoId 필요)
+ * - Nudge: 특정 할 일에 대한 콕 찌르기 (todoId 필요)
  * - Cheer: 친구 자체에 대한 응원 (메시지만)
  *
  * Event-driven:

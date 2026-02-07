@@ -19,7 +19,7 @@ import type { ErrorDefinition } from './types';
  * - TODO_CATEGORY (0850-0899): Todo 카테고리
  * - FOLLOW  (0900-0999): 친구/팔로우
  * - NOTIFICATION (1000-1099): 알림/푸시
- * - NUDGE   (1100-1199): 독촉
+ * - NUDGE   (1100-1199): 콕 찌르기
  * - CHEER   (1200-1299): 응원
  * - AI      (1300-1399): AI 서비스
  */
@@ -178,7 +178,7 @@ export const ErrorCode = {
   NOTIFICATION_1005: 'NOTIFICATION_1005',
 
   // =========================================================================
-  // 독촉 (NUDGE_1100-1199)
+  // 콕 찌르기 (NUDGE_1100-1199)
   // =========================================================================
   NUDGE_1101: 'NUDGE_1101',
   NUDGE_1102: 'NUDGE_1102',
@@ -838,30 +838,30 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
 
   // =========================================================================
-  // 독촉 (NUDGE_1100-1199)
+  // 콕 찌르기 (NUDGE_1100-1199)
   // =========================================================================
   [ErrorCode.NUDGE_1101]: {
     code: 'NUDGE_1101',
-    message: '일일 독촉 횟수를 초과했습니다.',
-    description: 'FREE 사용자는 하루 3회까지만 독촉을 보낼 수 있습니다.',
+    message: '일일 콕 찌르기 횟수를 초과했습니다.',
+    description: 'FREE 사용자는 하루 3회까지만 콕 찌를 수 있습니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.NUDGE_1102]: {
     code: 'NUDGE_1102',
     message: '쿨다운 기간입니다. 24시간 후 다시 시도해주세요.',
-    description: '같은 할일에 대해 24시간 내 재독촉은 불가합니다.',
+    description: '같은 할일에 대해 24시간 내 재콕 찌르기는 불가합니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.NUDGE_1103]: {
     code: 'NUDGE_1103',
     message: '친구 관계가 아닙니다.',
-    description: '독촉은 친구에게만 보낼 수 있습니다.',
+    description: '콕 찌르기는 친구에게만 보낼 수 있습니다.',
     httpStatus: HttpStatus.FORBIDDEN,
   },
   [ErrorCode.NUDGE_1104]: {
     code: 'NUDGE_1104',
-    message: '자신에게 독촉할 수 없습니다.',
-    description: '자기 자신에게는 독촉을 보낼 수 없습니다.',
+    message: '자신에게 콕 찌를 수 없습니다.',
+    description: '자기 자신에게는 콕 찌를 수 없습니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
   },
   [ErrorCode.NUDGE_1105]: {

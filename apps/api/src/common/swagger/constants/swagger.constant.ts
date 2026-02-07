@@ -32,7 +32,7 @@ export const SWAGGER_TAGS = {
 	/** 🔔 알림 - 푸시 토큰 등록, 알림 목록 조회, 읽음 처리 */
 	NOTIFICATIONS: "Notifications",
 
-	/** 👆 콕 찌르기 - 친구 할 일 독촉, 쿨다운/제한 관리 */
+	/** 👆 콕 찌르기 - 친구 할 일 콕 찌르기, 쿨다운/제한 관리 */
 	NUDGES: "Nudges",
 
 	/** 🎉 응원하기 - 친구 응원 메시지, 쿨다운/제한 관리 */

@@ -596,8 +596,8 @@ enum NotificationType {
   FOLLOW_NEW // 새 팔로워 알림
   FOLLOW_ACCEPTED // 친구 수락 (맞팔로우)
 
-  // 독촉
-  NUDGE_RECEIVED // 독촉 받음
+  // 콕 찌르기
+  NUDGE_RECEIVED // 콕 찌르기 받음
 
   // 응원
   CHEER_RECEIVED // 응원 받음
