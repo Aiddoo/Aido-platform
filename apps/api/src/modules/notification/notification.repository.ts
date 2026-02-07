@@ -96,20 +96,21 @@ export class NotificationRepository {
 		params: FindNotificationsParams,
 		tx?: TransactionClient,
 	): Promise<NotificationWithRelations[]> {
-		const { userId, cursor, size, unreadOnly } = params;
+		const { userId, cursor, size, unreadOnly, types } = params;
 		const client = tx ?? this.database;
 
 		return client.notification.findMany({
 			where: {
 				userId,
 				...(unreadOnly && { isRead: false }),
+				...(types && types.length > 0 && { type: { in: types } }),
 			},
 			take: size + 1, // 다음 페이지 존재 여부 확인용
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 

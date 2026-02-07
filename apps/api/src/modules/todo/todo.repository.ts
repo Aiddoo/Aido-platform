@@ -161,7 +161,7 @@ export class TodoRepository {
 		return client.todo.findMany({
 			where,
 			take: size + 1, // hasNext 확인을 위해 +1
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
@@ -169,6 +169,7 @@ export class TodoRepository {
 				{ sortOrder: "asc" },
 				{ startDate: "desc" },
 				{ createdAt: "desc" },
+				{ id: "desc" },
 			],
 			include: {
 				category: {
@@ -232,7 +233,7 @@ export class TodoRepository {
 		return client.todo.findMany({
 			where,
 			take: size + 1, // hasNext 확인을 위해 +1
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
@@ -240,6 +241,7 @@ export class TodoRepository {
 				{ sortOrder: "asc" },
 				{ startDate: "desc" },
 				{ createdAt: "desc" },
+				{ id: "desc" },
 			],
 			include: {
 				category: {
