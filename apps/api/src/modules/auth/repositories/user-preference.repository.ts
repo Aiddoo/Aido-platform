@@ -6,6 +6,9 @@ import type { Prisma, UserPreference } from "@/generated/prisma/client";
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;
 	nightPushEnabled?: boolean;
+	timezone?: string;
+	morningReminderHour?: number;
+	eveningReminderHour?: number;
 }
 
 @Injectable()
@@ -91,6 +94,22 @@ export class UserPreferenceRepository {
 		const client = tx ?? this.database;
 		return client.userPreference.findMany({
 			where: { userId: { in: userIds } },
+		});
+	}
+
+	/**
+	 * 사용자 타임존 upsert (없으면 생성, 있으면 갱신)
+	 */
+	async upsertTimezone(
+		userId: string,
+		timezone: string,
+		tx?: Prisma.TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.userPreference.upsert({
+			where: { userId },
+			create: { userId, timezone },
+			update: { timezone },
 		});
 	}
 }

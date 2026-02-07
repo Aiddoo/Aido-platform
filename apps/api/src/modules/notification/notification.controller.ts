@@ -15,8 +15,14 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
-
+import {
+	ApiBearerAuth,
+	ApiHeader,
+	ApiParam,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
+import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -80,12 +86,19 @@ export class NotificationController {
 
 동일 deviceId의 기존 토큰이 있으면 갱신됩니다.`,
 	})
+	@ApiHeader({
+		name: "X-Timezone",
+		description: 'IANA 타임존 (e.g. "Asia/Seoul")',
+		required: false,
+		example: "Asia/Seoul",
+	})
 	@ApiCreatedResponse({ type: RegisterTokenResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
 	async registerToken(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: RegisterPushTokenDto,
+		@Timezone() tz: string,
 	): Promise<RegisterTokenResponseDto> {
 		this.logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 
@@ -93,6 +106,7 @@ export class NotificationController {
 			userId: user.userId,
 			token: dto.token,
 			deviceId: dto.deviceId,
+			timezone: tz,
 		});
 
 		this.logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);

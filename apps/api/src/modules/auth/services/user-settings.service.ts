@@ -29,12 +29,18 @@ export class UserSettingsService {
 			return {
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			};
 		}
 
 		return {
 			pushEnabled: preference.pushEnabled,
 			nightPushEnabled: preference.nightPushEnabled,
+			timezone: preference.timezone,
+			morningReminderHour: preference.morningReminderHour,
+			eveningReminderHour: preference.eveningReminderHour,
 		};
 	}
 
@@ -55,6 +61,9 @@ export class UserSettingsService {
 		return {
 			pushEnabled: updated.pushEnabled,
 			nightPushEnabled: updated.nightPushEnabled,
+			timezone: updated.timezone,
+			morningReminderHour: updated.morningReminderHour,
+			eveningReminderHour: updated.eveningReminderHour,
 		};
 	}
 

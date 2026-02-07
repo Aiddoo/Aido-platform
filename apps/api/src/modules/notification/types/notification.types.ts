@@ -218,6 +218,7 @@ export interface RegisterPushTokenData {
 	token: string;
 	deviceId?: string;
 	platform?: "IOS" | "ANDROID";
+	timezone?: string;
 }
 
 /**

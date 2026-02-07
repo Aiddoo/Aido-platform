@@ -66,6 +66,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: true,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.findByUserId).toHaveBeenCalledWith(userId);
 		});
@@ -81,6 +84,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 		});
 	});
@@ -118,6 +124,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: true,
 				nightPushEnabled: true,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: true,
@@ -147,6 +156,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: false,

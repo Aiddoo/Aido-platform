@@ -81,6 +81,14 @@ export class NotificationService {
 
 		const pushToken = await this.notificationRepository.registerPushToken(data);
 
+		// 타임존 정보가 있으면 사용자 설정에 저장
+		if (data.timezone) {
+			await this.userPreferenceRepository.upsertTimezone(
+				data.userId,
+				data.timezone,
+			);
+		}
+
 		this.logger.log(
 			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
 		);
@@ -426,8 +434,11 @@ export class NotificationService {
 			return false;
 		}
 
-		// 3. 야간 시간대 확인 (21:00-08:00 KST)
-		if (isNightTime() && !preference.nightPushEnabled) {
+		// 3. 야간 시간대 확인 (사용자 타임존 기준)
+		if (
+			isNightTime(preference.timezone ?? "UTC") &&
+			!preference.nightPushEnabled
+		) {
 			return false;
 		}
 
@@ -458,7 +469,9 @@ export class NotificationService {
 	 */
 	private canSendPushWithCachedData(
 		type: NotificationType,
-		preference: { pushEnabled: boolean; nightPushEnabled: boolean } | undefined,
+		preference:
+			| { pushEnabled: boolean; nightPushEnabled: boolean; timezone?: string }
+			| undefined,
 		consent: { marketingAgreedAt: Date | null } | undefined,
 	): boolean {
 		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
@@ -471,8 +484,11 @@ export class NotificationService {
 			return false;
 		}
 
-		// 야간 시간대 확인 (21:00-08:00 KST)
-		if (isNightTime() && !preference.nightPushEnabled) {
+		// 야간 시간대 확인 (사용자 타임존 기준)
+		if (
+			isNightTime(preference.timezone ?? "UTC") &&
+			!preference.nightPushEnabled
+		) {
 			return false;
 		}
 
