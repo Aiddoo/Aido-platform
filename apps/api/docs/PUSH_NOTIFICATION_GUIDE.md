@@ -804,7 +804,7 @@ const handleLogout = async () => {
 |---------|------|------|
 | 친구 상호작용 | `FOLLOW_NEW` | 새로운 팔로우 요청 |
 | | `FOLLOW_ACCEPTED` | 맞팔로우 성립 |
-| | `NUDGE_RECEIVED` | 독촉 받음 |
+| | `NUDGE_RECEIVED` | 콕 찌르기 받음 |
 | | `CHEER_RECEIVED` | 응원 받음 |
 | 할일 관련 | `DAILY_COMPLETE` | 오늘 할일 전부 완료 |
 | | `TODO_REMINDER` | 마감 1시간 전 리마인더 |
