@@ -7,8 +7,9 @@ import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { router } from 'expo-router';
-import { useCallback } from 'react';
-import { getInternalRoute } from '../utils/get-internal-route';
+import { useCallback, useEffect, useRef } from 'react';
+import { match } from 'ts-pattern';
+import { NotificationPolicy } from '../../models/notification.model';
 
 interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
@@ -17,6 +18,7 @@ interface UseNotificationHandlerOptions {
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleNotificationResponse = useCallback(
     async (response: Notifications.NotificationResponse): Promise<void> => {
@@ -36,11 +38,13 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           await notificationService.markAsRead(data.notificationId);
           // Optimistic: 즉시 1 감소
           const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+
           if (count !== undefined && count > 0) {
             const newCount = count - 1;
             queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), newCount);
             await notificationService.setBadgeCount(newCount);
           }
+
           await queryClient.invalidateQueries({
             queryKey: NOTIFICATION_QUERY_KEYS.all,
           });
@@ -50,43 +54,55 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       }
 
       // 3. Action Type 기반 분기 처리
-      switch (data.action?.type) {
-        case 'BROWSER':
-          // External: 외부 브라우저로 열기
-          if (data.action.url) {
-            await Linking.openURL(data.action.url);
+      match(data.action?.type)
+        .with('BROWSER', () => {
+          if (data.action?.url) {
+            Linking.openURL(data.action.url);
           }
-          break;
-
-        case 'WEBVIEW':
-          // External: 인앱 브라우저
-          if (data.action.url) {
+        })
+        .with('WEBVIEW', () => {
+          if (data.action?.url) {
             router.push(`/webview/${encodeURIComponent(data.action.url)}` as Href);
           }
-          break;
-
-        default: {
-          // Internal: 서버 URL 우선, 없으면 클라이언트가 결정
+        })
+        .otherwise(() => {
           const route =
-            data.action?.url ?? getInternalRoute(data.type as NotificationType, data.context);
+            data.action?.url ??
+            NotificationPolicy.internalRoute({
+              type: data.type as NotificationType,
+              context: data.context,
+            });
+
           if (route) {
             router.push(route as Href);
           }
-          break;
-        }
-      }
+        });
     },
     [isAuthenticated, notificationService, queryClient],
   );
 
   const handleForegroundNotification = useCallback(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
         notificationService.syncBadgeCount(),
       ]).catch(console.error);
-    }
+    }, 1000);
   }, [isAuthenticated, notificationService, queryClient]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   return {
     handleNotificationResponse,
