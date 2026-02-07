@@ -3,12 +3,12 @@ import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 import { Text } from '../Text/Text';
-import type { InputProps } from './Input.types';
+import type { InputInternalProps } from './Input.types';
 import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './Input.variants';
 
 const StyledTextInput = withUniwind(TextInput);
 
-export const Input = forwardRef<TextInput, InputProps>(
+export const Input = forwardRef<TextInput, InputInternalProps>(
   (
     {
       variant = 'filled',
@@ -23,6 +23,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       className,
       onFocus,
       onBlur,
+      textInputComponent: InputComp = StyledTextInput,
       ...props
     },
     ref,
@@ -43,7 +44,7 @@ export const Input = forwardRef<TextInput, InputProps>(
           )}
         >
           {leftContent && <View className="mr-3">{leftContent}</View>}
-          <StyledTextInput
+          <InputComp
             ref={ref}
             placeholder={placeholder}
             editable={!isDisabled}

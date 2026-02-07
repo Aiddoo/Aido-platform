@@ -87,3 +87,46 @@ import { Input } from '@src/shared/ui/Input/Input';
 ```tsx
 <Input isInvalid errorMessage="오류 메시지" />
 ```
+
+## BottomSheetInput
+
+BottomSheet 내부에서 키보드를 제대로 처리하기 위한 Input 래퍼입니다. `@gorhom/bottom-sheet`의 `BottomSheetTextInput`을 사용하여 입력할 때 BottomSheet이 자동으로 올라갑니다.
+
+### 사용법
+
+```tsx
+import { BottomSheetInput } from '@src/shared/ui/Input';
+
+// BottomSheet 내부에서 사용
+<BottomSheet>
+  <BottomSheetInput
+    label="이메일"
+    placeholder="example@email.com"
+  />
+</BottomSheet>
+```
+
+### Props
+
+`Input`과 **동일한 props**를 지원합니다. `InputProps`를 그대로 사용하면 됩니다.
+
+```tsx
+<BottomSheetInput
+  label="할 일"
+  placeholder="새 할 일을 입력하세요"
+  variant="filled"
+  size="large"
+  isInvalid={false}
+  errorMessage=""
+/>
+```
+
+## 파일 구조
+
+| 파일 | 역할 |
+|------|------|
+| `Input.tsx` | 기본 입력 컴포넌트 |
+| `Input.types.ts` | 타입 정의 (`InputProps`, `InputInternalProps`) |
+| `Input.variants.ts` | Tailwind 스타일 (variant/size/상태) |
+| `BottomSheetInput.tsx` | BottomSheet용 Input 래퍼 |
+| `index.ts` | Export: `Input`, `BottomSheetInput`, `InputProps`, `InputSize`, `InputVariant` |
