@@ -1,59 +1,18 @@
-import type { NotificationContext, NotificationType } from '@aido/validators';
+import type { NotificationType } from '@aido/validators';
 import { pushNotificationDataSchema } from '@aido/validators';
 import { useNotificationService } from '@src/bootstrap/providers/di-provider';
-import { notificationQueryKeys } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
+import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
+import { getInternalRoute } from '../utils/get-internal-route';
 
 interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
 }
-
-const getInternalRoute = (type: NotificationType, context?: NotificationContext): string | null => {
-  switch (type) {
-    // 친구 요청
-    case 'FOLLOW_NEW':
-      return '/friends';
-
-    // 친구 프로필로 이동
-    case 'FOLLOW_ACCEPTED':
-    case 'CHEER_RECEIVED':
-    case 'FRIEND_COMPLETED':
-      return context?.friendId ? `/friends/${context.friendId}` : null;
-
-    // 독촉: 할일 있으면 할일, 없으면 친구 프로필
-    case 'NUDGE_RECEIVED':
-      if (context?.todoId) return `/todos/${context.todoId}`;
-      if (context?.friendId) return `/friends/${context.friendId}`;
-      return null;
-
-    // 할일 상세
-    case 'TODO_REMINDER':
-    case 'TODO_SHARED':
-      return context?.todoId ? `/todos/${context.todoId}` : '/(tabs)/home';
-
-    // 홈으로 이동
-    case 'DAILY_COMPLETE':
-    case 'MORNING_REMINDER':
-    case 'EVENING_REMINDER':
-      return '/(tabs)/home';
-
-    // 달성 화면
-    case 'WEEKLY_ACHIEVEMENT':
-      return '/achievements';
-
-    // 시스템 공지 (action.url로 처리되므로 여기선 null)
-    case 'SYSTEM_NOTICE':
-      return null;
-
-    default:
-      return null;
-  }
-};
 
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
@@ -75,10 +34,13 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       if (isAuthenticated && data.notificationId) {
         try {
           await notificationService.markAsRead(data.notificationId);
-          await notificationService.syncBadgeCount();
           await queryClient.invalidateQueries({
-            queryKey: notificationQueryKeys.all,
+            queryKey: NOTIFICATION_QUERY_KEYS.all,
           });
+          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+          if (count !== undefined) {
+            await notificationService.setBadgeCount(count);
+          }
         } catch (error) {
           console.log('[Notification] Failed to mark as read:', error);
         }
@@ -116,10 +78,15 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
 
   const handleForegroundNotification = useCallback(() => {
     if (isAuthenticated) {
-      notificationService.syncBadgeCount().catch(console.error);
-      queryClient.invalidateQueries({
-        queryKey: notificationQueryKeys.all,
-      });
+      queryClient
+        .invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all })
+        .then(() => {
+          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+          if (count !== undefined) {
+            notificationService.setBadgeCount(count);
+          }
+        })
+        .catch(console.error);
     }
   }, [isAuthenticated, notificationService, queryClient]);
 

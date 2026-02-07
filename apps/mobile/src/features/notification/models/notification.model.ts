@@ -13,6 +13,8 @@ export const notificationTypeSchema = z.enum([
   'EVENING_REMINDER',
   'WEEKLY_ACHIEVEMENT',
   'SYSTEM_NOTICE',
+  'ADMIN_BROADCAST',
+  'ADMIN_TARGETED',
 ]);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
@@ -24,6 +26,14 @@ export const notificationSchema = z.object({
   body: z.string(),
   isRead: z.boolean(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
+  context: z
+    .object({
+      todoId: z.number().optional(),
+      friendId: z.string().optional(),
+      nudgeId: z.number().optional(),
+      cheerId: z.number().optional(),
+    })
+    .optional(),
   createdAt: z.date(),
   readAt: z.date().nullable(),
 });
@@ -33,11 +43,19 @@ export type Notification = z.infer<typeof notificationSchema>;
 export const serverNotificationSchema = z.object({
   id: z.number(),
   userId: z.string(),
-  type: z.string(),
+  type: notificationTypeSchema,
   title: z.string(),
   body: z.string(),
   isRead: z.boolean(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
+  context: z
+    .object({
+      todoId: z.number().optional(),
+      friendId: z.string().optional(),
+      nudgeId: z.number().optional(),
+      cheerId: z.number().optional(),
+    })
+    .optional(),
   createdAt: z.string(),
   readAt: z.string().nullable(),
 });
@@ -76,9 +94,20 @@ export const markReadResultSchema = z.object({
 });
 export type MarkReadResult = z.infer<typeof markReadResultSchema>;
 
+export const NOTIFICATION_CATEGORY = {
+  ALL: 'ALL',
+  NOTICE: 'NOTICE',
+  TODO: 'TODO',
+  SOCIAL: 'SOCIAL',
+} as const;
+
+export type NotificationCategory =
+  (typeof NOTIFICATION_CATEGORY)[keyof typeof NOTIFICATION_CATEGORY];
+
 export interface GetNotificationsQuery {
   limit?: number;
   cursor?: number;
+  category?: NotificationCategory;
   unreadOnly?: boolean;
 }
 
