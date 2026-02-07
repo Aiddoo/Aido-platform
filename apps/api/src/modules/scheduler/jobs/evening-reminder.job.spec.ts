@@ -49,7 +49,6 @@ interface NotificationBatchItem {
 	type: string;
 	title: string;
 	body: string;
-	route: string;
 }
 
 /**
@@ -168,7 +167,6 @@ describe("EveningReminderJob", () => {
 				expect(batchCallArg[0]).toMatchObject({
 					userId: "user-1",
 					type: "EVENING_REMINDER",
-					route: "/",
 				});
 			});
 
@@ -198,6 +196,33 @@ describe("EveningReminderJob", () => {
 				const firstNotification = getFirstNotification(batchCallArg);
 				expect(firstNotification.userId).toBe("user-1");
 				expect(firstNotification.type).toBe("EVENING_REMINDER");
+			});
+
+			it("부분 완료 시 title에 {remaining}이 실제 숫자로 치환된다", async () => {
+				// Given - 5개 중 2개 완료한 사용자 준비 (remaining = 5 - 2 = 3)
+				const users: UserWithTodoStats[] = [
+					createMockUserWithTodoStats({
+						id: "user-1",
+						completedCount: 2,
+						totalCount: 5,
+					}),
+				];
+
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
+					count: 1,
+				});
+
+				// When - 저녁 리마인더 job 실행
+				await job.handleEveningReminder();
+
+				// Then - title에 {remaining} 플레이스홀더가 남아있지 않고 실제 숫자로 치환됨
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				const firstNotification = getFirstNotification(batchCallArg);
+				expect(firstNotification.title).not.toContain("{remaining}");
+				expect(firstNotification.title).toContain("3");
 			});
 
 			it("할일을 하나도 완료하지 않은 사용자에게 미완료 알림을 보낸다", async () => {

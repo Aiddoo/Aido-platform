@@ -483,6 +483,169 @@ describe("NotificationService", () => {
 				}),
 			);
 		});
+
+		it("category가 'SOCIAL'이면 소셜 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "SOCIAL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"FOLLOW_NEW",
+						"FOLLOW_ACCEPTED",
+						"NUDGE_RECEIVED",
+						"CHEER_RECEIVED",
+						"FRIEND_COMPLETED",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'NOTICE'이면 공지 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "NOTICE",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"SYSTEM_NOTICE",
+						"ADMIN_BROADCAST",
+						"ADMIN_TARGETED",
+						"WEEKLY_ACHIEVEMENT",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'TODO'이면 할일 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "TODO",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"TODO_REMINDER",
+						"TODO_SHARED",
+						"DAILY_COMPLETE",
+						"MORNING_REMINDER",
+						"EVENING_REMINDER",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'ALL'이면 types를 undefined로 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "ALL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: undefined,
+				}),
+			);
+		});
+
+		it("category가 미지정이면 types를 undefined로 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: undefined,
+				}),
+			);
+		});
+
+		it("category + cursor 조합: SOCIAL 카테고리와 cursor를 동시에 전달해야 한다", async () => {
+			// Given
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: 10,
+				size: 20,
+				take: 21,
+			});
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				cursor: 10,
+				size: 20,
+				category: "SOCIAL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					cursor: 10,
+					types: expect.arrayContaining([
+						"FOLLOW_NEW",
+						"FOLLOW_ACCEPTED",
+						"NUDGE_RECEIVED",
+						"CHEER_RECEIVED",
+						"FRIEND_COMPLETED",
+					]),
+				}),
+			);
+		});
+
+		it("category + unreadOnly 조합: NOTICE + unreadOnly=true를 동시에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "NOTICE",
+				unreadOnly: true,
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					unreadOnly: true,
+					types: expect.arrayContaining([
+						"SYSTEM_NOTICE",
+						"ADMIN_BROADCAST",
+						"ADMIN_TARGETED",
+						"WEEKLY_ACHIEVEMENT",
+					]),
+				}),
+			);
+		});
 	});
 
 	describe("getUnreadCount", () => {

@@ -40,7 +40,6 @@ interface NotificationBatchItem {
 	type: string;
 	title: string;
 	body: string;
-	route: string;
 }
 
 /**
@@ -74,18 +73,21 @@ function getFirstNotification(
 interface UserFindManyArgs {
 	where?: {
 		pushTokens?: unknown;
-		todos?: {
-			some?: {
-				startDate?: {
-					gte?: Date;
-					lt?: Date;
-				};
-			};
-		};
 	};
 	select?: {
 		id?: boolean;
-		_count?: unknown;
+		_count?: {
+			select?: {
+				todos?: {
+					where?: {
+						startDate?: {
+							gte?: Date;
+							lt?: Date;
+						};
+					};
+				};
+			};
+		};
 	};
 }
 
@@ -162,7 +164,6 @@ describe("MorningReminderJob", () => {
 				expect(firstNotification).toMatchObject({
 					userId: "user-1",
 					type: "MORNING_REMINDER",
-					route: "/",
 				});
 				expect(firstNotification.title).toBeDefined();
 				expect(firstNotification.body).toBeDefined();
@@ -192,10 +193,94 @@ describe("MorningReminderJob", () => {
 				expect(firstNotification.userId).toBe("user-1");
 				expect(firstNotification.type).toBe("MORNING_REMINDER");
 			});
+
+			it("할일이 0개인 사용자에게 할일 추가 유도 알림을 발송한다", async () => {
+				// Given - 할일이 없는 단일 사용자 준비
+				const users: UserWithTodoCount[] = [
+					createMockUserWithTodoCount({ id: "user-1", todoCount: 0 }),
+				];
+
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
+					count: 1,
+				});
+
+				// When - 아침 리마인더 job 실행
+				await job.handleMorningReminder();
+
+				// Then - 할일 추가 유도 메시지가 전송됨
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batchCallArg).toHaveLength(1);
+
+				const firstNotification = getFirstNotification(batchCallArg);
+				expect(firstNotification.title).toBe("할일이 하나도 없다");
+				expect(firstNotification.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			});
+
+			it("할일이 있는 사용자에게 title에 {count}가 치환된 알림을 발송한다", async () => {
+				// Given - 할일 5개가 있는 단일 사용자 준비
+				const users: UserWithTodoCount[] = [
+					createMockUserWithTodoCount({ id: "user-1", todoCount: 5 }),
+				];
+
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
+					count: 1,
+				});
+
+				// When - 아침 리마인더 job 실행
+				await job.handleMorningReminder();
+
+				// Then - title에 {count} 플레이스홀더가 실제 숫자로 치환됨
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batchCallArg).toHaveLength(1);
+
+				const firstNotification = getFirstNotification(batchCallArg);
+				expect(firstNotification.title).not.toContain("{count}");
+				expect(firstNotification.title).toContain("5");
+			});
+
+			it("할일이 있는 사용자와 없는 사용자가 혼합된 경우 각각 적절한 메시지를 발송한다", async () => {
+				// Given - 할일이 있는 사용자와 없는 사용자 혼합
+				const users: UserWithTodoCount[] = [
+					createMockUserWithTodoCount({ id: "user-1", todoCount: 3 }),
+					createMockUserWithTodoCount({ id: "user-2", todoCount: 0 }),
+				];
+
+				databaseService.user.findMany.mockResolvedValue(users as never);
+				notificationService.createAndSendBatch.mockResolvedValue({
+					count: 2,
+				});
+
+				// When - 아침 리마인더 job 실행
+				await job.handleMorningReminder();
+
+				// Then - 각 사용자에게 적절한 메시지가 전송됨
+				const batchCallArg = getFirstBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batchCallArg).toHaveLength(2);
+
+				// 할일이 있는 사용자: count가 치환된 메시지 + "/" 라우트
+				const withTodos = batchCallArg.find((n) => n.userId === "user-1");
+				expect(withTodos).toBeDefined();
+				expect(withTodos?.title).toContain("3");
+				expect(withTodos?.title).not.toContain("{count}");
+
+				// 할일이 없는 사용자: 할일 추가 유도 메시지
+				const withoutTodos = batchCallArg.find((n) => n.userId === "user-2");
+				expect(withoutTodos).toBeDefined();
+				expect(withoutTodos?.title).toBe("할일이 하나도 없다");
+				expect(withoutTodos?.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			});
 		});
 
 		describe("알림 대상 없음", () => {
-			it("오늘 할일이 있는 사용자가 없으면 알림을 발송하지 않는다", async () => {
+			it("푸시 토큰이 있는 사용자가 없으면 알림을 발송하지 않는다", async () => {
 				// Given - 대상 사용자 없음
 				databaseService.user.findMany.mockResolvedValue([] as never);
 
@@ -247,21 +332,19 @@ describe("MorningReminderJob", () => {
 					databaseService.user.findMany as unknown as jest.Mock,
 				);
 
-				// where 조건 확인
+				// where 조건 확인: 푸시 토큰만 필터링 (할일 유무 필터 없음)
 				expect(findManyCall.where).toBeDefined();
 				expect(findManyCall.where?.pushTokens).toEqual({ some: {} });
-				expect(findManyCall.where?.todos).toBeDefined();
 
-				const todosFilter = findManyCall.where?.todos;
-				expect(todosFilter?.some).toBeDefined();
-				expect(todosFilter?.some?.startDate).toBeDefined();
-				expect(todosFilter?.some?.startDate?.gte).toBeInstanceOf(Date);
-				expect(todosFilter?.some?.startDate?.lt).toBeInstanceOf(Date);
-
-				// select 조건 확인
+				// select 조건 확인: _count 내부에서 날짜 범위 필터링
 				expect(findManyCall.select).toBeDefined();
 				expect(findManyCall.select?.id).toBe(true);
 				expect(findManyCall.select?._count).toBeDefined();
+
+				const countSelect = findManyCall.select?._count?.select?.todos?.where;
+				expect(countSelect).toBeDefined();
+				expect(countSelect?.startDate?.gte).toBeInstanceOf(Date);
+				expect(countSelect?.startDate?.lt).toBeInstanceOf(Date);
 			});
 		});
 	});
