@@ -34,13 +34,16 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       if (isAuthenticated && data.notificationId) {
         try {
           await notificationService.markAsRead(data.notificationId);
+          // Optimistic: 즉시 1 감소
+          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
+          if (count !== undefined && count > 0) {
+            const newCount = count - 1;
+            queryClient.setQueryData(NOTIFICATION_QUERY_KEYS.unreadCount(), newCount);
+            await notificationService.setBadgeCount(newCount);
+          }
           await queryClient.invalidateQueries({
             queryKey: NOTIFICATION_QUERY_KEYS.all,
           });
-          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
-          if (count !== undefined) {
-            await notificationService.setBadgeCount(count);
-          }
         } catch (error) {
           console.log('[Notification] Failed to mark as read:', error);
         }
@@ -78,15 +81,10 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
 
   const handleForegroundNotification = useCallback(() => {
     if (isAuthenticated) {
-      queryClient
-        .invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all })
-        .then(() => {
-          const count = queryClient.getQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount());
-          if (count !== undefined) {
-            notificationService.setBadgeCount(count);
-          }
-        })
-        .catch(console.error);
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+        notificationService.syncBadgeCount(),
+      ]).catch(console.error);
     }
   }, [isAuthenticated, notificationService, queryClient]);
 

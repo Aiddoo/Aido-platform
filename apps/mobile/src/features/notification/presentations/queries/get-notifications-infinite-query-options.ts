@@ -33,7 +33,7 @@ export const getNotificationsInfiniteQueryOptions = (params?: NotificationQueryP
 
     queryFn: async ({ pageParam }) => {
       const result = await notificationService.getNotifications({
-        cursor: pageParam || undefined,
+        cursor: pageParam,
         limit: params?.limit ?? 20,
         category: params?.category,
         unreadOnly: params?.unreadOnly,
@@ -41,7 +41,7 @@ export const getNotificationsInfiniteQueryOptions = (params?: NotificationQueryP
       return unwrap(result);
     },
 
-    initialPageParam: 0,
+    initialPageParam: undefined as number | undefined,
 
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,

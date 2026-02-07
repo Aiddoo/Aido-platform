@@ -109,20 +109,20 @@ describe("notification-templates", () => {
 	// =========================================================================
 
 	describe("NotificationMessageBuilder.morningNoTodo", () => {
-		it('title이 "오늘은 여유로운 하루!"를 반환한다', () => {
+		it("title이 MORNING_NO_TODO 템플릿을 반환한다", () => {
 			// When
 			const result = NotificationMessageBuilder.morningNoTodo();
 
 			// Then
-			expect(result.title).toBe("오늘은 여유로운 하루!");
+			expect(result.title).toBe(SCHEDULER_TEMPLATES.MORNING_NO_TODO.title);
 		});
 
-		it('body가 "새로운 할일을 추가해보세요"를 반환한다', () => {
+		it("body가 MORNING_NO_TODO 템플릿을 반환한다", () => {
 			// When
 			const result = NotificationMessageBuilder.morningNoTodo();
 
 			// Then
-			expect(result.body).toBe("새로운 할일을 추가해보세요");
+			expect(result.body).toBe(SCHEDULER_TEMPLATES.MORNING_NO_TODO.body);
 		});
 	});
 
@@ -159,7 +159,9 @@ describe("notification-templates", () => {
 			);
 
 			// Then
-			expect(result.title).toBe("아직 3개 남았어요");
+			expect(result.title).toBe(
+				SCHEDULER_TEMPLATES.EVENING_PARTIAL.title.replace("{remaining}", "3"),
+			);
 			expect(result.body).toBe(SCHEDULER_TEMPLATES.EVENING_PARTIAL.body);
 		});
 

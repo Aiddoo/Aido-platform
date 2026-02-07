@@ -5,8 +5,11 @@ export const useRefresh = (refetchFn: () => Promise<unknown>) => {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await refetchFn();
-    setIsRefreshing(false);
+    try {
+      await refetchFn();
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [refetchFn]);
 
   return [isRefreshing, handleRefresh] as const;
