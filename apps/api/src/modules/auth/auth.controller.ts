@@ -573,11 +573,22 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 📋 응답 필드
+### 📋 알림 설정 필드
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`pushEnabled\` | boolean | 푸시 알림 전체 ON/OFF |
-| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00) |
+| \`pushEnabled\` | boolean | 푸시 알림 전체 on/off |
+| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간) |
+| \`timezone\` | string | IANA 타임존 (e.g. "Asia/Seoul") |
+| \`morningReminderHour\` | number | 아침 리마인더 시간 (0-23, 기본 8) |
+| \`eveningReminderHour\` | number | 저녁 리마인더 시간 (0-23, 기본 18) |
+
+### 🌏 타임존
+- 앱 실행 시 푸시 토큰 등록과 함께 자동 설정됩니다
+- 수동 변경도 가능합니다
+
+### ⏰ 리마인더 시간 커스텀
+- 사용자의 로컬 타임존 기준으로 동작합니다
+- 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
 		`,
 	})
 	@ApiSuccessResponse({ type: PreferenceResponseDto })
@@ -594,7 +605,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		operationId: "updatePushPreference",
 		description: `
 ## 🔔 푸시 알림 설정 수정
-푸시 알림 설정을 수정합니다.
+푸시 알림 설정을 수정합니다. 최소 1개 필드 필수.
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
@@ -602,8 +613,19 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 📝 요청 Body (최소 1개 필수)
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`pushEnabled\` | boolean? | 푸시 알림 전체 ON/OFF |
-| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00) |
+| \`pushEnabled\` | boolean? | 푸시 알림 전체 on/off |
+| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간) |
+| \`timezone\` | string? | IANA 타임존 (e.g. "Asia/Seoul") |
+| \`morningReminderHour\` | number? | 아침 리마인더 시간 (0-23, 기본 8) |
+| \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (0-23, 기본 18) |
+
+### 🌏 타임존
+- 앱 실행 시 푸시 토큰 등록과 함께 자동 설정됩니다
+- 수동 변경도 가능합니다
+
+### ⏰ 리마인더 시간 커스텀
+- 사용자의 로컬 타임존 기준으로 동작합니다
+- 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
 
 ### ⚠️ 주의
 - 야간 푸시를 허용하려면 먼저 \`pushEnabled\`가 true여야 합니다.

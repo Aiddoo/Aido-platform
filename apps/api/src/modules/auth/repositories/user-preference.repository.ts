@@ -36,6 +36,13 @@ export class UserPreferenceRepository {
 				userId,
 				pushEnabled: data?.pushEnabled ?? false,
 				nightPushEnabled: data?.nightPushEnabled ?? false,
+				...(data?.timezone !== undefined && { timezone: data.timezone }),
+				...(data?.morningReminderHour !== undefined && {
+					morningReminderHour: data.morningReminderHour,
+				}),
+				...(data?.eveningReminderHour !== undefined && {
+					eveningReminderHour: data.eveningReminderHour,
+				}),
 			},
 		});
 	}
@@ -52,6 +59,13 @@ export class UserPreferenceRepository {
 				userId,
 				pushEnabled: data.pushEnabled ?? false,
 				nightPushEnabled: data.nightPushEnabled ?? false,
+				...(data.timezone !== undefined && { timezone: data.timezone }),
+				...(data.morningReminderHour !== undefined && {
+					morningReminderHour: data.morningReminderHour,
+				}),
+				...(data.eveningReminderHour !== undefined && {
+					eveningReminderHour: data.eveningReminderHour,
+				}),
 			},
 			update: {
 				...(data.pushEnabled !== undefined && {
@@ -59,6 +73,13 @@ export class UserPreferenceRepository {
 				}),
 				...(data.nightPushEnabled !== undefined && {
 					nightPushEnabled: data.nightPushEnabled,
+				}),
+				...(data.timezone !== undefined && { timezone: data.timezone }),
+				...(data.morningReminderHour !== undefined && {
+					morningReminderHour: data.morningReminderHour,
+				}),
+				...(data.eveningReminderHour !== undefined && {
+					eveningReminderHour: data.eveningReminderHour,
 				}),
 			},
 		});
@@ -78,6 +99,13 @@ export class UserPreferenceRepository {
 				}),
 				...(data.nightPushEnabled !== undefined && {
 					nightPushEnabled: data.nightPushEnabled,
+				}),
+				...(data.timezone !== undefined && { timezone: data.timezone }),
+				...(data.morningReminderHour !== undefined && {
+					morningReminderHour: data.morningReminderHour,
+				}),
+				...(data.eveningReminderHour !== undefined && {
+					eveningReminderHour: data.eveningReminderHour,
 				}),
 			},
 		});

@@ -52,10 +52,13 @@ export class UserSettingsService {
 		const updated = await this.userPreferenceRepository.upsert(userId, {
 			pushEnabled: input.pushEnabled,
 			nightPushEnabled: input.nightPushEnabled,
+			timezone: input.timezone,
+			morningReminderHour: input.morningReminderHour,
+			eveningReminderHour: input.eveningReminderHour,
 		});
 
 		this.logger.log(
-			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}`,
+			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
 		);
 
 		return {
