@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
-import { startOfDay } from "@/common/date/utils/date.util";
+import { getUserToday } from "@/common/date/utils/date.util";
 
 import {
 	type FriendCompletedEventPayload,
@@ -50,7 +50,7 @@ export class TodoListener {
 			const alreadySent = await this.notificationRepository.existsNotification({
 				userId: payload.userId,
 				type: "DAILY_COMPLETE",
-				since: startOfDay(),
+				since: getUserToday(payload.timezone),
 			});
 
 			if (alreadySent) {
@@ -143,7 +143,7 @@ export class TodoListener {
 				await this.notificationRepository.findAlreadyNotifiedUserIds({
 					userIds: payload.notifyUserIds,
 					type: "FRIEND_COMPLETED",
-					since: startOfDay(),
+					since: getUserToday(payload.timezone),
 					friendId: payload.friendId,
 				});
 

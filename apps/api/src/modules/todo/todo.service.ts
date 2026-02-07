@@ -314,6 +314,7 @@ export class TodoService {
 				this.eventEmitter.emit(NotificationEvents.TODO_ALL_COMPLETED, {
 					userId,
 					completedCount: stats.completed,
+					timezone: tz,
 				} satisfies TodoAllCompletedEventPayload);
 
 				// 2. 친구들에게 알림 이벤트 발행
@@ -327,6 +328,7 @@ export class TodoService {
 						friendId: userId,
 						friendName: userName ?? "친구",
 						notifyUserIds: friendIds,
+						timezone: tz,
 					} satisfies FriendCompletedEventPayload);
 
 					this.logger.log(

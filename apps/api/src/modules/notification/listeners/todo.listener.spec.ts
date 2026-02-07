@@ -14,7 +14,7 @@ import { NotificationService } from "../notification.service";
 import { TodoListener } from "./todo.listener";
 
 jest.mock("@/common/date/utils/date.util", () => ({
-	startOfDay: jest.fn(() => new Date("2026-02-06T00:00:00.000Z")),
+	getUserToday: jest.fn(() => new Date("2026-02-06T00:00:00.000Z")),
 }));
 
 describe("TodoListener", () => {
@@ -39,7 +39,11 @@ describe("TodoListener", () => {
 	// ============================================
 
 	describe("handleTodoAllCompleted", () => {
-		const payload = { userId: "user-1", completedCount: 3 };
+		const payload = {
+			userId: "user-1",
+			completedCount: 3,
+			timezone: "Asia/Seoul",
+		};
 
 		it("오늘 첫 전체 완료 시 DAILY_COMPLETE 알림을 발송한다", async () => {
 			// Given: 오늘 DAILY_COMPLETE 알림이 없음
@@ -79,6 +83,7 @@ describe("TodoListener", () => {
 			friendId: "friend-1",
 			friendName: "김철수",
 			notifyUserIds: ["user-1", "user-2", "user-3"],
+			timezone: "Asia/Seoul",
 		};
 
 		it("오늘 첫 친구 완료 시 모든 친구에게 알림을 발송한다", async () => {
@@ -146,6 +151,7 @@ describe("TodoListener", () => {
 				friendId: "friend-1",
 				friendName: "김철수",
 				notifyUserIds: [] as string[],
+				timezone: "Asia/Seoul",
 			};
 
 			// When
