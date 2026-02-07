@@ -60,11 +60,15 @@ export class TodoListener {
 				return;
 			}
 
+			const message = NotificationMessageBuilder.dailyComplete(
+				payload.completedCount,
+			);
+
 			await this.notificationService.createAndSend({
 				userId: payload.userId,
 				type: "DAILY_COMPLETE",
-				title: "완벽한 하루였어요!",
-				body: `오늘 ${payload.completedCount}개의 할일을 모두 완료했어요 🎉`,
+				title: message.title,
+				body: message.body,
 			});
 
 			this.logger.log(

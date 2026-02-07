@@ -13,7 +13,8 @@ dayjs.extend(utc);
 /**
  * 아침 리마인더 크론 작업
  *
- * 매일 아침 08:00에 실행되어 오늘 할일이 있는 사용자에게 알림을 발송합니다.
+ * 매일 아침 08:00에 실행되어 푸시 토큰이 있는 모든 사용자에게 알림을 발송합니다.
+ * 할일이 있는 사용자에게는 할일 개수를, 없는 사용자에게는 앱 접속 유도 메시지를 보냅니다.
  */
 @Injectable()
 export class MorningReminderJob {
@@ -36,19 +37,11 @@ export class MorningReminderJob {
 			const today = dayjs.utc().startOf("day").toDate();
 			const tomorrow = dayjs.utc().add(1, "day").startOf("day").toDate();
 
-			// 오늘 할일이 있는 사용자 조회 (푸시 토큰이 있는 사용자만)
+			// 푸시 토큰이 있는 모든 사용자 조회 (할일 유무 관계없이)
 			const usersWithTodos = await this.database.user.findMany({
 				where: {
 					pushTokens: {
 						some: {},
-					},
-					todos: {
-						some: {
-							startDate: {
-								gte: today,
-								lt: tomorrow,
-							},
-						},
 					},
 				},
 				select: {
@@ -69,22 +62,23 @@ export class MorningReminderJob {
 			});
 
 			if (usersWithTodos.length === 0) {
-				this.logger.log("No users with todos for morning reminder");
+				this.logger.log("No users with push tokens for morning reminder");
 				return;
 			}
 
-			// 각 사용자에게 알림 생성 및 발송
+			// 각 사용자에게 알림 생성 및 발송 (할일 유무에 따라 메시지 분기)
 			const notifications = usersWithTodos.map((user) => {
-				const message = NotificationMessageBuilder.morningReminder(
-					user._count.todos,
-				);
+				const count = user._count.todos;
+				const message =
+					count > 0
+						? NotificationMessageBuilder.morningReminder(count)
+						: NotificationMessageBuilder.morningNoTodo();
 
 				return {
 					userId: user.id,
 					type: "MORNING_REMINDER" as const,
 					title: message.title,
 					body: message.body,
-					route: "/",
 				};
 			});
 

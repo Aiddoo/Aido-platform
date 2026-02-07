@@ -88,7 +88,6 @@ export class EveningReminderJob {
 					type: "EVENING_REMINDER" as const,
 					title: message.title,
 					body: message.body,
-					route: "/",
 				};
 			});
 
