@@ -2,6 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import { getUserToday } from "@/common/date/utils/date.util";
+import { DatabaseService } from "@/database/database.service";
+import { Prisma } from "@/generated/prisma/client";
 
 import {
 	type FriendCompletedEventPayload,
@@ -20,6 +22,10 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  * - todo.all_completed: 오늘 할일 전체 완료
  * - todo.reminder: 할일 마감 리마인더
  * - friend.completed: 친구가 오늘 할일 전체 완료
+ *
+ * 중복 방지:
+ * - Transaction으로 check-and-create를 원자적으로 수행 (NudgeService 패턴)
+ * - DB unique constraint (partial index)로 최종 방어 — P2002 graceful catch
  */
 @Injectable()
 export class TodoListener {
@@ -28,14 +34,14 @@ export class TodoListener {
 	constructor(
 		private readonly notificationService: NotificationService,
 		private readonly notificationRepository: NotificationRepository,
+		private readonly database: DatabaseService,
 	) {}
 
 	/**
 	 * 오늘 할일 전체 완료 이벤트 처리
 	 *
-	 * 사용자에게 완료 축하 알림을 발송하고,
-	 * 친구들에게도 알림을 발송하기 위해 friend.completed 이벤트를 발행합니다.
-	 * (friend.completed 이벤트 발행은 TodoModule에서 담당)
+	 * 사용자에게 완료 축하 알림을 발송합니다.
+	 * 트랜잭션 내에서 중복 체크 → 생성을 원자적으로 수행합니다.
 	 * 클라이언트가 type(DAILY_COMPLETE)으로 라우팅 결정 → 홈 화면
 	 */
 	@OnEvent(NotificationEvents.TODO_ALL_COMPLETED)
@@ -47,34 +53,56 @@ export class TodoListener {
 		);
 
 		try {
-			const alreadySent = await this.notificationRepository.existsNotification({
-				userId: payload.userId,
-				type: "DAILY_COMPLETE",
-				since: getUserToday(payload.timezone),
-			});
+			const today = getUserToday(payload.timezone);
 
-			if (alreadySent) {
+			await this.database.$transaction(async (tx) => {
+				const alreadySent =
+					await this.notificationRepository.existsNotification(
+						{
+							userId: payload.userId,
+							type: "DAILY_COMPLETE",
+							since: today,
+						},
+						tx,
+					);
+
+				if (alreadySent) {
+					this.logger.debug(
+						`Daily completion already sent today: userId=${payload.userId}`,
+					);
+					return;
+				}
+
+				const message = NotificationMessageBuilder.dailyComplete(
+					payload.completedCount,
+				);
+
+				await this.notificationService.createAndSend(
+					{
+						userId: payload.userId,
+						type: "DAILY_COMPLETE",
+						title: message.title,
+						body: message.body,
+						notificationDate: today,
+					},
+					tx,
+				);
+
+				this.logger.log(
+					`Daily completion notification sent to user: ${payload.userId}`,
+				);
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
 				this.logger.debug(
-					`Daily completion already sent today: userId=${payload.userId}`,
+					`Daily completion duplicate prevented by constraint: userId=${payload.userId}`,
 				);
 				return;
 			}
 
-			const message = NotificationMessageBuilder.dailyComplete(
-				payload.completedCount,
-			);
-
-			await this.notificationService.createAndSend({
-				userId: payload.userId,
-				type: "DAILY_COMPLETE",
-				title: message.title,
-				body: message.body,
-			});
-
-			this.logger.log(
-				`Daily completion notification sent to user: ${payload.userId}`,
-			);
-		} catch (error) {
 			this.logger.error(
 				`Failed to send daily completion notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
@@ -123,6 +151,7 @@ export class TodoListener {
 	 * 친구 할일 완료 이벤트 처리
 	 *
 	 * 친구가 오늘 할일을 모두 완료했을 때, 친구들에게 알림을 발송합니다.
+	 * 트랜잭션 내에서 중복 체크 → 생성을 원자적으로 수행합니다.
 	 * 클라이언트가 type(FRIEND_COMPLETED) + context(friendId)로 라우팅 결정
 	 */
 	@OnEvent(NotificationEvents.FRIEND_COMPLETED)
@@ -139,43 +168,61 @@ export class TodoListener {
 		}
 
 		try {
-			const alreadyNotified =
-				await this.notificationRepository.findAlreadyNotifiedUserIds({
-					userIds: payload.notifyUserIds,
-					type: "FRIEND_COMPLETED",
-					since: getUserToday(payload.timezone),
+			const today = getUserToday(payload.timezone);
+
+			await this.database.$transaction(async (tx) => {
+				const alreadyNotified =
+					await this.notificationRepository.findAlreadyNotifiedUserIds(
+						{
+							userIds: payload.notifyUserIds,
+							type: "FRIEND_COMPLETED",
+							since: today,
+							friendId: payload.friendId,
+						},
+						tx,
+					);
+
+				const newUserIds = payload.notifyUserIds.filter(
+					(id) => !alreadyNotified.has(id),
+				);
+
+				if (newUserIds.length === 0) {
+					this.logger.debug(
+						`Friend completion already sent today: friendId=${payload.friendId}`,
+					);
+					return;
+				}
+
+				const message = NotificationMessageBuilder.friendCompleted(
+					payload.friendName,
+				);
+
+				const notifications = newUserIds.map((userId) => ({
+					userId,
+					type: "FRIEND_COMPLETED" as const,
+					title: message.title,
+					body: message.body,
 					friendId: payload.friendId,
-				});
+					notificationDate: today,
+				}));
 
-			const newUserIds = payload.notifyUserIds.filter(
-				(id) => !alreadyNotified.has(id),
-			);
+				await this.notificationService.createAndSendBatch(notifications, tx);
 
-			if (newUserIds.length === 0) {
+				this.logger.log(
+					`Friend completion notifications sent: friendId=${payload.friendId}, count=${newUserIds.length}`,
+				);
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
 				this.logger.debug(
-					`Friend completion already sent today: friendId=${payload.friendId}`,
+					`Friend completion duplicate prevented by constraint: friendId=${payload.friendId}`,
 				);
 				return;
 			}
 
-			const message = NotificationMessageBuilder.friendCompleted(
-				payload.friendName,
-			);
-
-			const notifications = newUserIds.map((userId) => ({
-				userId,
-				type: "FRIEND_COMPLETED" as const,
-				title: message.title,
-				body: message.body,
-				friendId: payload.friendId,
-			}));
-
-			await this.notificationService.createAndSendBatch(notifications);
-
-			this.logger.log(
-				`Friend completion notifications sent: friendId=${payload.friendId}, count=${newUserIds.length}`,
-			);
-		} catch (error) {
 			this.logger.error(
 				`Failed to send friend completion notifications: ${error}`,
 				error instanceof Error ? error.stack : undefined,

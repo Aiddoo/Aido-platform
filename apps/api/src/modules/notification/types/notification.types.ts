@@ -1,5 +1,5 @@
 import type { NotificationActionType } from "@aido/validators";
-import type { DatabaseService } from "@/database/database.service";
+import type { TransactionClient as _TransactionClient } from "@/common/database/prisma.types";
 import type {
 	Notification,
 	NotificationType,
@@ -8,12 +8,9 @@ import type {
 } from "@/generated/prisma/client";
 
 /**
- * 트랜잭션 클라이언트 타입
+ * 트랜잭션 클라이언트 타입 (공통 타입 re-export)
  */
-export type TransactionClient = Omit<
-	DatabaseService,
-	"$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
+export type TransactionClient = _TransactionClient;
 
 /**
  * 알림 목록 조회 파라미터
@@ -208,6 +205,9 @@ export interface CreateNotificationData {
 	 * { noticeId: "notice-123", category: "update" }
 	 */
 	metadata?: Prisma.InputJsonValue | null;
+
+	/** 중복 방지용 알림 날짜 (DAILY_COMPLETE, FRIEND_COMPLETED에서 사용) */
+	notificationDate?: Date | null;
 }
 
 /**

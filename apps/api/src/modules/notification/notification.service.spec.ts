@@ -328,7 +328,10 @@ describe("NotificationService", () => {
 			const result = await service.createAndSend(data);
 
 			// Then - 알림 생성 확인 및 비동기 푸시 발송 검증
-			expect(notificationRepo.createNotification).toHaveBeenCalledWith(data);
+			expect(notificationRepo.createNotification).toHaveBeenCalledWith(
+				data,
+				undefined,
+			);
 			expect(result).toEqual(notification);
 
 			// 비동기 푸시 발송 대기
@@ -405,6 +408,7 @@ describe("NotificationService", () => {
 			// Then - 일괄 생성 및 비동기 푸시 발송 확인
 			expect(notificationRepo.createManyNotifications).toHaveBeenCalledWith(
 				dataList,
+				undefined,
 			);
 			expect(result.count).toBe(2);
 

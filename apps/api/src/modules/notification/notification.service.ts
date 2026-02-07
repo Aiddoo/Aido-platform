@@ -29,6 +29,7 @@ import type {
 	CreateNotificationData,
 	FindNotificationsParams,
 	RegisterPushTokenData,
+	TransactionClient,
 } from "./types/notification.types";
 import { isNightTime } from "./utils";
 
@@ -143,10 +144,15 @@ export class NotificationService {
 	 * 3. 설정에 따라 푸시 발송 여부 결정
 	 * 4. 발송 시 실패한 토큰 비활성화
 	 */
-	async createAndSend(data: CreateNotificationData): Promise<Notification> {
+	async createAndSend(
+		data: CreateNotificationData,
+		tx?: TransactionClient,
+	): Promise<Notification> {
 		// 1. DB에 알림 생성 (항상 저장)
-		const notification =
-			await this.notificationRepository.createNotification(data);
+		const notification = await this.notificationRepository.createNotification(
+			data,
+			tx,
+		);
 
 		// 2. 푸시 발송 여부 결정
 		const shouldSend = await this.shouldSendPush(
@@ -185,14 +191,17 @@ export class NotificationService {
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
+		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		if (dataList.length === 0) {
 			return { count: 0 };
 		}
 
 		// 1. DB에 알림 일괄 생성 (항상 저장)
-		const result =
-			await this.notificationRepository.createManyNotifications(dataList);
+		const result = await this.notificationRepository.createManyNotifications(
+			dataList,
+			tx,
+		);
 
 		// 2. 고유 사용자 ID 추출
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
