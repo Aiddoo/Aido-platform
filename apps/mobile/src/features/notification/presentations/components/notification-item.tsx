@@ -10,9 +10,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import type { Notification } from '../../models/notification.model';
 import { NotificationPolicy } from '../../models/notification.model';
-import { NOTIFICATION_CATEGORY_LABEL } from '../constants/notification';
 import { markAsReadMutationOptions } from '../queries/mark-as-read-mutation-options';
-import { getInternalRoute } from '../utils/get-internal-route';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -22,7 +20,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const { mutate: markAsRead } = useMutation(markAsReadMutationOptions());
   const router = useRouter();
   const isUnread = NotificationPolicy.isUnread(notification);
-  const categoryLabel = NOTIFICATION_CATEGORY_LABEL[notification.type];
+  const categoryLabel = NotificationPolicy.categoryLabel(notification);
   const relativeTime = formatRelativeTime(notification.createdAt);
 
   const handlePress = () => {
@@ -37,7 +35,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     }
 
     // 3. 타입 + context 기반 내부 라우팅
-    const route = getInternalRoute(notification.type, notification.context);
+    const route = NotificationPolicy.internalRoute(notification);
     if (route) router.push(route as Href);
   };
 

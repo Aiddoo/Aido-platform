@@ -1,291 +1,437 @@
 # Mobile 앱 테스트 가이드
 
-## 개요
+## 핵심 원칙
 
-Ports & Adapters 아키텍처의 의존성 주입을 활용한 테스트 전략입니다.
+> **DI + `jest.fn()` = 레이어 격리 테스트**
+>
+> 모든 의존성은 생성자 주입을 사용하므로, `jest.fn()` mock 객체로 교체하여 각 레이어를 독립적으로 테스트한다.
+> Policy와 Mapper는 순수 함수이므로 mock 없이 직접 테스트한다.
 
-- **mock 객체**: 생성자 주입을 활용하여 `jest.fn()` 기반 mock 객체로 의존성 교체
-- **순수 함수 테스트**: Mapper와 Policy는 mock 없이 직접 테스트
-- **테스트 데이터 팩토리**: 공통 테스트 데이터는 factory 함수로 생성
+---
 
-> **왜 Stub이 아니라 Mock인가?**
-> Stub은 정해진 결과를 반환할 뿐 호출 여부를 검증하지 않습니다 (결과 검증).
-> Mock은 `toHaveBeenCalledWith` 등으로 **어떤 인자로 호출되었는지까지 검증**합니다 (상호작용 검증).
-> 이 프로젝트에서는 "Policy 실패 시 Repository가 호출되지 않는다" 같은 상호작용 검증이 중요하므로 `jest.fn()` mock을 사용합니다.
+## 테스트 경계 다이어그램
 
-- **Result 타입**: `Result<T, ApiError>` 기반 성공/실패 검증
-- **한국어**: `describe`/`it` 블록은 모두 한국어로 작성
+```
+┌──────────────────────────────────────────────────────────┐
+│  UI Component          mock: Service (DI 훅)             │
+│    └─ render + screen 검증                               │
+├──────────────────────────────────────────────────────────┤
+│  Service               mock: Repository                  │
+│    └─ Policy 검증 + Result 전파                           │
+├──────────────────────────────────────────────────────────┤
+│  Repository            mock: HttpClient                  │
+│    └─ API 호출 + Zod 검증 + Mapper 변환                   │
+├──────────────────────────────────────────────────────────┤
+│  Mapper                mock 없음 (순수 함수)              │
+│    └─ DTO → Domain 변환                                  │
+├──────────────────────────────────────────────────────────┤
+│  Policy                mock 없음 (순수 함수)              │
+│    └─ 비즈니스 규칙 판단                                   │
+└──────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 테스트 우선순위
 
-| 우선순위 | 계층 | 테스트 대상 | mock 필요 |
-|---------|------|------------|----------|
-| 1 | Mapper | DTO → Domain 변환 | 없음 (순수 함수) |
-| 2 | Policy | 비즈니스 규칙 검증 | 없음 (순수 함수) |
-| 3 | Repository | API 응답 파싱, Zod 검증 | mock HttpClient |
-| 4 | Service | 비즈니스 로직 조합, Policy 검증 | mock Repository |
-| 5 | ErrorBoundary | InfraError → fallback UI 렌더링 | mock Service/Repository |
+| 우선순위 | 레이어 | 이유 | mock 필요 |
+|---------|--------|------|----------|
+| 1 | **Policy** | 비즈니스 로직의 핵심, 순수 함수라 작성 쉬움 | 없음 |
+| 2 | **Mapper** | 서버 변경 감지의 방파제, 순수 함수 | 없음 |
+| 3 | **Service** | Policy 검증 + Repository 위임 검증 | mock Repository |
+| 4 | **Repository** | API 응답 파싱, Zod 검증, Result 반환 | mock HttpClient |
+| 5 | **UI 컴포넌트** | 렌더링 + 사용자 상호작용 | mock Service (DI 훅) |
 
 ---
 
-## 1. 테스트 데이터 팩토리
+## 파일 위치 & 네이밍 규칙
 
-테스트마다 인라인으로 데이터를 만들면 의도가 묻힙니다. Factory 함수를 사용하면 **테스트마다 달라지는 값만 명시**할 수 있어 의도가 명확해집니다.
+테스트 파일은 **대상 파일과 같은 디렉토리**에 배치한다.
 
-### 위치
+| 테스트 대상 | 파일명 패턴 | 예시 |
+|------------|-----------|------|
+| Policy | `{feature}.model.test.ts` | `todo.model.test.ts` |
+| Mapper | `{feature}.mapper.test.ts` | `todo.mapper.test.ts` |
+| Service | `{feature}.service.test.ts` | `todo.service.test.ts` |
+| Repository | `{feature}.repository.impl.test.ts` | `todo.repository.impl.test.ts` |
+| UI 컴포넌트 | `{Component}.test.tsx` | `TodoList.test.tsx` |
 
-```
-shared/testing/factories/
-├── todo.factory.ts
-├── friend.factory.ts
-└── auth.factory.ts
-```
+> **주의**: `.spec.ts`가 아니라 **`.test.ts` / `.test.tsx`** 를 사용한다 (코드베이스 컨벤션).
 
-### Todo 팩토리 예시
+---
+
+## 공통 패턴
+
+### Given-When-Then 구조
+
+모든 테스트는 **반드시** `// Given`, `// When`, `// Then` 주석으로 구분한다. `describe`/`it`은 한국어로 작성한다.
 
 ```typescript
-// shared/testing/factories/todo.factory.ts
-import type { Todo } from '@aido/validators';
-import type { TodoItem } from '@src/features/todo/models/todo.model';
+it('특정 조건에서 기대하는 결과가 나와야 한다', async () => {
+  // Given — 테스트 데이터 및 mock 설정
+  const item = create{Feature}({ status: 'active' });
 
+  // When — 테스트 대상 실행
+  const result = {Feature}Policy.isActive(item);
+
+  // Then — 결과 검증
+  expect(result).toBe(true);
+});
+```
+
+### 성공 + 실패 케이스를 반드시 함께 테스트
+
+> **규칙**: 성공하는 케이스만 테스트하지 않는다. **실패가 예상되는 케이스도 반드시 포함**해야 한다.
+
+모든 `describe` 블록에는 최소 **성공 1개 + 실패 1개** 테스트가 있어야 한다.
+
+| 레이어 | 성공 케이스 | 실패 케이스 |
+|--------|-----------|-----------|
+| Policy | `isValid('valid')` → `true` | `isValid('')` → `false` |
+| Mapper | 정상 DTO → Domain 변환 | nullable 필드가 null인 경우 |
+| Repository | ok Response → ok Result | 4xx → err Result, 잘못된 응답 → ParseError |
+| Service | Repository 성공 → ok 전파 | Policy 실패 → err + Repository 미호출 |
+| UI 컴포넌트 | 정상 데이터 렌더링 | 에러 상태 UI 렌더링 |
+
+### 테스트 데이터 팩토리
+
+팩토리 함수를 사용하면 **테스트마다 달라지는 값만 명시**할 수 있어 의도가 명확해진다.
+팩토리는 **테스트 파일 상단**이나 **같은 디렉토리의 별도 파일**에 정의한다.
+
+```typescript
 /** DTO (서버 응답) 팩토리 */
-export const createTodoDto = (overrides?: Partial<Todo>): Todo => ({
+const create{Feature}Dto = (overrides?: Partial<{Feature}Dto>): {Feature}Dto => ({
   id: 1,
-  title: '할일 제목',
-  category: { id: 1, name: '일상', color: '#FF9500' },
-  completed: false,
-  scheduledTime: null,
-  isAllDay: true,
-  visibility: 'PUBLIC',
+  name: '기본 이름',
+  status: 'active',
+  createdAt: '2024-06-01T09:00:00Z',
   ...overrides,
 });
 
 /** Domain 모델 팩토리 */
-export const createTodoItem = (overrides?: Partial<TodoItem>): TodoItem => ({
+const create{Feature} = (overrides?: Partial<{Feature}>): {Feature} => ({
   id: 1,
-  title: '할일 제목',
-  category: { id: 1, name: '일상', color: '#FF9500' },
-  completed: false,
-  scheduledTime: null,
-  isAllDay: true,
-  visibility: 'PUBLIC',
+  name: '기본 이름',
+  status: 'active',
+  createdAt: new Date('2024-06-01T09:00:00Z'),
   ...overrides,
 });
 ```
 
-### 사용법
+**사용법**:
 
 ```typescript
-// 기본값 — 의도가 없는 필드는 생략
-const dto = createTodoDto();
+const dto = create{Feature}Dto();                              // 기본값
+const expiredDto = create{Feature}Dto({ status: 'expired' });  // 오버라이드
+```
 
-// 특정 필드만 오버라이드 — 테스트 의도가 명확
-const completedDto = createTodoDto({ completed: true });
-const withTimeDto = createTodoDto({ scheduledTime: '2024-06-01T09:00:00Z', isAllDay: false });
-const privateTodo = createTodoItem({ visibility: 'PRIVATE' });
+### Mock 생성 패턴
+
+#### HttpClient mock
+
+```typescript
+import type { HttpClient } from '@src/core/ports/http';
+
+const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  patch: jest.fn(),
+  delete: jest.fn(),
+});
+```
+
+#### Repository mock
+
+인터페이스의 **모든 메서드**를 `jest.fn()`으로 구현한다.
+
+```typescript
+import type { {Feature}Repository } from './{feature}.repository';
+
+const createMock{Feature}Repository = (): jest.Mocked<{Feature}Repository> => ({
+  getById: jest.fn(),
+  getList: jest.fn(),
+  create: jest.fn(),
+  // ...인터페이스에 정의된 나머지 메서드
+});
+```
+
+#### 기타 Port mock (Storage 등)
+
+```typescript
+import type { Storage } from '@src/core/ports/storage';
+
+const createMockStorage = (): jest.Mocked<Storage> => ({
+  get: jest.fn(),
+  set: jest.fn(),
+  remove: jest.fn(),
+});
+```
+
+### Result 검증 패턴
+
+```typescript
+// 성공 검증
+expect(result.ok).toBe(true);
+if (result.ok) {
+  expect(result.value).toEqual(expected);
+}
+
+// 실패 검증
+expect(result.ok).toBe(false);
+if (!result.ok) {
+  expect(result.error.code).toBe('ERROR_CODE');
+}
+```
+
+### mock 설정 패턴
+
+```typescript
+// 성공 응답
+repository.getList.mockResolvedValue(ok(data));
+
+// 에러 응답 (서버 4xx)
+repository.getList.mockResolvedValue(err(new ApiError('CODE', '메시지', 404)));
+
+// throw (InfraError — 5xx/네트워크)
+httpClient.get.mockRejectedValue(new ServerError(500));
 ```
 
 ---
 
-## 2. Mapper 테스트
+## 레이어별 테스트 패턴
 
-Mapper는 순수 함수입니다. 외부 의존성 없이 DTO → Domain 변환만 검증합니다.
+### 1. Policy 테스트 (순수 함수, mock 없음)
+
+Policy는 비즈니스 로직의 핵심이다. 5가지 카테고리별로 테스트한다:
+- **상태 판단** (`is{상태}`) — 경계값 + 양쪽 케이스
+- **가능 여부** (`can{동작}`) — 허용/거부 조건
+- **표시값** (`get{값}`) — 파생 값 계산 결과
+- **유효성 검증** (`isValid{대상}`) — 유효/무효 입력
+- **비즈니스 상수** (`UPPER_SNAKE`) — 값 존재 확인
 
 ```typescript
-// features/todo/repositories/todo.mapper.spec.ts
-import { toTodoItem, toTodoItems } from './todo.mapper';
-import { createTodoDto } from '@src/shared/testing/factories/todo.factory';
+// features/{feature}/models/{feature}.model.test.ts
+import { {Feature}Policy } from './{feature}.model';
 
-describe('Todo Mapper', () => {
-  describe('toTodoItem', () => {
-    it('DTO의 scheduledTime 문자열을 Date 객체로 변환해야 한다', () => {
-      const dto = createTodoDto({ scheduledTime: '2024-06-01T09:00:00Z', isAllDay: false });
+const create{Feature} = (overrides?: Partial<{Feature}>): {Feature} => ({
+  id: 1,
+  name: '기본 이름',
+  status: 'active',
+  expiresAt: new Date('2025-12-31'),
+  ...overrides,
+});
 
-      const result = toTodoItem(dto);
+describe('{Feature}Policy', () => {
+  // 상태 판단 — 경계 양쪽 케이스 (true/false)
+  describe('isExpired', () => {
+    it('만료일이 현재보다 이전이면 true를 반환해야 한다', () => {
+      // Given
+      const item = create{Feature}({ expiresAt: new Date('2020-01-01') });
 
-      expect(result.scheduledTime).toBeInstanceOf(Date);
-      expect(result.scheduledTime?.toISOString()).toBe('2024-06-01T09:00:00.000Z');
+      // When
+      const result = {Feature}Policy.isExpired(item);
+
+      // Then
+      expect(result).toBe(true);
     });
 
-    it('scheduledTime이 null이면 null을 유지해야 한다', () => {
-      const dto = createTodoDto({ scheduledTime: null });
+    it('만료일이 현재보다 이후이면 false를 반환해야 한다', () => {
+      // Given
+      const item = create{Feature}({ expiresAt: new Date('2099-12-31') });
 
-      const result = toTodoItem(dto);
+      // When
+      const result = {Feature}Policy.isExpired(item);
 
-      expect(result.scheduledTime).toBeNull();
+      // Then
+      expect(result).toBe(false);
+    });
+  });
+
+  // 가능 여부 — 허용/거부 조건
+  describe('canEdit', () => {
+    it('활성 상태이면 수정 가능해야 한다', () => {
+      // Given
+      const item = create{Feature}({ status: 'active' });
+
+      // When
+      const result = {Feature}Policy.canEdit(item);
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('만료 상태이면 수정 불가능해야 한다', () => {
+      // Given
+      const item = create{Feature}({ status: 'expired' });
+
+      // When
+      const result = {Feature}Policy.canEdit(item);
+
+      // Then
+      expect(result).toBe(false);
+    });
+  });
+
+  // 표시값 결정
+  describe('getDisplayLabel', () => {
+    it('이름이 있으면 이름을 반환해야 한다', () => {
+      // Given
+      const item = create{Feature}({ name: '테스트 이름' });
+
+      // When
+      const result = {Feature}Policy.getDisplayLabel(item);
+
+      // Then
+      expect(result).toBe('테스트 이름');
+    });
+
+    it('이름이 없으면 기본값을 반환해야 한다', () => {
+      // Given
+      const item = create{Feature}({ name: '' });
+
+      // When
+      const result = {Feature}Policy.getDisplayLabel(item);
+
+      // Then
+      expect(result).toBe('이름 없음');
+    });
+  });
+
+  // 유효성 검증 — 유효/무효 입력 쌍
+  describe('isValidInput', () => {
+    it('유효한 입력이면 true를 반환해야 한다', () => {
+      // Given
+      const input = 'valid-value';
+
+      // When
+      const result = {Feature}Policy.isValidInput(input);
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('빈 문자열이면 false를 반환해야 한다', () => {
+      // Given
+      const input = '';
+
+      // When
+      const result = {Feature}Policy.isValidInput(input);
+
+      // Then
+      expect(result).toBe(false);
+    });
+  });
+
+  // 비즈니스 상수
+  describe('상수', () => {
+    it('MAX_COUNT가 정의되어 있어야 한다', () => {
+      // Then
+      expect({Feature}Policy.MAX_COUNT).toBeDefined();
+      expect(typeof {Feature}Policy.MAX_COUNT).toBe('number');
+    });
+  });
+});
+```
+
+### 2. Mapper 테스트 (DTO → Domain, mock 없음)
+
+Mapper는 서버 변경의 방파제다. **타입 변환** (string → Date 등)과 **nullable 처리**를 집중 검증한다.
+
+```typescript
+// features/{feature}/repositories/{feature}.mapper.test.ts
+import { to{Feature}, to{Feature}s } from './{feature}.mapper';
+
+const create{Feature}Dto = (overrides?: Partial<{Feature}Dto>): {Feature}Dto => ({
+  id: 1,
+  name: '기본 이름',
+  createdAt: '2024-06-01T09:00:00Z',
+  optionalField: null,
+  ...overrides,
+});
+
+describe('{Feature} Mapper', () => {
+  describe('to{Feature}', () => {
+    it('날짜 문자열을 Date 객체로 변환해야 한다', () => {
+      // Given
+      const dto = create{Feature}Dto({ createdAt: '2024-06-01T09:00:00Z' });
+
+      // When
+      const result = to{Feature}(dto);
+
+      // Then
+      expect(result.createdAt).toBeInstanceOf(Date);
+      expect(result.createdAt.toISOString()).toBe('2024-06-01T09:00:00.000Z');
+    });
+
+    it('nullable 필드가 null이면 null을 유지해야 한다', () => {
+      // Given
+      const dto = create{Feature}Dto({ optionalField: null });
+
+      // When
+      const result = to{Feature}(dto);
+
+      // Then
+      expect(result.optionalField).toBeNull();
     });
 
     it('모든 필드를 올바르게 매핑해야 한다', () => {
-      const dto = createTodoDto();
+      // Given
+      const dto = create{Feature}Dto();
 
-      const result = toTodoItem(dto);
+      // When
+      const result = to{Feature}(dto);
 
+      // Then
       expect(result).toEqual({
         id: 1,
-        title: '할일 제목',
-        category: { id: 1, name: '일상', color: '#FF9500' },
-        completed: false,
-        scheduledTime: null,
-        isAllDay: true,
-        visibility: 'PUBLIC',
+        name: '기본 이름',
+        createdAt: new Date('2024-06-01T09:00:00Z'),
+        optionalField: null,
       });
     });
   });
 
-  describe('toTodoItems', () => {
+  describe('to{Feature}s', () => {
     it('DTO 배열을 Domain 모델 배열로 변환해야 한다', () => {
-      const dtos = [createTodoDto(), createTodoDto({ id: 2 })];
+      // Given
+      const dtos = [create{Feature}Dto(), create{Feature}Dto({ id: 2 })];
 
-      const result = toTodoItems(dtos);
+      // When
+      const result = to{Feature}s(dtos);
 
+      // Then
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe(1);
       expect(result[1].id).toBe(2);
     });
-  });
-});
-```
 
----
+    it('빈 배열이면 빈 배열을 반환해야 한다', () => {
+      // Given
+      const dtos: {Feature}Dto[] = [];
 
-## 3. Policy 테스트
+      // When
+      const result = to{Feature}s(dtos);
 
-Policy는 도메인 비즈니스 규칙을 순수 함수로 검증합니다.
-
-```typescript
-// features/todo/models/todo.model.spec.ts
-import { TodoPolicy } from './todo.model';
-import { createTodoItem } from '@src/shared/testing/factories/todo.factory';
-
-describe('TodoPolicy', () => {
-  describe('getColor', () => {
-    it('카테고리의 색상을 반환해야 한다', () => {
-      const todo = createTodoItem();
-
-      expect(TodoPolicy.getColor(todo)).toBe('#FF9500');
-    });
-  });
-
-  describe('isPublic', () => {
-    it('visibility가 PUBLIC이면 true를 반환해야 한다', () => {
-      const todo = createTodoItem({ visibility: 'PUBLIC' });
-
-      expect(TodoPolicy.isPublic(todo)).toBe(true);
-    });
-
-    it('visibility가 PRIVATE이면 false를 반환해야 한다', () => {
-      const todo = createTodoItem({ visibility: 'PRIVATE' });
-
-      expect(TodoPolicy.isPublic(todo)).toBe(false);
+      // Then
+      expect(result).toHaveLength(0);
     });
   });
 });
 ```
 
----
+### 3. Repository 테스트 (mock HttpClient)
 
-## 4. Mock 객체 생성 방법
-
-모든 의존성은 생성자 주입을 사용하므로, 인터페이스를 구현하는 `jest.fn()` mock 객체를 만들어 주입합니다.
-
-### HttpClient mock
+Repository는 **API 호출 → Zod 검증 → Mapper 변환 → Result 반환** 흐름을 검증한다.
 
 ```typescript
+// features/{feature}/repositories/{feature}.repository.impl.test.ts
 import type { HttpClient } from '@src/core/ports/http';
-
-const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  patch: jest.fn(),
-  delete: jest.fn(),
-});
-```
-
-### Repository mock 예시
-
-```typescript
-import type { TodoRepository } from './todo.repository';
-
-const createMockTodoRepository = (): jest.Mocked<TodoRepository> => ({
-  getTodos: jest.fn(),
-  toggleTodoComplete: jest.fn(),
-  createTodo: jest.fn(),
-  parseTodo: jest.fn(),
-  getAiUsage: jest.fn(),
-});
-```
-
-```typescript
-import type { FriendRepository } from './friend.repository';
-
-const createMockFriendRepository = (): jest.Mocked<FriendRepository> => ({
-  sendRequest: jest.fn(),
-  getReceivedRequests: jest.fn(),
-  getSentRequests: jest.fn(),
-  acceptRequest: jest.fn(),
-  rejectRequest: jest.fn(),
-  cancelRequest: jest.fn(),
-  getFriends: jest.fn(),
-  removeFriend: jest.fn(),
-});
-```
-
-```typescript
-import type { AuthRepository } from './auth.repository';
-
-const createMockAuthRepository = (): jest.Mocked<AuthRepository> => ({
-  exchangeCode: jest.fn(),
-  emailLogin: jest.fn(),
-  appleLogin: jest.fn(),
-  logout: jest.fn(),
-  getCurrentUser: jest.fn(),
-  getPreference: jest.fn(),
-  updatePreference: jest.fn(),
-  getConsent: jest.fn(),
-  updateMarketingConsent: jest.fn(),
-  register: jest.fn(),
-  verifyEmail: jest.fn(),
-  resendVerification: jest.fn(),
-  getKakaoAuthUrl: jest.fn(),
-  getNaverAuthUrl: jest.fn(),
-  getGoogleAuthUrl: jest.fn(),
-});
-```
-
-```typescript
-import type { NotificationRepository } from './notification.repository';
-
-const createMockNotificationRepository = (): jest.Mocked<NotificationRepository> => ({
-  registerToken: jest.fn(),
-  unregisterToken: jest.fn(),
-  getNotifications: jest.fn(),
-  getUnreadCount: jest.fn(),
-  markAsRead: jest.fn(),
-  markAllAsRead: jest.fn(),
-});
-```
-
-> mock 팩토리 함수는 테스트 파일 상단에 정의하거나, 필요하면 `src/shared/testing/` 하위에 공유 파일로 추출합니다.
-
----
-
-## 5. Repository 테스트
-
-Repository는 mock HttpClient를 주입하여 **API 응답 파싱, Zod 검증, Result 반환**을 검증합니다.
-
-```typescript
-// features/todo/repositories/todo.repository.spec.ts
-import type { TodoListResponse } from '@aido/validators';
-import type { HttpClient } from '@src/core/ports/http';
+import { ApiError } from '@src/shared/errors/api-error';
 import { ServerError, ParseError } from '@src/shared/errors/infra-error';
 import { ok, err } from '@src/shared/errors/result';
-import { ApiError } from '@src/shared/errors/api-error';
-import { createTodoDto } from '@src/shared/testing/factories/todo.factory';
 
-import { TodoRepositoryImpl } from './todo.repository.impl';
+import { {Feature}RepositoryImpl } from './{feature}.repository.impl';
 
 const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
   get: jest.fn(),
@@ -295,60 +441,63 @@ const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
   delete: jest.fn(),
 });
 
-describe('TodoRepositoryImpl', () => {
+// 서버 응답 형태의 DTO 팩토리
+const create{Feature}Response = () => ({
+  id: 1,
+  name: '기본 이름',
+  createdAt: '2024-06-01T09:00:00Z',
+});
+
+describe('{Feature}RepositoryImpl', () => {
   let httpClient: jest.Mocked<HttpClient>;
-  let repository: TodoRepositoryImpl;
+  let repository: {Feature}RepositoryImpl;
 
   beforeEach(() => {
     httpClient = createMockHttpClient();
-    repository = new TodoRepositoryImpl(httpClient);
+    repository = new {Feature}RepositoryImpl(httpClient);
   });
 
-  describe('getTodos', () => {
-    const validResponse: TodoListResponse = {
-      items: [createTodoDto()],
-      pagination: { hasNext: false, nextCursor: null },
-    };
-
+  describe('getById', () => {
     it('API 성공 응답을 Zod로 검증하고 ok Result를 반환해야 한다', async () => {
       // Given
-      httpClient.get.mockResolvedValue(ok(validResponse));
+      httpClient.get.mockResolvedValue(ok(create{Feature}Response()));
 
       // When
-      const result = await repository.getTodos({ size: 10 });
+      const result = await repository.getById(1);
 
       // Then
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.items).toHaveLength(1);
-        expect(result.value.items[0].title).toBe('할일 제목');
+        expect(result.value.id).toBe(1);
       }
-      expect(httpClient.get).toHaveBeenCalledWith('v1/todos', { params: { size: 10 } });
+      expect(httpClient.get).toHaveBeenCalledWith(
+        expect.stringContaining('v1/{feature}s'),
+        expect.any(Object),
+      );
     });
 
-    it('4xx API 에러 시 err Result를 그대로 반환해야 한다', async () => {
+    it('4xx API 에러 시 err Result를 그대로 전파해야 한다', async () => {
       // Given
       httpClient.get.mockResolvedValue(
-        err(new ApiError('TODO_0801', '할 일을 찾을 수 없어요', 404)),
+        err(new ApiError('{FEATURE}_0801', '리소스를 찾을 수 없어요', 404)),
       );
 
       // When
-      const result = await repository.getTodos({ size: 10 });
+      const result = await repository.getById(1);
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('TODO_0801');
         expect(result.error.status).toBe(404);
       }
     });
 
     it('Zod 검증 실패 시 ParseError를 throw해야 한다', async () => {
       // Given — 스키마에 맞지 않는 응답
-      httpClient.get.mockResolvedValue(ok({ items: [{ id: 'not-a-number' }], pagination: {} }));
+      httpClient.get.mockResolvedValue(ok({ invalid: 'data' }));
 
       // When & Then
-      await expect(repository.getTodos({ size: 10 })).rejects.toThrow(ParseError);
+      await expect(repository.getById(1)).rejects.toThrow(ParseError);
     });
 
     it('HttpClient가 throw하면 그대로 전파해야 한다', async () => {
@@ -356,364 +505,123 @@ describe('TodoRepositoryImpl', () => {
       httpClient.get.mockRejectedValue(new ServerError(500));
 
       // When & Then
-      await expect(repository.getTodos({ size: 10 })).rejects.toThrow(ServerError);
+      await expect(repository.getById(1)).rejects.toThrow(ServerError);
     });
   });
 });
 ```
 
----
+### 4. Service 테스트
 
-## 6. Service 테스트
+Service 테스트는 두 가지 패턴이 있다.
 
-Service는 mock Repository를 주입하여 **비즈니스 로직, Policy 검증, Result 전파**를 검증합니다.
+#### 패턴 A: Passthrough (단순 위임)
 
-### 기본 패턴: Result 전파
+대부분의 Service 메서드는 Repository를 그대로 호출한다. **호출 여부**와 **Result 전파**를 검증한다.
 
 ```typescript
-// features/todo/services/todo.service.spec.ts
-import type { TodosResult } from '../models/todo.model';
-import type { TodoRepository } from '../repositories/todo.repository';
+// features/{feature}/services/{feature}.service.test.ts
+import type { {Feature}Repository } from '../repositories/{feature}.repository';
 import { ApiError } from '@src/shared/errors/api-error';
 import { ok, err } from '@src/shared/errors/result';
-import { createTodoItem } from '@src/shared/testing/factories/todo.factory';
 
-import { TodoService } from './todo.service';
+import { {Feature}Service } from './{feature}.service';
 
-const createMockTodoRepository = (): jest.Mocked<TodoRepository> => ({
-  getTodos: jest.fn(),
-  toggleTodoComplete: jest.fn(),
-  createTodo: jest.fn(),
-  parseTodo: jest.fn(),
-  getAiUsage: jest.fn(),
+const createMock{Feature}Repository = (): jest.Mocked<{Feature}Repository> => ({
+  getById: jest.fn(),
+  getList: jest.fn(),
+  create: jest.fn(),
+  // ...인터페이스에 정의된 나머지 메서드
 });
 
-describe('TodoService', () => {
-  let repository: jest.Mocked<TodoRepository>;
-  let service: TodoService;
+const create{Feature} = (overrides?: Partial<{Feature}>): {Feature} => ({
+  id: 1,
+  name: '기본 이름',
+  ...overrides,
+});
+
+describe('{Feature}Service', () => {
+  let repository: jest.Mocked<{Feature}Repository>;
+  let service: {Feature}Service;
 
   beforeEach(() => {
-    repository = createMockTodoRepository();
-    service = new TodoService(repository);
+    repository = createMock{Feature}Repository();
+    service = new {Feature}Service(repository);
   });
 
-  describe('getTodos', () => {
+  describe('getList', () => {
     it('Repository 성공 시 ok Result를 반환해야 한다', async () => {
       // Given
-      const todosResult: TodosResult = {
-        todos: [createTodoItem({ scheduledTime: new Date('2024-06-01T09:00:00Z'), isAllDay: false })],
-        hasNext: false,
-        nextCursor: null,
-      };
-      repository.getTodos.mockResolvedValue(ok(todosResult));
+      repository.getList.mockResolvedValue(ok([create{Feature}()]));
 
       // When
-      const result = await service.getTodos({ size: 10 });
+      const result = await service.getList();
 
       // Then
       expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.todos).toHaveLength(1);
-        expect(result.value.hasNext).toBe(false);
-      }
-      expect(repository.getTodos).toHaveBeenCalledWith({ size: 10 });
+      expect(repository.getList).toHaveBeenCalled();
     });
 
     it('Repository가 에러를 반환하면 그대로 전파해야 한다', async () => {
       // Given
-      repository.getTodos.mockResolvedValue(
-        err(new ApiError('TODO_0801', '할 일을 찾을 수 없어요', 404)),
+      repository.getList.mockResolvedValue(
+        err(new ApiError('{FEATURE}_0801', '리소스를 찾을 수 없어요', 404)),
       );
 
       // When
-      const result = await service.getTodos({ size: 10 });
+      const result = await service.getList();
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('TODO_0801');
+        expect(result.error.code).toBe('{FEATURE}_0801');
       }
     });
   });
 });
 ```
 
-### Policy 검증 패턴 (FriendService)
+#### 패턴 B: Policy 검증 (클라이언트에서 먼저 거르기)
+
+Service가 **Policy로 검증** 후 실패하면 `{Feature}Error`를 반환하고, **Repository를 호출하지 않는다**.
 
 ```typescript
-// features/friend/services/friend.service.spec.ts
-import type { FriendRepository } from '../repositories/friend.repository';
-import { ok } from '@src/shared/errors/result';
-
-import { FriendService } from './friend.service';
-
-const createMockFriendRepository = (): jest.Mocked<FriendRepository> => ({
-  sendRequest: jest.fn(),
-  getReceivedRequests: jest.fn(),
-  getSentRequests: jest.fn(),
-  acceptRequest: jest.fn(),
-  rejectRequest: jest.fn(),
-  cancelRequest: jest.fn(),
-  getFriends: jest.fn(),
-  removeFriend: jest.fn(),
-});
-
-describe('FriendService', () => {
-  let repository: jest.Mocked<FriendRepository>;
-  let service: FriendService;
-
-  beforeEach(() => {
-    repository = createMockFriendRepository();
-    service = new FriendService(repository);
-  });
-
-  describe('sendRequestByTag', () => {
-    it('빈 태그로 요청 시 FRIEND_EMPTY_TAG 에러를 반환해야 한다', async () => {
-      const result = await service.sendRequestByTag('   ');
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.code).toBe('FRIEND_EMPTY_TAG');
-      }
-      // Repository가 호출되지 않아야 한다
-      expect(repository.sendRequest).not.toHaveBeenCalled();
-    });
-
-    it('잘못된 태그 형식으로 요청 시 FRIEND_INVALID_TAG 에러를 반환해야 한다', async () => {
-      const result = await service.sendRequestByTag('잘못된태그!!');
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.code).toBe('FRIEND_INVALID_TAG');
-      }
-      expect(repository.sendRequest).not.toHaveBeenCalled();
-    });
-
-    it('유효한 태그로 요청 시 Repository를 호출해야 한다', async () => {
+  describe('create', () => {
+    it('유효한 입력이면 Repository를 호출해야 한다', async () => {
       // Given
-      repository.sendRequest.mockResolvedValue(ok({ userId: 'user-1' }));
+      repository.create.mockResolvedValue(ok(create{Feature}()));
 
       // When
-      const result = await service.sendRequestByTag('#1234');
+      const result = await service.create({ value: 'valid-input' });
 
       // Then
-      expect(repository.sendRequest).toHaveBeenCalledWith('#1234');
+      expect(repository.create).toHaveBeenCalledWith({ value: 'valid-input' });
       expect(result.ok).toBe(true);
     });
-  });
-});
-```
 
-### AuthService 테스트 (Storage mock 포함)
-
-AuthService는 Repository와 Storage 두 의존성을 주입받습니다:
-
-```typescript
-// features/auth/services/auth.service.spec.ts
-import type { AuthRepository } from '../repositories/auth.repository';
-import type { Storage } from '@src/core/ports/storage';
-import { ok, err } from '@src/shared/errors/result';
-import { ApiError } from '@src/shared/errors/api-error';
-
-import { AuthService } from './auth.service';
-
-const createMockAuthRepository = (): jest.Mocked<AuthRepository> => ({
-  exchangeCode: jest.fn(),
-  emailLogin: jest.fn(),
-  appleLogin: jest.fn(),
-  logout: jest.fn(),
-  getCurrentUser: jest.fn(),
-  getPreference: jest.fn(),
-  updatePreference: jest.fn(),
-  getConsent: jest.fn(),
-  updateMarketingConsent: jest.fn(),
-  register: jest.fn(),
-  verifyEmail: jest.fn(),
-  resendVerification: jest.fn(),
-  getKakaoAuthUrl: jest.fn(),
-  getNaverAuthUrl: jest.fn(),
-  getGoogleAuthUrl: jest.fn(),
-});
-
-const createMockStorage = (): jest.Mocked<Storage> => ({
-  get: jest.fn(),
-  set: jest.fn(),
-  remove: jest.fn(),
-});
-
-describe('AuthService', () => {
-  let authRepository: jest.Mocked<AuthRepository>;
-  let storage: jest.Mocked<Storage>;
-  let service: AuthService;
-
-  beforeEach(() => {
-    authRepository = createMockAuthRepository();
-    storage = createMockStorage();
-    service = new AuthService(authRepository, storage);
-  });
-
-  describe('emailLogin', () => {
-    it('로그인 성공 시 토큰을 저장하고 ok Result를 반환해야 한다', async () => {
-      // Given
-      const tokens = { accessToken: 'access', refreshToken: 'refresh' };
-      authRepository.emailLogin.mockResolvedValue(ok(tokens));
+    it('무효한 입력이면 {Feature}Error를 반환하고 Repository를 호출하지 않아야 한다', async () => {
+      // Given — 무효한 입력 (빈 문자열)
 
       // When
-      const result = await service.emailLogin('test@example.com', 'password');
-
-      // Then
-      expect(result.ok).toBe(true);
-      expect(storage.set).toHaveBeenCalledWith('accessToken', 'access');
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', 'refresh');
-    });
-
-    it('로그인 실패 시 토큰을 저장하지 않고 에러를 전파해야 한다', async () => {
-      // Given
-      authRepository.emailLogin.mockResolvedValue(
-        err(new ApiError('AUTH_0401', '이메일 또는 비밀번호가 틀렸어요', 401)),
-      );
-
-      // When
-      const result = await service.emailLogin('test@example.com', 'wrong');
+      const result = await service.create({ value: '' });
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.code).toBe('AUTH_0401');
+        expect(result.error.code).toBe('{FEATURE}_INVALID_INPUT');
       }
-      expect(storage.set).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
     });
   });
-
-  describe('logout', () => {
-    it('성공/실패 관계없이 로컬 토큰을 삭제해야 한다', async () => {
-      // Given
-      authRepository.logout.mockResolvedValue(ok(undefined));
-
-      // When
-      await service.logout();
-
-      // Then
-      expect(storage.remove).toHaveBeenCalledWith('accessToken');
-      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
-    });
-  });
-});
 ```
 
----
+> **핵심 검증 포인트**: Policy 실패 시 `repository.method`가 `not.toHaveBeenCalled()`인지 확인한다.
 
-## 7. ErrorBoundary 통합 테스트
+### 5. UI 컴포넌트 테스트
 
-`<QueryErrorBoundary>`가 Repository/Service에서 throw된 InfraError를 잡아서 fallback UI를 렌더링하는지 검증합니다.
+컴포넌트 테스트에는 TanStack Query의 `QueryClient`가 필요하다.
 
-### 테스트 대상
-
-Repository에서 `ParseError`/`ServerError`가 throw되면 → TanStack Query가 error를 전파 → `<QueryErrorBoundary>`가 catch → fallback UI 렌더링
-
-### 테스트 유틸: throwError 컴포넌트
-
-```typescript
-// shared/testing/utils/throw-error.tsx
-import { useSuspenseQuery } from '@tanstack/react-query';
-
-/** queryFn에서 에러를 throw하여 ErrorBoundary를 트리거하는 컴포넌트 */
-export function ThrowError({ error }: { error: Error }) {
-  useSuspenseQuery({
-    queryKey: ['test-error'],
-    queryFn: () => { throw error; },
-    retry: false,
-  });
-  return null;
-}
-```
-
-### 기본 패턴: InfraError → fallback 렌더링
-
-```typescript
-// shared/ui/QueryErrorBoundary/QueryErrorBoundary.spec.tsx
-import { renderWithClient } from '@src/shared/testing/utils/render-with-client';
-import { screen, waitFor } from '@testing-library/react-native';
-import { ServerError, ParseError } from '@src/shared/errors/infra-error';
-
-import { QueryErrorBoundary } from './QueryErrorBoundary';
-import { ThrowError } from '@src/shared/testing/utils/throw-error';
-
-describe('QueryErrorBoundary', () => {
-  it('ServerError 발생 시 기본 fallback UI를 렌더링해야 한다', async () => {
-    renderWithClient(
-      <QueryErrorBoundary>
-        <ThrowError error={new ServerError(500)} />
-      </QueryErrorBoundary>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('오류가 발생했어요')).toBeTruthy();
-      expect(screen.getByText('재시도')).toBeTruthy();
-    });
-  });
-
-  it('ParseError 발생 시 기본 fallback UI를 렌더링해야 한다', async () => {
-    renderWithClient(
-      <QueryErrorBoundary>
-        <ThrowError error={new ParseError()} />
-      </QueryErrorBoundary>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('오류가 발생했어요')).toBeTruthy();
-    });
-  });
-
-  it('커스텀 fallback을 전달하면 해당 UI를 렌더링해야 한다', async () => {
-    renderWithClient(
-      <QueryErrorBoundary
-        fallback={({ error, reset }) => <Text testID="custom-fallback">커스텀 에러</Text>}
-      >
-        <ThrowError error={new ServerError(500)} />
-      </QueryErrorBoundary>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('custom-fallback')).toBeTruthy();
-    });
-  });
-});
-```
-
-### 재시도 흐름 테스트
-
-```typescript
-it('재시도 버튼을 누르면 쿼리가 다시 실행되어야 한다', async () => {
-  const queryFn = jest.fn()
-    .mockRejectedValueOnce(new ServerError(500))  // 첫 번째: 실패
-    .mockResolvedValueOnce({ data: 'success' });  // 두 번째: 성공
-
-  renderWithClient(
-    <QueryErrorBoundary>
-      <TestQueryComponent queryFn={queryFn} />
-    </QueryErrorBoundary>,
-  );
-
-  // fallback 렌더링 대기
-  await waitFor(() => {
-    expect(screen.getByText('오류가 발생했어요')).toBeTruthy();
-  });
-
-  // 재시도
-  fireEvent.press(screen.getByText('재시도'));
-
-  // 성공 UI 렌더링 대기
-  await waitFor(() => {
-    expect(screen.getByText('success')).toBeTruthy();
-  });
-  expect(queryFn).toHaveBeenCalledTimes(2);
-});
-```
-
-### renderWithClient 유틸
-
-ErrorBoundary 테스트에는 실제 `QueryClient`가 필요합니다:
+#### renderWithClient 유틸
 
 ```typescript
 // shared/testing/utils/render-with-client.tsx
@@ -737,67 +645,57 @@ export function renderWithClient(ui: ReactNode) {
 }
 ```
 
----
+#### 컴포넌트 테스트 예시
 
-## 테스트 작성 규칙
+```tsx
+// features/{feature}/presentations/components/{Feature}Card.test.tsx
+import { render, screen } from '@testing-library/react-native';
+import { {Feature}Card } from './{Feature}Card';
 
-### 파일 네이밍
+const create{Feature} = (overrides?: Partial<{Feature}>): {Feature} => ({
+  id: 1,
+  name: '기본 이름',
+  status: 'active',
+  ...overrides,
+});
 
-| 파일 유형 | 패턴 | 예시 |
-|----------|------|------|
-| Mapper 테스트 | `{feature}.mapper.spec.ts` | `todo.mapper.spec.ts` |
-| Policy 테스트 | `{feature}.model.spec.ts` | `todo.model.spec.ts` |
-| Repository 테스트 | `{feature}.repository.spec.ts` | `todo.repository.spec.ts` |
-| Service 테스트 | `{feature}.service.spec.ts` | `todo.service.spec.ts` |
-| ErrorBoundary 테스트 | `QueryErrorBoundary.spec.tsx` | — |
+describe('{Feature}Card', () => {
+  it('이름을 렌더링해야 한다', () => {
+    // Given
+    const item = create{Feature}({ name: '테스트' });
 
-### 테스트 구조 (Given-When-Then)
+    // When
+    render(<{Feature}Card item={item} />);
 
-```typescript
-it('특정 조건에서 기대하는 결과가 나와야 한다', async () => {
-  // Given — 테스트 데이터 및 mock 설정
-  repository.getTodos.mockResolvedValue(ok(data));
+    // Then
+    expect(screen.getByText('테스트')).toBeTruthy();
+  });
 
-  // When — 테스트 대상 실행
-  const result = await service.getTodos({ size: 10 });
+  it('만료 상태이면 만료 배지를 표시해야 한다', () => {
+    // Given
+    const item = create{Feature}({ status: 'expired' });
 
-  // Then — 결과 검증
-  expect(result.ok).toBe(true);
+    // When
+    render(<{Feature}Card item={item} />);
+
+    // Then
+    expect(screen.getByText('만료')).toBeTruthy();
+  });
+
+  it('활성 상태이면 만료 배지를 표시하지 않아야 한다', () => {
+    // Given
+    const item = create{Feature}({ status: 'active' });
+
+    // When
+    render(<{Feature}Card item={item} />);
+
+    // Then
+    expect(screen.queryByText('만료')).toBeNull();
+  });
 });
 ```
 
-### Result 타입 검증 패턴
-
-```typescript
-// 성공 검증
-expect(result.ok).toBe(true);
-if (result.ok) {
-  expect(result.value).toEqual(expected);
-}
-
-// 실패 검증
-expect(result.ok).toBe(false);
-if (!result.ok) {
-  expect(result.error.code).toBe('ERROR_CODE');
-}
-```
-
-### mock 설정 패턴
-
-```typescript
-// 성공 응답
-repository.getTodos.mockResolvedValue(ok(data));
-
-// 에러 응답
-repository.getTodos.mockResolvedValue(err(new ApiError('CODE', '메시지', 404)));
-
-// throw (InfraError 시뮬레이션)
-httpClient.get.mockRejectedValue(new ServerError(500));
-
-// 한 번만 다른 응답
-repository.getTodos.mockResolvedValueOnce(ok(firstData));
-repository.getTodos.mockResolvedValueOnce(ok(secondData));
-```
+> **QueryErrorBoundary 테스트**: `ThrowError` 컴포넌트 + `renderWithClient`로 InfraError → fallback UI 렌더링을 검증할 수 있다. 필요 시 `shared/ui/QueryErrorBoundary/` 하위에 작성한다.
 
 ---
 
@@ -808,7 +706,7 @@ repository.getTodos.mockResolvedValueOnce(ok(secondData));
 pnpm --filter @aido/mobile test
 
 # 특정 파일 테스트
-pnpm --filter @aido/mobile test -- todo.service.spec.ts
+pnpm --filter @aido/mobile test -- {feature}.service.test.ts
 
 # 특정 패턴 테스트
 pnpm --filter @aido/mobile test -- --testPathPattern=mapper
@@ -817,49 +715,57 @@ pnpm --filter @aido/mobile test -- --testPathPattern=mapper
 pnpm --filter @aido/mobile test -- --coverage
 ```
 
+### jest.config.js 주요 설정
+
+| 설정 | 값 |
+|------|-----|
+| preset | `jest-expo` |
+| testMatch | `**/*.test.[jt]s?(x)`, `**/*.spec.[jt]s?(x)` |
+| setupFilesAfterSetup | (현재 주석 처리됨) |
+| moduleNameMapper | `@aido/api-types` → packages, `@aido/utils` → packages, `expo-secure-store` → mock |
+
 ---
 
-## 체크리스트
+## 레이어별 체크리스트
 
-### Mapper 테스트
+### Policy
+
+- [ ] 5가지 카테고리별 테스트 (상태 판단, 가능 여부, 표시값, 유효성 검증, 상수)
+- [ ] 경계값 테스트 (경계 양쪽 케이스)
+- [ ] 유효/무효 입력 모두 검증
+
+### Mapper
 
 - [ ] DTO → Domain 변환이 올바른지 검증
 - [ ] 날짜 문자열 → Date 변환 확인
 - [ ] nullable 필드 처리 확인
+- [ ] 배열 변환 (`to{Feature}s`) 확인
 
-### Policy 테스트
+### Service
 
-- [ ] 비즈니스 규칙 경계값 테스트
-- [ ] 유효/무효 입력 모두 검증
+- [ ] Passthrough: Repository 호출 여부 + ok/err Result 전파 검증
+- [ ] Policy 검증: err Result 반환 + Repository 미호출 확인
+- [ ] 여러 의존성 조합 시 각 의존성 호출 순서 검증
 
-### Repository 테스트
+### Repository
 
-- [ ] mock HttpClient로 성공 응답 → ok Result 반환 검증
-- [ ] mock HttpClient로 4xx 에러 → err Result 전파 검증
-- [ ] Zod 검증 실패 시 ParseError throw 확인
-- [ ] InfraError throw 전파 확인
+- [ ] 성공 응답 → Zod 검증 → ok Result 반환
+- [ ] 4xx 에러 → err Result 그대로 전파
+- [ ] Zod 검증 실패 → ParseError throw
+- [ ] 5xx/네트워크 → InfraError throw 전파
 
-### Service 테스트
+### UI 컴포넌트
 
-- [ ] mock Repository로 호출 검증
-- [ ] ok Result 반환 시 데이터 변환 검증
-- [ ] err Result 전파 검증
-- [ ] Policy 검증 로직이 err Result 반환하는지 확인
-- [ ] Policy 실패 시 Repository가 호출되지 않는지 확인
-
-### ErrorBoundary 통합 테스트
-
-- [ ] InfraError throw 시 fallback UI 렌더링 확인
-- [ ] 기본 fallback 텍스트 ("오류가 발생했어요", "재시도") 확인
-- [ ] 커스텀 fallback 전달 시 해당 UI 렌더링 확인
-- [ ] 재시도 버튼으로 쿼리 재실행 검증
+- [ ] 렌더링 확인 (주요 텍스트, 요소)
+- [ ] 조건부 렌더링 (상태에 따른 UI 변화)
+- [ ] 사용자 상호작용 (`fireEvent.press` 등)
 
 ### 공통
 
-- [ ] 테스트 설명이 한국어로 작성됨
+- [ ] `describe`/`it` 한국어 작성
 - [ ] Given-When-Then 구조 준수
+- [ ] 팩토리 함수로 테스트 데이터 생성
 - [ ] 에러 케이스 포함
-- [ ] 팩토리 함수로 테스트 데이터 생성 (인라인 객체 지양)
 
 ---
 
@@ -868,11 +774,11 @@ pnpm --filter @aido/mobile test -- --coverage
 | 파일 | 설명 |
 |------|------|
 | `src/core/ports/http.ts` | HttpClient 인터페이스 |
+| `src/core/ports/storage.ts` | Storage 인터페이스 |
 | `src/shared/errors/result.ts` | Result 타입, ok/err/unwrap |
-| `src/shared/errors/api-error.ts` | ApiError (4xx) |
+| `src/shared/errors/api-error.ts` | ApiError (서버 4xx) |
 | `src/shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
-| `src/shared/ui/QueryErrorBoundary/` | ErrorBoundary 컴포넌트 |
-| `src/shared/testing/factories/` | 테스트 데이터 팩토리 |
-| `src/shared/testing/utils/` | 테스트 유틸 (renderWithClient 등) |
+| `src/features/*/models/*.model.ts` | Domain Model + Policy |
 | `src/features/*/repositories/*.repository.ts` | Repository 인터페이스 |
 | `src/features/*/services/*.service.ts` | Service 구현 |
+| `jest.config.js` | Jest 설정 |

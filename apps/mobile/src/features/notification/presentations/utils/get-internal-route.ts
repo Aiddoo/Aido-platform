@@ -1,4 +1,5 @@
 import type { NotificationContext, NotificationType } from '@aido/validators';
+import { match } from 'ts-pattern';
 
 /**
  * 알림 타입과 컨텍스트를 기반으로 앱 내부 라우트를 결정한다.
@@ -25,39 +26,21 @@ export const getInternalRoute = (
   type: NotificationType,
   context?: NotificationContext,
 ): string | null => {
-  switch (type) {
-    // 친구 요청
-    case 'FOLLOW_NEW':
-      return '/friends';
-
-    // 친구 프로필로 이동
-    case 'FOLLOW_ACCEPTED':
-    case 'CHEER_RECEIVED':
-    case 'FRIEND_COMPLETED':
-      return context?.friendId ? `/friends/${context.friendId}` : null;
-
-    // 콕 찌르기: 친구 프로필로 이동
-    case 'NUDGE_RECEIVED':
-      if (context?.friendId) return `/friends/${context.friendId}`;
-      return null;
-
-    // 할일 관련: 홈으로 이동
-    case 'TODO_REMINDER':
-    case 'TODO_SHARED':
-    case 'DAILY_COMPLETE':
-    case 'MORNING_REMINDER':
-    case 'EVENING_REMINDER':
-      return '/feed';
-
-    // 달성 화면
-    case 'WEEKLY_ACHIEVEMENT':
-      return '/achievements';
-
-    // 시스템 공지 (action.url로 처리되므로 여기선 null)
-    case 'SYSTEM_NOTICE':
-      return null;
-
-    default:
-      return null;
-  }
+  return match(type)
+    .with('FOLLOW_NEW', () => '/friends')
+    .with('FOLLOW_ACCEPTED', 'CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
+      context?.friendId ? `/friends/${context.friendId}` : null,
+    )
+    .with('NUDGE_RECEIVED', () => (context?.friendId ? `/friends/${context.friendId}` : null))
+    .with(
+      'TODO_REMINDER',
+      'TODO_SHARED',
+      'DAILY_COMPLETE',
+      'MORNING_REMINDER',
+      'EVENING_REMINDER',
+      () => '/feed',
+    )
+    .with('WEEKLY_ACHIEVEMENT', () => '/achievements')
+    .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
+    .exhaustive();
 };

@@ -1,11 +1,11 @@
 import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
-import type { NotificationCategory } from '@src/features/notification/models/notification.model';
+import {
+  NOTIFICATION_CATEGORY,
+  type NotificationCategory,
+} from '@src/features/notification/models/notification.model';
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
-import {
-  CATEGORY,
-  CATEGORY_TABS,
-} from '@src/features/notification/presentations/constants/notification';
+import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -25,7 +25,7 @@ const useView = () => {
   const route = useRoute<RouteProp<NotificationsRouteParams, 'notifications'>>();
   const navigation = useNavigation<NavigationProp<NotificationsRouteParams>>();
 
-  const category = route.params?.category ?? CATEGORY.ALL;
+  const category = route.params?.category ?? NOTIFICATION_CATEGORY.ALL;
 
   const setCategory = useCallback(
     (newCategory: NotificationCategory) => {
