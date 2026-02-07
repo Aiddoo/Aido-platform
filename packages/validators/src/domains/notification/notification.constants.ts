@@ -25,3 +25,44 @@ export const NOTIFICATION_LIMITS = {
 } as const;
 
 export const EXPO_PUSH_TOKEN_REGEX = /^ExponentPushToken\[.+\]$/;
+
+// =========================================================================
+// 알림 카테고리
+// =========================================================================
+
+export const NOTIFICATION_CATEGORY = {
+  ALL: 'ALL',
+  NOTICE: 'NOTICE',
+  TODO: 'TODO',
+  SOCIAL: 'SOCIAL',
+} as const;
+
+export type NotificationCategory =
+  (typeof NOTIFICATION_CATEGORY)[keyof typeof NOTIFICATION_CATEGORY];
+
+/** 카테고리 → NotificationType[] 매핑 (ALL 제외) */
+export const CATEGORY_TYPE_MAP: Record<
+  Exclude<NotificationCategory, 'ALL'>,
+  readonly NotificationType[]
+> = {
+  NOTICE: [
+    NOTIFICATION_TYPE.SYSTEM_NOTICE,
+    NOTIFICATION_TYPE.ADMIN_BROADCAST,
+    NOTIFICATION_TYPE.ADMIN_TARGETED,
+    NOTIFICATION_TYPE.WEEKLY_ACHIEVEMENT,
+  ],
+  TODO: [
+    NOTIFICATION_TYPE.TODO_REMINDER,
+    NOTIFICATION_TYPE.TODO_SHARED,
+    NOTIFICATION_TYPE.DAILY_COMPLETE,
+    NOTIFICATION_TYPE.MORNING_REMINDER,
+    NOTIFICATION_TYPE.EVENING_REMINDER,
+  ],
+  SOCIAL: [
+    NOTIFICATION_TYPE.FOLLOW_NEW,
+    NOTIFICATION_TYPE.FOLLOW_ACCEPTED,
+    NOTIFICATION_TYPE.NUDGE_RECEIVED,
+    NOTIFICATION_TYPE.CHEER_RECEIVED,
+    NOTIFICATION_TYPE.FRIEND_COMPLETED,
+  ],
+} as const;

@@ -1,5 +1,7 @@
 import {
+	CATEGORY_TYPE_MAP,
 	NOTIFICATION_ACTION_TYPE,
+	type NotificationCategory,
 	type Notification as NotificationDto,
 	type PushNotificationData,
 } from "@aido/validators";
@@ -257,6 +259,7 @@ export class NotificationService {
 		cursor?: number;
 		size?: number;
 		unreadOnly?: boolean;
+		category?: NotificationCategory;
 	}): Promise<CursorPaginatedResponse<NotificationDto, number>> {
 		const { cursor, size } =
 			this.paginationService.normalizeCursorPagination<number>({
@@ -264,11 +267,18 @@ export class NotificationService {
 				size: params.size,
 			});
 
+		// 카테고리 → NotificationType[] 변환
+		const types =
+			params.category && params.category !== "ALL"
+				? [...CATEGORY_TYPE_MAP[params.category]]
+				: undefined;
+
 		const repoParams: FindNotificationsParams = {
 			userId: params.userId,
 			cursor,
 			size,
 			unreadOnly: params.unreadOnly,
+			types,
 		};
 
 		const notifications =

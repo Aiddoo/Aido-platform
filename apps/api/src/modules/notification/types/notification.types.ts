@@ -2,6 +2,7 @@ import type { NotificationActionType } from "@aido/validators";
 import type { DatabaseService } from "@/database/database.service";
 import type {
 	Notification,
+	NotificationType,
 	Prisma,
 	PushToken,
 } from "@/generated/prisma/client";
@@ -22,6 +23,7 @@ export interface FindNotificationsParams {
 	cursor?: number;
 	size: number;
 	unreadOnly?: boolean;
+	types?: NotificationType[];
 }
 
 /**
@@ -123,7 +125,7 @@ export interface CreateNotificationData {
 	 * |------|------|----------------|
 	 * | FOLLOW_NEW | 새 친구 요청 | friendId |
 	 * | FOLLOW_ACCEPTED | 친구 요청 수락됨 | friendId |
-	 * | NUDGE_RECEIVED | 독촉받음 | todoId?, friendId, nudgeId |
+	 * | NUDGE_RECEIVED | 콕 찌르기 받음 | todoId?, friendId, nudgeId |
 	 * | CHEER_RECEIVED | 응원받음 | friendId, cheerId |
 	 * | DAILY_COMPLETE | 오늘 할일 전체 완료 | - |
 	 * | FRIEND_COMPLETED | 친구가 할일 완료 | friendId |
@@ -176,10 +178,10 @@ export interface CreateNotificationData {
 	friendId?: string | null;
 
 	/**
-	 * 독촉 ID (context)
+	 * 콕 찌르기 ID (context)
 	 *
 	 * 사용 타입: NUDGE_RECEIVED
-	 * 독촉 관련 추가 정보 조회에 사용
+	 * 콕 찌르기 관련 추가 정보 조회에 사용
 	 */
 	nudgeId?: number | null;
 

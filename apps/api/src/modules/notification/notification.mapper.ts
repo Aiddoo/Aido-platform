@@ -4,7 +4,10 @@
  * Prisma 엔티티를 DTO 형식으로 변환
  */
 
-import type { Notification as NotificationDto } from "@aido/validators";
+import type {
+	NotificationContext,
+	Notification as NotificationDto,
+} from "@aido/validators";
 import type { Notification } from "@/generated/prisma/client";
 
 export class NotificationMapper {
@@ -12,6 +15,13 @@ export class NotificationMapper {
 	 * Prisma Notification → Response DTO 형식
 	 */
 	static toDto(notification: Notification): NotificationDto {
+		const context: NotificationContext = {};
+		if (notification.todoId != null) context.todoId = notification.todoId;
+		if (notification.friendId != null) context.friendId = notification.friendId;
+		if (notification.nudgeId != null) context.nudgeId = notification.nudgeId;
+		if (notification.cheerId != null) context.cheerId = notification.cheerId;
+		const hasContext = Object.keys(context).length > 0;
+
 		return {
 			id: notification.id,
 			userId: notification.userId,
@@ -20,6 +30,7 @@ export class NotificationMapper {
 			body: notification.body,
 			isRead: notification.isRead,
 			metadata: notification.metadata as Record<string, unknown> | null,
+			...(hasContext && { context }),
 			createdAt: notification.createdAt.toISOString(),
 			readAt: notification.readAt?.toISOString() ?? null,
 		};

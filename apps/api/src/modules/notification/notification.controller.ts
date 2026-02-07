@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+import { NOTIFICATION_CATEGORY } from "@aido/validators";
 import {
 	Body,
 	Controller,
@@ -14,7 +15,7 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -151,7 +152,28 @@ export class NotificationController {
 **쿼리 파라미터**
 - \`limit\` (기본값: 20): 조회할 알림 수 (1-50)
 - \`cursor\`: 페이지네이션 커서 (이전 응답의 nextCursor)
-- \`unreadOnly\`: 읽지 않은 알림만 조회`,
+- \`unreadOnly\`: 읽지 않은 알림만 조회
+- \`category\`: 알림 카테고리 필터
+
+**카테고리 분류**
+| 값 | 설명 | 포함 알림 타입 |
+|-----|------|---------------|
+| \`ALL\` | 전체 (기본값) | 모든 알림 |
+| \`NOTICE\` | 공지 | SYSTEM_NOTICE, ADMIN_BROADCAST, ADMIN_TARGETED, WEEKLY_ACHIEVEMENT |
+| \`TODO\` | 할일 | TODO_REMINDER, TODO_SHARED, DAILY_COMPLETE, MORNING_REMINDER, EVENING_REMINDER |
+| \`SOCIAL\` | 소셜 | FOLLOW_NEW, FOLLOW_ACCEPTED, NUDGE_RECEIVED, CHEER_RECEIVED, FRIEND_COMPLETED |
+
+**조합 사용 예시**
+- \`?category=SOCIAL&unreadOnly=true\` — 읽지 않은 소셜 알림만
+- \`?category=TODO&limit=10\` — 할일 알림 10개`,
+	})
+	@ApiQuery({
+		name: "category",
+		required: false,
+		description:
+			"알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜)",
+		enum: Object.values(NOTIFICATION_CATEGORY),
+		example: "ALL",
 	})
 	@ApiSuccessResponse({ type: NotificationListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -159,18 +181,20 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNotificationsQueryDto,
 	): Promise<NotificationListResponseDto> {
-		this.logger.debug(`알림 목록 조회: userId=${user.userId}`);
-
-		const result = await this.notificationService.getNotifications({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-			unreadOnly: query.unreadOnly,
-		});
-
-		const unreadCount = await this.notificationService.getUnreadCount(
-			user.userId,
+		this.logger.debug(
+			`알림 목록 조회: userId=${user.userId}, category=${query.category}`,
 		);
+
+		const [result, unreadCount] = await Promise.all([
+			this.notificationService.getNotifications({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+				unreadOnly: query.unreadOnly,
+				category: query.category,
+			}),
+			this.notificationService.getUnreadCount(user.userId),
+		]);
 
 		return {
 			notifications: result.items,
