@@ -15,12 +15,14 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import type { DragEndParams } from 'react-native-draggable-flatlist';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { useResolveClassNames } from 'uniwind';
 import { CategoryDeleteDialog } from './CategoryDeleteDialog';
 import { CategoryEditBottomSheet } from './CategoryEditBottomSheet';
 
 export const CategoryList = () => {
   const editOverlay = useOverlay();
   const deleteOverlay = useOverlay();
+  const containerBgStyle = useResolveClassNames('bg-white');
   const { data } = useSuspenseQuery(getTodoCategoriesQueryOptions());
   const reorderMutation = useMutation(reorderTodoCategoryMutationOptions());
   const [categories, setCategories] = useState(data.categories);
@@ -123,7 +125,7 @@ export const CategoryList = () => {
         </ScaleDecorator>
       )}
       onDragEnd={handleDragEnd}
-      containerStyle={{ backgroundColor: 'white', borderRadius: 16, padding: 8 }}
+      containerStyle={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
     />
   );
 };
