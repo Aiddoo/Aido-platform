@@ -8,4 +8,6 @@ export const TODO_QUERY_KEYS = {
   // 무한 스크롤 리스트 (선택된 날짜의 상세 목록)
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: (date: string) => [...TODO_QUERY_KEYS.lists(), date] as const,
+  listByDateAndCategory: (date: string, categoryId: number) =>
+    [...TODO_QUERY_KEYS.lists(), date, 'category', categoryId] as const,
 } as const;

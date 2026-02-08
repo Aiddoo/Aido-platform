@@ -33,6 +33,7 @@ export class TodoRepositoryImpl implements TodoRepository {
         cursor: params.cursor,
         size: params.size,
         completed: params.completed,
+        categoryId: params.categoryId,
         startDate: params.startDate,
         endDate: params.endDate,
       },

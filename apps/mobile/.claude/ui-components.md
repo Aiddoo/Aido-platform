@@ -49,6 +49,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `KeyboardAdaptiveButton` | 키보드 반응 버튼 | `src/shared/ui/Button/Button.md` |
 | `TextButton` | 텍스트/링크 버튼 | `src/shared/ui/TextButton/TextButton.md` |
 | `Input` | 입력 필드 | `src/shared/ui/Input/Input.md` |
+| `BottomSheetInput` | BottomSheet 내부 입력 필드 | `src/shared/ui/Input/Input.md` |
 | `Spacing` | 간격 유틸리티 | `src/shared/ui/Spacing/Spacing.md` |
 | `Box` | 단순 컨테이너 | `src/shared/ui/Box/README.md` |
 | `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |
@@ -74,6 +75,21 @@ import { ScrollView, FlatList, Image } from 'react-native';
 <VStack style={{ flex: 1, padding: 16, backgroundColor: 'white' }}>
   <Text style={{ marginTop: 8 }}>콘텐츠</Text>
 </VStack>
+```
+
+### 조건부 className: cn 유틸리티 사용
+
+조건에 따라 className을 조합할 때 **반드시** `cn` 유틸리티를 사용합니다. 템플릿 리터럴로 직접 조합하지 않습니다.
+
+```tsx
+import { cn } from '@src/shared/utils/cn';
+
+// ✅ 올바름 - cn 사용
+<View className={cn('rounded-full', isSelected && 'border-2')} />
+<View className={cn('w-8 h-8', isActive ? 'bg-main' : 'bg-gray-3')} />
+
+// ❌ 금지 - 템플릿 리터럴 직접 조합
+<View className={`rounded-full ${isSelected ? 'border-2' : ''}`} />
 ```
 
 ### 외부 컴포넌트: withUniwind로 래핑

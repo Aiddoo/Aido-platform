@@ -511,3 +511,22 @@ if (!parsed.success) {
 - UI → Service → Repository 인터페이스 (OK)
 - Repository.impl → Repository 인터페이스 구현 (OK)
 - **역방향 의존 금지** — Model이 다른 레이어를 알면 안 됨
+
+---
+
+## UI 컴포넌트 문서 규칙
+
+`src/shared/ui/` 하위에 새 컴포넌트를 생성할 때 **반드시** 다음을 수행합니다:
+
+### 1. 컴포넌트 문서 생성
+`src/shared/ui/{ComponentDir}/{ComponentName}.md` 파일 생성. 포함 내용:
+
+- `# {ComponentName}` — 한 줄 설명
+- `## 사용법` — import 경로 + 기본 예제 (tsx 코드블록)
+- `## Props` — 테이블 (Prop | 타입 | 기본값 | 설명)
+- `## 파일 구조` — 디렉토리 내 파일 목록과 역할
+
+### 2. ui-components.md 업데이트
+`apps/mobile/.claude/ui-components.md`의 **Shared UI 컴포넌트 목록** 테이블에 행 추가:
+
+| `{ComponentName}` | {용도 한 줄 설명} | `src/shared/ui/{Dir}/{Name}.md` |

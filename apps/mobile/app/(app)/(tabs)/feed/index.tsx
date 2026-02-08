@@ -1,4 +1,3 @@
-import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { UserAvatarList } from '@src/features/todo/presentations/components/UserAvatarList';
@@ -6,9 +5,8 @@ import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryError
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { formatDate } from '@src/shared/utils/date';
 import { Suspense, useState } from 'react';
-import { View } from 'react-native';
+import { IOScrollView } from 'react-native-intersection-observer';
 
 const TODAY = new Date();
 
@@ -17,28 +15,25 @@ const FeedScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <VStack flex={1}>
-        <VStack>
-          <QueryErrorBoundary>
-            <Suspense fallback={<UserAvatarList.Loading />}>
-              <UserAvatarList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </VStack>
-        <Calendar value={selectedDate} onChange={setSelectedDate} />
-
-        <Spacing size={16} />
-
-        <View style={{ flex: 1 }}>
-          <QueryErrorBoundary key={formatDate(selectedDate)}>
-            <Suspense fallback={<TodoList.Loading />}>
-              <TodoList date={selectedDate} />
-            </Suspense>
-          </QueryErrorBoundary>
-        </View>
+      <VStack>
+        <QueryErrorBoundary>
+          <Suspense fallback={<UserAvatarList.Loading />}>
+            <UserAvatarList />
+          </Suspense>
+        </QueryErrorBoundary>
       </VStack>
 
-      <AddTodoBottomSheet selectedDate={selectedDate} />
+      <IOScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }}>
+        <Calendar value={selectedDate} onChange={setSelectedDate} />
+
+        <Spacing size={8} />
+
+        <QueryErrorBoundary>
+          <Suspense fallback={<TodoList.Loading />}>
+            <TodoList date={selectedDate} />
+          </Suspense>
+        </QueryErrorBoundary>
+      </IOScrollView>
     </StyledSafeAreaView>
   );
 };
