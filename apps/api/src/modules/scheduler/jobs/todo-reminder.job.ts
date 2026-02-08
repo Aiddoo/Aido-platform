@@ -11,16 +11,11 @@ import { NotificationMessageBuilder } from "../../notification/templates/notific
  *
  * 10분마다 실행되어 마감 1시간 전인 할일에 대해 알림을 발송합니다.
  * scheduledTime이 설정된 할일만 대상이 됩니다.
+ * DB 기반으로 중복 알림을 방지합니다 (24시간 내 동일 TODO_REMINDER 존재 여부).
  */
 @Injectable()
 export class TodoReminderJob {
 	private readonly logger = new Logger(TodoReminderJob.name);
-
-	/**
-	 * 이미 알림을 보낸 할일 ID를 추적 (메모리 캐시)
-	 * 서버 재시작 시 초기화되므로, 프로덕션에서는 Redis 등을 사용하는 것이 좋습니다.
-	 */
-	private readonly notifiedTodoIds = new Set<number>();
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -37,6 +32,7 @@ export class TodoReminderJob {
 
 		try {
 			const now = new Date();
+			const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
 			// 1시간 후 시점 계산 (50분~60분 범위로 10분 간격 실행에 맞춤)
 			const reminderStart = new Date(now.getTime() + 50 * 60 * 1000); // 50분 후
@@ -66,9 +62,27 @@ export class TodoReminderJob {
 				},
 			});
 
-			// 이미 알림을 보낸 할일 제외
+			if (todosToNotify.length === 0) {
+				this.logger.log("No todos to notify for reminder");
+				return;
+			}
+
+			// 이미 알림을 보낸 할일 제외 (DB 기반 중복 방지)
+			const todoIds = todosToNotify.map((todo) => todo.id);
+			const existingNotifications = await this.database.notification.findMany({
+				where: {
+					todoId: { in: todoIds },
+					type: "TODO_REMINDER",
+					createdAt: { gte: twentyFourHoursAgo },
+				},
+				select: { todoId: true },
+			});
+
+			const alreadyNotifiedIds = new Set(
+				existingNotifications.map((n) => n.todoId),
+			);
 			const newTodosToNotify = todosToNotify.filter(
-				(todo) => !this.notifiedTodoIds.has(todo.id),
+				(todo) => !alreadyNotifiedIds.has(todo.id),
 			);
 
 			if (newTodosToNotify.length === 0) {
@@ -91,15 +105,6 @@ export class TodoReminderJob {
 
 			await this.notificationService.createAndSendBatch(notifications);
 
-			// 알림을 보낸 할일 ID 기록
-			for (const todo of newTodosToNotify) {
-				this.notifiedTodoIds.add(todo.id);
-			}
-
-			// 오래된 캐시 정리 (24시간 이상 된 항목은 제거)
-			// 실제로는 Redis TTL을 사용하는 것이 좋습니다.
-			this.cleanupOldCache();
-
 			this.logger.log(
 				`Todo reminder sent for ${newTodosToNotify.length} todos`,
 			);
@@ -107,23 +112,6 @@ export class TodoReminderJob {
 			this.logger.error(
 				`Todo reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
-
-	/**
-	 * 오래된 캐시 정리
-	 * 캐시 크기가 1000개를 초과하면 절반을 제거합니다.
-	 */
-	private cleanupOldCache(): void {
-		if (this.notifiedTodoIds.size > 1000) {
-			const idsArray = Array.from(this.notifiedTodoIds);
-			const toRemove = idsArray.slice(0, 500);
-			for (const id of toRemove) {
-				this.notifiedTodoIds.delete(id);
-			}
-			this.logger.log(
-				`Cleaned up ${toRemove.length} old todo reminder cache entries`,
 			);
 		}
 	}

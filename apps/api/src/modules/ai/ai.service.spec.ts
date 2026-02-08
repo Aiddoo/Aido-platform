@@ -22,6 +22,7 @@ interface MockPrisma {
 		findUnique: jest.Mock<Promise<MockUser | AiUsageInfo | null>>;
 		update: jest.Mock<Promise<MockUser>>;
 	};
+	$transaction: jest.Mock;
 }
 
 describe("AiService", () => {
@@ -43,6 +44,9 @@ describe("AiService", () => {
 				findUnique: jest.fn(),
 				update: jest.fn(),
 			},
+			$transaction: jest.fn((callback: (tx: unknown) => unknown) =>
+				callback(mockPrisma),
+			),
 		};
 		mockConfigService = {
 			aiDailyLimit: 5,
@@ -234,6 +238,48 @@ describe("AiService", () => {
 			await expect(service.parseTodo("테스트", "unknown-user")).rejects.toThrow(
 				BusinessException,
 			);
+		});
+
+		it("일일 사용량 초과 시 AI_0003 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			mockPrisma.user.findUnique.mockResolvedValue({
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When & Then
+			await expect(service.parseTodo("테스트", "user-1")).rejects.toThrow(
+				BusinessException,
+			);
+			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
+				{
+					errorCode: "AI_0003",
+				},
+			);
+		});
+
+		it("사용량 초과 시 AI Provider를 호출하지 않는다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			mockPrisma.user.findUnique.mockResolvedValue({
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			await service.parseTodo("테스트", "user-1").catch(() => {});
+
+			// Then
+			expect(fakeAiProvider.getCallCount()).toBe(0);
 		});
 	});
 
