@@ -469,7 +469,7 @@ export class BusinessExceptions {
 	}
 
 	// =========================================================================
-	// 독촉 (Nudge)
+	// 콕 찌르기 (Nudge)
 	// =========================================================================
 	static nudgeDailyLimitExceeded(limit: number) {
 		return new BusinessException(ErrorCode.NUDGE_1101, { limit });

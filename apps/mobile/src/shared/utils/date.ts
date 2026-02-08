@@ -139,3 +139,31 @@ export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd:
     rangeEnd: d.endOf('week').format('YYYY-MM-DD'),
   };
 };
+
+/** 날짜를 섹션 라벨로 변환 ("오늘", "어제", "이번 주", "이번 달", "이전") */
+export const getDateSectionLabel = (date: Date): string => {
+  const now = dayjs();
+  const target = dayjs(date);
+
+  if (target.isToday()) return '오늘';
+  if (now.subtract(1, 'day').isSame(target, 'day')) return '어제';
+  if (target.isSame(now, 'isoWeek')) return '이번 주';
+  if (target.isSame(now, 'month')) return '이번 달';
+  return '이전';
+};
+
+/** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
+export const formatRelativeTime = (date: Date): string => {
+  const now = dayjs();
+  const target = dayjs(date);
+  const diffMinutes = now.diff(target, 'minute');
+  const diffHours = now.diff(target, 'hour');
+  const diffDays = now.diff(target, 'day');
+
+  if (diffMinutes < 1) return '방금 전';
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (target.year() === now.year()) return target.format('M월 D일');
+  return target.format('YYYY.M.D');
+};

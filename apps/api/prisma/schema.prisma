@@ -119,10 +119,13 @@ model UserProfile {
 // =============================================================================
 
 model UserPreference {
-  id               String  @id @default(cuid())
-  userId           String  @unique
-  pushEnabled      Boolean @default(false) // 푸시 알림 전체 on/off
-  nightPushEnabled Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  pushEnabled         Boolean @default(false) // 푸시 알림 전체 on/off
+  nightPushEnabled    Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
+  timezone            String  @default("UTC") @db.VarChar(50) // IANA timezone (e.g. "Asia/Seoul")
+  morningReminderHour Int     @default(8) // 0-23, 사용자 로컬 시간 기준 아침 리마인더
+  eveningReminderHour Int     @default(18) // 0-23, 사용자 로컬 시간 기준 저녁 리마인더
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -577,6 +580,9 @@ model Notification {
   nudgeId  Int? // Nudge 관련 알림
   cheerId  Int? // Cheer 관련 알림
 
+  // === 중복 방지용 날짜 ===
+  notificationDate DateTime? @db.Date // 사용자 로컬 날짜 (DAILY_COMPLETE, FRIEND_COMPLETED 중복 방지)
+
   // === 메타데이터 (확장용) ===
   metadata Json? // { externalUrl?: string, ... }
 
@@ -596,8 +602,8 @@ enum NotificationType {
   FOLLOW_NEW // 새 팔로워 알림
   FOLLOW_ACCEPTED // 친구 수락 (맞팔로우)
 
-  // 독촉
-  NUDGE_RECEIVED // 독촉 받음
+  // 콕 찌르기
+  NUDGE_RECEIVED // 콕 찌르기 받음
 
   // 응원
   CHEER_RECEIVED // 응원 받음

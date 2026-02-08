@@ -63,6 +63,8 @@ export interface TodoAllCompletedEventPayload {
 	userId: string;
 	/** 완료한 할일 개수 */
 	completedCount: number;
+	/** 사용자 타임존 (IANA) */
+	timezone: string;
 }
 
 /**
@@ -123,6 +125,8 @@ export interface FriendCompletedEventPayload {
 	friendName: string;
 	/** 알림을 받을 친구 ID 목록 */
 	notifyUserIds: string[];
+	/** 사용자 타임존 (IANA) */
+	timezone: string;
 }
 
 /**

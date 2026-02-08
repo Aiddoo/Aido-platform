@@ -1,18 +1,16 @@
 import type { NotificationActionType } from "@aido/validators";
-import type { DatabaseService } from "@/database/database.service";
+import type { TransactionClient as _TransactionClient } from "@/common/database/prisma.types";
 import type {
 	Notification,
+	NotificationType,
 	Prisma,
 	PushToken,
 } from "@/generated/prisma/client";
 
 /**
- * 트랜잭션 클라이언트 타입
+ * 트랜잭션 클라이언트 타입 (공통 타입 re-export)
  */
-export type TransactionClient = Omit<
-	DatabaseService,
-	"$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
+export type TransactionClient = _TransactionClient;
 
 /**
  * 알림 목록 조회 파라미터
@@ -22,6 +20,7 @@ export interface FindNotificationsParams {
 	cursor?: number;
 	size: number;
 	unreadOnly?: boolean;
+	types?: NotificationType[];
 }
 
 /**
@@ -123,7 +122,7 @@ export interface CreateNotificationData {
 	 * |------|------|----------------|
 	 * | FOLLOW_NEW | 새 친구 요청 | friendId |
 	 * | FOLLOW_ACCEPTED | 친구 요청 수락됨 | friendId |
-	 * | NUDGE_RECEIVED | 독촉받음 | todoId?, friendId, nudgeId |
+	 * | NUDGE_RECEIVED | 콕 찌르기 받음 | todoId?, friendId, nudgeId |
 	 * | CHEER_RECEIVED | 응원받음 | friendId, cheerId |
 	 * | DAILY_COMPLETE | 오늘 할일 전체 완료 | - |
 	 * | FRIEND_COMPLETED | 친구가 할일 완료 | friendId |
@@ -176,10 +175,10 @@ export interface CreateNotificationData {
 	friendId?: string | null;
 
 	/**
-	 * 독촉 ID (context)
+	 * 콕 찌르기 ID (context)
 	 *
 	 * 사용 타입: NUDGE_RECEIVED
-	 * 독촉 관련 추가 정보 조회에 사용
+	 * 콕 찌르기 관련 추가 정보 조회에 사용
 	 */
 	nudgeId?: number | null;
 
@@ -206,6 +205,9 @@ export interface CreateNotificationData {
 	 * { noticeId: "notice-123", category: "update" }
 	 */
 	metadata?: Prisma.InputJsonValue | null;
+
+	/** 중복 방지용 알림 날짜 (DAILY_COMPLETE, FRIEND_COMPLETED에서 사용) */
+	notificationDate?: Date | null;
 }
 
 /**
@@ -216,6 +218,7 @@ export interface RegisterPushTokenData {
 	token: string;
 	deviceId?: string;
 	platform?: "IOS" | "ANDROID";
+	timezone?: string;
 }
 
 /**

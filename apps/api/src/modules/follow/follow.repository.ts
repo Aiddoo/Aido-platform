@@ -202,11 +202,11 @@ export class FollowRepository {
 				},
 			},
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 
@@ -260,11 +260,11 @@ export class FollowRepository {
 				},
 			},
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 
@@ -288,11 +288,11 @@ export class FollowRepository {
 				},
 			},
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 

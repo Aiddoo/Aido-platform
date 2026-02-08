@@ -52,6 +52,9 @@ junit.xml
 !apps/*/.claude/
 .serena/
 
+# Worktrees
+.worktrees/
+
 # OS
 .DS_Store
 .AppleDouble

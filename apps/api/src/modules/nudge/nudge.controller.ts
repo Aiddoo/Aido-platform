@@ -48,7 +48,7 @@ import { NudgeService } from "./nudge.service";
  *
  * ## 👆 콕 찌르기 API
  *
- * 친구의 할 일을 독촉(콕 찌르기)하고 관리하는 API입니다.
+ * 친구의 할 일을 콕 찌르고 관리하는 API입니다.
  *
  * ### 콕 찌르기
  * - POST /nudges - 콕 찌르기
@@ -87,7 +87,7 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "콕 찌르기",
 		operationId: "sendNudge",
-		description: `친구의 할 일을 독촉합니다.
+		description: `친구의 할 일을 콕 찌릅니다.
 
 **요청 필드**
 - \`receiverId\` (필수): 콕 찌를 친구 ID
@@ -241,7 +241,7 @@ export class NudgeController {
 		operationId: "getNudgeCooldownInfo",
 		description: `특정 친구에게 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
 
-**쿨다운 정책**: 동일 친구에게 24시간 내 재독촉 불가`,
+**쿨다운 정책**: 동일 친구에게 24시간 내 재콕 찌르기 불가`,
 	})
 	@ApiSuccessResponse({ type: NudgeCooldownResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

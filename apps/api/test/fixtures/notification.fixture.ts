@@ -47,6 +47,7 @@ export const NotificationFixture = {
 			metadata: overrides.metadata ?? null,
 			readAt: overrides.readAt ?? null,
 			createdAt: overrides.createdAt ?? now,
+			notificationDate: overrides.notificationDate ?? null,
 		};
 	},
 

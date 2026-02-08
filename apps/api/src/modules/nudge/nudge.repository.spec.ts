@@ -231,7 +231,7 @@ describe("NudgeRepository", () => {
 					todo: expect.any(Object),
 				}),
 				take: 21,
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 			});
 			expect(result).toEqual(mockNudges);
 		});
@@ -259,7 +259,7 @@ describe("NudgeRepository", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 5 },
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 			});
 			expect(result).toEqual(mockNudges);
 		});
@@ -289,7 +289,7 @@ describe("NudgeRepository", () => {
 				where: { senderId: "sender-id" },
 				include: expect.any(Object),
 				take: 21,
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 			});
 			expect(result).toEqual(mockNudges);
 		});

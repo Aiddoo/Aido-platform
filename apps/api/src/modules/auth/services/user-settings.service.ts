@@ -29,12 +29,18 @@ export class UserSettingsService {
 			return {
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			};
 		}
 
 		return {
 			pushEnabled: preference.pushEnabled,
 			nightPushEnabled: preference.nightPushEnabled,
+			timezone: preference.timezone,
+			morningReminderHour: preference.morningReminderHour,
+			eveningReminderHour: preference.eveningReminderHour,
 		};
 	}
 
@@ -46,15 +52,21 @@ export class UserSettingsService {
 		const updated = await this.userPreferenceRepository.upsert(userId, {
 			pushEnabled: input.pushEnabled,
 			nightPushEnabled: input.nightPushEnabled,
+			timezone: input.timezone,
+			morningReminderHour: input.morningReminderHour,
+			eveningReminderHour: input.eveningReminderHour,
 		});
 
 		this.logger.log(
-			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}`,
+			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
 		);
 
 		return {
 			pushEnabled: updated.pushEnabled,
 			nightPushEnabled: updated.nightPushEnabled,
+			timezone: updated.timezone,
+			morningReminderHour: updated.morningReminderHour,
+			eveningReminderHour: updated.eveningReminderHour,
 		};
 	}
 

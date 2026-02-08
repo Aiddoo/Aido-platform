@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { EXPO_PUSH_TOKEN_REGEX, NOTIFICATION_LIMITS } from './notification.constants';
+import {
+  EXPO_PUSH_TOKEN_REGEX,
+  NOTIFICATION_CATEGORY,
+  NOTIFICATION_LIMITS,
+} from './notification.constants';
 
 export const registerPushTokenSchema = z.object({
   token: z
@@ -52,13 +56,20 @@ export const getNotificationsQuerySchema = z.object({
   cursor: z.coerce
     .number()
     .int()
-    .positive('유효하지 않은 커서입니다')
+    .nonnegative('유효하지 않은 커서입니다')
     .optional()
-    .describe('페이지네이션 커서 (선택, 양의 정수)'),
-  unreadOnly: z.coerce
-    .boolean()
+    .describe('페이지네이션 커서 (선택, 0 이상의 정수)'),
+  unreadOnly: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => val === true || val === 'true')
     .default(false)
     .describe('읽지 않은 알림만 조회 여부 (기본값: false)'),
+  category: z
+    .enum(['ALL', 'NOTICE', 'TODO', 'SOCIAL'] as const)
+    .default(NOTIFICATION_CATEGORY.ALL)
+    .describe(
+      '알림 카테고리 필터 (ALL: 전체, NOTICE: 공지, TODO: 할일, SOCIAL: 소셜 / 기본값: ALL)',
+    ),
 });
 
 export type GetNotificationsQuery = z.infer<typeof getNotificationsQuerySchema>;

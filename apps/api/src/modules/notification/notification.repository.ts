@@ -48,6 +48,7 @@ export class NotificationRepository {
 				cheerId: data.cheerId,
 				// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
 				metadata: data.metadata ?? undefined,
+				notificationDate: data.notificationDate ?? undefined,
 			},
 		});
 	}
@@ -72,6 +73,7 @@ export class NotificationRepository {
 				cheerId: data.cheerId,
 				// metadata가 null이면 undefined로 변환 (Prisma에서 null 직접 할당 불가)
 				metadata: data.metadata ?? undefined,
+				notificationDate: data.notificationDate ?? undefined,
 			})),
 		});
 	}
@@ -96,20 +98,21 @@ export class NotificationRepository {
 		params: FindNotificationsParams,
 		tx?: TransactionClient,
 	): Promise<NotificationWithRelations[]> {
-		const { userId, cursor, size, unreadOnly } = params;
+		const { userId, cursor, size, unreadOnly, types } = params;
 		const client = tx ?? this.database;
 
 		return client.notification.findMany({
 			where: {
 				userId,
 				...(unreadOnly && { isRead: false }),
+				...(types && types.length > 0 && { type: { in: types } }),
 			},
 			take: size + 1, // 다음 페이지 존재 여부 확인용
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 
@@ -197,12 +200,16 @@ export class NotificationRepository {
 	 * 특정 타입의 알림이 지정 시각 이후 존재하는지 확인
 	 * - DAILY_COMPLETE 중복 방지용 (단건)
 	 */
-	async existsNotification(params: {
-		userId: string;
-		type: NotificationType;
-		since: Date;
-	}): Promise<boolean> {
-		const count = await this.database.notification.count({
+	async existsNotification(
+		params: {
+			userId: string;
+			type: NotificationType;
+			since: Date;
+		},
+		tx?: TransactionClient,
+	): Promise<boolean> {
+		const client = tx ?? this.database;
+		const count = await client.notification.count({
 			where: {
 				userId: params.userId,
 				type: params.type,
@@ -216,13 +223,17 @@ export class NotificationRepository {
 	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
 	 * - FRIEND_COMPLETED 중복 방지용 — N+1 방지를 위해 단일 쿼리로 처리
 	 */
-	async findAlreadyNotifiedUserIds(params: {
-		userIds: string[];
-		type: NotificationType;
-		since: Date;
-		friendId: string;
-	}): Promise<Set<string>> {
-		const rows = await this.database.notification.findMany({
+	async findAlreadyNotifiedUserIds(
+		params: {
+			userIds: string[];
+			type: NotificationType;
+			since: Date;
+			friendId: string;
+		},
+		tx?: TransactionClient,
+	): Promise<Set<string>> {
+		const client = tx ?? this.database;
+		const rows = await client.notification.findMany({
 			where: {
 				userId: { in: params.userIds },
 				type: params.type,

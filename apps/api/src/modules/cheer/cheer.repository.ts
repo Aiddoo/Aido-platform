@@ -141,11 +141,11 @@ export class CheerRepository {
 			},
 			include: this.cheerInclude,
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 
@@ -163,11 +163,11 @@ export class CheerRepository {
 			},
 			include: this.cheerInclude,
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 

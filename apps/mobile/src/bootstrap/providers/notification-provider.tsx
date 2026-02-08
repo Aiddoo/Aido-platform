@@ -1,6 +1,6 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
 import * as Notifications from 'expo-notifications';
-import { createContext, type PropsWithChildren, use, useEffect, useRef } from 'react';
+import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
@@ -52,48 +52,46 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     }
   }, [lastNotificationResponse, handleNotificationResponse]);
 
-  // 리스너 설정 및 인증 기반 초기화
+  // Effect 1: 알림 리스너 등록
   useEffect(() => {
-    // 포그라운드 알림 수신 리스너
     receivedListener.current = Notifications.addNotificationReceivedListener((notification) => {
       console.log('[Notification] Received in foreground:', notification.request.content.title);
       handleForegroundNotification();
     });
 
-    // 알림 탭 응답 리스너
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       handleNotificationResponse(response).catch(console.error);
     });
-
-    // 인증 상태 변경에 따른 초기화
-    if (isAuthenticated) {
-      // 로그인: 푸시 토큰 등록 + 배지 동기화
-      notificationService.setupPushNotifications().catch((error) => {
-        console.log('[Notification] Push token registration skipped:', error);
-      });
-      notificationService.syncBadgeCount().catch(console.error);
-    } else {
-      // 로그아웃: 푸시 토큰 해제 + 배지 초기화
-      notificationService.unregisterPushToken().catch((error) => {
-        console.log('[Notification] Push token unregister skipped:', error);
-      });
-      notificationService.clearBadge().catch(console.error);
-    }
 
     return () => {
       receivedListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, [
-    isAuthenticated,
-    notificationService,
-    handleNotificationResponse,
-    handleForegroundNotification,
-  ]);
+  }, [handleForegroundNotification, handleNotificationResponse]);
 
-  const value: NotificationContextValue = {
-    handleNotificationResponse,
-  };
+  // Effect 2: 푸시 토큰 관리
+  useEffect(() => {
+    if (isAuthenticated) {
+      notificationService.setupPushNotifications().catch((error) => {
+        console.log('[Notification] Push token registration skipped:', error);
+      });
+    } else {
+      notificationService.unregisterPushToken().catch((error) => {
+        console.log('[Notification] Push token unregister skipped:', error);
+      });
+    }
+  }, [isAuthenticated, notificationService]);
+
+  // Effect 3: 배지 동기화
+  useEffect(() => {
+    if (isAuthenticated) {
+      notificationService.syncBadgeCount().catch(console.error);
+    } else {
+      notificationService.clearBadge().catch(console.error);
+    }
+  }, [isAuthenticated, notificationService]);
+
+  const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 };

@@ -58,7 +58,7 @@ const authErrors = getErrorsByDomain('AUTH');
 | TODO_CATEGORY | 0850-0899 | Todo 카테고리 |
 | FOLLOW | 0900-0999 | 친구/팔로우 |
 | NOTIFICATION | 1000-1099 | 알림/푸시 |
-| NUDGE | 1100-1199 | 독촉 |
+| NUDGE | 1100-1199 | 콕 찌르기 |
 | CHEER | 1200-1299 | 응원 |
 | AI | 1300-1399 | AI 서비스 |
 

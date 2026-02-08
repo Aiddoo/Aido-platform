@@ -1,9 +1,9 @@
 import type { NotificationType } from "@/generated/prisma/client";
 
 /**
- * 알림 메시지 템플릿
+ * 알림 메시지 템플릿 (듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박)
  *
- * 모든 알림 유형에 대한 제목과 본문 템플릿을 정의합니다.
+ * 듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박으로 작성된 알림 템플릿입니다.
  * 플레이스홀더는 {변수명} 형식으로 사용합니다.
  */
 
@@ -18,80 +18,84 @@ export interface NotificationTemplate {
 /**
  * 일정 기반 알림 템플릿
  *
- * 듀오링고 스타일: 짧고 임팩트 있게, 긴급성 + 성취감
+ * 듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박
  */
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
-		title: "1시간 남았어요",
-		body: "{todoTitle}",
+		title: "{todoTitle}, 1시간 남음",
+		body: "지금 안 하면 진짜 못 한다",
 		type: "TODO_REMINDER" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
 	MORNING_REMINDER: {
-		title: "오늘의 할일 {count}개",
-		body: "지금 시작하면 오늘도 완벽해요",
+		title: "오늘 할일 {count}개",
+		body: "미루면 저녁의 내가 울어",
 		type: "MORNING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
 	},
 	EVENING_COMPLETE: {
-		title: "오늘 전부 해냈어요!",
-		body: "내일도 이 기세로 가볼까요?",
+		title: "다 했다. 진짜 대단한데?",
+		body: "오늘 너 좀 멋있었어",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/",
 	},
 	EVENING_PARTIAL: {
-		title: "{remaining}개만 더!",
-		body: "오늘 안에 끝낼 수 있어요",
+		title: "{remaining}개 남았는데 자려고?",
+		body: "조금만 더 하면 끝이야",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
 	},
 	EVENING_NONE: {
-		title: "하나만 해볼까요?",
-		body: "5분이면 충분해요",
+		title: "오늘 하나도 안 했어",
+		body: "한 개만. 딱 한 개만 해보자",
 		type: "EVENING_REMINDER" as NotificationType,
 		defaultRoute: "/todos",
+	},
+	MORNING_NO_TODO: {
+		title: "할일이 하나도 없다",
+		body: "한가한 거 맞아? 뭐라도 적어봐",
 	},
 } as const;
 
 /**
  * 친구 상호작용 알림 템플릿
  *
- * 듀오링고 스타일: 개인화 + 사회적 연결감
+ * 듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박
  */
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
-		title: "{senderName}님의 친구 요청",
-		body: "함께 할일을 응원해요",
+		title: "{senderName}의 친구 요청",
+		body: "수락하면 서로 감시 시작",
 		type: "FOLLOW_NEW" as NotificationType,
 		defaultRoute: "/friends/requests",
 	},
 	FOLLOW_ACCEPTED: {
-		title: "{senderName}님과 친구가 됐어요",
-		body: "서로의 할일을 확인해보세요",
+		title: "{senderName}, 이제 친구다",
+		body: "서로 할일이 다 보여. 각오해",
 		type: "FOLLOW_ACCEPTED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	NUDGE_RECEIVED: {
-		title: "{senderName}님이 콕!",
-		body: "할일 끝내고 자랑해보세요",
+		title: "콕! {senderName}",
+		body: "뭐 하고 있었는지 다 보인다",
 		type: "NUDGE_RECEIVED" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
 	CHEER_RECEIVED: {
-		title: "{senderName}님의 응원",
+		title: "{senderName}의 한마디",
 		body: "{message}",
 		type: "CHEER_RECEIVED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	CHEER_RECEIVED_NO_MESSAGE: {
-		title: "{senderName}님이 응원해요",
-		body: "답장으로 화답해볼까요?",
+		title: "{senderName}, 보고 있다",
+		body: "네가 잘하는 거 알고 있어",
 		type: "CHEER_RECEIVED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
 	FRIEND_COMPLETED: {
-		title: "{friendName}님이 오늘 다 해냈어요",
-		body: "축하 메시지를 보내볼까요?",
+		title: "{friendName}, 오늘 다 끝냈대",
+		body: "너는?",
 		type: "FRIEND_COMPLETED" as NotificationType,
 		defaultRoute: "/friends/{friendId}",
 	},
@@ -102,8 +106,8 @@ export const SOCIAL_TEMPLATES = {
  */
 export const SYSTEM_TEMPLATES = {
 	WEEKLY_ACHIEVEMENT: {
-		title: "이번 주 {completedCount}개 완료!",
-		body: "다음 주도 기대돼요",
+		title: "이번 주 {completedCount}개 클리어",
+		body: "다음 주엔 더 할 수 있잖아",
 		type: "WEEKLY_ACHIEVEMENT" as NotificationType,
 		defaultRoute: "/stats",
 	},
@@ -210,8 +214,10 @@ export class NotificationMessageBuilder {
 	 */
 	static todoReminder(todoTitle: string): { title: string; body: string } {
 		return {
-			title: SCHEDULER_TEMPLATES.TODO_REMINDER.title,
-			body: fillTemplate(SCHEDULER_TEMPLATES.TODO_REMINDER.body, { todoTitle }),
+			title: fillTemplate(SCHEDULER_TEMPLATES.TODO_REMINDER.title, {
+				todoTitle,
+			}),
+			body: SCHEDULER_TEMPLATES.TODO_REMINDER.body,
 		};
 	}
 
@@ -229,11 +235,23 @@ export class NotificationMessageBuilder {
 	}
 
 	/**
+	 * 아침 할일 없음 알림 메시지 생성
+	 */
+	static morningNoTodo(): { title: string; body: string } {
+		return {
+			title: SCHEDULER_TEMPLATES.MORNING_NO_TODO.title,
+			body: SCHEDULER_TEMPLATES.MORNING_NO_TODO.body,
+		};
+	}
+
+	/**
 	 * 아침 리마인더 알림 메시지 생성
 	 */
 	static morningReminder(count: number): { title: string; body: string } {
 		return {
-			title: SCHEDULER_TEMPLATES.MORNING_REMINDER.title,
+			title: fillTemplate(SCHEDULER_TEMPLATES.MORNING_REMINDER.title, {
+				count,
+			}),
 			body: fillTemplate(SCHEDULER_TEMPLATES.MORNING_REMINDER.body, { count }),
 		};
 	}
@@ -254,7 +272,9 @@ export class NotificationMessageBuilder {
 		if (completed > 0) {
 			const remaining = total - completed;
 			return {
-				title: SCHEDULER_TEMPLATES.EVENING_PARTIAL.title,
+				title: fillTemplate(SCHEDULER_TEMPLATES.EVENING_PARTIAL.title, {
+					remaining,
+				}),
 				body: fillTemplate(SCHEDULER_TEMPLATES.EVENING_PARTIAL.body, {
 					remaining,
 				}),

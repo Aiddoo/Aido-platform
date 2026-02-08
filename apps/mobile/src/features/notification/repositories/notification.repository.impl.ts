@@ -37,6 +37,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = registerTokenResultSchema.safeParse(result.value);
     if (!parsed.success) {
+      // TODO: Sentry 연동 후 제거
       console.error('[NotificationRepository] Invalid registerToken response:', parsed.error);
       throw new ParseError();
     }
@@ -61,6 +62,7 @@ export class NotificationRepositoryImpl implements NotificationRepository {
       params: {
         limit: query?.limit,
         cursor: query?.cursor,
+        category: query?.category,
         unreadOnly: query?.unreadOnly,
       },
     });

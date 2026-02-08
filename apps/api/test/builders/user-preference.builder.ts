@@ -26,6 +26,9 @@ export class UserPreferenceBuilder {
 			userId,
 			pushEnabled: true,
 			nightPushEnabled: false,
+			timezone: "UTC",
+			morningReminderHour: 8,
+			eveningReminderHour: 18,
 		};
 	}
 
@@ -59,6 +62,23 @@ export class UserPreferenceBuilder {
 
 	withNightPushEnabled(enabled = true): UserPreferenceBuilder {
 		this.data.nightPushEnabled = enabled;
+		return this;
+	}
+
+	// === 타임존 & 리마인더 ===
+
+	withTimezone(timezone: string): UserPreferenceBuilder {
+		this.data.timezone = timezone;
+		return this;
+	}
+
+	withMorningReminderHour(hour: number): UserPreferenceBuilder {
+		this.data.morningReminderHour = hour;
+		return this;
+	}
+
+	withEveningReminderHour(hour: number): UserPreferenceBuilder {
+		this.data.eveningReminderHour = hour;
 		return this;
 	}
 

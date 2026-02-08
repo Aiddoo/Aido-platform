@@ -130,11 +130,11 @@ export class NudgeRepository {
 			},
 			include: this.nudgeInclude,
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 
@@ -152,11 +152,11 @@ export class NudgeRepository {
 			},
 			include: this.nudgeInclude,
 			take: size + 1,
-			...(cursor && {
+			...(cursor != null && {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
 

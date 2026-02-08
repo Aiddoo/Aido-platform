@@ -48,6 +48,9 @@ describe("UserSettingsService", () => {
 			userId,
 			pushEnabled: true,
 			nightPushEnabled: false,
+			timezone: "UTC",
+			morningReminderHour: 8,
+			eveningReminderHour: 18,
 		};
 
 		it("사용자의 푸시 설정을 반환해야 한다", async () => {
@@ -63,6 +66,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: true,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.findByUserId).toHaveBeenCalledWith(userId);
 		});
@@ -78,6 +84,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 		});
 	});
@@ -94,6 +103,9 @@ describe("UserSettingsService", () => {
 			userId,
 			pushEnabled: true,
 			nightPushEnabled: true,
+			timezone: "UTC",
+			morningReminderHour: 8,
+			eveningReminderHour: 18,
 		};
 
 		it("푸시 설정을 업데이트하고 결과를 반환해야 한다", async () => {
@@ -112,6 +124,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: true,
 				nightPushEnabled: true,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: true,
@@ -126,6 +141,9 @@ describe("UserSettingsService", () => {
 				userId,
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			};
 			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue(partialUpdate);
 
@@ -138,6 +156,9 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: false,
 				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: false,
