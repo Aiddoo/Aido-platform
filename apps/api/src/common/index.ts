@@ -10,6 +10,8 @@ export * from "./config";
 export * from "./database";
 // Date
 export * from "./date";
+// Encryption
+export * from "./encryption";
 
 // Exception
 export * from "./exception";

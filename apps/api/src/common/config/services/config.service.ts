@@ -96,6 +96,10 @@ export class TypedConfigService {
 		return this.get("THROTTLE_LIMIT");
 	}
 
+	get tokenEncryptionKey(): string {
+		return this.get("TOKEN_ENCRYPTION_KEY");
+	}
+
 	// ============================================
 	// OAuth Config Helpers
 	// ============================================
@@ -199,5 +203,35 @@ export class TypedConfigService {
 
 	get googleGenerativeAiApiKey(): string | undefined {
 		return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
+	}
+
+	// ============================================
+	// Cache Config Helpers
+	// ============================================
+
+	get cache() {
+		return {
+			type: this.get("CACHE_TYPE") as "memory" | "redis",
+			defaultTtlMs: this.get("CACHE_DEFAULT_TTL_MS"),
+			maxItems: this.get("CACHE_MAX_ITEMS"),
+			cleanupIntervalMs: this.get("CACHE_CLEANUP_INTERVAL_MS"),
+		};
+	}
+
+	get redis() {
+		return {
+			host: this.get("REDIS_HOST"),
+			port: this.get("REDIS_PORT"),
+			password: this.get("REDIS_PASSWORD"),
+			db: this.get("REDIS_DB"),
+		};
+	}
+
+	// ============================================
+	// Logger Config Helpers
+	// ============================================
+
+	get logLevel(): string | undefined {
+		return this.get("LOG_LEVEL");
 	}
 }
