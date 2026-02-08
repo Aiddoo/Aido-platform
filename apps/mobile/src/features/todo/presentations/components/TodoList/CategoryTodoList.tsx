@@ -3,7 +3,7 @@ import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import times from 'es-toolkit/compat/times';
 
 import { useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
