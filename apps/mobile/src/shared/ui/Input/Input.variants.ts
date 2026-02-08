@@ -16,7 +16,7 @@ export const inputContainerVariants = tv({
   base: 'flex-row items-center',
   variants: {
     variant: {
-      filled: 'bg-gray-1 rounded-xl border border-transparent',
+      filled: 'bg-gray-1 rounded-xl border border-gray-2',
       line: 'bg-transparent border-b border-gray-3 rounded-none',
     },
     size: {

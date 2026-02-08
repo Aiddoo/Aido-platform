@@ -1,5 +1,5 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { LockIcon, MenuIcon } from '@src/shared/ui/Icon';
+import { LockIcon, MoreIcon } from '@src/shared/ui/Icon';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
@@ -51,7 +51,7 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
         </VStack>
 
         <PressableFeedback className="p-1">
-          <MenuIcon width={20} height={20} colorClassName="text-gray-5" />
+          <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       </HStack>
     </PressableFeedback>

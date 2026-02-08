@@ -18,15 +18,19 @@ const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
   color: TodoPolicy.getColor(todo),
 });
 
-export const getTodosInfiniteQueryOptions = (date: string) => {
+export const getTodosInfiniteQueryOptions = (date: string, categoryId?: number) => {
   const todoService = useTodoService();
 
   return infiniteQueryOptions({
-    queryKey: TODO_QUERY_KEYS.listByDate(date),
+    queryKey:
+      categoryId != null
+        ? TODO_QUERY_KEYS.listByDateAndCategory(date, categoryId)
+        : TODO_QUERY_KEYS.listByDate(date),
     queryFn: async ({ pageParam }) => {
       const result = await todoService.getTodos({
         startDate: date,
         endDate: date,
+        categoryId,
         cursor: pageParam,
         size: 20,
       });

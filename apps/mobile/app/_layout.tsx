@@ -5,6 +5,7 @@ import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
+import { OverlayProvider } from '@src/shared/ui/Overlay';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -83,7 +84,9 @@ const AppBootstrapLayout = () => {
               <DIProvider>
                 <AuthProvider>
                   <NotificationProvider>
-                    <AuthGateLayout />
+                    <OverlayProvider>
+                      <AuthGateLayout />
+                    </OverlayProvider>
                   </NotificationProvider>
                 </AuthProvider>
               </DIProvider>
