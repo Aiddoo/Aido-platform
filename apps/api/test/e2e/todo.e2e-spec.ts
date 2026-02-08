@@ -6,6 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
+import type { Todo } from "@aido/validators";
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PinoLogger } from "nestjs-pino";
@@ -318,7 +319,7 @@ describe("Todo (e2e)", () => {
 					.expect(200);
 
 				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
+					(t: Todo) => t.title,
 				);
 				expect(titles).toContain("다중일 할 일");
 			});
@@ -354,7 +355,7 @@ describe("Todo (e2e)", () => {
 					.expect(200);
 
 				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
+					(t: Todo) => t.title,
 				);
 				expect(titles).toContain("2월1일 단건");
 				expect(titles).not.toContain("2월2일 단건");
@@ -401,7 +402,7 @@ describe("Todo (e2e)", () => {
 					.expect(200);
 
 				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
+					(t: Todo) => t.title,
 				);
 				expect(titles).toContain("2월2일 포함");
 				expect(titles).toContain("2월3일 포함");
@@ -1086,10 +1087,10 @@ describe("Todo (e2e)", () => {
 
 			// 각 사용자는 자신의 할 일만 볼 수 있음
 			const user1Titles = user1List.body.data.items.map(
-				(t: { title: string }) => t.title,
+				(t: Todo) => t.title,
 			);
 			const user2Titles = user2List.body.data.items.map(
-				(t: { title: string }) => t.title,
+				(t: Todo) => t.title,
 			);
 
 			expect(user1Titles).toContain("User1의 할 일");
@@ -1149,8 +1150,8 @@ describe("Todo (e2e)", () => {
 			expect(page2.body.data.items.length).toBe(5);
 
 			// 첫 페이지와 두 번째 페이지의 항목이 겹치지 않는지 확인
-			const page1Ids = page1.body.data.items.map((t: { id: number }) => t.id);
-			const page2Ids = page2.body.data.items.map((t: { id: number }) => t.id);
+			const page1Ids = page1.body.data.items.map((t: Todo) => t.id);
+			const page2Ids = page2.body.data.items.map((t: Todo) => t.id);
 
 			for (const id of page1Ids) {
 				expect(page2Ids).not.toContain(id);
@@ -1337,10 +1338,10 @@ describe("Todo (e2e)", () => {
 
 			// 카테고리별 sortOrder 값 검증
 			const cat1Items = response.body.data.items.filter(
-				(t: { category: { id: number } }) => t.category.id === category1Id,
+				(t: Todo) => t.category.id === category1Id,
 			);
 			const cat3Items = response.body.data.items.filter(
-				(t: { category: { id: number } }) => t.category.id === category3Id,
+				(t: Todo) => t.category.id === category3Id,
 			);
 
 			expect(cat1Items[0].category.sortOrder).toBeLessThan(
@@ -1401,10 +1402,10 @@ describe("Todo (e2e)", () => {
 
 			// Then: 카테고리3(공부)의 할 일이 카테고리1(중요한 일) 할 일보다 먼저 나옴
 			const firstCat3Index = items.findIndex(
-				(t: { category: { id: number } }) => t.category.id === category3Id,
+				(t: Todo) => t.category.id === category3Id,
 			);
 			const firstCat1Index = items.findIndex(
-				(t: { category: { id: number } }) => t.category.id === category1Id,
+				(t: Todo) => t.category.id === category1Id,
 			);
 
 			expect(firstCat3Index).toBeLessThan(firstCat1Index);
