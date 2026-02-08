@@ -19,13 +19,22 @@ export const throttleSchema = z.object({
 });
 
 /**
+ * 토큰 암호화 설정 스키마
+ */
+export const encryptionSchema = z.object({
+	TOKEN_ENCRYPTION_KEY: z.string().min(32),
+});
+
+/**
  * 통합 보안 설정 스키마
  */
 export const securitySchema = z
 	.object({})
 	.merge(corsSchema)
-	.merge(throttleSchema);
+	.merge(throttleSchema)
+	.merge(encryptionSchema);
 
 export type CorsConfig = z.infer<typeof corsSchema>;
 export type ThrottleConfig = z.infer<typeof throttleSchema>;
+export type EncryptionConfig = z.infer<typeof encryptionSchema>;
 export type SecurityConfig = z.infer<typeof securitySchema>;

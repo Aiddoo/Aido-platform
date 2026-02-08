@@ -83,6 +83,7 @@ export class AiService {
 	 * @returns 파싱된 투두 데이터와 메타 정보
 	 * @throws AI_0001 - AI 서비스 불가
 	 * @throws AI_0002 - 파싱 실패
+	 * @throws AI_0003 - 일일 사용량 초과
 	 */
 	async parseTodo(text: string, userId: string): Promise<ParseTodoResult> {
 		const startTime = Date.now();
@@ -93,13 +94,16 @@ export class AiService {
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
-		// 2. 최적화된 프롬프트 생성
+		// 2. 사용량 체크 및 증가 (원자적 처리)
+		await this.checkAndIncrementUsage(userId);
+
+		// 3. 최적화된 프롬프트 생성
 		const prompt = buildParseTodoPrompt(text, new Date());
 
 		this.logger.debug(`Parsing todo: "${text}"`);
 
 		try {
-			// 3. AI 호출 (구조화된 출력)
+			// 4. AI 호출 (구조화된 출력)
 			const result = await this.aiProvider.generateStructured({
 				prompt,
 				schema: parsedTodoDataSchema,
@@ -108,9 +112,6 @@ export class AiService {
 			});
 
 			const processingTimeMs = Date.now() - startTime;
-
-			// 4. 사용량 증가 (Guard에서 체크 완료됨)
-			await this.incrementUsage(userId);
 
 			this.logger.log(
 				`Todo parsed: "${result.output.title}" (${processingTimeMs}ms, ` +
@@ -182,39 +183,52 @@ export class AiService {
 	}
 
 	/**
-	 * 사용량 증가
+	 * 사용량 체크 및 증가 (원자적 처리)
+	 *
+	 * 트랜잭션으로 사용량 확인과 증가를 원자적으로 처리하여
+	 * 동시 요청 시 사용 제한을 정확하게 적용합니다.
 	 *
 	 * @param userId - 사용자 ID
+	 * @throws AI_0003 - 일일 사용량 초과
 	 */
-	private async incrementUsage(userId: string): Promise<void> {
-		const user = await this.prisma.user.findUnique({
-			where: { id: userId },
-			select: { aiUsageCount: true, aiUsageResetAt: true },
+	private async checkAndIncrementUsage(userId: string): Promise<void> {
+		await this.prisma.$transaction(async (tx) => {
+			const user = await tx.user.findUnique({
+				where: { id: userId },
+				select: { aiUsageCount: true, aiUsageResetAt: true },
+			});
+
+			if (!user) {
+				throw BusinessExceptions.userNotFound(userId);
+			}
+
+			const isNewDay = this.isNewDay(user.aiUsageResetAt);
+			const currentUsage = isNewDay ? 0 : user.aiUsageCount;
+
+			if (currentUsage >= this.dailyLimit) {
+				throw BusinessExceptions.aiUsageLimitExceeded(
+					currentUsage,
+					this.dailyLimit,
+				);
+			}
+
+			if (isNewDay) {
+				await tx.user.update({
+					where: { id: userId },
+					data: {
+						aiUsageCount: 1,
+						aiUsageResetAt: new Date(),
+					},
+				});
+			} else {
+				await tx.user.update({
+					where: { id: userId },
+					data: {
+						aiUsageCount: { increment: 1 },
+					},
+				});
+			}
 		});
-
-		if (!user) {
-			throw BusinessExceptions.userNotFound(userId);
-		}
-
-		if (this.isNewDay(user.aiUsageResetAt)) {
-			// 날짜가 바뀌었으면 리셋하고 1로 설정
-			await this.prisma.user.update({
-				where: { id: userId },
-				data: {
-					aiUsageCount: 1,
-					aiUsageResetAt: new Date(),
-				},
-			});
-			this.logger.debug(`Usage reset for user ${userId} (new day)`);
-		} else {
-			// 같은 날이면 증가
-			await this.prisma.user.update({
-				where: { id: userId },
-				data: {
-					aiUsageCount: { increment: 1 },
-				},
-			});
-		}
 	}
 
 	/**

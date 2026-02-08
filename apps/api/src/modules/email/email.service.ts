@@ -50,7 +50,7 @@ export class EmailService {
 
 		this._fromEmail = emailConfig.from;
 		this._fromName = emailConfig.fromName;
-		this._environment = process.env.NODE_ENV || "development";
+		this._environment = this._configService.nodeEnv;
 	}
 
 	/**

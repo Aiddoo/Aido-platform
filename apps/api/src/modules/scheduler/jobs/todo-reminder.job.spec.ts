@@ -118,6 +118,23 @@ describe("TodoReminderJob", () => {
 		) as unknown as Mocked<NotificationService>;
 	});
 
+	/**
+	 * DB 기반 중복 알림 조회 mock 설정 헬퍼
+	 */
+	const setupNotificationFindMany = (alreadyNotifiedTodoIds: number[] = []) => {
+		Object.defineProperty(databaseService, "notification", {
+			value: {
+				findMany: jest
+					.fn()
+					.mockResolvedValue(
+						alreadyNotifiedTodoIds.map((todoId) => ({ todoId })),
+					),
+			},
+			configurable: true,
+			writable: true,
+		});
+	};
+
 	// =========================================================================
 	// handleTodoReminder
 	// =========================================================================
@@ -132,6 +149,7 @@ describe("TodoReminderJob", () => {
 				];
 
 				databaseService.todo.findMany.mockResolvedValue(todos as never);
+				setupNotificationFindMany([]); // 기존 알림 없음
 				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 2,
 				});
@@ -167,6 +185,7 @@ describe("TodoReminderJob", () => {
 				];
 
 				databaseService.todo.findMany.mockResolvedValue(todos as never);
+				setupNotificationFindMany([]);
 				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 1,
 				});
@@ -183,75 +202,45 @@ describe("TodoReminderJob", () => {
 			});
 		});
 
-		describe("중복 알림 방지", () => {
+		describe("중복 알림 방지 (DB 기반)", () => {
 			it("이미 알림을 보낸 할일에는 다시 알림을 보내지 않는다", async () => {
-				// Given - 첫 번째 실행을 위한 할일 준비
+				// Given - 할일이 있지만, 이미 DB에 알림 기록이 존재
 				const todos: TodoToNotify[] = [
 					createMockTodoToNotify({ id: 100, title: "Task", userId: "user-1" }),
 				];
 
 				databaseService.todo.findMany.mockResolvedValue(todos as never);
-				notificationService.createAndSendBatch.mockResolvedValue({
-					count: 1,
-				});
+				setupNotificationFindMany([100]); // 이미 알림 발송됨
 
-				// When - 첫 번째 실행
+				// When
 				await job.handleTodoReminder();
 
-				// Then - 첫 번째 실행에서 알림 발송
-				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
-
-				// Given - 두 번째 실행 (같은 할일)
-				jest.clearAllMocks();
-				databaseService.todo.findMany.mockResolvedValue(todos as never);
-
-				// When - 두 번째 실행
-				await job.handleTodoReminder();
-
-				// Then - 두 번째 실행에서는 알림 발송하지 않음 (이미 캐시에 있음)
-				expect(databaseService.todo.findMany).toHaveBeenCalledTimes(1);
+				// Then - 알림 발송하지 않음
 				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 			});
 
 			it("새로운 할일에만 알림을 보내고 기존 할일은 제외한다", async () => {
-				// Given - 첫 번째 실행을 위한 할일 준비
-				const firstTodos: TodoToNotify[] = [
+				// Given - 기존 알림 있는 할일 + 새로운 할일
+				const todos: TodoToNotify[] = [
 					createMockTodoToNotify({
 						id: 200,
 						title: "Task 1",
 						userId: "user-1",
 					}),
-				];
-
-				databaseService.todo.findMany.mockResolvedValue(firstTodos as never);
-				notificationService.createAndSendBatch.mockResolvedValue({
-					count: 1,
-				});
-
-				// When - 첫 번째 실행
-				await job.handleTodoReminder();
-
-				// Given - 두 번째 실행 (기존 + 새로운 할일)
-				jest.clearAllMocks();
-				const secondTodos: TodoToNotify[] = [
-					createMockTodoToNotify({
-						id: 200,
-						title: "Task 1",
-						userId: "user-1",
-					}), // 기존
 					createMockTodoToNotify({
 						id: 201,
 						title: "Task 2",
 						userId: "user-2",
-					}), // 새로운
+					}),
 				];
 
-				databaseService.todo.findMany.mockResolvedValue(secondTodos as never);
+				databaseService.todo.findMany.mockResolvedValue(todos as never);
+				setupNotificationFindMany([200]); // 200은 이미 알림됨
 				notificationService.createAndSendBatch.mockResolvedValue({
 					count: 1,
 				});
 
-				// When - 두 번째 실행
+				// When
 				await job.handleTodoReminder();
 
 				// Then - 새로운 할일(201)에만 알림 발송
@@ -296,6 +285,7 @@ describe("TodoReminderJob", () => {
 					createMockTodoToNotify({ id: 300, title: "Task", userId: "user-1" }),
 				];
 				databaseService.todo.findMany.mockResolvedValue(todos as never);
+				setupNotificationFindMany([]);
 
 				const error = new Error("Push notification failed");
 				notificationService.createAndSendBatch.mockRejectedValue(error);
@@ -334,56 +324,6 @@ describe("TodoReminderJob", () => {
 				expect(findManyCall.select?.title).toBe(true);
 				expect(findManyCall.select?.userId).toBe(true);
 			});
-		});
-	});
-
-	// =========================================================================
-	// cleanupOldCache (private method - 간접 테스트)
-	// =========================================================================
-
-	describe("캐시 정리", () => {
-		it("캐시가 1000개를 초과하면 오래된 항목을 정리한다", async () => {
-			// Given - 1001개의 할일로 캐시 채우기
-			const manyTodos: TodoToNotify[] = [];
-			for (let i = 1; i <= 1001; i++) {
-				manyTodos.push(
-					createMockTodoToNotify({
-						id: i,
-						title: `Task ${i}`,
-						userId: `user-${i}`,
-					}),
-				);
-			}
-
-			databaseService.todo.findMany.mockResolvedValue(manyTodos as never);
-			notificationService.createAndSendBatch.mockResolvedValue({
-				count: 1001,
-			});
-
-			// When - 1001개 처리
-			await job.handleTodoReminder();
-
-			// Then - 알림은 발송되었어야 함
-			expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
-
-			// 캐시 정리 후 새로운 할일에 대해 알림이 가능한지 확인
-			jest.clearAllMocks();
-
-			// Given - 초기 500개가 정리되었으므로 1~500 범위의 할일은 다시 알림 가능
-			const newTodos: TodoToNotify[] = [
-				createMockTodoToNotify({ id: 1, title: "Task 1", userId: "user-1" }),
-			];
-
-			databaseService.todo.findMany.mockResolvedValue(newTodos as never);
-			notificationService.createAndSendBatch.mockResolvedValue({
-				count: 1,
-			});
-
-			// When - 다시 실행
-			await job.handleTodoReminder();
-
-			// Then - 캐시에서 제거되었으므로 다시 알림 발송
-			expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 		});
 	});
 });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type AppConfig, appSchema } from "./app.schema";
+import { type CacheEnvConfig, cacheSchema } from "./cache.schema";
 import { type DatabaseConfig, databaseSchema } from "./database.schema";
 import {
 	type EmailConfig,
@@ -18,6 +19,7 @@ import { type SecurityConfig, securitySchema } from "./security.schema";
 
 // 스키마 재export
 export * from "./app.schema";
+export * from "./cache.schema";
 export * from "./database.schema";
 export * from "./email.schema";
 export * from "./external.schema";
@@ -32,6 +34,7 @@ export * from "./security.schema";
 export const envSchema = z
 	.object({})
 	.merge(appSchema)
+	.merge(cacheSchema)
 	.merge(databaseSchema)
 	.merge(emailSchema)
 	.merge(jwtSchema)
@@ -44,6 +47,7 @@ export const envSchema = z
  * 환경변수 전체 타입
  */
 export type EnvConfig = AppConfig &
+	CacheEnvConfig &
 	DatabaseConfig &
 	EmailConfig &
 	JwtConfig &

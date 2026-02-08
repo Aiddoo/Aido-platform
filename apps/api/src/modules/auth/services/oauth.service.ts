@@ -1,12 +1,17 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { addMilliseconds, now } from "@/common/date";
+import { EncryptionService } from "@/common/encryption";
 import {
 	BusinessException,
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import { type AccountProvider, Prisma } from "@/generated/prisma/client";
+import {
+	type AccountProvider,
+	type OAuthState,
+	Prisma,
+} from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 
@@ -43,6 +48,7 @@ export class OAuthService {
 		private readonly _tokenService: TokenService,
 		private readonly _tokenVerifier: OAuthTokenVerifierService,
 		private readonly _configService: TypedConfigService,
+		private readonly _encryptionService: EncryptionService,
 	) {}
 
 	// 보안을 위한 화이트리스트 방식 검증
@@ -80,6 +86,15 @@ export class OAuthService {
 		}
 
 		return redirectUri;
+	}
+
+	private async validateAndGetOAuthState(state: string): Promise<OAuthState> {
+		const existingState = await this._oauthStateRepository.findByState(state);
+		if (!existingState) {
+			this._logger.warn(`Invalid OAuth state: ${state}`);
+			throw BusinessExceptions.invalidCredentials();
+		}
+		return existingState;
 	}
 
 	/** @deprecated generateKakaoAuthUrlWithState 사용 권장 */
@@ -193,35 +208,10 @@ export class OAuthService {
 		name?: string;
 		profileImage?: string;
 	}> {
-		// state로 기존 OAuthState 조회 (generateKakaoAuthUrlWithState에서 생성됨)
-		const existingState = await this._oauthStateRepository.findByState(state);
-
-		// 기존 로직으로 토큰 생성
+		const oauthState = await this.validateAndGetOAuthState(state);
 		const loginResult = await this.handleKakaoWebCallback(code, metadata);
+		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
 
-		let oauthState: Awaited<
-			ReturnType<typeof this._oauthStateRepository.create>
-		>;
-		let redirectUri: string;
-
-		if (existingState) {
-			// 기존 state가 있으면 사용
-			oauthState = existingState;
-			redirectUri = existingState.redirectUri || this.DEFAULT_REDIRECT_URI;
-		} else {
-			// 레거시 호환: state가 없으면 새로 생성 (직접 callback URL 호출 시)
-			this._logger.warn(
-				`OAuthState not found for state: ${state}, creating new one`,
-			);
-			oauthState = await this._oauthStateRepository.create(
-				state,
-				"KAKAO",
-				this.DEFAULT_REDIRECT_URI,
-			);
-			redirectUri = this.DEFAULT_REDIRECT_URI;
-		}
-
-		// 교환 코드 생성 및 토큰 저장
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
 			loginResult.tokens,
@@ -334,35 +324,10 @@ export class OAuthService {
 		name?: string;
 		profileImage?: string;
 	}> {
-		// state로 기존 OAuthState 조회 (generateGoogleAuthUrlWithState에서 생성됨)
-		const existingState = await this._oauthStateRepository.findByState(state);
-
-		// 기존 로직으로 토큰 생성
+		const oauthState = await this.validateAndGetOAuthState(state);
 		const loginResult = await this.handleGoogleWebCallback(code, metadata);
+		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
 
-		let oauthState: Awaited<
-			ReturnType<typeof this._oauthStateRepository.create>
-		>;
-		let redirectUri: string;
-
-		if (existingState) {
-			// 기존 state가 있으면 사용
-			oauthState = existingState;
-			redirectUri = existingState.redirectUri || this.DEFAULT_REDIRECT_URI;
-		} else {
-			// 레거시 호환: state가 없으면 새로 생성 (직접 callback URL 호출 시)
-			this._logger.warn(
-				`OAuthState not found for state: ${state}, creating new one`,
-			);
-			oauthState = await this._oauthStateRepository.create(
-				state,
-				"GOOGLE",
-				this.DEFAULT_REDIRECT_URI,
-			);
-			redirectUri = this.DEFAULT_REDIRECT_URI;
-		}
-
-		// 교환 코드 생성 및 토큰 저장
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
 			loginResult.tokens,
@@ -471,35 +436,10 @@ export class OAuthService {
 		name?: string;
 		profileImage?: string;
 	}> {
-		// state로 기존 OAuthState 조회 (generateNaverAuthUrlWithState에서 생성됨)
-		const existingState = await this._oauthStateRepository.findByState(state);
-
-		// 기존 로직으로 토큰 생성
+		const oauthState = await this.validateAndGetOAuthState(state);
 		const loginResult = await this.handleNaverWebCallback(code, metadata);
+		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
 
-		let oauthState: Awaited<
-			ReturnType<typeof this._oauthStateRepository.create>
-		>;
-		let redirectUri: string;
-
-		if (existingState) {
-			// 기존 state가 있으면 사용
-			oauthState = existingState;
-			redirectUri = existingState.redirectUri || this.DEFAULT_REDIRECT_URI;
-		} else {
-			// 레거시 호환: state가 없으면 새로 생성 (직접 callback URL 호출 시)
-			this._logger.warn(
-				`OAuthState not found for state: ${state}, creating new one`,
-			);
-			oauthState = await this._oauthStateRepository.create(
-				state,
-				"NAVER",
-				this.DEFAULT_REDIRECT_URI,
-			);
-			redirectUri = this.DEFAULT_REDIRECT_URI;
-		}
-
-		// 교환 코드 생성 및 토큰 저장
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
 			loginResult.tokens,
@@ -1291,8 +1231,10 @@ export class OAuthService {
 		);
 
 		return {
-			accessToken: oauthState.accessToken,
-			refreshToken: oauthState.refreshToken,
+			accessToken: this._encryptionService.decryptSafe(oauthState.accessToken),
+			refreshToken: this._encryptionService.decryptSafe(
+				oauthState.refreshToken,
+			),
 			userId: oauthState.userId,
 			userName: oauthState.userName ?? undefined,
 			profileImage: oauthState.profileImage ?? undefined,
