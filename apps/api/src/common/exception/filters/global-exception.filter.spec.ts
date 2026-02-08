@@ -7,6 +7,7 @@
 import { ErrorCode } from "@aido/errors";
 import { HttpException, HttpStatus } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
+import type { TypedConfigService } from "@/common/config/services/config.service";
 import { Prisma } from "@/generated/prisma/client";
 import { BusinessExceptions } from "../services/business-exception.service";
 import { GlobalExceptionFilter } from "./global-exception.filter";
@@ -14,9 +15,17 @@ import { GlobalExceptionFilter } from "./global-exception.filter";
 describe("GlobalExceptionFilter", () => {
 	let filter: GlobalExceptionFilter;
 	let mockLogger: jest.Mocked<PinoLogger>;
+	let mockConfigService: TypedConfigService;
 	let mockResponse: { status: jest.Mock; json: jest.Mock };
 	let mockRequest: { method: string; url: string; user?: { userId: string } };
 	let mockHost: { switchToHttp: jest.Mock };
+
+	const createFilter = (isDevelopment = true) => {
+		mockConfigService = {
+			isDevelopment,
+		} as unknown as TypedConfigService;
+		return new GlobalExceptionFilter(mockLogger, mockConfigService);
+	};
 
 	beforeEach(() => {
 		mockLogger = {
@@ -42,7 +51,7 @@ describe("GlobalExceptionFilter", () => {
 			}),
 		};
 
-		filter = new GlobalExceptionFilter(mockLogger);
+		filter = createFilter(true);
 	});
 
 	describe("P2002 Prisma 에러 처리", () => {
@@ -195,6 +204,66 @@ describe("GlobalExceptionFilter", () => {
 			);
 			const jsonArg = mockResponse.json.mock.calls[0][0];
 			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
+		});
+	});
+
+	describe("details 노출 제어", () => {
+		it("development 환경에서 HttpException의 details가 포함된다", () => {
+			// Given
+			filter = createFilter(true);
+			const exception = new HttpException(
+				{ message: "Bad Request", extra: "info" },
+				HttpStatus.BAD_REQUEST,
+			);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.details).toBeDefined();
+		});
+
+		it("production 환경에서 HttpException의 details가 포함되지 않는다", () => {
+			// Given
+			filter = createFilter(false);
+			const exception = new HttpException(
+				{ message: "Bad Request", extra: "info" },
+				HttpStatus.BAD_REQUEST,
+			);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.details).toBeUndefined();
+		});
+
+		it("development 환경에서 알 수 없는 에러의 details가 포함된다", () => {
+			// Given
+			filter = createFilter(true);
+			const exception = new Error("unexpected error");
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.details).toBe("unexpected error");
+		});
+
+		it("production 환경에서 알 수 없는 에러의 details가 포함되지 않는다", () => {
+			// Given
+			filter = createFilter(false);
+			const exception = new Error("unexpected error");
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.details).toBeUndefined();
 		});
 	});
 });

@@ -4,7 +4,7 @@ import {
 	Module,
 	type Provider,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { TypedConfigService } from "../config/services/config.service";
 import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter";
 import { RedisCacheAdapter } from "./adapters/redis-cache.adapter";
 import { CacheService } from "./cache.service";
@@ -46,27 +46,22 @@ export class CacheModule {
 	static forRoot(): DynamicModule {
 		const cacheProvider: Provider = {
 			provide: CACHE_SERVICE,
-			useFactory: (configService: ConfigService): ICacheService => {
-				const cacheType = configService.get<string>("CACHE_TYPE", "memory");
+			useFactory: (configService: TypedConfigService): ICacheService => {
+				const cacheConfig = configService.cache;
+				const redisConfig = configService.redis;
 
 				const config: CacheConfig = {
-					type: cacheType as "memory" | "redis",
-					defaultTtlMs: configService.get<number>(
-						"CACHE_DEFAULT_TTL_MS",
-						60_000,
-					),
-					maxItems: configService.get<number>("CACHE_MAX_ITEMS", 1000),
-					cleanupIntervalMs: configService.get<number>(
-						"CACHE_CLEANUP_INTERVAL_MS",
-						30_000,
-					),
+					type: cacheConfig.type,
+					defaultTtlMs: cacheConfig.defaultTtlMs,
+					maxItems: cacheConfig.maxItems,
+					cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
 					redis:
-						cacheType === "redis"
+						cacheConfig.type === "redis"
 							? {
-									host: configService.get<string>("REDIS_HOST", "localhost"),
-									port: configService.get<number>("REDIS_PORT", 6379),
-									password: configService.get<string>("REDIS_PASSWORD"),
-									db: configService.get<number>("REDIS_DB", 0),
+									host: redisConfig.host ?? "localhost",
+									port: redisConfig.port ?? 6379,
+									password: redisConfig.password,
+									db: redisConfig.db ?? 0,
 								}
 							: undefined,
 				};
@@ -81,12 +76,12 @@ export class CacheModule {
 					cleanupIntervalMs: config.cleanupIntervalMs,
 				});
 			},
-			inject: [ConfigService],
+			inject: [TypedConfigService],
 		};
 
 		return {
 			module: CacheModule,
-			providers: [cacheProvider, CacheService],
+			providers: [TypedConfigService, cacheProvider, CacheService],
 			exports: [CACHE_SERVICE, CacheService],
 		};
 	}

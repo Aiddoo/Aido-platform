@@ -8,6 +8,9 @@ export const appSchema = z.object({
 		.enum(["development", "production", "test"])
 		.default("development"),
 	PORT: z.coerce.number().int().positive().default(8080),
+	LOG_LEVEL: z
+		.enum(["silent", "fatal", "error", "warn", "info", "debug", "trace"])
+		.optional(),
 });
 
 export type AppConfig = z.infer<typeof appSchema>;
