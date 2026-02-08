@@ -4,7 +4,7 @@
 export const PAGINATION_DEFAULT = {
 	PAGE: 1,
 	SIZE: 20,
-	MAX_SIZE: 100,
+	MAX_SIZE: 200,
 	MIN_SIZE: 1,
 } as const;
 

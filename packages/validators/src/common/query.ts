@@ -6,9 +6,9 @@ export const paginationQuerySchema = z.object({
     .number()
     .int()
     .positive()
-    .max(100)
+    .max(200)
     .default(20)
-    .describe('페이지당 항목 수 (최대 100)'),
+    .describe('페이지당 항목 수 (최대 200)'),
 });
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;

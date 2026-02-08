@@ -42,6 +42,7 @@ export class TodoBuilder {
 				id: 1,
 				name: "기본 카테고리",
 				color: "#FFB3B3",
+				sortOrder: 0,
 			},
 		};
 	}
@@ -86,6 +87,7 @@ export class TodoBuilder {
 		id: number;
 		name: string;
 		color: string;
+		sortOrder: number;
 	}): TodoBuilder {
 		this.data.categoryId = category.id;
 		this.data.category = category;

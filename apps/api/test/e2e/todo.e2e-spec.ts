@@ -6,6 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
+import type { Todo } from "@aido/validators";
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { PinoLogger } from "nestjs-pino";
@@ -253,6 +254,7 @@ describe("Todo (e2e)", () => {
 					expect(item.category.id).toBeDefined();
 					expect(item.category.name).toBeDefined();
 					expect(item.category.color).toBeDefined();
+					expect(item.category.sortOrder).toBeDefined();
 				}
 			});
 
@@ -316,9 +318,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("다중일 할 일");
 			});
 
@@ -352,9 +352,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("2월1일 단건");
 				expect(titles).not.toContain("2월2일 단건");
 			});
@@ -399,9 +397,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: { title: string }) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("2월2일 포함");
 				expect(titles).toContain("2월3일 포함");
 				expect(titles).not.toContain("2월4일 제외");
@@ -1084,12 +1080,8 @@ describe("Todo (e2e)", () => {
 				.expect(200);
 
 			// 각 사용자는 자신의 할 일만 볼 수 있음
-			const user1Titles = user1List.body.data.items.map(
-				(t: { title: string }) => t.title,
-			);
-			const user2Titles = user2List.body.data.items.map(
-				(t: { title: string }) => t.title,
-			);
+			const user1Titles = user1List.body.data.items.map((t: Todo) => t.title);
+			const user2Titles = user2List.body.data.items.map((t: Todo) => t.title);
 
 			expect(user1Titles).toContain("User1의 할 일");
 			expect(user1Titles).not.toContain("User2의 할 일");
@@ -1148,8 +1140,8 @@ describe("Todo (e2e)", () => {
 			expect(page2.body.data.items.length).toBe(5);
 
 			// 첫 페이지와 두 번째 페이지의 항목이 겹치지 않는지 확인
-			const page1Ids = page1.body.data.items.map((t: { id: number }) => t.id);
-			const page2Ids = page2.body.data.items.map((t: { id: number }) => t.id);
+			const page1Ids = page1.body.data.items.map((t: Todo) => t.id);
+			const page2Ids = page2.body.data.items.map((t: Todo) => t.id);
 
 			for (const id of page1Ids) {
 				expect(page2Ids).not.toContain(id);
@@ -1212,6 +1204,201 @@ describe("Todo (e2e)", () => {
 				.expect(400);
 
 			expect(response.body.success).toBe(false);
+		});
+	});
+
+	describe("카테고리 순서 기반 정렬 테스트", () => {
+		const sortEmail = "sort-test@example.com";
+		const testPassword = "Test1234!";
+		let accessToken: string;
+		let category1Id: number;
+		let category2Id: number;
+		let category3Id: number;
+
+		beforeAll(async () => {
+			accessToken = await createVerifiedUser(sortEmail, testPassword);
+
+			// 기본 카테고리 조회 (회원가입 시 "중요한 일", "할 일" 자동 생성)
+			const catResponse = await request(app.getHttpServer())
+				.get("/todo-categories")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			const defaultCategories = catResponse.body.data.items;
+			category1Id = defaultCategories[0].id; // sortOrder 0
+			category2Id = defaultCategories[1].id; // sortOrder 1
+
+			// 세 번째 카테고리 생성 (sortOrder 2)
+			const cat3Response = await request(app.getHttpServer())
+				.post("/todo-categories")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ name: "공부", color: "#0000FF" })
+				.expect(201);
+
+			category3Id = cat3Response.body.data.category.id;
+
+			// 카테고리별 할 일 생성
+			// 카테고리3 (sortOrder 2)에 먼저 생성 — 정렬이 카테고리 순서 기반인지 확인
+			await request(app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "공부-할일1",
+					categoryId: category3Id,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+
+			await request(app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "공부-할일2",
+					categoryId: category3Id,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+
+			// 카테고리1 (sortOrder 0)
+			await request(app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "중요-할일1",
+					categoryId: category1Id,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+
+			await request(app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "중요-할일2",
+					categoryId: category1Id,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+
+			// 카테고리2 (sortOrder 1)
+			await request(app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "할일-할일1",
+					categoryId: category2Id,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+		});
+
+		it("categoryId 없이 조회 시 category.sortOrder → todo.sortOrder → id 순으로 정렬된다", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			const items = response.body.data.items;
+			expect(items.length).toBe(5);
+
+			// 카테고리 sortOrder 순으로 정렬되어야 함
+			// category1 (sortOrder 0) → category2 (sortOrder 1) → category3 (sortOrder 2)
+			expect(items[0].category.id).toBe(category1Id);
+			expect(items[1].category.id).toBe(category1Id);
+			expect(items[2].category.id).toBe(category2Id);
+			expect(items[3].category.id).toBe(category3Id);
+			expect(items[4].category.id).toBe(category3Id);
+
+			// 같은 카테고리 내에서는 sortOrder ASC → id ASC
+			expect(items[0].sortOrder).toBeLessThanOrEqual(items[1].sortOrder);
+			expect(items[3].sortOrder).toBeLessThanOrEqual(items[4].sortOrder);
+		});
+
+		it("각 todo의 category 객체에 sortOrder 필드가 포함된다", async () => {
+			const response = await request(app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			for (const item of response.body.data.items) {
+				expect(typeof item.category.sortOrder).toBe("number");
+			}
+
+			// 카테고리별 sortOrder 값 검증
+			const cat1Items = response.body.data.items.filter(
+				(t: Todo) => t.category.id === category1Id,
+			);
+			const cat3Items = response.body.data.items.filter(
+				(t: Todo) => t.category.id === category3Id,
+			);
+
+			expect(cat1Items[0].category.sortOrder).toBeLessThan(
+				cat3Items[0].category.sortOrder,
+			);
+		});
+
+		it("페이지네이션 시 카테고리 순서가 유지된다", async () => {
+			// 첫 페이지 (3개)
+			const page1 = await request(app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2024-06-01", endDate: "2024-06-01", size: 3 })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			expect(page1.body.data.items.length).toBe(3);
+			expect(page1.body.data.pagination.hasNext).toBe(true);
+
+			// 두 번째 페이지
+			const page2 = await request(app.getHttpServer())
+				.get("/todos")
+				.query({
+					startDate: "2024-06-01",
+					endDate: "2024-06-01",
+					size: 3,
+					cursor: page1.body.data.pagination.nextCursor,
+				})
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// 페이지1의 마지막 카테고리 sortOrder <= 페이지2의 첫 카테고리 sortOrder
+			const page1Last = page1.body.data.items[page1.body.data.items.length - 1];
+			const page2First = page2.body.data.items[0];
+			expect(page1Last.category.sortOrder).toBeLessThanOrEqual(
+				page2First.category.sortOrder,
+			);
+		});
+
+		it("카테고리 reorder 후 조회하면 새 순서가 반영된다", async () => {
+			// Given: 카테고리3(공부)를 카테고리1(중요한 일) 앞으로 이동
+			await request(app.getHttpServer())
+				.patch(`/todo-categories/${category3Id}/reorder`)
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					targetCategoryId: category1Id,
+					position: "before",
+				})
+				.expect(200);
+
+			// When: 할 일 목록 조회
+			const response = await request(app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2024-06-01", endDate: "2024-06-01" })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			const items = response.body.data.items;
+
+			// Then: 카테고리3(공부)의 할 일이 카테고리1(중요한 일) 할 일보다 먼저 나옴
+			const firstCat3Index = items.findIndex(
+				(t: Todo) => t.category.id === category3Id,
+			);
+			const firstCat1Index = items.findIndex(
+				(t: Todo) => t.category.id === category1Id,
+			);
+
+			expect(firstCat3Index).toBeLessThan(firstCat1Index);
 		});
 	});
 });

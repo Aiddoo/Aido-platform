@@ -11,6 +11,19 @@ import type {
 } from "./types/todo.types.ts";
 
 /**
+ * Todo 조회 시 포함할 카테고리 필드
+ *
+ * @description
+ * 모든 Todo 조회/생성/수정 메서드에서 공통으로 사용하는 category include 설정.
+ * 필드 변경 시 이 상수만 수정하면 전체 반영됩니다.
+ */
+const TODO_CATEGORY_INCLUDE = {
+	category: {
+		select: { id: true, name: true, color: true, sortOrder: true },
+	},
+} as const;
+
+/**
  * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)
  *
  * 투두의 기간 [todo.startDate, todo.endDate]가 필터 범위 [filterStart, filterEnd]와 겹치는지 확인합니다.
@@ -82,11 +95,7 @@ export class TodoRepository {
 		const client = tx ?? this.database;
 		return client.todo.create({
 			data,
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory>;
 	}
 
@@ -100,11 +109,7 @@ export class TodoRepository {
 		const client = tx ?? this.database;
 		return client.todo.findUnique({
 			where: { id },
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory | null>;
 	}
 
@@ -119,11 +124,7 @@ export class TodoRepository {
 		const client = tx ?? this.database;
 		return client.todo.findFirst({
 			where: { id, userId },
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory | null>;
 	}
 
@@ -166,16 +167,11 @@ export class TodoRepository {
 				cursor: { id: cursor },
 			}),
 			orderBy: [
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			],
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory[]>;
 	}
 
@@ -191,11 +187,7 @@ export class TodoRepository {
 		return client.todo.update({
 			where: { id },
 			data,
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory>;
 	}
 
@@ -238,16 +230,11 @@ export class TodoRepository {
 				cursor: { id: cursor },
 			}),
 			orderBy: [
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			],
-			include: {
-				category: {
-					select: { id: true, name: true, color: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory[]>;
 	}
 
@@ -386,7 +373,7 @@ export class TodoRepository {
 			data: { sortOrder },
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory>;

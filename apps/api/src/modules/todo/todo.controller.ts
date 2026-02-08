@@ -156,11 +156,31 @@ export class TodoController {
 
 **쿼리 파라미터**
 - \`cursor\`: 페이지네이션 커서
-- \`size\`: 페이지 크기 (1-100, 기본값: 20)
+- \`size\`: 페이지 크기 (1-200, 기본값: 20)
 - \`completed\`: 완료 상태 필터
 - \`categoryId\`: 카테고리 ID 필터
 - \`startDate\`: 시작일 필터 (YYYY-MM-DD)
 - \`endDate\`: 종료일 필터 (YYYY-MM-DD)
+
+---
+
+### 정렬 (Sort Order)
+
+응답 데이터는 다음 기준으로 정렬됩니다:
+
+1. \`category.sortOrder\` ASC — 카테고리 순서
+2. \`todo.sortOrder\` ASC — 카테고리 내 할 일 순서
+3. \`todo.id\` ASC — 동일 순서 시 ID 기준 안정 정렬
+
+이 정렬 덕분에 데이터가 카테고리 순서대로 연속으로 반환되므로,
+클라이언트에서 \`Map.groupBy(todos, (t) => t.category.id)\`로 그룹핑하면
+카테고리별 할 일 목록을 구성할 수 있습니다.
+
+\`categoryId\` 파라미터 없이 호출하면 모든 카테고리의 할 일이 카테고리 순서대로 반환됩니다.
+\`categoryId\`를 지정하면 해당 카테고리의 할 일만 반환됩니다.
+
+**카테고리 정보**: 각 할 일의 \`category\` 객체에 \`sortOrder\` 필드가 포함되어 있어
+클라이언트 그룹핑 시 정렬 키로 활용할 수 있습니다.
 
 ---
 
@@ -221,8 +241,8 @@ export class TodoController {
 	@ApiQuery({
 		name: "size",
 		required: false,
-		description: "페이지 크기 (1-100)",
-		schema: { type: "number", minimum: 1, maximum: 100, default: 20 },
+		description: "페이지 크기 (1-200)",
+		schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
 		example: 20,
 	})
 	@ApiQuery({
@@ -325,9 +345,16 @@ export class TodoController {
 
 **쿼리 파라미터**
 - \`cursor\`: 페이지네이션 커서
-- \`size\`: 페이지 크기 (1-100, 기본값: 20)
+- \`size\`: 페이지 크기 (1-200, 기본값: 20)
 - \`startDate\`: 시작일 필터 (YYYY-MM-DD)
 - \`endDate\`: 종료일 필터 (YYYY-MM-DD)
+
+---
+
+### 정렬
+
+\`GET /todos\` API와 동일한 정렬 순서를 사용합니다:
+\`category.sortOrder\` ASC → \`todo.sortOrder\` ASC → \`todo.id\` ASC
 
 ---
 

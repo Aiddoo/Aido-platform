@@ -44,7 +44,12 @@ describe("TodoMapper", () => {
 				.withScheduledTime(new Date("2024-01-15T10:00:00.000Z"))
 				.withIsAllDay(false)
 				.withVisibility("PUBLIC")
-				.withCategory({ id: 1, name: "중요한 일", color: "#FFB3B3" })
+				.withCategory({
+					id: 1,
+					name: "중요한 일",
+					color: "#FFB3B3",
+					sortOrder: 0,
+				})
 				.withCreatedAt(new Date("2024-01-01T00:00:00.000Z"))
 				.withUpdatedAt(new Date("2024-01-02T00:00:00.000Z"))
 				.build();
@@ -70,6 +75,7 @@ describe("TodoMapper", () => {
 					id: 1,
 					name: "중요한 일",
 					color: "#FFB3B3",
+					sortOrder: 0,
 				},
 				createdAt: "2024-01-01T00:00:00.000Z",
 				updatedAt: "2024-01-02T00:00:00.000Z",
@@ -137,7 +143,7 @@ describe("TodoMapper", () => {
 		it("카테고리 정보를 올바르게 변환해야 한다", () => {
 			// Given - 특정 카테고리가 포함된 Todo 엔티티 준비
 			const todo = TodoBuilder.create("user-123")
-				.withCategory({ id: 2, name: "할 일", color: "#FF6B43" })
+				.withCategory({ id: 2, name: "할 일", color: "#FF6B43", sortOrder: 1 })
 				.build();
 
 			// When - Mapper 호출
@@ -148,6 +154,7 @@ describe("TodoMapper", () => {
 				id: 2,
 				name: "할 일",
 				color: "#FF6B43",
+				sortOrder: 1,
 			});
 		});
 
@@ -226,11 +233,21 @@ describe("TodoMapper", () => {
 			const todos = [
 				TodoBuilder.create("user-123")
 					.withId(1)
-					.withCategory({ id: 1, name: "중요한 일", color: "#FFB3B3" })
+					.withCategory({
+						id: 1,
+						name: "중요한 일",
+						color: "#FFB3B3",
+						sortOrder: 0,
+					})
 					.build(),
 				TodoBuilder.create("user-123")
 					.withId(2)
-					.withCategory({ id: 2, name: "할 일", color: "#FF6B43" })
+					.withCategory({
+						id: 2,
+						name: "할 일",
+						color: "#FF6B43",
+						sortOrder: 1,
+					})
 					.build(),
 			];
 

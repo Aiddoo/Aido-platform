@@ -77,10 +77,11 @@ describe("TodoCategoryMapper", () => {
 				id: 1,
 				name: "중요한 일",
 				color: "#FFB3B3",
+				sortOrder: 0,
 			});
 		});
 
-		it("userId, sortOrder, timestamps는 포함하지 않아야 한다", () => {
+		it("userId, timestamps는 포함하지 않아야 한다", () => {
 			// Given - 변환할 카테고리 준비
 			const category = TodoCategoryBuilder.create("user-123").build();
 
@@ -89,7 +90,6 @@ describe("TodoCategoryMapper", () => {
 
 			// Then - 불필요한 필드가 제외되었는지 검증
 			expect(result).not.toHaveProperty("userId");
-			expect(result).not.toHaveProperty("sortOrder");
 			expect(result).not.toHaveProperty("createdAt");
 			expect(result).not.toHaveProperty("updatedAt");
 		});

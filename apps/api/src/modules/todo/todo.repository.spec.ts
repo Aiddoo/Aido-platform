@@ -63,14 +63,13 @@ describe("TodoRepository", () => {
 				where: { userId: "user-1" },
 				take: 11, // size + 1 for pagination check
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -97,14 +96,13 @@ describe("TodoRepository", () => {
 				skip: 1,
 				cursor: { id: 5 },
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -130,14 +128,13 @@ describe("TodoRepository", () => {
 				skip: 1,
 				cursor: { id: 0 },
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -215,7 +212,7 @@ describe("TodoRepository", () => {
 			);
 		});
 
-		it("동일한 sortOrder인 Todo가 startDate, createdAt, id 기준으로 정렬된다", async () => {
+		it("category.sortOrder, sortOrder, id 기준으로 정렬된다", async () => {
 			// Given - orderBy가 복합키로 설정되어야 함
 			const params: FindTodosParams = {
 				userId: "user-1",
@@ -229,10 +226,9 @@ describe("TodoRepository", () => {
 			// Then - orderBy가 복합키 배열인지 검증
 			const callArgs = (db.todo.findMany as jest.Mock).mock.calls[0]?.[0];
 			expect(callArgs?.orderBy).toEqual([
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			]);
 		});
 	});
@@ -265,14 +261,13 @@ describe("TodoRepository", () => {
 				},
 				take: 11,
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -301,14 +296,13 @@ describe("TodoRepository", () => {
 				skip: 1,
 				cursor: { id: 5 },
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -336,14 +330,13 @@ describe("TodoRepository", () => {
 				skip: 1,
 				cursor: { id: 0 },
 				orderBy: [
+					{ category: { sortOrder: "asc" } },
 					{ sortOrder: "asc" },
-					{ startDate: "desc" },
-					{ createdAt: "desc" },
-					{ id: "desc" },
+					{ id: "asc" },
 				],
 				include: {
 					category: {
-						select: { id: true, name: true, color: true },
+						select: { id: true, name: true, color: true, sortOrder: true },
 					},
 				},
 			});
@@ -376,7 +369,7 @@ describe("TodoRepository", () => {
 			);
 		});
 
-		it("동일한 sortOrder인 Todo가 startDate, createdAt, id 기준으로 정렬된다", async () => {
+		it("category.sortOrder, sortOrder, id 기준으로 정렬된다", async () => {
 			// Given - orderBy가 복합키로 설정되어야 함
 			const params: FindFriendTodosParams = {
 				friendUserId: "friend-1",
@@ -390,10 +383,9 @@ describe("TodoRepository", () => {
 			// Then - orderBy가 복합키 배열인지 검증
 			const callArgs = (db.todo.findMany as jest.Mock).mock.calls[0]?.[0];
 			expect(callArgs?.orderBy).toEqual([
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			]);
 		});
 	});
