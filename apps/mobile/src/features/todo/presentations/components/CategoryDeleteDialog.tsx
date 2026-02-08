@@ -1,6 +1,8 @@
+import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { deleteTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/delete-todo-category-mutation-options';
 import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
+import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -48,7 +50,11 @@ export const CategoryDeleteDialog = ({
         toast.success('카테고리를 삭제했어요');
         onOpenChange(false);
       },
-      onError: () => {
+      onError: (error) => {
+        if (isTodoCategoryError(error) || isApiError(error)) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(undefined, { fallback: '잠시 후 다시 삭제해 보세요' });
       },
     });

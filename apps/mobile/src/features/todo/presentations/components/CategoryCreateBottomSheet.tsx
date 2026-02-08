@@ -1,6 +1,8 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import { createTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/create-todo-category-mutation-options';
+import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -41,7 +43,11 @@ export const CategoryCreateBottomSheet = ({
         toast.success('카테고리를 추가했어요');
         onOpenChange(false);
       },
-      onError: () => {
+      onError: (error) => {
+        if (isTodoCategoryError(error) || isApiError(error)) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(undefined, { fallback: '잠시 후 다시 추가해 보세요' });
       },
     });
