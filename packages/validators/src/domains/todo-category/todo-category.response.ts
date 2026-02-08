@@ -30,6 +30,7 @@ export const todoCategorySummarySchema = z.object({
   id: z.number().int().describe('카테고리 ID (양의 정수)'),
   name: z.string().describe('카테고리 이름'),
   color: z.string().describe('카테고리 색상 (HEX 7자)'),
+  sortOrder: z.number().int().describe('카테고리 정렬 순서 (작을수록 위)'),
 });
 
 export type TodoCategorySummary = z.infer<typeof todoCategorySummarySchema>;

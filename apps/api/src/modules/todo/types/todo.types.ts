@@ -111,6 +111,7 @@ export interface TodoWithCategory {
 		id: number;
 		name: string;
 		color: string;
+		sortOrder: number;
 	};
 }
 

@@ -182,6 +182,7 @@ describe("TodoService Integration Tests", () => {
 					id: mockCategoryId,
 					name: mockCategory.name,
 					color: mockCategory.color,
+					sortOrder: 0,
 				})
 				.build();
 			mockDatabaseService.todo.create.mockResolvedValue(mockTodoWithCategory);
@@ -278,6 +279,7 @@ describe("TodoService Integration Tests", () => {
 					id: mockCategory.id,
 					name: mockCategory.name,
 					color: mockCategory.color,
+					sortOrder: 0,
 				})
 				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(
@@ -755,6 +757,7 @@ describe("TodoService Integration Tests", () => {
 					id: 2,
 					name: "할 일",
 					color: "#FF6B43",
+					sortOrder: 1,
 				})
 				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
