@@ -1,15 +1,24 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  type BottomSheetBackgroundProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
-import { Keyboard, Platform, StyleSheet } from 'react-native';
 import {
+  createContext,
+  memo,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+} from 'react';
+import { Keyboard, Platform, StyleSheet } from 'react-native';
+import Animated, {
   cancelAnimation,
   interpolate,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -23,6 +32,20 @@ interface KeyboardBottomSheetProps {
   children: ReactNode;
 }
 
+const KeyboardProgressContext = createContext<SharedValue<number> | null>(null);
+
+const SheetBackground = memo(({ style, pointerEvents }: BottomSheetBackgroundProps) => {
+  const keyboardProgress = useContext(KeyboardProgressContext) as SharedValue<number>;
+  const animStyle = useAnimatedStyle(() => ({
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: interpolate(keyboardProgress.value, [0, 1], [24, 0]),
+    borderBottomRightRadius: interpolate(keyboardProgress.value, [0, 1], [24, 0]),
+    borderCurve: 'continuous' as const,
+  }));
+  return <Animated.View pointerEvents={pointerEvents} style={[style, animStyle]} />;
+});
+
 const EXPAND_DELAY_MS = 100;
 
 /**
@@ -31,7 +54,7 @@ const EXPAND_DELAY_MS = 100;
  * HeroUI wrapper 대신 직접 사용하여:
  * - enableDynamicSizing + expand 딜레이 → 콘텐츠 높이 측정 후 열림 (간헐적 실패 방지)
  * - FullWindowOverlay 미사용 → backdrop과 sheet 동시 애니메이션 (깜빡임 제거)
- * - 키보드 표시 시 marginHorizontal 16→0 애니메이션
+ * - 키보드 표시 시 marginHorizontal 16→0, 하단 borderRadius 24→0 애니메이션
  */
 export const KeyboardBottomSheet = ({
   isOpen,
@@ -119,33 +142,32 @@ export const KeyboardBottomSheet = ({
   );
 
   return (
-    <GorhomBottomSheet
-      ref={sheetRef}
-      index={-1}
-      enableDynamicSizing
-      enablePanDownToClose
-      detached
-      bottomInset={insets.bottom}
-      style={sheetStyle}
-      backgroundStyle={[styles.background, backgroundStyle]}
-      handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-      backdropComponent={renderBackdrop}
-      onAnimate={handleAnimate}
-      onChange={handleSheetChange}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustPan"
-    >
-      <BottomSheetView style={styles.content}>{children}</BottomSheetView>
-    </GorhomBottomSheet>
+    <KeyboardProgressContext.Provider value={keyboardProgress}>
+      <GorhomBottomSheet
+        ref={sheetRef}
+        index={-1}
+        enableDynamicSizing
+        enablePanDownToClose
+        detached
+        bottomInset={insets.bottom}
+        style={sheetStyle}
+        backgroundStyle={backgroundStyle}
+        backgroundComponent={SheetBackground}
+        handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+        backdropComponent={renderBackdrop}
+        onAnimate={handleAnimate}
+        onChange={handleSheetChange}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustPan"
+      >
+        <BottomSheetView style={styles.content}>{children}</BottomSheetView>
+      </GorhomBottomSheet>
+    </KeyboardProgressContext.Provider>
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    borderRadius: 24,
-    borderCurve: 'continuous',
-  },
   handleIndicator: {
     width: 36,
   },
