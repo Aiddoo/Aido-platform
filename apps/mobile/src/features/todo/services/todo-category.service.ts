@@ -1,6 +1,7 @@
 import type {
   CreateTodoCategoryInput,
   DeleteTodoCategoryQuery,
+  ReorderTodoCategoryInput,
   UpdateTodoCategoryInput,
 } from '@aido/validators';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -38,5 +39,12 @@ export class TodoCategoryService {
     query?: DeleteTodoCategoryQuery,
   ): Promise<Result<void, ApiError>> => {
     return this.#repository.deleteCategory(id, query);
+  };
+
+  reorderCategory = async (
+    id: number,
+    input: ReorderTodoCategoryInput,
+  ): Promise<Result<TodoCategory, ApiError>> => {
+    return this.#repository.reorderCategory(id, input);
   };
 }

@@ -5,6 +5,9 @@ import {
   type DeleteTodoCategoryQuery,
   type DeleteTodoCategoryResponse,
   deleteTodoCategoryResponseSchema,
+  type ReorderTodoCategoryInput,
+  type ReorderTodoCategoryResponse,
+  reorderTodoCategoryResponseSchema,
   type TodoCategoryListResponse,
   todoCategoryListResponseSchema,
   type UpdateTodoCategoryInput,
@@ -100,5 +103,25 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
     }
 
     return ok(undefined);
+  }
+
+  async reorderCategory(
+    id: number,
+    input: ReorderTodoCategoryInput,
+  ): Promise<Result<TodoCategory, ApiError>> {
+    const result = await this.#httpClient.patch<ReorderTodoCategoryResponse>(
+      `v1/todo-categories/${id}/reorder`,
+      input,
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = reorderTodoCategoryResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[TodoCategoryRepository] Invalid reorderCategory response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toTodoCategory(parsed.data.category));
   }
 }

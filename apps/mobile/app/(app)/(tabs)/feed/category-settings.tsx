@@ -1,6 +1,7 @@
 import { CategoryCreateBottomSheet } from '@src/features/todo/presentations/components/CategoryCreateBottomSheet';
 import { CategoryList } from '@src/features/todo/presentations/components/CategoryList';
 import type { ButtonProps } from '@src/shared/ui/Button';
+import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
@@ -9,7 +10,6 @@ import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Text } from '@src/shared/ui/Text/Text';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView } from 'react-native';
 
 const TodoCategorySettingsScreen = () => {
   const createOverlay = useOverlay();
@@ -30,7 +30,7 @@ const TodoCategorySettingsScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView contentContainerClassName="px-4 pb-8">
+      <Flex direction="column" gap={8} flex={1} className="px-4">
         <HStack justify="end" className="mb-3">
           <CreateCategoryButton onPress={handleCreateCategory}>
             <PlusIcon width={14} height={14} colorClassName="text-main" />
@@ -45,7 +45,7 @@ const TodoCategorySettingsScreen = () => {
             <CategoryList />
           </Suspense>
         </QueryErrorBoundary>
-      </ScrollView>
+      </Flex>
     </StyledSafeAreaView>
   );
 };
