@@ -1,7 +1,10 @@
 import { Box } from '@src/shared/ui/Box/Box';
-
+import { HStack } from '@src/shared/ui/HStack/HStack';
+import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
+
 import { useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { InView } from 'react-native-intersection-observer';
@@ -43,3 +46,19 @@ export function CategoryTodoList({ date, categoryId }: CategoryTodoListProps) {
     </Box>
   );
 }
+
+CategoryTodoList.Loading = function Loading() {
+  return (
+    <VStack gap={8}>
+      {times(2, (i) => (
+        <HStack key={`cat-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
+          <Box className="size-5 rounded bg-gray-3" />
+          <VStack flex={1} gap={2}>
+            <Box className="h-5 w-3/4 rounded bg-gray-3" />
+            <Box className="h-4 w-16 rounded bg-gray-3" />
+          </VStack>
+        </HStack>
+      ))}
+    </VStack>
+  );
+};
