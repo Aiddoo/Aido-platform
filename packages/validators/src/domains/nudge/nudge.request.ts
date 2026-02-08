@@ -49,9 +49,9 @@ export const getNudgesQuerySchema = z.object({
   cursor: z.coerce
     .number()
     .int()
-    .positive('유효하지 않은 커서입니다')
+    .nonnegative('유효하지 않은 커서입니다')
     .optional()
-    .describe('페이지네이션 커서 (양의 정수)'),
+    .describe('페이지네이션 커서 (0 이상의 정수)'),
 });
 
 export type GetNudgesQuery = z.infer<typeof getNudgesQuerySchema>;

@@ -85,7 +85,6 @@ export class TodoReminderJob {
 					type: "TODO_REMINDER" as const,
 					title: message.title,
 					body: message.body,
-					route: `/todos/${todo.id}`,
 					todoId: todo.id,
 				};
 			});

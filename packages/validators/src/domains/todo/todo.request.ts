@@ -113,9 +113,9 @@ export const getTodosQuerySchema = z.object({
   cursor: z.coerce
     .number()
     .int()
-    .positive()
+    .nonnegative()
     .optional()
-    .describe('페이지네이션 커서 (마지막 조회 Todo ID)'),
+    .describe('페이지네이션 커서 (마지막 조회 Todo ID, 0 이상)'),
   size: z.coerce
     .number()
     .int()

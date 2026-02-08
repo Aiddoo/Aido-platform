@@ -262,7 +262,7 @@ describe("CheerRepository", () => {
 				expect.objectContaining({
 					where: { receiverId: params.userId },
 					take: params.size + 1,
-					orderBy: { createdAt: "desc" },
+					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 				}),
 			);
 		});
@@ -315,7 +315,7 @@ describe("CheerRepository", () => {
 				expect.objectContaining({
 					where: { senderId: params.userId },
 					take: params.size + 1,
-					orderBy: { createdAt: "desc" },
+					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 				}),
 			);
 		});

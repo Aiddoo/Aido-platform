@@ -1,13 +1,10 @@
-export const notificationQueryKeys = {
+export const NOTIFICATION_QUERY_KEYS = {
   all: ['notification'] as const,
 
-  // Push Token
-  pushToken: () => [...notificationQueryKeys.all, 'push-token'] as const,
+  pushToken: () => [...NOTIFICATION_QUERY_KEYS.all, 'push-token'] as const,
 
-  // Notification List
-  lists: () => [...notificationQueryKeys.all, 'list'] as const,
-  list: (filters: { unreadOnly?: boolean }) => [...notificationQueryKeys.lists(), filters] as const,
+  list: (filters: { category?: string; unreadOnly?: boolean }) =>
+    [...NOTIFICATION_QUERY_KEYS.all, 'list', filters] as const,
 
-  // Unread Count
-  unreadCount: () => [...notificationQueryKeys.all, 'unread-count'] as const,
+  unreadCount: () => [...NOTIFICATION_QUERY_KEYS.all, 'unread-count'] as const,
 } as const;

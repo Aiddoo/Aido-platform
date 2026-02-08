@@ -29,7 +29,7 @@ import { PUSH_PROVIDER } from "./providers/push-provider.interface";
  * Event-driven 아키텍처:
  * - FollowListener: 팔로우 요청/수락 알림
  * - TodoListener: 할일 완료/리마인더 알림
- * - NudgeListener: 독촉 수신 알림
+ * - NudgeListener: 콕 찌르기 수신 알림
  * - CheerListener: 응원 수신 알림
  *
  * Provider 추상화를 통해 Expo Push → FCM 마이그레이션 대비

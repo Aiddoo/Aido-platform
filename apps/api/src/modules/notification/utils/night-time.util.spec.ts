@@ -1,50 +1,30 @@
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 
-import { getKstHour, isDayTime, isNightTime } from "./night-time.util";
+import { isDayTime, isNightTime } from "./night-time.util";
 
 describe("night-time.util", () => {
-	describe("getKstHour", () => {
-		it("UTC 0시는 KST 9시로 변환된다", () => {
-			const date = new Date("2024-01-15T00:00:00Z");
-			expect(getKstHour(date)).toBe(9);
-		});
-
-		it("UTC 12시는 KST 21시로 변환된다", () => {
-			const date = new Date("2024-01-15T12:00:00Z");
-			expect(getKstHour(date)).toBe(21);
-		});
-
-		it("UTC 15시는 KST 0시로 변환된다 (자정 넘김)", () => {
-			const date = new Date("2024-01-15T15:00:00Z");
-			expect(getKstHour(date)).toBe(0);
-		});
-
-		it("UTC 23시는 KST 8시로 변환된다", () => {
-			const date = new Date("2024-01-15T23:00:00Z");
-			expect(getKstHour(date)).toBe(8);
-		});
-	});
+	const KST = "Asia/Seoul";
 
 	describe("isNightTime", () => {
-		// 야간 시간: KST 21:00 ~ 08:00 (START_HOUR=21, END_HOUR=8)
+		// 야간 시간: 로컬 21:00 ~ 08:00 (START_HOUR=21, END_HOUR=8)
 
 		describe("야간 시간대 (KST 21:00-23:59)", () => {
 			it("KST 21:00은 야간이다", () => {
 				// KST 21:00 = UTC 12:00
 				const date = new Date("2024-01-15T12:00:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 
 			it("KST 22:30은 야간이다", () => {
 				// KST 22:30 = UTC 13:30
 				const date = new Date("2024-01-15T13:30:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 
 			it("KST 23:59은 야간이다", () => {
 				// KST 23:59 = UTC 14:59
 				const date = new Date("2024-01-15T14:59:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 		});
 
@@ -52,19 +32,19 @@ describe("night-time.util", () => {
 			it("KST 00:00은 야간이다", () => {
 				// KST 00:00 = UTC 15:00 (전날)
 				const date = new Date("2024-01-15T15:00:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 
 			it("KST 03:00은 야간이다", () => {
 				// KST 03:00 = UTC 18:00 (전날)
 				const date = new Date("2024-01-15T18:00:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 
 			it("KST 07:59은 야간이다", () => {
 				// KST 07:59 = UTC 22:59 (전날)
 				const date = new Date("2024-01-15T22:59:00Z");
-				expect(isNightTime(date)).toBe(true);
+				expect(isNightTime(KST, date)).toBe(true);
 			});
 		});
 
@@ -72,25 +52,37 @@ describe("night-time.util", () => {
 			it("KST 08:00은 주간이다", () => {
 				// KST 08:00 = UTC 23:00 (전날)
 				const date = new Date("2024-01-15T23:00:00Z");
-				expect(isNightTime(date)).toBe(false);
+				expect(isNightTime(KST, date)).toBe(false);
 			});
 
 			it("KST 12:00은 주간이다", () => {
 				// KST 12:00 = UTC 03:00
 				const date = new Date("2024-01-15T03:00:00Z");
-				expect(isNightTime(date)).toBe(false);
+				expect(isNightTime(KST, date)).toBe(false);
 			});
 
 			it("KST 20:00은 주간이다", () => {
 				// KST 20:00 = UTC 11:00
 				const date = new Date("2024-01-15T11:00:00Z");
-				expect(isNightTime(date)).toBe(false);
+				expect(isNightTime(KST, date)).toBe(false);
 			});
 
 			it("KST 20:59은 주간이다", () => {
 				// KST 20:59 = UTC 11:59
 				const date = new Date("2024-01-15T11:59:00Z");
-				expect(isNightTime(date)).toBe(false);
+				expect(isNightTime(KST, date)).toBe(false);
+			});
+		});
+
+		describe("다른 타임존에서도 동작한다", () => {
+			it("UTC 기준 21:00은 야간이다", () => {
+				const date = new Date("2024-01-15T21:00:00Z");
+				expect(isNightTime("UTC", date)).toBe(true);
+			});
+
+			it("UTC 기준 12:00은 주간이다", () => {
+				const date = new Date("2024-01-15T12:00:00Z");
+				expect(isNightTime("UTC", date)).toBe(false);
 			});
 		});
 
@@ -105,13 +97,13 @@ describe("night-time.util", () => {
 		it("isNightTime의 반대값을 반환한다", () => {
 			// KST 12:00 (주간) = UTC 03:00
 			const dayDate = new Date("2024-01-15T03:00:00Z");
-			expect(isDayTime(dayDate)).toBe(true);
-			expect(isDayTime(dayDate)).toBe(!isNightTime(dayDate));
+			expect(isDayTime(KST, dayDate)).toBe(true);
+			expect(isDayTime(KST, dayDate)).toBe(!isNightTime(KST, dayDate));
 
 			// KST 02:00 (야간) = UTC 17:00
 			const nightDate = new Date("2024-01-15T17:00:00Z");
-			expect(isDayTime(nightDate)).toBe(false);
-			expect(isDayTime(nightDate)).toBe(!isNightTime(nightDate));
+			expect(isDayTime(KST, nightDate)).toBe(false);
+			expect(isDayTime(KST, nightDate)).toBe(!isNightTime(KST, nightDate));
 		});
 
 		it("인자 없이 호출하면 현재 시간을 사용한다", () => {
@@ -127,10 +119,6 @@ describe("night-time.util", () => {
 
 		it("종료 시간은 8시다", () => {
 			expect(NIGHT_TIME_CONFIG.END_HOUR).toBe(8);
-		});
-
-		it("KST 오프셋은 9시간이다", () => {
-			expect(NIGHT_TIME_CONFIG.KST_OFFSET_HOURS).toBe(9);
 		});
 	});
 });

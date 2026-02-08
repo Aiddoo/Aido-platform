@@ -2,17 +2,17 @@ import { useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
-import { notificationQueryKeys } from '../constants/notification-query-keys.constant';
+import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
 
 export const getUnreadCountQueryOptions = () => {
   const notificationService = useNotificationService();
 
   return queryOptions({
-    queryKey: notificationQueryKeys.unreadCount(),
+    queryKey: NOTIFICATION_QUERY_KEYS.unreadCount(),
     queryFn: async () => {
       const result = await notificationService.getUnreadCount();
       return unwrap(result);
     },
-    staleTime: 30 * 1000, // 30초
+    staleTime: 30 * 1_000,
   });
 };

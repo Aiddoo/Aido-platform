@@ -1,5 +1,7 @@
 import {
+	CATEGORY_TYPE_MAP,
 	NOTIFICATION_ACTION_TYPE,
+	type NotificationCategory,
 	type Notification as NotificationDto,
 	type PushNotificationData,
 } from "@aido/validators";
@@ -27,6 +29,7 @@ import type {
 	CreateNotificationData,
 	FindNotificationsParams,
 	RegisterPushTokenData,
+	TransactionClient,
 } from "./types/notification.types";
 import { isNightTime } from "./utils";
 
@@ -78,6 +81,14 @@ export class NotificationService {
 		}
 
 		const pushToken = await this.notificationRepository.registerPushToken(data);
+
+		// 타임존 정보가 있으면 사용자 설정에 저장
+		if (data.timezone) {
+			await this.userPreferenceRepository.upsertTimezone(
+				data.userId,
+				data.timezone,
+			);
+		}
 
 		this.logger.log(
 			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
@@ -133,10 +144,15 @@ export class NotificationService {
 	 * 3. 설정에 따라 푸시 발송 여부 결정
 	 * 4. 발송 시 실패한 토큰 비활성화
 	 */
-	async createAndSend(data: CreateNotificationData): Promise<Notification> {
+	async createAndSend(
+		data: CreateNotificationData,
+		tx?: TransactionClient,
+	): Promise<Notification> {
 		// 1. DB에 알림 생성 (항상 저장)
-		const notification =
-			await this.notificationRepository.createNotification(data);
+		const notification = await this.notificationRepository.createNotification(
+			data,
+			tx,
+		);
 
 		// 2. 푸시 발송 여부 결정
 		const shouldSend = await this.shouldSendPush(
@@ -175,14 +191,17 @@ export class NotificationService {
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
+		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		if (dataList.length === 0) {
 			return { count: 0 };
 		}
 
 		// 1. DB에 알림 일괄 생성 (항상 저장)
-		const result =
-			await this.notificationRepository.createManyNotifications(dataList);
+		const result = await this.notificationRepository.createManyNotifications(
+			dataList,
+			tx,
+		);
 
 		// 2. 고유 사용자 ID 추출
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
@@ -257,6 +276,7 @@ export class NotificationService {
 		cursor?: number;
 		size?: number;
 		unreadOnly?: boolean;
+		category?: NotificationCategory;
 	}): Promise<CursorPaginatedResponse<NotificationDto, number>> {
 		const { cursor, size } =
 			this.paginationService.normalizeCursorPagination<number>({
@@ -264,11 +284,18 @@ export class NotificationService {
 				size: params.size,
 			});
 
+		// 카테고리 → NotificationType[] 변환
+		const types =
+			params.category && params.category !== "ALL"
+				? [...CATEGORY_TYPE_MAP[params.category]]
+				: undefined;
+
 		const repoParams: FindNotificationsParams = {
 			userId: params.userId,
 			cursor,
 			size,
 			unreadOnly: params.unreadOnly,
+			types,
 		};
 
 		const notifications =
@@ -416,8 +443,11 @@ export class NotificationService {
 			return false;
 		}
 
-		// 3. 야간 시간대 확인 (21:00-08:00 KST)
-		if (isNightTime() && !preference.nightPushEnabled) {
+		// 3. 야간 시간대 확인 (사용자 타임존 기준)
+		if (
+			isNightTime(preference.timezone ?? "UTC") &&
+			!preference.nightPushEnabled
+		) {
 			return false;
 		}
 
@@ -448,7 +478,9 @@ export class NotificationService {
 	 */
 	private canSendPushWithCachedData(
 		type: NotificationType,
-		preference: { pushEnabled: boolean; nightPushEnabled: boolean } | undefined,
+		preference:
+			| { pushEnabled: boolean; nightPushEnabled: boolean; timezone?: string }
+			| undefined,
 		consent: { marketingAgreedAt: Date | null } | undefined,
 	): boolean {
 		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
@@ -461,8 +493,11 @@ export class NotificationService {
 			return false;
 		}
 
-		// 야간 시간대 확인 (21:00-08:00 KST)
-		if (isNightTime() && !preference.nightPushEnabled) {
+		// 야간 시간대 확인 (사용자 타임존 기준)
+		if (
+			isNightTime(preference.timezone ?? "UTC") &&
+			!preference.nightPushEnabled
+		) {
 			return false;
 		}
 

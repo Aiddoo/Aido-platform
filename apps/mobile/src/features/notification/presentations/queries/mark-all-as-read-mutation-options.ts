@@ -2,7 +2,7 @@ import { useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { notificationQueryKeys } from '../constants/notification-query-keys.constant';
+import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
 
 export const markAllAsReadMutationOptions = () => {
   const notificationService = useNotificationService();
@@ -14,13 +14,12 @@ export const markAllAsReadMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: async () => {
-      // Invalidate notification queries to refresh data
-      await queryClient.invalidateQueries({
-        queryKey: notificationQueryKeys.all,
-      });
-
-      // Clear badge
-      await notificationService.clearBadge();
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: NOTIFICATION_QUERY_KEYS.all,
+        }),
+        notificationService.clearBadge(),
+      ]);
     },
   });
 };

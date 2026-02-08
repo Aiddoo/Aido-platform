@@ -38,6 +38,7 @@ export class NotificationBuilder {
 			metadata: null,
 			createdAt: now,
 			readAt: null,
+			notificationDate: null,
 		};
 	}
 
@@ -134,7 +135,7 @@ export class NotificationBuilder {
 	asMorningReminder(): NotificationBuilder {
 		this.data.type = "MORNING_REMINDER" as NotificationType;
 		this.data.title = "좋은 아침이에요!";
-		this.data.body = "오늘 할일이 기다리고 있어요";
+		this.data.body = "미루면 저녁의 내가 울어";
 		return this;
 	}
 

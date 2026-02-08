@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const AppLayout = () => {
@@ -9,7 +8,7 @@ const AppLayout = () => {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: Platform.OS === 'ios' ? 'slide_from_right' : 'slide_from_bottom',
+        animation: 'slide_from_right',
         animationTypeForReplace: 'push',
         contentStyle: { backgroundColor: backgroundColor as string },
       }}

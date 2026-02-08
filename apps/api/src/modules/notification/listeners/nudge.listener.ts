@@ -12,7 +12,7 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  * Nudge 이벤트 리스너
  *
  * NudgeModule에서 발행하는 이벤트를 수신하여 알림을 생성합니다.
- * - nudge.sent: 독촉 발송 완료
+ * - nudge.sent: 콕 찌르기 발송 완료
  */
 @Injectable()
 export class NudgeListener {
@@ -23,7 +23,7 @@ export class NudgeListener {
 	/**
 	 * Nudge 발송 이벤트 처리
 	 *
-	 * 독촉을 받은 사용자에게 푸시 알림을 발송합니다.
+	 * 콕 찌르기를 받은 사용자에게 푸시 알림을 발송합니다.
 	 * 클라이언트가 type(NUDGE_RECEIVED) + context(todoId, friendId, nudgeId)로 라우팅 결정
 	 * - todoId가 있으면 해당 할일로
 	 * - 없으면 친구 프로필로

@@ -8,11 +8,12 @@ import type {
 export const toNotification = (server: ServerNotification): Notification => ({
   id: server.id,
   userId: server.userId,
-  type: server.type as Notification['type'],
+  type: server.type,
   title: server.title,
   body: server.body,
   isRead: server.isRead,
   metadata: server.metadata,
+  context: server.context,
   createdAt: new Date(server.createdAt),
   readAt: server.readAt ? new Date(server.readAt) : null,
 });

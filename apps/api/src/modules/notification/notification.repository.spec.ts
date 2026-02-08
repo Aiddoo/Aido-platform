@@ -199,7 +199,7 @@ describe("NotificationRepository", () => {
 			expect(db.notification.findMany).toHaveBeenCalledWith({
 				where: { userId: "user-1" },
 				take: 11, // size + 1 for pagination check
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 			});
 			expect(result).toEqual(notifications);
 		});
@@ -225,7 +225,7 @@ describe("NotificationRepository", () => {
 				take: 11,
 				skip: 1,
 				cursor: { id: 5 },
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 			});
 			expect(result).toEqual(notifications);
 		});
@@ -251,6 +251,168 @@ describe("NotificationRepository", () => {
 					where: { userId: "user-1", isRead: false },
 				}),
 			);
+		});
+
+		it("types 필터가 있으면 type IN 조건을 포함해야 한다", async () => {
+			// Given
+			const params: FindNotificationsParams = {
+				userId: "user-1",
+				size: 20,
+				types: ["FOLLOW_NEW", "FOLLOW_ACCEPTED", "NUDGE_RECEIVED"],
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then
+			expect(db.notification.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: "user-1",
+						type: { in: ["FOLLOW_NEW", "FOLLOW_ACCEPTED", "NUDGE_RECEIVED"] },
+					}),
+				}),
+			);
+		});
+
+		it("types와 unreadOnly를 함께 사용하면 두 조건 모두 포함해야 한다", async () => {
+			// Given
+			const params: FindNotificationsParams = {
+				userId: "user-1",
+				size: 20,
+				unreadOnly: true,
+				types: ["SYSTEM_NOTICE", "ADMIN_BROADCAST"],
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then
+			expect(db.notification.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: "user-1",
+						isRead: false,
+						type: { in: ["SYSTEM_NOTICE", "ADMIN_BROADCAST"] },
+					}),
+				}),
+			);
+		});
+
+		it("types가 빈 배열이면 type 조건을 포함하지 않아야 한다", async () => {
+			// Given
+			const params = {
+				userId: "user-1",
+				size: 20,
+				types: [],
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then
+			const callArgs = db.notification.findMany.mock.calls[0]?.[0];
+			expect(callArgs?.where).not.toHaveProperty("type");
+		});
+
+		it("types가 undefined면 type 조건을 포함하지 않아야 한다", async () => {
+			// Given
+			const params = {
+				userId: "user-1",
+				size: 20,
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then
+			const callArgs = db.notification.findMany.mock.calls[0]?.[0];
+			expect(callArgs?.where).not.toHaveProperty("type");
+		});
+
+		it("cursor + types 조합: cursor와 types 필터를 동시에 적용해야 한다", async () => {
+			// Given
+			const params: FindNotificationsParams = {
+				userId: "user-1",
+				cursor: 10,
+				size: 20,
+				types: [
+					"FOLLOW_NEW",
+					"FOLLOW_ACCEPTED",
+					"NUDGE_RECEIVED",
+					"CHEER_RECEIVED",
+					"FRIEND_COMPLETED",
+				],
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then
+			expect(db.notification.findMany).toHaveBeenCalledWith({
+				where: {
+					userId: "user-1",
+					type: {
+						in: [
+							"FOLLOW_NEW",
+							"FOLLOW_ACCEPTED",
+							"NUDGE_RECEIVED",
+							"CHEER_RECEIVED",
+							"FRIEND_COMPLETED",
+						],
+					},
+				},
+				take: 21,
+				skip: 1,
+				cursor: { id: 10 },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+			});
+		});
+
+		it("동일한 createdAt인 알림이 id 기준으로 정렬된다", async () => {
+			// Given - orderBy가 복합키 [createdAt desc, id desc]로 설정되어야 함
+			const params: FindNotificationsParams = {
+				userId: "user-1",
+				size: 10,
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then - orderBy가 복합키 배열인지 검증
+			const callArgs = db.notification.findMany.mock.calls[0]?.[0];
+			expect(callArgs?.orderBy).toEqual([
+				{ createdAt: "desc" },
+				{ id: "desc" },
+			]);
+		});
+
+		it("cursor가 0이면 skip과 cursor가 적용된다", async () => {
+			// Given - cursor가 0 (falsy이지만 유효한 값)
+			const params: FindNotificationsParams = {
+				userId: "user-1",
+				cursor: 0,
+				size: 10,
+			};
+			db.notification.findMany.mockResolvedValue([]);
+
+			// When
+			await repository.findNotificationsByUser(params);
+
+			// Then - cursor가 0이어도 skip: 1, cursor: { id: 0 }이 적용되어야 함
+			expect(db.notification.findMany).toHaveBeenCalledWith({
+				where: { userId: "user-1" },
+				take: 11,
+				skip: 1,
+				cursor: { id: 0 },
+				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+			});
 		});
 	});
 

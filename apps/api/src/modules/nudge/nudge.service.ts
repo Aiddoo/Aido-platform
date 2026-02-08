@@ -27,8 +27,8 @@ import type {
 /**
  * Nudge 서비스
  *
- * - 독촉 보내기 (친구 확인, 일일 제한, 쿨다운 체크)
- * - 받은/보낸 독촉 목록 조회
+ * - 콕 찌르기 보내기 (친구 확인, 일일 제한, 쿨다운 체크)
+ * - 받은/보낸 콕 찌르기 목록 조회
  * - 제한 및 쿨다운 정보 조회
  */
 @Injectable()
@@ -44,11 +44,11 @@ export class NudgeService {
 	) {}
 
 	// =========================================================================
-	// 독촉 보내기
+	// 콕 찌르기 보내기
 	// =========================================================================
 
 	/**
-	 * 독촉 보내기
+	 * 콕 찌르기 보내기
 	 *
 	 * 1. 자기 자신 체크
 	 * 2. 친구 관계 확인
@@ -217,7 +217,7 @@ export class NudgeService {
 	// =========================================================================
 
 	/**
-	 * 받은 독촉 목록 조회
+	 * 받은 콕 찌르기 목록 조회
 	 */
 	async getReceivedNudges(params: {
 		userId: string;
@@ -250,7 +250,7 @@ export class NudgeService {
 	}
 
 	/**
-	 * 보낸 독촉 목록 조회
+	 * 보낸 콕 찌르기 목록 조회
 	 */
 	async getSentNudges(params: {
 		userId: string;
@@ -287,7 +287,7 @@ export class NudgeService {
 	// =========================================================================
 
 	/**
-	 * 일일 독촉 제한 정보 조회
+	 * 일일 콕 찌르기 제한 정보 조회
 	 */
 	async getLimitInfo(
 		userId: string,
@@ -359,7 +359,7 @@ export class NudgeService {
 	// =========================================================================
 
 	/**
-	 * 독촉 읽음 처리
+	 * 콕 찌르기 읽음 처리
 	 */
 	async markAsRead(userId: string, nudgeId: number): Promise<void> {
 		const nudge = await this.nudgeRepository.findById(nudgeId);

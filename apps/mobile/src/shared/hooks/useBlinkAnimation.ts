@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   type WithTimingConfig,
@@ -49,6 +50,9 @@ export function useBlinkAnimation(isActive: boolean, config?: UseBlinkAnimationC
     } else {
       opacity.value = withTiming(from, resetTiming);
     }
+    return () => {
+      cancelAnimation(opacity);
+    };
   }, [isActive, from, to, timing, resetTiming, opacity]);
 
   return useAnimatedStyle(() => ({

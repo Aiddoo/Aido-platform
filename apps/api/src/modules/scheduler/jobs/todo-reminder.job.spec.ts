@@ -35,7 +35,6 @@ interface NotificationBatchItem {
 	type: string;
 	title: string;
 	body: string;
-	route: string;
 	todoId: number;
 }
 
@@ -154,7 +153,6 @@ describe("TodoReminderJob", () => {
 				expect(firstNotification).toMatchObject({
 					userId: "user-1",
 					type: "TODO_REMINDER",
-					route: "/todos/1",
 					todoId: 1,
 				});
 				expect(firstNotification.title).toBeDefined();
@@ -181,7 +179,6 @@ describe("TodoReminderJob", () => {
 					notificationService.createAndSendBatch as unknown as jest.Mock,
 				);
 				const firstNotification = getFirstNotification(batchCallArg);
-				expect(firstNotification.route).toBe("/todos/1");
 				expect(firstNotification.todoId).toBe(1);
 			});
 		});

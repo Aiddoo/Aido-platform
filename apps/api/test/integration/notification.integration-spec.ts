@@ -30,6 +30,7 @@ import { UserPreferenceRepository } from "@/modules/auth/repositories/user-prefe
 import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
+import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
 describe("NotificationService Integration Tests", () => {
 	let module: TestingModule;
@@ -63,6 +64,7 @@ describe("NotificationService Integration Tests", () => {
 	const mockUserPreferenceDb = {
 		findUnique: jest.fn(),
 		findFirst: jest.fn(),
+		findMany: jest.fn(),
 		create: jest.fn(),
 		update: jest.fn(),
 		upsert: jest.fn(),
@@ -71,6 +73,7 @@ describe("NotificationService Integration Tests", () => {
 	const mockUserConsentDb = {
 		findUnique: jest.fn(),
 		findFirst: jest.fn(),
+		findMany: jest.fn(),
 		create: jest.fn(),
 		update: jest.fn(),
 	};
@@ -251,6 +254,136 @@ describe("NotificationService Integration Tests", () => {
 				}),
 			);
 		});
+
+		it("category='SOCIAL'이면 소셜 타입 배열로 Repository를 호출해야 한다", async () => {
+			// Given
+			mockNotificationDb.findMany.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: "user-1",
+				category: "SOCIAL",
+			});
+
+			// Then
+			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: "user-1",
+						type: {
+							in: expect.arrayContaining([
+								"FOLLOW_NEW",
+								"FOLLOW_ACCEPTED",
+								"NUDGE_RECEIVED",
+								"CHEER_RECEIVED",
+								"FRIEND_COMPLETED",
+							]),
+						},
+					}),
+				}),
+			);
+		});
+
+		it("category='ALL'이면 type 조건 없이 Repository를 호출해야 한다", async () => {
+			// Given
+			mockNotificationDb.findMany.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: "user-1",
+				category: "ALL",
+			});
+
+			// Then
+			const callArgs = mockNotificationDb.findMany.mock.calls[0]?.[0];
+			expect(callArgs?.where).not.toHaveProperty("type");
+		});
+
+		it("category와 unreadOnly를 함께 사용하면 두 조건 모두 전달해야 한다", async () => {
+			// Given
+			mockNotificationDb.findMany.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: "user-1",
+				category: "NOTICE",
+				unreadOnly: true,
+			});
+
+			// Then
+			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: "user-1",
+						isRead: false,
+						type: {
+							in: expect.arrayContaining([
+								"SYSTEM_NOTICE",
+								"ADMIN_BROADCAST",
+								"ADMIN_TARGETED",
+								"WEEKLY_ACHIEVEMENT",
+							]),
+						},
+					}),
+				}),
+			);
+		});
+
+		it("getNotifications + getUnreadCount 병렬 조회 시 두 결과 모두 정상 반환해야 한다", async () => {
+			// Given
+			const notifications = [
+				NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
+				NotificationBuilder.create(mockUserId).withId(2).asRead().build(),
+			];
+			mockNotificationDb.findMany.mockResolvedValue(notifications);
+			mockNotificationDb.count.mockResolvedValue(1);
+
+			// When - Promise.all로 병렬 호출 (컨트롤러에서 하는 것과 동일)
+			const [result, unreadCount] = await Promise.all([
+				service.getNotifications({ userId: mockUserId }),
+				service.getUnreadCount(mockUserId),
+			]);
+
+			// Then
+			expect(result.items).toBeDefined();
+			expect(result.pagination).toBeDefined();
+			expect(unreadCount).toBe(1);
+			expect(mockNotificationDb.findMany).toHaveBeenCalled();
+			expect(mockNotificationDb.count).toHaveBeenCalled();
+		});
+
+		it("category + cursor 조합이 DB 쿼리에 함께 적용되어야 한다", async () => {
+			// Given
+			mockNotificationDb.findMany.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "SOCIAL",
+				cursor: 10,
+				size: 5,
+			});
+
+			// Then
+			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.objectContaining({
+						userId: mockUserId,
+						type: {
+							in: expect.arrayContaining([
+								"FOLLOW_NEW",
+								"FOLLOW_ACCEPTED",
+								"NUDGE_RECEIVED",
+								"CHEER_RECEIVED",
+								"FRIEND_COMPLETED",
+							]),
+						},
+					}),
+					skip: 1,
+					cursor: { id: 10 },
+				}),
+			);
+		});
 	});
 
 	describe("읽지 않은 알림 수 조회 통합 테스트", () => {
@@ -407,6 +540,153 @@ describe("NotificationService Integration Tests", () => {
 			// Then - 알림 생성만 수행됨
 			expect(result).toEqual(mockNotification);
 			expect(mockPushProvider.sendBatch).not.toHaveBeenCalled();
+		});
+
+		it("MORNING_REMINDER createAndSendBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
+			// Given - morningReminder 템플릿으로 치환된 메시지 준비
+			const todoCount = 3;
+			const message = NotificationMessageBuilder.morningReminder(todoCount);
+
+			const dataList = [
+				{
+					userId: mockUserId,
+					type: "MORNING_REMINDER" as const,
+					title: message.title,
+					body: message.body,
+				},
+			];
+
+			mockNotificationDb.createMany.mockResolvedValue({ count: 1 });
+			mockUserPreferenceDb.findMany.mockResolvedValue([
+				{ userId: mockUserId, pushEnabled: true, nightPushEnabled: true },
+			]);
+			mockUserConsentDb.findMany.mockResolvedValue([]);
+			mockPushTokenDb.findMany.mockResolvedValue([
+				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+			]);
+			mockPushProvider.sendBatch.mockResolvedValue({
+				total: 1,
+				successCount: 1,
+				failureCount: 0,
+				invalidTokens: [],
+			});
+
+			// When - 배치 알림 생성 및 발송
+			const result = await service.createAndSendBatch(dataList);
+
+			// Then - title이 치환된 값 ("오늘 할일 3개")이어야 하며, {count}가 포함되지 않아야 함
+			expect(result.count).toBe(1);
+			expect(message.title).toBe("오늘 할일 3개");
+			expect(message.title).not.toContain("{count}");
+
+			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
+			expect(createManyCall.data[0].title).toBe("오늘 할일 3개");
+			expect(createManyCall.data[0].title).not.toContain("{count}");
+			expect(createManyCall.data[0].type).toBe("MORNING_REMINDER");
+		});
+
+		it("할일 없는 사용자에게 MORNING_NO_TODO 메시지로 알림이 정상 생성되어야 함", async () => {
+			// Given - morningNoTodo 템플릿 메시지 준비
+			const message = NotificationMessageBuilder.morningNoTodo();
+			const mockNotification = NotificationBuilder.create(mockUserId)
+				.withId(10)
+				.withType("MORNING_REMINDER" as any)
+				.withContent(message.title, message.body)
+				.build();
+
+			mockNotificationDb.create.mockResolvedValue(mockNotification);
+			mockUserPreferenceDb.findUnique.mockResolvedValue({
+				userId: mockUserId,
+				pushEnabled: true,
+				nightPushEnabled: true,
+			});
+			mockPushTokenDb.findMany.mockResolvedValue([
+				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+			]);
+			mockPushProvider.sendBatch.mockResolvedValue({
+				total: 1,
+				successCount: 1,
+				failureCount: 0,
+				invalidTokens: [],
+			});
+
+			// When - 할일 없는 사용자용 알림 생성
+			const result = await service.createAndSend({
+				userId: mockUserId,
+				type: "MORNING_REMINDER",
+				title: message.title,
+				body: message.body,
+			});
+
+			// Then - morningNoTodo 메시지가 그대로 저장되어야 함
+			expect(result.title).toBe("할일이 하나도 없다");
+			expect(result.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			expect(result.type).toBe("MORNING_REMINDER");
+			expect(mockNotificationDb.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						userId: mockUserId,
+						type: "MORNING_REMINDER",
+						title: "할일이 하나도 없다",
+						body: "한가한 거 맞아? 뭐라도 적어봐",
+					}),
+				}),
+			);
+		});
+
+		it("createAndSendBatch에서 할일 있는 사용자와 없는 사용자 알림이 함께 저장되어야 함", async () => {
+			// Given - 할일 있는 사용자와 없는 사용자 메시지 준비
+			const userWithTodos = "user-with-todos";
+			const userWithoutTodos = "user-without-todos";
+
+			const messageWithTodos = NotificationMessageBuilder.morningReminder(5);
+			const messageNoTodos = NotificationMessageBuilder.morningNoTodo();
+
+			const dataList = [
+				{
+					userId: userWithTodos,
+					type: "MORNING_REMINDER" as const,
+					title: messageWithTodos.title,
+					body: messageWithTodos.body,
+				},
+				{
+					userId: userWithoutTodos,
+					type: "MORNING_REMINDER" as const,
+					title: messageNoTodos.title,
+					body: messageNoTodos.body,
+				},
+			];
+
+			mockNotificationDb.createMany.mockResolvedValue({ count: 2 });
+			mockUserPreferenceDb.findMany.mockResolvedValue([
+				{ userId: userWithTodos, pushEnabled: true, nightPushEnabled: true },
+				{ userId: userWithoutTodos, pushEnabled: true, nightPushEnabled: true },
+			]);
+			mockUserConsentDb.findMany.mockResolvedValue([]);
+			mockPushTokenDb.findMany.mockResolvedValue([
+				PushTokenBuilder.create(userWithTodos).withToken("token-1").build(),
+				PushTokenBuilder.create(userWithoutTodos).withToken("token-2").build(),
+			]);
+			mockPushProvider.sendBatch.mockResolvedValue({
+				total: 2,
+				successCount: 2,
+				failureCount: 0,
+				invalidTokens: [],
+			});
+
+			// When - 배치 알림 생성 및 발송
+			const result = await service.createAndSendBatch(dataList);
+
+			// Then - 두 사용자 모두 알림이 생성되어야 함
+			expect(result.count).toBe(2);
+
+			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
+			// 할일 있는 사용자: 치환된 title
+			expect(createManyCall.data[0].title).toBe("오늘 할일 5개");
+			expect(createManyCall.data[0].title).not.toContain("{count}");
+			// 할일 없는 사용자: morningNoTodo 메시지
+			expect(createManyCall.data[1].title).toBe("할일이 하나도 없다");
+			expect(createManyCall.data[1].body).toBe("한가한 거 맞아? 뭐라도 적어봐");
 		});
 	});
 });

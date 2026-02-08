@@ -168,6 +168,55 @@ describe("NotificationService", () => {
 			);
 			expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
 		});
+
+		it("timezone이 제공되면 upsertTimezone을 호출해야 한다", async () => {
+			// Given - 타임존 정보가 포함된 토큰 등록 데이터
+			const data = {
+				userId: mockUserId,
+				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+				deviceId: "device-1",
+				platform: "IOS" as const,
+				timezone: "Asia/Seoul",
+			};
+			const expectedToken = PushTokenBuilder.create(mockUserId)
+				.withToken(data.token)
+				.withDeviceId(data.deviceId)
+				.asIos()
+				.build();
+			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
+			userPreferenceRepo.upsertTimezone.mockResolvedValue(undefined as never);
+
+			// When - 타임존 포함 토큰 등록 요청
+			await service.registerPushToken(data);
+
+			// Then - upsertTimezone이 호출됨
+			expect(userPreferenceRepo.upsertTimezone).toHaveBeenCalledWith(
+				mockUserId,
+				"Asia/Seoul",
+			);
+		});
+
+		it("timezone이 없으면 upsertTimezone을 호출하지 않아야 한다", async () => {
+			// Given - 타임존 정보가 없는 토큰 등록 데이터
+			const data = {
+				userId: mockUserId,
+				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+				deviceId: "device-1",
+				platform: "IOS" as const,
+			};
+			const expectedToken = PushTokenBuilder.create(mockUserId)
+				.withToken(data.token)
+				.withDeviceId(data.deviceId)
+				.asIos()
+				.build();
+			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
+
+			// When - 타임존 미포함 토큰 등록 요청
+			await service.registerPushToken(data);
+
+			// Then - upsertTimezone이 호출되지 않음
+			expect(userPreferenceRepo.upsertTimezone).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("unregisterPushToken", () => {
@@ -279,7 +328,10 @@ describe("NotificationService", () => {
 			const result = await service.createAndSend(data);
 
 			// Then - 알림 생성 확인 및 비동기 푸시 발송 검증
-			expect(notificationRepo.createNotification).toHaveBeenCalledWith(data);
+			expect(notificationRepo.createNotification).toHaveBeenCalledWith(
+				data,
+				undefined,
+			);
 			expect(result).toEqual(notification);
 
 			// 비동기 푸시 발송 대기
@@ -356,6 +408,7 @@ describe("NotificationService", () => {
 			// Then - 일괄 생성 및 비동기 푸시 발송 확인
 			expect(notificationRepo.createManyNotifications).toHaveBeenCalledWith(
 				dataList,
+				undefined,
 			);
 			expect(result.count).toBe(2);
 
@@ -480,6 +533,169 @@ describe("NotificationService", () => {
 			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
 				expect.objectContaining({
 					cursor: 5,
+				}),
+			);
+		});
+
+		it("category가 'SOCIAL'이면 소셜 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "SOCIAL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"FOLLOW_NEW",
+						"FOLLOW_ACCEPTED",
+						"NUDGE_RECEIVED",
+						"CHEER_RECEIVED",
+						"FRIEND_COMPLETED",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'NOTICE'이면 공지 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "NOTICE",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"SYSTEM_NOTICE",
+						"ADMIN_BROADCAST",
+						"ADMIN_TARGETED",
+						"WEEKLY_ACHIEVEMENT",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'TODO'이면 할일 타입 배열을 Repository에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "TODO",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: expect.arrayContaining([
+						"TODO_REMINDER",
+						"TODO_SHARED",
+						"DAILY_COMPLETE",
+						"MORNING_REMINDER",
+						"EVENING_REMINDER",
+					]),
+				}),
+			);
+		});
+
+		it("category가 'ALL'이면 types를 undefined로 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "ALL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: undefined,
+				}),
+			);
+		});
+
+		it("category가 미지정이면 types를 undefined로 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					types: undefined,
+				}),
+			);
+		});
+
+		it("category + cursor 조합: SOCIAL 카테고리와 cursor를 동시에 전달해야 한다", async () => {
+			// Given
+			paginationService.normalizeCursorPagination.mockReturnValue({
+				cursor: 10,
+				size: 20,
+				take: 21,
+			});
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				cursor: 10,
+				size: 20,
+				category: "SOCIAL",
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					cursor: 10,
+					types: expect.arrayContaining([
+						"FOLLOW_NEW",
+						"FOLLOW_ACCEPTED",
+						"NUDGE_RECEIVED",
+						"CHEER_RECEIVED",
+						"FRIEND_COMPLETED",
+					]),
+				}),
+			);
+		});
+
+		it("category + unreadOnly 조합: NOTICE + unreadOnly=true를 동시에 전달해야 한다", async () => {
+			// Given
+			notificationRepo.findNotificationsByUser.mockResolvedValue([]);
+
+			// When
+			await service.getNotifications({
+				userId: mockUserId,
+				category: "NOTICE",
+				unreadOnly: true,
+			});
+
+			// Then
+			expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
+				expect.objectContaining({
+					unreadOnly: true,
+					types: expect.arrayContaining([
+						"SYSTEM_NOTICE",
+						"ADMIN_BROADCAST",
+						"ADMIN_TARGETED",
+						"WEEKLY_ACHIEVEMENT",
+					]),
 				}),
 			);
 		});

@@ -42,7 +42,13 @@ describe("AuthController - Settings API", () => {
 
 	describe("getPreference", () => {
 		it("사용자의 푸시 설정을 반환해야 한다", async () => {
-			const expectedResult = { pushEnabled: true, nightPushEnabled: false };
+			const expectedResult = {
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
+			};
 			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
 
 			const result = await controller.getPreference(mockUser);
@@ -54,7 +60,13 @@ describe("AuthController - Settings API", () => {
 		});
 
 		it("설정이 없으면 기본값을 반환해야 한다", async () => {
-			const defaultResult = { pushEnabled: false, nightPushEnabled: false };
+			const defaultResult = {
+				pushEnabled: false,
+				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
+			};
 			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
 
 			const result = await controller.getPreference(mockUser);
@@ -66,7 +78,13 @@ describe("AuthController - Settings API", () => {
 	describe("updatePreference", () => {
 		it("푸시 설정을 업데이트하고 결과를 반환해야 한다", async () => {
 			const dto = { pushEnabled: true, nightPushEnabled: true };
-			const expectedResult = { pushEnabled: true, nightPushEnabled: true };
+			const expectedResult = {
+				pushEnabled: true,
+				nightPushEnabled: true,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
+			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,
 			);
@@ -82,7 +100,13 @@ describe("AuthController - Settings API", () => {
 
 		it("일부 설정만 업데이트할 수 있어야 한다", async () => {
 			const dto = { pushEnabled: true };
-			const expectedResult = { pushEnabled: true, nightPushEnabled: false };
+			const expectedResult = {
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "UTC",
+				morningReminderHour: 8,
+				eveningReminderHour: 18,
+			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,
 			);
