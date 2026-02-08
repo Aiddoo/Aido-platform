@@ -1,62 +1,59 @@
 # API 코드 규칙
 
-> Controller, Service, Repository 계층별 규칙 및 패턴
+> Controller, Service, Repository, Module 계층별 코드 작성 규칙
 
 ## 관련 문서
 
 | 문서 | 설명 |
 |------|------|
-| [architecture.md](./architecture.md) | 전체 아키텍처 개요 |
-| [validators.md](./validators.md) | @aido/validators 패키지 규칙 |
-| [prisma.md](./prisma.md) | Prisma 7 가이드 |
-| [unit-test.md](./unit-test.md) | 단위 테스트 가이드 |
-| [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 |
+| [CLAUDE.md](../CLAUDE.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
+| [architecture.md](./architecture.md) | 전체 아키텍처, 에러 처리, 이벤트, 보안, 공통 모듈 |
+| [validators.md](./validators.md) | @aido/validators 패키지 규칙 (Zod 스키마, NestJS DTO) |
+| [prisma.md](./prisma.md) | Prisma 7 가이드 (스키마, 마이그레이션, 트랜잭션) |
+| [unit-test.md](./unit-test.md) | 단위 테스트 가이드 (Jest, Mock) |
+| [e2e-test.md](./e2e-test.md) | E2E 테스트 가이드 (supertest, Testcontainers) |
 
 ---
 
 ## 개요
 
-| 항목 | 규칙 |
-|------|------|
-| Controller | HTTP 요청/응답만 처리, 비즈니스 로직 금지 |
-| Service | 비즈니스 로직 담당, Repository 통해 데이터 접근 |
-| Repository | 데이터 액세스만 담당, 예외 발생 금지 |
-| Module | 의존성 주입 및 모듈 경계 정의 |
+| 계층 | 역할 | 핵심 규칙 |
+|------|------|----------|
+| Controller | HTTP 요청/응답 처리 | 비즈니스 로직 금지, Swagger 문서화 필수 |
+| Service | 비즈니스 로직 | BusinessExceptions로 예외 발생, Repository 통해 데이터 접근 |
+| Repository | 데이터 액세스 | 예외 발생 금지, 모든 메서드에 `tx?` 파라미터 |
+| Module | 의존성 주입 | 모듈 경계 정의, `app.module.ts`에 등록 |
 
 ---
 
-## 디렉토리 구조
+## 1. 디렉토리 구조
 
 ```
 src/modules/{name}/
-├── {name}.module.ts           # 모듈 정의
-├── {name}.controller.ts       # HTTP 엔드포인트
+├── {name}.module.ts              # 모듈 정의
+├── {name}.controller.ts          # HTTP 엔드포인트
 ├── services/
-│   ├── {name}.service.ts      # 비즈니스 로직
+│   ├── {name}.service.ts         # 비즈니스 로직
 │   └── index.ts
 ├── repositories/
-│   ├── {name}.repository.ts   # 데이터 액세스
+│   ├── {name}.repository.ts      # 데이터 액세스
 │   └── index.ts
 ├── types/
-│   ├── {name}.types.ts        # 타입 정의
+│   ├── {name}.types.ts           # 결과 타입 정의
 │   └── index.ts
 ├── constants/
-│   ├── {name}.constants.ts    # 모듈 상수
+│   ├── {name}.constants.ts       # 모듈 상수
 │   └── index.ts
-├── guards/                    # 인증/권한 가드
-├── decorators/                # 커스텀 데코레이터
-└── strategies/                # Passport 전략
+├── mappers/                      # 응답 변환 (필요시)
+│   └── {name}.mapper.ts
+├── guards/                       # 인증/권한 가드 (필요시)
+├── decorators/                   # 커스텀 데코레이터 (필요시)
+└── strategies/                   # Passport 전략 (auth만)
 ```
 
 ---
 
-## Controller 규칙
-
-### 파일 위치
-
-```
-src/modules/{name}/{name}.controller.ts
-```
+## 2. Controller 규칙
 
 ### 기본 구조
 
@@ -72,7 +69,7 @@ export class ExampleController {
   constructor(private readonly exampleService: ExampleService) {}
 
   @Get()
-  @ApiDoc({ 
+  @ApiDoc({
     summary: '목록 조회',
     description: `
 ## 📋 예시 목록 조회
@@ -118,11 +115,9 @@ export class ExampleController {
 
 ### 📝 요청 필드
 - \`field1\`: 설명 (필수/선택)
-- \`field2\`: 설명
 
 ### ⚠️ 주의사항
-- 주의할 점 1
-- 주의할 점 2
+- 주의할 점
 
 ### 🚫 에러 케이스
 - \`ERROR_CODE\`: 에러 상황 설명
@@ -148,7 +143,8 @@ private extractMetadata(req: Request): SessionMetadata {
 - Service 메서드 호출 및 결과 반환
 - Request 메타데이터 추출 (IP, User-Agent)
 - DTO를 통한 입력 검증
-- Swagger 문서화
+- Swagger 문서화 (`@ApiDoc`, `@ApiSuccessResponse`)
+- `@Timezone()` 데코레이터로 타임존 추출 (필요시)
 
 ### DON'T ❌
 
@@ -159,20 +155,17 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ---
 
-## Service 규칙
-
-### 파일 위치
-
-```
-src/modules/{name}/services/{name}.service.ts
-```
+## 3. Service 규칙
 
 ### 기본 구조
 
 ```typescript
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BusinessExceptions } from '@common/exception';
+import { DatabaseService } from '@common/database';
 import { ExampleRepository } from '../repositories';
-import type { CreateExampleInput, ExampleResponse } from '@aido/validators';
+import type { CreateExampleInput } from '@aido/validators';
 
 @Injectable()
 export class ExampleService {
@@ -180,25 +173,19 @@ export class ExampleService {
 
   constructor(
     private readonly exampleRepository: ExampleRepository,
-    private readonly database: DatabaseService, // 트랜잭션용
+    private readonly database: DatabaseService,  // 트랜잭션용
+    private readonly eventEmitter: EventEmitter2, // 이벤트 발행용 (필요시)
   ) {}
 
-  /**
-   * ID로 예시 조회
-   * @throws NotFoundException 존재하지 않는 경우
-   */
-  async findById(id: string): Promise<ExampleResponse> {
+  async findById(id: string) {
     const example = await this.exampleRepository.findById(id);
     if (!example) {
-      throw new NotFoundException(`Example #${id} not found`);
+      throw BusinessExceptions.todoNotFound(id);
     }
     return example;
   }
 
-  /**
-   * 예시 생성
-   */
-  async create(input: CreateExampleInput): Promise<ExampleResponse> {
+  async create(input: CreateExampleInput) {
     const example = await this.exampleRepository.create(input);
     this.logger.log(`Example created: ${example.id}`);
     return example;
@@ -209,16 +196,19 @@ export class ExampleService {
 ### 의존성 주입 규칙
 
 ```typescript
-// DO: Repository 주입
+// DO: Repository + DatabaseService(트랜잭션용) + EventEmitter2(이벤트용)
 constructor(
-  private readonly userRepository: UserRepository,
-  private readonly profileRepository: ProfileRepository,
+  private readonly exampleRepository: ExampleRepository,
+  private readonly database: DatabaseService,
+  private readonly eventEmitter: EventEmitter2,
 ) {}
 
-// DON'T: DatabaseService 직접 사용 (Repository 통해서만)
+// DO: 다른 Service 주입 (교차 모듈 로직)
 constructor(
-  private readonly database: DatabaseService, // 트랜잭션용으로만 허용
+  private readonly followService: FollowService,
 ) {}
+
+// DON'T: DatabaseService를 직접 쿼리에 사용 (Repository 통해야 함)
 ```
 
 ### 트랜잭션 사용
@@ -226,7 +216,7 @@ constructor(
 다중 테이블 작업 시 반드시 트랜잭션 사용:
 
 ```typescript
-async createWithProfile(input: CreateUserInput): Promise<User> {
+async createWithProfile(input: CreateUserInput) {
   return this.database.$transaction(async (tx) => {
     const user = await this.userRepository.create(input, tx);
     await this.profileRepository.create({ userId: user.id }, tx);
@@ -236,22 +226,38 @@ async createWithProfile(input: CreateUserInput): Promise<User> {
 }
 ```
 
+### 이벤트 발행
+
+```typescript
+async toggleComplete(id: number, userId: string, data: { completed: boolean }, tz: string) {
+  const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+  if (!todo) throw BusinessExceptions.todoNotFound(id);
+
+  const updated = await this.todoRepository.update(id, { ... });
+
+  // 부수효과는 이벤트로 분리 (알림 등)
+  if (data.completed) {
+    this.eventEmitter.emit(NotificationEvents.TODO_ALL_COMPLETED, {
+      userId,
+      completedCount: stats.completed,
+      timezone: tz,
+    } satisfies TodoAllCompletedEventPayload);
+  }
+
+  return updated;
+}
+```
+
 ### 결과 타입 정의
 
 ```typescript
 // types/{name}.types.ts
-
 export interface LoginResult {
   userId: string;
   tokens: TokenPair;
   sessionId: string;
   name: string | null;
   profileImage: string | null;
-}
-
-export interface CreateExampleResult {
-  id: string;
-  message: string;
 }
 ```
 
@@ -265,30 +271,28 @@ this.logger.warn(`Login attempt failed for: ${email}`);
 this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 ```
 
+> 상세 로깅 가이드: [logging-guide.md](./logging-guide.md)
+
 ### DO ✅
 
+- `BusinessExceptions.xxx()` 팩토리 메서드로 예외 발생
 - Repository를 통한 데이터 액세스
-- `NotFoundException`, `BadRequestException` 등 예외 발생
+- `database.$transaction()`으로 트랜잭션 관리
+- `eventEmitter.emit()` + `satisfies`로 이벤트 발행
 - Logger 사용한 중요 작업 로깅
-- 비즈니스 로직 구현
-- 입력 데이터 검증/변환
+- 크론 작업에서 DB 기반 중복 방지
 
 ### DON'T ❌
 
 - Repository 거치지 않고 직접 Prisma 호출
 - HTTP 관련 코드 (`@Res()`, 상태코드 설정)
 - Controller 로직 포함 (요청 파싱 등)
-- 무분별한 로깅 (성능 저하)
+- `new HttpException()` 직접 사용 (BusinessExceptions 사용)
+- 크론 작업에서 in-memory Set/Map으로 상태 관리 (서버 재시작 시 유실)
 
 ---
 
-## Repository 규칙
-
-### 파일 위치
-
-```
-src/modules/{name}/repositories/{name}.repository.ts
-```
+## 4. Repository 규칙
 
 ### 기본 구조
 
@@ -350,7 +354,7 @@ async someMethod(
 }
 ```
 
-### 복잡한 쿼리
+### 복잡한 쿼리 (페이지네이션)
 
 ```typescript
 async findAllWithPagination(params: {
@@ -385,12 +389,45 @@ async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
 }
 ```
 
+### 민감 데이터 암호화
+
+OAuth 토큰 등 민감 데이터를 DB에 저장할 때 EncryptionService 사용:
+
+```typescript
+@Injectable()
+export class AccountRepository {
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
+
+  async createOAuthAccount(data: CreateOAuthData): Promise<Account> {
+    return this.database.account.create({
+      data: {
+        ...data,
+        accessToken: data.accessToken
+          ? this.encryptionService.encrypt(data.accessToken) : null,
+        refreshToken: data.refreshToken
+          ? this.encryptionService.encrypt(data.refreshToken) : null,
+      },
+    });
+  }
+}
+```
+
+복호화 시 `decryptSafe()` 사용 (평문 fallback 지원):
+
+```typescript
+const token = this.encryptionService.decryptSafe(account.accessToken);
+```
+
 ### DO ✅
 
 - DatabaseService 주입하여 Prisma 사용
 - 타입이 명확한 반환값 정의
 - 단일 엔티티 책임 (User → UserRepository)
-- 트랜잭션 클라이언트 지원
+- 모든 메서드에 `tx?: Prisma.TransactionClient` 지원
+- 민감 데이터는 EncryptionService로 암호화하여 저장
 
 ### DON'T ❌
 
@@ -398,16 +435,11 @@ async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
 - 비즈니스 로직 포함
 - 다른 Repository 직접 호출
 - 데이터 변환 로직 포함
+- 민감 토큰을 평문으로 DB에 저장
 
 ---
 
-## Module 구성
-
-### 파일 위치
-
-```
-src/modules/{name}/{name}.module.ts
-```
+## 5. Module 구성
 
 ### 기본 구조
 
@@ -442,245 +474,73 @@ import { EmailModule } from '../email';
 export class AuthModule {}
 ```
 
----
-
-## AI 모듈 패턴
-
-### AI 파싱 → Todo 생성 플로우
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    클라이언트 통합 플로우                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. 사용자 입력        2. AI 파싱           3. 사용자 확인       │
-│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
-│  │ "내일 3시에  │ ───► │ POST        │ ───► │ 파싱 결과   │     │
-│  │  회의하기"   │      │ /v1/ai/     │      │ 미리보기    │     │
-│  └─────────────┘      │ parse-todo  │      └─────────────┘     │
-│                       └─────────────┘             │             │
-│                                                   ▼             │
-│  4. Todo 생성         5. 저장 완료                              │
-│  ┌─────────────┐      ┌─────────────┐                          │
-│  │ POST        │ ───► │ Todo 생성   │                          │
-│  │ /v1/todos   │      │ 완료!       │                          │
-│  └─────────────┘      └─────────────┘                          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 패턴 선택 이유
-
-| 이유 | 설명 |
-|------|------|
-| **사용자 확인** | AI 파싱 결과를 사용자가 검토/수정 가능 |
-| **유연성** | 파싱만 사용하거나, 수동 생성도 가능 |
-| **오류 복구** | 파싱 실패 시 사용자가 직접 수정 가능 |
-| **업계 표준** | Gmail 스마트 컴포즈, Notion AI 등과 동일 |
-
-### 클라이언트 구현 예시
-
-```typescript
-// 1단계: AI 파싱
-const parseResult = await api.post('/v1/ai/parse-todo', { 
-  text: '내일 오후 3시 회의' 
-});
-
-// 2단계: 사용자 확인 UI 표시
-const confirmed = await showConfirmDialog(parseResult.data);
-
-// 3단계: 확인 후 Todo 생성
-if (confirmed) {
-  await api.post('/v1/todos', parseResult.data);
-}
-```
-
-### AI 사용량 제한
-
-| 플랜 | 일일 제한 |
-|------|----------|
-| FREE | 5회 |
-| PREMIUM | 100회 |
+> `@Global()` 모듈 (DatabaseModule, EncryptionModule, CacheModule 등)은 `imports` 없이 바로 주입 가능.
 
 ---
 
-## 소셜 모듈 패턴
-
-### Follow 관계
+## 6. Import 별칭
 
 ```typescript
-// 팔로우
-POST /v1/follows/:userId
-
-// 언팔로우
-DELETE /v1/follows/:userId
-
-// 내 팔로워 목록
-GET /v1/follows/followers
-
-// 내가 팔로우하는 목록
-GET /v1/follows/following
-```
-
-### Cheer/Nudge 전송
-
-```typescript
-// 응원 전송 (팔로잉 대상에게만)
-POST /v1/cheers
-{
-  "receiverId": "cuid",
-  "message": "화이팅!"  // Cheer만 메시지 포함
-}
-
-// 찌르기 전송 (팔로잉 대상에게만)
-POST /v1/nudges
-{
-  "receiverId": "cuid"
-}
-```
-
-### 권한 검증 패턴
-
-모든 소셜 기능은 팔로우 관계를 먼저 확인:
-
-```typescript
-// Service 내부 로직
-async sendCheer(senderId: string, receiverId: string) {
-  // 1. 팔로우 관계 확인
-  const isFollowing = await this.followRepository.isFollowing(senderId, receiverId);
-  if (!isFollowing) {
-    throw new ForbiddenException('팔로우한 사용자에게만 응원을 보낼 수 있습니다');
-  }
-  
-  // 2. 응원 생성
-  return this.cheerRepository.create({ senderId, receiverId, ... });
-}
-```
-
----
-
-## 응답 형식
-
-### 성공 응답 (자동 래핑)
-
-`ResponseTransformInterceptor`가 자동으로 래핑:
-
-```json
-{
-  "success": true,
-  "data": { ... },
-  "timestamp": "2026-02-06T10:30:00.000Z"
-}
-```
-
-### 에러 응답 (자동 래핑)
-
-`GlobalExceptionFilter`가 자동으로 래핑:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "USER_NOT_FOUND",
-    "message": "사용자를 찾을 수 없습니다"
-  },
-  "timestamp": "2026-02-06T10:30:00.000Z"
-}
-```
-
-### 페이지네이션 응답
-
-```json
-{
-  "success": true,
-  "data": {
-    "items": [...],
-    "meta": {
-      "page": 1,
-      "size": 20,
-      "total": 100,
-      "totalPages": 5
-    }
-  },
-  "timestamp": "2026-02-06T10:30:00.000Z"
-}
-```
-
----
-
-## 예외 처리
-
-### NestJS 내장 예외
-
-```typescript
-import { 
-  NotFoundException,
-  BadRequestException,
-  UnauthorizedException,
-  ForbiddenException,
-  ConflictException,
-} from '@nestjs/common';
-
-// 404 Not Found
-throw new NotFoundException('User not found');
-
-// 400 Bad Request
-throw new BadRequestException('Invalid input');
-
-// 401 Unauthorized
-throw new UnauthorizedException('Token expired');
-
-// 403 Forbidden
-throw new ForbiddenException('Access denied');
-
-// 409 Conflict
-throw new ConflictException('Email already exists');
-```
-
-### 커스텀 비즈니스 예외
-
-```typescript
-// common/exception/services/business-exception.service.ts
-
-@Injectable()
-export class BusinessException {
-  // 이미 에러코드가 정의된 경우
-  throw(errorInfo: ErrorInfo): never {
-    throw new HttpException(
-      { code: errorInfo.code, message: errorInfo.message },
-      errorInfo.status,
-    );
-  }
-}
-
-// 사용
-this.businessException.throw(AUTH_ERRORS.INVALID_CREDENTIALS);
-```
-
----
-
-## Import 별칭 (Path Aliases)
-
-```typescript
-// tsconfig.json paths 기반
-
-// 공통 모듈
+// @common/* — 공통 모듈 (tsconfig paths)
 import { DatabaseService } from '@common/database';
 import { ApiDoc, ApiSuccessResponse } from '@common/swagger';
-import { BusinessException } from '@common/exception';
+import { BusinessExceptions } from '@common/exception';
+import { PaginationService } from '@common/pagination';
+import { EncryptionService } from '@common/encryption';
+import { TypedConfigService } from '@common/config';
+import { getUserToday, toScheduledTime } from '@common/date';
+import { Timezone, CurrentUser } from '@common/decorators';
 
-// 모듈 내부 (상대 경로)
-import { UserRepository } from '../repositories';
-import { AuthService } from './auth.service';
-
-// validators 패키지
+// @aido/validators — 공유 스키마 패키지
 import { LoginInput, LoginResponse } from '@aido/validators';
 import { LoginDto, LoginResponseDto } from '@aido/validators/nestjs';
+
+// 모듈 내부 — 상대 경로
+import { UserRepository } from '../repositories';
+import { AuthService } from './auth.service';
 ```
 
 ---
 
-## 개발 환경 설정
+## 7. 새 모듈 추가 체크리스트
+
+### 1. Prisma 스키마
+
+- [ ] `prisma/schema.prisma`에 모델 추가
+- [ ] `pnpm prisma:migrate` 실행
+
+### 2. @aido/validators
+
+- [ ] Request/Response 스키마 추가 ([validators.md](./validators.md) 참고)
+- [ ] NestJS DTO 추가
+- [ ] `pnpm build` 실행
+
+### 3. API 모듈
+
+- [ ] `repositories/{name}.repository.ts` 생성 (tx 패턴 적용)
+- [ ] `services/{name}.service.ts` 생성 (BusinessExceptions 사용)
+- [ ] `{name}.controller.ts` 생성 (Swagger 문서화)
+- [ ] `{name}.module.ts` 생성
+- [ ] `types/{name}.types.ts` 생성 (필요시)
+
+### 4. 등록
+
+- [ ] `app.module.ts`에 모듈 import 추가
+
+### 5. 에러 처리
+
+- [ ] 필요한 BusinessExceptions 팩토리 메서드 추가
+- [ ] 새 Unique Constraint가 있으면 constraintMap에 매핑 추가
+
+### 6. 테스트
+
+- [ ] Repository 단위 테스트
+- [ ] Service 단위 테스트
+- [ ] E2E 테스트
+
+---
+
+## 8. 개발 환경 설정
 
 ### Docker 실행 (필수)
 
@@ -697,56 +557,34 @@ docker ps
 pnpm docker:down
 ```
 
-> **주의**: Docker가 실행되지 않으면 데이터베이스 연결 실패로 API 서버가 시작되지 않습니다.
-
 ### 환경 변수 파일
 
-| 파일 | 용도 | 설명 |
-|------|------|------|
-| `.env` | **프로덕션** | 실제 배포 환경 설정, Git에 **절대 커밋 금지** |
-| `.env.development` | **개발** | 로컬 개발 환경 설정, Git에 커밋 가능 |
-| `.env.example` | **템플릿** | 필요한 환경 변수 목록, 값은 예시 |
-| `.env.test` | **테스트** | 테스트 환경 전용 설정 |
+| 파일 | 용도 | Git |
+|------|------|-----|
+| `.env` | 프로덕션 | 절대 커밋 금지 |
+| `.env.development` | 개발 | 커밋 가능 |
+| `.env.example` | 템플릿 | 커밋 가능 |
+| `.env.test` | 테스트 | 커밋 가능 |
 
 #### 환경 변수 로드 우선순위
 
-1. `NODE_ENV=development` → `.env.development` 로드
-2. `NODE_ENV=production` → `.env` 로드
-3. `NODE_ENV=test` → `.env.test` 로드
+1. `NODE_ENV=development` → `.env.development`
+2. `NODE_ENV=production` → `.env`
+3. `NODE_ENV=test` → `.env.test`
 
 #### 새 환경 변수 추가 시
 
-```bash
-# 1. .env.example에 변수 추가 (예시 값과 함께)
-DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
+1. `.env.example`에 변수 추가 (예시 값)
+2. `.env.development`에 실제 개발 값 추가
+3. `src/common/config/schemas/`에 Zod 검증 스키마 추가
 
-# 2. .env.development에 실제 개발 값 추가
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/aido_dev"
+### 필수 환경변수
 
-# 3. ConfigService 스키마에 검증 추가 (필요시)
-# src/common/config/schemas/에 스키마 정의
-```
-
-### 개발 서버 vs 프로덕션 서버
-
-| 구분 | 개발 서버 | 프로덕션 서버 |
-|------|----------|--------------|
-| 명령어 | `pnpm dev` | `pnpm start:prod` |
-| 환경 파일 | `.env.development` | `.env` |
-| 특징 | Hot reload, 상세 로그 | 최적화, 최소 로그 |
-| 데이터베이스 | 로컬 Docker PostgreSQL | 실제 DB 서버 |
-
-```bash
-# 개발 서버 시작 (apps/api에서)
-pnpm dev
-
-# 또는 프로젝트 루트에서 전체 개발 서버
-pnpm dev
-
-# 프로덕션 빌드 후 실행
-pnpm build
-pnpm start:prod
-```
+| 변수 | 설명 | 비고 |
+|------|------|------|
+| `TOKEN_ENCRYPTION_KEY` | AES-256-GCM 암호화 키 | 최소 32자 |
+| `JWT_SECRET` | JWT 서명 키 | |
+| `DATABASE_URL` | PostgreSQL 연결 문자열 | |
 
 ### 개발 시작 전 체크리스트
 
@@ -755,115 +593,3 @@ pnpm start:prod
 3. [ ] `.env.development` 파일 존재 확인
 4. [ ] `pnpm prisma:migrate`로 DB 마이그레이션 적용
 5. [ ] `pnpm dev`로 개발 서버 시작
-
----
-
-## 새 모듈 추가 체크리스트
-
-### 1. Prisma 스키마
-
-- [ ] `prisma/schema.prisma`에 모델 추가
-- [ ] `pnpm prisma:migrate` 실행
-
-### 2. @aido/validators
-
-- [ ] Request/Response 스키마 추가 ([validators.md](./validators.md) 참고)
-- [ ] NestJS DTO 추가
-- [ ] `pnpm build` 실행
-
-### 3. API 모듈
-
-- [ ] `repositories/{name}.repository.ts` 생성
-- [ ] `services/{name}.service.ts` 생성
-- [ ] `{name}.controller.ts` 생성
-- [ ] `{name}.module.ts` 생성
-- [ ] `types/{name}.types.ts` 생성 (필요시)
-
-### 4. 등록
-
-- [ ] `app.module.ts`에 모듈 import 추가
-
-### 5. 테스트
-
-- [ ] Repository 단위 테스트
-- [ ] Service 단위 테스트
-- [ ] E2E 테스트
-
----
-
-## 타임존 처리 규칙
-
-### 개요
-
-서버는 **모든 날짜를 UTC**로 저장하며, 클라이언트가 `X-Timezone` 헤더로 사용자의 타임존을 전달한다.
-
-| 항목 | 규칙 |
-|------|------|
-| 저장 | UTC (PostgreSQL TIMESTAMPTZ) |
-| 전송 | ISO 8601 UTC (`2026-02-06T10:30:00.000Z`) |
-| 날짜 경계 판단 | 클라이언트 `X-Timezone` 헤더 기준 |
-| 기본값 | `X-Timezone` 미전송 시 `UTC` |
-
-### X-Timezone 헤더
-
-```
-X-Timezone: Asia/Seoul
-```
-
-- IANA 타임존 식별자 사용 (예: `Asia/Seoul`, `America/New_York`)
-- 날짜 경계 판단이 필요한 API에서만 사용
-- 헤더가 없으면 `UTC`로 fallback
-
-### @Timezone 데코레이터
-
-```typescript
-import { Timezone } from '@/common/decorators';
-
-@Post()
-async create(
-  @Body() dto: CreateTodoDto,
-  @Timezone() timezone: string,  // X-Timezone 헤더 값 추출
-) {
-  return this.service.create(dto, timezone);
-}
-```
-
-### Swagger 문서화
-
-`@Timezone()`을 사용하는 메서드에는 반드시 `@ApiHeader`를 추가:
-
-```typescript
-import { ApiHeader } from '@nestjs/swagger';
-
-@ApiHeader({
-  name: 'X-Timezone',
-  required: false,
-  description: '사용자 타임존 (IANA, 기본값: UTC)',
-  example: 'Asia/Seoul',
-})
-@Post()
-async create(@Timezone() timezone: string) { ... }
-```
-
-### 타임존이 필요한 API
-
-| 모듈 | 엔드포인트 | 용도 |
-|------|-----------|------|
-| Todo | `POST /todos`, `PATCH /todos/:id`, `PATCH /todos/:id/complete`, `PATCH /todos/:id/schedule` | 날짜 경계 판단, 스케줄 시간 변환 |
-| Cheer | `POST /cheers`, `GET /cheers/limit` | 일일 제한 리셋 기준 |
-| Nudge | `POST /nudges`, `GET /nudges/limit` | 일일 제한 리셋 기준 |
-
-### 날짜 유틸리티 (`@common/date`)
-
-```typescript
-import { getUserToday, toScheduledTime, startOfDayInTimezone } from '@common/date';
-
-// 사용자의 "오늘" 시작 시각 (UTC)
-const today = getUserToday(timezone);
-
-// 사용자의 로컬 시간 → UTC 변환
-const scheduledAt = toScheduledTime('2026-02-06', '14:00', timezone);
-
-// 특정 시점의 타임존 기준 자정 (UTC)
-const dayStart = startOfDayInTimezone(date, timezone);
-```
