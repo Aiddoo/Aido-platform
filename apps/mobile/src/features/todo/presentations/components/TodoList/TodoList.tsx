@@ -4,10 +4,11 @@ import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
@@ -25,10 +26,11 @@ export function TodoList({ date }: TodoListProps) {
       {categoriesData.categories.map((category) => (
         <Box key={category.id} gap={8}>
           <CategoryHeader date={date} category={category} />
-
-          <Suspense fallback={<CategorySectionSkeleton />}>
-            <CategoryTodoList date={date} categoryId={category.id} />
-          </Suspense>
+          <QueryErrorBoundary>
+            <Suspense fallback={<CategoryTodoList.Loading />}>
+              <CategoryTodoList date={date} categoryId={category.id} />
+            </Suspense>
+          </QueryErrorBoundary>
         </Box>
       ))}
     </Box>
@@ -67,26 +69,6 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       </Text>
       <PlusIcon width={14} height={14} colorClassName="text-gray-6" />
     </PressableFeedback>
-  );
-}
-
-function CategorySectionSkeleton() {
-  return (
-    <VStack gap={8}>
-      <HStack gap={8} align="center" className="py-2">
-        <Skeleton className="size-2.5 rounded-full" />
-        <Skeleton className="h-5 w-20 rounded" />
-      </HStack>
-      {times(2, (i) => (
-        <HStack key={`cat-skeleton-${i}`} gap={12} align="center" className="py-3">
-          <Skeleton className="size-5 rounded" />
-          <VStack flex={1} gap={2}>
-            <Skeleton className="h-5 w-3/4 rounded" />
-            <Skeleton className="h-4 w-16 rounded" />
-          </VStack>
-        </HStack>
-      ))}
-    </VStack>
   );
 }
 
