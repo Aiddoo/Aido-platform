@@ -1,6 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
-import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 export const logoutMutationOptions = () => {
@@ -24,10 +23,12 @@ export const logoutMutationOptions = () => {
       }
 
       const result = await authService.logout();
-      return unwrap(result);
+      if (!result.ok) {
+        console.log('[Logout] API failed:', result.error);
+      }
     },
     // API 성공/실패 관계없이 항상 로그아웃 처리
-    onSuccess: () => {
+    onSettled: () => {
       setStatus('unauthenticated');
       queryClient.clear();
     },
