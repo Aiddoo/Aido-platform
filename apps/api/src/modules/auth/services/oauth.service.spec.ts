@@ -1749,6 +1749,362 @@ describe("OAuthService", () => {
 		});
 	});
 
+	// ============================================
+	// handleKakaoWebCallbackWithExchangeCode (OAuth state 검증)
+	// ============================================
+
+	describe("handleKakaoWebCallbackWithExchangeCode", () => {
+		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
+			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+
+				// When & Then
+				await expect(
+					service.handleKakaoWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+			});
+
+			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+				global.fetch = jest.fn();
+
+				// When & Then
+				await expect(
+					service.handleKakaoWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+
+				// fetch (토큰 교환)가 호출되지 않아야 한다
+				expect(global.fetch).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("유효한 state로 정상 플로우", () => {
+			it("유효한 state로 정상 플로우가 동작해야 한다", async () => {
+				// Given
+				const mockOAuthState = {
+					id: 1,
+					state: "valid-state",
+					provider: "KAKAO" as const,
+					redirectUri: "aido://auth/callback",
+					codeVerifier: null,
+					exchangeCode: null,
+					accessToken: null,
+					refreshToken: null,
+					userId: null,
+					userName: null,
+					profileImage: null,
+					ipAddress: null,
+					userAgent: null,
+					exchangedAt: null,
+					expiresAt: new Date(Date.now() + 600000),
+					createdAt: new Date(),
+				};
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@kakao.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asKakao("kakao-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...mockUser,
+					profile: {
+						name: "카카오사용자",
+						profileImage: "https://kakao.com/profile.jpg",
+					},
+				} as never);
+
+				const mockKakaoProfile: OAuthProfile = {
+					id: "kakao-user-123",
+					email: "test@kakao.com",
+					emailVerified: true,
+					name: "카카오사용자",
+					picture: "https://kakao.com/profile.jpg",
+				};
+				tokenVerifier.verifyKakaoToken.mockResolvedValue(mockKakaoProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
+
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "kakao-access-token",
+							token_type: "bearer",
+							refresh_token: "kakao-refresh-token",
+							expires_in: 21599,
+						}),
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"test-exchange-code",
+				);
+				oauthStateRepo.saveExchangeData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleKakaoWebCallbackWithExchangeCode(
+					"test-code",
+					"valid-state",
+				);
+
+				// Then
+				expect(result.exchangeCode).toBe("test-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("user-123");
+			});
+		});
+	});
+
+	// ============================================
+	// handleGoogleWebCallbackWithExchangeCode (OAuth state 검증)
+	// ============================================
+
+	describe("handleGoogleWebCallbackWithExchangeCode", () => {
+		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
+			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+
+				// When & Then
+				await expect(
+					service.handleGoogleWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+			});
+
+			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+				global.fetch = jest.fn();
+
+				// When & Then
+				await expect(
+					service.handleGoogleWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+
+				// fetch (토큰 교환)가 호출되지 않아야 한다
+				expect(global.fetch).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("유효한 state로 정상 플로우", () => {
+			it("유효한 state로 정상 플로우가 동작해야 한다", async () => {
+				// Given
+				const mockOAuthState = {
+					id: 2,
+					state: "valid-state",
+					provider: "GOOGLE" as const,
+					redirectUri: "aido://auth/callback",
+					codeVerifier: null,
+					exchangeCode: null,
+					accessToken: null,
+					refreshToken: null,
+					userId: null,
+					userName: null,
+					profileImage: null,
+					ipAddress: null,
+					userAgent: null,
+					exchangedAt: null,
+					expiresAt: new Date(Date.now() + 600000),
+					createdAt: new Date(),
+				};
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@gmail.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asGoogle("google-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...mockUser,
+					profile: {
+						name: "구글사용자",
+						profileImage: "https://google.com/profile.jpg",
+					},
+				} as never);
+
+				const mockGoogleProfile: OAuthProfile = {
+					id: "google-user-123",
+					email: "test@gmail.com",
+					emailVerified: true,
+					name: "구글사용자",
+					picture: "https://google.com/profile.jpg",
+				};
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(mockGoogleProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
+
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "google-access-token",
+							id_token: "google-id-token",
+							token_type: "bearer",
+							expires_in: 3600,
+						}),
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"test-exchange-code",
+				);
+				oauthStateRepo.saveExchangeData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleGoogleWebCallbackWithExchangeCode(
+					"test-code",
+					"valid-state",
+				);
+
+				// Then
+				expect(result.exchangeCode).toBe("test-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("user-123");
+			});
+		});
+	});
+
+	// ============================================
+	// handleNaverWebCallbackWithExchangeCode (OAuth state 검증)
+	// ============================================
+
+	describe("handleNaverWebCallbackWithExchangeCode", () => {
+		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
+			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+
+				// When & Then
+				await expect(
+					service.handleNaverWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+			});
+
+			it("state 검증 실패 시 토큰 교환을 수행하지 않아야 한다", async () => {
+				// Given
+				oauthStateRepo.findByState.mockResolvedValue(null);
+				global.fetch = jest.fn();
+
+				// When & Then
+				await expect(
+					service.handleNaverWebCallbackWithExchangeCode(
+						"test-code",
+						"invalid-state",
+					),
+				).rejects.toThrow(BusinessException);
+
+				// fetch (토큰 교환)가 호출되지 않아야 한다
+				expect(global.fetch).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("유효한 state로 정상 플로우", () => {
+			it("유효한 state로 정상 플로우가 동작해야 한다", async () => {
+				// Given
+				const mockOAuthState = {
+					id: 3,
+					state: "valid-state",
+					provider: "NAVER" as const,
+					redirectUri: "aido://auth/callback",
+					codeVerifier: null,
+					exchangeCode: null,
+					accessToken: null,
+					refreshToken: null,
+					userId: null,
+					userName: null,
+					profileImage: null,
+					ipAddress: null,
+					userAgent: null,
+					exchangedAt: null,
+					expiresAt: new Date(Date.now() + 600000),
+					createdAt: new Date(),
+				};
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@naver.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asNaver("naver-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...mockUser,
+					profile: {
+						name: "네이버사용자",
+						profileImage: "https://naver.com/profile.jpg",
+					},
+				} as never);
+
+				const mockNaverProfile: OAuthProfile = {
+					id: "naver-user-123",
+					email: "test@naver.com",
+					emailVerified: true,
+					name: "네이버사용자",
+					picture: "https://naver.com/profile.jpg",
+				};
+				tokenVerifier.verifyNaverToken.mockResolvedValue(mockNaverProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
+
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "naver-access-token",
+							token_type: "bearer",
+							expires_in: 3600,
+						}),
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"test-exchange-code",
+				);
+				oauthStateRepo.saveExchangeData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleNaverWebCallbackWithExchangeCode(
+					"test-code",
+					"valid-state",
+				);
+
+				// Then
+				expect(result.exchangeCode).toBe("test-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("user-123");
+			});
+		});
+	});
+
 	describe("기본 카테고리 생성", () => {
 		describe("신규 소셜 로그인 사용자", () => {
 			const newUserTestCases = [

@@ -2,6 +2,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
+import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
 
 import { AccountRepository } from "./account.repository";
@@ -9,6 +10,7 @@ import { AccountRepository } from "./account.repository";
 describe("AccountRepository", () => {
 	let repository: AccountRepository;
 	let db: Mocked<DatabaseService>;
+	let encryptionService: Mocked<EncryptionService>;
 
 	// Builder로 기본 테스트 계정 생성
 	const mockCredentialAccount = AccountBuilder.create("user-123")
@@ -39,6 +41,12 @@ describe("AccountRepository", () => {
 
 		repository = unit;
 		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
+		encryptionService = unitRef.get(
+			EncryptionService,
+		) as unknown as Mocked<EncryptionService>;
+
+		// encrypt를 입력값 그대로 반환하도록 설정
+		encryptionService.encrypt.mockImplementation((value: string) => value);
 
 		// ID 카운터 리셋
 		AccountBuilder.resetIdCounter();

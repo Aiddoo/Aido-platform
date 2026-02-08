@@ -1,4 +1,5 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 
 import { DatabaseService } from "@/database";
 
@@ -6,34 +7,15 @@ import { DailyCompletionRepository } from "./daily-completion.repository";
 
 describe("DailyCompletionRepository", () => {
 	let repository: DailyCompletionRepository;
-	let mockDatabase: {
-		todo: {
-			groupBy: jest.Mock;
-			count: jest.Mock;
-		};
-	};
+	let db: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
-		mockDatabase = {
-			todo: {
-				groupBy: jest.fn(),
-				count: jest.fn(),
-			},
-		};
-
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				DailyCompletionRepository,
-				{
-					provide: DatabaseService,
-					useValue: mockDatabase,
-				},
-			],
-		}).compile();
-
-		repository = module.get<DailyCompletionRepository>(
+		const { unit, unitRef } = await TestBed.solitary(
 			DailyCompletionRepository,
-		);
+		).compile();
+
+		repository = unit;
+		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
 	});
 
 	afterEach(() => {
@@ -56,7 +38,7 @@ describe("DailyCompletionRepository", () => {
 				{ startDate: new Date("2026-01-16"), _count: { id: 2 } },
 			];
 
-			mockDatabase.todo.groupBy
+			(db.todo.groupBy as jest.Mock)
 				.mockResolvedValueOnce(totalAggregations)
 				.mockResolvedValueOnce(completedAggregations);
 
@@ -83,7 +65,7 @@ describe("DailyCompletionRepository", () => {
 
 		it("전체 Todo와 완료 Todo를 병렬로 조회한다", async () => {
 			// Given
-			mockDatabase.todo.groupBy.mockResolvedValue([]);
+			(db.todo.groupBy as jest.Mock).mockResolvedValue([]);
 
 			// When
 			await repository.aggregateTodosByDateRange({
@@ -93,10 +75,10 @@ describe("DailyCompletionRepository", () => {
 			});
 
 			// Then
-			expect(mockDatabase.todo.groupBy).toHaveBeenCalledTimes(2);
+			expect(db.todo.groupBy).toHaveBeenCalledTimes(2);
 
 			// 첫 번째 호출: 전체 Todo
-			expect(mockDatabase.todo.groupBy).toHaveBeenNthCalledWith(1, {
+			expect(db.todo.groupBy).toHaveBeenNthCalledWith(1, {
 				by: ["startDate"],
 				where: {
 					userId,
@@ -106,7 +88,7 @@ describe("DailyCompletionRepository", () => {
 			});
 
 			// 두 번째 호출: 완료 Todo
-			expect(mockDatabase.todo.groupBy).toHaveBeenNthCalledWith(2, {
+			expect(db.todo.groupBy).toHaveBeenNthCalledWith(2, {
 				by: ["startDate"],
 				where: {
 					userId,
@@ -127,7 +109,7 @@ describe("DailyCompletionRepository", () => {
 				_count: { id: number };
 			}[] = [];
 
-			mockDatabase.todo.groupBy
+			(db.todo.groupBy as jest.Mock)
 				.mockResolvedValueOnce(totalAggregations)
 				.mockResolvedValueOnce(completedAggregations);
 
@@ -149,7 +131,7 @@ describe("DailyCompletionRepository", () => {
 
 		it("Todo가 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			mockDatabase.todo.groupBy.mockResolvedValue([]);
+			(db.todo.groupBy as jest.Mock).mockResolvedValue([]);
 
 			// When
 			const result = await repository.aggregateTodosByDateRange({
@@ -169,7 +151,7 @@ describe("DailyCompletionRepository", () => {
 
 		it("특정 날짜의 Todo 집계 결과를 반환한다", async () => {
 			// Given
-			mockDatabase.todo.count
+			(db.todo.count as jest.Mock)
 				.mockResolvedValueOnce(3) // totalCount
 				.mockResolvedValueOnce(2); // completedCount
 
@@ -186,18 +168,18 @@ describe("DailyCompletionRepository", () => {
 
 		it("전체 개수와 완료 개수를 병렬로 조회한다", async () => {
 			// Given
-			mockDatabase.todo.count.mockResolvedValue(0);
+			(db.todo.count as jest.Mock).mockResolvedValue(0);
 
 			// When
 			await repository.findByDate(userId, date);
 
 			// Then
-			expect(mockDatabase.todo.count).toHaveBeenCalledTimes(2);
+			expect(db.todo.count).toHaveBeenCalledTimes(2);
 		});
 
 		it("해당 날짜의 Todo가 없으면 null을 반환한다", async () => {
 			// Given
-			mockDatabase.todo.count.mockResolvedValue(0);
+			(db.todo.count as jest.Mock).mockResolvedValue(0);
 
 			// When
 			const result = await repository.findByDate(userId, date);
@@ -210,13 +192,13 @@ describe("DailyCompletionRepository", () => {
 			// Given
 			const expectedStartOfDay = new Date("2026-01-15T00:00:00.000Z");
 			const expectedEndOfDay = new Date("2026-01-16T00:00:00.000Z");
-			mockDatabase.todo.count.mockResolvedValue(1);
+			(db.todo.count as jest.Mock).mockResolvedValue(1);
 
 			// When
 			await repository.findByDate(userId, date);
 
 			// Then
-			expect(mockDatabase.todo.count).toHaveBeenCalledWith({
+			expect(db.todo.count).toHaveBeenCalledWith({
 				where: {
 					userId,
 					startDate: {

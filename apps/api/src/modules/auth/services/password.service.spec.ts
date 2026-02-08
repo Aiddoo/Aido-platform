@@ -1,15 +1,13 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import { TestBed } from "@suites/unit";
 import { PasswordService } from "./password.service";
 
 describe("PasswordService", () => {
 	let service: PasswordService;
 
 	beforeEach(async () => {
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [PasswordService],
-		}).compile();
+		const { unit } = await TestBed.solitary(PasswordService).compile();
 
-		service = module.get<PasswordService>(PasswordService);
+		service = unit;
 	});
 
 	describe("hash", () => {
