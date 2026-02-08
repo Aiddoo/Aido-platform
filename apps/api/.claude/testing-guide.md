@@ -441,11 +441,13 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"   # 특정 테스트
 
 | 문서 | 내용 |
 |------|------|
+| [CLAUDE.md](../CLAUDE.md) | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션) |
 | [unit-test.md](./unit-test.md) | 단위 테스트 상세 가이드 |
 | [integration-test.md](./integration-test.md) | 통합 테스트 상세 가이드 |
 | [e2e-test.md](./e2e-test.md) | E2E 테스트 상세 가이드 |
 | [prisma.md](./prisma.md) | Prisma 7 가이드 |
 | [api-conventions.md](./api-conventions.md) | API 코드 규칙 |
+| [architecture.md](./architecture.md) | 전체 아키텍처, 에러 처리, 이벤트, 보안 |
 
 ### 6.3 외부 참조
 

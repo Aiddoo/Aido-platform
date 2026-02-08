@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
 import type {
 	Account,
@@ -9,7 +10,10 @@ import type {
 
 @Injectable()
 export class AccountRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly database: DatabaseService,
+		private readonly encryptionService: EncryptionService,
+	) {}
 
 	async findByUserIdAndProvider(
 		userId: string,
@@ -81,8 +85,12 @@ export class AccountRepository {
 				userId: data.userId,
 				provider: data.provider,
 				providerAccountId: data.providerAccountId,
-				accessToken: data.accessToken,
-				refreshToken: data.refreshToken,
+				accessToken: data.accessToken
+					? this.encryptionService.encrypt(data.accessToken)
+					: undefined,
+				refreshToken: data.refreshToken
+					? this.encryptionService.encrypt(data.refreshToken)
+					: undefined,
 				accessTokenExpiresAt: data.accessTokenExpiresAt,
 				scope: data.scope,
 			},
@@ -105,8 +113,10 @@ export class AccountRepository {
 				userId_provider: { userId, provider },
 			},
 			data: {
-				accessToken: tokens.accessToken,
-				...(tokens.refreshToken && { refreshToken: tokens.refreshToken }),
+				accessToken: this.encryptionService.encrypt(tokens.accessToken),
+				...(tokens.refreshToken && {
+					refreshToken: this.encryptionService.encrypt(tokens.refreshToken),
+				}),
 				...(tokens.accessTokenExpiresAt && {
 					accessTokenExpiresAt: tokens.accessTokenExpiresAt,
 				}),

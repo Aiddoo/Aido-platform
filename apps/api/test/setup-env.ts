@@ -21,6 +21,17 @@ process.env.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 process.env.EMAIL_FROM = process.env.EMAIL_FROM || "noreply@test.example.com";
 process.env.EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "Aido Test";
 
+// Token Encryption
+process.env.TOKEN_ENCRYPTION_KEY =
+	process.env.TOKEN_ENCRYPTION_KEY ||
+	"test-token-encryption-key-for-e2e-min-32-chars";
+
+// Cache 환경변수
+process.env.CACHE_TYPE = process.env.CACHE_TYPE || "memory";
+
+// Logger 환경변수
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || "silent";
+
 // OAuth 환경변수 (테스트용 가짜 값 - 실제 검증은 mock 처리)
 process.env.GOOGLE_CLIENT_ID =
 	process.env.GOOGLE_CLIENT_ID ||

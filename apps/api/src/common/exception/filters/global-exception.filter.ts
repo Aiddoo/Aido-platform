@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
+import { TypedConfigService } from "@/common/config/services/config.service";
 import { Prisma } from "@/generated/prisma/client";
 import type { ErrorResponse } from "../interfaces/error.interface";
 import {
@@ -21,7 +22,10 @@ import {
  */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-	constructor(private readonly logger: PinoLogger) {
+	constructor(
+		private readonly logger: PinoLogger,
+		private readonly configService: TypedConfigService,
+	) {
 		this.logger.setContext(GlobalExceptionFilter.name);
 	}
 
@@ -53,7 +57,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 						message: Array.isArray(exceptionResponse.message)
 							? exceptionResponse.message.join(", ")
 							: String(exceptionResponse.message),
-						details: exceptionResponse,
+						...(this.configService.isDevelopment && {
+							details: exceptionResponse,
+						}),
 					},
 					timestamp: Date.now(),
 				};
@@ -87,7 +93,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 				error: {
 					code: ErrorCode.SYS_0001,
 					message: Errors[ErrorCode.SYS_0001].message,
-					details: errorMessage,
+					...(this.configService.isDevelopment && {
+						details: errorMessage,
+					}),
 				},
 				timestamp: Date.now(),
 			};

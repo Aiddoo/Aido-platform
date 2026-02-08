@@ -1,6 +1,5 @@
 import { ExecutionContext } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { Test, type TestingModule } from "@nestjs/testing";
+import { TestBed } from "@suites/unit";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
@@ -8,7 +7,6 @@ import { AdminGuard } from "./admin.guard";
 
 describe("AdminGuard", () => {
 	let guard: AdminGuard;
-	let _reflector: Reflector;
 
 	// ==========================================================================
 	// Mock Factory Functions
@@ -34,12 +32,9 @@ describe("AdminGuard", () => {
 	// ==========================================================================
 
 	beforeEach(async () => {
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [AdminGuard, Reflector],
-		}).compile();
+		const { unit } = await TestBed.solitary(AdminGuard).compile();
 
-		guard = module.get<AdminGuard>(AdminGuard);
-		_reflector = module.get<Reflector>(Reflector);
+		guard = unit;
 	});
 
 	afterEach(() => {

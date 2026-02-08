@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import {
 	AppConfigModule,
 	CacheModule,
+	EncryptionModule,
 	ExceptionModule,
 	LoggerModule,
 	PaginationModule,
@@ -35,6 +36,7 @@ import { AppService } from "./app.service";
 
 		// 2. Infrastructure
 		DatabaseModule,
+		EncryptionModule,
 		CacheModule.forRoot(),
 		EventEmitterModule.forRoot({
 			// 와일드카드 패턴 지원 (e.g., follow.*)

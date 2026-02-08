@@ -38,6 +38,7 @@ describe("EmailService", () => {
 				from: "noreply@test.com",
 				fromName: "Test App",
 			},
+			nodeEnv: "test",
 		};
 
 		const module: TestingModule = await Test.createTestingModule({
@@ -358,6 +359,7 @@ describe("EmailService", () => {
 					from: "noreply@test.com",
 					fromName: "Test App",
 				},
+				nodeEnv: "test",
 			};
 
 			const module: TestingModule = await Test.createTestingModule({
