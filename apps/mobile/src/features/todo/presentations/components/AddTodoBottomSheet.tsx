@@ -1,36 +1,41 @@
 import { createTodoSchema } from '@aido/validators';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { PlusIcon } from '@src/shared/ui/Icon';
+import { BottomSheetInput } from '@src/shared/ui/Input';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, Tabs } from 'heroui-native';
-import { useState } from 'react';
+import { Tabs } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
-import { Keyboard, View } from 'react-native';
+import { Keyboard } from 'react-native';
 import { createTodoMutationOptions } from '../queries/create-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 
 interface AddTodoBottomSheetProps {
   selectedDate: Date;
+  categoryId: number;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export const AddTodoBottomSheet = ({ selectedDate }: AddTodoBottomSheetProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const { control, handleSubmit, reset, watch, setValue } = useForm<AddTodoFormInput>({
+export const AddTodoBottomSheet = ({
+  selectedDate,
+  categoryId,
+  isOpen,
+  onOpenChange,
+}: AddTodoBottomSheetProps) => {
+  const { control, handleSubmit, watch, setValue } = useForm<AddTodoFormInput>({
     resolver: zodResolver(addTodoFormSchema),
     defaultValues: {
       title: '',
       scheduledTime: undefined,
       isAllDay: true,
-      categoryId: 2,
+      categoryId,
       visibility: 'PUBLIC',
     },
   });
@@ -46,137 +51,106 @@ export const AddTodoBottomSheet = ({ selectedDate }: AddTodoBottomSheetProps) =>
 
     createMutation.mutate(input, {
       onSuccess: () => {
-        reset();
-        setIsOpen(false);
-        toast.success('할 일이 추가되었어요!');
+        onOpenChange(false);
+        toast.success('할 일을 추가했어요!');
       },
       onError: () => {
-        toast.error(undefined, { fallback: '할 일 추가에 실패했어요' });
+        toast.error(undefined, { fallback: '잠시 후 다시 추가해 보세요' });
       },
     });
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={setIsOpen}>
-      <BottomSheet.Trigger className="absolute bottom-16 right-6 size-14 items-center justify-center rounded-full bg-main shadow-sm">
-        <PlusIcon width={24} height={24} color="white" />
-      </BottomSheet.Trigger>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content
-          className="px-1"
-          enableDynamicSizing
-          keyboardBehavior="interactive"
-          keyboardBlurBehavior="restore"
-          android_keyboardInputMode="adjustResize"
-        >
-          <BottomSheet.Title>
-            <Text size="b3" weight="medium">
-              할 일 추가
-            </Text>
-          </BottomSheet.Title>
+    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <VStack gap={16}>
+        <VStack gap={12} pb={16}>
+          {/* 제목 입력 */}
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <BottomSheetInput
+                placeholder="할 일을 입력해 주세요"
+                value={value}
+                onChangeText={onChange}
+                maxLength={200}
+                isInvalid={!!error}
+                errorMessage={error?.message}
+              />
+            )}
+          />
 
-          <Spacing size={12} />
+          {/* 시간 입력 */}
+          <Controller
+            control={control}
+            name="scheduledTime"
+            render={({ field: { onChange, value } }) => (
+              <BottomSheetInput
+                placeholder="시간 (선택, 예: 09:00)"
+                value={value ?? ''}
+                onChangeText={(text) => {
+                  onChange(text || undefined);
+                  setValue('isAllDay', !text);
+                }}
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+              />
+            )}
+          />
 
-          <VStack gap={12} pb={16}>
-            {/* 제목 입력 */}
-            <Controller
-              control={control}
-              name="title"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <VStack gap={4}>
-                  <View
-                    className={`rounded-xl border bg-gray-1 px-3 py-2 ${error ? 'border-red-500' : 'border-gray-3'}`}
-                  >
-                    <BottomSheetTextInput
-                      placeholder="할 일을 입력하세요"
-                      value={value}
-                      onChangeText={onChange}
-                      style={{ fontSize: 16 }}
-                      maxLength={200}
-                    />
-                  </View>
-                  {error && (
-                    <Text size="e1" className="text-red-500 px-1">
-                      {error.message}
-                    </Text>
-                  )}
-                </VStack>
-              )}
-            />
+          {/* 공개 여부 */}
+          <Controller
+            control={control}
+            name="visibility"
+            render={({ field: { onChange } }) => (
+              <HStack align="center" justify="between" className="py-2">
+                <Text size="b3" shade={7}>
+                  공개할까요?
+                </Text>
+                <Tabs value={visibility ?? 'PUBLIC'} onValueChange={(tab) => onChange(tab)}>
+                  <Tabs.List className="bg-gray-2 rounded-full p-1">
+                    <Tabs.Indicator className="bg-gray-9 rounded-full" />
+                    <Tabs.Trigger value="PUBLIC" className="px-4 py-2">
+                      {({ isSelected }) => (
+                        <Text
+                          size="b4"
+                          weight="medium"
+                          tone={isSelected ? 'white' : undefined}
+                          shade={isSelected ? undefined : 6}
+                        >
+                          공개
+                        </Text>
+                      )}
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="PRIVATE" className="px-4 py-2">
+                      {({ isSelected }) => (
+                        <Text
+                          size="b4"
+                          weight="medium"
+                          tone={isSelected ? 'white' : undefined}
+                          shade={isSelected ? undefined : 6}
+                        >
+                          비공개
+                        </Text>
+                      )}
+                    </Tabs.Trigger>
+                  </Tabs.List>
+                </Tabs>
+              </HStack>
+            )}
+          />
 
-            {/* 시간 입력 */}
-            <Controller
-              control={control}
-              name="scheduledTime"
-              render={({ field: { onChange, value } }) => (
-                <View className="rounded-xl border border-gray-3 bg-gray-1 px-3 py-2">
-                  <BottomSheetTextInput
-                    placeholder="시간 (선택, 예: 09:00)"
-                    value={value ?? ''}
-                    onChangeText={(text) => {
-                      onChange(text || undefined);
-                      setValue('isAllDay', !text);
-                    }}
-                    style={{ fontSize: 16 }}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={5}
-                  />
-                </View>
-              )}
-            />
+          <Spacing size={4} />
 
-            {/* 공개 여부 */}
-            <Controller
-              control={control}
-              name="visibility"
-              render={({ field: { onChange } }) => (
-                <HStack align="center" justify="between" className="py-2">
-                  <Text size="b3" shade={7}>
-                    공개 여부
-                  </Text>
-                  <Tabs value={visibility ?? 'PUBLIC'} onValueChange={(tab) => onChange(tab)}>
-                    <Tabs.List className="bg-gray-2 rounded-full p-1">
-                      <Tabs.Indicator className="bg-gray-9 rounded-full" />
-                      <Tabs.Trigger value="PUBLIC" className="px-4 py-2">
-                        {({ isSelected }) => (
-                          <Text
-                            size="b4"
-                            weight="medium"
-                            tone={isSelected ? 'white' : undefined}
-                            shade={isSelected ? undefined : 6}
-                          >
-                            공개
-                          </Text>
-                        )}
-                      </Tabs.Trigger>
-                      <Tabs.Trigger value="PRIVATE" className="px-4 py-2">
-                        {({ isSelected }) => (
-                          <Text
-                            size="b4"
-                            weight="medium"
-                            tone={isSelected ? 'white' : undefined}
-                            shade={isSelected ? undefined : 6}
-                          >
-                            비공개
-                          </Text>
-                        )}
-                      </Tabs.Trigger>
-                    </Tabs.List>
-                  </Tabs>
-                </HStack>
-              )}
-            />
-
-            <Spacing size={4} />
-
-            {/* 추가 버튼 */}
-            <Button onPress={handleSubmit(onSubmit)} isLoading={createMutation.isPending}>
-              추가하기
-            </Button>
-          </VStack>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
+          <Button
+            size="large"
+            onPress={handleSubmit(onSubmit)}
+            isLoading={createMutation.isPending}
+          >
+            추가하기
+          </Button>
+        </VStack>
+      </VStack>
+    </KeyboardBottomSheet>
   );
 };
