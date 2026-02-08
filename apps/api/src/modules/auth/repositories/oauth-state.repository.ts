@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 
 import { addMinutes, now } from "@/common/date/utils";
+import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
 
@@ -15,7 +16,10 @@ import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
  */
 @Injectable()
 export class OAuthStateRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly database: DatabaseService,
+		private readonly encryptionService: EncryptionService,
+	) {}
 
 	/**
 	 * OAuth State 생성 (인증 시작 시)
@@ -87,8 +91,8 @@ export class OAuthStateRepository {
 			where: { id },
 			data: {
 				exchangeCode: data.exchangeCode,
-				accessToken: data.accessToken,
-				refreshToken: data.refreshToken,
+				accessToken: this.encryptionService.encrypt(data.accessToken),
+				refreshToken: this.encryptionService.encrypt(data.refreshToken),
 				userId: data.userId,
 				userName: data.userName,
 				profileImage: data.profileImage,
