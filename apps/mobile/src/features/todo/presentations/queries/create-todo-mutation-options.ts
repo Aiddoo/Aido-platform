@@ -1,5 +1,6 @@
 import type { CreateTodoInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -16,6 +17,7 @@ export const createTodoMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
     },
   });
 };

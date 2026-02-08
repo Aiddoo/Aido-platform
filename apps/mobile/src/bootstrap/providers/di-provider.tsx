@@ -9,7 +9,9 @@ import { DeviceIdService } from '@src/features/notification/services/device-id.s
 import { NotificationService } from '@src/features/notification/services/notification.service';
 import { PushTokenService } from '@src/features/notification/services/push-token.service';
 import { TodoRepositoryImpl } from '@src/features/todo/repositories/todo.repository.impl';
+import { TodoCategoryRepositoryImpl } from '@src/features/todo/repositories/todo-category.repository.impl';
 import { TodoService } from '@src/features/todo/services/todo.service';
+import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -26,6 +28,7 @@ export interface DIContainer {
   authService: AuthService;
   friendService: FriendService;
   todoService: TodoService;
+  todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
 }
 
@@ -53,6 +56,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const todoRepository = new TodoRepositoryImpl(authHttpClient);
     const todoService = new TodoService(todoRepository);
 
+    // Todo Category
+    const todoCategoryRepository = new TodoCategoryRepositoryImpl(authHttpClient);
+    const todoCategoryService = new TodoCategoryService(todoCategoryRepository);
+
     // Notification
     const deviceIdRepository = new DeviceIdRepositoryImpl();
     const notificationRepository = new NotificationRepositoryImpl(authHttpClient);
@@ -69,6 +76,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       authService,
       friendService,
       todoService,
+      todoCategoryService,
       notificationService,
     };
   });
@@ -93,4 +101,5 @@ export const useStorage = () => useDI().storage;
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
 export const useTodoService = () => useDI().todoService;
+export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
