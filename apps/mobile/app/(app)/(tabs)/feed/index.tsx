@@ -6,7 +6,7 @@ import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { Suspense, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { IOScrollView } from 'react-native-intersection-observer';
 
 const TODAY = new Date();
 
@@ -23,7 +23,7 @@ const FeedScreen = () => {
         </QueryErrorBoundary>
       </VStack>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }}>
+      <IOScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }}>
         <Calendar value={selectedDate} onChange={setSelectedDate} />
 
         <Spacing size={8} />
@@ -33,7 +33,7 @@ const FeedScreen = () => {
             <TodoList date={selectedDate} />
           </Suspense>
         </QueryErrorBoundary>
-      </ScrollView>
+      </IOScrollView>
     </StyledSafeAreaView>
   );
 };
