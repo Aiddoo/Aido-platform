@@ -70,6 +70,7 @@ export abstract class TodoMapper {
 				id: entity.category.id,
 				name: entity.category.name,
 				color: entity.category.color,
+				sortOrder: entity.category.sortOrder,
 			},
 			createdAt: toISOString(entity.createdAt),
 			updatedAt: toISOString(entity.updatedAt),

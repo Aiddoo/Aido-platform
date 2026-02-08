@@ -67,6 +67,7 @@ export abstract class TodoCategoryMapper {
 			id: entity.id,
 			name: entity.name,
 			color: entity.color,
+			sortOrder: entity.sortOrder,
 		};
 	}
 

@@ -84,7 +84,7 @@ export class TodoRepository {
 			data,
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory>;
@@ -102,7 +102,7 @@ export class TodoRepository {
 			where: { id },
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory | null>;
@@ -121,7 +121,7 @@ export class TodoRepository {
 			where: { id, userId },
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory | null>;
@@ -166,14 +166,13 @@ export class TodoRepository {
 				cursor: { id: cursor },
 			}),
 			orderBy: [
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			],
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory[]>;
@@ -193,7 +192,7 @@ export class TodoRepository {
 			data,
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory>;
@@ -238,14 +237,13 @@ export class TodoRepository {
 				cursor: { id: cursor },
 			}),
 			orderBy: [
+				{ category: { sortOrder: "asc" } },
 				{ sortOrder: "asc" },
-				{ startDate: "desc" },
-				{ createdAt: "desc" },
-				{ id: "desc" },
+				{ id: "asc" },
 			],
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory[]>;
@@ -386,7 +384,7 @@ export class TodoRepository {
 			data: { sortOrder },
 			include: {
 				category: {
-					select: { id: true, name: true, color: true },
+					select: { id: true, name: true, color: true, sortOrder: true },
 				},
 			},
 		}) as Promise<TodoWithCategory>;

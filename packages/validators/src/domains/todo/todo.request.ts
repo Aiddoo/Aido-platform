@@ -120,9 +120,9 @@ export const getTodosQuerySchema = z.object({
     .number()
     .int()
     .min(1, '페이지 크기는 1 이상이어야 합니다')
-    .max(100, '페이지 크기는 100 이하여야 합니다')
+    .max(200, '페이지 크기는 200 이하여야 합니다')
     .default(20)
-    .describe('페이지 크기 (1-100, 기본값: 20)'),
+    .describe('페이지 크기 (1-200, 기본값: 20)'),
   completed: z
     .preprocess((val) => {
       if (val === 'true') return true;
