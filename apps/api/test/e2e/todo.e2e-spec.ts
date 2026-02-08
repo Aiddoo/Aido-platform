@@ -318,9 +318,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: Todo) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("다중일 할 일");
 			});
 
@@ -354,9 +352,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: Todo) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("2월1일 단건");
 				expect(titles).not.toContain("2월2일 단건");
 			});
@@ -401,9 +397,7 @@ describe("Todo (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const titles = response.body.data.items.map(
-					(t: Todo) => t.title,
-				);
+				const titles = response.body.data.items.map((t: Todo) => t.title);
 				expect(titles).toContain("2월2일 포함");
 				expect(titles).toContain("2월3일 포함");
 				expect(titles).not.toContain("2월4일 제외");
@@ -1086,12 +1080,8 @@ describe("Todo (e2e)", () => {
 				.expect(200);
 
 			// 각 사용자는 자신의 할 일만 볼 수 있음
-			const user1Titles = user1List.body.data.items.map(
-				(t: Todo) => t.title,
-			);
-			const user2Titles = user2List.body.data.items.map(
-				(t: Todo) => t.title,
-			);
+			const user1Titles = user1List.body.data.items.map((t: Todo) => t.title);
+			const user2Titles = user2List.body.data.items.map((t: Todo) => t.title);
 
 			expect(user1Titles).toContain("User1의 할 일");
 			expect(user1Titles).not.toContain("User2의 할 일");
