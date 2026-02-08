@@ -87,15 +87,17 @@ export const CategoryDeleteDialog = ({
   );
 };
 
+interface CategoryDeleteSectionProps {
+  categoryName: string;
+  onDelete: () => void;
+  isPending: boolean;
+}
+
 const CategoryDeleteSection = ({
   categoryName,
   onDelete,
   isPending,
-}: {
-  categoryName: string;
-  onDelete: () => void;
-  isPending: boolean;
-}) => (
+}: CategoryDeleteSectionProps) => (
   <>
     <VStack gap={4}>
       <Dialog.Title>
@@ -112,17 +114,19 @@ const CategoryDeleteSection = ({
   </>
 );
 
+interface TodoMoveCategoryDeleteSectionProps {
+  category: TodoCategoryWithCount;
+  otherCategories: TodoCategoryWithCount[];
+  onDelete: (moveToCategoryId: number | null) => void;
+  isPending: boolean;
+}
+
 const TodoMoveCategoryDeleteSection = ({
   category,
   otherCategories,
   onDelete,
   isPending,
-}: {
-  category: TodoCategoryWithCount;
-  otherCategories: TodoCategoryWithCount[];
-  onDelete: (moveToCategoryId: number | null) => void;
-  isPending: boolean;
-}) => {
+}: TodoMoveCategoryDeleteSectionProps) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     otherCategories[0]?.id ?? null,
   );
@@ -160,7 +164,12 @@ const TodoMoveCategoryDeleteSection = ({
   );
 };
 
-const DialogActions = ({ onDelete, isPending }: { onDelete: () => void; isPending: boolean }) => (
+interface DialogActionsProps {
+  onDelete: () => void;
+  isPending: boolean;
+}
+
+const DialogActions = ({ onDelete, isPending }: DialogActionsProps) => (
   <HStack gap={8} justify="end">
     <Dialog.Close asChild>
       <Button variant="weak" color="dark" size="medium" display="inline">
@@ -173,15 +182,13 @@ const DialogActions = ({ onDelete, isPending }: { onDelete: () => void; isPendin
   </HStack>
 );
 
-const CategoryRadioItem = ({
-  category,
-  isSelected,
-  onSelect,
-}: {
+interface CategoryRadioItemProps {
   category: TodoCategoryWithCount;
   isSelected: boolean;
   onSelect: () => void;
-}) => (
+}
+
+const CategoryRadioItem = ({ category, isSelected, onSelect }: CategoryRadioItemProps) => (
   <Pressable onPress={onSelect}>
     <HStack align="center" gap={10} className="rounded-lg px-3 py-2.5">
       <Box
