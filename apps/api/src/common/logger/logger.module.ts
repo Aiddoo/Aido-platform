@@ -106,10 +106,11 @@ export class LoggerModule {
 						const isTest = nodeEnv === "test";
 
 						// 로그 레벨 우선순위: options.level > LOG_LEVEL 환경변수 > 기본값
+						const logLevelEnv = configService.get("LOG_LEVEL", {
+							infer: true,
+						});
 						const level =
-							options.level ??
-							process.env.LOG_LEVEL ??
-							getDefaultLogLevel(nodeEnv);
+							options.level ?? logLevelEnv ?? getDefaultLogLevel(nodeEnv);
 
 						// 테스트 환경에서는 pretty print 비활성화
 						const prettyPrint =
