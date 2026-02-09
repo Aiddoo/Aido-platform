@@ -540,6 +540,158 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 	});
 
 	// ===========================================================================
+	// 계정 연동 심화 테스트
+	// ===========================================================================
+
+	describe("계정 연동 심화", () => {
+		let testUserId: string;
+
+		beforeEach(async () => {
+			// 테스트용 사용자 생성 (Google로 로그인)
+			const googleToken = "advanced-link-google-token";
+			fakeTokenVerifier.setCustomProfile("google", googleToken, {
+				id: "advanced-link-google-id",
+				email: "advanced-link@example.com",
+				emailVerified: true,
+				name: "Advanced Link User",
+			});
+
+			const result = await oauthService.handleGoogleMobileLogin(googleToken);
+			testUserId = result.userId;
+		});
+
+		it("해제 후 재연동 (round-trip)이 정상 동작해야 한다", async () => {
+			// Given: Kakao 계정 연동
+			await oauthService.linkAccount(testUserId, "KAKAO", "kakao-roundtrip-id");
+
+			// 연결 확인
+			let accounts = await oauthService.getLinkedAccounts(testUserId);
+			expect(accounts.map((a) => a.provider)).toContain("KAKAO");
+
+			// When: 해제
+			await oauthService.unlinkAccount(testUserId, "KAKAO");
+
+			// 해제 확인
+			accounts = await oauthService.getLinkedAccounts(testUserId);
+			expect(accounts.map((a) => a.provider)).not.toContain("KAKAO");
+
+			// When: 재연동
+			const result = await oauthService.linkAccount(
+				testUserId,
+				"KAKAO",
+				"kakao-roundtrip-id",
+			);
+
+			// Then: 재연동 성공
+			expect(result.message).toBe("계정이 연결되었습니다.");
+			accounts = await oauthService.getLinkedAccounts(testUserId);
+			expect(accounts.map((a) => a.provider)).toContain("KAKAO");
+		});
+
+		it("4개 provider 모두 같은 유저에 연동할 수 있어야 한다", async () => {
+			// Given: 이미 Google 계정이 있음
+
+			// When: 나머지 3개 provider 모두 연동
+			await oauthService.linkAccount(testUserId, "APPLE", "apple-multi-id");
+			await oauthService.linkAccount(testUserId, "KAKAO", "kakao-multi-id");
+			await oauthService.linkAccount(testUserId, "NAVER", "naver-multi-id");
+
+			// Then: 4개 모두 연동됨
+			const accounts = await oauthService.getLinkedAccounts(testUserId);
+			const providers = accounts.map((a) => a.provider).sort();
+			expect(providers).toEqual(["APPLE", "GOOGLE", "KAKAO", "NAVER"]);
+			expect(accounts).toHaveLength(4);
+		});
+
+		it("linkAccount 시 SecurityLog(OAUTH_LINKED)가 기록되어야 한다", async () => {
+			// When: 메타데이터와 함께 계정 연동
+			await oauthService.linkAccount(
+				testUserId,
+				"APPLE",
+				"apple-seclog-id",
+				undefined,
+				{ ip: "10.0.0.1", userAgent: "SecurityLogTest/1.0" },
+			);
+
+			// Then: SecurityLog 확인
+			const logs = await databaseService.securityLog.findMany({
+				where: {
+					userId: testUserId,
+					event: "OAUTH_LINKED",
+				},
+			});
+			expect(logs).toHaveLength(1);
+			expect(logs[0]?.ipAddress).toBe("10.0.0.1");
+			expect(logs[0]?.userAgent).toBe("SecurityLogTest/1.0");
+			expect(logs[0]?.metadata).toMatchObject({
+				provider: "APPLE",
+				providerAccountId: "apple-seclog-id",
+			});
+		});
+
+		it("unlinkAccount 시 SecurityLog(OAUTH_UNLINKED)가 기록되어야 한다", async () => {
+			// Given: KAKAO 계정 연동
+			await oauthService.linkAccount(testUserId, "KAKAO", "kakao-seclog-id");
+
+			// When: 메타데이터와 함께 계정 해제
+			await oauthService.unlinkAccount(testUserId, "KAKAO", {
+				ip: "192.168.1.100",
+				userAgent: "UnlinkTest/2.0",
+			});
+
+			// Then: SecurityLog 확인
+			const logs = await databaseService.securityLog.findMany({
+				where: {
+					userId: testUserId,
+					event: "OAUTH_UNLINKED",
+				},
+			});
+			expect(logs).toHaveLength(1);
+			expect(logs[0]?.ipAddress).toBe("192.168.1.100");
+			expect(logs[0]?.userAgent).toBe("UnlinkTest/2.0");
+			expect(logs[0]?.metadata).toMatchObject({
+				provider: "KAKAO",
+			});
+		});
+
+		it("getLinkedAccounts가 providerAccountId를 반환해야 한다", async () => {
+			// Given: NAVER 계정 연동
+			await oauthService.linkAccount(testUserId, "NAVER", "naver-pid-test");
+
+			// When
+			const accounts = await oauthService.getLinkedAccounts(testUserId);
+
+			// Then: providerAccountId 포함 확인
+			const naverAccount = accounts.find((a) => a.provider === "NAVER");
+			expect(naverAccount).toBeDefined();
+			expect(naverAccount?.providerAccountId).toBe("naver-pid-test");
+			expect(naverAccount?.linkedAt).toBeInstanceOf(Date);
+		});
+
+		it("다른 유저에 연결된 계정을 연동하면 409 에러가 발생해야 한다", async () => {
+			// Given: 다른 유저가 APPLE 계정 보유
+			const otherToken = "other-user-apple-token";
+			fakeTokenVerifier.setCustomProfile("apple", otherToken, {
+				id: "conflict-apple-id",
+				email: "other-apple@example.com",
+				emailVerified: true,
+				name: "Other Apple User",
+			});
+
+			await oauthService.handleAppleMobileLogin(otherToken);
+
+			// When & Then: 현재 유저가 같은 providerAccountId로 연동 시도
+			await expect(
+				oauthService.linkAccount(
+					testUserId,
+					"APPLE",
+					"apple-conflict-apple-id", // FakeService가 생성하는 ID 패턴
+				),
+			).rejects.toThrow(BusinessException);
+		});
+	});
+
+	// ===========================================================================
 	// OAuth State 및 Exchange Code 테스트
 	// ===========================================================================
 

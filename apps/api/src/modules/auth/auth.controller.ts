@@ -21,6 +21,7 @@ import type { Request, Response } from "express";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import {
+	ApiBadRequestError,
 	ApiConflictError,
 	ApiCreatedResponse,
 	ApiDoc,
@@ -2844,40 +2845,89 @@ export const useNaverLogin = () => {
 \`Authorization: Bearer {accessToken}\`
 
 ### 📝 요청 방법
-- **Apple/Google**: idToken 제공
-- **Kakao/Naver**: accessToken 제공
+provider에 따라 필수 토큰이 다릅니다:
+- **Apple/Google**: \`idToken\` 필수
+- **Kakao/Naver**: \`accessToken\` 필수
+
+### 📝 요청 예시
+
+**Apple/Google (idToken)**
+\`\`\`json
+{ "provider": "GOOGLE", "idToken": "eyJhbGciOiJSUzI1NiIs..." }
+\`\`\`
+
+**Kakao/Naver (accessToken)**
+\`\`\`json
+{ "provider": "KAKAO", "accessToken": "aaaabbbbccccdddd..." }
+\`\`\`
 
 ### ⚠️ 주의사항
-- 이미 다른 사용자에 연결된 소셜 계정은 연동할 수 없습니다
+- 이미 다른 사용자에 연결된 소셜 계정은 연동할 수 없습니다 (409)
 - 동일한 소셜 계정을 중복 연동하면 "이미 연결된 계정입니다" 메시지를 반환합니다
+
+### 에러 코드
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| \`AUTH_0107\` | 401 | 인증이 필요합니다 |
+| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 |
+| \`KAKAO_0306\` | 409 | 이미 다른 계정에 연동된 카카오 계정 |
+| \`APPLE_0355\` | 409 | 이미 다른 계정에 연동된 애플 계정 |
+| \`GOOGLE_0405\` | 409 | 이미 다른 계정에 연동된 구글 계정 |
+| \`NAVER_0455\` | 409 | 이미 다른 계정에 연동된 네이버 계정 |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiErrorResponse({ errorCode: ErrorCode.APPLE_0355 })
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: LinkSocialAccountDto,
+		@Req() req: Request,
 	) {
-		return this.oauthService.linkSocialAccountWithToken(user.userId, dto);
+		const metadata = this.extractMetadata(req);
+		return this.oauthService.linkSocialAccountWithToken(
+			user.userId,
+			dto,
+			metadata,
+		);
 	}
 
 	@Get("linked-accounts")
 	@ApiBearerAuth()
 	@ApiDoc({
-		summary: "연결된 소셜 계정 목록",
+		summary: "소셜 계정 연결 상태 목록",
 		operationId: "getLinkedAccounts",
 		description: `
-## 🔗 연결된 소셜 계정 조회
+## 소셜 계정 연결 상태 조회
 
-현재 사용자에 연결된 소셜 계정 목록을 조회합니다.
+현재 사용자의 소셜 계정 연결 상태를 조회합니다.
+4개 OAuth 제공자(APPLE, GOOGLE, KAKAO, NAVER) 모두의 연결 여부를 반환합니다.
 
-### 🔐 인증 필요
+### 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 📋 응답 데이터
-- \`provider\`: 소셜 제공자 (APPLE, GOOGLE, KAKAO 등)
-- \`linkedAt\`: 연결 일시
+### 응답 데이터
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`provider\` | string | 소셜 제공자 (APPLE, GOOGLE, KAKAO, NAVER) |
+| \`linked\` | boolean | 연결 여부 |
+| \`providerAccountId\` | string \\| null | 제공자 측 계정 고유 ID (미연결 시 null) |
+| \`linkedAt\` | string \\| null | 계정 연결 시각 (ISO 8601 UTC, 미연결 시 null) |
+
+### 응답 예시
+\`\`\`json
+{
+  "accounts": [
+    { "provider": "APPLE", "linked": false, "providerAccountId": null, "linkedAt": null },
+    { "provider": "GOOGLE", "linked": true, "providerAccountId": "102938475647382910", "linkedAt": "2026-01-15T10:30:00.000Z" },
+    { "provider": "KAKAO", "linked": true, "providerAccountId": "3456789012", "linkedAt": "2026-02-01T14:00:00.000Z" },
+    { "provider": "NAVER", "linked": false, "providerAccountId": null, "linkedAt": null }
+  ]
+}
+\`\`\`
 		`,
 	})
 	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
@@ -2902,24 +2952,35 @@ export const useNaverLogin = () => {
 \`Authorization: Bearer {accessToken}\`
 
 ### ⚠️ 제한사항
-- 마지막 로그인 수단은 해제할 수 없습니다
+- 마지막 로그인 수단은 해제할 수 없습니다 (400)
 - 비밀번호 또는 다른 소셜 계정이 있어야 해제 가능
+- 연결되지 않은 provider를 해제하면 404
+
+### 에러 코드
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| \`AUTH_0107\` | 401 | 인증이 필요합니다 |
+| \`USER_0610\` | 400 | 마지막 로그인 수단은 해제할 수 없습니다 |
+| \`USER_0603\` | 404 | 연결된 계정을 찾을 수 없습니다 |
 		`,
 	})
 	@ApiParam({
 		name: "provider",
-		description: "소셜 로그인 제공자",
+		description: "연결 해제할 소셜 로그인 제공자",
 		enum: ["APPLE", "GOOGLE", "KAKAO", "NAVER"],
 		example: "GOOGLE",
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0610 })
+	@ApiBadRequestError(ErrorCode.USER_0610)
+	@ApiNotFoundError(ErrorCode.USER_0603)
 	async unlinkAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("provider") provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+		@Req() req: Request,
 	) {
-		return this.oauthService.unlinkAccount(user.userId, provider);
+		const metadata = this.extractMetadata(req);
+		return this.oauthService.unlinkAccount(user.userId, provider, metadata);
 	}
 
 	// ============================================
