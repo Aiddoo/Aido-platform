@@ -2,6 +2,7 @@ import {
   type AiUsageResponse,
   aiUsageResponseSchema,
   type CreateTodoInput,
+  dailyCompletionsRangeResponseSchema,
   type GetTodosQuery,
   type ParseTodoResponse,
   parseTodoResponseSchema,
@@ -16,8 +17,20 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { AiUsage, ParsedTodoResult, TodoItem, TodosResult } from '../models/todo.model';
-import { toAiUsage, toParsedTodoResult, toTodoItem, toTodoItems } from './todo.mapper';
+import type {
+  AiUsage,
+  DailyCompletionsResult,
+  ParsedTodoResult,
+  TodoItem,
+  TodosResult,
+} from '../models/todo.model';
+import {
+  toAiUsage,
+  toDailyCompletionsResult,
+  toParsedTodoResult,
+  toTodoItem,
+  toTodoItems,
+} from './todo.mapper';
 import type { TodoRepository } from './todo.repository';
 
 export class TodoRepositoryImpl implements TodoRepository {
@@ -114,5 +127,24 @@ export class TodoRepositoryImpl implements TodoRepository {
     }
 
     return ok(toAiUsage(parsed.data));
+  }
+
+  async getDailyCompletions(
+    startDate: string,
+    endDate: string,
+  ): Promise<Result<DailyCompletionsResult, ApiError>> {
+    const result = await this.#httpClient.get<unknown>('v1/daily-completions', {
+      params: { startDate, endDate },
+    });
+
+    if (!result.ok) return result;
+
+    const parsed = dailyCompletionsRangeResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[TodoRepository] Invalid getDailyCompletions response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toDailyCompletionsResult(parsed.data));
   }
 }

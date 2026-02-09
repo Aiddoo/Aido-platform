@@ -69,6 +69,26 @@ export const aiUsageSchema = z.object({
 });
 export type AiUsage = z.infer<typeof aiUsageSchema>;
 
+// Daily Completion
+export const dailyCompletionSummaryClientSchema = z.object({
+  date: z.string(),
+  totalTodos: z.number(),
+  completedTodos: z.number(),
+  isComplete: z.boolean(),
+  completionRate: z.number(),
+});
+export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummaryClientSchema>;
+
+export const dailyCompletionsResultSchema = z.object({
+  completions: z.array(dailyCompletionSummaryClientSchema),
+  totalCompleteDays: z.number(),
+  dateRange: z.object({
+    startDate: z.string(),
+    endDate: z.string(),
+  }),
+});
+export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
+
 export const TodoPolicy = {
   DEFAULT_COLOR: '#FF9500',
   getColor: (todo: TodoItem): string => todo.category.color,
