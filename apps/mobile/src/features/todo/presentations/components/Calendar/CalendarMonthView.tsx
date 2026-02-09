@@ -1,6 +1,7 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { getMonthWeeks } from '@src/shared/utils/date';
+import { formatDate, getMonthWeeks } from '@src/shared/utils/date';
+import type { DailyCompletionSummary } from '../../../models/todo.model';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
 
@@ -8,9 +9,15 @@ interface CalendarMonthViewProps {
   displayDate: Date;
   value: Date;
   onChange: (date: Date) => void;
+  completions: Record<string, DailyCompletionSummary>;
 }
 
-export const CalendarMonthView = ({ displayDate, value, onChange }: CalendarMonthViewProps) => {
+export const CalendarMonthView = ({
+  displayDate,
+  value,
+  onChange,
+  completions,
+}: CalendarMonthViewProps) => {
   const weeks = getMonthWeeks(displayDate);
 
   return (
@@ -26,6 +33,7 @@ export const CalendarMonthView = ({ displayDate, value, onChange }: CalendarMont
               selectedDate={value}
               displayDate={displayDate}
               onPress={onChange}
+              completion={completions[formatDate(date)]}
             />
           ))}
         </HStack>
