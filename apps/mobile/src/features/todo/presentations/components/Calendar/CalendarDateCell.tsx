@@ -49,11 +49,7 @@ export const CalendarDateCell = ({
         )}
       >
         {isAllComplete ? (
-          <FishIcon
-            width={20}
-            height={13}
-            colorClassName={isSelected ? 'text-white' : 'text-main'}
-          />
+          <FishIcon width={20} height={13} colorClassName="text-fish" />
         ) : (
           <Text
             size="b4"
