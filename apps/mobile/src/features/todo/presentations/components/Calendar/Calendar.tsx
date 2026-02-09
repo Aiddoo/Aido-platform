@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { useEffect, useMemo, useState } from 'react';
 import { match } from 'ts-pattern';
-import type { DailyCompletionSummary } from '../../../models/todo.model';
+import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
 import { CalendarHeaderText } from './CalendarHeaderText';
 import { CalendarMonthView } from './CalendarMonthView';
@@ -25,7 +25,7 @@ interface CalendarProps {
   onChange: (date: Date) => void;
 }
 
-const EMPTY_COMPLETIONS: Record<string, DailyCompletionSummary> = {};
+const EMPTY_COMPLETIONS: CompletionsByDate = {};
 
 export function Calendar({ value, onChange }: CalendarProps) {
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');

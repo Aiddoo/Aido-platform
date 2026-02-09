@@ -1,7 +1,7 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate, getWeekDates, getWeekStart } from '@src/shared/utils/date';
-import type { DailyCompletionSummary } from '../../../models/todo.model';
+import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
 
@@ -9,7 +9,7 @@ interface CalendarWeekViewProps {
   displayDate: Date;
   value: Date;
   onChange: (date: Date) => void;
-  completions: Record<string, DailyCompletionSummary>;
+  completions: CompletionsByDate;
 }
 
 export const CalendarWeekView = ({
