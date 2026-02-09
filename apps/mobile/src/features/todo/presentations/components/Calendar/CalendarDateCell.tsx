@@ -41,7 +41,7 @@ export const CalendarDateCell = ({
         className={cn(
           'size-8 items-center justify-center overflow-hidden rounded-2xl',
           isSelected && 'bg-main',
-          isToday && !isSelected && 'bg-main/10',
+          isToday && !isSelected && 'bg-main/10 dark:bg-main/20',
         )}
       >
         {isAllComplete ? (
