@@ -3,14 +3,13 @@ import { FishIcon } from '@src/shared/ui/Icon/icons';
 import { Text } from '@src/shared/ui/Text/Text';
 import type { TextTone } from '@src/shared/ui/Text/Text.types';
 import { cn } from '@src/shared/utils/cn';
-import { isDateToday, isSameDay, isSameMonth, isSaturday, isSunday } from '@src/shared/utils/date';
+import { isDateToday, isSameDay, isSaturday, isSunday } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
 import type { DailyCompletionSummary } from '../../../models/todo.model';
 
 interface CalendarDateCellProps {
   date: Date;
   selectedDate: Date;
-  displayDate: Date;
   onPress: (date: Date) => void;
   completion?: DailyCompletionSummary;
 }
@@ -18,13 +17,11 @@ interface CalendarDateCellProps {
 export const CalendarDateCell = ({
   date,
   selectedDate,
-  displayDate,
   onPress,
   completion,
 }: CalendarDateCellProps) => {
   const dayOfMonth = date.getDate();
   const isSelected = isSameDay(date, selectedDate);
-  const isCurrentMonth = isSameMonth(date, displayDate);
   const isToday = isDateToday(date);
 
   const getDayTone = (): TextTone => {
@@ -50,12 +47,7 @@ export const CalendarDateCell = ({
         {isAllComplete ? (
           <FishIcon width={20} height={13} colorClassName="text-fish" />
         ) : (
-          <Text
-            size="b4"
-            weight="medium"
-            tone={getDayTone()}
-            shade={isCurrentMonth ? undefined : 4}
-          >
+          <Text size="b4" weight="medium" tone={getDayTone()}>
             {dayOfMonth}
           </Text>
         )}
