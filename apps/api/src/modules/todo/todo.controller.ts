@@ -110,6 +110,7 @@ export class TodoController {
 	@ApiCreatedResponse({ type: CreateTodoResponseDto })
 	@ApiUnauthorizedError()
 	@ApiBadRequestError(ErrorCode.SYS_0002)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateTodoDto,
@@ -427,6 +428,7 @@ export class TodoController {
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async update(
 		@CurrentUser() user: CurrentUserPayload,
@@ -565,6 +567,7 @@ export class TodoController {
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateCategory(
 		@CurrentUser() user: CurrentUserPayload,
@@ -612,6 +615,7 @@ export class TodoController {
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateSchedule(
 		@CurrentUser() user: CurrentUserPayload,

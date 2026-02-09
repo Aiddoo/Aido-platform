@@ -6,6 +6,7 @@ import {
 	ApiBadRequestError,
 	ApiDoc,
 	ApiForbiddenError,
+	ApiNotFoundError,
 	ApiSuccessResponse,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
@@ -42,7 +43,9 @@ export class AdminController {
 	})
 	@ApiSuccessResponse({ type: BroadcastResultDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiForbiddenError("관리자 권한이 필요합니다")
+	@ApiBadRequestError(ErrorCode.ADMIN_1403)
+	@ApiForbiddenError(ErrorCode.ADMIN_1401)
+	@ApiNotFoundError(ErrorCode.ADMIN_1402)
 	async broadcastNotification(
 		@CurrentUser() _user: CurrentUserPayload,
 		@Body() dto: BroadcastNotificationDto,
@@ -60,7 +63,8 @@ export class AdminController {
 	})
 	@ApiSuccessResponse({ type: BroadcastResultDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiForbiddenError("관리자 권한이 필요합니다")
+	@ApiForbiddenError(ErrorCode.ADMIN_1401)
+	@ApiNotFoundError(ErrorCode.ADMIN_1402)
 	async sendTargetedNotification(
 		@CurrentUser() _user: CurrentUserPayload,
 		@Body() dto: TargetedNotificationDto,
