@@ -1,10 +1,13 @@
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { getWeekStart, WEEKDAY_LABELS } from '@src/shared/utils/date';
+import { getCalendarRange, getWeekRange, WEEKDAY_LABELS } from '@src/shared/utils/date';
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { match } from 'ts-pattern';
+import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
+import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
 import { CalendarHeaderText } from './CalendarHeaderText';
 import { CalendarMonthView } from './CalendarMonthView';
 import { CalendarNavigation } from './CalendarNavigation';
@@ -17,33 +20,46 @@ interface CalendarProps {
   onChange: (date: Date) => void;
 }
 
+const EMPTY_COMPLETIONS: CompletionsByDate = {};
+
 export function Calendar({ value, onChange }: CalendarProps) {
-  const initialWeekStart = getWeekStart(value);
-
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
-  const [displayDate, setDisplayDate] = useState(initialWeekStart);
 
-  const handleSelect = (date: Date) => {
-    setDisplayDate(getWeekStart(date));
-    onChange(date);
-  };
+  const { rangeStart, rangeEnd } = useMemo(
+    () =>
+      match(viewMode)
+        .with('week', () => getWeekRange(value))
+        .with('month', () => getCalendarRange(value))
+        .exhaustive(),
+    [viewMode, value],
+  );
+
+  const { data: completions } = useQuery(getDailyCompletionsQueryOptions(rangeStart, rangeEnd));
 
   return (
     <VStack className="bg-background">
       <HStack className="px-4 py-2" justify="between" align="center">
         <HStack gap={8} align="center">
-          <CalendarHeaderText viewMode={viewMode} displayDate={displayDate} />
+          <CalendarHeaderText viewMode={viewMode} displayDate={value} />
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />
         </HStack>
-        <CalendarNavigation viewMode={viewMode} value={displayDate} onChange={setDisplayDate} />
+        <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
       </HStack>
 
       {match(viewMode)
         .with('week', () => (
-          <CalendarWeekView displayDate={displayDate} value={value} onChange={handleSelect} />
+          <CalendarWeekView
+            value={value}
+            onChange={onChange}
+            completions={completions ?? EMPTY_COMPLETIONS}
+          />
         ))
         .with('month', () => (
-          <CalendarMonthView displayDate={displayDate} value={value} onChange={handleSelect} />
+          <CalendarMonthView
+            value={value}
+            onChange={onChange}
+            completions={completions ?? EMPTY_COMPLETIONS}
+          />
         ))
         .exhaustive()}
     </VStack>
@@ -64,7 +80,7 @@ Calendar.Loading = function Loading() {
       <HStack px={8}>
         {WEEKDAY_LABELS.map((label) => (
           <Box key={`weekday-skeleton-${label}`} className="flex-1 items-center py-2">
-            <Skeleton className="h-4 w-4" />
+            <Skeleton className="size-4" />
           </Box>
         ))}
       </HStack>
@@ -72,7 +88,7 @@ Calendar.Loading = function Loading() {
       <HStack px={8}>
         {WEEKDAY_LABELS.map((label) => (
           <Box key={`date-skeleton-${label}`} className="flex-1 items-center py-2">
-            <Skeleton className="size-8 rounded-full" />
+            <Skeleton className="size-8 overflow-hidden rounded-2xl" />
           </Box>
         ))}
       </HStack>

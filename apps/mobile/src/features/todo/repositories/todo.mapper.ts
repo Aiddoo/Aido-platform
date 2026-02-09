@@ -1,6 +1,18 @@
-import type { AiUsageResponse, ParseTodoResponse, Todo } from '@aido/validators';
+import type {
+  AiUsageResponse,
+  DailyCompletionSummary as DailyCompletionSummaryDTO,
+  DailyCompletionsRangeResponse,
+  ParseTodoResponse,
+  Todo,
+} from '@aido/validators';
 
-import type { AiUsage, ParsedTodoResult, TodoItem } from '../models/todo.model';
+import type {
+  AiUsage,
+  DailyCompletionSummary,
+  DailyCompletionsResult,
+  ParsedTodoResult,
+  TodoItem,
+} from '../models/todo.model';
 
 export const toTodoItem = (dto: Todo): TodoItem => ({
   id: dto.id,
@@ -20,3 +32,22 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
 });
 
 export const toAiUsage = (dto: AiUsageResponse): AiUsage => dto.data;
+
+// Daily Completion
+export const toDailyCompletionSummary = (
+  dto: DailyCompletionSummaryDTO,
+): DailyCompletionSummary => ({
+  date: dto.date,
+  totalTodos: dto.totalTodos,
+  completedTodos: dto.completedTodos,
+  isComplete: dto.isComplete,
+  completionRate: dto.completionRate,
+});
+
+export const toDailyCompletionsResult = (
+  dto: DailyCompletionsRangeResponse,
+): DailyCompletionsResult => ({
+  completions: dto.completions.map(toDailyCompletionSummary),
+  totalCompleteDays: dto.totalCompleteDays,
+  dateRange: dto.dateRange,
+});

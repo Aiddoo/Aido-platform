@@ -15,7 +15,7 @@ export const CalendarHeaderText = ({ viewMode, displayDate }: CalendarHeaderText
     .exhaustive();
 
   return (
-    <Text size="t3" weight="semibold">
+    <Text size="b1" weight="semibold">
       {headerText}
     </Text>
   );
