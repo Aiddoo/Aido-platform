@@ -23,6 +23,7 @@ import {
 	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
+	ApiTooManyRequestsError,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
@@ -104,6 +105,7 @@ export class CheerController {
 	@ApiBadRequestError(ErrorCode.CHEER_1204)
 	@ApiForbiddenError(ErrorCode.CHEER_1203)
 	@ApiConflictError(ErrorCode.CHEER_1201)
+	@ApiTooManyRequestsError(ErrorCode.CHEER_1202)
 	async sendCheer(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: SendCheerDto,

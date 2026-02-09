@@ -88,3 +88,5 @@ export const VERIFICATION_TYPE = {
 } as const;
 
 export type VerificationTypeValue = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
+
+export const OAUTH_PROVIDERS = ['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;

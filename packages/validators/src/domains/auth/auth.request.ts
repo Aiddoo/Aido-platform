@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DEVICE_TYPES, PASSWORD_RULES, VERIFICATION_CODE } from './auth.constants';
+import { DEVICE_TYPES, OAUTH_PROVIDERS, PASSWORD_RULES, VERIFICATION_CODE } from './auth.constants';
 
 export const emailSchema = z
   .string()
@@ -177,9 +177,7 @@ export const updateProfileSchema = z
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
-export const oauthProviderSchema = z
-  .enum(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'])
-  .describe('소셜 로그인 제공자');
+export const oauthProviderSchema = z.enum(OAUTH_PROVIDERS).describe('소셜 로그인 제공자');
 
 export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 

@@ -524,6 +524,12 @@ describe("OAuthService", () => {
 			// Given
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
 
 			// When
 			const result = await service.linkAccount(
@@ -534,12 +540,15 @@ describe("OAuthService", () => {
 
 			// Then
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
-			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith({
-				userId: "user-123",
-				provider: "APPLE",
-				providerAccountId: "apple-account-456",
-				refreshToken: undefined,
-			});
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				{
+					userId: "user-123",
+					provider: "APPLE",
+					providerAccountId: "apple-account-456",
+					refreshToken: undefined,
+				},
+				expect.anything(),
+			);
 		});
 
 		it("이미 연결된 계정은 메시지를 반환한다", async () => {
@@ -563,7 +572,7 @@ describe("OAuthService", () => {
 		});
 
 		it("P2002 unique constraint 시 provider별 alreadyLinked를 던져야 한다", async () => {
-			// Given - 계정 없음 + createOAuthAccount에서 P2002 발생
+			// Given - 계정 없음 + 트랜잭션 내에서 P2002 발생
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockRejectedValue(
 				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
@@ -572,12 +581,53 @@ describe("OAuthService", () => {
 					clientVersion: "7.0.0",
 				}),
 			);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
 
 			// When & Then - KAKAO provider
 			await expect(
 				service.linkAccount("user-123", "KAKAO", "kakao-account-789"),
 			).rejects.toThrow(
 				BusinessExceptions.kakaoAccountAlreadyLinked("kakao-account-789"),
+			);
+		});
+
+		it("SecurityLog(OAUTH_LINKED)를 기록한다", async () => {
+			// Given
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+
+			// When
+			await service.linkAccount(
+				"user-123",
+				"GOOGLE",
+				"google-account-789",
+				undefined,
+				mockMetadata,
+			);
+
+			// Then
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					event: SECURITY_EVENT.OAUTH_LINKED,
+					ipAddress: mockMetadata.ip,
+					userAgent: mockMetadata.userAgent,
+					metadata: {
+						provider: "GOOGLE",
+						providerAccountId: "google-account-789",
+					},
+				}),
+				expect.anything(),
 			);
 		});
 
@@ -616,6 +666,12 @@ describe("OAuthService", () => {
 				credentialAccount,
 			]);
 			accountRepo.deleteAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
 
 			// When
 			const result = await service.unlinkAccount("user-123", "APPLE");
@@ -625,6 +681,45 @@ describe("OAuthService", () => {
 			expect(accountRepo.deleteAccount).toHaveBeenCalledWith(
 				"user-123",
 				"APPLE",
+				expect.anything(),
+			);
+		});
+
+		it("SecurityLog(OAUTH_UNLINKED)를 기록한다", async () => {
+			// Given - Builder로 계정 생성
+			const appleAccount = AccountBuilder.create("user-123")
+				.asApple("apple-account-456")
+				.build();
+			const credentialAccount = AccountBuilder.create("user-123")
+				.asCredential()
+				.build();
+
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(appleAccount);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				appleAccount,
+				credentialAccount,
+			]);
+			accountRepo.deleteAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+
+			// When
+			await service.unlinkAccount("user-123", "APPLE", mockMetadata);
+
+			// Then
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					event: SECURITY_EVENT.OAUTH_UNLINKED,
+					ipAddress: mockMetadata.ip,
+					userAgent: mockMetadata.userAgent,
+					metadata: { provider: "APPLE" },
+				}),
+				expect.anything(),
 			);
 		});
 
@@ -659,7 +754,7 @@ describe("OAuthService", () => {
 	// ============================================
 
 	describe("getLinkedAccounts", () => {
-		it("연결된 소셜 계정 목록을 반환한다", async () => {
+		it("4개 provider 전체를 반환하며 연결된 계정은 linked: true", async () => {
 			// Given - Builder로 계정들 생성
 			const linkedAt = new Date("2024-01-15");
 			const appleAccount = AccountBuilder.create("user-123")
@@ -679,14 +774,34 @@ describe("OAuthService", () => {
 			// When
 			const result = await service.getLinkedAccounts("user-123");
 
-			// Then
-			expect(result).toEqual([{ provider: "APPLE", linkedAt }]);
+			// Then - 항상 4개 provider 반환
+			expect(result).toHaveLength(4);
+
+			// APPLE은 linked
+			expect(result).toContainEqual({
+				provider: "APPLE",
+				linked: true,
+				providerAccountId: "apple-account-456",
+				linkedAt,
+			});
+
+			// 나머지 3개는 unlinked
+			for (const provider of ["GOOGLE", "KAKAO", "NAVER"]) {
+				expect(result).toContainEqual({
+					provider,
+					linked: false,
+					providerAccountId: null,
+					linkedAt: null,
+				});
+			}
+
+			// CREDENTIAL은 포함되지 않음
 			expect(result).not.toContainEqual(
 				expect.objectContaining({ provider: "CREDENTIAL" }),
 			);
 		});
 
-		it("소셜 계정이 없으면 빈 배열을 반환한다", async () => {
+		it("소셜 계정이 없으면 모든 제공자가 미연결 상태로 반환된다", async () => {
 			// Given - Builder로 Credential 계정만 생성
 			const linkedAt = new Date("2024-01-15");
 			const credentialAccount = AccountBuilder.create("user-123")
@@ -699,8 +814,199 @@ describe("OAuthService", () => {
 			// When
 			const result = await service.getLinkedAccounts("user-123");
 
+			// Then - 4개 전부 미연결
+			expect(result).toHaveLength(4);
+			expect(result.every((a) => a.linked === false)).toBe(true);
+			expect(result.every((a) => a.providerAccountId === null)).toBe(true);
+			expect(result.every((a) => a.linkedAt === null)).toBe(true);
+		});
+	});
+
+	// ============================================
+	// linkSocialAccountWithToken
+	// ============================================
+
+	describe("linkSocialAccountWithToken", () => {
+		beforeEach(() => {
+			// linkAccount 내부에서 사용하는 $transaction mock
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+		});
+
+		it("Apple idToken으로 소셜 계정을 연동한다", async () => {
+			// Given
+			tokenVerifier.verifyAppleToken.mockResolvedValue({
+				id: "apple-id-123",
+				email: "apple@example.com",
+				emailVerified: true,
+			});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+
+			// When
+			const result = await service.linkSocialAccountWithToken(
+				"user-123",
+				{ provider: "APPLE", idToken: "valid-apple-id-token" },
+				mockMetadata,
+			);
+
 			// Then
-			expect(result).toEqual([]);
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+			expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
+				"valid-apple-id-token",
+			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					provider: "APPLE",
+					providerAccountId: "apple-id-123",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("Google idToken으로 소셜 계정을 연동한다", async () => {
+			// Given
+			tokenVerifier.verifyGoogleToken.mockResolvedValue({
+				id: "google-id-123",
+				email: "google@example.com",
+				emailVerified: true,
+				name: "Google User",
+				picture: "https://example.com/photo.jpg",
+			});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+
+			// When
+			const result = await service.linkSocialAccountWithToken(
+				"user-123",
+				{ provider: "GOOGLE", idToken: "valid-google-id-token" },
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+			expect(tokenVerifier.verifyGoogleToken).toHaveBeenCalledWith(
+				"valid-google-id-token",
+			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					provider: "GOOGLE",
+					providerAccountId: "google-id-123",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("Kakao accessToken으로 소셜 계정을 연동한다", async () => {
+			// Given
+			tokenVerifier.verifyKakaoToken.mockResolvedValue({
+				id: "kakao-id-123",
+				email: "kakao@example.com",
+				emailVerified: true,
+				name: "Kakao User",
+				picture: "https://kakao.com/photo.jpg",
+			});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+
+			// When
+			const result = await service.linkSocialAccountWithToken(
+				"user-123",
+				{ provider: "KAKAO", accessToken: "valid-kakao-access-token" },
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+			expect(tokenVerifier.verifyKakaoToken).toHaveBeenCalledWith(
+				"valid-kakao-access-token",
+			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					provider: "KAKAO",
+					providerAccountId: "kakao-id-123",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("Naver accessToken으로 소셜 계정을 연동한다", async () => {
+			// Given
+			tokenVerifier.verifyNaverToken.mockResolvedValue({
+				id: "naver-id-123",
+				email: "naver@example.com",
+				emailVerified: true,
+				name: "Naver User",
+				picture: "https://naver.com/photo.jpg",
+			});
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+
+			// When
+			const result = await service.linkSocialAccountWithToken(
+				"user-123",
+				{ provider: "NAVER", accessToken: "valid-naver-access-token" },
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+			expect(tokenVerifier.verifyNaverToken).toHaveBeenCalledWith(
+				"valid-naver-access-token",
+			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					provider: "NAVER",
+					providerAccountId: "naver-id-123",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("토큰 검증 실패 시 에러를 전파한다", async () => {
+			// Given
+			tokenVerifier.verifyAppleToken.mockRejectedValue(
+				new Error("Invalid token"),
+			);
+
+			// When & Then
+			await expect(
+				service.linkSocialAccountWithToken(
+					"user-123",
+					{ provider: "APPLE", idToken: "invalid-token" },
+					mockMetadata,
+				),
+			).rejects.toThrow("Invalid token");
+		});
+
+		it("이미 다른 유저에 연결된 계정은 provider별 409 에러를 반환한다", async () => {
+			// Given
+			tokenVerifier.verifyKakaoToken.mockResolvedValue({
+				id: "kakao-id-existing",
+				email: "kakao@example.com",
+				emailVerified: true,
+				name: "Kakao User",
+				picture: "https://kakao.com/photo.jpg",
+			});
+
+			const otherUserAccount = AccountBuilder.create("other-user-999")
+				.asKakao("kakao-id-existing")
+				.build();
+			accountRepo.findByProviderAccountId.mockResolvedValue(otherUserAccount);
+
+			// When & Then
+			await expect(
+				service.linkSocialAccountWithToken(
+					"user-123",
+					{ provider: "KAKAO", accessToken: "valid-kakao-access-token" },
+					mockMetadata,
+				),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 

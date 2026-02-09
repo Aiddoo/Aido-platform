@@ -1,3 +1,4 @@
+import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { TypedConfigService } from "@/common/config/services/config.service";
@@ -629,6 +630,7 @@ export class OAuthService {
 		provider: AccountProvider,
 		providerAccountId: string,
 		refreshToken?: string,
+		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
 		// 이미 다른 사용자에 연결되었는지 확인
 		const existingAccount =
@@ -649,13 +651,32 @@ export class OAuthService {
 			return { message: "이미 연결된 계정입니다." };
 		}
 
-		// 계정 연결
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		// 계정 연결 + 보안 로그 (트랜잭션)
 		try {
-			await this._accountRepository.createOAuthAccount({
-				userId,
-				provider,
-				providerAccountId,
-				refreshToken,
+			await this._database.$transaction(async (tx) => {
+				await this._accountRepository.createOAuthAccount(
+					{
+						userId,
+						provider,
+						providerAccountId,
+						refreshToken,
+					},
+					tx,
+				);
+
+				await this._securityLogRepository.create(
+					{
+						userId,
+						event: SECURITY_EVENT.OAUTH_LINKED,
+						ipAddress: ip,
+						userAgent,
+						metadata: { provider, providerAccountId },
+					},
+					tx,
+				);
 			});
 		} catch (error) {
 			if (
@@ -682,6 +703,7 @@ export class OAuthService {
 			idToken?: string;
 			accessToken?: string;
 		},
+		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
 		const { provider, idToken, accessToken } = dto;
 		let providerAccountId: string;
@@ -729,12 +751,19 @@ export class OAuthService {
 		}
 
 		// 검증된 providerAccountId로 계정 연동
-		return this.linkAccount(userId, provider, providerAccountId);
+		return this.linkAccount(
+			userId,
+			provider,
+			providerAccountId,
+			undefined,
+			metadata,
+		);
 	}
 
 	async unlinkAccount(
 		userId: string,
 		provider: AccountProvider,
+		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
 		// 연결된 계정 조회
 		const account = await this._accountRepository.findByUserIdAndProvider(
@@ -752,25 +781,61 @@ export class OAuthService {
 			throw BusinessExceptions.cannotUnlinkLastAccount();
 		}
 
-		// 계정 삭제
-		await this._accountRepository.deleteAccount(userId, provider);
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		// 계정 삭제 + 보안 로그 (트랜잭션)
+		await this._database.$transaction(async (tx) => {
+			await this._accountRepository.deleteAccount(userId, provider, tx);
+
+			await this._securityLogRepository.create(
+				{
+					userId,
+					event: SECURITY_EVENT.OAUTH_UNLINKED,
+					ipAddress: ip,
+					userAgent,
+					metadata: { provider },
+				},
+				tx,
+			);
+		});
 
 		this._logger.log(`Account unlinked: ${provider} for user ${userId}`);
 
 		return { message: "계정 연결이 해제되었습니다." };
 	}
 
-	async getLinkedAccounts(
-		userId: string,
-	): Promise<{ provider: AccountProvider; linkedAt: Date }[]> {
+	async getLinkedAccounts(userId: string): Promise<
+		{
+			provider: (typeof OAUTH_PROVIDERS)[number];
+			linked: boolean;
+			providerAccountId: string | null;
+			linkedAt: Date | null;
+		}[]
+	> {
 		const accounts = await this._accountRepository.findAllByUserId(userId);
 
-		return accounts
-			.filter((account) => account.provider !== "CREDENTIAL")
-			.map((account) => ({
-				provider: account.provider,
-				linkedAt: account.createdAt,
-			}));
+		const linkedMap = new Map(
+			accounts
+				.filter((account) => account.provider !== "CREDENTIAL")
+				.map((account) => [
+					account.provider,
+					{
+						providerAccountId: account.providerAccountId,
+						linkedAt: account.createdAt,
+					},
+				]),
+		);
+
+		return OAUTH_PROVIDERS.map((provider) => {
+			const linked = linkedMap.get(provider);
+			return {
+				provider,
+				linked: !!linked,
+				providerAccountId: linked?.providerAccountId ?? null,
+				linkedAt: linked?.linkedAt ?? null,
+			};
+		});
 	}
 
 	private async _handleSocialLogin(
