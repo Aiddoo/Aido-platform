@@ -35,9 +35,8 @@ export const CalendarDateCell = ({
     return 'neutral';
   };
 
-  const hasCompletion = completion != null;
-  const isAllComplete = completion?.isComplete === true;
-  const showCompletedCount = hasCompletion && completion.completedTodos > 0;
+  const isAllComplete = !!completion?.isComplete;
+  const showCompletedCount = !!completion?.completedTodos;
 
   return (
     <PressableFeedback onPress={() => onPress(date)} className="flex-1 items-center py-1">
