@@ -1,11 +1,12 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { CopyIcon } from '@src/shared/ui/Icon';
+import { Text } from '@src/shared/ui/Text/Text';
 import { H4 } from '@src/shared/ui/Text/Typography';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Avatar, SkeletonGroup } from 'heroui-native';
+import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { getMeQueryOptions } from '../queries/get-me-query-options';
 
 export function ProfileCard() {
@@ -28,9 +29,12 @@ export function ProfileCard() {
 
       <VStack>
         <H4>{user.name ?? '사용자'}</H4>
-        <TextButton size="medium" onPress={handleCopyUserTag}>
-          {user.userTag}
-        </TextButton>
+        <PressableFeedback onPress={handleCopyUserTag} className="flex-row items-center gap-1">
+          <Text size="b4" shade={6}>
+            {user.userTag}
+          </Text>
+          <CopyIcon width={14} height={14} colorClassName="text-gray-6" />
+        </PressableFeedback>
       </VStack>
     </HStack>
   );

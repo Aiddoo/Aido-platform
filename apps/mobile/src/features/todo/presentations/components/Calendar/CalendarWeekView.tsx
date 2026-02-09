@@ -1,17 +1,18 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { getWeekDates, getWeekStart } from '@src/shared/utils/date';
+import { formatDate, getWeekDates, getWeekStart } from '@src/shared/utils/date';
+import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
 
 interface CalendarWeekViewProps {
-  displayDate: Date;
   value: Date;
   onChange: (date: Date) => void;
+  completions: CompletionsByDate;
 }
 
-export const CalendarWeekView = ({ displayDate, value, onChange }: CalendarWeekViewProps) => {
-  const weekStart = getWeekStart(displayDate);
+export const CalendarWeekView = ({ value, onChange, completions }: CalendarWeekViewProps) => {
+  const weekStart = getWeekStart(value);
   const dates = getWeekDates(weekStart);
 
   return (
@@ -24,8 +25,8 @@ export const CalendarWeekView = ({ displayDate, value, onChange }: CalendarWeekV
             key={date.toISOString()}
             date={date}
             selectedDate={value}
-            displayDate={displayDate}
             onPress={onChange}
+            completion={completions[formatDate(date)]}
           />
         ))}
       </HStack>

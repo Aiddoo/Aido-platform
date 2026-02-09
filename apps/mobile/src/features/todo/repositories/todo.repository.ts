@@ -2,7 +2,13 @@ import type { CreateTodoInput, GetTodosQuery, ToggleTodoCompleteInput } from '@a
 import type { ApiError } from '@src/shared/errors/api-error';
 import type { Result } from '@src/shared/errors/result';
 
-import type { AiUsage, ParsedTodoResult, TodoItem, TodosResult } from '../models/todo.model';
+import type {
+  AiUsage,
+  DailyCompletionsResult,
+  ParsedTodoResult,
+  TodoItem,
+  TodosResult,
+} from '../models/todo.model';
 
 export interface TodoRepository {
   getTodos(params: GetTodosQuery): Promise<Result<TodosResult, ApiError>>;
@@ -13,4 +19,8 @@ export interface TodoRepository {
   createTodo(params: CreateTodoInput): Promise<Result<TodoItem, ApiError>>;
   parseTodo(text: string): Promise<Result<ParsedTodoResult, ApiError>>;
   getAiUsage(): Promise<Result<AiUsage, ApiError>>;
+  getDailyCompletions(
+    startDate: string,
+    endDate: string,
+  ): Promise<Result<DailyCompletionsResult, ApiError>>;
 }
