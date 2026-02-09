@@ -39,7 +39,7 @@ export const CalendarDateCell = ({
   const showCompletedCount = !!completion?.completedTodos;
 
   return (
-    <PressableFeedback onPress={() => onPress(date)} className="flex-1 items-center py-1">
+    <PressableFeedback onPress={() => onPress(date)} className="h-[56px] flex-1 items-center py-1">
       <Box
         className={cn(
           'size-8 items-center justify-center overflow-hidden rounded-2xl',
@@ -60,13 +60,11 @@ export const CalendarDateCell = ({
           </Text>
         )}
       </Box>
-      <Text
-        size="e2"
-        weight="medium"
-        className={cn('mt-0.5 text-main/80', !showCompletedCount && 'opacity-0')}
-      >
-        {showCompletedCount ? `+${completion.completedTodos}` : ' '}
-      </Text>
+      {showCompletedCount && (
+        <Text size="e2" weight="medium" className="mt-0.5 text-main/80">
+          +{completion.completedTodos}
+        </Text>
+      )}
     </PressableFeedback>
   );
 };
