@@ -9,9 +9,11 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { LOGIN_ATTEMPT } from "@aido/validators";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
+import { AdminNotificationEvents } from "../../admin-notification/events/admin-notification.events";
 
 // Transaction callback 타입 (any로 타입 안정성 확보)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +51,7 @@ describe("AuthService", () => {
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
 	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let eventEmitter: Mocked<EventEmitter2>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -89,6 +92,9 @@ describe("AuthService", () => {
 		todoCategoryRepo = unitRef.get(
 			TodoCategoryRepository,
 		) as unknown as Mocked<TodoCategoryRepository>;
+		eventEmitter = unitRef.get(
+			EventEmitter2,
+		) as unknown as Mocked<EventEmitter2>;
 	});
 
 	// ============================================
@@ -298,6 +304,29 @@ describe("AuthService", () => {
 			// Then - 회원가입은 성공
 			expect(result.userId).toBe(mockUser.id);
 			expect(result.email).toBe(mockUser.email);
+		});
+
+		it("회원가입 성공 시 user.registered 이벤트를 발행한다", async () => {
+			// Given
+			const mockUser = UserBuilder.create()
+				.withId("user-123")
+				.withEmail(registerInput.email)
+				.build();
+
+			setupSuccessfulRegistration(mockUser);
+
+			// When
+			await service.register(registerInput);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				AdminNotificationEvents.USER_REGISTERED,
+				expect.objectContaining({
+					userId: "user-123",
+					email: registerInput.email,
+					provider: "credential",
+				}),
+			);
 		});
 	});
 

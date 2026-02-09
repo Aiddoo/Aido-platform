@@ -3,6 +3,7 @@
 // 기존 Mock (하위 호환성 유지)
 export * from "./database.mock";
 // Fake 서비스
+export * from "./fake-admin-notifier";
 export * from "./fake-ai.provider";
 export * from "./fake-email.service";
 // 유틸리티

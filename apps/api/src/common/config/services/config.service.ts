@@ -234,4 +234,12 @@ export class TypedConfigService {
 	get logLevel(): string | undefined {
 		return this.get("LOG_LEVEL");
 	}
+
+	// ============================================
+	// Webhook Config Helpers
+	// ============================================
+
+	get discordSignupWebhookUrl(): string | undefined {
+		return this.get("DISCORD_SIGNUP_WEBHOOK_URL");
+	}
 }
