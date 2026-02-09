@@ -1,15 +1,10 @@
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import {
-  getCalendarRange,
-  getWeekRange,
-  getWeekStart,
-  WEEKDAY_LABELS,
-} from '@src/shared/utils/date';
+import { getCalendarRange, getWeekRange, WEEKDAY_LABELS } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { match } from 'ts-pattern';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
@@ -29,52 +24,40 @@ const EMPTY_COMPLETIONS: CompletionsByDate = {};
 
 export function Calendar({ value, onChange }: CalendarProps) {
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
-  const [displayDate, setDisplayDate] = useState(() => getWeekStart(value));
-
-  useEffect(() => {
-    setDisplayDate(getWeekStart(value));
-  }, [value]);
 
   const { rangeStart, rangeEnd } = useMemo(
     () =>
       match(viewMode)
-        .with('week', () => getWeekRange(displayDate))
-        .with('month', () => getCalendarRange(displayDate))
+        .with('week', () => getWeekRange(value))
+        .with('month', () => getCalendarRange(value))
         .exhaustive(),
-    [viewMode, displayDate],
+    [viewMode, value],
   );
 
   const { data: completions } = useQuery(getDailyCompletionsQueryOptions(rangeStart, rangeEnd));
-
-  const handleSelect = (date: Date) => {
-    setDisplayDate(getWeekStart(date));
-    onChange(date);
-  };
 
   return (
     <VStack className="bg-background">
       <HStack className="px-4 py-2" justify="between" align="center">
         <HStack gap={8} align="center">
-          <CalendarHeaderText viewMode={viewMode} displayDate={displayDate} />
+          <CalendarHeaderText viewMode={viewMode} displayDate={value} />
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />
         </HStack>
-        <CalendarNavigation viewMode={viewMode} value={displayDate} onChange={setDisplayDate} />
+        <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
       </HStack>
 
       {match(viewMode)
         .with('week', () => (
           <CalendarWeekView
-            displayDate={displayDate}
             value={value}
-            onChange={handleSelect}
+            onChange={onChange}
             completions={completions ?? EMPTY_COMPLETIONS}
           />
         ))
         .with('month', () => (
           <CalendarMonthView
-            displayDate={displayDate}
             value={value}
-            onChange={handleSelect}
+            onChange={onChange}
             completions={completions ?? EMPTY_COMPLETIONS}
           />
         ))
