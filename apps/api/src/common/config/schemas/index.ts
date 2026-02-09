@@ -16,6 +16,7 @@ import {
 } from "./oauth.schema";
 import { type PushConfig, pushSchema } from "./push.schema";
 import { type SecurityConfig, securitySchema } from "./security.schema";
+import { type WebhookConfig, webhookSchema } from "./webhook.schema";
 
 // 스키마 재export
 export * from "./app.schema";
@@ -27,6 +28,7 @@ export * from "./jwt.schema";
 export * from "./oauth.schema";
 export * from "./push.schema";
 export * from "./security.schema";
+export * from "./webhook.schema";
 
 /**
  * 통합 환경변수 스키마
@@ -41,7 +43,8 @@ export const envSchema = z
 	.merge(oauthSchema)
 	.merge(securitySchema)
 	.merge(pushSchema)
-	.merge(externalSchema);
+	.merge(externalSchema)
+	.merge(webhookSchema);
 
 /**
  * 환경변수 전체 타입
@@ -54,7 +57,8 @@ export type EnvConfig = AppConfig &
 	OAuthConfig &
 	SecurityConfig &
 	PushConfig &
-	ExternalConfig;
+	ExternalConfig &
+	WebhookConfig;
 
 /**
  * 환경변수 검증 함수

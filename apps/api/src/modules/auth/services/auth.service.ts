@@ -6,6 +6,7 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import {
 	addMilliseconds,
@@ -17,6 +18,10 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
+import {
+	AdminNotificationEvents,
+	type UserRegisteredEventPayload,
+} from "../../admin-notification/events/admin-notification.events";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "../../todo-category/types/todo-category.types";
 import {
@@ -72,6 +77,7 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
 		private readonly cacheService: CacheService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	async register(input: RegisterInput): Promise<RegisterResult> {
@@ -201,6 +207,13 @@ export class AuthService {
 		}
 
 		this.logger.log(`User registered: ${result.user.id} (${email})`);
+
+		this.eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
+			userId: result.user.id,
+			email: result.user.email,
+			provider: "credential",
+			registeredAt: new Date().toISOString(),
+		} satisfies UserRegisteredEventPayload);
 
 		return {
 			userId: result.user.id,

@@ -15,6 +15,7 @@ import {
 import type { EnvConfig } from "@/common/config";
 import { DatabaseModule } from "@/database";
 import { AdminModule } from "@/modules/admin/admin.module";
+import { AdminNotificationModule } from "@/modules/admin-notification/admin-notification.module";
 import { AiModule } from "@/modules/ai";
 import { AuthModule } from "@/modules/auth/auth.module";
 import { CheerModule } from "@/modules/cheer/cheer.module";
@@ -64,6 +65,7 @@ import { AppService } from "./app.service";
 
 		// 4. Features
 		AdminModule,
+		AdminNotificationModule,
 		AiModule,
 		AuthModule,
 		CheerModule,

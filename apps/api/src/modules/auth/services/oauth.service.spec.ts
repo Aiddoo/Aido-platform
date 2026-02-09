@@ -9,10 +9,10 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
-
 import { TypedConfigService } from "@/common/config/services/config.service";
 import {
 	BusinessException,
@@ -20,6 +20,7 @@ import {
 } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { Prisma } from "@/generated/prisma/client";
+import { AdminNotificationEvents } from "../../admin-notification/events/admin-notification.events";
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import {
 	LOGIN_FAILURE_REASON,
@@ -68,6 +69,7 @@ describe("OAuthService", () => {
 	let tokenService: Mocked<TokenService>;
 	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
+	let eventEmitter: Mocked<EventEmitter2>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -115,6 +117,9 @@ describe("OAuthService", () => {
 		configService = unitRef.get(
 			TypedConfigService,
 		) as unknown as Mocked<TypedConfigService>;
+		eventEmitter = unitRef.get(
+			EventEmitter2,
+		) as unknown as Mocked<EventEmitter2>;
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();
@@ -274,6 +279,33 @@ describe("OAuthService", () => {
 				);
 				expect(userRepo.create).not.toHaveBeenCalled();
 			});
+
+			it("기존 사용자 로그인 시 user.registered 이벤트를 발행하지 않는다", async () => {
+				// Given
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
+
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asApple("apple-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
+
+				// When
+				await service.handleAppleMobileLogin("valid-id-token");
+
+				// Then
+				expect(eventEmitter.emit).not.toHaveBeenCalledWith(
+					AdminNotificationEvents.USER_REGISTERED,
+					expect.anything(),
+				);
+			});
 		});
 
 		describe("신규 사용자 회원가입", () => {
@@ -324,6 +356,37 @@ describe("OAuthService", () => {
 						event: SECURITY_EVENT.REGISTRATION,
 					}),
 					expect.anything(),
+				);
+			});
+
+			it("신규 소셜 회원가입 시 user.registered 이벤트를 발행한다", async () => {
+				// Given
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(null);
+				userRepo.create.mockResolvedValue(mockUser);
+				accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+				userRepo.createProfile.mockResolvedValue({} as never);
+				todoCategoryRepo.createMany.mockResolvedValue(2);
+
+				// When
+				await service.handleAppleMobileLogin("valid-id-token", "홍길동");
+
+				// Then
+				expect(eventEmitter.emit).toHaveBeenCalledWith(
+					AdminNotificationEvents.USER_REGISTERED,
+					expect.objectContaining({
+						userId: "user-123",
+						email: "test@privaterelay.appleid.com",
+						provider: "apple",
+					}),
 				);
 			});
 

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { addMilliseconds, now } from "@/common/date";
 import { EncryptionService } from "@/common/encryption";
@@ -14,7 +15,10 @@ import {
 } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
-
+import {
+	AdminNotificationEvents,
+	type UserRegisteredEventPayload,
+} from "../../admin-notification/events/admin-notification.events";
 import {
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
@@ -49,6 +53,7 @@ export class OAuthService {
 		private readonly _tokenVerifier: OAuthTokenVerifierService,
 		private readonly _configService: TypedConfigService,
 		private readonly _encryptionService: EncryptionService,
+		private readonly _eventEmitter: EventEmitter2,
 	) {}
 
 	// 보안을 위한 화이트리스트 방식 검증
@@ -849,6 +854,14 @@ export class OAuthService {
 			userEmail = effectiveEmail;
 
 			this._logger.log(`New ${provider} user registered: ${userId}`);
+
+			this._eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
+				userId,
+				email: effectiveEmail,
+				provider:
+					provider.toLowerCase() as UserRegisteredEventPayload["provider"],
+				registeredAt: new Date().toISOString(),
+			} satisfies UserRegisteredEventPayload);
 		}
 
 		// 세션 생성 및 토큰 발급
