@@ -8,7 +8,7 @@ export const useToday = (): Date => {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
-      const wasInBackground = appState.current.match(/inactive|background/);
+      const wasInBackground = appState.current !== 'active';
       const isActive = nextAppState === 'active';
 
       if (wasInBackground && isActive) {
