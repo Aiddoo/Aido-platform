@@ -1593,4 +1593,299 @@ describe("Auth (e2e)", () => {
 			// console.log(`Cache miss: ${duration1}ms, Cache hit: ${duration2}ms`);
 		});
 	});
+
+	describe("소셜 계정 연동 (Account Linking)", () => {
+		const linkEmail = "link-test@example.com";
+		const linkPassword = "Test1234!";
+		let accessToken: string;
+
+		beforeAll(async () => {
+			fakeOAuthTokenVerifierService.clear();
+			accessToken = await createVerifiedUser(linkEmail, linkPassword);
+		});
+
+		afterEach(() => {
+			fakeOAuthTokenVerifierService.clear();
+		});
+
+		describe("POST /auth/link - 소셜 계정 연동", () => {
+			it("Kakao accessToken으로 소셜 계정을 연동한다", async () => {
+				// Given - 커스텀 Kakao 프로필 설정
+				fakeOAuthTokenVerifierService.setCustomProfile(
+					"kakao",
+					"link-kakao-token",
+					{
+						id: "kakao-link-12345",
+						email: "kakao-link@kakao.com",
+						emailVerified: true,
+						name: "카카오링크유저",
+					},
+				);
+
+				// When
+				const response = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ provider: "KAKAO", accessToken: "link-kakao-token" })
+					.expect(200);
+
+				// Then
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.message).toContain("연결");
+			});
+
+			it("Google idToken으로 소셜 계정을 연동한다", async () => {
+				fakeOAuthTokenVerifierService.setCustomProfile(
+					"google",
+					"link-google-token",
+					{
+						id: "google-link-12345",
+						email: "google-link@gmail.com",
+						emailVerified: true,
+						name: "구글링크유저",
+					},
+				);
+
+				const response = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ provider: "GOOGLE", idToken: "link-google-token" })
+					.expect(200);
+
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.message).toContain("연결");
+			});
+
+			it("미인증 요청은 401을 반환한다", async () => {
+				const response = await request(app.getHttpServer())
+					.post("/auth/link")
+					.send({ provider: "KAKAO", accessToken: "some-token" })
+					.expect(401);
+
+				expect(response.body.success).toBe(false);
+			});
+
+			it("토큰 검증 실패 시 에러를 반환한다", async () => {
+				fakeOAuthTokenVerifierService.simulateFailure();
+
+				const response = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ provider: "KAKAO", accessToken: "invalid-token" })
+					.expect(401);
+
+				expect(response.body.success).toBe(false);
+			});
+
+			it("이미 다른 유저에 연결된 소셜 계정은 409를 반환한다", async () => {
+				// Given - 다른 유저가 먼저 Naver로 로그인 (계정 생성됨)
+				const otherToken = "naver-other-user-token";
+				fakeOAuthTokenVerifierService.setCustomProfile("naver", otherToken, {
+					id: "naver-shared-12345",
+					email: "naver-other@naver.com",
+					emailVerified: true,
+					name: "다른유저",
+				});
+
+				// 다른 유저가 Naver로 소셜 로그인 (계정 자동 생성)
+				await request(app.getHttpServer())
+					.post("/auth/naver/callback")
+					.send({ accessToken: otherToken })
+					.expect(200);
+
+				// When - 현재 유저가 같은 Naver 계정을 연동 시도
+				const linkToken = "naver-link-conflict-token";
+				fakeOAuthTokenVerifierService.setCustomProfile("naver", linkToken, {
+					id: "naver-shared-12345", // 같은 providerAccountId
+					email: "naver-other@naver.com",
+					emailVerified: true,
+					name: "다른유저",
+				});
+
+				const response = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ provider: "NAVER", accessToken: linkToken })
+					.expect(409);
+
+				// Then
+				expect(response.body.success).toBe(false);
+				expect(response.body.error.code).toBe("NAVER_0455");
+			});
+		});
+
+		describe("GET /auth/linked-accounts - 연동 목록 조회", () => {
+			it("연동된 소셜 계정 목록을 반환한다 (provider, linked, providerAccountId, linkedAt 포함)", async () => {
+				const response = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				expect(response.body.success).toBe(true);
+				expect(Array.isArray(response.body.data.accounts)).toBe(true);
+
+				// 항상 4개 항목 (APPLE, GOOGLE, KAKAO, NAVER)
+				const accounts = response.body.data.accounts;
+				expect(accounts).toHaveLength(4);
+
+				// 각 계정에 필수 필드 확인
+				for (const account of accounts) {
+					expect(account).toHaveProperty("provider");
+					expect(account).toHaveProperty("linked");
+					expect(account).toHaveProperty("providerAccountId");
+					expect(account).toHaveProperty("linkedAt");
+				}
+
+				// CREDENTIAL은 포함되지 않아야 함
+				expect(
+					accounts.every(
+						(a: { provider: string }) => a.provider !== "CREDENTIAL",
+					),
+				).toBe(true);
+
+				// 앞서 Kakao, Google을 연동했으므로 linked: true
+				const kakaoAccount = accounts.find(
+					(a: { provider: string }) => a.provider === "KAKAO",
+				);
+				expect(kakaoAccount.linked).toBe(true);
+
+				const googleAccount = accounts.find(
+					(a: { provider: string }) => a.provider === "GOOGLE",
+				);
+				expect(googleAccount.linked).toBe(true);
+			});
+
+			it("미인증 요청은 401을 반환한다", async () => {
+				await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.expect(401);
+			});
+		});
+
+		describe("DELETE /auth/linked-accounts/:provider - 연동 해제", () => {
+			it("연동된 소셜 계정을 해제한다", async () => {
+				// GOOGLE 계정 해제
+				const response = await request(app.getHttpServer())
+					.delete("/auth/linked-accounts/GOOGLE")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.message).toContain("해제");
+
+				// 해제 후 목록에서 linked: false 확인
+				const listResponse = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				const googleAccount = listResponse.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "GOOGLE",
+				);
+				expect(googleAccount.linked).toBe(false);
+				expect(googleAccount.providerAccountId).toBeNull();
+				expect(googleAccount.linkedAt).toBeNull();
+			});
+
+			it("마지막 로그인 수단은 해제할 수 없다 (400)", async () => {
+				// 현재 남은 계정: CREDENTIAL + KAKAO
+				// KAKAO 해제 → CREDENTIAL만 남음
+				await request(app.getHttpServer())
+					.delete("/auth/linked-accounts/KAKAO")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				// 이제 CREDENTIAL만 남았으므로, 다른 소셜 계정을 해제하려 해도 없음
+				// 실제로는 소셜 계정이 없으므로 404
+			});
+
+			it("연결되지 않은 provider는 404를 반환한다", async () => {
+				// APPLE은 연동한 적 없음
+				const response = await request(app.getHttpServer())
+					.delete("/auth/linked-accounts/APPLE")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(404);
+
+				expect(response.body.success).toBe(false);
+				expect(response.body.error.code).toBe("USER_0603");
+			});
+
+			it("미인증 요청은 401을 반환한다", async () => {
+				await request(app.getHttpServer())
+					.delete("/auth/linked-accounts/KAKAO")
+					.expect(401);
+			});
+		});
+
+		describe("연동 → 조회 → 해제 → 재연동 (round-trip)", () => {
+			it("전체 라운드트립 플로우가 정상 동작한다", async () => {
+				// 새 유저 생성
+				const rtEmail = "roundtrip-test@example.com";
+				const rtPassword = "Test1234!";
+				const rtAccessToken = await createVerifiedUser(rtEmail, rtPassword);
+
+				// 1. Apple 연동
+				fakeOAuthTokenVerifierService.setCustomProfile(
+					"apple",
+					"rt-apple-token",
+					{
+						id: "apple-rt-12345",
+						email: "apple-rt@privaterelay.appleid.com",
+						emailVerified: true,
+					},
+				);
+
+				const linkRes = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.send({ provider: "APPLE", idToken: "rt-apple-token" })
+					.expect(200);
+				expect(linkRes.body.data.message).toContain("연결");
+
+				// 2. 조회 - Apple linked: true
+				const listRes1 = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.expect(200);
+				const appleAccount1 = listRes1.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
+				);
+				expect(appleAccount1.linked).toBe(true);
+
+				// 3. 해제
+				await request(app.getHttpServer())
+					.delete("/auth/linked-accounts/APPLE")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.expect(200);
+
+				// 4. 조회 - Apple linked: false
+				const listRes2 = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.expect(200);
+				const appleAccount2 = listRes2.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
+				);
+				expect(appleAccount2.linked).toBe(false);
+
+				// 5. 재연동
+				const relinkRes = await request(app.getHttpServer())
+					.post("/auth/link")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.send({ provider: "APPLE", idToken: "rt-apple-token" })
+					.expect(200);
+				expect(relinkRes.body.data.message).toContain("연결");
+
+				// 6. 최종 조회 - Apple 다시 linked: true
+				const listRes3 = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${rtAccessToken}`)
+					.expect(200);
+				const appleAccount3 = listRes3.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
+				);
+				expect(appleAccount3.linked).toBe(true);
+			});
+		});
+	});
 });

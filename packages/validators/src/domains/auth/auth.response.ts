@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { DEVICE_TYPES, USER_ROLE, USER_STATUS } from './auth.constants';
+import { DEVICE_TYPES, OAUTH_PROVIDERS, USER_ROLE, USER_STATUS } from './auth.constants';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
 export const userRoleSchema = z
@@ -323,9 +323,7 @@ export const updateProfileResponseSchema = z
 
 export type UpdateProfileResponse = z.infer<typeof updateProfileResponseSchema>;
 
-export const oauthProviderEnumSchema = z
-  .enum(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'])
-  .describe('소셜 로그인 제공자');
+export const oauthProviderEnumSchema = z.enum(OAUTH_PROVIDERS).describe('소셜 로그인 제공자');
 
 export const appleLoginResponseSchema = authTokensSchema.describe('Apple 로그인 응답');
 export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
@@ -333,15 +331,15 @@ export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
 export const linkedAccountSchema = z
   .object({
     provider: oauthProviderEnumSchema,
-    providerAccountId: z.string().describe('제공자 측 계정 고유 ID'),
-    linkedAt: datetimeSchema.describe(
-      '계정 연결 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)',
-    ),
+    linked: z.boolean().describe('해당 제공자의 계정 연결 여부'),
+    providerAccountId: z.string().nullable().describe('제공자 측 계정 고유 ID (미연결 시 null)'),
+    linkedAt: nullableDatetimeSchema.describe('계정 연결 시각 (ISO 8601 UTC, 미연결 시 null)'),
   })
-  .describe('연결된 소셜 계정 정보')
+  .describe('소셜 계정 연결 상태')
   .meta({
     example: {
       provider: 'GOOGLE',
+      linked: true,
       providerAccountId: '102938475647382910',
       linkedAt: '2026-01-15T10:30:00.000Z',
     },
@@ -351,21 +349,37 @@ export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
 export const linkedAccountsResponseSchema = z
   .object({
-    accounts: z.array(linkedAccountSchema).describe('연결된 소셜 계정 목록'),
+    accounts: z
+      .array(linkedAccountSchema)
+      .describe('소셜 계정 연결 상태 목록 (항상 4개 제공자 포함)'),
   })
-  .describe('연결된 소셜 계정 목록 응답')
+  .describe('소셜 계정 연결 상태 목록 응답')
   .meta({
     example: {
       accounts: [
         {
+          provider: 'APPLE',
+          linked: false,
+          providerAccountId: null,
+          linkedAt: null,
+        },
+        {
           provider: 'GOOGLE',
+          linked: true,
           providerAccountId: '102938475647382910',
           linkedAt: '2026-01-15T10:30:00.000Z',
         },
         {
-          provider: 'APPLE',
-          providerAccountId: '001234.abcd1234efgh5678.0123',
-          linkedAt: '2026-01-10T09:00:00.000Z',
+          provider: 'KAKAO',
+          linked: true,
+          providerAccountId: '3456789012',
+          linkedAt: '2026-02-01T14:00:00.000Z',
+        },
+        {
+          provider: 'NAVER',
+          linked: false,
+          providerAccountId: null,
+          linkedAt: null,
         },
       ],
     },

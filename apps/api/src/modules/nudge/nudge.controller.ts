@@ -23,6 +23,7 @@ import {
 	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
+	ApiTooManyRequestsError,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
@@ -104,6 +105,7 @@ export class NudgeController {
 	@ApiForbiddenError(ErrorCode.NUDGE_1103)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiConflictError(ErrorCode.NUDGE_1101)
+	@ApiTooManyRequestsError(ErrorCode.NUDGE_1102)
 	async sendNudge(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: SendNudgeDto,

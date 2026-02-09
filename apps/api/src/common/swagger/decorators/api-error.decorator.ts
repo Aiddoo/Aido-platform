@@ -2,9 +2,7 @@ import { type ErrorCodeType, Errors } from "@aido/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiResponse } from "@nestjs/swagger";
 
-import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant";
 import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface";
-import { ErrorResponseSchema } from "../schemas/response.schema";
 
 /**
  * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)
@@ -88,16 +86,21 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
  * @example
  * ```typescript
  * @Get('profile')
- * @ApiUnauthorizedError()
+ * @ApiUnauthorizedError(ErrorCode.AUTH_0107)
  * getProfile() { ... }
  * ```
  */
-export function ApiUnauthorizedError(description?: string): MethodDecorator {
+export function ApiUnauthorizedError(
+	errorCode?: ErrorCodeType,
+): MethodDecorator {
+	const code = errorCode ?? ("AUTH_0107" as ErrorCodeType);
+	const message = Errors[code]?.message ?? "인증이 필요합니다.";
+
 	return applyDecorators(
 		ApiResponse({
 			status: HttpStatus.UNAUTHORIZED,
-			description: description ?? SWAGGER_DESCRIPTION.UNAUTHORIZED_401,
-			type: ErrorResponseSchema,
+			description: message,
+			schema: createErrorSchema(code, message),
 		}),
 	);
 }
@@ -108,16 +111,18 @@ export function ApiUnauthorizedError(description?: string): MethodDecorator {
  * @example
  * ```typescript
  * @Delete(':id')
- * @ApiForbiddenError()
+ * @ApiForbiddenError(ErrorCode.AUTH_0108)
  * delete(@Param('id') id: number) { ... }
  * ```
  */
-export function ApiForbiddenError(description?: string): MethodDecorator {
+export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
+	const message = Errors[errorCode]?.message ?? "접근 권한이 없습니다.";
+
 	return applyDecorators(
 		ApiResponse({
 			status: HttpStatus.FORBIDDEN,
-			description: description ?? SWAGGER_DESCRIPTION.FORBIDDEN_403,
-			type: ErrorResponseSchema,
+			description: message,
+			schema: createErrorSchema(errorCode, message),
 		}),
 	);
 }
