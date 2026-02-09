@@ -1715,7 +1715,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		describe("GET /auth/linked-accounts - 연동 목록 조회", () => {
-			it("연동된 소셜 계정 목록을 반환한다 (provider, providerAccountId, linkedAt 포함)", async () => {
+			it("연동된 소셜 계정 목록을 반환한다 (provider, linked, providerAccountId, linkedAt 포함)", async () => {
 				const response = await request(app.getHttpServer())
 					.get("/auth/linked-accounts")
 					.set("Authorization", `Bearer ${accessToken}`)
@@ -1724,13 +1724,14 @@ describe("Auth (e2e)", () => {
 				expect(response.body.success).toBe(true);
 				expect(Array.isArray(response.body.data.accounts)).toBe(true);
 
-				// 앞서 Kakao, Google을 연동했으므로 최소 2개
+				// 항상 4개 항목 (APPLE, GOOGLE, KAKAO, NAVER)
 				const accounts = response.body.data.accounts;
-				expect(accounts.length).toBeGreaterThanOrEqual(2);
+				expect(accounts).toHaveLength(4);
 
 				// 각 계정에 필수 필드 확인
 				for (const account of accounts) {
 					expect(account).toHaveProperty("provider");
+					expect(account).toHaveProperty("linked");
 					expect(account).toHaveProperty("providerAccountId");
 					expect(account).toHaveProperty("linkedAt");
 				}
@@ -1741,6 +1742,17 @@ describe("Auth (e2e)", () => {
 						(a: { provider: string }) => a.provider !== "CREDENTIAL",
 					),
 				).toBe(true);
+
+				// 앞서 Kakao, Google을 연동했으므로 linked: true
+				const kakaoAccount = accounts.find(
+					(a: { provider: string }) => a.provider === "KAKAO",
+				);
+				expect(kakaoAccount.linked).toBe(true);
+
+				const googleAccount = accounts.find(
+					(a: { provider: string }) => a.provider === "GOOGLE",
+				);
+				expect(googleAccount.linked).toBe(true);
 			});
 
 			it("미인증 요청은 401을 반환한다", async () => {
@@ -1761,16 +1773,18 @@ describe("Auth (e2e)", () => {
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.message).toContain("해제");
 
-				// 해제 후 목록에서 제거 확인
+				// 해제 후 목록에서 linked: false 확인
 				const listResponse = await request(app.getHttpServer())
 					.get("/auth/linked-accounts")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				const providers = listResponse.body.data.accounts.map(
-					(a: { provider: string }) => a.provider,
+				const googleAccount = listResponse.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "GOOGLE",
 				);
-				expect(providers).not.toContain("GOOGLE");
+				expect(googleAccount.linked).toBe(false);
+				expect(googleAccount.providerAccountId).toBeNull();
+				expect(googleAccount.linkedAt).toBeNull();
 			});
 
 			it("마지막 로그인 수단은 해제할 수 없다 (400)", async () => {
@@ -1828,15 +1842,15 @@ describe("Auth (e2e)", () => {
 					.expect(200);
 				expect(linkRes.body.data.message).toContain("연결");
 
-				// 2. 조회 - Apple 포함
+				// 2. 조회 - Apple linked: true
 				const listRes1 = await request(app.getHttpServer())
 					.get("/auth/linked-accounts")
 					.set("Authorization", `Bearer ${rtAccessToken}`)
 					.expect(200);
-				const providers1 = listRes1.body.data.accounts.map(
-					(a: { provider: string }) => a.provider,
+				const appleAccount1 = listRes1.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
 				);
-				expect(providers1).toContain("APPLE");
+				expect(appleAccount1.linked).toBe(true);
 
 				// 3. 해제
 				await request(app.getHttpServer())
@@ -1844,15 +1858,15 @@ describe("Auth (e2e)", () => {
 					.set("Authorization", `Bearer ${rtAccessToken}`)
 					.expect(200);
 
-				// 4. 조회 - Apple 없음
+				// 4. 조회 - Apple linked: false
 				const listRes2 = await request(app.getHttpServer())
 					.get("/auth/linked-accounts")
 					.set("Authorization", `Bearer ${rtAccessToken}`)
 					.expect(200);
-				const providers2 = listRes2.body.data.accounts.map(
-					(a: { provider: string }) => a.provider,
+				const appleAccount2 = listRes2.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
 				);
-				expect(providers2).not.toContain("APPLE");
+				expect(appleAccount2.linked).toBe(false);
 
 				// 5. 재연동
 				const relinkRes = await request(app.getHttpServer())
@@ -1862,15 +1876,15 @@ describe("Auth (e2e)", () => {
 					.expect(200);
 				expect(relinkRes.body.data.message).toContain("연결");
 
-				// 6. 최종 조회 - Apple 다시 포함
+				// 6. 최종 조회 - Apple 다시 linked: true
 				const listRes3 = await request(app.getHttpServer())
 					.get("/auth/linked-accounts")
 					.set("Authorization", `Bearer ${rtAccessToken}`)
 					.expect(200);
-				const providers3 = listRes3.body.data.accounts.map(
-					(a: { provider: string }) => a.provider,
+				const appleAccount3 = listRes3.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
 				);
-				expect(providers3).toContain("APPLE");
+				expect(appleAccount3.linked).toBe(true);
 			});
 		});
 	});

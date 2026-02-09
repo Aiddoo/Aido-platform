@@ -530,12 +530,15 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// When
 			const linkedAccounts = await oauthService.getLinkedAccounts(testUserId);
 
-			// Then
-			expect(linkedAccounts).toHaveLength(3);
-			const providers = linkedAccounts.map((a) => a.provider);
-			expect(providers).toContain("GOOGLE");
-			expect(providers).toContain("KAKAO");
-			expect(providers).toContain("APPLE");
+			// Then: 항상 4개 항목 반환
+			expect(linkedAccounts).toHaveLength(4);
+			const linkedProviders = linkedAccounts
+				.filter((a) => a.linked)
+				.map((a) => a.provider);
+			expect(linkedProviders).toHaveLength(3);
+			expect(linkedProviders).toContain("GOOGLE");
+			expect(linkedProviders).toContain("KAKAO");
+			expect(linkedProviders).toContain("APPLE");
 		});
 	});
 
@@ -566,14 +569,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// 연결 확인
 			let accounts = await oauthService.getLinkedAccounts(testUserId);
-			expect(accounts.map((a) => a.provider)).toContain("KAKAO");
+			expect(accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(true);
 
 			// When: 해제
 			await oauthService.unlinkAccount(testUserId, "KAKAO");
 
 			// 해제 확인
 			accounts = await oauthService.getLinkedAccounts(testUserId);
-			expect(accounts.map((a) => a.provider)).not.toContain("KAKAO");
+			expect(accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(false);
 
 			// When: 재연동
 			const result = await oauthService.linkAccount(
@@ -585,7 +588,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then: 재연동 성공
 			expect(result.message).toBe("계정이 연결되었습니다.");
 			accounts = await oauthService.getLinkedAccounts(testUserId);
-			expect(accounts.map((a) => a.provider)).toContain("KAKAO");
+			expect(accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(true);
 		});
 
 		it("4개 provider 모두 같은 유저에 연동할 수 있어야 한다", async () => {
@@ -598,9 +601,8 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// Then: 4개 모두 연동됨
 			const accounts = await oauthService.getLinkedAccounts(testUserId);
-			const providers = accounts.map((a) => a.provider).sort();
-			expect(providers).toEqual(["APPLE", "GOOGLE", "KAKAO", "NAVER"]);
 			expect(accounts).toHaveLength(4);
+			expect(accounts.every((a) => a.linked)).toBe(true);
 		});
 
 		it("linkAccount 시 SecurityLog(OAUTH_LINKED)가 기록되어야 한다", async () => {
@@ -664,6 +666,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then: providerAccountId 포함 확인
 			const naverAccount = accounts.find((a) => a.provider === "NAVER");
 			expect(naverAccount).toBeDefined();
+			expect(naverAccount?.linked).toBe(true);
 			expect(naverAccount?.providerAccountId).toBe("naver-pid-test");
 			expect(naverAccount?.linkedAt).toBeInstanceOf(Date);
 		});
