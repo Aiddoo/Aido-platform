@@ -1,8 +1,6 @@
 import { userTagParamSchema } from '@aido/validators';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiError } from '@src/shared/errors/api-error';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -17,7 +15,6 @@ import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Pressable } from 'react-native';
 import type { z } from 'zod';
 
-import { isFriendError } from '../../models/friend.error';
 import { sendRequestByTagMutationOptions } from '../queries/send-request-by-tag-mutation-options';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -25,7 +22,6 @@ type FormData = z.infer<typeof userTagParamSchema>;
 export const FriendSearchBottomSheet = () => {
   const [isOpen, setIsOpen] = useState(false);
   const sendRequestMutation = useMutation(sendRequestByTagMutationOptions());
-  const toast = useAppToast();
 
   const { control, handleSubmit, reset, formState } = useForm<FormData>({
     resolver: zodResolver(userTagParamSchema),
@@ -37,16 +33,8 @@ export const FriendSearchBottomSheet = () => {
 
     sendRequestMutation.mutate(data.userTag, {
       onSuccess: () => {
-        toast.success('친구 요청을 보냈어요');
         reset();
         setIsOpen(false);
-      },
-      onError: (err) => {
-        if (err instanceof ApiError || isFriendError(err)) {
-          toast.error(err.message);
-          return;
-        }
-        toast.error(undefined, { fallback: '친구 요청에 실패했어요' });
       },
     });
   };

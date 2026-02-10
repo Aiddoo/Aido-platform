@@ -1,7 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TodoItem } from '@src/features/todo/models/todo.model';
-import { isApiError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -25,7 +23,6 @@ interface NudgeDialogProps {
 }
 
 export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogProps) {
-  const toast = useAppToast();
   const sendNudgeMutation = useMutation(sendTodoNudgeMutationOptions());
   const { control, handleSubmit, reset } = useForm<NudgeFormInput>({
     resolver: zodResolver(nudgeFormSchema),
@@ -40,17 +37,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
         message: data.message?.trim() || undefined,
       },
       {
-        onSuccess: () => {
-          toast.success('콕 찔렀어요!');
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          if (isApiError(error)) {
-            toast.error(error.message);
-            return;
-          }
-          toast.error(undefined, { fallback: '잠시 후 다시 시도해 주세요' });
-        },
+        onSuccess: () => onOpenChange(false),
       },
     );
   };

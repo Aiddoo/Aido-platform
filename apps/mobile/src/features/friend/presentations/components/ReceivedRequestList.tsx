@@ -1,5 +1,4 @@
 import { FlashList } from '@shopify/flash-list';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -24,18 +23,13 @@ export function ReceivedRequestList() {
   );
   const acceptMutation = useMutation(acceptRequestMutationOptions());
   const rejectMutation = useMutation(rejectRequestMutationOptions());
-  const toast = useAppToast();
 
   const handleAccept = (userId: string) => {
-    acceptMutation.mutate(userId, {
-      onSuccess: () => toast.success('친구 요청을 수락했어요'),
-    });
+    acceptMutation.mutate(userId);
   };
 
   const handleReject = (userId: string) => {
-    rejectMutation.mutate(userId, {
-      onSuccess: () => toast.success('친구 요청을 거절했어요'),
-    });
+    rejectMutation.mutate(userId);
   };
 
   const allRequests = data.pages.flatMap((page) => page.items);

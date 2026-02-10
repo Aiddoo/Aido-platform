@@ -1,16 +1,12 @@
-import { ErrorCode } from '@aido/errors';
 import type { RegisterInput } from '@aido/validators';
 import { registerMutationOptions } from '@src/features/auth/presentations/queries/register-mutation-options';
 import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
-import { isApiError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
 import { BottomSheet, Checkbox, Divider, FormField } from 'heroui-native';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -25,7 +21,6 @@ interface TermsBottomSheetProps {
 
 export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
   const { handleSubmit } = useFormContext<SignUpFormData>();
-  const toast = useAppToast();
   const insets = useSafeAreaInsets();
 
   const [agreements, setAgreements] = useState(() => ({
@@ -61,22 +56,8 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
         onOpenChange(false);
         onNextStep();
       },
-      onError: (error) => {
-        if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
-          onOpenChange(false);
-          toast.toast('이미 가입된 이메일이에요', {
-            variant: 'accent',
-            action: {
-              label: '로그인하기',
-              onPress: ({ hide }) => {
-                hide();
-                router.replace('/(auth)/email-login');
-              },
-            },
-          });
-          return;
-        }
-        toast.error(error, { fallback: '회원가입에 실패했습니다' });
+      onError: () => {
+        onOpenChange(false);
       },
     });
   };
