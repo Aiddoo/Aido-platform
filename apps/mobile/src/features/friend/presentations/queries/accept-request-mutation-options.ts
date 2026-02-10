@@ -12,11 +12,11 @@ export const acceptRequestMutationOptions = () => {
       const result = await friendService.acceptRequest(userId);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() }),
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() }),
-      ]);
-    },
+        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() }),
+      ]),
   });
 };
