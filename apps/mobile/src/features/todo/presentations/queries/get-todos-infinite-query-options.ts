@@ -4,7 +4,6 @@ import { formatTime } from '@src/shared/utils/date';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import type { TodoItem } from '../../models/todo.model';
-import { TodoPolicy } from '../../models/todo.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export interface TodoItemViewModel extends TodoItem {
@@ -15,7 +14,7 @@ export interface TodoItemViewModel extends TodoItem {
 const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
   ...todo,
   formattedTime: todo.scheduledTime ? formatTime(todo.scheduledTime) : null,
-  color: TodoPolicy.getColor(todo),
+  color: todo.category.color,
 });
 
 export const getTodosInfiniteQueryOptions = (date: string, categoryId?: number) => {

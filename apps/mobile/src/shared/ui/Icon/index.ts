@@ -19,6 +19,7 @@ export {
   MoreIcon,
   NaverIcon,
   PauseIcon,
+  PawIcon,
   PersonIcon,
   PlusIcon,
   SearchIcon,

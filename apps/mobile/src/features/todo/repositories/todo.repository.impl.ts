@@ -67,6 +67,37 @@ export class TodoRepositoryImpl implements TodoRepository {
     });
   }
 
+  async getFriendTodos(
+    friendUserId: string,
+    params: GetTodosQuery,
+  ): Promise<Result<TodosResult, ApiError>> {
+    const result = await this.#httpClient.get<TodoListResponse>(
+      `v1/todos/friends/${friendUserId}`,
+      {
+        params: {
+          cursor: params.cursor,
+          size: params.size,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        },
+      },
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = todoListResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[TodoRepository] Invalid getFriendTodos response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok({
+      todos: toTodoItems(parsed.data.items),
+      hasNext: parsed.data.pagination.hasNext,
+      nextCursor: parsed.data.pagination.nextCursor,
+    });
+  }
+
   async toggleTodoComplete(
     todoId: number,
     body: ToggleTodoCompleteInput,

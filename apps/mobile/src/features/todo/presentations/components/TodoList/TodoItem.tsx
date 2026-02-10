@@ -5,7 +5,7 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
 
-import type { TodoItemViewModel } from '../../queries/get-todos-infinite-query-options';
+import type { TodoItemViewModel } from '../../queries/get-all-todos-query-options';
 import { toggleTodoMutationOptions } from '../../queries/toggle-todo-mutation-options';
 
 interface TodoItemProps {

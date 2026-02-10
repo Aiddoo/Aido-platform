@@ -9,7 +9,14 @@ import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Image, ScrollView } from 'react-native';
 
-export function UserAvatarList() {
+export type SelectedUser = { type: 'me' } | { type: 'friend'; userId: string; name: string };
+
+interface UserAvatarListProps {
+  value: SelectedUser;
+  onChange: (user: SelectedUser) => void;
+}
+
+export function UserAvatarList({ value, onChange }: UserAvatarListProps) {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
   const {
     data: friendsData,
@@ -36,13 +43,22 @@ export function UserAvatarList() {
       contentContainerStyle={{ paddingHorizontal: 16, gap: 12, alignItems: 'flex-start' }}
       onMomentumScrollEnd={handleScrollEnd}
     >
-      <UserAvatarItem name="나" profileImage={user.profileImage} isSelected={true} />
+      <UserAvatarItem
+        name="나"
+        profileImage={user.profileImage}
+        isSelected={value.type === 'me'}
+        onPress={() => onChange({ type: 'me' })}
+      />
 
       {friends.map((friend) => (
         <UserAvatarItem
           key={friend.followId}
           name={friend.name ?? '친구'}
           profileImage={friend.profileImage}
+          isSelected={value.type === 'friend' && value.userId === friend.id}
+          onPress={() =>
+            onChange({ type: 'friend', userId: friend.id, name: friend.name ?? '친구' })
+          }
         />
       ))}
     </ScrollView>

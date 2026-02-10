@@ -17,15 +17,15 @@ const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
   color: todo.category.color,
 });
 
-export const getTodosByRangeQueryOptions = (rangeStart: string, rangeEnd: string) => {
+export const getAllTodosQueryOptions = (date: string) => {
   const todoService = useTodoService();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.byRange(rangeStart, rangeEnd),
+    queryKey: TODO_QUERY_KEYS.listByDate(date),
     queryFn: async () => {
       const result = await todoService.getTodos({
-        startDate: rangeStart,
-        endDate: rangeEnd,
+        startDate: date,
+        endDate: date,
         size: 200,
       });
       return unwrap(result);

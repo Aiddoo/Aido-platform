@@ -22,6 +22,13 @@ export class TodoService {
     return this.#todoRepository.getTodos(params);
   };
 
+  getFriendTodos = async (
+    friendUserId: string,
+    params: GetTodosQuery,
+  ): Promise<Result<TodosResult, ApiError>> => {
+    return this.#todoRepository.getFriendTodos(friendUserId, params);
+  };
+
   toggleTodoComplete = async (
     todoId: number,
     body: ToggleTodoCompleteInput,

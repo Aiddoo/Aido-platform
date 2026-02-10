@@ -6,26 +6,26 @@ import { queryOptions } from '@tanstack/react-query';
 import type { TodoItem } from '../../models/todo.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
-export interface TodoItemViewModel extends TodoItem {
+export interface FriendTodoItemViewModel extends TodoItem {
   formattedTime: string | null;
   color: string;
 }
 
-const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
+const toViewModel = (todo: TodoItem): FriendTodoItemViewModel => ({
   ...todo,
   formattedTime: todo.scheduledTime ? formatTime(todo.scheduledTime) : null,
   color: todo.category.color,
 });
 
-export const getTodosByRangeQueryOptions = (rangeStart: string, rangeEnd: string) => {
+export const getFriendTodosQueryOptions = (friendUserId: string, date: string) => {
   const todoService = useTodoService();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.byRange(rangeStart, rangeEnd),
+    queryKey: TODO_QUERY_KEYS.friendListByDate(friendUserId, date),
     queryFn: async () => {
-      const result = await todoService.getTodos({
-        startDate: rangeStart,
-        endDate: rangeEnd,
+      const result = await todoService.getFriendTodos(friendUserId, {
+        startDate: date,
+        endDate: date,
         size: 200,
       });
       return unwrap(result);

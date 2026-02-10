@@ -88,9 +88,3 @@ export const dailyCompletionsResultSchema = z.object({
   }),
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
-
-export const TodoPolicy = {
-  DEFAULT_COLOR: '#FF9500',
-  getColor: (todo: TodoItem): string => todo.category.color,
-  isPublic: (todo: TodoItem): boolean => todo.visibility === 'PUBLIC',
-} as const;

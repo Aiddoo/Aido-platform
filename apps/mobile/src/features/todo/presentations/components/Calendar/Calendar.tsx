@@ -18,11 +18,12 @@ import type { CalendarViewMode } from './calendar.types';
 interface CalendarProps {
   value: Date;
   onChange: (date: Date) => void;
+  showCompletions?: boolean;
 }
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 
-export function Calendar({ value, onChange }: CalendarProps) {
+export function Calendar({ value, onChange, showCompletions = true }: CalendarProps) {
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
 
   const { rangeStart, rangeEnd } = useMemo(
@@ -34,7 +35,12 @@ export function Calendar({ value, onChange }: CalendarProps) {
     [viewMode, value],
   );
 
-  const { data: completions } = useQuery(getDailyCompletionsQueryOptions(rangeStart, rangeEnd));
+  const { data } = useQuery({
+    ...getDailyCompletionsQueryOptions(rangeStart, rangeEnd),
+    enabled: showCompletions,
+  });
+
+  const completions = (showCompletions && data) || EMPTY_COMPLETIONS;
 
   return (
     <VStack className="bg-background">
@@ -48,18 +54,10 @@ export function Calendar({ value, onChange }: CalendarProps) {
 
       {match(viewMode)
         .with('week', () => (
-          <CalendarWeekView
-            value={value}
-            onChange={onChange}
-            completions={completions ?? EMPTY_COMPLETIONS}
-          />
+          <CalendarWeekView value={value} onChange={onChange} completions={completions} />
         ))
         .with('month', () => (
-          <CalendarMonthView
-            value={value}
-            onChange={onChange}
-            completions={completions ?? EMPTY_COMPLETIONS}
-          />
+          <CalendarMonthView value={value} onChange={onChange} completions={completions} />
         ))
         .exhaustive()}
     </VStack>
