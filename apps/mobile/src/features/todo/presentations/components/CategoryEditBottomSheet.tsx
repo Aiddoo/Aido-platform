@@ -1,10 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
 import { updateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/update-todo-category-mutation-options';
-import { isApiError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -28,7 +25,6 @@ export const CategoryEditBottomSheet = ({
   onOpenChange,
   category,
 }: CategoryEditBottomSheetProps) => {
-  const toast = useAppToast();
   const updateMutation = useMutation(updateTodoCategoryMutationOptions());
 
   const {
@@ -45,15 +41,7 @@ export const CategoryEditBottomSheet = ({
       { id: category.id, input: data },
       {
         onSuccess: () => {
-          toast.success('카테고리를 수정했어요');
           onOpenChange(false);
-        },
-        onError: (error) => {
-          if (isTodoCategoryError(error) || isApiError(error)) {
-            toast.error(error.message);
-            return;
-          }
-          toast.error(undefined, { fallback: '잠시 후 다시 수정해 보세요' });
         },
       },
     );

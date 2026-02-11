@@ -1,36 +1,60 @@
-import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
-import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense } from 'react';
+import { useMemo } from 'react';
+import { getAllTodosQueryOptions } from '../../queries/get-all-todos-query-options';
+import { getTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
-import { CategoryTodoList } from './CategoryTodoList';
+import { TodoItem } from './TodoItem';
+
+interface TodoCategoryViewModel {
+  id: number;
+  name: string;
+  color: string;
+}
 
 interface TodoListProps {
   date: Date;
 }
 
 export function TodoList({ date }: TodoListProps) {
-  const { data: categoriesData } = useSuspenseQuery(getTodoCategoriesQueryOptions());
+  const { data } = useSuspenseQuery(getAllTodosQueryOptions(formatDate(date)));
+  const { data: categoriesData } = useSuspenseQuery({
+    ...getTodoCategoriesQueryOptions(),
+    select: (data) => ({
+      categories: data.categories.map(
+        (c): TodoCategoryViewModel => ({ id: c.id, name: c.name, color: c.color }),
+      ),
+    }),
+  });
+
+  const categoryGroups = useMemo(() => {
+    const grouped = groupBy(data.todos, (todo) => todo.category.id);
+
+    return categoriesData.categories.map((category) => ({
+      category,
+      todos: grouped[category.id] ?? [],
+    }));
+  }, [data.todos, categoriesData.categories]);
 
   return (
-    <Box gap={24} px={16}>
-      {categoriesData.categories.map((category) => (
-        <Box key={category.id} gap={8}>
-          <CategoryHeader date={date} category={category} />
-          <QueryErrorBoundary>
-            <Suspense fallback={<CategoryTodoList.Loading />}>
-              <CategoryTodoList date={date} categoryId={category.id} />
-            </Suspense>
-          </QueryErrorBoundary>
+    <Box gap={16} px={16}>
+      {categoryGroups.map((group) => (
+        <Box key={group.category.id} gap={8}>
+          <CategoryHeader date={date} category={group.category} />
+          <Box>
+            {group.todos.map((todo) => (
+              <TodoItem key={todo.id} todo={todo} />
+            ))}
+          </Box>
         </Box>
       ))}
     </Box>
@@ -39,7 +63,7 @@ export function TodoList({ date }: TodoListProps) {
 
 interface CategoryHeaderProps {
   date: Date;
-  category: TodoCategoryWithCount;
+  category: TodoCategoryViewModel;
 }
 
 function CategoryHeader({ date, category }: CategoryHeaderProps) {

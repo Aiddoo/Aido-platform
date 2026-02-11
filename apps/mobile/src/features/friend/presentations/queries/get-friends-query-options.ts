@@ -2,6 +2,7 @@ import { useFriendService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
+import { toFriendUserViewModel } from '../view-models/friend-user.view-model';
 
 export const getFriendsQueryOptions = () => {
   const friendService = useFriendService();
@@ -19,5 +20,12 @@ export const getFriendsQueryOptions = () => {
       }
       return lastPage.items[lastPage.items.length - 1]?.followId;
     },
+    select: (data) => ({
+      pages: data.pages.map((page) => ({
+        ...page,
+        items: page.items.map(toFriendUserViewModel),
+      })),
+      pageParams: data.pageParams,
+    }),
   });
 };

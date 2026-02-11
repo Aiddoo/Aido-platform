@@ -10,8 +10,10 @@ import { NotificationService } from '@src/features/notification/services/notific
 import { PushTokenService } from '@src/features/notification/services/push-token.service';
 import { TodoRepositoryImpl } from '@src/features/todo/repositories/todo.repository.impl';
 import { TodoCategoryRepositoryImpl } from '@src/features/todo/repositories/todo-category.repository.impl';
+import { TodoNudgeRepositoryImpl } from '@src/features/todo/repositories/todo-nudge.repository.impl';
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
+import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -30,6 +32,7 @@ export interface DIContainer {
   todoService: TodoService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
+  todoNudgeService: TodoNudgeService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -71,6 +74,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       pushTokenService,
     );
 
+    // Todo Nudge
+    const todoNudgeRepository = new TodoNudgeRepositoryImpl(authHttpClient);
+    const todoNudgeService = new TodoNudgeService(todoNudgeRepository);
+
     return {
       storage,
       authService,
@@ -78,6 +85,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       todoService,
       todoCategoryService,
       notificationService,
+      todoNudgeService,
     };
   });
 
@@ -103,3 +111,4 @@ export const useFriendService = () => useDI().friendService;
 export const useTodoService = () => useDI().todoService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
+export const useTodoNudgeService = () => useDI().todoNudgeService;
