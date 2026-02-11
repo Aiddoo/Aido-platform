@@ -50,7 +50,9 @@ const FeedScreen = () => {
             ))
             .with({ type: 'friend' }, (friend) => (
               <>
-                <PokeBanner />
+                <Suspense fallback={<PokeBanner.Loading />}>
+                  <PokeBanner />
+                </Suspense>
                 <Spacing size={16} />
                 <Suspense fallback={<FriendTodoList.Loading />}>
                   <FriendTodoList friend={friend} date={selectedDate} />

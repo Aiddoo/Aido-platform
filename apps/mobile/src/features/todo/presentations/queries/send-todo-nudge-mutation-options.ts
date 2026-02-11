@@ -17,9 +17,11 @@ export const sendTodoNudgeMutationOptions = () => {
       const result = await todoNudgeService.sendNudge(input);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeLimit() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudges() });
+      queryClient.invalidateQueries({
+        queryKey: TODO_QUERY_KEYS.nudgeCooldown(variables.receiverId),
+      });
       toast.success('콕 찔렀어요!');
     },
     onError: (error) => {

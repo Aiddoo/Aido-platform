@@ -9,7 +9,7 @@ import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { Checkbox, Skeleton } from 'heroui-native';
@@ -28,8 +28,8 @@ interface FriendTodoListProps {
 
 export function FriendTodoList({ friend, date }: FriendTodoListProps) {
   const { data } = useSuspenseQuery(getFriendTodosQueryOptions(friend.id, formatDate(date)));
-  const { data: limitInfo } = useQuery(getTodoNudgeLimitQueryOptions());
-  const isLimitReached = limitInfo ? TodoNudgePolicy.isLimitReached(limitInfo) : false;
+  const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
+  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const categoryGroups = useMemo(() => {
     const grouped = groupBy(data.todos, (todo) => todo.category.id);

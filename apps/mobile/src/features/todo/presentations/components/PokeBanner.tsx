@@ -3,15 +3,15 @@ import { HStack } from '@src/shared/ui/HStack/HStack';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
 import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 export function PokeBanner() {
-  const { data: limitInfo } = useQuery(getTodoNudgeLimitQueryOptions());
-
-  const isLimitReached = limitInfo ? TodoNudgePolicy.isLimitReached(limitInfo) : false;
+  const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
+  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const overlay = useOverlay();
   const handlePress = () => {
@@ -72,3 +72,15 @@ export function PokeBanner() {
     </Pressable>
   );
 }
+
+PokeBanner.Loading = function Loading() {
+  return (
+    <HStack mx={16} px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+      <Skeleton className="size-[72px] rounded-full" />
+      <VStack flex={1} gap={4}>
+        <Skeleton className="h-5 w-3/4 rounded" />
+        <Skeleton className="h-4 w-full rounded" />
+      </VStack>
+    </HStack>
+  );
+};
