@@ -29,6 +29,5 @@ export const getTodosInfiniteQueryOptions = (date: string, categoryId?: number) 
       todos: data.pages.flatMap((page) => page.todos.map(toTodoItemViewModel)),
       hasNextPage: data.pages.at(-1)?.hasNext ?? false,
     }),
-    staleTime: 30_000,
   });
 };

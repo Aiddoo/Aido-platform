@@ -21,6 +21,5 @@ export const getFriendTodosQueryOptions = (friendUserId: string, date: string) =
     select: (data) => ({
       todos: data.todos.map(toTodoItemViewModel),
     }),
-    staleTime: 30_000,
   });
 };

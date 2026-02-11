@@ -13,6 +13,5 @@ export const getUnreadCountQueryOptions = () => {
       const result = await notificationService.getUnreadCount();
       return unwrap(result);
     },
-    staleTime: 30 * 1_000,
   });
 };

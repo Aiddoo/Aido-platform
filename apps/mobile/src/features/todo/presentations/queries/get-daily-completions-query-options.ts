@@ -24,6 +24,5 @@ export const getDailyCompletionsQueryOptions = (startDate: string, endDate: stri
       return unwrap(result);
     },
     select: toCompletionsViewModel,
-    staleTime: 30_000,
   });
 };
