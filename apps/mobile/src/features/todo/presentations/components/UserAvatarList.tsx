@@ -53,12 +53,10 @@ export function UserAvatarList({ value, onChange }: UserAvatarListProps) {
       {friends.map((friend) => (
         <UserAvatarItem
           key={friend.followId}
-          name={friend.name ?? '친구'}
+          name={friend.displayName}
           profileImage={friend.profileImage}
           isSelected={value.type === 'friend' && value.userId === friend.id}
-          onPress={() =>
-            onChange({ type: 'friend', userId: friend.id, name: friend.name ?? '친구' })
-          }
+          onPress={() => onChange({ type: 'friend', userId: friend.id, name: friend.displayName })}
         />
       ))}
     </ScrollView>

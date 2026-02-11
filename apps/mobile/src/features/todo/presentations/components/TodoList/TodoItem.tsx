@@ -4,9 +4,8 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
-
-import type { TodoItemViewModel } from '../../queries/get-all-todos-query-options';
 import { toggleTodoMutationOptions } from '../../queries/toggle-todo-mutation-options';
+import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 
 interface TodoItemProps {
   todo: TodoItemViewModel;

@@ -13,8 +13,8 @@ import times from 'es-toolkit/compat/times';
 import { Checkbox, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Pressable } from 'react-native';
-import type { FriendTodoItemViewModel } from '../queries/get-friend-todos-query-options';
 import { getFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
+import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeDialog } from './NudgeDialog';
 
 interface FriendTodoListProps {
@@ -59,7 +59,7 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
 }
 
 interface CategoryHeaderProps {
-  category: FriendTodoItemViewModel['category'];
+  category: TodoItemViewModel['category'];
 }
 
 function CategoryHeader({ category }: CategoryHeaderProps) {
@@ -73,7 +73,7 @@ function CategoryHeader({ category }: CategoryHeaderProps) {
 }
 
 interface FriendTodoItemProps {
-  todo: FriendTodoItemViewModel;
+  todo: TodoItemViewModel;
   friend: { userId: string; name: string };
 }
 

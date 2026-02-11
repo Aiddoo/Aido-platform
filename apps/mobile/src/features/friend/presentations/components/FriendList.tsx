@@ -12,9 +12,9 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Avatar, Skeleton } from 'heroui-native';
 import { ActivityIndicator, ScrollView } from 'react-native';
-import type { FriendUser } from '../../models/friend.model';
 import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
+import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 
 export function FriendList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
@@ -35,9 +35,9 @@ export function FriendList() {
         </Box>
       }
       data={allFriends}
-      renderItem={({ item }: { item: FriendUser }) => {
+      renderItem={({ item }: { item: FriendUserViewModel }) => {
         const isProcessing = removeMutation.isPending && removeMutation.variables === item.id;
-        const displayName = item.name ?? item.userTag;
+        const displayName = item.displayName;
 
         return (
           <ListRow
