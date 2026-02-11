@@ -15,4 +15,9 @@ export const TODO_QUERY_KEYS = {
   listByDate: (date: string) => [...TODO_QUERY_KEYS.lists(), date] as const,
   listByDateAndCategory: (date: string, categoryId: number) =>
     [...TODO_QUERY_KEYS.lists(), date, 'category', categoryId] as const,
+
+  // 친구 할 일 목록 (단일 요청 + 카테고리 그룹핑)
+  friendLists: () => [...TODO_QUERY_KEYS.all, 'friend'] as const,
+  friendListByDate: (userId: string, date: string) =>
+    [...TODO_QUERY_KEYS.friendLists(), userId, date] as const,
 } as const;

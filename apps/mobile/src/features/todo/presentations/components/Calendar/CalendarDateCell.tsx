@@ -47,7 +47,7 @@ export const CalendarDateCell = ({
         {isAllComplete ? (
           <FishIcon width={20} height={13} colorClassName="text-fish" />
         ) : (
-          <Text size="b4" weight="medium" tone={getDayTone()}>
+          <Text size="b4" weight="medium" tone={getDayTone()} shade={7}>
             {dayOfMonth}
           </Text>
         )}

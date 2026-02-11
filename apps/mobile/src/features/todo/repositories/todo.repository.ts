@@ -12,6 +12,10 @@ import type {
 
 export interface TodoRepository {
   getTodos(params: GetTodosQuery): Promise<Result<TodosResult, ApiError>>;
+  getFriendTodos(
+    friendUserId: string,
+    params: GetTodosQuery,
+  ): Promise<Result<TodosResult, ApiError>>;
   toggleTodoComplete(
     todoId: number,
     body: ToggleTodoCompleteInput,

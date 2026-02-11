@@ -1,8 +1,5 @@
 import { createTodoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isTodoError } from '@src/features/todo/models/todo.error';
-import { isApiError } from '@src/shared/errors';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -44,7 +41,6 @@ export const AddTodoBottomSheet = ({
 
   const visibility = watch('visibility');
   const createMutation = useMutation(createTodoMutationOptions());
-  const toast = useAppToast();
 
   const onSubmit = (data: AddTodoFormInput) => {
     Keyboard.dismiss();
@@ -54,14 +50,6 @@ export const AddTodoBottomSheet = ({
     createMutation.mutate(input, {
       onSuccess: () => {
         onOpenChange(false);
-        toast.success('할 일을 추가했어요!');
-      },
-      onError: (error) => {
-        if (isTodoError(error) || isApiError(error)) {
-          toast.error(error.message);
-          return;
-        }
-        toast.error(undefined, { fallback: '잠시 후 다시 추가해 보세요' });
       },
     });
   };

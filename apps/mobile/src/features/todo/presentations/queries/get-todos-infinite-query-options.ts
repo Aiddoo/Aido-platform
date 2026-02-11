@@ -1,22 +1,9 @@
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
-import { formatTime } from '@src/shared/utils/date';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
-import type { TodoItem } from '../../models/todo.model';
-import { TodoPolicy } from '../../models/todo.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
-
-export interface TodoItemViewModel extends TodoItem {
-  formattedTime: string | null;
-  color: string;
-}
-
-const toViewModel = (todo: TodoItem): TodoItemViewModel => ({
-  ...todo,
-  formattedTime: todo.scheduledTime ? formatTime(todo.scheduledTime) : null,
-  color: TodoPolicy.getColor(todo),
-});
+import { toTodoItemViewModel } from '../view-models/todo-item.view-model';
 
 export const getTodosInfiniteQueryOptions = (date: string, categoryId?: number) => {
   const todoService = useTodoService();
@@ -39,7 +26,7 @@ export const getTodosInfiniteQueryOptions = (date: string, categoryId?: number) 
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     select: (data) => ({
-      todos: data.pages.flatMap((page) => page.todos.map(toViewModel)),
+      todos: data.pages.flatMap((page) => page.todos.map(toTodoItemViewModel)),
       hasNextPage: data.pages.at(-1)?.hasNext ?? false,
     }),
     staleTime: 30_000,

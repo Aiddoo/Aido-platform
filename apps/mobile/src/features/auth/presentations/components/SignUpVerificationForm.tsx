@@ -7,7 +7,6 @@ import { verifyEmailMutationOptions } from '@src/features/auth/presentations/que
 import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
 import { H3 } from '@src/shared/ui/Text/Typography';
@@ -22,7 +21,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 export const SignUpVerificationForm = () => {
   const { getValues } = useFormContext<SignUpFormData>();
-  const toast = useAppToast();
   const email = getValues('email');
 
   const inputOTPRef = useRef<InputOTPRef>(null);
@@ -40,11 +38,10 @@ export const SignUpVerificationForm = () => {
   const onSubmit = (data: VerifyEmailInput) => {
     setIsInvalid(false);
     verify.mutate(data, {
-      onError: (error) => {
+      onError: () => {
         setIsInvalid(true);
         setValue('code', '');
         inputOTPRef.current?.clear();
-        toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
       },
     });
   };
@@ -65,7 +62,6 @@ export const SignUpVerificationForm = () => {
           reset({ email, code: '' });
           inputOTPRef.current?.clear();
           setIsInvalid(false);
-          toast.success('인증 코드가 재발송되었습니다');
         },
         onError: (error) => {
           // 타입 세이프: VERIFY_0753 쿨다운 에러 처리
@@ -75,7 +71,6 @@ export const SignUpVerificationForm = () => {
               setCooldown(remaining);
             }
           }
-          toast.error(error, { fallback: '인증 코드 재발송에 실패했습니다' });
         },
       },
     );

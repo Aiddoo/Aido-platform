@@ -23,18 +23,20 @@ export class FriendService {
   sendRequestByTag = async (
     userTag: string,
   ): Promise<Result<SendRequestResult, FriendServiceError>> => {
+    const trimmed = userTag.trim();
+
     // 1. 빈 값 검증
-    if (!userTag.trim()) {
+    if (!trimmed) {
       return err(FriendErrors.emptyTag());
     }
 
-    // 2. 태그 형식 검증
-    if (!FriendPolicy.isValidTag(userTag)) {
+    // 2. 태그 형식 검증 (8자리 영문 대문자·숫자, validators/API와 동일)
+    if (!FriendPolicy.isValidTag(trimmed)) {
       return err(FriendErrors.invalidTag());
     }
 
     // 3. Repository 호출
-    return this.#repository.sendRequest(userTag);
+    return this.#repository.sendRequest(trimmed);
   };
 
   getReceivedRequests = async (

@@ -23,8 +23,9 @@ export interface SendRequestResult {
   autoAccepted: boolean;
 }
 
+/** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/validators userTagParamSchema와 동일) */
 export const FriendPolicy = {
   isValidTag(tag: string): boolean {
-    return /^#\d{4}$/.test(tag);
+    return /^[A-Z0-9]{8}$/.test(tag.trim());
   },
 } as const;
