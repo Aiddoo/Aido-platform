@@ -1,5 +1,6 @@
 import { getMeQueryOptions } from '@src/features/auth/presentations/queries/get-me-query-options';
 import { getFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
+import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -9,7 +10,7 @@ import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Image, ScrollView } from 'react-native';
 
-export type SelectedUser = { type: 'me' } | { type: 'friend'; userId: string; name: string };
+export type SelectedUser = { type: 'me' } | ({ type: 'friend' } & FriendUserViewModel);
 
 interface UserAvatarListProps {
   value: SelectedUser;
@@ -55,8 +56,8 @@ export function UserAvatarList({ value, onChange }: UserAvatarListProps) {
           key={friend.followId}
           name={friend.displayName}
           profileImage={friend.profileImage}
-          isSelected={value.type === 'friend' && value.userId === friend.id}
-          onPress={() => onChange({ type: 'friend', userId: friend.id, name: friend.displayName })}
+          isSelected={value.type === 'friend' && value.id === friend.id}
+          onPress={() => onChange({ type: 'friend', ...friend })}
         />
       ))}
     </ScrollView>

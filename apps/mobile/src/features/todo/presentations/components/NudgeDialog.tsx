@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import type { TodoItem } from '@src/features/todo/models/todo.model';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -16,7 +17,7 @@ import { sendTodoNudgeMutationOptions } from '../queries/send-todo-nudge-mutatio
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
 
 interface NudgeDialogProps {
-  friend: { userId: string; name: string };
+  friend: FriendUserViewModel;
   todo: TodoItem;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,17 +25,23 @@ interface NudgeDialogProps {
 
 export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogProps) {
   const sendNudgeMutation = useMutation(sendTodoNudgeMutationOptions());
-  const { control, handleSubmit, reset } = useForm<NudgeFormInput>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<NudgeFormInput>({
     resolver: zodResolver(nudgeFormSchema),
     defaultValues: { message: '' },
+    mode: 'onChange',
   });
 
   const onSubmit = (data: NudgeFormInput) => {
     sendNudgeMutation.mutate(
       {
-        receiverId: friend.userId,
+        receiverId: friend.id,
         todoId: todo.id,
-        message: data.message?.trim() || undefined,
+        message: data.message,
       },
       {
         onSuccess: () => onOpenChange(false),
@@ -58,7 +65,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
             <Dialog.Title>
               <VStack>
                 <Text size="b4" shade={6}>
-                  할 일을 잊은 {friend.name}님에게
+                  할 일을 잊은 {friend.displayName}님에게
                 </Text>
                 <H4>따끔하게 콕 찌르기</H4>
               </VStack>
@@ -69,27 +76,28 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
             <Box className="relative">
               <Image
                 source={require('@assets/images/aido_banner.webp')}
-                style={{ width: 84, height: 84 }}
                 resizeMode="contain"
-                className="absolute top-[-56px] right-2"
+                className="size-[84px] absolute top-[-58px] right-2"
               />
               <Controller
                 control={control}
                 name="message"
                 render={({ field: { onChange, value } }) => (
                   <TextArea
-                    label={`to. ${friend.name}`}
-                    placeholder={`${todo.title} 언제 할 거야?`}
+                    autoFocus
+                    isInvalid={!!errors.message}
+                    label={`to. ${friend.displayName}`}
+                    placeholder={`(선택) ${todo.title} 언제 할 거야?`}
                     value={value}
                     onChangeText={onChange}
+                    className="min-h-[100px]"
+                    errorMessage={errors?.message?.message}
                   />
                 )}
               />
             </Box>
 
-            <Spacing size={20} />
-
-            <HStack gap={8} className="w-full" justify="center">
+            <HStack gap={8} className="w-full" justify="center" mt={10}>
               <Dialog.Close asChild>
                 <Button
                   variant="weak"
@@ -107,6 +115,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
                 display="inline"
                 className="flex-1"
                 onPress={handleSubmit(onSubmit)}
+                isDisabled={!isValid}
                 isLoading={sendNudgeMutation.isPending}
               >
                 콕 찌르기

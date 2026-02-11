@@ -1,3 +1,5 @@
+import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
+import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -7,23 +9,27 @@ import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { Checkbox, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Pressable } from 'react-native';
 import { getFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
+import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeDialog } from './NudgeDialog';
+import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 interface FriendTodoListProps {
-  friend: { userId: string; name: string };
+  friend: FriendUserViewModel;
   date: Date;
 }
 
 export function FriendTodoList({ friend, date }: FriendTodoListProps) {
-  const { data } = useSuspenseQuery(getFriendTodosQueryOptions(friend.userId, formatDate(date)));
+  const { data } = useSuspenseQuery(getFriendTodosQueryOptions(friend.id, formatDate(date)));
+  const { data: limitInfo } = useQuery(getTodoNudgeLimitQueryOptions());
+  const isLimitReached = limitInfo ? TodoNudgePolicy.isLimitReached(limitInfo) : false;
 
   const categoryGroups = useMemo(() => {
     const grouped = groupBy(data.todos, (todo) => todo.category.id);
@@ -49,7 +55,12 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
           <CategoryHeader category={group.category} />
           <Box>
             {group.todos.map((todo) => (
-              <FriendTodoItem key={todo.id} todo={todo} friend={friend} />
+              <FriendTodoItem
+                key={todo.id}
+                todo={todo}
+                friend={friend}
+                isLimitReached={isLimitReached}
+              />
             ))}
           </Box>
         </VStack>
@@ -74,10 +85,11 @@ function CategoryHeader({ category }: CategoryHeaderProps) {
 
 interface FriendTodoItemProps {
   todo: TodoItemViewModel;
-  friend: { userId: string; name: string };
+  friend: FriendUserViewModel;
+  isLimitReached: boolean;
 }
 
-function FriendTodoItem({ todo, friend }: FriendTodoItemProps) {
+function FriendTodoItem({ todo, friend, isLimitReached }: FriendTodoItemProps) {
   const overlay = useOverlay();
   const showDateTime = todo.formattedTime && !todo.isAllDay;
 
@@ -95,6 +107,29 @@ function FriendTodoItem({ todo, friend }: FriendTodoItemProps) {
         }}
       />
     ));
+  };
+
+  const openLimitDialog = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <NudgeLimitDialog
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+      />
+    ));
+  };
+
+  const handleNudgePress = () => {
+    if (isLimitReached) {
+      openLimitDialog();
+      return;
+    }
+
+    openNudgeDialog();
   };
 
   return (
@@ -124,7 +159,7 @@ function FriendTodoItem({ todo, friend }: FriendTodoItemProps) {
           )}
         </VStack>
         {!todo.completed && (
-          <Pressable onPress={openNudgeDialog} hitSlop={8}>
+          <Pressable onPress={handleNudgePress} hitSlop={8}>
             <PawIcon width={18} height={18} colorClassName="text-gray-6" />
           </Pressable>
         )}
