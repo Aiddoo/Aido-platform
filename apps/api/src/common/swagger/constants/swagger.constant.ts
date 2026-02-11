@@ -108,7 +108,7 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 		"푸시 토큰 등록/해제, 알림 목록 조회, 읽음 처리",
 
 	[SWAGGER_TAGS.NUDGES]:
-		"친구 할 일에 콕 찌르기. FREE: 10회/일, 동일 할 일 24시간 쿨다운",
+		"친구 할 일에 콕 찌르기. FREE: 3회/일, 동일 할 일 24시간 쿨다운",
 
 	[SWAGGER_TAGS.CHEERS]:
 		"친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
