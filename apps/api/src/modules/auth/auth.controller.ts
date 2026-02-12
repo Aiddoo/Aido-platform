@@ -131,6 +131,18 @@ export class AuthController {
 		});
 	}
 
+	private async resolveOAuthErrorRedirectUri(
+		state: string,
+		defaultRedirectUri: string,
+	): Promise<string> {
+		try {
+			const redirectUri = await this.oauthService.getRedirectUriByState(state);
+			return redirectUri || defaultRedirectUri;
+		} catch {
+			return defaultRedirectUri;
+		}
+	}
+
 	// ============================================
 	// 회원가입 및 인증
 	// ============================================
@@ -1578,7 +1590,11 @@ const clientId = {
 | \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
 | \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
+
+### 📝 mode 파라미터
+- \`login\` (기본값): 소셜 로그인 → \`POST /auth/exchange\` 로 토큰 교환
+- \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
 	})
 	@ApiQuery({
 		name: "state",
@@ -1592,9 +1608,17 @@ const clientId = {
 		description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
 		example: "aido://auth/callback",
 	})
+	@ApiQuery({
+		name: "mode",
+		required: false,
+		description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
+		enum: ["login", "link"],
+		example: "link",
+	})
 	async kakaoOAuthStart(
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
+		@Query("mode") mode: "login" | "link" | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		// state가 없으면 서버에서 자동 생성
@@ -1602,6 +1626,7 @@ const clientId = {
 		const authUrl = await this.oauthService.generateKakaoAuthUrlWithState(
 			effectiveState,
 			redirectUri,
+			mode,
 		);
 		res.redirect(authUrl);
 	}
@@ -1667,8 +1692,12 @@ const clientId = {
 		} catch (error) {
 			// 에러 시 기본 redirect_uri로 에러 정보 전달 (BusinessException인 경우 에러 코드 포함)
 			const params = this.buildOAuthErrorParams(error, state);
+			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+				state,
+				defaultRedirectUri,
+			);
 
-			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
 	}
 
@@ -1691,17 +1720,42 @@ const clientId = {
 | \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
 | \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
+
+### 📝 mode 파라미터
+- \`login\` (기본값): 소셜 로그인 → \`POST /auth/exchange\` 로 토큰 교환
+- \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값",
+		example: "a1b2c3d4e5f6",
+	})
+	@ApiQuery({
+		name: "redirect_uri",
+		required: false,
+		description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
+		example: "aido://auth/callback",
+	})
+	@ApiQuery({
+		name: "mode",
+		required: false,
+		description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
+		enum: ["login", "link"],
+		example: "link",
 	})
 	async googleOAuthStart(
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
+		@Query("mode") mode: "login" | "link" | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
 		const authUrl = await this.oauthService.generateGoogleAuthUrlWithState(
 			effectiveState,
 			redirectUri,
+			mode,
 		);
 		res.redirect(authUrl);
 	}
@@ -1768,8 +1822,12 @@ const clientId = {
 				error instanceof Error ? error.stack : undefined,
 			);
 			const params = this.buildOAuthErrorParams(error, state);
+			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+				state,
+				defaultRedirectUri,
+			);
 
-			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
 	}
 
@@ -1792,17 +1850,42 @@ const clientId = {
 | \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
 | \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
-✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\``,
+✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
+
+### 📝 mode 파라미터
+- \`login\` (기본값): 소셜 로그인 → \`POST /auth/exchange\` 로 토큰 교환
+- \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
+	})
+	@ApiQuery({
+		name: "state",
+		required: true,
+		description: "CSRF 방지용 상태 값",
+		example: "a1b2c3d4e5f6",
+	})
+	@ApiQuery({
+		name: "redirect_uri",
+		required: false,
+		description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
+		example: "aido://auth/callback",
+	})
+	@ApiQuery({
+		name: "mode",
+		required: false,
+		description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
+		enum: ["login", "link"],
+		example: "link",
 	})
 	async naverOAuthStart(
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
+		@Query("mode") mode: "login" | "link" | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
 		const authUrl = await this.oauthService.generateNaverAuthUrlWithState(
 			effectiveState,
 			redirectUri,
+			mode,
 		);
 		res.redirect(authUrl);
 	}
@@ -1865,8 +1948,12 @@ const clientId = {
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
 			const params = this.buildOAuthErrorParams(error, state);
+			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+				state,
+				defaultRedirectUri,
+			);
 
-			res.redirect(`${defaultRedirectUri}?${params.toString()}`);
+			res.redirect(`${errorRedirectUri}?${params.toString()}`);
 		}
 	}
 
@@ -2874,6 +2961,9 @@ provider에 따라 필수 토큰이 다릅니다:
 | \`APPLE_0355\` | 409 | 이미 다른 계정에 연동된 애플 계정 |
 | \`GOOGLE_0405\` | 409 | 이미 다른 계정에 연동된 구글 계정 |
 | \`NAVER_0455\` | 409 | 이미 다른 계정에 연동된 네이버 계정 |
+
+### 💡 교환 코드 방식
+웹 브라우저 OAuth 플로우를 사용하는 경우 \`POST /auth/link-with-code\` 엔드포인트를 사용하세요.
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -2891,6 +2981,67 @@ provider에 따라 필수 토큰이 다릅니다:
 		return this.oauthService.linkSocialAccountWithToken(
 			user.userId,
 			dto,
+			metadata,
+		);
+	}
+
+	@Post("link-with-code")
+	@ApiBearerAuth()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "OAuth 교환 코드로 소셜 계정 연동",
+		operationId: "linkWithExchangeCode",
+		description: `
+## 🔗 교환 코드 기반 소셜 계정 연동
+
+웹 브라우저 OAuth 플로우(\`/auth/{provider}/start?mode=link\`)로 발급된 **교환 코드**를 사용하여
+로그인된 사용자 계정에 소셜 계정을 연동합니다.
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 플로우
+1. \`GET /auth/{provider}/start?mode=link&state=xxx&redirect_uri=aido://auth/callback\` 으로 OAuth 시작
+2. 사용자가 소셜 계정 인증 완료
+3. \`{redirect_uri}?code=xxx&state=xxx\` 로 리다이렉트 (교환 코드 발급)
+4. 이 엔드포인트로 교환 코드 전송 → 계정 연동 완료
+
+### 📝 요청 Body
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| \`code\` | string | ✅ | 일회용 교환 코드 (10분 내 사용) |
+
+### ⚠️ 제한사항
+- 교환 코드는 \`mode=link\`로 시작된 OAuth 플로우에서 발급된 것이어야 합니다
+- 이미 다른 사용자에 연결된 소셜 계정은 연동할 수 없습니다 (409)
+- 교환 코드는 1회만 사용 가능합니다
+
+### 에러 코드
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| \`AUTH_0107\` | 401 | 인증이 필요합니다 |
+| \`SOCIAL_0202\` | 401 | 유효하지 않거나 만료/사용된 교환 코드 |
+| \`KAKAO_0306\` | 409 | 이미 다른 계정에 연동된 카카오 계정 |
+| \`APPLE_0355\` | 409 | 이미 다른 계정에 연동된 애플 계정 |
+| \`GOOGLE_0405\` | 409 | 이미 다른 계정에 연동된 구글 계정 |
+| \`NAVER_0455\` | 409 | 이미 다른 계정에 연동된 네이버 계정 |
+		`,
+	})
+	@ApiSuccessResponse({ type: MessageResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
+	async linkWithExchangeCode(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: ExchangeCodeDto,
+		@Req() req: Request,
+	) {
+		const metadata = this.extractMetadata(req);
+		return this.oauthService.linkAccountWithExchangeCode(
+			user.userId,
+			dto.code,
 			metadata,
 		);
 	}

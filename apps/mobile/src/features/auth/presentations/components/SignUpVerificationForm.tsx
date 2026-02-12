@@ -1,10 +1,6 @@
 import { ErrorCode } from '@aido/errors';
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCooldown } from '@src/features/auth/presentations/hooks/useCooldown';
-import { resendVerificationMutationOptions } from '@src/features/auth/presentations/queries/resend-verification-mutation-options';
-import { verifyEmailMutationOptions } from '@src/features/auth/presentations/queries/verify-email-mutation-options';
-import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -18,6 +14,10 @@ import { useRef, useState } from 'react';
 import { Controller, useForm, useFormContext } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useCooldown } from '../hooks/useCooldown';
+import { resendVerificationMutationOptions } from '../queries/resend-verification-mutation-options';
+import { verifyEmailMutationOptions } from '../queries/verify-email-mutation-options';
+import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 export const SignUpVerificationForm = () => {
   const { getValues } = useFormContext<SignUpFormData>();

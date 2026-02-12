@@ -7,6 +7,8 @@ import {
   consentResponseSchema,
   currentUserSchema,
   type ExchangeCodeInput,
+  type LinkedAccountsResponse,
+  linkedAccountsResponseSchema,
   type PreferenceResponse,
   preferenceResponseSchema,
   type RegisterInput,
@@ -32,6 +34,10 @@ import { Platform } from 'react-native';
 import type {
   AuthTokens,
   Consent,
+  LinkedAccount,
+  OAuthProvider,
+  OAuthStartMode,
+  OAuthStartProvider,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -41,6 +47,7 @@ import type {
 import {
   toAuthTokens,
   toConsent,
+  toLinkedAccounts,
   toPreference,
   toRegisterResult,
   toResendVerificationResult,
@@ -129,16 +136,23 @@ export class AuthRepositoryImpl implements AuthRepository {
     return ok(undefined);
   }
 
-  getKakaoAuthUrl(redirectUri: string): string {
-    return `${ENV.API_URL}/v1/auth/kakao/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
-  }
+  getOAuthWebStartUrl(
+    provider: OAuthStartProvider,
+    redirectUri: string,
+    mode: OAuthStartMode,
+  ): string {
+    const authPathByProvider: Record<OAuthStartProvider, string> = {
+      kakao: 'kakao',
+      naver: 'naver',
+      google: 'google',
+    };
 
-  getNaverAuthUrl(redirectUri: string): string {
-    return `${ENV.API_URL}/v1/auth/naver/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
-  }
+    const params = new URLSearchParams({
+      redirect_uri: redirectUri,
+      mode,
+    });
 
-  getGoogleAuthUrl(redirectUri: string): string {
-    return `${ENV.API_URL}/v1/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    return `${ENV.API_URL}/v1/auth/${authPathByProvider[provider]}/start?${params.toString()}`;
   }
 
   async getPreference(): Promise<Result<Preference, ApiError>> {
@@ -250,5 +264,32 @@ export class AuthRepositoryImpl implements AuthRepository {
     }
 
     return ok(toResendVerificationResult(parsed.data));
+  }
+
+  async getLinkedAccounts(): Promise<Result<LinkedAccount[], ApiError>> {
+    const result =
+      await this.#authHttpClient.get<LinkedAccountsResponse>('v1/auth/linked-accounts');
+
+    if (!result.ok) return result;
+
+    const parsed = linkedAccountsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[AuthRepository] Invalid getLinkedAccounts response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toLinkedAccounts(parsed.data));
+  }
+
+  async linkWithCode(code: string): Promise<Result<{ message: string }, ApiError>> {
+    return this.#authHttpClient.post('v1/auth/link-with-code', { code });
+  }
+
+  async linkApple(idToken: string): Promise<Result<{ message: string }, ApiError>> {
+    return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken });
+  }
+
+  async unlinkAccount(provider: OAuthProvider): Promise<Result<{ message: string }, ApiError>> {
+    return this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
   }
 }

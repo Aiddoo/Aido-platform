@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import type { OAuthProviderSlug } from './auth.model';
 
 export interface ExpoCodedError extends Error {
   code?: string;
@@ -35,7 +36,7 @@ export class AuthError extends Error implements BusinessError {
 export const AuthErrors = {
   loginCancelled: () => new AuthError(AuthErrorCode.LOGIN_CANCELLED, '로그인이 취소되었어요'),
 
-  providerError: (provider: string, msg?: string) =>
+  providerError: (provider: OAuthProviderSlug, msg?: string) =>
     new AuthError(AuthErrorCode.PROVIDER_ERROR, msg ?? `${provider} 로그인에 실패했어요`),
 
   validationFailed: (endpoint?: string) =>

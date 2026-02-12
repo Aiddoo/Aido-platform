@@ -105,6 +105,14 @@ describe("Auth (e2e)", () => {
 		process.env.KAKAO_CLIENT_SECRET = "test-kakao-client-secret";
 		process.env.KAKAO_CALLBACK_URL =
 			"http://localhost:3000/auth/kakao/callback";
+		process.env.GOOGLE_CLIENT_ID = "test-google-client-id";
+		process.env.GOOGLE_CLIENT_SECRET = "test-google-client-secret";
+		process.env.GOOGLE_CALLBACK_URL =
+			"http://localhost:3000/auth/google/callback";
+		process.env.NAVER_CLIENT_ID = "test-naver-client-id";
+		process.env.NAVER_CLIENT_SECRET = "test-naver-client-secret";
+		process.env.NAVER_CALLBACK_URL =
+			"http://localhost:3000/auth/naver/callback";
 
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
@@ -938,6 +946,71 @@ describe("Auth (e2e)", () => {
 
 			// Then - 응답 검증
 			expect(response.headers.location).toContain("aido://auth/callback");
+			expect(response.headers.location).toContain("error=");
+		});
+	});
+
+	describe("웹 OAuth 콜백 실패 시 state 기반 redirect_uri 복원", () => {
+		it("Kakao 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
+			// Given
+			const state = "kakao-state-restore-test";
+			const redirectUri = "aido-dev://auth/kakao";
+
+			await request(app.getHttpServer())
+				.get("/auth/kakao/start")
+				.query({ state, redirect_uri: redirectUri })
+				.expect(302);
+
+			// When
+			const response = await request(app.getHttpServer())
+				.get("/auth/kakao/web-callback")
+				.query({ code: "invalid-auth-code", state })
+				.expect(302);
+
+			// Then
+			expect(response.headers.location).toContain(redirectUri);
+			expect(response.headers.location).toContain("error=");
+		});
+
+		it("Google 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
+			// Given
+			const state = "google-state-restore-test";
+			const redirectUri = "aido-dev://auth/google";
+
+			await request(app.getHttpServer())
+				.get("/auth/google/start")
+				.query({ state, redirect_uri: redirectUri })
+				.expect(302);
+
+			// When
+			const response = await request(app.getHttpServer())
+				.get("/auth/google/web-callback")
+				.query({ code: "invalid-auth-code", state })
+				.expect(302);
+
+			// Then
+			expect(response.headers.location).toContain(redirectUri);
+			expect(response.headers.location).toContain("error=");
+		});
+
+		it("Naver 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
+			// Given
+			const state = "naver-state-restore-test";
+			const redirectUri = "aido-dev://auth/naver";
+
+			await request(app.getHttpServer())
+				.get("/auth/naver/start")
+				.query({ state, redirect_uri: redirectUri })
+				.expect(302);
+
+			// When
+			const response = await request(app.getHttpServer())
+				.get("/auth/naver/web-callback")
+				.query({ code: "invalid-auth-code", state })
+				.expect(302);
+
+			// Then
+			expect(response.headers.location).toContain(redirectUri);
 			expect(response.headers.location).toContain("error=");
 		});
 	});
@@ -1814,6 +1887,187 @@ describe("Auth (e2e)", () => {
 				await request(app.getHttpServer())
 					.delete("/auth/linked-accounts/KAKAO")
 					.expect(401);
+			});
+		});
+
+		describe("POST /auth/link-with-code - 교환 코드로 연동", () => {
+			const prisma = () => testDatabase.getPrisma();
+
+			/**
+			 * 테스트용 linking exchange code 생성 헬퍼
+			 * 실제 웹 OAuth 플로우 대신 DB에 직접 OAuthState 레코드를 생성합니다.
+			 */
+			async function createLinkingExchangeCode(
+				provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+				providerAccountId: string,
+			): Promise<string> {
+				const { randomBytes } = await import("node:crypto");
+				const exchangeCode = randomBytes(32).toString("base64url");
+				const state = randomBytes(16).toString("hex");
+
+				await prisma().oAuthState.create({
+					data: {
+						state,
+						provider,
+						redirectUri: "aido://auth/callback",
+						mode: "link",
+						exchangeCode,
+						userId: providerAccountId, // providerAccountId를 userId 필드에 임시 저장
+						expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10분
+					},
+				});
+
+				return exchangeCode;
+			}
+
+			it("유효한 교환 코드로 소셜 계정을 연동한다", async () => {
+				// Given - 새 유저 생성 (CREDENTIAL만 보유)
+				const codeEmail = "link-code-test@example.com";
+				const codePassword = "Test1234!";
+				const codeAccessToken = await createVerifiedUser(
+					codeEmail,
+					codePassword,
+				);
+
+				// linking exchange code 생성 (Apple 연동용)
+				const exchangeCode = await createLinkingExchangeCode(
+					"APPLE",
+					"apple-code-link-12345",
+				);
+
+				// When - 교환 코드로 연동 요청
+				const response = await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.set("Authorization", `Bearer ${codeAccessToken}`)
+					.send({ code: exchangeCode })
+					.expect(200);
+
+				// Then - 연동 성공
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.message).toContain("연결");
+
+				// 연동 결과 확인
+				const listResponse = await request(app.getHttpServer())
+					.get("/auth/linked-accounts")
+					.set("Authorization", `Bearer ${codeAccessToken}`)
+					.expect(200);
+
+				const appleAccount = listResponse.body.data.accounts.find(
+					(a: { provider: string }) => a.provider === "APPLE",
+				);
+				expect(appleAccount.linked).toBe(true);
+				expect(appleAccount.providerAccountId).toBe("apple-code-link-12345");
+			});
+
+			it("인증되지 않은 요청은 401을 반환한다", async () => {
+				// Given - 유효한 exchange code 생성
+				const exchangeCode = await createLinkingExchangeCode(
+					"GOOGLE",
+					"google-unauth-12345",
+				);
+
+				// When - 토큰 없이 요청
+				const response = await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.send({ code: exchangeCode })
+					.expect(401);
+
+				// Then
+				expect(response.body.success).toBe(false);
+			});
+
+			it("유효하지 않은 교환 코드는 401을 반환한다", async () => {
+				// Given - 존재하지 않는 교환 코드
+				const codeEmail2 = "link-code-invalid@example.com";
+				const codePassword2 = "Test1234!";
+				const codeAccessToken2 = await createVerifiedUser(
+					codeEmail2,
+					codePassword2,
+				);
+
+				// When - 잘못된 코드로 요청
+				const response = await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.set("Authorization", `Bearer ${codeAccessToken2}`)
+					.send({ code: "invalid-exchange-code-does-not-exist" })
+					.expect(401);
+
+				// Then
+				expect(response.body.success).toBe(false);
+			});
+
+			it("이미 사용된 교환 코드는 401을 반환한다", async () => {
+				// Given - 새 유저 생성
+				const reuseEmail = "link-code-reuse@example.com";
+				const reusePassword = "Test1234!";
+				const reuseAccessToken = await createVerifiedUser(
+					reuseEmail,
+					reusePassword,
+				);
+
+				// exchange code 생성 및 첫 번째 사용
+				const exchangeCode = await createLinkingExchangeCode(
+					"NAVER",
+					"naver-reuse-12345",
+				);
+
+				await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.set("Authorization", `Bearer ${reuseAccessToken}`)
+					.send({ code: exchangeCode })
+					.expect(200);
+
+				// When - 같은 코드로 재사용 시도
+				const response = await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.set("Authorization", `Bearer ${reuseAccessToken}`)
+					.send({ code: exchangeCode })
+					.expect(401);
+
+				// Then
+				expect(response.body.success).toBe(false);
+			});
+
+			it("이미 다른 유저에 연결된 소셜 계정의 교환 코드는 409를 반환한다", async () => {
+				// Given - 다른 유저가 이미 KAKAO 계정으로 로그인 (계정 자동 생성)
+				const conflictToken = "kakao-conflict-code-token";
+				fakeOAuthTokenVerifierService.setCustomProfile("kakao", conflictToken, {
+					id: "kakao-conflict-code-12345",
+					email: "kakao-conflict-code@kakao.com",
+					emailVerified: true,
+					name: "다른유저카카오",
+				});
+
+				await request(app.getHttpServer())
+					.post("/auth/kakao/callback")
+					.send({ accessToken: conflictToken })
+					.expect(200);
+
+				// 새 유저 생성
+				const conflictEmail = "link-code-conflict@example.com";
+				const conflictPassword = "Test1234!";
+				const conflictAccessToken = await createVerifiedUser(
+					conflictEmail,
+					conflictPassword,
+				);
+
+				// 같은 providerAccountId로 exchange code 생성
+				// setCustomProfile로 설정한 id가 곧 providerAccountId
+				const exchangeCode = await createLinkingExchangeCode(
+					"KAKAO",
+					"kakao-conflict-code-12345",
+				);
+
+				// When - 이미 다른 유저에 연결된 계정의 코드로 연동 시도
+				const response = await request(app.getHttpServer())
+					.post("/auth/link-with-code")
+					.set("Authorization", `Bearer ${conflictAccessToken}`)
+					.send({ code: exchangeCode })
+					.expect(409);
+
+				// Then
+				expect(response.body.success).toBe(false);
+				expect(response.body.error.code).toBe("KAKAO_0306");
 			});
 		});
 

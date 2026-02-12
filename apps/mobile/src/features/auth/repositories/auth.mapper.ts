@@ -2,6 +2,8 @@ import type {
   AuthTokens as AuthTokensDTO,
   ConsentResponse,
   CurrentUser,
+  LinkedAccount as LinkedAccountDTO,
+  LinkedAccountsResponse,
   PreferenceResponse,
   RegisterResponse,
   ResendVerificationResponse,
@@ -10,6 +12,7 @@ import type {
 import type {
   AuthTokens,
   Consent,
+  LinkedAccount,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -67,3 +70,13 @@ export const toUpdateMarketingConsentResult = (
 ): UpdateMarketingConsentResult => ({
   marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
 });
+
+export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({
+  provider: dto.provider,
+  linked: dto.linked,
+  providerAccountId: dto.providerAccountId,
+  linkedAt: dto.linkedAt ? new Date(dto.linkedAt) : null,
+});
+
+export const toLinkedAccounts = (dto: LinkedAccountsResponse): LinkedAccount[] =>
+  dto.accounts.map(toLinkedAccount);
