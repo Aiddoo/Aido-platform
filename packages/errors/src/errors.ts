@@ -185,6 +185,7 @@ export const ErrorCode = {
   NUDGE_1103: 'NUDGE_1103',
   NUDGE_1104: 'NUDGE_1104',
   NUDGE_1105: 'NUDGE_1105',
+  NUDGE_1106: 'NUDGE_1106',
 
   // =========================================================================
   // 응원 (CHEER_1200-1299)
@@ -869,6 +870,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'Nudge를 찾을 수 없습니다.',
     description: '해당 ID의 Nudge가 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.NUDGE_1106]: {
+    code: 'NUDGE_1106',
+    message: '오늘의 할 일에만 콕 찌를 수 있습니다.',
+    description: '콕 찌르기는 오늘 날짜에 해당하는 할 일에만 가능합니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 
   // =========================================================================

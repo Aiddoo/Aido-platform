@@ -13,6 +13,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
+import { getUserToday } from "@/common/date";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
@@ -117,6 +118,8 @@ describe("NudgeService", () => {
 		/**
 		 * 성공 시나리오 mock 설정 헬퍼
 		 */
+		const todayMidnight = getUserToday("UTC");
+
 		const setupSuccessfulSend = () => {
 			followService.isMutualFriend.mockResolvedValue(true);
 			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
@@ -127,6 +130,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 			mockDatabase.nudge.count.mockResolvedValue(0);
 			mockDatabase.nudge.findFirst.mockResolvedValue(null);
@@ -257,6 +262,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "other-user-id",
 				title: "다른 사람 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 
 			// When & Then
@@ -270,6 +277,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "FREE",
@@ -287,6 +296,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "ACTIVE",
@@ -324,6 +335,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "FREE",
@@ -339,6 +352,99 @@ describe("NudgeService", () => {
 			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
 		});
 
+		it("어제 단일 날짜 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
+			// Given
+			const yesterday = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000);
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "어제 할일",
+				startDate: yesterday,
+				endDate: null,
+			});
+
+			// When & Then
+			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
+		});
+
+		it("내일 단일 날짜 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
+			// Given
+			const tomorrow = new Date(todayMidnight.getTime() + 24 * 60 * 60 * 1000);
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "내일 할일",
+				startDate: tomorrow,
+				endDate: null,
+			});
+
+			// When & Then
+			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
+		});
+
+		it("오늘 포함 기간 Todo에 Nudge를 보낼 수 있다", async () => {
+			// Given
+			const yesterday = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000);
+			const tomorrow = new Date(todayMidnight.getTime() + 24 * 60 * 60 * 1000);
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
+			mockDatabase.user.findUnique.mockResolvedValue({
+				subscriptionStatus: "FREE",
+			});
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "기간 할일",
+				startDate: yesterday,
+				endDate: tomorrow,
+			});
+			mockDatabase.nudge.count.mockResolvedValue(0);
+			mockDatabase.nudge.findFirst.mockResolvedValue(null);
+
+			const nudgeWithRelations = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			)
+				.withSenderInfo({
+					id: "sender-id",
+					userTag: "sender_tag",
+					profile: { name: "보내는 사람", profileImage: null },
+				})
+				.withTodoInfo({ id: 100, title: "기간 할일", completed: false })
+				.buildWithRelations();
+			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
+
+			// When
+			const result = await service.sendNudge(defaultParams);
+
+			// Then
+			expect(result).toBeDefined();
+		});
+
+		it("지난 기간 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
+			// Given
+			const fiveDaysAgo = new Date(
+				todayMidnight.getTime() - 5 * 24 * 60 * 60 * 1000,
+			);
+			const twoDaysAgo = new Date(
+				todayMidnight.getTime() - 2 * 24 * 60 * 60 * 1000,
+			);
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "지난 기간 할일",
+				startDate: fiveDaysAgo,
+				endDate: twoDaysAgo,
+			});
+
+			// When & Then
+			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
+		});
+
 		it("쿨다운이 지나면 같은 Todo에 다시 Nudge를 보낼 수 있다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
@@ -347,6 +453,8 @@ describe("NudgeService", () => {
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
 			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "FREE",

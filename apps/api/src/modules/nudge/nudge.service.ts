@@ -1,7 +1,12 @@
 import { NUDGE_LIMITS, SUBSCRIPTION_NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { addMilliseconds, now, startOfDayInTimezone } from "@/common/date";
+import {
+	addMilliseconds,
+	getUserToday,
+	now,
+	startOfDayInTimezone,
+} from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -53,6 +58,7 @@ export class NudgeService {
 	 * 1. 자기 자신 체크
 	 * 2. 친구 관계 확인
 	 * 3. Todo 존재 및 소유자 확인
+	 * 3.5. 오늘의 할 일인지 체크
 	 * 4. 일일 제한 체크
 	 * 5. 쿨다운 체크
 	 * 6. Nudge 생성
@@ -85,7 +91,13 @@ export class NudgeService {
 			// 3. Todo 존재 및 소유자 확인
 			const todo = await tx.todo.findUnique({
 				where: { id: todoId },
-				select: { id: true, userId: true, title: true },
+				select: {
+					id: true,
+					userId: true,
+					title: true,
+					startDate: true,
+					endDate: true,
+				},
 			});
 			if (!todo) {
 				throw BusinessExceptions.todoNotFound(todoId);
@@ -94,6 +106,16 @@ export class NudgeService {
 			// Todo가 receiver의 것인지 확인
 			if (todo.userId !== receiverId) {
 				throw BusinessExceptions.todoNotFound(todoId);
+			}
+
+			// 3.5. 오늘의 할 일인지 체크
+			const today = getUserToday(tz);
+			const isTodayTodo = todo.endDate
+				? todo.startDate <= today && today <= todo.endDate
+				: todo.startDate.getTime() === today.getTime();
+
+			if (!isTodayTodo) {
+				throw BusinessExceptions.nudgeTodoNotToday(todoId);
 			}
 
 			// 4. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
