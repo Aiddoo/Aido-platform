@@ -215,6 +215,7 @@ describe("OAuthService", () => {
 			async (callback: TransactionCallback) => {
 				const mockTx = {
 					userConsent: { create: jest.fn() },
+					userPreference: { create: jest.fn() },
 				};
 				return callback(mockTx as never);
 			},

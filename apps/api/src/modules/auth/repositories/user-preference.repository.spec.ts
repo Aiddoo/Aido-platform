@@ -87,8 +87,8 @@ describe("UserPreferenceRepository", () => {
 			// Given
 			const expectedPreference = UserPreferenceBuilder.create("user-123")
 				.withId("new-pref-123")
-				.withPushDisabled()
-				.withNightPushEnabled(false)
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
 				.build();
 			db.userPreference.create.mockResolvedValue(expectedPreference);
 
@@ -100,8 +100,8 @@ describe("UserPreferenceRepository", () => {
 			expect(db.userPreference.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
-					pushEnabled: false,
-					nightPushEnabled: false,
+					pushEnabled: true,
+					nightPushEnabled: true,
 				},
 			});
 		});
@@ -138,8 +138,8 @@ describe("UserPreferenceRepository", () => {
 			const mockTx = createMockTxClient();
 			const expectedPreference = UserPreferenceBuilder.create("user-123")
 				.withId("tx-pref-123")
-				.withPushDisabled()
-				.withNightPushEnabled(false)
+				.withPushEnabled(true)
+				.withNightPushEnabled(true)
 				.build();
 			mockTx.userPreference.create.mockResolvedValue(expectedPreference);
 
@@ -155,8 +155,8 @@ describe("UserPreferenceRepository", () => {
 			expect(mockTx.userPreference.create).toHaveBeenCalledWith({
 				data: {
 					userId: "user-123",
-					pushEnabled: false,
-					nightPushEnabled: false,
+					pushEnabled: true,
+					nightPushEnabled: true,
 				},
 			});
 			expect(db.userPreference.create).not.toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe("UserPreferenceRepository", () => {
 			const expectedPreference = UserPreferenceBuilder.create("user-123")
 				.withId("new-pref-123")
 				.withPushEnabled(true)
-				.withNightPushEnabled(false)
+				.withNightPushEnabled(true)
 				.build();
 			db.userPreference.upsert.mockResolvedValue(expectedPreference);
 
@@ -186,7 +186,7 @@ describe("UserPreferenceRepository", () => {
 				create: {
 					userId: "user-123",
 					pushEnabled: true,
-					nightPushEnabled: false,
+					nightPushEnabled: true,
 				},
 				update: {
 					pushEnabled: true,
@@ -215,7 +215,7 @@ describe("UserPreferenceRepository", () => {
 				where: { userId: "user-123" },
 				create: {
 					userId: "user-123",
-					pushEnabled: false,
+					pushEnabled: true,
 					nightPushEnabled: true,
 				},
 				update: {

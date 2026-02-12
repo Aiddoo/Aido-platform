@@ -1273,9 +1273,9 @@ describe("Auth (e2e)", () => {
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("pushEnabled");
 			expect(response.body.data).toHaveProperty("nightPushEnabled");
-			// 기본값은 false
-			expect(response.body.data.pushEnabled).toBe(false);
-			expect(response.body.data.nightPushEnabled).toBe(false);
+			// 기본값은 true
+			expect(response.body.data.pushEnabled).toBe(true);
+			expect(response.body.data.nightPushEnabled).toBe(true);
 		});
 
 		it("PATCH /auth/preference - 푸시 설정 활성화", async () => {
@@ -1291,7 +1291,7 @@ describe("Auth (e2e)", () => {
 			// Then - 응답 검증
 			expect(response.body.success).toBe(true);
 			expect(response.body.data.pushEnabled).toBe(true);
-			expect(response.body.data.nightPushEnabled).toBe(false);
+			expect(response.body.data.nightPushEnabled).toBe(true);
 		});
 
 		it("PATCH /auth/preference - 야간 푸시 설정 활성화", async () => {
@@ -1392,8 +1392,8 @@ describe("Auth (e2e)", () => {
 			// 회원가입 시 동의했으므로 termsAgreedAt, privacyAgreedAt은 값이 있음
 			expect(response.body.data.termsAgreedAt).not.toBeNull();
 			expect(response.body.data.privacyAgreedAt).not.toBeNull();
-			// 마케팅 동의는 기본적으로 없음
-			expect(response.body.data.marketingAgreedAt).toBeNull();
+			// 마케팅 동의는 기본적으로 활성화됨
+			expect(response.body.data.marketingAgreedAt).not.toBeNull();
 		});
 
 		it("PATCH /auth/consent/marketing - 마케팅 동의 활성화", async () => {
