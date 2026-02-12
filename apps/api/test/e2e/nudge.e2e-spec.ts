@@ -221,6 +221,61 @@ describe("Nudge (e2e)", () => {
 				expect(response.body.error.code).toBe("NUDGE_1104");
 			});
 
+			it("비공개 Todo에 콕 찌르기 시 404 에러 반환", async () => {
+				// Given - receiver의 PRIVATE Todo 생성
+				const today = new Date().toISOString().split("T")[0];
+				const categoryId = await getDefaultCategoryId(receiver.accessToken);
+				const todoResponse = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${receiver.accessToken}`)
+					.send({
+						title: "Private Todo",
+						startDate: today,
+						categoryId,
+						visibility: "PRIVATE",
+					});
+				const privateTodoId = todoResponse.body.data?.todo?.id;
+
+				// When - PRIVATE Todo에 콕 찌르기 API 호출
+				const response = await request(app.getHttpServer())
+					.post("/nudges")
+					.set("Authorization", `Bearer ${sender.accessToken}`)
+					.send({ receiverId: receiver.userId, todoId: privateTodoId })
+					.expect(404);
+
+				// Then - Todo 은닉 에러 검증
+				expect(response.body.success).toBe(false);
+				expect(response.body.error.code).toBe("TODO_0801");
+			});
+
+			it("오늘이 아닌 Todo에 콕 찌르기 시 400 에러 반환", async () => {
+				// Given - receiver의 어제 Todo 생성
+				const yesterday = new Date();
+				yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+				const yesterdayDate = yesterday.toISOString().split("T")[0];
+				const categoryId = await getDefaultCategoryId(receiver.accessToken);
+				const todoResponse = await request(app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${receiver.accessToken}`)
+					.send({
+						title: "Yesterday Todo",
+						startDate: yesterdayDate,
+						categoryId,
+					});
+				const yesterdayTodoId = todoResponse.body.data?.todo?.id;
+
+				// When - 오늘이 아닌 Todo에 콕 찌르기 API 호출
+				const response = await request(app.getHttpServer())
+					.post("/nudges")
+					.set("Authorization", `Bearer ${sender.accessToken}`)
+					.send({ receiverId: receiver.userId, todoId: yesterdayTodoId })
+					.expect(400);
+
+				// Then - 오늘 Todo 제한 에러 검증
+				expect(response.body.success).toBe(false);
+				expect(response.body.error.code).toBe("NUDGE_1106");
+			});
+
 			it("쿨다운 기간 내 동일 Todo에 다시 콕 찌르기 시 429 에러 반환", async () => {
 				// Given - 이미 콕 찌르기를 보낸 상태 (첫 번째 테스트에서 생성)
 
