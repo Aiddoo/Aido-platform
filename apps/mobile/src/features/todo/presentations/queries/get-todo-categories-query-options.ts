@@ -13,6 +13,5 @@ export const getTodoCategoriesQueryOptions = () => {
       const result = await todoCategoryService.getCategories();
       return unwrap(result);
     },
-    staleTime: 1_000 * 60 * 5,
   });
 };

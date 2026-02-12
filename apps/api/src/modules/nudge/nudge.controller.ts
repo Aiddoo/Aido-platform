@@ -96,7 +96,7 @@ export class NudgeController {
 - \`message\` (선택): 메시지 (최대 200자)
 
 **제한**
-- FREE: 일 10회, ACTIVE: 무제한
+- FREE: 일 3회, ACTIVE: 무제한
 - 동일 Todo에 24시간 쿨다운`,
 	})
 	@ApiCreatedResponse({ type: CreateNudgeResponseDto })
@@ -218,7 +218,7 @@ export class NudgeController {
 		operationId: "getNudgeLimitInfo",
 		description: `오늘 사용한 콕 찌르기 횟수와 남은 횟수를 확인합니다.
 
-**제한 정책**: FREE 일 10회, ACTIVE 무제한`,
+**제한 정책**: FREE 일 3회, ACTIVE 무제한`,
 	})
 	@ApiSuccessResponse({ type: NudgeLimitInfoDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)

@@ -3,6 +3,7 @@ import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 import { Text } from '../Text/Text';
+import { VStack } from '../VStack/VStack';
 import type { TextAreaProps } from './TextArea.types';
 import {
   textAreaContainerVariants,
@@ -41,35 +42,35 @@ export const TextArea = forwardRef<TextInput, TextAreaProps>(
             {label}
           </Text>
         )}
-        <View
-          className={cn(
-            textAreaContainerVariants({ variant, isFocused, isDisabled, isInvalid }),
-            className,
-          )}
-        >
-          <StyledTextInput
-            ref={ref}
-            placeholder={placeholder}
-            editable={!isDisabled}
-            multiline
-            textAlignVertical="top"
-            className={textAreaTextVariants()}
-            onFocus={(e) => {
-              setIsFocused(true);
-              onFocus?.(e);
-            }}
-            onBlur={(e) => {
-              setIsFocused(false);
-              onBlur?.(e);
-            }}
-            {...props}
-          />
-        </View>
-        {errorMessage && (
-          <Text size="e1" className="text-error">
-            {errorMessage}
+        <VStack gap={4}>
+          <View
+            className={cn(
+              textAreaContainerVariants({ variant, isFocused, isDisabled, isInvalid }),
+              className,
+            )}
+          >
+            <StyledTextInput
+              ref={ref}
+              placeholder={placeholder}
+              editable={!isDisabled}
+              multiline
+              textAlignVertical="top"
+              className={textAreaTextVariants()}
+              onFocus={(e) => {
+                setIsFocused(true);
+                onFocus?.(e);
+              }}
+              onBlur={(e) => {
+                setIsFocused(false);
+                onBlur?.(e);
+              }}
+              {...props}
+            />
+          </View>
+          <Text size="e1" className={cn('text-error', !errorMessage && 'opacity-0')}>
+            {errorMessage ?? ' '}
           </Text>
-        )}
+        </VStack>
       </View>
     );
   },
