@@ -583,4 +583,11 @@ export class BusinessExceptions {
 	static adminInvalidFilterCondition(details?: Record<string, unknown>) {
 		return new BusinessException(ErrorCode.ADMIN_1403, details);
 	}
+
+	// =========================================================================
+	// 문의 (Inquiry)
+	// =========================================================================
+	static inquiryEmailFailed(details?: unknown) {
+		return new BusinessException(ErrorCode.INQUIRY_1501, details);
+	}
 }

@@ -22,6 +22,7 @@ import { CheerModule } from "@/modules/cheer/cheer.module";
 import { DailyCompletionModule } from "@/modules/daily-completion";
 import { FollowModule } from "@/modules/follow";
 import { HealthModule } from "@/modules/health";
+import { InquiryModule } from "@/modules/inquiry/inquiry.module";
 import { NotificationModule } from "@/modules/notification/notification.module";
 import { NudgeModule } from "@/modules/nudge/nudge.module";
 import { SchedulerModule } from "@/modules/scheduler/scheduler.module";
@@ -72,6 +73,7 @@ import { AppService } from "./app.service";
 		DailyCompletionModule,
 		FollowModule,
 		HealthModule,
+		InquiryModule,
 		NotificationModule,
 		NudgeModule,
 		SchedulerModule,
