@@ -22,6 +22,8 @@ import type { ErrorDefinition } from './types';
  * - NUDGE   (1100-1199): 콕 찌르기
  * - CHEER   (1200-1299): 응원
  * - AI      (1300-1399): AI 서비스
+ * - ADMIN   (1400-1499): 관리자
+ * - INQUIRY (1500-1599): 문의
  */
 export const ErrorCode = {
   // =========================================================================
@@ -211,6 +213,11 @@ export const ErrorCode = {
   ADMIN_1402: 'ADMIN_1402',
   /** 유효하지 않은 필터 조건입니다 */
   ADMIN_1403: 'ADMIN_1403',
+  // =========================================================================
+  // 문의 (INQUIRY_1500-1599)
+  // =========================================================================
+  /** 문의 이메일 발송에 실패했습니다 */
+  INQUIRY_1501: 'INQUIRY_1501',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -947,5 +954,15 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '유효하지 않은 필터 조건입니다.',
     description: '알림 대상 필터 조건이 올바르지 않습니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+
+  // =========================================================================
+  // 문의 (INQUIRY_1500-1599)
+  // =========================================================================
+  [ErrorCode.INQUIRY_1501]: {
+    code: 'INQUIRY_1501',
+    message: '문의 이메일 발송에 실패했습니다.',
+    description: '문의 이메일 발송 서비스 오류가 발생했습니다.',
+    httpStatus: HttpStatus.BAD_GATEWAY,
   },
 };
