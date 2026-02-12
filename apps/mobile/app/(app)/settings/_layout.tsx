@@ -31,6 +31,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
       <Stack.Screen name="theme" options={{ title: '화면 테마' }} />
       <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
+      <Stack.Screen name="linked-accounts" options={{ title: '연결된 계정' }} />
     </Stack>
   );
 }

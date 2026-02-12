@@ -16,11 +16,14 @@ const PROVIDER_LABELS: Record<string, string> = {
 	NAVER: "Naver",
 };
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
  * 일일 가입 요약 크론 작업
  *
- * 매일 UTC 12:00 (KST 21:00)에 실행되어
- * 당일 신규 가입자 수와 총 사용자 수를 관리자 채널에 발송합니다.
+ * 매일 KST 00:00에 실행되어
+ * 전일(KST) 신규 가입자 수와 총 사용자 수를 관리자 채널에 발송합니다.
  */
 @Injectable()
 export class DailySignupSummaryJob {
@@ -33,29 +36,25 @@ export class DailySignupSummaryJob {
 	) {}
 
 	/**
-	 * 매일 UTC 12:00 (KST 21:00) 실행
+	 * 매일 KST 00:00 실행
 	 */
-	@Cron("0 12 * * *")
+	@Cron("0 0 * * *", { timeZone: "Asia/Seoul" })
 	async handleDailySummary(): Promise<void> {
 		this.logger.log("Starting daily signup summary job...");
 
 		try {
-			const today = new Date();
-			today.setUTCHours(0, 0, 0, 0);
+			const { startUtc, endUtc, reportDateStr } = this.getPreviousKstDayRange();
 
-			const tomorrow = new Date(today);
-			tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-
-			// 오늘 가입한 사용자의 Account provider별 집계
+			// 전일(KST) 가입한 사용자의 Account provider별 집계
 			const signupsByProvider = await this.database.account.groupBy({
 				by: ["provider"],
 				where: {
-					createdAt: { gte: today, lt: tomorrow },
+					createdAt: { gte: startUtc, lt: endUtc },
 				},
 				_count: true,
 			});
 
-			const todayTotal = signupsByProvider.reduce(
+			const previousDayTotal = signupsByProvider.reduce(
 				(sum, group) => sum + group._count,
 				0,
 			);
@@ -67,20 +66,21 @@ export class DailySignupSummaryJob {
 			const providerBreakdown = signupsByProvider
 				.map((group) => {
 					const label = PROVIDER_LABELS[group.provider] ?? group.provider;
-					return `${label}: ${group._count}명`;
+					return `- ${label}: ${group._count}명`;
 				})
 				.join("\n");
 
-			const dateStr = today.toISOString().split("T")[0];
-
 			const result = await this.adminNotifier.send({
-				title: `일일 가입 리포트 (${dateStr})`,
-				body: providerBreakdown || "오늘 신규 가입자가 없습니다.",
+				title: `일일 가입 리포트 | ${reportDateStr} (KST)`,
+				body:
+					previousDayTotal > 0
+						? `전일 신규 가입은 ${previousDayTotal}명입니다.\n\n가입 채널별\n${providerBreakdown}`
+						: "전일 신규 가입은 0명입니다.",
 				color: 0x5865f2,
 				fields: [
 					{
-						name: "오늘 신규 가입",
-						value: `${todayTotal}명`,
+						name: "전일 신규 가입",
+						value: `${previousDayTotal}명`,
 						inline: true,
 					},
 					{
@@ -88,12 +88,17 @@ export class DailySignupSummaryJob {
 						value: `${totalUsers.toLocaleString()}명`,
 						inline: true,
 					},
+					{
+						name: "집계 기준",
+						value: `${reportDateStr} 00:00 ~ 23:59 (KST)`,
+						inline: false,
+					},
 				],
 			});
 
 			if (result.success) {
 				this.logger.log(
-					`Daily signup summary sent: ${todayTotal} new, ${totalUsers} total`,
+					`Daily signup summary sent: ${previousDayTotal} new, ${totalUsers} total`,
 				);
 			} else {
 				this.logger.warn(
@@ -106,5 +111,24 @@ export class DailySignupSummaryJob {
 				error instanceof Error ? error.stack : undefined,
 			);
 		}
+	}
+
+	private getPreviousKstDayRange(now = new Date()): {
+		startUtc: Date;
+		endUtc: Date;
+		reportDateStr: string;
+	} {
+		const nowMs = now.getTime();
+		const kstNowMs = nowMs + KST_OFFSET_MS;
+		const kstTodayStartMs = Math.floor(kstNowMs / ONE_DAY_MS) * ONE_DAY_MS;
+		const kstPreviousDayStartMs = kstTodayStartMs - ONE_DAY_MS;
+
+		const startUtc = new Date(kstPreviousDayStartMs - KST_OFFSET_MS);
+		const endUtc = new Date(kstTodayStartMs - KST_OFFSET_MS);
+		const reportDateStr = new Date(kstPreviousDayStartMs)
+			.toISOString()
+			.slice(0, 10);
+
+		return { startUtc, endUtc, reportDateStr };
 	}
 }

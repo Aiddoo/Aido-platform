@@ -1,6 +1,4 @@
 import type { RegisterInput } from '@aido/validators';
-import { registerMutationOptions } from '@src/features/auth/presentations/queries/register-mutation-options';
-import type { SignUpFormData } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
@@ -12,6 +10,8 @@ import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { registerMutationOptions } from '../queries/register-mutation-options';
+import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
   isOpen: boolean;
