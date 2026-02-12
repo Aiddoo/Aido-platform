@@ -42,8 +42,8 @@ export const registerSchema = z
       .describe('개인정보처리방침 동의 (필수, true만 허용)'),
     marketingAgreed: z
       .boolean()
-      .default(false)
-      .describe('마케팅 정보 수신 동의 (선택, 기본값: false)'),
+      .default(true)
+      .describe('마케팅 정보 수신 동의 (선택, 기본값: true)'),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: '비밀번호가 일치하지 않습니다',

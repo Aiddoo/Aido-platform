@@ -1101,7 +1101,16 @@ export class OAuthService {
 					userId: user.id,
 					termsAgreedAt: currentTime,
 					privacyAgreedAt: currentTime,
-					marketingAgreedAt: null,
+					marketingAgreedAt: currentTime,
+				},
+			});
+
+			// 푸시 알림 설정 초기화 (기본값: 모두 ON)
+			await tx.userPreference.create({
+				data: {
+					userId: user.id,
+					pushEnabled: true,
+					nightPushEnabled: true,
 				},
 			});
 
