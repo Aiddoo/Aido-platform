@@ -15,7 +15,7 @@ import { NudgeService } from "./nudge.service";
  * - 일일 제한 및 쿨다운 관리
  *
  * 제한 정책:
- * - FREE 구독: 하루 10회
+ * - FREE 구독: 하루 3회
  * - ACTIVE 구독: 무제한
  * - 동일 Todo에 대해 24시간 쿨다운
  *

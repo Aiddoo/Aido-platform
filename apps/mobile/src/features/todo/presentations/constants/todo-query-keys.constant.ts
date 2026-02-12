@@ -20,4 +20,9 @@ export const TODO_QUERY_KEYS = {
   friendLists: () => [...TODO_QUERY_KEYS.all, 'friend'] as const,
   friendListByDate: (userId: string, date: string) =>
     [...TODO_QUERY_KEYS.friendLists(), userId, date] as const,
+
+  // 콕 찌르기 (Nudge)
+  nudges: () => [...TODO_QUERY_KEYS.all, 'nudge'] as const,
+  nudgeLimit: () => [...TODO_QUERY_KEYS.nudges(), 'limit'] as const,
+  nudgeCooldown: (userId: string) => [...TODO_QUERY_KEYS.nudges(), 'cooldown', userId] as const,
 } as const;

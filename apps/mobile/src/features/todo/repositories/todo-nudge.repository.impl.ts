@@ -1,9 +1,18 @@
-import { type CreateNudgeResponse, createNudgeResponseSchema } from '@aido/validators';
+import {
+  type CreateNudgeResponse,
+  createNudgeResponseSchema,
+  type NudgeCooldownInfo as NudgeCooldownInfoDTO,
+  type NudgeLimitInfo as NudgeLimitInfoDTO,
+  nudgeCooldownInfoSchema,
+  nudgeLimitInfoSchema,
+} from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
+import type { NudgeCooldownInfo, NudgeLimitInfo } from '../models/todo-nudge.model';
+import { toNudgeCooldownInfo, toNudgeLimitInfo, toSendNudgeResult } from './todo-nudge.mapper';
 import type { SendNudgeInput, SendNudgeResult, TodoNudgeRepository } from './todo-nudge.repository';
 
 export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
@@ -28,6 +37,34 @@ export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
       throw new ParseError();
     }
 
-    return ok({ message: parsed.data.message });
+    return ok(toSendNudgeResult(parsed.data));
+  }
+
+  async getLimitInfo(): Promise<Result<NudgeLimitInfo, ApiError>> {
+    const result = await this.#httpClient.get<NudgeLimitInfoDTO>('v1/nudges/limit');
+
+    if (!result.ok) return result;
+
+    const parsed = nudgeLimitInfoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[TodoNudgeRepository] Invalid getLimitInfo response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toNudgeLimitInfo(parsed.data));
+  }
+
+  async getCooldownInfoForUser(userId: string): Promise<Result<NudgeCooldownInfo, ApiError>> {
+    const result = await this.#httpClient.get<NudgeCooldownInfoDTO>(`v1/nudges/cooldown/${userId}`);
+
+    if (!result.ok) return result;
+
+    const parsed = nudgeCooldownInfoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      console.error('[TodoNudgeRepository] Invalid getCooldownInfo response:', parsed.error);
+      throw new ParseError();
+    }
+
+    return ok(toNudgeCooldownInfo(parsed.data));
   }
 }

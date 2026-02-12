@@ -21,6 +21,5 @@ export const getTodosByRangeQueryOptions = (rangeStart: string, rangeEnd: string
     select: (data) => ({
       todos: data.todos.map(toTodoItemViewModel),
     }),
-    staleTime: 30_000,
   });
 };
