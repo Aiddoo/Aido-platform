@@ -1,6 +1,9 @@
 import { getConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
 import { updateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/update-marketing-consent-mutation-options';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
+import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
@@ -9,7 +12,7 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Divider, FormField, Skeleton, SkeletonGroup } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 const TermsSettingsScreen = () => {
   return (
@@ -31,6 +34,7 @@ export default TermsSettingsScreen;
 function TermsSettingsForm() {
   const { data: consent } = useSuspenseQuery(getConsentQueryOptions());
   const updateMutation = useMutation(updateMarketingConsentMutationOptions());
+  const openUrl = useOpenUrl();
 
   const formatDate = (date: Date | null) => {
     if (!date) return '미동의';
@@ -46,39 +50,49 @@ function TermsSettingsForm() {
   return (
     <>
       <VStack p={8} gap={8} className="bg-white rounded-2xl">
-        <VStack gap={4} className="py-2">
-          <Text size="b4" weight="medium">
-            서비스 이용약관
-          </Text>
-          <VStack gap={2}>
-            <Text size="e1" shade={6}>
-              동의일: {formatDate(consent.termsAgreedAt)}
-            </Text>
-            {consent.agreedTermsVersion && (
-              <Text size="e1" shade={6}>
-                버전: {consent.agreedTermsVersion}
+        <Pressable className="py-2 active:opacity-60" onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+          <HStack justify="between" align="center">
+            <VStack gap={4}>
+              <Text size="b2" weight="medium">
+                서비스 이용약관
               </Text>
-            )}
-          </VStack>
-        </VStack>
+              <VStack gap={2}>
+                <Text size="b4" shade={6}>
+                  동의일: {formatDate(consent.termsAgreedAt)}
+                </Text>
+                {consent.agreedTermsVersion && (
+                  <Text size="b4" shade={6}>
+                    버전: {consent.agreedTermsVersion}
+                  </Text>
+                )}
+              </VStack>
+            </VStack>
+            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+          </HStack>
+        </Pressable>
 
         <Divider className="bg-gray-2" />
 
-        <VStack gap={4} className="py-2">
-          <Text size="b4" weight="medium">
-            개인정보처리방침
-          </Text>
-          <VStack gap={2}>
-            <Text size="e1" shade={6}>
-              동의일: {formatDate(consent.privacyAgreedAt)}
-            </Text>
-            {consent.agreedTermsVersion && (
-              <Text size="e1" shade={6}>
-                버전: {consent.agreedTermsVersion}
+        <Pressable className="py-2 active:opacity-60" onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+          <HStack justify="between" align="center">
+            <VStack gap={4}>
+              <Text size="b2" weight="medium">
+                개인정보처리방침
               </Text>
-            )}
-          </VStack>
-        </VStack>
+              <VStack gap={2}>
+                <Text size="b4" shade={6}>
+                  동의일: {formatDate(consent.privacyAgreedAt)}
+                </Text>
+                {consent.agreedTermsVersion && (
+                  <Text size="b4" shade={6}>
+                    버전: {consent.agreedTermsVersion}
+                  </Text>
+                )}
+              </VStack>
+            </VStack>
+            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+          </HStack>
+        </Pressable>
       </VStack>
 
       <Spacing size={12} />
