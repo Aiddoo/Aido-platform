@@ -12,6 +12,9 @@ export const emailSchema = z.object({
 
 	/** 발신자 이름 */
 	EMAIL_FROM_NAME: z.string().default("Aido"),
+
+	/** 문의 수신 이메일 */
+	SUPPORT_EMAIL: z.email().default("support@aido.app"),
 });
 
 export type EmailConfig = z.infer<typeof emailSchema>;
