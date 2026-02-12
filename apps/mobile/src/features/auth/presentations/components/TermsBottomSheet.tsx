@@ -1,4 +1,6 @@
 import type { RegisterInput } from '@aido/validators';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
+import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
@@ -8,8 +10,10 @@ import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, Divider, FormField } from 'heroui-native';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { registerMutationOptions } from '../queries/register-mutation-options';
 import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
@@ -22,6 +26,7 @@ interface TermsBottomSheetProps {
 export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
   const { handleSubmit } = useFormContext<SignUpFormData>();
   const insets = useSafeAreaInsets();
+  const openUrl = useOpenUrl();
 
   const [agreements, setAgreements] = useState(() => ({
     terms: false,
@@ -94,12 +99,14 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
                   isRequired
                   isSelected={agreements.terms}
                   onSelectedChange={setAgreement('terms')}
+                  onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
                 />
                 <TermsAgreementItem
                   label="개인정보처리방침 동의"
                   isRequired
                   isSelected={agreements.privacy}
                   onSelectedChange={setAgreement('privacy')}
+                  onPressLink={() => openUrl(LEGAL_URLS.PRIVACY)}
                 />
                 <TermsAgreementItem
                   label="마케팅 정보 수신 동의"
