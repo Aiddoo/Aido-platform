@@ -34,8 +34,8 @@ export class UserPreferenceRepository {
 		return client.userPreference.create({
 			data: {
 				userId,
-				pushEnabled: data?.pushEnabled ?? false,
-				nightPushEnabled: data?.nightPushEnabled ?? false,
+				pushEnabled: data?.pushEnabled ?? true,
+				nightPushEnabled: data?.nightPushEnabled ?? true,
 				...(data?.timezone !== undefined && { timezone: data.timezone }),
 				...(data?.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
@@ -57,8 +57,8 @@ export class UserPreferenceRepository {
 			where: { userId },
 			create: {
 				userId,
-				pushEnabled: data.pushEnabled ?? false,
-				nightPushEnabled: data.nightPushEnabled ?? false,
+				pushEnabled: data.pushEnabled ?? true,
+				nightPushEnabled: data.nightPushEnabled ?? true,
 				...(data.timezone !== undefined && { timezone: data.timezone }),
 				...(data.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
