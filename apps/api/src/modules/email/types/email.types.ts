@@ -34,4 +34,8 @@ export interface EmailSendResult {
 /**
  * 이메일 타입 (태그용)
  */
-export type EmailType = "verification" | "password-reset" | "notification";
+export type EmailType =
+	| "verification"
+	| "password-reset"
+	| "notification"
+	| "inquiry";

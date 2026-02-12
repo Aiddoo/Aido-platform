@@ -1,3 +1,4 @@
+import type { InquiryTemplateData } from "@/modules/email/templates/inquiry.template";
 import type {
 	EmailSendResult,
 	EmailTag,
@@ -26,8 +27,18 @@ interface SentEmail {
  * - 실패 시뮬레이션 (재시도 로직 테스트용)
  * - 태그 저장 및 조회
  */
+/**
+ * 발송된 문의 이메일 기록
+ */
+interface SentInquiry {
+	to: string;
+	data: InquiryTemplateData;
+	sentAt: Date;
+}
+
 export class FakeEmailService {
 	private _sentEmails: Map<string, SentEmail> = new Map();
+	private _sentInquiries: SentInquiry[] = [];
 	private _idempotencyKeys: Set<string> = new Set();
 
 	/** 실패 시뮬레이션 설정 */
@@ -133,6 +144,29 @@ export class FakeEmailService {
 		return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
 	}
 
+	/**
+	 * 문의 이메일 발송 (Mock)
+	 */
+	async sendInquiry(
+		to: string,
+		data: InquiryTemplateData,
+	): Promise<EmailSendResult> {
+		// 실패 시뮬레이션 체크
+		const failureResult = this._checkFailureSimulation();
+		if (failureResult) {
+			return failureResult;
+		}
+
+		this._sentInquiries.push({
+			to,
+			data,
+			sentAt: new Date(),
+		});
+
+		console.log(`📧 [FakeEmail] Inquiry sent to ${to}: ${data.categoryLabel}`);
+		return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+	}
+
 	// ===== 기존 테스트 유틸리티 메서드 =====
 
 	/**
@@ -147,6 +181,7 @@ export class FakeEmailService {
 	 */
 	clear(): void {
 		this._sentEmails.clear();
+		this._sentInquiries = [];
 		this._idempotencyKeys.clear();
 		this._resetFailureSimulation();
 	}
@@ -193,6 +228,22 @@ export class FakeEmailService {
 	 */
 	getSentCount(): number {
 		return this._sentEmails.size;
+	}
+
+	// ===== 문의 이메일 유틸리티 =====
+
+	/**
+	 * 마지막 발송된 문의 조회
+	 */
+	getLastInquiry(): SentInquiry | undefined {
+		return this._sentInquiries[this._sentInquiries.length - 1];
+	}
+
+	/**
+	 * 발송된 문의 수 조회
+	 */
+	getInquiryCount(): number {
+		return this._sentInquiries.length;
 	}
 
 	// ===== 실패 시뮬레이션 메서드 =====

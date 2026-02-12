@@ -11,6 +11,7 @@ export * from './domains/auth';
 export * from './domains/cheer';
 export * from './domains/daily-completion';
 export * from './domains/follow';
+export * from './domains/inquiry';
 export * from './domains/notification';
 export * from './domains/nudge';
 export * from './domains/todo';
