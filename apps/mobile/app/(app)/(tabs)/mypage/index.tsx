@@ -58,6 +58,10 @@ const MyPageScreen = () => {
 
         <SettingNavigationSection>
           <SettingNavigationItem
+            label="연결된 계정"
+            onPress={() => router.push('/settings/linked-accounts')}
+          />
+          <SettingNavigationItem
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
           />

@@ -1,0 +1,264 @@
+import type { OAuthProvider } from '@src/features/auth/models/auth.model';
+import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
+import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { HStack } from '@src/shared/ui/HStack/HStack';
+import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { Spacing } from '@src/shared/ui/Spacing/Spacing';
+import { Text } from '@src/shared/ui/Text/Text';
+import { VStack } from '@src/shared/ui/VStack/VStack';
+import { cn } from '@src/shared/utils/cn';
+import times from 'es-toolkit/compat/times';
+import { Button, Chip, Dialog, Divider, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import type { ComponentProps, ReactNode } from 'react';
+import { Fragment, memo, Suspense, useCallback, useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+const LinkedAccountsScreen = () => {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <Spacing size={20} />
+
+        <Text size="b4" shade={6} className="px-2 pb-2">
+          소셜 계정을 연결하면 다양한 방법으로 로그인할 수 있습니다
+        </Text>
+
+        <QueryErrorBoundary>
+          <Suspense fallback={<LinkedAccountsList.Loading />}>
+            <LinkedAccountsList />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+};
+
+export default LinkedAccountsScreen;
+
+function LinkedAccountsList() {
+  const { canUnlink, getProviderState, link, unlink } = useLinkedAccounts();
+
+  const [unlinkTarget, setUnlinkTarget] = useState<{
+    provider: OAuthProvider;
+    label: string;
+  } | null>(null);
+
+  const handleUnlinkConfirm = () => {
+    if (!unlinkTarget) return;
+    const target = unlinkTarget;
+    setUnlinkTarget(null);
+    unlink(target.provider);
+  };
+
+  const handleLink = useCallback(
+    (slug: (typeof PROVIDER_CONFIGS)[number]['slug']) => {
+      link(slug);
+    },
+    [link],
+  );
+
+  const handleUnlinkRequest = useCallback((provider: OAuthProvider, label: string) => {
+    setUnlinkTarget({ provider, label });
+  }, []);
+
+  return (
+    <>
+      <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
+        {PROVIDER_CONFIGS.map((config, index) => {
+          const { isLinked, isPending } = getProviderState(config.provider, config.slug);
+
+          return (
+            <Fragment key={config.provider}>
+              {index > 0 && <Divider className="mx-4 bg-gray-2" />}
+              <ProviderListRow
+                provider={config.provider}
+                slug={config.slug}
+                icon={config.icon}
+                iconClassName={config.iconClassName}
+                label={config.label}
+                isLinked={isLinked}
+                isPending={isPending}
+                canUnlink={canUnlink}
+                onLink={handleLink}
+                onUnlinkRequest={handleUnlinkRequest}
+              />
+            </Fragment>
+          );
+        })}
+      </VStack>
+
+      <UnlinkConfirmDialog
+        isOpen={unlinkTarget !== null}
+        providerLabel={unlinkTarget?.label ?? ''}
+        onOpenChange={(open) => {
+          if (!open) setUnlinkTarget(null);
+        }}
+        onConfirm={handleUnlinkConfirm}
+      />
+    </>
+  );
+}
+
+LinkedAccountsList.Loading = function Loading() {
+  return (
+    <>
+      <View className="px-2 pb-2">
+        <SkeletonGroup isLoading isSkeletonOnly>
+          <Skeleton className="h-4 w-64 rounded" />
+        </SkeletonGroup>
+      </View>
+      <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
+        <SkeletonGroup isLoading isSkeletonOnly>
+          {times(4, (index) => (
+            <Fragment key={`linked-account-skeleton-${index}`}>
+              <SkeletonRow />
+              {index < 3 && <Divider className="mx-4 bg-gray-2" />}
+            </Fragment>
+          ))}
+        </SkeletonGroup>
+      </VStack>
+    </>
+  );
+};
+
+function SkeletonRow() {
+  return (
+    <HStack align="center" gap={12} className="px-4 py-3.5">
+      <Skeleton className="w-9 h-9 rounded-full" />
+      <VStack flex={1} gap={2}>
+        <Skeleton className="h-4 w-16 rounded" />
+        <Skeleton className="h-3 w-12 rounded" />
+      </VStack>
+      <Skeleton className="h-8 w-16 rounded-lg" />
+    </HStack>
+  );
+}
+
+interface ProviderListRowProps {
+  provider: OAuthProvider;
+  slug: (typeof PROVIDER_CONFIGS)[number]['slug'];
+  icon: ReactNode;
+  iconClassName: string;
+  label: string;
+  isLinked: boolean;
+  isPending: boolean;
+  canUnlink: boolean;
+  onLink: (slug: (typeof PROVIDER_CONFIGS)[number]['slug']) => void;
+  onUnlinkRequest: (provider: OAuthProvider, label: string) => void;
+}
+
+const ProviderListRow = memo(function ProviderListRow({
+  provider,
+  slug,
+  icon,
+  iconClassName,
+  label,
+  isLinked,
+  isPending,
+  canUnlink,
+  onLink,
+  onUnlinkRequest,
+}: ProviderListRowProps) {
+  const handleLinkPress = useCallback(() => {
+    onLink(slug);
+  }, [onLink, slug]);
+
+  const handleUnlinkPress = useCallback(() => {
+    onUnlinkRequest(provider, label);
+  }, [onUnlinkRequest, provider, label]);
+
+  return (
+    <ListRow
+      horizontalPadding="medium"
+      verticalPadding="large"
+      left={
+        <View className={cn('w-10 h-10 rounded-full items-center justify-center', iconClassName)}>
+          {icon}
+        </View>
+      }
+      contents={
+        <VStack gap={2}>
+          <Text size="b3" weight="medium">
+            {label}
+          </Text>
+          <Chip
+            variant="soft"
+            color={isLinked ? 'accent' : 'default'}
+            size="sm"
+            className="self-start mt-0.5 px-1 rounded-md"
+          >
+            <Chip.Label>{isLinked ? '연결됨' : '연결 안 됨'}</Chip.Label>
+          </Chip>
+        </VStack>
+      }
+      right={
+        isPending ? (
+          <View className="w-16 items-center">
+            <Spinner size="sm" />
+          </View>
+        ) : isLinked ? (
+          <Button
+            size="sm"
+            className="border-gray-3 rounded-lg px-4 h-8 bg-transparent"
+            onPress={handleUnlinkPress}
+            isDisabled={!canUnlink}
+          >
+            <Text size="e1" weight="semibold" tone="neutral" shade={8}>
+              해제
+            </Text>
+          </Button>
+        ) : (
+          <Button size="sm" className="bg-main rounded-lg px-4 h-8" onPress={handleLinkPress}>
+            <Text size="e1" weight="semibold" tone="white">
+              연결
+            </Text>
+          </Button>
+        )
+      }
+    />
+  );
+});
+
+interface UnlinkConfirmDialogProps
+  extends Pick<ComponentProps<typeof Dialog>, 'isOpen' | 'onOpenChange'> {
+  providerLabel: string;
+  onConfirm: () => void;
+}
+
+function UnlinkConfirmDialog({
+  isOpen,
+  providerLabel,
+  onOpenChange,
+  onConfirm,
+}: UnlinkConfirmDialogProps) {
+  return (
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="bg-black/40" />
+        <Dialog.Content>
+          <VStack gap={20}>
+            <VStack gap={4}>
+              <Dialog.Title>계정 연결 해제</Dialog.Title>
+              <Dialog.Description>
+                {providerLabel} 계정 연결을 해제하시겠습니까?{'\n'}해제 후 해당 계정으로 로그인할 수
+                없습니다.
+              </Dialog.Description>
+            </VStack>
+            <HStack justify="end" gap={12}>
+              <Dialog.Close asChild>
+                <Button variant="ghost" size="sm">
+                  취소
+                </Button>
+              </Dialog.Close>
+              <Button size="sm" className="bg-error" onPress={onConfirm}>
+                해제
+              </Button>
+            </HStack>
+          </VStack>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog>
+  );
+}

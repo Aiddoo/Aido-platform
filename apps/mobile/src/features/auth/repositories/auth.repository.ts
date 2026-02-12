@@ -13,6 +13,10 @@ import type { Result } from '@src/shared/errors/result';
 import type {
   AuthTokens,
   Consent,
+  LinkedAccount,
+  OAuthProvider,
+  OAuthStartMode,
+  OAuthStartProvider,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -48,7 +52,15 @@ export interface AuthRepository {
   ): Promise<Result<ResendVerificationResult, ApiError>>;
 
   // OAuth URL 생성 (동기 메서드)
-  getKakaoAuthUrl(redirectUri: string): string;
-  getNaverAuthUrl(redirectUri: string): string;
-  getGoogleAuthUrl(redirectUri: string): string;
+  getOAuthWebStartUrl(
+    provider: OAuthStartProvider,
+    redirectUri: string,
+    mode: OAuthStartMode,
+  ): string;
+
+  // 소셜 계정 연동
+  getLinkedAccounts(): Promise<Result<LinkedAccount[], ApiError>>;
+  linkWithCode(code: string): Promise<Result<{ message: string }, ApiError>>;
+  linkApple(idToken: string): Promise<Result<{ message: string }, ApiError>>;
+  unlinkAccount(provider: OAuthProvider): Promise<Result<{ message: string }, ApiError>>;
 }

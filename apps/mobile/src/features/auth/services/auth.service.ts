@@ -20,6 +20,11 @@ import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../mo
 import type {
   AuthTokens,
   Consent,
+  LinkedAccount,
+  OAuthProvider,
+  OAuthProviderSlug,
+  OAuthStartMode,
+  OAuthStartProvider,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -28,9 +33,7 @@ import type {
 } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 
-type OAuthProvider = 'kakao' | 'naver' | 'google';
-
-const OAUTH_PATHS: Record<OAuthProvider, string> = {
+const OAUTH_PATHS: Record<OAuthStartProvider, string> = {
   kakao: 'auth/kakao',
   naver: 'auth/naver',
   google: 'auth/google',
@@ -47,7 +50,7 @@ export class AuthService {
     this.#storage = storage;
   }
 
-  private getRedirectUri = (provider: OAuthProvider): string =>
+  private getRedirectUri = (provider: OAuthStartProvider): string =>
     makeRedirectUri({
       scheme: ENV.SCHEME,
       path: OAUTH_PATHS[provider],
@@ -70,7 +73,53 @@ export class AuthService {
       return firstCode ?? null;
     }
 
+    try {
+      const parsedWithUrl = new URL(url);
+      const searchCode = parsedWithUrl.searchParams.get('code');
+      if (searchCode) {
+        return searchCode;
+      }
+
+      const hash = parsedWithUrl.hash.startsWith('#')
+        ? parsedWithUrl.hash.slice(1)
+        : parsedWithUrl.hash;
+      if (!hash) {
+        return null;
+      }
+
+      const hashParams = new URLSearchParams(hash);
+      const hashCode = hashParams.get('code');
+
+      if (hashCode) {
+        return hashCode;
+      }
+    } catch {
+      return null;
+    }
+
     return null;
+  };
+
+  private extractOAuthErrorFromUrl = (url: string): { code?: string; description?: string } => {
+    const parsedUrl = Linking.parse(url);
+    const queryParams = parsedUrl.queryParams;
+    const errorParam = queryParams?.error;
+    const descriptionParam = queryParams?.error_description;
+
+    const normalizeQueryParam = (value: unknown): string | undefined => {
+      if (typeof value === 'string') {
+        return value;
+      }
+      if (Array.isArray(value)) {
+        return typeof value[0] === 'string' ? value[0] : undefined;
+      }
+      return undefined;
+    };
+
+    return {
+      code: normalizeQueryParam(errorParam),
+      description: normalizeQueryParam(descriptionParam),
+    };
   };
 
   private saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
@@ -84,16 +133,12 @@ export class AuthService {
     await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
   };
 
-  private openOAuthLogin = async (provider: OAuthProvider): Promise<Result<string, AuthError>> => {
+  private openOAuth = async (
+    provider: OAuthStartProvider,
+    mode: OAuthStartMode,
+  ): Promise<Result<string, AuthError>> => {
     const redirectUri = this.getRedirectUri(provider);
-
-    const authUrlGetters: Record<OAuthProvider, (uri: string) => string> = {
-      kakao: this.#authRepository.getKakaoAuthUrl,
-      naver: this.#authRepository.getNaverAuthUrl,
-      google: this.#authRepository.getGoogleAuthUrl,
-    };
-
-    const authUrl = authUrlGetters[provider](redirectUri);
+    const authUrl = this.#authRepository.getOAuthWebStartUrl(provider, redirectUri, mode);
 
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
       createTask: false,
@@ -102,6 +147,15 @@ export class AuthService {
     if (result.type === 'success') {
       const code = this.extractCodeFromUrl(result.url);
       if (!code) {
+        const oauthError = this.extractOAuthErrorFromUrl(result.url);
+        if (oauthError.code || oauthError.description) {
+          return err(
+            AuthErrors.providerError(
+              provider,
+              oauthError.description ?? `${provider} 로그인에 실패했어요 (${oauthError.code})`,
+            ),
+          );
+        }
         return err(AuthErrors.noCodeReceived());
       }
       return ok(code);
@@ -119,15 +173,15 @@ export class AuthService {
   };
 
   openKakaoLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuthLogin('kakao');
+    return this.openOAuth('kakao', 'login');
   };
 
   openNaverLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuthLogin('naver');
+    return this.openOAuth('naver', 'login');
   };
 
   openGoogleLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuthLogin('google');
+    return this.openOAuth('google', 'login');
   };
 
   openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
@@ -227,5 +281,65 @@ export class AuthService {
     input: ResendVerificationInput,
   ): Promise<Result<ResendVerificationResult, ApiError>> => {
     return this.#authRepository.resendVerification(input);
+  };
+
+  // === 소셜 계정 연동 ===
+  getLinkedAccounts = async (): Promise<Result<LinkedAccount[], ApiError>> => {
+    return this.#authRepository.getLinkedAccounts();
+  };
+
+  openLinkOAuth = (provider: OAuthStartProvider): Promise<Result<string, AuthError>> => {
+    return this.openOAuth(provider, 'link');
+  };
+
+  linkAccount = async (
+    provider: OAuthProviderSlug,
+  ): Promise<Result<{ message: string }, AuthServiceError>> => {
+    if (provider === 'apple') {
+      return this.linkApple();
+    }
+
+    const oauthResult = await this.openLinkOAuth(provider);
+    if (!oauthResult.ok) {
+      return err(oauthResult.error);
+    }
+
+    return this.linkWithCode(oauthResult.value);
+  };
+
+  linkWithCode = async (code: string): Promise<Result<{ message: string }, ApiError>> => {
+    return this.#authRepository.linkWithCode(code);
+  };
+
+  linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const idToken = credential.identityToken;
+      if (!idToken) {
+        return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
+      }
+
+      return this.#authRepository.linkApple(idToken);
+    } catch (error) {
+      if (isAuthError(error)) {
+        return err(error);
+      }
+      if (isExpoCodedError(error)) {
+        return err(AuthErrors.fromExpoAppleError(error));
+      }
+      return err(AuthErrors.fromUnknown(error));
+    }
+  };
+
+  unlinkAccount = async (
+    provider: OAuthProvider,
+  ): Promise<Result<{ message: string }, ApiError>> => {
+    return this.#authRepository.unlinkAccount(provider);
   };
 }
