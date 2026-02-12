@@ -24,6 +24,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { NudgeBuilder, TodoBuilder, UserBuilder } from "@test/builders";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { getUserToday, subtractDays } from "@/common/date";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
@@ -125,6 +126,8 @@ describe("NudgeService Integration Tests", () => {
 		jest.restoreAllMocks();
 	});
 
+	const todayMidnight = getUserToday("UTC");
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 		NudgeBuilder.resetIdCounter();
@@ -167,6 +170,7 @@ describe("NudgeService Integration Tests", () => {
 			const mockTodo = TodoBuilder.create(mockReceiverId)
 				.withId(mockTodoId)
 				.withTitle("테스트 할일")
+				.withStartDate(todayMidnight)
 				.build();
 			const mockNudge = NudgeBuilder.create(
 				mockSenderId,
@@ -275,6 +279,7 @@ describe("NudgeService Integration Tests", () => {
 				.build();
 			const mockTodo = TodoBuilder.create(mockReceiverId)
 				.withId(mockTodoId)
+				.withStartDate(todayMidnight)
 				.build();
 
 			mockFollowService.isMutualFriend.mockResolvedValue(true);
@@ -322,6 +327,7 @@ describe("NudgeService Integration Tests", () => {
 				.build();
 			const mockTodo = TodoBuilder.create(mockReceiverId)
 				.withId(mockTodoId)
+				.withStartDate(todayMidnight)
 				.build();
 			const recentNudge = NudgeBuilder.create(
 				mockSenderId,
@@ -356,6 +362,51 @@ describe("NudgeService Integration Tests", () => {
 			mockNudgeDb.findFirst.mockResolvedValue(recentNudge);
 
 			// When & Then - 쿨다운 중이면 예외 발생
+			await expect(
+				service.sendNudge({
+					senderId: mockSenderId,
+					receiverId: mockReceiverId,
+					todoId: mockTodoId,
+				}),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("오늘의 할 일이 아니면 예외를 발생시켜야 함", async () => {
+			// Given - 어제 날짜의 Todo
+			const yesterday = subtractDays(1, todayMidnight);
+			const mockTodo = TodoBuilder.create(mockReceiverId)
+				.withId(mockTodoId)
+				.withStartDate(yesterday)
+				.build();
+
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockUserDb.findUnique.mockResolvedValueOnce({
+				subscriptionStatus: "FREE",
+			});
+			mockTodoDb.findUnique.mockResolvedValue(mockTodo);
+
+			// When & Then - 오늘의 할 일이 아니므로 예외 발생
+			await expect(
+				service.sendNudge({
+					senderId: mockSenderId,
+					receiverId: mockReceiverId,
+					todoId: mockTodoId,
+				}),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("비공개 Todo면 예외를 발생시켜야 함", async () => {
+			// Given - 오늘 날짜지만 PRIVATE인 Todo
+			const mockTodo = TodoBuilder.create(mockReceiverId)
+				.withId(mockTodoId)
+				.withStartDate(todayMidnight)
+				.asPrivate()
+				.build();
+
+			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockTodoDb.findUnique.mockResolvedValue(mockTodo);
+
+			// When & Then - PRIVATE Todo는 은닉 처리로 예외 발생
 			await expect(
 				service.sendNudge({
 					senderId: mockSenderId,

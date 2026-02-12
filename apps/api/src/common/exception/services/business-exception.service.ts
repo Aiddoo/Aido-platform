@@ -494,6 +494,10 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.NUDGE_1105, { nudgeId });
 	}
 
+	static nudgeTodoNotToday(todoId: number) {
+		return new BusinessException(ErrorCode.NUDGE_1106, { todoId });
+	}
+
 	// =========================================================================
 	// 응원 (Cheer)
 	// =========================================================================

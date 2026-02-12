@@ -96,12 +96,14 @@ export class NudgeController {
 - \`message\` (선택): 메시지 (최대 200자)
 
 **제한**
+- 오늘의 할 일에만 콕 찌르기 가능
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 Todo에 24시간 쿨다운`,
 	})
 	@ApiCreatedResponse({ type: CreateNudgeResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.NUDGE_1104)
+	@ApiBadRequestError(ErrorCode.NUDGE_1106)
 	@ApiForbiddenError(ErrorCode.NUDGE_1103)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiConflictError(ErrorCode.NUDGE_1101)
