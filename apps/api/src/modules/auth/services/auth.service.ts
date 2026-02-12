@@ -136,12 +136,12 @@ export class AuthService {
 					},
 				});
 
-				// 푸시 알림 설정 초기화 (기본값: 모두 OFF)
+				// 푸시 알림 설정 초기화 (기본값: 모두 ON)
 				await tx.userPreference.create({
 					data: {
 						userId: newUser.id,
-						pushEnabled: false,
-						nightPushEnabled: false,
+						pushEnabled: true,
+						nightPushEnabled: true,
 					},
 				});
 
