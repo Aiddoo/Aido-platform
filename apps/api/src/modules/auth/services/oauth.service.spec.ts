@@ -2408,10 +2408,10 @@ describe("OAuthService", () => {
 				expect(result.userId).toBe("user-123");
 
 				expect(global.fetch).toHaveBeenCalledWith(
-					"https://nid.naver.com/oauth2.0/token",
+					"https://oauth2.googleapis.com/token",
 					expect.objectContaining({
 						method: "POST",
-						body: expect.stringContaining("state=valid-state"),
+						body: expect.stringContaining("code=test-code"),
 					}),
 				);
 			});
