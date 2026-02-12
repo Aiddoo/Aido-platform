@@ -97,6 +97,7 @@ export class NudgeService {
 					title: true,
 					startDate: true,
 					endDate: true,
+					visibility: true,
 				},
 			});
 			if (!todo) {
@@ -108,7 +109,11 @@ export class NudgeService {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
 
-			// 3.5. 오늘의 할 일인지 체크
+			// 3.5. 공개 Todo 및 오늘의 할 일인지 체크
+			if (todo.visibility !== "PUBLIC") {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+
 			const today = getUserToday(tz);
 			const isTodayTodo = todo.endDate
 				? todo.startDate <= today && today <= todo.endDate
