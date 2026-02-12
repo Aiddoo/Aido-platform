@@ -41,6 +41,9 @@ export const SWAGGER_TAGS = {
 	/** 🤖 AI - 자연어 파싱, 스마트 입력 */
 	AI: "AI",
 
+	/** 📩 문의 - 사용자 문의 접수 */
+	INQUIRIES: "Inquiries",
+
 	// ============================================
 	// Admin APIs (관리자/백오피스용) - 추후 확장
 	// ============================================
@@ -115,6 +118,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
 	[SWAGGER_TAGS.AI]:
 		"자연어 텍스트를 할 일 데이터로 파싱. 스마트 시간 해석 지원",
+
+	[SWAGGER_TAGS.INQUIRIES]:
+		"사용자 문의 접수. 카테고리(버그 신고/기능 요청/기타) + 내용을 관리자 이메일로 발송",
 
 	[SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 

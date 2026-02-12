@@ -3,6 +3,12 @@ import { Resend } from "resend";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "./constants/email.constants";
 import {
+	getInquiryHtml,
+	getInquirySubject,
+	getInquiryText,
+	type InquiryTemplateData,
+} from "./templates/inquiry.template";
+import {
 	getPasswordResetHtml,
 	getPasswordResetSubject,
 	getPasswordResetText,
@@ -106,6 +112,33 @@ export class EmailService {
 			idempotencyKey,
 			tags: [
 				{ name: "type", value: "password-reset" },
+				{ name: "environment", value: this._environment },
+			],
+		});
+	}
+
+	/**
+	 * 문의 이메일 발송
+	 *
+	 * @param to 수신자 이메일 (관리자)
+	 * @param data 템플릿 데이터
+	 */
+	async sendInquiry(
+		to: string,
+		data: InquiryTemplateData,
+	): Promise<EmailSendResult> {
+		const subject = getInquirySubject(data.categoryLabel);
+		const html = getInquiryHtml(data);
+		const text = getInquiryText(data);
+
+		return this._sendEmail({
+			to,
+			subject,
+			html,
+			text,
+			tags: [
+				{ name: "type", value: "inquiry" },
+				{ name: "category", value: data.category },
 				{ name: "environment", value: this._environment },
 			],
 		});

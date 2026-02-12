@@ -170,6 +170,7 @@ export class TypedConfigService {
 			from: this.get("EMAIL_FROM"),
 			fromName: this.get("EMAIL_FROM_NAME"),
 			isConfigured: !!this.get("RESEND_API_KEY"),
+			supportEmail: this.get("SUPPORT_EMAIL"),
 		};
 	}
 
