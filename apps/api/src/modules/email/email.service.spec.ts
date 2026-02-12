@@ -37,6 +37,7 @@ describe("EmailService", () => {
 				apiKey: "test-api-key",
 				from: "noreply@test.com",
 				fromName: "Test App",
+				supportEmail: "support@aido.app",
 			},
 			nodeEnv: "test",
 		};
@@ -358,6 +359,7 @@ describe("EmailService", () => {
 					apiKey: "",
 					from: "noreply@test.com",
 					fromName: "Test App",
+					supportEmail: "support@aido.app",
 				},
 				nodeEnv: "test",
 			};
@@ -452,6 +454,68 @@ describe("EmailService", () => {
 					{ name: "environment", value: expect.any(String) },
 				]),
 			);
+		});
+	});
+
+	describe("sendInquiry", () => {
+		const inquiryData = {
+			userEmail: "user@example.com",
+			category: "BUG_REPORT",
+			categoryLabel: "버그 신고",
+			content: "앱에서 오류가 발생합니다.",
+			submittedAt: "2026-02-13T00:00:00.000Z",
+		};
+
+		it("성공적으로 문의 이메일을 발송한다", async () => {
+			// Given
+			resendMock.emails.send.mockResolvedValue({
+				data: { id: "msg-inquiry-1" },
+				error: null,
+			});
+
+			// When
+			const result = await service.sendInquiry("support@aido.app", inquiryData);
+
+			// Then
+			expect(result.success).toBe(true);
+			expect(result.messageId).toBe("msg-inquiry-1");
+			expect(resendMock.emails.send).toHaveBeenCalledTimes(1);
+		});
+
+		it("inquiry 타입 태그가 포함된다", async () => {
+			// Given
+			resendMock.emails.send.mockResolvedValue({
+				data: { id: "msg-inquiry-2" },
+				error: null,
+			});
+
+			// When
+			await service.sendInquiry("support@aido.app", inquiryData);
+
+			// Then
+			const call = resendMock.emails.send.mock.calls[0][0];
+			expect(call.tags).toEqual(
+				expect.arrayContaining([
+					{ name: "type", value: "inquiry" },
+					{ name: "category", value: "BUG_REPORT" },
+					{ name: "environment", value: expect.any(String) },
+				]),
+			);
+		});
+
+		it("제목에 카테고리 라벨이 포함된다", async () => {
+			// Given
+			resendMock.emails.send.mockResolvedValue({
+				data: { id: "msg-inquiry-3" },
+				error: null,
+			});
+
+			// When
+			await service.sendInquiry("support@aido.app", inquiryData);
+
+			// Then
+			const call = resendMock.emails.send.mock.calls[0][0];
+			expect(call.subject).toContain("버그 신고");
 		});
 	});
 });
