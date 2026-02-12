@@ -1118,6 +1118,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
+					{ mode: undefined },
 				);
 			});
 
@@ -1134,6 +1135,7 @@ describe("OAuthService", () => {
 					testState,
 					"GOOGLE",
 					redirectUri,
+					{ mode: undefined },
 				);
 			});
 
@@ -1150,6 +1152,7 @@ describe("OAuthService", () => {
 					testState,
 					"NAVER",
 					redirectUri,
+					{ mode: undefined },
 				);
 			});
 
@@ -1169,6 +1172,24 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
+					{ mode: undefined },
+				);
+			});
+
+			it("aido-dev:///auth/naver (triple slash)를 허용한다", async () => {
+				// Given
+				const redirectUri = "aido-dev:///auth/naver";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateNaverAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"NAVER",
+					redirectUri,
+					{ mode: undefined },
 				);
 			});
 		});
@@ -1187,6 +1208,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
+					{ mode: undefined },
 				);
 			});
 
@@ -1203,6 +1225,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
+					{ mode: undefined },
 				);
 			});
 		});
@@ -1221,6 +1244,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
+					{ mode: undefined },
 				);
 			});
 
@@ -1237,6 +1261,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
+					{ mode: undefined },
 				);
 			});
 
@@ -1252,8 +1277,35 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
+					{ mode: undefined },
 				);
 			});
+		});
+	});
+
+	describe("getRedirectUriByState", () => {
+		it("state가 존재하면 저장된 redirect_uri를 반환한다", async () => {
+			// Given
+			oauthStateRepo.findByState.mockResolvedValue({
+				redirectUri: "aido-dev://auth/naver",
+			} as never);
+
+			// When
+			const redirectUri = await service.getRedirectUriByState("valid-state");
+
+			// Then
+			expect(redirectUri).toBe("aido-dev://auth/naver");
+		});
+
+		it("state가 없으면 null을 반환한다", async () => {
+			// Given
+			oauthStateRepo.findByState.mockResolvedValue(null);
+
+			// When
+			const redirectUri = await service.getRedirectUriByState("missing-state");
+
+			// Then
+			expect(redirectUri).toBeNull();
 		});
 	});
 
@@ -2163,6 +2215,7 @@ describe("OAuthService", () => {
 					state: "valid-state",
 					provider: "KAKAO" as const,
 					redirectUri: "aido://auth/callback",
+					mode: null,
 					codeVerifier: null,
 					exchangeCode: null,
 					accessToken: null,
@@ -2282,6 +2335,7 @@ describe("OAuthService", () => {
 					state: "valid-state",
 					provider: "GOOGLE" as const,
 					redirectUri: "aido://auth/callback",
+					mode: null,
 					codeVerifier: null,
 					exchangeCode: null,
 					accessToken: null,
@@ -2352,6 +2406,14 @@ describe("OAuthService", () => {
 				expect(result.exchangeCode).toBe("test-exchange-code");
 				expect(result.redirectUri).toBe("aido://auth/callback");
 				expect(result.userId).toBe("user-123");
+
+				expect(global.fetch).toHaveBeenCalledWith(
+					"https://nid.naver.com/oauth2.0/token",
+					expect.objectContaining({
+						method: "POST",
+						body: expect.stringContaining("state=valid-state"),
+					}),
+				);
 			});
 		});
 	});
@@ -2401,6 +2463,7 @@ describe("OAuthService", () => {
 					state: "valid-state",
 					provider: "NAVER" as const,
 					redirectUri: "aido://auth/callback",
+					mode: null,
 					codeVerifier: null,
 					exchangeCode: null,
 					accessToken: null,
@@ -2670,6 +2733,442 @@ describe("OAuthService", () => {
 				// Then - 카테고리 생성 호출되지 않음
 				expect(todoCategoryRepo.createMany).not.toHaveBeenCalled();
 			});
+		});
+	});
+
+	// ============================================
+	// 소셜 계정 연동 (Linking Mode)
+	// ============================================
+
+	describe("소셜 계정 연동 (Linking Mode)", () => {
+		/** 공통 OAuthState mock 생성 헬퍼 */
+		const createMockOAuthState = (
+			overrides: Partial<{
+				id: number;
+				state: string;
+				provider: "KAKAO" | "GOOGLE" | "NAVER";
+				redirectUri: string;
+				mode: string | null;
+			}> = {},
+		) => ({
+			id: 1,
+			state: "test-state",
+			provider: "KAKAO" as const,
+			redirectUri: "aido://auth/callback",
+			mode: null as string | null,
+			codeVerifier: null,
+			exchangeCode: null,
+			accessToken: null,
+			refreshToken: null,
+			userId: null,
+			userName: null,
+			profileImage: null,
+			ipAddress: null,
+			userAgent: null,
+			exchangedAt: null,
+			expiresAt: new Date(Date.now() + 600000),
+			createdAt: new Date(),
+			...overrides,
+		});
+
+		describe("Kakao linking", () => {
+			it("mode=link일 때 Kakao 소셜 계정의 providerAccountId를 추출하고 exchangeCode를 발급한다", async () => {
+				// Given
+				const mockOAuthState = createMockOAuthState({
+					provider: "KAKAO",
+					mode: "link",
+				});
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				// Kakao token exchange mock
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "test-kakao-access-token",
+							token_type: "bearer",
+							refresh_token: "test-kakao-refresh-token",
+							expires_in: 21599,
+						}),
+				});
+
+				// Kakao 토큰 검증 mock
+				tokenVerifier.verifyKakaoToken.mockResolvedValue({
+					id: "kakao-123",
+					email: "kakao@example.com",
+					emailVerified: true,
+					name: "카카오유저",
+					picture: "https://kakao.com/photo.jpg",
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"link-exchange-code",
+				);
+				oauthStateRepo.saveLinkingData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleKakaoWebCallbackWithExchangeCode(
+					"test-auth-code",
+					"test-state",
+				);
+
+				// Then - exchangeCode와 redirectUri가 반환됨
+				expect(result.exchangeCode).toBe("link-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("kakao-123");
+
+				// saveLinkingData가 올바르게 호출됨
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
+					mockOAuthState.id,
+					{
+						exchangeCode: "link-exchange-code",
+						provider: "KAKAO",
+						providerAccountId: "kakao-123",
+					},
+				);
+
+				// 로그인 처리(handleKakaoMobileLogin)가 호출되지 않음 확인
+				// login 모드에서는 saveExchangeData가 호출되지만, link 모드에서는 saveLinkingData가 호출됨
+				expect(oauthStateRepo.saveExchangeData).not.toHaveBeenCalled();
+			});
+
+			it("mode=null(기본값)일 때 기존 로그인 플로우가 유지된다", async () => {
+				// Given
+				const mockOAuthState = createMockOAuthState({
+					provider: "KAKAO",
+					mode: null,
+				});
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				const mockUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@kakao.com")
+					.verified()
+					.build();
+				const existingAccount = AccountBuilder.create(mockUser.id)
+					.asKakao("kakao-user-123")
+					.build();
+
+				setupSuccessfulOAuthLogin(mockUser);
+				userRepo.findByIdWithProfile.mockResolvedValue({
+					...mockUser,
+					profile: {
+						name: "카카오사용자",
+						profileImage: "https://kakao.com/profile.jpg",
+					},
+				} as never);
+
+				tokenVerifier.verifyKakaoToken.mockResolvedValue({
+					id: "kakao-user-123",
+					email: "test@kakao.com",
+					emailVerified: true,
+					name: "카카오사용자",
+					picture: "https://kakao.com/profile.jpg",
+				});
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(mockUser);
+
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "kakao-access-token",
+							token_type: "bearer",
+							refresh_token: "kakao-refresh-token",
+							expires_in: 21599,
+						}),
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"login-exchange-code",
+				);
+				oauthStateRepo.saveExchangeData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleKakaoWebCallbackWithExchangeCode(
+					"test-auth-code",
+					"test-state",
+				);
+
+				// Then - 기존 로그인 플로우 결과
+				expect(result.exchangeCode).toBe("login-exchange-code");
+				expect(result.userId).toBe("user-123");
+
+				// saveExchangeData가 호출됨 (login 모드)
+				expect(oauthStateRepo.saveExchangeData).toHaveBeenCalled();
+				// saveLinkingData는 호출되지 않음
+				expect(oauthStateRepo.saveLinkingData).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("Google linking", () => {
+			it("mode=link일 때 Google 소셜 계정의 providerAccountId를 추출하고 exchangeCode를 발급한다", async () => {
+				// Given
+				const mockOAuthState = createMockOAuthState({
+					id: 2,
+					provider: "GOOGLE",
+					mode: "link",
+				});
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				// Google token exchange mock (idToken 반환)
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "google-access-token",
+							id_token: "google-id-token",
+							token_type: "bearer",
+							expires_in: 3600,
+						}),
+				});
+
+				// Google 토큰 검증 mock
+				tokenVerifier.verifyGoogleToken.mockResolvedValue({
+					id: "google-123",
+					email: "google@example.com",
+					emailVerified: true,
+					name: "Google User",
+					picture: "https://google.com/photo.jpg",
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"google-link-exchange-code",
+				);
+				oauthStateRepo.saveLinkingData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleGoogleWebCallbackWithExchangeCode(
+					"test-auth-code",
+					"test-state",
+				);
+
+				// Then
+				expect(result.exchangeCode).toBe("google-link-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("google-123");
+
+				// saveLinkingData가 올바르게 호출됨
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
+					mockOAuthState.id,
+					{
+						exchangeCode: "google-link-exchange-code",
+						provider: "GOOGLE",
+						providerAccountId: "google-123",
+					},
+				);
+
+				// 로그인 처리가 호출되지 않음
+				expect(oauthStateRepo.saveExchangeData).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("Naver linking", () => {
+			it("mode=link일 때 Naver 소셜 계정의 providerAccountId를 추출하고 exchangeCode를 발급한다", async () => {
+				// Given
+				const mockOAuthState = createMockOAuthState({
+					id: 3,
+					provider: "NAVER",
+					mode: "link",
+				});
+				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
+
+				// Naver token exchange mock (accessToken 반환)
+				global.fetch = jest.fn().mockResolvedValue({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							access_token: "naver-access-token",
+							token_type: "bearer",
+							expires_in: 3600,
+						}),
+				});
+
+				// Naver 토큰 검증 mock
+				tokenVerifier.verifyNaverToken.mockResolvedValue({
+					id: "naver-123",
+					email: "naver@example.com",
+					emailVerified: true,
+					name: "Naver User",
+					picture: "https://naver.com/photo.jpg",
+				});
+
+				oauthStateRepo.generateExchangeCode.mockReturnValue(
+					"naver-link-exchange-code",
+				);
+				oauthStateRepo.saveLinkingData.mockResolvedValue({} as never);
+
+				// When
+				const result = await service.handleNaverWebCallbackWithExchangeCode(
+					"test-auth-code",
+					"test-state",
+				);
+
+				// Then
+				expect(result.exchangeCode).toBe("naver-link-exchange-code");
+				expect(result.redirectUri).toBe("aido://auth/callback");
+				expect(result.userId).toBe("naver-123");
+
+				// saveLinkingData가 올바르게 호출됨
+				expect(oauthStateRepo.saveLinkingData).toHaveBeenCalledWith(
+					mockOAuthState.id,
+					{
+						exchangeCode: "naver-link-exchange-code",
+						provider: "NAVER",
+						providerAccountId: "naver-123",
+					},
+				);
+
+				// 로그인 처리가 호출되지 않음
+				expect(oauthStateRepo.saveExchangeData).not.toHaveBeenCalled();
+			});
+		});
+	});
+
+	// ============================================
+	// linkAccountWithExchangeCode
+	// ============================================
+
+	describe("linkAccountWithExchangeCode", () => {
+		it("유효한 교환 코드로 소셜 계정을 연동한다", async () => {
+			// Given
+			const mockOAuthState = {
+				id: 10,
+				state: "test-state",
+				provider: "GOOGLE" as const,
+				redirectUri: "aido://auth/callback",
+				mode: "link",
+				codeVerifier: null,
+				exchangeCode: "valid-exchange-code",
+				accessToken: null,
+				refreshToken: null,
+				userId: "google-123", // providerAccountId가 userId 필드에 저장됨
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
+			oauthStateRepo.markAsExchanged.mockResolvedValue({} as never);
+
+			// linkAccount 내부에서 사용하는 mock
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+
+			// When
+			const result = await service.linkAccountWithExchangeCode(
+				"user-123",
+				"valid-exchange-code",
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+			expect(oauthStateRepo.findByExchangeCode).toHaveBeenCalledWith(
+				"valid-exchange-code",
+			);
+			expect(oauthStateRepo.markAsExchanged).toHaveBeenCalledWith(
+				mockOAuthState.id,
+			);
+			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					provider: "GOOGLE",
+					providerAccountId: "google-123",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("존재하지 않는 교환 코드이면 에러를 던진다", async () => {
+			// Given
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.linkAccountWithExchangeCode(
+					"user-123",
+					"non-existent-code",
+					mockMetadata,
+				),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("mode가 link가 아닌 교환 코드이면 에러를 던진다", async () => {
+			// Given - login 모드 (mode: null)
+			const loginModeState = {
+				id: 11,
+				state: "test-state",
+				provider: "GOOGLE" as const,
+				redirectUri: "aido://auth/callback",
+				mode: null, // login 모드
+				codeVerifier: null,
+				exchangeCode: "login-exchange-code",
+				accessToken: "encrypted-access-token",
+				refreshToken: "encrypted-refresh-token",
+				userId: "user-123",
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(loginModeState);
+
+			// When & Then
+			await expect(
+				service.linkAccountWithExchangeCode(
+					"user-123",
+					"login-exchange-code",
+					mockMetadata,
+				),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("providerAccountId(userId 필드)가 없으면 에러를 던진다", async () => {
+			// Given
+			const stateWithoutProviderAccountId = {
+				id: 12,
+				state: "test-state",
+				provider: "KAKAO" as const,
+				redirectUri: "aido://auth/callback",
+				mode: "link",
+				codeVerifier: null,
+				exchangeCode: "link-exchange-code",
+				accessToken: null,
+				refreshToken: null,
+				userId: null, // providerAccountId 없음
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(
+				stateWithoutProviderAccountId,
+			);
+
+			// When & Then
+			await expect(
+				service.linkAccountWithExchangeCode(
+					"user-123",
+					"link-exchange-code",
+					mockMetadata,
+				),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 });

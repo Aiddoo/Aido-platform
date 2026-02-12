@@ -6,6 +6,8 @@ import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";
 
+export type OAuthMode = "login" | "link";
+
 /**
  * OAuth State Repository
  *
@@ -27,14 +29,16 @@ export class OAuthStateRepository {
 	 * @param state - CSRF 방지용 상태 값
 	 * @param provider - OAuth 제공자
 	 * @param redirectUri - 리다이렉트 URI
-	 * @param codeVerifier - PKCE code verifier (선택)
-	 * @param expiresInMinutes - 만료 시간 (기본 10분)
+	 * @param options.mode - 'login' | 'link' (미지정 시 null = login)
+	 * @param options.codeVerifier - PKCE code verifier (선택)
+	 * @param options.expiresInMinutes - 만료 시간 (기본 10분)
 	 */
 	async create(
 		state: string,
 		provider: AccountProvider,
 		redirectUri: string,
 		options?: {
+			mode?: OAuthMode;
 			codeVerifier?: string;
 			ipAddress?: string;
 			userAgent?: string;
@@ -48,6 +52,7 @@ export class OAuthStateRepository {
 				state,
 				provider,
 				redirectUri,
+				mode: options?.mode,
 				codeVerifier: options?.codeVerifier,
 				ipAddress: options?.ipAddress,
 				userAgent: options?.userAgent,
@@ -96,6 +101,30 @@ export class OAuthStateRepository {
 				userId: data.userId,
 				userName: data.userName,
 				profileImage: data.profileImage,
+			},
+		});
+	}
+
+	/**
+	 * 계정 연결(link) 모드 교환 데이터 저장
+	 *
+	 * login 모드와 달리 accessToken/refreshToken 대신
+	 * providerAccountId를 userId 필드에 임시 저장합니다.
+	 */
+	async saveLinkingData(
+		id: number,
+		data: {
+			exchangeCode: string;
+			provider: AccountProvider;
+			providerAccountId: string;
+		},
+	): Promise<OAuthState> {
+		return this.database.oAuthState.update({
+			where: { id },
+			data: {
+				exchangeCode: data.exchangeCode,
+				provider: data.provider,
+				userId: data.providerAccountId, // providerAccountId를 userId 필드에 임시 저장
 			},
 		});
 	}

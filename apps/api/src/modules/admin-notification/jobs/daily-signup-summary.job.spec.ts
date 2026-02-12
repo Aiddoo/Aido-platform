@@ -12,6 +12,8 @@ describe("DailySignupSummaryJob", () => {
 	let notifier: { send: jest.Mock };
 
 	beforeEach(async () => {
+		jest.useFakeTimers();
+
 		const mockNotifier = {
 			name: "fake",
 			send: jest.fn().mockResolvedValue({ success: true }),
@@ -42,8 +44,13 @@ describe("DailySignupSummaryJob", () => {
 		});
 	});
 
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
 	it("일일 가입 요약을 발송한다", async () => {
 		// Given
+		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		(database.account.groupBy as jest.Mock).mockResolvedValue([
 			{ provider: "CREDENTIAL", _count: 3 },
 			{ provider: "GOOGLE", _count: 2 },
@@ -56,19 +63,36 @@ describe("DailySignupSummaryJob", () => {
 		// Then
 		expect(notifier.send).toHaveBeenCalledWith(
 			expect.objectContaining({
-				title: expect.stringContaining("일일 가입 리포트"),
+				title: "일일 가입 리포트 | 2026-02-10 (KST)",
+				body: "전일 신규 가입은 5명입니다.\n\n가입 채널별\n- 이메일: 3명\n- Google: 2명",
 				fields: expect.arrayContaining([
 					expect.objectContaining({
-						name: "오늘 신규 가입",
+						name: "전일 신규 가입",
 						value: "5명",
 					}),
+					expect.objectContaining({
+						name: "집계 기준",
+						value: "2026-02-10 00:00 ~ 23:59 (KST)",
+					}),
 				]),
+			}),
+		);
+
+		expect(database.account.groupBy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: {
+					createdAt: {
+						gte: new Date("2026-02-09T15:00:00.000Z"),
+						lt: new Date("2026-02-10T15:00:00.000Z"),
+					},
+				},
 			}),
 		);
 	});
 
 	it("가입자가 없으면 해당 메시지를 표시한다", async () => {
 		// Given
+		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		(database.account.groupBy as jest.Mock).mockResolvedValue([]);
 		(database.user.count as jest.Mock).mockResolvedValue(100);
 
@@ -78,11 +102,15 @@ describe("DailySignupSummaryJob", () => {
 		// Then
 		expect(notifier.send).toHaveBeenCalledWith(
 			expect.objectContaining({
-				body: "오늘 신규 가입자가 없습니다.",
+				body: "전일 신규 가입은 0명입니다.",
 				fields: expect.arrayContaining([
 					expect.objectContaining({
-						name: "오늘 신규 가입",
+						name: "전일 신규 가입",
 						value: "0명",
+					}),
+					expect.objectContaining({
+						name: "집계 기준",
+						value: "2026-02-10 00:00 ~ 23:59 (KST)",
 					}),
 				]),
 			}),

@@ -21,9 +21,11 @@
  */
 
 import { ConfigService } from "@nestjs/config";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { EncryptionService } from "@/common/encryption";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
 import { AccountRepository } from "@/modules/auth/repositories/account.repository";
@@ -117,6 +119,19 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 							callbackUrl: "http://localhost:3000/auth/kakao/callback",
 							isConfigured: true,
 						},
+					},
+				},
+				{
+					provide: EncryptionService,
+					useValue: {
+						encrypt: (value: string) => value,
+						decryptSafe: (value: string) => value,
+					},
+				},
+				{
+					provide: EventEmitter2,
+					useValue: {
+						emit: () => true,
 					},
 				},
 				{
@@ -685,11 +700,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// When & Then: 현재 유저가 같은 providerAccountId로 연동 시도
 			await expect(
-				oauthService.linkAccount(
-					testUserId,
-					"APPLE",
-					"apple-conflict-apple-id", // FakeService가 생성하는 ID 패턴
-				),
+				oauthService.linkAccount(testUserId, "APPLE", "conflict-apple-id"),
 			).rejects.toThrow(BusinessException);
 		});
 	});
@@ -699,6 +710,30 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 	// ===========================================================================
 
 	describe("OAuth State 및 Exchange Code", () => {
+		it("저장된 state로 redirectUri를 조회할 수 있어야 한다", async () => {
+			// Given
+			const state = "redirect-lookup-state";
+			const redirectUri = "aido-dev://auth/naver";
+
+			await oauthStateRepository.create(state, "NAVER", redirectUri);
+
+			// When
+			const resolved = await oauthService.getRedirectUriByState(state);
+
+			// Then
+			expect(resolved).toBe(redirectUri);
+		});
+
+		it("없는 state 조회 시 null을 반환해야 한다", async () => {
+			// When
+			const resolved = await oauthService.getRedirectUriByState(
+				"missing-redirect-state",
+			);
+
+			// Then
+			expect(resolved).toBeNull();
+		});
+
 		it("리다이렉트 URI와 함께 OAuth State를 생성할 수 있어야 한다", async () => {
 			// Given
 			const state = "test-csrf-state-123";

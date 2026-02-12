@@ -20,6 +20,17 @@ export class DiscordWebhookProvider implements AdminNotifier {
 	private readonly webhookUrl: string | undefined;
 
 	constructor(config: TypedConfigService) {
+		const isTestRuntime =
+			config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
+
+		if (isTestRuntime) {
+			this.webhookUrl = undefined;
+			this.logger.debug(
+				"Test runtime detected, Discord webhook notifications are disabled",
+			);
+			return;
+		}
+
 		this.webhookUrl = config.discordSignupWebhookUrl;
 	}
 

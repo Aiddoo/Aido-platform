@@ -1,4 +1,5 @@
 import { TestBed } from "@suites/unit";
+import type { TypedConfigService } from "@/common/config/services/config.service";
 
 import { DiscordWebhookProvider } from "./discord-webhook.provider";
 
@@ -27,5 +28,23 @@ describe("DiscordWebhookProvider", () => {
 		// webhookUrl이 없거나 유효하지 않으면 실패
 		expect(result).toHaveProperty("success");
 		expect(result).toHaveProperty("error");
+	});
+
+	it("테스트 런타임이면 webhook URL이 있어도 비활성화한다", async () => {
+		const providerInTestRuntime = new DiscordWebhookProvider({
+			isTest: true,
+			discordSignupWebhookUrl:
+				"https://discord.com/api/webhooks/test-id/test-token",
+		} as TypedConfigService);
+
+		expect(providerInTestRuntime.isConfigured()).toBe(false);
+
+		const result = await providerInTestRuntime.send({
+			title: "테스트",
+			body: "테스트 본문",
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.error).toContain("Webhook URL not configured");
 	});
 });

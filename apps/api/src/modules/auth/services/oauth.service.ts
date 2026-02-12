@@ -28,7 +28,10 @@ import {
 } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
 import { LoginAttemptRepository } from "../repositories/login-attempt.repository";
-import { OAuthStateRepository } from "../repositories/oauth-state.repository";
+import {
+	type OAuthMode,
+	OAuthStateRepository,
+} from "../repositories/oauth-state.repository";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -61,8 +64,12 @@ export class OAuthService {
 	private readonly ALLOWED_REDIRECT_PATTERNS = [
 		// 모바일 앱 딥링크 (프로덕션)
 		/^aido:\/\/auth(\/.*)?$/,
+		// 모바일 앱 딥링크 (프로덕션, triple slash)
+		/^aido:\/\/\/auth(\/.*)?$/,
 		// 모바일 앱 딥링크 (개발)
 		/^aido-dev:\/\/auth(\/.*)?$/,
+		// 모바일 앱 딥링크 (개발, triple slash)
+		/^aido-dev:\/\/\/auth(\/.*)?$/,
 		// aido.kr 도메인 (프로덕션)
 		/^https:\/\/aido\.kr(\/.*)?$/,
 		// aido.kr 서브도메인
@@ -103,6 +110,11 @@ export class OAuthService {
 		return existingState;
 	}
 
+	async getRedirectUriByState(state: string): Promise<string | null> {
+		const existingState = await this._oauthStateRepository.findByState(state);
+		return existingState?.redirectUri ?? null;
+	}
+
 	/** @deprecated generateKakaoAuthUrlWithState 사용 권장 */
 	generateKakaoAuthUrl(state: string): string {
 		const { clientId, callbackUrl, isConfigured } =
@@ -126,6 +138,7 @@ export class OAuthService {
 	async generateKakaoAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
+		mode?: OAuthMode,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.kakaoOAuth;
@@ -142,6 +155,7 @@ export class OAuthService {
 			state,
 			"KAKAO",
 			validatedRedirectUri,
+			{ mode },
 		);
 
 		const params = new URLSearchParams({
@@ -155,10 +169,13 @@ export class OAuthService {
 		return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
 	}
 
-	async handleKakaoWebCallback(
-		code: string,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
+	/**
+	 * Kakao Authorization Code → Access Token 교환
+	 * handleKakaoWebCallback과 linking 모드에서 공통 사용
+	 */
+	private async _exchangeKakaoCode(code: string): Promise<{
+		accessToken: string;
+	}> {
 		const { clientId, clientSecret, callbackUrl, isConfigured } =
 			this._configService.kakaoOAuth;
 
@@ -166,7 +183,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// Authorization Code → Access Token 교환
 		const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
 			method: "POST",
 			headers: {
@@ -194,12 +210,17 @@ export class OAuthService {
 			expires_in: number;
 		};
 
+		return { accessToken: tokenData.access_token };
+	}
+
+	async handleKakaoWebCallback(
+		code: string,
+		metadata?: RequestMetadata,
+	): Promise<LoginResult> {
+		const { accessToken } = await this._exchangeKakaoCode(code);
+
 		// Access Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleKakaoMobileLogin(
-			tokenData.access_token,
-			undefined,
-			metadata,
-		);
+		return this.handleKakaoMobileLogin(accessToken, undefined, metadata);
 	}
 
 	// 딥링크 URL에 토큰 노출 방지를 위해 일회용 교환 코드 사용
@@ -215,8 +236,29 @@ export class OAuthService {
 		profileImage?: string;
 	}> {
 		const oauthState = await this.validateAndGetOAuthState(state);
-		const loginResult = await this.handleKakaoWebCallback(code, metadata);
 		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
+
+		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
+		if (oauthState.mode === "link") {
+			const { accessToken } = await this._exchangeKakaoCode(code);
+			const verifiedProfile =
+				await this._tokenVerifier.verifyKakaoToken(accessToken);
+
+			const exchangeCode = await this._saveLinkingExchangeCode(
+				oauthState.id,
+				oauthState.provider,
+				verifiedProfile.id,
+			);
+
+			return {
+				exchangeCode,
+				redirectUri,
+				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
+			};
+		}
+
+		// 기존 로그인 모드
+		const loginResult = await this.handleKakaoWebCallback(code, metadata);
 
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
@@ -240,6 +282,7 @@ export class OAuthService {
 	async generateGoogleAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
+		mode?: OAuthMode,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.googleOAuth;
@@ -256,6 +299,7 @@ export class OAuthService {
 			state,
 			"GOOGLE",
 			validatedRedirectUri,
+			{ mode },
 		);
 
 		const params = new URLSearchParams({
@@ -271,10 +315,13 @@ export class OAuthService {
 		return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 	}
 
-	async handleGoogleWebCallback(
-		code: string,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
+	/**
+	 * Google Authorization Code → ID Token 교환
+	 * handleGoogleWebCallback과 linking 모드에서 공통 사용
+	 */
+	private async _exchangeGoogleCode(code: string): Promise<{
+		idToken: string;
+	}> {
 		const { clientId, clientSecret, callbackUrl, isConfigured } =
 			this._configService.googleOAuth;
 
@@ -282,7 +329,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// Authorization Code → Access Token 교환
 		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
 			method: "POST",
 			headers: {
@@ -311,12 +357,17 @@ export class OAuthService {
 			expires_in: number;
 		};
 
+		return { idToken: tokenData.id_token };
+	}
+
+	async handleGoogleWebCallback(
+		code: string,
+		metadata?: RequestMetadata,
+	): Promise<LoginResult> {
+		const { idToken } = await this._exchangeGoogleCode(code);
+
 		// ID Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleGoogleMobileLogin(
-			tokenData.id_token,
-			undefined,
-			metadata,
-		);
+		return this.handleGoogleMobileLogin(idToken, undefined, metadata);
 	}
 
 	async handleGoogleWebCallbackWithExchangeCode(
@@ -331,8 +382,29 @@ export class OAuthService {
 		profileImage?: string;
 	}> {
 		const oauthState = await this.validateAndGetOAuthState(state);
-		const loginResult = await this.handleGoogleWebCallback(code, metadata);
 		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
+
+		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
+		if (oauthState.mode === "link") {
+			const { idToken } = await this._exchangeGoogleCode(code);
+			const verifiedProfile =
+				await this._tokenVerifier.verifyGoogleToken(idToken);
+
+			const exchangeCode = await this._saveLinkingExchangeCode(
+				oauthState.id,
+				oauthState.provider,
+				verifiedProfile.id,
+			);
+
+			return {
+				exchangeCode,
+				redirectUri,
+				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
+			};
+		}
+
+		// 기존 로그인 모드
+		const loginResult = await this.handleGoogleWebCallback(code, metadata);
 
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
@@ -356,6 +428,7 @@ export class OAuthService {
 	async generateNaverAuthUrlWithState(
 		state: string,
 		clientRedirectUri?: string,
+		mode?: OAuthMode,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.naverOAuth;
@@ -372,6 +445,7 @@ export class OAuthService {
 			state,
 			"NAVER",
 			validatedRedirectUri,
+			{ mode },
 		);
 
 		const params = new URLSearchParams({
@@ -384,10 +458,16 @@ export class OAuthService {
 		return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
 	}
 
-	async handleNaverWebCallback(
+	/**
+	 * Naver Authorization Code → Access Token 교환
+	 * handleNaverWebCallback과 linking 모드에서 공통 사용
+	 */
+	private async _exchangeNaverCode(
 		code: string,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
+		state?: string,
+	): Promise<{
+		accessToken: string;
+	}> {
 		const { clientId, clientSecret, callbackUrl, isConfigured } =
 			this._configService.naverOAuth;
 
@@ -395,19 +475,24 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// Authorization Code → Access Token 교환
+		const tokenRequestBody = new URLSearchParams({
+			grant_type: "authorization_code",
+			client_id: clientId,
+			client_secret: clientSecret,
+			redirect_uri: callbackUrl,
+			code,
+		});
+
+		if (state) {
+			tokenRequestBody.set("state", state);
+		}
+
 		const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/x-www-form-urlencoded",
 			},
-			body: new URLSearchParams({
-				grant_type: "authorization_code",
-				client_id: clientId,
-				client_secret: clientSecret,
-				redirect_uri: callbackUrl,
-				code,
-			}).toString(),
+			body: tokenRequestBody.toString(),
 		});
 
 		if (!tokenResponse.ok) {
@@ -423,12 +508,18 @@ export class OAuthService {
 			expires_in: number;
 		};
 
+		return { accessToken: tokenData.access_token };
+	}
+
+	async handleNaverWebCallback(
+		code: string,
+		metadata?: RequestMetadata,
+		state?: string,
+	): Promise<LoginResult> {
+		const { accessToken } = await this._exchangeNaverCode(code, state);
+
 		// Access Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleNaverMobileLogin(
-			tokenData.access_token,
-			undefined,
-			metadata,
-		);
+		return this.handleNaverMobileLogin(accessToken, undefined, metadata);
 	}
 
 	async handleNaverWebCallbackWithExchangeCode(
@@ -443,8 +534,33 @@ export class OAuthService {
 		profileImage?: string;
 	}> {
 		const oauthState = await this.validateAndGetOAuthState(state);
-		const loginResult = await this.handleNaverWebCallback(code, metadata);
 		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
+
+		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
+		if (oauthState.mode === "link") {
+			const { accessToken } = await this._exchangeNaverCode(code, state);
+			const verifiedProfile =
+				await this._tokenVerifier.verifyNaverToken(accessToken);
+
+			const exchangeCode = await this._saveLinkingExchangeCode(
+				oauthState.id,
+				oauthState.provider,
+				verifiedProfile.id,
+			);
+
+			return {
+				exchangeCode,
+				redirectUri,
+				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
+			};
+		}
+
+		// 기존 로그인 모드
+		const loginResult = await this.handleNaverWebCallback(
+			code,
+			metadata,
+			state,
+		);
 
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
@@ -1243,6 +1359,81 @@ export class OAuthService {
 			provider,
 			providerAccountId,
 			existingUser.email,
+		);
+	}
+
+	/**
+	 * Linking 모드 교환 코드 생성 및 저장
+	 *
+	 * login 모드와 달리 accessToken/refreshToken 대신
+	 * providerAccountId를 저장합니다.
+	 */
+	private async _saveLinkingExchangeCode(
+		oauthStateId: number,
+		provider: AccountProvider,
+		providerAccountId: string,
+	): Promise<string> {
+		const exchangeCode = this._oauthStateRepository.generateExchangeCode();
+
+		await this._oauthStateRepository.saveLinkingData(oauthStateId, {
+			exchangeCode,
+			provider,
+			providerAccountId,
+		});
+
+		this._logger.debug(
+			`Linking exchange code created for provider ${provider}, OAuthState ID: ${oauthStateId}`,
+		);
+
+		return exchangeCode;
+	}
+
+	/**
+	 * 일회용 교환 코드로 계정 연결 수행
+	 *
+	 * 웹 OAuth 콜백에서 linking 모드로 저장된 교환 코드를 사용하여
+	 * 사용자 계정에 소셜 계정을 연결합니다.
+	 */
+	async linkAccountWithExchangeCode(
+		userId: string,
+		code: string,
+		metadata?: RequestMetadata,
+	): Promise<{ message: string }> {
+		const oauthState =
+			await this._oauthStateRepository.findByExchangeCode(code);
+
+		if (!oauthState || oauthState.mode !== "link") {
+			this._logger.warn(
+				`Invalid or non-linking exchange code attempted: ${code.substring(0, 8)}...`,
+			);
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		// providerAccountId는 saveLinkingData에서 userId 필드에 저장됨
+		const provider = oauthState.provider;
+		const providerAccountId = oauthState.userId;
+
+		if (!providerAccountId) {
+			this._logger.error(
+				`Linking exchange code found but providerAccountId missing: OAuthState ID ${oauthState.id}`,
+			);
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		// 교환 완료 처리
+		await this._oauthStateRepository.markAsExchanged(oauthState.id);
+
+		this._logger.debug(
+			`Linking exchange code redeemed for user ${userId}, provider ${provider}, OAuthState ID: ${oauthState.id}`,
+		);
+
+		// 기존 linkAccount 메서드를 활용하여 계정 연결
+		return this.linkAccount(
+			userId,
+			provider,
+			providerAccountId,
+			undefined,
+			metadata,
 		);
 	}
 
