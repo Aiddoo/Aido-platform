@@ -3,9 +3,7 @@ import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from './inquiry.constants';
 
 export const createInquirySchema = z
   .object({
-    category: z
-      .enum([INQUIRY_CATEGORY.BUG_REPORT, INQUIRY_CATEGORY.FEATURE_REQUEST, INQUIRY_CATEGORY.OTHER])
-      .describe('문의 카테고리'),
+    category: z.enum(INQUIRY_CATEGORY).describe('문의 카테고리'),
     content: z
       .string()
       .min(

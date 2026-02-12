@@ -458,7 +458,7 @@ describe("EmailService", () => {
 	});
 
 	describe("sendInquiry", () => {
-		const inquiryData = {
+		const inquiryData: Parameters<EmailService["sendInquiry"]>[1] = {
 			userEmail: "user@example.com",
 			category: "BUG_REPORT",
 			categoryLabel: "버그 신고",
@@ -516,6 +516,33 @@ describe("EmailService", () => {
 			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.subject).toContain("버그 신고");
+		});
+
+		it("문의 HTML 템플릿에 사용자 입력을 escape 처리한다", async () => {
+			// Given
+			resendMock.emails.send.mockResolvedValue({
+				data: { id: "msg-inquiry-4" },
+				error: null,
+			});
+
+			// When
+			await service.sendInquiry("support@aido.app", {
+				userEmail: 'user@example.com"><img src=x onerror=alert(1)>',
+				category: "OTHER",
+				categoryLabel: "<b>기타</b>",
+				content: '<script>alert("xss")</script>',
+				submittedAt: "2026-02-13 12:30 (KST)",
+			});
+
+			// Then
+			const call = resendMock.emails.send.mock.calls[0][0];
+			expect(call.html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+			expect(call.html).toContain("&lt;b&gt;기타&lt;/b&gt;");
+			expect(call.html).toContain(
+				"&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;",
+			);
+			expect(call.html).not.toContain("<img src=x onerror=alert(1)>");
+			expect(call.html).not.toContain('<script>alert("xss")</script>');
 		});
 	});
 });

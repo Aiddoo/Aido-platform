@@ -12,6 +12,7 @@ import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
 	ApiDoc,
+	ApiErrorResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
@@ -40,6 +41,7 @@ export class InquiryController {
 	})
 	@ApiCreatedResponse({ type: CreateInquiryResponseDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
+	@ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
 	@ApiUnauthorizedError()
 	async createInquiry(
 		@CurrentUser() user: CurrentUserPayload,

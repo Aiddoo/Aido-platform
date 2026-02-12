@@ -8,13 +8,13 @@ export const emailSchema = z.object({
 	RESEND_API_KEY: z.string().optional(),
 
 	/** 발신자 이메일 주소 */
-	EMAIL_FROM: z.email().default("noreply@example.com"),
+	EMAIL_FROM: z.email().default("dydals3440@gmail.com"),
 
 	/** 발신자 이름 */
 	EMAIL_FROM_NAME: z.string().default("Aido"),
 
 	/** 문의 수신 이메일 */
-	SUPPORT_EMAIL: z.email().default("support@aido.app"),
+	SUPPORT_EMAIL: z.email().default("dydals3440@gmail.com"),
 });
 
 export type EmailConfig = z.infer<typeof emailSchema>;

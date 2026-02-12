@@ -10,6 +10,23 @@ const CATEGORY_LABELS: Record<InquiryCategory, string> = {
 	OTHER: "기타",
 };
 
+function formatSubmittedAtKst(date: Date): string {
+	const parts = new Intl.DateTimeFormat("ko-KR", {
+		timeZone: "Asia/Seoul",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).formatToParts(date);
+
+	const getValue = (type: Intl.DateTimeFormatPartTypes) =>
+		parts.find((part) => part.type === type)?.value ?? "";
+
+	return `${getValue("year")}-${getValue("month")}-${getValue("day")} ${getValue("hour")}:${getValue("minute")} (KST)`;
+}
+
 interface CreateInquiryParams {
 	userId: string;
 	userEmail: string;
@@ -30,13 +47,14 @@ export class InquiryService {
 		const { userId, userEmail, category, content } = params;
 		const supportEmail = this.configService.email.supportEmail;
 		const categoryLabel = CATEGORY_LABELS[category];
+		const submittedAt = formatSubmittedAtKst(new Date());
 
 		const result = await this.emailService.sendInquiry(supportEmail, {
 			userEmail,
 			category,
 			categoryLabel,
 			content,
-			submittedAt: new Date().toISOString(),
+			submittedAt,
 		});
 
 		if (!result.success) {
