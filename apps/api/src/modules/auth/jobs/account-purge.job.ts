@@ -17,7 +17,7 @@ export class AccountPurgeJob {
 		private readonly securityLogRepository: SecurityLogRepository,
 	) {}
 
-	@Cron(CronExpression.EVERY_DAY_AT_3AM)
+	@Cron(CronExpression.EVERY_DAY_AT_3AM, { timeZone: "Asia/Seoul" })
 	async purgeDeletedAccounts(): Promise<void> {
 		const users = await this.userRepository.findSoftDeletedForPurge(
 			ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
