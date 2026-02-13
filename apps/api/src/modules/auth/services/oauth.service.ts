@@ -60,25 +60,34 @@ export class OAuthService {
 		private readonly _eventEmitter: EventEmitter2,
 	) {}
 
-	// 보안을 위한 화이트리스트 방식 검증
-	private readonly ALLOWED_REDIRECT_PATTERNS = [
-		// 모바일 앱 딥링크 (프로덕션)
-		/^aido:\/\/auth(\/.*)?$/,
-		// 모바일 앱 딥링크 (프로덕션, triple slash)
-		/^aido:\/\/\/auth(\/.*)?$/,
-		// 모바일 앱 딥링크 (개발)
-		/^aido-dev:\/\/auth(\/.*)?$/,
-		// 모바일 앱 딥링크 (개발, triple slash)
-		/^aido-dev:\/\/\/auth(\/.*)?$/,
-		// aido.kr 도메인 (프로덕션)
-		/^https:\/\/aido\.kr(\/.*)?$/,
-		// aido.kr 서브도메인
-		/^https:\/\/[a-z0-9-]+\.aido\.kr(\/.*)?$/,
-		// 로컬 개발 환경
-		/^http:\/\/localhost(:\d+)?(\/.*)?$/,
-		// Expo Go 개발 환경 (exp:// scheme)
-		/^exp:\/\/[\d.:]+(\/.*)?$/,
-	];
+	// 보안을 위한 화이트리스트 방식 검증 (환경별 분기)
+	private get allowedRedirectPatterns(): RegExp[] {
+		const patterns: RegExp[] = [
+			// 모바일 앱 딥링크 (프로덕션)
+			/^aido:\/\/auth(\/.*)?$/,
+			// 모바일 앱 딥링크 (프로덕션, triple slash)
+			/^aido:\/\/\/auth(\/.*)?$/,
+			// aido.kr 도메인 (프로덕션)
+			/^https:\/\/aido\.kr(\/.*)?$/,
+			// aido.kr 서브도메인 (명시적 허용만)
+			/^https:\/\/(api|www|app)\.aido\.kr(\/.*)?$/,
+		];
+
+		if (this._configService.isDevelopment) {
+			patterns.push(
+				// 모바일 앱 딥링크 (개발)
+				/^aido-dev:\/\/auth(\/.*)?$/,
+				// 모바일 앱 딥링크 (개발, triple slash)
+				/^aido-dev:\/\/\/auth(\/.*)?$/,
+				// 로컬 개발 환경
+				/^http:\/\/localhost(:\d+)?(\/.*)?$/,
+				// Expo Go 개발 환경 (exp:// scheme)
+				/^exp:\/\/[\d.:]+(\/.*)?$/,
+			);
+		}
+
+		return patterns;
+	}
 
 	private readonly DEFAULT_REDIRECT_URI = "aido://auth/callback";
 
@@ -87,7 +96,7 @@ export class OAuthService {
 			return this.DEFAULT_REDIRECT_URI;
 		}
 
-		const isValid = this.ALLOWED_REDIRECT_PATTERNS.some((pattern) =>
+		const isValid = this.allowedRedirectPatterns.some((pattern) =>
 			pattern.test(redirectUri),
 		);
 
@@ -139,6 +148,7 @@ export class OAuthService {
 		state: string,
 		clientRedirectUri?: string,
 		mode?: OAuthMode,
+		initiatingUserId?: string,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.kakaoOAuth;
@@ -155,7 +165,10 @@ export class OAuthService {
 			state,
 			"KAKAO",
 			validatedRedirectUri,
-			{ mode },
+			{
+				mode,
+				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
+			},
 		);
 
 		const params = new URLSearchParams({
@@ -283,6 +296,7 @@ export class OAuthService {
 		state: string,
 		clientRedirectUri?: string,
 		mode?: OAuthMode,
+		initiatingUserId?: string,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.googleOAuth;
@@ -299,7 +313,10 @@ export class OAuthService {
 			state,
 			"GOOGLE",
 			validatedRedirectUri,
-			{ mode },
+			{
+				mode,
+				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
+			},
 		);
 
 		const params = new URLSearchParams({
@@ -429,6 +446,7 @@ export class OAuthService {
 		state: string,
 		clientRedirectUri?: string,
 		mode?: OAuthMode,
+		initiatingUserId?: string,
 	): Promise<string> {
 		const { clientId, callbackUrl, isConfigured } =
 			this._configService.naverOAuth;
@@ -445,7 +463,10 @@ export class OAuthService {
 			state,
 			"NAVER",
 			validatedRedirectUri,
-			{ mode },
+			{
+				mode,
+				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
+			},
 		);
 
 		const params = new URLSearchParams({
@@ -585,14 +606,17 @@ export class OAuthService {
 		idToken: string,
 		userName?: string,
 		metadata?: RequestMetadata,
+		nonce?: string,
 	): Promise<LoginResult> {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
 		try {
-			// 서버에서 토큰 검증
-			const verifiedProfile =
-				await this._tokenVerifier.verifyAppleToken(idToken);
+			// 서버에서 토큰 검증 (nonce 포함)
+			const verifiedProfile = await this._tokenVerifier.verifyAppleToken(
+				idToken,
+				nonce,
+			);
 
 			return this._handleSocialLogin(
 				"APPLE",
@@ -818,6 +842,7 @@ export class OAuthService {
 			provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER";
 			idToken?: string;
 			accessToken?: string;
+			nonce?: string;
 		},
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
@@ -830,8 +855,10 @@ export class OAuthService {
 				if (!idToken) {
 					throw BusinessExceptions.invalidCredentials();
 				}
-				const appleProfile =
-					await this._tokenVerifier.verifyAppleToken(idToken);
+				const appleProfile = await this._tokenVerifier.verifyAppleToken(
+					idToken,
+					dto.nonce,
+				);
 				providerAccountId = appleProfile.id;
 				break;
 			}
@@ -987,6 +1014,11 @@ export class OAuthService {
 
 			if (!user) {
 				throw BusinessExceptions.userNotFound(userId);
+			}
+
+			// 탈퇴 사용자 로그인 차단
+			if (user.deletedAt) {
+				throw BusinessExceptions.accountDeleted(userId);
 			}
 
 			this._validateUserStatus(user.status);
@@ -1287,7 +1319,12 @@ export class OAuthService {
 
 	// Google/Apple: 자동 연동, Kakao/Naver: 강제 연동 필요 (에러 반환)
 	private async _handleEmailConflict(
-		existingUser: { id: string; email: string; status: string },
+		existingUser: {
+			id: string;
+			email: string;
+			status: string;
+			deletedAt: Date | null;
+		},
 		provider: AccountProvider,
 		providerAccountId: string,
 		options: {
@@ -1297,6 +1334,11 @@ export class OAuthService {
 			userAgent: string;
 		},
 	): Promise<LoginResult> {
+		// 탈퇴 사용자 차단
+		if (existingUser.deletedAt) {
+			throw BusinessExceptions.accountDeleted(existingUser.id);
+		}
+
 		const isTrusted = this._isTrustedProvider(provider);
 		const isEmailVerified = options.emailVerified === true;
 
@@ -1414,6 +1456,14 @@ export class OAuthService {
 		if (!oauthState || oauthState.mode !== "link") {
 			this._logger.warn(
 				`Invalid or non-linking exchange code attempted: ${code.substring(0, 8)}...`,
+			);
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		// initiatingUserId 검증: link 시작한 사용자만 교환 가능
+		if (oauthState.initiatingUserId && oauthState.initiatingUserId !== userId) {
+			this._logger.warn(
+				`Linking user mismatch: expected ${oauthState.initiatingUserId}, got ${userId}`,
 			);
 			throw BusinessExceptions.invalidCredentials();
 		}

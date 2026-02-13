@@ -20,6 +20,10 @@ coverage/
 .env.*.local
 .env.production
 .env.development
+.env.docker.development
+.env.docker.production
+.env.docker.production.local
+.env.docker.development.local
 
 # Logs
 *.log

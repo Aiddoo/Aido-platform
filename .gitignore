@@ -36,6 +36,10 @@ junit.xml
 .env.production
 .secrets/
 
+# Docker environment (실제 값이 들어간 파일 - example은 트래킹)
+.env.docker.dev
+.env.docker.prod
+
 # IDE & Editor
 .idea/
 .vscode/*

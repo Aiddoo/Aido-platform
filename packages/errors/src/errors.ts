@@ -125,6 +125,8 @@ export const ErrorCode = {
   USER_0609: 'USER_0609',
   USER_0610: 'USER_0610',
   USER_0611: 'USER_0611',
+  USER_0612: 'USER_0612',
+  USER_0613: 'USER_0613',
 
   // =========================================================================
   // 세션 (SESSION_0700-0749)
@@ -645,6 +647,19 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '사용자 태그 생성에 실패했습니다.',
     description: '최대 시도 횟수 초과로 고유 태그 생성에 실패했습니다.',
     httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorCode.USER_0612]: {
+    code: 'USER_0612',
+    message: '회원 탈퇴를 위해 비밀번호를 입력해주세요.',
+    description: '이메일 계정의 회원 탈퇴 시 비밀번호 확인이 필요합니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.USER_0613]: {
+    code: 'USER_0613',
+    message: '소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.',
+    description:
+      '비밀번호 변경은 이메일 가입 계정만 가능합니다. 소셜 계정 해제 후 비밀번호를 설정해주세요.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 
   // =========================================================================

@@ -12,6 +12,7 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
@@ -136,9 +137,10 @@ export class AuthService {
   private openOAuth = async (
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
+    userHint?: string,
   ): Promise<Result<string, AuthError>> => {
     const redirectUri = this.getRedirectUri(provider);
-    const authUrl = this.#authRepository.getOAuthWebStartUrl(provider, redirectUri, mode);
+    const authUrl = this.#authRepository.getOAuthWebStartUrl(provider, redirectUri, mode, userHint);
 
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
       createTask: false,
@@ -184,13 +186,25 @@ export class AuthService {
     return this.openOAuth('google', 'login');
   };
 
+  private generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
+    const nonce = Crypto.getRandomBytes(32).reduce(
+      (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
+      '',
+    );
+    const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+    return { nonce, hashedNonce };
+  };
+
   openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
     try {
+      const { nonce, hashedNonce } = await this.generateNonce();
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       const idToken = credential.identityToken;
@@ -200,6 +214,7 @@ export class AuthService {
 
       const result = await this.#authRepository.appleLogin({
         idToken,
+        nonce,
         userName: credential.fullName?.givenName ?? undefined,
         deviceType: 'IOS',
       });
@@ -288,8 +303,11 @@ export class AuthService {
     return this.#authRepository.getLinkedAccounts();
   };
 
-  openLinkOAuth = (provider: OAuthStartProvider): Promise<Result<string, AuthError>> => {
-    return this.openOAuth(provider, 'link');
+  openLinkOAuth = (
+    provider: OAuthStartProvider,
+    userHint?: string,
+  ): Promise<Result<string, AuthError>> => {
+    return this.openOAuth(provider, 'link', userHint);
   };
 
   linkAccount = async (
@@ -313,11 +331,14 @@ export class AuthService {
 
   linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
     try {
+      const { nonce, hashedNonce } = await this.generateNonce();
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       const idToken = credential.identityToken;
@@ -325,7 +346,7 @@ export class AuthService {
         return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
       }
 
-      return this.#authRepository.linkApple(idToken);
+      return this.#authRepository.linkApple(idToken, nonce);
     } catch (error) {
       if (isAuthError(error)) {
         return err(error);

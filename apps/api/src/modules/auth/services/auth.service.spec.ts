@@ -467,6 +467,22 @@ describe("AuthService", () => {
 				expect.any(Object),
 			);
 		});
+
+		it("탈퇴한 사용자가 이메일 인증 시도 시 USER_0606 에러", async () => {
+			// Given
+			const deletedUser = UserBuilder.create()
+				.withEmail(verifyInput.email)
+				.verified()
+				.deleted()
+				.build();
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+
+			// When & Then
+			await expect(service.verifyEmail(verifyInput)).rejects.toThrow(
+				BusinessException,
+			);
+			expect(verificationService.verifyCode).not.toHaveBeenCalled();
+		});
 	});
 
 	// ============================================
@@ -1036,6 +1052,24 @@ describe("AuthService", () => {
 				verificationService.createAndSendPasswordReset,
 			).not.toHaveBeenCalled();
 		});
+
+		it("탈퇴한 사용자에게 비밀번호 재설정 코드를 발송하지 않는다", async () => {
+			// Given
+			const deletedUser = UserBuilder.create()
+				.withEmail(email)
+				.deleted()
+				.build();
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+
+			// When
+			const result = await service.forgotPassword(email);
+
+			// Then — 보안상 동일 응답, 이메일 미발송
+			expect(result.message).toBeDefined();
+			expect(
+				verificationService.createAndSendPasswordReset,
+			).not.toHaveBeenCalled();
+		});
 	});
 
 	// ============================================
@@ -1102,6 +1136,21 @@ describe("AuthService", () => {
 				service.resetPassword(email, code, newPassword),
 			).rejects.toThrow(BusinessException);
 		});
+
+		it("탈퇴한 사용자의 비밀번호 재설정 시 USER_0606 에러", async () => {
+			// Given
+			const deletedUser = UserBuilder.create()
+				.withEmail(email)
+				.deleted()
+				.build();
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+
+			// When & Then
+			await expect(
+				service.resetPassword(email, code, newPassword),
+			).rejects.toThrow(BusinessException);
+			expect(accountRepo.updatePassword).not.toHaveBeenCalled();
+		});
 	});
 
 	// ============================================
@@ -1115,6 +1164,8 @@ describe("AuthService", () => {
 
 		it("현재 비밀번호 확인 후 새 비밀번호로 변경한다", async () => {
 			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue({
 				id: "account-123",
 				userId,
@@ -1142,6 +1193,8 @@ describe("AuthService", () => {
 
 		it("현재 비밀번호가 틀리면 에러를 던진다", async () => {
 			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue({
 				id: "account-123",
 				userId,
@@ -1157,6 +1210,8 @@ describe("AuthService", () => {
 
 		it("Credential 계정이 없으면 에러를 던진다", async () => {
 			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 
 			// When & Then
@@ -1167,6 +1222,8 @@ describe("AuthService", () => {
 
 		it("보안 로그를 기록한다", async () => {
 			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue({
 				id: "account-123",
 				userId,
@@ -1191,6 +1248,271 @@ describe("AuthService", () => {
 				}),
 				expect.any(Object),
 			);
+		});
+	});
+
+	// ============================================
+	// deleteAccount
+	// ============================================
+
+	describe("deleteAccount", () => {
+		const userId = "user-123";
+		const sessionId = "session-123";
+		const metadata = { ip: "127.0.0.1", userAgent: "test-agent" };
+
+		it("CREDENTIAL 계정: 비밀번호 확인 후 soft delete 처리", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
+			] as never);
+			passwordService.verify.mockResolvedValue(true);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			userRepo.softDelete.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			const result = await service.deleteAccount(
+				userId,
+				sessionId,
+				{ password: "CurrentPw123" },
+				metadata,
+			);
+
+			// Then
+			expect(result.message).toContain("탈퇴 처리되었습니다");
+			expect(result.gracePeriodDays).toBe(30);
+			expect(userRepo.softDelete).toHaveBeenCalledWith(
+				userId,
+				expect.any(Object),
+			);
+			expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
+				userId,
+				REVOKE_REASON.ACCOUNT_DELETION,
+				undefined,
+				expect.any(Object),
+			);
+		});
+
+		it("CREDENTIAL 계정: 비밀번호 미입력 시 USER_0612 에러", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
+			] as never);
+
+			// When & Then
+			await expect(
+				service.deleteAccount(userId, sessionId, {}, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("CREDENTIAL 계정: 비밀번호 불일치 시 USER_0602 에러", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
+			] as never);
+			passwordService.verify.mockResolvedValue(false);
+
+			// When & Then
+			await expect(
+				service.deleteAccount(
+					userId,
+					sessionId,
+					{ password: "WrongPassword123" },
+					metadata,
+				),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("소셜 전용 계정: 세션 기반 확인으로 soft delete 처리", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				{ id: 1, userId, provider: "GOOGLE", password: null },
+			] as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			userRepo.softDelete.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			const result = await service.deleteAccount(
+				userId,
+				sessionId,
+				{},
+				metadata,
+			);
+
+			// Then
+			expect(result.message).toContain("탈퇴 처리되었습니다");
+			expect(passwordService.verify).not.toHaveBeenCalled();
+		});
+
+		it("이미 탈퇴한 계정 시도 시 USER_0606 에러", async () => {
+			// Given
+			const user = UserBuilder.create()
+				.withId(userId)
+				.verified()
+				.deleted()
+				.build();
+			userRepo.findById.mockResolvedValue(user);
+
+			// When & Then
+			await expect(
+				service.deleteAccount(userId, sessionId, {}, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("존재하지 않는 사용자 시 USER_0601 에러", async () => {
+			// Given
+			userRepo.findById.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.deleteAccount(userId, sessionId, {}, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("트랜잭션 내 softDelete + revokeAllByUserId + securityLog 호출 확인", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findAllByUserId.mockResolvedValue([
+				{ id: 1, userId, provider: "GOOGLE", password: null },
+			] as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			userRepo.softDelete.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			await service.deleteAccount(userId, sessionId, {}, metadata);
+
+			// Then
+			expect(database.$transaction).toHaveBeenCalled();
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId,
+					event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
+				}),
+				expect.any(Object),
+			);
+		});
+	});
+
+	// ============================================
+	// changePassword (추가 테스트)
+	// ============================================
+
+	describe("changePassword - 세션 폐기", () => {
+		const userId = "user-123";
+		const currentPassword = "CurrentPassword123!";
+		const newPassword = "NewPassword123!";
+		const sessionId = "session-current";
+
+		it("비밀번호 변경 후 현재 세션 제외 전체 폐기 확인", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				id: "account-123",
+				userId,
+				password: "current-hashed-password",
+			} as never);
+			passwordService.verify.mockResolvedValue(true);
+			passwordService.hash.mockResolvedValue("new-hashed-password");
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			await service.changePassword(
+				userId,
+				currentPassword,
+				newPassword,
+				undefined,
+				sessionId,
+			);
+
+			// Then
+			expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
+				userId,
+				REVOKE_REASON.PASSWORD_CHANGED,
+				sessionId,
+				expect.any(Object),
+			);
+		});
+
+		it("소셜 전용 사용자 시 USER_0613 에러", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.changePassword(userId, currentPassword, newPassword),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("탈퇴한 사용자의 비밀번호 변경 시 USER_0606 에러", async () => {
+			// Given
+			const deletedUser = UserBuilder.create().withId(userId).deleted().build();
+			userRepo.findById.mockResolvedValue(deletedUser);
+
+			// When & Then
+			await expect(
+				service.changePassword(userId, currentPassword, newPassword),
+			).rejects.toThrow(BusinessException);
+			expect(accountRepo.findByUserIdAndProvider).not.toHaveBeenCalled();
+		});
+	});
+
+	// ============================================
+	// login - 탈퇴 사용자 차단
+	// ============================================
+
+	describe("login - 탈퇴 사용자", () => {
+		it("탈퇴한 사용자 로그인 시도 시 USER_0606 에러", async () => {
+			// Given
+			const deletedUser = UserBuilder.create()
+				.withEmail("deleted@example.com")
+				.verified()
+				.deleted()
+				.build();
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				id: 1,
+				userId: deletedUser.id,
+				provider: "CREDENTIAL",
+				password: "hashed-pw",
+			} as never);
+			passwordService.verify.mockResolvedValue(true);
+			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
+
+			// When & Then
+			await expect(
+				service.login({
+					email: "deleted@example.com",
+					password: "Password123",
+				}),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 

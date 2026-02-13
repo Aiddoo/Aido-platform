@@ -273,6 +273,7 @@ describe("OAuthService", () => {
 				});
 				expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
 					"valid-id-token",
+					undefined,
 				);
 				expect(accountRepo.findByProviderAccountId).toHaveBeenCalledWith(
 					"APPLE",
@@ -506,6 +507,30 @@ describe("OAuthService", () => {
 				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(suspendedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
+
+				// When & Then
+				await expect(
+					service.handleAppleMobileLogin("valid-id-token"),
+				).rejects.toThrow(BusinessException);
+			});
+
+			it("탈퇴한 사용자는 소셜 로그인할 수 없다", async () => {
+				// Given - Builder로 탈퇴된 사용자 생성
+				const deletedUser = UserBuilder.create()
+					.withId("user-123")
+					.withEmail("test@privaterelay.appleid.com")
+					.verified()
+					.deleted()
+					.build();
+
+				const existingAccount = AccountBuilder.create(deletedUser.id)
+					.asApple("apple-user-123")
+					.build();
+
+				tokenVerifier.verifyAppleToken.mockResolvedValue(appleVerifiedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
+				userRepo.findById.mockResolvedValue(deletedUser);
 				loginAttemptRepo.create.mockResolvedValue({} as never);
 
 				// When & Then
@@ -859,6 +884,7 @@ describe("OAuthService", () => {
 			expect(result).toEqual({ message: "계정이 연결되었습니다." });
 			expect(tokenVerifier.verifyAppleToken).toHaveBeenCalledWith(
 				"valid-apple-id-token",
+				undefined,
 			);
 			expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -1105,97 +1131,14 @@ describe("OAuthService", () => {
 	describe("Redirect URI 검증", () => {
 		const testState = "test-state-123";
 
-		describe("모바일 딥링크 - 개발 환경 (aido-dev://)", () => {
-			it("aido-dev://auth/kakao를 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev://auth/kakao";
-				oauthStateRepo.create.mockResolvedValue({} as never);
-
-				// When
-				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
-
-				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined },
-				);
+		describe("프로덕션 환경", () => {
+			beforeEach(() => {
+				Object.defineProperty(configService, "isDevelopment", {
+					get: () => false,
+					configurable: true,
+				});
 			});
 
-			it("aido-dev://auth/google을 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev://auth/google";
-				oauthStateRepo.create.mockResolvedValue({} as never);
-
-				// When
-				await service.generateGoogleAuthUrlWithState(testState, redirectUri);
-
-				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"GOOGLE",
-					redirectUri,
-					{ mode: undefined },
-				);
-			});
-
-			it("aido-dev://auth/naver를 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev://auth/naver";
-				oauthStateRepo.create.mockResolvedValue({} as never);
-
-				// When
-				await service.generateNaverAuthUrlWithState(testState, redirectUri);
-
-				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"NAVER",
-					redirectUri,
-					{ mode: undefined },
-				);
-			});
-
-			// Note: Apple은 URL 기반 OAuth가 아닌 토큰 기반 모바일 로그인만 지원
-			// handleAppleMobileLogin에서 redirectUri를 사용하지 않으므로 이 테스트 그룹에서 제외
-
-			it("aido-dev://auth/callback을 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev://auth/callback";
-				oauthStateRepo.create.mockResolvedValue({} as never);
-
-				// When
-				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
-
-				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"KAKAO",
-					redirectUri,
-					{ mode: undefined },
-				);
-			});
-
-			it("aido-dev:///auth/naver (triple slash)를 허용한다", async () => {
-				// Given
-				const redirectUri = "aido-dev:///auth/naver";
-				oauthStateRepo.create.mockResolvedValue({} as never);
-
-				// When
-				await service.generateNaverAuthUrlWithState(testState, redirectUri);
-
-				// Then
-				expect(oauthStateRepo.create).toHaveBeenCalledWith(
-					testState,
-					"NAVER",
-					redirectUri,
-					{ mode: undefined },
-				);
-			});
-		});
-
-		describe("모바일 딥링크 - 프로덕션 환경 (aido://)", () => {
 			it("aido://auth/kakao를 허용한다", async () => {
 				// Given
 				const redirectUri = "aido://auth/kakao";
@@ -1209,13 +1152,13 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
-					{ mode: undefined },
+					{ mode: undefined, initiatingUserId: undefined },
 				);
 			});
 
-			it("aido://auth/callback을 허용한다", async () => {
+			it("https://api.aido.kr/callback을 허용한다", async () => {
 				// Given
-				const redirectUri = "aido://auth/callback";
+				const redirectUri = "https://api.aido.kr/callback";
 				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
@@ -1226,46 +1169,140 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					redirectUri,
-					{ mode: undefined },
+					{ mode: undefined, initiatingUserId: undefined },
+				);
+			});
+
+			it("exp:// 스킴을 거부하고 기본값으로 대체한다", async () => {
+				// Given
+				const redirectUri = "exp://192.168.1.1:8081";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+					{ mode: undefined, initiatingUserId: undefined },
+				);
+			});
+
+			it("http://localhost를 거부하고 기본값으로 대체한다", async () => {
+				// Given
+				const redirectUri = "http://localhost:8081";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+					{ mode: undefined, initiatingUserId: undefined },
+				);
+			});
+
+			it("aido-dev:// 스킴을 거부하고 기본값으로 대체한다", async () => {
+				// Given
+				const redirectUri = "aido-dev://auth/kakao";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+					{ mode: undefined, initiatingUserId: undefined },
+				);
+			});
+
+			it("임의의 서브도메인(evil.aido.kr)을 거부한다", async () => {
+				// Given
+				const redirectUri = "https://evil.aido.kr/steal";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					"aido://auth/callback",
+					{ mode: undefined, initiatingUserId: undefined },
 				);
 			});
 		});
 
-		describe("유효하지 않은 URI는 기본값으로 대체", () => {
-			it("잘못된 scheme은 기본값으로 대체된다", async () => {
+		describe("개발 환경", () => {
+			beforeEach(() => {
+				Object.defineProperty(configService, "isDevelopment", {
+					get: () => true,
+					configurable: true,
+				});
+			});
+
+			it("aido-dev://auth/kakao를 허용한다", async () => {
 				// Given
-				const invalidUri = "invalid-scheme://auth/kakao";
+				const redirectUri = "aido-dev://auth/kakao";
 				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
-				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
 				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
-					"aido://auth/callback",
-					{ mode: undefined },
+					redirectUri,
+					{ mode: undefined, initiatingUserId: undefined },
 				);
 			});
 
-			it("잘못된 경로는 기본값으로 대체된다", async () => {
+			it("http://localhost:8081을 허용한다", async () => {
 				// Given
-				const invalidUri = "aido://wrong/path";
+				const redirectUri = "http://localhost:8081";
 				oauthStateRepo.create.mockResolvedValue({} as never);
 
 				// When
-				await service.generateKakaoAuthUrlWithState(testState, invalidUri);
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
 
 				// Then
 				expect(oauthStateRepo.create).toHaveBeenCalledWith(
 					testState,
 					"KAKAO",
-					"aido://auth/callback",
-					{ mode: undefined },
+					redirectUri,
+					{ mode: undefined, initiatingUserId: undefined },
 				);
 			});
 
+			it("exp://192.168.1.1:8081을 허용한다", async () => {
+				// Given
+				const redirectUri = "exp://192.168.1.1:8081";
+				oauthStateRepo.create.mockResolvedValue({} as never);
+
+				// When
+				await service.generateKakaoAuthUrlWithState(testState, redirectUri);
+
+				// Then
+				expect(oauthStateRepo.create).toHaveBeenCalledWith(
+					testState,
+					"KAKAO",
+					redirectUri,
+					{ mode: undefined, initiatingUserId: undefined },
+				);
+			});
+		});
+
+		describe("공통", () => {
 			it("URI가 제공되지 않으면 기본값을 사용한다", async () => {
 				// Given
 				oauthStateRepo.create.mockResolvedValue({} as never);
@@ -1278,7 +1315,7 @@ describe("OAuthService", () => {
 					testState,
 					"KAKAO",
 					"aido://auth/callback",
-					{ mode: undefined },
+					{ mode: undefined, initiatingUserId: undefined },
 				);
 			});
 		});
@@ -2168,6 +2205,35 @@ describe("OAuthService", () => {
 					),
 				).rejects.toThrow(BusinessException);
 			});
+
+			it("탈퇴한 사용자에게는 자동 연동되지 않는다", async () => {
+				// Given
+				const deletedUser = UserBuilder.create()
+					.withId("existing-user-123")
+					.withEmail("deleted@example.com")
+					.verified()
+					.deleted()
+					.build();
+
+				const deletedProfile = {
+					...googleProfile,
+					email: "deleted@example.com",
+				};
+
+				tokenVerifier.verifyGoogleToken.mockResolvedValue(deletedProfile);
+				accountRepo.findByProviderAccountId.mockResolvedValue(null);
+				userRepo.findByEmail.mockResolvedValue(deletedUser);
+				loginAttemptRepo.create.mockResolvedValue({} as never);
+
+				// When & Then
+				await expect(
+					service.handleGoogleMobileLogin(
+						"valid-google-token",
+						undefined,
+						mockMetadata,
+					),
+				).rejects.toThrow(BusinessException);
+			});
 		});
 	});
 
@@ -2226,6 +2292,7 @@ describe("OAuthService", () => {
 					profileImage: null,
 					ipAddress: null,
 					userAgent: null,
+					initiatingUserId: null,
 					exchangedAt: null,
 					expiresAt: new Date(Date.now() + 600000),
 					createdAt: new Date(),
@@ -2346,6 +2413,7 @@ describe("OAuthService", () => {
 					profileImage: null,
 					ipAddress: null,
 					userAgent: null,
+					initiatingUserId: null,
 					exchangedAt: null,
 					expiresAt: new Date(Date.now() + 600000),
 					createdAt: new Date(),
@@ -2474,6 +2542,7 @@ describe("OAuthService", () => {
 					profileImage: null,
 					ipAddress: null,
 					userAgent: null,
+					initiatingUserId: null,
 					exchangedAt: null,
 					expiresAt: new Date(Date.now() + 600000),
 					createdAt: new Date(),
@@ -2766,6 +2835,7 @@ describe("OAuthService", () => {
 			profileImage: null,
 			ipAddress: null,
 			userAgent: null,
+			initiatingUserId: null,
 			exchangedAt: null,
 			expiresAt: new Date(Date.now() + 600000),
 			createdAt: new Date(),
@@ -3048,6 +3118,7 @@ describe("OAuthService", () => {
 				profileImage: null,
 				ipAddress: null,
 				userAgent: null,
+				initiatingUserId: null,
 				exchangedAt: null,
 				expiresAt: new Date(Date.now() + 600000),
 				createdAt: new Date(),
@@ -3121,6 +3192,7 @@ describe("OAuthService", () => {
 				profileImage: null,
 				ipAddress: null,
 				userAgent: null,
+				initiatingUserId: null,
 				exchangedAt: null,
 				expiresAt: new Date(Date.now() + 600000),
 				createdAt: new Date(),
@@ -3154,6 +3226,7 @@ describe("OAuthService", () => {
 				profileImage: null,
 				ipAddress: null,
 				userAgent: null,
+				initiatingUserId: null,
 				exchangedAt: null,
 				expiresAt: new Date(Date.now() + 600000),
 				createdAt: new Date(),
@@ -3170,6 +3243,128 @@ describe("OAuthService", () => {
 					mockMetadata,
 				),
 			).rejects.toThrow(BusinessException);
+		});
+
+		it("initiatingUserId와 요청 userId가 일치하면 정상 연동된다", async () => {
+			// Given
+			const mockOAuthState = {
+				id: 13,
+				state: "test-state",
+				provider: "GOOGLE" as const,
+				redirectUri: "aido://auth/callback",
+				mode: "link",
+				codeVerifier: null,
+				exchangeCode: "valid-exchange-code",
+				accessToken: null,
+				refreshToken: null,
+				userId: "google-123",
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				initiatingUserId: "user-123", // 일치
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
+			oauthStateRepo.markAsExchanged.mockResolvedValue({} as never);
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+
+			// When
+			const result = await service.linkAccountWithExchangeCode(
+				"user-123",
+				"valid-exchange-code",
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
+		});
+
+		it("initiatingUserId와 요청 userId가 불일치하면 에러를 던진다", async () => {
+			// Given
+			const mockOAuthState = {
+				id: 14,
+				state: "test-state",
+				provider: "GOOGLE" as const,
+				redirectUri: "aido://auth/callback",
+				mode: "link",
+				codeVerifier: null,
+				exchangeCode: "stolen-exchange-code",
+				accessToken: null,
+				refreshToken: null,
+				userId: "google-123",
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				initiatingUserId: "user-123", // 원래 사용자
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
+
+			// When & Then
+			await expect(
+				service.linkAccountWithExchangeCode(
+					"attacker-456", // 공격자
+					"stolen-exchange-code",
+					mockMetadata,
+				),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("initiatingUserId가 null이면 제한 없이 연동된다", async () => {
+			// Given - 하위 호환: initiatingUserId 없는 기존 상태
+			const mockOAuthState = {
+				id: 15,
+				state: "test-state",
+				provider: "KAKAO" as const,
+				redirectUri: "aido://auth/callback",
+				mode: "link",
+				codeVerifier: null,
+				exchangeCode: "legacy-exchange-code",
+				accessToken: null,
+				refreshToken: null,
+				userId: "kakao-456",
+				userName: null,
+				profileImage: null,
+				ipAddress: null,
+				userAgent: null,
+				initiatingUserId: null, // 하위 호환
+				exchangedAt: null,
+				expiresAt: new Date(Date.now() + 600000),
+				createdAt: new Date(),
+			};
+			oauthStateRepo.findByExchangeCode.mockResolvedValue(mockOAuthState);
+			oauthStateRepo.markAsExchanged.mockResolvedValue({} as never);
+			accountRepo.findByProviderAccountId.mockResolvedValue(null);
+			accountRepo.createOAuthAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => {
+					return callback({} as never);
+				},
+			);
+
+			// When
+			const result = await service.linkAccountWithExchangeCode(
+				"any-user-789",
+				"legacy-exchange-code",
+				mockMetadata,
+			);
+
+			// Then
+			expect(result).toEqual({ message: "계정이 연결되었습니다." });
 		});
 	});
 });

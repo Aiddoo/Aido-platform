@@ -402,6 +402,23 @@ export const unlinkAccountResponseSchema = z
 
 export type UnlinkAccountResponse = z.infer<typeof unlinkAccountResponseSchema>;
 
+export const deleteAccountResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+    deletedAt: datetimeSchema.describe('탈퇴 처리 시각'),
+    gracePeriodDays: z.number().int().describe('복구 가능 기간 (일)'),
+  })
+  .describe('회원 탈퇴 응답')
+  .meta({
+    example: {
+      message: '계정이 탈퇴 처리되었습니다. 30일 이내에 복구할 수 있습니다.',
+      deletedAt: '2026-02-13T10:00:00.000Z',
+      gracePeriodDays: 30,
+    },
+  });
+
+export type DeleteAccountResponse = z.infer<typeof deleteAccountResponseSchema>;
+
 export const authErrorCodeSchema = z
   .enum([
     // 공통

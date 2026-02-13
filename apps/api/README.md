@@ -41,18 +41,51 @@ Controller → Service → Repository → Database
 ## 시작하기
 
 ```bash
-# 루트에서
+# 루트에서 의존성 설치
 pnpm install
-pnpm docker:up
-pnpm db:migrate
 
-# API 개발 서버
+# API 로컬 실행
+pnpm --filter @aido/api db:migrate
 pnpm --filter @aido/api dev
 ```
 
-## 환경 변수
+## Docker 실행 (개발)
 
-`.env.example` → `.env` 복사 후 설정
+```bash
+# apps/api 디렉토리에서
+cp .env.docker.development.example .env.docker.development
+
+pnpm docker:dev:up
+pnpm docker:dev:logs
+pnpm docker:dev:down
+```
+
+개발용 구성:
+- `docker-compose.dev.yml`
+- `NODE_ENV=development`
+- 로컬 Postgres(`aido_dev`) 포함
+- 앱 시작 전 `prisma migrate deploy` 자동 실행
+
+## Docker 실행 (운영)
+
+```bash
+# apps/api 디렉토리에서
+cp .env.docker.production.example .env.docker.production
+# 실제 운영 값으로 .env.docker.production 수정
+
+pnpm docker:prod:build
+pnpm docker:prod:up
+pnpm docker:prod:logs
+pnpm docker:prod:down
+```
+
+운영용 구성:
+- `docker-compose.prod.yml`
+- `NODE_ENV=production`
+- `migrate` 서비스가 먼저 실행되어 마이그레이션 적용 후 API 기동
+- DB는 외부 관리형(PostgreSQL) 연결을 기본 가정
+
+## 환경 변수
 
 | 변수 | 설명 |
 |------|------|

@@ -92,3 +92,9 @@ export interface ExchangeCodeResult {
 	userName?: string;
 	profileImage?: string;
 }
+
+export interface DeleteAccountResult {
+	message: string;
+	deletedAt: string;
+	gracePeriodDays: number;
+}
