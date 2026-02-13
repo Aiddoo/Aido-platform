@@ -187,6 +187,11 @@ export const appleMobileCallbackSchema = z
       .string()
       .min(1, 'Apple ID 토큰이 필요합니다')
       .describe('Apple에서 발급받은 ID Token (서버에서 JWKS로 검증)'),
+    nonce: z
+      .string()
+      .min(1)
+      .optional()
+      .describe('Apple Sign-In 시 사용한 원본 nonce (서버에서 SHA256 후 토큰의 nonce와 비교)'),
     userName: z
       .string()
       .max(100, '이름은 100자 이내여야 합니다')
@@ -281,6 +286,15 @@ export const naverMobileCallbackSchema = z
 
 export type NaverMobileCallbackInput = z.infer<typeof naverMobileCallbackSchema>;
 
+export const deleteAccountSchema = z
+  .object({
+    password: z.string().min(1).optional().describe('현재 비밀번호 (이메일 가입 계정만 필수)'),
+    reason: z.string().max(500).trim().optional().describe('탈퇴 사유 (선택, 최대 500자)'),
+  })
+  .describe('회원 탈퇴 요청');
+
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
 export const linkSocialAccountSchema = z
   .object({
     provider: oauthProviderSchema.describe('연동할 소셜 로그인 제공자'),
@@ -289,6 +303,7 @@ export const linkSocialAccountSchema = z
       .string()
       .optional()
       .describe('Access Token (Kakao, Naver용 - provider에 따라 필수)'),
+    nonce: z.string().min(1).optional().describe('Apple Sign-In nonce (Apple 연동 시 사용)'),
   })
   .refine(
     (data) => {

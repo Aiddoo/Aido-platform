@@ -8,14 +8,21 @@ dist/
 .next/
 .expo/
 
+# Mobile app (API 빌드에 불필요)
+apps/mobile/
+
 # Environment
 .env*
-!.env.example
+!.env.docker.dev.example
+!.env.docker.prod.example
 
 # IDE
 .idea/
 .vscode/
 .cursor/
+
+# AI tools
+.claude/
 
 # Git
 .git/

@@ -8,6 +8,7 @@ import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.re
 
 import { AuthController } from "./auth.controller";
 import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
+import { AccountPurgeJob } from "./jobs/account-purge.job";
 import {
 	AccountRepository,
 	LoginAttemptRepository,
@@ -76,6 +77,8 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		// Guards
 		JwtAuthGuard,
 		JwtRefreshGuard,
+		// Jobs
+		AccountPurgeJob,
 	],
 	exports: [AuthService, JwtAuthGuard, JwtRefreshGuard],
 })

@@ -10,6 +10,7 @@
 // ============================================
 
 export {
+	ACCOUNT_DELETION,
 	ARGON2_CONFIG,
 	REVOKE_REASON,
 	type RevokeReason,

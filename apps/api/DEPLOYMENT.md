@@ -1,256 +1,224 @@
 # Aido API 배포 가이드
 
-## 📋 목차
+## Prerequisites
 
-- [환경별 CORS 설정](#환경별-cors-설정)
-- [배포 플랫폼별 가이드](#배포-플랫폼별-가이드)
-- [환경 변수 설정](#환경-변수-설정)
-- [배포 전 체크리스트](#배포-전-체크리스트)
-
----
-
-## 🌐 환경별 CORS 설정
-
-### ⚠️ 중요: 모바일 앱과 CORS
-
-**네이티브 모바일 앱(iOS/Android)은 CORS 제약을 받지 않습니다!**
-
-- CORS는 브라우저 보안 정책
-- 네이티브 앱은 HTTP 클라이언트를 직접 사용
-- **결론**: 모바일 앱은 `CORS_ORIGINS` 설정 없이도 API 호출 가능
-
-**CORS 설정이 필요한 경우**:
-- 웹 대시보드 (관리자 페이지)
-- Expo 웹 빌드 (브라우저에서 실행)
-- Swagger UI 등 개발 도구
-
-### 환경별 설정
-
-| 환경 | NODE_ENV | CORS 동작 | CORS_ORIGINS 예시 |
-|------|----------|-----------|------------------|
-| **개발** | `development` | ✅ 모든 origin 허용 (`origin: true`) | 설정 불필요 (무시됨) |
-| **프리뷰** | `preview` | 🔒 지정된 origin만 허용 | `https://preview.aido.kr,https://admin-preview.aido.kr` |
-| **프로덕션** | `production` | 🔒 지정된 origin만 허용 | `https://aido.kr,https://www.aido.kr,https://admin.aido.kr` |
+- Docker 24+ / Docker Compose V2
+- Node.js 22+ / pnpm 9.15.4
+- AWS CLI v2 (AWS 배포 시)
 
 ---
 
-## 🚀 배포 플랫폼별 가이드
+## 1. Local Development
 
-### Railway
+### DB-only 모드 (권장)
 
-```bash
-# Railway CLI 사용
-railway login
-railway link
-railway variables set NODE_ENV=production
-railway variables set CORS_ORIGINS="https://aido.kr,https://admin.aido.kr"
-# ... 기타 환경 변수
-railway up
-```
-
-또는 Railway 대시보드에서 Variables 설정:
-1. Project Settings > Variables
-2. `.env.production.example` 내용 복사
-3. 각 변수 추가
-
-### Render
-
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: aido-api
-    env: node
-    buildCommand: pnpm install && pnpm build
-    startCommand: pnpm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: CORS_ORIGINS
-        value: https://aido.kr,https://admin.aido.kr
-      # ... 기타 환경 변수
-```
-
-### Vercel
+PostgreSQL만 Docker로 실행하고, API는 네이티브로 실행합니다.
 
 ```bash
-# Vercel CLI 사용
-vercel env add NODE_ENV production
-vercel env add CORS_ORIGINS "https://aido.kr,https://admin.aido.kr"
-# ... 기타 환경 변수
-vercel --prod
+# DB 시작
+pnpm docker:up
+
+# API 개발 서버
+pnpm dev
 ```
 
-### AWS / Docker
+### Full Docker 모드
 
-```dockerfile
-# Dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY . .
-RUN pnpm install --frozen-lockfile
-RUN pnpm build
-CMD ["pnpm", "start"]
-```
+API + DB 모두 Docker로 실행합니다.
 
 ```bash
-# 환경 변수는 docker-compose.yml 또는 ECS Task Definition에서 설정
-docker run -e NODE_ENV=production \
-  -e CORS_ORIGINS="https://aido.kr,https://admin.aido.kr" \
-  -p 8080:8080 aido-api
+# 환경변수 설정
+cp .env.docker.dev.example .env.docker.dev
+
+# 빌드 & 실행
+pnpm docker:dev:build
+pnpm docker:dev:up
+
+# 로그 확인
+pnpm docker:dev:logs
+
+# DB 마이그레이션
+pnpm docker:dev:migrate
+
+# 종료
+pnpm docker:dev:down
+```
+
+> dev 모드는 소스 volume mount로 hot reload를 지원합니다.
+
+---
+
+## 2. Production Docker (로컬 테스트)
+
+로컬에서 프로덕션 이미지를 테스트합니다.
+
+```bash
+# 환경변수 설정 (모든 CHANGE_ME 값을 실제 값으로 교체)
+cp .env.docker.prod.example .env.docker.prod
+# .env.docker.prod 편집...
+
+# 빌드 & 실행 (migrate → api 순서 자동)
+pnpm docker:prod:build
+pnpm docker:prod:up
+
+# 헬스 체크
+curl http://localhost:8080/health
+
+# 로그 확인
+pnpm docker:prod:logs
+
+# 종료
+pnpm docker:prod:down
 ```
 
 ---
 
-## 🔐 환경 변수 설정
+## 3. AWS ECS + ECR 배포
 
-### 필수 환경 변수
-
-```bash
-# App
-NODE_ENV=production
-PORT=8080
-
-# Database
-DATABASE_URL=postgresql://...
-
-# JWT
-JWT_SECRET=...
-JWT_REFRESH_SECRET=...
-
-# Security
-CORS_ORIGINS=https://aido.kr,https://admin.aido.kr
-```
-
-### OAuth 환경 변수 (선택)
+### 3.1 ECR 리포지토리 생성
 
 ```bash
-# Google
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://api.aido.kr/v1/auth/google/web-callback
-
-# Apple
-APPLE_TEAM_ID=...
-APPLE_CLIENT_ID=com.aido.mobile.service
-APPLE_KEY_ID=...
-APPLE_PRIVATE_KEY=...
-APPLE_CALLBACK_URL=https://api.aido.kr/v1/auth/apple/callback
-
-# Kakao
-KAKAO_CLIENT_ID=...
-KAKAO_CLIENT_SECRET=...
-KAKAO_CALLBACK_URL=https://api.aido.kr/v1/auth/kakao/web-callback
-
-# Naver
-NAVER_CLIENT_ID=...
-NAVER_CLIENT_SECRET=...
-NAVER_CALLBACK_URL=https://api.aido.kr/v1/auth/naver/web-callback
+aws ecr create-repository --repository-name aido/api --image-scanning-configuration scanOnPush=true
+aws ecr create-repository --repository-name aido/migrate --image-scanning-configuration scanOnPush=true
 ```
 
-### 외부 서비스 (선택)
+### 3.2 이미지 빌드 & Push
 
 ```bash
-# Email
-RESEND_API_KEY=...
-EMAIL_FROM=noreply@aido.kr
+# ECR 로그인
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+AWS_REGION=ap-northeast-2
+ECR_URL=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-# Redis (캐시)
-REDIS_URL=redis://...
-CACHE_TYPE=redis
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
 
-# 모니터링
-SENTRY_DSN=...
+# Production 이미지 빌드
+docker build --target production -t aido/api:latest -f apps/api/Dockerfile .
+docker build --target migrate -t aido/migrate:latest -f apps/api/Dockerfile .
 
-# AI
-GOOGLE_GENERATIVE_AI_API_KEY=...
+# 태그 & Push
+docker tag aido/api:latest $ECR_URL/aido/api:latest
+docker tag aido/migrate:latest $ECR_URL/aido/migrate:latest
+
+docker push $ECR_URL/aido/api:latest
+docker push $ECR_URL/aido/migrate:latest
 ```
+
+### 3.3 ECS Task Definition
+
+**API 서비스** (long-running):
+- Image: `aido/api:latest`
+- CPU: 256 / Memory: 512
+- Port mapping: 8080
+- Health check: `/health`
+
+**Migration 태스크** (one-shot):
+- Image: `aido/migrate:latest`
+- CPU: 256 / Memory: 512
+- 배포 전 `aws ecs run-task`로 실행
+
+### 3.4 RDS PostgreSQL
+
+```bash
+aws rds create-db-instance \
+  --db-instance-identifier aido-db \
+  --db-instance-class db.t4g.micro \
+  --engine postgres \
+  --engine-version 16 \
+  --master-username postgres \
+  --master-user-password <password> \
+  --allocated-storage 20
+```
+
+### 3.5 Secrets Manager
+
+```bash
+aws secretsmanager create-secret \
+  --name aido/api/env \
+  --secret-string '{
+    "JWT_SECRET": "...",
+    "JWT_REFRESH_SECRET": "...",
+    "TOKEN_ENCRYPTION_KEY": "...",
+    "DATABASE_URL": "postgresql://..."
+  }'
+```
+
+ECS Task Definition에서 `secrets` 필드로 참조합니다.
+
+### 3.6 CI/CD 파이프라인
+
+```
+Build → Push to ECR → Run Migration Task → Deploy API Service
+```
+
+1. 코드 Push 또는 PR 머지 트리거
+2. Docker 이미지 빌드 (production + migrate)
+3. ECR에 Push
+4. Migration 태스크 실행 및 완료 대기
+5. ECS 서비스 업데이트 (롤링 배포)
 
 ---
 
-## ✅ 배포 전 체크리스트
+## 4. 환경변수 레퍼런스
 
-### 1. 환경 변수 확인
+| 변수 | 필수 | 기본값 | 설명 |
+|------|------|--------|------|
+| `NODE_ENV` | - | development | 실행 환경 |
+| `PORT` | - | 8080 | API 포트 |
+| `DATABASE_URL` | Y | - | PostgreSQL 연결 URL |
+| `JWT_SECRET` | Y | - | JWT 서명 키 (min 32자) |
+| `JWT_REFRESH_SECRET` | Y | - | Refresh 토큰 키 (min 32자) |
+| `JWT_EXPIRES_IN` | - | 15m | Access 토큰 만료 |
+| `JWT_REFRESH_EXPIRES_IN` | - | 7d | Refresh 토큰 만료 |
+| `TOKEN_ENCRYPTION_KEY` | Y | - | AES-256-GCM 키 (min 32자) |
+| `CORS_ORIGINS` | - | localhost | 허용 오리진 (쉼표 구분) |
+| `THROTTLE_TTL` | - | 60000 | Rate limit 윈도우 (ms) |
+| `THROTTLE_LIMIT` | - | 100 | Rate limit 횟수 |
+| `GOOGLE_CLIENT_ID` | Prod* | - | Google OAuth |
+| `GOOGLE_CLIENT_SECRET` | Prod* | - | Google OAuth |
+| `KAKAO_CLIENT_ID` | Prod* | - | Kakao OAuth |
+| `NAVER_CLIENT_ID` | Prod* | - | Naver OAuth |
+| `RESEND_API_KEY` | Prod | - | Resend 이메일 API 키 |
+| `EXPO_ACCESS_TOKEN` | - | - | 푸시 알림 |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | - | - | AI 기능 |
+| `DISCORD_SIGNUP_WEBHOOK_URL` | - | - | 가입 알림 웹훅 |
 
-- [ ] `NODE_ENV=production` 설정
-- [ ] `DATABASE_URL` 프로덕션 DB 연결 문자열
-- [ ] `JWT_SECRET`, `JWT_REFRESH_SECRET` 강력한 랜덤 값 (최소 32자)
-- [ ] `CORS_ORIGINS` 웹 클라이언트 도메인만 포함
-- [ ] OAuth 콜백 URL 프로덕션 도메인으로 변경
-- [ ] 모든 API 키 프로덕션 값으로 교체
-
-### 2. 데이터베이스 마이그레이션
-
-```bash
-# 프로덕션 DB에 마이그레이션 실행
-pnpm prisma migrate deploy
-```
-
-### 3. 보안 체크
-
-- [ ] HTTPS 설정 (Let's Encrypt, Cloudflare 등)
-- [ ] Rate Limiting 활성화 (`THROTTLE_TTL`, `THROTTLE_LIMIT`)
-- [ ] Helmet 활성화 (기본 활성화됨)
-- [ ] 민감한 정보 환경 변수로 관리 (코드에 하드코딩 금지)
-
-### 4. 모니터링 설정
-
-- [ ] Sentry DSN 설정 (에러 트래킹)
-- [ ] 로그 수집 설정 (CloudWatch, Datadog 등)
-- [ ] Health Check 엔드포인트 확인 (`GET /health`)
-
-### 5. 성능 최적화
-
-- [ ] Redis 캐시 활성화 (`CACHE_TYPE=redis`)
-- [ ] DB 인덱스 최적화
-- [ ] Connection Pool 설정 확인
-
-### 6. 배포 후 검증
-
-```bash
-# Health Check
-curl https://api.aido.kr/health
-
-# API 문서 (개발 환경만 노출)
-curl https://api.aido.kr/api/docs  # 404 확인 (프로덕션에서는 비활성화)
-
-# 모바일 앱에서 테스트
-# - 로그인
-# - API 호출
-# - 에러 핸들링
-```
+> *Prod: 프로덕션에서 OAuth 최소 1개 필수
 
 ---
 
-## 🔧 CORS 트러블슈팅
+## 5. 트러블슈팅
 
-### CORS 에러가 발생하는 경우
+### pnpm install 실패 (lockfile mismatch)
 
-**1. 웹 클라이언트에서 발생**
-```
-Access to fetch at 'https://api.aido.kr/v1/auth/login' from origin
-'https://admin.aido.kr' has been blocked by CORS policy
-```
-
-**해결**: `CORS_ORIGINS`에 웹 도메인 추가
 ```bash
-CORS_ORIGINS=https://aido.kr,https://admin.aido.kr
+# 로컬에서 lockfile 업데이트 후 재빌드
+pnpm install
+pnpm docker:dev:build --no-cache
 ```
 
-**2. 모바일 앱에서 CORS 에러**
+### Migration 실패
 
-❌ **이런 경우는 발생하지 않음!**
-- 네이티브 모바일 앱은 CORS 제약을 받지 않음
-- 다른 문제일 가능성:
-  - 네트워크 연결 문제
-  - API 서버 다운
-  - 잘못된 API URL
-  - 인증 토큰 문제
+```bash
+# 로그 확인
+pnpm docker:prod:logs
 
----
+# 수동 마이그레이션
+pnpm docker:prod:migrate
+```
 
-## 📚 참고 자료
+### Health check 실패
 
-- [NestJS Production 가이드](https://docs.nestjs.com/techniques/performance)
-- [Prisma Production 체크리스트](https://www.prisma.io/docs/guides/deployment/deployment-guides)
-- [CORS MDN 문서](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+```bash
+# 컨테이너 내부에서 확인
+docker exec aido-prod-api wget -qO- http://localhost:8080/health
+```
+
+### 이미지 크기 최적화
+
+```bash
+# 이미지 크기 확인
+docker images aido/api
+```
+
+Production 이미지는 `node:22-alpine` + production deps만 포함하여 경량화됩니다.

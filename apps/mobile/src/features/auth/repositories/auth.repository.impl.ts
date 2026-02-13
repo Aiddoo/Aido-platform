@@ -140,6 +140,7 @@ export class AuthRepositoryImpl implements AuthRepository {
     provider: OAuthStartProvider,
     redirectUri: string,
     mode: OAuthStartMode,
+    userHint?: string,
   ): string {
     const authPathByProvider: Record<OAuthStartProvider, string> = {
       kakao: 'kakao',
@@ -151,6 +152,10 @@ export class AuthRepositoryImpl implements AuthRepository {
       redirect_uri: redirectUri,
       mode,
     });
+
+    if (userHint) {
+      params.set('user_hint', userHint);
+    }
 
     return `${ENV.API_URL}/v1/auth/${authPathByProvider[provider]}/start?${params.toString()}`;
   }
@@ -285,8 +290,8 @@ export class AuthRepositoryImpl implements AuthRepository {
     return this.#authHttpClient.post('v1/auth/link-with-code', { code });
   }
 
-  async linkApple(idToken: string): Promise<Result<{ message: string }, ApiError>> {
-    return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken });
+  async linkApple(idToken: string, nonce?: string): Promise<Result<{ message: string }, ApiError>> {
+    return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken, nonce });
   }
 
   async unlinkAccount(provider: OAuthProvider): Promise<Result<{ message: string }, ApiError>> {

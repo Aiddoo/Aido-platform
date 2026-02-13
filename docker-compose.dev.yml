@@ -1,0 +1,49 @@
+# Full Docker 개발 환경 (DB + API)
+# 사용: pnpm docker:dev:up
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aido-dev-db
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aido
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aido"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    container_name: aido-dev-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.docker.dev
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./packages/errors/src:/app/packages/errors/src
+      - ./packages/utils/src:/app/packages/utils/src
+      - ./packages/validators/src:/app/packages/validators/src
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dev_postgres_data:

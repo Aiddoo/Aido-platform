@@ -99,20 +99,7 @@ describe("Auth (e2e)", () => {
 	}
 
 	beforeAll(async () => {
-		// 테스트용 Kakao OAuth 환경변수 설정 (웹 플로우 테스트용)
-		// 실제 API 호출은 하지 않고 URL 생성/리다이렉트만 테스트
-		process.env.KAKAO_CLIENT_ID = "test-kakao-client-id";
-		process.env.KAKAO_CLIENT_SECRET = "test-kakao-client-secret";
-		process.env.KAKAO_CALLBACK_URL =
-			"http://localhost:3000/auth/kakao/callback";
-		process.env.GOOGLE_CLIENT_ID = "test-google-client-id";
-		process.env.GOOGLE_CLIENT_SECRET = "test-google-client-secret";
-		process.env.GOOGLE_CALLBACK_URL =
-			"http://localhost:3000/auth/google/callback";
-		process.env.NAVER_CLIENT_ID = "test-naver-client-id";
-		process.env.NAVER_CLIENT_SECRET = "test-naver-client-secret";
-		process.env.NAVER_CALLBACK_URL =
-			"http://localhost:3000/auth/naver/callback";
+		// OAuth 환경변수는 setup-env.ts에서 중앙 관리
 
 		// Testcontainers로 PostgreSQL 컨테이너 시작
 		testDatabase = new TestDatabase();
@@ -954,7 +941,7 @@ describe("Auth (e2e)", () => {
 		it("Kakao 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
 			// Given
 			const state = "kakao-state-restore-test";
-			const redirectUri = "aido-dev://auth/kakao";
+			const redirectUri = "aido://auth/kakao";
 
 			await request(app.getHttpServer())
 				.get("/auth/kakao/start")
@@ -975,7 +962,7 @@ describe("Auth (e2e)", () => {
 		it("Google 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
 			// Given
 			const state = "google-state-restore-test";
-			const redirectUri = "aido-dev://auth/google";
+			const redirectUri = "aido://auth/google";
 
 			await request(app.getHttpServer())
 				.get("/auth/google/start")
@@ -996,7 +983,7 @@ describe("Auth (e2e)", () => {
 		it("Naver 콜백 실패 시 start에서 저장한 redirect_uri로 리다이렉트", async () => {
 			// Given
 			const state = "naver-state-restore-test";
-			const redirectUri = "aido-dev://auth/naver";
+			const redirectUri = "aido://auth/naver";
 
 			await request(app.getHttpServer())
 				.get("/auth/naver/start")
@@ -2140,6 +2127,166 @@ describe("Auth (e2e)", () => {
 				);
 				expect(appleAccount3.linked).toBe(true);
 			});
+		});
+	});
+
+	// ============================================
+	// 회원 탈퇴 플로우
+	// ============================================
+
+	describe("회원 탈퇴 플로우", () => {
+		describe("이메일 계정 탈퇴", () => {
+			const deleteEmail = "delete-test@example.com";
+			const deletePassword = "Test1234!";
+			let accessToken: string;
+
+			beforeAll(async () => {
+				accessToken = await createVerifiedUser(deleteEmail, deletePassword);
+			});
+
+			it("DELETE /auth/account - 비밀번호 확인 후 탈퇴 처리", async () => {
+				const response = await request(app.getHttpServer())
+					.delete("/auth/account")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ password: deletePassword })
+					.expect(200);
+
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.gracePeriodDays).toBe(30);
+				expect(response.body.data.deletedAt).toBeDefined();
+			});
+
+			it("POST /auth/login - 탈퇴 후 로그인 차단", async () => {
+				const response = await request(app.getHttpServer())
+					.post("/auth/login")
+					.send({ email: deleteEmail, password: deletePassword })
+					.expect(410);
+
+				expect(response.body.error.code).toBe("USER_0606");
+			});
+
+			it("GET /auth/me - 탈퇴 후 토큰으로 접근 불가", async () => {
+				await request(app.getHttpServer())
+					.get("/auth/me")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(401);
+			});
+		});
+
+		describe("비밀번호 미입력 시 탈퇴 실패", () => {
+			const noPassEmail = "no-pass-delete@example.com";
+			const noPassPassword = "Test1234!";
+			let accessToken: string;
+
+			beforeAll(async () => {
+				accessToken = await createVerifiedUser(noPassEmail, noPassPassword);
+			});
+
+			it("DELETE /auth/account - 비밀번호 없이 요청 시 400", async () => {
+				const response = await request(app.getHttpServer())
+					.delete("/auth/account")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({})
+					.expect(400);
+
+				expect(response.body.error.code).toBe("USER_0612");
+			});
+		});
+
+		describe("비밀번호 불일치 시 탈퇴 실패", () => {
+			const wrongPassEmail = "wrong-pass-delete@example.com";
+			const wrongPassPassword = "Test1234!";
+			let accessToken: string;
+
+			beforeAll(async () => {
+				accessToken = await createVerifiedUser(
+					wrongPassEmail,
+					wrongPassPassword,
+				);
+			});
+
+			it("DELETE /auth/account - 잘못된 비밀번호 시 401", async () => {
+				const response = await request(app.getHttpServer())
+					.delete("/auth/account")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ password: "WrongPassword1!" })
+					.expect(401);
+
+				expect(response.body.error.code).toBe("USER_0602");
+			});
+		});
+
+		describe("소셜 계정 탈퇴", () => {
+			it("DELETE /auth/account - 소셜 전용 계정은 비밀번호 없이 탈퇴", async () => {
+				// Given - OAuth로 사용자 생성
+				fakeOAuthTokenVerifierService.setCustomProfile(
+					"google",
+					"social-delete-token",
+					{
+						id: "google-delete-user-123",
+						email: "social-delete@example.com",
+						emailVerified: true,
+						name: "Social Delete User",
+					},
+				);
+
+				const loginResponse = await request(app.getHttpServer())
+					.post("/auth/google/callback")
+					.send({ idToken: "social-delete-token" })
+					.expect(200);
+
+				const socialAccessToken = loginResponse.body.data.accessToken;
+
+				// When - 비밀번호 없이 탈퇴
+				const deleteResponse = await request(app.getHttpServer())
+					.delete("/auth/account")
+					.set("Authorization", `Bearer ${socialAccessToken}`)
+					.send({})
+					.expect(200);
+
+				// Then
+				expect(deleteResponse.body.data.gracePeriodDays).toBe(30);
+			});
+		});
+	});
+
+	// ============================================
+	// 비밀번호 변경 후 세션 폐기
+	// ============================================
+
+	describe("비밀번호 변경 후 세션 폐기", () => {
+		const changePwEmail = "change-pw-session@example.com";
+		const changePwPassword = "Test1234!";
+		const newPwPassword = "NewTest5678!";
+
+		it("비밀번호 변경 후 다른 세션의 토큰은 무효화된다", async () => {
+			// Given - 사용자 생성 후 두 번 로그인 (두 세션)
+			await createVerifiedUser(changePwEmail, changePwPassword);
+			const session1 = await loginUser(changePwEmail, changePwPassword);
+			const session2 = await loginUser(changePwEmail, changePwPassword);
+
+			// When - session1에서 비밀번호 변경
+			await request(app.getHttpServer())
+				.patch("/auth/password")
+				.set("Authorization", `Bearer ${session1.accessToken}`)
+				.send({
+					currentPassword: changePwPassword,
+					newPassword: newPwPassword,
+					newPasswordConfirm: newPwPassword,
+				})
+				.expect(200);
+
+			// Then - session2 토큰으로 refresh 시도 시 실패
+			await request(app.getHttpServer())
+				.post("/auth/refresh")
+				.send({ refreshToken: session2.refreshToken })
+				.expect(401);
+
+			// session1은 여전히 유효
+			await request(app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${session1.accessToken}`)
+				.expect(200);
 		});
 	});
 });

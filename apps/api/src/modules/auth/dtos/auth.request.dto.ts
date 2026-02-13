@@ -1,6 +1,7 @@
 import {
 	appleMobileCallbackSchema,
 	changePasswordSchema,
+	deleteAccountSchema,
 	exchangeCodeSchema,
 	forgotPasswordSchema,
 	googleMobileCallbackSchema,
@@ -49,3 +50,4 @@ export class LinkSocialAccountDto extends createZodDto(
 	linkSocialAccountSchema,
 ) {}
 export class UnlinkAccountDto extends createZodDto(unlinkAccountSchema) {}
+export class DeleteAccountDto extends createZodDto(deleteAccountSchema) {}

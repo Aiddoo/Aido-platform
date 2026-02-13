@@ -344,6 +344,14 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.USER_0611, details);
 	}
 
+	static accountDeletionPasswordRequired() {
+		return new BusinessException(ErrorCode.USER_0612);
+	}
+
+	static noCredentialAccountForPasswordChange(userId: string) {
+		return new BusinessException(ErrorCode.USER_0613, { userId });
+	}
+
 	// =========================================================================
 	// 로그인 시도 제한 (Login Attempts)
 	// =========================================================================

@@ -400,5 +400,19 @@ describe("OAuthTokenVerifierService", () => {
 			// jose는 ESM-only 모듈이므로 Jest에서 동적 import 모킹이 어렵습니다.
 			// 실제 Apple 토큰 검증은 E2E 테스트 또는 실제 환경에서 검증합니다.
 		});
+
+		// nonce 검증 테스트 — jose ESM 모킹 제약으로 스킵
+		// verifyAppleToken 내부에서 jose.jwtVerify 호출 후 nonce를 SHA256 비교
+		it.skip("nonce가 제공되고 일치하면 검증에 성공한다", () => {
+			// expectedNonce → SHA256 해시 → payload.nonce와 비교 → 일치 시 통과
+		});
+
+		it.skip("nonce가 제공되고 불일치하면 socialTokenInvalid를 던진다", () => {
+			// expectedNonce → SHA256 해시 → payload.nonce와 불일치 → BusinessException
+		});
+
+		it.skip("nonce가 없으면 nonce 검증을 건너뛴다", () => {
+			// expectedNonce 미제공 → nonce 검증 로직 스킵 → 정상 반환
+		});
 	});
 });

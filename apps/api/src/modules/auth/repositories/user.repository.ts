@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { now } from "@/common/date";
+import { now, subtractDays } from "@/common/date";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,
@@ -240,5 +240,28 @@ export class UserRepository {
 		});
 
 		return profile;
+	}
+
+	async softDelete(id: string, tx?: Prisma.TransactionClient): Promise<User> {
+		const client = tx ?? this.database;
+		return client.user.update({
+			where: { id },
+			data: { deletedAt: now(), status: "SUSPENDED" },
+		});
+	}
+
+	async findSoftDeletedForPurge(
+		gracePeriodDays: number,
+	): Promise<{ id: string; email: string; deletedAt: Date }[]> {
+		const cutoff = subtractDays(gracePeriodDays);
+		return this.database.user.findMany({
+			where: { deletedAt: { not: null, lt: cutoff } },
+			select: { id: true, email: true, deletedAt: true },
+		}) as Promise<{ id: string; email: string; deletedAt: Date }[]>;
+	}
+
+	async hardDelete(id: string, tx?: Prisma.TransactionClient): Promise<void> {
+		const client = tx ?? this.database;
+		await client.user.delete({ where: { id } });
 	}
 }
