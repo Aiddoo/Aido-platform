@@ -162,9 +162,10 @@ export class UserBuilder {
 		return this;
 	}
 
-	/** Soft delete 처리된 사용자 */
+	/** Soft delete 처리된 사용자 (status도 SUSPENDED로 설정) */
 	deleted(deletedAt?: Date): UserBuilder {
 		this.data.deletedAt = deletedAt ?? new Date();
+		this.data.status = "SUSPENDED";
 		return this;
 	}
 

@@ -1,21 +1,10 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+# 로컬 개발용 인프라 (DB only)
+# API는 네이티브 실행: pnpm dev
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/aido
-    depends_on:
-      db:
-        condition: service_healthy
-
   db:
     image: postgres:16-alpine
+    container_name: aido-db
     ports:
       - "5432:5432"
     environment:
@@ -25,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aido"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -46,6 +46,7 @@ interface AppleIdTokenClaims {
 	is_private_email?: string | boolean;
 	auth_time: number;
 	nonce_supported: boolean;
+	nonce?: string;
 }
 
 // 모바일 클라이언트 토큰을 서버에서 직접 검증 (각 OAuth Provider의 공식 API/JWKS 사용)
@@ -111,7 +112,10 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	}
 
 	// @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
-	async verifyAppleToken(idToken: string): Promise<VerifiedProfile> {
+	async verifyAppleToken(
+		idToken: string,
+		expectedNonce?: string,
+	): Promise<VerifiedProfile> {
 		const jose = await this._getJose();
 
 		try {
@@ -133,6 +137,18 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 					audience: appleClientId,
 				},
 			);
+
+			// nonce 검증 (제공된 경우)
+			if (expectedNonce) {
+				const { createHash } = await import("node:crypto");
+				const hashedNonce = createHash("sha256")
+					.update(expectedNonce)
+					.digest("hex");
+				if (payload.nonce !== hashedNonce) {
+					this._logger.warn("Apple nonce mismatch");
+					throw BusinessExceptions.socialTokenInvalid("APPLE");
+				}
+			}
 
 			// 이메일 인증 여부 확인
 			const emailVerified =

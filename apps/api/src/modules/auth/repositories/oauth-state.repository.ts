@@ -43,6 +43,7 @@ export class OAuthStateRepository {
 			ipAddress?: string;
 			userAgent?: string;
 			expiresInMinutes?: number;
+			initiatingUserId?: string;
 		},
 	): Promise<OAuthState> {
 		const expiresAt = addMinutes(options?.expiresInMinutes ?? 10);
@@ -56,6 +57,7 @@ export class OAuthStateRepository {
 				codeVerifier: options?.codeVerifier,
 				ipAddress: options?.ipAddress,
 				userAgent: options?.userAgent,
+				initiatingUserId: options?.initiatingUserId,
 				expiresAt,
 			},
 		});

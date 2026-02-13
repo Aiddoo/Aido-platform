@@ -2,6 +2,7 @@ import {
 	authTokensSchema,
 	changePasswordResponseSchema,
 	currentUserSchema,
+	deleteAccountResponseSchema,
 	forgotPasswordResponseSchema,
 	linkedAccountsResponseSchema,
 	logoutResponseSchema,
@@ -47,4 +48,7 @@ export class LinkedAccountsResponseDto extends createZodDto(
 ) {}
 export class UnlinkAccountResponseDto extends createZodDto(
 	unlinkAccountResponseSchema,
+) {}
+export class DeleteAccountResponseDto extends createZodDto(
+	deleteAccountResponseSchema,
 ) {}

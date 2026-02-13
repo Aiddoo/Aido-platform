@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 export const logoutMutationOptions = () => {
@@ -31,6 +32,7 @@ export const logoutMutationOptions = () => {
     onSettled: () => {
       setStatus('unauthenticated');
       queryClient.clear();
+      resetAuthClient();
     },
   });
 };

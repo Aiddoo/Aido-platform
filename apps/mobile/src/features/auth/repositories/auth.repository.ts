@@ -56,11 +56,12 @@ export interface AuthRepository {
     provider: OAuthStartProvider,
     redirectUri: string,
     mode: OAuthStartMode,
+    userHint?: string,
   ): string;
 
   // 소셜 계정 연동
   getLinkedAccounts(): Promise<Result<LinkedAccount[], ApiError>>;
   linkWithCode(code: string): Promise<Result<{ message: string }, ApiError>>;
-  linkApple(idToken: string): Promise<Result<{ message: string }, ApiError>>;
+  linkApple(idToken: string, nonce?: string): Promise<Result<{ message: string }, ApiError>>;
   unlinkAccount(provider: OAuthProvider): Promise<Result<{ message: string }, ApiError>>;
 }

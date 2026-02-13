@@ -1,4 +1,5 @@
 import {
+	type DeleteAccountInput,
 	LOGIN_ATTEMPT,
 	type LoginInput,
 	type RegisterInput,
@@ -25,6 +26,7 @@ import {
 import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "../../todo-category/types/todo-category.types";
 import {
+	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
 	LOGIN_FAILURE_REASON,
 	REVOKE_REASON,
@@ -37,6 +39,7 @@ import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
 import type {
 	CurrentUserResult,
+	DeleteAccountResult,
 	LoginResult,
 	RefreshTokensResult,
 	RegisterResult,
@@ -52,6 +55,7 @@ import { VerificationService } from "./verification.service";
 // Re-export types for backward compatibility
 export type {
 	CurrentUserResult,
+	DeleteAccountResult,
 	LoginResult,
 	RefreshTokensResult,
 	RegisterResult,
@@ -236,6 +240,9 @@ export class AuthService {
 		if (!user) {
 			throw BusinessExceptions.emailNotFound(email);
 		}
+
+		// 탈퇴 사용자 체크
+		this._assertNotDeleted(user);
 
 		// 상태 확인
 		if (user.status !== "PENDING_VERIFY") {
@@ -467,6 +474,7 @@ export class AuthService {
 		}
 
 		// 4. 사용자 상태 확인
+		this._assertNotDeleted(user);
 		if (user.status === "PENDING_VERIFY") {
 			throw BusinessExceptions.emailNotVerified(email);
 		}
@@ -764,15 +772,13 @@ export class AuthService {
 		// 사용자 존재 확인 (존재하지 않아도 보안상 동일한 응답)
 		const user = await this.userRepository.findByEmail(email);
 
-		if (user) {
+		if (user && !user.deletedAt) {
 			// 인증 코드 생성 및 이메일 발송
 			await this.verificationService.createAndSendPasswordReset(user.id, email);
 
 			this.logger.debug(`Password reset code sent to: ${email}`);
 		} else {
-			this.logger.debug(
-				`Password reset requested for non-existent email: ${email}`,
-			);
+			this.logger.debug(`Password reset skipped: ${email}`);
 		}
 
 		// 보안상 동일한 응답 (이메일 존재 여부 노출 방지)
@@ -791,6 +797,7 @@ export class AuthService {
 		if (!user) {
 			throw BusinessExceptions.verificationCodeInvalid();
 		}
+		this._assertNotDeleted(user);
 
 		// Credential Account 조회
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -848,9 +855,15 @@ export class AuthService {
 		currentPassword: string,
 		newPassword: string,
 		metadata?: RequestMetadata,
+		currentSessionId?: string,
 	): Promise<{ message: string }> {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		// 탈퇴 사용자 체크
+		const user = await this.userRepository.findById(userId);
+		if (!user) throw BusinessExceptions.userNotFound(userId);
+		this._assertNotDeleted(user);
 
 		// Credential Account 조회
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -858,7 +871,7 @@ export class AuthService {
 			"CREDENTIAL",
 		);
 		if (!account || !account.password) {
-			throw BusinessExceptions.invalidCredentials();
+			throw BusinessExceptions.noCredentialAccountForPasswordChange(userId);
 		}
 
 		// 현재 비밀번호 검증
@@ -873,10 +886,18 @@ export class AuthService {
 		// 새 비밀번호 해싱 (트랜잭션 밖에서 수행 - CPU 작업)
 		const hashedPassword = await this.passwordService.hash(newPassword);
 
-		// 트랜잭션으로 비밀번호 변경 + 로그 기록
+		// 트랜잭션으로 비밀번호 변경 + 세션 폐기 + 로그 기록
 		await this.database.$transaction(async (tx) => {
 			// 비밀번호 업데이트
 			await this.accountRepository.updatePassword(userId, hashedPassword, tx);
+
+			// 현재 세션 제외 전체 세션 폐기
+			await this.sessionRepository.revokeAllByUserId(
+				userId,
+				REVOKE_REASON.PASSWORD_CHANGED,
+				currentSessionId,
+				tx,
+			);
 
 			// 보안 로그 기록
 			await this.securityLogRepository.create(
@@ -1010,6 +1031,86 @@ export class AuthService {
 			name: profile.name,
 			profileImage: profile.profileImage,
 		};
+	}
+
+	async deleteAccount(
+		userId: string,
+		sessionId: string,
+		input: DeleteAccountInput,
+		metadata?: RequestMetadata,
+	): Promise<DeleteAccountResult> {
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		// 1. 사용자 조회 + 이미 탈퇴 여부 확인
+		const user = await this.userRepository.findById(userId);
+		if (!user) throw BusinessExceptions.userNotFound(userId);
+		this._assertNotDeleted(user);
+
+		// 2. 계정 유형에 따른 본인 확인
+		const accounts = await this.accountRepository.findAllByUserId(userId);
+		const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
+
+		if (credentialAccount) {
+			if (!input.password) {
+				throw BusinessExceptions.accountDeletionPasswordRequired();
+			}
+			const credentialPassword = credentialAccount.password;
+			if (!credentialPassword) {
+				throw BusinessExceptions.invalidCredentials();
+			}
+			const isValid = await this.passwordService.verify(
+				credentialPassword,
+				input.password,
+			);
+			if (!isValid) throw BusinessExceptions.invalidCredentials();
+		}
+		// 소셜 전용: JWT 인증 통과 = 확인 완료
+
+		// 3. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
+		const deletedAt = now();
+		await this.database.$transaction(async (tx) => {
+			await this.userRepository.softDelete(userId, tx);
+			await this.sessionRepository.revokeAllByUserId(
+				userId,
+				REVOKE_REASON.ACCOUNT_DELETION,
+				undefined,
+				tx,
+			);
+			await this.securityLogRepository.create(
+				{
+					userId,
+					event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
+					ipAddress: ip,
+					userAgent,
+					metadata: {
+						reason: input.reason ?? null,
+						gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+						providers: accounts.map((a) => a.provider),
+					},
+				},
+				tx,
+			);
+		});
+
+		// 4. 캐시 무효화 (트랜잭션 완료 후)
+		await this.cacheService.invalidateSession(sessionId);
+		await this.cacheService.invalidateUserProfile(userId);
+
+		this.logger.log(`Account deletion requested: ${userId}`);
+
+		return {
+			message: `계정이 탈퇴 처리되었습니다. ${ACCOUNT_DELETION.GRACE_PERIOD_DAYS}일 이내에 복구할 수 있습니다.`,
+			deletedAt: deletedAt.toISOString(),
+			gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+		};
+	}
+
+	private _assertNotDeleted(user: {
+		deletedAt: Date | null;
+		id: string;
+	}): void {
+		if (user.deletedAt) throw BusinessExceptions.accountDeleted(user.id);
 	}
 
 	private _checkUserStatus(status: UserStatus, email: string): void {

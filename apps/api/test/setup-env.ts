@@ -2,6 +2,19 @@
  * E2E 테스트용 환경변수 설정
  * Jest가 테스트 파일을 로드하기 전에 실행됨
  */
+
+/**
+ * E2E 테스트에서 rate limiting 비활성화
+ *
+ * @nestjs/throttler v6의 ThrottlerGuard는 APP_GUARD로 등록되어
+ * overrideGuard/overrideProvider로 비활성화할 수 없음.
+ * 프로토타입 패치가 유일한 방법.
+ *
+ * @see https://github.com/nestjs/throttler/issues
+ */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ThrottlerGuard } = require("@nestjs/throttler");
+ThrottlerGuard.prototype.canActivate = () => true;
 process.env.DATABASE_URL =
 	process.env.DATABASE_URL ||
 	"postgresql://postgres:postgres@localhost:5432/aido_test";
@@ -32,9 +45,26 @@ process.env.CACHE_TYPE = process.env.CACHE_TYPE || "memory";
 // Logger 환경변수
 process.env.LOG_LEVEL = process.env.LOG_LEVEL || "silent";
 
-// OAuth 환경변수 (테스트용 가짜 값 - 실제 검증은 mock 처리)
+// OAuth 환경변수 (테스트용 가짜 값 - 실제 API 호출은 mock 처리)
 process.env.GOOGLE_CLIENT_ID =
 	process.env.GOOGLE_CLIENT_ID ||
 	"test-google-client-id.apps.googleusercontent.com";
+process.env.GOOGLE_CLIENT_SECRET =
+	process.env.GOOGLE_CLIENT_SECRET || "test-google-client-secret";
+process.env.GOOGLE_CALLBACK_URL =
+	process.env.GOOGLE_CALLBACK_URL ||
+	"http://localhost:3000/auth/google/callback";
 process.env.APPLE_CLIENT_ID =
 	process.env.APPLE_CLIENT_ID || "com.test.example.app";
+process.env.KAKAO_CLIENT_ID =
+	process.env.KAKAO_CLIENT_ID || "test-kakao-client-id";
+process.env.KAKAO_CLIENT_SECRET =
+	process.env.KAKAO_CLIENT_SECRET || "test-kakao-client-secret";
+process.env.KAKAO_CALLBACK_URL =
+	process.env.KAKAO_CALLBACK_URL || "http://localhost:3000/auth/kakao/callback";
+process.env.NAVER_CLIENT_ID =
+	process.env.NAVER_CLIENT_ID || "test-naver-client-id";
+process.env.NAVER_CLIENT_SECRET =
+	process.env.NAVER_CLIENT_SECRET || "test-naver-client-secret";
+process.env.NAVER_CALLBACK_URL =
+	process.env.NAVER_CALLBACK_URL || "http://localhost:3000/auth/naver/callback";

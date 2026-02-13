@@ -17,6 +17,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -40,6 +41,8 @@ import {
 	ChangePasswordDto,
 	ConsentResponseDto,
 	CurrentUserDto,
+	DeleteAccountDto,
+	DeleteAccountResponseDto,
 	ExchangeCodeDto,
 	ForgotPasswordDto,
 	GoogleMobileCallbackDto,
@@ -115,12 +118,10 @@ export class AuthController {
 		state: string,
 	): URLSearchParams {
 		let errorCode = "authentication_failed";
-		let errorMessage = "Unknown error";
+		let errorMessage = "인증 처리 중 오류가 발생했습니다.";
 
 		if (error instanceof BusinessException) {
 			errorCode = error.errorCode;
-			errorMessage = error.message;
-		} else if (error instanceof Error) {
 			errorMessage = error.message;
 		}
 
@@ -149,6 +150,7 @@ export class AuthController {
 
 	@Post("register")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 5 } })
 	@ApiDoc({
 		summary: "회원가입",
 		operationId: "register",
@@ -261,6 +263,7 @@ export class AuthController {
 
 	@Post("login")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "로그인",
@@ -411,6 +414,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 	@Post("forgot-password")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 5 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "비밀번호 찾기",
@@ -507,6 +511,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 			dto.currentPassword,
 			dto.newPassword,
 			metadata,
+			user.sessionId,
 		);
 		return result;
 	}
@@ -823,6 +828,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 	@Post("exchange")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "OAuth 교환 코드로 토큰 획득",
@@ -857,6 +863,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 	@Post("apple/callback")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Apple 로그인 콜백",
@@ -1124,6 +1131,7 @@ if (decoded.nonce !== expectedNonce) {
 				deviceName: dto.deviceName ?? metadata.deviceName,
 				deviceType: dto.deviceType ?? metadata.deviceType,
 			},
+			dto.nonce,
 		);
 
 		return AuthMapper.toAuthTokensResponse(result);
@@ -1131,6 +1139,7 @@ if (decoded.nonce !== expectedNonce) {
 
 	@Post("google/callback")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Google 로그인 콜백 (모바일)",
@@ -1619,6 +1628,7 @@ const clientId = {
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
 		@Query("mode") mode: "login" | "link" | undefined,
+		@Query("user_hint") userHint: string | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		// state가 없으면 서버에서 자동 생성
@@ -1627,6 +1637,7 @@ const clientId = {
 			effectiveState,
 			redirectUri,
 			mode,
+			userHint,
 		);
 		res.redirect(authUrl);
 	}
@@ -1749,6 +1760,7 @@ const clientId = {
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
 		@Query("mode") mode: "login" | "link" | undefined,
+		@Query("user_hint") userHint: string | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
@@ -1756,6 +1768,7 @@ const clientId = {
 			effectiveState,
 			redirectUri,
 			mode,
+			userHint,
 		);
 		res.redirect(authUrl);
 	}
@@ -1879,6 +1892,7 @@ const clientId = {
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
 		@Query("mode") mode: "login" | "link" | undefined,
+		@Query("user_hint") userHint: string | undefined,
 		@Res() res: Response,
 	): Promise<void> {
 		const effectiveState = state || randomBytes(16).toString("hex");
@@ -1886,6 +1900,7 @@ const clientId = {
 			effectiveState,
 			redirectUri,
 			mode,
+			userHint,
 		);
 		res.redirect(authUrl);
 	}
@@ -1963,6 +1978,7 @@ const clientId = {
 
 	@Post("kakao/callback")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Kakao 로그인 콜백 (모바일)",
@@ -2404,6 +2420,7 @@ export const useKakaoLogin = () => {
 
 	@Post("naver/callback")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "Naver 로그인 콜백 (모바일)",
@@ -3132,6 +3149,55 @@ provider에 따라 필수 토큰이 다릅니다:
 	) {
 		const metadata = this.extractMetadata(req);
 		return this.oauthService.unlinkAccount(user.userId, provider, metadata);
+	}
+
+	// ============================================
+	// 회원 탈퇴
+	// ============================================
+
+	@Delete("account")
+	@ApiBearerAuth()
+	@Throttle({ default: { ttl: 3600000, limit: 3 } })
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "회원 탈퇴",
+		operationId: "deleteAccount",
+		description: `
+## 회원 탈퇴
+계정을 탈퇴 처리합니다 (30일 복구 기간).
+
+### 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 요청 Body
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| password | string | 이메일 계정만 | 현재 비밀번호 |
+| reason | string | 선택 | 탈퇴 사유 (최대 500자) |
+
+### 처리 내용
+1. 본인 확인 (이메일 계정: 비밀번호, 소셜 계정: 세션)
+2. Soft delete (deletedAt 설정)
+3. 모든 세션 즉시 폐기
+4. 30일 후 데이터 완전 삭제
+		`,
+	})
+	@ApiSuccessResponse({ type: DeleteAccountResponseDto })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0612 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	async deleteAccount(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: DeleteAccountDto,
+		@Req() req: Request,
+	) {
+		const metadata = this.extractMetadata(req);
+		return this.authService.deleteAccount(
+			user.userId,
+			user.sessionId,
+			dto,
+			metadata,
+		);
 	}
 
 	// ============================================

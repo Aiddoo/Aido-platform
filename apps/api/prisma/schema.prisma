@@ -293,6 +293,10 @@ enum SecurityEvent {
   OAUTH_UNLINKED
   OAUTH_AUTO_LINKED // 소셜 계정 자동 연동 (신뢰된 Provider)
   OAUTH_LINK_REQUIRED // 소셜 계정 연동 필요 (이메일 충돌)
+
+  // 계정 삭제
+  ACCOUNT_DELETION_REQUESTED
+  ACCOUNT_HARD_DELETED
 }
 
 // =============================================================================
@@ -335,6 +339,7 @@ model OAuthState {
   provider     AccountProvider
   redirectUri  String          @db.VarChar(500)
   mode         String?         @db.VarChar(10) // 'login' | 'link' (null = login)
+  initiatingUserId String?     @db.VarChar(36) // link 모드 시 요청한 사용자 ID
 
   // === 교환 코드 (콜백 성공 후 설정) ===
   exchangeCode String? @unique @db.VarChar(64) // 일회용 교환 코드
