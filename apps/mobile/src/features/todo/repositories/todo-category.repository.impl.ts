@@ -37,8 +37,9 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
 
     const parsed = todoCategoryListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoCategoryRepository] Invalid getCategories response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoCategoryRepository] Invalid getCategories response: ${parsed.error.message}`,
+      );
     }
 
     return ok({
@@ -56,8 +57,9 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
 
     const parsed = createTodoCategoryResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoCategoryRepository] Invalid createCategory response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoCategoryRepository] Invalid createCategory response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toTodoCategory(parsed.data.category));
@@ -76,8 +78,9 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
 
     const parsed = updateTodoCategoryResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoCategoryRepository] Invalid updateCategory response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoCategoryRepository] Invalid updateCategory response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toTodoCategory(parsed.data.category));
@@ -98,8 +101,9 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
 
     const parsed = deleteTodoCategoryResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoCategoryRepository] Invalid deleteCategory response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoCategoryRepository] Invalid deleteCategory response: ${parsed.error.message}`,
+      );
     }
 
     return ok(undefined);
@@ -118,8 +122,9 @@ export class TodoCategoryRepositoryImpl implements TodoCategoryRepository {
 
     const parsed = reorderTodoCategoryResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoCategoryRepository] Invalid reorderCategory response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoCategoryRepository] Invalid reorderCategory response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toTodoCategory(parsed.data.category));

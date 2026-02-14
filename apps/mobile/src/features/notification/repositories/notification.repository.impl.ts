@@ -37,9 +37,9 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = registerTokenResultSchema.safeParse(result.value);
     if (!parsed.success) {
-      // TODO: Sentry 연동 후 제거
-      console.error('[NotificationRepository] Invalid registerToken response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[NotificationRepository] Invalid registerToken response: ${parsed.error.message}`,
+      );
     }
 
     return ok(parsed.data);
@@ -71,8 +71,9 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = notificationListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[NotificationRepository] Invalid getNotifications response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[NotificationRepository] Invalid getNotifications response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toNotificationListResult(parsed.data));
@@ -85,8 +86,9 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = unreadCountResultSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[NotificationRepository] Invalid getUnreadCount response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[NotificationRepository] Invalid getUnreadCount response: ${parsed.error.message}`,
+      );
     }
 
     return ok(parsed.data);
@@ -99,8 +101,9 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = markReadResultSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[NotificationRepository] Invalid markAsRead response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[NotificationRepository] Invalid markAsRead response: ${parsed.error.message}`,
+      );
     }
 
     return ok(parsed.data);
@@ -113,8 +116,9 @@ export class NotificationRepositoryImpl implements NotificationRepository {
 
     const parsed = markReadResultSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[NotificationRepository] Invalid markAllAsRead response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[NotificationRepository] Invalid markAllAsRead response: ${parsed.error.message}`,
+      );
     }
 
     return ok(parsed.data);

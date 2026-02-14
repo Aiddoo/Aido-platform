@@ -72,8 +72,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid exchangeCode response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid exchangeCode response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toAuthTokens(parsed.data));
@@ -90,8 +91,7 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid emailLogin response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[AuthRepository] Invalid emailLogin response: ${parsed.error.message}`);
     }
 
     return ok(toAuthTokens(parsed.data));
@@ -107,8 +107,7 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid appleLogin response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[AuthRepository] Invalid appleLogin response: ${parsed.error.message}`);
     }
 
     return ok(toAuthTokens(parsed.data));
@@ -121,8 +120,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = currentUserSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid getCurrentUser response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid getCurrentUser response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toUser(parsed.data));
@@ -167,8 +167,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = preferenceResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid getPreference response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid getPreference response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toPreference(parsed.data));
@@ -184,8 +185,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = updatePreferenceResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid updatePreference response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid updatePreference response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toPreference(parsed.data));
@@ -198,8 +200,7 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = consentResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid getConsent response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[AuthRepository] Invalid getConsent response: ${parsed.error.message}`);
     }
 
     return ok(toConsent(parsed.data));
@@ -217,8 +218,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = updateMarketingConsentResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid updateMarketingConsent response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid updateMarketingConsent response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toUpdateMarketingConsentResult(parsed.data));
@@ -231,8 +233,7 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = registerResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid register response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[AuthRepository] Invalid register response: ${parsed.error.message}`);
     }
 
     return ok(toRegisterResult(parsed.data));
@@ -245,8 +246,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid verifyEmail response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid verifyEmail response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toAuthTokens(parsed.data));
@@ -264,8 +266,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = resendVerificationResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid resendVerification response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid resendVerification response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toResendVerificationResult(parsed.data));
@@ -279,8 +282,9 @@ export class AuthRepositoryImpl implements AuthRepository {
 
     const parsed = linkedAccountsResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[AuthRepository] Invalid getLinkedAccounts response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[AuthRepository] Invalid getLinkedAccounts response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toLinkedAccounts(parsed.data));
