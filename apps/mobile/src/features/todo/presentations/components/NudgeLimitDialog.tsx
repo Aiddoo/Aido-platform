@@ -44,7 +44,6 @@ export function NudgeLimitDialog({ isOpen, onOpenChange }: NudgeLimitDialogProps
                 className="flex-1"
                 onPress={() => {
                   //TODO: 구독하기로 이동
-                  console.log('구독관리로 이동');
                   onOpenChange(false);
                 }}
               >

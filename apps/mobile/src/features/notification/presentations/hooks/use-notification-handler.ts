@@ -1,6 +1,6 @@
 import type { NotificationType } from '@aido/validators';
 import { pushNotificationDataSchema } from '@aido/validators';
-import { useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
@@ -18,6 +18,7 @@ interface UseNotificationHandlerOptions {
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
+  const logger = useLogger();
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleNotificationResponse = useCallback(
@@ -27,7 +28,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       // 1. Zod 검증으로 타입 안정성 확보
       const parseResult = pushNotificationDataSchema.safeParse(rawData);
       if (!parseResult.success) {
-        console.error('[Notification] Invalid payload:', parseResult.error);
+        logger.error('[Notification] Invalid payload', undefined, { error: parseResult.error });
         return;
       }
       const data = parseResult.data;
@@ -49,7 +50,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
             queryKey: NOTIFICATION_QUERY_KEYS.all,
           });
         } catch (error) {
-          console.log('[Notification] Failed to mark as read:', error);
+          logger.warn('[Notification] Failed to mark as read', { error });
         }
       }
 
@@ -78,7 +79,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           }
         });
     },
-    [isAuthenticated, notificationService, queryClient],
+    [isAuthenticated, logger, notificationService, queryClient],
   );
 
   const handleForegroundNotification = useCallback(() => {
@@ -92,9 +93,11 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       Promise.all([
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
         notificationService.syncBadgeCount(),
-      ]).catch(console.error);
+      ]).catch((e) =>
+        logger.error('[Notification] Handler failed', e instanceof Error ? e : undefined),
+      );
     }, 1000);
-  }, [isAuthenticated, notificationService, queryClient]);
+  }, [isAuthenticated, logger, notificationService, queryClient]);
 
   useEffect(() => {
     return () => {

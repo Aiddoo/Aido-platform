@@ -1,11 +1,16 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import {
+  useAuthService,
+  useLogger,
+  useNotificationService,
+} from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const exchangeCodeMutationOptions = () => {
   const authService = useAuthService();
   const notificationService = useNotificationService();
+  const logger = useLogger();
   const { setStatus } = useAuth();
 
   return mutationOptions({
@@ -20,11 +25,11 @@ export const exchangeCodeMutationOptions = () => {
       try {
         const tokenResult = await notificationService.setupPushNotifications();
         if (!tokenResult.ok) {
-          console.log('[PushNotification] Setup skipped:', tokenResult.error);
+          logger.warn('[PushNotification] Setup skipped', { error: tokenResult.error });
         }
       } catch (error) {
         // Silently fail - push notification is optional
-        console.log('[PushNotification] Setup error:', error);
+        logger.warn('[PushNotification] Setup error', { error });
       }
     },
   });
