@@ -2,6 +2,7 @@ import type { UpdateMarketingConsentInput } from '@aido/validators';
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 import type { Consent } from '../../models/auth.model';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
@@ -43,6 +44,8 @@ export const updateMarketingConsentMutationOptions = () => {
     },
 
     onError: (_error, _input, context) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (context?.previousData) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
       }

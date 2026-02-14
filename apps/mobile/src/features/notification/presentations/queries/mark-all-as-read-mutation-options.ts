@@ -1,6 +1,7 @@
 import { useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys.constant';
 
@@ -20,6 +21,9 @@ export const markAllAsReadMutationOptions = () => {
         }),
         notificationService.clearBadge(),
       ]);
+    },
+    onError: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 };

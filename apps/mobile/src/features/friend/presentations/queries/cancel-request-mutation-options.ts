@@ -1,6 +1,7 @@
 import { useFriendService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const cancelRequestMutationOptions = () => {
@@ -14,6 +15,9 @@ export const cancelRequestMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
+    },
+    onError: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 };

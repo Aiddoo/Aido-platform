@@ -5,6 +5,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const registerMutationOptions = () => {
@@ -17,6 +18,8 @@ export const registerMutationOptions = () => {
       return unwrap(result);
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
         toast.toast('이미 가입된 이메일이에요', {
           variant: 'accent',

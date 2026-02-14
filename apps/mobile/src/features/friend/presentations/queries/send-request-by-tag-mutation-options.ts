@@ -3,6 +3,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { isFriendError } from '../../models/friend.error';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
@@ -21,6 +22,8 @@ export const sendRequestByTagMutationOptions = () => {
       toast.success('친구 요청을 보냈어요');
     },
     onError: (err) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isApiError(err) || isFriendError(err)) {
         toast.error(err.message);
         return;

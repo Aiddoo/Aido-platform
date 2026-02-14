@@ -6,6 +6,7 @@ import {
 } from '@src/bootstrap/providers/di-provider';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 export const logoutMutationOptions = () => {
   const authService = useAuthService();
@@ -34,6 +35,9 @@ export const logoutMutationOptions = () => {
       if (!result.ok) {
         logger.warn('[Logout] API failed', { error: result.error });
       }
+    },
+    onError: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
     // API 성공/실패 관계없이 항상 로그아웃 처리
     onSettled: () => {

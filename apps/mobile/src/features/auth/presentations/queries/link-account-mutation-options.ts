@@ -3,6 +3,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { isAuthError, isCancelledError } from '../../models/auth.error';
 import type { OAuthProviderSlug } from '../../models/auth.model';
 import { AUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
@@ -23,6 +24,8 @@ export const linkAccountMutationOptions = () => {
       toast.success(`${AUTH_PROVIDER_LABELS[provider]} 계정이 연결되었습니다`);
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isCancelledError(error)) return;
       if (isApiError(error) || isAuthError(error)) {
         toast.error(error.message);
