@@ -5,6 +5,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 import { isTodoError } from '../../models/todo.error';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
@@ -25,6 +26,8 @@ export const createTodoMutationOptions = () => {
       toast.success('할 일을 추가했어요!');
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isTodoError(error) || isApiError(error)) {
         toast.error(error.message);
         return;

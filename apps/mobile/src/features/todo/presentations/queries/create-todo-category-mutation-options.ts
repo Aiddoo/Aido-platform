@@ -6,6 +6,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
 
 export const createTodoCategoryMutationOptions = () => {
@@ -24,6 +25,8 @@ export const createTodoCategoryMutationOptions = () => {
       toast.success('카테고리를 추가했어요');
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isTodoCategoryError(error) || isApiError(error)) {
         toast.error(error.message);
         return;

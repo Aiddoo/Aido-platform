@@ -3,6 +3,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { isTodoNudgeError } from '../../models/todo-nudge.error';
 import type { SendNudgeInput } from '../../repositories/todo-nudge.repository';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
@@ -25,6 +26,8 @@ export const sendTodoNudgeMutationOptions = () => {
       toast.success('콕 찔렀어요!');
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       if (isApiError(error) || isTodoNudgeError(error)) {
         toast.error(error.message);
         return;

@@ -4,6 +4,7 @@ import { useAuthService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 export const verifyEmailMutationOptions = () => {
   const authService = useAuthService();
@@ -19,6 +20,8 @@ export const verifyEmailMutationOptions = () => {
       setStatus('authenticated');
     },
     onError: (error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
     },
   });

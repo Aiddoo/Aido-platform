@@ -2,6 +2,7 @@ import type { ReorderTodoCategoryInput } from '@aido/validators';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
 
 interface ReorderTodoCategoryParams {
@@ -19,6 +20,8 @@ export const reorderTodoCategoryMutationOptions = () => {
       return unwrap(result);
     },
     onError: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
     },
   });

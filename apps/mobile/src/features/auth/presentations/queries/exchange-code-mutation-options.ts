@@ -6,6 +6,7 @@ import {
 } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 
 export const exchangeCodeMutationOptions = () => {
   const authService = useAuthService();
@@ -31,6 +32,9 @@ export const exchangeCodeMutationOptions = () => {
         // Silently fail - push notification is optional
         logger.warn('[PushNotification] Setup error', { error });
       }
+    },
+    onError: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 };
