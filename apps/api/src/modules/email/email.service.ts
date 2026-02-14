@@ -15,6 +15,12 @@ import {
 	type PasswordResetTemplateData,
 } from "./templates/password-reset.template";
 import {
+	getPasswordSetupHtml,
+	getPasswordSetupSubject,
+	getPasswordSetupText,
+	type PasswordSetupTemplateData,
+} from "./templates/password-setup.template";
+import {
 	getVerificationCodeHtml,
 	getVerificationCodeSubject,
 	getVerificationCodeText,
@@ -112,6 +118,35 @@ export class EmailService {
 			idempotencyKey,
 			tags: [
 				{ name: "type", value: "password-reset" },
+				{ name: "environment", value: this._environment },
+			],
+		});
+	}
+
+	/**
+	 * 비밀번호 설정 인증 코드 발송
+	 *
+	 * @param to 수신자 이메일
+	 * @param data 템플릿 데이터 (code, expiryMinutes)
+	 * @param idempotencyKey 중복 발송 방지 키 (선택)
+	 */
+	async sendPasswordSetupCode(
+		to: string,
+		data: PasswordSetupTemplateData,
+		idempotencyKey?: string,
+	): Promise<EmailSendResult> {
+		const subject = getPasswordSetupSubject();
+		const html = getPasswordSetupHtml(data);
+		const text = getPasswordSetupText(data);
+
+		return this._sendEmail({
+			to,
+			subject,
+			html,
+			text,
+			idempotencyKey,
+			tags: [
+				{ name: "type", value: "password-setup" },
 				{ name: "environment", value: this._environment },
 			],
 		});
