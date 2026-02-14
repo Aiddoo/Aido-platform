@@ -21,6 +21,7 @@ export {
 	type FollowWithFollowing,
 	type FollowWithUser,
 } from "./follow.builder";
+export { LoginAttemptBuilder } from "./login-attempt.builder";
 export { NotificationBuilder } from "./notification.builder";
 export {
 	NudgeBuilder,
@@ -30,6 +31,7 @@ export {
 	type NudgeWithRelations,
 } from "./nudge.builder";
 export { PushTokenBuilder } from "./push-token.builder";
+export { SecurityLogBuilder } from "./security-log.builder";
 export { SessionBuilder } from "./session.builder";
 export { TodoBuilder } from "./todo.builder";
 export {
@@ -37,4 +39,6 @@ export {
 	type TodoCategoryWithCount,
 } from "./todo-category.builder";
 export { UserBuilder } from "./user.builder";
+export { UserConsentBuilder } from "./user-consent.builder";
 export { UserPreferenceBuilder } from "./user-preference.builder";
+export { VerificationBuilder } from "./verification.builder";

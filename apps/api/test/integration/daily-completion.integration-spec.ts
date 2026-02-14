@@ -20,6 +20,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { DatabaseService } from "@/database/database.service";
@@ -40,6 +41,8 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 	// 테스트 스위트 시작 시 한 번만 실행
 	beforeAll(async () => {
+		suppressLogger();
+
 		// TestContainer 시작 및 Database 연결
 		testDb = new TestDatabase();
 		databaseService = (await testDb.start()) as DatabaseService;

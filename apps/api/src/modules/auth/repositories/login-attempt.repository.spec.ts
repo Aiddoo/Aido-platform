@@ -1,8 +1,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { LoginAttemptBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
-import type { LoginAttempt } from "@/generated/prisma/client";
 
 import { LoginAttemptRepository } from "./login-attempt.repository";
 
@@ -10,27 +10,20 @@ describe("LoginAttemptRepository", () => {
 	let repository: LoginAttemptRepository;
 	let db: Mocked<DatabaseService>;
 
-	const mockSuccessfulAttempt: LoginAttempt = {
-		id: 1,
-		email: "user@example.com",
-		provider: "CREDENTIAL",
-		ipAddress: "192.168.1.1",
-		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-		success: true,
-		failureReason: null,
-		createdAt: new Date("2025-01-15T10:00:00Z"),
-	};
+	const mockSuccessfulAttempt = LoginAttemptBuilder.create("user@example.com")
+		.withId(1)
+		.withIpAddress("192.168.1.1")
+		.withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+		.withCreatedAt(new Date("2025-01-15T10:00:00Z"))
+		.build();
 
-	const mockFailedAttempt: LoginAttempt = {
-		id: 2,
-		email: "user@example.com",
-		provider: "CREDENTIAL",
-		ipAddress: "192.168.1.1",
-		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-		success: false,
-		failureReason: "INVALID_PASSWORD",
-		createdAt: new Date("2025-01-15T09:00:00Z"),
-	};
+	const mockFailedAttempt = LoginAttemptBuilder.create("user@example.com")
+		.withId(2)
+		.withIpAddress("192.168.1.1")
+		.withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+		.failed("INVALID_PASSWORD")
+		.withCreatedAt(new Date("2025-01-15T09:00:00Z"))
+		.build();
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock

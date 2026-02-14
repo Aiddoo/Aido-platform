@@ -6,84 +6,18 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("TodoCategory (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<string> {
-		// 등록
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		// 인증
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return response.body.data.accessToken;
-	}
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		// FakeEmailService 인스턴스 생성
-		fakeEmailService = new FakeEmailService();
-
-		// FakeOAuthTokenVerifierService 인스턴스 생성
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("기본 카테고리 생성", () => {
@@ -91,11 +25,16 @@ describe("TodoCategory (e2e)", () => {
 		const testPassword = "Test1234!";
 
 		it("회원가입 시 기본 카테고리 2개가 자동 생성된다", async () => {
-			// When: 회원가입 및 인증
-			const accessToken = await createVerifiedUser(testEmail, testPassword);
+			// Given - 새 사용자
 
-			// Then: 카테고리 목록 조회
-			const response = await request(app.getHttpServer())
+			// When - 회원가입 및 인증
+			const { accessToken } = await ctx.helpers.createVerifiedUser(
+				testEmail,
+				testPassword,
+			);
+
+			// Then - 카테고리 목록 조회
+			const response = await request(ctx.app.getHttpServer())
 				.get("/todo-categories")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -129,12 +68,19 @@ describe("TodoCategory (e2e)", () => {
 		let createdCategoryId: number;
 
 		beforeAll(async () => {
-			accessToken = await createVerifiedUser(testEmail, testPassword);
+			const user = await ctx.helpers.createVerifiedUser(
+				testEmail,
+				testPassword,
+			);
+			accessToken = user.accessToken;
 		});
 
 		describe("POST /todo-categories - 카테고리 생성", () => {
 			it("새 카테고리 생성 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - 카테고리 생성 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -143,6 +89,7 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(201);
 
+				// Then - 카테고리 생성 성공 검증
 				expect(response.body.data.message).toBe("카테고리가 생성되었습니다.");
 				expect(response.body.data.category).toMatchObject({
 					name: "공부",
@@ -154,7 +101,10 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("중복된 이름으로 생성 시 409 에러", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 이미 "공부" 카테고리가 존재하는 상태
+
+				// When - 동일 이름으로 카테고리 생성 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -163,31 +113,45 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(409);
 
+				// Then - 중복 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0853");
 			});
 
 			it("이름 누락 시 400 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - 이름 없이 카테고리 생성 API 호출
+				await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						color: "#00FF00",
 					})
 					.expect(400);
+
+				// Then - 400 Bad Request 응답 확인 (expect에서 검증)
 			});
 
 			it("색상 누락 시 400 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - 색상 없이 카테고리 생성 API 호출
+				await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
 						name: "새 카테고리",
 					})
 					.expect(400);
+
+				// Then - 400 Bad Request 응답 확인 (expect에서 검증)
 			});
 
 			it("잘못된 색상 형식 시 400 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - 잘못된 색상으로 카테고리 생성 API 호출
+				await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -195,29 +159,39 @@ describe("TodoCategory (e2e)", () => {
 						color: "not-a-color",
 					})
 					.expect(400);
+
+				// Then - 400 Bad Request 응답 확인 (expect에서 검증)
 			});
 
 			it("인증 없이 생성 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 카테고리 생성 API 호출
+				await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.send({
 						name: "테스트",
 						color: "#000000",
 					})
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("GET /todo-categories - 카테고리 목록 조회", () => {
 			it("카테고리 목록 조회 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 기본 카테고리 2개 + 생성한 "공부" 카테고리
+
+				// When - 카테고리 목록 조회 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.get("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
+				// Then - 카테고리 목록 검증
 				expect(response.body.data.items).toBeDefined();
 				expect(Array.isArray(response.body.data.items)).toBe(true);
-				// 기본 카테고리 2개 + 생성한 "공부" 카테고리
 				expect(response.body.data.items.length).toBe(3);
 
 				// todoCount가 포함되어야 함
@@ -228,16 +202,19 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("sortOrder 순서로 정렬되어 반환된다", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 카테고리가 존재하는 상태
+
+				// When - 카테고리 목록 조회 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.get("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
+				// Then - 정렬 검증
 				const sortOrders = response.body.data.items.map(
 					(c: { sortOrder: number }) => c.sortOrder,
 				);
 
-				// 정렬 확인
 				const isSorted = sortOrders.every(
 					(val: number, i: number, arr: number[]) => {
 						const prev = arr[i - 1];
@@ -248,41 +225,64 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("인증 없이 조회 시 401 에러", async () => {
-				await request(app.getHttpServer()).get("/todo-categories").expect(401);
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 카테고리 목록 조회 API 호출
+				await request(ctx.app.getHttpServer())
+					.get("/todo-categories")
+					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("GET /todo-categories/:id - 카테고리 상세 조회", () => {
 			it("카테고리 상세 조회 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 생성된 카테고리 ID
+
+				// When - 카테고리 상세 조회 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.get(`/todo-categories/${createdCategoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
+				// Then - 카테고리 상세 정보 검증
 				expect(response.body.data.category.id).toBe(createdCategoryId);
 				expect(response.body.data.category.name).toBe("공부");
 				expect(response.body.data.category.todoCount).toBeDefined();
 			});
 
 			it("존재하지 않는 ID로 조회 시 404 에러", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 존재하지 않는 카테고리 ID
+
+				// When - 존재하지 않는 ID로 조회 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.get("/todo-categories/999999")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(404);
 
+				// Then - 404 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 			});
 
 			it("인증 없이 조회 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 카테고리 상세 조회 API 호출
+				await request(ctx.app.getHttpServer())
 					.get(`/todo-categories/${createdCategoryId}`)
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
 		describe("PATCH /todo-categories/:id - 카테고리 수정", () => {
 			it("이름 수정 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 생성된 카테고리
+
+				// When - 이름 수정 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${createdCategoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -290,12 +290,16 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - 수정 결과 검증
 				expect(response.body.data.message).toBe("카테고리가 수정되었습니다.");
 				expect(response.body.data.category.name).toBe("수정된 카테고리");
 			});
 
 			it("색상 수정 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 생성된 카테고리
+
+				// When - 색상 수정 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${createdCategoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -303,11 +307,15 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - 수정 결과 검증
 				expect(response.body.data.category.color).toBe("#0000FF");
 			});
 
 			it("이름과 색상 동시 수정 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 생성된 카테고리
+
+				// When - 이름과 색상 동시 수정 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${createdCategoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -316,12 +324,16 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - 수정 결과 검증
 				expect(response.body.data.category.name).toBe("최종 수정");
 				expect(response.body.data.category.color).toBe("#AABBCC");
 			});
 
 			it("중복된 이름으로 수정 시 409 에러", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 기본 카테고리 "중요한 일"이 존재
+
+				// When - 기본 카테고리와 중복된 이름으로 수정 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${createdCategoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -329,24 +341,34 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(409);
 
+				// Then - 중복 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0853");
 			});
 
 			it("존재하지 않는 ID로 수정 시 404 에러", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 존재하지 않는 카테고리 ID
+
+				// When - 존재하지 않는 ID로 수정 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.patch("/todo-categories/999999")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "테스트" })
 					.expect(404);
 
+				// Then - 404 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 			});
 
 			it("인증 없이 수정 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 카테고리 수정 API 호출
+				await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${createdCategoryId}`)
 					.send({ name: "테스트" })
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 
@@ -357,21 +379,21 @@ describe("TodoCategory (e2e)", () => {
 
 			beforeAll(async () => {
 				// 추가 카테고리 생성
-				const res1 = await request(app.getHttpServer())
+				const res1 = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "순서 테스트 1", color: "#111111" })
 					.expect(201);
 				category1Id = res1.body.data.category.id;
 
-				const res2 = await request(app.getHttpServer())
+				const res2 = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "순서 테스트 2", color: "#222222" })
 					.expect(201);
 				category2Id = res2.body.data.category.id;
 
-				const res3 = await request(app.getHttpServer())
+				const res3 = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "순서 테스트 3", color: "#333333" })
@@ -380,7 +402,10 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("특정 카테고리 앞으로 이동 성공 (before)", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 3개의 카테고리
+
+				// When - category3을 category1 앞으로 이동
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${category3Id}/reorder`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -389,13 +414,17 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - 이동 성공 검증
 				expect(response.body.data.message).toBe(
 					"카테고리 순서가 변경되었습니다.",
 				);
 			});
 
 			it("특정 카테고리 뒤로 이동 성공 (after)", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 카테고리가 존재하는 상태
+
+				// When - category1을 category2 뒤로 이동
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${category1Id}/reorder`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -404,13 +433,17 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - 이동 성공 검증
 				expect(response.body.data.message).toBe(
 					"카테고리 순서가 변경되었습니다.",
 				);
 			});
 
 			it("맨 앞으로 이동 성공 (targetCategoryId 없이 before)", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 카테고리가 존재하는 상태
+
+				// When - category2를 맨 앞으로 이동
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${category2Id}/reorder`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -418,11 +451,13 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
+				// Then - sortOrder 0 검증
 				expect(response.body.data.category.sortOrder).toBe(0);
 			});
 
 			it("맨 뒤로 이동 성공 (targetCategoryId 없이 after)", async () => {
-				const beforeResponse = await request(app.getHttpServer())
+				// Given - 현재 최대 sortOrder 확인
+				const beforeResponse = await request(ctx.app.getHttpServer())
 					.get("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
@@ -433,7 +468,8 @@ describe("TodoCategory (e2e)", () => {
 					),
 				);
 
-				const response = await request(app.getHttpServer())
+				// When - category1을 맨 뒤로 이동
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/todo-categories/${category1Id}/reorder`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -441,7 +477,7 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(200);
 
-				// 맨 뒤로 이동 후 가장 큰 sortOrder 값을 가져야 함
+				// Then - 맨 뒤로 이동 후 가장 큰 sortOrder 값을 가져야 함
 				expect(response.body.data.category.sortOrder).toBeGreaterThanOrEqual(
 					maxSortOrder,
 				);
@@ -454,7 +490,7 @@ describe("TodoCategory (e2e)", () => {
 
 			beforeAll(async () => {
 				// 삭제용 카테고리 생성
-				const res = await request(app.getHttpServer())
+				const res = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "삭제될 카테고리", color: "#FF0000" })
@@ -462,7 +498,7 @@ describe("TodoCategory (e2e)", () => {
 				categoryToDelete = res.body.data.category.id;
 
 				// 이동 대상 카테고리 (기본 카테고리)
-				const listRes = await request(app.getHttpServer())
+				const listRes = await request(ctx.app.getHttpServer())
 					.get("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
@@ -470,23 +506,27 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("Todo가 없는 카테고리 삭제 성공", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - Todo가 없는 카테고리
+
+				// When - 카테고리 삭제 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categoryToDelete}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
+				// Then - 삭제 성공 검증
 				expect(response.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
 				// 삭제 확인
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.get(`/todo-categories/${categoryToDelete}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(404);
 			});
 
 			it("Todo가 있는 카테고리 삭제 시 이동 대상 필요", async () => {
-				// 카테고리 생성
-				const catRes = await request(app.getHttpServer())
+				// Given - Todo가 있는 카테고리 생성
+				const catRes = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "Todo 있는 카테고리", color: "#00FF00" })
@@ -494,7 +534,7 @@ describe("TodoCategory (e2e)", () => {
 				const categoryWithTodos = catRes.body.data.category.id;
 
 				// Todo 생성
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -504,18 +544,19 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(201);
 
-				// 이동 대상 없이 삭제 시도
-				const response = await request(app.getHttpServer())
+				// When - 이동 대상 없이 삭제 시도
+				const response = await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categoryWithTodos}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(400);
 
+				// Then - 이동 대상 필요 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0855");
 			});
 
 			it("moveToCategoryId가 삭제 대상과 같으면 400을 반환해야 한다", async () => {
-				// 카테고리 생성
-				const catRes = await request(app.getHttpServer())
+				// Given - Todo가 있는 카테고리 생성
+				const catRes = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "셀프 이동 테스트", color: "#FF0000" })
@@ -523,7 +564,7 @@ describe("TodoCategory (e2e)", () => {
 				const categoryId = catRes.body.data.category.id;
 
 				// Todo 생성
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -533,19 +574,20 @@ describe("TodoCategory (e2e)", () => {
 					})
 					.expect(201);
 
-				// 자기 자신으로 이동 시도
-				const response = await request(app.getHttpServer())
+				// When - 자기 자신으로 이동 시도
+				const response = await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categoryId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ moveToCategoryId: categoryId })
 					.expect(400);
 
+				// Then - 셀프 이동 에러 검증
 				expect(response.body.error.code).toBe("SYS_0002");
 			});
 
 			it("Todo가 있는 카테고리를 이동 대상과 함께 삭제 성공", async () => {
-				// 카테고리 생성
-				const catRes = await request(app.getHttpServer())
+				// Given - Todo가 있는 카테고리 생성
+				const catRes = await request(ctx.app.getHttpServer())
 					.post("/todo-categories")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ name: "이동 후 삭제", color: "#0000FF" })
@@ -553,7 +595,7 @@ describe("TodoCategory (e2e)", () => {
 				const categoryWithTodos = catRes.body.data.category.id;
 
 				// Todo 생성
-				const todoRes = await request(app.getHttpServer())
+				const todoRes = await request(ctx.app.getHttpServer())
 					.post("/todos")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({
@@ -564,17 +606,18 @@ describe("TodoCategory (e2e)", () => {
 					.expect(201);
 				const todoId = todoRes.body.data.todo.id;
 
-				// 이동 대상과 함께 삭제
-				const response = await request(app.getHttpServer())
+				// When - 이동 대상과 함께 삭제
+				const response = await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categoryWithTodos}`)
 					.query({ moveToCategoryId: targetCategoryId })
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
+				// Then - 삭제 성공 및 Todo 이동 검증
 				expect(response.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
 				// Todo가 이동되었는지 확인
-				const todoResponse = await request(app.getHttpServer())
+				const todoResponse = await request(ctx.app.getHttpServer())
 					.get(`/todos/${todoId}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
@@ -583,14 +626,15 @@ describe("TodoCategory (e2e)", () => {
 			});
 
 			it("마지막 카테고리 삭제 시 400 에러", async () => {
-				// 새 사용자 생성 (카테고리 2개만 있음)
-				const newUserToken = await createVerifiedUser(
-					"last-category@example.com",
-					testPassword,
-				);
+				// Given - 새 사용자 생성 (카테고리 2개만 있음)
+				const { accessToken: newUserToken } =
+					await ctx.helpers.createVerifiedUser(
+						"last-category@example.com",
+						testPassword,
+					);
 
 				// 카테고리 목록 조회
-				const listRes = await request(app.getHttpServer())
+				const listRes = await request(ctx.app.getHttpServer())
 					.get("/todo-categories")
 					.set("Authorization", `Bearer ${newUserToken}`)
 					.expect(200);
@@ -598,34 +642,44 @@ describe("TodoCategory (e2e)", () => {
 				const categories = listRes.body.data.items;
 				expect(categories).toHaveLength(2);
 
-				// 첫 번째 카테고리 삭제
-				await request(app.getHttpServer())
+				// When - 첫 번째 카테고리 삭제
+				await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categories[0].id}`)
 					.set("Authorization", `Bearer ${newUserToken}`)
 					.expect(200);
 
-				// 마지막 카테고리 삭제 시도
-				const response = await request(app.getHttpServer())
+				// When - 마지막 카테고리 삭제 시도
+				const response = await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${categories[1].id}`)
 					.set("Authorization", `Bearer ${newUserToken}`)
 					.expect(400);
 
+				// Then - 마지막 카테고리 삭제 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0854");
 			});
 
 			it("존재하지 않는 ID로 삭제 시 404 에러", async () => {
-				const response = await request(app.getHttpServer())
+				// Given - 존재하지 않는 카테고리 ID
+
+				// When - 존재하지 않는 ID로 삭제 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.delete("/todo-categories/999999")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(404);
 
+				// Then - 404 에러 검증
 				expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 			});
 
 			it("인증 없이 삭제 시 401 에러", async () => {
-				await request(app.getHttpServer())
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 카테고리 삭제 API 호출
+				await request(ctx.app.getHttpServer())
 					.delete(`/todo-categories/${createdCategoryId}`)
 					.expect(401);
+
+				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
 		});
 	});
@@ -639,11 +693,19 @@ describe("TodoCategory (e2e)", () => {
 		let user1CategoryId: number;
 
 		beforeAll(async () => {
-			user1Token = await createVerifiedUser(user1Email, testPassword);
-			user2Token = await createVerifiedUser(user2Email, testPassword);
+			const user1 = await ctx.helpers.createVerifiedUser(
+				user1Email,
+				testPassword,
+			);
+			const user2 = await ctx.helpers.createVerifiedUser(
+				user2Email,
+				testPassword,
+			);
+			user1Token = user1.accessToken;
+			user2Token = user2.accessToken;
 
 			// user1의 카테고리 생성
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/todo-categories")
 				.set("Authorization", `Bearer ${user1Token}`)
 				.send({
@@ -656,36 +718,48 @@ describe("TodoCategory (e2e)", () => {
 		});
 
 		it("다른 사용자의 카테고리 조회 시 403 에러", async () => {
-			const response = await request(app.getHttpServer())
+			// Given - user2가 user1의 카테고리 접근
+
+			// When - 다른 사용자의 카테고리 상세 조회 API 호출
+			const response = await request(ctx.app.getHttpServer())
 				.get(`/todo-categories/${user1CategoryId}`)
 				.set("Authorization", `Bearer ${user2Token}`)
 				.expect(403);
 
+			// Then - 권한 에러 검증
 			expect(response.body.error.code).toBe("TODO_CATEGORY_0852");
 		});
 
 		it("다른 사용자의 카테고리 수정 시 404 에러", async () => {
-			const response = await request(app.getHttpServer())
+			// Given - user2가 user1의 카테고리 수정 시도
+
+			// When - 다른 사용자의 카테고리 수정 API 호출
+			const response = await request(ctx.app.getHttpServer())
 				.patch(`/todo-categories/${user1CategoryId}`)
 				.set("Authorization", `Bearer ${user2Token}`)
 				.send({ name: "해킹 시도" })
 				.expect(404);
 
+			// Then - 404 에러 검증
 			expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 		});
 
 		it("다른 사용자의 카테고리 삭제 시 404 에러", async () => {
-			const response = await request(app.getHttpServer())
+			// Given - user2가 user1의 카테고리 삭제 시도
+
+			// When - 다른 사용자의 카테고리 삭제 API 호출
+			const response = await request(ctx.app.getHttpServer())
 				.delete(`/todo-categories/${user1CategoryId}`)
 				.set("Authorization", `Bearer ${user2Token}`)
 				.expect(404);
 
+			// Then - 404 에러 검증
 			expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
 		});
 
 		it("같은 이름의 카테고리를 다른 사용자가 각각 생성 가능", async () => {
-			// user1이 "운동" 카테고리 생성
-			await request(app.getHttpServer())
+			// Given - user1이 "운동" 카테고리 생성
+			await request(ctx.app.getHttpServer())
 				.post("/todo-categories")
 				.set("Authorization", `Bearer ${user1Token}`)
 				.send({
@@ -694,8 +768,8 @@ describe("TodoCategory (e2e)", () => {
 				})
 				.expect(201);
 
-			// user2도 "운동" 카테고리 생성 가능
-			const response = await request(app.getHttpServer())
+			// When - user2도 "운동" 카테고리 생성
+			const response = await request(ctx.app.getHttpServer())
 				.post("/todo-categories")
 				.set("Authorization", `Bearer ${user2Token}`)
 				.send({
@@ -704,22 +778,26 @@ describe("TodoCategory (e2e)", () => {
 				})
 				.expect(201);
 
+			// Then - 생성 성공 검증
 			expect(response.body.data.category.name).toBe("운동");
 		});
 
 		it("각 사용자는 자신의 카테고리만 목록에서 조회됨", async () => {
-			// user1의 목록 조회
-			const user1List = await request(app.getHttpServer())
+			// Given - 두 사용자 각각 카테고리 보유
+
+			// When - user1의 목록 조회
+			const user1List = await request(ctx.app.getHttpServer())
 				.get("/todo-categories")
 				.set("Authorization", `Bearer ${user1Token}`)
 				.expect(200);
 
-			// user2의 목록 조회
-			const user2List = await request(app.getHttpServer())
+			// When - user2의 목록 조회
+			const user2List = await request(ctx.app.getHttpServer())
 				.get("/todo-categories")
 				.set("Authorization", `Bearer ${user2Token}`)
 				.expect(200);
 
+			// Then - 격리 검증
 			const user1Names = user1List.body.data.items.map(
 				(c: { name: string }) => c.name,
 			);

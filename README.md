@@ -50,16 +50,56 @@ pnpm dev
 
 ## 스크립트
 
+### 개발
+
 | 명령어 | 설명 |
 |--------|------|
 | `pnpm dev` | 전체 개발 서버 |
 | `pnpm build` | 전체 빌드 |
+| `pnpm typecheck` | 타입 검사 |
+| `pnpm lint` | Biome 린트 |
+| `pnpm format` | 코드 포맷팅 |
+| `pnpm clean` | 빌드 산출물 전체 삭제 |
+
+### 데이터베이스
+
+| 명령어 | 설명 |
+|--------|------|
+| `pnpm db:migrate` | Prisma 마이그레이션 |
+| `pnpm db:generate` | Prisma Client 생성 |
+| `pnpm db:push` | 스키마 즉시 반영 |
+
+### 테스트
+
+| 명령어 | 설명 |
+|--------|------|
 | `pnpm test` | 단위 테스트 |
 | `pnpm test:e2e` | E2E 테스트 |
-| `pnpm check` | Biome 검사 |
-| `pnpm format` | 코드 포맷팅 |
-| `pnpm typecheck` | 타입 검사 |
-| `pnpm commit` | Conventional Commit |
+| `pnpm test:all` | 전체 테스트 (Unit + Integration + E2E) |
+| `pnpm test:cov` | 커버리지 리포트 |
+
+### Docker
+
+| 명령어 | 설명 |
+|--------|------|
+| `pnpm docker:up` | DB 컨테이너 (로컬 개발) |
+| `pnpm docker:down` | DB 컨테이너 중지 |
+| `pnpm docker:dev:up` | 개발 환경 전체 (DB + API) |
+| `pnpm docker:dev:down` | 개발 환경 중지 |
+| `pnpm docker:prod:up` | 프로덕션 환경 (DB + Migrate + API) |
+| `pnpm docker:prod:down` | 프로덕션 환경 중지 |
+
+## Docker 워크플로우
+
+| 모드 | Compose 파일 | 용도 |
+|------|-------------|------|
+| DB Only | `docker-compose.yml` | 로컬 개발 (추천) |
+| Development | `docker-compose.dev.yml` | Docker 전체 개발 |
+| Production | `docker-compose.prod.yml` | 프로덕션 배포 테스트 |
+
+- **DB Only**: PostgreSQL만 Docker로 실행하고 API는 로컬에서 `pnpm dev`로 실행
+- **Development**: DB + API를 모두 Docker로 실행 (`.env.docker.dev` 필요)
+- **Production**: 프로덕션 이미지 빌드 + 자동 마이그레이션 (`.env.docker.prod` 필요)
 
 ## 패키지
 
@@ -83,6 +123,10 @@ pnpm dev
 ```
 http://localhost:8080/api/docs
 ```
+
+## 배포
+
+프로덕션 배포는 AWS ECS + ECR 기반. 상세 가이드는 [API 배포 문서](./apps/api/DEPLOYMENT.md)를 참고.
 
 ## 라이선스
 

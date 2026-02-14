@@ -313,6 +313,143 @@ describe("VerificationService", () => {
 		});
 	});
 
+	describe("createAndSendPasswordSetup", () => {
+		const userId = "user-123";
+		const email = "test@example.com";
+
+		beforeEach(() => {
+			// Given - 기본 성공 시나리오 설정
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(0);
+			(
+				verificationRepo.invalidateAllByUserIdAndType as jest.Mock
+			).mockResolvedValue({ count: 0 });
+			(verificationRepo.create as jest.Mock).mockResolvedValue({
+				id: "verification-id",
+				userId,
+				type: "PASSWORD_SETUP" as VerificationType,
+				token: "hashed-token",
+				expiresAt: new Date(),
+				attempts: 0,
+				usedAt: null,
+				createdAt: new Date(),
+			});
+			(emailService.sendPasswordSetupCode as jest.Mock).mockResolvedValue({
+				success: true,
+			});
+		});
+
+		it("PASSWORD_SETUP 타입으로 인증 코드를 생성한다", async () => {
+			// Given - beforeEach에서 기본 mock 설정됨
+
+			// When
+			const result = await service.createAndSendPasswordSetup(userId, email);
+
+			// Then
+			expect(result.code).toMatch(/^\d{6}$/);
+			expect(verificationRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId,
+					type: "PASSWORD_SETUP",
+				}),
+				undefined,
+			);
+		});
+
+		it("이메일로 비밀번호 설정 코드를 발송한다", async () => {
+			// Given - beforeEach에서 이메일 서비스 mock 설정됨
+
+			// When
+			await service.createAndSendPasswordSetup(userId, email);
+
+			// Then
+			expect(emailService.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
+				code: expect.any(String),
+				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+			});
+		});
+
+		it("재발송 쿨다운 중이면 에러를 던진다", async () => {
+			// Given
+			(
+				verificationRepo.countRecentByUserIdAndType as jest.Mock
+			).mockResolvedValue(1);
+
+			// When & Then
+			await expect(
+				service.createAndSendPasswordSetup(userId, email),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("기존 미사용 코드를 무효화한다", async () => {
+			// Given - beforeEach에서 기본 mock 설정됨
+
+			// When
+			await service.createAndSendPasswordSetup(userId, email);
+
+			// Then
+			expect(
+				verificationRepo.invalidateAllByUserIdAndType,
+			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP", undefined);
+		});
+
+		it("재발송 쿨다운을 확인한다", async () => {
+			// Given - beforeEach에서 쿨다운 카운트가 0으로 설정됨
+
+			// When
+			await service.createAndSendPasswordSetup(userId, email);
+
+			// Then
+			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"PASSWORD_SETUP",
+				expect.any(Date),
+				undefined,
+			);
+		});
+
+		it("트랜잭션을 전달한다", async () => {
+			// Given
+			const mockTx = {} as Parameters<
+				typeof service.createAndSendPasswordSetup
+			>[2];
+
+			// When
+			await service.createAndSendPasswordSetup(userId, email, mockTx);
+
+			// Then
+			expect(verificationRepo.countRecentByUserIdAndType).toHaveBeenCalledWith(
+				userId,
+				"PASSWORD_SETUP",
+				expect.any(Date),
+				mockTx,
+			);
+			expect(
+				verificationRepo.invalidateAllByUserIdAndType,
+			).toHaveBeenCalledWith(userId, "PASSWORD_SETUP", mockTx);
+			expect(verificationRepo.create).toHaveBeenCalledWith(
+				expect.any(Object),
+				mockTx,
+			);
+		});
+
+		it("이메일 발송 실패해도 결과를 반환한다", async () => {
+			// Given
+			(emailService.sendPasswordSetupCode as jest.Mock).mockResolvedValue({
+				success: false,
+				error: "SMTP error",
+			});
+
+			// When
+			const result = await service.createAndSendPasswordSetup(userId, email);
+
+			// Then
+			expect(result.code).toBeDefined();
+			expect(result.expiresAt).toBeDefined();
+		});
+	});
+
 	describe("verifyCode", () => {
 		const userId = "user-123";
 		const code = "123456";

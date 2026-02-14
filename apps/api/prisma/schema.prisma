@@ -297,6 +297,9 @@ enum SecurityEvent {
   // 계정 삭제
   ACCOUNT_DELETION_REQUESTED
   ACCOUNT_HARD_DELETED
+
+  // 비밀번호 설정
+  PASSWORD_SETUP
 }
 
 // =============================================================================
@@ -323,6 +326,7 @@ model Verification {
 enum VerificationType {
   EMAIL_VERIFY
   PASSWORD_RESET
+  PASSWORD_SETUP
 }
 
 // =============================================================================
@@ -333,13 +337,13 @@ enum VerificationType {
 // 3단계: 앱에서 /exchange 호출 시 코드 검증 후 삭제
 
 model OAuthState {
-  id           Int             @id @default(autoincrement())
-  state        String          @unique @db.VarChar(64) // CSRF 토큰
-  codeVerifier String?         @db.VarChar(128) // PKCE
-  provider     AccountProvider
-  redirectUri  String          @db.VarChar(500)
-  mode         String?         @db.VarChar(10) // 'login' | 'link' (null = login)
-  initiatingUserId String?     @db.VarChar(36) // link 모드 시 요청한 사용자 ID
+  id               Int             @id @default(autoincrement())
+  state            String          @unique @db.VarChar(64) // CSRF 토큰
+  codeVerifier     String?         @db.VarChar(128) // PKCE
+  provider         AccountProvider
+  redirectUri      String          @db.VarChar(500)
+  mode             String?         @db.VarChar(10) // 'login' | 'link' (null = login)
+  initiatingUserId String?         @db.VarChar(36) // link 모드 시 요청한 사용자 ID
 
   // === 교환 코드 (콜백 성공 후 설정) ===
   exchangeCode String? @unique @db.VarChar(64) // 일회용 교환 코드

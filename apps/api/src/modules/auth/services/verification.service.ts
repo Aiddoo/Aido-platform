@@ -131,6 +131,44 @@ export class VerificationService {
 		return result;
 	}
 
+	async createAndSendPasswordSetup(
+		userId: string,
+		email: string,
+		tx?: Prisma.TransactionClient,
+	): Promise<VerificationCodeResult> {
+		// 재발송 쿨다운 확인
+		await this._checkResendCooldown(userId, "PASSWORD_SETUP", tx);
+
+		// 기존 미사용 인증 코드 무효화
+		await this.verificationRepository.invalidateAllByUserIdAndType(
+			userId,
+			"PASSWORD_SETUP",
+			tx,
+		);
+
+		// 새 인증 코드 생성
+		const result = await this._createVerificationCode(
+			userId,
+			"PASSWORD_SETUP",
+			tx,
+		);
+
+		// 이메일 발송
+		const emailResult = await this.emailService.sendPasswordSetupCode(email, {
+			code: result.code,
+			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
+		});
+
+		if (!emailResult.success) {
+			this.logger.error(
+				`Failed to send password setup email to ${email}: ${emailResult.error}`,
+			);
+		}
+
+		this.logger.log(`Password setup code created for user ${userId}`);
+		return result;
+	}
+
 	// 브루트포스 보호: 최대 시도 횟수 초과 시 검증 거부, 실패 시 시도 횟수 증가
 	async verifyCode(
 		userId: string,

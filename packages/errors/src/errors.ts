@@ -127,6 +127,7 @@ export const ErrorCode = {
   USER_0611: 'USER_0611',
   USER_0612: 'USER_0612',
   USER_0613: 'USER_0613',
+  USER_0614: 'USER_0614',
 
   // =========================================================================
   // 세션 (SESSION_0700-0749)
@@ -660,6 +661,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       '비밀번호 변경은 이메일 가입 계정만 가능합니다. 소셜 계정 해제 후 비밀번호를 설정해주세요.',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.USER_0614]: {
+    code: 'USER_0614',
+    message: '이미 비밀번호가 설정된 계정입니다.',
+    description: '이메일 가입 계정이 이미 존재합니다. 비밀번호 변경을 이용해주세요.',
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // =========================================================================

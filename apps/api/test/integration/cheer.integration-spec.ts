@@ -19,10 +19,11 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { CheerBuilder, UserBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -32,7 +33,7 @@ import { CheerRepository } from "@/modules/cheer/cheer.repository";
 import { CheerService } from "@/modules/cheer/cheer.service";
 import { FollowService } from "@/modules/follow/follow.service";
 
-describe("CheerService Integration Tests", () => {
+describe("CheerService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: CheerService;
 	let repository: CheerRepository;
@@ -53,16 +54,10 @@ describe("CheerService Integration Tests", () => {
 		findUnique: jest.fn(),
 	};
 
-	const mockDatabaseService = {
+	const mockDatabaseService = createMockDatabaseService({
 		cheer: mockCheerDb,
 		user: mockUserDb,
-		$transaction: jest.fn(),
-	};
-
-	mockDatabaseService.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDatabaseService),
-	);
+	});
 
 	// Mock FollowService
 	const mockFollowService = {
@@ -87,11 +82,7 @@ describe("CheerService Integration Tests", () => {
 	const mockCheerId = 1;
 
 	beforeAll(async () => {
-		// Given - Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [

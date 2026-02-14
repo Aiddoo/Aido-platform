@@ -1,14 +1,13 @@
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 
 import { AuthController } from "./auth.controller";
 import type { CurrentUserPayload } from "./decorators";
-import { AuthService } from "./services/auth.service";
-import { OAuthService } from "./services/oauth.service";
 import { UserSettingsService } from "./services/user-settings.service";
 
 describe("AuthController - Settings API", () => {
 	let controller: AuthController;
-	let mockUserSettingsService: jest.Mocked<UserSettingsService>;
+	let mockUserSettingsService: Mocked<UserSettingsService>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -18,26 +17,12 @@ describe("AuthController - Settings API", () => {
 	};
 
 	beforeEach(async () => {
-		mockUserSettingsService = {
-			getPreference: jest.fn(),
-			updatePreference: jest.fn(),
-			getConsent: jest.fn(),
-			updateMarketingConsent: jest.fn(),
-		} as unknown as jest.Mocked<UserSettingsService>;
+		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
-		const mockAuthService = {} as AuthService;
-		const mockOAuthService = {} as OAuthService;
-
-		const module: TestingModule = await Test.createTestingModule({
-			controllers: [AuthController],
-			providers: [
-				{ provide: AuthService, useValue: mockAuthService },
-				{ provide: OAuthService, useValue: mockOAuthService },
-				{ provide: UserSettingsService, useValue: mockUserSettingsService },
-			],
-		}).compile();
-
-		controller = module.get<AuthController>(AuthController);
+		controller = unit;
+		mockUserSettingsService = unitRef.get(
+			UserSettingsService,
+		) as unknown as Mocked<UserSettingsService>;
 	});
 
 	describe("getPreference", () => {

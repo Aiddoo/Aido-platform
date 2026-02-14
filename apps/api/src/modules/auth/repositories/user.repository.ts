@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { now, subtractDays } from "@/common/date";
 import { DatabaseService } from "@/database";
 import type {
+	AccountProvider,
 	Prisma,
 	SubscriptionStatus,
 	User,
@@ -39,6 +40,9 @@ export interface UserWithProfile {
 		name: string | null;
 		profileImage: string | null;
 	} | null;
+	accounts: {
+		provider: AccountProvider;
+	}[];
 }
 
 @Injectable()
@@ -104,6 +108,11 @@ export class UserRepository {
 					select: {
 						name: true,
 						profileImage: true,
+					},
+				},
+				accounts: {
+					select: {
+						provider: true,
 					},
 				},
 			},

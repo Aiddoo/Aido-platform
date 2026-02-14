@@ -13,6 +13,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import {
 	BusinessException,
@@ -70,6 +71,7 @@ describe("OAuthService", () => {
 	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
 	let eventEmitter: Mocked<EventEmitter2>;
+	let cacheService: Mocked<CacheService>;
 
 	// 재사용 가능한 테스트 데이터
 	const mockTokens = {
@@ -120,6 +122,7 @@ describe("OAuthService", () => {
 		eventEmitter = unitRef.get(
 			EventEmitter2,
 		) as unknown as Mocked<EventEmitter2>;
+		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();
@@ -575,6 +578,9 @@ describe("OAuthService", () => {
 				},
 				expect.anything(),
 			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				"user-123",
+			);
 		});
 
 		it("이미 연결된 계정은 메시지를 반환한다", async () => {
@@ -708,6 +714,9 @@ describe("OAuthService", () => {
 				"user-123",
 				"APPLE",
 				expect.anything(),
+			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				"user-123",
 			);
 		});
 

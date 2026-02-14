@@ -1,4 +1,5 @@
 import {
+	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
@@ -207,6 +208,7 @@ export function createMockUserProfile(
 		name: "Test User",
 		profileImage: null,
 		createdAt: new Date().toISOString(),
+		providers: [AccountProvider.CREDENTIAL],
 		...overrides,
 	};
 }

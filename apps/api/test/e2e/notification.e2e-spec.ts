@@ -12,88 +12,18 @@
  * 4. 알림 읽음 처리
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("Notification (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 * @returns { accessToken, userId }
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<{ accessToken: string; userId: string }> {
-		// 등록
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		// 인증
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return {
-			accessToken: response.body.data.accessToken,
-			userId: response.body.data.userId,
-		};
-	}
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		// FakeEmailService 인스턴스 생성
-		fakeEmailService = new FakeEmailService();
-
-		// FakeOAuthTokenVerifierService 인스턴스 생성
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("푸시 토큰 관리", () => {
@@ -103,7 +33,14 @@ describe("Notification (e2e)", () => {
 		let user: { accessToken: string; userId: string };
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
+			const verified = await ctx.helpers.createVerifiedUser(
+				userEmail,
+				password,
+			);
+			user = {
+				accessToken: verified.accessToken,
+				userId: verified.userId,
+			};
 		});
 
 		describe("POST /notifications/token - 푸시 토큰 등록", () => {
@@ -111,7 +48,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증된 사용자와 유효한 Expo 토큰
 
 				// When - 푸시 토큰 등록 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -129,7 +66,7 @@ describe("Notification (e2e)", () => {
 				// Given - 이미 토큰이 등록된 deviceId
 
 				// When - 동일한 deviceId로 새 토큰 등록 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -147,7 +84,7 @@ describe("Notification (e2e)", () => {
 				// Given - 유효하지 않은 토큰 형식
 
 				// When - 유효하지 않은 토큰으로 등록 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -164,7 +101,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 푸시 토큰 등록 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.send({
 						token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
@@ -178,7 +115,7 @@ describe("Notification (e2e)", () => {
 		describe("DELETE /notifications/token - 푸시 토큰 해제", () => {
 			it("특정 deviceId의 토큰을 해제한다", async () => {
 				// Given - 토큰이 등록된 deviceId
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -188,7 +125,7 @@ describe("Notification (e2e)", () => {
 					.expect(201);
 
 				// When - 특정 deviceId의 토큰 해제 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.delete("/notifications/token")
 					.query({ deviceId: "delete-test-device" })
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -201,7 +138,7 @@ describe("Notification (e2e)", () => {
 
 			it("모든 토큰을 해제한다 (deviceId 미지정)", async () => {
 				// Given - 여러 deviceId에 토큰이 등록된 상태
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -210,7 +147,7 @@ describe("Notification (e2e)", () => {
 					})
 					.expect(201);
 
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -220,7 +157,7 @@ describe("Notification (e2e)", () => {
 					.expect(201);
 
 				// When - deviceId 미지정으로 모든 토큰 해제 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.delete("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -239,7 +176,14 @@ describe("Notification (e2e)", () => {
 		let user: { accessToken: string; userId: string };
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
+			const verified = await ctx.helpers.createVerifiedUser(
+				userEmail,
+				password,
+			);
+			user = {
+				accessToken: verified.accessToken,
+				userId: verified.userId,
+			};
 		});
 
 		describe("GET /notifications - 알림 목록 조회", () => {
@@ -247,7 +191,7 @@ describe("Notification (e2e)", () => {
 				// Given - 알림이 없는 상태의 인증된 사용자
 
 				// When - 알림 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/notifications")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -263,7 +207,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - limit을 5로 설정하여 알림 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/notifications")
 					.query({ limit: 5 })
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -278,7 +222,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - unreadOnly=true로 알림 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/notifications")
 					.query({ unreadOnly: true })
 					.set("Authorization", `Bearer ${user.accessToken}`)
@@ -293,7 +237,9 @@ describe("Notification (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 알림 목록 조회 API 호출
-				await request(app.getHttpServer()).get("/notifications").expect(401);
+				await request(ctx.app.getHttpServer())
+					.get("/notifications")
+					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -302,49 +248,55 @@ describe("Notification (e2e)", () => {
 				it("category=ALL이면 모든 알림을 반환해야 한다", async () => {
 					// Given - 인증된 사용자
 
-					// When
-					const response = await request(app.getHttpServer())
+					// When - category=ALL로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=ALL")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 모든 알림 반환 검증
 					expect(response.body.success).toBe(true);
 					expect(response.body.data).toHaveProperty("notifications");
 					expect(response.body.data).toHaveProperty("hasMore");
 				});
 
 				it("category 미지정이면 기본값 ALL로 동작해야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 인증된 사용자
+
+					// When - category 미지정으로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 기본값 ALL 동작 검증
 					expect(response.body.success).toBe(true);
 					expect(response.body.data).toHaveProperty("notifications");
 				});
 
 				it("유효하지 않은 category이면 400을 반환해야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 유효하지 않은 category 값
+
+					// When - 유효하지 않은 category로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=INVALID")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(400);
 
-					// Then
+					// Then - 400 Bad Request 반환 검증
 					expect(response.body.success).toBe(false);
 				});
 
 				it("category=SOCIAL이면 소셜 알림만 반환해야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 인증된 사용자
+
+					// When - category=SOCIAL로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=SOCIAL")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 소셜 알림만 반환 검증
 					expect(response.body.success).toBe(true);
 					const notifications = response.body.data.notifications;
 					const socialTypes = [
@@ -360,13 +312,15 @@ describe("Notification (e2e)", () => {
 				});
 
 				it("category=NOTICE이면 공지 알림만 반환해야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 인증된 사용자
+
+					// When - category=NOTICE로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=NOTICE")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 공지 알림만 반환 검증
 					expect(response.body.success).toBe(true);
 					const notifications = response.body.data.notifications;
 					const noticeTypes = [
@@ -381,13 +335,15 @@ describe("Notification (e2e)", () => {
 				});
 
 				it("category=TODO이면 할일 알림만 반환해야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 인증된 사용자
+
+					// When - category=TODO로 알림 목록 조회
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=TODO")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 할일 알림만 반환 검증
 					expect(response.body.success).toBe(true);
 					const notifications = response.body.data.notifications;
 					const todoTypes = [
@@ -403,13 +359,15 @@ describe("Notification (e2e)", () => {
 				});
 
 				it("category와 unreadOnly를 함께 사용할 수 있어야 한다", async () => {
-					// When
-					const response = await request(app.getHttpServer())
+					// Given - 인증된 사용자
+
+					// When - category와 unreadOnly 동시 사용
+					const response = await request(ctx.app.getHttpServer())
 						.get("/notifications?category=SOCIAL&unreadOnly=true")
 						.set("Authorization", `Bearer ${user.accessToken}`)
 						.expect(200);
 
-					// Then
+					// Then - 정상 응답 검증
 					expect(response.body.success).toBe(true);
 				});
 			});
@@ -420,7 +378,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 읽지 않은 알림 수 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/notifications/unread-count")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -438,11 +396,17 @@ describe("Notification (e2e)", () => {
 		const password = "Test1234!";
 
 		let user: { accessToken: string; userId: string };
-		let prisma: ReturnType<TestDatabase["getPrisma"]>;
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
-			prisma = testDatabase.getPrisma();
+			const verified = await ctx.helpers.createVerifiedUser(
+				userEmail,
+				password,
+			);
+			user = {
+				accessToken: verified.accessToken,
+				userId: verified.userId,
+			};
+			const prisma = ctx.testDatabase.getPrisma();
 
 			// 시드 데이터 삽입: 다양한 타입의 알림
 			const notifications = [];
@@ -502,13 +466,15 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("category=SOCIAL 필터링 시 소셜 알림만 반환해야 한다", async () => {
-			// When
-			const response = await request(app.getHttpServer())
+			// Given - 시드 데이터로 다양한 타입의 알림 생성
+
+			// When - category=SOCIAL로 알림 목록 조회
+			const response = await request(ctx.app.getHttpServer())
 				.get("/notifications?category=SOCIAL")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
-			// Then
+			// Then - 소셜 알림 5개만 반환 검증
 			const notifications = response.body.data.notifications;
 			expect(notifications.length).toBe(5);
 			const socialTypes = [
@@ -524,8 +490,10 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("페이지네이션이 정상 동작해야 한다 (limit=10)", async () => {
+			// Given - 27개의 시드 데이터 알림
+
 			// When - 1페이지
-			const page1 = await request(app.getHttpServer())
+			const page1 = await request(ctx.app.getHttpServer())
 				.get("/notifications?limit=10")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -536,7 +504,7 @@ describe("Notification (e2e)", () => {
 			expect(page1.body.data.nextCursor).toBeDefined();
 
 			// When - 2페이지
-			const page2 = await request(app.getHttpServer())
+			const page2 = await request(ctx.app.getHttpServer())
 				.get(`/notifications?limit=10&cursor=${page1.body.data.nextCursor}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -546,7 +514,7 @@ describe("Notification (e2e)", () => {
 			expect(page2.body.data.hasMore).toBe(true);
 
 			// When - 3페이지
-			const page3 = await request(app.getHttpServer())
+			const page3 = await request(ctx.app.getHttpServer())
 				.get(`/notifications?limit=10&cursor=${page2.body.data.nextCursor}`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -566,13 +534,15 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("카테고리 + 페이지네이션 조합이 동작해야 한다", async () => {
-			// When - TODO 카테고리 1페이지 (19개 중 10개: TODO_REMINDER 17 + MORNING_REMINDER 2)
-			const page1 = await request(app.getHttpServer())
+			// Given - TODO 카테고리 알림 19개 (TODO_REMINDER 17 + MORNING_REMINDER 2)
+
+			// When - TODO 카테고리 1페이지 (10개)
+			const page1 = await request(ctx.app.getHttpServer())
 				.get("/notifications?category=TODO&limit=10")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
-			// Then
+			// Then - 1페이지 검증
 			expect(page1.body.data.notifications.length).toBe(10);
 			expect(page1.body.data.hasMore).toBe(true);
 			const todoTypes = [
@@ -587,14 +557,14 @@ describe("Notification (e2e)", () => {
 			}
 
 			// When - TODO 카테고리 2페이지 (나머지 9개)
-			const page2 = await request(app.getHttpServer())
+			const page2 = await request(ctx.app.getHttpServer())
 				.get(
 					`/notifications?category=TODO&limit=10&cursor=${page1.body.data.nextCursor}`,
 				)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
-			// Then
+			// Then - 2페이지 검증
 			expect(page2.body.data.notifications.length).toBe(9);
 			expect(page2.body.data.hasMore).toBe(false);
 			for (const notification of page2.body.data.notifications) {
@@ -606,13 +576,13 @@ describe("Notification (e2e)", () => {
 			// Given - cursor=0은 유효한 요청 (nonnegative 정수)
 
 			// When - cursor 없이 첫 페이지 조회
-			const _firstPage = await request(app.getHttpServer())
+			const _firstPage = await request(ctx.app.getHttpServer())
 				.get("/notifications?limit=10")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
 
 			// When - cursor=0으로 조회
-			const cursorZeroPage = await request(app.getHttpServer())
+			const cursorZeroPage = await request(ctx.app.getHttpServer())
 				.get("/notifications?limit=10&cursor=0")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -624,8 +594,10 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("MORNING_REMINDER 알림이 치환된 title로 정상 조회되어야 한다", async () => {
+			// Given - 시드 데이터로 MORNING_REMINDER 알림 2개 생성
+
 			// When - 전체 알림 조회
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/notifications?limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -653,8 +625,10 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("category=TODO 필터로 MORNING_REMINDER가 조회되어야 한다", async () => {
+			// Given - 시드 데이터로 TODO 카테고리 알림 생성
+
 			// When - TODO 카테고리 필터링
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/notifications?category=TODO&limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -680,8 +654,10 @@ describe("Notification (e2e)", () => {
 		});
 
 		it("category=SOCIAL 필터에 MORNING_REMINDER가 포함되지 않아야 한다", async () => {
+			// Given - 시드 데이터로 다양한 타입의 알림 생성
+
 			// When - SOCIAL 카테고리 필터링
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/notifications?category=SOCIAL&limit=50")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.expect(200);
@@ -701,7 +677,14 @@ describe("Notification (e2e)", () => {
 		let user: { accessToken: string; userId: string };
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
+			const verified = await ctx.helpers.createVerifiedUser(
+				userEmail,
+				password,
+			);
+			user = {
+				accessToken: verified.accessToken,
+				userId: verified.userId,
+			};
 		});
 
 		describe("PATCH /notifications/:id/read - 단일 알림 읽음 처리", () => {
@@ -709,7 +692,7 @@ describe("Notification (e2e)", () => {
 				// Given - 존재하지 않는 알림 ID
 
 				// When - 존재하지 않는 알림 읽음 처리 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch("/notifications/99999/read")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(404);
@@ -723,7 +706,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 단일 알림 읽음 처리 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.patch("/notifications/1/read")
 					.expect(401);
 
@@ -736,7 +719,7 @@ describe("Notification (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 모든 알림 읽음 처리 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch("/notifications/read-all")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);

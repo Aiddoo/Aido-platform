@@ -19,10 +19,11 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { NudgeBuilder, TodoBuilder, UserBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { getUserToday, subtractDays } from "@/common/date";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -32,7 +33,7 @@ import { FollowService } from "@/modules/follow/follow.service";
 import { NudgeRepository } from "@/modules/nudge/nudge.repository";
 import { NudgeService } from "@/modules/nudge/nudge.service";
 
-describe("NudgeService Integration Tests", () => {
+describe("NudgeService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: NudgeService;
 	let repository: NudgeRepository;
@@ -56,17 +57,11 @@ describe("NudgeService Integration Tests", () => {
 		findUnique: jest.fn(),
 	};
 
-	const mockDatabaseService = {
+	const mockDatabaseService = createMockDatabaseService({
 		nudge: mockNudgeDb,
 		user: mockUserDb,
 		todo: mockTodoDb,
-		$transaction: jest.fn(),
-	};
-
-	mockDatabaseService.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDatabaseService),
-	);
+	});
 
 	// Mock FollowService
 	const mockFollowService = {
@@ -85,11 +80,7 @@ describe("NudgeService Integration Tests", () => {
 	const mockNudgeId = 1;
 
 	beforeAll(async () => {
-		// Given - Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [

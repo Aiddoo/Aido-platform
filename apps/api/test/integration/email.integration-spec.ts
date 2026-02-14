@@ -17,8 +17,8 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "@/modules/email/constants/email.constants";
 import { EmailService } from "@/modules/email/email.service";
@@ -30,7 +30,7 @@ type ResendMock = {
 	};
 };
 
-describe("EmailService Integration Tests", () => {
+describe("EmailService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: EmailService;
 	let resendMock: ResendMock;
@@ -40,12 +40,8 @@ describe("EmailService Integration Tests", () => {
 	const testCode = "987654";
 	const testExpiryMinutes = 15;
 
-	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+	beforeAll(() => {
+		suppressLogger();
 	});
 
 	beforeEach(async () => {
