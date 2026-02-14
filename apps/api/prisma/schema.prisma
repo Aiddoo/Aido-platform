@@ -602,6 +602,9 @@ model Notification {
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // 중복 방지 복합 유니크 인덱스
+  @@unique([userId, type, notificationDate], map: "Notification_daily_dedup")
+  @@unique([userId, type, friendId, notificationDate], map: "Notification_friend_dedup")
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([createdAt]) // 정리 배치용 (90일 보관)

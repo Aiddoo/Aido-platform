@@ -144,6 +144,7 @@ describe("NotificationRepository", () => {
 					expect.objectContaining({ userId: "user-1" }),
 					expect.objectContaining({ userId: "user-2" }),
 				]),
+				skipDuplicates: true,
 			});
 			expect(result.count).toBe(2);
 		});

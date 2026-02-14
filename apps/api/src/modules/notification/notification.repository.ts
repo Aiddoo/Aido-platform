@@ -75,6 +75,7 @@ export class NotificationRepository {
 				metadata: data.metadata ?? undefined,
 				notificationDate: data.notificationDate ?? undefined,
 			})),
+			skipDuplicates: true,
 		});
 	}
 
@@ -228,7 +229,7 @@ export class NotificationRepository {
 			userIds: string[];
 			type: NotificationType;
 			since: Date;
-			friendId: string;
+			friendId?: string;
 		},
 		tx?: TransactionClient,
 	): Promise<Set<string>> {
@@ -237,7 +238,7 @@ export class NotificationRepository {
 			where: {
 				userId: { in: params.userIds },
 				type: params.type,
-				friendId: params.friendId,
+				...(params.friendId && { friendId: params.friendId }),
 				createdAt: { gte: params.since },
 			},
 			select: { userId: true },
