@@ -67,6 +67,35 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 	}
 
 	/**
+	 * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
+	 * @returns userId
+	 */
+	async function createSocialOnlyUser(
+		email: string,
+		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
+	): Promise<string> {
+		const prisma = testDb.getPrisma();
+		const user = await prisma.user.create({
+			data: {
+				email,
+				userTag: `TAG${Date.now().toString(36).slice(-6).toUpperCase()}`,
+				status: "ACTIVE",
+				emailVerifiedAt: new Date(),
+			},
+		});
+
+		await prisma.account.create({
+			data: {
+				userId: user.id,
+				provider,
+				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
+			},
+		});
+
+		return user.id;
+	}
+
+	/**
 	 * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
 	 * @returns userId
 	 */
@@ -255,6 +284,21 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 					(log.metadata as Record<string, unknown>).reason === "PASSWORD_RESET",
 			);
 			expect(resetLog).toBeDefined();
+		});
+
+		it("소셜 전용 사용자가 비밀번호 재설정을 시도하면 에러를 던진다", async () => {
+			// Given - 소셜 전용 사용자 (Credential 계정 없음)
+			const email = "social-only-reset@example.com";
+			await createSocialOnlyUser(email);
+
+			// forgotPassword는 보안상 동일 응답 (에러 없음)
+			await authService.forgotPassword(email);
+			const code = getCode(email);
+
+			// When & Then - resetPassword에서 USER_0613 에러
+			await expect(
+				authService.resetPassword(email, code, "NewPassword456!"),
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {

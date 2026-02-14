@@ -200,7 +200,7 @@ export class AuthController {
 	@Public()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "이메일 인증",
+		summary: "이메일 인증 코드 확인",
 		operationId: "verifyEmail",
 		description: `
 ## ✉️ 이메일 인증
@@ -257,7 +257,6 @@ export class AuthController {
 |------|------|
 | USER_0604 | 이미 인증 완료된 사용자 |
 | VERIFY_0753 | 재발송 쿨다운 (1분) |
-| VERIFY_0753 | 재발송 쿨다운 (1분) |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
@@ -277,7 +276,7 @@ export class AuthController {
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "로그인",
+		summary: "이메일 로그인",
 		operationId: "login",
 		description: `
 ## 🔑 로그인
@@ -321,7 +320,7 @@ export class AuthController {
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "로그아웃",
+		summary: "로그아웃 (현재 기기)",
 		operationId: "logout",
 		description: `
 ## 🚪 로그아웃
@@ -353,7 +352,7 @@ export class AuthController {
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "모든 기기에서 로그아웃",
+		summary: "전체 로그아웃 (모든 기기)",
 		operationId: "logoutAll",
 		description: `
 ## 🚪 전체 로그아웃
@@ -429,13 +428,14 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Throttle({ default: { ttl: 60000, limit: 5 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "[비로그인] 비밀번호 재설정 코드 요청 (이메일 계정 전용)",
+		summary: "비밀번호 재설정 - 코드 요청",
 		operationId: "forgotPassword",
 		description: `
 ## 🔑 비밀번호 재설정 — 1단계: 인증 코드 발송
 
-> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 불필요)
-> **용도**: 비밀번호를 잊어버린 사용자가 재설정하기 위한 인증 코드 요청
+> **인증**: 불필요
+> **대상**: 이메일 계정 (비밀번호 분실)
+> **플로우**: 2단계 중 1단계
 
 ### 📝 요청 Body
 - \`email\`: 가입된 이메일
@@ -443,17 +443,12 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 🔄 다음 단계
 \`POST /auth/reset-password\`로 새 비밀번호 설정 (10분 내)
 
-### ⚠️ 에러 케이스
-| 코드 | 상황 | 클라이언트 처리 |
-|------|------|----------------|
-| USER_0613 | 소셜 로그인 전용 계정 | "소셜 로그인을 이용해주세요" 안내 |
-
 ### 💡 참고
+- 보안상 등록되지 않은 이메일이어도 동일한 성공 응답을 반환합니다 (이메일 존재 여부 노출 방지)
 - 소셜 로그인 사용자가 비밀번호를 **새로 설정**하려면 → \`POST /auth/password/setup-code\` (로그인 필요)
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async forgotPassword(@Body() dto: ForgotPasswordDto) {
 		const result = await this.authService.forgotPassword(dto.email);
 		return result;
@@ -463,12 +458,14 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Public()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "[비로그인] 비밀번호 재설정 (이메일 계정 전용)",
+		summary: "비밀번호 재설정 - 새 비밀번호 설정",
 		operationId: "resetPassword",
 		description: `
 ## 🔑 비밀번호 재설정 — 2단계: 새 비밀번호 설정
 
-> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 불필요)
+> **인증**: 불필요
+> **대상**: 이메일 계정 (비밀번호 분실)
+> **플로우**: 2단계 중 2단계
 > **전제**: \`POST /auth/forgot-password\`로 발송된 인증 코드 필요
 
 ### 📝 요청 Body
@@ -509,13 +506,14 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Throttle({ default: { ttl: 60000, limit: 5 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "[로그인] 비밀번호 설정 코드 요청 (소셜 계정 전용)",
+		summary: "비밀번호 최초 설정 - 코드 요청",
 		operationId: "requestPasswordSetupCode",
 		description: `
 ## 🔑 비밀번호 설정 — 1단계: 인증 코드 발송
 
-> **대상**: 소셜 로그인으로만 가입한 사용자 (로그인 필요)
-> **용도**: 이메일/비밀번호 로그인 수단을 추가하기 위한 인증 코드 요청
+> **인증**: Bearer 토큰 필요
+> **대상**: 소셜 계정 (이메일 로그인 추가)
+> **플로우**: 2단계 중 1단계
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
@@ -546,12 +544,14 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "[로그인] 비밀번호 설정 (소셜 계정 전용)",
+		summary: "비밀번호 최초 설정 - 비밀번호 생성",
 		operationId: "setPassword",
 		description: `
 ## 🔑 비밀번호 설정 — 2단계: 비밀번호 생성
 
-> **대상**: 소셜 로그인으로만 가입한 사용자 (로그인 필요)
+> **인증**: Bearer 토큰 필요
+> **대상**: 소셜 계정 (이메일 로그인 추가)
+> **플로우**: 2단계 중 2단계
 > **전제**: \`POST /auth/password/setup-code\`로 발송된 인증 코드 필요
 > **결과**: 이메일/비밀번호 로그인 수단이 추가됨
 
@@ -597,13 +597,14 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "[로그인] 비밀번호 변경 (이메일 계정 전용)",
+		summary: "비밀번호 변경",
 		operationId: "changePassword",
 		description: `
 ## 🔐 비밀번호 변경
 
-> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 필요)
-> **용도**: 현재 비밀번호를 알고 있는 상태에서 새 비밀번호로 변경
+> **인증**: Bearer 토큰 필요
+> **대상**: 이메일 계정 (현재 비밀번호 알고 있음)
+> **플로우**: 단일 단계
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
@@ -650,7 +651,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Get("me")
 	@ApiBearerAuth()
 	@ApiDoc({
-		summary: "현재 사용자 정보 조회",
+		summary: "내 정보 조회",
 		operationId: "getCurrentUser",
 		description: `
 ## 👤 내 정보 조회
@@ -714,7 +715,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Get("preference")
 	@ApiBearerAuth()
 	@ApiDoc({
-		summary: "푸시 알림 설정 조회",
+		summary: "알림 설정 조회",
 		operationId: "getPushPreference",
 		description: `
 ## 🔔 푸시 알림 설정 조회
@@ -751,7 +752,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "푸시 알림 설정 수정",
+		summary: "알림 설정 수정",
 		operationId: "updatePushPreference",
 		description: `
 ## 🔔 푸시 알림 설정 수정
@@ -963,7 +964,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "OAuth 교환 코드로 토큰 획득",
+		summary: "교환 코드로 토큰 획득",
 		operationId: "exchangeOAuthCode",
 		description: `OAuth Web 콜백에서 발급된 **일회용 교환 코드**를 JWT 토큰으로 교환합니다.
 
@@ -998,255 +999,38 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "Apple 로그인 콜백",
+		summary: "Apple 로그인 (모바일 네이티브)",
 		operationId: "appleCallback",
-		description: `\`expo-apple-authentication\`으로 Apple Sign In 후 credential을 전송합니다.
+		description: `## 🍎 Apple 로그인 (모바일 네이티브)
 
-## 📦 라이브러리 설치
+\`expo-apple-authentication\`으로 Apple Sign In 후 Identity Token을 전송합니다.
+시스템 인증 다이얼로그를 사용하므로 Redirect URI가 불필요합니다.
 
-\`\`\`bash
-npx expo install expo-apple-authentication
-\`\`\`
+> 📖 상세 구현 가이드: \`.claude/oauth-client-guide.md\`
 
-## 🔐 보안 특성
+### 🔄 플로우
+1. 클라이언트: \`AppleAuthentication.signInAsync()\` 호출
+2. Apple 시스템: 사용자 인증 후 Identity Token 반환
+3. 클라이언트: Identity Token을 이 엔드포인트로 전송
+4. 백엔드: Token 검증 → 사용자 생성/업데이트 → JWT 발급
 
-Apple Sign In은 **시스템 인증 다이얼로그**를 사용하므로 다른 OAuth 제공자와 다릅니다.
+### 📝 요청 Body
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| \`idToken\` | string | ✅ | Apple Identity Token (JWT) |
+| \`userName\` | string | ❌ | 사용자 이름 (최초 로그인 시만 제공) |
+| \`deviceName\` | string | ❌ | 디바이스 이름 |
+| \`deviceType\` | string | ❌ | 디바이스 타입 |
+| \`nonce\` | string | ❌ | CSRF 방지용 (선택) |
 
-| 특성 | 설명 | 보안 이점 |
-|------|------|----------|
-| **인증 방식** | 시스템 수준 API 호출 | WebView 우회 → XSS 불가능 |
-| **Token 유형** | Identity Token (JWT) | 서명 검증 필수, 발급자 확인 가능 |
-| **사용자 정보** | **최초 로그인 시만** 제공 | 중복 계정 방지, 개인정보 보호 |
-| **Redirect URI** | 불필요 | URL Scheme 공격 최소화 |
+### ⚠️ 에러 케이스
+| 코드 | HTTP | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| \`SOCIAL_0202\` | 401 | 유효하지 않은 토큰 | 재로그인 요청 |
 
-## 📱 클라이언트 구현
-
-### App.json 설정
-\`\`\`json
-{
-  "expo": {
-    "ios": { "usesAppleSignIn": true },
-    "plugins": ["expo-apple-authentication"]
-  }
-}
-\`\`\`
-
-### 로그인 플로우 (TypeScript)
-\`\`\`typescript
-import * as AppleAuthentication from 'expo-apple-authentication';
-import { api } from './api';
-
-const handleAppleLogin = async () => {
-  try {
-    // 1️⃣ 시스템 인증 다이얼로그 표시
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
-
-    // 2️⃣ credential.identityToken 획득 (JWT 형식)
-    const idToken = credential.identityToken;
-
-    // 3️⃣ 서버로 전송 (최초 로그인 시 사용자 정보도 함께)
-    const response = await api.post('/auth/apple/callback', {
-      idToken,
-      // ❌ 최초 로그인 이후 재로그인 시 아래는 undefined
-      userName: credential.user?.name || undefined,
-      deviceName: credential.user?.name || undefined, // 사용 가능한 경우
-      deviceType: 'iOS', // 명시적으로 설정
-    });
-
-    // 4️⃣ 토큰 저장
-    await saveTokens(response.data);
-  } catch (e) {
-    if (e.code === 'ERR_REQUEST_CANCELED') {
-      console.log('사용자가 로그인 취소');
-    } else {
-      console.error('Apple 로그인 실패', e);
-    }
-  }
-};
-\`\`\`
-
-## 🔄 API 플로우
-
-| Step | 역할 | 작업 |
-|------|------|------|
-| 1️⃣ | 클라이언트 | \`AppleAuthentication.signInAsync()\` 호출 |
-| 2️⃣ | Apple 시스템 | 사용자 인증 후 Identity Token 반환 |
-| 3️⃣ | 클라이언트 | Identity Token을 서버로 전송 |
-| 4️⃣ | 백엔드 | Token 검증 → 사용자 생성/업데이트 → JWT 발급 |
-
-## 📝 요청 Body
-
-| 필드 | 타입 | 필수 | 설명 | 예시 |
-|------|------|:----:|------|------|
-| \`idToken\` | string | ✅ | Apple Identity Token (JWT) | \`eyJhbGc...\` |
-| \`userName\` | string | ❌ | 사용자 이름 | \`김영민\` |
-| \`deviceName\` | string | ❌ | 디바이스 이름 | \`iPhone 15 Pro\` |
-| \`deviceType\` | string | ❌ | 디바이스 타입 | \`iOS\` |
-
-### Identity Token 예시 (JWT 디코드)
-\`\`\`json
-{
-  "iss": "https://appleid.apple.com",
-  "aud": "com.example.aido",
-  "sub": "001234.abcd1234e.0987",
-  "nonce_supported": true,
-  "email": "user@example.com",
-  "email_verified": "true",
-  "auth_time": 1704067200,
-  "iat": 1704067200,
-  "exp": 1704067260
-}
-\`\`\`
-
-## ✅ 성공 응답 (200)
-\`\`\`json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGc...",
-    "refreshToken": "eyJhbGc...",
-    "user": {
-      "id": 1,
-      "email": "user@example.com",
-      "nickname": "김영민",
-      "profileImage": null
-    }
-  }
-}
-\`\`\`
-
-## ❌ 에러 케이스
-
-| 에러 코드 | HTTP | 메시지 | 클라이언트 처리 |
-|----------|------|--------|----------------|
-| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 요청 |
-| \`USER_0601\` | 400 | 이미 다른 계정으로 가입됨 | 계정 연동 화면 또는 가입 재시도 |
-| \`USER_0602\` | 400 | 가입 불가능한 이메일 | 고객 지원 안내 |
-
-## 🔐 백엔드 검증 프로세스
-
-서버는 다음과 같이 Identity Token을 검증합니다:
-
-\`\`\`typescript
-// 1️⃣ Token 서명 검증 (Apple 공개키 사용)
-const publicKeySet = await fetchApplePublicKeys();
-const decoded = jwt.verify(idToken, publicKeySet);
-
-// 2️⃣ 필드 검증
-if (decoded.iss !== 'https://appleid.apple.com') {
-  throw new InvalidTokenError();
-}
-if (decoded.aud !== process.env.APPLE_BUNDLE_ID) {
-  throw new InvalidTokenError();
-}
-if (decoded.exp < Date.now()) {
-  throw new ExpiredTokenError();
-}
-
-// 3️⃣ 사용자 정보 추출
-const { sub: appleUserId, email } = decoded;
-
-// 4️⃣ 사용자 조회 또는 생성
-const user = await findOrCreateUser(appleUserId, email);
-\`\`\`
-
-## ⚠️ 주의사항
-
-### 1️⃣ 최초 로그인 시에만 사용자 정보 제공
-Apple은 **보안 정책**으로 최초 로그인 시에만 \`email\`과 \`name\`을 제공합니다.
-- ✅ 1차: Apple 시스템 다이얼로그 → 이메일, 이름 전달
-- ❌ 2차 이후: 다시 로그인하면 이메일, 이름 전달 안 함 (서버의 기존 기록 사용)
-
-**클라이언트 처리**: Identity Token의 \`sub\` 필드(사용자 고유 ID)로만 식별
-
-### 2️⃣ Email Masking 사용 가능
-Apple 개인정보 보호 정책으로 사용자가 "Hide My Email" 옵션을 선택할 수 있습니다.
-- 실제 이메일 대신 \`random@privaterelay.appleid.com\` 형식 제공
-- 이 경우 실제 이메일 주소를 얻을 수 없음 (사용자의 선택)
-- **처리 방법**: 닉네임을 다시 입력받도록 유도
-
-### 3️⃣ Team ID와 Bundle ID 설정
-Apple Developer Account에서 다음 설정 필수:
-- **Team ID**: 앱 서명에 필요
-- **Bundle ID**: 요청 시 \`aud\` 필드와 일치해야 함
-
-### 4️⃣ Sub 값 저장 필수
-Apple의 \`sub\` 값(예: \`001234.abcd1234e.0987\`)은 **영구 사용자 ID**입니다.
-- 향후 Apple 로그인 시 동일한 \`sub\` 값으로 사용자 식별
-- 데이터베이스에 \`appleUserId\` 컬럼으로 저장 필수
-
-### 5️⃣ Nonce 검증 (선택사항)
-CSRF 공격 방지를 위해 Nonce 사용 권장:
-\`\`\`typescript
-// 클라이언트
-const nonce = generateRandomString();
-const credential = await AppleAuthentication.signInAsync({
-  requestedScopes: [...],
-  nonce, // 추가
-});
-
-// 서버
-const decoded = jwt.verify(idToken, publicKey);
-if (decoded.nonce !== expectedNonce) {
-  throw new SecurityError('Nonce mismatch');
-}
-\`\`\`
-
-## 🔄 플로우 다이어그램
-
-\`\`\`
-┌─────────────┐                        ┌──────────────┐
-│   클라이언트   │                        │  Apple 시스템  │
-└─────────────┘                        └──────────────┘
-      │                                      │
-      │──────────────────────────────────────>│
-      │  signInAsync(scopes)                 │
-      │                                      │
-      │  ┌──────────────────────────┐        │
-      │  │ 사용자 인증 다이얼로그      │        │
-      │  │ (생체인증/암호)          │        │
-      │  └──────────────────────────┘        │
-      │                                      │
-      │<──────────────────────────────────────│
-      │  credential {                        │
-      │    identityToken: JWT,               │
-      │    user: {                           │
-      │      name: string? (최초만),         │
-      │      email: string? (최초만)         │
-      │    }                                 │
-      │  }                                   │
-      │                                      │
-      ├─────────────────────────────────────>│
-      │  POST /auth/apple/callback           │
-      │  { idToken, userName?, ... }         │
-      │                                      │
-      │  ┌──────────────────────────┐        │
-      │  │ 1. Token 서명 검증         │        │
-      │  │ 2. 필드 검증              │        │
-      │  │ 3. 사용자 조회/생성       │        │
-      │  │ 4. JWT 토큰 발급          │        │
-      │  └──────────────────────────┘        │
-      │                                      │
-      │<─────────────────────────────────────│
-      │  200 OK {                            │
-      │    accessToken, refreshToken, user   │
-      │  }                                   │
-      │                                      │
-\`\`\`
-
-## 📚 Apple Developer 설정 체크리스트
-
-- [ ] Apple Developer Team에 등록
-- [ ] App ID 생성 (Sign In with Apple 활성화)
-- [ ] Certificates 및 Identifiers 설정
-- [ ] app.json에 \`usesAppleSignIn: true\` 추가
-- [ ] Privacy Policy 페이지에 Apple 로그인 명시
-- [ ] 약관에 Apple ID 사용 동의 포함`,
+### 💡 참고
+- Apple은 **최초 로그인 시에만** email/name을 제공합니다
+- "Hide My Email" 선택 시 \`random@privaterelay.appleid.com\` 형식 제공`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
@@ -1274,423 +1058,37 @@ if (decoded.nonce !== expectedNonce) {
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "Google 로그인 콜백 (모바일)",
+		summary: "Google 로그인 (모바일 네이티브)",
 		operationId: "googleMobileCallback",
-		description: `**expo-auth-session**의 Google OAuth 제공자를 통해 ID Token을 받은 후 백엔드로 전송합니다.
-
-## 📦 필수 라이브러리
-
-\`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
-\`\`\`
-
-### 라이브러리별 역할
-
-| 라이브러리 | 목적 | 역할 | 보안성 |
-|-----------|------|------|--------|
-| \`expo-auth-session\` | OAuth 2.0 프로토콜 | Google 인증 요청/응답 관리 | ✅ HTTPS + 시스템 브라우저 |
-| \`expo-crypto\` | PKCE 지원 | Code challenge 생성 (선택) | ✅ 로컬 암호화 |
-| \`expo-web-browser\` | 시스템 브라우저 | 보안 인증 UI 제공 | ✅ 시스템 관리 |
-| \`expo-linking\` | Deep link 처리 | Redirect URI 수신 | ✅ 네이티브 통합 |
-
-### 보안 특성
-
-- **인증 UI**: 시스템 브라우저 사용 (앱 내 WebView 불가)
-- **토큰 전달**: ID Token만 전송 (Access Token 노출 방지)
-- **토큰 검증**: JWT 서명 검증 필수
-- **만료**: ID Token은 1시간 유효
-
----
-
-## ⚙️ Google Developers Console 설정
-
-### Step 1: OAuth 2.0 클라이언트 생성
-1. [Google Cloud Console](https://console.cloud.google.com)에서 프로젝트 생성
-2. **OAuth 동의 화면** → \`외부\` 선택 → 기본 정보 입력
-3. **사용자 인증 정보** → \`OAuth 2.0 클라이언트 ID\` 생성
-4. **애플리케이션 유형**: iOS 또는 Android 선택
-
-### Step 2: iOS 설정
-1. Bundle ID 입력 (예: \`com.aido.mobile\`)
-2. 팀 ID 입력 (Apple Developer 계정에서 확인)
-3. **클라이언트 ID** 복사
-
-### Step 3: Android 설정
-1. Package name 입력 (예: \`com.aido.mobile\`)
-2. SHA-1 지문 입력 (앱 서명 인증서에서 확인)
-3. **클라이언트 ID** 복사
-
----
-
-## 🔄 OAuth 플로우 (Step별)
-
-### Step 1: 인증 요청 (클라이언트)
-\`\`\`javascript
-// Google.useAuthRequest() 설정
-const [request, response, promptAsync] = Google.useAuthRequest({
-  clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
-  iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
-  androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
-  scopes: ['profile', 'email'],
-});
-
-// 로그인 버튼 클릭 시
-const handleGoogleLogin = async () => {
-  const result = await promptAsync();
-  if (result?.type === 'success') {
-    // Step 2로 진행
-  }
-};
-\`\`\`
-
-### Step 2: ID Token 획득 (클라이언트)
-\`\`\`javascript
-// response에서 ID Token 추출
-if (response?.type === 'success') {
-  const { id_token: idToken } = response.params;
-
-  // Step 3: 백엔드로 전송
-  await api.post('/auth/google/callback', {
-    idToken,
-    userName: '사용자명', // 최초 로그인 시만
-    deviceName: '디바이스명',
-    deviceType: 'iOS' | 'Android',
-  });
-}
-\`\`\`
-
-### Step 3: ID Token 검증 (백엔드)
-\`\`\`
-클라이언트로부터 받은 idToken:
-├─ JWT 서명 검증 (Google 공개 키로)
-├─ aud 클레임 검증 (클라이언트 ID 일치)
-├─ iss 클레임 검증 (https://accounts.google.com)
-├─ exp 검증 (만료 시간 확인)
-└─ sub 추출 (Google 사용자 ID)
-\`\`\`
-
-### Step 4: 사용자 정보 저장 및 토큰 발급 (백엔드)
-\`\`\`
-ID Token 검증 성공
-├─ 기존 사용자 확인 (sub로)
-├─ 없으면 신규 생성 (이메일은 필수)
-├─ 디바이스 정보 저장
-└─ Access Token + Refresh Token 발급
-\`\`\`
-
----
-
-## 📱 클라이언트 구현 예제
-
-\`\`\`typescript
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import { ResponseType } from 'expo-auth-session';
-
-WebBrowser.maybeCompleteAuthSession();
-
-export const GoogleLoginScreen = () => {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    // Google Cloud Console에서 생성한 Client IDs
-    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-    iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
-    androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
-
-    // OAuth 2.0 설정
-    scopes: ['profile', 'email'],
-    responseType: ResponseType.IdToken,
-    usePKCE: true, // PKCE 사용 권장
-  });
-
-  const handleGoogleLogin = async () => {
-    try {
-      // Step 1: 인증 프롬프트 표시
-      const result = await promptAsync();
-
-      if (result?.type !== 'success') {
-        console.log('Google 로그인 취소됨');
-        return;
-      }
-
-      // Step 2: ID Token 추출
-      const { id_token: idToken } = result.params;
-      if (!idToken) {
-        throw new Error('ID Token을 받지 못했습니다');
-      }
-
-      // Step 3: 백엔드로 전송
-      const response = await api.post('/auth/google/callback', {
-        idToken,
-        userName: 'User Display Name', // 최초 로그인 시 권장
-        deviceName: 'My Device',
-        deviceType: Platform.os === 'ios' ? 'iOS' : 'Android',
-      });
-
-      // Step 4: 토큰 저장 및 로그인 완료
-      if (response.data.success) {
-        await secureStorage.setItem('accessToken', response.data.data.accessToken);
-        await secureStorage.setItem('refreshToken', response.data.data.refreshToken);
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-      }
-    } catch (error) {
-      console.error('Google 로그인 실패:', error.message);
-      // 에러 처리
-    }
-  };
-
-  return (
-    <Button
-      title="Google로 로그인"
-      onPress={handleGoogleLogin}
-      disabled={!request}
-    />
-  );
-};
-\`\`\`
-
----
-
-## 🔐 ID Token JWT 형식
-
-Google의 ID Token은 다음과 같은 클레임을 포함합니다:
-
-\`\`\`json
-{
-  "iss": "https://accounts.google.com",
-  "aud": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-  "sub": "110123456789...",
-  "email": "user@gmail.com",
-  "email_verified": true,
-  "name": "User Name",
-  "picture": "https://...",
-  "given_name": "User",
-  "family_name": "Name",
-  "iat": 1704067200,
-  "exp": 1704070800,
-  "nonce": "random-string"
-}
-\`\`\`
-
-### 핵심 클레임 검증
-
-| 클레임 | 검증 방법 | 필수 |
-|--------|----------|:----:|
-| \`iss\` | \`=== "https://accounts.google.com"\` | ✅ |
-| \`aud\` | \`=== 클라이언트 ID\` | ✅ |
-| \`sub\` | Google 사용자 ID (고유값 보관) | ✅ |
-| \`exp\` | 현재 시각 < exp | ✅ |
-| \`email\` | 선택적 사용자 이메일 | ❌ |
-| \`nonce\` | PKCE 사용 시 검증 | ⚠️ |
-
----
-
-## 📝 API 스펙
-
-### 요청 (Request)
-\`\`\`json
-POST /auth/google/callback
-Content-Type: application/json
-
-{
-  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...",
-  "userName": "사용자 이름",
-  "deviceName": "iPhone 15",
-  "deviceType": "iOS"
-}
-\`\`\`
-
-| 필드 | 타입 | 필수 | 설명 | 예시 |
-|------|------|:----:|------|------|
-| \`idToken\` | string | ✅ | Google ID Token (JWT) | \`eyJhbGciOi...\` |
-| \`userName\` | string | ❌ | 사용자 이름 (최초 로그인) | \`John Doe\` |
-| \`deviceName\` | string | ❌ | 디바이스 이름 | \`iPhone 15 Pro\` |
-| \`deviceType\` | string | ❌ | 디바이스 유형 | \`iOS\`, \`Android\` |
-
-### 응답 (Response) - 성공 (200 OK)
-\`\`\`json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-    "user": {
-      "id": 1,
-      "email": "user@gmail.com",
-      "nickname": "사용자",
-      "profileImage": "https://..."
-    }
-  },
-  "timestamp": 1704067200000
-}
-\`\`\`
-
-### 응답 (Response) - 실패 (401 Unauthorized)
-\`\`\`json
-{
-  "success": false,
-  "error": {
-    "code": "SOCIAL_0202",
-    "message": "소셜 인증 토큰이 유효하지 않습니다.",
-    "details": {
-      "reason": "Invalid token",
-      "hint": "토큰이 유효하지 않거나 만료되었습니다"
-    }
-  },
-  "timestamp": 1704067200000
-}
-\`\`\`
-
----
-
-## 🎯 백엔드 검증 프로세스
-
-\`\`\`typescript
-// 1. ID Token 검증 (GoogleAuth 라이브러리 사용)
-const ticket = await client.verifyIdToken({
-  idToken,
-  audience: clientIds, // 설정된 모든 Client ID
-});
-
-const payload = ticket.getPayload();
-
-// 2. 필수 클레임 검증
-if (!payload.email) {
-  throw new BadRequestException('Email 정보가 없습니다');
-}
-
-// 3. Google 사용자 ID 추출
-const googleId = payload.sub;
-const email = payload.email;
-
-// 4. 사용자 찾기 또는 생성
-let user = await userService.findByGoogleId(googleId);
-if (!user) {
-  user = await userService.create({
-    email,
-    googleId,
-    nickname: payload.name,
-    profileImage: payload.picture,
-  });
-}
-
-// 5. 토큰 발급
-const tokens = await authService.generateTokens(user.id);
-return { accessToken: tokens.access, refreshToken: tokens.refresh };
-\`\`\`
-
----
-
-## ⚠️ Google 특화 주의사항
-
-### 1️⃣ **클라이언트 ID 관리**
-- **웹 클라이언트 ID**: 프론트엔드 환경 변수에 저장
-- **iOS/Android 클라이언트 ID**: 앱 설정에 포함
-- 각 플랫폼별 ID가 다르므로 정확히 구분
-
-\`\`\`typescript
-// ❌ 잘못된 예
-const clientId = 'MY_WEB_CLIENT_ID'; // 모든 플랫폼에 동일
-
-// ✅ 올바른 예
-const clientId = {
-  web: 'WEB_CLIENT_ID.apps.googleusercontent.com',
-  ios: 'IOS_CLIENT_ID.apps.googleusercontent.com',
-  android: 'ANDROID_CLIENT_ID.apps.googleusercontent.com',
-};
-\`\`\`
-
-### 2️⃣ **ID Token만 사용**
-- Access Token을 받으면 서버에서 **절대 노출하지 말 것**
-- ID Token만 검증하여 사용자 신원 확인
-- Access Token은 클라이언트에서만 Google API 호출 시 사용
-
-### 3️⃣ **PKCE 권장 (선택사항)**
-- \`usePKCE: true\`로 설정하면 추가 보안 제공
-- Code challenge/verifier 자동 생성
-- Nonce 값도 함께 검증
-
-### 4️⃣ **만료 토큰 처리**
-- ID Token은 1시간 유효
-- 클라이언트에서 만료 후 재인증 필요
-- 백엔드에서는 \`exp\` 클레임으로 검증
-
-### 5️⃣ **이메일 선택사항 처리**
-- Google 계정의 이메일이 공개되지 않을 수 있음
-- 최초 로그인 시 사용자로부터 이메일 입력 받기
-- 또는 Google+ API로 사용자 정보 추가 요청
-
----
-
-## 🔍 에러 처리
-
-| 에러 코드 | HTTP | 상황 | 클라이언트 액션 |
-|---------|------|------|----------------|
-| \`SOCIAL_0202\` | 401 | 소셜 인증 토큰이 유효하지 않습니다 | 재로그인 유도 |
-| \`SOCIAL_0203\` | 401 | 소셜 인증 토큰이 만료되었습니다 | 재로그인 유도 |
-| \`USER_0601\` | 409 | 이미 가입된 이메일 | 로그인 화면 이동 |
-
----
-
-## 📊 전체 흐름도
-
-\`\`\`
-┌─────────────┐                    ┌──────────────────┐
-│   클라이언트    │                    │   Google 서버      │
-└──────┬──────┘                    └────────┬─────────┘
-       │                                   │
-       │  1. Google.useAuthRequest()       │
-       │─────────────────────────────────> │
-       │                                   │
-       │<──────────────────────────────────│
-       │  2. 시스템 브라우저 인증 UI 표시  │
-       │                                   │
-       │  (사용자 Google 로그인)            │
-       │                                   │
-       │<──────────────────────────────────│
-       │  3. ID Token + 사용자 정보       │
-       │                                   │
-       ├──────────────────────────────────┐│
-       │  4. ID Token 추출                ││
-       │     + 디바이스 정보               ││
-       └──────────────────────────────────┘│
-                                           │
-       ┌───────────────────────────────────┘
-       │
-       ▼
-┌──────────────────┐
-│  Aido 백엔드      │
-└────────┬─────────┘
-         │
-         ├─ 1. ID Token 검증
-         │    └─ JWT 서명 검증 (Google 공개 키)
-         │    └─ aud, iss, exp 클레임 검증
-         │
-         ├─ 2. Google 사용자 ID (sub) 추출
-         │
-         ├─ 3. 기존 사용자 조회 또는 신규 생성
-         │
-         ├─ 4. 디바이스 정보 저장
-         │
-         └─ 5. 토큰 발급 및 응답
-                └─ Access Token
-                └─ Refresh Token
-                └─ 사용자 정보
-\`\`\`
-
----
-
-## ✅ 개발자 체크리스트
-
-- [ ] Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
-- [ ] iOS Bundle ID / Android Package Name 등록
-- [ ] 각 플랫폼별 Client ID 환경 변수 설정
-- [ ] expo-auth-session 라이브러리 설치 및 설정
-- [ ] Google.useAuthRequest() 구현
-- [ ] ID Token 추출 및 백엔드로 전송
-- [ ] 백엔드 token 검증 로직 구현 (GoogleAuth 라이브러리)
-- [ ] 에러 처리 (SOCIAL_0202, SOCIAL_0203) 구현
-- [ ] 테스트 디바이스에서 전체 로그인 플로우 검증
-- [ ] Swagger 문서에서 요청/응답 형식 확인`,
+		description: `## 🔵 Google 로그인 (모바일 네이티브)
+
+\`expo-auth-session\`의 Google OAuth 제공자를 통해 ID Token을 받은 후 백엔드로 전송합니다.
+시스템 브라우저를 사용하여 보안 인증 UI를 제공합니다.
+
+> 📖 상세 구현 가이드: \`.claude/oauth-client-guide.md\`
+
+### 🔄 플로우
+1. 클라이언트: \`Google.useAuthRequest()\`로 인증 요청
+2. Google 서버: 시스템 브라우저 인증 후 ID Token 반환
+3. 클라이언트: ID Token을 이 엔드포인트로 전송
+4. 백엔드: JWT 서명 검증 → 사용자 조회/생성 → 토큰 발급
+
+### 📝 요청 Body
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| \`idToken\` | string | ✅ | Google ID Token (JWT) |
+| \`userName\` | string | ❌ | 사용자 이름 (최초 로그인 시 권장) |
+| \`deviceName\` | string | ❌ | 디바이스 이름 |
+| \`deviceType\` | string | ❌ | 디바이스 유형 (iOS, Android) |
+
+### ⚠️ 에러 케이스
+| 코드 | HTTP | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| \`SOCIAL_0202\` | 401 | 유효하지 않은 토큰 | 재로그인 유도 |
+
+### 💡 참고
+- ID Token은 1시간 유효, 만료 후 재인증 필요
+- 웹/iOS/Android별 Client ID가 다르므로 정확히 구분 필요`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
@@ -1719,7 +1117,7 @@ const clientId = {
 	@Get("kakao/start")
 	@Public()
 	@ApiDoc({
-		summary: "Kakao OAuth 시작 (웹 브라우저 기반)",
+		summary: "Kakao OAuth 시작 (웹 브라우저)",
 		operationId: "kakaoOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 카카오 로그인 페이지로 리다이렉트합니다.
 
@@ -1777,7 +1175,7 @@ const clientId = {
 	@Get("kakao/web-callback")
 	@Public()
 	@ApiDoc({
-		summary: "Kakao OAuth 콜백 (웹 브라우저 기반)",
+		summary: "Kakao OAuth 콜백 (웹 브라우저)",
 		operationId: "kakaoOAuthCallback",
 		description: `카카오 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -1851,7 +1249,7 @@ const clientId = {
 	@Get("google/start")
 	@Public()
 	@ApiDoc({
-		summary: "Google OAuth 시작 (웹 브라우저 기반)",
+		summary: "Google OAuth 시작 (웹 브라우저)",
 		operationId: "googleOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 구글 로그인 페이지로 리다이렉트합니다.
 
@@ -1908,7 +1306,7 @@ const clientId = {
 	@Get("google/web-callback")
 	@Public()
 	@ApiDoc({
-		summary: "Google OAuth 콜백 (웹 브라우저 기반)",
+		summary: "Google OAuth 콜백 (웹 브라우저)",
 		operationId: "googleOAuthCallback",
 		description: `구글 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -1983,7 +1381,7 @@ const clientId = {
 	@Get("naver/start")
 	@Public()
 	@ApiDoc({
-		summary: "Naver OAuth 시작 (웹 브라우저 기반)",
+		summary: "Naver OAuth 시작 (웹 브라우저)",
 		operationId: "naverOAuthStart",
 		description: `\`expo-web-browser\`로 브라우저를 열어 네이버 로그인 페이지로 리다이렉트합니다.
 
@@ -2040,7 +1438,7 @@ const clientId = {
 	@Get("naver/web-callback")
 	@Public()
 	@ApiDoc({
-		summary: "Naver OAuth 콜백 (웹 브라우저 기반)",
+		summary: "Naver OAuth 콜백 (웹 브라우저)",
 		operationId: "naverOAuthCallback",
 		description: `네이버 인증 완료 후 authorization code를 처리하고 일회용 교환 코드를 발급합니다.
 
@@ -2113,421 +1511,39 @@ const clientId = {
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "Kakao 로그인 콜백 (모바일)",
+		summary: "Kakao 로그인 (모바일 네이티브)",
 		operationId: "kakaoMobileCallback",
 		description: `
-## 🟡 Kakao 소셜 로그인 (Expo 모바일 앱용)
+## 🟡 Kakao 로그인 (모바일 네이티브)
 
-Expo 앱에서 \`expo-auth-session\`을 사용하여 Kakao OAuth 인증 완료 후,
-사용자 프로필 정보를 전송하는 엔드포인트입니다.
+\`expo-auth-session\`을 사용하여 Kakao OAuth 인증 후 Access Token으로 사용자 정보를 조회하고 전송합니다.
+서버는 Access Token으로 Kakao API를 직접 호출하여 프로필을 검증합니다.
 
----
+> 📖 상세 구현 가이드: \`.claude/oauth-client-guide.md\`
 
-### 📦 필요한 라이브러리 (Expo)
-\`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
-\`\`\`
+### 🔄 플로우
+1. 클라이언트: \`expo-auth-session\`으로 Authorization Code → Access Token 교환
+2. 클라이언트: Kakao API(\`/v2/user/me\`)로 사용자 정보 조회
+3. 클라이언트: 프로필 정보를 이 엔드포인트로 전송
+4. 백엔드: Access Token으로 Kakao API 직접 호출하여 검증 → JWT 발급
 
-### 🔐 각 라이브러리가 필요한 이유
-
-#### 1. expo-crypto - PKCE 및 CSRF 보안
-**왜 필요한가?**
-- **PKCE (Proof Key for Code Exchange)**: 모바일 앱에서 Authorization Code가 탈취되어도 토큰 교환 불가
-- **state 파라미터**: CSRF(Cross-Site Request Forgery) 공격 방지
-- 암호학적으로 안전한 난수 생성으로 예측 불가능한 값 보장
-
-**보안적 이점:**
-| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
-|----------|-----------------|-------------------|
-| Code 가로채기 | ❌ 악성 앱이 code 탈취 후 토큰 획득 | ✅ code_verifier 없이는 토큰 교환 불가 |
-| CSRF 공격 | ❌ 공격자가 악의적 OAuth 요청 주입 | ✅ state 불일치로 즉시 거부 |
-| 세션 고정 | ❌ 공격자 세션으로 사용자 연결 가능 | ✅ 랜덤 state로 세션 고정 불가 |
-
-\`\`\`typescript
-import * as Crypto from 'expo-crypto';
-const state = Crypto.randomUUID(); // CSRF 토큰 - 콜백에서 반드시 검증
-const codeVerifier = Crypto.randomUUID(); // PKCE용 - 토큰 교환 시 필요
-\`\`\`
-
-#### 2. expo-linking - 딥링크 및 콜백 URL 처리
-**왜 필요한가?**
-- Kakao OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
-- Custom URL Scheme 생성 및 파싱 (\`aido://auth/kakao/callback\`)
-- Universal Links(iOS) / App Links(Android) 지원
-
-**보안적 이점:**
-| 기능 | 설명 |
-|------|------|
-| 정확한 앱 라우팅 | Kakao 인증 완료 후 정확한 앱으로만 콜백 전달 |
-| URL 파싱 | code, state 파라미터를 안전하게 추출하여 검증 |
-| 토큰 보호 | Access Token이 URL에 직접 노출되지 않음 (code 교환 방식) |
-
-\`\`\`typescript
-import * as Linking from 'expo-linking';
-const returnUrl = Linking.createURL('auth/kakao/callback', { scheme: 'aido' });
-// 결과: aido://auth/kakao/callback
-
-// 콜백 URL에서 code와 state 추출
-const parsed = Linking.parse(callbackUrl);
-const { code, state: returnedState } = parsed.queryParams;
-// state 검증 후 code로 토큰 교환
-\`\`\`
-
-#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
-**왜 필요한가?**
-- **RFC 8252 준수**: 네이티브 앱에서는 시스템 브라우저 사용 권장
-- 카카오 계정 로그인을 안전한 환경에서 진행
-- 기존 카카오 로그인 세션 재사용으로 UX 향상
-
-**WebView vs 시스템 브라우저 비교:**
-| 항목 | 인앱 WebView | expo-web-browser |
-|------|-------------|-----------------|
-| 자격증명 접근 | ❌ 앱이 카카오 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
-| 피싱 방지 | ❌ 가짜 카카오 로그인 UI 표시 가능 | ✅ 진짜 카카오 도메인 주소창 표시 |
-| 세션 재사용 | ❌ 매번 카카오 로그인 필요 | ✅ 기존 카카오 로그인 세션 활용 |
-| 카카오톡 연동 | ❌ 지원 불가 | ✅ 카카오톡 앱 인증 가능 |
-
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-// 앱 시작 시 호출 - 딥링크로 돌아왔을 때 세션 정리
-WebBrowser.maybeCompleteAuthSession();
-
-// Kakao OAuth 브라우저 열기
-const result = await WebBrowser.openAuthSessionAsync(kakaoAuthUrl, returnUrl);
-\`\`\`
-
-### 🔒 서버 측 Access Token 검증이 필요한 이유
-
-**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
-
-서버에서는 클라이언트가 보낸 Access Token으로 Kakao API(\`/v2/user/me\`)를 **직접 호출**하여 검증합니다.
-
-| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
-|------|---------------------|-------------|
-| 프로필 위조 | ❌ 타인의 카카오 ID로 사칭 가능 | ✅ Kakao API가 실제 토큰 소유자 반환 |
-| 토큰 위조 | ❌ 가짜 토큰으로 로그인 시도 | ✅ Kakao API 호출 실패로 탐지 |
-| 만료된 토큰 | ❌ 이전에 탈취한 토큰 재사용 | ✅ Kakao가 만료 토큰 거부 |
-| 권한 확인 | ❌ 동의하지 않은 정보 조작 | ✅ Kakao가 실제 동의 범위 반환 |
-
-**서버 검증 방식:**
-\`\`\`typescript
-// 서버에서 Access Token으로 Kakao API 직접 호출
-const userInfo = await axios.get('https://kapi.kakao.com/v2/user/me', {
-  headers: { Authorization: \`Bearer \${accessToken}\` }
-});
-// Kakao가 반환한 정보만 신뢰하여 사용자 생성/로그인 처리
-\`\`\`
-
----
-
-### 🔧 Kakao Developers 설정
-1. [Kakao Developers](https://developers.kakao.com)에서 애플리케이션 생성
-2. **앱 키** 발급 (REST API 키 사용)
-3. **플랫폼** 등록:
-   - **iOS**: 번들 ID 등록
-   - **Android**: 패키지명 + 키 해시 등록
-4. **카카오 로그인** 활성화
-5. **Redirect URI** 등록: \`https://auth.expo.io/@username/appname\`
-6. **동의 항목** 설정:
-   - 닉네임 (필수)
-   - 프로필 사진 (선택)
-   - 이메일 (선택 - 사용자 동의 필요)
-
----
-
-### 🌐 호출해야 하는 API 목록
-
-| 단계 | API | 메서드 | 설명 |
-|------|-----|--------|------|
-| 1 | \`https://kauth.kakao.com/oauth/authorize\` | GET | 사용자 인증 페이지 (expo-auth-session이 처리) |
-| 2 | \`https://kauth.kakao.com/oauth/token\` | POST | Access Token 교환 (expo-auth-session이 처리) |
-| 3 | \`https://kapi.kakao.com/v2/user/me\` | GET | 사용자 정보 조회 (**직접 호출**) |
-| 4 | \`POST /v1/auth/kakao/callback\` | POST | 백엔드로 프로필 전송 (**직접 호출**) |
-
----
-
-### 📋 Step 1-2: OAuth 인증 (expo-auth-session 처리)
-
-Kakao는 \`expo-auth-session\`의 기본 provider가 없으므로 **수동 설정**이 필요합니다.
-
-\`\`\`typescript
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const KAKAO_REST_API_KEY = 'YOUR_KAKAO_REST_API_KEY';
-
-// Kakao OAuth Discovery 문서
-const discovery = {
-  authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-  tokenEndpoint: 'https://kauth.kakao.com/oauth/token',
-};
-
-const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'your-app-scheme', // app.json의 scheme과 일치
-});
-
-// Step 1: Authorization Code 요청
-const authRequest = new AuthSession.AuthRequest({
-  clientId: KAKAO_REST_API_KEY,
-  scopes: ['profile_nickname', 'profile_image', 'account_email'],
-  redirectUri,
-});
-
-const authResult = await authRequest.promptAsync(discovery);
-// authResult.type === 'success' 시 authResult.params.code 획득
-
-// Step 2: Access Token 교환
-const tokenResult = await AuthSession.exchangeCodeAsync(
-  {
-    clientId: KAKAO_REST_API_KEY,
-    code: authResult.params.code,
-    redirectUri,
-  },
-  discovery
-);
-// tokenResult.accessToken 획득
-\`\`\`
-
----
-
-### 📋 Step 3: 사용자 정보 조회 API
-
-**엔드포인트**: \`GET https://kapi.kakao.com/v2/user/me\`
-
-**요청 헤더**:
-\`\`\`
-Authorization: Bearer {accessToken}
-\`\`\`
-
-**응답 예시**:
-\`\`\`json
-{
-  "id": 1234567890,
-  "connected_at": "2024-01-15T10:30:00Z",
-  "kakao_account": {
-    "profile_needs_agreement": false,
-    "profile": {
-      "nickname": "홍길동",
-      "thumbnail_image_url": "https://k.kakaocdn.net/...",
-      "profile_image_url": "https://k.kakaocdn.net/...",
-      "is_default_image": false
-    },
-    "has_email": true,
-    "email_needs_agreement": false,
-    "is_email_valid": true,
-    "is_email_verified": true,
-    "email": "user@example.com"
-  }
-}
-\`\`\`
-
-**응답 필드 설명**:
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`id\` | number | Kakao 고유 사용자 ID (숫자) |
-| \`kakao_account.email\` | string | 이메일 주소 (동의 시에만) |
-| \`kakao_account.is_email_verified\` | boolean | 이메일 인증 여부 |
-| \`kakao_account.profile.nickname\` | string | 카카오 닉네임 |
-| \`kakao_account.profile.profile_image_url\` | string | 프로필 사진 URL (원본) |
-| \`kakao_account.profile.thumbnail_image_url\` | string | 프로필 사진 URL (썸네일) |
-
----
-
-### 📋 Step 4: 백엔드 API 호출
-
-**엔드포인트**: \`POST /v1/auth/kakao/callback\`
-
-**요청 헤더**:
-\`\`\`
-Content-Type: application/json
-\`\`\`
-
-**요청 바디**:
-\`\`\`json
-{
-  "profile": {
-    "id": "1234567890",
-    "email": "user@example.com",
-    "emailVerified": true,
-    "name": "홍길동",
-    "picture": "https://k.kakaocdn.net/..."
-  }
-}
-\`\`\`
-
-**⚠️ 주의**: \`id\`는 **문자열**로 변환해서 전송해야 합니다 (\`String(userInfo.id)\`)
-
-**응답 예시**:
-\`\`\`json
-{
-  "userId": "clx123...",
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-  "name": "홍길동",
-  "profileImage": "https://k.kakaocdn.net/..."
-}
-\`\`\`
-
----
-
-### 🔄 전체 구현 예시
-
-\`\`\`typescript
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import * as SecureStore from 'expo-secure-store';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const KAKAO_REST_API_KEY = 'YOUR_KAKAO_REST_API_KEY';
-
-const discovery = {
-  authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-  tokenEndpoint: 'https://kauth.kakao.com/oauth/token',
-};
-
-export const useKakaoLogin = () => {
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'your-app-scheme',
-  });
-
-  const handleKakaoLogin = async () => {
-    try {
-      // Step 1: Authorization Code 요청
-      const authRequest = new AuthSession.AuthRequest({
-        clientId: KAKAO_REST_API_KEY,
-        scopes: ['profile_nickname', 'profile_image', 'account_email'],
-        redirectUri,
-      });
-
-      const authResult = await authRequest.promptAsync(discovery);
-
-      if (authResult.type !== 'success') {
-        throw new Error('Kakao OAuth cancelled or failed');
-      }
-
-      // Step 2: Access Token 교환
-      const tokenResult = await AuthSession.exchangeCodeAsync(
-        {
-          clientId: KAKAO_REST_API_KEY,
-          code: authResult.params.code,
-          redirectUri,
-        },
-        discovery
-      );
-
-      // Step 3: Kakao API로 사용자 정보 조회
-      const userInfoResponse = await fetch(
-        'https://kapi.kakao.com/v2/user/me',
-        {
-          headers: { Authorization: \`Bearer \${tokenResult.accessToken}\` },
-        }
-      );
-
-      if (!userInfoResponse.ok) {
-        throw new Error('Failed to fetch Kakao user info');
-      }
-
-      const userInfo = await userInfoResponse.json();
-      const kakaoAccount = userInfo.kakao_account;
-
-      // Step 4: 백엔드로 프로필 전송
-      const backendResponse = await fetch(
-        'https://your-api.com/v1/auth/kakao/callback',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            profile: {
-              id: String(userInfo.id), // 숫자를 문자열로 변환!
-              email: kakaoAccount?.email,
-              emailVerified: kakaoAccount?.is_email_verified ?? false,
-              name: kakaoAccount?.profile?.nickname,
-              picture: kakaoAccount?.profile?.profile_image_url,
-            },
-          }),
-        }
-      );
-
-      if (!backendResponse.ok) {
-        throw new Error('Backend authentication failed');
-      }
-
-      const { accessToken: jwtAccessToken, refreshToken } =
-        await backendResponse.json();
-
-      // 토큰 저장 (SecureStore 권장)
-      await SecureStore.setItemAsync('accessToken', jwtAccessToken);
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
-
-      return { success: true };
-    } catch (error) {
-      console.error('Kakao login error:', error);
-      return { success: false, error };
-    }
-  };
-
-  return { handleKakaoLogin };
-};
-\`\`\`
-
----
-
-### 🔄 인증 플로우 다이어그램
-\`\`\`
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Expo App   │      │    Kakao    │      │   Backend   │
-└──────┬──────┘      └──────┬──────┘      └──────┬──────┘
-       │                    │                    │
-       │ [Step 1] promptAsync()                  │
-       │ (kauth.kakao.com/oauth/authorize)       │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ [Step 2] exchangeCodeAsync()            │
-       │ (kauth.kakao.com/oauth/token)           │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ accessToken        │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 3] GET /v2/user/me                │
-       │ (kapi.kakao.com)   │                    │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ userInfo (JSON)    │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 4] POST /v1/auth/kakao/callback   │
-       │────────────────────────────────────────▶│
-       │                    │                    │
-       │             { accessToken, refreshToken }
-       │◀────────────────────────────────────────│
-       │                    │                    │
-\`\`\`
-
----
-
-### 📝 백엔드 요청 데이터 상세
+### 📝 요청 Body
 | 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
+|------|------|:----:|------|
 | \`profile.id\` | string | ✅ | Kakao 고유 사용자 ID (**문자열로 변환**) |
 | \`profile.email\` | string | ❌ | 이메일 (사용자 동의 시에만) |
 | \`profile.emailVerified\` | boolean | ❌ | 이메일 인증 여부 (기본: false) |
 | \`profile.name\` | string | ❌ | 카카오 닉네임 |
 | \`profile.picture\` | string | ❌ | 프로필 사진 URL |
 
-### 🔒 권한 범위 (Scopes)
-- \`profile_nickname\`: 닉네임 (필수)
-- \`profile_image\`: 프로필 사진 (선택)
-- \`account_email\`: 이메일 주소 (사용자 동의 필요)
+### ⚠️ 에러 케이스
+| 코드 | HTTP | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| \`SOCIAL_0202\` | 401 | 유효하지 않은 토큰 | 재로그인 유도 |
 
-### ⚠️ Kakao OAuth 주의사항
-- **이메일**: 사용자가 동의해야만 제공됨 (필수 아님)
-- **ID 타입**: Kakao API는 숫자로 반환하지만, 백엔드에는 문자열로 전송
-- **Redirect URI**: Kakao Developers에서 등록한 URI와 정확히 일치해야 함
+### 💡 참고
+- Kakao API는 \`id\`를 숫자로 반환하지만, 백엔드에는 **문자열**로 전송 필수
+- 이메일은 사용자가 동의해야만 제공됨
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
@@ -2555,491 +1571,39 @@ export const useKakaoLogin = () => {
 	@Throttle({ default: { ttl: 60000, limit: 10 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "Naver 로그인 콜백 (모바일)",
+		summary: "Naver 로그인 (모바일 네이티브)",
 		operationId: "naverMobileCallback",
 		description: `
-## 🟢 Naver 소셜 로그인 (Expo 모바일 앱용)
+## 🟢 Naver 로그인 (모바일 네이티브)
 
-Expo 앱에서 \`expo-auth-session\`을 사용하여 Naver OAuth 인증 완료 후,
-사용자 프로필 정보를 전송하는 엔드포인트입니다.
+\`expo-auth-session\`을 사용하여 Naver OAuth 인증 후 Access Token으로 사용자 정보를 조회하고 전송합니다.
+서버는 Access Token으로 Naver API를 직접 호출하여 프로필을 검증합니다.
 
----
+> 📖 상세 구현 가이드: \`.claude/oauth-client-guide.md\`
 
-### 📦 필요한 라이브러리 (Expo)
-\`\`\`bash
-npx expo install expo-auth-session expo-crypto expo-web-browser expo-linking
-\`\`\`
+### 🔄 플로우
+1. 클라이언트: \`expo-auth-session\`으로 Authorization Code 획득
+2. 클라이언트: Access Token 교환 (**client_secret 필수** → 직접 호출)
+3. 클라이언트: Naver API(\`/v1/nid/me\`)로 사용자 정보 조회 후 전송
+4. 백엔드: Access Token으로 Naver API 직접 호출하여 검증 → JWT 발급
 
-### 🔐 각 라이브러리가 필요한 이유
-
-#### 1. expo-crypto - PKCE 및 CSRF 보안
-**왜 필요한가?**
-- **state 파라미터 생성**: CSRF(Cross-Site Request Forgery) 공격 방지의 핵심
-- 암호학적으로 안전한 난수 생성 (\`randomUUID()\`)
-- 예측 불가능한 값으로 세션 고정 공격 방지
-
-**보안적 이점:**
-| 공격 유형 | expo-crypto 없이 | expo-crypto 사용 시 |
-|----------|-----------------|-------------------|
-| CSRF 공격 | ❌ 공격자가 악의적 OAuth 요청 주입 가능 | ✅ 랜덤 state 불일치로 즉시 거부 |
-| 세션 고정 | ❌ 공격자 세션으로 사용자 연결 가능 | ✅ 예측 불가능한 state로 방지 |
-| 리플레이 공격 | ❌ 이전 인증 요청 재사용 가능 | ✅ 일회성 state로 재사용 방지 |
-
-\`\`\`typescript
-import * as Crypto from 'expo-crypto';
-// CSRF 방지 토큰 - 콜백에서 반드시 검증 필요!
-const state = Crypto.randomUUID();
-// 저장 후, 콜백에서 returnedState === state 검증
-\`\`\`
-
-#### 2. expo-linking - 딥링크 및 콜백 URL 처리
-**왜 필요한가?**
-- Naver OAuth 콜백 URL을 네이티브 앱으로 정확히 라우팅
-- Custom URL Scheme 생성 및 파싱 (\`aido://auth/naver/callback\`)
-- Universal Links(iOS) / App Links(Android) 지원
-
-**보안적 이점:**
-| 기능 | 설명 |
-|------|------|
-| 정확한 앱 라우팅 | Naver 인증 완료 후 정확한 앱으로만 콜백 전달 |
-| URL 파싱 | code, state, error 파라미터를 안전하게 추출 |
-| state 검증 | 저장된 state와 반환된 state 비교로 CSRF 방지 |
-
-\`\`\`typescript
-import * as Linking from 'expo-linking';
-const returnUrl = Linking.createURL('auth/naver/callback', { scheme: 'aido' });
-// 결과: aido://auth/naver/callback
-
-// 콜백 URL에서 code와 state 추출
-const parsed = Linking.parse(callbackUrl);
-const { code, state: returnedState, error } = parsed.queryParams;
-
-// 필수! state 검증
-if (returnedState !== savedState) {
-  throw new Error('CSRF attack detected!');
-}
-\`\`\`
-
-#### 3. expo-web-browser - 보안 OAuth 브라우저 세션
-**왜 필요한가?**
-- **RFC 8252 준수**: 네이티브 앱에서는 시스템 브라우저 사용 권장
-- 네이버 계정 로그인을 안전한 환경에서 진행
-- 기존 네이버 로그인 세션 재사용으로 UX 향상
-
-**WebView vs 시스템 브라우저 비교:**
-| 항목 | 인앱 WebView | expo-web-browser |
-|------|-------------|-----------------|
-| 자격증명 접근 | ❌ 앱이 네이버 비밀번호 가로채기 가능 | ✅ 시스템이 보호 |
-| 피싱 방지 | ❌ 가짜 네이버 로그인 UI 표시 가능 | ✅ 진짜 nid.naver.com 주소창 표시 |
-| 세션 재사용 | ❌ 매번 네이버 로그인 필요 | ✅ 기존 네이버 로그인 세션 활용 |
-| 2단계 인증 | ❌ 지원 불안정 | ✅ 네이버 앱 OTP 연동 가능 |
-
-\`\`\`typescript
-import * as WebBrowser from 'expo-web-browser';
-
-// 앱 시작 시 호출 - 딥링크로 돌아왔을 때 세션 정리
-WebBrowser.maybeCompleteAuthSession();
-
-// Naver OAuth 브라우저 열기
-const result = await WebBrowser.openAuthSessionAsync(naverAuthUrl, returnUrl);
-\`\`\`
-
-### 🔒 서버 측 검증 및 client_secret 보호가 필요한 이유
-
-**Naver OAuth의 특수성: client_secret 필요**
-
-Naver는 토큰 교환 시 \`client_secret\`이 필수입니다. 이 비밀키는 **절대로 클라이언트에 저장하면 안 됩니다**.
-
-| 위치 | client_secret 노출 시 위험 |
-|------|--------------------------|
-| 모바일 앱 | ❌ 앱 디컴파일로 탈취 → 다른 앱이 우리 앱 사칭 가능 |
-| 서버 | ✅ 환경변수로 안전하게 관리, 외부 접근 불가 |
-
-**왜 클라이언트가 보낸 profile을 그대로 신뢰하지 않는가?**
-
-서버에서는 클라이언트가 보낸 Access Token으로 Naver API(\`/v1/nid/me\`)를 **직접 호출**하여 검증합니다.
-
-| 위협 | 클라이언트만 신뢰 시 | 서버 검증 시 |
-|------|---------------------|-------------|
-| 프로필 위조 | ❌ 타인의 네이버 ID로 사칭 가능 | ✅ Naver API가 실제 토큰 소유자 반환 |
-| 토큰 위조 | ❌ 가짜 토큰으로 로그인 시도 | ✅ Naver API 호출 실패로 탐지 |
-| 만료된 토큰 | ❌ 이전에 탈취한 토큰 재사용 | ✅ Naver가 만료 토큰 거부 |
-| 권한 확인 | ❌ 동의하지 않은 정보 조작 | ✅ Naver가 실제 동의 범위 반환 |
-
-**서버 검증 방식:**
-\`\`\`typescript
-// 서버에서 Access Token으로 Naver API 직접 호출
-const userInfo = await axios.get('https://openapi.naver.com/v1/nid/me', {
-  headers: { Authorization: \`Bearer \${accessToken}\` }
-});
-// Naver가 반환한 response.id, response.email 등만 신뢰
-\`\`\`
-
----
-
-### 🔧 Naver Developers 설정
-1. [Naver Developers](https://developers.naver.com)에서 애플리케이션 등록
-2. **사용 API**: 네이버 로그인 선택
-3. **서비스 환경** 추가:
-   - **iOS**: URL Scheme 등록 (예: \`naverlogin\`)
-   - **Android**: 패키지명 + 다운로드 마켓 URL 등록
-4. **Callback URL** 등록: \`https://auth.expo.io/@username/appname\`
-5. **API 권한** 설정 (제공 정보 선택):
-   - 회원이름 (필수)
-   - 이메일 (필수)
-   - 프로필 사진 (선택)
-   - 닉네임 (선택)
-
----
-
-### 🌐 호출해야 하는 API 목록
-
-| 단계 | API | 메서드 | 설명 |
-|------|-----|--------|------|
-| 1 | \`https://nid.naver.com/oauth2.0/authorize\` | GET | 사용자 인증 페이지 (expo-auth-session이 처리) |
-| 2 | \`https://nid.naver.com/oauth2.0/token\` | POST | Access Token 교환 (**직접 호출** - client_secret 필요) |
-| 3 | \`https://openapi.naver.com/v1/nid/me\` | GET | 사용자 정보 조회 (**직접 호출**) |
-| 4 | \`POST /v1/auth/naver/callback\` | POST | 백엔드로 프로필 전송 (**직접 호출**) |
-
----
-
-### 📋 Step 1: Authorization Code 요청 (expo-auth-session 처리)
-
-Naver는 \`expo-auth-session\`의 기본 provider가 없으므로 **수동 설정**이 필요합니다.
-
-\`\`\`typescript
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const NAVER_CLIENT_ID = 'YOUR_NAVER_CLIENT_ID';
-
-// Naver OAuth Discovery 문서
-const discovery = {
-  authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
-  tokenEndpoint: 'https://nid.naver.com/oauth2.0/token',
-};
-
-const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'your-app-scheme', // app.json의 scheme과 일치
-});
-
-// Authorization Code 요청
-const authRequest = new AuthSession.AuthRequest({
-  clientId: NAVER_CLIENT_ID,
-  redirectUri,
-  responseType: AuthSession.ResponseType.Code,
-  state: 'random-state-string', // CSRF 방지용
-});
-
-const authResult = await authRequest.promptAsync(discovery);
-// authResult.type === 'success' 시 authResult.params.code 획득
-\`\`\`
-
----
-
-### 📋 Step 2: Access Token 교환 API
-
-**⚠️ 중요**: Naver는 \`client_secret\`이 필수입니다. expo-auth-session의 \`exchangeCodeAsync\`를 사용할 수 없으므로 **직접 호출**해야 합니다.
-
-**엔드포인트**: \`POST https://nid.naver.com/oauth2.0/token\`
-
-**요청 파라미터** (URL Query String):
-| 파라미터 | 필수 | 설명 |
-|----------|------|------|
-| \`grant_type\` | ✅ | \`authorization_code\` (고정값) |
-| \`client_id\` | ✅ | 애플리케이션 Client ID |
-| \`client_secret\` | ✅ | 애플리케이션 Client Secret |
-| \`code\` | ✅ | Authorization Code (Step 1에서 획득) |
-| \`state\` | ❌ | CSRF 검증용 state 값 |
-
-**요청 예시**:
-\`\`\`
-POST https://nid.naver.com/oauth2.0/token
-  ?grant_type=authorization_code
-  &client_id=YOUR_CLIENT_ID
-  &client_secret=YOUR_CLIENT_SECRET
-  &code=AUTHORIZATION_CODE
-  &state=RANDOM_STATE
-\`\`\`
-
-**응답 예시**:
-\`\`\`json
-{
-  "access_token": "AAAAOLtP40eH...",
-  "refresh_token": "c8ceMEJisO4Se7...",
-  "token_type": "bearer",
-  "expires_in": "3600"
-}
-\`\`\`
-
-**응답 필드 설명**:
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`access_token\` | string | 사용자 정보 조회용 Access Token |
-| \`refresh_token\` | string | Access Token 갱신용 |
-| \`token_type\` | string | 토큰 타입 (bearer) |
-| \`expires_in\` | string | 만료 시간 (초) |
-
----
-
-### 📋 Step 3: 사용자 정보 조회 API
-
-**엔드포인트**: \`GET https://openapi.naver.com/v1/nid/me\`
-
-**요청 헤더**:
-\`\`\`
-Authorization: Bearer {access_token}
-\`\`\`
-
-**응답 예시**:
-\`\`\`json
-{
-  "resultcode": "00",
-  "message": "success",
-  "response": {
-    "id": "32742776",
-    "nickname": "홍길동",
-    "profile_image": "https://ssl.pstatic.net/static/pwe/address/img_profile.png",
-    "email": "user@naver.com",
-    "name": "홍길동",
-    "birthday": "01-01",
-    "birthyear": "1990",
-    "gender": "M",
-    "mobile": "010-1234-5678"
-  }
-}
-\`\`\`
-
-**응답 필드 설명** (\`response\` 객체 내부):
-| 필드 | 타입 | 설명 | 동의 필요 |
-|------|------|------|----------|
-| \`id\` | string | 네이버 고유 사용자 ID | 필수 제공 |
-| \`email\` | string | 이메일 주소 | 이메일 동의 |
-| \`name\` | string | 사용자 실명 | 이름 동의 |
-| \`nickname\` | string | 네이버 닉네임 | 닉네임 동의 |
-| \`profile_image\` | string | 프로필 사진 URL | 프로필 사진 동의 |
-| \`gender\` | string | 성별 (M/F) | 성별 동의 |
-| \`birthday\` | string | 생일 (MM-DD) | 생일 동의 |
-| \`birthyear\` | string | 출생연도 (YYYY) | 출생연도 동의 |
-| \`mobile\` | string | 휴대전화 번호 | 휴대전화 동의 |
-
----
-
-### 📋 Step 4: 백엔드 API 호출
-
-**엔드포인트**: \`POST /v1/auth/naver/callback\`
-
-**요청 헤더**:
-\`\`\`
-Content-Type: application/json
-\`\`\`
-
-**요청 바디**:
-\`\`\`json
-{
-  "profile": {
-    "id": "32742776",
-    "email": "user@naver.com",
-    "name": "홍길동",
-    "picture": "https://ssl.pstatic.net/static/pwe/address/img_profile.png"
-  }
-}
-\`\`\`
-
-**응답 예시**:
-\`\`\`json
-{
-  "userId": "clx123...",
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-  "name": "홍길동",
-  "profileImage": "https://ssl.pstatic.net/static/pwe/address/img_profile.png"
-}
-\`\`\`
-
----
-
-### 🔄 전체 구현 예시
-
-\`\`\`typescript
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import * as SecureStore from 'expo-secure-store';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const NAVER_CLIENT_ID = 'YOUR_NAVER_CLIENT_ID';
-const NAVER_CLIENT_SECRET = 'YOUR_NAVER_CLIENT_SECRET'; // ⚠️ 보안 주의
-
-const discovery = {
-  authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
-  tokenEndpoint: 'https://nid.naver.com/oauth2.0/token',
-};
-
-export const useNaverLogin = () => {
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'your-app-scheme',
-  });
-
-  const handleNaverLogin = async () => {
-    try {
-      // Step 1: Authorization Code 요청
-      const state = Math.random().toString(36).substring(7);
-      const authRequest = new AuthSession.AuthRequest({
-        clientId: NAVER_CLIENT_ID,
-        redirectUri,
-        responseType: AuthSession.ResponseType.Code,
-        extraParams: { state },
-      });
-
-      const authResult = await authRequest.promptAsync(discovery);
-
-      if (authResult.type !== 'success') {
-        throw new Error('Naver OAuth cancelled or failed');
-      }
-
-      // Step 2: Access Token 교환 (직접 호출 - client_secret 필요)
-      const tokenUrl = new URL('https://nid.naver.com/oauth2.0/token');
-      tokenUrl.searchParams.set('grant_type', 'authorization_code');
-      tokenUrl.searchParams.set('client_id', NAVER_CLIENT_ID);
-      tokenUrl.searchParams.set('client_secret', NAVER_CLIENT_SECRET);
-      tokenUrl.searchParams.set('code', authResult.params.code);
-      tokenUrl.searchParams.set('state', state);
-
-      const tokenResponse = await fetch(tokenUrl.toString(), {
-        method: 'POST',
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error('Failed to exchange authorization code');
-      }
-
-      const tokenData = await tokenResponse.json();
-
-      if (tokenData.error) {
-        throw new Error(tokenData.error_description || 'Token exchange failed');
-      }
-
-      // Step 3: Naver API로 사용자 정보 조회
-      const userInfoResponse = await fetch(
-        'https://openapi.naver.com/v1/nid/me',
-        {
-          headers: { Authorization: \`Bearer \${tokenData.access_token}\` },
-        }
-      );
-
-      if (!userInfoResponse.ok) {
-        throw new Error('Failed to fetch Naver user info');
-      }
-
-      const userInfoResult = await userInfoResponse.json();
-
-      if (userInfoResult.resultcode !== '00') {
-        throw new Error(userInfoResult.message || 'Failed to get user info');
-      }
-
-      const naverProfile = userInfoResult.response;
-
-      // Step 4: 백엔드로 프로필 전송
-      const backendResponse = await fetch(
-        'https://your-api.com/v1/auth/naver/callback',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            profile: {
-              id: naverProfile.id,
-              email: naverProfile.email,
-              name: naverProfile.name || naverProfile.nickname,
-              picture: naverProfile.profile_image,
-            },
-          }),
-        }
-      );
-
-      if (!backendResponse.ok) {
-        throw new Error('Backend authentication failed');
-      }
-
-      const { accessToken: jwtAccessToken, refreshToken } =
-        await backendResponse.json();
-
-      // 토큰 저장 (SecureStore 권장)
-      await SecureStore.setItemAsync('accessToken', jwtAccessToken);
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
-
-      return { success: true };
-    } catch (error) {
-      console.error('Naver login error:', error);
-      return { success: false, error };
-    }
-  };
-
-  return { handleNaverLogin };
-};
-\`\`\`
-
----
-
-### 🔄 인증 플로우 다이어그램
-\`\`\`
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Expo App   │      │    Naver    │      │   Backend   │
-└──────┬──────┘      └──────┬──────┘      └──────┬──────┘
-       │                    │                    │
-       │ [Step 1] promptAsync()                  │
-       │ (nid.naver.com/oauth2.0/authorize)      │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ code + state       │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 2] POST /oauth2.0/token           │
-       │ (nid.naver.com - client_secret 포함)    │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ access_token       │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 3] GET /v1/nid/me                 │
-       │ (openapi.naver.com)│                    │
-       │───────────────────▶│                    │
-       │                    │                    │
-       │ userInfo (JSON)    │                    │
-       │◀───────────────────│                    │
-       │                    │                    │
-       │ [Step 4] POST /v1/auth/naver/callback   │
-       │────────────────────────────────────────▶│
-       │                    │                    │
-       │             { accessToken, refreshToken }
-       │◀────────────────────────────────────────│
-       │                    │                    │
-\`\`\`
-
----
-
-### 📝 백엔드 요청 데이터 상세
+### 📝 요청 Body
 | 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
+|------|------|:----:|------|
 | \`profile.id\` | string | ✅ | Naver 고유 사용자 ID |
 | \`profile.email\` | string | ❌ | 이메일 주소 (사용자 동의 시) |
 | \`profile.name\` | string | ❌ | 이름 또는 닉네임 |
 | \`profile.picture\` | string | ❌ | 프로필 사진 URL |
 
-### 🔒 API 권한 (제공 정보 선택)
-- **회원이름** (이름): 사용자 실명
-- **이메일**: 네이버 이메일 주소
-- **프로필 사진**: 프로필 이미지 URL
-- **닉네임**: 네이버 닉네임 (이름 대신 사용 가능)
+### ⚠️ 에러 케이스
+| 코드 | HTTP | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| \`SOCIAL_0202\` | 401 | 유효하지 않은 토큰 | 재로그인 유도 |
 
-### ⚠️ Naver OAuth 주의사항
-- **client_secret 필수**: 토큰 교환 시 반드시 필요 (Kakao, Google과 다름)
-- **보안**: client_secret을 앱에 직접 넣으면 보안 위험 → 프록시 서버 사용 권장
-- **state 파라미터**: CSRF 공격 방지용으로 권장
-- **Redirect URI**: Naver Developers에 등록한 Callback URL과 정확히 일치해야 함
-- **동의 항목**: 사용자가 거부하면 해당 정보는 null로 반환됨
+### 💡 참고
+- Naver는 토큰 교환 시 **client_secret 필수** (Kakao/Google과 다름)
+- client_secret을 앱에 직접 넣으면 보안 위험 → 프록시 서버 사용 권장
+- 동의 항목을 사용자가 거부하면 해당 정보는 null 반환
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })
@@ -3070,7 +1634,7 @@ export const useNaverLogin = () => {
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "소셜 계정 연동",
+		summary: "소셜 계정 연동 (토큰 직접 전송)",
 		operationId: "linkSocialAccount",
 		description: `
 ## 🔗 소셜 계정 연동
@@ -3101,7 +1665,7 @@ provider에 따라 필수 토큰이 다릅니다:
 - 이미 다른 사용자에 연결된 소셜 계정은 연동할 수 없습니다 (409)
 - 동일한 소셜 계정을 중복 연동하면 "이미 연결된 계정입니다" 메시지를 반환합니다
 
-### 에러 코드
+### ⚠️ 에러 코드
 | 코드 | HTTP | 설명 |
 |------|------|------|
 | \`AUTH_0107\` | 401 | 인증이 필요합니다 |
@@ -3138,7 +1702,7 @@ provider에 따라 필수 토큰이 다릅니다:
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "OAuth 교환 코드로 소셜 계정 연동",
+		summary: "소셜 계정 연동 (교환 코드)",
 		operationId: "linkWithExchangeCode",
 		description: `
 ## 🔗 교환 코드 기반 소셜 계정 연동
@@ -3165,7 +1729,7 @@ provider에 따라 필수 토큰이 다릅니다:
 - 이미 다른 사용자에 연결된 소셜 계정은 연동할 수 없습니다 (409)
 - 교환 코드는 1회만 사용 가능합니다
 
-### 에러 코드
+### ⚠️ 에러 코드
 | 코드 | HTTP | 설명 |
 |------|------|------|
 | \`AUTH_0107\` | 401 | 인증이 필요합니다 |
@@ -3198,18 +1762,18 @@ provider에 따라 필수 토큰이 다릅니다:
 	@Get("linked-accounts")
 	@ApiBearerAuth()
 	@ApiDoc({
-		summary: "소셜 계정 연결 상태 목록",
+		summary: "소셜 계정 연결 상태 조회",
 		operationId: "getLinkedAccounts",
 		description: `
-## 소셜 계정 연결 상태 조회
+## 🔗 소셜 계정 연결 상태 조회
 
 현재 사용자의 소셜 계정 연결 상태를 조회합니다.
 4개 OAuth 제공자(APPLE, GOOGLE, KAKAO, NAVER) 모두의 연결 여부를 반환합니다.
 
-### 인증 필요
+### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 응답 데이터
+### 📋 응답 데이터
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`provider\` | string | 소셜 제공자 (APPLE, GOOGLE, KAKAO, NAVER) |
@@ -3217,7 +1781,7 @@ provider에 따라 필수 토큰이 다릅니다:
 | \`providerAccountId\` | string \\| null | 제공자 측 계정 고유 ID (미연결 시 null) |
 | \`linkedAt\` | string \\| null | 계정 연결 시각 (ISO 8601 UTC, 미연결 시 null) |
 
-### 응답 예시
+### 💡 응답 예시
 \`\`\`json
 {
   "accounts": [
@@ -3256,7 +1820,7 @@ provider에 따라 필수 토큰이 다릅니다:
 - 비밀번호 또는 다른 소셜 계정이 있어야 해제 가능
 - 연결되지 않은 provider를 해제하면 404
 
-### 에러 코드
+### ⚠️ 에러 코드
 | 코드 | HTTP | 설명 |
 |------|------|------|
 | \`AUTH_0107\` | 401 | 인증이 필요합니다 |
@@ -3295,19 +1859,19 @@ provider에 따라 필수 토큰이 다릅니다:
 		summary: "회원 탈퇴",
 		operationId: "deleteAccount",
 		description: `
-## 회원 탈퇴
+## 👋 회원 탈퇴
 계정을 탈퇴 처리합니다 (30일 복구 기간).
 
-### 인증 필요
+### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
 
-### 요청 Body
+### 📝 요청 Body
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | password | string | 이메일 계정만 | 현재 비밀번호 |
 | reason | string | 선택 | 탈퇴 사유 (최대 500자) |
 
-### 처리 내용
+### 📋 처리 내용
 1. 본인 확인 (이메일 계정: 비밀번호, 소셜 계정: 세션)
 2. Soft delete (deletedAt 설정)
 3. 모든 세션 즉시 폐기
