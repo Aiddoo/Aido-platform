@@ -12,25 +12,13 @@
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
 import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
-import { EmailService } from "@/modules/email/email.service";
-
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("AI (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
+	let ctx: E2eTestContext;
 	let fakeAiProvider: FakeAiProvider;
 	let accessToken: string;
 	let testUserId: string;
@@ -41,52 +29,10 @@ describe("AI (e2e)", () => {
 	};
 
 	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 */
-	async function createVerifiedUser(): Promise<{
-		token: string;
-		userId: string;
-	}> {
-		// 회원가입
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email: testUser.email,
-				password: testUser.password,
-				passwordConfirm: testUser.password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		// 이메일 인증
-		const code = fakeEmailService.getLastCode(testUser.email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email: testUser.email, code })
-			.expect(200);
-
-		// 유저 ID 조회
-		const prisma = testDatabase.getPrisma();
-		const user = await prisma.user.findUnique({
-			where: { email: testUser.email },
-		});
-
-		if (!user) {
-			throw new Error("Test user not found");
-		}
-
-		return {
-			token: response.body.data.accessToken,
-			userId: user.id,
-		};
-	}
-
-	/**
 	 * 사용량 리셋 헬퍼
 	 */
 	async function resetUsage(userId: string): Promise<void> {
-		const prisma = testDatabase.getPrisma();
+		const prisma = ctx.testDatabase.getPrisma();
 		await prisma.user.update({
 			where: { id: userId },
 			data: {
@@ -100,7 +46,7 @@ describe("AI (e2e)", () => {
 	 * 사용량 설정 헬퍼
 	 */
 	async function setUsage(userId: string, count: number): Promise<void> {
-		const prisma = testDatabase.getPrisma();
+		const prisma = ctx.testDatabase.getPrisma();
 		await prisma.user.update({
 			where: { id: userId },
 			data: {
@@ -111,38 +57,35 @@ describe("AI (e2e)", () => {
 	}
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		// Fake 서비스 인스턴스 생성
-		fakeEmailService = new FakeEmailService();
 		fakeAiProvider = new FakeAiProvider();
 
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(AI_PROVIDER)
-			.useValue(fakeAiProvider)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp({
+			customizeBuilder: (builder) =>
+				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+		});
 
 		// 테스트 사용자 생성 및 인증
-		const { token, userId } = await createVerifiedUser();
-		accessToken = token;
-		testUserId = userId;
+		const user = await ctx.helpers.createVerifiedUser(
+			testUser.email,
+			testUser.password,
+		);
+		accessToken = user.accessToken;
+
+		// 유저 ID 조회
+		const prisma = ctx.testDatabase.getPrisma();
+		const dbUser = await prisma.user.findUnique({
+			where: { email: testUser.email },
+		});
+
+		if (!dbUser) {
+			throw new Error("Test user not found");
+		}
+
+		testUserId = dbUser.id;
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	beforeEach(async () => {
@@ -167,7 +110,7 @@ describe("AI (e2e)", () => {
 				});
 
 				// When - 자연어 파싱 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "내일 오후 3시에 팀 미팅" });
@@ -210,7 +153,7 @@ describe("AI (e2e)", () => {
 				});
 
 				// When - 종일 일정 자연어 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "다음주 월요일부터 금요일까지 출장" });
@@ -232,7 +175,7 @@ describe("AI (e2e)", () => {
 
 				// When - 3회 연속 파싱 요청
 				for (let i = 0; i < 3; i++) {
-					await request(app.getHttpServer())
+					await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.send({ text: `테스트 ${i + 1}` })
@@ -240,7 +183,7 @@ describe("AI (e2e)", () => {
 				}
 
 				// Then - 사용량이 3으로 증가
-				const usageResponse = await request(app.getHttpServer())
+				const usageResponse = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
@@ -286,7 +229,7 @@ describe("AI (e2e)", () => {
 					fakeAiProvider.setResponse(testCase.expected);
 
 					// When - 각 자연어 입력 파싱 요청
-					const response = await request(app.getHttpServer())
+					const response = await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.send({ text: testCase.input });
@@ -309,7 +252,7 @@ describe("AI (e2e)", () => {
 				await setUsage(testUserId, 5);
 
 				// When - 6번째 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "테스트" });
@@ -335,7 +278,7 @@ describe("AI (e2e)", () => {
 
 				// When - 5회 연속 요청
 				for (let i = 0; i < 5; i++) {
-					await request(app.getHttpServer())
+					await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
 						.send({ text: `테스트 ${i + 1}` })
@@ -343,7 +286,7 @@ describe("AI (e2e)", () => {
 				}
 
 				// Then - 6회째 요청 시 429 에러
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "테스트 6" });
@@ -359,7 +302,7 @@ describe("AI (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 토큰 없이 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.send({ text: "내일 회의" });
 
@@ -372,7 +315,7 @@ describe("AI (e2e)", () => {
 				// Given - 유효하지 않은 토큰
 
 				// When - 잘못된 토큰으로 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", "Bearer invalid-token")
 					.send({ text: "내일 회의" });
@@ -388,7 +331,7 @@ describe("AI (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 빈 텍스트로 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "" });
@@ -403,7 +346,7 @@ describe("AI (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - text 필드 없이 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({});
@@ -419,7 +362,7 @@ describe("AI (e2e)", () => {
 				const longText = "가".repeat(501);
 
 				// When - 긴 텍스트로 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: longText });
@@ -437,7 +380,7 @@ describe("AI (e2e)", () => {
 				fakeAiProvider.setAvailable(false);
 
 				// When - 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "내일 회의" });
@@ -452,7 +395,7 @@ describe("AI (e2e)", () => {
 				fakeAiProvider.setInvalidResponse(new Error("파싱 실패"));
 
 				// When - 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "알 수 없는 입력" });
@@ -474,7 +417,7 @@ describe("AI (e2e)", () => {
 				});
 
 				// When - 파싱 요청
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "테스트" });
@@ -499,7 +442,7 @@ describe("AI (e2e)", () => {
 				// Given - 사용량 0인 상태 (beforeEach에서 리셋됨)
 
 				// When - 사용량 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
@@ -519,7 +462,7 @@ describe("AI (e2e)", () => {
 				await setUsage(testUserId, 3);
 
 				// When - 사용량 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
@@ -536,7 +479,7 @@ describe("AI (e2e)", () => {
 				await setUsage(testUserId, 5);
 
 				// When - 사용량 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
@@ -552,7 +495,7 @@ describe("AI (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 사용량 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", `Bearer ${accessToken}`);
 
@@ -574,7 +517,9 @@ describe("AI (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 토큰 없이 사용량 조회
-				const response = await request(app.getHttpServer()).get("/ai/usage");
+				const response = await request(ctx.app.getHttpServer()).get(
+					"/ai/usage",
+				);
 
 				// Then - 401 Unauthorized 반환
 				expect(response.status).toBe(401);
@@ -584,7 +529,7 @@ describe("AI (e2e)", () => {
 				// Given - 유효하지 않은 토큰
 
 				// When - 잘못된 토큰으로 사용량 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/ai/usage")
 					.set("Authorization", "Bearer invalid-token");
 
@@ -608,7 +553,7 @@ describe("AI (e2e)", () => {
 			});
 
 			// When - 초기 사용량 확인
-			const initialUsage = await request(app.getHttpServer())
+			const initialUsage = await request(ctx.app.getHttpServer())
 				.get("/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -617,20 +562,20 @@ describe("AI (e2e)", () => {
 			expect(initialUsage.body.data.data.used).toBe(0);
 
 			// When - 파싱 요청 2회
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ text: "테스트 1" })
 				.expect(200);
 
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ text: "테스트 2" })
 				.expect(200);
 
 			// Then - 사용량 2로 증가
-			const finalUsage = await request(app.getHttpServer())
+			const finalUsage = await request(ctx.app.getHttpServer())
 				.get("/ai/usage")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
@@ -648,7 +593,7 @@ describe("AI (e2e)", () => {
 			await setUsage(testUserId, 5);
 
 			// When - 6번째 요청 시도
-			const failedResponse = await request(app.getHttpServer())
+			const failedResponse = await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ text: "테스트" });
@@ -658,7 +603,7 @@ describe("AI (e2e)", () => {
 
 			// When - 사용량 리셋 후 다시 요청
 			await resetUsage(testUserId);
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ text: "테스트" });

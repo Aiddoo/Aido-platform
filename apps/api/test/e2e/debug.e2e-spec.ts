@@ -4,53 +4,20 @@
  * TestDatabase를 사용하여 PostgreSQL 컨테이너를 시작합니다.
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("Debug (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		// TestDatabase로 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
+		ctx = await createE2eApp();
 
 		console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
-		fakeEmailService = new FakeEmailService();
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
 		// 디버깅: DatabaseService가 어떤 연결을 사용하는지 확인
-		const db = moduleFixture.get(DatabaseService);
+		const db = ctx.testDatabase.getPrisma();
 		console.log("DatabaseService instance type:", db.constructor.name);
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
 
 		// 디버깅: 다양한 쿼리 테스트
 		try {
@@ -82,8 +49,7 @@ describe("Debug (e2e)", () => {
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	it("POST /auth/register - 에러 응답 확인", async () => {
@@ -92,7 +58,7 @@ describe("Debug (e2e)", () => {
 		const testPassword = "Test1234!";
 
 		// When - 회원가입 API 호출
-		const response = await request(app.getHttpServer())
+		const response = await request(ctx.app.getHttpServer())
 			.post("/auth/register")
 			.send({
 				email: testEmail,

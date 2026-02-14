@@ -6,69 +6,11 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("DailyCompletion (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<string> {
-		// 회원가입
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		// 이메일 인증
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return response.body.data.accessToken;
-	}
-
-	/**
-	 * 기본 카테고리 ID 조회 헬퍼
-	 */
-	async function getDefaultCategoryId(accessToken: string): Promise<number> {
-		const response = await request(app.getHttpServer())
-			.get("/todo-categories")
-			.set("Authorization", `Bearer ${accessToken}`)
-			.expect(200);
-
-		const categories = response.body.data.items;
-		const defaultCategory =
-			categories.find((c: { name: string }) => c.name === "할 일") ||
-			categories[0];
-		return defaultCategory.id;
-	}
+	let ctx: E2eTestContext;
 
 	/**
 	 * 테스트용 Todo 생성 헬퍼
@@ -77,8 +19,8 @@ describe("DailyCompletion (e2e)", () => {
 		accessToken: string,
 		data: { title: string; startDate: string; completed?: boolean },
 	): Promise<{ id: number }> {
-		const categoryId = await getDefaultCategoryId(accessToken);
-		const response = await request(app.getHttpServer())
+		const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+		const response = await request(ctx.app.getHttpServer())
 			.post("/todos")
 			.set("Authorization", `Bearer ${accessToken}`)
 			.send({
@@ -92,7 +34,7 @@ describe("DailyCompletion (e2e)", () => {
 
 		// completed가 true인 경우 업데이트
 		if (data.completed) {
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.patch(`/todos/${todoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
@@ -121,33 +63,11 @@ describe("DailyCompletion (e2e)", () => {
 	}
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		// FakeEmailService 인스턴스 생성
-		fakeEmailService = new FakeEmailService();
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("GET /daily-completions - 일일 완료 현황 조회", () => {
@@ -156,7 +76,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증되지 않은 상태
 
 				// When - 인증 토큰 없이 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
@@ -168,7 +88,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 유효하지 않은 토큰 준비
 
 				// When - 잘못된 토큰으로 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", "Bearer invalid-token")
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
@@ -182,17 +102,18 @@ describe("DailyCompletion (e2e)", () => {
 			let accessToken: string;
 
 			beforeAll(async () => {
-				accessToken = await createVerifiedUser(
+				const user = await ctx.helpers.createVerifiedUser(
 					"param-test@example.com",
 					"Test1234!",
 				);
+				accessToken = user.accessToken;
 			});
 
 			it("startDate 누락 시 400 반환", async () => {
 				// Given - 인증된 사용자 준비
 
 				// When - startDate 없이 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ endDate: "2026-01-31" });
@@ -206,7 +127,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자 준비
 
 				// When - endDate 없이 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-01" });
@@ -220,7 +141,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자 준비
 
 				// When - 잘못된 날짜 형식으로 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026/01/01", endDate: "2026-01-31" });
@@ -234,7 +155,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자 준비
 
 				// When - endDate가 startDate보다 이전인 값으로 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-31", endDate: "2026-01-01" });
@@ -249,10 +170,11 @@ describe("DailyCompletion (e2e)", () => {
 			let accessToken: string;
 
 			beforeAll(async () => {
-				accessToken = await createVerifiedUser(
+				const user = await ctx.helpers.createVerifiedUser(
 					"completions-test@example.com",
 					"Test1234!",
 				);
+				accessToken = user.accessToken;
 
 				// 테스트 데이터 생성
 				// 2026-01-15: 3개 중 3개 완료 (100% - 물고기)
@@ -272,7 +194,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자와 4개 날짜에 Todo 데이터 준비 (100% 완료 2일)
 
 				// When - 1월 전체 기간 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-01", endDate: "2026-01-31" });
@@ -302,7 +224,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자와 3일간의 Todo 데이터 준비
 
 				// When - 특정 3일 기간 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-15", endDate: "2026-01-17" });
@@ -348,7 +270,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자와 2026-01-20에 100% 완료된 Todo 준비
 
 				// When - 단일 날짜 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-01-20", endDate: "2026-01-20" });
@@ -367,7 +289,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 인증된 사용자 준비 (2월에는 Todo 없음)
 
 				// When - Todo가 없는 2월 기간 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-02-01", endDate: "2026-02-28" });
@@ -386,17 +308,19 @@ describe("DailyCompletion (e2e)", () => {
 
 			beforeAll(async () => {
 				// 첫 번째 사용자 생성 및 Todo 추가
-				user1Token = await createVerifiedUser(
+				const user1 = await ctx.helpers.createVerifiedUser(
 					"isolation-user1@example.com",
 					"Test1234!",
 				);
+				user1Token = user1.accessToken;
 				await createTodosForDate(user1Token, "2026-03-01", 3, 3);
 
 				// 두 번째 사용자 생성 및 Todo 추가
-				user2Token = await createVerifiedUser(
+				const user2 = await ctx.helpers.createVerifiedUser(
 					"isolation-user2@example.com",
 					"Test1234!",
 				);
+				user2Token = user2.accessToken;
 				await createTodosForDate(user2Token, "2026-03-01", 2, 1);
 			});
 
@@ -404,7 +328,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
 
 				// When - 사용자 1이 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${user1Token}`)
 					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
@@ -422,7 +346,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
 
 				// When - 사용자 2가 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${user2Token}`)
 					.query({ startDate: "2026-03-01", endDate: "2026-03-01" });
@@ -441,10 +365,11 @@ describe("DailyCompletion (e2e)", () => {
 			let accessToken: string;
 
 			beforeAll(async () => {
-				accessToken = await createVerifiedUser(
+				const user = await ctx.helpers.createVerifiedUser(
 					"state-change-test@example.com",
 					"Test1234!",
 				);
+				accessToken = user.accessToken;
 			});
 
 			it("Todo 완료 상태 변경 시 완료 현황 즉시 반영", async () => {
@@ -461,7 +386,7 @@ describe("DailyCompletion (e2e)", () => {
 				});
 
 				// When - 초기 완료 현황 조회
-				let response = await request(app.getHttpServer())
+				let response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
@@ -472,13 +397,13 @@ describe("DailyCompletion (e2e)", () => {
 				expect(response.body.data.completions[0].isComplete).toBe(false);
 
 				// When - Todo 하나 완료 처리 후 다시 조회
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.patch(`/todos/${todoId2}`)
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ completed: true })
 					.expect(200);
 
-				response = await request(app.getHttpServer())
+				response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-04-01", endDate: "2026-04-01" });
@@ -494,10 +419,11 @@ describe("DailyCompletion (e2e)", () => {
 			let accessToken: string;
 
 			beforeAll(async () => {
-				accessToken = await createVerifiedUser(
+				const user = await ctx.helpers.createVerifiedUser(
 					"calendar-test@example.com",
 					"Test1234!",
 				);
+				accessToken = user.accessToken;
 
 				// 5월 데이터 생성 - 다양한 완료 현황
 				await createTodosForDate(accessToken, "2026-05-01", 1, 1); // 100%
@@ -513,7 +439,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 5월에 7일간 다양한 완료율의 Todo 준비 (100% 완료 4일)
 
 				// When - 5월 전체 기간 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-05-01", endDate: "2026-05-31" });
@@ -539,7 +465,7 @@ describe("DailyCompletion (e2e)", () => {
 				// Given - 5월에 다양한 완료율의 Todo 준비
 
 				// When - 5월 전체 기간 완료 현황 조회
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/daily-completions")
 					.set("Authorization", `Bearer ${accessToken}`)
 					.query({ startDate: "2026-05-01", endDate: "2026-05-31" });

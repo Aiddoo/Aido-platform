@@ -6,48 +6,25 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { PinoLogger } from "nestjs-pino";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { FakeLogger } from "../mocks/fake-logger.service";
-import { TestDatabase } from "../setup/test-database";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("AppController (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(PinoLogger)
-			.useClass(FakeLogger)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		await app.init();
-	});
+		ctx = await createE2eApp();
+	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	it("/ (GET)", () => {
 		// Given - 애플리케이션이 초기화된 상태
 
 		// When - 루트 경로 GET 요청
-		return request(app.getHttpServer())
+		return request(ctx.app.getHttpServer())
 			.get("/")
 			.expect(200)
 			.expect((res) => {

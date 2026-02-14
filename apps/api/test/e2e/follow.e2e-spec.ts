@@ -13,105 +13,23 @@
  * 5. 친구 투두 조회
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import {
+	createE2eApp,
+	destroyE2eApp,
+	type E2eTestContext,
+	type VerifiedUser,
+} from "./helpers";
 
 describe("Follow (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 기본 카테고리 ID 조회 헬퍼
-	 */
-	async function getDefaultCategoryId(accessToken: string): Promise<number> {
-		const response = await request(app.getHttpServer())
-			.get("/todo-categories")
-			.set("Authorization", `Bearer ${accessToken}`)
-			.expect(200);
-
-		const categories = response.body.data.items;
-		const defaultCategory =
-			categories.find((c: { name: string }) => c.name === "할 일") ||
-			categories[0];
-		return defaultCategory.id;
-	}
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 * @returns { accessToken, userId, userTag }
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<{ accessToken: string; userId: string; userTag: string }> {
-		// 등록
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		// 인증
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return {
-			accessToken: response.body.data.accessToken,
-			userId: response.body.data.userId,
-			userTag: response.body.data.userTag,
-		};
-	}
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		// Testcontainers로 PostgreSQL 컨테이너 시작
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		// FakeEmailService 인스턴스 생성
-		fakeEmailService = new FakeEmailService();
-
-		// FakeOAuthTokenVerifierService 인스턴스 생성
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("친구 요청 플로우", () => {
@@ -119,12 +37,12 @@ describe("Follow (e2e)", () => {
 		const userBEmail = "user-b@example.com";
 		const password = "Test1234!";
 
-		let userA: { accessToken: string; userId: string; userTag: string };
-		let userB: { accessToken: string; userId: string; userTag: string };
+		let userA: VerifiedUser;
+		let userB: VerifiedUser;
 
 		beforeAll(async () => {
-			userA = await createVerifiedUser(userAEmail, password);
-			userB = await createVerifiedUser(userBEmail, password);
+			userA = await ctx.helpers.createVerifiedUser(userAEmail, password);
+			userB = await ctx.helpers.createVerifiedUser(userBEmail, password);
 		});
 
 		describe("POST /follows/:userTag - 친구 요청 보내기", () => {
@@ -132,7 +50,7 @@ describe("Follow (e2e)", () => {
 				// Given - 두 명의 인증된 사용자가 준비됨 (beforeAll에서 생성)
 
 				// When - 친구 요청 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(201);
@@ -148,7 +66,7 @@ describe("Follow (e2e)", () => {
 				// Given - 이미 친구 요청을 보낸 상태
 
 				// When - 동일한 친구 요청 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(409);
@@ -162,7 +80,7 @@ describe("Follow (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 자기 자신에게 친구 요청 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post(`/follows/${userA.userTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(400);
@@ -177,7 +95,7 @@ describe("Follow (e2e)", () => {
 				const nonExistentUserTag = "ZZZZ9999";
 
 				// When - 존재하지 않는 사용자에게 친구 요청 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post(`/follows/${nonExistentUserTag}`)
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(404);
@@ -194,7 +112,7 @@ describe("Follow (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 친구 요청 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post(`/follows/${userB.userTag}`)
 					.expect(401);
 
@@ -207,7 +125,7 @@ describe("Follow (e2e)", () => {
 				// Given - 친구 요청을 보낸 상태 (이전 테스트에서 생성)
 
 				// When - 보낸 요청 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/follows/requests/sent")
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(200);
@@ -226,7 +144,7 @@ describe("Follow (e2e)", () => {
 				// Given - 친구 요청을 받은 상태 (이전 테스트에서 생성)
 
 				// When - 받은 요청 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/follows/requests/received")
 					.set("Authorization", `Bearer ${userB.accessToken}`)
 					.expect(200);
@@ -245,7 +163,7 @@ describe("Follow (e2e)", () => {
 				// Given - 친구 요청을 받은 상태 (userA -> userB)
 
 				// When - 친구 요청 수락 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/follows/${userA.userId}/accept`)
 					.set("Authorization", `Bearer ${userB.accessToken}`)
 					.expect(200);
@@ -258,7 +176,7 @@ describe("Follow (e2e)", () => {
 				// Given - 친구 요청을 수락한 상태
 
 				// When - 친구 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/follows/friends")
 					.set("Authorization", `Bearer ${userA.accessToken}`)
 					.expect(200);
@@ -277,23 +195,23 @@ describe("Follow (e2e)", () => {
 		const userDEmail = "user-d@example.com";
 		const password = "Test1234!";
 
-		let userC: { accessToken: string; userId: string; userTag: string };
-		let userD: { accessToken: string; userId: string; userTag: string };
+		let userC: VerifiedUser;
+		let userD: VerifiedUser;
 
 		beforeAll(async () => {
-			userC = await createVerifiedUser(userCEmail, password);
-			userD = await createVerifiedUser(userDEmail, password);
+			userC = await ctx.helpers.createVerifiedUser(userCEmail, password);
+			userD = await ctx.helpers.createVerifiedUser(userDEmail, password);
 		});
 
 		it("친구 요청을 철회한다", async () => {
 			// Given - 친구 요청을 보낸 상태
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${userD.userTag}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(201);
 
 			// When - 친구 요청 철회 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.delete(`/follows/${userD.userId}`)
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(200);
@@ -301,7 +219,7 @@ describe("Follow (e2e)", () => {
 			// Then - 철회 성공 및 보낸 요청 목록에서 제거됨 검증
 			expect(response.body.success).toBe(true);
 
-			const sentRequests = await request(app.getHttpServer())
+			const sentRequests = await request(ctx.app.getHttpServer())
 				.get("/follows/requests/sent")
 				.set("Authorization", `Bearer ${userC.accessToken}`)
 				.expect(200);
@@ -318,23 +236,23 @@ describe("Follow (e2e)", () => {
 		const userFEmail = "user-f@example.com";
 		const password = "Test1234!";
 
-		let userE: { accessToken: string; userId: string; userTag: string };
-		let userF: { accessToken: string; userId: string; userTag: string };
+		let userE: VerifiedUser;
+		let userF: VerifiedUser;
 
 		beforeAll(async () => {
-			userE = await createVerifiedUser(userEEmail, password);
-			userF = await createVerifiedUser(userFEmail, password);
+			userE = await ctx.helpers.createVerifiedUser(userEEmail, password);
+			userF = await ctx.helpers.createVerifiedUser(userFEmail, password);
 		});
 
 		it("친구 요청을 거절한다", async () => {
 			// Given - E가 F에게 친구 요청을 보낸 상태
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${userF.userTag}`)
 				.set("Authorization", `Bearer ${userE.accessToken}`)
 				.expect(201);
 
 			// When - F가 친구 요청 거절 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.patch(`/follows/${userE.userId}/reject`)
 				.set("Authorization", `Bearer ${userF.accessToken}`)
 				.expect(200);
@@ -342,7 +260,7 @@ describe("Follow (e2e)", () => {
 			// Then - 거절 성공 및 받은 요청 목록에서 제거됨 검증
 			expect(response.body.success).toBe(true);
 
-			const receivedRequests = await request(app.getHttpServer())
+			const receivedRequests = await request(ctx.app.getHttpServer())
 				.get("/follows/requests/received")
 				.set("Authorization", `Bearer ${userF.accessToken}`)
 				.expect(200);
@@ -359,23 +277,23 @@ describe("Follow (e2e)", () => {
 		const userHEmail = "user-h@example.com";
 		const password = "Test1234!";
 
-		let userG: { accessToken: string; userId: string; userTag: string };
-		let userH: { accessToken: string; userId: string; userTag: string };
+		let userG: VerifiedUser;
+		let userH: VerifiedUser;
 
 		beforeAll(async () => {
-			userG = await createVerifiedUser(userGEmail, password);
-			userH = await createVerifiedUser(userHEmail, password);
+			userG = await ctx.helpers.createVerifiedUser(userGEmail, password);
+			userH = await ctx.helpers.createVerifiedUser(userHEmail, password);
 		});
 
 		it("상대방이 먼저 요청한 경우 자동으로 친구가 된다", async () => {
 			// Given - G가 H에게 친구 요청을 보낸 상태
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${userH.userTag}`)
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(201);
 
 			// When - H가 G에게 친구 요청 API 호출 (자동 수락 예상)
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post(`/follows/${userG.userTag}`)
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(201);
@@ -385,12 +303,12 @@ describe("Follow (e2e)", () => {
 			expect(response.body.data.autoAccepted).toBe(true);
 			expect(response.body.data.follow.status).toBe("ACCEPTED");
 
-			const gFriends = await request(app.getHttpServer())
+			const gFriends = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${userG.accessToken}`)
 				.expect(200);
 
-			const hFriends = await request(app.getHttpServer())
+			const hFriends = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${userH.accessToken}`)
 				.expect(200);
@@ -412,19 +330,19 @@ describe("Follow (e2e)", () => {
 		const userJEmail = "user-j@example.com";
 		const password = "Test1234!";
 
-		let userI: { accessToken: string; userId: string; userTag: string };
-		let userJ: { accessToken: string; userId: string; userTag: string };
+		let userI: VerifiedUser;
+		let userJ: VerifiedUser;
 
 		beforeAll(async () => {
-			userI = await createVerifiedUser(userIEmail, password);
-			userJ = await createVerifiedUser(userJEmail, password);
+			userI = await ctx.helpers.createVerifiedUser(userIEmail, password);
+			userJ = await ctx.helpers.createVerifiedUser(userJEmail, password);
 		});
 
 		it("친구가 아니면 투두 조회 시 403 에러 반환", async () => {
 			// Given - 친구 관계가 아닌 두 사용자
 
 			// When - 친구 투두 조회 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get(`/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(403);
@@ -436,19 +354,21 @@ describe("Follow (e2e)", () => {
 
 		it("친구가 되면 PUBLIC 투두만 조회 가능", async () => {
 			// Given - 서로 친구가 된 상태 및 J의 PUBLIC/PRIVATE 투두 생성
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${userJ.userTag}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(201);
 
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${userI.userTag}`)
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.expect(201);
 
-			const categoryId = await getDefaultCategoryId(userJ.accessToken);
+			const categoryId = await ctx.helpers.getDefaultCategoryId(
+				userJ.accessToken,
+			);
 
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
@@ -459,7 +379,7 @@ describe("Follow (e2e)", () => {
 				})
 				.expect(201);
 
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${userJ.accessToken}`)
 				.send({
@@ -471,7 +391,7 @@ describe("Follow (e2e)", () => {
 				.expect(201);
 
 			// When - I가 J의 친구 투두 조회 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get(`/todos/friends/${userJ.userId}`)
 				.set("Authorization", `Bearer ${userI.accessToken}`)
 				.expect(200);
@@ -489,31 +409,27 @@ describe("Follow (e2e)", () => {
 		const mainUserEmail = "main-user@example.com";
 		const password = "Test1234!";
 
-		let mainUser: { accessToken: string; userId: string; userTag: string };
-		const friendUsers: Array<{
-			accessToken: string;
-			userId: string;
-			userTag: string;
-		}> = [];
+		let mainUser: VerifiedUser;
+		const friendUsers: VerifiedUser[] = [];
 
 		beforeAll(async () => {
-			mainUser = await createVerifiedUser(mainUserEmail, password);
+			mainUser = await ctx.helpers.createVerifiedUser(mainUserEmail, password);
 
 			// 5명의 친구 생성 및 맞팔
 			for (let i = 0; i < 5; i++) {
-				const friend = await createVerifiedUser(
+				const friend = await ctx.helpers.createVerifiedUser(
 					`friend-${i}@example.com`,
 					password,
 				);
 				friendUsers.push(friend);
 
 				// 상호 친구 요청 (자동 수락)
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post(`/follows/${friend.userTag}`)
 					.set("Authorization", `Bearer ${mainUser.accessToken}`)
 					.expect(201);
 
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post(`/follows/${mainUser.userTag}`)
 					.set("Authorization", `Bearer ${friend.accessToken}`)
 					.expect(201);
@@ -524,7 +440,7 @@ describe("Follow (e2e)", () => {
 			// Given - 5명의 친구가 있는 상태
 
 			// When - limit을 3으로 설정하여 친구 목록 조회 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3 })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
@@ -538,7 +454,7 @@ describe("Follow (e2e)", () => {
 
 		it("커서를 사용하여 다음 페이지를 조회한다", async () => {
 			// Given - 첫 페이지 조회 후 커서 획득
-			const firstPage = await request(app.getHttpServer())
+			const firstPage = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3 })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
@@ -550,7 +466,7 @@ describe("Follow (e2e)", () => {
 			expect(cursor).toBeDefined();
 
 			// When - 커서를 사용하여 두 번째 페이지 조회 API 호출
-			const secondPage = await request(app.getHttpServer())
+			const secondPage = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ limit: 3, cursor })
 				.set("Authorization", `Bearer ${mainUser.accessToken}`)
@@ -567,25 +483,28 @@ describe("Follow (e2e)", () => {
 		const searchUserEmail = "search-main@example.com";
 		const password = "Test1234!";
 
-		let searchUser: { accessToken: string; userId: string; userTag: string };
-		let searchFriend: { accessToken: string; userId: string; userTag: string };
+		let searchUser: VerifiedUser;
+		let searchFriend: VerifiedUser;
 
 		beforeAll(async () => {
-			searchUser = await createVerifiedUser(searchUserEmail, password);
+			searchUser = await ctx.helpers.createVerifiedUser(
+				searchUserEmail,
+				password,
+			);
 
 			// 친구 생성
-			searchFriend = await createVerifiedUser(
+			searchFriend = await ctx.helpers.createVerifiedUser(
 				"search-friend@example.com",
 				password,
 			);
 
 			// 상호 친구 요청 (자동 수락)
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${searchFriend.userTag}`)
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(201);
 
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post(`/follows/${searchUser.userTag}`)
 				.set("Authorization", `Bearer ${searchFriend.accessToken}`)
 				.expect(201);
@@ -593,7 +512,7 @@ describe("Follow (e2e)", () => {
 
 		it("userTag로 검색하면 해당 친구만 반환된다", async () => {
 			// Given - 친구 목록을 조회하여 userTag 획득
-			const allFriends = await request(app.getHttpServer())
+			const allFriends = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -604,7 +523,7 @@ describe("Follow (e2e)", () => {
 			const searchTerm = friendUserTag.slice(0, 3);
 
 			// When - userTag 일부로 검색 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -621,7 +540,7 @@ describe("Follow (e2e)", () => {
 
 		it("대소문자 구분 없이 검색된다", async () => {
 			// Given - 친구 목록을 조회하여 userTag 획득
-			const allFriends = await request(app.getHttpServer())
+			const allFriends = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -632,7 +551,7 @@ describe("Follow (e2e)", () => {
 			const searchTerm = friendUserTag.slice(0, 3).toLowerCase();
 
 			// When - 소문자로 검색 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -646,7 +565,7 @@ describe("Follow (e2e)", () => {
 			// Given - 존재하지 않는 검색어
 
 			// When - 존재하지 않는 태그로 검색 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: "ZZZZZ999" })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
@@ -659,7 +578,7 @@ describe("Follow (e2e)", () => {
 
 		it("검색과 페이지네이션이 함께 동작한다", async () => {
 			// Given - 친구 목록을 조회하여 검색어 획득
-			const allFriends = await request(app.getHttpServer())
+			const allFriends = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
 				.expect(200);
@@ -668,7 +587,7 @@ describe("Follow (e2e)", () => {
 			const searchTerm = friendUserTag?.slice(0, 2) || "";
 
 			// When - 검색어와 limit을 함께 사용하여 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/friends")
 				.query({ search: searchTerm, limit: 5 })
 				.set("Authorization", `Bearer ${searchUser.accessToken}`)
