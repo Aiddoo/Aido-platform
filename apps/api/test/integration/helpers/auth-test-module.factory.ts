@@ -1,0 +1,135 @@
+/**
+ * Auth 통합 테스트 모듈 팩토리
+ *
+ * @description
+ * auth-password-setup, auth-password-change, auth-password-reset 통합 테스트에서
+ * 반복되는 TestingModule 설정을 통합합니다.
+ *
+ * 실제 DB (Testcontainers)를 사용하는 통합 테스트용입니다.
+ */
+
+import { ConfigService } from "@nestjs/config";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { JwtModule } from "@nestjs/jwt";
+import { Test, type TestingModule } from "@nestjs/testing";
+import { CacheService } from "@/common/cache/cache.service";
+import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
+import { TypedConfigService } from "@/common/config/services/config.service";
+import { EncryptionService } from "@/common/encryption";
+import { DatabaseService } from "@/database/database.service";
+import { AccountRepository } from "@/modules/auth/repositories/account.repository";
+import { LoginAttemptRepository } from "@/modules/auth/repositories/login-attempt.repository";
+import { SecurityLogRepository } from "@/modules/auth/repositories/security-log.repository";
+import { SessionRepository } from "@/modules/auth/repositories/session.repository";
+import { UserRepository } from "@/modules/auth/repositories/user.repository";
+import { VerificationRepository } from "@/modules/auth/repositories/verification.repository";
+import { AuthService } from "@/modules/auth/services/auth.service";
+import { PasswordService } from "@/modules/auth/services/password.service";
+import { TokenService } from "@/modules/auth/services/token.service";
+import { VerificationService } from "@/modules/auth/services/verification.service";
+import { EmailService } from "@/modules/email/email.service";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import type { FakeEmailService } from "../../mocks/fake-email.service";
+
+export async function createAuthTestModule(
+	databaseService: DatabaseService,
+	fakeEmailService: FakeEmailService,
+): Promise<TestingModule> {
+	return Test.createTestingModule({
+		imports: [
+			JwtModule.register({
+				secret: process.env.JWT_SECRET,
+				signOptions: { expiresIn: "15m" },
+			}),
+		],
+		providers: [
+			AuthService,
+			PasswordService,
+			TokenService,
+			VerificationService,
+			{
+				provide: EncryptionService,
+				useValue: {
+					encrypt: (value: string) => value,
+					decryptSafe: (value: string) => value,
+				},
+			},
+			AccountRepository,
+			UserRepository,
+			SessionRepository,
+			SecurityLogRepository,
+			LoginAttemptRepository,
+			VerificationRepository,
+			TodoCategoryRepository,
+			{
+				provide: DatabaseService,
+				useValue: databaseService,
+			},
+			{
+				provide: EmailService,
+				useValue: fakeEmailService,
+			},
+			{
+				provide: CacheService,
+				useValue: {
+					invalidateSession: async () => {},
+					invalidateUserProfile: async () => {},
+					wrapUserProfile: async (
+						_userId: string,
+						fn: () => Promise<unknown>,
+					) => fn(),
+				},
+			},
+			{
+				provide: CACHE_SERVICE,
+				useValue: {
+					get: async () => undefined,
+					set: async () => {},
+					del: async () => {},
+				},
+			},
+			{
+				provide: TypedConfigService,
+				useValue: {
+					get: (key: string) => {
+						const config: Record<string, string | undefined> = {
+							JWT_SECRET: process.env.JWT_SECRET,
+							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+							JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+						};
+						return config[key];
+					},
+					jwtSecret: process.env.JWT_SECRET,
+					jwtExpiresIn: process.env.JWT_EXPIRES_IN,
+					jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
+					jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+					jwtConfig: {
+						secret: process.env.JWT_SECRET,
+						expiresIn: process.env.JWT_EXPIRES_IN,
+						refreshSecret: process.env.JWT_REFRESH_SECRET,
+						refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+					},
+				},
+			},
+			{
+				provide: ConfigService,
+				useValue: {
+					get: (key: string) => {
+						const config: Record<string, string | undefined> = {
+							JWT_SECRET: process.env.JWT_SECRET,
+							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+							JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+						};
+						return config[key];
+					},
+				},
+			},
+			{
+				provide: EventEmitter2,
+				useValue: { emit: () => true },
+			},
+		],
+	}).compile();
+}
