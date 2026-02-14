@@ -386,6 +386,7 @@ export class AuthController {
 
 	@Post("refresh")
 	@Public()
+	@Throttle({ default: { ttl: 60000, limit: 20 } })
 	@UseGuards(JwtRefreshGuard)
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
