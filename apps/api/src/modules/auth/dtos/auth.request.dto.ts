@@ -14,6 +14,7 @@ import {
 	resendVerificationSchema,
 	resetPasswordSchema,
 	revokeSessionSchema,
+	setPasswordSchema,
 	unlinkAccountSchema,
 	updateProfileSchema,
 	verifyEmailSchema,
@@ -29,6 +30,7 @@ export class ResendVerificationDto extends createZodDto(
 export class ForgotPasswordDto extends createZodDto(forgotPasswordSchema) {}
 export class ResetPasswordDto extends createZodDto(resetPasswordSchema) {}
 export class ChangePasswordDto extends createZodDto(changePasswordSchema) {}
+export class SetPasswordDto extends createZodDto(setPasswordSchema) {}
 export class RefreshTokenDto extends createZodDto(refreshTokenSchema) {}
 export class ExchangeCodeDto extends createZodDto(exchangeCodeSchema) {}
 export class RevokeSessionDto extends createZodDto(revokeSessionSchema) {}

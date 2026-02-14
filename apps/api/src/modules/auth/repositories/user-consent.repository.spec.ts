@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { UserConsentBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { UserConsent } from "@/generated/prisma/client";
@@ -13,14 +14,15 @@ describe("UserConsentRepository", () => {
 	const userId = "user-123";
 	const now = new Date("2024-01-15T10:00:00Z");
 
-	const mockConsent: UserConsent = {
-		id: "consent-1",
-		userId,
-		termsAgreedAt: new Date("2024-01-01T00:00:00Z"),
-		privacyAgreedAt: new Date("2024-01-01T00:00:00Z"),
-		agreedTermsVersion: "1.0.0",
-		marketingAgreedAt: new Date("2024-01-01T00:00:00Z"),
-	};
+	const mockConsent = UserConsentBuilder.create(userId)
+		.withId("consent-1")
+		.withTermsAgreedAt(new Date("2024-01-01T00:00:00Z"))
+		.withPrivacyAgreedAt(new Date("2024-01-01T00:00:00Z"))
+		.withAgreedTermsVersion("1.0.0")
+		.withMarketingConsent()
+		.build();
+	// Override marketingAgreedAt to match the specific date
+	mockConsent.marketingAgreedAt = new Date("2024-01-01T00:00:00Z");
 
 	beforeEach(async () => {
 		jest.useFakeTimers();

@@ -95,6 +95,56 @@ export class FakeEmailService {
 	}
 
 	/**
+	 * 비밀번호 설정 코드 발송 (Mock) - 소셜 전용 사용자용
+	 */
+	async sendPasswordSetupCode(
+		to: string,
+		data: { code: string; expiryMinutes: number },
+		idempotencyKey?: string,
+	): Promise<EmailSendResult> {
+		// Idempotency 체크
+		if (idempotencyKey && this._idempotencyKeys.has(idempotencyKey)) {
+			console.log(
+				`📧 [FakeEmail] Duplicate request detected (${idempotencyKey})`,
+			);
+			return {
+				success: true,
+				messageId: `fake-duplicate-${Date.now()}`,
+				retryCount: 0,
+			};
+		}
+
+		// 실패 시뮬레이션 체크
+		const failureResult = this._checkFailureSimulation();
+		if (failureResult) {
+			return failureResult;
+		}
+
+		// Idempotency Key 저장
+		if (idempotencyKey) {
+			this._idempotencyKeys.add(idempotencyKey);
+		}
+
+		const tags: EmailTag[] = [
+			{ name: "type", value: "password-setup" },
+			{ name: "environment", value: "test" },
+		];
+
+		this._sentEmails.set(to, {
+			code: data.code,
+			type: "password-setup",
+			sentAt: new Date(),
+			idempotencyKey,
+			tags,
+		});
+
+		console.log(
+			`📧 [FakeEmail] Password setup code sent to ${to}: ${data.code}`,
+		);
+		return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+	}
+
+	/**
 	 * 비밀번호 재설정 코드 발송 (Mock)
 	 */
 	async sendPasswordResetCode(

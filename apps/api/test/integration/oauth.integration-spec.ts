@@ -24,6 +24,9 @@ import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
+import { CacheService } from "@/common/cache/cache.service";
+import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { EncryptionService } from "@/common/encryption";
 import { BusinessException } from "@/common/exception";
@@ -53,6 +56,8 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 	// 테스트 스위트 시작 시 한 번만 실행
 	beforeAll(async () => {
+		suppressLogger();
+
 		// TestContainer 시작 및 Database 연결
 		testDb = new TestDatabase();
 		databaseService = (await testDb.start()) as DatabaseService;
@@ -81,6 +86,25 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
+				},
+				{
+					provide: CacheService,
+					useValue: {
+						invalidateSession: async () => {},
+						invalidateUserProfile: async () => {},
+						wrapUserProfile: async (
+							_userId: string,
+							fn: () => Promise<unknown>,
+						) => fn(),
+					},
+				},
+				{
+					provide: CACHE_SERVICE,
+					useValue: {
+						get: async () => undefined,
+						set: async () => {},
+						del: async () => {},
+					},
 				},
 				{
 					provide: OAuthTokenVerifierService,

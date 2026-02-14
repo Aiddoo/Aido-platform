@@ -13,99 +13,40 @@
  * 5. 각 카테고리 타입 정상 작동
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import {
+	createE2eApp,
+	destroyE2eApp,
+	type E2eTestContext,
+	type VerifiedUser,
+} from "./helpers";
 
 describe("Inquiry (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<{ accessToken: string; userId: string; userTag: string }> {
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return {
-			accessToken: response.body.data.accessToken,
-			userId: response.body.data.userId,
-			userTag: response.body.data.userTag,
-		};
-	}
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		fakeEmailService = new FakeEmailService();
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("POST /inquiries - 문의 접수", () => {
 		const userEmail = "inquiry-user@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string; userTag: string };
+		let user: VerifiedUser;
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
+			user = await ctx.helpers.createVerifiedUser(userEmail, password);
 		});
 
 		it("인증된 사용자가 문의를 접수한다 (201)", async () => {
 			// Given - 인증된 사용자 (beforeAll에서 생성)
 
 			// When - 문의 접수 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
@@ -123,7 +64,7 @@ describe("Inquiry (e2e)", () => {
 			// Given - 이전 테스트에서 문의 발송 완료
 
 			// Then - FakeEmailService에 기록 확인
-			const lastInquiry = fakeEmailService.getLastInquiry();
+			const lastInquiry = ctx.fakeEmailService.getLastInquiry();
 			expect(lastInquiry).toBeDefined();
 			expect(lastInquiry?.data.categoryLabel).toBe("버그 신고");
 		});
@@ -132,7 +73,7 @@ describe("Inquiry (e2e)", () => {
 			// Given - 인증 토큰 없음
 
 			// When - 인증 없이 문의 접수 API 호출
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/inquiries")
 				.send({
 					category: "BUG_REPORT",
@@ -147,7 +88,7 @@ describe("Inquiry (e2e)", () => {
 			// Given - 잘못된 카테고리 값
 
 			// When - 잘못된 카테고리로 문의 접수 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
@@ -164,7 +105,7 @@ describe("Inquiry (e2e)", () => {
 			// Given - 너무 짧은 내용 (10자 미만)
 
 			// When - 짧은 내용으로 문의 접수 API 호출
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/inquiries")
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
@@ -179,8 +120,10 @@ describe("Inquiry (e2e)", () => {
 
 		describe("각 카테고리 타입 정상 작동", () => {
 			it("FEATURE_REQUEST 카테고리로 문의 접수", async () => {
-				// When
-				const response = await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - FEATURE_REQUEST 카테고리로 문의 접수 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.post("/inquiries")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -189,14 +132,16 @@ describe("Inquiry (e2e)", () => {
 					})
 					.expect(201);
 
-				// Then
+				// Then - 문의 접수 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.message).toBe("문의가 접수되었습니다.");
 			});
 
 			it("OTHER 카테고리로 문의 접수", async () => {
-				// When
-				const response = await request(app.getHttpServer())
+				// Given - 인증된 사용자
+
+				// When - OTHER 카테고리로 문의 접수 API 호출
+				const response = await request(ctx.app.getHttpServer())
 					.post("/inquiries")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.send({
@@ -205,7 +150,7 @@ describe("Inquiry (e2e)", () => {
 					})
 					.expect(201);
 
-				// Then
+				// Then - 문의 접수 성공 검증
 				expect(response.body.success).toBe(true);
 				expect(response.body.data.message).toBe("문의가 접수되었습니다.");
 			});

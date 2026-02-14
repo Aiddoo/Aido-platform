@@ -4,6 +4,7 @@ import { UserBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type {
+	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
@@ -48,6 +49,9 @@ interface UserWithProfile {
 		name: string;
 		profileImage: string | null;
 	} | null;
+	accounts: {
+		provider: AccountProvider;
+	}[];
 }
 
 // 유틸리티 함수 모킹
@@ -202,6 +206,7 @@ describe("UserRepository", () => {
 					name: "Test User",
 					profileImage: null,
 				},
+				accounts: [{ provider: "CREDENTIAL" as AccountProvider }],
 			};
 			db.user.findUnique.mockResolvedValue(userWithProfile as never);
 
@@ -229,6 +234,11 @@ describe("UserRepository", () => {
 							profileImage: true,
 						},
 					},
+					accounts: {
+						select: {
+							provider: true,
+						},
+					},
 				},
 			});
 		});
@@ -247,6 +257,7 @@ describe("UserRepository", () => {
 				createdAt: mockUser.createdAt,
 				lastLoginAt: mockUser.lastLoginAt,
 				profile: null,
+				accounts: [{ provider: "CREDENTIAL" as AccountProvider }],
 			};
 			db.user.findUnique.mockResolvedValue(userWithoutProfile as never);
 

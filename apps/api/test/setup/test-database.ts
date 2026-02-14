@@ -127,15 +127,38 @@ export class TestDatabase {
 
 		console.log("🧹 Cleaning up test data...");
 
-		// 트랜잭션으로 모든 테이블 데이터 삭제 (의존성 순서대로)
+		// 트랜잭션으로 모든 테이블 데이터 삭제 (의존성 역순)
 		await this.prisma.$transaction([
+			// 알림/로그/기록 (자식 테이블)
+			this.prisma.notification.deleteMany(),
+			this.prisma.weeklyAchievement.deleteMany(),
+			this.prisma.dailyCompletion.deleteMany(),
 			this.prisma.securityLog.deleteMany(),
 			this.prisma.loginAttempt.deleteMany(),
+
+			// 소셜 기능
+			this.prisma.cheer.deleteMany(),
+			this.prisma.nudge.deleteMany(),
+			this.prisma.follow.deleteMany(),
+
+			// 인증
 			this.prisma.verification.deleteMany(),
 			this.prisma.session.deleteMany(),
+			this.prisma.oAuthState.deleteMany(),
 			this.prisma.account.deleteMany(),
-			this.prisma.userConsent.deleteMany(),
+
+			// 구독
+			this.prisma.subscription.deleteMany(),
+
+			// Todo
 			this.prisma.todo.deleteMany(),
+			this.prisma.todoCategory.deleteMany(),
+			this.prisma.pushToken.deleteMany(),
+
+			// 사용자 (부모 테이블)
+			this.prisma.userConsent.deleteMany(),
+			this.prisma.userPreference.deleteMany(),
+			this.prisma.userProfile.deleteMany(),
 			this.prisma.user.deleteMany(),
 		]);
 

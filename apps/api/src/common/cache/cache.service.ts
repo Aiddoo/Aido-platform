@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
+	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
@@ -30,6 +31,7 @@ export interface CachedUserProfile {
 	name: string | null;
 	profileImage: string | null;
 	createdAt: string;
+	providers: AccountProvider[];
 }
 
 export interface CachedSubscription {

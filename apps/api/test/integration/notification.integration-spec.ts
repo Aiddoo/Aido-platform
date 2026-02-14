@@ -18,9 +18,10 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -32,7 +33,7 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
-describe("NotificationService Integration Tests", () => {
+describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: NotificationService;
 	let repository: NotificationRepository;
@@ -78,18 +79,12 @@ describe("NotificationService Integration Tests", () => {
 		update: jest.fn(),
 	};
 
-	const mockDatabaseService = {
+	const mockDatabaseService = createMockDatabaseService({
 		notification: mockNotificationDb,
 		pushToken: mockPushTokenDb,
 		userPreference: mockUserPreferenceDb,
 		userConsent: mockUserConsentDb,
-		$transaction: jest.fn(),
-	};
-
-	mockDatabaseService.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDatabaseService),
-	);
+	});
 
 	// Mock Push Provider
 	const mockPushProvider = {
@@ -104,11 +99,7 @@ describe("NotificationService Integration Tests", () => {
 	const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 
 	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [
@@ -590,7 +581,7 @@ describe("NotificationService Integration Tests", () => {
 			const message = NotificationMessageBuilder.morningNoTodo();
 			const mockNotification = NotificationBuilder.create(mockUserId)
 				.withId(10)
-				.withType("MORNING_REMINDER" as any)
+				.withType("MORNING_REMINDER")
 				.withContent(message.title, message.body)
 				.build();
 

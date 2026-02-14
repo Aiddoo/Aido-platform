@@ -37,5 +37,6 @@ export interface EmailSendResult {
 export type EmailType =
 	| "verification"
 	| "password-reset"
+	| "password-setup"
 	| "notification"
 	| "inquiry";

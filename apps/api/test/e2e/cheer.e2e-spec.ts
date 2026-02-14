@@ -12,102 +12,23 @@
  * 4. 읽음 처리
  */
 
-import type { INestApplication } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
-import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-import type { App } from "supertest/types";
-import { AppModule } from "@/app.module";
-import { DatabaseService } from "@/database";
-import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/modules/email/email.service";
-import { FakeEmailService } from "../mocks/fake-email.service";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
-import { TestDatabase } from "../setup/test-database";
+import {
+	createE2eApp,
+	destroyE2eApp,
+	type E2eTestContext,
+	type VerifiedUser,
+} from "./helpers";
 
 describe("Cheer (e2e)", () => {
-	let app: INestApplication<App>;
-	let testDatabase: TestDatabase;
-	let fakeEmailService: FakeEmailService;
-	let fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
-
-	/**
-	 * 테스트용 사용자 등록 및 인증 헬퍼
-	 */
-	async function createVerifiedUser(
-		email: string,
-		password: string,
-	): Promise<{ accessToken: string; userId: string; userTag: string }> {
-		await request(app.getHttpServer())
-			.post("/auth/register")
-			.send({
-				email,
-				password,
-				passwordConfirm: password,
-				termsAgreed: true,
-				privacyAgreed: true,
-			})
-			.expect(201);
-
-		const code = fakeEmailService.getLastCode(email);
-		const response = await request(app.getHttpServer())
-			.post("/auth/verify-email")
-			.send({ email, code })
-			.expect(200);
-
-		return {
-			accessToken: response.body.data.accessToken,
-			userId: response.body.data.userId,
-			userTag: response.body.data.userTag,
-		};
-	}
-
-	/**
-	 * 두 사용자 간 친구 관계 생성 헬퍼
-	 */
-	async function createFriendship(
-		user1: { accessToken: string; userId: string; userTag: string },
-		user2: { accessToken: string; userId: string; userTag: string },
-	): Promise<void> {
-		// user1 -> user2 팔로우 요청
-		await request(app.getHttpServer())
-			.post(`/follows/${user2.userTag}`)
-			.set("Authorization", `Bearer ${user1.accessToken}`)
-			.expect(201);
-
-		// user2 -> user1 맞팔로우 (친구 성립)
-		await request(app.getHttpServer())
-			.post(`/follows/${user1.userTag}`)
-			.set("Authorization", `Bearer ${user2.accessToken}`)
-			.expect(201);
-	}
+	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
-		testDatabase = new TestDatabase();
-		await testDatabase.start();
-
-		fakeEmailService = new FakeEmailService();
-		fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
-
-		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
-		})
-			.overrideProvider(DatabaseService)
-			.useValue(testDatabase.getPrisma())
-			.overrideProvider(EmailService)
-			.useValue(fakeEmailService)
-			.overrideProvider(OAuthTokenVerifierService)
-			.useValue(fakeOAuthTokenVerifierService)
-			.compile();
-
-		app = moduleFixture.createNestApplication();
-		app.useGlobalPipes(new ZodValidationPipe());
-		await app.init();
+		ctx = await createE2eApp();
 	}, 60000);
 
 	afterAll(async () => {
-		await app.close();
-		await testDatabase.stop();
+		await destroyE2eApp(ctx);
 	});
 
 	describe("응원 전송", () => {
@@ -115,13 +36,13 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string; userTag: string };
-		let receiver: { accessToken: string; userId: string; userTag: string };
+		let sender: VerifiedUser;
+		let receiver: VerifiedUser;
 
 		beforeAll(async () => {
-			sender = await createVerifiedUser(senderEmail, password);
-			receiver = await createVerifiedUser(receiverEmail, password);
-			await createFriendship(sender, receiver);
+			sender = await ctx.helpers.createVerifiedUser(senderEmail, password);
+			receiver = await ctx.helpers.createVerifiedUser(receiverEmail, password);
+			await ctx.helpers.createFriendship(sender, receiver);
 		});
 
 		describe("POST /cheers - 응원 보내기", () => {
@@ -129,7 +50,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 친구 관계인 두 사용자 (beforeAll에서 생성)
 
 				// When - 응원 보내기 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({
@@ -148,18 +69,18 @@ describe("Cheer (e2e)", () => {
 
 			it("메시지 없이도 응원을 보낼 수 있다", async () => {
 				// Given - 새로운 친구 쌍 생성 (쿨다운 회피)
-				const sender2 = await createVerifiedUser(
+				const sender2 = await ctx.helpers.createVerifiedUser(
 					"cheer-sender2@example.com",
 					password,
 				);
-				const receiver2 = await createVerifiedUser(
+				const receiver2 = await ctx.helpers.createVerifiedUser(
 					"cheer-receiver2@example.com",
 					password,
 				);
-				await createFriendship(sender2, receiver2);
+				await ctx.helpers.createFriendship(sender2, receiver2);
 
 				// When - 메시지 없이 응원 보내기 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender2.accessToken}`)
 					.send({ receiverId: receiver2.userId })
@@ -172,13 +93,13 @@ describe("Cheer (e2e)", () => {
 
 			it("친구가 아닌 사용자에게 응원 시 403 에러 반환", async () => {
 				// Given - 친구 관계가 아닌 사용자
-				const stranger = await createVerifiedUser(
+				const stranger = await ctx.helpers.createVerifiedUser(
 					"cheer-stranger@example.com",
 					password,
 				);
 
 				// When - 친구가 아닌 사용자에게 응원 보내기 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: stranger.userId })
@@ -193,7 +114,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 자기 자신에게 응원 보내기 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: sender.userId })
@@ -208,7 +129,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 이미 응원을 보낸 상태 (첫 번째 테스트에서 생성)
 
 				// When - 쿨다운 기간 내 동일 대상에게 다시 응원 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.send({ receiverId: receiver.userId })
@@ -223,7 +144,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 응원 보내기 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.send({ receiverId: receiver.userId })
 					.expect(401);
@@ -238,16 +159,16 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-list-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string; userTag: string };
-		let receiver: { accessToken: string; userId: string; userTag: string };
+		let sender: VerifiedUser;
+		let receiver: VerifiedUser;
 
 		beforeAll(async () => {
-			sender = await createVerifiedUser(senderEmail, password);
-			receiver = await createVerifiedUser(receiverEmail, password);
-			await createFriendship(sender, receiver);
+			sender = await ctx.helpers.createVerifiedUser(senderEmail, password);
+			receiver = await ctx.helpers.createVerifiedUser(receiverEmail, password);
+			await ctx.helpers.createFriendship(sender, receiver);
 
 			// 테스트용 응원 생성
-			await request(app.getHttpServer())
+			await request(ctx.app.getHttpServer())
 				.post("/cheers")
 				.set("Authorization", `Bearer ${sender.accessToken}`)
 				.send({
@@ -261,7 +182,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 응원을 받은 상태 (beforeAll에서 생성)
 
 				// When - 받은 응원 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/cheers/received")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
@@ -277,7 +198,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 응원을 받은 상태
 
 				// When - limit을 1로 설정하여 받은 응원 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/cheers/received")
 					.query({ limit: 1 })
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
@@ -292,7 +213,9 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 받은 응원 목록 조회 API 호출
-				await request(app.getHttpServer()).get("/cheers/received").expect(401);
+				await request(ctx.app.getHttpServer())
+					.get("/cheers/received")
+					.expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -303,7 +226,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 응원을 보낸 상태 (beforeAll에서 생성)
 
 				// When - 보낸 응원 목록 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/cheers/sent")
 					.set("Authorization", `Bearer ${sender.accessToken}`)
 					.expect(200);
@@ -321,13 +244,13 @@ describe("Cheer (e2e)", () => {
 		const friendEmail = "cheer-limit-friend@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string; userTag: string };
-		let friend: { accessToken: string; userId: string; userTag: string };
+		let user: VerifiedUser;
+		let friend: VerifiedUser;
 
 		beforeAll(async () => {
-			user = await createVerifiedUser(userEmail, password);
-			friend = await createVerifiedUser(friendEmail, password);
-			await createFriendship(user, friend);
+			user = await ctx.helpers.createVerifiedUser(userEmail, password);
+			friend = await ctx.helpers.createVerifiedUser(friendEmail, password);
+			await ctx.helpers.createFriendship(user, friend);
 		});
 
 		describe("GET /cheers/limit - 일일 제한 정보 조회", () => {
@@ -335,7 +258,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증된 사용자
 
 				// When - 일일 제한 정보 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get("/cheers/limit")
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -350,7 +273,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 일일 제한 정보 조회 API 호출
-				await request(app.getHttpServer()).get("/cheers/limit").expect(401);
+				await request(ctx.app.getHttpServer()).get("/cheers/limit").expect(401);
 
 				// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
 			});
@@ -361,7 +284,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 친구 관계인 두 사용자
 
 				// When - 쿨다운 상태 조회 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.get(`/cheers/cooldown/${friend.userId}`)
 					.set("Authorization", `Bearer ${user.accessToken}`)
 					.expect(200);
@@ -375,7 +298,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 쿨다운 상태 조회 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.get(`/cheers/cooldown/${friend.userId}`)
 					.expect(401);
 
@@ -389,17 +312,17 @@ describe("Cheer (e2e)", () => {
 		const receiverEmail = "cheer-read-receiver@example.com";
 		const password = "Test1234!";
 
-		let sender: { accessToken: string; userId: string; userTag: string };
-		let receiver: { accessToken: string; userId: string; userTag: string };
+		let sender: VerifiedUser;
+		let receiver: VerifiedUser;
 		let cheerId: number;
 
 		beforeAll(async () => {
-			sender = await createVerifiedUser(senderEmail, password);
-			receiver = await createVerifiedUser(receiverEmail, password);
-			await createFriendship(sender, receiver);
+			sender = await ctx.helpers.createVerifiedUser(senderEmail, password);
+			receiver = await ctx.helpers.createVerifiedUser(receiverEmail, password);
+			await ctx.helpers.createFriendship(sender, receiver);
 
 			// 테스트용 응원 생성
-			const response = await request(app.getHttpServer())
+			const response = await request(ctx.app.getHttpServer())
 				.post("/cheers")
 				.set("Authorization", `Bearer ${sender.accessToken}`)
 				.send({
@@ -415,7 +338,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 읽지 않은 응원이 있는 상태 (beforeAll에서 생성)
 
 				// When - 단일 응원 읽음 처리 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch(`/cheers/${cheerId}/read`)
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(200);
@@ -429,7 +352,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 존재하지 않는 응원 ID
 
 				// When - 존재하지 않는 응원 읽음 처리 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch("/cheers/99999/read")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.expect(404);
@@ -443,7 +366,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 단일 응원 읽음 처리 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.patch(`/cheers/${cheerId}/read`)
 					.expect(401);
 
@@ -456,13 +379,13 @@ describe("Cheer (e2e)", () => {
 
 			beforeAll(async () => {
 				// 새 응원 생성
-				const sender2 = await createVerifiedUser(
+				const sender2 = await ctx.helpers.createVerifiedUser(
 					"cheer-read-sender2@example.com",
 					password,
 				);
-				await createFriendship(sender2, receiver);
+				await ctx.helpers.createFriendship(sender2, receiver);
 
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.post("/cheers")
 					.set("Authorization", `Bearer ${sender2.accessToken}`)
 					.send({ receiverId: receiver.userId });
@@ -474,7 +397,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 읽지 않은 응원들이 있는 상태 (beforeAll에서 생성)
 
 				// When - 여러 응원 읽음 처리 API 호출
-				const response = await request(app.getHttpServer())
+				const response = await request(ctx.app.getHttpServer())
 					.patch("/cheers/read")
 					.set("Authorization", `Bearer ${receiver.accessToken}`)
 					.send({ cheerIds: [newCheerId] })
@@ -489,7 +412,7 @@ describe("Cheer (e2e)", () => {
 				// Given - 인증 토큰 없음
 
 				// When - 인증 없이 여러 응원 읽음 처리 API 호출
-				await request(app.getHttpServer())
+				await request(ctx.app.getHttpServer())
 					.patch("/cheers/read")
 					.send({ cheerIds: [newCheerId] })
 					.expect(401);

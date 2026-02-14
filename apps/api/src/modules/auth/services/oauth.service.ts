@@ -1,6 +1,7 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { addMilliseconds, now } from "@/common/date";
 import { EncryptionService } from "@/common/encryption";
@@ -58,6 +59,7 @@ export class OAuthService {
 		private readonly _configService: TypedConfigService,
 		private readonly _encryptionService: EncryptionService,
 		private readonly _eventEmitter: EventEmitter2,
+		private readonly _cacheService: CacheService,
 	) {}
 
 	// 보안을 위한 화이트리스트 방식 검증 (환경별 분기)
@@ -833,6 +835,8 @@ export class OAuthService {
 
 		this._logger.log(`Account linked: ${provider} for user ${userId}`);
 
+		await this._cacheService.invalidateUserProfile(userId);
+
 		return { message: "계정이 연결되었습니다." };
 	}
 
@@ -944,6 +948,8 @@ export class OAuthService {
 		});
 
 		this._logger.log(`Account unlinked: ${provider} for user ${userId}`);
+
+		await this._cacheService.invalidateUserProfile(userId);
 
 		return { message: "계정 연결이 해제되었습니다." };
 	}

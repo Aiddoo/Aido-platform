@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { SecurityLogBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import type { SecurityLog } from "@/generated/prisma/client";
@@ -24,15 +25,13 @@ describe("SecurityLogRepository", () => {
 	let repository: SecurityLogRepository;
 	let db: Mocked<DatabaseService>;
 
-	const mockSecurityLog: SecurityLog = {
-		id: 1,
-		userId: "user-123",
-		event: "LOGIN_SUCCESS",
-		ipAddress: "192.168.1.1",
-		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-		metadata: { browser: "Chrome", os: "macOS" },
-		createdAt: new Date("2025-01-15T10:00:00Z"),
-	};
+	const mockSecurityLog = SecurityLogBuilder.create("user-123", "LOGIN_SUCCESS")
+		.withId(1)
+		.withIpAddress("192.168.1.1")
+		.withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")
+		.withMetadata({ browser: "Chrome", os: "macOS" })
+		.withCreatedAt(new Date("2025-01-15T10:00:00Z"))
+		.build();
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock

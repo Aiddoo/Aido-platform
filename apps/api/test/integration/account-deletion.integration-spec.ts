@@ -25,9 +25,11 @@ import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { EncryptionService } from "@/common/encryption";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
 import { AccountPurgeJob } from "@/modules/auth/jobs/account-purge.job";
@@ -58,6 +60,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	let _securityLogRepository: SecurityLogRepository;
 
 	beforeAll(async () => {
+		suppressLogger();
+
 		testDb = new TestDatabase();
 		databaseService = (await testDb.start()) as DatabaseService;
 
@@ -74,6 +78,13 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				PasswordService,
 				TokenService,
 				VerificationService,
+				{
+					provide: EncryptionService,
+					useValue: {
+						encrypt: (value: string) => value,
+						decryptSafe: (value: string) => value,
+					},
+				},
 				AccountRepository,
 				UserRepository,
 				SessionRepository,

@@ -1,5 +1,6 @@
 import { ConfigService } from "@nestjs/config";
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
@@ -15,16 +16,7 @@ jest.mock("google-auth-library", () => ({
 describe("OAuthTokenVerifierService", () => {
 	let service: OAuthTokenVerifierService;
 	let mockGoogleVerifyIdToken: jest.Mock;
-
-	const mockConfig = {
-		get: jest.fn((key: string) => {
-			const config: Record<string, string> = {
-				GOOGLE_CLIENT_ID: "google-client-id",
-				APPLE_CLIENT_ID: "apple-client-id",
-			};
-			return config[key];
-		}),
-	};
+	let configService: Mocked<ConfigService>;
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -36,14 +28,23 @@ describe("OAuthTokenVerifierService", () => {
 			verifyIdToken: mockGoogleVerifyIdToken,
 		}));
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				OAuthTokenVerifierService,
-				{ provide: ConfigService, useValue: mockConfig },
-			],
-		}).compile();
+		const { unit, unitRef } = await TestBed.solitary(
+			OAuthTokenVerifierService,
+		).compile();
 
-		service = module.get<OAuthTokenVerifierService>(OAuthTokenVerifierService);
+		service = unit;
+		configService = unitRef.get(
+			ConfigService,
+		) as unknown as Mocked<ConfigService>;
+
+		// ConfigService mock 설정
+		configService.get.mockImplementation((key: string) => {
+			const config: Record<string, string> = {
+				GOOGLE_CLIENT_ID: "google-client-id",
+				APPLE_CLIENT_ID: "apple-client-id",
+			};
+			return config[key];
+		});
 	});
 
 	// ============================================
@@ -394,7 +395,6 @@ describe("OAuthTokenVerifierService", () => {
 	// ============================================
 	// Apple 토큰 검증은 jose ESM 모듈을 사용하므로
 	// 단위 테스트가 어렵습니다. E2E 또는 통합 테스트에서 검증합니다.
-	// Jest의 ESM 지원이 제한적이므로 이 테스트는 스킵합니다.
 	describe("verifyAppleToken", () => {
 		it.skip("Apple 토큰 검증은 통합 테스트에서 수행합니다", () => {
 			// jose는 ESM-only 모듈이므로 Jest에서 동적 import 모킹이 어렵습니다.

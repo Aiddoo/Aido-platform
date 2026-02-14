@@ -1,4 +1,5 @@
 import type {
+	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
@@ -71,6 +72,7 @@ export interface CurrentUserResult {
 	name: string | null;
 	profileImage: string | null;
 	createdAt: string;
+	providers: AccountProvider[];
 }
 
 /**
