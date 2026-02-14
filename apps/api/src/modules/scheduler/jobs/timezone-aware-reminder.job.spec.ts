@@ -4,7 +4,10 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 
+import type { ILockProvider } from "@/common/lock";
+import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
+import { NotificationRepository } from "@/modules/notification/notification.repository";
 
 import { NotificationService } from "../../notification/notification.service";
 import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
@@ -66,6 +69,7 @@ interface NotificationBatchItem {
 	type: string;
 	title: string;
 	body: string;
+	notificationDate?: Date;
 }
 
 /**
@@ -109,11 +113,19 @@ describe("TimezoneAwareReminderJob", () => {
 	let job: TimezoneAwareReminderJob;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let notificationRepository: Mocked<NotificationRepository>;
+	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			TimezoneAwareReminderJob,
-		).compile();
+		const mockLockProvider: ILockProvider = {
+			acquire: jest.fn(),
+			isLocked: jest.fn(),
+		};
+
+		const { unit, unitRef } = await TestBed.solitary(TimezoneAwareReminderJob)
+			.mock(LOCK_PROVIDER)
+			.impl(() => mockLockProvider)
+			.compile();
 
 		job = unit;
 		databaseService = unitRef.get(
@@ -122,6 +134,19 @@ describe("TimezoneAwareReminderJob", () => {
 		notificationService = unitRef.get(
 			NotificationService,
 		) as unknown as Mocked<NotificationService>;
+		notificationRepository = unitRef.get(
+			NotificationRepository,
+		) as unknown as Mocked<NotificationRepository>;
+		lockProvider = unitRef.get(
+			LOCK_PROVIDER,
+		) as unknown as Mocked<ILockProvider>;
+
+		// 기본: Lock 획득 성공 (release 함수 반환)
+		lockProvider.acquire.mockResolvedValue(jest.fn());
+		// 기본: 중복 알림 없음
+		notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValue(
+			new Set(),
+		);
 	});
 
 	// =========================================================================
@@ -182,6 +207,9 @@ describe("TimezoneAwareReminderJob", () => {
 				const notification = getFirstNotification(batch);
 				expect(notification.userId).toBe("user-seoul");
 				expect(notification.type).toBe("MORNING_REMINDER");
+				expect(notification.notificationDate).toEqual(
+					dayjs.utc("2024-01-16").startOf("day").toDate(),
+				);
 
 				jest.useRealTimers();
 			});
@@ -303,6 +331,9 @@ describe("TimezoneAwareReminderJob", () => {
 				const notification = getFirstNotification(batch);
 				expect(notification.userId).toBe("user-evening");
 				expect(notification.type).toBe("EVENING_REMINDER");
+				expect(notification.notificationDate).toEqual(
+					dayjs.utc("2024-01-15").startOf("day").toDate(),
+				);
 
 				jest.useRealTimers();
 			});
@@ -628,6 +659,243 @@ describe("TimezoneAwareReminderJob", () => {
 
 				// When & Then - 에러가 throw되지 않고 내부에서 처리됨
 				await expect(job.handleHourlySweep()).resolves.not.toThrow();
+
+				jest.useRealTimers();
+			});
+		});
+
+		// =====================================================================
+		// 중복 방지
+		// =====================================================================
+
+		describe("중복 방지", () => {
+			it("이미 아침 리마인더를 받은 사용자는 제외한다", async () => {
+				// Given - KST 08:00, 2명의 사용자 중 1명은 이미 알림 받음
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const user1 = createMockMorningUser({
+					id: "user-1",
+					_count: { todos: 3 },
+				});
+				const user2 = createMockMorningUser({
+					id: "user-2",
+					_count: { todos: 5 },
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([user1, user2] as never) // 아침
+					.mockResolvedValueOnce([] as never); // 저녁
+
+				// user-1은 이미 아침 리마인더를 받음
+				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+					new Set(["user-1"]),
+				);
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - user-2에게만 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batch).toHaveLength(1);
+				expect(getFirstNotification(batch).userId).toBe("user-2");
+
+				jest.useRealTimers();
+			});
+
+			it("이미 저녁 리마인더를 받은 사용자는 제외한다", async () => {
+				// Given - KST 18:00, 2명의 사용자 중 1명은 이미 알림 받음
+				const fakeNow = new Date("2024-01-15T09:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const user1 = createMockEveningUser({
+					id: "user-1",
+					todos: [{ completed: true }],
+				});
+				const user2 = createMockEveningUser({
+					id: "user-2",
+					todos: [{ completed: false }],
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([] as never) // 아침
+					.mockResolvedValueOnce([user1, user2] as never); // 저녁
+
+				// user-1은 이미 저녁 리마인더를 받음
+				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+					new Set(["user-1"]),
+				);
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - user-2에게만 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batch).toHaveLength(1);
+				expect(getFirstNotification(batch).userId).toBe("user-2");
+
+				jest.useRealTimers();
+			});
+
+			it("모든 사용자가 이미 알림을 받았으면 발송하지 않는다", async () => {
+				// Given - KST 08:00, 모든 사용자가 이미 알림 받음
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const user1 = createMockMorningUser({
+					id: "user-1",
+					_count: { todos: 3 },
+				});
+				const user2 = createMockMorningUser({
+					id: "user-2",
+					_count: { todos: 5 },
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([user1, user2] as never) // 아침
+					.mockResolvedValueOnce([] as never); // 저녁
+
+				// 모든 사용자가 이미 아침 리마인더를 받음
+				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+					new Set(["user-1", "user-2"]),
+				);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - createAndSendBatch 호출 안 됨
+				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+
+				jest.useRealTimers();
+			});
+
+			it("notificationDate가 배치 데이터에 포함된다", async () => {
+				// Given - KST 08:00
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const mockUser = createMockMorningUser({
+					id: "user-1",
+					_count: { todos: 3 },
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([mockUser] as never)
+					.mockResolvedValueOnce([] as never);
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - notificationDate가 KST 기준 오늘 날짜 (2024-01-16)
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				const notification = getFirstNotification(batch);
+				expect(notification.notificationDate).toEqual(
+					dayjs.utc("2024-01-16").startOf("day").toDate(),
+				);
+
+				jest.useRealTimers();
+			});
+		});
+
+		// =====================================================================
+		// Lock 기반 겹침 방지
+		// =====================================================================
+
+		describe("Lock 기반 겹침 방지", () => {
+			it("Lock 획득 실패 시 작업을 스킵한다", async () => {
+				// Given - Lock 획득 실패 (다른 인스턴스가 이미 점유)
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				lockProvider.acquire.mockResolvedValue(null);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - DB 조회 자체가 실행되지 않음
+				expect(databaseService.userPreference.findMany).not.toHaveBeenCalled();
+				expect(databaseService.user.findMany).not.toHaveBeenCalled();
+				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+
+				jest.useRealTimers();
+			});
+
+			it("작업 완료 후 Lock이 해제된다", async () => {
+				// Given - Lock 획득 성공
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				const mockRelease = jest.fn().mockResolvedValue(undefined);
+				lockProvider.acquire.mockResolvedValue(mockRelease);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - release 함수가 호출됨
+				expect(mockRelease).toHaveBeenCalledTimes(1);
+
+				jest.useRealTimers();
+			});
+
+			it("작업 실패 시에도 Lock이 해제된다", async () => {
+				// Given - Lock 획득 성공, 하지만 DB 에러 발생
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				const mockRelease = jest.fn().mockResolvedValue(undefined);
+				lockProvider.acquire.mockResolvedValue(mockRelease);
+
+				const error = new Error("Database connection failed");
+				databaseService.userPreference.findMany.mockRejectedValue(error);
+
+				// When - 에러가 발생해도 정상 종료
+				await expect(job.handleHourlySweep()).resolves.not.toThrow();
+
+				// Then - release 함수가 반드시 호출됨 (finally 블록)
+				expect(mockRelease).toHaveBeenCalledTimes(1);
 
 				jest.useRealTimers();
 			});

@@ -1,11 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { getUserToday } from "@/common/date/utils/date.util";
+import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
-
+import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
@@ -27,6 +28,8 @@ export class TimezoneAwareReminderJob {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
+		private readonly notificationRepository: NotificationRepository,
+		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
 	/**
@@ -39,6 +42,18 @@ export class TimezoneAwareReminderJob {
 	@Cron("0 * * * *")
 	async handleHourlySweep(): Promise<void> {
 		this.logger.log("Starting hourly sweep reminder job...");
+
+		const release = await this.lockProvider.acquire(
+			"timezone-reminder",
+			55 * 60 * 1000,
+		);
+
+		if (!release) {
+			this.logger.warn(
+				"Skipping hourly sweep — another instance holds the lock",
+			);
+			return;
+		}
 
 		try {
 			const now = new Date();
@@ -66,6 +81,8 @@ export class TimezoneAwareReminderJob {
 				`Hourly sweep reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+		} finally {
+			await release();
 		}
 	}
 
@@ -106,7 +123,18 @@ export class TimezoneAwareReminderJob {
 
 		if (users.length === 0) return;
 
-		const notifications = users.map((user) => {
+		// 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
+		const alreadyNotified =
+			await this.notificationRepository.findAlreadyNotifiedUserIds({
+				userIds: users.map((u) => u.id),
+				type: "MORNING_REMINDER",
+				since: today,
+			});
+
+		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
+		if (filteredUsers.length === 0) return;
+
+		const notifications = filteredUsers.map((user) => {
 			const count = user._count.todos;
 			const message =
 				count > 0
@@ -118,6 +146,7 @@ export class TimezoneAwareReminderJob {
 				type: "MORNING_REMINDER" as const,
 				title: message.title,
 				body: message.body,
+				notificationDate: today,
 			};
 		});
 
@@ -171,7 +200,18 @@ export class TimezoneAwareReminderJob {
 
 		if (users.length === 0) return;
 
-		const notifications = users.map((user) => {
+		// 중복 방지: 이미 오늘 저녁 리마인더를 받은 사용자 제외
+		const alreadyNotified =
+			await this.notificationRepository.findAlreadyNotifiedUserIds({
+				userIds: users.map((u) => u.id),
+				type: "EVENING_REMINDER",
+				since: today,
+			});
+
+		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
+		if (filteredUsers.length === 0) return;
+
+		const notifications = filteredUsers.map((user) => {
 			const total = user.todos.length;
 			const completed = user.todos.filter((t) => t.completed).length;
 			const message = NotificationMessageBuilder.eveningReminder(
@@ -184,6 +224,7 @@ export class TimezoneAwareReminderJob {
 				type: "EVENING_REMINDER" as const,
 				title: message.title,
 				body: message.body,
+				notificationDate: today,
 			};
 		});
 
