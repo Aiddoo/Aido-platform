@@ -1,19 +1,36 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
 
-export class ConsoleLogger implements Logger {
-  debug(message: string, data?: unknown): void {
-    console.debug(`[DEBUG] ${message}`, data);
-  }
+const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
 
-  info(message: string, data?: unknown): void {
-    console.info(`[INFO] ${message}`, data);
-  }
-
-  warn(message: string, data?: unknown): void {
-    console.warn(`[WARN] ${message}`, data);
-  }
-
-  error(message: string, data?: unknown): void {
-    console.error(`[ERROR] ${message}`, data);
-  }
+interface ConsoleLoggerOptions {
+  minLevel: LogLevel;
 }
+
+export const createConsoleLogger = ({ minLevel }: ConsoleLoggerOptions): Logger => {
+  const shouldLog = (level: LogLevel): boolean =>
+    LOG_LEVEL_ORDER[level] >= LOG_LEVEL_ORDER[minLevel];
+
+  return {
+    debug(message: string, context?: LogContext): void {
+      if (!shouldLog('debug')) return;
+      console.debug(`[DEBUG] ${message}`, context ?? '');
+    },
+    info(message: string, context?: LogContext): void {
+      if (!shouldLog('info')) return;
+      console.info(`[INFO] ${message}`, context ?? '');
+    },
+    warn(message: string, context?: LogContext): void {
+      if (!shouldLog('warn')) return;
+      console.warn(`[WARN] ${message}`, context ?? '');
+    },
+    error(message: string, error?: Error, context?: LogContext): void {
+      if (!shouldLog('error')) return;
+      console.error(`[ERROR] ${message}`, error ?? '', context ?? '');
+    },
+  };
+};
