@@ -17,9 +17,10 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoCategoryBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
@@ -27,7 +28,7 @@ import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.re
 import { TodoCategoryService } from "@/modules/todo-category/todo-category.service";
 import type { TodoCategoryWithCount } from "@/modules/todo-category/types/todo-category.types";
 
-describe("TodoCategoryService Integration Tests", () => {
+describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: TodoCategoryService;
 	let repository: TodoCategoryRepository;
@@ -51,17 +52,10 @@ describe("TodoCategoryService Integration Tests", () => {
 		count: jest.fn(),
 	};
 
-	const mockDatabaseService: {
-		todoCategory: typeof mockTodoCategoryDb;
-		todo: typeof mockTodoDb;
-		$transaction: jest.Mock;
-	} = {
+	const mockDatabaseService = createMockDatabaseService({
 		todoCategory: mockTodoCategoryDb,
 		todo: mockTodoDb,
-		$transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
-			cb(mockDatabaseService),
-		),
-	};
+	});
 
 	// 테스트 데이터
 	const mockUserId = "user-category-123";
@@ -93,12 +87,8 @@ describe("TodoCategoryService Integration Tests", () => {
 		};
 	};
 
-	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+	beforeAll(() => {
+		suppressLogger();
 	});
 
 	beforeEach(async () => {

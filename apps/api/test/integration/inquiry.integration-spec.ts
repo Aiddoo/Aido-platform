@@ -11,14 +11,14 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { EmailService } from "@/modules/email/email.service";
 import { InquiryService } from "@/modules/inquiry/inquiry.service";
 
-describe("InquiryService Integration Tests", () => {
+describe("InquiryService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: InquiryService;
 
@@ -39,11 +39,7 @@ describe("InquiryService Integration Tests", () => {
 	};
 
 	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [

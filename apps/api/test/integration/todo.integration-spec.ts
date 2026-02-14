@@ -17,10 +17,11 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -31,7 +32,7 @@ import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 
-describe("TodoService Integration Tests", () => {
+describe("TodoService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: TodoService;
 	let repository: TodoRepository;
@@ -52,17 +53,10 @@ describe("TodoService Integration Tests", () => {
 		findFirst: jest.fn(),
 	};
 
-	const mockDatabaseService: {
-		todo: typeof mockTodoDb;
-		todoCategory: typeof mockTodoCategoryDb;
-		$transaction: jest.Mock;
-	} = {
+	const mockDatabaseService = createMockDatabaseService({
 		todo: mockTodoDb,
 		todoCategory: mockTodoCategoryDb,
-		$transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
-			cb(mockDatabaseService),
-		),
-	};
+	});
 
 	// Mock FollowService
 	const mockFollowService = {
@@ -92,11 +86,7 @@ describe("TodoService Integration Tests", () => {
 		.build();
 
 	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 	});
 
 	beforeEach(async () => {

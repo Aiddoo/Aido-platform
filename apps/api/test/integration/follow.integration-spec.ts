@@ -17,10 +17,11 @@
  * ```
  */
 
-import { Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { FollowBuilder, UserBuilder } from "@test/builders";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -29,7 +30,7 @@ import { DatabaseService } from "@/database/database.service";
 import { FollowRepository } from "@/modules/follow/follow.repository";
 import { FollowService } from "@/modules/follow/follow.service";
 
-describe("FollowService Integration Tests", () => {
+describe("FollowService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: FollowService;
 	let repository: FollowRepository;
@@ -49,20 +50,10 @@ describe("FollowService Integration Tests", () => {
 		findUnique: jest.fn(),
 	};
 
-	const mockDatabaseService: {
-		follow: typeof mockFollowDb;
-		user: typeof mockUserDb;
-		$transaction: jest.Mock;
-	} = {
+	const mockDatabaseService = createMockDatabaseService({
 		follow: mockFollowDb,
 		user: mockUserDb,
-		$transaction: jest.fn(),
-	};
-	// 순환 참조를 피하기 위해 초기화 후 구현 설정
-	mockDatabaseService.$transaction.mockImplementation(
-		(callback: (tx: unknown) => Promise<unknown>) =>
-			callback(mockDatabaseService),
-	);
+	});
 
 	// Mock EventEmitter
 	const mockEventEmitter = {
@@ -92,12 +83,8 @@ describe("FollowService Integration Tests", () => {
 	const mockFollowId = "follow-integration-789";
 	const mockTargetUserTag = mockTargetUser.userTag;
 
-	beforeAll(async () => {
-		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+	beforeAll(() => {
+		suppressLogger();
 	});
 
 	beforeEach(async () => {

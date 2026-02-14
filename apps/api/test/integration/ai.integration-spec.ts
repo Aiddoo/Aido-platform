@@ -1,6 +1,20 @@
+/**
+ * AiController 통합 테스트
+ *
+ * @description
+ * AiController가 AiService와 함께 올바르게 작동하는지 검증합니다.
+ * HTTP 요청/응답 흐름을 포함한 통합 테스트입니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test ai.integration-spec
+ * ```
+ */
+
 import { ErrorCode } from "@aido/errors";
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 
@@ -20,6 +34,8 @@ describe("AiController (Integration)", () => {
 	};
 
 	beforeAll(async () => {
+		suppressLogger();
+
 		const mockAiService = {
 			parseTodo: jest.fn(),
 		};
