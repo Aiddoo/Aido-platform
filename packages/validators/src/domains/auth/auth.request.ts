@@ -136,6 +136,26 @@ export const changePasswordSchema = z
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const setPasswordSchema = z
+  .object({
+    code: z
+      .string()
+      .length(VERIFICATION_CODE.LENGTH, `인증 코드는 ${VERIFICATION_CODE.LENGTH}자리입니다`)
+      .regex(/^\d+$/, '인증 코드는 숫자만 입력 가능합니다')
+      .describe('이메일로 발송된 6자리 인증 코드'),
+    newPassword: passwordSchema.describe(
+      '새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수)',
+    ),
+    newPasswordConfirm: z.string().describe('새 비밀번호 확인 (newPassword와 동일해야 함)'),
+  })
+  .refine((data) => data.newPassword === data.newPasswordConfirm, {
+    message: '비밀번호가 일치하지 않습니다',
+    path: ['newPasswordConfirm'],
+  })
+  .describe('비밀번호 설정 요청 (소셜 전용 사용자)');
+
+export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
+
 export const refreshTokenSchema = z
   .object({
     refreshToken: z.string().min(1, '리프레시 토큰이 필요합니다').describe('리프레시 토큰'),

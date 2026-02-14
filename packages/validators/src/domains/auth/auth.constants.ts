@@ -82,6 +82,7 @@ export const SECURITY_EVENT = {
   OAUTH_LINK_REQUIRED: 'OAUTH_LINK_REQUIRED',
   ACCOUNT_DELETION_REQUESTED: 'ACCOUNT_DELETION_REQUESTED',
   ACCOUNT_HARD_DELETED: 'ACCOUNT_HARD_DELETED',
+  PASSWORD_SETUP: 'PASSWORD_SETUP',
 } as const;
 
 export type SecurityEvent = (typeof SECURITY_EVENT)[keyof typeof SECURITY_EVENT];
@@ -89,6 +90,7 @@ export type SecurityEvent = (typeof SECURITY_EVENT)[keyof typeof SECURITY_EVENT]
 export const VERIFICATION_TYPE = {
   EMAIL_VERIFY: 'EMAIL_VERIFY',
   PASSWORD_RESET: 'PASSWORD_RESET',
+  PASSWORD_SETUP: 'PASSWORD_SETUP',
 } as const;
 
 export type VerificationTypeValue = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
@@ -98,3 +100,5 @@ export const ACCOUNT_DELETION = {
 } as const;
 
 export const OAUTH_PROVIDERS = ['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;
+
+export const ACCOUNT_PROVIDERS = ['CREDENTIAL', 'APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;

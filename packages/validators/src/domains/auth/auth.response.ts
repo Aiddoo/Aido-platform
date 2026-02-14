@@ -1,13 +1,23 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import { DEVICE_TYPES, OAUTH_PROVIDERS, USER_ROLE, USER_STATUS } from './auth.constants';
+import {
+  ACCOUNT_PROVIDERS,
+  DEVICE_TYPES,
+  OAUTH_PROVIDERS,
+  USER_ROLE,
+  USER_STATUS,
+} from './auth.constants';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
 export const userRoleSchema = z
   .enum([USER_ROLE.USER, USER_ROLE.ADMIN])
   .describe('사용자 역할 (USER: 일반 사용자, ADMIN: 관리자)');
 export const deviceTypeEnumSchema = z.enum(DEVICE_TYPES).describe('기기 타입');
+export const accountProviderEnumSchema = z
+  .enum(ACCOUNT_PROVIDERS)
+  .describe('계정 제공자 (이메일/소셜)');
+export const oauthProviderEnumSchema = z.enum(OAUTH_PROVIDERS).describe('소셜 로그인 제공자');
 
 export const authTokensSchema = z
   .object({
@@ -120,6 +130,9 @@ export const currentUserSchema = z
     name: z.string().nullable().describe('사용자 이름'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL'),
     createdAt: datetimeSchema.describe('가입 일시'),
+    providers: z
+      .array(accountProviderEnumSchema)
+      .describe('연결된 로그인 제공자 목록 (예: ["CREDENTIAL", "KAKAO"])'),
   })
   .describe('현재 사용자 정보')
   .meta({
@@ -136,6 +149,7 @@ export const currentUserSchema = z
       name: '매튜',
       profileImage: 'https://example.com/profiles/matthew.jpg',
       createdAt: '2026-01-01T09:00:00.000Z',
+      providers: ['CREDENTIAL'],
     },
   });
 
@@ -271,6 +285,14 @@ export const changePasswordResponseSchema = z
 
 export type ChangePasswordResponse = z.infer<typeof changePasswordResponseSchema>;
 
+export const setPasswordResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+  })
+  .describe('비밀번호 설정 완료 응답');
+
+export type SetPasswordResponse = z.infer<typeof setPasswordResponseSchema>;
+
 export const logoutResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
@@ -322,8 +344,6 @@ export const updateProfileResponseSchema = z
   });
 
 export type UpdateProfileResponse = z.infer<typeof updateProfileResponseSchema>;
-
-export const oauthProviderEnumSchema = z.enum(OAUTH_PROVIDERS).describe('소셜 로그인 제공자');
 
 export const appleLoginResponseSchema = authTokensSchema.describe('Apple 로그인 응답');
 export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
