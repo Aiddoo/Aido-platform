@@ -56,8 +56,7 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = todoListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid getTodos response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[TodoRepository] Invalid getTodos response: ${parsed.error.message}`);
     }
 
     return ok({
@@ -87,8 +86,9 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = todoListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid getFriendTodos response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoRepository] Invalid getFriendTodos response: ${parsed.error.message}`,
+      );
     }
 
     return ok({
@@ -111,8 +111,9 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = todoSchema.safeParse(result.value.todo);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid toggleTodoComplete response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoRepository] Invalid toggleTodoComplete response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toTodoItem(parsed.data));
@@ -125,8 +126,7 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = todoSchema.safeParse(result.value.todo);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid createTodo response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[TodoRepository] Invalid createTodo response: ${parsed.error.message}`);
     }
 
     return ok(toTodoItem(parsed.data));
@@ -139,8 +139,7 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = parseTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid parseTodo response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[TodoRepository] Invalid parseTodo response: ${parsed.error.message}`);
     }
 
     return ok(toParsedTodoResult(parsed.data));
@@ -153,8 +152,7 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = aiUsageResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid getAiUsage response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[TodoRepository] Invalid getAiUsage response: ${parsed.error.message}`);
     }
 
     return ok(toAiUsage(parsed.data));
@@ -172,8 +170,9 @@ export class TodoRepositoryImpl implements TodoRepository {
 
     const parsed = dailyCompletionsRangeResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoRepository] Invalid getDailyCompletions response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoRepository] Invalid getDailyCompletions response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toDailyCompletionsResult(parsed.data));

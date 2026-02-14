@@ -42,8 +42,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = sendFriendRequestResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid sendRequest response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid sendRequest response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toSendRequestResult(parsed.data));
@@ -61,8 +62,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = receivedRequestsResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid getReceivedRequests response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid getReceivedRequests response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toFriendRequestsPage(parsed.data));
@@ -77,8 +79,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = sentRequestsResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid getSentRequests response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid getSentRequests response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toFriendRequestsPage(parsed.data));
@@ -93,8 +96,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = acceptFriendRequestResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid acceptRequest response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid acceptRequest response: ${parsed.error.message}`,
+      );
     }
 
     return ok(undefined);
@@ -109,8 +113,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = rejectFriendRequestResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid rejectRequest response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid rejectRequest response: ${parsed.error.message}`,
+      );
     }
 
     return ok(undefined);
@@ -125,8 +130,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = cancelFriendRequestResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid cancelRequest response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid cancelRequest response: ${parsed.error.message}`,
+      );
     }
 
     return ok(undefined);
@@ -141,8 +147,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = friendsListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid getFriends response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid getFriends response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toFriendsPage(parsed.data));
@@ -157,8 +164,9 @@ export class FriendRepositoryImpl implements FriendRepository {
 
     const parsed = removeFriendResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[FriendRepository] Invalid removeFriend response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[FriendRepository] Invalid removeFriend response: ${parsed.error.message}`,
+      );
     }
 
     return ok(undefined);

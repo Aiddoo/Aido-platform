@@ -33,8 +33,9 @@ export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
 
     const parsed = createNudgeResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoNudgeRepository] Invalid sendNudge response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoNudgeRepository] Invalid sendNudge response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toSendNudgeResult(parsed.data));
@@ -47,8 +48,9 @@ export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
 
     const parsed = nudgeLimitInfoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoNudgeRepository] Invalid getLimitInfo response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoNudgeRepository] Invalid getLimitInfo response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toNudgeLimitInfo(parsed.data));
@@ -61,8 +63,9 @@ export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
 
     const parsed = nudgeCooldownInfoSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[TodoNudgeRepository] Invalid getCooldownInfo response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(
+        `[TodoNudgeRepository] Invalid getCooldownInfo response: ${parsed.error.message}`,
+      );
     }
 
     return ok(toNudgeCooldownInfo(parsed.data));
