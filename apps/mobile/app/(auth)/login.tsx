@@ -16,7 +16,7 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Avatar, Divider } from 'heroui-native';
+import { Avatar, Separator } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
@@ -101,11 +101,11 @@ const LoginScreen = () => {
           </VStack>
 
           <HStack align="center" gap={12}>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
             <Text tone="neutral" shade={5} size="e1">
               또는
             </Text>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
           </HStack>
 
           <HStack justify="center" gap={16}>
@@ -133,7 +133,7 @@ const LoginScreen = () => {
             회원가입
           </TextButton>
 
-          <Divider orientation="vertical" className="h-3 bg-gray-6" />
+          <Separator orientation="vertical" className="h-3 bg-gray-6" />
 
           <TextButton size="medium" onPress={() => router.push('/email-login')}>
             이메일로 로그인

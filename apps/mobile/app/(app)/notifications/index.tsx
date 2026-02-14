@@ -45,7 +45,7 @@ export default function NotificationsScreen() {
       <Tabs
         value={category}
         onValueChange={(value) => setCategory(value as NotificationCategory)}
-        variant="line"
+        variant="secondary"
         className="flex-1"
       >
         <Tabs.List className="border-b border-gray-2 w-full">

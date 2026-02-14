@@ -98,17 +98,16 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
             </Box>
 
             <HStack gap={8} className="w-full" justify="center" mt={10}>
-              <Dialog.Close asChild>
-                <Button
-                  variant="weak"
-                  color="dark"
-                  size="large"
-                  display="inline"
-                  className="flex-1"
-                >
-                  취소
-                </Button>
-              </Dialog.Close>
+              <Button
+                variant="weak"
+                color="dark"
+                size="large"
+                display="inline"
+                className="flex-1"
+                onPress={() => handleOpenChange(false)}
+              >
+                취소
+              </Button>
               <Button
                 color="primary"
                 size="large"

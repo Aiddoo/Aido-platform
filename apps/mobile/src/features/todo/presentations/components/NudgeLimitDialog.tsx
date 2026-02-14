@@ -28,17 +28,16 @@ export function NudgeLimitDialog({ isOpen, onOpenChange }: NudgeLimitDialogProps
               </Dialog.Description>
             </VStack>
             <HStack gap={8} className="w-full" justify="center">
-              <Dialog.Close asChild>
-                <Button
-                  variant="weak"
-                  color="dark"
-                  size="large"
-                  display="inline"
-                  className="flex-1"
-                >
-                  닫기
-                </Button>
-              </Dialog.Close>
+              <Button
+                variant="weak"
+                color="dark"
+                size="large"
+                display="inline"
+                className="flex-1"
+                onPress={() => onOpenChange(false)}
+              >
+                닫기
+              </Button>
               <Button
                 size="large"
                 display="inline"

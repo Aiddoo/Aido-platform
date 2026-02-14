@@ -102,9 +102,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isProduction = env === 'production';
 
   const EAS_PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-  if (!EAS_PROJECT_ID && !isDevelopment) {
-    throw new Error('[config] EXPO_PUBLIC_EAS_PROJECT_ID 환경변수가 설정되지 않았습니다.');
-  }
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,
@@ -342,10 +339,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     newArchEnabled: true,
 
-    // EAS Updates
-    updates: {
-      url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
-    },
+    // EAS Updates (EAS_PROJECT_ID가 있을 때만 활성화)
+    ...(EAS_PROJECT_ID && {
+      updates: {
+        url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+      },
+    }),
     runtimeVersion: VERSION,
 
     // Extra (Constants.expoConfig.extra)
@@ -355,9 +354,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       devMachineIp: process.env.EXPO_PUBLIC_DEV_MACHINE_IP,
       isDevelopment,
       isProduction,
-      eas: {
-        projectId: EAS_PROJECT_ID,
-      },
+      ...(EAS_PROJECT_ID && {
+        eas: {
+          projectId: EAS_PROJECT_ID,
+        },
+      }),
     },
   };
 };

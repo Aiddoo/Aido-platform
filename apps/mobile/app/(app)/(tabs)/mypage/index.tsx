@@ -11,7 +11,7 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Button, Dialog, Divider, PressableFeedback } from 'heroui-native';
+import { Button, Dialog, PressableFeedback, Separator } from 'heroui-native';
 import type { PropsWithChildren } from 'react';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -88,7 +88,7 @@ const MyPageScreen = () => {
           <TextButton size="medium" onPress={handleLogoutPress}>
             로그아웃
           </TextButton>
-          <Divider orientation="vertical" className="h-3 bg-gray-6" />
+          <Separator orientation="vertical" className="h-3 bg-gray-6" />
           <TextButton size="medium" onPress={handleWithdrawPress}>
             탈퇴하기
           </TextButton>
@@ -123,11 +123,9 @@ const LogoutDialog = ({ isOpen, onOpenChange, onConfirm }: LogoutDialogProps) =>
             <Dialog.Description>정말 로그아웃 하시겠습니까?</Dialog.Description>
           </VStack>
           <HStack justify="end" gap={12}>
-            <Dialog.Close asChild>
-              <Button variant="ghost" size="sm">
-                취소
-              </Button>
-            </Dialog.Close>
+            <Button variant="ghost" size="sm" onPress={() => onOpenChange(false)}>
+              취소
+            </Button>
             <Button size="sm" onPress={onConfirm}>
               확인
             </Button>

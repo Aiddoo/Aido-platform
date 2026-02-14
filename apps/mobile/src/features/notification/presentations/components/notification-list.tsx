@@ -8,7 +8,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
-import { Divider, Skeleton, Spinner } from 'heroui-native';
+import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
 import type { NotificationCategory } from '../../models/notification.model';
@@ -73,7 +73,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
             </Flex>
           ) : null
         }
-        ItemSeparatorComponent={() => <Divider className="ml-[3.5px]" />}
+        ItemSeparatorComponent={() => <Separator className="ml-[3.5px]" />}
         keyExtractor={(item) =>
           match(item)
             .with({ type: 'header' }, ({ title }) => `header-${title}`)
