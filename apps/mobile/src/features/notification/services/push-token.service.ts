@@ -38,10 +38,6 @@ export class PushTokenService {
 
     const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
 
-    if (__DEV__) {
-      console.log('[PushToken]', tokenData.data);
-    }
-
     return ok(tokenData.data);
   };
 

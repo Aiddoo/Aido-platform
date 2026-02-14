@@ -1,9 +1,10 @@
-import { useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const unregisterPushTokenMutationOptions = () => {
   const notificationService = useNotificationService();
+  const logger = useLogger();
 
   return mutationOptions({
     mutationFn: async () => {
@@ -11,7 +12,10 @@ export const unregisterPushTokenMutationOptions = () => {
       return unwrap(result);
     },
     onError: (error) => {
-      console.error('[PushNotification] Failed to unregister:', error);
+      logger.error(
+        '[PushNotification] Failed to unregister',
+        error instanceof Error ? error : undefined,
+      );
     },
   });
 };

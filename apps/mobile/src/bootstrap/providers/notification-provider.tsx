@@ -4,7 +4,7 @@ import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef 
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
-import { useNotificationService } from './di-provider';
+import { useLogger, useNotificationService } from './di-provider';
 
 interface NotificationContextValue {
   handleNotificationResponse: (response: Notifications.NotificationResponse) => Promise<void>;
@@ -28,6 +28,7 @@ if (Platform.OS !== 'web') {
 const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();
   const notificationService = useNotificationService();
+  const logger = useLogger();
   const isAuthenticated = status === 'authenticated';
 
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
@@ -47,49 +48,66 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
       if (lastResponseHandled.current !== responseId) {
         lastResponseHandled.current = responseId;
-        handleNotificationResponse(lastNotificationResponse).catch(console.error);
+        handleNotificationResponse(lastNotificationResponse).catch((e) =>
+          logger.error(
+            '[Notification] Response handling failed',
+            e instanceof Error ? e : undefined,
+          ),
+        );
       }
     }
-  }, [lastNotificationResponse, handleNotificationResponse]);
+  }, [lastNotificationResponse, handleNotificationResponse, logger]);
 
   // Effect 1: 알림 리스너 등록
   useEffect(() => {
     receivedListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('[Notification] Received in foreground:', notification.request.content.title);
+      logger.info('[Notification] Received in foreground', {
+        title: notification.request.content.title,
+      });
       handleForegroundNotification();
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      handleNotificationResponse(response).catch(console.error);
+      handleNotificationResponse(response).catch((e) =>
+        logger.error('[Notification] Response handling failed', e instanceof Error ? e : undefined),
+      );
     });
 
     return () => {
       receivedListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, [handleForegroundNotification, handleNotificationResponse]);
+  }, [handleForegroundNotification, handleNotificationResponse, logger]);
 
   // Effect 2: 푸시 토큰 관리
   useEffect(() => {
     if (isAuthenticated) {
       notificationService.setupPushNotifications().catch((error) => {
-        console.log('[Notification] Push token registration skipped:', error);
+        logger.warn('[Notification] Push token registration skipped', { error });
       });
     } else {
       notificationService.unregisterPushToken().catch((error) => {
-        console.log('[Notification] Push token unregister skipped:', error);
+        logger.warn('[Notification] Push token unregister skipped', { error });
       });
     }
-  }, [isAuthenticated, notificationService]);
+  }, [isAuthenticated, notificationService, logger]);
 
   // Effect 3: 배지 동기화
   useEffect(() => {
     if (isAuthenticated) {
-      notificationService.syncBadgeCount().catch(console.error);
+      notificationService
+        .syncBadgeCount()
+        .catch((e) =>
+          logger.error('[Notification] Badge sync failed', e instanceof Error ? e : undefined),
+        );
     } else {
-      notificationService.clearBadge().catch(console.error);
+      notificationService
+        .clearBadge()
+        .catch((e) =>
+          logger.error('[Notification] Badge clear failed', e instanceof Error ? e : undefined),
+        );
     }
-  }, [isAuthenticated, notificationService]);
+  }, [isAuthenticated, notificationService, logger]);
 
   const value = useMemo(() => ({ handleNotificationResponse }), [handleNotificationResponse]);
 
