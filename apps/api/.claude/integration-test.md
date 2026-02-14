@@ -155,6 +155,30 @@ const mockDb = createMockDatabaseService({
 // $transaction(callback) → callback(mockDb) 호출
 ```
 
+### 단위 테스트에서의 `$transaction` mock (txProxy 패턴)
+
+단위 테스트(@suites)에서는 `createMockDatabaseService()`를 사용하지 않습니다.
+대신 `$transaction`의 callback에 **txProxy** 객체를 직접 전달합니다:
+
+```typescript
+// Given - 트랜잭션 내부에서 사용할 모델별 mock 설정
+(database.$transaction as jest.Mock).mockImplementation(
+  async (callback: (tx: unknown) => Promise<unknown>) => {
+    const txProxy = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(mockUser),
+      },
+      cheer: {
+        create: jest.fn().mockResolvedValue(mockCheer),
+      },
+    };
+    return callback(txProxy);
+  },
+);
+```
+
+> **참고**: 통합 테스트에서는 `createMockDatabaseService()`가 `$transaction`을 자동 설정하므로 txProxy가 불필요합니다. txProxy 패턴은 단위 테스트에서만 사용합니다.
+
 ---
 
 ## 실제 DB 통합 테스트
