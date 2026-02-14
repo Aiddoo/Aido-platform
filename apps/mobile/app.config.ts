@@ -13,7 +13,6 @@ interface EnvironmentConfig {
   apiUrl: string;
 }
 
-const EAS_PROJECT_ID = '185abed7-acd2-4d80-b652-cb3846e9806a';
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
 const VERSION = '1.0.0';
@@ -25,9 +24,7 @@ const SCHEME = 'aido';
 
 const BRAND_COLOR = '#FF6B43';
 
-// =============================================================================
-// Constants - Assets (images must exist in ./assets/images/)
-// =============================================================================
+// Assets
 const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
@@ -35,9 +32,7 @@ const FAVICON = './assets/images/favicon.png';
 // TODO: 알림 아이콘 추가 필요 (96x96, 흰색 투명 배경 PNG)
 const _NOTIFICATION_ICON = './assets/images/notification-icon.png';
 
-// =============================================================================
-// Environment Configuration
-// =============================================================================
+// Environment
 
 const PROJECT_ROOT = __dirname;
 
@@ -100,16 +95,16 @@ const resolveEnvironment = (rawEnv: string): AppEnvironment =>
     .with('preview', () => 'preview' as const)
     .otherwise(() => 'development' as const);
 
-// =============================================================================
-// Main Configuration
-// =============================================================================
-
 export default ({ config }: ConfigContext): ExpoConfig => {
-  // Resolve environment
   const rawEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development';
   const env = resolveEnvironment(rawEnv);
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
+
+  const EAS_PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  if (!EAS_PROJECT_ID && !isDevelopment) {
+    throw new Error('[config] EXPO_PUBLIC_EAS_PROJECT_ID 환경변수가 설정되지 않았습니다.');
+  }
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,
@@ -123,16 +118,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     label: 'GoogleService-Info.plist',
   });
 
-  // Get environment-specific config
   const envConfig = getEnvironmentConfig(env);
 
   return {
     ...config,
 
-    // ==========================================================================
     // Basic Info
-    // ==========================================================================
-
     name: envConfig.name,
     slug: PROJECT_SLUG,
     owner: OWNER,
@@ -140,17 +131,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: envConfig.scheme,
     orientation: 'portrait',
 
-    // ==========================================================================
     // Branding
-    // ==========================================================================
-
     icon: ICON,
     userInterfaceStyle: 'automatic',
 
-    // ==========================================================================
-    // Notification (Push Notifications)
-    // ==========================================================================
-
+    // Notification
     notification: {
       // TODO: notification-icon.png 추가 후 주석 해제
       // icon: NOTIFICATION_ICON,
@@ -160,20 +145,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       androidCollapsedTitle: APP_NAME,
     },
 
-    // ==========================================================================
-    // Splash Screen
-    // ==========================================================================
-
+    // Splash
     splash: {
       image: SPLASH,
       resizeMode: 'contain',
       backgroundColor: BRAND_COLOR,
     },
 
-    // ==========================================================================
-    // iOS Configuration
-    // ==========================================================================
-
+    // iOS
     ios: {
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
@@ -184,27 +163,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         usesNonExemptEncryption: false,
       },
       infoPlist: {
-        // 카메라 권한
         NSCameraUsageDescription:
           '$(PRODUCT_NAME)이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
-        // 사진 라이브러리 권한
         NSPhotoLibraryUsageDescription:
           '$(PRODUCT_NAME)이(가) 사진 선택을 위해 사진 라이브러리에 접근하려고 합니다.',
-        // 마이크 권한 (음성 입력)
         NSMicrophoneUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
-        // 캘린더 권한
         NSCalendarsUsageDescription:
           '$(PRODUCT_NAME)이(가) 일정 동기화를 위해 캘린더에 접근하려고 합니다.',
         NSCalendarsWriteUsageDescription:
           '$(PRODUCT_NAME)이(가) 일정 추가를 위해 캘린더 쓰기 권한이 필요합니다.',
-        // Face ID 권한
         NSFaceIDUsageDescription:
           '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
-        // 음성 인식 권한
         NSSpeechRecognitionUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.',
-        // 개발 환경 HTTP 허용
         ...(isDevelopment && {
           NSAppTransportSecurity: {
             NSAllowsArbitraryLoads: true,
@@ -218,15 +190,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         }),
       },
       entitlements: {
-        // 푸시 알림 환경 설정
         'aps-environment': isProduction ? 'production' : 'development',
       },
     },
 
-    // ==========================================================================
-    // Android Configuration
-    // ==========================================================================
-
+    // Android
     android: {
       package: envConfig.packageName,
       adaptiveIcon: {
@@ -234,7 +202,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: BRAND_COLOR,
       },
       edgeToEdgeEnabled: true,
-      // 개발 환경에서 HTTP 허용 (iOS의 NSAppTransportSecurity와 동일)
       ...(isDevelopment && {
         usesCleartextTraffic: true,
       }),
@@ -242,74 +209,44 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           action: 'VIEW',
           data: [
-            {
-              scheme: envConfig.scheme,
-              host: 'auth',
-              pathPrefix: '/kakao',
-            },
-            {
-              scheme: envConfig.scheme,
-              host: 'auth',
-              pathPrefix: '/naver',
-            },
-            {
-              scheme: envConfig.scheme,
-              host: 'auth',
-              pathPrefix: '/google',
-            },
+            { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/kakao' },
+            { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/naver' },
+            { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/google' },
           ],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
       permissions: [
-        // 카메라
         'CAMERA',
-        // 저장소 (Android 12 이하)
         'READ_EXTERNAL_STORAGE',
         'WRITE_EXTERNAL_STORAGE',
-        // 미디어 (Android 13+)
         'READ_MEDIA_IMAGES',
         'READ_MEDIA_AUDIO',
-        // 마이크 (음성 입력)
         'RECORD_AUDIO',
-        // 캘린더
         'READ_CALENDAR',
         'WRITE_CALENDAR',
-        // 진동 (햅틱 피드백)
         'VIBRATE',
-        // 부팅 시 알림 스케줄링
         'RECEIVE_BOOT_COMPLETED',
-        // 생체 인증
         'USE_BIOMETRIC',
         'USE_FINGERPRINT',
-        // 알림
         'POST_NOTIFICATIONS',
-        // 백그라운드 작업
         'FOREGROUND_SERVICE',
         'WAKE_LOCK',
       ],
       googleServicesFile: './google-services.json',
     },
 
-    // ==========================================================================
-    // Web Configuration
-    // ==========================================================================
-
+    // Web
     web: {
       bundler: 'metro',
       output: 'static',
       favicon: FAVICON,
     },
 
-    // ==========================================================================
-    // Plugins & Features
-    // ==========================================================================
-
+    // Plugins
     plugins: [
-      // 라우팅
       'expo-router',
 
-      // 폰트
       [
         'expo-font',
         {
@@ -322,7 +259,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 카메라
       [
         'expo-camera',
         {
@@ -335,7 +271,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 이미지 피커
       [
         'expo-image-picker',
         {
@@ -347,7 +282,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 푸시 알림
       // TODO: notification-icon.png 추가 후 icon 설정
       [
         'expo-notifications',
@@ -359,7 +293,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 캘린더
       [
         'expo-calendar',
         {
@@ -369,7 +302,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 로컬 인증 (생체 인증 - Face ID, 지문)
       [
         'expo-local-authentication',
         {
@@ -379,20 +311,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 보안 저장소 (토큰 저장)
       'expo-secure-store',
-
-      // 시스템 UI (다크 모드 지원)
       'expo-system-ui',
-
-      // SQLite (오프라인 DB)
       'expo-sqlite',
-
-      // 백그라운드 작업
       'expo-task-manager',
       'expo-background-fetch',
 
-      // 음성 인식 (STT)
       [
         'expo-speech-recognition',
         {
@@ -409,32 +333,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // 날짜/시간 선택기
       '@react-native-community/datetimepicker',
     ],
 
-    // ==========================================================================
     // Experiments
-    // ==========================================================================
-
     experiments: {
       typedRoutes: true,
     },
     newArchEnabled: true,
 
-    // ==========================================================================
     // EAS Updates
-    // ==========================================================================
-
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
     },
     runtimeVersion: VERSION,
 
-    // ==========================================================================
-    // Environment Variables (accessible via Constants.expoConfig.extra)
-    // ==========================================================================
-
+    // Extra (Constants.expoConfig.extra)
     extra: {
       env,
       apiUrl: envConfig.apiUrl,
