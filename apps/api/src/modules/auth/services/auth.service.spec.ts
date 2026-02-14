@@ -10,9 +10,10 @@
  */
 import { LOGIN_ATTEMPT } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import type { AccountProvider } from "@/generated/prisma/enums";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { SessionBuilder, UserBuilder } from "@test/builders";
+import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
 import { AdminNotificationEvents } from "../../admin-notification/events/admin-notification.events";
 
 // Transaction callback 타입 (any로 타입 안정성 확보)
@@ -1121,7 +1122,7 @@ describe("AuthService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 
-		it("Credential 계정이 없으면 에러를 던진다", async () => {
+		it("소셜 전용 계정(Credential 없음)이면 USER_0613 에러를 던진다", async () => {
 			// Given
 			const mockUser = UserBuilder.create()
 				.withId("user-123")
@@ -1150,6 +1151,80 @@ describe("AuthService", () => {
 				service.resetPassword(email, code, newPassword),
 			).rejects.toThrow(BusinessException);
 			expect(accountRepo.updatePassword).not.toHaveBeenCalled();
+		});
+
+		it("재설정 후 모든 세션을 무효화한다 (excludeSessionId=undefined)", async () => {
+			// Given
+			const mockUser = UserBuilder.create()
+				.withId("user-123")
+				.withEmail(email)
+				.verified()
+				.build();
+
+			userRepo.findByEmail.mockResolvedValue(mockUser);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				id: "account-123",
+				userId: mockUser.id,
+				password: "old-hashed-password",
+			} as never);
+			passwordService.hash.mockResolvedValue("new-hashed-password");
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			verificationService.verifyCode.mockResolvedValue(true as never);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			await service.resetPassword(email, code, newPassword);
+
+			// Then - excludeSessionId가 undefined (모든 세션 무효화)
+			expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
+				mockUser.id,
+				REVOKE_REASON.PASSWORD_RESET,
+				undefined,
+				expect.any(Object),
+			);
+		});
+
+		it("보안 로그에 PASSWORD_CHANGED 이벤트와 PASSWORD_RESET 사유를 기록한다", async () => {
+			// Given
+			const mockUser = UserBuilder.create()
+				.withId("user-123")
+				.withEmail(email)
+				.verified()
+				.build();
+
+			userRepo.findByEmail.mockResolvedValue(mockUser);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				id: "account-123",
+				userId: mockUser.id,
+				password: "old-hashed-password",
+			} as never);
+			passwordService.hash.mockResolvedValue("new-hashed-password");
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			verificationService.verifyCode.mockResolvedValue(true as never);
+			accountRepo.updatePassword.mockResolvedValue({} as never);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
+			securityLogRepo.create.mockResolvedValue({} as never);
+
+			// When
+			await service.resetPassword(email, code, newPassword);
+
+			// Then
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUser.id,
+					event: SECURITY_EVENT.PASSWORD_CHANGED,
+					metadata: expect.objectContaining({
+						reason: REVOKE_REASON.PASSWORD_RESET,
+					}),
+				}),
+				expect.any(Object),
+			);
 		});
 	});
 
@@ -1485,6 +1560,229 @@ describe("AuthService", () => {
 	});
 
 	// ============================================
+	// requestPasswordSetupCode
+	// ============================================
+
+	describe("requestPasswordSetupCode", () => {
+		const userId = "user-setup-1";
+
+		it("소셜 전용 사용자에게 인증 코드를 발송한다", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
+			verificationService.createAndSendPasswordSetup.mockResolvedValue({
+				code: "123456",
+				expiresAt: new Date(),
+			});
+
+			// When
+			const result = await service.requestPasswordSetupCode(userId);
+
+			// Then
+			expect(result.message).toBeDefined();
+			expect(accountRepo.findByUserIdAndProvider).toHaveBeenCalledWith(
+				userId,
+				"CREDENTIAL",
+			);
+			expect(
+				verificationService.createAndSendPasswordSetup,
+			).toHaveBeenCalledWith(userId, user.email);
+		});
+
+		it("CREDENTIAL 계정이 이미 존재하면 에러를 던진다", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			const account = AccountBuilder.create(userId).asCredential().build();
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(account);
+
+			// When & Then
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("존재하지 않는 사용자면 에러를 던진다", async () => {
+			// Given
+			userRepo.findById.mockResolvedValue(null);
+
+			// When & Then
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("탈퇴한 사용자면 에러를 던진다", async () => {
+			// Given
+			const user = UserBuilder.create()
+				.withId(userId)
+				.verified()
+				.deleted()
+				.build();
+			userRepo.findById.mockResolvedValue(user);
+
+			// When & Then
+			await expect(service.requestPasswordSetupCode(userId)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+	});
+
+	// ============================================
+	// setPassword
+	// ============================================
+
+	describe("setPassword", () => {
+		const userId = "user-setup-2";
+		const code = "123456";
+		const newPassword = "NewPassword1";
+		const metadata = { ip: "127.0.0.1", userAgent: "test-agent" };
+
+		/**
+		 * setPassword 성공 시나리오 mock 설정 헬퍼
+		 */
+		const setupSuccessfulSetPassword = () => {
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
+			passwordService.hash.mockResolvedValue("hashed-password");
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) => callback({} as never),
+			);
+			verificationService.verifyCode.mockResolvedValue(true);
+			accountRepo.createCredentialAccount.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as never);
+			return user;
+		};
+
+		it("인증 코드 검증 후 비밀번호를 설정한다", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			const result = await service.setPassword(
+				userId,
+				code,
+				newPassword,
+				metadata,
+			);
+
+			// Then
+			expect(result.message).toBeDefined();
+			expect(passwordService.hash).toHaveBeenCalledWith(newPassword);
+		});
+
+		it("CREDENTIAL 계정을 생성한다", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			await service.setPassword(userId, code, newPassword, metadata);
+
+			// Then
+			expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith(
+				userId,
+				"hashed-password",
+				expect.any(Object),
+			);
+		});
+
+		it("보안 로그를 기록한다 (PASSWORD_SETUP)", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			await service.setPassword(userId, code, newPassword, metadata);
+
+			// Then
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId,
+					event: SECURITY_EVENT.PASSWORD_SETUP,
+				}),
+				expect.any(Object),
+			);
+		});
+
+		it("세션을 유지한다 (revokeAllByUserId 호출하지 않음)", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			await service.setPassword(userId, code, newPassword, metadata);
+
+			// Then
+			expect(sessionRepo.revokeAllByUserId).not.toHaveBeenCalled();
+		});
+
+		it("CREDENTIAL 계정이 이미 존재하면 에러를 던진다", async () => {
+			// Given
+			const user = UserBuilder.create().withId(userId).verified().build();
+			userRepo.findById.mockResolvedValue(user);
+			const account = AccountBuilder.create(userId).asCredential().build();
+			accountRepo.findByUserIdAndProvider.mockResolvedValue(account);
+
+			// When & Then
+			await expect(
+				service.setPassword(userId, code, newPassword, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("비밀번호를 Argon2id로 해싱한다", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			await service.setPassword(userId, code, newPassword, metadata);
+
+			// Then
+			expect(passwordService.hash).toHaveBeenCalledWith(newPassword);
+		});
+
+		it("존재하지 않는 사용자면 에러를 던진다", async () => {
+			// Given
+			userRepo.findById.mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.setPassword(userId, code, newPassword, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("탈퇴한 사용자면 에러를 던진다", async () => {
+			// Given
+			const user = UserBuilder.create()
+				.withId(userId)
+				.verified()
+				.deleted()
+				.build();
+			userRepo.findById.mockResolvedValue(user);
+
+			// When & Then
+			await expect(
+				service.setPassword(userId, code, newPassword, metadata),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("인증 코드를 PASSWORD_SETUP 타입으로 검증한다", async () => {
+			// Given
+			setupSuccessfulSetPassword();
+
+			// When
+			await service.setPassword(userId, code, newPassword, metadata);
+
+			// Then
+			expect(verificationService.verifyCode).toHaveBeenCalledWith(
+				userId,
+				code,
+				"PASSWORD_SETUP",
+				expect.any(Object),
+			);
+		});
+	});
+
+	// ============================================
 	// login - 탈퇴 사용자 차단
 	// ============================================
 
@@ -1760,6 +2058,7 @@ describe("AuthService", () => {
 				name: "Test User",
 				profileImage: null,
 				createdAt: mockUser.createdAt.toISOString(),
+				providers: ["CREDENTIAL"] as AccountProvider[],
 			};
 			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
 
@@ -1774,6 +2073,7 @@ describe("AuthService", () => {
 			expect(result.userId).toBe(mockUser.id);
 			expect(result.email).toBe(mockUser.email);
 			expect(result.name).toBe("Test User");
+			expect(result.providers).toEqual(["CREDENTIAL"]);
 		});
 
 		it("사용자가 존재하지 않으면 에러를 던진다", async () => {
@@ -1784,6 +2084,42 @@ describe("AuthService", () => {
 			await expect(
 				service.getCurrentUser("user-123", "test@example.com", "session-123"),
 			).rejects.toThrow(BusinessException);
+		});
+
+		it("다중 provider (CREDENTIAL + GOOGLE) 목록을 반환한다", async () => {
+			// Given
+			const mockUser = UserBuilder.create()
+				.withId("user-123")
+				.withEmail("multi@example.com")
+				.verified()
+				.build();
+
+			const cachedProfile = {
+				id: mockUser.id,
+				email: mockUser.email,
+				userTag: mockUser.userTag,
+				role: mockUser.role,
+				status: mockUser.status,
+				emailVerifiedAt: mockUser.emailVerifiedAt?.toISOString() ?? null,
+				subscriptionStatus: mockUser.subscriptionStatus,
+				subscriptionExpiresAt: null,
+				name: "Multi Provider User",
+				profileImage: null,
+				createdAt: mockUser.createdAt.toISOString(),
+				providers: ["CREDENTIAL", "GOOGLE"] as AccountProvider[],
+			};
+			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
+
+			// When
+			const result = await service.getCurrentUser(
+				mockUser.id,
+				mockUser.email,
+				"session-123",
+			);
+
+			// Then
+			expect(result.providers).toEqual(["CREDENTIAL", "GOOGLE"]);
+			expect(result.providers).toHaveLength(2);
 		});
 
 		it("sessionId는 캐시되지 않고 항상 파라미터 값을 사용한다", async () => {
@@ -1806,6 +2142,7 @@ describe("AuthService", () => {
 				name: "Test User",
 				profileImage: null,
 				createdAt: mockUser.createdAt.toISOString(),
+				providers: ["CREDENTIAL"] as AccountProvider[],
 			};
 			cacheService.wrapUserProfile.mockResolvedValue(cachedProfile);
 

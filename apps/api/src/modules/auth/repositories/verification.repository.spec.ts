@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { VerificationBuilder } from "@test/builders";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { DatabaseService } from "@/database";
 import { type Verification, VerificationType } from "@/generated/prisma/client";
@@ -10,16 +11,15 @@ describe("VerificationRepository", () => {
 	let repository: VerificationRepository;
 	let db: Mocked<DatabaseService>;
 
-	const mockVerification: Verification = {
-		id: 1,
-		userId: "user-123",
-		type: VerificationType.EMAIL_VERIFY,
-		token: "hashed-token-123",
-		expiresAt: new Date("2025-12-31T23:59:59Z"),
-		attempts: 0,
-		usedAt: null,
-		createdAt: new Date("2025-01-01T00:00:00Z"),
-	};
+	const mockVerification = VerificationBuilder.create(
+		"user-123",
+		VerificationType.EMAIL_VERIFY,
+	)
+		.withId(1)
+		.withToken("hashed-token-123")
+		.withExpiresAt(new Date("2025-12-31T23:59:59Z"))
+		.withCreatedAt(new Date("2025-01-01T00:00:00Z"))
+		.build();
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(

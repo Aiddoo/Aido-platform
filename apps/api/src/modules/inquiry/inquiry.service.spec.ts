@@ -17,7 +17,7 @@ describe("InquiryService", () => {
 		content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
 	};
 
-	beforeAll(async () => {
+	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(InquiryService).compile();
 
 		service = unit;
@@ -25,9 +25,7 @@ describe("InquiryService", () => {
 		configService = unitRef.get(
 			TypedConfigService,
 		) as unknown as Mocked<TypedConfigService>;
-	});
 
-	beforeEach(() => {
 		jest.clearAllMocks();
 
 		// config.email.supportEmail 기본 설정
