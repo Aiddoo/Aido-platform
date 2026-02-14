@@ -829,6 +829,70 @@ describe("NotificationService", () => {
 	// 푸시 발송 (Private 메서드 간접 테스트)
 	// ==========================================================================
 
+	// ==========================================================================
+	// Graceful Shutdown 테스트
+	// ==========================================================================
+
+	describe("beforeApplicationShutdown", () => {
+		it("pending push가 없으면 즉시 반환한다", async () => {
+			// Given - 기본 상태 (pending push 없음)
+
+			// When
+			await service.beforeApplicationShutdown();
+
+			// Then - 에러 없이 즉시 반환 (암묵적 통과)
+		});
+
+		it("pending push가 있으면 완료될 때까지 대기한다", async () => {
+			// Given - createAndSend를 통해 fire-and-forget 푸시가 발생하는 상황
+			let resolvePush!: () => void;
+			const pushPromise = new Promise<void>((resolve) => {
+				resolvePush = resolve;
+			});
+			const data: CreateNotificationData = {
+				userId: mockUserId,
+				type: "FOLLOW_NEW",
+				title: "테스트",
+				body: "테스트 알림",
+				friendId: "friend-1",
+			};
+			const notification = NotificationBuilder.create(mockUserId)
+				.asFollowNew("friend-1")
+				.build();
+			const preference = UserPreferenceBuilder.create(mockUserId)
+				.withPushEnabled()
+				.build();
+			const pushToken = PushTokenBuilder.create(mockUserId).build();
+
+			notificationRepo.createNotification.mockResolvedValue(notification);
+			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
+			// sendPushToUser 내부의 findPushTokensByUser가 지연된 Promise를 반환
+			notificationRepo.findPushTokensByUser.mockReturnValue(
+				pushPromise.then(() => [pushToken]) as never,
+			);
+
+			// When - createAndSend로 fire-and-forget 푸시 트리거
+			await service.createAndSend(data);
+
+			// Then - beforeApplicationShutdown이 pending push 완료를 대기
+			let shutdownResolved = false;
+			const shutdownPromise = service.beforeApplicationShutdown().then(() => {
+				shutdownResolved = true;
+			});
+
+			// 아직 push가 완료되지 않았으므로 shutdown도 대기 중
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			expect(shutdownResolved).toBe(false);
+
+			// push 완료
+			resolvePush();
+			await shutdownPromise;
+
+			// shutdown이 완료됨
+			expect(shutdownResolved).toBe(true);
+		});
+	});
+
 	describe("sendPushToUser (간접 테스트)", () => {
 		it("활성 토큰이 없으면 푸시를 발송하지 않아야 한다", async () => {
 			// Given - 활성 토큰이 없는 사용자

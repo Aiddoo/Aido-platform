@@ -5,7 +5,12 @@ import {
 	type Notification as NotificationDto,
 	type PushNotificationData,
 } from "@aido/validators";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import {
+	type BeforeApplicationShutdown,
+	Inject,
+	Injectable,
+	Logger,
+} from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -56,8 +61,9 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 ]);
 
 @Injectable()
-export class NotificationService {
+export class NotificationService implements BeforeApplicationShutdown {
 	private readonly logger = new Logger(NotificationService.name);
+	private readonly pendingPushes = new Set<Promise<void>>();
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
@@ -171,7 +177,7 @@ export class NotificationService {
 		const pushData = this.buildPushPayloadData(data, notification.id);
 
 		// 4. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
-		this.sendPushToUser(data.userId, {
+		const pushPromise = this.sendPushToUser(data.userId, {
 			title: data.title,
 			body: data.body,
 			data: pushData,
@@ -179,7 +185,8 @@ export class NotificationService {
 			this.logger.error(
 				`Failed to send push notification: userId=${data.userId}, error=${error}`,
 			);
-		});
+		}) as Promise<void>;
+		this.trackPush(pushPromise);
 
 		return notification;
 	}
@@ -240,7 +247,7 @@ export class NotificationService {
 		const eligibleUserIds = [...new Set(eligibleDataList.map((d) => d.userId))];
 
 		// 6. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
-		this.sendPushToUsers(
+		const pushPromise = this.sendPushToUsers(
 			eligibleUserIds,
 			eligibleDataList.map((d) => ({
 				userId: d.userId,
@@ -252,7 +259,8 @@ export class NotificationService {
 			this.logger.error(
 				`Failed to send batch push notifications: userIds=${eligibleUserIds.join(",")}, error=${error}`,
 			);
-		});
+		}) as Promise<void>;
+		this.trackPush(pushPromise);
 
 		return result;
 	}
@@ -611,6 +619,31 @@ export class NotificationService {
 		this.logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
+	}
+
+	// =========================================================================
+	// Graceful Shutdown
+	// =========================================================================
+
+	/**
+	 * fire-and-forget 푸시 프라미스를 추적하여 셧다운 시 대기할 수 있게 합니다.
+	 */
+	private trackPush(promise: Promise<void>): void {
+		this.pendingPushes.add(promise);
+		promise.finally(() => this.pendingPushes.delete(promise));
+	}
+
+	/**
+	 * 앱 종료 전 모든 pending 푸시가 완료될 때까지 대기합니다.
+	 */
+	async beforeApplicationShutdown(): Promise<void> {
+		if (this.pendingPushes.size > 0) {
+			this.logger.log(
+				`Waiting for ${this.pendingPushes.size} pending push(es)...`,
+			);
+			await Promise.allSettled([...this.pendingPushes]);
+			this.logger.log("All pending pushes completed");
+		}
 	}
 
 	// =========================================================================
