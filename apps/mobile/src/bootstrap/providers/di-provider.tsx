@@ -1,3 +1,6 @@
+import type { Analytics } from '@src/core/ports/analytics';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
 import { AuthRepositoryImpl } from '@src/features/auth/repositories/auth.repository.impl';
 import { AuthService } from '@src/features/auth/services/auth.service';
@@ -15,9 +18,13 @@ import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 
+import { ENV } from '@src/shared/config/env';
+import { createConsoleAnalytics } from '@src/shared/infra/analytics';
+import { createConsoleErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
+import { createConsoleLogger } from '@src/shared/infra/logger';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 
 import { createContext, type PropsWithChildren, use, useState } from 'react';
@@ -25,6 +32,9 @@ import { createContext, type PropsWithChildren, use, useState } from 'react';
 export interface DIContainer {
   // Infrastructure
   storage: Storage;
+  logger: Logger;
+  analytics: Analytics;
+  errorReporter: ErrorReporter;
 
   // Services
   authService: AuthService;
@@ -40,6 +50,11 @@ const DIContext = createContext<DIContainer | null>(null);
 export const DIProvider = ({ children }: PropsWithChildren) => {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
+
+    // Observability
+    const logger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
+    const analytics = createConsoleAnalytics();
+    const errorReporter = createConsoleErrorReporter();
 
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
@@ -80,6 +95,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     return {
       storage,
+      logger,
+      analytics,
+      errorReporter,
       authService,
       friendService,
       todoService,
@@ -104,6 +122,9 @@ export const useDI = (): DIContainer => {
 
 // Infrastructure Hooks
 export const useStorage = () => useDI().storage;
+export const useLogger = () => useDI().logger;
+export const useAnalytics = () => useDI().analytics;
+export const useErrorReporter = () => useDI().errorReporter;
 
 // Service Hooks
 export const useAuthService = () => useDI().authService;
