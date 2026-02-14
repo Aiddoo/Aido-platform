@@ -799,13 +799,13 @@ export class AuthService {
 		}
 		this._assertNotDeleted(user);
 
-		// Credential Account 조회
+		// Credential Account 조회 (소셜 전용 계정이면 비밀번호 재설정 불가)
 		const account = await this.accountRepository.findByUserIdAndProvider(
 			user.id,
 			"CREDENTIAL",
 		);
 		if (!account) {
-			throw BusinessExceptions.invalidCredentials();
+			throw BusinessExceptions.noCredentialAccountForPasswordChange(user.id);
 		}
 
 		// 새 비밀번호 해싱 (트랜잭션 밖에서 수행 - CPU 작업)
@@ -916,6 +916,96 @@ export class AuthService {
 		return { message: "비밀번호가 변경되었습니다." };
 	}
 
+	async requestPasswordSetupCode(userId: string): Promise<{ message: string }> {
+		// 1. 유저 조회 + 탈퇴 체크
+		const user = await this.userRepository.findById(userId);
+		if (!user) throw BusinessExceptions.userNotFound(userId);
+		this._assertNotDeleted(user);
+
+		// 2. CREDENTIAL 계정 존재 여부 확인
+		const account = await this.accountRepository.findByUserIdAndProvider(
+			userId,
+			"CREDENTIAL",
+		);
+		if (account) {
+			throw BusinessExceptions.credentialAccountAlreadyExists(userId);
+		}
+
+		// 3. 인증 코드 생성 및 발송
+		await this.verificationService.createAndSendPasswordSetup(
+			userId,
+			user.email,
+		);
+
+		return {
+			message: "비밀번호 설정 코드가 이메일로 발송되었습니다.",
+		};
+	}
+
+	async setPassword(
+		userId: string,
+		code: string,
+		newPassword: string,
+		metadata?: RequestMetadata,
+	): Promise<{ message: string }> {
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		// 1. 유저 조회 + 탈퇴 체크
+		const user = await this.userRepository.findById(userId);
+		if (!user) throw BusinessExceptions.userNotFound(userId);
+		this._assertNotDeleted(user);
+
+		// 2. CREDENTIAL 계정 존재 여부 확인
+		const existingAccount =
+			await this.accountRepository.findByUserIdAndProvider(
+				userId,
+				"CREDENTIAL",
+			);
+		if (existingAccount) {
+			throw BusinessExceptions.credentialAccountAlreadyExists(userId);
+		}
+
+		// 3. 비밀번호 해싱 (트랜잭션 밖 - CPU 작업)
+		const hashedPassword = await this.passwordService.hash(newPassword);
+
+		// 4. 트랜잭션: 인증 코드 검증 + CREDENTIAL 계정 생성 + 보안 로그
+		await this.database.$transaction(async (tx) => {
+			// 인증 코드 검증 (PASSWORD_SETUP 타입)
+			await this.verificationService.verifyCode(
+				userId,
+				code,
+				"PASSWORD_SETUP",
+				tx,
+			);
+
+			// CREDENTIAL 계정 생성
+			await this.accountRepository.createCredentialAccount(
+				userId,
+				hashedPassword,
+				tx,
+			);
+
+			// 보안 로그 기록
+			await this.securityLogRepository.create(
+				{
+					userId,
+					event: SECURITY_EVENT.PASSWORD_SETUP,
+					ipAddress: ip,
+					userAgent,
+				},
+				tx,
+			);
+		});
+
+		this.logger.log(`Password set for social user: ${userId}`);
+
+		// 세션 유지 (changePassword와 달리 기존 세션 폐기하지 않음)
+		return {
+			message: "비밀번호가 설정되었습니다. 이제 이메일로 로그인할 수 있습니다.",
+		};
+	}
+
 	async getActiveSessions(userId: string): Promise<SessionInfo[]> {
 		const sessions = await this.sessionRepository.findActiveByUserId(userId);
 
@@ -990,6 +1080,7 @@ export class AuthService {
 					name: user.profile?.name ?? null,
 					profileImage: user.profile?.profileImage ?? null,
 					createdAt: toISOString(user.createdAt),
+					providers: user.accounts.map((a) => a.provider),
 				};
 			},
 		);
@@ -1012,6 +1103,7 @@ export class AuthService {
 			name: cachedProfile.name,
 			profileImage: cachedProfile.profileImage,
 			createdAt: cachedProfile.createdAt,
+			providers: cachedProfile.providers,
 		};
 	}
 

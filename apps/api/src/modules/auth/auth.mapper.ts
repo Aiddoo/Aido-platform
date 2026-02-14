@@ -111,6 +111,7 @@ export abstract class AuthMapper {
 			name: result.name,
 			profileImage: result.profileImage,
 			createdAt: result.createdAt,
+			providers: result.providers,
 		};
 	}
 

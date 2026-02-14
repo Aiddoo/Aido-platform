@@ -58,6 +58,7 @@ import {
 	ResendVerificationDto,
 	ResetPasswordDto,
 	SessionListDto,
+	SetPasswordDto,
 	UpdateMarketingConsentDto,
 	UpdateMarketingConsentResponseDto,
 	UpdatePreferenceDto,
@@ -91,10 +92,23 @@ import type { RefreshTokenPayload } from "./strategies/jwt-refresh.strategy";
  * 4. POST /auth/logout  → 로그아웃 (Access Token 필요)
  * ```
  *
- * ### 비밀번호 재설정 플로우
+ * ### 비밀번호 관리 플로우
+ *
+ * #### 비밀번호 재설정 (비로그인, 이메일 계정 전용)
  * ```
- * 1. POST /auth/forgot-password → 재설정 코드 이메일 발송
- * 2. POST /auth/reset-password  → 새 비밀번호 설정
+ * 1. POST /auth/forgot-password    → 재설정 코드 이메일 발송
+ * 2. POST /auth/reset-password     → 새 비밀번호 설정
+ * ```
+ *
+ * #### 비밀번호 설정 (로그인, 소셜 계정 전용)
+ * ```
+ * 1. POST /auth/password/setup-code → 설정 코드 이메일 발송
+ * 2. POST /auth/password            → 비밀번호 생성
+ * ```
+ *
+ * #### 비밀번호 변경 (로그인, 이메일 계정 전용)
+ * ```
+ * PATCH /auth/password → 현재 비밀번호 확인 후 변경
  * ```
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
@@ -241,16 +255,13 @@ export class AuthController {
 ### ⚠️ 에러 케이스
 | 코드 | 상황 |
 |------|------|
-| USER_0602 | 존재하지 않는 사용자 |
 | USER_0604 | 이미 인증 완료된 사용자 |
-| USER_0605 | 인증 요청 정보 없음 |
+| VERIFY_0753 | 재발송 쿨다운 (1분) |
 | VERIFY_0753 | 재발송 쿨다운 (1분) |
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async resendVerification(@Body() dto: ResendVerificationDto) {
 		const result = await this.authService.resendVerification(dto.email);
@@ -297,6 +308,7 @@ export class AuthController {
 	@ApiSuccessResponse({ type: AuthTokensDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
 	async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -417,11 +429,13 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Throttle({ default: { ttl: 60000, limit: 5 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "비밀번호 찾기",
+		summary: "[비로그인] 비밀번호 재설정 코드 요청 (이메일 계정 전용)",
 		operationId: "forgotPassword",
 		description: `
-## 🔑 비밀번호 찾기 (1/2)
-비밀번호 재설정용 6자리 인증 코드를 이메일로 발송합니다.
+## 🔑 비밀번호 재설정 — 1단계: 인증 코드 발송
+
+> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 불필요)
+> **용도**: 비밀번호를 잊어버린 사용자가 재설정하기 위한 인증 코드 요청
 
 ### 📝 요청 Body
 - \`email\`: 가입된 이메일
@@ -429,11 +443,17 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 🔄 다음 단계
 \`POST /auth/reset-password\`로 새 비밀번호 설정 (10분 내)
 
-### 🔒 보안
-존재하지 않는 이메일도 동일 응답 (이메일 노출 방지)
+### ⚠️ 에러 케이스
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| USER_0613 | 소셜 로그인 전용 계정 | "소셜 로그인을 이용해주세요" 안내 |
+
+### 💡 참고
+- 소셜 로그인 사용자가 비밀번호를 **새로 설정**하려면 → \`POST /auth/password/setup-code\` (로그인 필요)
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async forgotPassword(@Body() dto: ForgotPasswordDto) {
 		const result = await this.authService.forgotPassword(dto.email);
 		return result;
@@ -443,11 +463,13 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@Public()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "비밀번호 재설정",
+		summary: "[비로그인] 비밀번호 재설정 (이메일 계정 전용)",
 		operationId: "resetPassword",
 		description: `
-## 🔑 비밀번호 재설정 (2/2)
-인증 코드 확인 후 새 비밀번호를 설정합니다.
+## 🔑 비밀번호 재설정 — 2단계: 새 비밀번호 설정
+
+> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 불필요)
+> **전제**: \`POST /auth/forgot-password\`로 발송된 인증 코드 필요
 
 ### 📝 요청 Body
 - \`email\`: 이메일
@@ -455,16 +477,24 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 - \`newPassword\`: 새 비밀번호 (8자+, 영문+숫자)
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| EMAIL_0504 | 잘못된 인증 코드 |
-| EMAIL_0505 | 만료된 인증 코드 |
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| VERIFY_0751 | 잘못된 인증 코드 | 재입력 요청 |
+| VERIFY_0752 | 만료된 인증 코드 | 코드 재발송 안내 |
+| VERIFY_0754 | 인증 시도 횟수 초과 | 코드 재발송 안내 |
+| USER_0606 | 탈퇴한 계정 | 재가입 안내 |
+| USER_0613 | 소셜 전용 계정 | "소셜 로그인을 이용해주세요" 안내 |
+
+### 🔒 보안
+- 성공 시 모든 기존 세션이 무효화됩니다 (재로그인 필요)
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0752 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
 		const result = await this.authService.resetPassword(
 			dto.email,
@@ -474,15 +504,106 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		return result;
 	}
 
+	@Post("password/setup-code")
+	@ApiBearerAuth()
+	@Throttle({ default: { ttl: 60000, limit: 5 } })
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "[로그인] 비밀번호 설정 코드 요청 (소셜 계정 전용)",
+		operationId: "requestPasswordSetupCode",
+		description: `
+## 🔑 비밀번호 설정 — 1단계: 인증 코드 발송
+
+> **대상**: 소셜 로그인으로만 가입한 사용자 (로그인 필요)
+> **용도**: 이메일/비밀번호 로그인 수단을 추가하기 위한 인증 코드 요청
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 🔄 다음 단계
+\`POST /auth/password\`로 비밀번호 설정 (10분 내)
+
+### ⚠️ 에러 케이스
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| USER_0614 | 이미 비밀번호가 설정된 계정 | 비밀번호 변경 화면으로 안내 |
+| VERIFY_0753 | 재발송 쿨다운 (1분) | 대기 안내 |
+
+### 💡 참고
+- 이미 비밀번호가 있는 사용자가 비밀번호를 **변경**하려면 → \`PATCH /auth/password\` (로그인 필요)
+- 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
+		`,
+	})
+	@ApiSuccessResponse({ type: MessageResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
+	async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
+		return this.authService.requestPasswordSetupCode(user.userId);
+	}
+
+	@Post("password")
+	@ApiBearerAuth()
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "[로그인] 비밀번호 설정 (소셜 계정 전용)",
+		operationId: "setPassword",
+		description: `
+## 🔑 비밀번호 설정 — 2단계: 비밀번호 생성
+
+> **대상**: 소셜 로그인으로만 가입한 사용자 (로그인 필요)
+> **전제**: \`POST /auth/password/setup-code\`로 발송된 인증 코드 필요
+> **결과**: 이메일/비밀번호 로그인 수단이 추가됨
+
+### 🔐 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 📝 요청 Body
+- \`code\`: 6자리 인증 코드
+- \`newPassword\`: 새 비밀번호 (8자+, 영문+숫자)
+- \`newPasswordConfirm\`: 비밀번호 확인
+
+### ⚠️ 에러 케이스
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| USER_0614 | 이미 비밀번호가 설정된 계정 | 비밀번호 변경 화면으로 안내 |
+| VERIFY_0751 | 잘못된 인증 코드 | 재입력 요청 |
+| VERIFY_0754 | 인증 시도 횟수 초과 | 코드 재발송 안내 |
+
+### 🔒 보안
+- 기존 세션이 유지됩니다 (재로그인 불필요)
+		`,
+	})
+	@ApiSuccessResponse({ type: MessageResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
+	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
+	async setPassword(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: SetPasswordDto,
+		@Req() req: Request,
+	) {
+		const metadata = this.extractMetadata(req);
+		return this.authService.setPassword(
+			user.userId,
+			dto.code,
+			dto.newPassword,
+			metadata,
+		);
+	}
+
 	@Patch("password")
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "비밀번호 변경",
+		summary: "[로그인] 비밀번호 변경 (이메일 계정 전용)",
 		operationId: "changePassword",
 		description: `
 ## 🔐 비밀번호 변경
-로그인 상태에서 비밀번호를 변경합니다.
+
+> **대상**: 이메일/비밀번호로 가입한 사용자 (로그인 필요)
+> **용도**: 현재 비밀번호를 알고 있는 상태에서 새 비밀번호로 변경
 
 ### 🔐 인증 필요
 \`Authorization: Bearer {accessToken}\`
@@ -492,14 +613,20 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 - \`newPassword\`: 새 비밀번호 (8자+, 영문+숫자)
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| USER_0602 | 현재 비밀번호 불일치 |
+| 코드 | 상황 | 클라이언트 처리 |
+|------|------|----------------|
+| USER_0602 | 현재 비밀번호 불일치 | 재입력 요청 |
+| USER_0613 | 소셜 전용 계정 | 비밀번호 설정 화면으로 안내 |
+
+### 💡 참고
+- 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
+- 소셜 계정에 비밀번호를 **처음 설정**하려면 → \`POST /auth/password/setup-code\`
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async changePassword(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ChangePasswordDto,
@@ -533,7 +660,12 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 \`Authorization: Bearer {accessToken}\`
 
 ### 📋 응답 필드
-\`userId\`, \`email\`, \`sessionId\`, \`name\`, \`profileImage\`
+\`userId\`, \`email\`, \`sessionId\`, \`name\`, \`profileImage\`, \`providers\`
+
+### 📋 providers 필드
+연결된 로그인 제공자 목록 (예: \`["CREDENTIAL", "KAKAO"]\`)
+- \`CREDENTIAL\`: 이메일/비밀번호 로그인
+- \`APPLE\`, \`GOOGLE\`, \`KAKAO\`, \`NAVER\`: 소셜 로그인
 		`,
 	})
 	@ApiSuccessResponse({ type: CurrentUserDto })
