@@ -100,6 +100,9 @@ beforeEach(async () => {
 - `notification-templates.spec.ts` - 알림 템플릿 상수
 - `in-memory-cache.adapter.spec.ts` - 캐시 어댑터
 
+외부 SDK의 **모듈 레벨 mock**(`jest.mock()`)이 필요한 경우에도 `Test.createTestingModule()`을 사용합니다:
+- `gemini.provider.spec.ts` - AI SDK(`ai` 패키지)를 `jest.mock("ai")`로 모킹. Suites는 모듈 레벨 mock을 지원하지 않으므로 이 방식이 정당함
+
 ---
 
 ## Builder 패턴
@@ -127,6 +130,30 @@ const expired = VerificationBuilder.create("user-123", "PASSWORD_RESET").expired
 // 실패한 로그인 시도
 const attempt = LoginAttemptBuilder.create("test@example.com").asFailed().build();
 ```
+
+### `buildWithRelations()` — 관계 데이터 포함 빌드
+
+`build()`는 단일 엔티티를, `buildWithRelations()`는 관계 객체(sender, receiver 등)가 포함된 데이터를 반환합니다.
+Service에서 join/include 결과를 기대하는 메서드를 테스트할 때 사용합니다:
+
+```typescript
+// 관계 없는 기본 빌드
+const cheer = CheerBuilder.create(senderId, receiverId).build();
+
+// 관계 포함 빌드 — sender/receiver 프로필 등 포함
+const cheerWithRelations = CheerBuilder.create(senderId, receiverId)
+  .withMessage("잘했어!")
+  .withSenderProfile({ name: "테스트유저", profileImage: null })
+  .buildWithRelations();
+
+// 목록 mock에서 여러 Builder 조합
+mockRepo.findMany.mockResolvedValue([
+  CheerBuilder.create("sender-1", userId).withId(1).buildWithRelations(),
+  CheerBuilder.create("sender-2", userId).withId(2).buildWithRelations(),
+]);
+```
+
+> **현재 `buildWithRelations()` 지원 Builder**: `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder`
 
 ### ID 카운터 리셋
 
