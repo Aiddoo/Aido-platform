@@ -10,7 +10,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import times from 'es-toolkit/compat/times';
-import { Button, Chip, Dialog, Divider, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import { Button, Chip, Dialog, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -71,7 +71,7 @@ function LinkedAccountsList() {
 
           return (
             <Fragment key={config.provider}>
-              {index > 0 && <Divider className="mx-4 bg-gray-2" />}
+              {index > 0 && <Separator className="mx-4 bg-gray-2" />}
               <ProviderListRow
                 provider={config.provider}
                 slug={config.slug}
@@ -114,7 +114,7 @@ LinkedAccountsList.Loading = function Loading() {
           {times(4, (index) => (
             <Fragment key={`linked-account-skeleton-${index}`}>
               <SkeletonRow />
-              {index < 3 && <Divider className="mx-4 bg-gray-2" />}
+              {index < 3 && <Separator className="mx-4 bg-gray-2" />}
             </Fragment>
           ))}
         </SkeletonGroup>
@@ -247,11 +247,9 @@ function UnlinkConfirmDialog({
               </Dialog.Description>
             </VStack>
             <HStack justify="end" gap={12}>
-              <Dialog.Close asChild>
-                <Button variant="ghost" size="sm">
-                  취소
-                </Button>
-              </Dialog.Close>
+              <Button variant="ghost" size="sm" onPress={() => onOpenChange?.(false)}>
+                취소
+              </Button>
               <Button size="sm" className="bg-error" onPress={onConfirm}>
                 해제
               </Button>

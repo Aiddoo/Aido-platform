@@ -59,12 +59,14 @@ export const CategoryDeleteDialog = ({
             <TodoMoveCategoryDeleteSection
               category={category}
               otherCategories={otherCategories}
+              onCancel={() => onOpenChange(false)}
               onDelete={handleDelete}
               isPending={deleteMutation.isPending}
             />
           ) : (
             <CategoryDeleteSection
               categoryName={category.name}
+              onCancel={() => onOpenChange(false)}
               onDelete={() => handleDelete()}
               isPending={deleteMutation.isPending}
             />
@@ -77,12 +79,14 @@ export const CategoryDeleteDialog = ({
 
 interface CategoryDeleteSectionProps {
   categoryName: string;
+  onCancel: () => void;
   onDelete: () => void;
   isPending: boolean;
 }
 
 const CategoryDeleteSection = ({
   categoryName,
+  onCancel,
   onDelete,
   isPending,
 }: CategoryDeleteSectionProps) => (
@@ -98,13 +102,14 @@ const CategoryDeleteSection = ({
       </Dialog.Description>
     </VStack>
     <Spacing size={20} />
-    <DialogActions onDelete={onDelete} isPending={isPending} />
+    <DialogActions onCancel={onCancel} onDelete={onDelete} isPending={isPending} />
   </>
 );
 
 interface TodoMoveCategoryDeleteSectionProps {
   category: TodoCategoryWithCount;
   otherCategories: TodoCategoryWithCount[];
+  onCancel: () => void;
   onDelete: (moveToCategoryId: number | null) => void;
   isPending: boolean;
 }
@@ -112,6 +117,7 @@ interface TodoMoveCategoryDeleteSectionProps {
 const TodoMoveCategoryDeleteSection = ({
   category,
   otherCategories,
+  onCancel,
   onDelete,
   isPending,
 }: TodoMoveCategoryDeleteSectionProps) => {
@@ -147,23 +153,26 @@ const TodoMoveCategoryDeleteSection = ({
 
       <Spacing size={20} />
 
-      <DialogActions onDelete={() => onDelete(selectedCategoryId)} isPending={isPending} />
+      <DialogActions
+        onCancel={onCancel}
+        onDelete={() => onDelete(selectedCategoryId)}
+        isPending={isPending}
+      />
     </>
   );
 };
 
 interface DialogActionsProps {
+  onCancel: () => void;
   onDelete: () => void;
   isPending: boolean;
 }
 
-const DialogActions = ({ onDelete, isPending }: DialogActionsProps) => (
+const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) => (
   <HStack gap={8} justify="end">
-    <Dialog.Close asChild>
-      <Button variant="weak" color="dark" size="medium" display="inline">
-        취소
-      </Button>
-    </Dialog.Close>
+    <Button variant="weak" color="dark" size="medium" display="inline" onPress={onCancel}>
+      취소
+    </Button>
     <Button color="danger" size="medium" display="inline" onPress={onDelete} isLoading={isPending}>
       삭제
     </Button>

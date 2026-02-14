@@ -7,7 +7,7 @@ import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, Checkbox, Divider, FormField } from 'heroui-native';
+import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -80,18 +80,18 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
         >
           <VStack gap={32}>
             <VStack gap={16}>
-              <FormField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
-                <FormField.Indicator>
+              <ControlField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
+                <ControlField.Indicator>
                   <Checkbox />
-                </FormField.Indicator>
-                <FormField.Label>
+                </ControlField.Indicator>
+                <Label>
                   <Text size="b2" weight="semibold">
                     약관에 모두 동의
                   </Text>
-                </FormField.Label>
-              </FormField>
+                </Label>
+              </ControlField>
 
-              <Divider />
+              <Separator />
 
               <VStack gap={20}>
                 <TermsAgreementItem
@@ -149,25 +149,25 @@ const TermsAgreementItem = ({
   const requiredLabel = isRequired ? '필수' : '선택';
 
   return (
-    <FormField isSelected={isSelected} onSelectedChange={onSelectedChange}>
-      <FormField.Indicator>
+    <ControlField isSelected={isSelected} onSelectedChange={onSelectedChange}>
+      <ControlField.Indicator>
         <Checkbox />
-      </FormField.Indicator>
+      </ControlField.Indicator>
       <HStack flex={1} justify="between" align="center">
-        <FormField.Label>
+        <Label>
           <HStack gap={4} align="center">
             <Text size="b4">{label}</Text>
             <Text size="b4" shade={6}>
               ({requiredLabel})
             </Text>
           </HStack>
-        </FormField.Label>
+        </Label>
         {onPressLink && (
           <Pressable hitSlop={8} onPress={onPressLink}>
             <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
           </Pressable>
         )}
       </HStack>
-    </FormField>
+    </ControlField>
   );
 };

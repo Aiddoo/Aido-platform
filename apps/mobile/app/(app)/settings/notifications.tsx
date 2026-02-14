@@ -6,7 +6,14 @@ import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Divider, FormField, Skeleton, SkeletonGroup } from 'heroui-native';
+import {
+  ControlField,
+  Description,
+  Label,
+  Separator,
+  Skeleton,
+  SkeletonGroup,
+} from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -33,22 +40,22 @@ function NotificationSettingsForm() {
 
   return (
     <VStack p={8} gap={8} className="bg-white rounded-2xl">
-      <FormField
+      <ControlField
         isSelected={preference.pushEnabled}
         onSelectedChange={(enabled) => updateMutation.mutate({ pushEnabled: enabled })}
         isDisabled={updateMutation.isPending}
         className="py-2"
       >
         <View className="flex-1">
-          <FormField.Label>푸시 알림</FormField.Label>
-          <FormField.Description>모든 푸시 알림을 받습니다</FormField.Description>
+          <Label>푸시 알림</Label>
+          <Description>모든 푸시 알림을 받습니다</Description>
         </View>
-        <FormField.Indicator />
-      </FormField>
+        <ControlField.Indicator />
+      </ControlField>
 
-      <Divider className="bg-gray-2" />
+      <Separator className="bg-gray-2" />
 
-      <FormField
+      <ControlField
         isSelected={preference.nightPushEnabled}
         onSelectedChange={(enabled) => {
           if (!preference.pushEnabled) return;
@@ -58,15 +65,15 @@ function NotificationSettingsForm() {
         className="py-2"
       >
         <View className="flex-1">
-          <FormField.Label>야간 푸시 알림</FormField.Label>
-          <FormField.Description>
+          <Label>야간 푸시 알림</Label>
+          <Description>
             {preference.pushEnabled
               ? '21:00 - 08:00 시간대에도 알림을 받습니다'
               : '푸시 알림을 먼저 활성화해주세요'}
-          </FormField.Description>
+          </Description>
         </View>
-        <FormField.Indicator />
-      </FormField>
+        <ControlField.Indicator />
+      </ControlField>
     </VStack>
   );
 }
@@ -83,7 +90,7 @@ NotificationSettingsForm.Loading = function Loading() {
           <Skeleton className="h-8 w-14 rounded-full" />
         </HStack>
 
-        <Divider className="bg-gray-2" />
+        <Separator className="bg-gray-2" />
 
         <HStack justify="between" align="center" className="py-2">
           <VStack flex={1} gap={2}>
