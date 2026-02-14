@@ -621,28 +621,30 @@ Service가 **Policy로 검증** 후 실패하면 `{Feature}Error`를 반환하�
 
 컴포넌트 테스트에는 TanStack Query의 `QueryClient`가 필요하다.
 
-#### renderWithClient 유틸
+#### QueryClient 래핑
+
+TanStack Query를 사용하는 컴포넌트는 `QueryClientProvider`로 래핑해야 한다.
+테스트 파일 내에서 직접 설정한다.
 
 ```typescript
-// shared/testing/utils/render-with-client.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
 
-export function renderWithClient(ui: ReactNode) {
-  const queryClient = new QueryClient({
+const createTestQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>,
-  );
-}
+// 사용
+const queryClient = createTestQueryClient();
+const { getByText } = render(
+  <QueryClientProvider client={queryClient}>
+    <MyComponent />
+  </QueryClientProvider>,
+);
 ```
 
 #### 컴포넌트 테스트 예시
@@ -695,7 +697,7 @@ describe('{Feature}Card', () => {
 });
 ```
 
-> **QueryErrorBoundary 테스트**: `ThrowError` 컴포넌트 + `renderWithClient`로 InfraError → fallback UI 렌더링을 검증할 수 있다. 필요 시 `shared/ui/QueryErrorBoundary/` 하위에 작성한다.
+> **QueryErrorBoundary 테스트**: `ThrowError` 컴포넌트 + `QueryClientProvider` 래핑으로 InfraError → fallback UI 렌더링을 검증할 수 있다. 필요 시 `shared/ui/QueryErrorBoundary/` 하위에 작성한다.
 
 ---
 

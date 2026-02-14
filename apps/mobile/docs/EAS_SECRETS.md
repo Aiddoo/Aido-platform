@@ -2,7 +2,7 @@
 
 EAS Build에서 민감한 파일들을 환경변수로 관리하는 방법입니다.
 
-## 🔐 환경변수 설정
+## 환경변수 설정
 
 ### 1. Google Services JSON (Android) 인코딩
 
@@ -35,7 +35,7 @@ base64 -i GoogleService-Info.plist | pbcopy
 eas secret:create --scope project --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" --type string
 ```
 
-## ✅ 설정 확인
+## 설정 확인
 
 ```bash
 # 저장된 secret 목록 확인
@@ -45,14 +45,14 @@ eas secret:list
 eas secret:delete --name GOOGLE_SERVICES_JSON
 ```
 
-## 🔧 작동 원리
+## 작동 원리
 
 1. `eas-build-pre-install.sh` 스크립트가 빌드 전에 자동 실행됩니다
 2. 환경변수 `GOOGLE_SERVICES_JSON`을 Base64 디코딩합니다
 3. `google-services.json` 파일로 복원합니다
 4. `app.config.ts`의 `googleServicesFile` 설정이 해당 파일을 참조합니다
 
-## 🚀 빌드 실행
+## 빌드 실행
 
 이제 정상적으로 빌드됩니다:
 
@@ -67,7 +67,7 @@ eas build --profile preview --platform android
 eas build --profile production --platform android
 ```
 
-## ⚠️ 주의사항
+## 주의사항
 
 - **Base64 인코딩 시 줄바꿈 제거**: macOS의 경우 `base64 -i` 사용
 - **Git에 커밋하지 않기**: `.gitignore`에 이미 설정되어 있음
