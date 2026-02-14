@@ -1,6 +1,9 @@
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogContext = Record<string, unknown>;
+
 export interface Logger {
-  debug(message: string, data?: unknown): void;
-  info(message: string, data?: unknown): void;
-  warn(message: string, data?: unknown): void;
-  error(message: string, data?: unknown): void;
+  debug(message: string, context?: LogContext): void;
+  info(message: string, context?: LogContext): void;
+  warn(message: string, context?: LogContext): void;
+  error(message: string, error?: Error, context?: LogContext): void;
 }
