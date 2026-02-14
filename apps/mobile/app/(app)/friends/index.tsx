@@ -52,7 +52,7 @@ export default function FriendsScreen() {
       <Tabs
         value={view}
         onValueChange={(value) => setView(value as TabValue)}
-        variant="line"
+        variant="secondary"
         className="flex-1"
       >
         <Tabs.List className="border-b border-gray-2 w-full">

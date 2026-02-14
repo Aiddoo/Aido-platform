@@ -11,11 +11,12 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import {
+  Alert,
   Avatar,
-  Dialog,
-  Divider,
-  Button as HeroButton,
+  Input,
+  Label,
   PressableFeedback,
+  Separator,
   TextField,
 } from 'heroui-native';
 import { useState } from 'react';
@@ -23,25 +24,15 @@ import { useState } from 'react';
 const EmailLoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorDialog, setErrorDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-  });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const emailLoginMutation = useMutation(emailLoginMutationOptions());
 
-  const showError = (title: string, message: string) => {
-    setErrorDialog({ isOpen: true, title, message });
-  };
-
   const handleLogin = () => {
+    setErrorMessage(null);
+
     if (!email.trim() || !password.trim()) {
-      showError('오류', '이메일과 비밀번호를 입력해주세요');
+      setErrorMessage('이메일과 비밀번호를 입력해주세요');
       return;
     }
 
@@ -53,7 +44,7 @@ const EmailLoginScreen = () => {
             router.push({ pathname: './verify-email', params: { email: email.trim() } });
             return;
           }
-          showError('로그인 실패', error.message || '로그인에 실패했습니다');
+          setErrorMessage(error.message || '로그인에 실패했습니다');
         },
       },
     );
@@ -86,10 +77,19 @@ const EmailLoginScreen = () => {
 
           {/* Form */}
           <VStack gap={24}>
+            {errorMessage && (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>{errorMessage}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+
             <VStack gap={16}>
               <TextField>
-                <TextField.Label>이메일</TextField.Label>
-                <TextField.Input
+                <Label>이메일</Label>
+                <Input
                   placeholder="example@email.com"
                   value={email}
                   onChangeText={setEmail}
@@ -100,8 +100,8 @@ const EmailLoginScreen = () => {
               </TextField>
 
               <TextField>
-                <TextField.Label>비밀번호</TextField.Label>
-                <TextField.Input
+                <Label>비밀번호</Label>
+                <Input
                   placeholder="비밀번호를 입력하세요"
                   value={password}
                   onChangeText={setPassword}
@@ -121,7 +121,7 @@ const EmailLoginScreen = () => {
           <Text size="e1" shade={5}>
             계정이 없으신가요?
           </Text>
-          <Divider orientation="vertical" className="mx-2 h-3 bg-gray-4" />
+          <Separator orientation="vertical" className="mx-2 h-3 bg-gray-4" />
           <PressableFeedback onPress={() => router.push('/sign-up')}>
             <Text size="e1" shade={9} weight="semibold">
               회원가입
@@ -129,29 +129,6 @@ const EmailLoginScreen = () => {
           </PressableFeedback>
         </HStack>
       </VStack>
-
-      {/* Error Dialog */}
-      <Dialog
-        isOpen={errorDialog.isOpen}
-        onOpenChange={(isOpen) => setErrorDialog((prev) => ({ ...prev, isOpen }))}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="bg-black/40" />
-          <Dialog.Content>
-            <VStack gap={16}>
-              <VStack gap={4}>
-                <Dialog.Title>{errorDialog.title}</Dialog.Title>
-                <Dialog.Description>{errorDialog.message}</Dialog.Description>
-              </VStack>
-              <HStack justify="end">
-                <Dialog.Close asChild>
-                  <HeroButton size="sm">확인</HeroButton>
-                </Dialog.Close>
-              </HStack>
-            </VStack>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
     </StyledSafeAreaView>
   );
 };

@@ -10,7 +10,14 @@ import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Divider, FormField, Skeleton, SkeletonGroup } from 'heroui-native';
+import {
+  ControlField,
+  Description,
+  Label,
+  Separator,
+  Skeleton,
+  SkeletonGroup,
+} from 'heroui-native';
 import { Suspense } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -71,7 +78,7 @@ function TermsSettingsForm() {
           </HStack>
         </Pressable>
 
-        <Divider className="bg-gray-2" />
+        <Separator className="bg-gray-2" />
 
         <Pressable className="py-2 active:opacity-60" onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
           <HStack justify="between" align="center">
@@ -98,18 +105,18 @@ function TermsSettingsForm() {
       <Spacing size={12} />
 
       <VStack p={8} className="bg-white rounded-2xl">
-        <FormField
+        <ControlField
           isSelected={marketingAgreed}
           onSelectedChange={(agreed) => updateMutation.mutate({ agreed })}
           isDisabled={updateMutation.isPending}
           className="py-2"
         >
           <View className="flex-1">
-            <FormField.Label>마케팅 수신 동의</FormField.Label>
-            <FormField.Description>이벤트 및 프로모션 정보를 받습니다</FormField.Description>
+            <Label>마케팅 수신 동의</Label>
+            <Description>이벤트 및 프로모션 정보를 받습니다</Description>
           </View>
-          <FormField.Indicator />
-        </FormField>
+          <ControlField.Indicator />
+        </ControlField>
       </VStack>
     </>
   );
@@ -128,7 +135,7 @@ TermsSettingsForm.Loading = function Loading() {
             </VStack>
           </VStack>
 
-          <Divider className="bg-gray-2" />
+          <Separator className="bg-gray-2" />
 
           <VStack gap={4} className="py-2">
             <Skeleton className="h-5 w-32 rounded" />

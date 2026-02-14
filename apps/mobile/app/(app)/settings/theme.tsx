@@ -47,11 +47,7 @@ function ThemeRadioItem({ value, label, Icon }: ThemeRadioItemProps) {
               topProps={{ size: 'b3', weight: 'semibold' }}
             />
           }
-          right={
-            <RadioGroup.Indicator>
-              <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
-            </RadioGroup.Indicator>
-          }
+          right={<AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />}
           horizontalPadding="medium"
           verticalPadding="large"
         />
