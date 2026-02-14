@@ -1,3 +1,4 @@
+import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -14,11 +15,19 @@ interface QueryErrorBoundaryProps {
 }
 
 export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryProps) {
+  const errorReporter = useErrorReporter();
+
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <ErrorBoundary
           onReset={reset}
+          onError={(error) => {
+            errorReporter.captureException(
+              error instanceof Error ? error : new Error(String(error)),
+              { feature: 'error_boundary' },
+            );
+          }}
           fallbackRender={({ error, resetErrorBoundary }) =>
             fallback ? (
               fallback({ error, reset: resetErrorBoundary })
