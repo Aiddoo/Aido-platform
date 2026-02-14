@@ -581,7 +581,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			const message = NotificationMessageBuilder.morningNoTodo();
 			const mockNotification = NotificationBuilder.create(mockUserId)
 				.withId(10)
-				.withType("MORNING_REMINDER" as any)
+				.withType("MORNING_REMINDER")
 				.withContent(message.title, message.body)
 				.build();
 

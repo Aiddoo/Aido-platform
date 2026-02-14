@@ -14,9 +14,9 @@
  * ```
  */
 
-export function createMockDatabaseService<
-	T extends Record<string, object>,
->(models: T): T & { $transaction: jest.Mock } {
+export function createMockDatabaseService<T extends Record<string, object>>(
+	models: T,
+): T & { $transaction: jest.Mock } {
 	const service = {
 		...models,
 		$transaction: jest.fn(),

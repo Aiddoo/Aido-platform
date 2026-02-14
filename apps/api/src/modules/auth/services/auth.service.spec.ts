@@ -10,10 +10,10 @@
  */
 import { LOGIN_ATTEMPT } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import type { AccountProvider } from "@/generated/prisma/enums";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, SessionBuilder, UserBuilder } from "@test/builders";
+import type { AccountProvider } from "@/generated/prisma/enums";
 import { AdminNotificationEvents } from "../../admin-notification/events/admin-notification.events";
 
 // Transaction callback 타입 (any로 타입 안정성 확보)

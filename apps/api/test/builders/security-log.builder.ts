@@ -52,9 +52,7 @@ export class SecurityLogBuilder {
 		return this;
 	}
 
-	withMetadata(
-		metadata: Record<string, unknown>,
-	): SecurityLogBuilder {
+	withMetadata(metadata: Record<string, unknown>): SecurityLogBuilder {
 		this.data.metadata = metadata as SecurityLog["metadata"];
 		return this;
 	}
