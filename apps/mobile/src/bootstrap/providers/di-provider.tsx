@@ -19,12 +19,21 @@ import { TodoCategoryService } from '@src/features/todo/services/todo-category.s
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 
 import { ENV } from '@src/shared/config/env';
-import { createConsoleAnalytics } from '@src/shared/infra/analytics';
-import { createConsoleErrorReporter } from '@src/shared/infra/error-reporter';
+import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
+import {
+  createConsoleErrorReporter,
+  createCrashlyticsErrorReporter,
+  initCrashlytics,
+} from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
-import { createConsoleLogger } from '@src/shared/infra/logger';
+import {
+  createCompositeLogger,
+  createConsoleLogger,
+  createCrashlyticsLogger,
+  setGlobalLogger,
+} from '@src/shared/infra/logger';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 
 import { createContext, type PropsWithChildren, use, useState } from 'react';
@@ -52,9 +61,23 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const storage = new SecureStorage();
 
     // Observability
-    const logger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
-    const analytics = createConsoleAnalytics();
-    const errorReporter = createConsoleErrorReporter();
+    const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
+
+    if (ENV.IS_PRODUCTION) {
+      initCrashlytics(true);
+    }
+
+    const logger = ENV.IS_PRODUCTION
+      ? createCompositeLogger([consoleLogger, createCrashlyticsLogger()])
+      : consoleLogger;
+
+    setGlobalLogger(logger);
+
+    const analytics = ENV.IS_PRODUCTION ? createFirebaseAnalytics() : createConsoleAnalytics();
+
+    const errorReporter = ENV.IS_PRODUCTION
+      ? createCrashlyticsErrorReporter()
+      : createConsoleErrorReporter();
 
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);

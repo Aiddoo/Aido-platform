@@ -5,28 +5,36 @@ export const createCompositeLogger = (loggers: Logger[]): Logger => ({
     for (const logger of loggers) {
       try {
         logger.debug(message, context);
-      } catch {}
+      } catch (e) {
+        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+      }
     }
   },
   info(message: string, context?: LogContext): void {
     for (const logger of loggers) {
       try {
         logger.info(message, context);
-      } catch {}
+      } catch (e) {
+        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+      }
     }
   },
   warn(message: string, context?: LogContext): void {
     for (const logger of loggers) {
       try {
         logger.warn(message, context);
-      } catch {}
+      } catch (e) {
+        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+      }
     }
   },
   error(message: string, error?: Error, context?: LogContext): void {
     for (const logger of loggers) {
       try {
         logger.error(message, error, context);
-      } catch {}
+      } catch (e) {
+        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+      }
     }
   },
 });

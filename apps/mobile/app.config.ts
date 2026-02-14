@@ -242,6 +242,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Plugins
     plugins: [
+      '@react-native-firebase/app',
+      '@react-native-firebase/crashlytics',
+      [
+        'expo-build-properties',
+        {
+          ios: {
+            useFrameworks: 'static',
+            forceStaticLinking: ['RNFBApp', 'RNFBAnalytics', 'RNFBCrashlytics'],
+          },
+        },
+      ],
+
       'expo-router',
 
       [
@@ -331,6 +343,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
 
       '@react-native-community/datetimepicker',
+      'expo-quick-actions',
     ],
 
     // Experiments

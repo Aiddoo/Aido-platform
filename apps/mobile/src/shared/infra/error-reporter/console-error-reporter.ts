@@ -2,10 +2,14 @@ import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-
 
 export const createConsoleErrorReporter = (): ErrorReporter => ({
   captureException(error: Error, context?: ErrorReporterContext): void {
-    console.error('[ErrorReporter] captureException:', error.message, context);
+    context
+      ? console.error('[ErrorReporter] captureException:', error.message, context)
+      : console.error('[ErrorReporter] captureException:', error.message);
   },
   captureMessage(message: string, context?: ErrorReporterContext): void {
-    console.error('[ErrorReporter] captureMessage:', message, context);
+    context
+      ? console.error('[ErrorReporter] captureMessage:', message, context)
+      : console.error('[ErrorReporter] captureMessage:', message);
   },
   setUserId(userId: string | null): void {
     console.info('[ErrorReporter] setUserId:', userId);

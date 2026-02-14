@@ -41,6 +41,10 @@ export class NotificationService {
 
     if (!tokenResult.ok) return tokenResult;
 
+    if (__DEV__) {
+      console.log('[PushToken]', { token: tokenResult.value, deviceId });
+    }
+
     return this.#notificationRepository.registerToken(tokenResult.value, deviceId);
   };
 
