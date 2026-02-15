@@ -14,6 +14,9 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { generateObject } from "ai";
 import type { z } from "zod";
+
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+
 import type {
 	AiProvider,
 	GenerateStructuredOptions,
@@ -45,7 +48,7 @@ export class GeminiProvider implements AiProvider {
 		options: GenerateStructuredOptions<T>,
 	): Promise<GenerateStructuredResult<T>> {
 		if (!this.apiKey) {
-			throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not configured");
+			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
 		const google = createGoogleGenerativeAI({

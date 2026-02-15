@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import { Body, Controller, Post } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
@@ -24,6 +24,7 @@ import {
 } from "./dto";
 
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
+@ApiBearerAuth()
 @Controller("admin/notifications")
 export class AdminController {
 	constructor(private readonly adminService: AdminService) {}

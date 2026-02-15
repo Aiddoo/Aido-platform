@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { z } from "zod";
+import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { GeminiProvider } from "./gemini.provider";
 
 // Vercel AI SDK mock
@@ -94,18 +95,18 @@ describe("GeminiProvider", () => {
 			isAllDay: z.boolean(),
 		});
 
-		it("API 키가 없으면 에러를 던진다", async () => {
+		it("API 키가 없으면 BusinessException을 던진다", async () => {
 			// Given - API 키가 설정되지 않음
 			mockConfigService.get.mockReturnValue(undefined);
 			const provider = await createProvider();
 
-			// When & Then - 에러가 발생함
+			// When & Then - BusinessException이 발생함
 			await expect(
 				provider.generateStructured({
 					prompt: "테스트 프롬프트",
 					schema: testSchema,
 				}),
-			).rejects.toThrow("GOOGLE_GENERATIVE_AI_API_KEY is not configured");
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("Vercel AI SDK generateObject를 호출한다", async () => {

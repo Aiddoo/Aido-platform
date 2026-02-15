@@ -38,7 +38,7 @@ export class CheerListener {
 				payload.message,
 			);
 
-			await this.notificationService.createAndSend({
+			await this.notificationService.createAndSendWithDedup({
 				userId: payload.receiverId,
 				type: "CHEER_RECEIVED",
 				title: message.title,

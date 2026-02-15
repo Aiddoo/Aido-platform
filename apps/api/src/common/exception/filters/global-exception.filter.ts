@@ -155,6 +155,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			Account_userId_provider_key: () =>
 				BusinessExceptions.accountAlreadyExists(),
 			userId_provider: () => BusinessExceptions.accountAlreadyExists(),
+			Notification_daily_dedup: () =>
+				BusinessExceptions.concurrentModification(),
+			userId_type_notificationDate: () =>
+				BusinessExceptions.concurrentModification(),
+			Notification_friend_dedup: () =>
+				BusinessExceptions.concurrentModification(),
+			userId_type_friendId_notificationDate: () =>
+				BusinessExceptions.concurrentModification(),
 		};
 
 		const factory = constraintMap[constraintKey];

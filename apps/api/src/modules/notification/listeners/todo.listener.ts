@@ -11,7 +11,6 @@ import {
 	type TodoAllCompletedEventPayload,
 	type TodoReminderEventPayload,
 } from "../events/notification.events";
-import { NotificationRepository } from "../notification.repository";
 import { NotificationService } from "../notification.service";
 import { NotificationMessageBuilder } from "../templates/notification-templates";
 
@@ -33,7 +32,6 @@ export class TodoListener {
 
 	constructor(
 		private readonly notificationService: NotificationService,
-		private readonly notificationRepository: NotificationRepository,
 		private readonly database: DatabaseService,
 	) {}
 
@@ -56,15 +54,14 @@ export class TodoListener {
 			const today = getUserToday(payload.timezone);
 
 			await this.database.$transaction(async (tx) => {
-				const alreadySent =
-					await this.notificationRepository.existsNotification(
-						{
-							userId: payload.userId,
-							type: "DAILY_COMPLETE",
-							since: today,
-						},
-						tx,
-					);
+				const alreadySent = await this.notificationService.existsNotification(
+					{
+						userId: payload.userId,
+						type: "DAILY_COMPLETE",
+						notificationDate: today,
+					},
+					tx,
+				);
 
 				if (alreadySent) {
 					this.logger.debug(
@@ -172,11 +169,11 @@ export class TodoListener {
 
 			await this.database.$transaction(async (tx) => {
 				const alreadyNotified =
-					await this.notificationRepository.findAlreadyNotifiedUserIds(
+					await this.notificationService.findAlreadyNotifiedUserIds(
 						{
 							userIds: payload.notifyUserIds,
 							type: "FRIEND_COMPLETED",
-							since: today,
+							notificationDate: today,
 							friendId: payload.friendId,
 						},
 						tx,
