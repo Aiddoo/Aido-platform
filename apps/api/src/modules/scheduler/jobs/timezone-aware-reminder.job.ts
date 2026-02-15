@@ -6,7 +6,6 @@ import utc from "dayjs/plugin/utc";
 import { getUserToday } from "@/common/date/utils/date.util";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
-import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
@@ -28,7 +27,6 @@ export class TimezoneAwareReminderJob {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		private readonly notificationRepository: NotificationRepository,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
@@ -125,10 +123,10 @@ export class TimezoneAwareReminderJob {
 
 		// 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
 		const alreadyNotified =
-			await this.notificationRepository.findAlreadyNotifiedUserIds({
+			await this.notificationService.findAlreadyNotifiedUserIds({
 				userIds: users.map((u) => u.id),
 				type: "MORNING_REMINDER",
-				since: today,
+				notificationDate: today,
 			});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
@@ -202,10 +200,10 @@ export class TimezoneAwareReminderJob {
 
 		// 중복 방지: 이미 오늘 저녁 리마인더를 받은 사용자 제외
 		const alreadyNotified =
-			await this.notificationRepository.findAlreadyNotifiedUserIds({
+			await this.notificationService.findAlreadyNotifiedUserIds({
 				userIds: users.map((u) => u.id),
 				type: "EVENING_REMINDER",
-				since: today,
+				notificationDate: today,
 			});
 
 		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));

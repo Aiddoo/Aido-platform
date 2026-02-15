@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { DatabaseService } from "@/database/database.service";
 import type {
 	Notification,
@@ -22,6 +22,8 @@ import type {
 
 @Injectable()
 export class NotificationRepository {
+	private readonly logger = new Logger(NotificationRepository.name);
+
 	constructor(private readonly database: DatabaseService) {}
 
 	// =========================================================================
@@ -61,7 +63,7 @@ export class NotificationRepository {
 		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		const client = tx ?? this.database;
-		return client.notification.createMany({
+		const result = await client.notification.createMany({
 			data: dataList.map((data) => ({
 				userId: data.userId,
 				type: data.type,
@@ -77,6 +79,15 @@ export class NotificationRepository {
 			})),
 			skipDuplicates: true,
 		});
+
+		const skipped = dataList.length - result.count;
+		if (skipped > 0) {
+			this.logger.warn(
+				`createManyNotifications: ${skipped}/${dataList.length} duplicates skipped`,
+			);
+		}
+
+		return result;
 	}
 
 	/**
@@ -198,14 +209,14 @@ export class NotificationRepository {
 	}
 
 	/**
-	 * 특정 타입의 알림이 지정 시각 이후 존재하는지 확인
+	 * 특정 타입 + notificationDate 조합의 알림 존재 여부 확인
 	 * - DAILY_COMPLETE 중복 방지용 (단건)
 	 */
 	async existsNotification(
 		params: {
 			userId: string;
 			type: NotificationType;
-			since: Date;
+			notificationDate: Date;
 		},
 		tx?: TransactionClient,
 	): Promise<boolean> {
@@ -214,21 +225,54 @@ export class NotificationRepository {
 			where: {
 				userId: params.userId,
 				type: params.type,
-				createdAt: { gte: params.since },
+				notificationDate: params.notificationDate,
 			},
 		});
 		return count > 0;
 	}
 
 	/**
+	 * 지정 기간 내 동일 조건 알림 존재 여부 확인
+	 * - nullable 타입 (NUDGE, CHEER, FOLLOW 등) 서비스 레이어 dedup용
+	 */
+	async existsRecentNotification(
+		params: {
+			userId: string;
+			type: NotificationType;
+			since: Date;
+			friendId?: string;
+			todoId?: number;
+			nudgeId?: number;
+			cheerId?: number;
+		},
+		tx?: TransactionClient,
+	): Promise<boolean> {
+		const client = tx ?? this.database;
+
+		const where: Record<string, unknown> = {
+			userId: params.userId,
+			type: params.type,
+			createdAt: { gte: params.since },
+		};
+		if (params.friendId !== undefined) where.friendId = params.friendId;
+		if (params.todoId !== undefined) where.todoId = params.todoId;
+		if (params.nudgeId !== undefined) where.nudgeId = params.nudgeId;
+		if (params.cheerId !== undefined) where.cheerId = params.cheerId;
+
+		const count = await client.notification.count({ where });
+		return count > 0;
+	}
+
+	/**
 	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
-	 * - FRIEND_COMPLETED 중복 방지용 — N+1 방지를 위해 단일 쿼리로 처리
+	 * - FRIEND_COMPLETED / MORNING_REMINDER / EVENING_REMINDER 중복 방지용
+	 * - N+1 방지를 위해 단일 쿼리로 처리
 	 */
 	async findAlreadyNotifiedUserIds(
 		params: {
 			userIds: string[];
 			type: NotificationType;
-			since: Date;
+			notificationDate: Date;
 			friendId?: string;
 		},
 		tx?: TransactionClient,
@@ -239,7 +283,7 @@ export class NotificationRepository {
 				userId: { in: params.userIds },
 				type: params.type,
 				...(params.friendId && { friendId: params.friendId }),
-				createdAt: { gte: params.since },
+				notificationDate: params.notificationDate,
 			},
 			select: { userId: true },
 			distinct: ["userId"],

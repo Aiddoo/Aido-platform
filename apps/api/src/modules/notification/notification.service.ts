@@ -1,42 +1,25 @@
 import {
 	CATEGORY_TYPE_MAP,
-	NOTIFICATION_ACTION_TYPE,
 	type NotificationCategory,
 	type Notification as NotificationDto,
-	type PushNotificationData,
 } from "@aido/validators";
-import {
-	type BeforeApplicationShutdown,
-	Inject,
-	Injectable,
-	Logger,
-} from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import {
 	type Notification,
 	type NotificationType,
-	Prisma,
-	type PushToken,
 } from "@/generated/prisma/client";
-import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 
 import { NotificationMapper } from "./notification.mapper";
 import { NotificationRepository } from "./notification.repository";
-import {
-	PUSH_PROVIDER,
-	type PushPayload,
-	type PushProvider,
-} from "./providers/push-provider.interface";
+import { PushDeliveryService } from "./push-delivery.service";
 import type {
 	CreateNotificationData,
 	FindNotificationsParams,
-	RegisterPushTokenData,
 	TransactionClient,
 } from "./types/notification.types";
-import { isNightTime } from "./utils";
 
 // =============================================================================
 // Service
@@ -45,123 +28,117 @@ import { isNightTime } from "./utils";
 /**
  * 알림 서비스
  *
- * - 푸시 토큰 등록/해제
- * - 알림 생성 및 푸시 발송
+ * - 알림 생성 (+ 중복 방지)
  * - 알림 목록 조회 (커서 기반 페이지네이션)
  * - 읽음 처리
+ * - 중복 체크 위임
+ * - 오래된 알림 정리
  */
-/**
- * 마케팅 알림 타입 목록
- * 향후 마케팅 알림이 추가되면 여기에 등록합니다.
- * 마케팅 알림은 marketingAgreedAt이 있어야만 발송됩니다.
- */
-const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-	// 현재는 마케팅 알림 타입이 없음
-	// 향후 추가 예정: "MARKETING_PROMOTION", "MARKETING_EVENT" 등
-]);
-
 @Injectable()
-export class NotificationService implements BeforeApplicationShutdown {
+export class NotificationService {
 	private readonly logger = new Logger(NotificationService.name);
-	private readonly pendingPushes = new Set<Promise<void>>();
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
 		private readonly paginationService: PaginationService,
-		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
-		private readonly userPreferenceRepository: UserPreferenceRepository,
-		private readonly userConsentRepository: UserConsentRepository,
+		private readonly pushDeliveryService: PushDeliveryService,
 	) {}
-
-	// =========================================================================
-	// 푸시 토큰 관리
-	// =========================================================================
-
-	/**
-	 * 푸시 토큰 등록
-	 */
-	async registerPushToken(data: RegisterPushTokenData): Promise<PushToken> {
-		// 토큰 유효성 검증
-		if (!this.pushProvider.validateToken(data.token)) {
-			throw BusinessExceptions.invalidPushToken(data.token);
-		}
-
-		const pushToken = await this.notificationRepository.registerPushToken(data);
-
-		// 타임존 정보가 있으면 사용자 설정에 저장
-		if (data.timezone) {
-			await this.userPreferenceRepository.upsertTimezone(
-				data.userId,
-				data.timezone,
-			);
-		}
-
-		this.logger.log(
-			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
-		);
-
-		return pushToken;
-	}
-
-	/**
-	 * 푸시 토큰 해제
-	 */
-	async unregisterPushToken(userId: string, deviceId: string): Promise<void> {
-		try {
-			await this.notificationRepository.deletePushToken(userId, deviceId);
-			this.logger.log(
-				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
-			);
-		} catch (error) {
-			// 토큰이 없는 경우(P2025)만 무시, 그 외는 re-throw
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2025"
-			) {
-				this.logger.warn(
-					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
-				);
-				return;
-			}
-			throw error;
-		}
-	}
-
-	/**
-	 * 사용자의 모든 푸시 토큰 해제 (로그아웃 등)
-	 */
-	async unregisterAllPushTokens(userId: string): Promise<void> {
-		const result =
-			await this.notificationRepository.deleteAllPushTokensByUser(userId);
-		this.logger.log(
-			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
-		);
-	}
 
 	// =========================================================================
 	// 알림 생성 및 발송
 	// =========================================================================
 
 	/**
+	 * 알림 타입별 서비스 레이어 중복 방지 전략
+	 *
+	 * - DB partial unique index로 보호되는 타입 (DAILY_COMPLETE 등): 맵에 없음 → createAndSend 직접 사용
+	 * - 중복 허용 타입 (SYSTEM_NOTICE, ADMIN_*): 맵에 없음 → createAndSend 직접 사용
+	 * - 서비스 dedup 필요 타입: windowMs + 체크 키 정의
+	 */
+	private static readonly DEDUP_STRATEGIES: Partial<
+		Record<
+			NotificationType,
+			{
+				windowMs: number;
+				keys: Array<"friendId" | "todoId" | "nudgeId" | "cheerId">;
+			}
+		>
+	> = {
+		NUDGE_RECEIVED: { windowMs: 60 * 60 * 1000, keys: ["friendId"] },
+		CHEER_RECEIVED: { windowMs: 5 * 60 * 1000, keys: ["friendId"] },
+		FOLLOW_NEW: { windowMs: 24 * 60 * 60 * 1000, keys: ["friendId"] },
+		FOLLOW_ACCEPTED: { windowMs: 24 * 60 * 60 * 1000, keys: ["friendId"] },
+	};
+
+	/**
+	 * 중복 방지가 적용된 알림 생성 및 푸시 발송
+	 *
+	 * @returns 생성된 Notification 또는 null (중복 스킵)
+	 */
+	async createAndSendWithDedup(
+		data: CreateNotificationData,
+		tx?: TransactionClient,
+	): Promise<Notification | null> {
+		const strategy =
+			NotificationService.DEDUP_STRATEGIES[data.type as NotificationType];
+
+		if (!strategy) {
+			return this.createAndSend(data, tx);
+		}
+
+		const since = new Date(Date.now() - strategy.windowMs);
+		const params: {
+			userId: string;
+			type: NotificationType;
+			since: Date;
+			friendId?: string;
+			todoId?: number;
+			nudgeId?: number;
+			cheerId?: number;
+		} = {
+			userId: data.userId,
+			type: data.type as NotificationType,
+			since,
+		};
+
+		for (const key of strategy.keys) {
+			const value = data[key];
+			if (value != null) {
+				(params as Record<string, unknown>)[key] = value;
+			}
+		}
+
+		const exists = await this.notificationRepository.existsRecentNotification(
+			params,
+			tx,
+		);
+		if (exists) {
+			this.logger.debug(
+				`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
+			);
+			return null;
+		}
+
+		return this.createAndSend(data, tx);
+	}
+
+	/**
 	 * 알림 생성 및 푸시 발송
 	 *
 	 * 1. DB에 알림 레코드 생성
-	 * 2. 사용자 푸시 설정 확인 (pushEnabled, nightPushEnabled, 마케팅 동의)
-	 * 3. 설정에 따라 푸시 발송 여부 결정
-	 * 4. 발송 시 실패한 토큰 비활성화
+	 * 2. 사용자 푸시 설정 확인
+	 * 3. 설정에 따라 푸시 발송 (fire-and-forget)
 	 */
 	async createAndSend(
 		data: CreateNotificationData,
 		tx?: TransactionClient,
 	): Promise<Notification> {
-		// 1. DB에 알림 생성 (항상 저장)
 		const notification = await this.notificationRepository.createNotification(
 			data,
 			tx,
 		);
 
-		// 2. 푸시 발송 여부 결정
-		const shouldSend = await this.shouldSendPush(
+		const shouldSend = await this.pushDeliveryService.shouldSendPush(
 			data.userId,
 			data.type as NotificationType,
 		);
@@ -173,28 +150,13 @@ export class NotificationService implements BeforeApplicationShutdown {
 			return notification;
 		}
 
-		// 3. 푸시 페이로드 생성 (업계 표준 action.type 기반)
-		const pushData = this.buildPushPayloadData(data, notification.id);
-
-		// 4. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
-		const pushPromise = this.sendPushToUser(data.userId, {
-			title: data.title,
-			body: data.body,
-			data: pushData,
-		}).catch((error) => {
-			this.logger.error(
-				`Failed to send push notification: userId=${data.userId}, error=${error}`,
-			);
-		}) as Promise<void>;
-		this.trackPush(pushPromise);
+		this.pushDeliveryService.fireAndForgetPush(data, notification.id);
 
 		return notification;
 	}
 
 	/**
 	 * 여러 사용자에게 알림 생성 및 발송
-	 *
-	 * N+1 쿼리 최적화: 사용자별 설정을 배치로 한 번에 조회
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
@@ -204,63 +166,12 @@ export class NotificationService implements BeforeApplicationShutdown {
 			return { count: 0 };
 		}
 
-		// 1. DB에 알림 일괄 생성 (항상 저장)
 		const result = await this.notificationRepository.createManyNotifications(
 			dataList,
 			tx,
 		);
 
-		// 2. 고유 사용자 ID 추출
-		const userIds = [...new Set(dataList.map((d) => d.userId))];
-
-		// 3. 모든 사용자의 설정을 배치로 한 번에 조회 (N+1 방지)
-		const [preferences, consents] = await Promise.all([
-			this.userPreferenceRepository.findByUserIds(userIds),
-			this.userConsentRepository.findByUserIds(userIds),
-		]);
-
-		const prefMap = new Map(preferences.map((p) => [p.userId, p]));
-		const consentMap = new Map(consents.map((c) => [c.userId, c]));
-
-		// 4. 각 사용자별 푸시 발송 가능 여부 확인 (DB 조회 없이 메모리에서)
-		const eligibleDataList: CreateNotificationData[] = [];
-		for (const data of dataList) {
-			const shouldSend = this.canSendPushWithCachedData(
-				data.type as NotificationType,
-				prefMap.get(data.userId),
-				consentMap.get(data.userId),
-			);
-			if (shouldSend) {
-				eligibleDataList.push(data);
-			} else {
-				this.logger.debug(
-					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
-				);
-			}
-		}
-
-		if (eligibleDataList.length === 0) {
-			return result;
-		}
-
-		// 5. 고유 사용자 ID 추출 (발송 대상만)
-		const eligibleUserIds = [...new Set(eligibleDataList.map((d) => d.userId))];
-
-		// 6. 푸시 발송 (비동기, 에러 발생해도 알림 생성은 성공)
-		const pushPromise = this.sendPushToUsers(
-			eligibleUserIds,
-			eligibleDataList.map((d) => ({
-				userId: d.userId,
-				title: d.title,
-				body: d.body,
-				data: this.buildPushPayloadData(d),
-			})),
-		).catch((error) => {
-			this.logger.error(
-				`Failed to send batch push notifications: userIds=${eligibleUserIds.join(",")}, error=${error}`,
-			);
-		}) as Promise<void>;
-		this.trackPush(pushPromise);
+		this.pushDeliveryService.fireAndForgetBatchPush(dataList);
 
 		return result;
 	}
@@ -292,7 +203,6 @@ export class NotificationService implements BeforeApplicationShutdown {
 				size: params.size,
 			});
 
-		// 카테고리 → NotificationType[] 변환
 		const types =
 			params.category && params.category !== "ALL"
 				? [...CATEGORY_TYPE_MAP[params.category]]
@@ -313,7 +223,6 @@ export class NotificationService implements BeforeApplicationShutdown {
 			`Notifications listed: ${notifications.length} items for user: ${params.userId}`,
 		);
 
-		// DTO 변환
 		const dtoItems = NotificationMapper.toDtoList(notifications);
 
 		return this.paginationService.createCursorPaginatedResponse<
@@ -340,7 +249,6 @@ export class NotificationService implements BeforeApplicationShutdown {
 	 * 단일 알림 읽음 처리
 	 */
 	async markAsRead(userId: string, notificationId: number): Promise<void> {
-		// 알림 존재 및 소유권 확인
 		const notification =
 			await this.notificationRepository.findNotificationById(notificationId);
 
@@ -352,7 +260,6 @@ export class NotificationService implements BeforeApplicationShutdown {
 			throw BusinessExceptions.notificationAccessDenied(notificationId);
 		}
 
-		// 이미 읽은 경우 무시
 		if (notification.isRead) {
 			return;
 		}
@@ -376,274 +283,36 @@ export class NotificationService implements BeforeApplicationShutdown {
 	}
 
 	// =========================================================================
-	// 푸시 페이로드 빌드 (Private)
+	// 중복 체크 (계층 위임)
 	// =========================================================================
 
 	/**
-	 * 푸시 알림 페이로드 데이터 생성
-	 *
-	 * 업계 표준 action.type enum 기반으로 페이로드를 구성합니다.
-	 * - action.type: DEEP_LINK, BROWSER, WEBVIEW, NONE
-	 * - action.url: External Link의 경우 URL
-	 * - context: 라우팅에 필요한 ID들 (클라이언트가 결정)
+	 * 특정 타입 + notificationDate 조합의 알림 존재 여부 확인
 	 */
-	private buildPushPayloadData(
-		data: CreateNotificationData,
-		notificationId?: number,
-	): PushNotificationData {
-		// action 결정: 명시적 action이 있으면 사용, 없으면 기본값
-		const action = data.action ?? {
-			type: NOTIFICATION_ACTION_TYPE.DEEP_LINK,
-			url: undefined,
-		};
-
-		// context 구성: 라우팅에 필요한 ID들
-		const context: PushNotificationData["context"] = {};
-		if (data.todoId) context.todoId = data.todoId;
-		if (data.friendId) context.friendId = data.friendId;
-		if (data.nudgeId) context.nudgeId = data.nudgeId;
-		if (data.cheerId) context.cheerId = data.cheerId;
-
-		return {
-			notificationId: notificationId ?? 0,
-			type: data.type,
-			action: {
-				type: action.type,
-				...(action.url && { url: action.url }),
-			},
-			...(Object.keys(context).length > 0 && { context }),
-		};
-	}
-
-	// =========================================================================
-	// 푸시 필터링 (Private)
-	// =========================================================================
-
-	/**
-	 * 푸시 발송 여부 결정
-	 *
-	 * 다음 조건을 순차적으로 확인합니다:
-	 * 1. pushEnabled가 false면 발송 안 함
-	 * 2. 야간 시간(21:00-08:00 KST)이고 nightPushEnabled가 false면 발송 안 함
-	 * 3. 마케팅 알림인데 marketingAgreedAt이 null이면 발송 안 함
-	 *
-	 * @param userId 사용자 ID
-	 * @param type 알림 타입
-	 * @returns 푸시 발송 여부
-	 */
-	private async shouldSendPush(
-		userId: string,
-		type: NotificationType,
+	async existsNotification(
+		params: {
+			userId: string;
+			type: NotificationType;
+			notificationDate: Date;
+		},
+		tx?: TransactionClient,
 	): Promise<boolean> {
-		// 1. 사용자 푸시 설정 조회
-		const preference = await this.userPreferenceRepository.findByUserId(userId);
-
-		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
-		if (!preference) {
-			this.logger.debug(
-				`No preference found for user ${userId}, skipping push`,
-			);
-			return false;
-		}
-
-		// 2. 푸시 전체 OFF 확인
-		if (!preference.pushEnabled) {
-			return false;
-		}
-
-		// 3. 야간 시간대 확인 (사용자 타임존 기준)
-		if (
-			isNightTime(preference.timezone ?? "UTC") &&
-			!preference.nightPushEnabled
-		) {
-			return false;
-		}
-
-		// 4. 마케팅 알림 확인
-		if (this.isMarketingNotification(type)) {
-			const consent = await this.userConsentRepository.findByUserId(userId);
-			if (!consent?.marketingAgreedAt) {
-				return false;
-			}
-		}
-
-		return true;
+		return this.notificationRepository.existsNotification(params, tx);
 	}
 
 	/**
-	 * 마케팅 알림 여부 확인
+	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
 	 */
-	private isMarketingNotification(type: NotificationType): boolean {
-		return MARKETING_NOTIFICATION_TYPES.has(type);
-	}
-
-	/**
-	 * 캐시된 데이터로 푸시 발송 여부 결정 (배치 처리용, DB 조회 없음)
-	 *
-	 * @param type 알림 타입
-	 * @param preference 사용자 푸시 설정 (없으면 발송 안 함)
-	 * @param consent 사용자 동의 정보 (마케팅 알림 확인용)
-	 */
-	private canSendPushWithCachedData(
-		type: NotificationType,
-		preference:
-			| { pushEnabled: boolean; nightPushEnabled: boolean; timezone?: string }
-			| undefined,
-		consent: { marketingAgreedAt: Date | null } | undefined,
-	): boolean {
-		// 설정이 없으면 기본값(pushEnabled=false)으로 발송 안 함
-		if (!preference) {
-			return false;
-		}
-
-		// 푸시 전체 OFF 확인
-		if (!preference.pushEnabled) {
-			return false;
-		}
-
-		// 야간 시간대 확인 (사용자 타임존 기준)
-		if (
-			isNightTime(preference.timezone ?? "UTC") &&
-			!preference.nightPushEnabled
-		) {
-			return false;
-		}
-
-		// 마케팅 알림 확인
-		if (this.isMarketingNotification(type)) {
-			if (!consent?.marketingAgreedAt) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	// =========================================================================
-	// 푸시 발송 (Private)
-	// =========================================================================
-
-	/**
-	 * 특정 사용자에게 푸시 발송
-	 */
-	private async sendPushToUser(
-		userId: string,
-		payload: Omit<PushPayload, "token">,
-	): Promise<void> {
-		const tokens = await this.notificationRepository.findPushTokensByUser({
-			userId,
-			activeOnly: true,
-		});
-
-		if (tokens.length === 0) {
-			this.logger.debug(`No active push tokens for user: ${userId}`);
-			return;
-		}
-
-		const payloads: PushPayload[] = tokens.map((t) => ({
-			...payload,
-			token: t.token,
-		}));
-
-		const result = await this.pushProvider.sendBatch(payloads);
-
-		// 잘못된 토큰 비활성화
-		if (result.invalidTokens.length > 0) {
-			await this.notificationRepository.deactivateInvalidTokens(
-				result.invalidTokens,
-			);
-			this.logger.warn(
-				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
-			);
-		}
-
-		this.logger.debug(
-			`Push sent to user ${userId}: success=${result.successCount}, failure=${result.failureCount}`,
-		);
-	}
-
-	/**
-	 * 여러 사용자에게 푸시 발송
-	 */
-	private async sendPushToUsers(
-		userIds: string[],
-		payloads: Array<{ userId: string } & Omit<PushPayload, "token">>,
-	): Promise<void> {
-		// 모든 사용자의 활성 토큰 조회
-		const tokens =
-			await this.notificationRepository.findActivePushTokensByUsers(userIds);
-
-		if (tokens.length === 0) {
-			this.logger.debug("No active push tokens for users");
-			return;
-		}
-
-		// userId -> tokens 매핑
-		const tokensByUser = new Map<string, string[]>();
-		for (const token of tokens) {
-			const userTokens = tokensByUser.get(token.userId) ?? [];
-			userTokens.push(token.token);
-			tokensByUser.set(token.userId, userTokens);
-		}
-
-		// 페이로드에 토큰 매칭
-		const pushPayloads: PushPayload[] = [];
-		for (const payload of payloads) {
-			const userTokens = tokensByUser.get(payload.userId) ?? [];
-			for (const token of userTokens) {
-				pushPayloads.push({
-					token,
-					title: payload.title,
-					body: payload.body,
-					data: payload.data,
-				});
-			}
-		}
-
-		if (pushPayloads.length === 0) {
-			return;
-		}
-
-		const result = await this.pushProvider.sendBatch(pushPayloads);
-
-		// 잘못된 토큰 비활성화
-		if (result.invalidTokens.length > 0) {
-			await this.notificationRepository.deactivateInvalidTokens(
-				result.invalidTokens,
-			);
-			this.logger.warn(
-				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
-			);
-		}
-
-		this.logger.debug(
-			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
-		);
-	}
-
-	// =========================================================================
-	// Graceful Shutdown
-	// =========================================================================
-
-	/**
-	 * fire-and-forget 푸시 프라미스를 추적하여 셧다운 시 대기할 수 있게 합니다.
-	 */
-	private trackPush(promise: Promise<void>): void {
-		this.pendingPushes.add(promise);
-		promise.finally(() => this.pendingPushes.delete(promise));
-	}
-
-	/**
-	 * 앱 종료 전 모든 pending 푸시가 완료될 때까지 대기합니다.
-	 */
-	async beforeApplicationShutdown(): Promise<void> {
-		if (this.pendingPushes.size > 0) {
-			this.logger.log(
-				`Waiting for ${this.pendingPushes.size} pending push(es)...`,
-			);
-			await Promise.allSettled([...this.pendingPushes]);
-			this.logger.log("All pending pushes completed");
-		}
+	async findAlreadyNotifiedUserIds(
+		params: {
+			userIds: string[];
+			type: NotificationType;
+			notificationDate: Date;
+			friendId?: string;
+		},
+		tx?: TransactionClient,
+	): Promise<Set<string>> {
+		return this.notificationRepository.findAlreadyNotifiedUserIds(params, tx);
 	}
 
 	// =========================================================================

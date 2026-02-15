@@ -45,6 +45,7 @@ import {
 	UnreadCountResponseDto,
 } from "./dtos";
 import { NotificationService } from "./notification.service";
+import { PushDeliveryService } from "./push-delivery.service";
 
 /**
  * Notification API 컨트롤러
@@ -68,7 +69,10 @@ import { NotificationService } from "./notification.service";
 export class NotificationController {
 	private readonly logger = new Logger(NotificationController.name);
 
-	constructor(private readonly notificationService: NotificationService) {}
+	constructor(
+		private readonly notificationService: NotificationService,
+		private readonly pushDeliveryService: PushDeliveryService,
+	) {}
 
 	// ============================================
 	// 푸시 토큰 관리
@@ -102,7 +106,7 @@ export class NotificationController {
 	): Promise<RegisterTokenResponseDto> {
 		this.logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 
-		await this.notificationService.registerPushToken({
+		await this.pushDeliveryService.registerPushToken({
 			userId: user.userId,
 			token: dto.token,
 			deviceId: dto.deviceId,
@@ -138,9 +142,9 @@ export class NotificationController {
 		);
 
 		if (deviceId) {
-			await this.notificationService.unregisterPushToken(user.userId, deviceId);
+			await this.pushDeliveryService.unregisterPushToken(user.userId, deviceId);
 		} else {
-			await this.notificationService.unregisterAllPushTokens(user.userId);
+			await this.pushDeliveryService.unregisterAllPushTokens(user.userId);
 		}
 
 		this.logger.log(
