@@ -1,0 +1,85 @@
+import { TestBed } from "@suites/unit";
+
+import { BusinessException } from "@/common/exception/services/business-exception.service";
+
+import { JwtRefreshGuard } from "./jwt-refresh.guard";
+
+describe("JwtRefreshGuard", () => {
+	let guard: JwtRefreshGuard;
+
+	// ==========================================================================
+	// Setup
+	// ==========================================================================
+
+	beforeEach(async () => {
+		const { unit } = await TestBed.solitary(JwtRefreshGuard).compile();
+
+		guard = unit;
+	});
+
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
+	// ==========================================================================
+	// handleRequest
+	// ==========================================================================
+
+	describe("handleRequest", () => {
+		it("유효한 사용자가 있으면 사용자를 반환해야 한다", () => {
+			// Given
+			const mockUser = {
+				userId: "user-1",
+				email: "test@test.com",
+				sessionId: "session-1",
+				role: "USER",
+			};
+
+			// When
+			const result = guard.handleRequest(null, mockUser);
+
+			// Then
+			expect(result).toBe(mockUser);
+		});
+
+		it("에러가 존재하면 BusinessException을 던져야 한다", () => {
+			// Given
+			const error = new Error("Refresh token expired");
+
+			// When & Then
+			expect(() => guard.handleRequest(error, false)).toThrow(
+				BusinessException,
+			);
+		});
+
+		it("사용자가 false이면 BusinessException을 던져야 한다", () => {
+			// Given & When & Then
+			expect(() => guard.handleRequest(null, false)).toThrow(BusinessException);
+		});
+
+		it("에러 발생 시 AUTH_0104 에러 코드를 반환해야 한다", () => {
+			// Given
+			const error = new Error("Refresh token invalid");
+
+			// When & Then
+			try {
+				guard.handleRequest(error, false);
+				fail("에러가 발생해야 합니다");
+			} catch (error) {
+				expect(error).toBeInstanceOf(BusinessException);
+				expect((error as BusinessException).errorCode).toBe("AUTH_0104");
+			}
+		});
+
+		it("사용자 없이 에러도 없으면 AUTH_0104 에러 코드를 반환해야 한다", () => {
+			// Given & When & Then
+			try {
+				guard.handleRequest(null, false);
+				fail("에러가 발생해야 합니다");
+			} catch (error) {
+				expect(error).toBeInstanceOf(BusinessException);
+				expect((error as BusinessException).errorCode).toBe("AUTH_0104");
+			}
+		});
+	});
+});

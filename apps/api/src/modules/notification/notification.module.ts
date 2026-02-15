@@ -16,15 +16,16 @@ import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
 import { ExpoPushProvider } from "./providers/expo-push.provider";
 import { PUSH_PROVIDER } from "./providers/push-provider.interface";
+import { PushDeliveryService } from "./push-delivery.service";
 
 /**
  * Notification 모듈
  *
  * 푸시 알림 및 인앱 알림 관리 기능을 담당합니다.
- * - 푸시 토큰 등록/해제
- * - 알림 생성 및 푸시 발송
- * - 알림 목록 조회 (커서 기반 페이지네이션)
- * - 읽음 처리 (단일/전체)
+ *
+ * 서비스 구조:
+ * - NotificationService: 알림 CRUD, 조회, 중복 방지
+ * - PushDeliveryService: 푸시 토큰 관리, 발송, 필터링, Graceful Shutdown
  *
  * Event-driven 아키텍처:
  * - FollowListener: 팔로우 요청/수락 알림
@@ -40,6 +41,7 @@ import { PUSH_PROVIDER } from "./providers/push-provider.interface";
 		// Core
 		NotificationRepository,
 		NotificationService,
+		PushDeliveryService,
 		// User Preference/Consent Repositories (푸시 필터링용)
 		UserPreferenceRepository,
 		UserConsentRepository,

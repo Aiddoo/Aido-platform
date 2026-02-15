@@ -40,6 +40,8 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ZodValidationPipe());
 
+	app.enableShutdownHooks();
+
 	// API 버전 프리픽스 설정 (/v1)
 	// health 엔드포인트는 프리픽스 제외
 	app.setGlobalPrefix("v1", {

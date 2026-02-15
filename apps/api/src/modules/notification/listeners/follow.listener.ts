@@ -39,7 +39,7 @@ export class FollowListener {
 				payload.followerName,
 			);
 
-			await this.notificationService.createAndSend({
+			await this.notificationService.createAndSendWithDedup({
 				userId: payload.followingId,
 				type: "FOLLOW_NEW",
 				title: message.title,
@@ -77,7 +77,7 @@ export class FollowListener {
 				payload.friendName,
 			);
 
-			await this.notificationService.createAndSend({
+			await this.notificationService.createAndSendWithDedup({
 				userId: payload.userId,
 				type: "FOLLOW_ACCEPTED",
 				title: message.title,

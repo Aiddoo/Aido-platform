@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { now, subtractDays } from "@/common/date";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import type {
 	AccountProvider,
@@ -164,9 +165,9 @@ export class UserRepository {
 		}
 
 		// 모든 재시도 실패 시 (극히 드문 경우)
-		throw new Error(
-			`Failed to generate unique user tag after ${UserRepository.MAX_USER_TAG_RETRIES} attempts`,
-		);
+		throw BusinessExceptions.userTagGenerationFailed({
+			attempts: UserRepository.MAX_USER_TAG_RETRIES,
+		});
 	}
 
 	async updateStatus(

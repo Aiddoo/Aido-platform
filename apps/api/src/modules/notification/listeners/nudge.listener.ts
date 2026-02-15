@@ -39,7 +39,7 @@ export class NudgeListener {
 				payload.senderName,
 			);
 
-			await this.notificationService.createAndSend({
+			await this.notificationService.createAndSendWithDedup({
 				userId: payload.receiverId,
 				type: "NUDGE_RECEIVED",
 				title: message.title,

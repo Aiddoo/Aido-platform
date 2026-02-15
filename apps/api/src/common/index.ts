@@ -15,6 +15,8 @@ export * from "./encryption";
 
 // Exception
 export * from "./exception";
+// Lock
+export * from "./lock";
 // Logger
 export * from "./logger";
 

@@ -1,6 +1,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
+import type { ILockProvider } from "@/common/lock";
+import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../notification/notification.service";
@@ -105,9 +107,18 @@ describe("TodoReminderJob", () => {
 	let job: TodoReminderJob;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(TodoReminderJob).compile();
+		const mockLockProvider: ILockProvider = {
+			acquire: jest.fn(),
+			isLocked: jest.fn(),
+		};
+
+		const { unit, unitRef } = await TestBed.solitary(TodoReminderJob)
+			.mock(LOCK_PROVIDER)
+			.impl(() => mockLockProvider)
+			.compile();
 
 		job = unit;
 		databaseService = unitRef.get(
@@ -116,6 +127,12 @@ describe("TodoReminderJob", () => {
 		notificationService = unitRef.get(
 			NotificationService,
 		) as unknown as Mocked<NotificationService>;
+		lockProvider = unitRef.get(
+			LOCK_PROVIDER,
+		) as unknown as Mocked<ILockProvider>;
+
+		// 기본: Lock 획득 성공 (release 함수 반환)
+		lockProvider.acquire.mockResolvedValue(jest.fn());
 	});
 
 	/**
@@ -323,6 +340,45 @@ describe("TodoReminderJob", () => {
 				expect(findManyCall.select?.id).toBe(true);
 				expect(findManyCall.select?.title).toBe(true);
 				expect(findManyCall.select?.userId).toBe(true);
+			});
+		});
+
+		describe("Lock 기반 겹침 방지", () => {
+			it("Lock 획득 실패 시 작업을 스킵한다", async () => {
+				// Given
+				lockProvider.acquire.mockResolvedValue(null);
+
+				// When
+				await job.handleTodoReminder();
+
+				// Then - database should NOT be called (no work done)
+				expect(databaseService.todo.findMany).not.toHaveBeenCalled();
+			});
+
+			it("작업 완료 후 Lock이 해제된다", async () => {
+				// Given
+				const mockRelease = jest.fn();
+				lockProvider.acquire.mockResolvedValue(mockRelease);
+				databaseService.todo.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleTodoReminder();
+
+				// Then
+				expect(mockRelease).toHaveBeenCalled();
+			});
+
+			it("작업 실패 시에도 Lock이 해제된다", async () => {
+				// Given
+				const mockRelease = jest.fn();
+				lockProvider.acquire.mockResolvedValue(mockRelease);
+				databaseService.todo.findMany.mockRejectedValue(new Error("DB error"));
+
+				// When
+				await job.handleTodoReminder();
+
+				// Then
+				expect(mockRelease).toHaveBeenCalled();
 			});
 		});
 	});

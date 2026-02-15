@@ -8,6 +8,7 @@ import {
 	CacheModule,
 	EncryptionModule,
 	ExceptionModule,
+	LockModule,
 	LoggerModule,
 	PaginationModule,
 	ResponseModule,
@@ -40,6 +41,7 @@ import { AppService } from "./app.service";
 		DatabaseModule,
 		EncryptionModule,
 		CacheModule.forRoot(),
+		LockModule.forRoot(),
 		EventEmitterModule.forRoot({
 			// 와일드카드 패턴 지원 (e.g., follow.*)
 			wildcard: true,
