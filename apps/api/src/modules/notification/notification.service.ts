@@ -55,6 +55,12 @@ export class NotificationService {
 	 * - 중복 허용 타입 (SYSTEM_NOTICE, ADMIN_*): 맵에 없음 → createAndSend 직접 사용
 	 * - 서비스 dedup 필요 타입: windowMs + 체크 키 정의
 	 */
+	private static readonly DEDUP_WINDOW = {
+		NUDGE: 60 * 60 * 1000, // 1시간
+		CHEER: 5 * 60 * 1000, // 5분
+		FOLLOW: 24 * 60 * 60 * 1000, // 24시간
+	} as const;
+
 	private static readonly DEDUP_STRATEGIES: Partial<
 		Record<
 			NotificationType,
@@ -64,10 +70,22 @@ export class NotificationService {
 			}
 		>
 	> = {
-		NUDGE_RECEIVED: { windowMs: 60 * 60 * 1000, keys: ["friendId"] },
-		CHEER_RECEIVED: { windowMs: 5 * 60 * 1000, keys: ["friendId"] },
-		FOLLOW_NEW: { windowMs: 24 * 60 * 60 * 1000, keys: ["friendId"] },
-		FOLLOW_ACCEPTED: { windowMs: 24 * 60 * 60 * 1000, keys: ["friendId"] },
+		NUDGE_RECEIVED: {
+			windowMs: NotificationService.DEDUP_WINDOW.NUDGE,
+			keys: ["friendId"],
+		},
+		CHEER_RECEIVED: {
+			windowMs: NotificationService.DEDUP_WINDOW.CHEER,
+			keys: ["friendId"],
+		},
+		FOLLOW_NEW: {
+			windowMs: NotificationService.DEDUP_WINDOW.FOLLOW,
+			keys: ["friendId"],
+		},
+		FOLLOW_ACCEPTED: {
+			windowMs: NotificationService.DEDUP_WINDOW.FOLLOW,
+			keys: ["friendId"],
+		},
 	};
 
 	/**
