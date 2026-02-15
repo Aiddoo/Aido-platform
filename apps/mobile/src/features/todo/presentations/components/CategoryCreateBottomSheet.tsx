@@ -43,13 +43,14 @@ export const CategoryCreateBottomSheet = ({
 
   return (
     <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={40}>
+      <VStack gap={40} pb={12}>
         <VStack gap={20}>
           <Controller
             control={control}
             name="name"
             render={({ field: { onChange, value } }) => (
               <BottomSheetInput
+                autoFocus
                 label="카테고리 이름"
                 placeholder="카테고리 이름을 입력해 주세요"
                 value={value}
@@ -63,7 +64,7 @@ export const CategoryCreateBottomSheet = ({
             control={control}
             name="color"
             render={({ field: { onChange, value } }) => (
-              <HStack className="flex-wrap gap-2.5">
+              <HStack className="flex-wrap gap-2.5" align="center" justify="center">
                 {CATEGORY_COLORS.map((color) => {
                   const isSelected = value === color;
 
