@@ -7,7 +7,6 @@ import utc from "dayjs/plugin/utc";
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
-import { NotificationRepository } from "@/modules/notification/notification.repository";
 
 import { NotificationService } from "../../notification/notification.service";
 import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
@@ -113,7 +112,6 @@ describe("TimezoneAwareReminderJob", () => {
 	let job: TimezoneAwareReminderJob;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
-	let notificationRepository: Mocked<NotificationRepository>;
 	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
@@ -134,9 +132,6 @@ describe("TimezoneAwareReminderJob", () => {
 		notificationService = unitRef.get(
 			NotificationService,
 		) as unknown as Mocked<NotificationService>;
-		notificationRepository = unitRef.get(
-			NotificationRepository,
-		) as unknown as Mocked<NotificationRepository>;
 		lockProvider = unitRef.get(
 			LOCK_PROVIDER,
 		) as unknown as Mocked<ILockProvider>;
@@ -144,9 +139,7 @@ describe("TimezoneAwareReminderJob", () => {
 		// 기본: Lock 획득 성공 (release 함수 반환)
 		lockProvider.acquire.mockResolvedValue(jest.fn());
 		// 기본: 중복 알림 없음
-		notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValue(
-			new Set(),
-		);
+		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 	});
 
 	// =========================================================================
@@ -693,7 +686,7 @@ describe("TimezoneAwareReminderJob", () => {
 					.mockResolvedValueOnce([] as never); // 저녁
 
 				// user-1은 이미 아침 리마인더를 받음
-				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
 					new Set(["user-1"]),
 				);
 
@@ -737,7 +730,7 @@ describe("TimezoneAwareReminderJob", () => {
 					.mockResolvedValueOnce([user1, user2] as never); // 저녁
 
 				// user-1은 이미 저녁 리마인더를 받음
-				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
 					new Set(["user-1"]),
 				);
 
@@ -781,7 +774,7 @@ describe("TimezoneAwareReminderJob", () => {
 					.mockResolvedValueOnce([] as never); // 저녁
 
 				// 모든 사용자가 이미 아침 리마인더를 받음
-				notificationRepository.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
+				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
 					new Set(["user-1", "user-2"]),
 				);
 

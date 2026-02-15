@@ -541,7 +541,7 @@ describe("NotificationRepository", () => {
 	// ==========================================================================
 
 	describe("existsNotification", () => {
-		const since = new Date("2026-02-06T00:00:00.000Z");
+		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
 
 		it("해당 타입의 알림이 존재하면 true를 반환해야 한다", async () => {
 			// Given
@@ -551,7 +551,7 @@ describe("NotificationRepository", () => {
 			const result = await repository.existsNotification({
 				userId: "user-1",
 				type: "DAILY_COMPLETE",
-				since,
+				notificationDate,
 			});
 
 			// Then
@@ -559,7 +559,7 @@ describe("NotificationRepository", () => {
 				where: {
 					userId: "user-1",
 					type: "DAILY_COMPLETE",
-					createdAt: { gte: since },
+					notificationDate,
 				},
 			});
 			expect(result).toBe(true);
@@ -573,7 +573,7 @@ describe("NotificationRepository", () => {
 			const result = await repository.existsNotification({
 				userId: "user-1",
 				type: "DAILY_COMPLETE",
-				since,
+				notificationDate,
 			});
 
 			// Then
@@ -582,7 +582,7 @@ describe("NotificationRepository", () => {
 	});
 
 	describe("findAlreadyNotifiedUserIds", () => {
-		const since = new Date("2026-02-06T00:00:00.000Z");
+		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
 
 		it("이미 알림을 받은 사용자 ID Set을 반환해야 한다", async () => {
 			// Given
@@ -595,7 +595,7 @@ describe("NotificationRepository", () => {
 			const result = await repository.findAlreadyNotifiedUserIds({
 				userIds: ["user-1", "user-2", "user-3"],
 				type: "FRIEND_COMPLETED",
-				since,
+				notificationDate,
 				friendId: "friend-1",
 			});
 
@@ -605,7 +605,7 @@ describe("NotificationRepository", () => {
 					userId: { in: ["user-1", "user-2", "user-3"] },
 					type: "FRIEND_COMPLETED",
 					friendId: "friend-1",
-					createdAt: { gte: since },
+					notificationDate,
 				},
 				select: { userId: true },
 				distinct: ["userId"],
@@ -621,12 +621,101 @@ describe("NotificationRepository", () => {
 			const result = await repository.findAlreadyNotifiedUserIds({
 				userIds: ["user-1", "user-2"],
 				type: "FRIEND_COMPLETED",
-				since,
+				notificationDate,
 				friendId: "friend-1",
 			});
 
 			// Then
 			expect(result).toEqual(new Set());
+		});
+	});
+
+	describe("existsRecentNotification", () => {
+		const since = new Date("2026-02-06T00:00:00.000Z");
+
+		it("friendId 조건 포함 시 해당 friendId만 검색해야 한다", async () => {
+			// Given
+			(db.notification.count as jest.Mock).mockResolvedValue(1);
+
+			// When
+			const result = await repository.existsRecentNotification({
+				userId: "user-1",
+				type: "NUDGE_RECEIVED",
+				since,
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(db.notification.count).toHaveBeenCalledWith({
+				where: {
+					userId: "user-1",
+					type: "NUDGE_RECEIVED",
+					createdAt: { gte: since },
+					friendId: "friend-1",
+				},
+			});
+			expect(result).toBe(true);
+		});
+
+		it("알림이 없으면 false를 반환해야 한다", async () => {
+			// Given
+			(db.notification.count as jest.Mock).mockResolvedValue(0);
+
+			// When
+			const result = await repository.existsRecentNotification({
+				userId: "user-1",
+				type: "NUDGE_RECEIVED",
+				since,
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("friendId가 undefined면 where 조건에 포함하지 않아야 한다", async () => {
+			// Given
+			(db.notification.count as jest.Mock).mockResolvedValue(0);
+
+			// When
+			await repository.existsRecentNotification({
+				userId: "user-1",
+				type: "WEEKLY_ACHIEVEMENT",
+				since,
+			});
+
+			// Then
+			expect(db.notification.count).toHaveBeenCalledWith({
+				where: {
+					userId: "user-1",
+					type: "WEEKLY_ACHIEVEMENT",
+					createdAt: { gte: since },
+				},
+			});
+		});
+
+		it("트랜잭션 클라이언트를 사용해야 한다", async () => {
+			// Given
+			const mockCount = jest.fn().mockResolvedValue(1);
+			const txClient = {
+				notification: { count: mockCount },
+			} as unknown as Parameters<typeof repository.existsRecentNotification>[1];
+			(db.notification.count as jest.Mock).mockResolvedValue(0);
+
+			// When
+			await repository.existsRecentNotification(
+				{
+					userId: "user-1",
+					type: "CHEER_RECEIVED",
+					since,
+					friendId: "friend-1",
+				},
+				txClient,
+			);
+
+			// Then — tx 클라이언트의 count가 호출됨
+			expect(mockCount).toHaveBeenCalled();
+			expect(db.notification.count).not.toHaveBeenCalled();
 		});
 	});
 

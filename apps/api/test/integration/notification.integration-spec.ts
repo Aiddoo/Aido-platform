@@ -31,11 +31,13 @@ import { UserPreferenceRepository } from "@/modules/auth/repositories/user-prefe
 import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
+import { PushDeliveryService } from "@/modules/notification/push-delivery.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
 describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: NotificationService;
+	let pushDeliveryService: PushDeliveryService;
 	let repository: NotificationRepository;
 
 	// Mock 데이터베이스 서비스
@@ -104,6 +106,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 		module = await Test.createTestingModule({
 			providers: [
 				NotificationService,
+				PushDeliveryService,
 				NotificationRepository,
 				PaginationService,
 				UserPreferenceRepository,
@@ -126,6 +129,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		service = module.get<NotificationService>(NotificationService);
+		pushDeliveryService = module.get<PushDeliveryService>(PushDeliveryService);
 		repository = module.get<NotificationRepository>(NotificationRepository);
 	});
 
@@ -173,7 +177,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			mockPushProvider.validateToken.mockReturnValue(true);
 
 			// When - 푸시 토큰 등록
-			const result = await service.registerPushToken({
+			const result = await pushDeliveryService.registerPushToken({
 				userId: mockUserId,
 				token: mockPushToken,
 				platform: "IOS",
@@ -190,7 +194,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// When & Then - 예외 발생 검증
 			await expect(
-				service.registerPushToken({
+				pushDeliveryService.registerPushToken({
 					userId: mockUserId,
 					token: "invalid-token",
 					platform: "IOS",

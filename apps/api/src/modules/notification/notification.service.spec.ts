@@ -19,64 +19,29 @@ import {
 } from "@test/builders";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import { Prisma } from "@/generated/prisma/client";
-import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
-import { PUSH_PROVIDER } from "./providers";
-import type { PushProvider } from "./providers/push-provider.interface";
+import { PushDeliveryService } from "./push-delivery.service";
 import type { CreateNotificationData } from "./types/notification.types";
-
-// jest.mock으로 모듈 전체 모킹
-jest.mock("./utils/night-time.util", () => ({
-	isNightTime: jest.fn(() => false),
-	isDayTime: jest.fn(() => true),
-	getKstHour: jest.fn(() => 12),
-}));
-
-// 모킹된 모듈 import
-import * as timeUtils from "./utils/night-time.util";
 
 describe("NotificationService", () => {
 	let service: NotificationService;
 	let notificationRepo: Mocked<NotificationRepository>;
 	let paginationService: Mocked<PaginationService>;
-	let pushProvider: Mocked<PushProvider>;
-	let userPreferenceRepo: Mocked<UserPreferenceRepository>;
-	let userConsentRepo: Mocked<UserConsentRepository>;
+	let pushDeliveryService: Mocked<PushDeliveryService>;
 
 	// 테스트 데이터
 	const mockUserId = "user-1";
 
 	beforeEach(async () => {
-		// 야간 시간 mock 초기화 (기본값: 낮 시간)
-		(timeUtils.isNightTime as jest.Mock).mockReturnValue(false);
-
 		// Builder ID 카운터 리셋
 		NotificationBuilder.resetIdCounter();
 		PushTokenBuilder.resetIdCounter();
 		UserPreferenceBuilder.resetIdCounter();
 
-		// PushProvider mock 객체 생성 (테스트에서 직접 참조하기 위해 별도 변수로 관리)
-		const mockPushProviderImpl = {
-			name: "expo",
-			validateToken: jest.fn().mockReturnValue(true),
-			send: jest.fn(),
-			sendBatch: jest.fn().mockResolvedValue({
-				total: 1,
-				successCount: 1,
-				failureCount: 0,
-				results: [{ success: true, ticketId: "ticket-1" }],
-				invalidTokens: [],
-			}),
-		};
-
-		// Suites가 모든 의존성을 자동으로 mock (PUSH_PROVIDER는 impl()로 수동 설정)
-		const { unit, unitRef } = await TestBed.solitary(NotificationService)
-			.mock(PUSH_PROVIDER)
-			.impl(() => mockPushProviderImpl)
-			.compile();
+		// Suites가 모든 의존성을 자동으로 mock
+		const { unit, unitRef } =
+			await TestBed.solitary(NotificationService).compile();
 
 		service = unit;
 		notificationRepo = unitRef.get(
@@ -85,13 +50,9 @@ describe("NotificationService", () => {
 		paginationService = unitRef.get(
 			PaginationService,
 		) as unknown as Mocked<PaginationService>;
-		pushProvider = mockPushProviderImpl as unknown as Mocked<PushProvider>;
-		userPreferenceRepo = unitRef.get(
-			UserPreferenceRepository,
-		) as unknown as Mocked<UserPreferenceRepository>;
-		userConsentRepo = unitRef.get(
-			UserConsentRepository,
-		) as unknown as Mocked<UserConsentRepository>;
+		pushDeliveryService = unitRef.get(
+			PushDeliveryService,
+		) as unknown as Mocked<PushDeliveryService>;
 
 		// PaginationService 기본 동작 설정
 		paginationService.normalizeCursorPagination.mockReturnValue({
@@ -118,6 +79,9 @@ describe("NotificationService", () => {
 				};
 			},
 		);
+
+		// PushDeliveryService 기본 동작 설정
+		pushDeliveryService.shouldSendPush.mockResolvedValue(true);
 	});
 
 	afterEach(() => {
@@ -125,185 +89,11 @@ describe("NotificationService", () => {
 	});
 
 	// ==========================================================================
-	// 푸시 토큰 관리 테스트
-	// ==========================================================================
-
-	describe("registerPushToken", () => {
-		it("유효한 토큰을 등록해야 한다", async () => {
-			// Given - 유효한 Expo 푸시 토큰 데이터 준비
-			const data = {
-				userId: mockUserId,
-				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-				deviceId: "device-1",
-				platform: "IOS" as const,
-			};
-			const expectedToken = PushTokenBuilder.create(mockUserId)
-				.withToken(data.token)
-				.withDeviceId(data.deviceId)
-				.asIos()
-				.build();
-			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
-
-			// When - 푸시 토큰 등록 요청
-			const result = await service.registerPushToken(data);
-
-			// Then - 토큰 검증 및 저장 확인
-			expect(pushProvider.validateToken).toHaveBeenCalledWith(data.token);
-			expect(notificationRepo.registerPushToken).toHaveBeenCalledWith(data);
-			expect(result).toEqual(expectedToken);
-		});
-
-		it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
-			// Given - 유효하지 않은 토큰 형식
-			const data = {
-				userId: mockUserId,
-				token: "invalid-token",
-				deviceId: "device-1",
-			};
-			pushProvider.validateToken.mockReturnValue(false);
-
-			// When & Then - 유효성 검사 실패로 예외 발생
-			await expect(service.registerPushToken(data)).rejects.toThrow(
-				BusinessException,
-			);
-			expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
-		});
-
-		it("timezone이 제공되면 upsertTimezone을 호출해야 한다", async () => {
-			// Given - 타임존 정보가 포함된 토큰 등록 데이터
-			const data = {
-				userId: mockUserId,
-				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-				deviceId: "device-1",
-				platform: "IOS" as const,
-				timezone: "Asia/Seoul",
-			};
-			const expectedToken = PushTokenBuilder.create(mockUserId)
-				.withToken(data.token)
-				.withDeviceId(data.deviceId)
-				.asIos()
-				.build();
-			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
-			userPreferenceRepo.upsertTimezone.mockResolvedValue(undefined as never);
-
-			// When - 타임존 포함 토큰 등록 요청
-			await service.registerPushToken(data);
-
-			// Then - upsertTimezone이 호출됨
-			expect(userPreferenceRepo.upsertTimezone).toHaveBeenCalledWith(
-				mockUserId,
-				"Asia/Seoul",
-			);
-		});
-
-		it("timezone이 없으면 upsertTimezone을 호출하지 않아야 한다", async () => {
-			// Given - 타임존 정보가 없는 토큰 등록 데이터
-			const data = {
-				userId: mockUserId,
-				token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-				deviceId: "device-1",
-				platform: "IOS" as const,
-			};
-			const expectedToken = PushTokenBuilder.create(mockUserId)
-				.withToken(data.token)
-				.withDeviceId(data.deviceId)
-				.asIos()
-				.build();
-			notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
-
-			// When - 타임존 미포함 토큰 등록 요청
-			await service.registerPushToken(data);
-
-			// Then - upsertTimezone이 호출되지 않음
-			expect(userPreferenceRepo.upsertTimezone).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("unregisterPushToken", () => {
-		it("푸시 토큰을 삭제해야 한다", async () => {
-			// Given - 삭제할 푸시 토큰 존재
-			const pushToken = PushTokenBuilder.create(mockUserId).build();
-			notificationRepo.deletePushToken.mockResolvedValue(pushToken);
-
-			// When - 푸시 토큰 삭제 요청
-			await service.unregisterPushToken(mockUserId, "device-1");
-
-			// Then - 삭제 메서드 호출 확인
-			expect(notificationRepo.deletePushToken).toHaveBeenCalledWith(
-				mockUserId,
-				"device-1",
-			);
-		});
-
-		it("P2025 에러(토큰 미존재)는 무시하고 정상 반환해야 한다", async () => {
-			// Given - 토큰이 존재하지 않아 Prisma P2025 발생
-			notificationRepo.deletePushToken.mockRejectedValue(
-				new Prisma.PrismaClientKnownRequestError("Record not found", {
-					code: "P2025",
-					meta: { cause: "Record to delete does not exist." },
-					clientVersion: "7.0.0",
-				}),
-			);
-
-			// When & Then - 예외 없이 정상 처리
-			await expect(
-				service.unregisterPushToken(mockUserId, "device-1"),
-			).resolves.not.toThrow();
-		});
-
-		it("P2025가 아닌 Prisma 에러는 re-throw해야 한다", async () => {
-			// Given - P2002 등 다른 Prisma 에러
-			const prismaError = new Prisma.PrismaClientKnownRequestError(
-				"Connection error",
-				{
-					code: "P2010",
-					meta: {},
-					clientVersion: "7.0.0",
-				},
-			);
-			notificationRepo.deletePushToken.mockRejectedValue(prismaError);
-
-			// When & Then - 에러가 re-throw 되어야 함
-			await expect(
-				service.unregisterPushToken(mockUserId, "device-1"),
-			).rejects.toThrow(prismaError);
-		});
-
-		it("일반 에러(DB 연결 실패 등)는 re-throw해야 한다", async () => {
-			// Given - 일반 에러 (네트워크 장애 등)
-			const error = new Error("Connection refused");
-			notificationRepo.deletePushToken.mockRejectedValue(error);
-
-			// When & Then - 에러가 re-throw 되어야 함
-			await expect(
-				service.unregisterPushToken(mockUserId, "device-1"),
-			).rejects.toThrow(error);
-		});
-	});
-
-	describe("unregisterAllPushTokens", () => {
-		it("사용자의 모든 푸시 토큰을 삭제해야 한다", async () => {
-			// Given - 사용자가 여러 디바이스에 토큰 보유
-			notificationRepo.deleteAllPushTokensByUser.mockResolvedValue({
-				count: 3,
-			});
-
-			// When - 모든 푸시 토큰 삭제 요청
-			await service.unregisterAllPushTokens(mockUserId);
-
-			// Then - 전체 삭제 메서드 호출 확인
-			expect(notificationRepo.deleteAllPushTokensByUser).toHaveBeenCalledWith(
-				mockUserId,
-			);
-		});
-	});
-
-	// ==========================================================================
 	// 알림 생성 및 발송 테스트
 	// ==========================================================================
 
 	describe("createAndSend", () => {
-		it("알림을 생성하고 푸시를 발송해야 한다", async () => {
+		it("알림을 생성하고 푸시 발송을 위임해야 한다", async () => {
 			// Given - 알림 생성 데이터 및 푸시 발송 환경 준비
 			const data: CreateNotificationData = {
 				userId: mockUserId,
@@ -315,35 +105,26 @@ describe("NotificationService", () => {
 			const notification = NotificationBuilder.create(mockUserId)
 				.asFollowNew("friend-1")
 				.build();
-			const pushToken = PushTokenBuilder.create(mockUserId).build();
-			const preference = UserPreferenceBuilder.create(mockUserId)
-				.withPushEnabled()
-				.build();
 
 			notificationRepo.createNotification.mockResolvedValue(notification);
-			notificationRepo.findPushTokensByUser.mockResolvedValue([pushToken]);
-			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
 
 			// When - 알림 생성 및 푸시 발송 요청
 			const result = await service.createAndSend(data);
 
-			// Then - 알림 생성 확인 및 비동기 푸시 발송 검증
+			// Then - 알림 생성 및 푸시 위임 확인
 			expect(notificationRepo.createNotification).toHaveBeenCalledWith(
 				data,
 				undefined,
 			);
 			expect(result).toEqual(notification);
-
-			// 비동기 푸시 발송 대기
-			await new Promise((resolve) => setTimeout(resolve, 10));
-			expect(notificationRepo.findPushTokensByUser).toHaveBeenCalledWith({
-				userId: mockUserId,
-				activeOnly: true,
-			});
+			expect(pushDeliveryService.fireAndForgetPush).toHaveBeenCalledWith(
+				data,
+				notification.id,
+			);
 		});
 
-		it("푸시 발송 실패해도 알림 생성은 성공해야 한다", async () => {
-			// Given - 푸시 발송이 실패하는 상황
+		it("푸시 설정이 꺼져있으면 푸시를 발송하지 않아야 한다", async () => {
+			// Given - 푸시 비활성화
 			const data: CreateNotificationData = {
 				userId: mockUserId,
 				type: "FOLLOW_NEW",
@@ -353,26 +134,21 @@ describe("NotificationService", () => {
 			const notification = NotificationBuilder.create(mockUserId)
 				.asFollowNew("friend-1")
 				.build();
-			const preference = UserPreferenceBuilder.create(mockUserId)
-				.withPushEnabled()
-				.build();
 
 			notificationRepo.createNotification.mockResolvedValue(notification);
-			notificationRepo.findPushTokensByUser.mockRejectedValue(
-				new Error("Push failed"),
-			);
-			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
+			pushDeliveryService.shouldSendPush.mockResolvedValue(false);
 
 			// When - 알림 생성 요청
 			const result = await service.createAndSend(data);
 
-			// Then - 푸시 실패와 무관하게 알림 생성 성공
+			// Then - 알림 생성만 되고 푸시는 발송되지 않음
 			expect(result).toEqual(notification);
+			expect(pushDeliveryService.fireAndForgetPush).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("createAndSendBatch", () => {
-		it("여러 알림을 일괄 생성하고 푸시를 발송해야 한다", async () => {
+		it("여러 알림을 일괄 생성하고 배치 푸시를 위임해야 한다", async () => {
 			// Given - 여러 사용자에게 알림 발송 데이터 준비
 			const dataList: CreateNotificationData[] = [
 				{
@@ -388,34 +164,20 @@ describe("NotificationService", () => {
 					body: "오늘 5개의 할일이 기다리고 있어요",
 				},
 			];
-			const tokens = [
-				PushTokenBuilder.create("user-1").build(),
-				PushTokenBuilder.create("user-2").build(),
-			];
 
 			notificationRepo.createManyNotifications.mockResolvedValue({ count: 2 });
-			notificationRepo.findActivePushTokensByUsers.mockResolvedValue(tokens);
-			// 두 사용자 모두 푸시 활성화 (배치 조회)
-			userPreferenceRepo.findByUserIds.mockResolvedValue([
-				UserPreferenceBuilder.create("user-1").withPushEnabled().build(),
-				UserPreferenceBuilder.create("user-2").withPushEnabled().build(),
-			]);
-			userConsentRepo.findByUserIds.mockResolvedValue([]);
 
 			// When - 일괄 알림 생성 및 발송 요청
 			const result = await service.createAndSendBatch(dataList);
 
-			// Then - 일괄 생성 및 비동기 푸시 발송 확인
+			// Then - 일괄 생성 및 배치 푸시 위임 확인
 			expect(notificationRepo.createManyNotifications).toHaveBeenCalledWith(
 				dataList,
 				undefined,
 			);
 			expect(result.count).toBe(2);
-
-			// 비동기 푸시 발송 대기
-			await new Promise((resolve) => setTimeout(resolve, 10));
-			expect(notificationRepo.findActivePushTokensByUsers).toHaveBeenCalledWith(
-				["user-1", "user-2"],
+			expect(pushDeliveryService.fireAndForgetBatchPush).toHaveBeenCalledWith(
+				dataList,
 			);
 		});
 
@@ -452,7 +214,7 @@ describe("NotificationService", () => {
 			// Then - 알림 생성만 되고 푸시는 발송되지 않음
 			expect(notificationRepo.createNotification).toHaveBeenCalledWith(data);
 			expect(result).toEqual(notification);
-			expect(notificationRepo.findPushTokensByUser).not.toHaveBeenCalled();
+			expect(pushDeliveryService.fireAndForgetPush).not.toHaveBeenCalled();
 		});
 	});
 
@@ -826,147 +588,180 @@ describe("NotificationService", () => {
 	});
 
 	// ==========================================================================
-	// 푸시 발송 (Private 메서드 간접 테스트)
+	// createAndSendWithDedup 테스트
 	// ==========================================================================
 
-	// ==========================================================================
-	// Graceful Shutdown 테스트
-	// ==========================================================================
+	describe("createAndSendWithDedup", () => {
+		const baseSetup = () => {
+			const notification = NotificationBuilder.create(mockUserId)
+				.asFollowNew("friend-1")
+				.build();
 
-	describe("beforeApplicationShutdown", () => {
-		it("pending push가 없으면 즉시 반환한다", async () => {
-			// Given - 기본 상태 (pending push 없음)
+			notificationRepo.createNotification.mockResolvedValue(notification);
+
+			return { notification };
+		};
+
+		it("NUDGE_RECEIVED: 1시간 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
+			// Given
+			notificationRepo.existsRecentNotification.mockResolvedValue(true);
 
 			// When
-			await service.beforeApplicationShutdown();
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "NUDGE_RECEIVED",
+				title: "콕!",
+				body: "친구가 콕 찔렀어요",
+				friendId: "friend-1",
+				nudgeId: 1,
+			});
 
-			// Then - 에러 없이 즉시 반환 (암묵적 통과)
+			// Then
+			expect(result).toBeNull();
+			expect(notificationRepo.existsRecentNotification).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUserId,
+					type: "NUDGE_RECEIVED",
+					friendId: "friend-1",
+				}),
+				undefined,
+			);
+			expect(notificationRepo.createNotification).not.toHaveBeenCalled();
 		});
 
-		it("pending push가 있으면 완료될 때까지 대기한다", async () => {
-			// Given - createAndSend를 통해 fire-and-forget 푸시가 발생하는 상황
-			let resolvePush!: () => void;
-			const pushPromise = new Promise<void>((resolve) => {
-				resolvePush = resolve;
+		it("NUDGE_RECEIVED: 1시간 내 같은 friendId 알림이 없으면 정상 생성한다", async () => {
+			// Given
+			baseSetup();
+			notificationRepo.existsRecentNotification.mockResolvedValue(false);
+
+			// When
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "NUDGE_RECEIVED",
+				title: "콕!",
+				body: "친구가 콕 찔렀어요",
+				friendId: "friend-1",
+				nudgeId: 1,
 			});
-			const data: CreateNotificationData = {
+
+			// Then
+			expect(result).not.toBeNull();
+			expect(notificationRepo.createNotification).toHaveBeenCalled();
+		});
+
+		it("CHEER_RECEIVED: 5분 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
+			// Given
+			notificationRepo.existsRecentNotification.mockResolvedValue(true);
+
+			// When
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "CHEER_RECEIVED",
+				title: "응원!",
+				body: "친구가 응원해요",
+				friendId: "friend-1",
+				cheerId: 1,
+			});
+
+			// Then
+			expect(result).toBeNull();
+		});
+
+		it("FOLLOW_NEW: 24시간 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
+			// Given
+			notificationRepo.existsRecentNotification.mockResolvedValue(true);
+
+			// When
+			const result = await service.createAndSendWithDedup({
 				userId: mockUserId,
 				type: "FOLLOW_NEW",
-				title: "테스트",
-				body: "테스트 알림",
+				title: "팔로우",
+				body: "새로운 팔로워",
 				friendId: "friend-1",
-			};
-			const notification = NotificationBuilder.create(mockUserId)
-				.asFollowNew("friend-1")
-				.build();
-			const preference = UserPreferenceBuilder.create(mockUserId)
-				.withPushEnabled()
-				.build();
-			const pushToken = PushTokenBuilder.create(mockUserId).build();
+			});
 
-			notificationRepo.createNotification.mockResolvedValue(notification);
-			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
-			// sendPushToUser 내부의 findPushTokensByUser가 지연된 Promise를 반환
-			notificationRepo.findPushTokensByUser.mockReturnValue(
-				pushPromise.then(() => [pushToken]) as never,
+			// Then
+			expect(result).toBeNull();
+		});
+
+		it("FOLLOW_ACCEPTED: 24시간 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
+			// Given
+			notificationRepo.existsRecentNotification.mockResolvedValue(true);
+
+			// When
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "FOLLOW_ACCEPTED",
+				title: "맞팔로우",
+				body: "친구가 되었어요",
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(result).toBeNull();
+		});
+
+		it("전략이 없는 타입(SYSTEM_NOTICE)은 dedup 체크 없이 바로 생성한다", async () => {
+			// Given
+			baseSetup();
+
+			// When
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "SYSTEM_NOTICE",
+				title: "시스템 공지",
+				body: "점검 안내",
+			});
+
+			// Then
+			expect(result).not.toBeNull();
+			expect(notificationRepo.existsRecentNotification).not.toHaveBeenCalled();
+			expect(notificationRepo.createNotification).toHaveBeenCalled();
+		});
+
+		it("전략이 없는 타입(DAILY_COMPLETE)은 dedup 체크 없이 바로 생성한다", async () => {
+			// Given
+			baseSetup();
+
+			// When
+			await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "DAILY_COMPLETE",
+				title: "완료!",
+				body: "오늘 할일 다 끝냈어요",
+				notificationDate: new Date("2026-02-15"),
+			});
+
+			// Then
+			expect(notificationRepo.existsRecentNotification).not.toHaveBeenCalled();
+			expect(notificationRepo.createNotification).toHaveBeenCalled();
+		});
+
+		it("중복 스킵 시 since 시간이 전략의 windowMs를 기준으로 계산된다", async () => {
+			// Given
+			notificationRepo.existsRecentNotification.mockResolvedValue(false);
+			baseSetup();
+			const now = Date.now();
+			jest.spyOn(Date, "now").mockReturnValue(now);
+
+			// When
+			await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "NUDGE_RECEIVED",
+				title: "콕!",
+				body: "찔러요",
+				friendId: "friend-1",
+			});
+
+			// Then — since가 현재 - 1시간
+			expect(notificationRepo.existsRecentNotification).toHaveBeenCalledWith(
+				expect.objectContaining({
+					since: new Date(now - 60 * 60 * 1000),
+				}),
+				undefined,
 			);
 
-			// When - createAndSend로 fire-and-forget 푸시 트리거
-			await service.createAndSend(data);
-
-			// Then - beforeApplicationShutdown이 pending push 완료를 대기
-			let shutdownResolved = false;
-			const shutdownPromise = service.beforeApplicationShutdown().then(() => {
-				shutdownResolved = true;
-			});
-
-			// 아직 push가 완료되지 않았으므로 shutdown도 대기 중
-			await new Promise((resolve) => setTimeout(resolve, 10));
-			expect(shutdownResolved).toBe(false);
-
-			// push 완료
-			resolvePush();
-			await shutdownPromise;
-
-			// shutdown이 완료됨
-			expect(shutdownResolved).toBe(true);
-		});
-	});
-
-	describe("sendPushToUser (간접 테스트)", () => {
-		it("활성 토큰이 없으면 푸시를 발송하지 않아야 한다", async () => {
-			// Given - 활성 토큰이 없는 사용자
-			const data: CreateNotificationData = {
-				userId: mockUserId,
-				type: "FOLLOW_NEW",
-				title: "테스트",
-				body: "테스트 알림",
-			};
-			const notification = NotificationBuilder.create(mockUserId)
-				.asFollowNew("friend-1")
-				.build();
-			const preference = UserPreferenceBuilder.create(mockUserId)
-				.withPushEnabled()
-				.build();
-
-			notificationRepo.createNotification.mockResolvedValue(notification);
-			notificationRepo.findPushTokensByUser.mockResolvedValue([]);
-			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
-
-			// When - 알림 생성 및 푸시 발송 시도
-			await service.createAndSend(data);
-
-			// 비동기 푸시 발송 대기
-			await new Promise((resolve) => setTimeout(resolve, 10));
-
-			// Then - 푸시 발송 시도하지 않음
-			expect(pushProvider.sendBatch).not.toHaveBeenCalled();
-		});
-
-		it("잘못된 토큰을 비활성화해야 한다", async () => {
-			// Given - 유효하지 않은 토큰으로 푸시 발송 실패
-			const data: CreateNotificationData = {
-				userId: mockUserId,
-				type: "FOLLOW_NEW",
-				title: "테스트",
-				body: "테스트 알림",
-			};
-			const notification = NotificationBuilder.create(mockUserId)
-				.asFollowNew("friend-1")
-				.build();
-			const pushToken = PushTokenBuilder.create(mockUserId).build();
-			const preference = UserPreferenceBuilder.create(mockUserId)
-				.withPushEnabled()
-				.build();
-
-			notificationRepo.createNotification.mockResolvedValue(notification);
-			notificationRepo.findPushTokensByUser.mockResolvedValue([pushToken]);
-			userPreferenceRepo.findByUserId.mockResolvedValue(preference);
-			pushProvider.sendBatch.mockResolvedValue({
-				total: 1,
-				successCount: 0,
-				failureCount: 1,
-				results: [
-					{
-						success: false,
-						error: "DeviceNotRegistered",
-						errorCode: "DeviceNotRegistered",
-					},
-				],
-				invalidTokens: [pushToken.token],
-			});
-			notificationRepo.deactivateInvalidTokens.mockResolvedValue({ count: 1 });
-
-			// When - 알림 생성 및 푸시 발송 시도
-			await service.createAndSend(data);
-
-			// 비동기 푸시 발송 대기
-			await new Promise((resolve) => setTimeout(resolve, 10));
-
-			// Then - 유효하지 않은 토큰 비활성화 확인
-			expect(notificationRepo.deactivateInvalidTokens).toHaveBeenCalledWith([
-				pushToken.token,
-			]);
+			jest.spyOn(Date, "now").mockRestore();
 		});
 	});
 });
