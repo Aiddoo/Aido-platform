@@ -55,8 +55,11 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Flex` | Flexbox 레이아웃 | `src/shared/ui/Flex/README.md` |
 | `HStack` | 수평 레이아웃 | `src/shared/ui/HStack/README.md` |
 | `VStack` | 수직 레이아웃 | `src/shared/ui/VStack/README.md` |
+| `Grid` | 그리드 레이아웃 | `src/shared/ui/Grid/README.md` |
+| `GridItem` | 그리드 아이템 | `src/shared/ui/Grid/README.md` |
 | `Result` | 결과 화면 (에러, 빈 상태) | `src/shared/ui/Result/Result.md` |
 | `TextArea` | 여러 줄 텍스트 입력 | `src/shared/ui/TextArea/TextArea.md` |
+
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
 
