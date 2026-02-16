@@ -1,18 +1,22 @@
 import { ProfileCard } from '@src/features/auth/presentations/components/ProfileCard';
+import { getMeQueryOptions } from '@src/features/auth/presentations/queries/get-me-query-options';
 import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
+import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowRightIcon } from '@src/shared/ui/Icon';
+import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { useOverlay } from '@src/shared/ui/Overlay';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { H3 } from '@src/shared/ui/Text/Typography';
+import { Text } from '@src/shared/ui/Text/Text';
+import { H3, H4 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Button, Dialog, PressableFeedback, Separator } from 'heroui-native';
-import type { PropsWithChildren } from 'react';
+import { Dialog, Button as HeroButton, PressableFeedback, Separator } from 'heroui-native';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -66,6 +70,9 @@ const MyPageScreen = () => {
             onPress={() => router.push('/settings/notifications')}
           />
           <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
+          <Suspense fallback={null}>
+            <AppIconMenuItem />
+          </Suspense>
         </SettingNavigationSection>
 
         <Spacing size={12} />
@@ -123,12 +130,12 @@ const LogoutDialog = ({ isOpen, onOpenChange, onConfirm }: LogoutDialogProps) =>
             <Dialog.Description>정말 로그아웃 하시겠습니까?</Dialog.Description>
           </VStack>
           <HStack justify="end" gap={12}>
-            <Button variant="ghost" size="sm" onPress={() => onOpenChange(false)}>
+            <HeroButton variant="ghost" size="sm" onPress={() => onOpenChange(false)}>
               취소
-            </Button>
-            <Button size="sm" onPress={onConfirm}>
+            </HeroButton>
+            <HeroButton size="sm" onPress={onConfirm}>
               확인
-            </Button>
+            </HeroButton>
           </HStack>
         </VStack>
       </Dialog.Content>
@@ -145,15 +152,101 @@ const SettingNavigationSection = ({ children }: PropsWithChildren) => (
 interface SettingNavigationItemProps {
   label: string;
   onPress: () => void;
+  right?: ReactNode;
+  locked?: boolean;
 }
 
-const SettingNavigationItem = ({ label, onPress }: SettingNavigationItemProps) => (
+const SettingNavigationItem = ({ label, onPress, right, locked }: SettingNavigationItemProps) => (
   <PressableFeedback onPress={onPress} className="rounded-lg">
     <PressableFeedback.Highlight className="rounded-xl" />
     <ListRow
       contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-      right={<ArrowRightIcon colorClassName="text-gray-6" />}
+      right={
+        locked ? (
+          <LockIcon width={20} height={20} colorClassName="text-gray-5" />
+        ) : (
+          (right ?? <ArrowRightIcon colorClassName="text-gray-6" />)
+        )
+      }
       horizontalPadding="medium"
     />
   </PressableFeedback>
+);
+
+function AppIconMenuItem() {
+  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const router = useRouter();
+  const overlay = useOverlay();
+
+  const handlePress = () => {
+    if (user.isSubscribed) {
+      overlay.open(({ isOpen, close, exit }) => (
+        <AppIconLockDialog
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              close();
+              exit();
+            }
+          }}
+        />
+      ));
+      return;
+    }
+    router.push('/settings/app-icon');
+  };
+
+  return (
+    <SettingNavigationItem label="앱 아이콘" locked={!user.isSubscribed} onPress={handlePress} />
+  );
+}
+
+interface AppIconLockDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const AppIconLockDialog = ({ isOpen, onOpenChange }: AppIconLockDialogProps) => (
+  <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
+    <Dialog.Portal>
+      <Dialog.Overlay className="bg-black/40" />
+      <Dialog.Content>
+        <VStack gap={16}>
+          <VStack gap={6}>
+            <Dialog.Title>
+              <H4>프리미엄 기능</H4>
+            </Dialog.Title>
+            <Dialog.Description>
+              <Text size="b3" shade={6}>
+                앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.
+              </Text>
+            </Dialog.Description>
+          </VStack>
+          <HStack gap={8} className="w-full" justify="center">
+            <Button
+              variant="weak"
+              color="dark"
+              size="large"
+              display="inline"
+              className="flex-1"
+              onPress={() => onOpenChange(false)}
+            >
+              닫기
+            </Button>
+            <Button
+              size="large"
+              display="inline"
+              className="flex-1"
+              onPress={() => {
+                /* TODO: 구독 페이지 이동 */
+                onOpenChange(false);
+              }}
+            >
+              구독하기
+            </Button>
+          </HStack>
+        </VStack>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog>
 );
