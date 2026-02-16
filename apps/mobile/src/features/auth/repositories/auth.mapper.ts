@@ -37,7 +37,7 @@ export const toUser = (dto: CurrentUser): User => ({
   userTag: dto.userTag,
   subscriptionStatus: dto.subscriptionStatus,
   createdAt: new Date(dto.createdAt),
-  isSubscribed: AuthPolicy.isSubscriptionActive(dto.subscriptionStatus),
+  isSubscribed: AuthPolicy.isPremiumUser(dto.subscriptionStatus),
 });
 
 export const toPreference = (dto: PreferenceResponse): Preference => ({

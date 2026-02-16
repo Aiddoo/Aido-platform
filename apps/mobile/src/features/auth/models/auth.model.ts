@@ -81,7 +81,7 @@ export const linkedAccountSchema = z.object({
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
 export const AuthPolicy = {
-  isSubscriptionActive: (status: SubscriptionStatus): boolean => {
+  isPremiumUser: (status: SubscriptionStatus): boolean => {
     return status === 'ACTIVE';
   },
   canUnlinkAccount: (linkedCount: number): boolean => {
