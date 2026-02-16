@@ -5,6 +5,7 @@ export {
   ArrowRightIcon,
   BellIcon,
   CheckIcon,
+  CheckmarkIcon,
   CopyIcon,
   DeviceIcon,
   DocsIcon,
