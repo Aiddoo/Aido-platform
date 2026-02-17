@@ -1,3 +1,4 @@
+import defaultProfileIconImage from '@assets/images/icon.png';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { Avatar } from 'heroui-native';
 import type { ReactNode } from 'react';
@@ -18,7 +19,7 @@ export const FriendRequestRow = ({ user, actions }: FriendRequestRowProps) => {
         <Avatar alt={displayName} className="size-10">
           {user.profileImage && <Avatar.Image source={{ uri: user.profileImage }} />}
           <Avatar.Fallback>
-            <Avatar.Image source={require('@assets/images/icon.png')} />
+            <Avatar.Image source={defaultProfileIconImage} />
           </Avatar.Fallback>
         </Avatar>
       }

@@ -1,3 +1,4 @@
+import defaultProfileIconImage from '@assets/images/icon.png';
 import { FlashList } from '@shopify/flash-list';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -46,7 +47,7 @@ export function FriendList() {
               <Avatar alt={displayName} className="size-10">
                 {item.profileImage && <Avatar.Image source={{ uri: item.profileImage }} />}
                 <Avatar.Fallback>
-                  <Avatar.Image source={require('@assets/images/icon.png')} />
+                  <Avatar.Image source={defaultProfileIconImage} />
                 </Avatar.Fallback>
               </Avatar>
             }

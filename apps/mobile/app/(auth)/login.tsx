@@ -1,3 +1,4 @@
+import appIconImage from '@assets/images/icon.png';
 import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
 import { openAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-apple-login-mutation-options';
 import { openGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-google-login-mutation-options';
@@ -69,7 +70,7 @@ const LoginScreen = () => {
       <VStack flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
           <Avatar alt="Aido logo" size="lg" className="rounded-xl">
-            <Avatar.Image source={require('@assets/images/icon.png')} />
+            <Avatar.Image source={appIconImage} />
           </Avatar>
           <VStack align="center">
             <H1>Aido</H1>

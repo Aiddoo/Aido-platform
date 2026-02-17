@@ -1,7 +1,6 @@
-import { AuthPolicy } from '@src/features/auth/models/auth.model';
-import { ProfileCard } from '@src/features/auth/presentations/components/ProfileCard';
-import { getMeQueryOptions } from '@src/features/auth/presentations/queries/get-me-query-options';
 import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
+import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
+import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
@@ -180,7 +179,7 @@ function AppIconMenuItem() {
   const overlay = useOverlay();
 
   const handlePress = () => {
-    if (!AuthPolicy.isPremiumUser(user.subscriptionStatus)) {
+    if (!user.isSubscribed) {
       overlay.open(({ isOpen, close, exit }) => (
         <AppIconLockDialog
           isOpen={isOpen}
@@ -198,11 +197,7 @@ function AppIconMenuItem() {
   };
 
   return (
-    <SettingNavigationItem
-      label="앱 아이콘"
-      locked={!AuthPolicy.isPremiumUser(user.subscriptionStatus)}
-      onPress={handlePress}
-    />
+    <SettingNavigationItem label="앱 아이콘" locked={!user.isSubscribed} onPress={handlePress} />
   );
 }
 

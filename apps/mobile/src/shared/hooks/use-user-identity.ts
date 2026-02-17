@@ -1,26 +1,18 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import {
-  useAnalytics,
-  useAuthService,
-  useErrorReporter,
-} from '@src/bootstrap/providers/di-provider';
-import { AUTH_QUERY_KEYS } from '@src/features/auth/presentations/constants/auth-query-keys.constant';
+import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 export const useUserIdentity = (): void => {
   const { status } = useAuth();
-  const authService = useAuthService();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const isAuthenticated = status === 'authenticated';
 
+  const meQueryOptions = getMeQueryOptions();
   const { data: me } = useQuery({
-    queryKey: AUTH_QUERY_KEYS.me(),
-    queryFn: async () => {
-      const result = await authService.getCurrentUser();
-      return result.ok ? result.value : null;
-    },
+    ...meQueryOptions,
     enabled: isAuthenticated,
   });
 

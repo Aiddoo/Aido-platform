@@ -1,3 +1,4 @@
+import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import type { TodoItem } from '@src/features/todo/models/todo.model';
@@ -75,7 +76,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
 
             <Box className="relative">
               <Image
-                source={require('@assets/images/aido_banner.webp')}
+                source={aidoBannerImage}
                 resizeMode="contain"
                 className="size-[84px] absolute top-[-58px] right-2"
               />

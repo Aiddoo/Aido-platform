@@ -1,6 +1,7 @@
-import { getMeQueryOptions } from '@src/features/auth/presentations/queries/get-me-query-options';
 import { getFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
+import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -8,7 +9,7 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { times } from 'es-toolkit/compat';
 import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
-import { Image, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 export type SelectedUser = { type: 'me' } | ({ type: 'friend' } & FriendUserViewModel);
 
@@ -79,7 +80,7 @@ UserAvatarList.Loading = function Loading() {
 
 interface UserAvatarItemProps {
   name: string;
-  profileImage?: string | null;
+  profileImage: string | null;
   isSelected?: boolean;
   onPress?: () => void;
 }
@@ -89,11 +90,7 @@ const UserAvatarItem = ({ name, profileImage, isSelected, onPress }: UserAvatarI
     <PressableFeedback onPress={onPress}>
       <VStack align="center" gap={4}>
         <Avatar size="sm" alt={`${name} 프로필`}>
-          {profileImage ? (
-            <Avatar.Image source={{ uri: profileImage }} />
-          ) : (
-            <Image source={require('@assets/images/icon.png')} className="size-full" />
-          )}
+          <Avatar.Image source={getProfileIconSource(profileImage)} />
         </Avatar>
         <Text size="e1" shade={isSelected ? 9 : 6} weight={isSelected ? 'semibold' : 'normal'}>
           {name}
