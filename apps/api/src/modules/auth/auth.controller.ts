@@ -696,7 +696,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 ### 📝 요청 Body (최소 1개 필수)
 - \`name\`: 이름 (100자 이내, null=삭제)
-- \`profileImage\`: 이미지 URL (500자 이내, null=삭제)
+- \`profileImage\`: 아이콘 키 또는 이미지 URL (500자 이내, null=삭제)
 		`,
 	})
 	@ApiSuccessResponse({ type: UpdateProfileResponseDto })

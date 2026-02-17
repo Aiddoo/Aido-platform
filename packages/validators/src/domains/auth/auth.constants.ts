@@ -99,6 +99,17 @@ export const ACCOUNT_DELETION = {
   GRACE_PERIOD_DAYS: 30,
 } as const;
 
+export const PROFILE_ICON_KEYS = [
+  'default',
+  'scottish_fold',
+  'orange_tabby',
+  'black_cat',
+  'white_cat',
+  'siamese',
+] as const;
+
+export type ProfileIconKey = (typeof PROFILE_ICON_KEYS)[number];
+
 export const OAUTH_PROVIDERS = ['APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;
 
 export const ACCOUNT_PROVIDERS = ['CREDENTIAL', 'APPLE', 'GOOGLE', 'KAKAO', 'NAVER'] as const;

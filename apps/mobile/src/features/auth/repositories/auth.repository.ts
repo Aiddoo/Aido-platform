@@ -21,7 +21,6 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
-  User,
 } from '../models/auth.model';
 
 export interface AuthRepository {
@@ -30,9 +29,6 @@ export interface AuthRepository {
   emailLogin(email: string, password: string): Promise<Result<AuthTokens, ApiError>>;
   appleLogin(input: AppleMobileCallbackInput): Promise<Result<AuthTokens, ApiError>>;
   logout(): Promise<Result<void, ApiError>>;
-
-  // 사용자 정보
-  getCurrentUser(): Promise<Result<User, ApiError>>;
 
   // 설정
   getPreference(): Promise<Result<Preference, ApiError>>;
