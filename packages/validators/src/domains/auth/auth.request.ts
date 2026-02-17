@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { DEVICE_TYPES, OAUTH_PROVIDERS, PASSWORD_RULES, VERIFICATION_CODE } from './auth.constants';
+import {
+  DEVICE_TYPES,
+  OAUTH_PROVIDERS,
+  PASSWORD_RULES,
+  PROFILE_ICON_KEYS,
+  VERIFICATION_CODE,
+} from './auth.constants';
 
 export const emailSchema = z
   .string()
@@ -183,12 +189,16 @@ export const updateProfileSchema = z
       .optional()
       .describe('사용자 이름'),
     profileImage: z
-      .string()
-      .url('올바른 URL 형식이 아닙니다')
-      .max(500, '프로필 이미지 URL은 500자 이내여야 합니다')
+      .union([
+        z.enum(PROFILE_ICON_KEYS),
+        z
+          .string()
+          .url('올바른 URL 형식이 아닙니다')
+          .max(500, '프로필 이미지 URL은 500자 이내여야 합니다'),
+      ])
       .optional()
       .nullable()
-      .describe('프로필 이미지 URL (null로 설정 시 삭제)'),
+      .describe('프로필 이미지 (아이콘 키 또는 URL, null로 설정 시 삭제)'),
   })
   .refine((data) => data.name !== undefined || data.profileImage !== undefined, {
     message: '최소 하나의 필드를 입력해주세요',
