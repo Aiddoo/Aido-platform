@@ -6,7 +6,7 @@ export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export const userSchema = z.object({
   id: z.string(),
   email: z.string(),
-  name: z.string().nullable(),
+  name: z.string(),
   profileImage: z.string().nullable(),
   userTag: z.string(),
   subscriptionStatus: subscriptionStatusSchema,

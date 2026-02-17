@@ -5,7 +5,7 @@ import { UserPolicy } from '../models/user.model';
 export const toUser = (dto: CurrentUser): User => ({
   id: dto.userId,
   email: dto.email,
-  name: dto.name,
+  name: dto.name ?? '열정적인 사용자',
   profileImage: dto.profileImage,
   userTag: dto.userTag,
   subscriptionStatus: dto.subscriptionStatus,
@@ -14,6 +14,6 @@ export const toUser = (dto: CurrentUser): User => ({
 });
 
 export const toUpdateProfileResult = (dto: UpdateProfileResponse): UpdateProfileResult => ({
-  name: dto.name,
+  name: dto.name ?? '열정적인 사용자',
   profileImage: dto.profileImage,
 });

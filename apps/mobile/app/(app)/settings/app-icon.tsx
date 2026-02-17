@@ -20,10 +20,10 @@ const AppIconScreen = () => {
   const { currentIcon, isSupported, isChanging, changeIcon } = useAppIcon();
   const overlay = useOverlay();
 
-  const handleIconPress = (key: string) => {
+  const handleIconPress = (key: AppIconKey) => {
     const applyIcon = async () => {
       try {
-        await changeIcon(key as AppIconKey);
+        await changeIcon(key);
       } catch {
         overlay.open(({ isOpen, close, exit }) => (
           <AppIconErrorDialog
