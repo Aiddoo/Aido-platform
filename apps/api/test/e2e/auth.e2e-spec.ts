@@ -679,6 +679,34 @@ describe("Auth (e2e)", () => {
 				.expect(401);
 		});
 
+		it("PATCH /auth/profile - 아이콘 키로 프로필 이미지 설정", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 아이콘 키로 프로필 이미지 수정 API 호출
+			const response = await request(ctx.app.getHttpServer())
+				.patch("/auth/profile")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ profileImage: "scottish_fold" })
+				.expect(200);
+
+			// Then - 응답 검증
+			expect(response.body.success).toBe(true);
+			expect(response.body.data.profileImage).toBe("scottish_fold");
+		});
+
+		it("PATCH /auth/profile - 아이콘 키 설정 후 /auth/me에서 확인", async () => {
+			// Given - 아이콘 키로 프로필 이미지 설정된 상태
+
+			// When - 사용자 정보 조회 API 호출
+			const response = await request(ctx.app.getHttpServer())
+				.get("/auth/me")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// Then - 아이콘 키가 저장되어 있는지 확인
+			expect(response.body.data.profileImage).toBe("scottish_fold");
+		});
+
 		it("PATCH /auth/profile - 잘못된 URL 형식 거부", async () => {
 			// Given - 로그인된 사용자
 
@@ -694,7 +722,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("GET /auth/me - 수정된 프로필 정보 확인", async () => {
-			// Given - 프로필 수정 완료된 상태
+			// Given - 프로필 수정 완료된 상태 (마지막으로 아이콘 키 설정됨)
 
 			// When - 사용자 정보 조회 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -702,11 +730,9 @@ describe("Auth (e2e)", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			// Then - 응답 검증
+			// Then - 응답 검증 (마지막 업데이트: 아이콘 키)
 			expect(response.body.data.name).toBe("최종 이름");
-			expect(response.body.data.profileImage).toBe(
-				"https://example.com/final.jpg",
-			);
+			expect(response.body.data.profileImage).toBe("scottish_fold");
 		});
 	});
 
