@@ -3,9 +3,7 @@ import {
   type AuthTokens as AuthTokensDTO,
   authTokensSchema as authTokensDtoSchema,
   type ConsentResponse,
-  type CurrentUser,
   consentResponseSchema,
-  currentUserSchema,
   type ExchangeCodeInput,
   type LinkedAccountsResponse,
   linkedAccountsResponseSchema,
@@ -42,7 +40,6 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
-  User,
 } from '../models/auth.model';
 import {
   toAuthTokens,
@@ -52,7 +49,6 @@ import {
   toRegisterResult,
   toResendVerificationResult,
   toUpdateMarketingConsentResult,
-  toUser,
 } from './auth.mapper';
 import type { AuthRepository } from './auth.repository';
 
@@ -111,21 +107,6 @@ export class AuthRepositoryImpl implements AuthRepository {
     }
 
     return ok(toAuthTokens(parsed.data));
-  }
-
-  async getCurrentUser(): Promise<Result<User, ApiError>> {
-    const result = await this.#authHttpClient.get<CurrentUser>('v1/auth/me');
-
-    if (!result.ok) return result;
-
-    const parsed = currentUserSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AuthRepository] Invalid getCurrentUser response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toUser(parsed.data));
   }
 
   async logout(): Promise<Result<void, ApiError>> {

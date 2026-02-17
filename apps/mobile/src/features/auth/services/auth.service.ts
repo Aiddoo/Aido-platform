@@ -30,7 +30,6 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
-  User,
 } from '../models/auth.model';
 import type { AuthRepository } from '../repositories/auth.repository';
 
@@ -247,10 +246,6 @@ export class AuthService {
 
     await this.saveTokens(result.value.accessToken, result.value.refreshToken);
     return result;
-  };
-
-  getCurrentUser = async (): Promise<Result<User, ApiError>> => {
-    return this.#authRepository.getCurrentUser();
   };
 
   logout = async (): Promise<Result<void, ApiError>> => {

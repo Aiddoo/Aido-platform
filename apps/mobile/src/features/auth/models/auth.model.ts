@@ -9,21 +9,6 @@ export const authTokensSchema = z.object({
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
-export const subscriptionStatusSchema = z.enum(['FREE', 'ACTIVE', 'EXPIRED', 'CANCELLED']);
-export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
-
-export const userSchema = z.object({
-  id: z.string(),
-  email: z.string(),
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
-  userTag: z.string(),
-  subscriptionStatus: subscriptionStatusSchema,
-  isSubscribed: z.boolean(),
-  createdAt: z.coerce.date(),
-});
-export type User = z.infer<typeof userSchema>;
-
 export const preferenceSchema = z.object({
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
@@ -81,9 +66,6 @@ export const linkedAccountSchema = z.object({
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
 export const AuthPolicy = {
-  isPremiumUser: (status: SubscriptionStatus): boolean => {
-    return status === 'ACTIVE';
-  },
   canUnlinkAccount: (linkedCount: number): boolean => {
     return linkedCount > 1;
   },
