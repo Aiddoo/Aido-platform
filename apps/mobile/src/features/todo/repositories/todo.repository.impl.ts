@@ -2,7 +2,9 @@ import {
   type AiUsageResponse,
   aiUsageResponseSchema,
   type CreateTodoInput,
+  type DeleteTodoResponse,
   dailyCompletionsRangeResponseSchema,
+  deleteTodoResponseSchema,
   type GetTodosQuery,
   type ParseTodoResponse,
   parseTodoResponseSchema,
@@ -11,6 +13,9 @@ import {
   type ToggleTodoCompleteInput,
   todoListResponseSchema,
   todoSchema,
+  type UpdateTodoInput,
+  type UpdateTodoScheduleInput,
+  updateTodoResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -130,6 +135,50 @@ export class TodoRepositoryImpl implements TodoRepository {
     }
 
     return ok(toTodoItem(parsed.data));
+  }
+
+  async updateTodo(todoId: number, input: UpdateTodoInput): Promise<Result<TodoItem, ApiError>> {
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}`, input);
+
+    if (!result.ok) return result;
+
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[TodoRepository] Invalid updateTodo response: ${parsed.error.message}`);
+    }
+
+    return ok(toTodoItem(parsed.data.todo));
+  }
+
+  async updateTodoSchedule(
+    todoId: number,
+    input: UpdateTodoScheduleInput,
+  ): Promise<Result<TodoItem, ApiError>> {
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
+
+    if (!result.ok) return result;
+
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoRepository] Invalid updateTodoSchedule response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodoItem(parsed.data.todo));
+  }
+
+  async deleteTodo(todoId: number): Promise<Result<void, ApiError>> {
+    const result = await this.#httpClient.delete<DeleteTodoResponse>(`v1/todos/${todoId}`);
+
+    if (!result.ok) return result;
+
+    const parsed = deleteTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[TodoRepository] Invalid deleteTodo response: ${parsed.error.message}`);
+    }
+
+    return ok(undefined);
   }
 
   async parseTodo(text: string): Promise<Result<ParsedTodoResult, ApiError>> {

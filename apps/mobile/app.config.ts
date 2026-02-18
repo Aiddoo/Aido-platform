@@ -341,9 +341,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
         },
       ],
-
-      '@react-native-community/datetimepicker',
-      'expo-quick-actions',
+      [
+        'expo-quick-actions/icon/plugin',
+        {
+          scottish_fold: { image: './assets/premium-app-icons/scottish-fold.png' },
+          orange_tabby: { image: './assets/premium-app-icons/orange-tabby.png' },
+          black_cat: { image: './assets/premium-app-icons/black-cat.png' },
+          white_cat: { image: './assets/premium-app-icons/white-cat.png' },
+          siamese: { image: './assets/premium-app-icons/siamese.png' },
+        },
+      ],
     ],
 
     // Experiments

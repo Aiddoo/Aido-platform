@@ -1,30 +1,21 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
-  type BottomSheetBackgroundProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
-import {
-  createContext,
-  memo,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-} from 'react';
-import { Keyboard, Platform, StyleSheet } from 'react-native';
-import Animated, {
-  cancelAnimation,
-  interpolate,
-  type SharedValue,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { Keyboard, type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
+import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
+
+const SHEET_INDEX = {
+  CLOSED: -1,
+  OPEN: 0,
+} as const;
+
+const MIN_CONTENT_HEIGHT = 280;
+const TOP_MARGIN = 24;
 
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
@@ -32,138 +23,158 @@ interface KeyboardBottomSheetProps {
   children: ReactNode;
 }
 
-const KeyboardProgressContext = createContext<SharedValue<number> | null>(null);
-
-const SheetBackground = memo(({ style, pointerEvents }: BottomSheetBackgroundProps) => {
-  const keyboardProgress = useContext(KeyboardProgressContext) as SharedValue<number>;
-  const animStyle = useAnimatedStyle(() => ({
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderBottomLeftRadius: interpolate(keyboardProgress.value, [0, 1], [24, 0]),
-    borderBottomRightRadius: interpolate(keyboardProgress.value, [0, 1], [24, 0]),
-    borderCurve: 'continuous' as const,
-  }));
-  return <Animated.View pointerEvents={pointerEvents} style={[style, animStyle]} />;
-});
-
-const EXPAND_DELAY_MS = 100;
-
 /**
- * @gorhom/bottom-sheet를 직접 사용하는 detached BottomSheet.
- *
- * HeroUI wrapper 대신 직접 사용하여:
- * - enableDynamicSizing + expand 딜레이 → 콘텐츠 높이 측정 후 열림 (간헐적 실패 방지)
- * - FullWindowOverlay 미사용 → backdrop과 sheet 동시 애니메이션 (깜빡임 제거)
- * - 키보드 표시 시 marginHorizontal 16→0, 하단 borderRadius 24→0 애니메이션
+ * 키보드 연동 BottomSheet.
  */
 export const KeyboardBottomSheet = ({
   isOpen,
   onOpenChange,
   children,
 }: KeyboardBottomSheetProps) => {
-  const sheetRef = useRef<GorhomBottomSheet>(null);
+  const { setEnabled } = useKeyboardContext();
+  const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
+  const lastContentHeightRef = useRef(0);
+  const isClosingRef = useRef(false);
+  const hasNotifiedCloseRef = useRef(false);
+  const prevIsOpenRef = useRef(isOpen);
   const insets = useSafeAreaInsets();
-  const keyboardProgress = useSharedValue(0);
-  const isOpenRef = useRef(isOpen);
-  isOpenRef.current = isOpen;
-
+  const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-
-  // Sheet open/close
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        sheetRef.current?.expand();
-      }, EXPAND_DELAY_MS);
-      return () => clearTimeout(timer);
-    }
-    sheetRef.current?.close();
-  }, [isOpen]);
-
-  // 닫기 애니메이션 시작 시 키보드 즉시 dismiss
-  const handleAnimate = useCallback((_fromIndex: number, toIndex: number) => {
-    if (toIndex === -1) {
-      Keyboard.dismiss();
-    }
-  }, []);
-
-  // 닫기 애니메이션 완료 후 상태 동기화
-  const handleSheetChange = useCallback(
-    (index: number) => {
-      if (index === -1 && isOpenRef.current) {
-        isOpenRef.current = false;
-        cancelAnimation(keyboardProgress);
-        onOpenChange(false);
-      }
-    },
-    [onOpenChange, keyboardProgress],
+  const maxDynamicContentSize = Math.max(
+    MIN_CONTENT_HEIGHT,
+    windowHeight - insets.top - TOP_MARGIN,
   );
 
-  // Keyboard margin animation
   useEffect(() => {
-    if (!isOpen) {
-      cancelAnimation(keyboardProgress);
-      const timer = setTimeout(() => {
-        keyboardProgress.value = 0;
-      }, ANIMATION.duration.normal);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, keyboardProgress]);
+    setEnabled(!isOpen);
+    return () => setEnabled(true);
+  }, [isOpen, setEnabled]);
 
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      if (!isOpen || isClosingRef.current) {
+        return;
+      }
 
-    const showSub = Keyboard.addListener(showEvent, () => {
-      if (!isOpenRef.current) return;
-      keyboardProgress.value = withTiming(1, { duration: ANIMATION.duration.normal });
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      if (!isOpenRef.current) return;
-      keyboardProgress.value = withTiming(0, { duration: ANIMATION.duration.normal });
+      requestAnimationFrame(() => {
+        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      });
     });
 
     return () => {
-      showSub.remove();
-      hideSub.remove();
+      hideSubscription.remove();
     };
-  }, [keyboardProgress]);
+  }, [isOpen]);
 
-  const sheetStyle = useAnimatedStyle(() => ({
-    marginHorizontal: interpolate(keyboardProgress.value, [0, 1], [16, 0]),
-  }));
+  useEffect(() => {
+    if (!isOpen) {
+      lastContentHeightRef.current = 0;
+      isClosingRef.current = false;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const wasOpen = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (!sheetRef.current || wasOpen === isOpen) {
+      return;
+    }
+
+    if (isOpen) {
+      isClosingRef.current = false;
+      hasNotifiedCloseRef.current = false;
+      requestAnimationFrame(() => {
+        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      });
+      return;
+    }
+
+    isClosingRef.current = true;
+    hasNotifiedCloseRef.current = false;
+    Keyboard.dismiss();
+    requestAnimationFrame(() => {
+      sheetRef.current?.close();
+    });
+  }, [isOpen]);
+
+  const handleAnimate = (_fromIndex: number, toIndex: number) => {
+    if (toIndex === SHEET_INDEX.CLOSED) {
+      isClosingRef.current = true;
+      Keyboard.dismiss();
+    }
+  };
+
+  const handleSheetChange = (index: number) => {
+    if (index === SHEET_INDEX.CLOSED) {
+      if (!hasNotifiedCloseRef.current) {
+        hasNotifiedCloseRef.current = true;
+        onOpenChange(false);
+      }
+      isClosingRef.current = false;
+      return;
+    }
+
+    hasNotifiedCloseRef.current = false;
+    isClosingRef.current = false;
+  };
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={SHEET_INDEX.CLOSED}
+        appearsOnIndex={SHEET_INDEX.OPEN}
+        opacity={0.5}
+      />
     ),
     [],
   );
 
+  const handleContentLayout = (event: LayoutChangeEvent) => {
+    if (!isOpen || isClosingRef.current) {
+      return;
+    }
+
+    const nextHeight = Math.round(event.nativeEvent.layout.height);
+    const prevHeight = lastContentHeightRef.current;
+
+    if (Math.abs(nextHeight - prevHeight) < 2) {
+      return;
+    }
+
+    lastContentHeightRef.current = nextHeight;
+    requestAnimationFrame(() => {
+      sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+    });
+  };
+
   return (
-    <KeyboardProgressContext.Provider value={keyboardProgress}>
-      <GorhomBottomSheet
-        ref={sheetRef}
-        index={-1}
-        enableDynamicSizing
-        enablePanDownToClose
-        detached
-        bottomInset={insets.bottom}
-        style={sheetStyle}
-        backgroundStyle={backgroundStyle}
-        backgroundComponent={SheetBackground}
-        handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
-        backdropComponent={renderBackdrop}
-        onAnimate={handleAnimate}
-        onChange={handleSheetChange}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustPan"
+    <GorhomBottomSheet
+      ref={sheetRef}
+      index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
+      enableDynamicSizing
+      maxDynamicContentSize={maxDynamicContentSize}
+      enablePanDownToClose
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      enableBlurKeyboardOnGesture
+      android_keyboardInputMode="adjustPan"
+      topInset={insets.top}
+      backgroundStyle={backgroundStyle}
+      handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
+      backdropComponent={renderBackdrop}
+      onAnimate={handleAnimate}
+      onChange={handleSheetChange}
+    >
+      <BottomSheetView
+        onLayout={handleContentLayout}
+        style={[styles.content, { paddingBottom: insets.bottom }]}
       >
-        <BottomSheetView style={styles.content}>{children}</BottomSheetView>
-      </GorhomBottomSheet>
-    </KeyboardProgressContext.Provider>
+        {children}
+      </BottomSheetView>
+    </GorhomBottomSheet>
   );
 };
 
@@ -172,6 +183,7 @@ const styles = StyleSheet.create({
     width: 36,
   },
   content: {
-    padding: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
 });

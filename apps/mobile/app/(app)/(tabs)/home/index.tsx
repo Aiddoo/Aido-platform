@@ -1,3 +1,4 @@
+import homeIdoCatImage from '@assets/images/home_ido_cat.webp';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ParsedTodoData } from '@src/features/todo/models/todo.model';
@@ -109,7 +110,7 @@ const HomeScreen = () => {
 
           <VStack align="center">
             <Image
-              source={require('@assets/images/home_ido_cat.webp')}
+              source={homeIdoCatImage}
               style={{ width: 200, height: 200 }}
               resizeMode="contain"
             />

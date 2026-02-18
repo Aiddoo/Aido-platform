@@ -17,12 +17,14 @@ import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 interface CategoryEditBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onRequestClose: () => void;
   category: TodoCategory;
 }
 
 export const CategoryEditBottomSheet = ({
   isOpen,
   onOpenChange,
+  onRequestClose,
   category,
 }: CategoryEditBottomSheetProps) => {
   const updateMutation = useMutation(updateTodoCategoryMutationOptions());
@@ -40,22 +42,21 @@ export const CategoryEditBottomSheet = ({
     updateMutation.mutate(
       { id: category.id, input: data },
       {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
+        onSuccess: onRequestClose,
       },
     );
   };
 
   return (
     <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={40}>
+      <VStack gap={40} pb={12}>
         <VStack gap={20}>
           <Controller
             control={control}
             name="name"
             render={({ field: { onChange, value } }) => (
               <BottomSheetInput
+                autoFocus
                 label="카테고리 이름"
                 placeholder="카테고리 이름을 입력해 주세요"
                 value={value}
@@ -69,7 +70,7 @@ export const CategoryEditBottomSheet = ({
             control={control}
             name="color"
             render={({ field: { onChange, value } }) => (
-              <HStack className="flex-wrap gap-2.5">
+              <HStack className="flex-wrap gap-2.5" align="center" justify="center">
                 {CATEGORY_COLORS.map((color) => {
                   const isSelected = value === color;
 
@@ -78,11 +79,11 @@ export const CategoryEditBottomSheet = ({
                       <Flex
                         align="center"
                         justify="center"
-                        className={cn('size-8 rounded-full', isSelected && 'border-2')}
+                        className={cn('size-8 rounded-4xl', isSelected && 'border-2')}
                         style={isSelected ? { borderColor: color } : undefined}
                       >
                         <Flex
-                          className={cn('rounded-full', isSelected ? 'size-6' : 'size-7')}
+                          className={cn('rounded-4xl', isSelected ? 'size-6' : 'size-7')}
                           style={{ backgroundColor: color }}
                         />
                       </Flex>

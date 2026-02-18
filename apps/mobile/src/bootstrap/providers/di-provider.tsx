@@ -17,6 +17,8 @@ import { TodoNudgeRepositoryImpl } from '@src/features/todo/repositories/todo-nu
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
+import { UserRepositoryImpl } from '@src/features/user/repositories/user.repository.impl';
+import { UserService } from '@src/features/user/services/user.service';
 
 import { ENV } from '@src/shared/config/env';
 import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
@@ -52,6 +54,7 @@ export interface DIContainer {
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
   todoNudgeService: TodoNudgeService;
+  userService: UserService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -116,6 +119,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const todoNudgeRepository = new TodoNudgeRepositoryImpl(authHttpClient);
     const todoNudgeService = new TodoNudgeService(todoNudgeRepository);
 
+    // User
+    const userRepository = new UserRepositoryImpl(authHttpClient);
+    const userService = new UserService(userRepository);
+
     return {
       storage,
       logger,
@@ -127,6 +134,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       todoCategoryService,
       notificationService,
       todoNudgeService,
+      userService,
     };
   });
 
@@ -156,3 +164,4 @@ export const useTodoService = () => useDI().todoService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
+export const useUserService = () => useDI().userService;

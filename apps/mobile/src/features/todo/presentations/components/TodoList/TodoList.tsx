@@ -74,9 +74,11 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       onPress={() => {
         overlay.open(({ isOpen, close, exit }) => (
           <AddTodoBottomSheet
+            mode="create"
             selectedDate={date}
             categoryId={category.id}
             isOpen={isOpen}
+            onRequestClose={close}
             onOpenChange={(open) => {
               if (!open) {
                 close();

@@ -128,7 +128,7 @@ export const currentUserSchema = z
     subscriptionStatus: subscriptionStatusSchema.describe('구독 상태'),
     subscriptionExpiresAt: nullableDatetimeSchema.describe('구독 만료 시점 (무료 사용자는 null)'),
     name: z.string().nullable().describe('사용자 이름'),
-    profileImage: z.string().nullable().describe('프로필 이미지 URL'),
+    profileImage: z.string().nullable().describe('프로필 이미지 (아이콘 키 또는 URL)'),
     createdAt: datetimeSchema.describe('가입 일시'),
     providers: z
       .array(accountProviderEnumSchema)
@@ -332,7 +332,7 @@ export const updateProfileResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
     name: z.string().nullable().describe('수정된 이름'),
-    profileImage: z.string().nullable().describe('수정된 프로필 이미지 URL'),
+    profileImage: z.string().nullable().describe('수정된 프로필 이미지 (아이콘 키 또는 URL)'),
   })
   .describe('프로필 수정 응답')
   .meta({

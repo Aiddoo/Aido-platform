@@ -2202,7 +2202,7 @@ describe("AuthService", () => {
 			expect(invalidateCallOrder).toBeGreaterThan(updateCallOrder as number);
 		});
 
-		it("프로필 이미지를 업데이트할 수 있다", async () => {
+		it("프로필 이미지를 URL로 업데이트할 수 있다", async () => {
 			// Given
 			const imageUpdateData = {
 				profileImage: "https://example.com/new-image.jpg",
@@ -2218,6 +2218,24 @@ describe("AuthService", () => {
 
 			// Then
 			expect(result.profileImage).toBe("https://example.com/new-image.jpg");
+		});
+
+		it("프로필 이미지를 아이콘 키로 업데이트할 수 있다", async () => {
+			// Given
+			const iconKeyUpdateData = {
+				profileImage: "scottish_fold",
+			};
+			userRepo.updateProfile.mockResolvedValue({
+				name: "Test User",
+				profileImage: "scottish_fold",
+			} as never);
+			cacheService.invalidateUserProfile.mockResolvedValue(undefined);
+
+			// When
+			const result = await service.updateProfile(userId, iconKeyUpdateData);
+
+			// Then
+			expect(result.profileImage).toBe("scottish_fold");
 		});
 	});
 });

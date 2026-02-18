@@ -1,7 +1,6 @@
 import type {
   AuthTokens as AuthTokensDTO,
   ConsentResponse,
-  CurrentUser,
   LinkedAccount as LinkedAccountDTO,
   LinkedAccountsResponse,
   PreferenceResponse,
@@ -17,9 +16,7 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
-  User,
 } from '../models/auth.model';
-import { AuthPolicy } from '../models/auth.model';
 
 export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userId: dto.userId,
@@ -27,17 +24,6 @@ export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   refreshToken: dto.refreshToken,
   userName: dto.name,
   userProfileImage: dto.profileImage,
-});
-
-export const toUser = (dto: CurrentUser): User => ({
-  id: dto.userId,
-  email: dto.email,
-  name: dto.name,
-  profileImage: dto.profileImage,
-  userTag: dto.userTag,
-  subscriptionStatus: dto.subscriptionStatus,
-  createdAt: new Date(dto.createdAt),
-  isSubscribed: AuthPolicy.isSubscriptionActive(dto.subscriptionStatus),
 });
 
 export const toPreference = (dto: PreferenceResponse): Preference => ({

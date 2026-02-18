@@ -1,3 +1,4 @@
+import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { Avatar } from 'heroui-native';
 import type { ReactNode } from 'react';
@@ -16,10 +17,7 @@ export const FriendRequestRow = ({ user, actions }: FriendRequestRowProps) => {
       horizontalPadding="none"
       left={
         <Avatar alt={displayName} className="size-10">
-          {user.profileImage && <Avatar.Image source={{ uri: user.profileImage }} />}
-          <Avatar.Fallback>
-            <Avatar.Image source={require('@assets/images/icon.png')} />
-          </Avatar.Fallback>
+          <Avatar.Image source={getProfileIconSource(user.profileImage)} />
         </Avatar>
       }
       contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
