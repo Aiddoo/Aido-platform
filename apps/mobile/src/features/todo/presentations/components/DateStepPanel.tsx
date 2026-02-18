@@ -72,9 +72,9 @@ export const DateStepPanel = ({
               <ListRow.Texts
                 type="2RowTypeA"
                 top="시작일"
-                topProps={{ size: 'e1', shade: 5 }}
+                topProps={{ size: 'e1', shade: 6 }}
                 bottom={formattedStartDateLabel}
-                bottomProps={{ size: 'b4', weight: 'semibold' }}
+                bottomProps={{ size: 'b4', weight: 'semibold', shade: 8 }}
               />
             }
             right={
@@ -91,9 +91,9 @@ export const DateStepPanel = ({
               <ListRow.Texts
                 type="2RowTypeA"
                 top="종료일"
-                topProps={{ size: 'e1', shade: 5 }}
+                topProps={{ size: 'e1', shade: 6 }}
                 bottom={isRange ? formattedEndDateLabel : '하루 일정'}
-                bottomProps={{ size: 'b4', weight: 'semibold' }}
+                bottomProps={{ size: 'b4', weight: 'semibold', shade: 8 }}
               />
             }
             right={

@@ -341,8 +341,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
         },
       ],
-
-      '@react-native-community/datetimepicker',
       [
         'expo-quick-actions/icon/plugin',
         {
