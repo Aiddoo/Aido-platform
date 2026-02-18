@@ -5,10 +5,10 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { isAfterDay, isBeforeDay } from '@src/shared/utils/date';
 import { Chip } from 'heroui-native';
 import { useReducer, useState } from 'react';
+import { DEFAULT_TIME } from '../constants/todo.constant';
 import { DateStepPanel } from './DateStepPanel';
 import { TimeStepPanel } from './TimeStepPanel';
 
-const DEFAULT_TIME = '09:00';
 type SchedulePanel = 'date' | 'time';
 
 export interface TodoDateTimeEditorValue {

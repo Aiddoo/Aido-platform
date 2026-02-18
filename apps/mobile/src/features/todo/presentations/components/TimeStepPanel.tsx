@@ -4,29 +4,11 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { formatTime } from '@src/shared/utils/date';
+import { getDateWithTime, toHHmm } from '@src/shared/utils/time';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import DatePicker from 'react-native-date-picker';
-
-const DEFAULT_TIME = '09:00';
-
-const toHHmm = (date: Date): string => {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-};
-
-const getDateWithTime = (date: Date, time?: string): Date => {
-  const base = new Date(date);
-  const source = time ?? DEFAULT_TIME;
-  const [rawHours, rawMinutes] = source.split(':');
-  const hours = Number(rawHours);
-  const minutes = Number(rawMinutes);
-  const nextHours = Number.isFinite(hours) ? hours : 9;
-  const nextMinutes = Number.isFinite(minutes) ? minutes : 0;
-  base.setHours(nextHours, nextMinutes, 0, 0);
-  return base;
-};
+import { DEFAULT_TIME } from '../constants/todo.constant';
 
 interface TimeStepPanelProps {
   draftDate: Date;
@@ -47,7 +29,7 @@ export const TimeStepPanel = ({
 
   const formattedTimeLabel = draftIsAllDay
     ? '종일'
-    : formatTime(getDateWithTime(draftDate, draftScheduledTime));
+    : formatTime(getDateWithTime(draftDate, draftScheduledTime, DEFAULT_TIME));
 
   const openTimePicker = () => {
     setIsTimePickerOpen(true);
@@ -92,7 +74,7 @@ export const TimeStepPanel = ({
         modal
         mode="time"
         open={isTimePickerOpen}
-        date={getDateWithTime(draftDate, draftScheduledTime)}
+        date={getDateWithTime(draftDate, draftScheduledTime, DEFAULT_TIME)}
         locale="ko"
         title="시간 선택"
         confirmText="완료"
