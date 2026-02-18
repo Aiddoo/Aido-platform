@@ -11,6 +11,7 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 interface DeleteTodoMutationParams {
   todoId: number;
+  startDate: string;
 }
 
 export const deleteTodoMutationOptions = () => {
@@ -23,8 +24,10 @@ export const deleteTodoMutationOptions = () => {
       const result = await todoService.deleteTodo(todoId);
       return unwrap(result);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+    onSuccess: (_, { startDate }) => {
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 삭제했어요');
     },

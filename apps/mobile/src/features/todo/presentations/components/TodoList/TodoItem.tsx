@@ -71,7 +71,7 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
   };
 
   const openActionsBottomSheet = () => {
-    let nextAction: 'edit' | 'dateTime' | 'delete' | null = null;
+    let afterClose: (() => void) | null = null;
 
     overlay.open(({ isOpen, close, exit }) => (
       <TodoActionsBottomSheet
@@ -82,30 +82,17 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
           if (!open) {
             close();
             exit();
-
-            if (nextAction === 'edit') {
-              openEditBottomSheet();
-              return;
-            }
-
-            if (nextAction === 'dateTime') {
-              openDateTimeBottomSheet();
-              return;
-            }
-
-            if (nextAction === 'delete') {
-              deleteMutation.mutate({ todoId: todo.id });
-            }
+            afterClose?.();
           }
         }}
         onEdit={() => {
-          nextAction = 'edit';
+          afterClose = openEditBottomSheet;
         }}
         onUpdateDateTime={() => {
-          nextAction = 'dateTime';
+          afterClose = openDateTimeBottomSheet;
         }}
         onDelete={() => {
-          nextAction = 'delete';
+          afterClose = () => deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate });
         }}
       />
     ));
