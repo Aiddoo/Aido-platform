@@ -21,6 +21,35 @@ export const formatTime = (date: Date | string | number): string => {
   return d.isValid() ? d.format('A h:mm') : '';
 };
 
+export const formatMonthDay = (date: Date | string | number): string => {
+  const d = dayjs(date);
+  return d.isValid() ? d.format('M월 D일') : '';
+};
+
+export const formatDayOfMonth = (date: Date | string | number): string => {
+  const d = dayjs(date);
+  return d.isValid() ? d.format('D일') : '';
+};
+
+export const formatTime24 = (date: Date | string | number): string => {
+  const d = dayjs(date);
+  return d.isValid() ? d.format('HH:mm') : '';
+};
+
+export const toDate = (date: Date | string | number): Date => {
+  const d = dayjs(date);
+  return d.isValid() ? d.toDate() : new Date(date);
+};
+
+export const toNullableDate = (date?: Date | string | number | null): Date | null => {
+  if (date == null) {
+    return null;
+  }
+
+  const d = dayjs(date);
+  return d.isValid() ? d.toDate() : null;
+};
+
 // Predicates
 export const isDateToday = (date: Date): boolean => {
   return dayjs(date).isToday();
@@ -32,6 +61,14 @@ export const isSameDay = (date1: Date, date2: Date): boolean => {
 
 export const isSameMonth = (date1: Date, date2: Date): boolean => {
   return dayjs(date1).isSame(date2, 'month');
+};
+
+export const isAfterDay = (date1: Date, date2: Date): boolean => {
+  return dayjs(date1).isAfter(date2, 'day');
+};
+
+export const isBeforeDay = (date1: Date, date2: Date): boolean => {
+  return dayjs(date1).isBefore(date2, 'day');
 };
 
 export const isSunday = (date: Date): boolean => {

@@ -1,11 +1,18 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { LockIcon, MoreIcon } from '@src/shared/ui/Icon';
+import { useOverlay } from '@src/shared/ui/Overlay';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
+import { deleteTodoMutationOptions } from '../../queries/delete-todo-mutation-options';
 import { toggleTodoMutationOptions } from '../../queries/toggle-todo-mutation-options';
+import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
+import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
+import { TodoDateTimeBottomSheet } from '../TodoDateTimeBottomSheet';
+import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
 
 interface TodoItemProps {
   todo: TodoItemViewModel;
@@ -13,8 +20,96 @@ interface TodoItemProps {
 }
 
 export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
+  const overlay = useOverlay();
   const toggleMutation = useMutation(toggleTodoMutationOptions());
+  const deleteMutation = useMutation(deleteTodoMutationOptions());
+  const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
   const showDateTime = todo.formattedTime && !todo.isAllDay;
+
+  const openEditBottomSheet = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <AddTodoBottomSheet
+        mode="edit"
+        todo={todo}
+        isOpen={isOpen}
+        onRequestClose={close}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+      />
+    ));
+  };
+
+  const openDateTimeBottomSheet = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <TodoDateTimeBottomSheet
+        isOpen={isOpen}
+        onRequestClose={close}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+        todo={todo}
+        onConfirm={({ startDate, endDate, scheduledTime, isAllDay }) => {
+          updateScheduleMutation.mutate({
+            todoId: todo.id,
+            input: {
+              startDate: formatDate(startDate),
+              endDate: endDate ? formatDate(endDate) : null,
+              scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+              isAllDay,
+            },
+          });
+        }}
+      />
+    ));
+  };
+
+  const openActionsBottomSheet = () => {
+    let nextAction: 'edit' | 'dateTime' | 'delete' | null = null;
+
+    overlay.open(({ isOpen, close, exit }) => (
+      <TodoActionsBottomSheet
+        isOpen={isOpen}
+        isDeletePending={deleteMutation.isPending}
+        onRequestClose={close}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+
+            if (nextAction === 'edit') {
+              openEditBottomSheet();
+              return;
+            }
+
+            if (nextAction === 'dateTime') {
+              openDateTimeBottomSheet();
+              return;
+            }
+
+            if (nextAction === 'delete') {
+              deleteMutation.mutate({ todoId: todo.id });
+            }
+          }
+        }}
+        onEdit={() => {
+          nextAction = 'edit';
+        }}
+        onUpdateDateTime={() => {
+          nextAction = 'dateTime';
+        }}
+        onDelete={() => {
+          nextAction = 'delete';
+        }}
+      />
+    ));
+  };
 
   return (
     <PressableFeedback onPress={() => onPress?.(todo.id)} className="py-2">
@@ -49,7 +144,7 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
           )}
         </VStack>
 
-        <PressableFeedback className="p-1">
+        <PressableFeedback className="p-1" onPress={openActionsBottomSheet}>
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       </HStack>
