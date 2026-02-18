@@ -6,14 +6,7 @@ import { BottomSheetInput } from '@src/shared/ui/Input';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
-import {
-  formatDate,
-  formatDayOfMonth,
-  formatMonthDay,
-  isDateToday,
-  isSameDay,
-  isSameMonth,
-} from '@src/shared/utils/date';
+import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
@@ -24,6 +17,7 @@ import type { z } from 'zod';
 import { createTodoMutationOptions } from '../queries/create-todo-mutation-options';
 import { updateTodoMutationOptions } from '../queries/update-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
+import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { TodoDateTimeEditorContent } from './TodoDateTimeEditorContent';
 
@@ -201,20 +195,7 @@ const DateLabelButton = ({ onPress }: { onPress: () => void }) => {
     name: ['startDate', 'endDate', 'scheduledTime', 'isAllDay'],
   });
 
-  const start = isDateToday(startDate) ? '오늘' : formatMonthDay(startDate);
-
-  let dateLabel = start;
-
-  if (endDate && !isSameDay(startDate, endDate)) {
-    const end = isSameMonth(startDate, endDate)
-      ? formatDayOfMonth(endDate)
-      : formatMonthDay(endDate);
-    dateLabel += ` - ${end}`;
-  }
-
-  if (!isAllDay && scheduledTime) {
-    dateLabel += ` ${scheduledTime}`;
-  }
+  const dateLabel = formatTodoDateLabel({ startDate, endDate, scheduledTime, isAllDay });
 
   return (
     <PressableFeedback onPress={onPress} className="h-10 flex-row items-center gap-1 px-2">
