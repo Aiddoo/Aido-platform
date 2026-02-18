@@ -13,6 +13,8 @@ export type TodoCategory = z.infer<typeof todoCategorySchema>;
 export const todoItemSchema = z.object({
   id: z.number(),
   title: z.string(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
   category: todoCategorySchema,
   completed: z.boolean(),
   scheduledTime: z.date().nullable(),

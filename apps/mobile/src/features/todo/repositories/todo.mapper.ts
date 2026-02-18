@@ -17,6 +17,8 @@ import type {
 export const toTodoItem = (dto: Todo): TodoItem => ({
   id: dto.id,
   title: dto.title,
+  startDate: dto.startDate,
+  endDate: dto.endDate,
   category: dto.category,
   completed: dto.completed,
   scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,

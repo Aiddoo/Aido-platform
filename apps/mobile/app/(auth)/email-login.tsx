@@ -1,4 +1,5 @@
 import { ErrorCode } from '@aido/errors';
+import appIconImage from '@assets/images/icon.png';
 import { emailLoginMutationOptions } from '@src/features/auth/presentations/queries/email-login-mutation-options';
 import { isApiError } from '@src/shared/errors';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -65,7 +66,7 @@ const EmailLoginScreen = () => {
           {/* Logo & Title */}
           <VStack align="center" gap={8}>
             <Avatar alt="Aido logo" size="lg" className="rounded-xl">
-              <Avatar.Image source={require('@assets/images/icon.png')} />
+              <Avatar.Image source={appIconImage} />
             </Avatar>
             <VStack align="center">
               <H1>이메일 로그인</H1>

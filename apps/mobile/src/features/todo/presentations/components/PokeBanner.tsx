@@ -1,3 +1,5 @@
+import aidoBannerImage from '@assets/images/aido_banner.webp';
+import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { useOverlay } from '@src/shared/ui/Overlay';
@@ -52,11 +54,7 @@ export function PokeBanner() {
     <Pressable onPress={handlePress} disabled={!isLimitReached}>
       <HStack mx={16} px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
         <Image
-          source={
-            isLimitReached
-              ? require('@assets/images/aido_no_banner.webp')
-              : require('@assets/images/aido_banner.webp')
-          }
+          source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
           className="size-[72px]"
           resizeMode="contain"
         />

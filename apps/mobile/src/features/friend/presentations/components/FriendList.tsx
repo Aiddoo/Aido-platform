@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -44,10 +45,7 @@ export function FriendList() {
             horizontalPadding="none"
             left={
               <Avatar alt={displayName} className="size-10">
-                {item.profileImage && <Avatar.Image source={{ uri: item.profileImage }} />}
-                <Avatar.Fallback>
-                  <Avatar.Image source={require('@assets/images/icon.png')} />
-                </Avatar.Fallback>
+                <Avatar.Image source={getProfileIconSource(item.profileImage)} />
               </Avatar>
             }
             contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}

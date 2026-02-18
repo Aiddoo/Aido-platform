@@ -1,4 +1,10 @@
-import type { CreateTodoInput, GetTodosQuery, ToggleTodoCompleteInput } from '@aido/validators';
+import type {
+  CreateTodoInput,
+  GetTodosQuery,
+  ToggleTodoCompleteInput,
+  UpdateTodoInput,
+  UpdateTodoScheduleInput,
+} from '@aido/validators';
 import type { ApiError } from '@src/shared/errors/api-error';
 import type { Result } from '@src/shared/errors/result';
 
@@ -38,6 +44,24 @@ export class TodoService {
 
   createTodo = async (params: CreateTodoInput): Promise<Result<TodoItem, ApiError>> => {
     return this.#todoRepository.createTodo(params);
+  };
+
+  updateTodo = async (
+    todoId: number,
+    input: UpdateTodoInput,
+  ): Promise<Result<TodoItem, ApiError>> => {
+    return this.#todoRepository.updateTodo(todoId, input);
+  };
+
+  updateTodoSchedule = async (
+    todoId: number,
+    input: UpdateTodoScheduleInput,
+  ): Promise<Result<TodoItem, ApiError>> => {
+    return this.#todoRepository.updateTodoSchedule(todoId, input);
+  };
+
+  deleteTodo = async (todoId: number): Promise<Result<void, ApiError>> => {
+    return this.#todoRepository.deleteTodo(todoId);
   };
 
   parseTodo = async (text: string): Promise<Result<ParsedTodoResult, ApiError>> => {
