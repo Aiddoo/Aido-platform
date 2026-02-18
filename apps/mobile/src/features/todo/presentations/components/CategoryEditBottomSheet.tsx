@@ -17,12 +17,14 @@ import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 interface CategoryEditBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onRequestClose: () => void;
   category: TodoCategory;
 }
 
 export const CategoryEditBottomSheet = ({
   isOpen,
   onOpenChange,
+  onRequestClose,
   category,
 }: CategoryEditBottomSheetProps) => {
   const updateMutation = useMutation(updateTodoCategoryMutationOptions());
@@ -40,9 +42,7 @@ export const CategoryEditBottomSheet = ({
     updateMutation.mutate(
       { id: category.id, input: data },
       {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
+        onSuccess: onRequestClose,
       },
     );
   };
@@ -79,11 +79,11 @@ export const CategoryEditBottomSheet = ({
                       <Flex
                         align="center"
                         justify="center"
-                        className={cn('size-8 rounded-full', isSelected && 'border-2')}
+                        className={cn('size-8 rounded-4xl', isSelected && 'border-2')}
                         style={isSelected ? { borderColor: color } : undefined}
                       >
                         <Flex
-                          className={cn('rounded-full', isSelected ? 'size-6' : 'size-7')}
+                          className={cn('rounded-4xl', isSelected ? 'size-6' : 'size-7')}
                           style={{ backgroundColor: color }}
                         />
                       </Flex>

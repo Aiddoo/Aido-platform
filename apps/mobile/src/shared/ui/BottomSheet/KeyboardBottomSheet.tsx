@@ -3,8 +3,8 @@ import GorhomBottomSheet, {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { type ReactNode, useCallback, useEffect } from 'react';
-import { Keyboard, StyleSheet, useWindowDimensions } from 'react-native';
+import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { Keyboard, type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
@@ -32,6 +32,11 @@ export const KeyboardBottomSheet = ({
   children,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
+  const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
+  const lastContentHeightRef = useRef(0);
+  const isClosingRef = useRef(false);
+  const hasNotifiedCloseRef = useRef(false);
+  const prevIsOpenRef = useRef(isOpen);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -46,20 +51,74 @@ export const KeyboardBottomSheet = ({
     return () => setEnabled(true);
   }, [isOpen, setEnabled]);
 
-  const handleAnimate = useCallback((_fromIndex: number, toIndex: number) => {
+  useEffect(() => {
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      if (!isOpen || isClosingRef.current) {
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      });
+    });
+
+    return () => {
+      hideSubscription.remove();
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      lastContentHeightRef.current = 0;
+      isClosingRef.current = false;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const wasOpen = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+
+    if (!sheetRef.current || wasOpen === isOpen) {
+      return;
+    }
+
+    if (isOpen) {
+      isClosingRef.current = false;
+      hasNotifiedCloseRef.current = false;
+      requestAnimationFrame(() => {
+        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      });
+      return;
+    }
+
+    isClosingRef.current = true;
+    hasNotifiedCloseRef.current = false;
+    Keyboard.dismiss();
+    requestAnimationFrame(() => {
+      sheetRef.current?.close();
+    });
+  }, [isOpen]);
+
+  const handleAnimate = (_fromIndex: number, toIndex: number) => {
     if (toIndex === SHEET_INDEX.CLOSED) {
+      isClosingRef.current = true;
       Keyboard.dismiss();
     }
-  }, []);
+  };
 
-  const handleSheetChange = useCallback(
-    (index: number) => {
-      if (index === SHEET_INDEX.CLOSED && isOpen) {
+  const handleSheetChange = (index: number) => {
+    if (index === SHEET_INDEX.CLOSED) {
+      if (!hasNotifiedCloseRef.current) {
+        hasNotifiedCloseRef.current = true;
         onOpenChange(false);
       }
-    },
-    [isOpen, onOpenChange],
-  );
+      isClosingRef.current = false;
+      return;
+    }
+
+    hasNotifiedCloseRef.current = false;
+    isClosingRef.current = false;
+  };
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -73,8 +132,27 @@ export const KeyboardBottomSheet = ({
     [],
   );
 
+  const handleContentLayout = (event: LayoutChangeEvent) => {
+    if (!isOpen || isClosingRef.current) {
+      return;
+    }
+
+    const nextHeight = Math.round(event.nativeEvent.layout.height);
+    const prevHeight = lastContentHeightRef.current;
+
+    if (Math.abs(nextHeight - prevHeight) < 2) {
+      return;
+    }
+
+    lastContentHeightRef.current = nextHeight;
+    requestAnimationFrame(() => {
+      sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+    });
+  };
+
   return (
     <GorhomBottomSheet
+      ref={sheetRef}
       index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
       enableDynamicSizing
       maxDynamicContentSize={maxDynamicContentSize}
@@ -90,7 +168,10 @@ export const KeyboardBottomSheet = ({
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
     >
-      <BottomSheetView style={[styles.content, { paddingBottom: insets.bottom }]}>
+      <BottomSheetView
+        onLayout={handleContentLayout}
+        style={[styles.content, { paddingBottom: insets.bottom }]}
+      >
         {children}
       </BottomSheetView>
     </GorhomBottomSheet>

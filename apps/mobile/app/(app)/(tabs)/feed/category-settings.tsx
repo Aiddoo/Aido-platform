@@ -18,6 +18,7 @@ const TodoCategorySettingsScreen = () => {
     createOverlay.open(({ isOpen, close, exit }) => (
       <CategoryCreateBottomSheet
         isOpen={isOpen}
+        onRequestClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();
