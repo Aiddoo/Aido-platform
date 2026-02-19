@@ -29,8 +29,7 @@ const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
 const FAVICON = './assets/images/favicon.png';
-// TODO: 알림 아이콘 추가 필요 (96x96, 흰색 투명 배경 PNG)
-const _NOTIFICATION_ICON = './assets/images/notification-icon.png';
+// TODO: 알림 아이콘 추가 필요 (96x96, 흰색 투명 배경 PNG) → ./assets/images/notification-icon.png
 
 // Environment
 
@@ -47,6 +46,10 @@ const restoreBase64File = ({
 }) => {
   if (!envVar) {
     console.warn(`[eas] ${label} env var not set; skipping restore.`);
+    return;
+  }
+
+  if (fs.existsSync(outputPath)) {
     return;
   }
 
@@ -75,14 +78,14 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
     .with('preview', () => ({
       name: `${APP_NAME} Preview`,
       bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-      packageName: PACKAGE_NAME,
+      packageName: `${PACKAGE_NAME}.preview`,
       scheme: `${SCHEME}-preview`,
       apiUrl: apiUrl ?? 'https://api.aido.kr',
     }))
     .with('development', () => ({
       name: `${APP_NAME} Development`,
       bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-      packageName: PACKAGE_NAME,
+      packageName: `${PACKAGE_NAME}.dev`,
       scheme: `${SCHEME}-dev`,
       apiUrl: apiUrl ?? 'http://localhost:8080',
     }))
@@ -101,7 +104,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 
-  const EAS_PROJECT_ID = config.extra?.eas?.projectId as string | undefined;
+  const EAS_PROJECT_ID = (process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? config.extra?.eas?.projectId) as
+    | string
+    | undefined;
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,
@@ -228,6 +233,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'USE_FINGERPRINT',
         'POST_NOTIFICATIONS',
         'FOREGROUND_SERVICE',
+        'FOREGROUND_SERVICE_DATA_SYNC',
         'WAKE_LOCK',
       ],
       googleServicesFile: './google-services.json',
@@ -365,7 +371,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
       },
     }),
-    runtimeVersion: VERSION,
+    runtimeVersion: {
+      policy: 'fingerprint',
+    },
 
     // Extra (Constants.expoConfig.extra)
     extra: {
