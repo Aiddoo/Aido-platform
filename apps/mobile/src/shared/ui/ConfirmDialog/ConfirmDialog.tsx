@@ -25,7 +25,7 @@ export function ConfirmDialog({
           <VStack gap={16}>
             <VStack gap={6}>
               {title}
-              {description && description}
+              {description}
             </VStack>
             {cancelButton ? (
               <HStack gap={8} className="w-full">
