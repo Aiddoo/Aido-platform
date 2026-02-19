@@ -12,5 +12,9 @@ export const getMeQueryOptions = () => {
       const result = await userService.getCurrentUser();
       return unwrap(result);
     },
+    select: (user) => ({
+      ...user,
+      name: user.name ?? '열정적인 사용자',
+    }),
   });
 };

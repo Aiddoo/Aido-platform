@@ -1,4 +1,5 @@
 import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
+import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -179,7 +180,7 @@ function AppIconMenuItem() {
   const overlay = useOverlay();
 
   const handlePress = () => {
-    if (!user.isSubscribed) {
+    if (!UserPolicy.isPremiumUser(user)) {
       overlay.open(({ isOpen, close, exit }) => (
         <AppIconLockDialog
           isOpen={isOpen}
@@ -197,7 +198,11 @@ function AppIconMenuItem() {
   };
 
   return (
-    <SettingNavigationItem label="앱 아이콘" locked={!user.isSubscribed} onPress={handlePress} />
+    <SettingNavigationItem
+      label="앱 아이콘"
+      locked={!UserPolicy.isPremiumUser(user)}
+      onPress={handlePress}
+    />
   );
 }
 

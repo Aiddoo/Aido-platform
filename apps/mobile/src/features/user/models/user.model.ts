@@ -6,12 +6,10 @@ export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export const userSchema = z.object({
   id: z.string(),
   email: z.string(),
-  name: z.string(),
+  name: z.string().nullable(),
   profileImage: z.string().nullable(),
   userTag: z.string(),
   subscriptionStatus: subscriptionStatusSchema,
-  /** mapper에서 UserPolicy.isPremiumUser(subscriptionStatus)로 파생 계산 */
-  isSubscribed: z.boolean(),
   createdAt: z.coerce.date(),
 });
 export type User = z.infer<typeof userSchema>;
@@ -20,7 +18,7 @@ export const updateProfileResultSchema = userSchema.pick({ name: true, profileIm
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
 export const UserPolicy = {
-  isPremiumUser: (status: SubscriptionStatus): boolean => {
-    return status === 'ACTIVE';
+  isPremiumUser: (user: User): boolean => {
+    return user.subscriptionStatus === 'ACTIVE';
   },
 } as const;
