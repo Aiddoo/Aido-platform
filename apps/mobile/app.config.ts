@@ -101,7 +101,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 
-  const EAS_PROJECT_ID = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  const EAS_PROJECT_ID = config.extra?.eas?.projectId as string | undefined;
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,
@@ -359,7 +359,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     newArchEnabled: true,
 
-    // EAS Updates (EAS_PROJECT_ID가 있을 때만 활성화)
+    // EAS Updates
     ...(EAS_PROJECT_ID && {
       updates: {
         url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
@@ -369,16 +369,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Extra (Constants.expoConfig.extra)
     extra: {
+      ...config.extra,
       env,
       apiUrl: envConfig.apiUrl,
       devMachineIp: process.env.EXPO_PUBLIC_DEV_MACHINE_IP,
       isDevelopment,
       isProduction,
-      ...(EAS_PROJECT_ID && {
-        eas: {
-          projectId: EAS_PROJECT_ID,
-        },
-      }),
     },
   };
 };

@@ -31,6 +31,7 @@ junit.xml
 .env
 .env.local
 .env.*.local
+.env.development
 .env.staging
 .env.preview
 .env.production
