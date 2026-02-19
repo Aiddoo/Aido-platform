@@ -3,6 +3,7 @@ import { deleteTodoCategoryMutationOptions } from '@src/features/todo/presentati
 import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
+import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -48,14 +49,12 @@ export const CategoryDeleteDialog = ({
     });
   };
 
-  const categoryHasTodos = category.todoCount > 0;
-
-  return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="bg-black/40" />
-        <Dialog.Content>
-          {categoryHasTodos ? (
+  if (category.todoCount > 0) {
+    return (
+      <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="bg-black/40" />
+          <Dialog.Content>
             <TodoMoveCategoryDeleteSection
               category={category}
               otherCategories={otherCategories}
@@ -63,48 +62,34 @@ export const CategoryDeleteDialog = ({
               onDelete={handleDelete}
               isPending={deleteMutation.isPending}
             />
-          ) : (
-            <CategoryDeleteSection
-              categoryName={category.name}
-              onCancel={() => onOpenChange(false)}
-              onDelete={() => handleDelete()}
-              isPending={deleteMutation.isPending}
-            />
-          )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
+    );
+  }
+
+  return (
+    <ConfirmDialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={<ConfirmDialog.Title>{category.name} 카테고리를 삭제할까요?</ConfirmDialog.Title>}
+      description={<ConfirmDialog.Description>삭제하면 되돌릴 수 없어요</ConfirmDialog.Description>}
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
+          취소
+        </ConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton
+          onPress={() => handleDelete()}
+          isLoading={deleteMutation.isPending}
+        >
+          삭제
+        </ConfirmDialog.ConfirmButton>
+      }
+    />
   );
 };
-
-interface CategoryDeleteSectionProps {
-  categoryName: string;
-  onCancel: () => void;
-  onDelete: () => void;
-  isPending: boolean;
-}
-
-const CategoryDeleteSection = ({
-  categoryName,
-  onCancel,
-  onDelete,
-  isPending,
-}: CategoryDeleteSectionProps) => (
-  <>
-    <VStack gap={4}>
-      <Dialog.Title>
-        <H4>{categoryName} 카테고리를 삭제할까요?</H4>
-      </Dialog.Title>
-      <Dialog.Description>
-        <Text size="b3" shade={6}>
-          삭제하면 되돌릴 수 없어요
-        </Text>
-      </Dialog.Description>
-    </VStack>
-    <Spacing size={20} />
-    <DialogActions onCancel={onCancel} onDelete={onDelete} isPending={isPending} />
-  </>
-);
 
 interface TodoMoveCategoryDeleteSectionProps {
   category: TodoCategoryWithCount;
