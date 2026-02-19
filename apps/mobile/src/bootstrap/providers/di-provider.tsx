@@ -17,7 +17,6 @@ import { TodoNudgeRepositoryImpl } from '@src/features/todo/repositories/todo-nu
 import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
-import { UserRepositoryImpl } from '@src/features/user/repositories/user.repository.impl';
 import { UserService } from '@src/features/user/services/user.service';
 
 import { ENV } from '@src/shared/config/env';
@@ -120,8 +119,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const todoNudgeService = new TodoNudgeService(todoNudgeRepository);
 
     // User
-    const userRepository = new UserRepositoryImpl(authHttpClient);
-    const userService = new UserService(userRepository);
+    const userService = new UserService(authHttpClient);
 
     return {
       storage,
