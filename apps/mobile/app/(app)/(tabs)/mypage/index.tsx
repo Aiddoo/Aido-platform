@@ -2,7 +2,7 @@ import { logoutMutationOptions } from '@src/features/auth/presentations/queries/
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { Button } from '@src/shared/ui/Button/Button';
+import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
@@ -10,13 +10,12 @@ import { useOverlay } from '@src/shared/ui/Overlay';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H3, H4 } from '@src/shared/ui/Text/Typography';
+import { H3 } from '@src/shared/ui/Text/Typography';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Dialog, Button as HeroButton, PressableFeedback, Separator } from 'heroui-native';
+import { PressableFeedback, Separator } from 'heroui-native';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -103,46 +102,29 @@ const MyPageScreen = () => {
         </HStack>
       </ScrollView>
 
-      <LogoutDialog
+      <ConfirmDialog
         isOpen={isLogoutDialogOpen}
         onOpenChange={setIsLogoutDialogOpen}
-        onConfirm={handleLogoutConfirm}
+        title={<ConfirmDialog.Title>로그아웃</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>정말 로그아웃 하시겠습니까?</ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onPress={() => setIsLogoutDialogOpen(false)}>
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton onPress={handleLogoutConfirm}>
+            확인
+          </ConfirmDialog.ConfirmButton>
+        }
       />
     </StyledSafeAreaView>
   );
 };
 
 export default MyPageScreen;
-
-interface LogoutDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}
-
-const LogoutDialog = ({ isOpen, onOpenChange, onConfirm }: LogoutDialogProps) => (
-  <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-    <Dialog.Portal>
-      <Dialog.Overlay className="bg-black/40" />
-      <Dialog.Content>
-        <VStack gap={20}>
-          <VStack gap={4}>
-            <Dialog.Title>로그아웃</Dialog.Title>
-            <Dialog.Description>정말 로그아웃 하시겠습니까?</Dialog.Description>
-          </VStack>
-          <HStack justify="end" gap={12}>
-            <HeroButton variant="ghost" size="sm" onPress={() => onOpenChange(false)}>
-              취소
-            </HeroButton>
-            <HeroButton size="sm" onPress={onConfirm}>
-              확인
-            </HeroButton>
-          </HStack>
-        </VStack>
-      </Dialog.Content>
-    </Dialog.Portal>
-  </Dialog>
-);
 
 const SettingNavigationSection = ({ children }: PropsWithChildren) => (
   <VStack p={8} gap={8} className="bg-white rounded-2xl">
@@ -212,46 +194,29 @@ interface AppIconLockDialogProps {
 }
 
 const AppIconLockDialog = ({ isOpen, onOpenChange }: AppIconLockDialogProps) => (
-  <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-    <Dialog.Portal>
-      <Dialog.Overlay className="bg-black/40" />
-      <Dialog.Content>
-        <VStack gap={16}>
-          <VStack gap={6}>
-            <Dialog.Title>
-              <H4>프리미엄 기능</H4>
-            </Dialog.Title>
-            <Dialog.Description>
-              <Text size="b3" shade={6}>
-                앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.
-              </Text>
-            </Dialog.Description>
-          </VStack>
-          <HStack gap={8} className="w-full" justify="center">
-            <Button
-              variant="weak"
-              color="dark"
-              size="large"
-              display="inline"
-              className="flex-1"
-              onPress={() => onOpenChange(false)}
-            >
-              닫기
-            </Button>
-            <Button
-              size="large"
-              display="inline"
-              className="flex-1"
-              onPress={() => {
-                /* TODO: 구독 페이지 이동 */
-                onOpenChange(false);
-              }}
-            >
-              구독하기
-            </Button>
-          </HStack>
-        </VStack>
-      </Dialog.Content>
-    </Dialog.Portal>
-  </Dialog>
+  <ConfirmDialog
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    title={<ConfirmDialog.Title>프리미엄 기능</ConfirmDialog.Title>}
+    description={
+      <ConfirmDialog.Description>
+        앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.
+      </ConfirmDialog.Description>
+    }
+    cancelButton={
+      <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
+        닫기
+      </ConfirmDialog.CancelButton>
+    }
+    confirmButton={
+      <ConfirmDialog.ConfirmButton
+        onPress={() => {
+          /* TODO: 구독 페이지 이동 */
+          onOpenChange(false);
+        }}
+      >
+        구독하기
+      </ConfirmDialog.ConfirmButton>
+    }
+  />
 );

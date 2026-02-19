@@ -1,6 +1,7 @@
 import type { OAuthProvider } from '@src/features/auth/models/auth.model';
 import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
 import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
@@ -10,8 +11,8 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import times from 'es-toolkit/compat/times';
-import { Button, Chip, Dialog, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
+import { Button, Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -89,13 +90,28 @@ function LinkedAccountsList() {
         })}
       </VStack>
 
-      <UnlinkConfirmDialog
+      <ConfirmDialog
         isOpen={unlinkTarget !== null}
-        providerLabel={unlinkTarget?.label ?? ''}
         onOpenChange={(open) => {
           if (!open) setUnlinkTarget(null);
         }}
-        onConfirm={handleUnlinkConfirm}
+        title={<ConfirmDialog.Title>계정 연결 해제</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            {unlinkTarget?.label} 계정 연결을 해제하시겠습니까?{'\n'}해제 후 해당 계정으로 로그인할
+            수 없습니다.
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onPress={() => setUnlinkTarget(null)}>
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton onPress={handleUnlinkConfirm}>
+            해제
+          </ConfirmDialog.ConfirmButton>
+        }
       />
     </>
   );
@@ -220,43 +236,3 @@ const ProviderListRow = memo(function ProviderListRow({
     />
   );
 });
-
-interface UnlinkConfirmDialogProps
-  extends Pick<ComponentProps<typeof Dialog>, 'isOpen' | 'onOpenChange'> {
-  providerLabel: string;
-  onConfirm: () => void;
-}
-
-function UnlinkConfirmDialog({
-  isOpen,
-  providerLabel,
-  onOpenChange,
-  onConfirm,
-}: UnlinkConfirmDialogProps) {
-  return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="bg-black/40" />
-        <Dialog.Content>
-          <VStack gap={20}>
-            <VStack gap={4}>
-              <Dialog.Title>계정 연결 해제</Dialog.Title>
-              <Dialog.Description>
-                {providerLabel} 계정 연결을 해제하시겠습니까?{'\n'}해제 후 해당 계정으로 로그인할 수
-                없습니다.
-              </Dialog.Description>
-            </VStack>
-            <HStack justify="end" gap={12}>
-              <Button variant="ghost" size="sm" onPress={() => onOpenChange?.(false)}>
-                취소
-              </Button>
-              <Button size="sm" className="bg-error" onPress={onConfirm}>
-                해제
-              </Button>
-            </HStack>
-          </VStack>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
-  );
-}

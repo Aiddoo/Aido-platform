@@ -3,7 +3,7 @@ import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
 import { Avatar } from '@src/shared/ui/Avatar/Avatar';
 import { Box } from '@src/shared/ui/Box/Box';
-import { Button } from '@src/shared/ui/Button/Button';
+import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { Grid } from '@src/shared/ui/Grid/Grid';
 import { GridItem } from '@src/shared/ui/Grid/GridItem';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -11,9 +11,8 @@ import { useOverlay } from '@src/shared/ui/Overlay/useOverlay';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
-import { H4 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { Dialog, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { Platform, ScrollView } from 'react-native';
 
 const AppIconScreen = () => {
@@ -134,40 +133,22 @@ interface AppIconRestartDialogProps {
 
 function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestartDialogProps) {
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="bg-black/40" />
-        <Dialog.Content>
-          <VStack gap={16}>
-            <VStack gap={6}>
-              <Dialog.Title>
-                <H4>앱 아이콘 변경</H4>
-              </Dialog.Title>
-              <Dialog.Description>
-                <Text size="b3" shade={6}>
-                  아이콘을 변경하면 앱이 재시작됩니다.
-                </Text>
-              </Dialog.Description>
-            </VStack>
-            <HStack gap={8} className="w-full" justify="center">
-              <Button
-                variant="weak"
-                color="dark"
-                size="large"
-                display="inline"
-                className="flex-1"
-                onPress={() => onOpenChange(false)}
-              >
-                취소
-              </Button>
-              <Button size="large" display="inline" className="flex-1" onPress={onConfirm}>
-                변경
-              </Button>
-            </HStack>
-          </VStack>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
+    <ConfirmDialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={<ConfirmDialog.Title>앱 아이콘 변경</ConfirmDialog.Title>}
+      description={
+        <ConfirmDialog.Description>아이콘을 변경하면 앱이 재시작됩니다.</ConfirmDialog.Description>
+      }
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
+          취소
+        </ConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton onPress={onConfirm}>변경</ConfirmDialog.ConfirmButton>
+      }
+    />
   );
 }
 
@@ -178,33 +159,20 @@ interface AppIconErrorDialogProps {
 
 function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="bg-black/40" />
-        <Dialog.Content>
-          <VStack gap={16}>
-            <VStack gap={6}>
-              <Dialog.Title>
-                <H4>아이콘 변경 실패</H4>
-              </Dialog.Title>
-              <Dialog.Description>
-                <Text size="b3" shade={6}>
-                  앱 아이콘을 변경할 수 없습니다. 앱을 삭제 후 다시 설치하거나, 실기기에서 시도해
-                  주세요.
-                </Text>
-              </Dialog.Description>
-            </VStack>
-            <Button
-              size="large"
-              display="inline"
-              className="w-full"
-              onPress={() => onOpenChange(false)}
-            >
-              확인
-            </Button>
-          </VStack>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
+    <ConfirmDialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={<ConfirmDialog.Title>아이콘 변경 실패</ConfirmDialog.Title>}
+      description={
+        <ConfirmDialog.Description>
+          앱 아이콘을 변경할 수 없습니다. 앱을 삭제 후 다시 설치하거나, 실기기에서 시도해 주세요.
+        </ConfirmDialog.Description>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton onPress={() => onOpenChange(false)}>
+          확인
+        </ConfirmDialog.ConfirmButton>
+      }
+    />
   );
 }

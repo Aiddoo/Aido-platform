@@ -60,6 +60,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Result` | 결과 화면 (에러, 빈 상태) | `src/shared/ui/Result/Result.md` |
 | `TextArea` | 여러 줄 텍스트 입력 | `src/shared/ui/TextArea/TextArea.md` |
 | `Avatar` | 선택 가능 아바타 아이콘 | `src/shared/ui/Avatar/Avatar.md` |
+| `ConfirmDialog` | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화) | `src/shared/ui/ConfirmDialog/ConfirmDialog.md` |
 
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
