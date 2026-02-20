@@ -2,13 +2,14 @@ import { getProfileIconSource } from '@src/features/user/presentations/utils/pro
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { CopyIcon } from '@src/shared/ui/Icon';
+import { ArrowRightIcon, CopyIcon } from '@src/shared/ui/Icon';
 import { Text } from '@src/shared/ui/Text/Text';
 import { H4 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { Pressable } from 'react-native';
 import { getMeQueryOptions } from '../queries/get-me-query-options';
 
 export function ProfileCard() {
@@ -26,32 +27,48 @@ export function ProfileCard() {
   };
 
   return (
-    <HStack gap={12} align="center">
-      <PressableFeedback onPress={() => router.push('/settings/profile-icon')}>
+    <PressableFeedback
+      onPress={() => router.push('/settings/profile')}
+      className="rounded-2xl bg-white p-4"
+    >
+      <HStack gap={12} align="center">
         <Avatar size="lg" alt={`${user.name} 프로필`}>
           <Avatar.Image source={getProfileIconSource(user.profileImage)} />
         </Avatar>
-      </PressableFeedback>
 
-      <VStack>
-        <H4>{user.name}</H4>
-        <PressableFeedback onPress={handleCopyUserTag} className="flex-row items-center gap-1">
-          <Text size="b4" shade={6}>
-            {user.userTag}
-          </Text>
-          <CopyIcon width={14} height={14} colorClassName="text-gray-6" />
-        </PressableFeedback>
-      </VStack>
-    </HStack>
+        <VStack className="flex-1">
+          <H4>{user.name}</H4>
+
+          <HStack align="center" gap={2}>
+            <Text size="b4" shade={6}>
+              {user.userTag}
+            </Text>
+            <Pressable
+              hitSlop={8}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleCopyUserTag();
+              }}
+              className="p-1"
+            >
+              <CopyIcon width={12} height={12} colorClassName="text-gray-5" />
+            </Pressable>
+          </HStack>
+        </VStack>
+
+        <ArrowRightIcon colorClassName="text-gray-6" />
+      </HStack>
+      <PressableFeedback.Highlight className="rounded-2xl" />
+    </PressableFeedback>
   );
 }
 
 ProfileCard.Loading = function Loading() {
   return (
     <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack gap={12} align="center">
+      <HStack gap={12} align="center" className="rounded-2xl bg-white p-4">
         <SkeletonGroup.Item className="size-12 rounded-full" />
-        <VStack>
+        <VStack className="flex-1">
           <SkeletonGroup.Item className="h-5 w-24 rounded-md" />
           <SkeletonGroup.Item className="h-4 w-20 rounded-md" />
         </VStack>

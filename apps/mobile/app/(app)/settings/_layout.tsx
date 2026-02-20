@@ -33,7 +33,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
       <Stack.Screen name="linked-accounts" options={{ title: '연결된 계정' }} />
       <Stack.Screen name="app-icon" options={{ title: '앱 아이콘' }} />
-      <Stack.Screen name="profile-icon" options={{ title: '프로필 아이콘' }} />
+      <Stack.Screen name="profile" options={{ title: '프로필 정보' }} />
+      <Stack.Screen name="edit-name" options={{ title: '이름 변경' }} />
     </Stack>
   );
 }

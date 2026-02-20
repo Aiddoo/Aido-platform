@@ -11,48 +11,27 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: 22
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-  # Build/Lint용 가짜 URL
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
-  # ============================================
-  # Lint & Type Check
-  # ============================================
   lint:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # pnpm 설치 및 캐싱을 한 방에 처리
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm" # setup-node가 pnpm store를 알아서 캐싱함 (훨씬 간단)
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
-      # ★ 중요: 캐시에서 가져오는 게 아니라 매번 생성 (빠르고 안전함)
-      - name: Generate Prisma Client
-        run: pnpm db:generate
-
-      - name: Biome Check & Lint
-        run: |
-          pnpm check
-          pnpm lint
+      - name: Biome Check
+        run: pnpm turbo run check --affected
 
       - name: Type Check
-        run: pnpm typecheck
+        run: pnpm turbo run typecheck --affected
 
-  # ============================================
-  # Test (Unit + E2E)
-  # ============================================
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -65,7 +44,6 @@ jobs:
           POSTGRES_DB: aido_test
         ports:
           - 5432:5432
-        # DB가 준비될 때까지 기다리는 헬스체크 (필수)
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -74,17 +52,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: pnpm db:generate
+      - uses: ./.github/actions/setup
 
       - name: Run Prisma migrations
         run: pnpm --filter @aido/api exec prisma migrate deploy
@@ -92,11 +63,10 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
 
       - name: Run unit tests
-        run: pnpm test
+        run: pnpm turbo run test --affected
 
-      # E2E 테스트는 validators 등 workspace 패키지를 import하므로 빌드 필요
       - name: Build packages for E2E
-        run: pnpm build
+        run: pnpm turbo run build --filter='!@aido/mobile'
 
       - name: Run E2E tests
         env:
@@ -107,27 +77,17 @@ jobs:
           JWT_REFRESH_EXPIRES_IN: 7d
           EMAIL_FROM: noreply@test.aido.app
           EMAIL_FROM_NAME: Aido Test
-        run: pnpm test:e2e
+        run: pnpm turbo run test:e2e
 
-  # ============================================
-  # Build (Lint/Test와 병렬로 실행)
-  # ============================================
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma Client
-        run: pnpm db:generate
+      - uses: ./.github/actions/setup
 
       - name: Build
-        run: pnpm build
+        run: pnpm turbo run build --filter='!@aido/mobile'
