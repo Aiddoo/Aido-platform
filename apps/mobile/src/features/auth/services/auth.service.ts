@@ -1,14 +1,32 @@
-import type {
-  ExchangeCodeInput,
-  RegisterInput,
-  ResendVerificationInput,
-  UpdateMarketingConsentInput,
-  UpdatePreferenceInput,
-  VerifyEmailInput,
+import {
+  type AppleMobileCallbackInput,
+  type AuthTokens as AuthTokensDTO,
+  authTokensSchema as authTokensDtoSchema,
+  type ConsentResponse,
+  consentResponseSchema,
+  type ExchangeCodeInput,
+  type LinkedAccountsResponse,
+  linkedAccountsResponseSchema,
+  type PreferenceResponse,
+  preferenceResponseSchema,
+  type RegisterInput,
+  type RegisterResponse,
+  type ResendVerificationInput,
+  type ResendVerificationResponse,
+  registerResponseSchema,
+  resendVerificationResponseSchema,
+  type UpdateMarketingConsentInput,
+  type UpdateMarketingConsentResponse,
+  type UpdatePreferenceInput,
+  updateMarketingConsentResponseSchema,
+  updatePreferenceResponseSchema,
+  type VerifyEmailInput,
 } from '@aido/validators';
+import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
 import type { ApiError } from '@src/shared/errors/api-error';
+import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -16,6 +34,7 @@ import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { WebBrowserResultType } from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../models/auth.error';
 import type {
@@ -31,7 +50,15 @@ import type {
   ResendVerificationResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
-import type { AuthRepository } from '../repositories/auth.repository';
+import {
+  toAuthTokens,
+  toConsent,
+  toLinkedAccounts,
+  toPreference,
+  toRegisterResult,
+  toResendVerificationResult,
+  toUpdateMarketingConsentResult,
+} from './auth.mapper';
 
 const OAUTH_PATHS: Record<OAuthStartProvider, string> = {
   kakao: 'auth/kakao',
@@ -39,14 +66,22 @@ const OAUTH_PATHS: Record<OAuthStartProvider, string> = {
   google: 'auth/google',
 };
 
+const AUTH_PATH_BY_PROVIDER: Record<OAuthStartProvider, string> = {
+  kakao: 'kakao',
+  naver: 'naver',
+  google: 'google',
+};
+
 export type AuthServiceError = ApiError | AuthError;
 
 export class AuthService {
-  readonly #authRepository: AuthRepository;
+  readonly #publicHttpClient: HttpClient;
+  readonly #authHttpClient: HttpClient;
   readonly #storage: Storage;
 
-  constructor(authRepository: AuthRepository, storage: Storage) {
-    this.#authRepository = authRepository;
+  constructor(publicHttpClient: HttpClient, authHttpClient: HttpClient, storage: Storage) {
+    this.#publicHttpClient = publicHttpClient;
+    this.#authHttpClient = authHttpClient;
     this.#storage = storage;
   }
 
@@ -55,6 +90,24 @@ export class AuthService {
       scheme: ENV.SCHEME,
       path: OAUTH_PATHS[provider],
     });
+
+  private getOAuthWebStartUrl = (
+    provider: OAuthStartProvider,
+    redirectUri: string,
+    mode: OAuthStartMode,
+    userHint?: string,
+  ): string => {
+    const params = new URLSearchParams({
+      redirect_uri: redirectUri,
+      mode,
+    });
+
+    if (userHint) {
+      params.set('user_hint', userHint);
+    }
+
+    return `${ENV.API_URL}/v1/auth/${AUTH_PATH_BY_PROVIDER[provider]}/start?${params.toString()}`;
+  };
 
   private extractCodeFromUrl = (url: string): string | null => {
     const parsedUrl = Linking.parse(url);
@@ -133,13 +186,30 @@ export class AuthService {
     await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
   };
 
+  private parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {
+    const parsed = authTokensDtoSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid auth tokens response: ${parsed.error.message}`);
+    }
+    return toAuthTokens(parsed.data);
+  };
+
+  private generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
+    const nonce = Crypto.getRandomBytes(32).reduce(
+      (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
+      '',
+    );
+    const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+    return { nonce, hashedNonce };
+  };
+
   private openOAuth = async (
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
     userHint?: string,
   ): Promise<Result<string, AuthError>> => {
     const redirectUri = this.getRedirectUri(provider);
-    const authUrl = this.#authRepository.getOAuthWebStartUrl(provider, redirectUri, mode, userHint);
+    const authUrl = this.getOAuthWebStartUrl(provider, redirectUri, mode, userHint);
 
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
       createTask: false,
@@ -169,7 +239,6 @@ export class AuthService {
       return err(AuthErrors.loginCancelled());
     }
 
-    // WebBrowserResultType.OPENED, WebBrowserResultType.LOCKED
     return err(AuthErrors.unknown('OAuth 인증 중 문제가 발생했어요'));
   };
 
@@ -183,15 +252,6 @@ export class AuthService {
 
   openGoogleLogin = (): Promise<Result<string, AuthError>> => {
     return this.openOAuth('google', 'login');
-  };
-
-  private generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
-    const nonce = Crypto.getRandomBytes(32).reduce(
-      (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
-      '',
-    );
-    const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
-    return { nonce, hashedNonce };
   };
 
   openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
@@ -211,16 +271,22 @@ export class AuthService {
         return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
       }
 
-      const result = await this.#authRepository.appleLogin({
+      const input: AppleMobileCallbackInput = {
         idToken,
         nonce,
         userName: credential.fullName?.givenName ?? undefined,
         deviceType: 'IOS',
-      });
+      };
+
+      const result = await this.#publicHttpClient.post<AuthTokensDTO>(
+        'v1/auth/apple/callback',
+        input,
+      );
       if (!result.ok) return result;
 
-      await this.saveTokens(result.value.accessToken, result.value.refreshToken);
-      return result;
+      const tokens = this.parseAuthTokens(result);
+      await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+      return ok(tokens);
     } catch (error) {
       if (isAuthError(error)) {
         return err(error);
@@ -233,69 +299,148 @@ export class AuthService {
   };
 
   emailLogin = async (email: string, password: string): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#authRepository.emailLogin(email, password);
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/login', {
+      email,
+      password,
+      deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+    });
     if (!result.ok) return result;
 
-    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
-    return result;
+    const tokens = this.parseAuthTokens(result);
+    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    return ok(tokens);
   };
 
   exchangeCode = async (request: ExchangeCodeInput): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#authRepository.exchangeCode(request);
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/exchange', request);
     if (!result.ok) return result;
 
-    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
-    return result;
+    const tokens = this.parseAuthTokens(result);
+    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    return ok(tokens);
   };
 
   logout = async (): Promise<Result<void, ApiError>> => {
-    const result = await this.#authRepository.logout();
-    // 성공/실패 관계없이 로컬 토큰은 삭제
+    const result = await this.#authHttpClient.post('v1/auth/logout');
     await this.clearTokens();
-    return result;
+    return result.ok ? ok(undefined) : result;
+  };
+
+  verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {
+    const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/verify-email', input);
+    if (!result.ok) return result;
+
+    const tokens = this.parseAuthTokens(result);
+    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    return ok(tokens);
   };
 
   getPreference = async (): Promise<Result<Preference, ApiError>> => {
-    return this.#authRepository.getPreference();
+    const result = await this.#authHttpClient.get<PreferenceResponse>('v1/auth/preference');
+    if (!result.ok) return result;
+
+    const parsed = preferenceResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid getPreference response: ${parsed.error.message}`);
+    }
+
+    return ok(toPreference(parsed.data));
   };
 
   updatePreference = async (
     input: UpdatePreferenceInput,
   ): Promise<Result<Preference, ApiError>> => {
-    return this.#authRepository.updatePreference(input);
+    const result = await this.#authHttpClient.patch<PreferenceResponse>(
+      'v1/auth/preference',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = updatePreferenceResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid updatePreference response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toPreference(parsed.data));
   };
 
   getConsent = async (): Promise<Result<Consent, ApiError>> => {
-    return this.#authRepository.getConsent();
+    const result = await this.#authHttpClient.get<ConsentResponse>('v1/auth/consent');
+    if (!result.ok) return result;
+
+    const parsed = consentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid getConsent response: ${parsed.error.message}`);
+    }
+
+    return ok(toConsent(parsed.data));
   };
 
   updateMarketingConsent = async (
     input: UpdateMarketingConsentInput,
   ): Promise<Result<UpdateMarketingConsentResult, ApiError>> => {
-    return this.#authRepository.updateMarketingConsent(input);
+    const result = await this.#authHttpClient.patch<UpdateMarketingConsentResponse>(
+      'v1/auth/consent/marketing',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = updateMarketingConsentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid updateMarketingConsent response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toUpdateMarketingConsentResult(parsed.data));
   };
 
   register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {
-    return this.#authRepository.register(input);
-  };
-
-  verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {
-    const result = await this.#authRepository.verifyEmail(input);
+    const result = await this.#publicHttpClient.post<RegisterResponse>('v1/auth/register', input);
     if (!result.ok) return result;
 
-    await this.saveTokens(result.value.accessToken, result.value.refreshToken);
-    return result;
+    const parsed = registerResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid register response: ${parsed.error.message}`);
+    }
+
+    return ok(toRegisterResult(parsed.data));
   };
 
   resendVerification = async (
     input: ResendVerificationInput,
   ): Promise<Result<ResendVerificationResult, ApiError>> => {
-    return this.#authRepository.resendVerification(input);
+    const result = await this.#publicHttpClient.post<ResendVerificationResponse>(
+      'v1/auth/resend-verification',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = resendVerificationResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid resendVerification response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toResendVerificationResult(parsed.data));
   };
 
-  // === 소셜 계정 연동 ===
   getLinkedAccounts = async (): Promise<Result<LinkedAccount[], ApiError>> => {
-    return this.#authRepository.getLinkedAccounts();
+    const result =
+      await this.#authHttpClient.get<LinkedAccountsResponse>('v1/auth/linked-accounts');
+    if (!result.ok) return result;
+
+    const parsed = linkedAccountsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid getLinkedAccounts response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toLinkedAccounts(parsed.data));
   };
 
   openLinkOAuth = (
@@ -321,7 +466,7 @@ export class AuthService {
   };
 
   linkWithCode = async (code: string): Promise<Result<{ message: string }, ApiError>> => {
-    return this.#authRepository.linkWithCode(code);
+    return this.#authHttpClient.post('v1/auth/link-with-code', { code });
   };
 
   linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
@@ -341,7 +486,7 @@ export class AuthService {
         return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
       }
 
-      return this.#authRepository.linkApple(idToken, nonce);
+      return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken, nonce });
     } catch (error) {
       if (isAuthError(error)) {
         return err(error);
@@ -356,6 +501,6 @@ export class AuthService {
   unlinkAccount = async (
     provider: OAuthProvider,
   ): Promise<Result<{ message: string }, ApiError>> => {
-    return this.#authRepository.unlinkAccount(provider);
+    return this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
   };
 }
