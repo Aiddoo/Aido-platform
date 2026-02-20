@@ -90,4 +90,4 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Build
-        run: pnpm turbo run build --affected --filter='!@aido/mobile'
+        run: pnpm turbo run build --filter='!@aido/mobile'
