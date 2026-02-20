@@ -96,7 +96,7 @@ jobs:
 
       # E2E 테스트는 validators 등 workspace 패키지를 import하므로 빌드 필요
       - name: Build packages for E2E
-        run: pnpm build
+        run: pnpm turbo run build --filter='!@aido/mobile'
 
       - name: Run E2E tests
         env:
@@ -130,4 +130,4 @@ jobs:
         run: pnpm db:generate
 
       - name: Build
-        run: pnpm build
+        run: pnpm turbo run build --filter='!@aido/mobile'

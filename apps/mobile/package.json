@@ -6,7 +6,6 @@
   "scripts": {
     "adb:reverse": "adb reverse tcp:8080 tcp:8080",
     "android": "expo run:android",
-    "prebuild": "expo prebuild --clean",
     "build": "expo export --platform ios --platform android",
     "build:development": "eas build --profile development --platform all",
     "build:development:android": "eas build --profile development --platform android",
@@ -26,6 +25,7 @@
     "format": "biome format --write .",
     "ios": "expo run:ios",
     "lint": "biome lint .",
+    "native:prebuild": "expo prebuild --clean",
     "submit:production": "eas submit --profile production --platform all --latest",
     "submit:production:android": "eas submit --profile production --platform android --latest",
     "submit:production:ios": "eas submit --profile production --platform ios --latest",
