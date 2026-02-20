@@ -38,7 +38,7 @@ function EditNameForm() {
     formState: { errors, isValid, isDirty },
   } = useForm<UpdateNameInput>({
     resolver: zodResolver(updateNameInputSchema),
-    defaultValues: { name: user.name ?? '' },
+    defaultValues: { name: user.name },
     mode: 'onChange',
   });
 
