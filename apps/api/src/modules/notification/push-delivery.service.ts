@@ -15,8 +15,8 @@ import {
 	Prisma,
 	type PushToken,
 } from "@/generated/prisma/client";
-import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 
 import { NotificationRepository } from "./notification.repository";
 import {

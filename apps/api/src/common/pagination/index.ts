@@ -7,7 +7,6 @@ export {
 
 // DTOs
 export {
-	CursorPaginationDto,
 	NumberCursorPaginationDto,
 	PaginationDto,
 	StringCursorPaginationDto,

@@ -26,13 +26,13 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
 import { NotificationRepository } from "@/modules/notification/notification.repository";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
 import { PushDeliveryService } from "@/modules/notification/push-delivery.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 
 describe("NotificationService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

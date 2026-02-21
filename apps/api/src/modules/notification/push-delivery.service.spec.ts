@@ -9,8 +9,8 @@ import { TestBed } from "@suites/unit";
 import { PushTokenBuilder } from "@test/builders";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { Prisma } from "@/generated/prisma/client";
-import { UserConsentRepository } from "@/modules/auth/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/auth/repositories/user-preference.repository";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 
 import { NotificationRepository } from "./notification.repository";
 import {

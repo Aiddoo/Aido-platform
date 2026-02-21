@@ -540,15 +540,15 @@ export class BusinessExceptions {
 	// AI 서비스 (AI)
 	// =========================================================================
 	static aiServiceUnavailable() {
-		return new BusinessException(ErrorCode.AI_0001);
+		return new BusinessException(ErrorCode.AI_1301);
 	}
 
 	static aiParseFailed(details?: string) {
-		return new BusinessException(ErrorCode.AI_0002, { details });
+		return new BusinessException(ErrorCode.AI_1302, { details });
 	}
 
 	static aiUsageLimitExceeded(used: number, limit: number) {
-		return new BusinessException(ErrorCode.AI_0003, { used, limit });
+		return new BusinessException(ErrorCode.AI_1303, { used, limit });
 	}
 
 	// =========================================================================

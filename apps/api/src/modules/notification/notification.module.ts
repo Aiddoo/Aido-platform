@@ -1,9 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import {
-	UserConsentRepository,
-	UserPreferenceRepository,
-} from "@/modules/auth/repositories";
+import { UserSettingsModule } from "@/modules/user-settings/user-settings.module";
 
 import {
 	CheerListener,
@@ -36,15 +33,13 @@ import { PushDeliveryService } from "./push-delivery.service";
  * Provider 추상화를 통해 Expo Push → FCM 마이그레이션 대비
  */
 @Module({
+	imports: [UserSettingsModule],
 	controllers: [NotificationController],
 	providers: [
 		// Core
 		NotificationRepository,
 		NotificationService,
 		PushDeliveryService,
-		// User Preference/Consent Repositories (푸시 필터링용)
-		UserPreferenceRepository,
-		UserConsentRepository,
 		// Push Provider (Strategy Pattern)
 		{
 			provide: PUSH_PROVIDER,

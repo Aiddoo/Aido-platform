@@ -190,9 +190,9 @@ if (confirmed) {
 	@ApiSuccessResponse({ type: ParseTodoResponseDto })
 	@ApiUnauthorizedError()
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiUnprocessableError(ErrorCode.AI_0002)
-	@ApiTooManyRequestsError(ErrorCode.AI_0003)
-	@ApiServiceUnavailableError(ErrorCode.AI_0001)
+	@ApiUnprocessableError(ErrorCode.AI_1302)
+	@ApiTooManyRequestsError(ErrorCode.AI_1303)
+	@ApiServiceUnavailableError(ErrorCode.AI_1301)
 	async parseTodo(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ParseTodoRequestDto,

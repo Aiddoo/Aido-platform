@@ -111,6 +111,28 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		return this._jose;
 	}
 
+	/**
+	 * Provider별 토큰 검증 통합 dispatch 메서드
+	 *
+	 * Apple/Google은 idToken, Kakao/Naver는 accessToken을 사용합니다.
+	 */
+	async verifyToken(
+		provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+		token: string,
+		nonce?: string,
+	): Promise<VerifiedProfile> {
+		switch (provider) {
+			case "APPLE":
+				return this.verifyAppleToken(token, nonce);
+			case "GOOGLE":
+				return this.verifyGoogleToken(token);
+			case "KAKAO":
+				return this.verifyKakaoToken(token);
+			case "NAVER":
+				return this.verifyNaverToken(token);
+		}
+	}
+
 	// @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
 	async verifyAppleToken(
 		idToken: string,

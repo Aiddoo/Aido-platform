@@ -83,14 +83,9 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 	const mockFollowId = "follow-integration-789";
 	const mockTargetUserTag = mockTargetUser.userTag;
 
-	beforeAll(() => {
+	beforeAll(async () => {
 		suppressLogger();
-	});
 
-	beforeEach(async () => {
-		jest.clearAllMocks();
-
-		// NestJS 테스트 모듈 생성 - 실제 DI 컨테이너 사용
 		module = await Test.createTestingModule({
 			providers: [
 				FollowService,
@@ -124,10 +119,13 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		repository = module.get<FollowRepository>(FollowRepository);
 	});
 
-	afterEach(async () => {
-		if (module) {
-			await module.close();
-		}
+	afterAll(async () => {
+		await module.close();
+		jest.restoreAllMocks();
+	});
+
+	beforeEach(() => {
+		jest.clearAllMocks();
 	});
 
 	// ============================================

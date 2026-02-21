@@ -63,36 +63,6 @@ export class VerificationService {
 		}
 	}
 
-	/** @deprecated createEmailVerification() + sendVerificationEmail() 분리 사용 권장 */
-	async createAndSendEmailVerification(
-		userId: string,
-		email: string,
-		tx?: Prisma.TransactionClient,
-	): Promise<VerificationCodeResult> {
-		// 재발송 쿨다운 확인
-		await this._checkResendCooldown(userId, "EMAIL_VERIFY", tx);
-
-		// 기존 미사용 인증 코드 무효화
-		await this.verificationRepository.invalidateAllByUserIdAndType(
-			userId,
-			"EMAIL_VERIFY",
-			tx,
-		);
-
-		// 새 인증 코드 생성
-		const result = await this._createVerificationCode(
-			userId,
-			"EMAIL_VERIFY",
-			tx,
-		);
-
-		// 이메일 발송 (트랜잭션 외부에서 실행)
-		await this.sendVerificationEmail(email, result.code);
-
-		this.logger.log(`Verification code created for user ${userId}`);
-		return result;
-	}
-
 	async createAndSendPasswordReset(
 		userId: string,
 		email: string,

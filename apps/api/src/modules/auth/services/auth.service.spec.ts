@@ -26,8 +26,14 @@ import {
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import { Prisma } from "@/generated/prisma/client";
-import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
+import {
+	type Account,
+	type LoginAttempt,
+	Prisma,
+	type SecurityLog,
+	type Session,
+	type User,
+} from "@/generated/prisma/client";
 import { REVOKE_REASON, SECURITY_EVENT } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
 import { LoginAttemptRepository } from "../repositories/login-attempt.repository";
@@ -36,6 +42,8 @@ import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AuthService } from "./auth.service";
 import { PasswordService } from "./password.service";
+import { SessionService } from "./session.service";
+import type { JwtPayload } from "./token.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
@@ -51,7 +59,7 @@ describe("AuthService", () => {
 	let database: Mocked<DatabaseService>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let loginAttemptRepo: Mocked<LoginAttemptRepository>;
-	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let sessionService: Mocked<SessionService>;
 	let eventEmitter: Mocked<EventEmitter2>;
 
 	// 재사용 가능한 테스트 데이터
@@ -90,9 +98,9 @@ describe("AuthService", () => {
 		loginAttemptRepo = unitRef.get(
 			LoginAttemptRepository,
 		) as unknown as Mocked<LoginAttemptRepository>;
-		todoCategoryRepo = unitRef.get(
-			TodoCategoryRepository,
-		) as unknown as Mocked<TodoCategoryRepository>;
+		sessionService = unitRef.get(
+			SessionService,
+		) as unknown as Mocked<SessionService>;
 		eventEmitter = unitRef.get(
 			EventEmitter2,
 		) as unknown as Mocked<EventEmitter2>;
@@ -126,19 +134,20 @@ describe("AuthService", () => {
 						userConsent: { create: jest.fn() },
 						userPreference: { create: jest.fn() },
 					};
-					return callback(mockTx as never);
+					return callback(mockTx as unknown as Prisma.TransactionClient);
 				},
 			);
 			userRepo.create.mockResolvedValue(mockUser);
-			userRepo.createProfile.mockResolvedValue({} as never);
-			accountRepo.createCredentialAccount.mockResolvedValue({} as never);
+			userRepo.createProfile.mockResolvedValue(undefined);
+			accountRepo.createCredentialAccount.mockResolvedValue(
+				{} as unknown as Account,
+			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
 				expiresAt: new Date(),
 			});
 			verificationService.sendVerificationEmail.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as never);
-			todoCategoryRepo.createMany.mockResolvedValue(2);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 		};
 
 		it("새 사용자를 등록하고 인증 코드를 발송한다", async () => {
@@ -349,20 +358,17 @@ describe("AuthService", () => {
 		) => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as never);
-			userRepo.markEmailVerified.mockResolvedValue({} as never);
-			tokenService.generateTokenFamily.mockReturnValue("family-id");
-			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
-			sessionRepo.create.mockResolvedValue({
-				id: "session-id",
-				userId: mockUser.id,
-			} as never);
-			tokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			verificationService.verifyCode.mockResolvedValue(true as boolean);
+			userRepo.markEmailVerified.mockResolvedValue({} as User);
+			sessionService.createSessionWithTokens.mockResolvedValue({
+				sessionId: "session-id",
+				tokens: mockTokens,
+				tokenFamily: "family-id",
+			});
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 			userRepo.findByIdWithProfile.mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
@@ -425,7 +431,7 @@ describe("AuthService", () => {
 			const result = await service.verifyEmail(verifyInput);
 
 			// Then
-			expect(tokenService.generateTokenPair).toHaveBeenCalled();
+			expect(sessionService.createSessionWithTokens).toHaveBeenCalled();
 			expect(result.tokens.accessToken).toBe(mockTokens.accessToken);
 		});
 
@@ -443,7 +449,7 @@ describe("AuthService", () => {
 			await service.verifyEmail(verifyInput);
 
 			// Then
-			expect(sessionRepo.create).toHaveBeenCalled();
+			expect(sessionService.createSessionWithTokens).toHaveBeenCalled();
 		});
 
 		it("보안 이벤트를 기록한다", async () => {
@@ -509,22 +515,19 @@ describe("AuthService", () => {
 				userId: mockUser.id,
 				type: "CREDENTIAL",
 				password: "hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			tokenService.generateTokenFamily.mockReturnValue("family-id");
-			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
-			sessionRepo.create.mockResolvedValue({
-				id: "session-id",
-				userId: mockUser.id,
-			} as never);
-			tokenService.generateTokenPair.mockResolvedValue(mockTokens);
-			tokenService.hashRefreshToken.mockReturnValue("hashed-refresh-token");
-			sessionRepo.updateRefreshTokenHash.mockResolvedValue({} as never);
-			loginAttemptRepo.create.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			sessionService.createSessionWithTokens.mockResolvedValue({
+				sessionId: "session-id",
+				tokens: mockTokens,
+				tokenFamily: "family-id",
+			});
+			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 			userRepo.findByIdWithProfile.mockResolvedValue({
 				...mockUser,
 				profile: { name: "Test User", profileImage: null },
@@ -554,7 +557,7 @@ describe("AuthService", () => {
 			// Given
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			userRepo.findByEmail.mockResolvedValue(null);
-			loginAttemptRepo.create.mockResolvedValue({} as never);
+			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -578,9 +581,9 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(false);
-			loginAttemptRepo.create.mockResolvedValue({} as never);
+			loginAttemptRepo.create.mockResolvedValue({} as LoginAttempt);
 
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
@@ -604,7 +607,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: pendingUser.id,
 				password: "hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -627,7 +630,7 @@ describe("AuthService", () => {
 			await service.login(loginInput);
 
 			// Then
-			expect(sessionRepo.create).toHaveBeenCalled();
+			expect(sessionService.createSessionWithTokens).toHaveBeenCalled();
 			expect(securityLogRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUser.id,
@@ -686,7 +689,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: lockedUser.id,
 				password: "hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 
 			// When & Then
@@ -711,8 +714,8 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			sessionRepo.revoke.mockResolvedValue({} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -733,8 +736,8 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			sessionRepo.revoke.mockResolvedValue({} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
 
 			// When
@@ -799,7 +802,7 @@ describe("AuthService", () => {
 		it("사용자의 모든 세션을 비활성화한다", async () => {
 			// Given
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.logoutAll(userId);
@@ -815,7 +818,7 @@ describe("AuthService", () => {
 		it("보안 이벤트를 기록한다", async () => {
 			// Given
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.logoutAll(userId);
@@ -861,7 +864,9 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -869,8 +874,8 @@ describe("AuthService", () => {
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.refreshTokens(refreshToken);
@@ -888,7 +893,9 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -896,8 +903,8 @@ describe("AuthService", () => {
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
 				tokenVersion: 2,
-			} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.refreshTokens(refreshToken);
@@ -929,12 +936,14 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When & Then
 			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
@@ -960,7 +969,9 @@ describe("AuthService", () => {
 				.revoked()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
 
@@ -977,7 +988,9 @@ describe("AuthService", () => {
 				.expired()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
 
@@ -995,7 +1008,9 @@ describe("AuthService", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(mockPayload as never);
+			tokenService.verifyRefreshToken.mockResolvedValue(
+				mockPayload as JwtPayload,
+			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -1095,15 +1110,16 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as never);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
+			verificationService.verifyCode.mockResolvedValue(true as boolean);
+			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.resetPassword(email, code, newPassword);
@@ -1166,15 +1182,16 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as never);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
+			verificationService.verifyCode.mockResolvedValue(true as boolean);
+			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.resetPassword(email, code, newPassword);
@@ -1201,15 +1218,16 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId: mockUser.id,
 				password: "old-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			verificationService.verifyCode.mockResolvedValue(true as never);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
+			verificationService.verifyCode.mockResolvedValue(true as boolean);
+			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.resetPassword(email, code, newPassword);
@@ -1245,14 +1263,15 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.changePassword(
@@ -1274,7 +1293,7 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
@@ -1303,14 +1322,15 @@ describe("AuthService", () => {
 				id: "account-123",
 				userId,
 				password: "current-hashed-password",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.changePassword(userId, currentPassword, newPassword);
@@ -1323,6 +1343,74 @@ describe("AuthService", () => {
 				}),
 				expect.any(Object),
 			);
+		});
+
+		describe("세션 폐기", () => {
+			const sessionId = "session-current";
+
+			it("비밀번호 변경 후 현재 세션 제외 전체 폐기 확인", async () => {
+				// Given
+				const user = UserBuilder.create().withId(userId).verified().build();
+				userRepo.findById.mockResolvedValue(user);
+				accountRepo.findByUserIdAndProvider.mockResolvedValue({
+					id: "account-123",
+					userId,
+					password: "current-hashed-password",
+				} as unknown as Account);
+				passwordService.verify.mockResolvedValue(true);
+				passwordService.hash.mockResolvedValue("new-hashed-password");
+				database.$transaction.mockImplementation(
+					async (callback: TransactionCallback) =>
+						callback({} as Prisma.TransactionClient),
+				);
+				accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
+				sessionRepo.revokeAllByUserId.mockResolvedValue(3);
+				securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+				// When
+				await service.changePassword(
+					userId,
+					currentPassword,
+					newPassword,
+					undefined,
+					sessionId,
+				);
+
+				// Then
+				expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
+					userId,
+					REVOKE_REASON.PASSWORD_CHANGED,
+					sessionId,
+					expect.any(Object),
+				);
+			});
+
+			it("소셜 전용 사용자 시 USER_0613 에러", async () => {
+				// Given
+				const user = UserBuilder.create().withId(userId).verified().build();
+				userRepo.findById.mockResolvedValue(user);
+				accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
+
+				// When & Then
+				await expect(
+					service.changePassword(userId, currentPassword, newPassword),
+				).rejects.toThrow(BusinessException);
+			});
+
+			it("탈퇴한 사용자의 비밀번호 변경 시 USER_0606 에러", async () => {
+				// Given
+				const deletedUser = UserBuilder.create()
+					.withId(userId)
+					.deleted()
+					.build();
+				userRepo.findById.mockResolvedValue(deletedUser);
+
+				// When & Then
+				await expect(
+					service.changePassword(userId, currentPassword, newPassword),
+				).rejects.toThrow(BusinessException);
+				expect(accountRepo.findByUserIdAndProvider).not.toHaveBeenCalled();
+			});
 		});
 	});
 
@@ -1340,15 +1428,21 @@ describe("AuthService", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findAllByUserId.mockResolvedValue([
-				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
-			] as never);
+				{
+					id: 1,
+					userId,
+					provider: "CREDENTIAL" as AccountProvider,
+					password: "hashed-pw",
+				},
+			] as Account[]);
 			passwordService.verify.mockResolvedValue(true);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			userRepo.softDelete.mockResolvedValue({} as never);
+			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.deleteAccount(
@@ -1378,8 +1472,13 @@ describe("AuthService", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findAllByUserId.mockResolvedValue([
-				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
-			] as never);
+				{
+					id: 1,
+					userId,
+					provider: "CREDENTIAL" as AccountProvider,
+					password: "hashed-pw",
+				},
+			] as Account[]);
 
 			// When & Then
 			await expect(
@@ -1392,8 +1491,13 @@ describe("AuthService", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findAllByUserId.mockResolvedValue([
-				{ id: 1, userId, provider: "CREDENTIAL", password: "hashed-pw" },
-			] as never);
+				{
+					id: 1,
+					userId,
+					provider: "CREDENTIAL" as AccountProvider,
+					password: "hashed-pw",
+				},
+			] as Account[]);
 			passwordService.verify.mockResolvedValue(false);
 
 			// When & Then
@@ -1412,14 +1516,20 @@ describe("AuthService", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findAllByUserId.mockResolvedValue([
-				{ id: 1, userId, provider: "GOOGLE", password: null },
-			] as never);
+				{
+					id: 1,
+					userId,
+					provider: "GOOGLE" as AccountProvider,
+					password: null,
+				},
+			] as Account[]);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			userRepo.softDelete.mockResolvedValue({} as never);
+			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.deleteAccount(
@@ -1464,14 +1574,20 @@ describe("AuthService", () => {
 			const user = UserBuilder.create().withId(userId).verified().build();
 			userRepo.findById.mockResolvedValue(user);
 			accountRepo.findAllByUserId.mockResolvedValue([
-				{ id: 1, userId, provider: "GOOGLE", password: null },
-			] as never);
+				{
+					id: 1,
+					userId,
+					provider: "GOOGLE" as AccountProvider,
+					password: null,
+				},
+			] as Account[]);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
-			userRepo.softDelete.mockResolvedValue({} as never);
+			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.deleteAccount(userId, sessionId, {}, metadata);
@@ -1485,77 +1601,6 @@ describe("AuthService", () => {
 				}),
 				expect.any(Object),
 			);
-		});
-	});
-
-	// ============================================
-	// changePassword (추가 테스트)
-	// ============================================
-
-	describe("changePassword - 세션 폐기", () => {
-		const userId = "user-123";
-		const currentPassword = "CurrentPassword123!";
-		const newPassword = "NewPassword123!";
-		const sessionId = "session-current";
-
-		it("비밀번호 변경 후 현재 세션 제외 전체 폐기 확인", async () => {
-			// Given
-			const user = UserBuilder.create().withId(userId).verified().build();
-			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue({
-				id: "account-123",
-				userId,
-				password: "current-hashed-password",
-			} as never);
-			passwordService.verify.mockResolvedValue(true);
-			passwordService.hash.mockResolvedValue("new-hashed-password");
-			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
-			);
-			accountRepo.updatePassword.mockResolvedValue({} as never);
-			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
-			securityLogRepo.create.mockResolvedValue({} as never);
-
-			// When
-			await service.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				undefined,
-				sessionId,
-			);
-
-			// Then
-			expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
-				userId,
-				REVOKE_REASON.PASSWORD_CHANGED,
-				sessionId,
-				expect.any(Object),
-			);
-		});
-
-		it("소셜 전용 사용자 시 USER_0613 에러", async () => {
-			// Given
-			const user = UserBuilder.create().withId(userId).verified().build();
-			userRepo.findById.mockResolvedValue(user);
-			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
-
-			// When & Then
-			await expect(
-				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(BusinessException);
-		});
-
-		it("탈퇴한 사용자의 비밀번호 변경 시 USER_0606 에러", async () => {
-			// Given
-			const deletedUser = UserBuilder.create().withId(userId).deleted().build();
-			userRepo.findById.mockResolvedValue(deletedUser);
-
-			// When & Then
-			await expect(
-				service.changePassword(userId, currentPassword, newPassword),
-			).rejects.toThrow(BusinessException);
-			expect(accountRepo.findByUserIdAndProvider).not.toHaveBeenCalled();
 		});
 	});
 
@@ -1648,11 +1693,14 @@ describe("AuthService", () => {
 			accountRepo.findByUserIdAndProvider.mockResolvedValue(null);
 			passwordService.hash.mockResolvedValue("hashed-password");
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true);
-			accountRepo.createCredentialAccount.mockResolvedValue({} as never);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			accountRepo.createCredentialAccount.mockResolvedValue(
+				{} as unknown as Account,
+			);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 			return user;
 		};
 
@@ -1800,7 +1848,7 @@ describe("AuthService", () => {
 				userId: deletedUser.id,
 				provider: "CREDENTIAL",
 				password: "hashed-pw",
-			} as never);
+			} as unknown as Account);
 			passwordService.verify.mockResolvedValue(true);
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 
@@ -1878,9 +1926,9 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as never);
+			sessionRepo.revoke.mockResolvedValue({} as Session);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			const result = await service.revokeSession(userId, sessionId);
@@ -1900,9 +1948,9 @@ describe("AuthService", () => {
 				.build();
 
 			sessionRepo.findById.mockResolvedValue(mockSession);
-			sessionRepo.revoke.mockResolvedValue({} as never);
+			sessionRepo.revoke.mockResolvedValue({} as Session);
 			cacheService.invalidateSession.mockResolvedValue(undefined);
-			securityLogRepo.create.mockResolvedValue({} as never);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
 			await service.revokeSession(userId, sessionId);
@@ -1959,7 +2007,8 @@ describe("AuthService", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
@@ -2015,7 +2064,8 @@ describe("AuthService", () => {
 
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
-				async (callback: TransactionCallback) => callback({} as never),
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "654321",

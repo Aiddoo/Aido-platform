@@ -1,0 +1,20 @@
+import { Module } from "@nestjs/common";
+
+import { AuthModule } from "@/modules/auth/auth.module";
+
+import { UserConsentRepository } from "./repositories/user-consent.repository";
+import { UserPreferenceRepository } from "./repositories/user-preference.repository";
+import { UserSettingsService } from "./services/user-settings.service";
+import { SettingsController } from "./settings.controller";
+
+@Module({
+	imports: [AuthModule],
+	controllers: [SettingsController],
+	providers: [
+		UserSettingsService,
+		UserPreferenceRepository,
+		UserConsentRepository,
+	],
+	exports: [UserPreferenceRepository, UserConsentRepository],
+})
+export class UserSettingsModule {}

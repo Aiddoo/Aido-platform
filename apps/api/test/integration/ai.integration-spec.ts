@@ -180,7 +180,7 @@ describe("AiController (Integration)", () => {
 		it("AI 서비스 불가 시 503 에러", async () => {
 			// Given - AI 서비스 에러 설정
 			aiService.parseTodo.mockRejectedValue(
-				new BusinessException(ErrorCode.AI_0001),
+				new BusinessException(ErrorCode.AI_1301),
 			);
 
 			// When - API 요청
@@ -190,13 +190,13 @@ describe("AiController (Integration)", () => {
 				.expect(503);
 
 			// Then - 503 에러 반환
-			expect(response.body.error.code).toBe(ErrorCode.AI_0001);
+			expect(response.body.error.code).toBe(ErrorCode.AI_1301);
 		});
 
 		it("파싱 실패 시 422 에러", async () => {
 			// Given - 파싱 실패 에러 설정
 			aiService.parseTodo.mockRejectedValue(
-				new BusinessException(ErrorCode.AI_0002, {
+				new BusinessException(ErrorCode.AI_1302, {
 					details: "Invalid response format",
 				}),
 			);
@@ -208,7 +208,7 @@ describe("AiController (Integration)", () => {
 				.expect(422);
 
 			// Then - 422 에러 반환
-			expect(response.body.error.code).toBe(ErrorCode.AI_0002);
+			expect(response.body.error.code).toBe(ErrorCode.AI_1302);
 		});
 
 		it("너무 긴 텍스트 요청 시 400 에러", async () => {

@@ -247,7 +247,7 @@ describe("AI (e2e)", () => {
 		});
 
 		describe("사용량 제한", () => {
-			it("5회 초과 시 429 에러 반환 (AI_0003)", async () => {
+			it("5회 초과 시 429 에러 반환 (AI_1303)", async () => {
 				// Given - 5회 사용 완료 상태 설정
 				await setUsage(testUserId, 5);
 
@@ -257,9 +257,9 @@ describe("AI (e2e)", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.send({ text: "테스트" });
 
-				// Then - 429 에러와 AI_0003 코드 반환
+				// Then - 429 에러와 AI_1303 코드 반환
 				expect(response.status).toBe(429);
-				expect(response.body.error.code).toBe("AI_0003");
+				expect(response.body.error.code).toBe("AI_1303");
 				expect(response.body.error.message).toContain(
 					"일일 AI 사용 횟수를 초과",
 				);
@@ -292,7 +292,7 @@ describe("AI (e2e)", () => {
 					.send({ text: "테스트 6" });
 
 				expect(response.status).toBe(429);
-				expect(response.body.error.code).toBe("AI_0003");
+				expect(response.body.error.code).toBe("AI_1303");
 				expect(fakeAiProvider.getCallCount()).toBe(5);
 			});
 		});
@@ -375,7 +375,7 @@ describe("AI (e2e)", () => {
 		});
 
 		describe("AI 서비스 에러", () => {
-			it("AI 서비스 불가 시 503 에러 (AI_0001)", async () => {
+			it("AI 서비스 불가 시 503 에러 (AI_1301)", async () => {
 				// Given - AI 서비스 비활성화 설정
 				fakeAiProvider.setAvailable(false);
 
@@ -387,10 +387,10 @@ describe("AI (e2e)", () => {
 
 				// Then - 503 Service Unavailable 반환
 				expect(response.status).toBe(503);
-				expect(response.body.error.code).toBe("AI_0001");
+				expect(response.body.error.code).toBe("AI_1301");
 			});
 
-			it("AI 파싱 실패 시 422 에러 (AI_0002)", async () => {
+			it("AI 파싱 실패 시 422 에러 (AI_1302)", async () => {
 				// Given - AI 파싱 실패 설정
 				fakeAiProvider.setInvalidResponse(new Error("파싱 실패"));
 
@@ -402,7 +402,7 @@ describe("AI (e2e)", () => {
 
 				// Then - 422 Unprocessable Entity 반환
 				expect(response.status).toBe(422);
-				expect(response.body.error.code).toBe("AI_0002");
+				expect(response.body.error.code).toBe("AI_1302");
 			});
 		});
 

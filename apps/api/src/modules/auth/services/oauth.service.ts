@@ -3,7 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { addMilliseconds, now } from "@/common/date";
+import { now } from "@/common/date";
 import { EncryptionService } from "@/common/encryption";
 import {
 	BusinessException,
@@ -15,8 +15,6 @@ import {
 	type OAuthState,
 	Prisma,
 } from "@/generated/prisma/client";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
-import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 import {
 	AdminNotificationEvents,
 	type UserRegisteredEventPayload,
@@ -34,33 +32,76 @@ import {
 	OAuthStateRepository,
 } from "../repositories/oauth-state.repository";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
-import { SessionRepository } from "../repositories/session.repository";
 import { UserRepository } from "../repositories/user.repository";
 import type { LoginResult, RequestMetadata } from "../types";
+import {
+	AppleOAuthProvider,
+	GoogleOAuthProvider,
+	type IOAuthProviderStrategy,
+	KakaoOAuthProvider,
+	NaverOAuthProvider,
+} from "./oauth-providers";
 import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
-import { TokenService } from "./token.service";
+import { SessionService } from "./session.service";
 
 // Apple, Google, Kakao, Naver OAuth 소셜 로그인 처리
 @Injectable()
 export class OAuthService {
 	private readonly _logger = new Logger(OAuthService.name);
+	private readonly _providers: Map<AccountProvider, IOAuthProviderStrategy>;
 
 	constructor(
 		private readonly _database: DatabaseService,
 		private readonly _userRepository: UserRepository,
 		private readonly _accountRepository: AccountRepository,
-		private readonly _sessionRepository: SessionRepository,
 		private readonly _securityLogRepository: SecurityLogRepository,
 		private readonly _loginAttemptRepository: LoginAttemptRepository,
 		private readonly _oauthStateRepository: OAuthStateRepository,
-		private readonly _todoCategoryRepository: TodoCategoryRepository,
-		private readonly _tokenService: TokenService,
+		private readonly _sessionService: SessionService,
 		private readonly _tokenVerifier: OAuthTokenVerifierService,
 		private readonly _configService: TypedConfigService,
 		private readonly _encryptionService: EncryptionService,
 		private readonly _eventEmitter: EventEmitter2,
 		private readonly _cacheService: CacheService,
-	) {}
+	) {
+		this._providers = new Map<AccountProvider, IOAuthProviderStrategy>([
+			["APPLE", new AppleOAuthProvider(this._tokenVerifier)],
+			[
+				"GOOGLE",
+				new GoogleOAuthProvider(
+					() => this._configService.googleOAuth,
+					this._tokenVerifier,
+					this._logger,
+				),
+			],
+			[
+				"KAKAO",
+				new KakaoOAuthProvider(
+					() => this._configService.kakaoOAuth,
+					this._tokenVerifier,
+					this._logger,
+				),
+			],
+			[
+				"NAVER",
+				new NaverOAuthProvider(
+					() => this._configService.naverOAuth,
+					this._tokenVerifier,
+					this._logger,
+				),
+			],
+		]);
+	}
+
+	private _getStrategy(provider: AccountProvider): IOAuthProviderStrategy {
+		const strategy = this._providers.get(provider);
+		if (!strategy) {
+			throw BusinessExceptions.socialProviderError(provider, {
+				reason: `Unsupported provider: ${provider}`,
+			});
+		}
+		return strategy;
+	}
 
 	// 보안을 위한 화이트리스트 방식 검증 (환경별 분기)
 	private get allowedRedirectPatterns(): RegExp[] {
@@ -126,120 +167,88 @@ export class OAuthService {
 		return existingState?.redirectUri ?? null;
 	}
 
-	/** @deprecated generateKakaoAuthUrlWithState 사용 권장 */
-	generateKakaoAuthUrl(state: string): string {
-		const { clientId, callbackUrl, isConfigured } =
-			this._configService.kakaoOAuth;
+	// ============================================
+	// Strategy 기반 통합 메서드
+	// ============================================
 
-		if (!isConfigured || !clientId || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
+	/**
+	 * 모바일 로그인 통합 처리
+	 *
+	 * Provider 전략 클래스에 토큰 검증과 옵션 빌드를 위임하고,
+	 * 공통 흐름(_handleSocialLogin, 실패 기록)을 관리합니다.
+	 */
+	private async _handleMobileLogin(
+		provider: AccountProvider,
+		token: string,
+		userName?: string,
+		metadata?: RequestMetadata,
+		nonce?: string,
+	): Promise<LoginResult> {
+		const strategy = this._getStrategy(provider);
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
+		try {
+			const verifiedProfile = await strategy.verifyToken(token, nonce);
+			const opts = strategy.buildLoginOptions(verifiedProfile, userName);
+
+			return this._handleSocialLogin(
+				provider,
+				verifiedProfile.id,
+				verifiedProfile.email ?? undefined,
+				{ ...opts, metadata },
+			);
+		} catch (error) {
+			await this._loginAttemptRepository.create({
+				email: strategy.failureEmail,
+				provider,
+				ipAddress: ip,
+				userAgent,
+				success: false,
+				failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
+			});
+			throw error;
 		}
-
-		const params = new URLSearchParams({
-			client_id: clientId,
-			redirect_uri: callbackUrl,
-			response_type: "code",
-			state,
-			scope: "profile_nickname profile_image",
-		});
-
-		return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
 	}
 
-	async generateKakaoAuthUrlWithState(
+	/**
+	 * Auth URL 생성 통합 처리
+	 */
+	private async _generateAuthUrlWithState(
+		provider: AccountProvider,
 		state: string,
 		clientRedirectUri?: string,
 		mode?: OAuthMode,
 		initiatingUserId?: string,
 	): Promise<string> {
-		const { clientId, callbackUrl, isConfigured } =
-			this._configService.kakaoOAuth;
-
-		if (!isConfigured || !clientId || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		// Redirect URI 검증 (화이트리스트)
+		const strategy = this._getStrategy(provider);
 		const validatedRedirectUri = this.validateRedirectUri(clientRedirectUri);
 
-		// OAuthState 생성 (redirect_uri 저장)
-		await this._oauthStateRepository.create(
-			state,
-			"KAKAO",
-			validatedRedirectUri,
-			{
-				mode,
-				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
-			},
-		);
+		const persistState = (
+			p: AccountProvider,
+			redirectUri: string,
+			opts: { mode?: OAuthMode; initiatingUserId?: string },
+		) => this._oauthStateRepository.create(state, p, redirectUri, opts);
 
-		const params = new URLSearchParams({
-			client_id: clientId,
-			redirect_uri: callbackUrl, // 카카오에는 백엔드 콜백 URL 전달
-			response_type: "code",
+		const url = await strategy.generateAuthUrl({
 			state,
-			scope: "profile_nickname profile_image",
+			validatedRedirectUri,
+			mode,
+			initiatingUserId,
+			persistState,
 		});
 
-		return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
+		if (!url) {
+			throw BusinessExceptions.invalidCredentials();
+		}
+		return url;
 	}
 
 	/**
-	 * Kakao Authorization Code → Access Token 교환
-	 * handleKakaoWebCallback과 linking 모드에서 공통 사용
+	 * Web Callback + ExchangeCode 통합 처리
 	 */
-	private async _exchangeKakaoCode(code: string): Promise<{
-		accessToken: string;
-	}> {
-		const { clientId, clientSecret, callbackUrl, isConfigured } =
-			this._configService.kakaoOAuth;
-
-		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: new URLSearchParams({
-				grant_type: "authorization_code",
-				client_id: clientId,
-				client_secret: clientSecret,
-				redirect_uri: callbackUrl,
-				code,
-			}).toString(),
-		});
-
-		if (!tokenResponse.ok) {
-			const errorData = await tokenResponse.text();
-			this._logger.error(`Kakao token exchange failed: ${errorData}`);
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenData = (await tokenResponse.json()) as {
-			access_token: string;
-			token_type: string;
-			refresh_token: string;
-			expires_in: number;
-		};
-
-		return { accessToken: tokenData.access_token };
-	}
-
-	async handleKakaoWebCallback(
-		code: string,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
-		const { accessToken } = await this._exchangeKakaoCode(code);
-
-		// Access Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleKakaoMobileLogin(accessToken, undefined, metadata);
-	}
-
-	// 딥링크 URL에 토큰 노출 방지를 위해 일회용 교환 코드 사용
-	async handleKakaoWebCallbackWithExchangeCode(
+	private async _handleWebCallbackWithExchangeCode(
+		provider: AccountProvider,
 		code: string,
 		state: string,
 		metadata?: RequestMetadata,
@@ -250,15 +259,18 @@ export class OAuthService {
 		name?: string;
 		profileImage?: string;
 	}> {
+		const strategy = this._getStrategy(provider);
 		const oauthState = await this.validateAndGetOAuthState(state);
 		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
 
+		const exchanged = await strategy.exchangeCode(code, state);
+		if (!exchanged) {
+			throw BusinessExceptions.invalidCredentials();
+		}
+
 		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
 		if (oauthState.mode === "link") {
-			const { accessToken } = await this._exchangeKakaoCode(code);
-			const verifiedProfile =
-				await this._tokenVerifier.verifyKakaoToken(accessToken);
-
+			const verifiedProfile = await strategy.verifyToken(exchanged.token);
 			const exchangeCode = await this._saveLinkingExchangeCode(
 				oauthState.id,
 				oauthState.provider,
@@ -268,12 +280,17 @@ export class OAuthService {
 			return {
 				exchangeCode,
 				redirectUri,
-				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
+				userId: verifiedProfile.id,
 			};
 		}
 
 		// 기존 로그인 모드
-		const loginResult = await this.handleKakaoWebCallback(code, metadata);
+		const loginResult = await this._handleMobileLogin(
+			provider,
+			exchanged.token,
+			undefined,
+			metadata,
+		);
 
 		const exchangeCode = await this.createExchangeCode(
 			oauthState.id,
@@ -292,6 +309,25 @@ export class OAuthService {
 			name: loginResult.name ?? undefined,
 			profileImage: loginResult.profileImage ?? undefined,
 		};
+	}
+
+	// ============================================
+	// Public delegates — 컨트롤러 인터페이스 유지
+	// ============================================
+
+	async generateKakaoAuthUrlWithState(
+		state: string,
+		clientRedirectUri?: string,
+		mode?: OAuthMode,
+		initiatingUserId?: string,
+	): Promise<string> {
+		return this._generateAuthUrlWithState(
+			"KAKAO",
+			state,
+			clientRedirectUri,
+			mode,
+			initiatingUserId,
+		);
 	}
 
 	async generateGoogleAuthUrlWithState(
@@ -300,148 +336,13 @@ export class OAuthService {
 		mode?: OAuthMode,
 		initiatingUserId?: string,
 	): Promise<string> {
-		const { clientId, callbackUrl, isConfigured } =
-			this._configService.googleOAuth;
-
-		if (!isConfigured || !clientId || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		// Redirect URI 검증 (화이트리스트)
-		const validatedRedirectUri = this.validateRedirectUri(clientRedirectUri);
-
-		// OAuthState 생성 (redirect_uri 저장)
-		await this._oauthStateRepository.create(
-			state,
+		return this._generateAuthUrlWithState(
 			"GOOGLE",
-			validatedRedirectUri,
-			{
-				mode,
-				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
-			},
-		);
-
-		const params = new URLSearchParams({
-			client_id: clientId,
-			redirect_uri: callbackUrl, // 구글에는 백엔드 콜백 URL 전달
-			response_type: "code",
 			state,
-			scope: "openid email profile",
-			access_type: "offline",
-			prompt: "consent",
-		});
-
-		return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-	}
-
-	/**
-	 * Google Authorization Code → ID Token 교환
-	 * handleGoogleWebCallback과 linking 모드에서 공통 사용
-	 */
-	private async _exchangeGoogleCode(code: string): Promise<{
-		idToken: string;
-	}> {
-		const { clientId, clientSecret, callbackUrl, isConfigured } =
-			this._configService.googleOAuth;
-
-		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: new URLSearchParams({
-				grant_type: "authorization_code",
-				client_id: clientId,
-				client_secret: clientSecret,
-				redirect_uri: callbackUrl,
-				code,
-			}).toString(),
-		});
-
-		if (!tokenResponse.ok) {
-			const errorData = await tokenResponse.text();
-			this._logger.error(`Google token exchange failed: ${errorData}`);
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenData = (await tokenResponse.json()) as {
-			access_token: string;
-			id_token: string;
-			token_type: string;
-			refresh_token?: string;
-			expires_in: number;
-		};
-
-		return { idToken: tokenData.id_token };
-	}
-
-	async handleGoogleWebCallback(
-		code: string,
-		metadata?: RequestMetadata,
-	): Promise<LoginResult> {
-		const { idToken } = await this._exchangeGoogleCode(code);
-
-		// ID Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleGoogleMobileLogin(idToken, undefined, metadata);
-	}
-
-	async handleGoogleWebCallbackWithExchangeCode(
-		code: string,
-		state: string,
-		metadata?: RequestMetadata,
-	): Promise<{
-		exchangeCode: string;
-		redirectUri: string;
-		userId: string;
-		name?: string;
-		profileImage?: string;
-	}> {
-		const oauthState = await this.validateAndGetOAuthState(state);
-		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
-
-		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
-		if (oauthState.mode === "link") {
-			const { idToken } = await this._exchangeGoogleCode(code);
-			const verifiedProfile =
-				await this._tokenVerifier.verifyGoogleToken(idToken);
-
-			const exchangeCode = await this._saveLinkingExchangeCode(
-				oauthState.id,
-				oauthState.provider,
-				verifiedProfile.id,
-			);
-
-			return {
-				exchangeCode,
-				redirectUri,
-				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
-			};
-		}
-
-		// 기존 로그인 모드
-		const loginResult = await this.handleGoogleWebCallback(code, metadata);
-
-		const exchangeCode = await this.createExchangeCode(
-			oauthState.id,
-			loginResult.tokens,
-			{
-				userId: loginResult.userId,
-				userName: loginResult.name ?? undefined,
-				profileImage: loginResult.profileImage ?? undefined,
-			},
+			clientRedirectUri,
+			mode,
+			initiatingUserId,
 		);
-
-		return {
-			exchangeCode,
-			redirectUri,
-			userId: loginResult.userId,
-			name: loginResult.name ?? undefined,
-			profileImage: loginResult.profileImage ?? undefined,
-		};
 	}
 
 	async generateNaverAuthUrlWithState(
@@ -450,158 +351,52 @@ export class OAuthService {
 		mode?: OAuthMode,
 		initiatingUserId?: string,
 	): Promise<string> {
-		const { clientId, callbackUrl, isConfigured } =
-			this._configService.naverOAuth;
-
-		if (!isConfigured || !clientId || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		// Redirect URI 검증 (화이트리스트)
-		const validatedRedirectUri = this.validateRedirectUri(clientRedirectUri);
-
-		// OAuthState 생성 (redirect_uri 저장)
-		await this._oauthStateRepository.create(
-			state,
+		return this._generateAuthUrlWithState(
 			"NAVER",
-			validatedRedirectUri,
-			{
-				mode,
-				initiatingUserId: mode === "link" ? initiatingUserId : undefined,
-			},
-		);
-
-		const params = new URLSearchParams({
-			client_id: clientId,
-			redirect_uri: callbackUrl, // 네이버에는 백엔드 콜백 URL 전달
-			response_type: "code",
 			state,
-		});
-
-		return `https://nid.naver.com/oauth2.0/authorize?${params.toString()}`;
+			clientRedirectUri,
+			mode,
+			initiatingUserId,
+		);
 	}
 
-	/**
-	 * Naver Authorization Code → Access Token 교환
-	 * handleNaverWebCallback과 linking 모드에서 공통 사용
-	 */
-	private async _exchangeNaverCode(
+	async handleKakaoWebCallbackWithExchangeCode(
 		code: string,
-		state?: string,
-	): Promise<{
-		accessToken: string;
-	}> {
-		const { clientId, clientSecret, callbackUrl, isConfigured } =
-			this._configService.naverOAuth;
-
-		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenRequestBody = new URLSearchParams({
-			grant_type: "authorization_code",
-			client_id: clientId,
-			client_secret: clientSecret,
-			redirect_uri: callbackUrl,
-			code,
-		});
-
-		if (state) {
-			tokenRequestBody.set("state", state);
-		}
-
-		const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: tokenRequestBody.toString(),
-		});
-
-		if (!tokenResponse.ok) {
-			const errorData = await tokenResponse.text();
-			this._logger.error(`Naver token exchange failed: ${errorData}`);
-			throw BusinessExceptions.invalidCredentials();
-		}
-
-		const tokenData = (await tokenResponse.json()) as {
-			access_token: string;
-			token_type: string;
-			refresh_token?: string;
-			expires_in: number;
-		};
-
-		return { accessToken: tokenData.access_token };
-	}
-
-	async handleNaverWebCallback(
-		code: string,
+		state: string,
 		metadata?: RequestMetadata,
-		state?: string,
-	): Promise<LoginResult> {
-		const { accessToken } = await this._exchangeNaverCode(code, state);
+	) {
+		return this._handleWebCallbackWithExchangeCode(
+			"KAKAO",
+			code,
+			state,
+			metadata,
+		);
+	}
 
-		// Access Token으로 사용자 정보 검증 및 로그인 처리
-		return this.handleNaverMobileLogin(accessToken, undefined, metadata);
+	async handleGoogleWebCallbackWithExchangeCode(
+		code: string,
+		state: string,
+		metadata?: RequestMetadata,
+	) {
+		return this._handleWebCallbackWithExchangeCode(
+			"GOOGLE",
+			code,
+			state,
+			metadata,
+		);
 	}
 
 	async handleNaverWebCallbackWithExchangeCode(
 		code: string,
 		state: string,
 		metadata?: RequestMetadata,
-	): Promise<{
-		exchangeCode: string;
-		redirectUri: string;
-		userId: string;
-		name?: string;
-		profileImage?: string;
-	}> {
-		const oauthState = await this.validateAndGetOAuthState(state);
-		const redirectUri = oauthState.redirectUri || this.DEFAULT_REDIRECT_URI;
-
-		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
-		if (oauthState.mode === "link") {
-			const { accessToken } = await this._exchangeNaverCode(code, state);
-			const verifiedProfile =
-				await this._tokenVerifier.verifyNaverToken(accessToken);
-
-			const exchangeCode = await this._saveLinkingExchangeCode(
-				oauthState.id,
-				oauthState.provider,
-				verifiedProfile.id,
-			);
-
-			return {
-				exchangeCode,
-				redirectUri,
-				userId: verifiedProfile.id, // linking 모드에서는 providerAccountId
-			};
-		}
-
-		// 기존 로그인 모드
-		const loginResult = await this.handleNaverWebCallback(
+	) {
+		return this._handleWebCallbackWithExchangeCode(
+			"NAVER",
 			code,
-			metadata,
 			state,
+			metadata,
 		);
-
-		const exchangeCode = await this.createExchangeCode(
-			oauthState.id,
-			loginResult.tokens,
-			{
-				userId: loginResult.userId,
-				userName: loginResult.name ?? undefined,
-				profileImage: loginResult.profileImage ?? undefined,
-			},
-		);
-
-		return {
-			exchangeCode,
-			redirectUri,
-			userId: loginResult.userId,
-			name: loginResult.name ?? undefined,
-			profileImage: loginResult.profileImage ?? undefined,
-		};
 	}
 
 	async handleAppleMobileLogin(
@@ -610,38 +405,7 @@ export class OAuthService {
 		metadata?: RequestMetadata,
 		nonce?: string,
 	): Promise<LoginResult> {
-		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
-
-		try {
-			// 서버에서 토큰 검증 (nonce 포함)
-			const verifiedProfile = await this._tokenVerifier.verifyAppleToken(
-				idToken,
-				nonce,
-			);
-
-			return this._handleSocialLogin(
-				"APPLE",
-				verifiedProfile.id,
-				verifiedProfile.email ?? undefined,
-				{
-					userName,
-					emailVerified: verifiedProfile.emailVerified,
-					metadata,
-				},
-			);
-		} catch (error) {
-			// 토큰 검증 실패 시 LoginAttempt 기록
-			await this._loginAttemptRepository.create({
-				email: "apple_unknown@social.aido.app",
-				provider: "APPLE",
-				ipAddress: ip,
-				userAgent,
-				success: false,
-				failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
-			});
-			throw error;
-		}
+		return this._handleMobileLogin("APPLE", idToken, userName, metadata, nonce);
 	}
 
 	async handleGoogleMobileLogin(
@@ -649,40 +413,7 @@ export class OAuthService {
 		userName?: string,
 		metadata?: RequestMetadata,
 	): Promise<LoginResult> {
-		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
-
-		try {
-			// 서버에서 토큰 검증
-			const verifiedProfile =
-				await this._tokenVerifier.verifyGoogleToken(idToken);
-
-			// 검증된 프로필에서 이름 사용 (userName이 제공되지 않은 경우)
-			const finalUserName = userName ?? verifiedProfile.name;
-
-			return this._handleSocialLogin(
-				"GOOGLE",
-				verifiedProfile.id,
-				verifiedProfile.email ?? undefined,
-				{
-					userName: finalUserName,
-					emailVerified: verifiedProfile.emailVerified,
-					profileImage: verifiedProfile.picture,
-					metadata,
-				},
-			);
-		} catch (error) {
-			// 토큰 검증 실패 시 LoginAttempt 기록
-			await this._loginAttemptRepository.create({
-				email: "google_unknown@social.aido.app",
-				provider: "GOOGLE",
-				ipAddress: ip,
-				userAgent,
-				success: false,
-				failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
-			});
-			throw error;
-		}
+		return this._handleMobileLogin("GOOGLE", idToken, userName, metadata);
 	}
 
 	async handleKakaoMobileLogin(
@@ -690,40 +421,7 @@ export class OAuthService {
 		userName?: string,
 		metadata?: RequestMetadata,
 	): Promise<LoginResult> {
-		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
-
-		try {
-			// 서버에서 토큰 검증
-			const verifiedProfile =
-				await this._tokenVerifier.verifyKakaoToken(accessToken);
-
-			// 검증된 프로필에서 이름 사용 (userName이 제공되지 않은 경우)
-			const finalUserName = userName ?? verifiedProfile.name;
-
-			return this._handleSocialLogin(
-				"KAKAO",
-				verifiedProfile.id,
-				verifiedProfile.email ?? undefined,
-				{
-					userName: finalUserName,
-					emailVerified: verifiedProfile.emailVerified,
-					profileImage: verifiedProfile.picture,
-					metadata,
-				},
-			);
-		} catch (error) {
-			// 토큰 검증 실패 시 LoginAttempt 기록
-			await this._loginAttemptRepository.create({
-				email: "kakao_unknown@social.aido.app",
-				provider: "KAKAO",
-				ipAddress: ip,
-				userAgent,
-				success: false,
-				failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
-			});
-			throw error;
-		}
+		return this._handleMobileLogin("KAKAO", accessToken, userName, metadata);
 	}
 
 	async handleNaverMobileLogin(
@@ -731,40 +429,7 @@ export class OAuthService {
 		userName?: string,
 		metadata?: RequestMetadata,
 	): Promise<LoginResult> {
-		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
-
-		try {
-			// 서버에서 토큰 검증
-			const verifiedProfile =
-				await this._tokenVerifier.verifyNaverToken(accessToken);
-
-			// 검증된 프로필에서 이름 사용 (userName이 제공되지 않은 경우)
-			const finalUserName = userName ?? verifiedProfile.name;
-
-			return this._handleSocialLogin(
-				"NAVER",
-				verifiedProfile.id,
-				verifiedProfile.email ?? undefined,
-				{
-					userName: finalUserName,
-					emailVerified: verifiedProfile.emailVerified,
-					profileImage: verifiedProfile.picture,
-					metadata,
-				},
-			);
-		} catch (error) {
-			// 토큰 검증 실패 시 LoginAttempt 기록
-			await this._loginAttemptRepository.create({
-				email: "naver_unknown@social.aido.app",
-				provider: "NAVER",
-				ipAddress: ip,
-				userAgent,
-				success: false,
-				failureReason: LOGIN_FAILURE_REASON.OAUTH_TOKEN_INVALID,
-			});
-			throw error;
-		}
+		return this._handleMobileLogin("NAVER", accessToken, userName, metadata);
 	}
 
 	async linkAccount(
@@ -850,61 +515,22 @@ export class OAuthService {
 		},
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
-		const { provider, idToken, accessToken } = dto;
-		let providerAccountId: string;
+		const { provider, idToken, accessToken, nonce } = dto;
+		const strategy = this._providers.get(provider);
 
-		// 토큰 검증하여 providerAccountId 추출
-		switch (provider) {
-			case "APPLE": {
-				if (!idToken) {
-					throw BusinessExceptions.invalidCredentials();
-				}
-				const appleProfile = await this._tokenVerifier.verifyAppleToken(
-					idToken,
-					dto.nonce,
-				);
-				providerAccountId = appleProfile.id;
-				break;
-			}
-			case "GOOGLE": {
-				if (!idToken) {
-					throw BusinessExceptions.invalidCredentials();
-				}
-				const googleProfile =
-					await this._tokenVerifier.verifyGoogleToken(idToken);
-				providerAccountId = googleProfile.id;
-				break;
-			}
-			case "KAKAO": {
-				if (!accessToken) {
-					throw BusinessExceptions.invalidCredentials();
-				}
-				const kakaoProfile =
-					await this._tokenVerifier.verifyKakaoToken(accessToken);
-				providerAccountId = kakaoProfile.id;
-				break;
-			}
-			case "NAVER": {
-				if (!accessToken) {
-					throw BusinessExceptions.invalidCredentials();
-				}
-				const naverProfile =
-					await this._tokenVerifier.verifyNaverToken(accessToken);
-				providerAccountId = naverProfile.id;
-				break;
-			}
-			default:
-				throw BusinessExceptions.invalidCredentials();
+		if (!strategy) {
+			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 검증된 providerAccountId로 계정 연동
-		return this.linkAccount(
-			userId,
-			provider,
-			providerAccountId,
-			undefined,
-			metadata,
-		);
+		// Apple/Google은 idToken, Kakao/Naver는 accessToken 사용
+		const token = idToken ?? accessToken;
+		if (!token) {
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		const profile = await strategy.verifyToken(token, nonce);
+
+		return this.linkAccount(userId, provider, profile.id, undefined, metadata);
 	}
 
 	async unlinkAccount(
@@ -1152,16 +778,7 @@ export class OAuthService {
 				},
 			});
 
-			// 기본 카테고리 생성
-			await this._todoCategoryRepository.createMany(
-				DEFAULT_CATEGORIES.map((category) => ({
-					userId: user.id,
-					name: category.name,
-					color: category.color,
-					sortOrder: category.sortOrder,
-				})),
-				tx,
-			);
+			// 기본 카테고리는 user.registered 이벤트를 통해 TodoCategoryModule에서 생성
 
 			// 보안 로그
 			await this._securityLogRepository.create(
@@ -1199,47 +816,18 @@ export class OAuthService {
 		}
 
 		return this._database.$transaction(async (tx) => {
-			// 토큰 패밀리 생성
-			const tokenFamily = this._tokenService.generateTokenFamily();
-
-			// 세션 만료 시간
-			const expiresInSeconds =
-				this._tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
-
-			// 세션 생성
-			const session = await this._sessionRepository.create(
-				{
-					userId,
-					tokenFamily,
-					tokenVersion: 1,
-					deviceFingerprint: options.userAgent,
-					userAgent: options.userAgent,
-					ipAddress: options.ip,
-					expiresAt,
-				},
-				tx,
-			);
-
-			// 토큰 발급
-			const tokens = await this._tokenService.generateTokenPair(
-				userId,
-				email,
-				session.id,
-				user.role,
-				tokenFamily,
-				1,
-			);
-
-			// 리프레시 토큰 해시 업데이트
-			const refreshTokenHash = this._tokenService.hashRefreshToken(
-				tokens.refreshToken,
-			);
-			await this._sessionRepository.updateRefreshTokenHash(
-				session.id,
-				refreshTokenHash,
-				tx,
-			);
+			const { sessionId, tokens } =
+				await this._sessionService.createSessionWithTokens(
+					{
+						userId,
+						email,
+						role: user.role,
+						deviceFingerprint: options.userAgent,
+						userAgent: options.userAgent,
+						ipAddress: options.ip,
+					},
+					tx,
+				);
 
 			// 보안 로그
 			await this._securityLogRepository.create(
@@ -1275,7 +863,7 @@ export class OAuthService {
 				userId,
 				userTag: userWithProfile?.userTag ?? "",
 				tokens,
-				sessionId: session.id,
+				sessionId,
 				name: userWithProfile?.profile?.name ?? null,
 				profileImage: userWithProfile?.profile?.profileImage ?? null,
 			};

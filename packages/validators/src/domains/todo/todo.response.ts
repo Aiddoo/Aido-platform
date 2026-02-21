@@ -62,9 +62,6 @@ export const numberCursorPaginationInfoSchema = z.object({
   size: z.number(),
 });
 
-/** @deprecated numberCursorPaginationInfoSchema 사용 */
-export const cursorPaginationInfoSchema = numberCursorPaginationInfoSchema;
-
 export const todoListResponseSchema = z
   .object({
     items: z.array(todoSchema),

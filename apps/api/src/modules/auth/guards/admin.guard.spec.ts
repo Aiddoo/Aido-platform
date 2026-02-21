@@ -1,31 +1,11 @@
-import { ExecutionContext } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
-
+import { createMockExecutionContext } from "@test/mocks";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
 import { AdminGuard } from "./admin.guard";
 
 describe("AdminGuard", () => {
 	let guard: AdminGuard;
-
-	// ==========================================================================
-	// Mock Factory Functions
-	// ==========================================================================
-
-	const createMockExecutionContext = (
-		user:
-			| { userId: string; email: string; sessionId: string; role: string }
-			| undefined,
-	): ExecutionContext => {
-		const mockRequest = { user };
-		return {
-			switchToHttp: () => ({
-				getRequest: () => mockRequest,
-			}),
-			getHandler: () => ({}),
-			getClass: () => ({}),
-		} as unknown as ExecutionContext;
-	};
 
 	// ==========================================================================
 	// Setup
@@ -48,11 +28,13 @@ describe("AdminGuard", () => {
 	describe("canActivate", () => {
 		it("ADMIN 역할을 가진 사용자는 접근을 허용해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext({
-				userId: "user-1",
-				email: "admin@test.com",
-				sessionId: "session-1",
-				role: "ADMIN",
+			const { context } = createMockExecutionContext({
+				user: {
+					userId: "user-1",
+					email: "admin@test.com",
+					sessionId: "session-1",
+					role: "ADMIN",
+				},
 			});
 
 			// When
@@ -64,11 +46,13 @@ describe("AdminGuard", () => {
 
 		it("USER 역할을 가진 사용자는 접근을 거부해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext({
-				userId: "user-1",
-				email: "user@test.com",
-				sessionId: "session-1",
-				role: "USER",
+			const { context } = createMockExecutionContext({
+				user: {
+					userId: "user-1",
+					email: "user@test.com",
+					sessionId: "session-1",
+					role: "USER",
+				},
 			});
 
 			// When & Then
@@ -77,7 +61,7 @@ describe("AdminGuard", () => {
 
 		it("사용자 정보가 없으면 invalidToken 에러를 던져야 한다", () => {
 			// Given
-			const context = createMockExecutionContext(undefined);
+			const { context } = createMockExecutionContext();
 
 			// When & Then
 			expect(() => guard.canActivate(context)).toThrow(BusinessException);
@@ -85,11 +69,13 @@ describe("AdminGuard", () => {
 
 		it("알 수 없는 역할은 접근을 거부해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext({
-				userId: "user-1",
-				email: "unknown@test.com",
-				sessionId: "session-1",
-				role: "UNKNOWN_ROLE",
+			const { context } = createMockExecutionContext({
+				user: {
+					userId: "user-1",
+					email: "unknown@test.com",
+					sessionId: "session-1",
+					role: "UNKNOWN_ROLE" as any,
+				},
 			});
 
 			// When & Then
@@ -98,11 +84,13 @@ describe("AdminGuard", () => {
 
 		it("빈 문자열 역할은 접근을 거부해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext({
-				userId: "user-1",
-				email: "empty@test.com",
-				sessionId: "session-1",
-				role: "",
+			const { context } = createMockExecutionContext({
+				user: {
+					userId: "user-1",
+					email: "empty@test.com",
+					sessionId: "session-1",
+					role: "" as any,
+				},
 			});
 
 			// When & Then
@@ -117,11 +105,13 @@ describe("AdminGuard", () => {
 	describe("에러 메시지 검증", () => {
 		it("USER 역할 거부 시 ADMIN_1401 에러 코드를 반환해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext({
-				userId: "user-1",
-				email: "user@test.com",
-				sessionId: "session-1",
-				role: "USER",
+			const { context } = createMockExecutionContext({
+				user: {
+					userId: "user-1",
+					email: "user@test.com",
+					sessionId: "session-1",
+					role: "USER",
+				},
 			});
 
 			// When & Then
@@ -136,7 +126,7 @@ describe("AdminGuard", () => {
 
 		it("사용자 정보 없음 시 AUTH 에러 코드를 반환해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext(undefined);
+			const { context } = createMockExecutionContext();
 
 			// When & Then
 			try {
