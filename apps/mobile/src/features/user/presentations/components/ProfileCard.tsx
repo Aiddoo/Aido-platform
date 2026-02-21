@@ -29,7 +29,7 @@ export function ProfileCard() {
   return (
     <PressableFeedback
       onPress={() => router.push('/settings/profile')}
-      className="rounded-2xl bg-white p-4"
+      className="rounded-2xl px-4 py-3"
     >
       <HStack gap={12} align="center">
         <Avatar size="lg" alt={`${user.name} 프로필`}>
