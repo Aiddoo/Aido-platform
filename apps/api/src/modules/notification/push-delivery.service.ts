@@ -7,6 +7,7 @@ import {
 	Inject,
 	Injectable,
 	Logger,
+	type OnModuleDestroy,
 } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import {
@@ -37,6 +38,18 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 	// 향후 추가 예정: "MARKETING_PROMOTION", "MARKETING_EVENT" 등
 ]);
 
+/**
+ * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
+ *
+ * 사용자가 직접 트리거한 액션의 결과 알림은 야간에도 발송한다:
+ * - DAILY_COMPLETE: 밤늦게 할일 완료 시 즉각적인 축하 피드백
+ * - NUDGE_RECEIVED: 긴급성 있는 실시간 소셜 인터랙션
+ */
+const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
+	"DAILY_COMPLETE",
+	"NUDGE_RECEIVED",
+]);
+
 // =============================================================================
 // PushDeliveryService
 // =============================================================================
@@ -50,9 +63,21 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
  * - Graceful Shutdown (pending push 대기)
  */
 @Injectable()
-export class PushDeliveryService implements BeforeApplicationShutdown {
+export class PushDeliveryService
+	implements BeforeApplicationShutdown, OnModuleDestroy
+{
 	private readonly logger = new Logger(PushDeliveryService.name);
 	private readonly pendingPushes = new Set<Promise<void>>();
+
+	// =========================================================================
+	// 수신자별 Rate Limiting (인메모리 슬라이딩 윈도우)
+	// =========================================================================
+
+	/** 1시간 윈도우 내 최대 푸시 횟수 */
+	private static readonly RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+	private static readonly RATE_LIMIT_MAX = 15;
+
+	private readonly pushTimestamps = new Map<string, number[]>();
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
@@ -233,7 +258,8 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 
 		if (
 			isNightTime(preference.timezone ?? "UTC") &&
-			!preference.nightPushEnabled
+			!preference.nightPushEnabled &&
+			!NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type)
 		) {
 			return false;
 		}
@@ -243,6 +269,11 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			if (!consent?.marketingAgreedAt) {
 				return false;
 			}
+		}
+
+		if (this.isRateLimited(userId)) {
+			this.logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
+			return false;
 		}
 
 		return true;
@@ -273,7 +304,8 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 
 		if (
 			isNightTime(preference.timezone ?? "UTC") &&
-			!preference.nightPushEnabled
+			!preference.nightPushEnabled &&
+			!NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type)
 		) {
 			return false;
 		}
@@ -406,6 +438,46 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		this.logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
+	}
+
+	// =========================================================================
+	// Rate Limiting
+	// =========================================================================
+
+	/**
+	 * 사용자별 푸시 발송 빈도 제한 (1시간 15건)
+	 *
+	 * 알림 DB 기록은 정상 생성하되, 푸시 발송만 제한한다.
+	 * 앱 내 알림 목록에서는 모두 확인 가능.
+	 */
+	private isRateLimited(userId: string): boolean {
+		const now = Date.now();
+		const windowStart = now - PushDeliveryService.RATE_LIMIT_WINDOW_MS;
+
+		let timestamps = this.pushTimestamps.get(userId);
+		if (!timestamps) {
+			timestamps = [];
+			this.pushTimestamps.set(userId, timestamps);
+		}
+
+		// 윈도우 밖 타임스탬프 제거
+		const filtered = timestamps.filter((t) => t > windowStart);
+		this.pushTimestamps.set(userId, filtered);
+
+		if (filtered.length >= PushDeliveryService.RATE_LIMIT_MAX) {
+			return true;
+		}
+
+		filtered.push(now);
+		return false;
+	}
+
+	// =========================================================================
+	// Lifecycle
+	// =========================================================================
+
+	onModuleDestroy(): void {
+		this.pushTimestamps.clear();
 	}
 
 	// =========================================================================

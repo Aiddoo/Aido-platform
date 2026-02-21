@@ -60,6 +60,12 @@ import { PushDeliveryService } from "./push-delivery.service";
  * - PATCH /notifications/:id/read - 단일 알림 읽음 처리
  * - PATCH /notifications/read-all - 모든 알림 읽음 처리
  *
+ * ### 푸시 발송 규칙
+ * - 야간(21:00-08:00)에는 nightPushEnabled=false 시 푸시를 발송하지 않습니다.
+ *   단, DAILY_COMPLETE와 NUDGE_RECEIVED는 야간에도 항상 발송됩니다.
+ * - 사용자당 시간당 최대 15건의 푸시만 발송됩니다.
+ *   초과 시 앱 내 알림은 정상 기록되며, 푸시만 스킵됩니다.
+ *
  * 💡 **클라이언트 구현 가이드**: [NOTIFICATION_GUIDE.md](../../docs/NOTIFICATION_GUIDE.md) 참조
  */
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)

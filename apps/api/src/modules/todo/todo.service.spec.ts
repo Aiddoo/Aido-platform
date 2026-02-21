@@ -18,6 +18,10 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 
 import { FollowService } from "../follow/follow.service";
+import {
+	type IReminderScheduler,
+	REMINDER_SCHEDULER,
+} from "../scheduler/reminder";
 import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
 import { TodoRepository } from "./todo.repository";
@@ -32,6 +36,7 @@ describe("TodoService", () => {
 	let followService: Mocked<FollowService>;
 	let _eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
+	let reminderScheduler: Mocked<IReminderScheduler>;
 
 	// 테스트 데이터
 	const mockUserId = "user-123";
@@ -41,7 +46,13 @@ describe("TodoService", () => {
 		TodoBuilder.resetIdCounter();
 		TodoCategoryBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(TodoService).compile();
+		const { unit, unitRef } = await TestBed.solitary(TodoService)
+			.mock(REMINDER_SCHEDULER)
+			.impl(() => ({
+				scheduleReminder: jest.fn(),
+				cancelReminder: jest.fn(),
+			}))
+			.compile();
 
 		service = unit;
 		todoRepo = unitRef.get(TodoRepository) as unknown as Mocked<TodoRepository>;
@@ -60,6 +71,9 @@ describe("TodoService", () => {
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
+		reminderScheduler = unitRef.get(
+			REMINDER_SCHEDULER,
+		) as unknown as Mocked<IReminderScheduler>;
 
 		// Given: 기본 transaction mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -164,6 +178,43 @@ describe("TodoService", () => {
 					content: null,
 				}),
 			);
+		});
+
+		it("scheduledTime이 있으면 리마인더를 스케줄링한다", async () => {
+			// Given: scheduledTime이 있는 Todo 생성
+			const scheduledTime = new Date("2024-01-15T14:30:00Z");
+			const inputWithSchedule: CreateTodoData = {
+				...createInput,
+				scheduledTime,
+			};
+
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withTitle(createInput.title)
+				.withScheduledTime(scheduledTime)
+				.build();
+			todoRepo.create.mockResolvedValue(mockTodo);
+
+			// When: Todo 생성
+			await service.create(inputWithSchedule);
+
+			// Then: 리마인더가 스케줄링됨
+			expect(reminderScheduler.scheduleReminder).toHaveBeenCalledWith(
+				mockTodo.id,
+				scheduledTime,
+				mockUserId,
+				mockTodo.title,
+			);
+		});
+
+		it("scheduledTime이 없으면 리마인더를 스케줄링하지 않는다", async () => {
+			// Given: scheduledTime이 없는 Todo 생성 (beforeEach에서 설정됨)
+
+			// When: Todo 생성
+			await service.create(createInput);
+
+			// Then: 리마인더가 스케줄링되지 않음
+			expect(reminderScheduler.scheduleReminder).not.toHaveBeenCalled();
 		});
 
 		it("존재하지 않는 카테고리면 에러를 던진다", async () => {
@@ -519,6 +570,30 @@ describe("TodoService", () => {
 			expect(updateCallArg?.completedAt).toBeUndefined();
 		});
 
+		it("완료로 변경 시 리마인더를 취소한다", async () => {
+			// Given: 미완료 상태의 Todo
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			const updatedTodo: TodoWithCategory = {
+				...mockTodo,
+				completed: true,
+				completedAt: new Date(),
+				updatedAt: new Date(),
+			};
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoRepo.update.mockResolvedValue(updatedTodo);
+
+			// When: 완료 상태로 변경
+			await service.update(mockTodo.id, mockUserId, { completed: true });
+
+			// Then: 리마인더가 취소됨
+			expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(
+				mockTodo.id,
+			);
+		});
+
 		it("카테고리를 변경할 때 존재하지 않는 카테고리면 에러를 던진다", async () => {
 			// Given: 존재하지 않는 카테고리로 변경 시도
 			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
@@ -549,6 +624,21 @@ describe("TodoService", () => {
 
 			// Then: delete가 호출됨
 			expect(todoRepo.delete).toHaveBeenCalledWith(mockTodo.id);
+		});
+
+		it("삭제 시 리마인더를 취소한다", async () => {
+			// Given: 존재하는 Todo
+			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoRepo.delete.mockResolvedValue(mockTodo);
+
+			// When: Todo 삭제
+			await service.delete(mockTodo.id, mockUserId);
+
+			// Then: 리마인더가 취소됨
+			expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(
+				mockTodo.id,
+			);
 		});
 
 		it("존재하지 않는 Todo면 TODO_NOT_FOUND 에러를 던진다", async () => {
@@ -670,6 +760,57 @@ describe("TodoService", () => {
 					completed: true,
 				}),
 			).rejects.toThrow(BusinessException);
+		});
+
+		it("완료로 변경 시 리마인더를 취소한다", async () => {
+			// Given: 미완료 상태의 Todo
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...uncompletedTodo,
+						...data,
+					}) as any,
+			);
+			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 0 });
+
+			// When: 완료로 변경
+			await service.toggleComplete(uncompletedTodo.id, mockUserId, {
+				completed: true,
+			});
+
+			// Then: 리마인더가 취소됨
+			expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(
+				uncompletedTodo.id,
+			);
+		});
+
+		it("미완료로 변경 시 리마인더를 취소하지 않는다", async () => {
+			// Given: 완료 상태의 Todo
+			const completedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.completed(new Date("2024-01-10"))
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(completedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...completedTodo,
+						...data,
+					}) as any,
+			);
+
+			// When: 미완료로 변경
+			await service.toggleComplete(completedTodo.id, mockUserId, {
+				completed: false,
+			});
+
+			// Then: 리마인더 취소가 호출되지 않음
+			expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
 		});
 
 		it("완료 시 타임존이 checkAndEmitAllCompletedEvent에 전달된다", async () => {
@@ -934,6 +1075,56 @@ describe("TodoService", () => {
 				mockTodo.id,
 				expect.objectContaining({ isAllDay: true }),
 			);
+		});
+
+		it("scheduledTime 설정 시 리마인더를 스케줄링한다", async () => {
+			// Given: 존재하는 Todo
+			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
+			const scheduledTime = new Date("2024-02-01T14:30:00Z");
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoRepo.update.mockResolvedValue({
+				...mockTodo,
+				scheduledTime,
+				title: mockTodo.title,
+			});
+
+			// When: scheduledTime을 설정
+			await service.updateSchedule(mockTodo.id, mockUserId, {
+				startDate: "2024-02-01",
+				scheduledTime: "14:30",
+				isAllDay: false,
+			});
+
+			// Then: 리마인더가 스케줄링됨
+			expect(reminderScheduler.scheduleReminder).toHaveBeenCalledWith(
+				mockTodo.id,
+				scheduledTime,
+				mockUserId,
+				mockTodo.title,
+			);
+		});
+
+		it("scheduledTime을 null로 설정 시 리마인더를 취소한다", async () => {
+			// Given: 존재하는 Todo
+			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoRepo.update.mockResolvedValue({
+				...mockTodo,
+				scheduledTime: null,
+			});
+
+			// When: scheduledTime을 null로 설정
+			await service.updateSchedule(mockTodo.id, mockUserId, {
+				startDate: "2024-02-01",
+				scheduledTime: null,
+				isAllDay: true,
+			});
+
+			// Then: 리마인더가 취소됨
+			expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(
+				mockTodo.id,
+			);
+			expect(reminderScheduler.scheduleReminder).not.toHaveBeenCalled();
 		});
 
 		it("존재하지 않는 Todo면 TODO_NOT_FOUND 에러를 던진다", async () => {

@@ -6,6 +6,7 @@ import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../notification/notification.service";
 import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
+import { REMINDER_LEAD_TIME_MS } from "../constants/reminder.constants";
 
 /**
  * 할일 마감 리마인더 크론 작업
@@ -60,9 +61,12 @@ export class TodoReminderJob {
 		const now = new Date();
 		const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-		// 1시간 후 시점 계산 (50분~60분 범위로 10분 간격 실행에 맞춤)
-		const reminderStart = new Date(now.getTime() + 50 * 60 * 1000); // 50분 후
-		const reminderEnd = new Date(now.getTime() + 60 * 60 * 1000); // 60분 후
+		// LEAD_TIME 시점 계산 (10분 간격 실행에 맞춤: LEAD_TIME-10분 ~ LEAD_TIME)
+		const cronIntervalMs = 10 * 60 * 1000;
+		const reminderStart = new Date(
+			now.getTime() + REMINDER_LEAD_TIME_MS - cronIntervalMs,
+		);
+		const reminderEnd = new Date(now.getTime() + REMINDER_LEAD_TIME_MS);
 
 		// 마감이 50분~60분 후인 할일 조회
 		// - scheduledTime이 설정되어 있고

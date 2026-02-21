@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "../follow/follow.module";
+import { SchedulerModule } from "../scheduler/scheduler.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
 
 import { TodoController } from "./todo.controller";
@@ -17,9 +18,10 @@ import { TodoService } from "./todo.service";
  * - 커서 기반 페이지네이션
  * - 날짜별 조회
  * - 친구의 PUBLIC 투두 조회
+ * - 리마인더 즉시 스케줄링 (생성/수정/삭제 시 타이머 관리)
  */
 @Module({
-	imports: [FollowModule, TodoCategoryModule],
+	imports: [FollowModule, TodoCategoryModule, SchedulerModule],
 	controllers: [TodoController],
 	providers: [TodoRepository, TodoService],
 	exports: [TodoService],

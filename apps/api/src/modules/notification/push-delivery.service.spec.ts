@@ -230,7 +230,7 @@ describe("PushDeliveryService", () => {
 			expect(result).toBe(false);
 		});
 
-		it("야간 시간에 nightPushEnabled가 false면 false를 반환한다", async () => {
+		it("야간 시간에 nightPushEnabled가 false면 false를 반환한다 (면제 타입 제외)", async () => {
 			// Given
 			userPreferenceRepository.findByUserId.mockResolvedValue({
 				pushEnabled: true,
@@ -239,8 +239,8 @@ describe("PushDeliveryService", () => {
 			} as any);
 			mockedIsNightTime.mockReturnValue(true);
 
-			// When
-			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
+			// When — CHEER_RECEIVED는 야간 면제 타입이 아님
+			const result = await service.shouldSendPush("user-1", "CHEER_RECEIVED");
 
 			// Then
 			expect(result).toBe(false);
@@ -258,6 +258,81 @@ describe("PushDeliveryService", () => {
 			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
 
 			// Then
+			expect(result).toBe(true);
+		});
+
+		it("야간이지만 DAILY_COMPLETE는 nightPushEnabled=false여도 발송한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue({
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+			} as any);
+			mockedIsNightTime.mockReturnValue(true);
+
+			// When
+			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("야간이지만 NUDGE_RECEIVED는 nightPushEnabled=false여도 발송한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue({
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+			} as any);
+			mockedIsNightTime.mockReturnValue(true);
+
+			// When
+			const result = await service.shouldSendPush("user-1", "NUDGE_RECEIVED");
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("1시간 내 15건 초과 시 rate limit으로 false를 반환한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue({
+				pushEnabled: true,
+				nightPushEnabled: true,
+				timezone: "UTC",
+			} as any);
+
+			// When — 15건 발송 (모두 true)
+			for (let i = 0; i < 15; i++) {
+				const result = await service.shouldSendPush(
+					"user-rate",
+					"CHEER_RECEIVED",
+				);
+				expect(result).toBe(true);
+			}
+
+			// Then — 16번째는 rate limit
+			const result = await service.shouldSendPush(
+				"user-rate",
+				"CHEER_RECEIVED",
+			);
+			expect(result).toBe(false);
+		});
+
+		it("다른 사용자의 rate limit은 독립적이다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue({
+				pushEnabled: true,
+				nightPushEnabled: true,
+				timezone: "UTC",
+			} as any);
+
+			// When — user-a 15건 소진
+			for (let i = 0; i < 15; i++) {
+				await service.shouldSendPush("user-a", "CHEER_RECEIVED");
+			}
+
+			// Then — user-b는 영향 없음
+			const result = await service.shouldSendPush("user-b", "CHEER_RECEIVED");
 			expect(result).toBe(true);
 		});
 	});
