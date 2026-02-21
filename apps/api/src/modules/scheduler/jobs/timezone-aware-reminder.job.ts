@@ -67,10 +67,24 @@ export class TimezoneAwareReminderJob {
 				const localHour = dayjs(now).tz(tz).hour();
 
 				// 2. 아침 리마인더: morningReminderHour가 현재 시간인 사용자
-				await this.sendMorningReminders(tz, localHour);
+				try {
+					await this.sendMorningReminders(tz, localHour);
+				} catch (error) {
+					this.logger.error(
+						`Morning reminder failed for tz=${tz}: ${error}`,
+						error instanceof Error ? error.stack : undefined,
+					);
+				}
 
 				// 3. 저녁 리마인더: eveningReminderHour가 현재 시간인 사용자
-				await this.sendEveningReminders(tz, localHour);
+				try {
+					await this.sendEveningReminders(tz, localHour);
+				} catch (error) {
+					this.logger.error(
+						`Evening reminder failed for tz=${tz}: ${error}`,
+						error instanceof Error ? error.stack : undefined,
+					);
+				}
 			}
 
 			this.logger.log("Hourly sweep reminder job completed");

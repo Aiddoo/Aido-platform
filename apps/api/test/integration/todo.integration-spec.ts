@@ -28,6 +28,7 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
 import { FollowService } from "@/modules/follow/follow.service";
+import { REMINDER_SCHEDULER } from "@/modules/scheduler/reminder";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
@@ -71,6 +72,12 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 	// Mock TodoCategoryRepository
 	const mockTodoCategoryRepository = {
 		findByIdAndUserId: jest.fn(),
+	};
+
+	// Mock TodoReminderSchedulerService
+	const mockReminderScheduler = {
+		scheduleReminder: jest.fn(),
+		cancelReminder: jest.fn(),
 	};
 
 	// 테스트 데이터
@@ -124,6 +131,10 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: TodoCategoryRepository,
 					useValue: mockTodoCategoryRepository,
+				},
+				{
+					provide: REMINDER_SCHEDULER,
+					useValue: mockReminderScheduler,
 				},
 			],
 		}).compile();

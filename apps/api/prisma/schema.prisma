@@ -127,6 +127,8 @@ model UserPreference {
   eveningReminderHour Int     @default(18) // 0-23, 사용자 로컬 시간 기준 저녁 리마인더
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([pushEnabled, timezone]) // 타임존별 활성 사용자 스캔
 }
 
 // =============================================================================
@@ -434,6 +436,7 @@ model Todo {
   @@index([userId, completed, startDate])
   @@index([userId, categoryId])
   @@index([userId, sortOrder])
+  @@index([completed, scheduledTime]) // 리마인더 대상 조회
 }
 
 enum TodoVisibility {
@@ -605,6 +608,7 @@ model Notification {
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([createdAt]) // 정리 배치용 (90일 보관)
+  @@index([todoId, type, createdAt]) // TODO_REMINDER 단계별 중복 체크
 }
 
 enum NotificationType {

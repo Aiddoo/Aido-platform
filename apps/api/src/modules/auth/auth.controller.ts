@@ -729,7 +729,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`pushEnabled\` | boolean | 푸시 알림 전체 on/off |
-| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간) |
+| \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 단, 일일 완료(DAILY_COMPLETE)와 콕 찌르기(NUDGE_RECEIVED)는 야간에도 항상 발송 |
 | \`timezone\` | string | IANA 타임존 (e.g. "Asia/Seoul") |
 | \`morningReminderHour\` | number | 아침 리마인더 시간 (0-23, 기본 8) |
 | \`eveningReminderHour\` | number | 저녁 리마인더 시간 (0-23, 기본 18) |
@@ -766,7 +766,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`pushEnabled\` | boolean? | 푸시 알림 전체 on/off |
-| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간) |
+| \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 단, 일일 완료(DAILY_COMPLETE)와 콕 찌르기(NUDGE_RECEIVED)는 야간에도 항상 발송 |
 | \`timezone\` | string? | IANA 타임존 (e.g. "Asia/Seoul") |
 | \`morningReminderHour\` | number? | 아침 리마인더 시간 (0-23, 기본 8) |
 | \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (0-23, 기본 18) |
@@ -781,6 +781,8 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 ### ⚠️ 주의
 - 야간 푸시를 허용하려면 먼저 \`pushEnabled\`가 true여야 합니다.
+- 일일 완료(DAILY_COMPLETE), 콕 찌르기(NUDGE_RECEIVED)는 \`nightPushEnabled=false\`여도 야간에 발송됩니다.
+- 푸시는 사용자당 시간당 최대 15건으로 제한됩니다. 초과 시 앱 내 알림은 정상 기록되나 푸시만 스킵됩니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })

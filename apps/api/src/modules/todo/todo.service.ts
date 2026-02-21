@@ -1,5 +1,5 @@
 import type { Todo } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -13,6 +13,10 @@ import {
 	NotificationEvents,
 	type TodoAllCompletedEventPayload,
 } from "../notification/events/notification.events";
+import {
+	type IReminderScheduler,
+	REMINDER_SCHEDULER,
+} from "../scheduler/reminder";
 import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
 import { TodoMapper } from "./todo.mapper";
@@ -37,6 +41,8 @@ export class TodoService {
 		private readonly followService: FollowService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
+		@Inject(REMINDER_SCHEDULER)
+		private readonly reminderScheduler: IReminderScheduler,
 	) {}
 
 	/**
@@ -89,6 +95,22 @@ export class TodoService {
 		});
 
 		this.logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
+
+		if (todo.scheduledTime) {
+			try {
+				this.reminderScheduler.scheduleReminder(
+					todo.id,
+					todo.scheduledTime,
+					data.userId,
+					todo.title,
+				);
+			} catch (error) {
+				this.logger.error(
+					`Failed to schedule reminder for todo ${todo.id}: ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			}
+		}
 
 		return TodoMapper.toResponse(todo);
 	}
@@ -236,6 +258,10 @@ export class TodoService {
 
 		const updatedTodo = await this.todoRepository.update(id, updateData);
 
+		if (data.completed) {
+			this.reminderScheduler.cancelReminder(id);
+		}
+
 		this.logger.log(`Todo updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
@@ -252,6 +278,7 @@ export class TodoService {
 		}
 
 		await this.todoRepository.delete(id);
+		this.reminderScheduler.cancelReminder(id);
 
 		this.logger.log(`Todo deleted: ${id} for user: ${userId}`);
 	}
@@ -279,6 +306,10 @@ export class TodoService {
 		};
 
 		const updatedTodo = await this.todoRepository.update(id, updateData);
+
+		if (data.completed) {
+			this.reminderScheduler.cancelReminder(id);
+		}
 
 		this.logger.log(
 			`Todo completion toggled: ${id} -> ${data.completed} for user: ${userId}`,
@@ -433,6 +464,24 @@ export class TodoService {
 				: null,
 			isAllDay: data.isAllDay ?? true,
 		});
+
+		try {
+			if (updatedTodo.scheduledTime) {
+				this.reminderScheduler.scheduleReminder(
+					id,
+					updatedTodo.scheduledTime,
+					userId,
+					updatedTodo.title,
+				);
+			} else {
+				this.reminderScheduler.cancelReminder(id);
+			}
+		} catch (error) {
+			this.logger.error(
+				`Failed to schedule reminder for todo ${id}: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 
 		this.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 

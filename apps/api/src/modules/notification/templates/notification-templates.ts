@@ -27,6 +27,24 @@ export const SCHEDULER_TEMPLATES = {
 		type: "TODO_REMINDER" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
+	TODO_REMINDER_60MIN: {
+		title: "{todoTitle}, 1시간 남음",
+		body: "지금 안 하면 진짜 못 한다",
+		type: "TODO_REMINDER" as NotificationType,
+		defaultRoute: "/todos/{todoId}",
+	},
+	TODO_REMINDER_10MIN: {
+		title: "{todoTitle}, 10분 남음",
+		body: "진짜 마지막이다. 지금 당장!",
+		type: "TODO_REMINDER" as NotificationType,
+		defaultRoute: "/todos/{todoId}",
+	},
+	TODO_REMINDER_IMMEDIATE: {
+		title: "{todoTitle}, 곧 시작",
+		body: "아직 시간 있어. 지금 바로 시작해",
+		type: "TODO_REMINDER" as NotificationType,
+		defaultRoute: "/todos/{todoId}",
+	},
 	MORNING_REMINDER: {
 		title: "오늘 할일 {count}개",
 		body: "미루면 저녁의 내가 울어",
@@ -210,14 +228,31 @@ export class NotificationMessageBuilder {
 	}
 
 	/**
-	 * 할일 리마인더 알림 메시지 생성
+	 * 할일 리마인더 알림 메시지 생성 (단계별)
+	 *
+	 * @param todoTitle 투두 제목
+	 * @param stageLabel 리마인더 단계 ('60min' | '10min' | 'immediate')
 	 */
-	static todoReminder(todoTitle: string): { title: string; body: string } {
+	static todoReminder(
+		todoTitle: string,
+		stageLabel?: string,
+	): { title: string; body: string } {
+		let template: { title: string; body: string };
+		switch (stageLabel) {
+			case "10min":
+				template = SCHEDULER_TEMPLATES.TODO_REMINDER_10MIN;
+				break;
+			case "immediate":
+				template = SCHEDULER_TEMPLATES.TODO_REMINDER_IMMEDIATE;
+				break;
+			default:
+				template = SCHEDULER_TEMPLATES.TODO_REMINDER_60MIN;
+				break;
+		}
+
 		return {
-			title: fillTemplate(SCHEDULER_TEMPLATES.TODO_REMINDER.title, {
-				todoTitle,
-			}),
-			body: SCHEDULER_TEMPLATES.TODO_REMINDER.body,
+			title: fillTemplate(template.title, { todoTitle }),
+			body: template.body,
 		};
 	}
 
