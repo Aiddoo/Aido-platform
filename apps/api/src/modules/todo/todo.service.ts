@@ -97,12 +97,19 @@ export class TodoService {
 		this.logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
 
 		if (todo.scheduledTime) {
-			this.reminderScheduler.scheduleReminder(
-				todo.id,
-				todo.scheduledTime,
-				data.userId,
-				todo.title,
-			);
+			try {
+				this.reminderScheduler.scheduleReminder(
+					todo.id,
+					todo.scheduledTime,
+					data.userId,
+					todo.title,
+				);
+			} catch (error) {
+				this.logger.error(
+					`Failed to schedule reminder for todo ${todo.id}: ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			}
 		}
 
 		return TodoMapper.toResponse(todo);
@@ -458,15 +465,22 @@ export class TodoService {
 			isAllDay: data.isAllDay ?? true,
 		});
 
-		if (updatedTodo.scheduledTime) {
-			this.reminderScheduler.scheduleReminder(
-				id,
-				updatedTodo.scheduledTime,
-				userId,
-				updatedTodo.title,
+		try {
+			if (updatedTodo.scheduledTime) {
+				this.reminderScheduler.scheduleReminder(
+					id,
+					updatedTodo.scheduledTime,
+					userId,
+					updatedTodo.title,
+				);
+			} else {
+				this.reminderScheduler.cancelReminder(id);
+			}
+		} catch (error) {
+			this.logger.error(
+				`Failed to schedule reminder for todo ${id}: ${error}`,
+				error instanceof Error ? error.stack : undefined,
 			);
-		} else {
-			this.reminderScheduler.cancelReminder(id);
 		}
 
 		this.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);

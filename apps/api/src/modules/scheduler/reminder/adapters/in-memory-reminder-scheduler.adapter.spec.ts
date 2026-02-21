@@ -4,7 +4,7 @@ import { TestBed } from "@suites/unit";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
-import { REMINDER_LEAD_TIME_MS } from "../../constants/reminder.constants";
+import { REMINDER_IMMEDIATE_LABEL } from "../../constants/reminder.constants";
 import { InMemoryReminderSchedulerAdapter } from "./in-memory-reminder-scheduler.adapter";
 
 // =============================================================================
@@ -13,6 +13,7 @@ import { InMemoryReminderSchedulerAdapter } from "./in-memory-reminder-scheduler
 
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";
+const SIXTY_MIN_MS = 60 * 60 * 1000;
 
 // =============================================================================
 // Tests
@@ -45,12 +46,12 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 	});
 
 	/**
-	 * notification.findFirst mock 설정 헬퍼
+	 * notification mock 설정 헬퍼
 	 */
-	const setupNotificationFindFirst = (exists: boolean) => {
+	const setupNotificationMock = (findFirstResult: unknown = null) => {
 		Object.defineProperty(databaseService, "notification", {
 			value: {
-				findFirst: jest.fn().mockResolvedValue(exists ? { id: 1 } : null),
+				findFirst: jest.fn().mockResolvedValue(findFirstResult),
 				findMany: jest.fn().mockResolvedValue([]),
 			},
 			configurable: true,
@@ -79,82 +80,127 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 	};
 
 	// =========================================================================
-	// scheduleReminder
+	// scheduleReminder — 다단계 스케줄링
 	// =========================================================================
 
 	describe("scheduleReminder", () => {
-		it("미래 scheduledTime에 대해 타이머를 등록하고, delay 후 알림을 발송한다", async () => {
-			// Given - 2시간 후 마감인 투두 (리마인더는 1시간 후에 발송)
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-			setupNotificationFindFirst(false);
+		it("2시간+ 후 마감이면 60분, 10분 두 단계 타이머를 등록한다", async () => {
+			// Given — 2시간 후 마감
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			setupNotificationMock(null);
 			notificationService.createAndSend.mockResolvedValue({} as never);
 
-			// When - 리마인더 스케줄링
+			// When
 			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
 
-			// Then - 아직 알림 발송 안 됨
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
-
-			// When - LEAD_TIME 전까지 시간 경과 (1시간 후)
-			jest.advanceTimersByTime(
-				scheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now(),
-			);
-
-			// 비동기 콜백 실행 대기
+			// Then — 60분 전 단계 (1시간 후)
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
-			// Then - 알림이 발송됨
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
 			expect(notificationService.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: USER_ID,
-					type: "TODO_REMINDER",
+					metadata: { stage: "60min" },
+					todoId: 1,
+				}),
+			);
+
+			// Then — 10분 전 단계 (추가 50분 후)
+			jest.advanceTimersByTime(50 * 60 * 1000);
+			await jest.advanceTimersByTimeAsync(0);
+
+			expect(notificationService.createAndSend).toHaveBeenCalledTimes(2);
+			expect(notificationService.createAndSend).toHaveBeenLastCalledWith(
+				expect.objectContaining({
+					metadata: { stage: "10min" },
 					todoId: 1,
 				}),
 			);
 		});
 
-		it("이미 지난 리마인더 시각이면 타이머를 등록하지 않는다", () => {
-			// Given - 30분 후 마감 (리마인더 시각 = 30분 전 → 이미 지남)
+		it("30분 후 마감이면 60분 단계는 스킵하고 10분 단계만 등록한다", async () => {
+			// Given — 30분 후 마감 (60분 전 = -30분, 이미 지남)
 			const scheduledTime = new Date(Date.now() + 30 * 60 * 1000);
+			setupNotificationMock(null);
+			notificationService.createAndSend.mockResolvedValue({} as never);
 
 			// When
 			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
 
-			// Then - 아무 타이머도 등록되지 않음
-			jest.advanceTimersByTime(60 * 60 * 1000);
+			// Then — 10분 전 단계 (20분 후)
+			jest.advanceTimersByTime(20 * 60 * 1000);
+			await jest.advanceTimersByTimeAsync(0);
+
+			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					metadata: { stage: "10min" },
+				}),
+			);
+		});
+
+		it("5분 후 마감이면 모든 단계가 지나서 즉시 발송한다", async () => {
+			// Given — 5분 후 마감 (60분 전, 10분 전 모두 이미 지남)
+			const scheduledTime = new Date(Date.now() + 5 * 60 * 1000);
+			setupNotificationMock(null);
+			notificationService.createAndSend.mockResolvedValue({} as never);
+
+			// When
+			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+
+			// Then — 즉시 발송 (setTimeout 없이 바로 호출)
+			await jest.advanceTimersByTimeAsync(0);
+
+			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					metadata: { stage: REMINDER_IMMEDIATE_LABEL },
+					todoId: 1,
+				}),
+			);
+		});
+
+		it("scheduledTime이 과거면 아무것도 하지 않는다", () => {
+			// Given — 과거 시간
+			const scheduledTime = new Date(Date.now() - 60 * 1000);
+
+			// When
+			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+
+			// Then
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 
-		it("같은 todoId로 재호출하면 기존 타이머를 취소하고 새로 등록한다", async () => {
-			// Given - 첫 번째 스케줄링 (2시간 후 마감)
-			const firstScheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-			service.scheduleReminder(1, firstScheduledTime, USER_ID, "Old Title");
+		it("같은 todoId로 재호출하면 기존 모든 단계를 취소하고 새로 등록한다", async () => {
+			// Given — 첫 스케줄링 (2시간 후 마감)
+			const firstTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			service.scheduleReminder(1, firstTime, USER_ID, "Old");
 
-			// When - 같은 todoId로 다른 시간에 재스케줄링 (3시간 후 마감)
-			const secondScheduledTime = new Date(Date.now() + 3 * 60 * 60 * 1000);
-			setupNotificationFindFirst(false);
+			// When — 재스케줄링 (3시간 후 마감)
+			const secondTime = new Date(Date.now() + 3 * SIXTY_MIN_MS);
+			setupNotificationMock(null);
 			notificationService.createAndSend.mockResolvedValue({} as never);
+			service.scheduleReminder(1, secondTime, USER_ID, "New");
 
-			service.scheduleReminder(1, secondScheduledTime, USER_ID, "New Title");
-
-			// 첫 번째 타이머 시각 경과 (2시간 - 1시간 = 1시간 후)
-			jest.advanceTimersByTime(
-				firstScheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now(),
-			);
+			// 첫 번째 60분 단계 시각 경과
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
-			// Then - 첫 번째 타이머는 취소되어 호출 안 됨
+			// Then — 첫 번째 타이머는 취소됨
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 
-			// When - 두 번째 타이머 시각 경과 (3시간 - 1시간 = 2시간 후)
-			jest.advanceTimersByTime(
-				secondScheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now(),
-			);
+			// 두 번째 60분 단계 시각 경과 (2시간 후)
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
-			// Then - 두 번째 타이머만 실행됨
+			// Then — 두 번째 타이머만 실행됨
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
+			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					metadata: { stage: "60min" },
+				}),
+			);
 		});
 	});
 
@@ -163,80 +209,87 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 	// =========================================================================
 
 	describe("cancelReminder", () => {
-		it("등록된 타이머를 취소한다", async () => {
-			// Given - 리마인더 등록
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+		it("등록된 모든 단계 타이머를 취소한다", async () => {
+			// Given
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
 			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
 
-			// When - 취소
+			// When
 			service.cancelReminder(1);
 
-			// Then - 타이머 시각 경과해도 알림 발송 안 됨
-			jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+			// Then
+			jest.advanceTimersByTime(2 * SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
-
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 
 		it("미등록 todoId에 대해 에러 없이 무시한다", () => {
-			// When & Then - 에러 발생하지 않음
 			expect(() => service.cancelReminder(999)).not.toThrow();
 		});
 	});
 
 	// =========================================================================
-	// sendReminder (private — scheduleReminder 타이머 실행 시 간접 테스트)
+	// sendReminder — 단계별 중복 방지
 	// =========================================================================
 
 	describe("sendReminder (간접 테스트)", () => {
-		it("24시간 내 동일 todoId TODO_REMINDER가 DB에 있으면 알림을 스킵한다", async () => {
-			// Given - DB에 이미 알림 존재
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-			setupNotificationFindFirst(true);
+		it("같은 stage의 알림이 DB에 있으면 스킵한다", async () => {
+			// Given — DB에 같은 stage 알림 존재
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			setupNotificationMock({ id: 1 });
 			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
 
-			// When - 타이머 실행
-			const delay =
-				scheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now();
-			jest.advanceTimersByTime(delay);
+			// When — 60분 전 단계 실행
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
-			// Then - 중복으로 스킵
+			// Then — 스킵
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 
-		it("DB에 중복이 없으면 정상적으로 알림을 발송한다", async () => {
-			// Given - DB에 기존 알림 없음
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-			setupNotificationFindFirst(false);
+		it("다른 stage의 알림이 DB에 있어도 정상 발송한다", async () => {
+			// Given — DB에 "60min" stage 알림은 있지만 "10min"은 없음
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			const findFirstFn = jest
+				.fn()
+				// 60min 단계 호출: 이미 존재 → 스킵
+				.mockResolvedValueOnce({ id: 1 })
+				// 10min 단계 호출: 없음 → 발송
+				.mockResolvedValueOnce(null);
+
+			Object.defineProperty(databaseService, "notification", {
+				value: {
+					findFirst: findFirstFn,
+					findMany: jest.fn().mockResolvedValue([]),
+				},
+				configurable: true,
+				writable: true,
+			});
 			notificationService.createAndSend.mockResolvedValue({} as never);
+
 			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
 
-			// When - 타이머 실행
-			const delay =
-				scheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now();
-			jest.advanceTimersByTime(delay);
+			// 60분 단계 실행 → 스킵됨
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
+			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 
-			// Then - 알림 발송됨
+			// 10분 단계 실행 → 발송됨
+			jest.advanceTimersByTime(50 * 60 * 1000);
+			await jest.advanceTimersByTimeAsync(0);
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
 			expect(notificationService.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: USER_ID,
-					type: "TODO_REMINDER",
-					title: expect.stringContaining(TODO_TITLE),
-					body: expect.any(String),
-					todoId: 1,
+					metadata: { stage: "10min" },
 				}),
 			);
 		});
 
 		it("알림 발송 중 에러가 발생해도 다른 타이머에 영향을 주지 않는다", async () => {
-			// Given - 발송 실패하는 투두 + 성공하는 투두
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-			setupNotificationFindFirst(false);
+			// Given
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			setupNotificationMock(null);
 
-			// 첫 호출은 실패, 두 번째는 성공
 			notificationService.createAndSend
 				.mockRejectedValueOnce(new Error("Push failed"))
 				.mockResolvedValueOnce({} as never);
@@ -244,13 +297,11 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 			service.scheduleReminder(1, scheduledTime, USER_ID, "Todo 1");
 			service.scheduleReminder(2, scheduledTime, USER_ID, "Todo 2");
 
-			// When - 타이머 실행
-			const delay =
-				scheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now();
-			jest.advanceTimersByTime(delay);
+			// When — 60분 전 단계 실행
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
-			// Then - 두 번 모두 호출됨 (첫 번째 실패가 두 번째에 영향 없음)
+			// Then — 두 투두 모두 호출됨
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(2);
 		});
 	});
@@ -260,59 +311,46 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 	// =========================================================================
 
 	describe("onModuleDestroy", () => {
-		it("모든 타이머를 정리한다", async () => {
-			// Given - 여러 타이머 등록
-			const scheduledTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+		it("모든 todoId의 모든 단계 타이머를 정리한다", async () => {
+			// Given — 여러 투두, 각각 다단계 타이머
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
 			service.scheduleReminder(1, scheduledTime, USER_ID, "Todo 1");
 			service.scheduleReminder(2, scheduledTime, USER_ID, "Todo 2");
-			service.scheduleReminder(3, scheduledTime, USER_ID, "Todo 3");
 
-			// When - 모듈 종료
+			// When
 			service.onModuleDestroy();
 
-			// Then - 타이머 경과해도 알림 발송 안 됨
-			jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+			// Then
+			jest.advanceTimersByTime(2 * SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
-
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 	});
 
 	// =========================================================================
-	// onModuleInit (recoverPendingReminders)
+	// onModuleInit (recoverPendingReminders — Gemini 쿼리 최적화)
 	// =========================================================================
 
 	describe("onModuleInit", () => {
-		it("서버 재시작 시 미래 리마인더를 DB에서 복구한다", async () => {
-			// Given - 미래 scheduledTime을 가진 투두 + 기존 알림 없음
-			const futureScheduledTime = new Date(Date.now() + 3 * 60 * 60 * 1000);
+		it("서버 재시작 시 미래 리마인더를 단일 쿼리로 복구한다", async () => {
+			// Given
+			const futureTime = new Date(Date.now() + 3 * SIXTY_MIN_MS);
 			setupTodoFindMany([
 				{
 					id: 10,
 					title: "Recover Todo",
 					userId: USER_ID,
-					scheduledTime: futureScheduledTime,
+					scheduledTime: futureTime,
 				},
 			]);
-
-			Object.defineProperty(databaseService, "notification", {
-				value: {
-					findFirst: jest.fn().mockResolvedValue(null),
-					findMany: jest.fn().mockResolvedValue([]),
-				},
-				configurable: true,
-				writable: true,
-			});
-
+			setupNotificationMock(null);
 			notificationService.createAndSend.mockResolvedValue({} as never);
 
-			// When - 모듈 초기화
+			// When
 			await service.onModuleInit();
 
-			// Then - 타이머가 등록되어 적절한 시간에 발송됨
-			const delay =
-				futureScheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now();
-			jest.advanceTimersByTime(delay);
+			// Then — 60분 전 단계 발송
+			jest.advanceTimersByTime(2 * SIXTY_MIN_MS);
 			await jest.advanceTimersByTimeAsync(0);
 
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
@@ -321,96 +359,20 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 					todoId: 10,
 					userId: USER_ID,
 					type: "TODO_REMINDER",
-				}),
-			);
-		});
-
-		it("이미 알림된 투두는 복구하지 않는다", async () => {
-			// Given - 투두는 있지만 이미 알림 발송됨
-			const futureScheduledTime = new Date(Date.now() + 3 * 60 * 60 * 1000);
-			setupTodoFindMany([
-				{
-					id: 20,
-					title: "Already Notified",
-					userId: USER_ID,
-					scheduledTime: futureScheduledTime,
-				},
-			]);
-
-			Object.defineProperty(databaseService, "notification", {
-				value: {
-					findFirst: jest.fn(),
-					findMany: jest.fn().mockResolvedValue([{ todoId: 20 }]),
-				},
-				configurable: true,
-				writable: true,
-			});
-
-			// When - 모듈 초기화
-			await service.onModuleInit();
-
-			// Then - 타이머 경과해도 알림 발송 안 됨
-			jest.advanceTimersByTime(3 * 60 * 60 * 1000);
-			await jest.advanceTimersByTimeAsync(0);
-
-			expect(notificationService.createAndSend).not.toHaveBeenCalled();
-		});
-
-		it("LEAD_TIME 이내의 미래 할일도 복구한다", async () => {
-			// Given - scheduledTime이 now+90분 (LEAD_TIME=60분 이내, 리마인더 시각=now+30분)
-			const scheduledTime = new Date(Date.now() + 90 * 60 * 1000);
-			setupTodoFindMany([
-				{
-					id: 30,
-					title: "Near Future Todo",
-					userId: USER_ID,
-					scheduledTime,
-				},
-			]);
-
-			Object.defineProperty(databaseService, "notification", {
-				value: {
-					findFirst: jest.fn().mockResolvedValue(null),
-					findMany: jest.fn().mockResolvedValue([]),
-				},
-				configurable: true,
-				writable: true,
-			});
-
-			notificationService.createAndSend.mockResolvedValue({} as never);
-
-			// When - 모듈 초기화
-			await service.onModuleInit();
-
-			// Then - LEAD_TIME 이내여도 타이머가 등록되어 발송됨
-			const delay =
-				scheduledTime.getTime() - REMINDER_LEAD_TIME_MS - Date.now();
-			jest.advanceTimersByTime(delay);
-			await jest.advanceTimersByTimeAsync(0);
-
-			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
-			expect(notificationService.createAndSend).toHaveBeenCalledWith(
-				expect.objectContaining({
-					todoId: 30,
-					userId: USER_ID,
-					type: "TODO_REMINDER",
+					metadata: { stage: "60min" },
 				}),
 			);
 		});
 
 		it("복구할 투두가 없으면 아무것도 하지 않는다", async () => {
-			// Given - 대상 투두 없음
 			setupTodoFindMany([]);
 
-			// When
 			await service.onModuleInit();
 
-			// Then
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 
 		it("복구 중 에러가 발생해도 서비스 초기화에 영향을 주지 않는다", async () => {
-			// Given - DB 에러 발생
 			Object.defineProperty(databaseService, "todo", {
 				value: {
 					findMany: jest
@@ -421,7 +383,6 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 				writable: true,
 			});
 
-			// When & Then - 에러가 throw되지 않음
 			await expect(service.onModuleInit()).resolves.not.toThrow();
 		});
 	});

@@ -60,11 +60,22 @@ import { PushDeliveryService } from "./push-delivery.service";
  * - PATCH /notifications/:id/read - 단일 알림 읽음 처리
  * - PATCH /notifications/read-all - 모든 알림 읽음 처리
  *
- * ### 푸시 발송 규칙
- * - 야간(21:00-08:00)에는 nightPushEnabled=false 시 푸시를 발송하지 않습니다.
- *   단, DAILY_COMPLETE와 NUDGE_RECEIVED는 야간에도 항상 발송됩니다.
- * - 사용자당 시간당 최대 15건의 푸시만 발송됩니다.
- *   초과 시 앱 내 알림은 정상 기록되며, 푸시만 스킵됩니다.
+ * ### 할일 마감 리마인더 (TODO_REMINDER)
+ * - **60분 전**: "{제목}, 1시간 남음"
+ * - **10분 전**: "{제목}, 10분 남음"
+ * - **즉시**: 60분/10분 전이 모두 지난 경우 즉시 발송
+ * - 동일 투두+단계 조합은 24시간 내 중복 발송하지 않습니다.
+ *
+ * ### 아침/저녁 리마인더
+ * - **아침 (MORNING_REMINDER)**: morningReminderHour(기본 8시)에 오늘 할일 요약 발송
+ * - **저녁 (EVENING_REMINDER)**: eveningReminderHour(기본 18시)에 완료 현황 발송
+ *
+ * ### 푸시 발송 필터링
+ * 1. `pushEnabled=false` → 푸시 스킵 (앱 내 알림은 정상 기록)
+ * 2. 야간(21:00-08:00, 로컬 시간) + `nightPushEnabled=false` → 스킵
+ *    - 예외: DAILY_COMPLETE, NUDGE_RECEIVED는 야간에도 항상 발송
+ * 3. 마케팅 알림 → `marketingAgreedAt` 없으면 스킵
+ * 4. Rate limit → 시간당 최대 15건 초과 시 푸시만 스킵
  *
  * 💡 **클라이언트 구현 가이드**: [NOTIFICATION_GUIDE.md](../../docs/NOTIFICATION_GUIDE.md) 참조
  */

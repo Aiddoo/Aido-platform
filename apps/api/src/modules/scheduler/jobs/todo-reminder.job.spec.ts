@@ -6,6 +6,7 @@ import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../notification/notification.service";
+import { REMINDER_STAGES } from "../constants/reminder.constants";
 import { TodoReminderJob } from "./todo-reminder.job";
 
 // =============================================================================
@@ -174,9 +175,12 @@ describe("TodoReminderJob", () => {
 				// When - 할일 리마인더 job 실행
 				await job.handleTodoReminder();
 
-				// Then - 모든 할일에 대해 알림이 전송됨
-				expect(databaseService.todo.findMany).toHaveBeenCalledTimes(1);
-				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				// Then - 각 stage마다 할일 조회 + 알림 발송
+				const stageCount = REMINDER_STAGES.length;
+				expect(databaseService.todo.findMany).toHaveBeenCalledTimes(stageCount);
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(
+					stageCount,
+				);
 
 				const batchCallArg = getFirstBatchCallArg(
 					notificationService.createAndSendBatch as unknown as jest.Mock,
@@ -260,8 +264,10 @@ describe("TodoReminderJob", () => {
 				// When
 				await job.handleTodoReminder();
 
-				// Then - 새로운 할일(201)에만 알림 발송
-				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				// Then - 각 stage에서 새로운 할일(201)에만 알림 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(
+					REMINDER_STAGES.length,
+				);
 				const batchCallArg = getFirstBatchCallArg(
 					notificationService.createAndSendBatch as unknown as jest.Mock,
 				);
@@ -279,8 +285,10 @@ describe("TodoReminderJob", () => {
 				// When - 할일 리마인더 job 실행
 				await job.handleTodoReminder();
 
-				// Then - 알림 발송이 호출되지 않음
-				expect(databaseService.todo.findMany).toHaveBeenCalledTimes(1);
+				// Then - 각 stage에서 조회하지만 대상 없어 알림 미발송
+				expect(databaseService.todo.findMany).toHaveBeenCalledTimes(
+					REMINDER_STAGES.length,
+				);
 				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 			});
 		});
