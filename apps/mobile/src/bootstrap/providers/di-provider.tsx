@@ -2,7 +2,6 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
-import { AuthRepositoryImpl } from '@src/features/auth/repositories/auth.repository.impl';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { FriendRepositoryImpl } from '@src/features/friend/repositories/friend.repository.impl';
 import { FriendService } from '@src/features/friend/services/friend.service';
@@ -88,8 +87,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const authHttpClient = new KyHttpClient(authKyInstance);
 
     // Auth
-    const authRepository = new AuthRepositoryImpl(publicHttpClient, authHttpClient);
-    const authService = new AuthService(authRepository, storage);
+    const authService = new AuthService(publicHttpClient, authHttpClient, storage);
 
     // Friend
     const friendRepository = new FriendRepositoryImpl(authHttpClient);
