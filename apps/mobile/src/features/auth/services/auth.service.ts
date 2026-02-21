@@ -321,9 +321,12 @@ export class AuthService {
   };
 
   logout = async (): Promise<Result<void, ApiError>> => {
-    const result = await this.#authHttpClient.post('v1/auth/logout');
-    await this.clearTokens();
-    return result.ok ? ok(undefined) : result;
+    try {
+      const result = await this.#authHttpClient.post('v1/auth/logout');
+      return result.ok ? ok(undefined) : result;
+    } finally {
+      await this.clearTokens();
+    }
   };
 
   verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {

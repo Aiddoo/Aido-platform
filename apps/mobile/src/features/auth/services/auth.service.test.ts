@@ -264,6 +264,16 @@ describe('AuthService', () => {
       expect(storage.remove).toHaveBeenCalledWith('refreshToken');
       expect(result).toEqual({ ok: false, error: apiError });
     });
+
+    test('HttpClient throw 시에도 토큰을 삭제한다', async () => {
+      // Given
+      (authHttpClient.post as jest.Mock).mockRejectedValue(new Error('network error'));
+
+      // When & Then
+      await expect(service.logout()).rejects.toThrow('network error');
+      expect(storage.remove).toHaveBeenCalledWith('accessToken');
+      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+    });
   });
 
   // -- verifyEmail --
