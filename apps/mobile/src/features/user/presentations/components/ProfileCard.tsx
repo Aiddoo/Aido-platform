@@ -66,7 +66,7 @@ export function ProfileCard() {
 ProfileCard.Loading = function Loading() {
   return (
     <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack gap={12} align="center" className="rounded-2xl bg-white p-4">
+      <HStack gap={12} align="center" className="rounded-2xl px-4 py-3">
         <SkeletonGroup.Item className="size-12 rounded-full" />
         <VStack className="flex-1">
           <SkeletonGroup.Item className="h-5 w-24 rounded-md" />
