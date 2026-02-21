@@ -3,7 +3,7 @@ import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
 import { DeviceIcon, MoonIcon, type StyledIconType, SunIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { RadioGroup } from 'heroui-native';
+import { Radio, RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
@@ -47,7 +47,13 @@ function ThemeRadioItem({ value, label, Icon }: ThemeRadioItemProps) {
               topProps={{ size: 'b3', weight: 'semibold' }}
             />
           }
-          right={<AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />}
+          right={
+            <Radio>
+              <Radio.Indicator>
+                <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
+              </Radio.Indicator>
+            </Radio>
+          }
           horizontalPadding="medium"
           verticalPadding="large"
         />

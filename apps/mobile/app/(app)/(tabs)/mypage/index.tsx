@@ -51,7 +51,7 @@ const MyPageScreen = () => {
           </Suspense>
         </QueryErrorBoundary>
 
-        <Spacing size={24} />
+        <Spacing size={12} />
 
         <SettingNavigationSection>
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />

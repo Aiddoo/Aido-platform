@@ -15,7 +15,7 @@ import { ScrollView, View } from 'react-native';
 
 const EditNameScreen = () => {
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-gray-1">
       <QueryErrorBoundary>
         <Suspense fallback={<View className="flex-1" />}>
           <EditNameForm />
