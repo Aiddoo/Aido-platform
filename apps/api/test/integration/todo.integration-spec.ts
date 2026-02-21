@@ -94,14 +94,7 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 
 	beforeAll(async () => {
 		suppressLogger();
-	});
 
-	beforeEach(async () => {
-		jest.clearAllMocks();
-		TodoBuilder.resetIdCounter();
-		TodoCategoryBuilder.resetIdCounter();
-
-		// NestJS 테스트 모듈 생성 - 실제 DI 컨테이너 사용
 		module = await Test.createTestingModule({
 			providers: [
 				TodoService,
@@ -143,10 +136,15 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		repository = module.get<TodoRepository>(TodoRepository);
 	});
 
-	afterEach(async () => {
-		if (module) {
-			await module.close();
-		}
+	afterAll(async () => {
+		await module.close();
+		jest.restoreAllMocks();
+	});
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+		TodoBuilder.resetIdCounter();
+		TodoCategoryBuilder.resetIdCounter();
 	});
 
 	describe("DI 통합", () => {

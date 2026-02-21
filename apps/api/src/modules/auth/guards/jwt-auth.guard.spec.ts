@@ -1,8 +1,7 @@
-import { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-
+import { createMockExecutionContext } from "@test/mocks";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
@@ -11,20 +10,6 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 describe("JwtAuthGuard", () => {
 	let guard: JwtAuthGuard;
 	let reflector: Mocked<Reflector>;
-
-	// ==========================================================================
-	// Mock Factory Functions
-	// ==========================================================================
-
-	const createMockExecutionContext = (): ExecutionContext => {
-		return {
-			switchToHttp: () => ({
-				getRequest: () => ({}),
-			}),
-			getHandler: () => ({}),
-			getClass: () => ({}),
-		} as unknown as ExecutionContext;
-	};
 
 	// ==========================================================================
 	// Setup
@@ -48,7 +33,7 @@ describe("JwtAuthGuard", () => {
 	describe("canActivate", () => {
 		it("@Public() 데코레이터가 적용된 라우트는 true를 반환해야 한다", () => {
 			// Given
-			const context = createMockExecutionContext();
+			const { context } = createMockExecutionContext();
 			reflector.getAllAndOverride.mockReturnValue(true);
 
 			// When

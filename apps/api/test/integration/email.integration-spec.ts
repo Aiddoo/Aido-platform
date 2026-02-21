@@ -40,19 +40,9 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 	const testCode = "987654";
 	const testExpiryMinutes = 15;
 
-	beforeAll(() => {
+	beforeAll(async () => {
 		suppressLogger();
-	});
 
-	beforeEach(async () => {
-		// Resend mock 생성
-		resendMock = {
-			emails: {
-				send: jest.fn(),
-			},
-		};
-
-		// NestJS 테스트 모듈 생성 - 실제 DI 컨테이너 사용
 		module = await Test.createTestingModule({
 			providers: [
 				EmailService,
@@ -71,16 +61,23 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 		}).compile();
 
 		service = module.get<EmailService>(EmailService);
-
-		// Private Resend 인스턴스를 mock으로 교체
-		(service as unknown as { _resend: ResendMock })._resend = resendMock;
 	});
 
-	afterEach(async () => {
+	afterAll(async () => {
+		await module.close();
+		jest.restoreAllMocks();
+	});
+
+	beforeEach(() => {
 		jest.clearAllMocks();
-		if (module) {
-			await module.close();
-		}
+
+		// Resend mock 생성 및 private 필드 교체
+		resendMock = {
+			emails: {
+				send: jest.fn(),
+			},
+		};
+		(service as unknown as { _resend: ResendMock })._resend = resendMock;
 	});
 
 	describe("DI 통합", () => {

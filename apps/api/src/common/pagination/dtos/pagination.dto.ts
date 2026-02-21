@@ -1,62 +1,43 @@
-import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { createZodDto } from "nestjs-zod";
+import { z } from "zod";
 import { PAGINATION_DEFAULT } from "../constants/pagination.constant";
 
-/**
- * 오프셋 기반 페이지네이션 DTO
- */
-export class PaginationDto {
-	@IsOptional()
-	@IsInt()
-	@Min(1)
-	@Type(() => Number)
-	page?: number = PAGINATION_DEFAULT.PAGE;
+const paginationSchema = z.object({
+	page: z.coerce.number().int().min(1).default(PAGINATION_DEFAULT.PAGE),
+	size: z.coerce
+		.number()
+		.int()
+		.min(PAGINATION_DEFAULT.MIN_SIZE)
+		.max(PAGINATION_DEFAULT.MAX_SIZE)
+		.default(PAGINATION_DEFAULT.SIZE),
+});
 
-	@IsOptional()
-	@IsInt()
-	@Min(PAGINATION_DEFAULT.MIN_SIZE)
-	@Max(PAGINATION_DEFAULT.MAX_SIZE)
-	@Type(() => Number)
-	size?: number = PAGINATION_DEFAULT.SIZE;
-}
+export class PaginationDto extends createZodDto(paginationSchema) {}
 
-/**
- * String 커서 기반 페이지네이션 DTO
- * CUID, UUID 등 문자열 ID를 사용하는 엔티티용 (예: User)
- */
-export class StringCursorPaginationDto {
-	@IsOptional()
-	@IsString()
-	cursor?: string;
+const stringCursorPaginationSchema = z.object({
+	cursor: z.string().optional(),
+	size: z.coerce
+		.number()
+		.int()
+		.min(PAGINATION_DEFAULT.MIN_SIZE)
+		.max(PAGINATION_DEFAULT.MAX_SIZE)
+		.default(PAGINATION_DEFAULT.SIZE),
+});
 
-	@IsOptional()
-	@IsInt()
-	@Min(PAGINATION_DEFAULT.MIN_SIZE)
-	@Max(PAGINATION_DEFAULT.MAX_SIZE)
-	@Type(() => Number)
-	size?: number = PAGINATION_DEFAULT.SIZE;
-}
+export class StringCursorPaginationDto extends createZodDto(
+	stringCursorPaginationSchema,
+) {}
 
-/**
- * Number 커서 기반 페이지네이션 DTO
- * auto-increment 등 숫자 ID를 사용하는 엔티티용 (예: Todo)
- */
-export class NumberCursorPaginationDto {
-	@IsOptional()
-	@IsInt()
-	@Min(1)
-	@Type(() => Number)
-	cursor?: number;
+const numberCursorPaginationSchema = z.object({
+	cursor: z.coerce.number().int().min(1).optional(),
+	size: z.coerce
+		.number()
+		.int()
+		.min(PAGINATION_DEFAULT.MIN_SIZE)
+		.max(PAGINATION_DEFAULT.MAX_SIZE)
+		.default(PAGINATION_DEFAULT.SIZE),
+});
 
-	@IsOptional()
-	@IsInt()
-	@Min(PAGINATION_DEFAULT.MIN_SIZE)
-	@Max(PAGINATION_DEFAULT.MAX_SIZE)
-	@Type(() => Number)
-	size?: number = PAGINATION_DEFAULT.SIZE;
-}
-
-/**
- * @deprecated CursorPaginationDto 대신 StringCursorPaginationDto 또는 NumberCursorPaginationDto 사용
- */
-export class CursorPaginationDto extends StringCursorPaginationDto {}
+export class NumberCursorPaginationDto extends createZodDto(
+	numberCursorPaginationSchema,
+) {}

@@ -203,7 +203,7 @@ function createCursorPaginatedSchema<T>(type: Type<T>) {
  * ```typescript
  * @Get('cursor')
  * @ApiCursorPaginatedResponse({ type: TodoResponseDto })
- * findAllCursor(@Query() query: CursorPaginationDto) { ... }
+ * findAllCursor(@Query() query: NumberCursorPaginationDto) { ... }
  * ```
  */
 export function ApiCursorPaginatedResponse<T>(

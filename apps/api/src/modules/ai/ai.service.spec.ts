@@ -174,7 +174,7 @@ describe("AiService", () => {
 			});
 		});
 
-		it("AI Provider가 불가용하면 AI_0001 에러를 던진다", async () => {
+		it("AI Provider가 불가용하면 AI_1301 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setAvailable(false);
 
@@ -184,12 +184,12 @@ describe("AiService", () => {
 			);
 			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
 				{
-					errorCode: "AI_0001",
+					errorCode: "AI_1301",
 				},
 			);
 		});
 
-		it("AI 파싱 실패시 AI_0002 에러를 던진다", async () => {
+		it("AI 파싱 실패시 AI_1302 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setInvalidResponse(new Error("Parse error"));
 			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
@@ -200,7 +200,7 @@ describe("AiService", () => {
 			);
 			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
 				{
-					errorCode: "AI_0002",
+					errorCode: "AI_1302",
 				},
 			);
 		});
@@ -240,7 +240,7 @@ describe("AiService", () => {
 			);
 		});
 
-		it("일일 사용량 초과 시 AI_0003 에러를 던진다", async () => {
+		it("일일 사용량 초과 시 AI_1303 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setResponse({
 				title: "테스트",
@@ -258,7 +258,7 @@ describe("AiService", () => {
 			);
 			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
 				{
-					errorCode: "AI_0003",
+					errorCode: "AI_1303",
 				},
 			);
 		});

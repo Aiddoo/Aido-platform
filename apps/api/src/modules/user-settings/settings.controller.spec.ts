@@ -1,12 +1,13 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import { AuthController } from "./auth.controller";
-import type { CurrentUserPayload } from "./decorators";
-import { UserSettingsService } from "./services/user-settings.service";
+import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
-describe("AuthController - Settings API", () => {
-	let controller: AuthController;
+import { UserSettingsService } from "./services/user-settings.service";
+import { SettingsController } from "./settings.controller";
+
+describe("SettingsController", () => {
+	let controller: SettingsController;
 	let mockUserSettingsService: Mocked<UserSettingsService>;
 
 	const mockUser: CurrentUserPayload = {
@@ -17,7 +18,8 @@ describe("AuthController - Settings API", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
+		const { unit, unitRef } =
+			await TestBed.solitary(SettingsController).compile();
 
 		controller = unit;
 		mockUserSettingsService = unitRef.get(

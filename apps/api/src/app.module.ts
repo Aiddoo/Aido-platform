@@ -29,6 +29,7 @@ import { NudgeModule } from "@/modules/nudge/nudge.module";
 import { SchedulerModule } from "@/modules/scheduler/scheduler.module";
 import { TodoModule } from "@/modules/todo";
 import { TodoCategoryModule } from "@/modules/todo-category";
+import { UserSettingsModule } from "@/modules/user-settings/user-settings.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
@@ -81,6 +82,7 @@ import { AppService } from "./app.service";
 		SchedulerModule,
 		TodoModule,
 		TodoCategoryModule,
+		UserSettingsModule,
 	],
 	// Controllers
 	controllers: [AppController],

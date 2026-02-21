@@ -204,9 +204,9 @@ export const ErrorCode = {
   // =========================================================================
   // AI 서비스 (AI_1300-1399)
   // =========================================================================
-  AI_0001: 'AI_0001',
-  AI_0002: 'AI_0002',
-  AI_0003: 'AI_0003',
+  AI_1301: 'AI_1301',
+  AI_1302: 'AI_1302',
+  AI_1303: 'AI_1303',
 
   // =========================================================================
   // 관리자 (ADMIN_1400-1499)
@@ -944,20 +944,20 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // =========================================================================
   // AI 서비스 (AI_1300-1399)
   // =========================================================================
-  [ErrorCode.AI_0001]: {
-    code: 'AI_0001',
+  [ErrorCode.AI_1301]: {
+    code: 'AI_1301',
     message: 'AI 서비스를 사용할 수 없습니다.',
     description: 'AI 서비스가 일시적으로 사용 불가능하거나 API 키가 설정되지 않았습니다.',
     httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
   },
-  [ErrorCode.AI_0002]: {
-    code: 'AI_0002',
+  [ErrorCode.AI_1302]: {
+    code: 'AI_1302',
     message: '자연어 파싱에 실패했습니다.',
     description: 'AI가 입력 텍스트를 투두 데이터로 변환하지 못했습니다.',
     httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
-  [ErrorCode.AI_0003]: {
-    code: 'AI_0003',
+  [ErrorCode.AI_1303]: {
+    code: 'AI_1303',
     message: '일일 AI 사용 횟수를 초과했습니다.',
     description: '무료 사용자는 하루 5회까지만 AI 기능을 사용할 수 있습니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,

@@ -10,7 +10,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import {
-	addMilliseconds,
 	now,
 	subtractMinutes,
 	toISOString,
@@ -23,8 +22,6 @@ import {
 	AdminNotificationEvents,
 	type UserRegisteredEventPayload,
 } from "../../admin-notification/events/admin-notification.events";
-import { TodoCategoryRepository } from "../../todo-category/todo-category.repository";
-import { DEFAULT_CATEGORIES } from "../../todo-category/types/todo-category.types";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -49,6 +46,7 @@ import type {
 	VerifyEmailResult,
 } from "../types";
 import { PasswordService } from "./password.service";
+import { SessionService } from "./session.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
@@ -76,8 +74,8 @@ export class AuthService {
 		private readonly sessionRepository: SessionRepository,
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly passwordService: PasswordService,
+		private readonly sessionService: SessionService,
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
 		private readonly cacheService: CacheService,
@@ -149,16 +147,7 @@ export class AuthService {
 					},
 				});
 
-				// 기본 카테고리 생성 ("중요한 일", "할 일")
-				await this.todoCategoryRepository.createMany(
-					DEFAULT_CATEGORIES.map((category) => ({
-						userId: newUser.id,
-						name: category.name,
-						color: category.color,
-						sortOrder: category.sortOrder,
-					})),
-					tx,
-				);
+				// 기본 카테고리는 user.registered 이벤트를 통해 TodoCategoryModule에서 생성
 
 				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 				const verificationResult =
@@ -270,45 +259,16 @@ export class AuthService {
 			// 이메일 인증 완료 처리 (상태 ACTIVE로 변경)
 			await this.userRepository.markEmailVerified(user.id, tx);
 
-			// 토큰 패밀리 생성
-			const tokenFamily = this.tokenService.generateTokenFamily();
-
-			// 세션 만료 시간 계산
-			const expiresInSeconds =
-				this.tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
-
-			// 세션 먼저 생성 (refreshTokenHash 없이)
-			const session = await this.sessionRepository.create(
+			// 세션 생성 + 토큰 발급
+			const { tokens } = await this.sessionService.createSessionWithTokens(
 				{
 					userId: user.id,
-					tokenFamily,
-					tokenVersion: 1,
+					email,
+					role: user.role,
 					deviceFingerprint: userAgent,
 					userAgent,
 					ipAddress: ip,
-					expiresAt,
 				},
-				tx,
-			);
-
-			// 실제 세션 ID로 토큰 한 번만 생성
-			const tokens = await this.tokenService.generateTokenPair(
-				user.id,
-				email,
-				session.id,
-				user.role,
-				tokenFamily,
-				1,
-			);
-
-			// 리프레시 토큰 해시로 세션 업데이트
-			const refreshTokenHash = this.tokenService.hashRefreshToken(
-				tokens.refreshToken,
-			);
-			await this.sessionRepository.updateRefreshTokenHash(
-				session.id,
-				refreshTokenHash,
 				tx,
 			);
 
@@ -482,47 +442,19 @@ export class AuthService {
 
 		// 5. 세션 생성 + JWT 토큰 발급 (트랜잭션)
 		const result = await this.database.$transaction(async (tx) => {
-			// 토큰 패밀리 생성
-			const tokenFamily = this.tokenService.generateTokenFamily();
-
-			// 세션 만료 시간 계산
-			const expiresInSeconds =
-				this.tokenService.getRefreshTokenExpiresInSeconds();
-			const expiresAt = addMilliseconds(expiresInSeconds * 1000);
-
-			// 세션 먼저 생성 (refreshTokenHash 없이)
-			const session = await this.sessionRepository.create(
-				{
-					userId: user.id,
-					tokenFamily,
-					tokenVersion: 1,
-					deviceFingerprint: deviceName ?? userAgent,
-					userAgent,
-					ipAddress: ip,
-					expiresAt,
-				},
-				tx,
-			);
-
-			// 실제 세션 ID로 토큰 한 번만 생성
-			const tokens = await this.tokenService.generateTokenPair(
-				user.id,
-				email,
-				session.id,
-				user.role,
-				tokenFamily,
-				1,
-			);
-
-			// 리프레시 토큰 해시로 세션 업데이트
-			const refreshTokenHash = this.tokenService.hashRefreshToken(
-				tokens.refreshToken,
-			);
-			await this.sessionRepository.updateRefreshTokenHash(
-				session.id,
-				refreshTokenHash,
-				tx,
-			);
+			// 세션 생성 + 토큰 발급
+			const { sessionId, tokens } =
+				await this.sessionService.createSessionWithTokens(
+					{
+						userId: user.id,
+						email,
+						role: user.role,
+						deviceFingerprint: deviceName ?? userAgent,
+						userAgent,
+						ipAddress: ip,
+					},
+					tx,
+				);
 
 			// 로그인 성공 기록
 			await this.loginAttemptRepository.create(
@@ -555,7 +487,7 @@ export class AuthService {
 
 			return {
 				tokens,
-				sessionId: session.id,
+				sessionId,
 				name: userWithProfile?.profile?.name ?? null,
 				profileImage: userWithProfile?.profile?.profileImage ?? null,
 			};

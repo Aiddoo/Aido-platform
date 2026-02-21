@@ -81,9 +81,9 @@ export class AiService {
 	 * @param text - 파싱할 자연어 텍스트
 	 * @param userId - 사용자 ID
 	 * @returns 파싱된 투두 데이터와 메타 정보
-	 * @throws AI_0001 - AI 서비스 불가
-	 * @throws AI_0002 - 파싱 실패
-	 * @throws AI_0003 - 일일 사용량 초과
+	 * @throws AI_1301 - AI 서비스 불가
+	 * @throws AI_1302 - 파싱 실패
+	 * @throws AI_1303 - 일일 사용량 초과
 	 */
 	async parseTodo(text: string, userId: string): Promise<ParseTodoResult> {
 		const startTime = Date.now();
@@ -189,7 +189,7 @@ export class AiService {
 	 * 동시 요청 시 사용 제한을 정확하게 적용합니다.
 	 *
 	 * @param userId - 사용자 ID
-	 * @throws AI_0003 - 일일 사용량 초과
+	 * @throws AI_1303 - 일일 사용량 초과
 	 */
 	private async checkAndIncrementUsage(userId: string): Promise<void> {
 		await this.prisma.$transaction(async (tx) => {

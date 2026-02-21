@@ -151,7 +151,20 @@ it("유효한 토큰을 등록해야 한다", async () => {
 });
 ```
 
-### 2.5 실행 명령어
+### 2.5 Controller 테스트 작성 기준
+
+Controller 스펙은 **위임과 변환** 두 가지를 검증합니다:
+
+| 검증 대상 | 어서션 | 예시 |
+|-----------|--------|------|
+| **위임** (올바른 파라미터 전달) | `toHaveBeenCalledWith` | `expect(service.create).toHaveBeenCalledWith(...)` |
+| **변환** (응답 구성 로직) | `toEqual` | `expect(result).toEqual({ message: "...", todo })` |
+
+- Controller가 서비스 반환값을 **가공하여 응답을 구성**하면 → `toEqual`로 변환 로직 검증 (O)
+- Controller가 서비스 반환값을 **그대로 pass-through**하면 → `toBeDefined()`로 충분, 구체적 값은 Service 스펙에 위임 (O)
+- Controller에서 서비스 **반환값의 내부 필드 정합성**을 검증 → Service 스펙 범위이므로 불필요 (X)
+
+### 2.6 실행 명령어
 
 ```bash
 pnpm --filter @aido/api test                    # 전체 단위 테스트
@@ -176,6 +189,21 @@ pnpm --filter @aido/api test:cov                # 커버리지
 | **실제 DB** | Testcontainers PostgreSQL | TestDatabase + 모듈 팩토리 | 전체 DB 스택 + 트랜잭션 검증 |
 
 ### 3.2 Mock DB 통합 테스트
+
+#### 역할과 작성 기준
+
+Mock DB 통합 테스트는 **NestJS DI 컨테이너를 실제로 구동**하여 Unit 테스트에서 커버하기 어려운 부분을 검증합니다.
+
+**작성해야 하는 케이스** (Unit과 차별화되는 영역):
+- NestJS DI 연결 정합성 (서비스/레포지토리 주입 확인)
+- `$transaction` 콜백을 통한 다중 Repository 조합 시나리오
+- EventEmitter / 캐시 등 인프라 서비스와의 통합
+- 순환 의존성, 글로벌 모듈 로드 문제 검출
+
+**작성하지 않아야 하는 케이스** (Unit에서 충분한 영역):
+- 단일 Service 메서드의 입력 검증 / 예외 분기 (Unit의 `TestBed.solitary`가 커버)
+- 단일 Repository의 쿼리 파라미터 검증 (Unit에서 `toHaveBeenCalledWith`로 커버)
+- 단순한 CRUD 정상 경로 (Unit에서 이미 동일하게 검증)
 
 ```typescript
 import { Test, type TestingModule } from "@nestjs/testing";
@@ -333,7 +361,23 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"   # 특정 테스트
 | `test/mocks/fake-oauth-token-verifier.service.ts` | `FakeOAuthTokenVerifierService` | E2E + OAuth Integration 테스트 |
 | `test/setup/test-database.ts` | `TestDatabase` (Testcontainers) | 실제 DB Integration + E2E 테스트 |
 
-### 5.2 Builder 목록
+### 5.2 Builder vs Fixture 사용 기준
+
+| 구분 | Builder (`test/builders/`) | Fixture (`test/fixtures/`) |
+|------|---------------------------|---------------------------|
+| **목적** | 단일 엔티티를 메서드 체이닝으로 생성 | 연관 엔티티 묶음(User + Profile + Account)을 한 번에 생성 |
+| **사용처** | Unit 테스트, Integration 테스트 | Integration (실제 DB), E2E 테스트 |
+| **ID 방식** | `resetIdCounter()`로 수동 리셋 | 카운터 자동 증가, `resetAllFixtures()`로 일괄 리셋 |
+| **상태 표현** | `.verified()`, `.deleted()` 등 도메인 메서드 | `Partial<T>` override |
+| **관계 데이터** | `buildWithRelations()`으로 선택적 포함 | `createWithProfile()` 등 복합 팩토리 기본 제공 |
+
+**선택 기준:**
+- **단일 엔티티 mock 반환값** → Builder: `UserBuilder.create().verified().build()`
+- **DB에 실제 삽입할 복합 데이터** → Fixture: `UserFixture.createFull()`
+- **도메인 상태가 중요한 테스트** → Builder: `.locked()`, `.expired()`, `.asPremium()` 체이닝
+- **관계 데이터가 필요하지만 상태가 단순한 경우** → Fixture: `UserFixture.createWithProfile()`
+
+### 5.3 Builder 목록
 
 | Builder | 모델 | 주요 메서드 |
 |---------|------|------------|

@@ -4,9 +4,12 @@ import { PassportModule } from "@nestjs/passport";
 
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { EmailModule } from "@/modules/email/email.module";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
-
-import { AuthController } from "./auth.controller";
+import {
+	AccountController,
+	AuthController,
+	OAuthController,
+	SessionController,
+} from "./controllers";
 import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
 import { AccountPurgeJob } from "./jobs/account-purge.job";
 import {
@@ -15,8 +18,6 @@ import {
 	OAuthStateRepository,
 	SecurityLogRepository,
 	SessionRepository,
-	UserConsentRepository,
-	UserPreferenceRepository,
 	UserRepository,
 	VerificationRepository,
 } from "./repositories";
@@ -25,8 +26,8 @@ import {
 	OAuthService,
 	OAuthTokenVerifierService,
 	PasswordService,
+	SessionService,
 	TokenService,
-	UserSettingsService,
 	VerificationService,
 } from "./services";
 import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
@@ -50,7 +51,12 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		}),
 		EmailModule,
 	],
-	controllers: [AuthController],
+	controllers: [
+		AuthController,
+		OAuthController,
+		SessionController,
+		AccountController,
+	],
 	providers: [
 		// Repositories
 		UserRepository,
@@ -60,17 +66,14 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		LoginAttemptRepository,
 		SecurityLogRepository,
 		OAuthStateRepository,
-		UserPreferenceRepository,
-		UserConsentRepository,
-		TodoCategoryRepository,
 		// Services
 		PasswordService,
+		SessionService,
 		TokenService,
 		VerificationService,
 		OAuthTokenVerifierService,
 		AuthService,
 		OAuthService,
-		UserSettingsService,
 		// Strategies
 		JwtStrategy,
 		JwtRefreshStrategy,

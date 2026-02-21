@@ -1,8 +1,7 @@
 import type { CurrentUserPayload } from "@aido/validators";
-import { ExecutionContext } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-
+import { createMockExecutionContext } from "@test/mocks";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
 import { AiService, type UsageInfo } from "../ai.service";
@@ -15,20 +14,6 @@ describe("AiUsageGuard", () => {
 	// ==========================================================================
 	// Mock Factory Functions
 	// ==========================================================================
-
-	const createMockExecutionContext = (user?: CurrentUserPayload) => {
-		const mockRequest: Record<string, unknown> = { user };
-		return {
-			context: {
-				switchToHttp: () => ({
-					getRequest: () => mockRequest,
-				}),
-				getHandler: () => ({}),
-				getClass: () => ({}),
-			} as unknown as ExecutionContext,
-			request: mockRequest,
-		};
-	};
 
 	const createMockUsage = (used: number, limit: number): UsageInfo => ({
 		used,
@@ -65,7 +50,7 @@ describe("AiUsageGuard", () => {
 	describe("canActivate", () => {
 		it("사용자가 인증되고 사용량이 제한 미만이면 true를 반환해야 한다", async () => {
 			// Given
-			const { context } = createMockExecutionContext(mockUser);
+			const { context } = createMockExecutionContext({ user: mockUser });
 			const usage = createMockUsage(2, 5);
 			aiService.getUsage.mockResolvedValue(usage);
 
@@ -79,7 +64,7 @@ describe("AiUsageGuard", () => {
 
 		it("사용자 정보가 없으면 authenticationRequired 에러를 던져야 한다", async () => {
 			// Given
-			const { context } = createMockExecutionContext(undefined);
+			const { context } = createMockExecutionContext();
 
 			// When & Then
 			await expect(guard.canActivate(context)).rejects.toThrow(
@@ -89,7 +74,7 @@ describe("AiUsageGuard", () => {
 
 		it("사용자 정보가 없으면 AUTH_0107 에러 코드를 반환해야 한다", async () => {
 			// Given
-			const { context } = createMockExecutionContext(undefined);
+			const { context } = createMockExecutionContext();
 
 			// When & Then
 			try {
@@ -103,7 +88,7 @@ describe("AiUsageGuard", () => {
 
 		it("사용량이 제한에 도달하면 aiUsageLimitExceeded 에러를 던져야 한다", async () => {
 			// Given
-			const { context } = createMockExecutionContext(mockUser);
+			const { context } = createMockExecutionContext({ user: mockUser });
 			const usage = createMockUsage(5, 5);
 			aiService.getUsage.mockResolvedValue(usage);
 
@@ -113,9 +98,9 @@ describe("AiUsageGuard", () => {
 			);
 		});
 
-		it("사용량이 제한을 초과하면 AI_0003 에러 코드를 반환해야 한다", async () => {
+		it("사용량이 제한을 초과하면 AI_1303 에러 코드를 반환해야 한다", async () => {
 			// Given
-			const { context } = createMockExecutionContext(mockUser);
+			const { context } = createMockExecutionContext({ user: mockUser });
 			const usage = createMockUsage(6, 5);
 			aiService.getUsage.mockResolvedValue(usage);
 
@@ -125,13 +110,15 @@ describe("AiUsageGuard", () => {
 				fail("에러가 발생해야 합니다");
 			} catch (error) {
 				expect(error).toBeInstanceOf(BusinessException);
-				expect((error as BusinessException).errorCode).toBe("AI_0003");
+				expect((error as BusinessException).errorCode).toBe("AI_1303");
 			}
 		});
 
 		it("request에 aiUsage 정보를 첨부해야 한다", async () => {
 			// Given
-			const { context, request } = createMockExecutionContext(mockUser);
+			const { context, request } = createMockExecutionContext({
+				user: mockUser,
+			});
 			const usage = createMockUsage(3, 5);
 			aiService.getUsage.mockResolvedValue(usage);
 
