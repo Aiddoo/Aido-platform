@@ -51,7 +51,7 @@ const listRowVariants = ({
   const borderClass = border === 'indented' ? 'border-b border-gray-3' : '';
   const disabledClass = disabled ? 'opacity-40' : '';
 
-  return cn('bg-white', paddingY, paddingX, borderClass, disabledClass);
+  return cn(paddingY, paddingX, borderClass, disabledClass);
 };
 
 const listRowSlotVariants = ({ alignment = 'center' }: { alignment?: ListRowAlignment }) => {
