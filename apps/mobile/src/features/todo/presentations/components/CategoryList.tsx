@@ -3,7 +3,7 @@ import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/
 import { reorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/reorder-todo-category-mutation-options';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { DragIcon, EditIcon, TrashIcon } from '@src/shared/ui/Icon';
+import { EditIcon, TrashIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -71,36 +71,32 @@ export const CategoryList = () => {
       data={draggableCategories}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item, drag, isActive }) => (
-        <ScaleDecorator>
-          <ListRow
-            left={
-              <PressableFeedback
-                onPressIn={drag}
-                isDisabled={isActive || reorderMutation.isPending}
-              >
-                <DragIcon width={18} height={18} colorClassName="text-gray-6" />
-              </PressableFeedback>
-            }
-            contents={
-              <HStack align="center" gap={8}>
-                <Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
+        <ScaleDecorator activeScale={1.015}>
+          <PressableFeedback
+            onLongPress={reorderMutation.isPending ? undefined : drag}
+            isDisabled={isActive}
+            className={isActive ? 'bg-gray-1 rounded-xl' : ''}
+          >
+            <ListRow
+              left={<Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />}
+              contents={
                 <Text size="b3" weight="medium">
                   {item.name}
                 </Text>
-              </HStack>
-            }
-            right={
-              <HStack align="center" gap={4}>
-                <PressableFeedback onPress={() => openEditSheet(item)} className="p-1">
-                  <EditIcon width={18} height={18} colorClassName="text-gray-6" />
-                </PressableFeedback>
-                <PressableFeedback onPress={() => openDeleteDialog(item)} className="p-1">
-                  <TrashIcon width={18} height={18} colorClassName="text-gray-6" />
-                </PressableFeedback>
-              </HStack>
-            }
-            horizontalPadding="medium"
-          />
+              }
+              right={
+                <HStack align="center" gap={4}>
+                  <PressableFeedback onPress={() => openEditSheet(item)} className="p-1">
+                    <EditIcon width={18} height={18} colorClassName="text-gray-6" />
+                  </PressableFeedback>
+                  <PressableFeedback onPress={() => openDeleteDialog(item)} className="p-1">
+                    <TrashIcon width={18} height={18} colorClassName="text-gray-6" />
+                  </PressableFeedback>
+                </HStack>
+              }
+              horizontalPadding="medium"
+            />
+          </PressableFeedback>
         </ScaleDecorator>
       )}
       onDragEnd={onDragEnd}

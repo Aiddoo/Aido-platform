@@ -3,10 +3,11 @@ import { CategoryList } from '@src/features/todo/presentations/components/Catego
 import type { ButtonProps } from '@src/shared/ui/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { PlusIcon } from '@src/shared/ui/Icon';
+import { InfoIcon, PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense } from 'react';
@@ -46,6 +47,15 @@ const TodoCategorySettingsScreen = () => {
             <CategoryList />
           </Suspense>
         </QueryErrorBoundary>
+
+        <Spacing size={8} />
+
+        <HStack gap={4} justify="center" align="center">
+          <InfoIcon width={14} height={14} colorClassName="text-gray-6" />
+          <Text size="b4" shade={6}>
+            꾹 누르면 순서를 바꿀 수 있어요
+          </Text>
+        </HStack>
       </Flex>
     </StyledSafeAreaView>
   );
