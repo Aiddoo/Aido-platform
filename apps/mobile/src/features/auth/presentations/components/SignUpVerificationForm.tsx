@@ -64,7 +64,6 @@ export const SignUpVerificationForm = () => {
           setIsInvalid(false);
         },
         onError: (error) => {
-          // 타입 세이프: VERIFY_0753 쿨다운 에러 처리
           if (error instanceof ApiError && error.hasCode(ErrorCode.VERIFY_0753)) {
             const remaining = error.details?.remainingSeconds;
             if (typeof remaining === 'number') {
@@ -102,7 +101,7 @@ export const SignUpVerificationForm = () => {
             render={({ field: { onChange, value } }) => (
               <InputOTP
                 ref={inputOTPRef}
-                maxLength={6}
+                maxLength={VERIFICATION_CODE.LENGTH}
                 value={value}
                 onChange={onChange}
                 onComplete={handleComplete}
