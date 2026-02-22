@@ -6,7 +6,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { router, Stack } from 'expo-router';
 import { Popover, type PopoverTriggerRef, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useRef } from 'react';
-import { Pressable } from 'react-native';
+import { InteractionManager, Pressable } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 export default function FeedLayout() {
@@ -64,7 +64,9 @@ function FeedMenuPopover() {
 
   const handleCategorySettings = () => {
     popoverRef.current?.close();
-    router.push('/feed/category-settings');
+    InteractionManager.runAfterInteractions(() => {
+      router.push('/feed/category-settings');
+    });
   };
 
   return (
