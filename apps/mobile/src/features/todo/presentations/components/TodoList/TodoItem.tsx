@@ -17,9 +17,12 @@ import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
 interface TodoItemProps {
   todo: TodoItemViewModel;
   onPress?: (todoId: number) => void;
+  drag?: () => void;
+  isActive?: boolean;
+  isDragDisabled?: boolean;
 }
 
-export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
+export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: TodoItemProps) => {
   const overlay = useOverlay();
   const toggleMutation = useMutation(toggleTodoMutationOptions());
   const deleteMutation = useMutation(deleteTodoMutationOptions());
@@ -99,7 +102,12 @@ export const TodoItem = ({ todo, onPress }: TodoItemProps) => {
   };
 
   return (
-    <PressableFeedback onPress={() => onPress?.(todo.id)} className="py-2">
+    <PressableFeedback
+      onPress={() => onPress?.(todo.id)}
+      onLongPress={isDragDisabled ? undefined : drag}
+      isDisabled={isActive}
+      className={`py-2 rounded-xl ${isActive ? 'bg-gray-1' : ''}`}
+    >
       <HStack gap={12} align="center">
         <Checkbox
           className="shadow-none border border-main size-5 rounded-md"

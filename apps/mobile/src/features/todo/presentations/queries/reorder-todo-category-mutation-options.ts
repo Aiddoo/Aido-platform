@@ -19,9 +19,11 @@ export const reorderTodoCategoryMutationOptions = () => {
       const result = await todoCategoryService.reorderCategory(id, input);
       return unwrap(result);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+    },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
     },
   });
