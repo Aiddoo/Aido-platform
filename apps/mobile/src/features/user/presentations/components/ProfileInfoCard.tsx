@@ -1,3 +1,4 @@
+import { UserPolicy } from '@src/features/user/models/user.model';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon, EditIcon } from '@src/shared/ui/Icon';
@@ -12,10 +13,17 @@ import { getProfileIconSource } from '../utils/profile-icon.util';
 interface ProfileInfoCardProps {
   onAvatarPress: () => void;
   onNamePress: () => void;
+  onChangePasswordPress: () => void;
 }
 
-export function ProfileInfoCard({ onAvatarPress, onNamePress }: ProfileInfoCardProps) {
+export function ProfileInfoCard({
+  onAvatarPress,
+  onNamePress,
+  onChangePasswordPress,
+}: ProfileInfoCardProps) {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const hasCredential = UserPolicy.hasCredential(user);
+
   return (
     <VStack gap={24}>
       <VStack align="center" py={32}>
@@ -32,7 +40,7 @@ export function ProfileInfoCard({ onAvatarPress, onNamePress }: ProfileInfoCardP
         </PressableFeedback>
       </VStack>
 
-      <VStack p={8} className="bg-white rounded-2xl">
+      <VStack p={8} gap={8} className="bg-white rounded-2xl">
         <PressableFeedback onPress={onNamePress} className="rounded-lg">
           <PressableFeedback.Highlight className="rounded-xl" />
 
@@ -49,6 +57,18 @@ export function ProfileInfoCard({ onAvatarPress, onNamePress }: ProfileInfoCardP
             horizontalPadding="medium"
           />
         </PressableFeedback>
+
+        {hasCredential && (
+          <PressableFeedback onPress={onChangePasswordPress} className="rounded-lg">
+            <PressableFeedback.Highlight className="rounded-xl" />
+
+            <ListRow
+              contents={<ListRow.Texts type="1RowTypeA" top="비밀번호 변경" />}
+              right={<ArrowRightIcon colorClassName="text-gray-6" />}
+              horizontalPadding="medium"
+            />
+          </PressableFeedback>
+        )}
       </VStack>
     </VStack>
   );

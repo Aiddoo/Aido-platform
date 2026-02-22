@@ -35,6 +35,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="app-icon" options={{ title: '앱 아이콘' }} />
       <Stack.Screen name="profile" options={{ title: '프로필 정보' }} />
       <Stack.Screen name="edit-name" options={{ title: '이름 변경' }} />
+      <Stack.Screen name="change-password" options={{ title: '비밀번호 변경' }} />
     </Stack>
   );
 }

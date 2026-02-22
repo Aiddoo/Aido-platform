@@ -21,6 +21,7 @@ const ProfileScreen = () => {
             <ProfileInfoCard
               onAvatarPress={() => setIsImageSheetOpen(true)}
               onNamePress={() => router.push('/settings/edit-name')}
+              onChangePasswordPress={() => router.push('/settings/change-password')}
             />
           </ScrollView>
 
