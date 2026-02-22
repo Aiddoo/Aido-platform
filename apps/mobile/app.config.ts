@@ -28,6 +28,7 @@ const BRAND_COLOR = '#FF6B43';
 const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
+const SPLASH_ANDROID = './assets/images/splash-icon-android.png';
 const FAVICON = './assets/images/favicon.png';
 // TODO: 알림 아이콘 추가 필요 (96x96, 흰색 투명 배경 PNG) → ./assets/images/notification-icon.png
 
@@ -261,6 +262,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
 
       'expo-router',
+
+      [
+        'expo-splash-screen',
+        {
+          image: SPLASH,
+          resizeMode: 'contain',
+          backgroundColor: BRAND_COLOR,
+          android: {
+            image: SPLASH_ANDROID,
+            imageWidth: 288,
+          },
+        },
+      ],
 
       [
         'expo-font',
