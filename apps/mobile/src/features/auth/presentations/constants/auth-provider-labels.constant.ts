@@ -1,12 +1,4 @@
-import type { AuthProviderSlug, OAuthProvider } from '../../models/auth.model';
-
-export const AUTH_PROVIDER_LABELS = {
-  credential: '이메일',
-  kakao: '카카오',
-  google: 'Google',
-  apple: 'Apple',
-  naver: '네이버',
-} as const satisfies Record<AuthProviderSlug, string>;
+import type { OAuthProvider } from '../../models/oauth.model';
 
 export const OAUTH_PROVIDER_LABELS = {
   APPLE: 'Apple',

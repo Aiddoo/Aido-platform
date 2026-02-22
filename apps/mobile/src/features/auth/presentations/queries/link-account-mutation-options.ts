@@ -5,8 +5,8 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isAuthError, isCancelledError } from '../../models/auth.error';
-import type { OAuthProviderSlug } from '../../models/auth.model';
-import { AUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
+import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
+import { OAUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const linkAccountMutationOptions = () => {
@@ -21,7 +21,9 @@ export const linkAccountMutationOptions = () => {
     },
     onSuccess: (_data, provider) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
-      toast.success(`${AUTH_PROVIDER_LABELS[provider]} 계정이 연결되었습니다`);
+      toast.success(
+        `${OAUTH_PROVIDER_LABELS[provider.toUpperCase() as OAuthProvider]} 계정이 연결되었습니다`,
+      );
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

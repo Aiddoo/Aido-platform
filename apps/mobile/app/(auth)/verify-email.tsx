@@ -131,7 +131,7 @@ const VerifyEmailScreen = () => {
               render={({ field: { onChange, value } }) => (
                 <InputOTP
                   ref={inputOTPRef}
-                  maxLength={6}
+                  maxLength={VERIFICATION_CODE.LENGTH}
                   value={value}
                   onChange={onChange}
                   onComplete={handleComplete}

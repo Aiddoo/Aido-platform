@@ -1,6 +1,10 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import type { LinkedAccount, OAuthProvider, OAuthProviderSlug } from '../../models/auth.model';
-import { AuthPolicy } from '../../models/auth.model';
+import {
+  AuthPolicy,
+  type LinkedAccount,
+  type OAuthProvider,
+  type OAuthProviderSlug,
+} from '../../models/oauth.model';
 import { getLinkedAccountsQueryOptions } from '../queries/get-linked-accounts-query-options';
 import { linkAccountMutationOptions } from '../queries/link-account-mutation-options';
 import { unlinkAccountMutationOptions } from '../queries/unlink-account-mutation-options';

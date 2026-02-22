@@ -1,4 +1,4 @@
-import type { OAuthProvider } from '@src/features/auth/models/auth.model';
+import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
 import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
 import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';

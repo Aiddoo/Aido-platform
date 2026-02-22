@@ -2,7 +2,10 @@ import {
   type AppleMobileCallbackInput,
   type AuthTokens as AuthTokensDTO,
   authTokensSchema as authTokensDtoSchema,
+  type ChangePasswordInput,
+  type ChangePasswordResponse,
   type ConsentResponse,
+  changePasswordResponseSchema,
   consentResponseSchema,
   type ExchangeCodeInput,
   type LinkedAccountsResponse,
@@ -40,16 +43,18 @@ import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../mo
 import type {
   AuthTokens,
   Consent,
-  LinkedAccount,
-  OAuthProvider,
-  OAuthProviderSlug,
-  OAuthStartMode,
-  OAuthStartProvider,
   Preference,
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
+import type {
+  LinkedAccount,
+  OAuthProvider,
+  OAuthProviderSlug,
+  OAuthStartMode,
+  OAuthStartProvider,
+} from '../models/oauth.model';
 import {
   toAuthTokens,
   toConsent,
@@ -505,5 +510,24 @@ export class AuthService {
     provider: OAuthProvider,
   ): Promise<Result<{ message: string }, ApiError>> => {
     return this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
+  };
+
+  changePassword = async (
+    input: ChangePasswordInput,
+  ): Promise<Result<{ message: string }, ApiError>> => {
+    const result = await this.#authHttpClient.patch<ChangePasswordResponse>(
+      'v1/auth/password',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = changePasswordResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid changePassword response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok({ message: parsed.data.message });
   };
 }
