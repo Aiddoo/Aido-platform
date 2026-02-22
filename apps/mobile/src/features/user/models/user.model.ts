@@ -1,6 +1,9 @@
+import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS } from '@aido/validators';
 import { z } from 'zod';
 
-export const subscriptionStatusSchema = z.enum(['FREE', 'ACTIVE', 'EXPIRED', 'CANCELLED']);
+const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
+
+export const subscriptionStatusSchema = z.enum(SUBSCRIPTION_STATUS);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
 export const userSchema = z.object({
@@ -10,6 +13,7 @@ export const userSchema = z.object({
   profileImage: z.string().nullable(),
   userTag: z.string(),
   subscriptionStatus: subscriptionStatusSchema,
+  providers: z.array(accountProviderSchema),
   createdAt: z.coerce.date(),
 });
 export type User = z.infer<typeof userSchema>;
@@ -22,8 +26,15 @@ export const updateNameInputSchema = z.object({
 });
 export type UpdateNameInput = z.infer<typeof updateNameInputSchema>;
 
+const isPremiumUser = (user: User) => {
+  return user.subscriptionStatus === 'ACTIVE';
+};
+
+const hasCredential = (user: User) => {
+  return user.providers.includes('CREDENTIAL');
+};
+
 export const UserPolicy = {
-  isPremiumUser: (user: User): boolean => {
-    return user.subscriptionStatus === 'ACTIVE';
-  },
+  isPremiumUser,
+  hasCredential,
 } as const;

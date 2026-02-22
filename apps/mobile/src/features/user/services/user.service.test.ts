@@ -78,6 +78,7 @@ describe('UserService', () => {
           userTag: 'TEST2025',
           subscriptionStatus: 'ACTIVE',
           createdAt: new Date('2026-01-01T09:00:00.000Z'),
+          providers: ['CREDENTIAL'],
         },
       });
     });
