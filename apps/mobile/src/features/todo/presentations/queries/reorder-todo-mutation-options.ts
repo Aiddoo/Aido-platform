@@ -20,11 +20,11 @@ export const reorderTodoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
   });
 };

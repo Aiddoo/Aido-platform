@@ -8,6 +8,7 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -75,7 +76,7 @@ export const CategoryList = () => {
           <PressableFeedback
             onLongPress={reorderMutation.isPending ? undefined : drag}
             isDisabled={isActive}
-            className={isActive ? 'bg-gray-1 rounded-xl' : ''}
+            className={cn(isActive && 'bg-gray-1 rounded-xl')}
           >
             <ListRow
               left={<Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />}

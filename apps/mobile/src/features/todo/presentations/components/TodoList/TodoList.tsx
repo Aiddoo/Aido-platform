@@ -31,7 +31,8 @@ interface TodoListProps {
 }
 
 export function TodoList({ date }: TodoListProps) {
-  const { data, dataUpdatedAt } = useSuspenseQuery(getAllTodosQueryOptions(formatDate(date)));
+  const formattedDate = formatDate(date);
+  const { data, dataUpdatedAt } = useSuspenseQuery(getAllTodosQueryOptions(formattedDate));
   const { data: categoriesData } = useSuspenseQuery({
     ...getTodoCategoriesQueryOptions(),
     select: (data) => ({
