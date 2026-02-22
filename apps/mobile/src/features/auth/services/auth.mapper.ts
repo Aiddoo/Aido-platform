@@ -11,12 +11,12 @@ import type {
 import type {
   AuthTokens,
   Consent,
-  LinkedAccount,
   Preference,
   RegisterResult,
   ResendVerificationResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
+import type { LinkedAccount } from '../models/oauth.model';
 
 export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userId: dto.userId,

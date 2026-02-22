@@ -1,3 +1,4 @@
+import { PASSWORD_RULES } from '@aido/validators';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -23,50 +24,38 @@ export const consentSchema = z.object({
 });
 export type Consent = z.infer<typeof consentSchema>;
 
-export type RegisterResult = { message: string; email: string };
-
-export type ResendVerificationResult = {
-  message: string;
-  email: string;
-  retryAfterSeconds?: number;
-};
-
-export type UpdateMarketingConsentResult = { marketingAgreedAt: Date | null };
-
-// === OAuth Provider ===
-/** 전체 계정 제공자 (DB/백엔드 기준) */
-export const accountProviderSchema = z.enum(['CREDENTIAL', 'APPLE', 'GOOGLE', 'KAKAO', 'NAVER']);
-export type AccountProvider = z.infer<typeof accountProviderSchema>;
-
-/** 소셜 계정 제공자 (CREDENTIAL 제외) */
-export const oauthProviderSchema = z.enum(['APPLE', 'GOOGLE', 'KAKAO', 'NAVER']);
-export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
-
-/** 전체 로그인 수단 slug (UI/클라이언트 기준) */
-export const authProviderSlugSchema = z.enum(['credential', 'apple', 'google', 'kakao', 'naver']);
-export type AuthProviderSlug = z.infer<typeof authProviderSlugSchema>;
-
-/** 소셜 로그인 수단 slug (credential 제외) */
-export const oauthProviderSlugSchema = z.enum(['apple', 'google', 'kakao', 'naver']);
-export type OAuthProviderSlug = z.infer<typeof oauthProviderSlugSchema>;
-
-/**
- * 브라우저 start 엔드포인트를 사용하는 provider.
- * Apple은 Web start 플로우를 사용하지 않고 idToken 기반 callback/link API를 사용한다.
- */
-export type OAuthStartProvider = Exclude<OAuthProviderSlug, 'apple'>;
-export type OAuthStartMode = 'login' | 'link';
-
-export const linkedAccountSchema = z.object({
-  provider: oauthProviderSchema,
-  linked: z.boolean(),
-  providerAccountId: z.string().nullable(),
-  linkedAt: z.date().nullable(),
+export const registerResultSchema = z.object({
+  message: z.string(),
+  email: z.string(),
 });
-export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
+export type RegisterResult = z.infer<typeof registerResultSchema>;
 
-export const AuthPolicy = {
-  canUnlinkAccount: (linkedCount: number): boolean => {
-    return linkedCount > 1;
-  },
+export const resendVerificationResultSchema = z.object({
+  message: z.string(),
+  email: z.string(),
+  retryAfterSeconds: z.number().optional(),
+});
+export type ResendVerificationResult = z.infer<typeof resendVerificationResultSchema>;
+
+export const updateMarketingConsentResultSchema = z.object({
+  marketingAgreedAt: z.coerce.date().nullable(),
+});
+export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
+
+export function hasLetter(password: string) {
+  return PASSWORD_RULES.HAS_LETTER.test(password);
+}
+
+export function hasNumber(password: string) {
+  return PASSWORD_RULES.HAS_NUMBER.test(password);
+}
+
+export function hasMinLength(password: string, min: number) {
+  return password.length >= min;
+}
+
+export const PasswordPolicy = {
+  hasLetter,
+  hasNumber,
+  hasMinLength: (password: string) => hasMinLength(password, PASSWORD_RULES.MIN_LENGTH),
 } as const;

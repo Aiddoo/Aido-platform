@@ -22,7 +22,6 @@ export const exchangeCodeMutationOptions = () => {
     onSuccess: async () => {
       setStatus('authenticated');
 
-      // Register push token after successful authentication
       try {
         const tokenResult = await notificationService.setupPushNotifications();
         if (!tokenResult.ok) {

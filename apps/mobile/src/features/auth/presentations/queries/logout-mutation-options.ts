@@ -18,7 +18,6 @@ export const logoutMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: async () => {
-      // Unregister push token before logout
       try {
         const unregisterResult = await notificationService.unregisterPushToken();
         if (!unregisterResult.ok) {
