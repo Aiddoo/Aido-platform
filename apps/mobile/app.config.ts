@@ -266,12 +266,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-splash-screen',
         {
-          image: SPLASH,
-          resizeMode: 'contain',
-          backgroundColor: BRAND_COLOR,
           android: {
             image: SPLASH_ANDROID,
             imageWidth: 288,
+            resizeMode: 'contain',
+            backgroundColor: BRAND_COLOR,
           },
         },
       ],
