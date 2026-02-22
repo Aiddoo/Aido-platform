@@ -1,4 +1,3 @@
-import type { ReorderTodoInput } from '@aido/validators';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
@@ -51,19 +50,12 @@ export function TodoList({ date }: TodoListProps) {
     }));
   }, [data.todos, categoriesData.categories]);
 
-  const reorderMutation = useMutation(reorderTodoMutationOptions());
-
   return (
     <Box gap={16} px={16}>
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
           <CategoryHeader date={date} category={group.category} />
-          <CategoryTodoDraggableList
-            todos={group.todos}
-            updatedAt={dataUpdatedAt}
-            isPending={reorderMutation.isPending}
-            onReorder={(todoId, input) => reorderMutation.mutate({ id: todoId, input })}
-          />
+          <CategoryTodoDraggableList todos={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
     </Box>
@@ -110,22 +102,20 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
 interface CategoryTodoDraggableListProps {
   todos: TodoItemViewModel[];
   updatedAt: number;
-  isPending: boolean;
-  onReorder: (todoId: number, input: ReorderTodoInput) => void;
 }
 
-function CategoryTodoDraggableList({
-  todos,
-  updatedAt,
-  isPending,
-  onReorder,
-}: CategoryTodoDraggableListProps) {
+function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableListProps) {
+  const reorderMutation = useMutation(reorderTodoMutationOptions());
+
   const { items: draggableTodos, onDragEnd } = useDraggableReorderList({
     items: todos,
     updatedAt,
-    isPending,
+    isPending: reorderMutation.isPending,
     onReorder: ({ movedItemId, targetId, position }) => {
-      onReorder(movedItemId, { targetTodoId: targetId, position });
+      reorderMutation.mutate({
+        id: movedItemId,
+        input: { targetTodoId: targetId, position },
+      });
     },
   });
 
@@ -136,7 +126,12 @@ function CategoryTodoDraggableList({
       scrollEnabled={false}
       renderItem={({ item, drag, isActive }) => (
         <ScaleDecorator activeScale={1.015}>
-          <TodoItem todo={item} drag={drag} isActive={isActive} isDragDisabled={isPending} />
+          <TodoItem
+            todo={item}
+            drag={drag}
+            isActive={isActive}
+            isDragDisabled={reorderMutation.isPending}
+          />
         </ScaleDecorator>
       )}
       onDragEnd={onDragEnd}
