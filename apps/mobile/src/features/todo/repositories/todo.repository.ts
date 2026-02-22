@@ -1,6 +1,7 @@
 import type {
   CreateTodoInput,
   GetTodosQuery,
+  ReorderTodoInput,
   ToggleTodoCompleteInput,
   UpdateTodoInput,
   UpdateTodoScheduleInput,
@@ -39,4 +40,5 @@ export interface TodoRepository {
     startDate: string,
     endDate: string,
   ): Promise<Result<DailyCompletionsResult, ApiError>>;
+  reorderTodo(todoId: number, input: ReorderTodoInput): Promise<Result<TodoItem, ApiError>>;
 }

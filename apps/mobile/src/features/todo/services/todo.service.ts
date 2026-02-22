@@ -1,6 +1,7 @@
 import type {
   CreateTodoInput,
   GetTodosQuery,
+  ReorderTodoInput,
   ToggleTodoCompleteInput,
   UpdateTodoInput,
   UpdateTodoScheduleInput,
@@ -77,5 +78,12 @@ export class TodoService {
     endDate: string,
   ): Promise<Result<DailyCompletionsResult, ApiError>> => {
     return this.#todoRepository.getDailyCompletions(startDate, endDate);
+  };
+
+  reorderTodo = async (
+    todoId: number,
+    input: ReorderTodoInput,
+  ): Promise<Result<TodoItem, ApiError>> => {
+    return this.#todoRepository.reorderTodo(todoId, input);
   };
 }

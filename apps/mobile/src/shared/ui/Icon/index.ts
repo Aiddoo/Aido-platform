@@ -18,6 +18,7 @@ export {
   EyeOffIcon,
   FishIcon,
   GoogleIcon,
+  InfoIcon,
   KakaoIcon,
   LockIcon,
   MenuIcon,

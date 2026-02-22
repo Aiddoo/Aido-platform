@@ -8,6 +8,9 @@ import {
   type GetTodosQuery,
   type ParseTodoResponse,
   parseTodoResponseSchema,
+  type ReorderTodoInput,
+  type ReorderTodoResponse,
+  reorderTodoResponseSchema,
   type Todo,
   type TodoListResponse,
   type ToggleTodoCompleteInput,
@@ -225,5 +228,23 @@ export class TodoRepositoryImpl implements TodoRepository {
     }
 
     return ok(toDailyCompletionsResult(parsed.data));
+  }
+
+  async reorderTodo(todoId: number, input: ReorderTodoInput): Promise<Result<TodoItem, ApiError>> {
+    const result = await this.#httpClient.patch<ReorderTodoResponse>(
+      `v1/todos/${todoId}/reorder`,
+      input,
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = reorderTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoRepository] Invalid reorderTodo response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodoItem(parsed.data.todo));
   }
 }

@@ -5,13 +5,17 @@ import { useOverlay } from '@src/shared/ui/Overlay';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { getAllTodosQueryOptions } from '../../queries/get-all-todos-query-options';
 import { getTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
+import { reorderTodoMutationOptions } from '../../queries/reorder-todo-mutation-options';
+import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
 import { TodoItem } from './TodoItem';
 
@@ -26,7 +30,8 @@ interface TodoListProps {
 }
 
 export function TodoList({ date }: TodoListProps) {
-  const { data } = useSuspenseQuery(getAllTodosQueryOptions(formatDate(date)));
+  const formattedDate = formatDate(date);
+  const { data, dataUpdatedAt } = useSuspenseQuery(getAllTodosQueryOptions(formattedDate));
   const { data: categoriesData } = useSuspenseQuery({
     ...getTodoCategoriesQueryOptions(),
     select: (data) => ({
@@ -50,11 +55,7 @@ export function TodoList({ date }: TodoListProps) {
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
           <CategoryHeader date={date} category={group.category} />
-          <Box>
-            {group.todos.map((todo) => (
-              <TodoItem key={todo.id} todo={todo} />
-            ))}
-          </Box>
+          <CategoryTodoDraggableList todos={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
     </Box>
@@ -95,6 +96,46 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       </Text>
       <PlusIcon width={14} height={14} colorClassName="text-gray-6" />
     </PressableFeedback>
+  );
+}
+
+interface CategoryTodoDraggableListProps {
+  todos: TodoItemViewModel[];
+  updatedAt: number;
+}
+
+function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableListProps) {
+  const reorderMutation = useMutation(reorderTodoMutationOptions());
+
+  const { items: draggableTodos, onDragEnd } = useDraggableReorderList({
+    items: todos,
+    updatedAt,
+    isPending: reorderMutation.isPending,
+    onReorder: ({ movedItemId, targetId, position }) => {
+      reorderMutation.mutate({
+        id: movedItemId,
+        input: { targetTodoId: targetId, position },
+      });
+    },
+  });
+
+  return (
+    <DraggableFlatList
+      data={draggableTodos}
+      keyExtractor={(item) => String(item.id)}
+      scrollEnabled={false}
+      renderItem={({ item, drag, isActive }) => (
+        <ScaleDecorator activeScale={1.015}>
+          <TodoItem
+            todo={item}
+            drag={drag}
+            isActive={isActive}
+            isDragDisabled={reorderMutation.isPending}
+          />
+        </ScaleDecorator>
+      )}
+      onDragEnd={onDragEnd}
+    />
   );
 }
 
