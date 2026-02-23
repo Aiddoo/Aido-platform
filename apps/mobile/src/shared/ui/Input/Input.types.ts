@@ -11,6 +11,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   isDisabled?: boolean;
   isInvalid?: boolean;
   errorMessage?: string;
+  renderErrorMessage?: boolean;
   leftContent?: ReactNode;
   rightContent?: ReactNode;
   className?: string;

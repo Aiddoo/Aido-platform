@@ -17,6 +17,7 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
       isDisabled = false,
       isInvalid = false,
       errorMessage,
+      renderErrorMessage = true,
       leftContent,
       rightContent,
       placeholder,
@@ -31,7 +32,7 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
     const [isFocused, setIsFocused] = useState(false);
 
     return (
-      <View className="gap-2">
+      <View className="gap-1">
         {label && (
           <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
             {label}
@@ -61,9 +62,9 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
           />
           {rightContent && <View className="ml-3">{rightContent}</View>}
         </View>
-        {errorMessage && (
-          <Text size="e1" className="text-error">
-            {errorMessage}
+        {renderErrorMessage && (
+          <Text size="e1" className={cn('ml-1', errorMessage ? 'text-error' : 'opacity-0')}>
+            {errorMessage || ' '}
           </Text>
         )}
       </View>

@@ -33,7 +33,7 @@ const AuthLayout = () => {
       }}
     >
       <Stack.Screen name="login" />
-      <Stack.Screen name="email-login" />
+      <Stack.Screen name="email-login" options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="sign-up" options={{ headerShown: true }} />
       <Stack.Screen name="verify-email" />
     </Stack>
