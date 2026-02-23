@@ -7,6 +7,7 @@ import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { now } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
 import type { JwtPayload } from "../services/token.service";
 
@@ -27,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 		readonly configService: TypedConfigService,
 		private readonly sessionRepository: SessionRepository,
 		private readonly cacheService: CacheService,
+		private readonly database: DatabaseService,
 	) {
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -70,6 +72,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 				throw BusinessExceptions.sessionExpired();
 			}
 
+			// Defense in Depth: 캐시된 사용자 상태 검증
+			if (cachedSession.userStatus) {
+				this.#assertUserStatus(
+					cachedSession.userStatus,
+					cachedSession.userDeletedAt,
+				);
+			}
+
 			return {
 				userId: payload.sub,
 				email: payload.email,
@@ -93,11 +103,26 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			throw BusinessExceptions.sessionExpired();
 		}
 
-		// 3. 유효한 세션을 캐시에 저장 (30초 TTL)
+		// 3. 사용자 상태 조회 (Defense in Depth)
+		const user = await this.database.user.findUnique({
+			where: { id: session.userId },
+			select: { status: true, deletedAt: true },
+		});
+
+		const userStatus = user?.status;
+		const userDeletedAt = user?.deletedAt?.toISOString() ?? null;
+
+		if (userStatus) {
+			this.#assertUserStatus(userStatus, userDeletedAt);
+		}
+
+		// 4. 유효한 세션을 캐시에 저장 (30초 TTL) — 사용자 상태 포함
 		await this.cacheService.setSession(payload.sessionId, {
 			userId: session.userId,
 			expiresAt: session.expiresAt,
 			revokedAt: session.revokedAt,
+			userStatus,
+			userDeletedAt,
 		});
 
 		return {
@@ -106,5 +131,19 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			sessionId: payload.sessionId,
 			role: payload.role,
 		};
+	}
+
+	/**
+	 * 사용자 상태 검증 (Defense in Depth)
+	 *
+	 * 세션이 유효하더라도 사용자가 잠금/정지/탈퇴 상태이면 접근을 거부합니다.
+	 */
+	#assertUserStatus(status: string, deletedAt?: string | null): void {
+		if (status === "LOCKED") {
+			throw BusinessExceptions.accountLocked("User");
+		}
+		if (status === "SUSPENDED" || deletedAt) {
+			throw BusinessExceptions.accountSuspended("User");
+		}
 	}
 }

@@ -15,7 +15,7 @@ export interface VerificationCodeResult {
 // 6자리 숫자 인증 코드 생성, 검증, 이메일 발송 (SHA-256 해시 저장, 최대 시도 횟수 제한, 재발송 쿨다운)
 @Injectable()
 export class VerificationService {
-	private readonly logger = new Logger(VerificationService.name);
+	readonly #logger = new Logger(VerificationService.name);
 
 	constructor(
 		private readonly verificationRepository: VerificationRepository,
@@ -28,7 +28,7 @@ export class VerificationService {
 		tx: Prisma.TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this._checkResendCooldown(userId, "EMAIL_VERIFY", tx);
+		await this.#checkResendCooldown(userId, "EMAIL_VERIFY", tx);
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
@@ -38,13 +38,13 @@ export class VerificationService {
 		);
 
 		// 새 인증 코드 생성
-		const result = await this._createVerificationCode(
+		const result = await this.#createVerificationCode(
 			userId,
 			"EMAIL_VERIFY",
 			tx,
 		);
 
-		this.logger.log(`Verification code created for user ${userId}`);
+		this.#logger.log(`Verification code created for user ${userId}`);
 		return result;
 	}
 
@@ -56,7 +56,7 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send verification email to ${email}: ${emailResult.error}`,
 			);
 			// 이메일 발송 실패해도 예외를 던지지 않음 (사용자는 재발송 가능)
@@ -69,7 +69,7 @@ export class VerificationService {
 		tx?: Prisma.TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this._checkResendCooldown(userId, "PASSWORD_RESET", tx);
+		await this.#checkResendCooldown(userId, "PASSWORD_RESET", tx);
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
@@ -79,7 +79,7 @@ export class VerificationService {
 		);
 
 		// 새 인증 코드 생성
-		const result = await this._createVerificationCode(
+		const result = await this.#createVerificationCode(
 			userId,
 			"PASSWORD_RESET",
 			tx,
@@ -92,12 +92,12 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send password reset email to ${email}: ${emailResult.error}`,
 			);
 		}
 
-		this.logger.log(`Password reset code created for user ${userId}`);
+		this.#logger.log(`Password reset code created for user ${userId}`);
 		return result;
 	}
 
@@ -107,7 +107,7 @@ export class VerificationService {
 		tx?: Prisma.TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
-		await this._checkResendCooldown(userId, "PASSWORD_SETUP", tx);
+		await this.#checkResendCooldown(userId, "PASSWORD_SETUP", tx);
 
 		// 기존 미사용 인증 코드 무효화
 		await this.verificationRepository.invalidateAllByUserIdAndType(
@@ -117,7 +117,7 @@ export class VerificationService {
 		);
 
 		// 새 인증 코드 생성
-		const result = await this._createVerificationCode(
+		const result = await this.#createVerificationCode(
 			userId,
 			"PASSWORD_SETUP",
 			tx,
@@ -130,12 +130,12 @@ export class VerificationService {
 		});
 
 		if (!emailResult.success) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send password setup email to ${email}: ${emailResult.error}`,
 			);
 		}
 
-		this.logger.log(`Password setup code created for user ${userId}`);
+		this.#logger.log(`Password setup code created for user ${userId}`);
 		return result;
 	}
 
@@ -164,7 +164,7 @@ export class VerificationService {
 			throw BusinessExceptions.verificationMaxAttemptsExceeded();
 		}
 
-		const tokenHash = this._hashCode(code);
+		const tokenHash = this.#hashCode(code);
 
 		// 코드 일치 확인
 		if (verification.token !== tokenHash) {
@@ -172,7 +172,7 @@ export class VerificationService {
 			// 브루트포스 보호를 위해 실패 횟수는 항상 영구 저장되어야 함
 			await this.verificationRepository.incrementAttempts(verification.id);
 
-			this.logger.warn(
+			this.#logger.warn(
 				`Verification attempt failed for user ${userId}, attempts: ${verification.attempts + 1}`,
 			);
 
@@ -182,11 +182,11 @@ export class VerificationService {
 		// 사용 처리
 		await this.verificationRepository.markAsUsed(verification.id, tx);
 
-		this.logger.log(`Verification code verified for user ${userId}`);
+		this.#logger.log(`Verification code verified for user ${userId}`);
 		return true;
 	}
 
-	private async _checkResendCooldown(
+	async #checkResendCooldown(
 		userId: string,
 		type: VerificationType,
 		tx?: Prisma.TransactionClient,
@@ -210,14 +210,14 @@ export class VerificationService {
 		}
 	}
 
-	private async _createVerificationCode(
+	async #createVerificationCode(
 		userId: string,
 		type: VerificationType,
 		tx?: Prisma.TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성
-		const code = this._generateCode();
-		const tokenHash = this._hashCode(code);
+		const code = this.#generateCode();
+		const tokenHash = this.#hashCode(code);
 
 		// 만료 시간 계산
 		const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
@@ -236,14 +236,14 @@ export class VerificationService {
 		return { code, expiresAt };
 	}
 
-	private _generateCode(): string {
+	#generateCode(): string {
 		// randomInt는 암호학적으로 안전한 난수 생성
 		const min = 10 ** (VERIFICATION_CODE.LENGTH - 1); // 100000
 		const max = 10 ** VERIFICATION_CODE.LENGTH; // 1000000
 		return randomInt(min, max).toString();
 	}
 
-	private _hashCode(code: string): string {
+	#hashCode(code: string): string {
 		return createHash("sha256").update(code).digest("hex");
 	}
 }

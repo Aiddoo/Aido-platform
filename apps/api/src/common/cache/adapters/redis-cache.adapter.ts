@@ -37,13 +37,13 @@ import { parseTtl } from "../interfaces/cache.interface";
 
 @Injectable()
 export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
-	private readonly logger = new Logger(RedisCacheAdapter.name);
+	readonly #logger = new Logger(RedisCacheAdapter.name);
 	// private readonly client: Redis;
-	private readonly defaultTtlMs: number;
-	private stats = { hits: 0, misses: 0 };
+	readonly #defaultTtlMs: number;
+	#stats = { hits: 0, misses: 0 };
 
 	constructor(config: CacheConfig) {
-		this.defaultTtlMs = config.defaultTtlMs;
+		this.#defaultTtlMs = config.defaultTtlMs;
 
 		if (!config.redis) {
 			throw new Error("Redis configuration is required for RedisCacheAdapter");
@@ -61,10 +61,10 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		//   retryStrategy: (times) => Math.min(times * 50, 2000),
 		// });
 		//
-		// this.client.on('error', (err) => this.logger.error('Redis error:', err));
-		// this.client.on('connect', () => this.logger.log('Redis connected'));
+		// this.client.on('error', (err) => this.#logger.error('Redis error:', err));
+		// this.client.on('connect', () => this.#logger.log('Redis connected'));
 
-		this.logger.warn(
+		this.#logger.warn(
 			"RedisCacheAdapter is a stub. Install ioredis and implement for production use.",
 		);
 	}
@@ -78,34 +78,34 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// const data = await this.client.get(key);
 		//
 		// if (!data) {
-		//   this.stats.misses++;
-		//   this.logger.debug(`MISS ${key}`);
+		//   this.#stats.misses++;
+		//   this.#logger.debug(`MISS ${key}`);
 		//   return undefined;
 		// }
 		//
-		// this.stats.hits++;
-		// this.logger.debug(`HIT ${key}`);
+		// this.#stats.hits++;
+		// this.#logger.debug(`HIT ${key}`);
 		// return JSON.parse(data) as T;
 
-		this.stats.misses++;
-		this.logger.debug("MISS (Redis stub)");
+		this.#stats.misses++;
+		this.#logger.debug("MISS (Redis stub)");
 		return undefined;
 	}
 
 	async set<T>(_key: string, _value: T, ttl?: TtlValue): Promise<void> {
-		const ttlMs = ttl ? parseTtl(ttl) : this.defaultTtlMs;
+		const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
 
 		// TODO: Redis 전환 시 구현
 		// await this.client.set(key, JSON.stringify(value), 'PX', ttlMs);
 
-		this.logger.debug(`SET (TTL: ${ttlMs}ms) (Redis stub)`);
+		this.#logger.debug(`SET (TTL: ${ttlMs}ms) (Redis stub)`);
 	}
 
 	async del(_key: string): Promise<void> {
 		// TODO: Redis 전환 시 구현
 		// await this.client.del(key);
 
-		this.logger.debug("DEL (Redis stub)");
+		this.#logger.debug("DEL (Redis stub)");
 	}
 
 	async delByPattern(_pattern: string): Promise<number> {
@@ -129,10 +129,10 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		//   }
 		// } while (cursor !== '0');
 		//
-		// this.logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
+		// this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
 		// return count;
 
-		this.logger.debug("DEL_PATTERN (Redis stub)");
+		this.#logger.debug("DEL_PATTERN (Redis stub)");
 		return 0;
 	}
 
@@ -140,17 +140,17 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// TODO: Redis 전환 시 구현
 		// await this.client.flushdb();
 
-		this.stats = { hits: 0, misses: 0 };
-		this.logger.debug("RESET (Redis stub)");
+		this.#stats = { hits: 0, misses: 0 };
+		this.#logger.debug("RESET (Redis stub)");
 	}
 
 	getStats(): CacheStats {
 		// TODO: Redis 전환 시 DBSIZE로 키 수 조회
 		// const keys = await this.client.dbsize();
-		// return { ...this.stats, keys };
+		// return { ...this.#stats, keys };
 
 		return {
-			...this.stats,
+			...this.#stats,
 			keys: -1,
 		};
 	}
@@ -182,7 +182,7 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// }
 		// return value;
 
-		this.logger.debug("WRAP called (Redis stub - calling factory directly)");
+		this.#logger.debug("WRAP called (Redis stub - calling factory directly)");
 		return factory();
 	}
 
@@ -199,15 +199,15 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// const values = await this.client.mget(...keys);
 		// return values.map((data, index) => {
 		//   if (!data) {
-		//     this.stats.misses++;
+		//     this.#stats.misses++;
 		//     return undefined;
 		//   }
-		//   this.stats.hits++;
+		//   this.#stats.hits++;
 		//   return JSON.parse(data) as T;
 		// });
 
-		this.logger.debug(`MGET [${keys.length} keys] (Redis stub)`);
-		this.stats.misses += keys.length;
+		this.#logger.debug(`MGET [${keys.length} keys] (Redis stub)`);
+		this.#stats.misses += keys.length;
 		return keys.map(() => undefined);
 	}
 
@@ -226,12 +226,12 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		//
 		// const pipeline = this.client.pipeline();
 		// for (const { key, value, ttl } of entries) {
-		//   const ttlMs = ttl ? parseTtl(ttl) : this.defaultTtlMs;
+		//   const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
 		//   pipeline.set(key, JSON.stringify(value), 'PX', ttlMs);
 		// }
 		// await pipeline.exec();
 
-		this.logger.debug(`MSET [${entries.length} entries] (Redis stub)`);
+		this.#logger.debug(`MSET [${entries.length} entries] (Redis stub)`);
 	}
 
 	/**
@@ -245,7 +245,7 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// const exists = await this.client.exists(key);
 		// return exists === 1;
 
-		this.logger.debug(`HAS ${key} (Redis stub - always false)`);
+		this.#logger.debug(`HAS ${key} (Redis stub - always false)`);
 		return false;
 	}
 
@@ -260,7 +260,7 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// const pttl = await this.client.pttl(key);
 		// return pttl; // Redis PTTL returns: -2 if key doesn't exist, -1 if no TTL
 
-		this.logger.debug(`TTL ${key} (Redis stub - returning -2)`);
+		this.#logger.debug(`TTL ${key} (Redis stub - returning -2)`);
 		return -2; // 키 없음
 	}
 
@@ -278,7 +278,7 @@ export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
 		// const result = await this.client.pexpire(key, ttlMs);
 		// return result === 1;
 
-		this.logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms) (Redis stub - false)`);
+		this.#logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms) (Redis stub - false)`);
 		return false;
 	}
 }

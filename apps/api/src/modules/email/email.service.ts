@@ -41,28 +41,28 @@ import type { EmailSendOptions, EmailSendResult } from "./types/email.types";
  */
 @Injectable()
 export class EmailService {
-	private readonly logger = new Logger(EmailService.name);
-	private readonly _resend: Resend | null;
-	private readonly _fromEmail: string;
-	private readonly _fromName: string;
-	private readonly _environment: string;
+	readonly #logger = new Logger(EmailService.name);
+	readonly #resend: Resend | null;
+	readonly #fromEmail: string;
+	readonly #fromName: string;
+	readonly #environment: string;
 
-	constructor(private readonly _configService: TypedConfigService) {
-		const emailConfig = this._configService.email;
+	constructor(private readonly configService: TypedConfigService) {
+		const emailConfig = this.configService.email;
 
 		if (emailConfig.isConfigured && emailConfig.apiKey) {
-			this._resend = new Resend(emailConfig.apiKey);
-			this.logger.log("Resend email service initialized");
+			this.#resend = new Resend(emailConfig.apiKey);
+			this.#logger.log("Resend email service initialized");
 		} else {
-			this._resend = null;
-			this.logger.warn(
+			this.#resend = null;
+			this.#logger.warn(
 				"Resend API key not configured. Emails will be logged only.",
 			);
 		}
 
-		this._fromEmail = emailConfig.from;
-		this._fromName = emailConfig.fromName;
-		this._environment = this._configService.nodeEnv;
+		this.#fromEmail = emailConfig.from;
+		this.#fromName = emailConfig.fromName;
+		this.#environment = this.configService.nodeEnv;
 	}
 
 	/**
@@ -81,7 +81,7 @@ export class EmailService {
 		const html = getVerificationCodeHtml(data);
 		const text = getVerificationCodeText(data);
 
-		return this._sendEmail({
+		return this.#sendEmail({
 			to,
 			subject,
 			html,
@@ -89,7 +89,7 @@ export class EmailService {
 			idempotencyKey,
 			tags: [
 				{ name: "type", value: "verification" },
-				{ name: "environment", value: this._environment },
+				{ name: "environment", value: this.#environment },
 			],
 		});
 	}
@@ -110,7 +110,7 @@ export class EmailService {
 		const html = getPasswordResetHtml(data);
 		const text = getPasswordResetText(data);
 
-		return this._sendEmail({
+		return this.#sendEmail({
 			to,
 			subject,
 			html,
@@ -118,7 +118,7 @@ export class EmailService {
 			idempotencyKey,
 			tags: [
 				{ name: "type", value: "password-reset" },
-				{ name: "environment", value: this._environment },
+				{ name: "environment", value: this.#environment },
 			],
 		});
 	}
@@ -139,7 +139,7 @@ export class EmailService {
 		const html = getPasswordSetupHtml(data);
 		const text = getPasswordSetupText(data);
 
-		return this._sendEmail({
+		return this.#sendEmail({
 			to,
 			subject,
 			html,
@@ -147,7 +147,7 @@ export class EmailService {
 			idempotencyKey,
 			tags: [
 				{ name: "type", value: "password-setup" },
-				{ name: "environment", value: this._environment },
+				{ name: "environment", value: this.#environment },
 			],
 		});
 	}
@@ -166,7 +166,7 @@ export class EmailService {
 		const html = getInquiryHtml(data);
 		const text = getInquiryText(data);
 
-		return this._sendEmail({
+		return this.#sendEmail({
 			to,
 			subject,
 			html,
@@ -174,7 +174,7 @@ export class EmailService {
 			tags: [
 				{ name: "type", value: "inquiry" },
 				{ name: "category", value: data.category },
-				{ name: "environment", value: this._environment },
+				{ name: "environment", value: this.#environment },
 			],
 		});
 	}
@@ -182,18 +182,16 @@ export class EmailService {
 	/**
 	 * 기본 이메일 발송
 	 */
-	private async _sendEmail(
-		options: EmailSendOptions,
-	): Promise<EmailSendResult> {
+	async #sendEmail(options: EmailSendOptions): Promise<EmailSendResult> {
 		// Development/Test 환경이거나 Resend가 설정되지 않은 경우 로그만 출력
-		if (!this._resend) {
-			this.logger.debug(`[EMAIL MOCK] To: ${options.to}`);
-			this.logger.debug(`[EMAIL MOCK] Subject: ${options.subject}`);
-			this.logger.debug(
+		if (!this.#resend) {
+			this.#logger.debug(`[EMAIL MOCK] To: ${options.to}`);
+			this.#logger.debug(`[EMAIL MOCK] Subject: ${options.subject}`);
+			this.#logger.debug(
 				`[EMAIL MOCK] IdempotencyKey: ${options.idempotencyKey || "none"}`,
 			);
-			this.logger.debug(`[EMAIL MOCK] Tags: ${JSON.stringify(options.tags)}`);
-			this.logger.debug(`[EMAIL MOCK] Text:\n${options.text}`);
+			this.#logger.debug(`[EMAIL MOCK] Tags: ${JSON.stringify(options.tags)}`);
+			this.#logger.debug(`[EMAIL MOCK] Text:\n${options.text}`);
 
 			return {
 				success: true,
@@ -202,7 +200,7 @@ export class EmailService {
 			};
 		}
 
-		return this._sendWithRetry(options);
+		return this.#sendWithRetry(options);
 	}
 
 	/**
@@ -211,12 +209,12 @@ export class EmailService {
 	 * @param options 이메일 발송 옵션
 	 * @param attempt 현재 시도 횟수 (0부터 시작)
 	 */
-	private async _sendWithRetry(
+	async #sendWithRetry(
 		options: EmailSendOptions,
 		attempt = 0,
 	): Promise<EmailSendResult> {
 		// _resend가 없으면 실패 반환 (이 메서드는 _resend가 있을 때만 호출됨)
-		if (!this._resend) {
+		if (!this.#resend) {
 			return {
 				success: false,
 				error: "Resend client not initialized",
@@ -224,10 +222,10 @@ export class EmailService {
 			};
 		}
 
-		const from = `${this._fromName} <${this._fromEmail}>`;
+		const from = `${this.#fromName} <${this.#fromEmail}>`;
 
 		try {
-			const result = await this._resend.emails.send({
+			const result = await this.#resend.emails.send({
 				from,
 				to: options.to,
 				subject: options.subject,
@@ -242,18 +240,18 @@ export class EmailService {
 			if (result.error) {
 				// 재시도 가능한 에러인지 확인
 				if (
-					this._isRetryableError(result.error) &&
+					this.#isRetryableError(result.error) &&
 					attempt < EMAIL_CONSTANTS.MAX_RETRIES
 				) {
-					const delay = this._calculateBackoffDelay(attempt);
-					this.logger.warn(
+					const delay = this.#calculateBackoffDelay(attempt);
+					this.#logger.warn(
 						`Retryable error (${result.error.name}), retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
 					);
-					await this._sleep(delay);
-					return this._sendWithRetry(options, attempt + 1);
+					await this.#sleep(delay);
+					return this.#sendWithRetry(options, attempt + 1);
 				}
 
-				this.logger.error(
+				this.#logger.error(
 					`Failed to send email to ${options.to}: ${result.error.message}`,
 				);
 				return {
@@ -263,7 +261,7 @@ export class EmailService {
 				};
 			}
 
-			this.logger.log(
+			this.#logger.log(
 				`Email sent successfully to ${options.to} (ID: ${result.data?.id})`,
 			);
 			return {
@@ -274,17 +272,17 @@ export class EmailService {
 		} catch (error) {
 			// 네트워크 에러 등 예외 발생 시 재시도
 			if (attempt < EMAIL_CONSTANTS.MAX_RETRIES) {
-				const delay = this._calculateBackoffDelay(attempt);
-				this.logger.warn(
+				const delay = this.#calculateBackoffDelay(attempt);
+				this.#logger.warn(
 					`Network error, retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
 				);
-				await this._sleep(delay);
-				return this._sendWithRetry(options, attempt + 1);
+				await this.#sleep(delay);
+				return this.#sendWithRetry(options, attempt + 1);
 			}
 
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send email to ${options.to}: ${errorMessage}`,
 			);
 
@@ -299,7 +297,7 @@ export class EmailService {
 	/**
 	 * 재시도 가능한 에러인지 확인
 	 */
-	private _isRetryableError(error: { name: string }): boolean {
+	#isRetryableError(error: { name: string }): boolean {
 		return (
 			EMAIL_CONSTANTS.RETRYABLE_ERROR_TYPES as readonly string[]
 		).includes(error.name);
@@ -309,14 +307,14 @@ export class EmailService {
 	 * 지수 백오프 딜레이 계산
 	 * 시도 횟수에 따라 1초, 2초, 4초... 증가
 	 */
-	private _calculateBackoffDelay(attempt: number): number {
+	#calculateBackoffDelay(attempt: number): number {
 		return EMAIL_CONSTANTS.BASE_RETRY_DELAY * 2 ** attempt;
 	}
 
 	/**
 	 * 지정된 시간만큼 대기
 	 */
-	private _sleep(ms: number): Promise<void> {
+	async #sleep(ms: number): Promise<void> {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 }

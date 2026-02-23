@@ -43,6 +43,7 @@ describe("OAuthController", () => {
 				refreshToken: serviceResult.refreshToken,
 				name: serviceResult.userName,
 				profileImage: serviceResult.profileImage,
+				accountRestored: false,
 			});
 		});
 
@@ -70,6 +71,7 @@ describe("OAuthController", () => {
 				refreshToken: serviceResult.refreshToken,
 				name: null,
 				profileImage: null,
+				accountRestored: false,
 			});
 		});
 	});

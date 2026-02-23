@@ -22,7 +22,7 @@ import type {
 
 @Injectable()
 export class NotificationRepository {
-	private readonly logger = new Logger(NotificationRepository.name);
+	readonly #logger = new Logger(NotificationRepository.name);
 
 	constructor(private readonly database: DatabaseService) {}
 
@@ -82,7 +82,7 @@ export class NotificationRepository {
 
 		const skipped = dataList.length - result.count;
 		if (skipped > 0) {
-			this.logger.warn(
+			this.#logger.warn(
 				`createManyNotifications: ${skipped}/${dataList.length} duplicates skipped`,
 			);
 		}

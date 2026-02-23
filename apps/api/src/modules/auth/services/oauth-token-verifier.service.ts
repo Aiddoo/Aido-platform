@@ -52,10 +52,10 @@ interface AppleIdTokenClaims {
 // 모바일 클라이언트 토큰을 서버에서 직접 검증 (각 OAuth Provider의 공식 API/JWKS 사용)
 @Injectable()
 export class OAuthTokenVerifierService implements OnModuleInit {
-	private readonly _logger = new Logger(OAuthTokenVerifierService.name);
-	private readonly _googleClient: OAuth2Client;
-	private _jose: JoseWrapper | null = null;
-	private _appleJWKS: JWKSFunction | null = null;
+	readonly #logger = new Logger(OAuthTokenVerifierService.name);
+	readonly #googleClient: OAuth2Client;
+	#jose: JoseWrapper | null = null;
+	#appleJWKS: JWKSFunction | null = null;
 
 	// Apple JWKS URL
 	private static readonly APPLE_JWKS_URL =
@@ -70,17 +70,19 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	private static readonly NAVER_USER_INFO_URL =
 		"https://openapi.naver.com/v1/nid/me";
 
-	constructor(private readonly _config: ConfigService) {
+	constructor(private readonly configService: ConfigService) {
 		// Google OAuth2 클라이언트 초기화
-		this._googleClient = new OAuth2Client(this._config.get("GOOGLE_CLIENT_ID"));
+		this.#googleClient = new OAuth2Client(
+			this.configService.get("GOOGLE_CLIENT_ID"),
+		);
 	}
 
 	async onModuleInit(): Promise<void> {
-		this._jose = await this._loadJose();
-		this._logger.log("Jose library loaded successfully");
+		this.#jose = await this.#loadJose();
+		this.#logger.log("Jose library loaded successfully");
 	}
 
-	private async _loadJose(): Promise<JoseWrapper> {
+	async #loadJose(): Promise<JoseWrapper> {
 		const jose = await import("jose");
 		return {
 			createRemoteJWKSet: (url: URL) =>
@@ -104,11 +106,11 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		};
 	}
 
-	private async _getJose(): Promise<JoseWrapper> {
-		if (!this._jose) {
-			this._jose = await this._loadJose();
+	async #getJose(): Promise<JoseWrapper> {
+		if (!this.#jose) {
+			this.#jose = await this.#loadJose();
 		}
-		return this._jose;
+		return this.#jose;
 	}
 
 	/**
@@ -138,22 +140,22 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		idToken: string,
 		expectedNonce?: string,
 	): Promise<VerifiedProfile> {
-		const jose = await this._getJose();
+		const jose = await this.#getJose();
 
 		try {
 			// JWKS 캐시 초기화 (필요시)
-			if (!this._appleJWKS) {
-				this._appleJWKS = jose.createRemoteJWKSet(
+			if (!this.#appleJWKS) {
+				this.#appleJWKS = jose.createRemoteJWKSet(
 					new URL(OAuthTokenVerifierService.APPLE_JWKS_URL),
 				);
 			}
 
-			const appleClientId = this._config.get<string>("APPLE_CLIENT_ID");
+			const appleClientId = this.configService.get<string>("APPLE_CLIENT_ID");
 
 			// ID Token 검증
 			const { payload } = await jose.jwtVerify<AppleIdTokenClaims>(
 				idToken,
-				this._appleJWKS,
+				this.#appleJWKS,
 				{
 					issuer: OAuthTokenVerifierService.APPLE_ISSUER,
 					audience: appleClientId,
@@ -167,7 +169,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 					.update(expectedNonce)
 					.digest("hex");
 				if (payload.nonce !== hashedNonce) {
-					this._logger.warn("Apple nonce mismatch");
+					this.#logger.warn("Apple nonce mismatch");
 					throw BusinessExceptions.socialTokenInvalid("APPLE");
 				}
 			}
@@ -178,7 +180,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				payload.email_verified === "true" ||
 				false;
 
-			this._logger.debug(`Apple token verified for user: ${payload.sub}`);
+			this.#logger.debug(`Apple token verified for user: ${payload.sub}`);
 
 			return {
 				id: payload.sub,
@@ -186,7 +188,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				emailVerified,
 			};
 		} catch (error) {
-			this._logger.error(`Apple token verification failed: ${error}`);
+			this.#logger.error(`Apple token verification failed: ${error}`);
 
 			if (jose.isJWTExpiredError(error)) {
 				throw BusinessExceptions.socialTokenExpired("APPLE");
@@ -202,10 +204,10 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.google.com/identity/sign-in/web/backend-auth
 	async verifyGoogleToken(idToken: string): Promise<VerifiedProfile> {
 		try {
-			const googleClientId = this._config.get<string>("GOOGLE_CLIENT_ID");
+			const googleClientId = this.configService.get<string>("GOOGLE_CLIENT_ID");
 
 			// Google ID Token 검증
-			const ticket = await this._googleClient.verifyIdToken({
+			const ticket = await this.#googleClient.verifyIdToken({
 				idToken,
 				audience: googleClientId,
 			});
@@ -216,7 +218,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				throw BusinessExceptions.socialTokenInvalid("GOOGLE");
 			}
 
-			this._logger.debug(`Google token verified for user: ${payload.sub}`);
+			this.#logger.debug(`Google token verified for user: ${payload.sub}`);
 
 			return {
 				id: payload.sub ?? "",
@@ -226,7 +228,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				picture: payload.picture,
 			};
 		} catch (error) {
-			this._logger.error(`Google token verification failed: ${error}`);
+			this.#logger.error(`Google token verification failed: ${error}`);
 
 			// Google Auth Library는 만료된 토큰에 대해 일반 에러를 던짐
 			if (error instanceof Error && error.message.includes("expired")) {
@@ -272,7 +274,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			const kakaoAccount = data.kakao_account;
 
-			this._logger.debug(`Kakao token verified for user: ${data.id}`);
+			this.#logger.debug(`Kakao token verified for user: ${data.id}`);
 
 			return {
 				id: String(data.id),
@@ -282,7 +284,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 				picture: kakaoAccount?.profile?.profile_image_url,
 			};
 		} catch (error) {
-			this._logger.error(`Kakao token verification failed: ${error}`);
+			this.#logger.error(`Kakao token verification failed: ${error}`);
 
 			// BusinessException은 그대로 전파
 			if (error instanceof Error && error.name === "BusinessException") {
@@ -330,19 +332,19 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			const naverUser = data.response;
 
-			this._logger.debug(`Naver token verified for user: ${naverUser.id}`);
+			this.#logger.debug(`Naver token verified for user: ${naverUser.id}`);
 
-			// Naver는 이메일 인증 여부를 별도로 제공하지 않음
-			// 이메일이 있으면 인증된 것으로 간주
+			// Naver는 이메일 인증 여부를 제공하지 않으므로 false 설정
+			// 자동 계정 연동 불가 — 수동 연동 필요 (handleEmailConflict에서 처리)
 			return {
 				id: naverUser.id,
 				email: naverUser.email ?? null,
-				emailVerified: !!naverUser.email,
+				emailVerified: false,
 				name: naverUser.name || naverUser.nickname,
 				picture: naverUser.profile_image,
 			};
 		} catch (error) {
-			this._logger.error(`Naver token verification failed: ${error}`);
+			this.#logger.error(`Naver token verification failed: ${error}`);
 
 			// BusinessException은 그대로 전파
 			if (error instanceof Error && error.name === "BusinessException") {

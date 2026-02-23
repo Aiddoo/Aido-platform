@@ -16,6 +16,7 @@ describe("AuthMapper", () => {
 			const result: RegisterResult = {
 				userId: "user-123",
 				email: "test@example.com",
+				emailSent: true,
 				message: "회원가입이 완료되었습니다.",
 			};
 
@@ -26,6 +27,7 @@ describe("AuthMapper", () => {
 			expect(response).toEqual({
 				message: "회원가입이 완료되었습니다.",
 				email: "test@example.com",
+				emailSent: true,
 			});
 		});
 	});
@@ -56,6 +58,7 @@ describe("AuthMapper", () => {
 				refreshToken: "refresh-token",
 				name: "테스터",
 				profileImage: "https://example.com/img.jpg",
+				accountRestored: false,
 			});
 		});
 
@@ -85,7 +88,31 @@ describe("AuthMapper", () => {
 				refreshToken: "login-refresh",
 				name: null,
 				profileImage: null,
+				accountRestored: false,
 			});
+		});
+
+		it("계정 복구 로그인 시 accountRestored: true를 포함한다", () => {
+			// Given
+			const result: LoginResult = {
+				userId: "user-789",
+				userTag: "rest#1234",
+				tokens: {
+					accessToken: "restored-access",
+					refreshToken: "restored-refresh",
+					expiresIn: 3600,
+				},
+				sessionId: "session-restored",
+				name: "복구유저",
+				profileImage: null,
+				accountRestored: true,
+			};
+
+			// When
+			const response = AuthMapper.toAuthTokensResponse(result);
+
+			// Then
+			expect(response.accountRestored).toBe(true);
 		});
 	});
 
@@ -195,6 +222,7 @@ describe("AuthMapper", () => {
 				refreshToken: "oauth-refresh",
 				name: "OAuth유저",
 				profileImage: "https://example.com/oauth.jpg",
+				accountRestored: false,
 			});
 		});
 
@@ -212,6 +240,24 @@ describe("AuthMapper", () => {
 			// Then
 			expect(response.name).toBeNull();
 			expect(response.profileImage).toBeNull();
+			expect(response.accountRestored).toBe(false);
+		});
+
+		it("계정 복구 시 accountRestored: true를 포함한다", () => {
+			// Given
+			const result: ExchangeCodeResult = {
+				userId: "user-restored",
+				accessToken: "restored-access",
+				refreshToken: "restored-refresh",
+				userName: "복구유저",
+				accountRestored: true,
+			};
+
+			// When
+			const response = AuthMapper.toExchangeCodeResponse(result);
+
+			// Then
+			expect(response.accountRestored).toBe(true);
 		});
 	});
 });

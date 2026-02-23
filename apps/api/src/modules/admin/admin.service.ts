@@ -14,7 +14,7 @@ export interface BroadcastResult {
 
 @Injectable()
 export class AdminService {
-	private readonly logger = new Logger(AdminService.name);
+	readonly #logger = new Logger(AdminService.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -32,13 +32,13 @@ export class AdminService {
 		const { title, body, targetFilter } = dto;
 
 		// 대상 사용자 조회
-		const targetUsers = await this.getTargetUsers(targetFilter);
+		const targetUsers = await this.#getTargetUsers(targetFilter);
 
 		if (targetUsers.length === 0) {
 			throw BusinessExceptions.adminNotificationTargetNotFound();
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`Broadcasting notification to ${targetUsers.length} users with filter: ${targetFilter}`,
 		);
 
@@ -54,7 +54,7 @@ export class AdminService {
 		const result =
 			await this.notificationService.createAndSendBatch(notifications);
 
-		this.logger.log(
+		this.#logger.log(
 			`Broadcast notification completed: ${result.count} notifications sent`,
 		);
 
@@ -88,7 +88,7 @@ export class AdminService {
 			throw BusinessExceptions.adminNotificationTargetNotFound();
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`Sending targeted notification to ${existingUserIds.length} users`,
 		);
 
@@ -104,7 +104,7 @@ export class AdminService {
 		const result =
 			await this.notificationService.createAndSendBatch(notifications);
 
-		this.logger.log(
+		this.#logger.log(
 			`Targeted notification completed: ${result.count} notifications sent`,
 		);
 
@@ -118,7 +118,7 @@ export class AdminService {
 	/**
 	 * 대상 필터에 따른 사용자 ID 조회
 	 */
-	private async getTargetUsers(
+	async #getTargetUsers(
 		targetFilter: (typeof BROADCAST_TARGET_FILTER)[keyof typeof BROADCAST_TARGET_FILTER],
 	): Promise<string[]> {
 		const baseWhere = {

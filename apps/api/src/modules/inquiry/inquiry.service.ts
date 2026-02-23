@@ -36,7 +36,7 @@ interface CreateInquiryParams {
 
 @Injectable()
 export class InquiryService {
-	private readonly logger = new Logger(InquiryService.name);
+	readonly #logger = new Logger(InquiryService.name);
 
 	constructor(
 		private readonly emailService: EmailService,
@@ -64,7 +64,7 @@ export class InquiryService {
 			});
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`Inquiry submitted: userId=${userId}, category=${category}`,
 		);
 	}

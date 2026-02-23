@@ -22,7 +22,7 @@ dayjs.extend(timezone);
  */
 @Injectable()
 export class TimezoneAwareReminderJob {
-	private readonly logger = new Logger(TimezoneAwareReminderJob.name);
+	readonly #logger = new Logger(TimezoneAwareReminderJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -39,7 +39,7 @@ export class TimezoneAwareReminderJob {
 	 */
 	@Cron("0 * * * *")
 	async handleHourlySweep(): Promise<void> {
-		this.logger.log("Starting hourly sweep reminder job...");
+		this.#logger.log("Starting hourly sweep reminder job...");
 
 		const release = await this.lockProvider.acquire(
 			"timezone-reminder",
@@ -47,7 +47,7 @@ export class TimezoneAwareReminderJob {
 		);
 
 		if (!release) {
-			this.logger.warn(
+			this.#logger.warn(
 				"Skipping hourly sweep — another instance holds the lock",
 			);
 			return;
@@ -68,9 +68,9 @@ export class TimezoneAwareReminderJob {
 
 				// 2. 아침 리마인더: morningReminderHour가 현재 시간인 사용자
 				try {
-					await this.sendMorningReminders(tz, localHour);
+					await this.#sendMorningReminders(tz, localHour);
 				} catch (error) {
-					this.logger.error(
+					this.#logger.error(
 						`Morning reminder failed for tz=${tz}: ${error}`,
 						error instanceof Error ? error.stack : undefined,
 					);
@@ -78,18 +78,18 @@ export class TimezoneAwareReminderJob {
 
 				// 3. 저녁 리마인더: eveningReminderHour가 현재 시간인 사용자
 				try {
-					await this.sendEveningReminders(tz, localHour);
+					await this.#sendEveningReminders(tz, localHour);
 				} catch (error) {
-					this.logger.error(
+					this.#logger.error(
 						`Evening reminder failed for tz=${tz}: ${error}`,
 						error instanceof Error ? error.stack : undefined,
 					);
 				}
 			}
 
-			this.logger.log("Hourly sweep reminder job completed");
+			this.#logger.log("Hourly sweep reminder job completed");
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Hourly sweep reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -98,10 +98,7 @@ export class TimezoneAwareReminderJob {
 		}
 	}
 
-	private async sendMorningReminders(
-		tz: string,
-		localHour: number,
-	): Promise<void> {
+	async #sendMorningReminders(tz: string, localHour: number): Promise<void> {
 		const today = getUserToday(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
@@ -163,15 +160,12 @@ export class TimezoneAwareReminderJob {
 		});
 
 		await this.notificationService.createAndSendBatch(notifications);
-		this.logger.log(
+		this.#logger.log(
 			`Morning reminder: tz=${tz}, hour=${localHour}, count=${notifications.length}`,
 		);
 	}
 
-	private async sendEveningReminders(
-		tz: string,
-		localHour: number,
-	): Promise<void> {
+	async #sendEveningReminders(tz: string, localHour: number): Promise<void> {
 		const today = getUserToday(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
@@ -241,7 +235,7 @@ export class TimezoneAwareReminderJob {
 		});
 
 		await this.notificationService.createAndSendBatch(notifications);
-		this.logger.log(
+		this.#logger.log(
 			`Evening reminder: tz=${tz}, hour=${localHour}, count=${notifications.length}`,
 		);
 	}

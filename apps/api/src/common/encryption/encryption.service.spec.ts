@@ -8,6 +8,7 @@ describe("EncryptionService", () => {
 		const mockConfigService = {
 			tokenEncryptionKey:
 				"test-encryption-key-must-be-at-least-32-characters-long",
+			get: jest.fn().mockReturnValue(undefined),
 		} as unknown as TypedConfigService;
 
 		service = new EncryptionService(mockConfigService);

@@ -18,6 +18,7 @@ import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
 import {
+	ApiConflictError,
 	ApiCreatedResponse,
 	ApiDoc,
 	ApiErrorResponse,
@@ -49,11 +50,11 @@ import {
 @Controller("auth")
 @UseGuards(JwtAuthGuard)
 export class OAuthController {
-	private readonly logger = new Logger(OAuthController.name);
+	readonly #logger = new Logger(OAuthController.name);
 
 	constructor(private readonly oauthService: OAuthService) {}
 
-	private async resolveOAuthErrorRedirectUri(
+	async #resolveOAuthErrorRedirectUri(
 		state: string,
 		defaultRedirectUri: string,
 	): Promise<string> {
@@ -88,7 +89,12 @@ export class OAuthController {
 ⚠️ **에러 케이스**
 | 코드 | 상황 |
 |------|------|
-| \`AUTH_0107\` | 유효하지 않거나 만료/사용된 교환 코드 |`,
+| \`AUTH_0107\` | 유효하지 않거나 만료/사용된 교환 코드 |
+
+### 🔄 탈퇴 유예 계정 복구
+탈퇴 후 **30일 이내**에 동일 소셜 계정으로 로그인하면 자동 복구됩니다.
+- 응답의 \`accountRestored: true\`로 복구 여부 확인
+- 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시`,
 	})
 	@ApiCreatedResponse({
 		description: "토큰 교환 성공",
@@ -338,12 +344,12 @@ export class OAuthController {
 
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Google OAuth callback error: ${error instanceof Error ? error.message : String(error)}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
 				state,
 				defaultRedirectUri,
 			);
@@ -529,7 +535,7 @@ export class OAuthController {
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
 				state,
 				defaultRedirectUri,
 			);
@@ -717,7 +723,7 @@ export class OAuthController {
 			res.redirect(`${redirectUri}?${params.toString()}`);
 		} catch (error) {
 			const params = buildOAuthErrorParams(error, state);
-			const errorRedirectUri = await this.resolveOAuthErrorRedirectUri(
+			const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(
 				state,
 				defaultRedirectUri,
 			);
@@ -781,6 +787,11 @@ provider에 따라 필수 토큰이 다릅니다:
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: LinkSocialAccountDto,
@@ -838,6 +849,11 @@ provider에 따라 필수 토큰이 다릅니다:
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkWithExchangeCode(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ExchangeCodeDto,

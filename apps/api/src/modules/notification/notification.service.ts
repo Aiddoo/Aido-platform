@@ -36,7 +36,7 @@ import type {
  */
 @Injectable()
 export class NotificationService {
-	private readonly logger = new Logger(NotificationService.name);
+	readonly #logger = new Logger(NotificationService.name);
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
@@ -131,7 +131,7 @@ export class NotificationService {
 			tx,
 		);
 		if (exists) {
-			this.logger.debug(
+			this.#logger.debug(
 				`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
 			);
 			return null;
@@ -162,7 +162,7 @@ export class NotificationService {
 		);
 
 		if (!shouldSend) {
-			this.logger.debug(
+			this.#logger.debug(
 				`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
 			);
 			return notification;
@@ -237,7 +237,7 @@ export class NotificationService {
 		const notifications =
 			await this.notificationRepository.findNotificationsByUser(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Notifications listed: ${notifications.length} items for user: ${params.userId}`,
 		);
 
@@ -284,7 +284,7 @@ export class NotificationService {
 
 		await this.notificationRepository.markAsRead(notificationId);
 
-		this.logger.debug(`Notification marked as read: id=${notificationId}`);
+		this.#logger.debug(`Notification marked as read: id=${notificationId}`);
 	}
 
 	/**
@@ -293,7 +293,7 @@ export class NotificationService {
 	async markAllAsRead(userId: string): Promise<{ count: number }> {
 		const result = await this.notificationRepository.markAllAsRead(userId);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`All notifications marked as read: userId=${userId}, count=${result.count}`,
 		);
 
@@ -347,7 +347,7 @@ export class NotificationService {
 		const result =
 			await this.notificationRepository.deleteOldNotifications(daysOld);
 
-		this.logger.log(`Old notifications cleaned up: count=${result.count}`);
+		this.#logger.log(`Old notifications cleaned up: count=${result.count}`);
 
 		return result;
 	}

@@ -48,7 +48,7 @@ export interface UserWithProfile {
 
 @Injectable()
 export class UserRepository {
-	private readonly logger = new Logger(UserRepository.name);
+	readonly #logger = new Logger(UserRepository.name);
 	private static readonly MAX_USER_TAG_RETRIES = 5;
 
 	constructor(private readonly database: DatabaseService) {}
@@ -137,7 +137,7 @@ export class UserRepository {
 		const client = tx ?? this.database;
 
 		// userTag가 제공되지 않으면 자동 생성
-		const userTag = data.userTag ?? (await this.generateUniqueUserTag(client));
+		const userTag = data.userTag ?? (await this.#generateUniqueUserTag(client));
 
 		return client.user.create({
 			data: {
@@ -147,7 +147,7 @@ export class UserRepository {
 		});
 	}
 
-	private async generateUniqueUserTag(
+	async #generateUniqueUserTag(
 		client: Prisma.TransactionClient | DatabaseService,
 	): Promise<string> {
 		for (let i = 0; i < UserRepository.MAX_USER_TAG_RETRIES; i++) {
@@ -161,7 +161,7 @@ export class UserRepository {
 				return tag;
 			}
 
-			this.logger.warn(`User tag collision detected: ${tag}, retrying...`);
+			this.#logger.warn(`User tag collision detected: ${tag}, retrying...`);
 		}
 
 		// 모든 재시도 실패 시 (극히 드문 경우)
@@ -257,6 +257,14 @@ export class UserRepository {
 		return client.user.update({
 			where: { id },
 			data: { deletedAt: now(), status: "SUSPENDED" },
+		});
+	}
+
+	async restore(id: string, tx?: Prisma.TransactionClient): Promise<User> {
+		const client = tx ?? this.database;
+		return client.user.update({
+			where: { id },
+			data: { deletedAt: null, status: "ACTIVE" },
 		});
 	}
 

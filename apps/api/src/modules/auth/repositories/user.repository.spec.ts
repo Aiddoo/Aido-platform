@@ -488,4 +488,47 @@ describe("UserRepository", () => {
 			});
 		});
 	});
+
+	describe("restore", () => {
+		it("사용자의 deletedAt을 null로, status를 ACTIVE로 업데이트한다", async () => {
+			// Given - 탈퇴된 사용자
+			const deletedUser = UserBuilder.create()
+				.withId("user-123")
+				.deleted()
+				.build();
+			db.user.update.mockResolvedValue({
+				...deletedUser,
+				deletedAt: null,
+				status: "ACTIVE",
+			});
+
+			// When
+			const result = await repository.restore("user-123");
+
+			// Then
+			expect(db.user.update).toHaveBeenCalledWith({
+				where: { id: "user-123" },
+				data: { deletedAt: null, status: "ACTIVE" },
+			});
+			expect(result.deletedAt).toBeNull();
+			expect(result.status).toBe("ACTIVE");
+		});
+
+		it("트랜잭션 클라이언트가 제공되면 해당 클라이언트를 사용한다", async () => {
+			// Given
+			const mockTxClient = createMockTxClient();
+			const restoredUser = UserBuilder.create().verified().build();
+			mockTxClient.user.update.mockResolvedValue(restoredUser);
+
+			// When
+			await repository.restore("user-123", asTxClient(mockTxClient));
+
+			// Then
+			expect(mockTxClient.user.update).toHaveBeenCalledWith({
+				where: { id: "user-123" },
+				data: { deletedAt: null, status: "ACTIVE" },
+			});
+			expect(db.user.update).not.toHaveBeenCalled();
+		});
+	});
 });

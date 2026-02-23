@@ -28,7 +28,7 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  */
 @Injectable()
 export class TodoListener {
-	private readonly logger = new Logger(TodoListener.name);
+	readonly #logger = new Logger(TodoListener.name);
 
 	constructor(
 		private readonly notificationService: NotificationService,
@@ -46,7 +46,7 @@ export class TodoListener {
 	async handleTodoAllCompleted(
 		payload: TodoAllCompletedEventPayload,
 	): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling todo.all_completed event: userId=${payload.userId}, count=${payload.completedCount}`,
 		);
 
@@ -64,7 +64,7 @@ export class TodoListener {
 				);
 
 				if (alreadySent) {
-					this.logger.debug(
+					this.#logger.debug(
 						`Daily completion already sent today: userId=${payload.userId}`,
 					);
 					return;
@@ -85,7 +85,7 @@ export class TodoListener {
 					tx,
 				);
 
-				this.logger.log(
+				this.#logger.log(
 					`Daily completion notification sent to user: ${payload.userId}`,
 				);
 			});
@@ -94,13 +94,13 @@ export class TodoListener {
 				error instanceof Prisma.PrismaClientKnownRequestError &&
 				error.code === "P2002"
 			) {
-				this.logger.debug(
+				this.#logger.debug(
 					`Daily completion duplicate prevented by constraint: userId=${payload.userId}`,
 				);
 				return;
 			}
 
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send daily completion notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -116,7 +116,7 @@ export class TodoListener {
 	 */
 	@OnEvent(NotificationEvents.TODO_REMINDER)
 	async handleTodoReminder(payload: TodoReminderEventPayload): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling todo.reminder event: userId=${payload.userId}, todoId=${payload.todoId}`,
 		);
 
@@ -133,11 +133,11 @@ export class TodoListener {
 				todoId: payload.todoId,
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Todo reminder notification sent: userId=${payload.userId}, todoId=${payload.todoId}`,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send todo reminder notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -155,12 +155,12 @@ export class TodoListener {
 	async handleFriendCompleted(
 		payload: FriendCompletedEventPayload,
 	): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling friend.completed event: friendId=${payload.friendId}, notifyCount=${payload.notifyUserIds.length}`,
 		);
 
 		if (payload.notifyUserIds.length === 0) {
-			this.logger.debug("No friends to notify for friend completion");
+			this.#logger.debug("No friends to notify for friend completion");
 			return;
 		}
 
@@ -184,7 +184,7 @@ export class TodoListener {
 				);
 
 				if (newUserIds.length === 0) {
-					this.logger.debug(
+					this.#logger.debug(
 						`Friend completion already sent today: friendId=${payload.friendId}`,
 					);
 					return;
@@ -205,7 +205,7 @@ export class TodoListener {
 
 				await this.notificationService.createAndSendBatch(notifications, tx);
 
-				this.logger.log(
+				this.#logger.log(
 					`Friend completion notifications sent: friendId=${payload.friendId}, count=${newUserIds.length}`,
 				);
 			});
@@ -214,13 +214,13 @@ export class TodoListener {
 				error instanceof Prisma.PrismaClientKnownRequestError &&
 				error.code === "P2002"
 			) {
-				this.logger.debug(
+				this.#logger.debug(
 					`Friend completion duplicate prevented by constraint: friendId=${payload.friendId}`,
 				);
 				return;
 			}
 
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send friend completion notifications: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

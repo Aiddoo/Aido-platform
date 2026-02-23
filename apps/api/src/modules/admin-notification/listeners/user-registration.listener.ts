@@ -26,7 +26,7 @@ const PROVIDER_LABELS: Record<string, string> = {
  */
 @Injectable()
 export class UserRegistrationListener {
-	private readonly logger = new Logger(UserRegistrationListener.name);
+	readonly #logger = new Logger(UserRegistrationListener.name);
 
 	constructor(
 		@Inject(ADMIN_NOTIFIER)
@@ -37,7 +37,7 @@ export class UserRegistrationListener {
 	async handleUserRegistered(
 		payload: UserRegisteredEventPayload,
 	): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling user.registered event: ${payload.userId} (${payload.email})`,
 		);
 
@@ -62,14 +62,14 @@ export class UserRegistrationListener {
 			});
 
 			if (result.success) {
-				this.logger.log(
+				this.#logger.log(
 					`Admin notification sent for new registration: ${payload.userId}`,
 				);
 			} else {
-				this.logger.warn(`Admin notification failed: ${result.error}`);
+				this.#logger.warn(`Admin notification failed: ${result.error}`);
 			}
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send admin notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

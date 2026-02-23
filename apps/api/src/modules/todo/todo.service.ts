@@ -32,7 +32,7 @@ import type {
 
 @Injectable()
 export class TodoService {
-	private readonly logger = new Logger(TodoService.name);
+	readonly #logger = new Logger(TodoService.name);
 
 	constructor(
 		private readonly todoRepository: TodoRepository,
@@ -49,7 +49,7 @@ export class TodoService {
 	 * 날짜 범위 파라미터 검증
 	 * startDate와 endDate가 모두 존재할 때 startDate <= endDate 여야 합니다.
 	 */
-	private validateDateRange(startDate?: Date, endDate?: Date): void {
+	#validateDateRange(startDate?: Date, endDate?: Date): void {
 		if (!startDate || !endDate) {
 			return;
 		}
@@ -94,7 +94,7 @@ export class TodoService {
 			visibility: data.visibility ?? "PUBLIC",
 		});
 
-		this.logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
+		this.#logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
 
 		if (todo.scheduledTime) {
 			try {
@@ -105,7 +105,7 @@ export class TodoService {
 					todo.title,
 				);
 			} catch (error) {
-				this.logger.error(
+				this.#logger.error(
 					`Failed to schedule reminder for todo ${todo.id}: ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);
@@ -125,7 +125,7 @@ export class TodoService {
 			throw BusinessExceptions.todoNotFound(id);
 		}
 
-		this.logger.debug(`Todo retrieved: ${id} for user: ${userId}`);
+		this.#logger.debug(`Todo retrieved: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(todo);
 	}
@@ -136,7 +136,7 @@ export class TodoService {
 	async findMany(
 		params: GetTodosParams,
 	): Promise<CursorPaginatedResponse<Todo, number>> {
-		this.validateDateRange(params.startDate, params.endDate);
+		this.#validateDateRange(params.startDate, params.endDate);
 
 		const { cursor, size } =
 			this.paginationService.normalizeCursorPagination<number>({
@@ -156,7 +156,7 @@ export class TodoService {
 
 		const todos = await this.todoRepository.findManyByUserId(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Todos listed: ${todos.length} items for user: ${params.userId}`,
 		);
 
@@ -176,7 +176,7 @@ export class TodoService {
 		params: GetFriendTodosParams,
 	): Promise<CursorPaginatedResponse<Todo, number>> {
 		const { userId, friendUserId } = params;
-		this.validateDateRange(params.startDate, params.endDate);
+		this.#validateDateRange(params.startDate, params.endDate);
 
 		// 1. 맞팔 관계 확인
 		const isMutualFriend = await this.followService.isMutualFriend(
@@ -206,7 +206,7 @@ export class TodoService {
 
 		const todos = await this.todoRepository.findPublicTodosByUserId(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Friend todos listed: ${todos.length} items for friend: ${friendUserId} by user: ${userId}`,
 		);
 
@@ -262,7 +262,7 @@ export class TodoService {
 			this.reminderScheduler.cancelReminder(id);
 		}
 
-		this.logger.log(`Todo updated: ${id} for user: ${userId}`);
+		this.#logger.log(`Todo updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
 	}
@@ -280,7 +280,7 @@ export class TodoService {
 		await this.todoRepository.delete(id);
 		this.reminderScheduler.cancelReminder(id);
 
-		this.logger.log(`Todo deleted: ${id} for user: ${userId}`);
+		this.#logger.log(`Todo deleted: ${id} for user: ${userId}`);
 	}
 
 	// ===== 액션별 수정 메서드 (SRP) =====
@@ -311,13 +311,13 @@ export class TodoService {
 			this.reminderScheduler.cancelReminder(id);
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`Todo completion toggled: ${id} -> ${data.completed} for user: ${userId}`,
 		);
 
 		// 완료로 변경된 경우, 오늘 할일 전체 완료 여부 확인 후 이벤트 발행
 		if (data.completed) {
-			await this.checkAndEmitAllCompletedEvent(userId, tz);
+			await this.#checkAndEmitAllCompletedEvent(userId, tz);
 		}
 
 		return TodoMapper.toResponse(updatedTodo);
@@ -327,7 +327,7 @@ export class TodoService {
 	 * 오늘 할일 전체 완료 시 이벤트 발행
 	 * @private
 	 */
-	private async checkAndEmitAllCompletedEvent(
+	async #checkAndEmitAllCompletedEvent(
 		userId: string,
 		tz: string = "UTC",
 	): Promise<void> {
@@ -337,7 +337,7 @@ export class TodoService {
 
 			// 오늘 할일이 있고, 모두 완료된 경우
 			if (stats.total > 0 && stats.total === stats.completed) {
-				this.logger.log(
+				this.#logger.log(
 					`User ${userId} completed all ${stats.completed} todos today!`,
 				);
 
@@ -362,14 +362,14 @@ export class TodoService {
 						timezone: tz,
 					} satisfies FriendCompletedEventPayload);
 
-					this.logger.log(
+					this.#logger.log(
 						`Friend completed event emitted to ${friendIds.length} friends`,
 					);
 				}
 			}
 		} catch (error) {
 			// 이벤트 발행 실패가 메인 로직에 영향을 주지 않도록 로깅만 수행
-			this.logger.error(
+			this.#logger.error(
 				`Failed to check/emit all completed event: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -394,7 +394,7 @@ export class TodoService {
 			visibility: data.visibility,
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`Todo visibility updated: ${id} -> ${data.visibility} for user: ${userId}`,
 		);
 
@@ -429,7 +429,7 @@ export class TodoService {
 			category: { connect: { id: data.categoryId } },
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,
 		);
 
@@ -477,13 +477,13 @@ export class TodoService {
 				this.reminderScheduler.cancelReminder(id);
 			}
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to schedule reminder for todo ${id}: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		}
 
-		this.logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
+		this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
 	}
@@ -514,7 +514,7 @@ export class TodoService {
 
 		const updatedTodo = await this.todoRepository.update(id, updateData);
 
-		this.logger.log(`Todo content updated: ${id} for user: ${userId}`);
+		this.#logger.log(`Todo content updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
 	}
@@ -624,7 +624,7 @@ export class TodoService {
 				tx,
 			);
 
-			this.logger.log(
+			this.#logger.log(
 				`Todo reordered: ${id} to sortOrder ${newSortOrder} for user: ${userId}`,
 			);
 

@@ -17,7 +17,7 @@ import { REMINDER_STAGES } from "../constants/reminder.constants";
  */
 @Injectable()
 export class TodoReminderJob {
-	private readonly logger = new Logger(TodoReminderJob.name);
+	readonly #logger = new Logger(TodoReminderJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -31,7 +31,7 @@ export class TodoReminderJob {
 	 */
 	@Cron("*/10 * * * *")
 	async handleTodoReminder(): Promise<void> {
-		this.logger.log("Starting todo reminder job...");
+		this.#logger.log("Starting todo reminder job...");
 
 		const release = await this.lockProvider.acquire(
 			"todo-reminder",
@@ -39,16 +39,16 @@ export class TodoReminderJob {
 		);
 
 		if (!release) {
-			this.logger.warn(
+			this.#logger.warn(
 				"Skipping todo reminder — another instance holds the lock",
 			);
 			return;
 		}
 
 		try {
-			await this.execute();
+			await this.#execute();
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Todo reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -57,7 +57,7 @@ export class TodoReminderJob {
 		}
 	}
 
-	private async execute(): Promise<void> {
+	async #execute(): Promise<void> {
 		const now = new Date();
 		const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 		const cronIntervalMs = 10 * 60 * 1000;
@@ -140,11 +140,11 @@ export class TodoReminderJob {
 
 				await this.notificationService.createAndSendBatch(notifications);
 
-				this.logger.log(
+				this.#logger.log(
 					`Todo reminder (${stage.label}) sent for ${newTodosToNotify.length} todos`,
 				);
 			} catch (error) {
-				this.logger.error(
+				this.#logger.error(
 					`Todo reminder stage "${stage.label}" failed: ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);

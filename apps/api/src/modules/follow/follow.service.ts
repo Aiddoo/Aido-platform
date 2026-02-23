@@ -26,7 +26,7 @@ import type {
 
 @Injectable()
 export class FollowService {
-	private readonly logger = new Logger(FollowService.name);
+	readonly #logger = new Logger(FollowService.name);
 
 	constructor(
 		private readonly followRepository: FollowRepository,
@@ -141,7 +141,7 @@ export class FollowService {
 					throw error;
 				}
 
-				this.logger.log(
+				this.#logger.log(
 					`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
 				);
 
@@ -192,7 +192,7 @@ export class FollowService {
 			throw error;
 		}
 
-		this.logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
+		this.#logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
 
 		// 새 친구 요청 이벤트 발행
 		const followerName = await this.followRepository.getUserName(userId);
@@ -285,7 +285,7 @@ export class FollowService {
 			return followWithUser;
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
 		);
 
@@ -334,7 +334,9 @@ export class FollowService {
 
 		await this.followRepository.delete(request.id);
 
-		this.logger.log(`Friend request rejected: ${requesterUserId} -> ${userId}`);
+		this.#logger.log(
+			`Friend request rejected: ${requesterUserId} -> ${userId}`,
+		);
 	}
 
 	// =========================================================================
@@ -376,7 +378,7 @@ export class FollowService {
 		// 캐시 무효화 (친구 관계 변경)
 		await this.cacheService.invalidateMutualFriend(userId, targetUserId);
 
-		this.logger.log(`Follow removed: ${userId} X ${targetUserId}`);
+		this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}
 
 	// =========================================================================
@@ -404,7 +406,7 @@ export class FollowService {
 
 		const follows = await this.followRepository.findMutualFriends(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Friends listed: ${follows.length} items for user: ${params.userId}`,
 		);
 
@@ -438,7 +440,7 @@ export class FollowService {
 		const follows =
 			await this.followRepository.findReceivedRequests(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Received requests listed: ${follows.length} items for user: ${params.userId}`,
 		);
 
@@ -471,7 +473,7 @@ export class FollowService {
 
 		const follows = await this.followRepository.findSentRequests(repoParams);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Sent requests listed: ${follows.length} items for user: ${params.userId}`,
 		);
 

@@ -23,6 +23,7 @@ export const throttleSchema = z.object({
  */
 export const encryptionSchema = z.object({
 	TOKEN_ENCRYPTION_KEY: z.string().min(32),
+	TOKEN_ENCRYPTION_SALT: z.string().min(8).optional(),
 });
 
 /**

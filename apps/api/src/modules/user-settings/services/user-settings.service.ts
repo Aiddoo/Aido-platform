@@ -14,7 +14,7 @@ import { UserPreferenceRepository } from "../repositories/user-preference.reposi
 
 @Injectable()
 export class UserSettingsService {
-	private readonly logger = new Logger(UserSettingsService.name);
+	readonly #logger = new Logger(UserSettingsService.name);
 
 	constructor(
 		private readonly userPreferenceRepository: UserPreferenceRepository,
@@ -57,7 +57,7 @@ export class UserSettingsService {
 			eveningReminderHour: input.eveningReminderHour,
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
 		);
 
@@ -101,7 +101,7 @@ export class UserSettingsService {
 			{ agreed },
 		);
 
-		this.logger.log(
+		this.#logger.log(
 			`User ${userId} updated marketing consent: agreed=${agreed}`,
 		);
 

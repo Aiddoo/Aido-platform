@@ -59,7 +59,7 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
 @UseGuards(JwtAuthGuard)
 @Controller("ai")
 export class AiController {
-	private readonly logger = new Logger(AiController.name);
+	readonly #logger = new Logger(AiController.name);
 
 	constructor(private readonly aiService: AiService) {}
 
@@ -197,11 +197,11 @@ if (confirmed) {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ParseTodoRequestDto,
 	): Promise<ParseTodoResponseDto> {
-		this.logger.debug(`AI 파싱 요청: user=${user.userId}, text="${dto.text}"`);
+		this.#logger.debug(`AI 파싱 요청: user=${user.userId}, text="${dto.text}"`);
 
 		const result = await this.aiService.parseTodo(dto.text, user.userId);
 
-		this.logger.log(
+		this.#logger.log(
 			`AI 파싱 완료: user=${user.userId}, title="${result.data.title}", ` +
 				`model=${result.meta.model}, time=${result.meta.processingTimeMs}ms`,
 		);

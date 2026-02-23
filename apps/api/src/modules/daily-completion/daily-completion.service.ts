@@ -20,7 +20,7 @@ export type {
 
 @Injectable()
 export class DailyCompletionService {
-	private readonly logger = new Logger(DailyCompletionService.name);
+	readonly #logger = new Logger(DailyCompletionService.name);
 
 	constructor(
 		private readonly dailyCompletionRepository: DailyCompletionRepository,
@@ -50,7 +50,7 @@ export class DailyCompletionService {
 		const completions = DailyCompletionMapper.toCompletionSummaries(aggregates);
 		const totalCompleteDays = completions.filter((c) => c.isComplete).length;
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Daily completions retrieved: ${completions.length} days for user: ${userId}, complete days: ${totalCompleteDays}`,
 		);
 

@@ -18,7 +18,7 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  */
 @Injectable()
 export class FollowListener {
-	private readonly logger = new Logger(FollowListener.name);
+	readonly #logger = new Logger(FollowListener.name);
 
 	constructor(private readonly notificationService: NotificationService) {}
 
@@ -30,7 +30,7 @@ export class FollowListener {
 	 */
 	@OnEvent(NotificationEvents.FOLLOW_NEW)
 	async handleFollowNew(payload: FollowNewEventPayload): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling follow.new event: ${payload.followerId} -> ${payload.followingId}`,
 		);
 
@@ -47,12 +47,12 @@ export class FollowListener {
 				friendId: payload.followerId,
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Follow request notification sent to user: ${payload.followingId}`,
 			);
 		} catch (error) {
 			// 알림 발송 실패가 팔로우 기능을 방해하면 안 됨
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send follow request notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -68,7 +68,7 @@ export class FollowListener {
 	 */
 	@OnEvent(NotificationEvents.FOLLOW_MUTUAL)
 	async handleFollowMutual(payload: FollowMutualEventPayload): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling follow.mutual event: user ${payload.userId} <-> friend ${payload.friendId}`,
 		);
 
@@ -85,11 +85,11 @@ export class FollowListener {
 				friendId: payload.friendId,
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Mutual follow notification sent to user: ${payload.userId}`,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send mutual follow notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

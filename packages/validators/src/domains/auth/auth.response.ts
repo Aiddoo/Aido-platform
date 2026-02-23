@@ -1,23 +1,16 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
-import {
-  ACCOUNT_PROVIDERS,
-  DEVICE_TYPES,
-  OAUTH_PROVIDERS,
-  USER_ROLE,
-  USER_STATUS,
-} from './auth.constants';
+import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from './auth.constants';
+import { deviceTypeSchema, oauthProviderSchema } from './auth.request';
 
 export const userStatusSchema = z.enum(USER_STATUS).describe('사용자 계정 상태');
 export const userRoleSchema = z
   .enum([USER_ROLE.USER, USER_ROLE.ADMIN])
   .describe('사용자 역할 (USER: 일반 사용자, ADMIN: 관리자)');
-export const deviceTypeEnumSchema = z.enum(DEVICE_TYPES).describe('기기 타입');
-export const accountProviderEnumSchema = z
+export const accountProviderSchema = z
   .enum(ACCOUNT_PROVIDERS)
   .describe('계정 제공자 (이메일/소셜)');
-export const oauthProviderEnumSchema = z.enum(OAUTH_PROVIDERS).describe('소셜 로그인 제공자');
 
 export const authTokensSchema = z
   .object({
@@ -26,6 +19,7 @@ export const authTokensSchema = z
     refreshToken: z.string().describe('JWT 리프레시 토큰 (유효기간: 7일)'),
     name: z.string().nullable().describe('사용자 이름 (미설정 시 null)'),
     profileImage: z.string().nullable().describe('프로필 이미지 URL (미설정 시 null)'),
+    accountRestored: z.boolean().optional().describe('탈퇴 유예 기간 내 계정 복구 여부'),
   })
   .describe('인증 토큰 정보')
   .meta({
@@ -131,7 +125,7 @@ export const currentUserSchema = z
     profileImage: z.string().nullable().describe('프로필 이미지 (아이콘 키 또는 URL)'),
     createdAt: datetimeSchema.describe('가입 일시'),
     providers: z
-      .array(accountProviderEnumSchema)
+      .array(accountProviderSchema)
       .describe('연결된 로그인 제공자 목록 (예: ["CREDENTIAL", "KAKAO"])'),
   })
   .describe('현재 사용자 정보')
@@ -159,7 +153,7 @@ export const sessionInfoSchema = z
   .object({
     id: z.cuid().describe('세션 고유 ID'),
     deviceName: z.string().nullable().describe('기기 이름'),
-    deviceType: deviceTypeEnumSchema.nullable().describe('기기 타입'),
+    deviceType: deviceTypeSchema.nullable().describe('기기 타입'),
     ipAddress: z.string().nullable().describe('접속 IP 주소'),
     userAgent: z.string().nullable().describe('User-Agent 문자열'),
     lastActiveAt: datetimeSchema.describe('마지막 활동 시각'),
@@ -350,7 +344,7 @@ export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
 
 export const linkedAccountSchema = z
   .object({
-    provider: oauthProviderEnumSchema,
+    provider: oauthProviderSchema,
     linked: z.boolean().describe('해당 제공자의 계정 연결 여부'),
     providerAccountId: z.string().nullable().describe('제공자 측 계정 고유 ID (미연결 시 null)'),
     linkedAt: nullableDatetimeSchema.describe('계정 연결 시각 (ISO 8601 UTC, 미연결 시 null)'),
@@ -410,7 +404,7 @@ export type LinkedAccountsResponse = z.infer<typeof linkedAccountsResponseSchema
 export const unlinkAccountResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    provider: oauthProviderEnumSchema.describe('연결 해제된 제공자'),
+    provider: oauthProviderSchema.describe('연결 해제된 제공자'),
   })
   .describe('소셜 계정 연결 해제 응답')
   .meta({

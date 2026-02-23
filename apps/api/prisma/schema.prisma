@@ -298,6 +298,7 @@ enum SecurityEvent {
   // 계정 삭제
   ACCOUNT_DELETION_REQUESTED
   ACCOUNT_HARD_DELETED
+  ACCOUNT_RESTORED
 
   // 비밀번호 설정
   PASSWORD_SETUP
@@ -357,6 +358,7 @@ model OAuthState {
   userId       String? @db.VarChar(255)
   userName     String? @db.VarChar(100)
   profileImage String? @db.VarChar(500)
+  accountRestored Boolean? // 계정 복구 여부 (탈퇴 유예 기간 내 재로그인)
 
   // 요청 메타데이터
   ipAddress String? @db.VarChar(45)

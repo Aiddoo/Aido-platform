@@ -1,6 +1,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-
+import {
+	type ILockProvider,
+	LOCK_PROVIDER,
+} from "@/common/lock/interfaces/lock.interface";
 import { DatabaseService } from "@/database";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
@@ -16,6 +19,7 @@ describe("AccountPurgeJob", () => {
 	let userRepo: Mocked<UserRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let database: Mocked<DatabaseService>;
+	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob).compile();
@@ -28,6 +32,12 @@ describe("AccountPurgeJob", () => {
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
+		lockProvider = unitRef.get(
+			LOCK_PROVIDER,
+		) as unknown as Mocked<ILockProvider>;
+
+		// Lock을 항상 획득 성공하도록 mock
+		lockProvider.acquire.mockResolvedValue(jest.fn());
 	});
 
 	it("유예 기간이 지난 사용자를 hard delete 한다", async () => {
@@ -56,12 +66,13 @@ describe("AccountPurgeJob", () => {
 		expect(database.$transaction).toHaveBeenCalled();
 		expect(securityLogRepo.create).toHaveBeenCalledWith(
 			expect.objectContaining({
-				userId: "user-1",
 				event: SECURITY_EVENT.ACCOUNT_HARD_DELETED,
 				ipAddress: "SYSTEM",
 				userAgent: "AccountPurgeJob",
+				metadata: expect.objectContaining({
+					purgedUserId: "user-1",
+				}),
 			}),
-			expect.any(Object),
 		);
 		expect(userRepo.hardDelete).toHaveBeenCalledWith(
 			"user-1",

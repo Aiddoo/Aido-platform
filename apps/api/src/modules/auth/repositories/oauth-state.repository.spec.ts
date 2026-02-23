@@ -40,6 +40,7 @@ describe("OAuthStateRepository", () => {
 		userId: null,
 		userName: null,
 		profileImage: null,
+		accountRestored: null,
 		exchangedAt: null,
 		expiresAt: new Date("2024-12-31"),
 		createdAt: new Date("2024-01-01"),

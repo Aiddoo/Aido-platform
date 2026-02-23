@@ -92,6 +92,7 @@ export class OAuthStateRepository {
 			userId: string;
 			userName?: string;
 			profileImage?: string;
+			accountRestored?: boolean;
 		},
 	): Promise<OAuthState> {
 		return this.database.oAuthState.update({
@@ -103,6 +104,7 @@ export class OAuthStateRepository {
 				userId: data.userId,
 				userName: data.userName,
 				profileImage: data.profileImage,
+				accountRestored: data.accountRestored,
 			},
 		});
 	}

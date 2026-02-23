@@ -17,7 +17,7 @@ export class FollowRepository {
 	constructor(private readonly database: DatabaseService) {}
 
 	// Include 설정 (프로필 정보 포함)
-	private readonly userSelect = {
+	readonly #userSelect = {
 		id: true,
 		userTag: true,
 		profile: {
@@ -84,10 +84,10 @@ export class FollowRepository {
 			where: { id },
 			include: {
 				follower: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 				following: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 			},
 		});
@@ -195,10 +195,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 				following: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 			},
 			take: size + 1,
@@ -253,10 +253,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 				following: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 			},
 			take: size + 1,
@@ -281,10 +281,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 				following: {
-					select: this.userSelect,
+					select: this.#userSelect,
 				},
 			},
 			take: size + 1,

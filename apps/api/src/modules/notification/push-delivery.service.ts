@@ -66,8 +66,8 @@ const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 export class PushDeliveryService
 	implements BeforeApplicationShutdown, OnModuleDestroy
 {
-	private readonly logger = new Logger(PushDeliveryService.name);
-	private readonly pendingPushes = new Set<Promise<void>>();
+	readonly #logger = new Logger(PushDeliveryService.name);
+	readonly #pendingPushes = new Set<Promise<void>>();
 
 	// =========================================================================
 	// 수신자별 Rate Limiting (인메모리 슬라이딩 윈도우)
@@ -77,7 +77,7 @@ export class PushDeliveryService
 	private static readonly RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 	private static readonly RATE_LIMIT_MAX = 15;
 
-	private readonly pushTimestamps = new Map<string, number[]>();
+	readonly #pushTimestamps = new Map<string, number[]>();
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
@@ -104,7 +104,7 @@ export class PushDeliveryService
 			);
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
 		);
 
@@ -114,7 +114,7 @@ export class PushDeliveryService
 	async unregisterPushToken(userId: string, deviceId: string): Promise<void> {
 		try {
 			await this.notificationRepository.deletePushToken(userId, deviceId);
-			this.logger.log(
+			this.#logger.log(
 				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
 			);
 		} catch (error) {
@@ -122,7 +122,7 @@ export class PushDeliveryService
 				error instanceof Prisma.PrismaClientKnownRequestError &&
 				error.code === "P2025"
 			) {
-				this.logger.warn(
+				this.#logger.warn(
 					`Push token not found: userId=${userId}, deviceId=${deviceId}`,
 				);
 				return;
@@ -134,7 +134,7 @@ export class PushDeliveryService
 	async unregisterAllPushTokens(userId: string): Promise<void> {
 		const result =
 			await this.notificationRepository.deleteAllPushTokensByUser(userId);
-		this.logger.log(
+		this.#logger.log(
 			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
 		);
 	}
@@ -154,18 +154,18 @@ export class PushDeliveryService
 		data: CreateNotificationData,
 		notificationId: number,
 	): void {
-		const pushData = this.buildPushPayloadData(data, notificationId);
+		const pushData = this.#buildPushPayloadData(data, notificationId);
 
-		const pushPromise = this.sendPushToUser(data.userId, {
+		const pushPromise = this.#sendPushToUser(data.userId, {
 			title: data.title,
 			body: data.body,
 			data: pushData,
 		}).catch((error) => {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send push notification: userId=${data.userId}, error=${error}`,
 			);
 		}) as Promise<void>;
-		this.trackPush(pushPromise);
+		this.#trackPush(pushPromise);
 	}
 
 	// =========================================================================
@@ -178,17 +178,15 @@ export class PushDeliveryService
 	 * N+1 쿼리 최적화: 사용자별 설정을 배치로 한 번에 조회
 	 */
 	fireAndForgetBatchPush(dataList: CreateNotificationData[]): void {
-		const pushPromise = this.sendBatchPush(dataList).catch((error) => {
-			this.logger.error(
+		const pushPromise = this.#sendBatchPush(dataList).catch((error) => {
+			this.#logger.error(
 				`Failed to send batch push notifications: error=${error}`,
 			);
 		}) as Promise<void>;
-		this.trackPush(pushPromise);
+		this.#trackPush(pushPromise);
 	}
 
-	private async sendBatchPush(
-		dataList: CreateNotificationData[],
-	): Promise<void> {
+	async #sendBatchPush(dataList: CreateNotificationData[]): Promise<void> {
 		const userIds = [...new Set(dataList.map((d) => d.userId))];
 
 		const [preferences, consents] = await Promise.all([
@@ -201,7 +199,7 @@ export class PushDeliveryService
 
 		const eligibleDataList: CreateNotificationData[] = [];
 		for (const data of dataList) {
-			const shouldSend = this.canSendPushWithCachedData(
+			const shouldSend = this.#canSendPushWithCachedData(
 				data.type as NotificationType,
 				prefMap.get(data.userId),
 				consentMap.get(data.userId),
@@ -209,7 +207,7 @@ export class PushDeliveryService
 			if (shouldSend) {
 				eligibleDataList.push(data);
 			} else {
-				this.logger.debug(
+				this.#logger.debug(
 					`Push notification skipped due to user settings: userId=${data.userId}, type=${data.type}`,
 				);
 			}
@@ -221,13 +219,13 @@ export class PushDeliveryService
 
 		const eligibleUserIds = [...new Set(eligibleDataList.map((d) => d.userId))];
 
-		await this.sendPushToUsers(
+		await this.#sendPushToUsers(
 			eligibleUserIds,
 			eligibleDataList.map((d) => ({
 				userId: d.userId,
 				title: d.title,
 				body: d.body,
-				data: this.buildPushPayloadData(d),
+				data: this.#buildPushPayloadData(d),
 			})),
 		);
 	}
@@ -246,7 +244,7 @@ export class PushDeliveryService
 		const preference = await this.userPreferenceRepository.findByUserId(userId);
 
 		if (!preference) {
-			this.logger.debug(
+			this.#logger.debug(
 				`No preference found for user ${userId}, skipping push`,
 			);
 			return false;
@@ -264,26 +262,26 @@ export class PushDeliveryService
 			return false;
 		}
 
-		if (this.isMarketingNotification(type)) {
+		if (this.#isMarketingNotification(type)) {
 			const consent = await this.userConsentRepository.findByUserId(userId);
 			if (!consent?.marketingAgreedAt) {
 				return false;
 			}
 		}
 
-		if (this.isRateLimited(userId)) {
-			this.logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
+		if (this.#isRateLimited(userId)) {
+			this.#logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
 			return false;
 		}
 
 		return true;
 	}
 
-	private isMarketingNotification(type: NotificationType): boolean {
+	#isMarketingNotification(type: NotificationType): boolean {
 		return MARKETING_NOTIFICATION_TYPES.has(type);
 	}
 
-	private canSendPushWithCachedData(
+	#canSendPushWithCachedData(
 		type: NotificationType,
 		preference:
 			| {
@@ -310,7 +308,7 @@ export class PushDeliveryService
 			return false;
 		}
 
-		if (this.isMarketingNotification(type)) {
+		if (this.#isMarketingNotification(type)) {
 			if (!consent?.marketingAgreedAt) {
 				return false;
 			}
@@ -323,7 +321,7 @@ export class PushDeliveryService
 	// 푸시 페이로드 빌드
 	// =========================================================================
 
-	private buildPushPayloadData(
+	#buildPushPayloadData(
 		data: CreateNotificationData,
 		notificationId?: number,
 	): PushNotificationData {
@@ -353,7 +351,7 @@ export class PushDeliveryService
 	// 푸시 발송 (Internal)
 	// =========================================================================
 
-	private async sendPushToUser(
+	async #sendPushToUser(
 		userId: string,
 		payload: Omit<PushPayload, "token">,
 	): Promise<void> {
@@ -363,7 +361,7 @@ export class PushDeliveryService
 		});
 
 		if (tokens.length === 0) {
-			this.logger.debug(`No active push tokens for user: ${userId}`);
+			this.#logger.debug(`No active push tokens for user: ${userId}`);
 			return;
 		}
 
@@ -378,17 +376,17 @@ export class PushDeliveryService
 			await this.notificationRepository.deactivateInvalidTokens(
 				result.invalidTokens,
 			);
-			this.logger.warn(
+			this.#logger.warn(
 				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
 			);
 		}
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Push sent to user ${userId}: success=${result.successCount}, failure=${result.failureCount}`,
 		);
 	}
 
-	private async sendPushToUsers(
+	async #sendPushToUsers(
 		userIds: string[],
 		payloads: Array<{ userId: string } & Omit<PushPayload, "token">>,
 	): Promise<void> {
@@ -396,7 +394,7 @@ export class PushDeliveryService
 			await this.notificationRepository.findActivePushTokensByUsers(userIds);
 
 		if (tokens.length === 0) {
-			this.logger.debug("No active push tokens for users");
+			this.#logger.debug("No active push tokens for users");
 			return;
 		}
 
@@ -430,12 +428,12 @@ export class PushDeliveryService
 			await this.notificationRepository.deactivateInvalidTokens(
 				result.invalidTokens,
 			);
-			this.logger.warn(
+			this.#logger.warn(
 				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
 			);
 		}
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
 	}
@@ -450,19 +448,19 @@ export class PushDeliveryService
 	 * 알림 DB 기록은 정상 생성하되, 푸시 발송만 제한한다.
 	 * 앱 내 알림 목록에서는 모두 확인 가능.
 	 */
-	private isRateLimited(userId: string): boolean {
+	#isRateLimited(userId: string): boolean {
 		const now = Date.now();
 		const windowStart = now - PushDeliveryService.RATE_LIMIT_WINDOW_MS;
 
-		let timestamps = this.pushTimestamps.get(userId);
+		let timestamps = this.#pushTimestamps.get(userId);
 		if (!timestamps) {
 			timestamps = [];
-			this.pushTimestamps.set(userId, timestamps);
+			this.#pushTimestamps.set(userId, timestamps);
 		}
 
 		// 윈도우 밖 타임스탬프 제거
 		const filtered = timestamps.filter((t) => t > windowStart);
-		this.pushTimestamps.set(userId, filtered);
+		this.#pushTimestamps.set(userId, filtered);
 
 		if (filtered.length >= PushDeliveryService.RATE_LIMIT_MAX) {
 			return true;
@@ -477,25 +475,25 @@ export class PushDeliveryService
 	// =========================================================================
 
 	onModuleDestroy(): void {
-		this.pushTimestamps.clear();
+		this.#pushTimestamps.clear();
 	}
 
 	// =========================================================================
 	// Graceful Shutdown
 	// =========================================================================
 
-	private trackPush(promise: Promise<void>): void {
-		this.pendingPushes.add(promise);
-		promise.finally(() => this.pendingPushes.delete(promise));
+	#trackPush(promise: Promise<void>): void {
+		this.#pendingPushes.add(promise);
+		promise.finally(() => this.#pendingPushes.delete(promise));
 	}
 
 	async beforeApplicationShutdown(): Promise<void> {
-		if (this.pendingPushes.size > 0) {
-			this.logger.log(
-				`Waiting for ${this.pendingPushes.size} pending push(es)...`,
+		if (this.#pendingPushes.size > 0) {
+			this.#logger.log(
+				`Waiting for ${this.#pendingPushes.size} pending push(es)...`,
 			);
-			await Promise.allSettled([...this.pendingPushes]);
-			this.logger.log("All pending pushes completed");
+			await Promise.allSettled([...this.#pendingPushes]);
+			this.#logger.log("All pending pushes completed");
 		}
 	}
 }

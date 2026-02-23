@@ -292,12 +292,53 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			expect(deletedUser?.deletedAt).not.toBeNull();
 		});
 
-		it("탈퇴 후 로그인 시도 시 USER_0606", async () => {
-			// Given
+		it("유예 기간 내 credential 로그인 시 자동 복구", async () => {
+			// Given - 탈퇴된 사용자
 			const email = "login-after-delete@example.com";
 			const password = "Test1234!";
 			const userId = await createVerifiedCredentialUser(email, password);
 			await authService.deleteAccount(userId, "test-session", { password });
+
+			// When - 로그인 (탈퇴 직후 = 유예 기간 내)
+			const loginResult = await authService.login({ email, password });
+
+			// Then - 성공
+			expect(loginResult.userId).toBe(userId);
+			expect(loginResult.tokens.accessToken).toBeDefined();
+			expect(loginResult.accountRestored).toBe(true);
+
+			// DB 검증: 복구됨
+			const prisma = testDb.getPrisma();
+			const restoredUser = await prisma.user.findUnique({
+				where: { id: userId },
+			});
+			expect(restoredUser?.deletedAt).toBeNull();
+			expect(restoredUser?.status).toBe("ACTIVE");
+
+			// 보안 로그: ACCOUNT_RESTORED 기록됨
+			const logs = await prisma.securityLog.findMany({
+				where: { userId, event: "ACCOUNT_RESTORED" },
+			});
+			expect(logs.length).toBeGreaterThanOrEqual(1);
+		});
+
+		it("유예 기간 초과 시 로그인 차단 (USER_0606)", async () => {
+			// Given - 31일 전 탈퇴된 사용자 (DB 직접 생성)
+			const prisma = testDb.getPrisma();
+			const pastDate = new Date();
+			pastDate.setDate(
+				pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1),
+			);
+
+			const email = "expired-delete@example.com";
+			const password = "Test1234!";
+			const userId = await createVerifiedCredentialUser(email, password);
+
+			// DB에서 직접 탈퇴 처리 (유예 기간 초과)
+			await prisma.user.update({
+				where: { id: userId },
+				data: { deletedAt: pastDate, status: "SUSPENDED" },
+			});
 
 			// When & Then
 			await expect(authService.login({ email, password })).rejects.toThrow(

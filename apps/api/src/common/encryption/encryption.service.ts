@@ -11,19 +11,20 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
-const SALT = "aido-token-encryption";
+const DEFAULT_SALT = "aido-token-encryption";
 
 @Injectable()
 export class EncryptionService {
-	private readonly key: Buffer;
+	readonly #key: Buffer;
 
 	constructor(configService: TypedConfigService) {
-		this.key = scryptSync(configService.tokenEncryptionKey, SALT, KEY_LENGTH);
+		const salt = configService.get("TOKEN_ENCRYPTION_SALT") ?? DEFAULT_SALT;
+		this.#key = scryptSync(configService.tokenEncryptionKey, salt, KEY_LENGTH);
 	}
 
 	encrypt(plaintext: string): string {
 		const iv = randomBytes(IV_LENGTH);
-		const cipher = createCipheriv(ALGORITHM, this.key, iv, {
+		const cipher = createCipheriv(ALGORITHM, this.#key, iv, {
 			authTagLength: AUTH_TAG_LENGTH,
 		});
 
@@ -47,7 +48,7 @@ export class EncryptionService {
 		const authTag = Buffer.from(authTagB64, "base64");
 		const encrypted = Buffer.from(encryptedB64, "base64");
 
-		const decipher = createDecipheriv(ALGORITHM, this.key, iv, {
+		const decipher = createDecipheriv(ALGORITHM, this.#key, iv, {
 			authTagLength: AUTH_TAG_LENGTH,
 		});
 		decipher.setAuthTag(authTag);

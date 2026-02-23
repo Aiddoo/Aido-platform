@@ -138,12 +138,32 @@ describe("GlobalExceptionFilter", () => {
 			);
 		});
 
-		it("P2002가 아닌 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
+		it("P2003 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
 			// Given
 			const error = new Prisma.PrismaClientKnownRequestError(
 				"Foreign key constraint",
 				{
 					code: "P2003",
+					meta: {},
+					clientVersion: "7.0.0",
+				},
+			);
+
+			// When
+			filter.catch(error, mockHost as never);
+
+			// Then
+			expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0002);
+		});
+
+		it("처리되지 않은 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
+			// Given
+			const error = new Prisma.PrismaClientKnownRequestError(
+				"Unknown Prisma error",
+				{
+					code: "P2024",
 					meta: {},
 					clientVersion: "7.0.0",
 				},

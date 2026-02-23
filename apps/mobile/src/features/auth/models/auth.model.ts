@@ -7,6 +7,7 @@ export const authTokensSchema = z.object({
   refreshToken: z.string(),
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
+  accountRestored: z.boolean().optional().default(false),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
@@ -41,6 +42,13 @@ export const updateMarketingConsentResultSchema = z.object({
   marketingAgreedAt: z.coerce.date().nullable(),
 });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
+
+export const deleteAccountResultSchema = z.object({
+  message: z.string(),
+  deletedAt: z.coerce.date(),
+  gracePeriodDays: z.number(),
+});
+export type DeleteAccountResult = z.infer<typeof deleteAccountResultSchema>;
 
 export function hasLetter(password: string) {
   return PASSWORD_RULES.HAS_LETTER.test(password);

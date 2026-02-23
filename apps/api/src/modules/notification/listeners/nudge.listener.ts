@@ -16,7 +16,7 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  */
 @Injectable()
 export class NudgeListener {
-	private readonly logger = new Logger(NudgeListener.name);
+	readonly #logger = new Logger(NudgeListener.name);
 
 	constructor(private readonly notificationService: NotificationService) {}
 
@@ -30,7 +30,7 @@ export class NudgeListener {
 	 */
 	@OnEvent(NotificationEvents.NUDGE_SENT)
 	async handleNudgeSent(payload: NudgeSentEventPayload): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling nudge.sent event: ${payload.senderId} -> ${payload.receiverId}`,
 		);
 
@@ -49,11 +49,11 @@ export class NudgeListener {
 				todoId: payload.todoId,
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Nudge notification sent: from=${payload.senderId}, to=${payload.receiverId}`,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send nudge notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

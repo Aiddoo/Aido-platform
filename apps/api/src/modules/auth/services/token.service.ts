@@ -52,13 +52,13 @@ export class TokenService {
 	): Promise<TokenPair> {
 		const family = tokenFamily ?? this.generateTokenFamily();
 
-		const accessToken = await this._generateAccessToken(
+		const accessToken = await this.#generateAccessToken(
 			userId,
 			email,
 			sessionId,
 			role,
 		);
-		const refreshToken = await this._generateRefreshToken(
+		const refreshToken = await this.#generateRefreshToken(
 			userId,
 			email,
 			sessionId,
@@ -70,11 +70,11 @@ export class TokenService {
 		return {
 			accessToken,
 			refreshToken,
-			expiresIn: this._getAccessTokenExpiresInSeconds(),
+			expiresIn: this.#getAccessTokenExpiresInSeconds(),
 		};
 	}
 
-	private async _generateAccessToken(
+	async #generateAccessToken(
 		userId: string,
 		email: string,
 		sessionId: string,
@@ -90,11 +90,11 @@ export class TokenService {
 
 		return this.jwtService.signAsync(payload, {
 			secret: this.configService.jwtSecret,
-			expiresIn: this._getAccessTokenExpiresInSeconds(),
+			expiresIn: this.#getAccessTokenExpiresInSeconds(),
 		});
 	}
 
-	private async _generateRefreshToken(
+	async #generateRefreshToken(
 		userId: string,
 		email: string,
 		sessionId: string,
@@ -137,7 +137,7 @@ export class TokenService {
 
 			return { success: true, payload };
 		} catch (error) {
-			return { success: false, error: this._classifyJwtError(error) };
+			return { success: false, error: this.#classifyJwtError(error) };
 		}
 	}
 
@@ -160,11 +160,11 @@ export class TokenService {
 
 			return { success: true, payload };
 		} catch (error) {
-			return { success: false, error: this._classifyJwtError(error) };
+			return { success: false, error: this.#classifyJwtError(error) };
 		}
 	}
 
-	private _classifyJwtError(error: unknown): TokenVerifyError {
+	#classifyJwtError(error: unknown): TokenVerifyError {
 		if (error instanceof TokenExpiredError) {
 			return TOKEN_VERIFY_ERROR.EXPIRED;
 		}
@@ -189,18 +189,18 @@ export class TokenService {
 		return createHash("sha256").update(token).digest("hex");
 	}
 
-	private _getAccessTokenExpiresInSeconds(): number {
+	#getAccessTokenExpiresInSeconds(): number {
 		const expiresIn = this.configService.jwtExpiresIn;
-		return this._parseExpiresIn(expiresIn);
+		return this.#parseExpiresIn(expiresIn);
 	}
 
 	getRefreshTokenExpiresInSeconds(): number {
 		const expiresIn = this.configService.jwtRefreshExpiresIn;
-		return this._parseExpiresIn(expiresIn);
+		return this.#parseExpiresIn(expiresIn);
 	}
 
 	// "15m", "1h", "7d" 형식을 초 단위로 변환
-	private _parseExpiresIn(expiresIn: string): number {
+	#parseExpiresIn(expiresIn: string): number {
 		const match = expiresIn.match(/^(\d+)([smhd])$/);
 		if (!match?.[1] || !match[2]) {
 			return AUTH_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES_SECONDS;

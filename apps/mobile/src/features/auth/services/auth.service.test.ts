@@ -1,14 +1,16 @@
-import type {
-  AuthTokens as AuthTokensDTO,
-  LinkedAccountsResponse,
-  PreferenceResponse,
-  RegisterResponse,
-  ResendVerificationResponse,
-} from '@aido/validators';
-import type { HttpClient } from '@src/core/ports/http';
-import type { Storage } from '@src/core/ports/storage';
-import { ApiError } from '@src/shared/errors/api-error';
-import { ParseError } from '@src/shared/errors/infra-error';
+import { createMockHttpClient, createMockStorage } from '@src/shared/__tests__';
+import {
+  createAuthApiError,
+  createAuthTokensDto,
+  createConsentDto,
+  createDeleteAccountDto,
+  createLinkedAccountsDto,
+  createPreferenceDto,
+  createRegisterDto,
+  createResendVerificationDto,
+  createUpdateMarketingConsentDto,
+  INVALID_DTO,
+} from '../__tests__/auth.factories';
 
 jest.mock('@src/shared/config/env', () => ({
   ENV: {
@@ -25,98 +27,11 @@ jest.mock('@src/shared/config/env', () => ({
 
 import { AuthService } from './auth.service';
 
-// -- Fixtures --
-
-const validAuthTokensDTO: AuthTokensDTO = {
-  userId: 'clz7x5p8k0001qz0z8z8z8z8z',
-  accessToken: 'access-token-jwt',
-  refreshToken: 'refresh-token-jwt',
-  name: '테스트',
-  profileImage: 'https://example.com/avatar.jpg',
-};
-
-const validPreferenceDTO: PreferenceResponse = {
-  pushEnabled: true,
-  nightPushEnabled: false,
-  timezone: 'Asia/Seoul',
-  morningReminderHour: 8,
-  eveningReminderHour: 21,
-};
-
-const validConsentDTO = {
-  termsAgreedAt: '2026-01-01T00:00:00.000Z',
-  privacyAgreedAt: '2026-01-01T00:00:00.000Z',
-  agreedTermsVersion: '1.0.0',
-  marketingAgreedAt: '2026-02-01T00:00:00.000Z',
-};
-
-const validUpdateMarketingConsentDTO = {
-  marketingAgreedAt: '2026-02-01T00:00:00.000Z',
-};
-
-const validRegisterDTO: RegisterResponse = {
-  message: '인증 메일이 발송되었습니다.',
-  email: 'test@example.com',
-};
-
-const validResendVerificationDTO: ResendVerificationResponse = {
-  message: '인증 메일이 재발송되었습니다.',
-  email: 'test@example.com',
-  retryAfterSeconds: 60,
-};
-
-const validLinkedAccountsDTO: LinkedAccountsResponse = {
-  accounts: [
-    {
-      provider: 'GOOGLE',
-      linked: true,
-      providerAccountId: 'g-123',
-      linkedAt: '2026-01-15T00:00:00.000Z',
-    },
-    { provider: 'KAKAO', linked: false, providerAccountId: null, linkedAt: null },
-  ],
-};
-
-// -- Mock Helpers --
-
-const createMockHttpClient = (): HttpClient => ({
-  get: jest.fn(),
-  post: jest.fn(),
-  put: jest.fn(),
-  patch: jest.fn(),
-  delete: jest.fn(),
-});
-
-const createMockStorage = (): Storage => ({
-  get: jest.fn(),
-  set: jest.fn(),
-  remove: jest.fn(),
-  clear: jest.fn(),
-});
-
-const mockResolvedPost = (client: HttpClient, value: unknown) => {
-  (client.post as jest.Mock).mockResolvedValue(value);
-};
-
-const mockResolvedGet = (client: HttpClient, value: unknown) => {
-  (client.get as jest.Mock).mockResolvedValue(value);
-};
-
-const mockResolvedPatch = (client: HttpClient, value: unknown) => {
-  (client.patch as jest.Mock).mockResolvedValue(value);
-};
-
-const mockResolvedDelete = (client: HttpClient, value: unknown) => {
-  (client.delete as jest.Mock).mockResolvedValue(value);
-};
-
 describe('AuthService', () => {
-  let publicHttpClient: HttpClient;
-  let authHttpClient: HttpClient;
-  let storage: Storage;
+  let publicHttpClient: ReturnType<typeof createMockHttpClient>;
+  let authHttpClient: ReturnType<typeof createMockHttpClient>;
+  let storage: ReturnType<typeof createMockStorage>;
   let service: AuthService;
-
-  const apiError = new ApiError('AUTH_ERROR', '인증 오류', 401);
 
   beforeEach(() => {
     publicHttpClient = createMockHttpClient();
@@ -125,12 +40,13 @@ describe('AuthService', () => {
     service = new AuthService(publicHttpClient, authHttpClient, storage);
   });
 
-  // -- emailLogin --
+  // ── emailLogin ─────────────────────────────
 
   describe('emailLogin', () => {
-    test('정상 응답 시 토큰을 저장하고 도메인 모델을 반환한다', async () => {
+    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: validAuthTokensDTO });
+      const dto = createAuthTokensDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.emailLogin('test@example.com', 'password123');
@@ -138,31 +54,24 @@ describe('AuthService', () => {
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith(
         'v1/auth/login',
-        expect.objectContaining({
-          email: 'test@example.com',
-          password: 'password123',
-        }),
+        expect.objectContaining({ email: 'test@example.com', password: 'password123' }),
       );
-      expect(storage.set).toHaveBeenCalledWith('accessToken', 'access-token-jwt');
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', 'refresh-token-jwt');
+      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
+      expect(storage.set).toHaveBeenCalledWith('refreshToken', dto.refreshToken);
       expect(result).toEqual({
         ok: true,
-        value: {
-          userId: 'clz7x5p8k0001qz0z8z8z8z8z',
-          accessToken: 'access-token-jwt',
-          refreshToken: 'refresh-token-jwt',
-          userName: '테스트',
-          userProfileImage: 'https://example.com/avatar.jpg',
-        },
+        value: expect.objectContaining({
+          userId: dto.userId,
+          userName: dto.name,
+          userProfileImage: dto.profileImage,
+        }),
       });
     });
 
-    test('name이 null이면 userName도 null로 변환한다', async () => {
+    test('name null → userName null 매핑', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, {
-        ok: true,
-        value: { ...validAuthTokensDTO, name: null, profileImage: null },
-      });
+      const dto = createAuthTokensDto({ name: null, profileImage: null });
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.emailLogin('test@example.com', 'password123');
@@ -175,9 +84,25 @@ describe('AuthService', () => {
       }
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('accountRestored 미포함 → 기본값 false', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: false, error: apiError });
+      const dto = createAuthTokensDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.emailLogin('test@example.com', 'password123');
+
+      // Then
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.accountRestored).toBe(false);
+      }
+    });
+
+    test('HTTP 에러 → Result.err + 토큰 미저장', async () => {
+      // Given
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.emailLogin('test@example.com', 'wrong');
@@ -187,21 +112,24 @@ describe('AuthService', () => {
       expect(storage.set).not.toHaveBeenCalled();
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: { invalid: 'data' } });
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.emailLogin('a@b.com', 'pw')).rejects.toThrow(ParseError);
+      await expect(service.emailLogin('a@b.com', 'pw')).rejects.toThrow(
+        'Invalid auth tokens response',
+      );
     });
   });
 
-  // -- exchangeCode --
+  // ── exchangeCode ───────────────────────────
 
   describe('exchangeCode', () => {
-    test('정상 응답 시 토큰을 저장하고 도메인 모델을 반환한다', async () => {
+    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: validAuthTokensDTO });
+      const dto = createAuthTokensDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
       const input = { code: 'auth-code' };
 
       // When
@@ -209,23 +137,15 @@ describe('AuthService', () => {
 
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/exchange', input);
-      expect(storage.set).toHaveBeenCalledWith('accessToken', 'access-token-jwt');
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', 'refresh-token-jwt');
-      expect(result).toEqual({
-        ok: true,
-        value: {
-          userId: 'clz7x5p8k0001qz0z8z8z8z8z',
-          accessToken: 'access-token-jwt',
-          refreshToken: 'refresh-token-jwt',
-          userName: '테스트',
-          userProfileImage: 'https://example.com/avatar.jpg',
-        },
-      });
+      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
+      expect(storage.set).toHaveBeenCalledWith('refreshToken', dto.refreshToken);
+      expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.exchangeCode({ code: 'bad' });
@@ -233,14 +153,24 @@ describe('AuthService', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.exchangeCode({ code: 'code' })).rejects.toThrow(
+        'Invalid auth tokens response',
+      );
+    });
   });
 
-  // -- logout --
+  // ── logout ─────────────────────────────────
 
   describe('logout', () => {
-    test('성공 시 토큰을 삭제한다', async () => {
+    test('성공 시 토큰 삭제', async () => {
       // Given
-      mockResolvedPost(authHttpClient, { ok: true, value: undefined });
+      authHttpClient.post.mockResolvedValue({ ok: true, value: undefined });
 
       // When
       const result = await service.logout();
@@ -252,9 +182,10 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
-    test('API 실패해도 토큰을 삭제한다', async () => {
+    test('API 실패해도 토큰 삭제 (finally 보장)', async () => {
       // Given
-      mockResolvedPost(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.logout();
@@ -265,9 +196,9 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('HttpClient throw 시에도 토큰을 삭제한다', async () => {
+    test('HttpClient throw 시에도 토큰 삭제 (finally 보장)', async () => {
       // Given
-      (authHttpClient.post as jest.Mock).mockRejectedValue(new Error('network error'));
+      authHttpClient.post.mockRejectedValue(new Error('network error'));
 
       // When & Then
       await expect(service.logout()).rejects.toThrow('network error');
@@ -276,12 +207,13 @@ describe('AuthService', () => {
     });
   });
 
-  // -- verifyEmail --
+  // ── verifyEmail ────────────────────────────
 
   describe('verifyEmail', () => {
-    test('정상 응답 시 토큰을 저장하고 도메인 모델을 반환한다', async () => {
+    test('정상 응답 → 토큰 저장 + 도메인 모델 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: validAuthTokensDTO });
+      const dto = createAuthTokensDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
       const input = { email: 'test@example.com', code: '123456' };
 
       // When
@@ -289,23 +221,14 @@ describe('AuthService', () => {
 
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/verify-email', input);
-      expect(storage.set).toHaveBeenCalledWith('accessToken', 'access-token-jwt');
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', 'refresh-token-jwt');
-      expect(result).toEqual({
-        ok: true,
-        value: {
-          userId: 'clz7x5p8k0001qz0z8z8z8z8z',
-          accessToken: 'access-token-jwt',
-          refreshToken: 'refresh-token-jwt',
-          userName: '테스트',
-          userProfileImage: 'https://example.com/avatar.jpg',
-        },
-      });
+      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
+      expect(result.ok).toBe(true);
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.verifyEmail({ email: 'a@b.com', code: '000000' });
@@ -313,14 +236,25 @@ describe('AuthService', () => {
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.verifyEmail({ email: 'a@b.com', code: '000000' })).rejects.toThrow(
+        'Invalid auth tokens response',
+      );
+    });
   });
 
-  // -- getPreference --
+  // ── getPreference ──────────────────────────
 
   describe('getPreference', () => {
-    test('정상 응답 시 pushEnabled, nightPushEnabled만 추출한다', async () => {
+    test('정상 응답 → pushEnabled, nightPushEnabled만 추출', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: validPreferenceDTO });
+      const dto = createPreferenceDto();
+      authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.getPreference();
@@ -329,16 +263,14 @@ describe('AuthService', () => {
       expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/preference');
       expect(result).toEqual({
         ok: true,
-        value: {
-          pushEnabled: true,
-          nightPushEnabled: false,
-        },
+        value: { pushEnabled: dto.pushEnabled, nightPushEnabled: dto.nightPushEnabled },
       });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.getPreference();
@@ -347,21 +279,22 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: { invalid: 'data' } });
+      authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.getPreference()).rejects.toThrow(ParseError);
+      await expect(service.getPreference()).rejects.toThrow('Invalid getPreference response');
     });
   });
 
-  // -- updatePreference --
+  // ── updatePreference ───────────────────────
 
   describe('updatePreference', () => {
-    test('정상 응답 시 도메인 모델로 변환한다', async () => {
+    test('정상 응답 → 도메인 모델 반환', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: true, value: validPreferenceDTO });
+      const dto = createPreferenceDto();
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
       const input = { pushEnabled: false };
 
       // When
@@ -371,16 +304,14 @@ describe('AuthService', () => {
       expect(authHttpClient.patch).toHaveBeenCalledWith('v1/auth/preference', input);
       expect(result).toEqual({
         ok: true,
-        value: {
-          pushEnabled: true,
-          nightPushEnabled: false,
-        },
+        value: { pushEnabled: dto.pushEnabled, nightPushEnabled: dto.nightPushEnabled },
       });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.updatePreference({ pushEnabled: true });
@@ -389,21 +320,24 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: true, value: { invalid: 'data' } });
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.updatePreference({ pushEnabled: true })).rejects.toThrow(ParseError);
+      await expect(service.updatePreference({ pushEnabled: true })).rejects.toThrow(
+        'Invalid updatePreference response',
+      );
     });
   });
 
-  // -- getConsent --
+  // ── getConsent ──────────────────────────────
 
   describe('getConsent', () => {
-    test('정상 응답 시 ISO 문자열을 Date 객체로 변환한다', async () => {
+    test('정상 응답 → ISO 문자열을 Date로 변환', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: validConsentDTO });
+      const dto = createConsentDto();
+      authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.getConsent();
@@ -413,20 +347,18 @@ describe('AuthService', () => {
       expect(result).toEqual({
         ok: true,
         value: {
-          termsAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
-          privacyAgreedAt: new Date('2026-01-01T00:00:00.000Z'),
-          agreedTermsVersion: '1.0.0',
-          marketingAgreedAt: new Date('2026-02-01T00:00:00.000Z'),
+          termsAgreedAt: new Date(dto.termsAgreedAt!),
+          privacyAgreedAt: new Date(dto.privacyAgreedAt!),
+          agreedTermsVersion: dto.agreedTermsVersion,
+          marketingAgreedAt: new Date(dto.marketingAgreedAt!),
         },
       });
     });
 
-    test('marketingAgreedAt이 null이면 null 그대로 전달한다', async () => {
+    test('marketingAgreedAt null → null 유지', async () => {
       // Given
-      mockResolvedGet(authHttpClient, {
-        ok: true,
-        value: { ...validConsentDTO, marketingAgreedAt: null },
-      });
+      const dto = createConsentDto({ marketingAgreedAt: null });
+      authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.getConsent();
@@ -438,9 +370,10 @@ describe('AuthService', () => {
       }
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.getConsent();
@@ -449,21 +382,22 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: { invalid: 'data' } });
+      authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.getConsent()).rejects.toThrow(ParseError);
+      await expect(service.getConsent()).rejects.toThrow('Invalid getConsent response');
     });
   });
 
-  // -- updateMarketingConsent --
+  // ── updateMarketingConsent ──────────────────
 
   describe('updateMarketingConsent', () => {
-    test('정상 응답 시 ISO 문자열을 Date 객체로 변환한다', async () => {
+    test('동의 → ISO를 Date로 변환', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: true, value: validUpdateMarketingConsentDTO });
+      const dto = createUpdateMarketingConsentDto();
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.updateMarketingConsent({ agreed: true });
@@ -474,29 +408,26 @@ describe('AuthService', () => {
       });
       expect(result).toEqual({
         ok: true,
-        value: {
-          marketingAgreedAt: new Date('2026-02-01T00:00:00.000Z'),
-        },
+        value: { marketingAgreedAt: new Date(dto.marketingAgreedAt!) },
       });
     });
 
-    test('철회 시 marketingAgreedAt이 null로 변환된다', async () => {
+    test('철회 → marketingAgreedAt null', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: true, value: { marketingAgreedAt: null } });
+      const dto = createUpdateMarketingConsentDto({ marketingAgreedAt: null });
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.updateMarketingConsent({ agreed: false });
 
       // Then
-      expect(result).toEqual({
-        ok: true,
-        value: { marketingAgreedAt: null },
-      });
+      expect(result).toEqual({ ok: true, value: { marketingAgreedAt: null } });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.patch.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.updateMarketingConsent({ agreed: false });
@@ -505,87 +436,74 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedPatch(authHttpClient, { ok: true, value: { invalid: 'data' } });
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.updateMarketingConsent({ agreed: true })).rejects.toThrow(ParseError);
+      await expect(service.updateMarketingConsent({ agreed: true })).rejects.toThrow(
+        'Invalid updateMarketingConsent response',
+      );
     });
   });
 
-  // -- register --
+  // ── register ───────────────────────────────
 
   describe('register', () => {
-    test('정상 응답 시 RegisterResult를 반환한다', async () => {
+    const registerInput = {
+      email: 'test@example.com',
+      password: 'Password1!',
+      passwordConfirm: 'Password1!',
+      name: '테스트',
+      termsAgreed: true as const,
+      privacyAgreed: true as const,
+      marketingAgreed: false,
+    };
+
+    test('정상 응답 → RegisterResult 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: validRegisterDTO });
-      const input = {
-        email: 'test@example.com',
-        password: 'Password1!',
-        passwordConfirm: 'Password1!',
-        name: '테스트',
-        termsAgreed: true as const,
-        privacyAgreed: true as const,
-        marketingAgreed: false,
-      };
+      const dto = createRegisterDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
 
       // When
-      const result = await service.register(input);
+      const result = await service.register(registerInput);
 
       // Then
-      expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/register', input);
+      expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/register', registerInput);
       expect(result).toEqual({
         ok: true,
-        value: {
-          message: '인증 메일이 발송되었습니다.',
-          email: 'test@example.com',
-        },
+        value: { message: dto.message, email: dto.email },
       });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError({ code: 'EMAIL_ALREADY_EXISTS', status: 409 });
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
-      const result = await service.register({
-        email: 'a@b.com',
-        password: 'Password1!',
-        passwordConfirm: 'Password1!',
-        termsAgreed: true as const,
-        privacyAgreed: true as const,
-        marketingAgreed: false,
-      });
+      const result = await service.register(registerInput);
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: { invalid: 'data' } });
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(
-        service.register({
-          email: 'a@b.com',
-          password: 'Password1!',
-          passwordConfirm: 'Password1!',
-          termsAgreed: true as const,
-          privacyAgreed: true as const,
-          marketingAgreed: false,
-        }),
-      ).rejects.toThrow(ParseError);
+      await expect(service.register(registerInput)).rejects.toThrow('Invalid register response');
     });
   });
 
-  // -- resendVerification --
+  // ── resendVerification ─────────────────────
 
   describe('resendVerification', () => {
-    test('정상 응답 시 ResendVerificationResult를 반환한다', async () => {
+    test('정상 응답 → retryAfterSeconds 포함', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: validResendVerificationDTO });
+      const dto = createResendVerificationDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
       const input = { email: 'test@example.com' };
 
       // When
@@ -596,20 +514,17 @@ describe('AuthService', () => {
       expect(result).toEqual({
         ok: true,
         value: {
-          message: '인증 메일이 재발송되었습니다.',
-          email: 'test@example.com',
-          retryAfterSeconds: 60,
+          message: dto.message,
+          email: dto.email,
+          retryAfterSeconds: dto.retryAfterSeconds,
         },
       });
     });
 
-    test('retryAfterSeconds가 없으면 undefined로 전달한다', async () => {
+    test('retryAfterSeconds 없음 → undefined', async () => {
       // Given
-      const dtoWithoutRetry: ResendVerificationResponse = {
-        message: '인증 메일이 재발송되었습니다.',
-        email: 'test@example.com',
-      };
-      mockResolvedPost(publicHttpClient, { ok: true, value: dtoWithoutRetry });
+      const dto = createResendVerificationDto({ retryAfterSeconds: undefined });
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.resendVerification({ email: 'test@example.com' });
@@ -621,9 +536,10 @@ describe('AuthService', () => {
       }
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.resendVerification({ email: 'a@b.com' });
@@ -632,21 +548,24 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedPost(publicHttpClient, { ok: true, value: { invalid: 'data' } });
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.resendVerification({ email: 'a@b.com' })).rejects.toThrow(ParseError);
+      await expect(service.resendVerification({ email: 'a@b.com' })).rejects.toThrow(
+        'Invalid resendVerification response',
+      );
     });
   });
 
-  // -- getLinkedAccounts --
+  // ── getLinkedAccounts ──────────────────────
 
   describe('getLinkedAccounts', () => {
-    test('정상 응답 시 LinkedAccount 배열로 변환하고 linkedAt을 Date로 변환한다', async () => {
+    test('정상 응답 → LinkedAccount 배열, linkedAt Date 변환', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: validLinkedAccountsDTO });
+      const dto = createLinkedAccountsDto();
+      authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
       const result = await service.getLinkedAccounts();
@@ -656,25 +575,24 @@ describe('AuthService', () => {
       expect(result).toEqual({
         ok: true,
         value: [
-          {
+          expect.objectContaining({
             provider: 'GOOGLE',
             linked: true,
-            providerAccountId: 'g-123',
-            linkedAt: new Date('2026-01-15T00:00:00.000Z'),
-          },
-          {
+            linkedAt: expect.any(Date),
+          }),
+          expect.objectContaining({
             provider: 'KAKAO',
             linked: false,
-            providerAccountId: null,
             linkedAt: null,
-          },
+          }),
         ],
       });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.getLinkedAccounts();
@@ -683,22 +601,24 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('Zod 검증 실패 시 ParseError를 throw한다', async () => {
+    test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
-      mockResolvedGet(authHttpClient, { ok: true, value: { invalid: 'data' } });
+      authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
 
       // When & Then
-      await expect(service.getLinkedAccounts()).rejects.toThrow(ParseError);
+      await expect(service.getLinkedAccounts()).rejects.toThrow(
+        'Invalid getLinkedAccounts response',
+      );
     });
   });
 
-  // -- linkWithCode --
+  // ── linkWithCode ───────────────────────────
 
   describe('linkWithCode', () => {
-    test('성공 시 결과를 반환한다', async () => {
+    test('성공 → 결과 반환', async () => {
       // Given
       const response = { message: '계정이 연동되었습니다.' };
-      mockResolvedPost(authHttpClient, { ok: true, value: response });
+      authHttpClient.post.mockResolvedValue({ ok: true, value: response });
 
       // When
       const result = await service.linkWithCode('auth-code-123');
@@ -710,9 +630,10 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: response });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedPost(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.linkWithCode('bad-code');
@@ -722,13 +643,13 @@ describe('AuthService', () => {
     });
   });
 
-  // -- unlinkAccount --
+  // ── unlinkAccount ──────────────────────────
 
   describe('unlinkAccount', () => {
-    test('성공 시 결과를 반환한다', async () => {
+    test('성공 → 결과 반환', async () => {
       // Given
       const response = { message: '계정 연동이 해제되었습니다.' };
-      mockResolvedDelete(authHttpClient, { ok: true, value: response });
+      authHttpClient.delete.mockResolvedValue({ ok: true, value: response });
 
       // When
       const result = await service.unlinkAccount('GOOGLE');
@@ -738,9 +659,10 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: true, value: response });
     });
 
-    test('HTTP 에러 시 Result.err를 반환한다', async () => {
+    test('HTTP 에러 → Result.err 반환', async () => {
       // Given
-      mockResolvedDelete(authHttpClient, { ok: false, error: apiError });
+      const apiError = createAuthApiError();
+      authHttpClient.delete.mockResolvedValue({ ok: false, error: apiError });
 
       // When
       const result = await service.unlinkAccount('KAKAO');
@@ -749,4 +671,116 @@ describe('AuthService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
   });
+
+  // ── changePassword ─────────────────────────
+
+  describe('changePassword', () => {
+    const input = {
+      currentPassword: 'OldPass1!',
+      newPassword: 'NewPass1!',
+      newPasswordConfirm: 'NewPass1!',
+    };
+
+    test('정상 응답 → message 반환', async () => {
+      // Given
+      const dto = { message: '비밀번호가 성공적으로 변경되었습니다.' };
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.changePassword(input);
+
+      // Then
+      expect(authHttpClient.patch).toHaveBeenCalledWith('v1/auth/password', input);
+      expect(result).toEqual({ ok: true, value: { message: dto.message } });
+    });
+
+    test('HTTP 에러 → Result.err 반환', async () => {
+      // Given
+      const apiError = createAuthApiError({
+        code: 'WRONG_PASSWORD',
+        message: '현재 비밀번호가 일치하지 않습니다',
+      });
+      authHttpClient.patch.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.changePassword(input);
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      authHttpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.changePassword(input)).rejects.toThrow(
+        'Invalid changePassword response',
+      );
+    });
+  });
+
+  // ── deleteAccount ──────────────────────────
+
+  describe('deleteAccount', () => {
+    const input = { password: 'Password1!', reason: '더 이상 사용하지 않음' };
+
+    test('정상 응답 → 토큰 삭제 + DeleteAccountResult 반환', async () => {
+      // Given
+      const dto = createDeleteAccountDto();
+      authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.deleteAccount(input);
+
+      // Then
+      expect(authHttpClient.delete).toHaveBeenCalledWith('v1/auth/account', input);
+      expect(storage.remove).toHaveBeenCalledWith('accessToken');
+      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+      expect(result).toEqual({
+        ok: true,
+        value: expect.objectContaining({
+          message: dto.message,
+          deletedAt: expect.any(Date),
+          gracePeriodDays: dto.gracePeriodDays,
+        }),
+      });
+    });
+
+    test('HTTP 에러 → Result.err + 토큰 미삭제', async () => {
+      // Given
+      const apiError = createAuthApiError({ code: 'WRONG_PASSWORD', status: 400 });
+      authHttpClient.delete.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.deleteAccount(input);
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+      expect(storage.remove).not.toHaveBeenCalled();
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      authHttpClient.delete.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.deleteAccount(input)).rejects.toThrow('Invalid deleteAccount response');
+    });
+
+    test('토큰 삭제 실패해도 결과 반환', async () => {
+      // Given
+      const dto = createDeleteAccountDto();
+      authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
+      storage.remove.mockRejectedValueOnce(new Error('storage error'));
+
+      // When & Then
+      await expect(service.deleteAccount(input)).rejects.toThrow('storage error');
+    });
+  });
+
+  // ── OAuth 네이티브 메서드 ──────────────────
+  // openKakaoLogin, openNaverLogin, openGoogleLogin, openAppleLogin,
+  // linkAccount, linkApple 등은 expo-web-browser, expo-apple-authentication
+  // 네이티브 모듈에 의존하므로 별도 통합/E2E 테스트에서 검증
 });

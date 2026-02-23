@@ -551,6 +551,7 @@ describe("AuthService", () => {
 			expect(result.userId).toBe(mockUser.id);
 			expect(result.tokens).toEqual(mockTokens);
 			expect(result.sessionId).toBe("session-id");
+			expect(result.accountRestored).toBe(false);
 		});
 
 		it("존재하지 않는 이메일이면 에러를 던진다", async () => {
@@ -664,7 +665,7 @@ describe("AuthService", () => {
 			);
 		});
 
-		it("로그인 시도 횟수 초과 시 에러를 던진다", async () => {
+		it("로그인 시도 횟수 초과 시 에러를 던지고 ACCOUNT_LOCKED 보안 로그를 기록한다", async () => {
 			// Given
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(
 				LOGIN_ATTEMPT.MAX_FAILURES,
@@ -673,6 +674,15 @@ describe("AuthService", () => {
 			// When & Then
 			await expect(service.login(loginInput)).rejects.toThrow(
 				BusinessException,
+			);
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					event: SECURITY_EVENT.ACCOUNT_LOCKED,
+					metadata: expect.objectContaining({
+						email: loginInput.email,
+						recentFailures: LOGIN_ATTEMPT.MAX_FAILURES,
+					}),
+				}),
 			);
 		});
 
@@ -1052,6 +1062,13 @@ describe("AuthService", () => {
 			expect(
 				verificationService.createAndSendPasswordReset,
 			).toHaveBeenCalledWith(mockUser.id, email);
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUser.id,
+					event: SECURITY_EVENT.PASSWORD_RESET_REQUESTED,
+					metadata: { email },
+				}),
+			);
 			expect(result.message).toBeDefined();
 		});
 
@@ -1436,6 +1453,9 @@ describe("AuthService", () => {
 				},
 			] as Account[]);
 			passwordService.verify.mockResolvedValue(true);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1523,6 +1543,9 @@ describe("AuthService", () => {
 					password: null,
 				},
 			] as Account[]);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1581,6 +1604,9 @@ describe("AuthService", () => {
 					password: null,
 				},
 			] as Account[]);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1835,12 +1861,12 @@ describe("AuthService", () => {
 	// ============================================
 
 	describe("login - 탈퇴 사용자", () => {
-		it("탈퇴한 사용자 로그인 시도 시 USER_0606 에러", async () => {
-			// Given
+		it("유예 기간 초과 시 USER_0606 에러", async () => {
+			// Given - 31일 전에 탈퇴한 사용자
 			const deletedUser = UserBuilder.create()
 				.withEmail("deleted@example.com")
 				.verified()
-				.deleted()
+				.deleted(new Date(Date.now() - 31 * 24 * 60 * 60 * 1000))
 				.build();
 			userRepo.findByEmail.mockResolvedValue(deletedUser);
 			accountRepo.findByUserIdAndProvider.mockResolvedValue({
@@ -1859,6 +1885,71 @@ describe("AuthService", () => {
 					password: "Password123",
 				}),
 			).rejects.toThrow(BusinessException);
+		});
+
+		it("유예 기간 내 탈퇴 사용자 로그인 시 자동 복구", async () => {
+			// Given - 29일 전에 탈퇴한 사용자
+			const deletedAt = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+			const deletedUser = UserBuilder.create()
+				.withEmail("deleted@example.com")
+				.verified()
+				.deleted(deletedAt)
+				.build();
+			userRepo.findByEmail.mockResolvedValue(deletedUser);
+			accountRepo.findByUserIdAndProvider.mockResolvedValue({
+				id: 1,
+				userId: deletedUser.id,
+				provider: "CREDENTIAL",
+				password: "hashed-pw",
+			} as unknown as Account);
+			passwordService.verify.mockResolvedValue(true);
+			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
+			database.$transaction.mockImplementation(
+				async (callback: TransactionCallback) =>
+					callback({} as Prisma.TransactionClient),
+			);
+			sessionService.createSessionWithTokens.mockResolvedValue({
+				sessionId: "session-123",
+				tokens: {
+					accessToken: "access",
+					refreshToken: "refresh",
+					expiresIn: 900,
+				},
+				tokenFamily: "family-123",
+			});
+			userRepo.findByIdWithProfile.mockResolvedValue({
+				id: deletedUser.id,
+				profile: { name: "Test", profileImage: null },
+			} as never);
+
+			// When
+			const result = await service.login({
+				email: "deleted@example.com",
+				password: "Password123",
+			});
+
+			// Then - 로그인 성공 + accountRestored 플래그
+			expect(result.tokens).toBeDefined();
+			expect(result.userId).toBe(deletedUser.id);
+			expect(result.accountRestored).toBe(true);
+
+			// 복구 호출 확인
+			expect(userRepo.restore).toHaveBeenCalledWith(
+				deletedUser.id,
+				expect.anything(),
+			);
+			// ACCOUNT_RESTORED 보안 로그 확인
+			expect(securityLogRepo.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					event: "ACCOUNT_RESTORED",
+					userId: deletedUser.id,
+				}),
+				expect.anything(),
+			);
+			// 캐시 무효화 확인
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				deletedUser.id,
+			);
 		});
 	});
 

@@ -1,3 +1,4 @@
+import { deleteAccountMutationOptions } from '@src/features/auth/presentations/queries/delete-account-mutation-options';
 import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
@@ -17,26 +18,11 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
   const router = useRouter();
-  const logout = useMutation(logoutMutationOptions());
-  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-
-  const handleLogoutPress = () => {
-    setIsLogoutDialogOpen(true);
-  };
-
-  const handleWithdrawPress = () => {
-    console.log('탈퇴하기 클릭');
-  };
-
-  const handleLogoutConfirm = () => {
-    setIsLogoutDialogOpen(false);
-    logout.mutate();
-  };
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -91,35 +77,10 @@ const MyPageScreen = () => {
 
         <Spacing size={32} />
 
-        <HStack justify="center" align="center" gap={8} pb={40}>
-          <TextButton size="medium" onPress={handleLogoutPress}>
-            로그아웃
-          </TextButton>
-          <Separator orientation="vertical" className="h-3 bg-gray-6" />
-          <TextButton size="medium" onPress={handleWithdrawPress}>
-            탈퇴하기
-          </TextButton>
-        </HStack>
+        <Suspense fallback={null}>
+          <AccountActionButtons />
+        </Suspense>
       </ScrollView>
-
-      <ConfirmDialog
-        isOpen={isLogoutDialogOpen}
-        onOpenChange={setIsLogoutDialogOpen}
-        title={<ConfirmDialog.Title>로그아웃</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>정말 로그아웃 하시겠습니까?</ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onPress={() => setIsLogoutDialogOpen(false)}>
-            취소
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton onPress={handleLogoutConfirm}>
-            확인
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
     </StyledSafeAreaView>
   );
 };
@@ -155,6 +116,111 @@ const SettingNavigationItem = ({ label, onPress, right, locked }: SettingNavigat
     />
   </PressableFeedback>
 );
+
+function AccountActionButtons() {
+  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const router = useRouter();
+  const logout = useMutation(logoutMutationOptions());
+  const deleteAccount = useMutation(deleteAccountMutationOptions());
+  const overlay = useOverlay();
+
+  const handleLogoutPress = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <ConfirmDialog
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+        title={<ConfirmDialog.Title>로그아웃</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>정말 로그아웃 하시겠습니까?</ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton
+            onPress={() => {
+              close();
+              exit();
+            }}
+          >
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton
+            onPress={() => {
+              close();
+              exit();
+              logout.mutate();
+            }}
+          >
+            확인
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
+    ));
+  };
+
+  const handleWithdrawPress = () => {
+    if (UserPolicy.hasCredential(user)) {
+      router.push('/settings/delete-account');
+    } else {
+      overlay.open(({ isOpen, close, exit }) => (
+        <ConfirmDialog
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              close();
+              exit();
+            }
+          }}
+          title={<ConfirmDialog.Title>회원 탈퇴</ConfirmDialog.Title>}
+          description={
+            <ConfirmDialog.Description>
+              {'탈퇴 후 30일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?'}
+            </ConfirmDialog.Description>
+          }
+          cancelButton={
+            <ConfirmDialog.CancelButton
+              onPress={() => {
+                close();
+                exit();
+              }}
+            >
+              취소
+            </ConfirmDialog.CancelButton>
+          }
+          confirmButton={
+            <ConfirmDialog.ConfirmButton
+              color="danger"
+              onPress={() => {
+                close();
+                exit();
+                deleteAccount.mutate({});
+              }}
+            >
+              탈퇴하기
+            </ConfirmDialog.ConfirmButton>
+          }
+        />
+      ));
+    }
+  };
+
+  return (
+    <HStack justify="center" align="center" gap={8} pb={40}>
+      <TextButton size="medium" onPress={handleLogoutPress}>
+        로그아웃
+      </TextButton>
+      <Separator orientation="vertical" className="h-3 bg-gray-6" />
+      <TextButton size="medium" onPress={handleWithdrawPress}>
+        탈퇴하기
+      </TextButton>
+    </HStack>
+  );
+}
 
 function AppIconMenuItem() {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());

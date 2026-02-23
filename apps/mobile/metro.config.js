@@ -27,6 +27,14 @@ config.transformer = {
 config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
 
+// Block test-only files from production bundle
+// Note: __tests__/ directories are already excluded by Metro's default exclusionList
+config.resolver.blockList = [
+  ...(config.resolver.blockList ?? []),
+  /.*\.test\.[jt]sx?$/,
+  /.*\.spec\.[jt]sx?$/,
+];
+
 module.exports = withUniwindConfig(config, {
   cssEntryFile: './global.css',
 });

@@ -235,6 +235,12 @@ export class AccountController {
 2. Soft delete (deletedAt 설정)
 3. 모든 세션 즉시 폐기
 4. 30일 후 데이터 완전 삭제
+
+### 🔄 계정 복구
+30일 이내에 **동일 이메일/소셜 계정으로 재로그인**하면 자동 복구됩니다.
+- 이메일 계정: \`POST /auth/login\`
+- 소셜 계정: \`POST /auth/exchange\` (OAuth 플로우)
+- 복구 시 응답에 \`accountRestored: true\` 포함
 		`,
 	})
 	@ApiSuccessResponse({ type: DeleteAccountResponseDto })

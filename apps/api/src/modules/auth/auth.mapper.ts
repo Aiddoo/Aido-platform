@@ -40,6 +40,7 @@ export abstract class AuthMapper {
 		return {
 			message: result.message,
 			email: result.email,
+			emailSent: result.emailSent,
 		};
 	}
 
@@ -63,6 +64,7 @@ export abstract class AuthMapper {
 			refreshToken: result.tokens.refreshToken,
 			name: result.name,
 			profileImage: result.profileImage,
+			accountRestored: result.accountRestored ?? false,
 		};
 	}
 
@@ -169,6 +171,7 @@ export abstract class AuthMapper {
 			refreshToken: result.refreshToken,
 			name: result.userName ?? null,
 			profileImage: result.profileImage ?? null,
+			accountRestored: result.accountRestored ?? false,
 		};
 	}
 }

@@ -61,7 +61,7 @@ import { TodoCategoryService } from "./todo-category.service";
 @UseGuards(JwtAuthGuard)
 @Controller("todo-categories")
 export class TodoCategoryController {
-	private readonly logger = new Logger(TodoCategoryController.name);
+	readonly #logger = new Logger(TodoCategoryController.name);
 
 	constructor(private readonly todoCategoryService: TodoCategoryService) {}
 
@@ -96,7 +96,7 @@ export class TodoCategoryController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateTodoCategoryDto,
 	): Promise<CreateTodoCategoryResponseDto> {
-		this.logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
+		this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
 
 		const category = await this.todoCategoryService.create({
 			userId: user.userId,
@@ -104,7 +104,7 @@ export class TodoCategoryController {
 			color: dto.color,
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`카테고리 생성 완료: id=${category.id}, user=${user.userId}`,
 		);
 
@@ -141,7 +141,7 @@ export class TodoCategoryController {
 	async findAll(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<TodoCategoryListResponseDto> {
-		this.logger.debug(`카테고리 목록 조회: user=${user.userId}`);
+		this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
 
 		const categories = await this.todoCategoryService.findMany(user.userId);
 
@@ -170,7 +170,7 @@ export class TodoCategoryController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoCategoryIdParamDto,
 	): Promise<TodoCategoryResponseDto> {
-		this.logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
+		this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
 
 		const category = await this.todoCategoryService.findById(
 			params.id,
@@ -213,7 +213,7 @@ export class TodoCategoryController {
 		@Param() params: TodoCategoryIdParamDto,
 		@Body() dto: UpdateTodoCategoryDto,
 	): Promise<UpdateTodoCategoryResponseDto> {
-		this.logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
+		this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
 
 		const category = await this.todoCategoryService.update(
 			params.id,
@@ -221,7 +221,7 @@ export class TodoCategoryController {
 			dto,
 		);
 
-		this.logger.log(`카테고리 수정 완료: id=${params.id}`);
+		this.#logger.log(`카테고리 수정 완료: id=${params.id}`);
 
 		return {
 			message: "카테고리가 수정되었습니다.",
@@ -273,7 +273,7 @@ export class TodoCategoryController {
 		@Param() params: TodoCategoryIdParamDto,
 		@Body() dto: ReorderTodoCategoryDto,
 	): Promise<ReorderTodoCategoryResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
 		);
 
@@ -284,7 +284,7 @@ export class TodoCategoryController {
 			position: dto.position,
 		});
 
-		this.logger.log(`카테고리 순서 변경 완료: id=${params.id}`);
+		this.#logger.log(`카테고리 순서 변경 완료: id=${params.id}`);
 
 		return {
 			message: "카테고리 순서가 변경되었습니다.",
@@ -341,7 +341,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 		@Param() params: TodoCategoryIdParamDto,
 		@Query() query: DeleteTodoCategoryQueryDto,
 	): Promise<DeleteTodoCategoryResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`,
 		);
 
@@ -351,7 +351,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 			moveToCategoryId: query.moveToCategoryId,
 		});
 
-		this.logger.log(`카테고리 삭제 완료: id=${params.id}`);
+		this.#logger.log(`카테고리 삭제 완료: id=${params.id}`);
 
 		return {
 			message: "카테고리가 삭제되었습니다.",

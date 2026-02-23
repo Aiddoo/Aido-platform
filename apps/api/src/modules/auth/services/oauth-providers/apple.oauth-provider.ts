@@ -19,7 +19,11 @@ export class AppleOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "APPLE" as const;
 	readonly failureEmail = "apple_unknown@social.aido.app";
 
-	constructor(private readonly _verifier: OAuthTokenVerifierService) {}
+	readonly #verifier: OAuthTokenVerifierService;
+
+	constructor(verifier: OAuthTokenVerifierService) {
+		this.#verifier = verifier;
+	}
 
 	async generateAuthUrl(): Promise<null> {
 		return null;
@@ -30,7 +34,7 @@ export class AppleOAuthProvider implements IOAuthProviderStrategy {
 	}
 
 	async verifyToken(idToken: string, nonce?: string): Promise<VerifiedProfile> {
-		return this._verifier.verifyAppleToken(idToken, nonce);
+		return this.#verifier.verifyAppleToken(idToken, nonce);
 	}
 
 	buildLoginOptions(

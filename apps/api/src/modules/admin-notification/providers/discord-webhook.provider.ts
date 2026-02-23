@@ -16,32 +16,32 @@ import type {
 @Injectable()
 export class DiscordWebhookProvider implements AdminNotifier {
 	readonly name = "discord";
-	private readonly logger = new Logger(DiscordWebhookProvider.name);
-	private readonly webhookUrl: string | undefined;
+	readonly #logger = new Logger(DiscordWebhookProvider.name);
+	readonly #webhookUrl: string | undefined;
 
 	constructor(config: TypedConfigService) {
 		const isTestRuntime =
 			config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
 
 		if (isTestRuntime) {
-			this.webhookUrl = undefined;
-			this.logger.debug(
+			this.#webhookUrl = undefined;
+			this.#logger.debug(
 				"Test runtime detected, Discord webhook notifications are disabled",
 			);
 			return;
 		}
 
-		this.webhookUrl = config.discordSignupWebhookUrl;
+		this.#webhookUrl = config.discordSignupWebhookUrl;
 	}
 
 	isConfigured(): boolean {
-		return !!this.webhookUrl;
+		return !!this.#webhookUrl;
 	}
 
 	async send(notification: AdminNotification): Promise<AdminNotifyResult> {
-		const { webhookUrl } = this;
+		const webhookUrl = this.#webhookUrl;
 		if (!webhookUrl) {
-			this.logger.debug(
+			this.#logger.debug(
 				"Discord webhook not configured, skipping notification",
 			);
 			return { success: false, error: "Webhook URL not configured" };
@@ -66,7 +66,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				this.logger.error(
+				this.#logger.error(
 					`Discord webhook failed: ${response.status} ${errorText}`,
 				);
 				return {
@@ -77,7 +77,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
 			return { success: true };
 		} catch (error) {
-			this.logger.error(`Discord webhook error: ${error}`);
+			this.#logger.error(`Discord webhook error: ${error}`);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

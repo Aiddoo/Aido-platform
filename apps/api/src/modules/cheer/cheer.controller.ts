@@ -72,7 +72,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller("cheers")
 export class CheerController {
-	private readonly logger = new Logger(CheerController.name);
+	readonly #logger = new Logger(CheerController.name);
 
 	constructor(private readonly cheerService: CheerService) {}
 
@@ -111,7 +111,7 @@ export class CheerController {
 		@Body() dto: SendCheerDto,
 		@Timezone() tz: string,
 	): Promise<CreateCheerResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
 		);
 
@@ -124,7 +124,7 @@ export class CheerController {
 			tz,
 		);
 
-		this.logger.log(
+		this.#logger.log(
 			`응원 완료: id=${cheer.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
 		);
 
@@ -154,7 +154,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetCheersQueryDto,
 	): Promise<ReceivedCheersResponseDto> {
-		this.logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
+		this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
 		const result = await this.cheerService.getReceivedCheers({
 			userId: user.userId,
@@ -186,7 +186,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetCheersQueryDto,
 	): Promise<SentCheersResponseDto> {
-		this.logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
+		this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
 		const result = await this.cheerService.getSentCheers({
 			userId: user.userId,
@@ -281,7 +281,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("id", ParseIntPipe) id: number,
 	): Promise<MarkCheerReadResponseDto> {
-		this.logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${id}`);
 
 		await this.cheerService.markAsRead(user.userId, id);
 
@@ -307,7 +307,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: MarkCheersReadDto,
 	): Promise<MarkCheerReadResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`,
 		);
 
