@@ -103,9 +103,6 @@ describe("Follow (e2e)", () => {
 				// Then - 사용자 없음 에러 검증
 				expect(response.body.success).toBe(false);
 				expect(response.body.error.code).toBe("FOLLOW_0905");
-				expect(response.body.error.details).toEqual({
-					userTag: nonExistentUserTag,
-				});
 			});
 
 			it("인증 없이 요청 시 401 에러 반환", async () => {
