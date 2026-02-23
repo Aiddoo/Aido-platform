@@ -62,7 +62,15 @@ export function getErrorsByDomain(
     | 'USER'
     | 'SESSION'
     | 'VERIFY'
-    | 'TODO',
+    | 'TODO'
+    | 'TODO_CATEGORY'
+    | 'FOLLOW'
+    | 'NOTIFICATION'
+    | 'NUDGE'
+    | 'CHEER'
+    | 'AI'
+    | 'ADMIN'
+    | 'INQUIRY',
 ): ErrorDefinition[] {
   return Object.values(Errors).filter((error) => error.code.startsWith(domain));
 }

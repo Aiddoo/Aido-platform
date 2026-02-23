@@ -128,6 +128,7 @@ export const ErrorCode = {
   USER_0612: 'USER_0612',
   USER_0613: 'USER_0613',
   USER_0614: 'USER_0614',
+  USER_0615: 'USER_0615',
 
   // =========================================================================
   // 세션 (SESSION_0700-0749)
@@ -667,6 +668,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '이미 비밀번호가 설정된 계정입니다.',
     description: '이메일 가입 계정이 이미 존재합니다. 비밀번호 변경을 이용해주세요.',
     httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.USER_0615]: {
+    code: 'USER_0615',
+    message: '탈퇴한 계정이 복구되었습니다.',
+    description: '유예 기간(30일) 내 재로그인으로 계정이 자동 복구되었습니다.',
+    httpStatus: HttpStatus.OK,
   },
 
   // =========================================================================
