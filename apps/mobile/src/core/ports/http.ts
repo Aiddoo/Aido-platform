@@ -17,5 +17,5 @@ export interface HttpClient {
   post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
   put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
   patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  delete<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>>;
+  delete<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
 }

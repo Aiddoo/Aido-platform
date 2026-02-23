@@ -18,8 +18,11 @@ export const emailLoginMutationOptions = () => {
       const result = await authService.emailLogin(email, password);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setStatus('authenticated');
+      if (data.accountRestored) {
+        toast.success('탈퇴한 계정이 복구되었어요');
+      }
     },
     onError: (error, variables) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

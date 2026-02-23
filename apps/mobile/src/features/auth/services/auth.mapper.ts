@@ -1,6 +1,7 @@
 import type {
   AuthTokens as AuthTokensDTO,
   ConsentResponse,
+  DeleteAccountResponse,
   LinkedAccount as LinkedAccountDTO,
   LinkedAccountsResponse,
   PreferenceResponse,
@@ -11,6 +12,7 @@ import type {
 import type {
   AuthTokens,
   Consent,
+  DeleteAccountResult,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -24,6 +26,7 @@ export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   refreshToken: dto.refreshToken,
   userName: dto.name,
   userProfileImage: dto.profileImage,
+  accountRestored: dto.accountRestored ?? false,
 });
 
 export const toPreference = (dto: PreferenceResponse): Preference => ({
@@ -55,6 +58,12 @@ export const toUpdateMarketingConsentResult = (
   dto: UpdateMarketingConsentResponse,
 ): UpdateMarketingConsentResult => ({
   marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
+});
+
+export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccountResult => ({
+  message: dto.message,
+  deletedAt: new Date(dto.deletedAt),
+  gracePeriodDays: dto.gracePeriodDays,
 });
 
 export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({
