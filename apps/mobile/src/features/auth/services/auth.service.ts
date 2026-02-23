@@ -7,6 +7,9 @@ import {
   type ConsentResponse,
   changePasswordResponseSchema,
   consentResponseSchema,
+  type DeleteAccountInput,
+  type DeleteAccountResponse,
+  deleteAccountResponseSchema,
   type ExchangeCodeInput,
   type LinkedAccountsResponse,
   linkedAccountsResponseSchema,
@@ -43,6 +46,7 @@ import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../mo
 import type {
   AuthTokens,
   Consent,
+  DeleteAccountResult,
   Preference,
   RegisterResult,
   ResendVerificationResult,
@@ -58,6 +62,7 @@ import type {
 import {
   toAuthTokens,
   toConsent,
+  toDeleteAccountResult,
   toLinkedAccounts,
   toPreference,
   toRegisterResult,
@@ -90,13 +95,13 @@ export class AuthService {
     this.#storage = storage;
   }
 
-  private getRedirectUri = (provider: OAuthStartProvider): string =>
+  #getRedirectUri = (provider: OAuthStartProvider): string =>
     makeRedirectUri({
       scheme: ENV.SCHEME,
       path: OAUTH_PATHS[provider],
     });
 
-  private getOAuthWebStartUrl = (
+  #getOAuthWebStartUrl = (
     provider: OAuthStartProvider,
     redirectUri: string,
     mode: OAuthStartMode,
@@ -114,7 +119,7 @@ export class AuthService {
     return `${ENV.API_URL}/v1/auth/${AUTH_PATH_BY_PROVIDER[provider]}/start?${params.toString()}`;
   };
 
-  private extractCodeFromUrl = (url: string): string | null => {
+  #extractCodeFromUrl = (url: string): string | null => {
     const parsedUrl = Linking.parse(url);
     const queryParams = parsedUrl.queryParams;
     const codeParam = queryParams?.code;
@@ -158,7 +163,7 @@ export class AuthService {
     return null;
   };
 
-  private extractOAuthErrorFromUrl = (url: string): { code?: string; description?: string } => {
+  #extractOAuthErrorFromUrl = (url: string): { code?: string; description?: string } => {
     const parsedUrl = Linking.parse(url);
     const queryParams = parsedUrl.queryParams;
     const errorParam = queryParams?.error;
@@ -180,18 +185,18 @@ export class AuthService {
     };
   };
 
-  private saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
+  #saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
     await Promise.all([
       this.#storage.set('accessToken', accessToken),
       this.#storage.set('refreshToken', refreshToken),
     ]);
   };
 
-  private clearTokens = async (): Promise<void> => {
+  #clearTokens = async (): Promise<void> => {
     await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
   };
 
-  private parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {
+  #parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {
     const parsed = authTokensDtoSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[AuthService] Invalid auth tokens response: ${parsed.error.message}`);
@@ -199,7 +204,7 @@ export class AuthService {
     return toAuthTokens(parsed.data);
   };
 
-  private generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
+  #generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
     const nonce = Crypto.getRandomBytes(32).reduce(
       (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
       '',
@@ -208,22 +213,22 @@ export class AuthService {
     return { nonce, hashedNonce };
   };
 
-  private openOAuth = async (
+  #openOAuth = async (
     provider: OAuthStartProvider,
     mode: OAuthStartMode,
     userHint?: string,
   ): Promise<Result<string, AuthError>> => {
-    const redirectUri = this.getRedirectUri(provider);
-    const authUrl = this.getOAuthWebStartUrl(provider, redirectUri, mode, userHint);
+    const redirectUri = this.#getRedirectUri(provider);
+    const authUrl = this.#getOAuthWebStartUrl(provider, redirectUri, mode, userHint);
 
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
       createTask: false,
     });
 
     if (result.type === 'success') {
-      const code = this.extractCodeFromUrl(result.url);
+      const code = this.#extractCodeFromUrl(result.url);
       if (!code) {
-        const oauthError = this.extractOAuthErrorFromUrl(result.url);
+        const oauthError = this.#extractOAuthErrorFromUrl(result.url);
         if (oauthError.code || oauthError.description) {
           return err(
             AuthErrors.providerError(
@@ -248,20 +253,20 @@ export class AuthService {
   };
 
   openKakaoLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuth('kakao', 'login');
+    return this.#openOAuth('kakao', 'login');
   };
 
   openNaverLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuth('naver', 'login');
+    return this.#openOAuth('naver', 'login');
   };
 
   openGoogleLogin = (): Promise<Result<string, AuthError>> => {
-    return this.openOAuth('google', 'login');
+    return this.#openOAuth('google', 'login');
   };
 
   openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
     try {
-      const { nonce, hashedNonce } = await this.generateNonce();
+      const { nonce, hashedNonce } = await this.#generateNonce();
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -289,8 +294,8 @@ export class AuthService {
       );
       if (!result.ok) return result;
 
-      const tokens = this.parseAuthTokens(result);
-      await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+      const tokens = this.#parseAuthTokens(result);
+      await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
       return ok(tokens);
     } catch (error) {
       if (isAuthError(error)) {
@@ -311,8 +316,8 @@ export class AuthService {
     });
     if (!result.ok) return result;
 
-    const tokens = this.parseAuthTokens(result);
-    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    const tokens = this.#parseAuthTokens(result);
+    await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
     return ok(tokens);
   };
 
@@ -320,8 +325,8 @@ export class AuthService {
     const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/exchange', request);
     if (!result.ok) return result;
 
-    const tokens = this.parseAuthTokens(result);
-    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    const tokens = this.#parseAuthTokens(result);
+    await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
     return ok(tokens);
   };
 
@@ -330,7 +335,7 @@ export class AuthService {
       const result = await this.#authHttpClient.post('v1/auth/logout');
       return result.ok ? ok(undefined) : result;
     } finally {
-      await this.clearTokens();
+      await this.#clearTokens();
     }
   };
 
@@ -338,8 +343,8 @@ export class AuthService {
     const result = await this.#publicHttpClient.post<AuthTokensDTO>('v1/auth/verify-email', input);
     if (!result.ok) return result;
 
-    const tokens = this.parseAuthTokens(result);
-    await this.saveTokens(tokens.accessToken, tokens.refreshToken);
+    const tokens = this.#parseAuthTokens(result);
+    await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
     return ok(tokens);
   };
 
@@ -455,7 +460,7 @@ export class AuthService {
     provider: OAuthStartProvider,
     userHint?: string,
   ): Promise<Result<string, AuthError>> => {
-    return this.openOAuth(provider, 'link', userHint);
+    return this.#openOAuth(provider, 'link', userHint);
   };
 
   linkAccount = async (
@@ -479,7 +484,7 @@ export class AuthService {
 
   linkApple = async (): Promise<Result<{ message: string }, AuthServiceError>> => {
     try {
-      const { nonce, hashedNonce } = await this.generateNonce();
+      const { nonce, hashedNonce } = await this.#generateNonce();
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -529,5 +534,23 @@ export class AuthService {
     }
 
     return ok({ message: parsed.data.message });
+  };
+
+  deleteAccount = async (
+    input: DeleteAccountInput,
+  ): Promise<Result<DeleteAccountResult, ApiError>> => {
+    const result = await this.#authHttpClient.delete<DeleteAccountResponse>(
+      'v1/auth/account',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = deleteAccountResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid deleteAccount response: ${parsed.error.message}`);
+    }
+
+    await this.#clearTokens();
+    return ok(toDeleteAccountResult(parsed.data));
   };
 }
