@@ -41,18 +41,11 @@ const EmailLoginScreen = () => {
   });
 
   return (
-    <View className="flex-1 bg-background" style={{ overflow: 'hidden' }}>
+    <View className="flex-1 overflow-hidden bg-background">
       <Image
         source={idoCatHiImage}
-        style={{
-          width: 100,
-          height: 100,
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }],
-          zIndex: 1,
-        }}
+        className="absolute right-0 top-0 z-10 h-[100px] w-[100px]"
+        style={{ transform: [{ translateX: 20 }, { translateY: 20 }, { rotate: '-60deg' }] }}
         resizeMode="contain"
       />
       <KeyboardAwareScrollView
