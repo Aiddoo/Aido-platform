@@ -63,8 +63,8 @@ onSuccess()
 ```
 KyHttpClient.post('v1/auth/login', { email, password })
   → 401 Unauthorized
-  → AfterResponseHook: MOBILE_ERROR_MESSAGES 한국어 매핑
-  → return err(new ApiError('AUTH_0401', '이메일 또는 비밀번호가 틀렸어요', 401))
+  → AfterResponseHook: throw new ApiError(code, MOBILE_ERROR_MESSAGES[code], 401)
+  → KyHttpClient.#request() catch → return err(ApiError)
       │
       ▼
 AuthRepositoryImpl.emailLogin()
@@ -147,13 +147,22 @@ class ApiError extends Error implements BusinessError {
 ```typescript
 // shared/infra/http/error-handler.ts
 const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
+  // 보안: 구체적 원인 숨김
+  USER_0602: '이메일 또는 비밀번호를 확인해주세요',  // 어떤 것이 틀렸는지 숨김
+  EMAIL_0502: '입력 정보를 확인해주세요',            // 이메일 존재 여부 숨김
+
+  // 일반 에러
   FOLLOW_0901: '이미 친구 요청을 보냈어요',
-  FOLLOW_0904: '자기 자신에게는 친구 요청을 보낼 수 없어요',
   VERIFY_0752: '인증 코드가 만료되었어요. 다시 요청해주세요.',
-  TODO_0801:   '할 일을 찾을 수 없어요',
-  // ...
+  USER_0615:   '탈퇴한 계정이 복구되었어요',
+  AI_1303:     '오늘 AI 사용 횟수를 모두 사용했어요',
+  // ... 150+ 에러 코드 매핑
 };
 ```
+
+2가지 AfterResponseHook이 존재합니다:
+- `handleApiErrors` — auth-client용: 401은 refresh 로직에서 처리하므로 건너뜀
+- `handlePublicApiErrors` — public-client용: 401 포함 모든 에러 처리
 
 `ApiError.message`가 이미 사용자 친화적이므로, UI에서는 `toast.error(err)`만 하면 됩니다.
 
@@ -234,21 +243,47 @@ export const isFriendError = (error: unknown): error is FriendError => error ins
 | `TimeoutError` | 요청 시간 초과 | "요청 시간이 초과되었어요" |
 | `ParseError` | Zod safeParse 실패 | "응답 형식이 올바르지 않아요" |
 
+### 4xx 에러 흐름 상세
+
+4xx 에러는 2단계를 거칩니다:
+
+1. **AfterResponseHook** (`error-handler.ts`): 서버 에러 코드를 한국어 메시지로 매핑 후 `throw new ApiError()`
+2. **KyHttpClient.`#request()`**: catch에서 `err(new ApiError(...))` 로 Result 반환
+
+```typescript
+// 1단계: error-handler.ts (AfterResponseHook)
+// 401 Unauthorized → throw new ApiError('USER_0602', '이메일 또는 비밀번호를 확인해주세요', 401)
+
+// 2단계: ky-client.ts (#request)
+// catch (error) → error instanceof HTTPError → err(new ApiError(...))
+```
+
+public-client는 모든 4xx를, auth-client는 401을 제외한 4xx를 처리합니다 (401은 refresh 로직에서 처리).
+
 ### InfraError가 throw되는 곳
 
 ```typescript
 // KyHttpClient.#request() — 4xx만 err(), 나머지는 throw
-try {
-  const response = await request();
-  return ok((await response.json()).data);
-} catch (error) {
-  if (error instanceof KyTimeoutError) throw new TimeoutError();
-  if (error instanceof HTTPError) {
-    if (error.response.status >= 500) throw new ServerError(status);
-    return err(new ApiError(...));  // 4xx만 err()
+async #request<T>(request: () => Promise<Response>): Promise<Result<T, ApiError>> {
+  try {
+    const response = await request();
+    const { data } = (await response.json()) as ServerResponse<T>;
+    return ok(data);
+  } catch (error) {
+    if (error instanceof KyTimeoutError) throw new TimeoutError();
+    if (error instanceof HTTPError) {
+      if (error.response.status >= 500) throw new ServerError(error.response.status);
+      const body = await this.#parseErrorBody(error.response);
+      return err(new ApiError(
+        body?.error.code ?? `HTTP_${error.response.status}`,
+        body?.error.message ?? error.response.statusText,
+        error.response.status,
+        body?.error.details,
+      ));
+    }
+    if (error instanceof TypeError) throw new NetworkError();
+    throw error;
   }
-  if (error instanceof TypeError) throw new NetworkError();
-  throw error;
 }
 ```
 
@@ -263,13 +298,23 @@ if (!parsed.success) throw new ParseError();  // 서버 응답이 깨진 건 인
 ```typescript
 // shared/ui/QueryErrorBoundary/QueryErrorBoundary.tsx
 export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryProps) {
+  const errorReporter = useErrorReporter();
+
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <ErrorBoundary
           onReset={reset}
+          onError={(error) => {
+            errorReporter.captureException(
+              error instanceof Error ? error : new Error(String(error)),
+              { feature: 'error_boundary' },
+            );
+          }}
           fallbackRender={({ error, resetErrorBoundary }) =>
-            fallback ? fallback({ error, reset: resetErrorBoundary }) : (
+            fallback ? (
+              fallback({ error, reset: resetErrorBoundary })
+            ) : (
               <Result
                 title="오류가 발생했어요"
                 button={<Result.Button onPress={resetErrorBoundary}>재시도</Result.Button>}
@@ -284,6 +329,8 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
   );
 }
 ```
+
+`onError`에서 에러 리포터를 통해 예외를 캡처하여, 프로덕션 환경에서 ErrorBoundary에 잡힌 에러를 모니터링합니다.
 
 `QueryErrorResetBoundary`는 에러 reset 시 쿼리 에러 상태도 초기화하여, 재시도가 실제로 데이터를 다시 fetch합니다.
 
@@ -385,6 +432,8 @@ retry: (failureCount, error) => {
 | Auth | `LOGIN_CANCELLED`, `PROVIDER_ERROR`, `VALIDATION_FAILED`, `NO_CODE_RECEIVED`, `UNKNOWN` | `fromExpoAppleError()`, `fromUnknown()` |
 | Friend | `INVALID_TAG`, `EMPTY_TAG` | - |
 | Todo | `VALIDATION_FAILED` | - |
+| TodoCategory | `VALIDATION_FAILED` | - |
+| TodoNudge | `VALIDATION_FAILED`, `DAILY_LIMIT_EXCEEDED` | - |
 | Notification | `PERMISSION_DENIED`, `NOT_PHYSICAL_DEVICE`, `VALIDATION_FAILED` | `isPermissionDeniedError()` 등 |
 
 ### 네이밍 규칙
@@ -427,6 +476,7 @@ retry: (failureCount, error) => {
 | `shared/errors/api-error.ts` | ApiError (4xx) |
 | `shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
 | `shared/infra/http/ky-client.ts` | KyHttpClient 구현 |
-| `shared/infra/http/error-handler.ts` | 에러 코드 → 메시지 매핑 |
+| `shared/infra/http/error-handler.ts` | 에러 코드 → 메시지 매핑 (150+ 코드) |
 | `shared/ui/QueryErrorBoundary/` | QueryErrorBoundary 컴포넌트 |
 | `features/*/models/*.error.ts` | 각 도메인 에러 정의 |
+| [testing-strategy.md](./testing-strategy.md) | 테스트 전략 (에러 테스트 패턴 포함) |
