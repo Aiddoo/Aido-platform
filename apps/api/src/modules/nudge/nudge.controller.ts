@@ -70,7 +70,7 @@ import { NudgeService } from "./nudge.service";
 @UseGuards(JwtAuthGuard)
 @Controller("nudges")
 export class NudgeController {
-	private readonly logger = new Logger(NudgeController.name);
+	readonly #logger = new Logger(NudgeController.name);
 
 	constructor(private readonly nudgeService: NudgeService) {}
 
@@ -113,7 +113,7 @@ export class NudgeController {
 		@Body() dto: SendNudgeDto,
 		@Timezone() tz: string,
 	): Promise<CreateNudgeResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}, todoId=${dto.todoId}`,
 		);
 
@@ -127,7 +127,7 @@ export class NudgeController {
 			tz,
 		);
 
-		this.logger.log(
+		this.#logger.log(
 			`콕 찌르기 완료: id=${nudge.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
 		);
 
@@ -157,7 +157,7 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNudgesQueryDto,
 	): Promise<ReceivedNudgesResponseDto> {
-		this.logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
+		this.#logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
 
 		const result = await this.nudgeService.getReceivedNudges({
 			userId: user.userId,
@@ -189,7 +189,7 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNudgesQueryDto,
 	): Promise<SentNudgesResponseDto> {
-		this.logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
+		this.#logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
 
 		const result = await this.nudgeService.getSentNudges({
 			userId: user.userId,
@@ -286,7 +286,7 @@ export class NudgeController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("id", ParseIntPipe) id: number,
 	): Promise<MarkNudgeReadResponseDto> {
-		this.logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${id}`);
 
 		await this.nudgeService.markAsRead(user.userId, id);
 

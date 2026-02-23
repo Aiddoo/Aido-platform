@@ -32,9 +32,9 @@ import type { IReminderScheduler } from "../interfaces/reminder-scheduler.interf
 export class InMemoryReminderSchedulerAdapter
 	implements IReminderScheduler, OnModuleInit, OnModuleDestroy
 {
-	private readonly logger = new Logger(InMemoryReminderSchedulerAdapter.name);
+	readonly #logger = new Logger(InMemoryReminderSchedulerAdapter.name);
 	/** todoId → (stageLabel → timer) */
-	private readonly timers = new Map<number, Map<string, NodeJS.Timeout>>();
+	readonly #timers = new Map<number, Map<string, NodeJS.Timeout>>();
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -42,20 +42,20 @@ export class InMemoryReminderSchedulerAdapter
 	) {}
 
 	async onModuleInit(): Promise<void> {
-		await this.recoverPendingReminders();
+		await this.#recoverPendingReminders();
 	}
 
 	onModuleDestroy(): void {
-		for (const [todoId, stageTimers] of this.timers.entries()) {
+		for (const [todoId, stageTimers] of this.#timers.entries()) {
 			for (const [label, timer] of stageTimers.entries()) {
 				clearTimeout(timer);
-				this.logger.debug(
+				this.#logger.debug(
 					`Timer cleared on destroy: todoId=${todoId}, stage=${label}`,
 				);
 			}
 		}
-		this.timers.clear();
-		this.logger.log("All reminder timers cleared");
+		this.#timers.clear();
+		this.#logger.log("All reminder timers cleared");
 	}
 
 	/**
@@ -78,7 +78,7 @@ export class InMemoryReminderSchedulerAdapter
 
 		// scheduledTime이 이미 과거면 아무것도 안 함
 		if (scheduledMs <= now) {
-			this.logger.debug(
+			this.#logger.debug(
 				`Scheduled time already passed: todoId=${todoId}, skipping`,
 			);
 			return;
@@ -92,21 +92,21 @@ export class InMemoryReminderSchedulerAdapter
 
 			if (delay > 0) {
 				hasScheduledTimer = true;
-				this.registerTimer(todoId, stage.label, delay, () =>
-					this.sendReminder(todoId, userId, todoTitle, stage.label),
+				this.#registerTimer(todoId, stage.label, delay, () =>
+					this.#sendReminder(todoId, userId, todoTitle, stage.label),
 				);
 			}
 		}
 
 		// 모든 단계가 이미 지났지만 scheduledTime은 아직 미래 → 즉시 발송
 		if (!hasScheduledTimer) {
-			this.sendReminder(
+			this.#sendReminder(
 				todoId,
 				userId,
 				todoTitle,
 				REMINDER_IMMEDIATE_LABEL,
 			).catch((error) => {
-				this.logger.error(
+				this.#logger.error(
 					`Failed to send immediate reminder: todoId=${todoId}, ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);
@@ -118,51 +118,51 @@ export class InMemoryReminderSchedulerAdapter
 	 * 리마인더 타이머 취소 (모든 단계)
 	 */
 	cancelReminder(todoId: number): void {
-		const stageTimers = this.timers.get(todoId);
+		const stageTimers = this.#timers.get(todoId);
 		if (stageTimers) {
 			for (const [label, timer] of stageTimers.entries()) {
 				clearTimeout(timer);
-				this.logger.debug(
+				this.#logger.debug(
 					`Reminder cancelled: todoId=${todoId}, stage=${label}`,
 				);
 			}
-			this.timers.delete(todoId);
+			this.#timers.delete(todoId);
 		}
 	}
 
 	/**
 	 * 개별 단계 타이머 등록
 	 */
-	private registerTimer(
+	#registerTimer(
 		todoId: number,
 		label: string,
 		delay: number,
 		callback: () => Promise<void>,
 	): void {
 		const timer = setTimeout(() => {
-			const stageTimers = this.timers.get(todoId);
+			const stageTimers = this.#timers.get(todoId);
 			if (stageTimers) {
 				stageTimers.delete(label);
 				if (stageTimers.size === 0) {
-					this.timers.delete(todoId);
+					this.#timers.delete(todoId);
 				}
 			}
 			callback().catch((error) => {
-				this.logger.error(
+				this.#logger.error(
 					`Failed to send reminder: todoId=${todoId}, stage=${label}, ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);
 			});
 		}, delay);
 
-		let stageTimers = this.timers.get(todoId);
+		let stageTimers = this.#timers.get(todoId);
 		if (!stageTimers) {
 			stageTimers = new Map();
-			this.timers.set(todoId, stageTimers);
+			this.#timers.set(todoId, stageTimers);
 		}
 		stageTimers.set(label, timer);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Reminder scheduled: todoId=${todoId}, stage=${label}, delay=${Math.round(delay / 1000)}s`,
 		);
 	}
@@ -170,7 +170,7 @@ export class InMemoryReminderSchedulerAdapter
 	/**
 	 * 리마인더 알림 발송 (단계별 24시간 DB 중복 방지)
 	 */
-	private async sendReminder(
+	async #sendReminder(
 		todoId: number,
 		userId: string,
 		todoTitle: string,
@@ -193,7 +193,7 @@ export class InMemoryReminderSchedulerAdapter
 			});
 
 			if (exists) {
-				this.logger.debug(
+				this.#logger.debug(
 					`Reminder dedup: skipped todoId=${todoId}, stage=${stageLabel} (already notified)`,
 				);
 				return;
@@ -213,11 +213,11 @@ export class InMemoryReminderSchedulerAdapter
 				metadata: { stage: stageLabel },
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Reminder sent: todoId=${todoId}, stage=${stageLabel}, userId=${userId}`,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send reminder: todoId=${todoId}, stage=${stageLabel}, ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
@@ -231,7 +231,7 @@ export class InMemoryReminderSchedulerAdapter
 	 * scheduleReminder를 호출하여 다단계 타이머를 재등록합니다.
 	 * 이미 발송된 단계는 sendReminder 내부의 DB 중복 체크가 필터링합니다.
 	 */
-	private async recoverPendingReminders(): Promise<void> {
+	async #recoverPendingReminders(): Promise<void> {
 		try {
 			const now = new Date();
 
@@ -252,7 +252,7 @@ export class InMemoryReminderSchedulerAdapter
 			});
 
 			if (todosToRecover.length === 0) {
-				this.logger.log("No pending reminders to recover");
+				this.#logger.log("No pending reminders to recover");
 				return;
 			}
 
@@ -269,9 +269,9 @@ export class InMemoryReminderSchedulerAdapter
 				}
 			}
 
-			this.logger.log(`Recovered ${recovered} pending reminders`);
+			this.#logger.log(`Recovered ${recovered} pending reminders`);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to recover pending reminders: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

@@ -23,11 +23,11 @@ import type {
 @Injectable()
 export class ExpoPushProvider implements PushProvider {
 	readonly name = "expo";
-	private readonly logger = new Logger(ExpoPushProvider.name);
-	private readonly expo: Expo;
+	readonly #logger = new Logger(ExpoPushProvider.name);
+	readonly #expo: Expo;
 
 	constructor() {
-		this.expo = new Expo();
+		this.#expo = new Expo();
 	}
 
 	/**
@@ -50,10 +50,10 @@ export class ExpoPushProvider implements PushProvider {
 			throw BusinessExceptions.invalidPushToken(payload.token);
 		}
 
-		const message = this.buildMessage(payload);
+		const message = this.#buildMessage(payload);
 
 		try {
-			const tickets = await this.expo.sendPushNotificationsAsync([message]);
+			const tickets = await this.#expo.sendPushNotificationsAsync([message]);
 			const ticket = tickets[0];
 
 			if (!ticket) {
@@ -63,14 +63,14 @@ export class ExpoPushProvider implements PushProvider {
 				});
 			}
 
-			return this.parseTicket(ticket, payload.token);
+			return this.#parseTicket(ticket, payload.token);
 		} catch (error) {
 			// BusinessException은 그대로 재전파
 			if (error instanceof Error && error.name === "BusinessException") {
 				throw error;
 			}
 
-			this.logger.error(`Failed to send push notification: ${error}`);
+			this.#logger.error(`Failed to send push notification: ${error}`);
 			throw BusinessExceptions.pushSendFailed({
 				reason: error instanceof Error ? error.message : "Unknown error",
 				token: payload.token,
@@ -117,15 +117,15 @@ export class ExpoPushProvider implements PushProvider {
 		}
 
 		// 메시지 빌드
-		const messages = validPayloads.map((p) => this.buildMessage(p));
+		const messages = validPayloads.map((p) => this.#buildMessage(p));
 
 		// Expo는 내부적으로 청크를 나눠서 처리
-		const chunks = this.expo.chunkPushNotifications(messages);
+		const chunks = this.#expo.chunkPushNotifications(messages);
 
 		let processedIndex = 0;
 		for (const chunk of chunks) {
 			try {
-				const tickets = await this.expo.sendPushNotificationsAsync(chunk);
+				const tickets = await this.#expo.sendPushNotificationsAsync(chunk);
 
 				for (let i = 0; i < tickets.length; i++) {
 					const ticket = tickets[i];
@@ -141,7 +141,7 @@ export class ExpoPushProvider implements PushProvider {
 						continue;
 					}
 
-					const result = this.parseTicket(ticket, payload.token);
+					const result = this.#parseTicket(ticket, payload.token);
 
 					if (!result.success && result.errorCode === "DeviceNotRegistered") {
 						invalidTokens.push(payload.token);
@@ -150,7 +150,7 @@ export class ExpoPushProvider implements PushProvider {
 					results.push(result);
 				}
 			} catch (error) {
-				this.logger.error(`Failed to send batch notifications: ${error}`);
+				this.#logger.error(`Failed to send batch notifications: ${error}`);
 				// 청크 전체 실패 처리
 				for (let i = 0; i < chunk.length; i++) {
 					processedIndex++;
@@ -177,7 +177,7 @@ export class ExpoPushProvider implements PushProvider {
 	/**
 	 * PushPayload를 ExpoPushMessage로 변환
 	 */
-	private buildMessage(payload: PushPayload): ExpoPushMessage {
+	#buildMessage(payload: PushPayload): ExpoPushMessage {
 		return {
 			to: payload.token,
 			title: payload.title,
@@ -194,7 +194,7 @@ export class ExpoPushProvider implements PushProvider {
 	/**
 	 * Expo 티켓을 PushResult로 변환
 	 */
-	private parseTicket(ticket: ExpoPushTicket, token: string): PushResult {
+	#parseTicket(ticket: ExpoPushTicket, token: string): PushResult {
 		if (ticket.status === "ok") {
 			return {
 				success: true,
@@ -206,7 +206,7 @@ export class ExpoPushProvider implements PushProvider {
 		const errorMessage = ticket.message ?? "Unknown error";
 		const errorCode = ticket.details?.error ?? "NOTIFICATION_1003";
 
-		this.logger.warn(
+		this.#logger.warn(
 			`Push notification failed for token ${token}: ${errorMessage} (${errorCode})`,
 		);
 

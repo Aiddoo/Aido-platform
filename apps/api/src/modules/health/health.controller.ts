@@ -8,7 +8,7 @@ import { DatabaseHealthIndicator } from "./indicators/database.health";
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
 @Controller("health")
 export class HealthController {
-	private readonly logger = new Logger(HealthController.name);
+	readonly #logger = new Logger(HealthController.name);
 
 	constructor(
 		private readonly health: HealthCheckService,
@@ -72,11 +72,11 @@ curl https://api.aido.com/health
 		},
 	})
 	async check(): Promise<HealthCheckResult> {
-		this.logger.debug("헬스 체크 요청");
+		this.#logger.debug("헬스 체크 요청");
 		const result = await this.health.check([
 			() => this.databaseHealth.isHealthy("database"),
 		]);
-		this.logger.log(`헬스 체크 완료: ${result.status}`);
+		this.#logger.log(`헬스 체크 완료: ${result.status}`);
 		return result;
 	}
 }

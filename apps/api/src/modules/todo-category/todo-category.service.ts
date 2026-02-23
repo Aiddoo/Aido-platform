@@ -15,7 +15,7 @@ import type {
 
 @Injectable()
 export class TodoCategoryService {
-	private readonly logger = new Logger(TodoCategoryService.name);
+	readonly #logger = new Logger(TodoCategoryService.name);
 
 	constructor(
 		private readonly todoCategoryRepository: TodoCategoryRepository,
@@ -59,7 +59,7 @@ export class TodoCategoryService {
 			throw error;
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`TodoCategory created: ${category.id} for user: ${data.userId}`,
 		);
 
@@ -82,7 +82,9 @@ export class TodoCategoryService {
 
 		const count = await this.todoCategoryRepository.createMany(data);
 
-		this.logger.log(`Default categories created: ${count} for user: ${userId}`);
+		this.#logger.log(
+			`Default categories created: ${count} for user: ${userId}`,
+		);
 
 		return count;
 	}
@@ -101,7 +103,7 @@ export class TodoCategoryService {
 			throw BusinessExceptions.todoCategoryAccessDenied(id);
 		}
 
-		this.logger.debug(`TodoCategory retrieved: ${id} for user: ${userId}`);
+		this.#logger.debug(`TodoCategory retrieved: ${id} for user: ${userId}`);
 
 		return category;
 	}
@@ -113,7 +115,7 @@ export class TodoCategoryService {
 		const categories =
 			await this.todoCategoryRepository.findManyByUserId(userId);
 
-		this.logger.debug(
+		this.#logger.debug(
 			`TodoCategories listed: ${categories.length} items for user: ${userId}`,
 		);
 
@@ -163,7 +165,7 @@ export class TodoCategoryService {
 			throw error;
 		}
 
-		this.logger.log(`TodoCategory updated: ${id} for user: ${userId}`);
+		this.#logger.log(`TodoCategory updated: ${id} for user: ${userId}`);
 
 		return updatedCategory;
 	}
@@ -240,7 +242,7 @@ export class TodoCategoryService {
 					tx,
 				);
 
-				this.logger.log(
+				this.#logger.log(
 					`Moved ${todoCount} todos from category ${categoryId} to ${moveToCategoryId}`,
 				);
 			}
@@ -248,7 +250,7 @@ export class TodoCategoryService {
 			// 4. 카테고리 삭제
 			await this.todoCategoryRepository.delete(categoryId, tx);
 
-			this.logger.log(
+			this.#logger.log(
 				`TodoCategory deleted: ${categoryId} for user: ${userId}`,
 			);
 		});
@@ -359,7 +361,7 @@ export class TodoCategoryService {
 				tx,
 			);
 
-			this.logger.log(
+			this.#logger.log(
 				`TodoCategory reordered: ${categoryId} -> sortOrder ${newSortOrder} for user: ${userId}`,
 			);
 

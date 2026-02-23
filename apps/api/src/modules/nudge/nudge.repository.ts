@@ -19,7 +19,7 @@ export class NudgeRepository {
 	constructor(private readonly database: DatabaseService) {}
 
 	// Include 설정 (사용자 및 Todo 정보 포함)
-	private readonly userSelect = {
+	readonly #userSelect = {
 		id: true,
 		userTag: true,
 		profile: {
@@ -30,21 +30,21 @@ export class NudgeRepository {
 		},
 	} as const;
 
-	private readonly todoSelect = {
+	readonly #todoSelect = {
 		id: true,
 		title: true,
 		completed: true,
 	} as const;
 
-	private readonly nudgeInclude = {
+	readonly #nudgeInclude = {
 		sender: {
-			select: this.userSelect,
+			select: this.#userSelect,
 		},
 		receiver: {
-			select: this.userSelect,
+			select: this.#userSelect,
 		},
 		todo: {
-			select: this.todoSelect,
+			select: this.#todoSelect,
 		},
 	} as const;
 
@@ -73,7 +73,7 @@ export class NudgeRepository {
 		const client = tx ?? this.database;
 		return client.nudge.create({
 			data,
-			include: this.nudgeInclude,
+			include: this.#nudgeInclude,
 		});
 	}
 
@@ -97,7 +97,7 @@ export class NudgeRepository {
 		const client = tx ?? this.database;
 		return client.nudge.findUnique({
 			where: { id },
-			include: this.nudgeInclude,
+			include: this.#nudgeInclude,
 		});
 	}
 
@@ -128,7 +128,7 @@ export class NudgeRepository {
 			where: {
 				receiverId: userId,
 			},
-			include: this.nudgeInclude,
+			include: this.#nudgeInclude,
 			take: size + 1,
 			...(cursor != null && {
 				skip: 1,
@@ -150,7 +150,7 @@ export class NudgeRepository {
 			where: {
 				senderId: userId,
 			},
-			include: this.nudgeInclude,
+			include: this.#nudgeInclude,
 			take: size + 1,
 			...(cursor != null && {
 				skip: 1,

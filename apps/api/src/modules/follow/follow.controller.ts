@@ -111,7 +111,7 @@ import { FollowService } from "./follow.service";
 @UseGuards(JwtAuthGuard)
 @Controller("follows")
 export class FollowController {
-	private readonly logger = new Logger(FollowController.name);
+	readonly #logger = new Logger(FollowController.name);
 
 	constructor(private readonly followService: FollowService) {}
 
@@ -144,7 +144,7 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserTagParamDto,
 	): Promise<SendFriendRequestResponseDto> {
-		this.logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
+		this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
 		const result = await this.followService.sendRequestByTag(
 			user.userId,
@@ -155,7 +155,7 @@ export class FollowController {
 			? "친구가 되었습니다."
 			: "친구 요청을 보냈습니다.";
 
-		this.logger.log(
+		this.#logger.log(
 			`친구 요청 완료: ${user.userId} -> ${params.userTag}, autoAccepted=${result.autoAccepted}`,
 		);
 
@@ -188,14 +188,16 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
 	): Promise<AcceptFriendRequestResponseDto> {
-		this.logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
+		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
 		const result = await this.followService.acceptRequest(
 			user.userId,
 			params.userId,
 		);
 
-		this.logger.log(`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`);
+		this.#logger.log(
+			`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`,
+		);
 
 		// result는 "나 -> 상대방" Follow 레코드
 		// following이 요청을 보낸 사람(상대방)의 정보
@@ -221,11 +223,11 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
 	): Promise<RejectFriendRequestResponseDto> {
-		this.logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
+		this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
 
 		await this.followService.rejectRequest(user.userId, params.userId);
 
-		this.logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
+		this.#logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
 
 		return {
 			message: "친구 요청을 거절했습니다.",
@@ -254,11 +256,13 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
 	): Promise<RemoveFriendResponseDto> {
-		this.logger.debug(`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`);
+		this.#logger.debug(
+			`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`,
+		);
 
 		await this.followService.remove(user.userId, params.userId);
 
-		this.logger.log(
+		this.#logger.log(
 			`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`,
 		);
 
@@ -288,7 +292,7 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFriendsQueryDto,
 	): Promise<FriendsListResponseDto> {
-		this.logger.debug(`친구 목록 조회: user=${user.userId}`);
+		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
 		const result = await this.followService.getFriends({
 			userId: user.userId,
@@ -322,7 +326,7 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFollowsQueryDto,
 	): Promise<ReceivedRequestsResponseDto> {
-		this.logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
+		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
 		const result = await this.followService.getReceivedRequests({
 			userId: user.userId,
@@ -357,7 +361,7 @@ export class FollowController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetFollowsQueryDto,
 	): Promise<SentRequestsResponseDto> {
-		this.logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
+		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 
 		const result = await this.followService.getSentRequests({
 			userId: user.userId,

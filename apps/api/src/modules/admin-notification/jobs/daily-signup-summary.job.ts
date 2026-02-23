@@ -27,7 +27,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  */
 @Injectable()
 export class DailySignupSummaryJob {
-	private readonly logger = new Logger(DailySignupSummaryJob.name);
+	readonly #logger = new Logger(DailySignupSummaryJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -40,10 +40,11 @@ export class DailySignupSummaryJob {
 	 */
 	@Cron("0 0 * * *", { timeZone: "Asia/Seoul" })
 	async handleDailySummary(): Promise<void> {
-		this.logger.log("Starting daily signup summary job...");
+		this.#logger.log("Starting daily signup summary job...");
 
 		try {
-			const { startUtc, endUtc, reportDateStr } = this.getPreviousKstDayRange();
+			const { startUtc, endUtc, reportDateStr } =
+				this.#getPreviousKstDayRange();
 
 			// 전일(KST) 가입한 사용자의 Account provider별 집계
 			const signupsByProvider = await this.database.account.groupBy({
@@ -97,23 +98,23 @@ export class DailySignupSummaryJob {
 			});
 
 			if (result.success) {
-				this.logger.log(
+				this.#logger.log(
 					`Daily signup summary sent: ${previousDayTotal} new, ${totalUsers} total`,
 				);
 			} else {
-				this.logger.warn(
+				this.#logger.warn(
 					`Daily signup summary notification failed: ${result.error}`,
 				);
 			}
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Daily signup summary job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		}
 	}
 
-	private getPreviousKstDayRange(now = new Date()): {
+	#getPreviousKstDayRange(now = new Date()): {
 		startUtc: Date;
 		endUtc: Date;
 		reportDateStr: string;

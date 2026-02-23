@@ -30,10 +30,10 @@ const DEFAULT_TEMPERATURE = 0.1;
 
 @Injectable()
 export class GeminiProvider implements AiProvider {
-	private readonly apiKey: string | undefined;
+	readonly #apiKey: string | undefined;
 
 	constructor(private readonly configService: ConfigService) {
-		this.apiKey = this.configService.get<string>(
+		this.#apiKey = this.configService.get<string>(
 			"GOOGLE_GENERATIVE_AI_API_KEY",
 		);
 	}
@@ -47,12 +47,12 @@ export class GeminiProvider implements AiProvider {
 	async generateStructured<T>(
 		options: GenerateStructuredOptions<T>,
 	): Promise<GenerateStructuredResult<T>> {
-		if (!this.apiKey) {
+		if (!this.#apiKey) {
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
 		const google = createGoogleGenerativeAI({
-			apiKey: this.apiKey,
+			apiKey: this.#apiKey,
 		});
 
 		const model = google(GEMINI_MODEL);
@@ -81,6 +81,6 @@ export class GeminiProvider implements AiProvider {
 	 * @returns API 키 설정 여부
 	 */
 	isAvailable(): boolean {
-		return !!this.apiKey;
+		return !!this.#apiKey;
 	}
 }

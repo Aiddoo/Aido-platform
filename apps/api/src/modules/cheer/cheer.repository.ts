@@ -19,7 +19,7 @@ export class CheerRepository {
 	constructor(private readonly database: DatabaseService) {}
 
 	// Include 설정 (사용자 정보 포함)
-	private readonly userSelect = {
+	readonly #userSelect = {
 		id: true,
 		userTag: true,
 		profile: {
@@ -30,12 +30,12 @@ export class CheerRepository {
 		},
 	} as const;
 
-	private readonly cheerInclude = {
+	readonly #cheerInclude = {
 		sender: {
-			select: this.userSelect,
+			select: this.#userSelect,
 		},
 		receiver: {
-			select: this.userSelect,
+			select: this.#userSelect,
 		},
 	} as const;
 
@@ -64,7 +64,7 @@ export class CheerRepository {
 		const client = tx ?? this.database;
 		return client.cheer.create({
 			data,
-			include: this.cheerInclude,
+			include: this.#cheerInclude,
 		});
 	}
 
@@ -88,7 +88,7 @@ export class CheerRepository {
 		const client = tx ?? this.database;
 		return client.cheer.findUnique({
 			where: { id },
-			include: this.cheerInclude,
+			include: this.#cheerInclude,
 		});
 	}
 
@@ -139,7 +139,7 @@ export class CheerRepository {
 			where: {
 				receiverId: userId,
 			},
-			include: this.cheerInclude,
+			include: this.#cheerInclude,
 			take: size + 1,
 			...(cursor != null && {
 				skip: 1,
@@ -161,7 +161,7 @@ export class CheerRepository {
 			where: {
 				senderId: userId,
 			},
-			include: this.cheerInclude,
+			include: this.#cheerInclude,
 			take: size + 1,
 			...(cursor != null && {
 				skip: 1,

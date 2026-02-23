@@ -38,7 +38,7 @@ import type {
  */
 @Injectable()
 export class NudgeService {
-	private readonly logger = new Logger(NudgeService.name);
+	readonly #logger = new Logger(NudgeService.name);
 
 	constructor(
 		private readonly nudgeRepository: NudgeRepository,
@@ -218,7 +218,7 @@ export class NudgeService {
 				},
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Nudge sent: senderId=${senderId}, receiverId=${receiverId}, todoId=${todoId}`,
 			);
 
@@ -263,7 +263,7 @@ export class NudgeService {
 			size,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Received nudges listed: ${nudges.length} items for user: ${params.userId}`,
 		);
 
@@ -296,7 +296,7 @@ export class NudgeService {
 			size,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Sent nudges listed: ${nudges.length} items for user: ${params.userId}`,
 		);
 
@@ -363,7 +363,7 @@ export class NudgeService {
 			todoId,
 		});
 
-		return this.calculateCooldownInfo(lastNudge?.createdAt);
+		return this.#calculateCooldownInfo(lastNudge?.createdAt);
 	}
 
 	/**
@@ -378,7 +378,7 @@ export class NudgeService {
 			receiverId,
 		);
 
-		return this.calculateCooldownInfo(lastNudge?.createdAt);
+		return this.#calculateCooldownInfo(lastNudge?.createdAt);
 	}
 
 	// =========================================================================
@@ -407,7 +407,7 @@ export class NudgeService {
 
 		await this.nudgeRepository.markAsRead(nudgeId);
 
-		this.logger.debug(`Nudge marked as read: id=${nudgeId}`);
+		this.#logger.debug(`Nudge marked as read: id=${nudgeId}`);
 	}
 
 	// =========================================================================
@@ -417,9 +417,7 @@ export class NudgeService {
 	/**
 	 * 쿨다운 정보 계산
 	 */
-	private calculateCooldownInfo(
-		lastNudgeTime?: Date | null,
-	): NudgeCooldownInfo {
+	#calculateCooldownInfo(lastNudgeTime?: Date | null): NudgeCooldownInfo {
 		if (!lastNudgeTime) {
 			return {
 				isActive: false,

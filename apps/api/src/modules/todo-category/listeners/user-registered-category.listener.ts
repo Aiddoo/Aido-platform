@@ -20,7 +20,7 @@ import { DEFAULT_CATEGORIES } from "../types/todo-category.types";
  */
 @Injectable()
 export class UserRegisteredCategoryListener {
-	private readonly logger = new Logger(UserRegisteredCategoryListener.name);
+	readonly #logger = new Logger(UserRegisteredCategoryListener.name);
 
 	constructor(
 		private readonly todoCategoryRepository: TodoCategoryRepository,
@@ -30,7 +30,7 @@ export class UserRegisteredCategoryListener {
 	async handleUserRegistered(
 		payload: UserRegisteredEventPayload,
 	): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Creating default categories for new user: ${payload.userId}`,
 		);
 
@@ -40,7 +40,7 @@ export class UserRegisteredCategoryListener {
 				payload.userId,
 			);
 			if (existingCount > 0) {
-				this.logger.debug(
+				this.#logger.debug(
 					`User ${payload.userId} already has ${existingCount} categories, skipping`,
 				);
 				return;
@@ -55,10 +55,12 @@ export class UserRegisteredCategoryListener {
 				})),
 			);
 
-			this.logger.log(`Default categories created for user: ${payload.userId}`);
+			this.#logger.log(
+				`Default categories created for user: ${payload.userId}`,
+			);
 		} catch (error) {
 			// 카테고리 생성 실패가 회원가입을 방해하면 안 됨
-			this.logger.error(
+			this.#logger.error(
 				`Failed to create default categories for user ${payload.userId}: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

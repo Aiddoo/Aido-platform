@@ -84,7 +84,7 @@ import { PushDeliveryService } from "./push-delivery.service";
 @UseGuards(JwtAuthGuard)
 @Controller("notifications")
 export class NotificationController {
-	private readonly logger = new Logger(NotificationController.name);
+	readonly #logger = new Logger(NotificationController.name);
 
 	constructor(
 		private readonly notificationService: NotificationService,
@@ -121,7 +121,7 @@ export class NotificationController {
 		@Body() dto: RegisterPushTokenDto,
 		@Timezone() tz: string,
 	): Promise<RegisterTokenResponseDto> {
-		this.logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
+		this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 
 		await this.pushDeliveryService.registerPushToken({
 			userId: user.userId,
@@ -130,7 +130,7 @@ export class NotificationController {
 			timezone: tz,
 		});
 
-		this.logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);
+		this.#logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);
 
 		return {
 			message: "푸시 토큰이 등록되었습니다.",
@@ -154,7 +154,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query("deviceId") deviceId?: string,
 	): Promise<RegisterTokenResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
 		);
 
@@ -164,7 +164,7 @@ export class NotificationController {
 			await this.pushDeliveryService.unregisterAllPushTokens(user.userId);
 		}
 
-		this.logger.log(
+		this.#logger.log(
 			`푸시 토큰 해제 완료: userId=${user.userId}, deviceId=${deviceId ?? "all"}`,
 		);
 
@@ -216,7 +216,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetNotificationsQueryDto,
 	): Promise<NotificationListResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`알림 목록 조회: userId=${user.userId}, category=${query.category}`,
 		);
 
@@ -281,7 +281,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("id", ParseIntPipe) id: number,
 	): Promise<MarkReadResponseDto> {
-		this.logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${id}`);
 
 		await this.notificationService.markAsRead(user.userId, id);
 
@@ -303,7 +303,7 @@ export class NotificationController {
 	async markAllAsRead(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<MarkReadResponseDto> {
-		this.logger.debug(`모든 알림 읽음 처리: userId=${user.userId}`);
+		this.#logger.debug(`모든 알림 읽음 처리: userId=${user.userId}`);
 
 		const result = await this.notificationService.markAllAsRead(user.userId);
 

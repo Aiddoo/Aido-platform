@@ -70,7 +70,7 @@ import { TodoService } from "./todo.service";
 @UseGuards(JwtAuthGuard)
 @Controller("todos")
 export class TodoController {
-	private readonly logger = new Logger(TodoController.name);
+	readonly #logger = new Logger(TodoController.name);
 
 	constructor(private readonly todoService: TodoService) {}
 
@@ -116,7 +116,7 @@ export class TodoController {
 		@Body() dto: CreateTodoDto,
 		@Timezone() tz: string,
 	): Promise<CreateTodoResponseDto> {
-		this.logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
+		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
 		const todo = await this.todoService.create({
 			userId: user.userId,
@@ -126,13 +126,13 @@ export class TodoController {
 			startDate: toDateOnly(dto.startDate),
 			endDate: dto.endDate ? toDateOnly(dto.endDate) : undefined,
 			scheduledTime: dto.scheduledTime
-				? this.parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+				? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
 				: undefined,
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
 		});
 
-		this.logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
+		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
 		return {
 			message: "할 일이 생성되었습니다.",
@@ -282,7 +282,7 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetTodosQueryDto,
 	): Promise<TodoListResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
 		);
 
@@ -323,7 +323,7 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 	): Promise<TodoResponseDto> {
-		this.logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
+		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
 		const todo = await this.todoService.findById(params.id, user.userId);
 
@@ -381,7 +381,7 @@ export class TodoController {
 		@Param() params: UserIdParamDto,
 		@Query() query: GetTodosQueryDto,
 	): Promise<TodoListResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
 		);
 
@@ -436,7 +436,7 @@ export class TodoController {
 		@Body() dto: UpdateTodoDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
+		this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
 
 		const todo = await this.todoService.update(params.id, user.userId, {
 			title: dto.title,
@@ -453,14 +453,14 @@ export class TodoController {
 				dto.scheduledTime === null
 					? null
 					: dto.scheduledTime && dto.startDate
-						? this.parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+						? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
 						: undefined,
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
 			completed: dto.completed,
 		});
 
-		this.logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
+		this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
 
 		return {
 			message: "할 일이 수정되었습니다.",
@@ -496,7 +496,7 @@ export class TodoController {
 		@Body() dto: ToggleTodoCompleteDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
 		);
 
@@ -536,7 +536,7 @@ export class TodoController {
 		@Param() params: TodoIdParamDto,
 		@Body() dto: UpdateTodoVisibilityDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
 		);
 
@@ -574,7 +574,7 @@ export class TodoController {
 		@Param() params: TodoIdParamDto,
 		@Body() dto: ChangeTodoCategoryDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
 		);
 
@@ -623,7 +623,7 @@ export class TodoController {
 		@Body() dto: UpdateTodoScheduleDto,
 		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
 		);
 
@@ -663,7 +663,7 @@ export class TodoController {
 		@Param() params: TodoIdParamDto,
 		@Body() dto: UpdateTodoContentDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 제목/내용 수정: id=${params.id}, user=${user.userId}`,
 		);
 
@@ -702,7 +702,7 @@ export class TodoController {
 		@Param() params: TodoIdParamDto,
 		@Body() dto: ReorderTodoDto,
 	): Promise<ReorderTodoResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
 		);
 
@@ -735,11 +735,11 @@ export class TodoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 	): Promise<DeleteTodoResponseDto> {
-		this.logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
+		this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
 
 		await this.todoService.delete(params.id, user.userId);
 
-		this.logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
+		this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
 
 		return {
 			message: "할 일이 삭제되었습니다.",
@@ -761,11 +761,7 @@ export class TodoController {
 	 * @param tz - IANA 타임존 (예: "Asia/Seoul", "America/New_York")
 	 * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
 	 */
-	private parseScheduledTime(
-		dateStr: string,
-		timeStr: string,
-		tz: string,
-	): Date {
+	#parseScheduledTime(dateStr: string, timeStr: string, tz: string): Date {
 		return toScheduledTime(dateStr, timeStr, tz);
 	}
 }

@@ -61,7 +61,7 @@ export interface ParseTodoResult {
 
 @Injectable()
 export class AiService {
-	private readonly logger = new Logger(AiService.name);
+	readonly #logger = new Logger(AiService.name);
 
 	constructor(
 		@Inject(AI_PROVIDER)
@@ -71,7 +71,7 @@ export class AiService {
 	) {}
 
 	/** 환경변수에서 일일 사용 제한 가져오기 (기본값: 5) */
-	private get dailyLimit(): number {
+	get #dailyLimit(): number {
 		return this.configService.aiDailyLimit;
 	}
 
@@ -90,17 +90,17 @@ export class AiService {
 
 		// 1. AI Provider 가용성 확인
 		if (!this.aiProvider.isAvailable()) {
-			this.logger.error("AI provider is not available");
+			this.#logger.error("AI provider is not available");
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
 		// 2. 사용량 체크 및 증가 (원자적 처리)
-		await this.checkAndIncrementUsage(userId);
+		await this.#checkAndIncrementUsage(userId);
 
 		// 3. 최적화된 프롬프트 생성
 		const prompt = buildParseTodoPrompt(text, new Date());
 
-		this.logger.debug(`Parsing todo: "${text}"`);
+		this.#logger.debug(`Parsing todo: "${text}"`);
 
 		try {
 			// 4. AI 호출 (구조화된 출력)
@@ -113,7 +113,7 @@ export class AiService {
 
 			const processingTimeMs = Date.now() - startTime;
 
-			this.logger.log(
+			this.#logger.log(
 				`Todo parsed: "${result.output.title}" (${processingTimeMs}ms, ` +
 					`input: ${result.usage.input}, output: ${result.usage.output})`,
 			);
@@ -127,12 +127,12 @@ export class AiService {
 				},
 			};
 		} catch (error) {
-			this.logger.error(`AI parsing failed: ${error}`);
+			this.#logger.error(`AI parsing failed: ${error}`);
 
 			// AI SDK 에러 타입 기반 분기 처리
 			if (error instanceof APICallError) {
 				// API 호출 실패 (네트워크, 인증, 서버 오류 등)
-				this.logger.error("AI API call failed", {
+				this.#logger.error("AI API call failed", {
 					status: error.statusCode,
 					message: error.message,
 				});
@@ -162,12 +162,12 @@ export class AiService {
 			throw BusinessExceptions.userNotFound(userId);
 		}
 
-		const isNewDay = this.isNewDay(user.aiUsageResetAt);
+		const isNewDay = this.#isNewDay(user.aiUsageResetAt);
 
 		return {
 			used: isNewDay ? 0 : user.aiUsageCount,
-			limit: this.dailyLimit,
-			resetsAt: this.getNextResetTime(),
+			limit: this.#dailyLimit,
+			resetsAt: this.#getNextResetTime(),
 		};
 	}
 
@@ -191,7 +191,7 @@ export class AiService {
 	 * @param userId - 사용자 ID
 	 * @throws AI_1303 - 일일 사용량 초과
 	 */
-	private async checkAndIncrementUsage(userId: string): Promise<void> {
+	async #checkAndIncrementUsage(userId: string): Promise<void> {
 		await this.prisma.$transaction(async (tx) => {
 			const user = await tx.user.findUnique({
 				where: { id: userId },
@@ -202,13 +202,13 @@ export class AiService {
 				throw BusinessExceptions.userNotFound(userId);
 			}
 
-			const isNewDay = this.isNewDay(user.aiUsageResetAt);
+			const isNewDay = this.#isNewDay(user.aiUsageResetAt);
 			const currentUsage = isNewDay ? 0 : user.aiUsageCount;
 
-			if (currentUsage >= this.dailyLimit) {
+			if (currentUsage >= this.#dailyLimit) {
 				throw BusinessExceptions.aiUsageLimitExceeded(
 					currentUsage,
-					this.dailyLimit,
+					this.#dailyLimit,
 				);
 			}
 
@@ -237,7 +237,7 @@ export class AiService {
 	 * @param lastReset - 마지막 리셋 시간
 	 * @returns 새로운 날 여부
 	 */
-	private isNewDay(lastReset: Date): boolean {
+	#isNewDay(lastReset: Date): boolean {
 		const now = new Date();
 		const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
 		const kstLast = new Date(lastReset.getTime() + KST_OFFSET_MS);
@@ -251,7 +251,7 @@ export class AiService {
 	 *
 	 * @returns ISO 8601 형식의 다음 리셋 시간
 	 */
-	private getNextResetTime(): string {
+	#getNextResetTime(): string {
 		const now = new Date();
 		const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
 

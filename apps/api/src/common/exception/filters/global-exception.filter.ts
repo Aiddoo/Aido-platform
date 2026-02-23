@@ -78,7 +78,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			exception.code === "P2002"
 		) {
 			// Prisma unique constraint 위반 처리
-			const businessException = this.mapP2002ToBusinessException(exception);
+			const businessException = this.#mapP2002ToBusinessException(exception);
 			statusCode = businessException.getStatus();
 			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {
@@ -126,7 +126,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 	 *
 	 * 알려진 constraint는 구체적인 에러 코드로, 미지의 constraint는 SYS_0004로 폴백
 	 */
-	private mapP2002ToBusinessException(
+	#mapP2002ToBusinessException(
 		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
 	): BusinessException {
 		const target = error.meta?.target;

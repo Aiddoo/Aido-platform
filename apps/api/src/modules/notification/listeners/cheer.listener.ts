@@ -16,7 +16,7 @@ import { NotificationMessageBuilder } from "../templates/notification-templates"
  */
 @Injectable()
 export class CheerListener {
-	private readonly logger = new Logger(CheerListener.name);
+	readonly #logger = new Logger(CheerListener.name);
 
 	constructor(private readonly notificationService: NotificationService) {}
 
@@ -28,7 +28,7 @@ export class CheerListener {
 	 */
 	@OnEvent(NotificationEvents.CHEER_SENT)
 	async handleCheerSent(payload: CheerSentEventPayload): Promise<void> {
-		this.logger.debug(
+		this.#logger.debug(
 			`Handling cheer.sent event: ${payload.senderId} -> ${payload.receiverId}`,
 		);
 
@@ -48,11 +48,11 @@ export class CheerListener {
 				metadata: payload.message ? { message: payload.message } : undefined,
 			});
 
-			this.logger.log(
+			this.#logger.log(
 				`Cheer notification sent: from=${payload.senderId}, to=${payload.receiverId}`,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Failed to send cheer notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);

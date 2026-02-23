@@ -34,7 +34,7 @@ import type {
  */
 @Injectable()
 export class CheerService {
-	private readonly logger = new Logger(CheerService.name);
+	readonly #logger = new Logger(CheerService.name);
 
 	constructor(
 		private readonly cheerRepository: CheerRepository,
@@ -175,7 +175,7 @@ export class CheerService {
 			return newCheer;
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`,
 		);
 
@@ -216,7 +216,7 @@ export class CheerService {
 			size,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Received cheers listed: ${cheers.length} items for user: ${params.userId}`,
 		);
 
@@ -249,7 +249,7 @@ export class CheerService {
 			size,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Sent cheers listed: ${cheers.length} items for user: ${params.userId}`,
 		);
 
@@ -326,7 +326,7 @@ export class CheerService {
 			receiverId,
 		});
 
-		return this.calculateCooldownInfo(lastCheer?.createdAt);
+		return this.#calculateCooldownInfo(lastCheer?.createdAt);
 	}
 
 	// =========================================================================
@@ -355,7 +355,7 @@ export class CheerService {
 
 		await this.cheerRepository.markAsRead(cheerId);
 
-		this.logger.debug(`Cheer marked as read: id=${cheerId}`);
+		this.#logger.debug(`Cheer marked as read: id=${cheerId}`);
 	}
 
 	/**
@@ -364,7 +364,7 @@ export class CheerService {
 	async markManyAsRead(userId: string, cheerIds: number[]): Promise<number> {
 		const count = await this.cheerRepository.markManyAsRead(cheerIds, userId);
 
-		this.logger.debug(`${count} cheers marked as read for user: ${userId}`);
+		this.#logger.debug(`${count} cheers marked as read for user: ${userId}`);
 
 		return count;
 	}
@@ -376,9 +376,7 @@ export class CheerService {
 	/**
 	 * 쿨다운 정보 계산
 	 */
-	private calculateCooldownInfo(
-		lastCheerTime?: Date | null,
-	): CheerCooldownInfo {
+	#calculateCooldownInfo(lastCheerTime?: Date | null): CheerCooldownInfo {
 		if (!lastCheerTime) {
 			return {
 				isActive: false,

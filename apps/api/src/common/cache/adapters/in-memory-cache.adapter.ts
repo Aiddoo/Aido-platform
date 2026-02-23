@@ -22,21 +22,21 @@ interface CacheEntry<T> {
  */
 @Injectable()
 export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
-	private readonly logger = new Logger(InMemoryCacheAdapter.name);
-	private readonly cache = new Map<string, CacheEntry<unknown>>();
-	private readonly defaultTtlMs: number;
-	private readonly maxItems: number;
+	readonly #logger = new Logger(InMemoryCacheAdapter.name);
+	readonly #cache = new Map<string, CacheEntry<unknown>>();
+	readonly #defaultTtlMs: number;
+	readonly #maxItems: number;
 
-	private stats = { hits: 0, misses: 0 };
-	private cleanupInterval: NodeJS.Timeout;
+	#stats = { hits: 0, misses: 0 };
+	#cleanupInterval: NodeJS.Timeout;
 
 	constructor(config: {
 		defaultTtlMs: number;
 		maxItems: number;
 		cleanupIntervalMs?: number;
 	}) {
-		this.defaultTtlMs = config.defaultTtlMs;
-		this.maxItems = config.maxItems;
+		this.#defaultTtlMs = config.defaultTtlMs;
+		this.#maxItems = config.maxItems;
 
 		// cleanupInterval을 설정 가능하게 (기본값 30초)
 		const cleanupInterval = config.cleanupIntervalMs ?? 30_000;
@@ -48,60 +48,60 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 			);
 		}
 
-		this.cleanupInterval = setInterval(() => this.cleanup(), cleanupInterval);
+		this.#cleanupInterval = setInterval(() => this.#cleanup(), cleanupInterval);
 	}
 
 	onModuleDestroy() {
-		clearInterval(this.cleanupInterval);
+		clearInterval(this.#cleanupInterval);
 	}
 
 	async get<T>(key: string): Promise<T | undefined> {
-		const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+		const entry = this.#cache.get(key) as CacheEntry<T> | undefined;
 
 		if (!entry) {
-			this.stats.misses++;
-			this.logger.debug(`MISS ${key}`);
+			this.#stats.misses++;
+			this.#logger.debug(`MISS ${key}`);
 			return undefined;
 		}
 
 		if (Date.now() > entry.expiresAt) {
-			this.cache.delete(key);
-			this.stats.misses++;
-			this.logger.debug(`EXPIRED ${key}`);
+			this.#cache.delete(key);
+			this.#stats.misses++;
+			this.#logger.debug(`EXPIRED ${key}`);
 			return undefined;
 		}
 
-		this.stats.hits++;
-		this.logger.debug(`HIT ${key}`);
+		this.#stats.hits++;
+		this.#logger.debug(`HIT ${key}`);
 		return entry.value;
 	}
 
 	async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
 		// TTL이 0이면 즉시 만료 (저장하지 않음)
 		if (ttl === 0) {
-			this.logger.debug(`SET ${key} skipped (TTL: 0, immediate expiration)`);
+			this.#logger.debug(`SET ${key} skipped (TTL: 0, immediate expiration)`);
 			return;
 		}
 
 		// FIFO: 최대 항목 수 초과 시 가장 먼저 삽입된 항목 삭제
-		if (this.cache.size >= this.maxItems) {
-			const oldestKey = this.cache.keys().next().value;
+		if (this.#cache.size >= this.#maxItems) {
+			const oldestKey = this.#cache.keys().next().value;
 			if (oldestKey) {
-				this.cache.delete(oldestKey);
-				this.logger.debug(`EVICTED ${oldestKey} (max items reached)`);
+				this.#cache.delete(oldestKey);
+				this.#logger.debug(`EVICTED ${oldestKey} (max items reached)`);
 			}
 		}
 
-		const ttlMs = ttl !== undefined ? parseTtl(ttl) : this.defaultTtlMs;
+		const ttlMs = ttl !== undefined ? parseTtl(ttl) : this.#defaultTtlMs;
 		const expiresAt = Date.now() + ttlMs;
-		this.cache.set(key, { value, expiresAt });
-		this.logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
+		this.#cache.set(key, { value, expiresAt });
+		this.#logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
 	}
 
 	async del(key: string): Promise<void> {
-		const deleted = this.cache.delete(key);
+		const deleted = this.#cache.delete(key);
 		if (deleted) {
-			this.logger.debug(`DEL ${key}`);
+			this.#logger.debug(`DEL ${key}`);
 		}
 	}
 
@@ -109,29 +109,29 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 		const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
 		let count = 0;
 
-		for (const key of this.cache.keys()) {
+		for (const key of this.#cache.keys()) {
 			if (regex.test(key)) {
-				this.cache.delete(key);
+				this.#cache.delete(key);
 				count++;
 			}
 		}
 
-		this.logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
+		this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
 		return count;
 	}
 
 	async reset(): Promise<void> {
-		const size = this.cache.size;
-		this.cache.clear();
-		this.stats = { hits: 0, misses: 0 };
-		this.logger.debug(`RESET (${size} keys cleared)`);
+		const size = this.#cache.size;
+		this.#cache.clear();
+		this.#stats = { hits: 0, misses: 0 };
+		this.#logger.debug(`RESET (${size} keys cleared)`);
 	}
 
 	getStats(): CacheStats {
 		return {
-			...this.stats,
-			keys: this.cache.size,
-			memoryUsage: this.estimateMemoryUsage(),
+			...this.#stats,
+			keys: this.#cache.size,
+			memoryUsage: this.#estimateMemoryUsage(),
 		};
 	}
 
@@ -172,12 +172,12 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	}
 
 	async has(key: string): Promise<boolean> {
-		const entry = this.cache.get(key);
+		const entry = this.#cache.get(key);
 		if (!entry) return false;
 
 		// 만료 체크
 		if (Date.now() > entry.expiresAt) {
-			this.cache.delete(key);
+			this.#cache.delete(key);
 			return false;
 		}
 
@@ -185,7 +185,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	}
 
 	async ttl(key: string): Promise<number> {
-		const entry = this.cache.get(key);
+		const entry = this.#cache.get(key);
 
 		// 키가 없으면 -2 (Redis PTTL 규칙)
 		if (!entry) return -2;
@@ -194,7 +194,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
 		// 이미 만료되었으면 삭제하고 -2
 		if (remaining <= 0) {
-			this.cache.delete(key);
+			this.#cache.delete(key);
 			return -2;
 		}
 
@@ -202,47 +202,47 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	}
 
 	async touch(key: string, ttl: TtlValue): Promise<boolean> {
-		const entry = this.cache.get(key);
+		const entry = this.#cache.get(key);
 
 		// 키가 없으면 false
 		if (!entry) return false;
 
 		// 만료 체크
 		if (Date.now() > entry.expiresAt) {
-			this.cache.delete(key);
+			this.#cache.delete(key);
 			return false;
 		}
 
 		// TTL 갱신
 		const ttlMs = parseTtl(ttl);
 		entry.expiresAt = Date.now() + ttlMs;
-		this.logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms)`);
+		this.#logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms)`);
 
 		return true;
 	}
 
 	// === Private 헬퍼 ===
 
-	private cleanup(): void {
+	#cleanup(): void {
 		const now = Date.now();
 		let cleaned = 0;
 
-		for (const [key, entry] of this.cache.entries()) {
+		for (const [key, entry] of this.#cache.entries()) {
 			if (now > entry.expiresAt) {
-				this.cache.delete(key);
+				this.#cache.delete(key);
 				cleaned++;
 			}
 		}
 
 		if (cleaned > 0) {
-			this.logger.debug(`CLEANUP ${cleaned} expired entries`);
+			this.#logger.debug(`CLEANUP ${cleaned} expired entries`);
 		}
 	}
 
-	private estimateMemoryUsage(): number {
+	#estimateMemoryUsage(): number {
 		// 대략적인 메모리 사용량 추정 (정확하지 않음)
 		let size = 0;
-		for (const [key, entry] of this.cache.entries()) {
+		for (const [key, entry] of this.#cache.entries()) {
 			size += key.length * 2; // UTF-16
 			size += JSON.stringify(entry.value).length * 2;
 			size += 8; // expiresAt (number)

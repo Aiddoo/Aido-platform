@@ -36,7 +36,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @Controller("daily-completions")
 export class DailyCompletionController {
-	private readonly logger = new Logger(DailyCompletionController.name);
+	readonly #logger = new Logger(DailyCompletionController.name);
 
 	constructor(
 		private readonly dailyCompletionService: DailyCompletionService,
@@ -134,7 +134,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetDailyCompletionsRangeDto,
 	): Promise<DailyCompletionsRangeResponseDto> {
-		this.logger.debug(
+		this.#logger.debug(
 			`일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
 		);
 
@@ -144,17 +144,17 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 			endDate: query.endDate,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
 		);
 
-		return this.mapToResponse(result);
+		return this.#mapToResponse(result);
 	}
 
 	/**
 	 * 서비스 결과를 응답 DTO로 변환
 	 */
-	private mapToResponse(
+	#mapToResponse(
 		result: DailyCompletionsRangeResult,
 	): DailyCompletionsRangeResponseDto {
 		return {
