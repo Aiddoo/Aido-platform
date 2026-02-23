@@ -1,8 +1,20 @@
 import { Logger } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { Resend } from "resend";
 import { TypedConfigService } from "../../common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "./constants/email.constants";
 import { EmailService } from "./email.service";
+
+// Resend 모듈 mock: new Resend() 호출 시 mock 인스턴스 반환
+jest.mock("resend", () => ({
+	Resend: jest.fn().mockImplementation(() => ({
+		emails: {
+			send: jest.fn(),
+		},
+	})),
+}));
+
+const MockedResend = Resend as jest.MockedClass<typeof Resend>;
 
 // Resend 모킹용 타입
 type ResendMock = {
@@ -15,6 +27,7 @@ describe("EmailService", () => {
 	let service: EmailService;
 	let resendMock: ResendMock;
 	let configServiceMock: Partial<TypedConfigService>;
+	let setTimeoutCalls: number[];
 
 	// 테스트 데이터
 	const testEmail = "test@example.com";
@@ -23,12 +36,16 @@ describe("EmailService", () => {
 	const testIdempotencyKey = "test-idempotency-key-123";
 
 	beforeEach(async () => {
-		// Resend mock 생성
-		resendMock = {
-			emails: {
-				send: jest.fn(),
-			},
-		};
+		// MockedResend 호출 기록 초기화
+		MockedResend.mockClear();
+
+		// setTimeout을 mock하여 즉시 resolve되도록 함 (백오프 딜레이 검증용으로 호출 기록)
+		setTimeoutCalls = [];
+		jest.spyOn(globalThis, "setTimeout").mockImplementation((fn, ms) => {
+			setTimeoutCalls.push(ms ?? 0);
+			if (typeof fn === "function") fn();
+			return 0 as unknown as ReturnType<typeof setTimeout>;
+		});
 
 		// ConfigService mock 생성
 		configServiceMock = {
@@ -59,12 +76,15 @@ describe("EmailService", () => {
 		jest.spyOn(Logger.prototype, "debug").mockImplementation();
 
 		service = module.get<EmailService>(EmailService);
-		// Private Resend 인스턴스를 mock으로 교체
-		(service as unknown as { _resend: ResendMock })._resend = resendMock;
+
+		// Resend mock 인스턴스에서 resendMock 참조 획득
+		const resendInstance =
+			MockedResend.mock.results[MockedResend.mock.results.length - 1]?.value;
+		resendMock = resendInstance as unknown as ResendMock;
 	});
 
 	afterEach(() => {
-		jest.clearAllMocks();
+		jest.restoreAllMocks();
 	});
 
 	describe("sendVerificationCode", () => {
@@ -181,14 +201,6 @@ describe("EmailService", () => {
 					error: null,
 				});
 
-			// sleep을 mock하여 테스트 속도 향상
-			const sleepSpy = jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
@@ -199,7 +211,8 @@ describe("EmailService", () => {
 			expect(result.success).toBe(true);
 			expect(result.retryCount).toBe(1);
 			expect(resendMock.emails.send).toHaveBeenCalledTimes(2);
-			expect(sleepSpy).toHaveBeenCalledTimes(1);
+			// setTimeout이 1회 호출됨 (sleep 1회)
+			expect(setTimeoutCalls).toHaveLength(1);
 		});
 
 		it("rate_limit_exceeded 발생 시 재시도한다", async () => {
@@ -213,13 +226,6 @@ describe("EmailService", () => {
 					data: { id: "msg-success" },
 					error: null,
 				});
-
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.sendVerificationCode(testEmail, {
@@ -259,13 +265,6 @@ describe("EmailService", () => {
 				error: { name: "application_error", message: "Persistent error" },
 			});
 
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When
 			const result = await service.sendVerificationCode(testEmail, {
 				code: testCode,
@@ -298,13 +297,6 @@ describe("EmailService", () => {
 					error: null,
 				});
 
-			const sleepSpy = jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When
 			await service.sendVerificationCode(testEmail, {
 				code: testCode,
@@ -312,15 +304,9 @@ describe("EmailService", () => {
 			});
 
 			// Then
-			// 지수 백오프 확인: 1초, 2초
-			expect(sleepSpy).toHaveBeenNthCalledWith(
-				1,
-				EMAIL_CONSTANTS.BASE_RETRY_DELAY,
-			); // 1000ms
-			expect(sleepSpy).toHaveBeenNthCalledWith(
-				2,
-				EMAIL_CONSTANTS.BASE_RETRY_DELAY * 2,
-			); // 2000ms
+			// 지수 백오프 확인: setTimeout에 전달된 딜레이 값 검증
+			expect(setTimeoutCalls[0]).toBe(EMAIL_CONSTANTS.BASE_RETRY_DELAY); // 1000ms
+			expect(setTimeoutCalls[1]).toBe(EMAIL_CONSTANTS.BASE_RETRY_DELAY * 2); // 2000ms
 		});
 
 		it("네트워크 에러 발생 시 재시도한다", async () => {
@@ -331,13 +317,6 @@ describe("EmailService", () => {
 					data: { id: "msg-success" },
 					error: null,
 				});
-
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
 
 			// When
 			const result = await service.sendVerificationCode(testEmail, {

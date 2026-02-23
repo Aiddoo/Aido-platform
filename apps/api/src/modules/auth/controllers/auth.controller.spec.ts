@@ -97,6 +97,7 @@ describe("AuthController", () => {
 				refreshToken: serviceResult.tokens.refreshToken,
 				name: serviceResult.name,
 				profileImage: serviceResult.profileImage,
+				accountRestored: false,
 			});
 		});
 	});

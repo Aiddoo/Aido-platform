@@ -16,18 +16,18 @@ import {
  * 테스트용 Mock 캐시 어댑터
  */
 export class MockCacheAdapter implements ICacheService {
-	private store = new Map<string, { value: unknown; expiresAt: number }>();
+	#store = new Map<string, { value: unknown; expiresAt: number }>();
 	public stats = { hits: 0, misses: 0 };
-	private defaultTtlMs = 60 * 60 * 1000; // 1시간
+	readonly #defaultTtlMs = 60 * 60 * 1000; // 1시간
 
 	async get<T>(key: string): Promise<T | undefined> {
-		const entry = this.store.get(key);
+		const entry = this.#store.get(key);
 		if (!entry) {
 			this.stats.misses++;
 			return undefined;
 		}
 		if (Date.now() > entry.expiresAt) {
-			this.store.delete(key);
+			this.#store.delete(key);
 			this.stats.misses++;
 			return undefined;
 		}
@@ -36,23 +36,23 @@ export class MockCacheAdapter implements ICacheService {
 	}
 
 	async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
-		const ttlMs = ttl ? parseTtl(ttl) : this.defaultTtlMs;
-		this.store.set(key, {
+		const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
+		this.#store.set(key, {
 			value,
 			expiresAt: Date.now() + ttlMs,
 		});
 	}
 
 	async del(key: string): Promise<void> {
-		this.store.delete(key);
+		this.#store.delete(key);
 	}
 
 	async delByPattern(pattern: string): Promise<number> {
 		const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
 		let count = 0;
-		for (const key of this.store.keys()) {
+		for (const key of this.#store.keys()) {
 			if (regex.test(key)) {
-				this.store.delete(key);
+				this.#store.delete(key);
 				count++;
 			}
 		}
@@ -60,12 +60,12 @@ export class MockCacheAdapter implements ICacheService {
 	}
 
 	async reset(): Promise<void> {
-		this.store.clear();
+		this.#store.clear();
 		this.stats = { hits: 0, misses: 0 };
 	}
 
 	getStats(): CacheStats {
-		return { ...this.stats, keys: this.store.size };
+		return { ...this.stats, keys: this.#store.size };
 	}
 
 	async wrap<T>(
@@ -97,31 +97,31 @@ export class MockCacheAdapter implements ICacheService {
 	}
 
 	async has(key: string): Promise<boolean> {
-		const entry = this.store.get(key);
+		const entry = this.#store.get(key);
 		if (!entry) return false;
 		if (Date.now() > entry.expiresAt) {
-			this.store.delete(key);
+			this.#store.delete(key);
 			return false;
 		}
 		return true;
 	}
 
 	async ttl(key: string): Promise<number> {
-		const entry = this.store.get(key);
+		const entry = this.#store.get(key);
 		if (!entry) return -2;
 		const remaining = entry.expiresAt - Date.now();
 		if (remaining <= 0) {
-			this.store.delete(key);
+			this.#store.delete(key);
 			return -2;
 		}
 		return remaining;
 	}
 
 	async touch(key: string, ttl: TtlValue): Promise<boolean> {
-		const entry = this.store.get(key);
+		const entry = this.#store.get(key);
 		if (!entry) return false;
 		if (Date.now() > entry.expiresAt) {
-			this.store.delete(key);
+			this.#store.delete(key);
 			return false;
 		}
 		entry.expiresAt = Date.now() + parseTtl(ttl);
@@ -130,15 +130,15 @@ export class MockCacheAdapter implements ICacheService {
 
 	// 테스트 헬퍼 메서드
 	getStoreSize(): number {
-		return this.store.size;
+		return this.#store.size;
 	}
 
 	hasKey(key: string): boolean {
-		return this.store.has(key);
+		return this.#store.has(key);
 	}
 
 	getAllKeys(): string[] {
-		return Array.from(this.store.keys());
+		return Array.from(this.#store.keys());
 	}
 }
 

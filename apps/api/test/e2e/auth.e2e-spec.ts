@@ -12,6 +12,7 @@ import {
 	CACHE_SERVICE,
 	type ICacheService,
 } from "@/common/cache/interfaces/cache.interface";
+import { DatabaseService } from "@/database/database.service";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
 describe("Auth (e2e)", () => {
@@ -2251,8 +2252,44 @@ describe("Auth (e2e)", () => {
 				expect(response.body.data.deletedAt).toBeDefined();
 			});
 
-			it("POST /auth/login - 탈퇴 후 로그인 차단", async () => {
-				// Given - 탈퇴한 사용자
+			it("POST /auth/login - 탈퇴 후 유예 기간 내 로그인 시 자동 복구", async () => {
+				// Given - 탈퇴한 사용자 (유예 기간 내)
+
+				// When - 로그인 시도
+				const response = await request(ctx.app.getHttpServer())
+					.post("/auth/login")
+					.send({ email: deleteEmail, password: deletePassword })
+					.expect(200);
+
+				// Then - 정상 로그인 + 복구 확인
+				expect(response.body.success).toBe(true);
+				expect(response.body.data.accessToken).toBeDefined();
+				expect(response.body.data.refreshToken).toBeDefined();
+				expect(response.body.data.accountRestored).toBe(true);
+			});
+
+			it("POST /auth/login - 유예 기간 초과 시 로그인 차단", async () => {
+				// Given - 유예 기간이 지난 탈퇴 사용자
+				// 먼저 다시 탈퇴 처리 (위 테스트에서 복구되었으므로)
+				const loginForDelete = await request(ctx.app.getHttpServer())
+					.post("/auth/login")
+					.send({ email: deleteEmail, password: deletePassword });
+
+				const tokenForDelete = loginForDelete.body.data.accessToken;
+				await request(ctx.app.getHttpServer())
+					.delete("/auth/account")
+					.set("Authorization", `Bearer ${tokenForDelete}`)
+					.send({ password: deletePassword })
+					.expect(200);
+
+				// DB에서 직접 deletedAt을 31일 전으로 변경
+				const prisma = ctx.module.get(DatabaseService);
+				await prisma.user.updateMany({
+					where: { email: deleteEmail },
+					data: {
+						deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+					},
+				});
 
 				// When - 로그인 시도
 				const response = await request(ctx.app.getHttpServer())
