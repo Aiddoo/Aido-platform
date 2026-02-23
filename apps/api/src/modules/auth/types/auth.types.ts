@@ -24,6 +24,7 @@ export interface VerifyEmailResult {
 	tokens: TokenPair;
 	name: string | null;
 	profileImage: string | null;
+	accountRestored?: boolean;
 }
 
 /**
@@ -36,6 +37,7 @@ export interface LoginResult {
 	sessionId: string;
 	name: string | null;
 	profileImage: string | null;
+	accountRestored?: boolean;
 }
 
 /**
@@ -93,6 +95,7 @@ export interface ExchangeCodeResult {
 	refreshToken: string;
 	userName?: string;
 	profileImage?: string;
+	accountRestored?: boolean;
 }
 
 export interface DeleteAccountResult {

@@ -11,6 +11,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import {
 	now,
+	subtractDays,
 	subtractMinutes,
 	toISOString,
 	toISOStringOrNull,
@@ -65,7 +66,7 @@ export type {
 
 @Injectable()
 export class AuthService {
-	private readonly logger = new Logger(AuthService.name);
+	readonly #logger = new Logger(AuthService.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -193,13 +194,13 @@ export class AuthService {
 				result.verificationCode,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Unexpected error sending verification email to ${email}:`,
 				error,
 			);
 		}
 
-		this.logger.log(`User registered: ${result.user.id} (${email})`);
+		this.#logger.log(`User registered: ${result.user.id} (${email})`);
 
 		this.eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
 			userId: result.user.id,
@@ -231,7 +232,7 @@ export class AuthService {
 		}
 
 		// 탈퇴 사용자 체크
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// 상태 확인
 		if (user.status !== "PENDING_VERIFY") {
@@ -243,7 +244,7 @@ export class AuthService {
 				});
 			}
 			// 다른 상태 (LOCKED, SUSPENDED 등)
-			this._checkUserStatus(user.status, email);
+			this.#checkUserStatus(user.status, email);
 		}
 
 		// 트랜잭션으로 인증 처리
@@ -296,7 +297,7 @@ export class AuthService {
 			};
 		});
 
-		this.logger.log(`Email verified: ${user.id} (${email})`);
+		this.#logger.log(`Email verified: ${user.id} (${email})`);
 
 		return {
 			userId: user.id,
@@ -325,7 +326,7 @@ export class AuthService {
 					message: "이미 인증이 완료된 계정입니다.",
 				});
 			}
-			this._checkUserStatus(user.status, email);
+			this.#checkUserStatus(user.status, email);
 		}
 
 		// 트랜잭션으로 인증 코드 생성 (쿨다운 체크 포함)
@@ -343,13 +344,13 @@ export class AuthService {
 				verificationResult.code,
 			);
 		} catch (error) {
-			this.logger.error(
+			this.#logger.error(
 				`Unexpected error sending verification email to ${email}:`,
 				error,
 			);
 		}
 
-		this.logger.log(`Verification code resent: ${user.id} (${email})`);
+		this.#logger.log(`Verification code resent: ${user.id} (${email})`);
 
 		return {
 			message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
@@ -374,6 +375,14 @@ export class AuthService {
 			);
 
 		if (recentFailures >= LOGIN_ATTEMPT.MAX_FAILURES) {
+			// 보안 로그 기록
+			await this.securityLogRepository.create({
+				event: SECURITY_EVENT.ACCOUNT_LOCKED,
+				ipAddress: ip,
+				userAgent,
+				metadata: { email, recentFailures },
+			});
+
 			throw BusinessExceptions.accountLocked(email);
 		}
 
@@ -433,15 +442,23 @@ export class AuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 4. 사용자 상태 확인
-		this._assertNotDeleted(user);
-		if (user.status === "PENDING_VERIFY") {
-			throw BusinessExceptions.emailNotVerified(email);
+		// 4. 사용자 상태 확인 (탈퇴 유예 기간 내 복구 처리)
+		const needsRestore = this.#isWithinGracePeriod(user);
+
+		if (!needsRestore) {
+			if (user.status === "PENDING_VERIFY") {
+				throw BusinessExceptions.emailNotVerified(email);
+			}
+			this.#checkUserStatus(user.status, email);
 		}
-		this._checkUserStatus(user.status, email);
 
 		// 5. 세션 생성 + JWT 토큰 발급 (트랜잭션)
 		const result = await this.database.$transaction(async (tx) => {
+			// 유예 기간 내 탈퇴 계정 복구
+			if (needsRestore) {
+				await this.#restoreDeletedAccount(user, { ip, userAgent }, tx);
+			}
+
 			// 세션 생성 + 토큰 발급
 			const { sessionId, tokens } =
 				await this.sessionService.createSessionWithTokens(
@@ -493,7 +510,15 @@ export class AuthService {
 			};
 		});
 
-		this.logger.log(`User logged in: ${user.id} (${email})`);
+		// 복구된 계정의 캐시 무효화
+		if (needsRestore) {
+			await this.cacheService.invalidateUserProfile(user.id);
+			this.#logger.log(
+				`Deleted account restored on login: ${user.id} (${email})`,
+			);
+		}
+
+		this.#logger.log(`User logged in: ${user.id} (${email})`);
 
 		return {
 			userId: user.id,
@@ -502,6 +527,7 @@ export class AuthService {
 			sessionId: result.sessionId,
 			name: result.name,
 			profileImage: result.profileImage,
+			accountRestored: needsRestore,
 		};
 	}
 
@@ -538,7 +564,7 @@ export class AuthService {
 			userAgent,
 		});
 
-		this.logger.log(`User logged out: ${userId}, session: ${sessionId}`);
+		this.#logger.log(`User logged out: ${userId}, session: ${sessionId}`);
 
 		return { message: "로그아웃되었습니다." };
 	}
@@ -569,7 +595,7 @@ export class AuthService {
 			metadata: { revokedCount },
 		});
 
-		this.logger.log(
+		this.#logger.log(
 			`User logged out from all devices: ${userId}, revoked: ${revokedCount}`,
 		);
 
@@ -629,7 +655,7 @@ export class AuthService {
 					},
 				});
 
-				this.logger.warn(
+				this.#logger.warn(
 					`Token reuse detected for user: ${reusedSession.userId}`,
 				);
 				throw BusinessExceptions.tokenReuseDetected();
@@ -676,7 +702,7 @@ export class AuthService {
 
 		// 로테이션 실패 시 (다른 요청이 먼저 로테이션함)
 		if (!rotatedSession) {
-			this.logger.warn(
+			this.#logger.warn(
 				`Token rotation race condition detected for session: ${sessionId}`,
 			);
 			throw BusinessExceptions.sessionExpired();
@@ -690,7 +716,7 @@ export class AuthService {
 			userAgent,
 		});
 
-		this.logger.debug(
+		this.#logger.debug(
 			`Token refreshed for user: ${userId}, session: ${sessionId}`,
 		);
 
@@ -708,9 +734,18 @@ export class AuthService {
 			// 인증 코드 생성 및 이메일 발송
 			await this.verificationService.createAndSendPasswordReset(user.id, email);
 
-			this.logger.debug(`Password reset code sent to: ${email}`);
+			// 보안 로그 기록
+			await this.securityLogRepository.create({
+				userId: user.id,
+				event: SECURITY_EVENT.PASSWORD_RESET_REQUESTED,
+				ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
+				userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+				metadata: { email },
+			});
+
+			this.#logger.debug(`Password reset code sent to: ${email}`);
 		} else {
-			this.logger.debug(`Password reset skipped: ${email}`);
+			this.#logger.debug(`Password reset skipped: ${email}`);
 		}
 
 		// 보안상 동일한 응답 (이메일 존재 여부 노출 방지)
@@ -729,7 +764,7 @@ export class AuthService {
 		if (!user) {
 			throw BusinessExceptions.verificationCodeInvalid();
 		}
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// Credential Account 조회 (소셜 전용 계정이면 비밀번호 재설정 불가)
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -777,7 +812,7 @@ export class AuthService {
 			);
 		});
 
-		this.logger.log(`Password reset completed for: ${email}`);
+		this.#logger.log(`Password reset completed for: ${email}`);
 
 		return { message: "비밀번호가 재설정되었습니다. 다시 로그인해주세요." };
 	}
@@ -795,7 +830,7 @@ export class AuthService {
 		// 탈퇴 사용자 체크
 		const user = await this.userRepository.findById(userId);
 		if (!user) throw BusinessExceptions.userNotFound(userId);
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// Credential Account 조회
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -843,7 +878,7 @@ export class AuthService {
 			);
 		});
 
-		this.logger.log(`Password changed for user: ${userId}`);
+		this.#logger.log(`Password changed for user: ${userId}`);
 
 		return { message: "비밀번호가 변경되었습니다." };
 	}
@@ -852,7 +887,7 @@ export class AuthService {
 		// 1. 유저 조회 + 탈퇴 체크
 		const user = await this.userRepository.findById(userId);
 		if (!user) throw BusinessExceptions.userNotFound(userId);
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
 		const account = await this.accountRepository.findByUserIdAndProvider(
@@ -886,7 +921,7 @@ export class AuthService {
 		// 1. 유저 조회 + 탈퇴 체크
 		const user = await this.userRepository.findById(userId);
 		if (!user) throw BusinessExceptions.userNotFound(userId);
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// 2. CREDENTIAL 계정 존재 여부 확인
 		const existingAccount =
@@ -930,7 +965,7 @@ export class AuthService {
 			);
 		});
 
-		this.logger.log(`Password set for social user: ${userId}`);
+		this.#logger.log(`Password set for social user: ${userId}`);
 
 		// 세션 유지 (changePassword와 달리 기존 세션 폐기하지 않음)
 		return {
@@ -982,7 +1017,7 @@ export class AuthService {
 			metadata: { revokedSessionId: sessionId },
 		});
 
-		this.logger.debug(`Session revoked: ${sessionId} for user: ${userId}`);
+		this.#logger.debug(`Session revoked: ${sessionId} for user: ${userId}`);
 
 		return { message: "세션이 종료되었습니다." };
 	}
@@ -1048,7 +1083,7 @@ export class AuthService {
 		// 캐시 무효화 (프로필 변경)
 		await this.cacheService.invalidateUserProfile(userId);
 
-		this.logger.log(`Profile updated for user: ${userId}`);
+		this.#logger.log(`Profile updated for user: ${userId}`);
 
 		return {
 			message: "프로필이 수정되었습니다.",
@@ -1069,7 +1104,7 @@ export class AuthService {
 		// 1. 사용자 조회 + 이미 탈퇴 여부 확인
 		const user = await this.userRepository.findById(userId);
 		if (!user) throw BusinessExceptions.userNotFound(userId);
-		this._assertNotDeleted(user);
+		this.#assertNotDeleted(user);
 
 		// 2. 계정 유형에 따른 본인 확인
 		const accounts = await this.accountRepository.findAllByUserId(userId);
@@ -1121,7 +1156,7 @@ export class AuthService {
 		await this.cacheService.invalidateSession(sessionId);
 		await this.cacheService.invalidateUserProfile(userId);
 
-		this.logger.log(`Account deletion requested: ${userId}`);
+		this.#logger.log(`Account deletion requested: ${userId}`);
 
 		return {
 			message: `계정이 탈퇴 처리되었습니다. ${ACCOUNT_DELETION.GRACE_PERIOD_DAYS}일 이내에 복구할 수 있습니다.`,
@@ -1130,14 +1165,58 @@ export class AuthService {
 		};
 	}
 
-	private _assertNotDeleted(user: {
-		deletedAt: Date | null;
-		id: string;
-	}): void {
+	#assertNotDeleted(user: { deletedAt: Date | null; id: string }): void {
 		if (user.deletedAt) throw BusinessExceptions.accountDeleted(user.id);
 	}
 
-	private _checkUserStatus(status: UserStatus, email: string): void {
+	/**
+	 * 탈퇴 유예 기간(30일) 내 여부를 판단합니다.
+	 *
+	 * - deletedAt이 null이면 false (복구 불필요)
+	 * - 30일 이내면 true (복구 필요)
+	 * - 30일 초과면 예외 발생 (cron이 아직 처리하지 못한 edge case)
+	 */
+	#isWithinGracePeriod(user: { deletedAt: Date | null; id: string }): boolean {
+		if (!user.deletedAt) return false;
+
+		const gracePeriodCutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
+		if (user.deletedAt > gracePeriodCutoff) {
+			return true; // 30일 이내 — 복구 가능
+		}
+
+		// 30일 초과 — cron이 아직 hard delete 처리하지 못한 edge case
+		throw BusinessExceptions.accountDeleted(user.id);
+	}
+
+	/**
+	 * 탈퇴 계정 복구 처리 (트랜잭션 내부에서 호출)
+	 *
+	 * - 사용자 상태를 ACTIVE로 복원
+	 * - 보안 로그에 ACCOUNT_RESTORED 이벤트 기록
+	 */
+	async #restoreDeletedAccount(
+		user: { id: string; deletedAt: Date | null },
+		metadata: { ip: string; userAgent: string },
+		tx: Prisma.TransactionClient,
+	): Promise<void> {
+		await this.userRepository.restore(user.id, tx);
+
+		await this.securityLogRepository.create(
+			{
+				userId: user.id,
+				event: SECURITY_EVENT.ACCOUNT_RESTORED,
+				ipAddress: metadata.ip,
+				userAgent: metadata.userAgent,
+				metadata: {
+					deletedAt: user.deletedAt?.toISOString() ?? null,
+					restoredAt: now().toISOString(),
+				},
+			},
+			tx,
+		);
+	}
+
+	#checkUserStatus(status: UserStatus, email: string): void {
 		switch (status) {
 			case "LOCKED":
 				throw BusinessExceptions.accountLocked(email);

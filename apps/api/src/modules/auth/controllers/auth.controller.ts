@@ -191,6 +191,12 @@ export class AuthController {
 | USER_0602 | 이메일/비밀번호 불일치 | 재입력 요청 |
 | USER_0605 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
 | USER_0608 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
+
+### 🔄 탈퇴 유예 계정 복구
+탈퇴 후 **30일 이내**에 동일 이메일로 로그인하면 자동 복구됩니다.
+- 응답의 \`accountRestored: true\`로 복구 여부 확인
+- 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시
+- 30일 경과 후에는 복구 불가 (USER_0606 에러)
 		`,
 	})
 	@ApiSuccessResponse({ type: AuthTokensDto })

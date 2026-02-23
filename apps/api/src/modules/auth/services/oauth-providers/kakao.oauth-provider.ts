@@ -31,14 +31,22 @@ export class KakaoOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "KAKAO" as const;
 	readonly failureEmail = "kakao_unknown@social.aido.app";
 
+	readonly #getConfig: () => OAuthConfig;
+	readonly #verifier: OAuthTokenVerifierService;
+	readonly #logger: Logger;
+
 	constructor(
-		private readonly _getConfig: () => OAuthConfig,
-		private readonly _verifier: OAuthTokenVerifierService,
-		private readonly _logger: Logger,
-	) {}
+		getConfig: () => OAuthConfig,
+		verifier: OAuthTokenVerifierService,
+		logger: Logger,
+	) {
+		this.#getConfig = getConfig;
+		this.#verifier = verifier;
+		this.#logger = logger;
+	}
 
 	async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
-		const { clientId, callbackUrl, isConfigured } = this._getConfig();
+		const { clientId, callbackUrl, isConfigured } = this.#getConfig();
 
 		if (!isConfigured || !clientId || !callbackUrl) {
 			throw BusinessExceptions.invalidCredentials();
@@ -63,7 +71,7 @@ export class KakaoOAuthProvider implements IOAuthProviderStrategy {
 
 	async exchangeCode(code: string): Promise<ExchangedToken> {
 		const { clientId, clientSecret, callbackUrl, isConfigured } =
-			this._getConfig();
+			this.#getConfig();
 
 		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
 			throw BusinessExceptions.invalidCredentials();
@@ -83,7 +91,7 @@ export class KakaoOAuthProvider implements IOAuthProviderStrategy {
 
 		if (!tokenResponse.ok) {
 			const errorData = await tokenResponse.text();
-			this._logger.error(`Kakao token exchange failed: ${errorData}`);
+			this.#logger.error(`Kakao token exchange failed: ${errorData}`);
 			throw BusinessExceptions.invalidCredentials();
 		}
 
@@ -98,7 +106,7 @@ export class KakaoOAuthProvider implements IOAuthProviderStrategy {
 	}
 
 	async verifyToken(accessToken: string): Promise<VerifiedProfile> {
-		return this._verifier.verifyKakaoToken(accessToken);
+		return this.#verifier.verifyKakaoToken(accessToken);
 	}
 
 	buildLoginOptions(

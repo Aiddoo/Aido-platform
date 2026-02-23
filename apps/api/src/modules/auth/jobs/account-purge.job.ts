@@ -9,7 +9,7 @@ import { UserRepository } from "../repositories/user.repository";
 
 @Injectable()
 export class AccountPurgeJob {
-	private readonly logger = new Logger(AccountPurgeJob.name);
+	readonly #logger = new Logger(AccountPurgeJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -41,14 +41,14 @@ export class AccountPurgeJob {
 					);
 					await this.userRepository.hardDelete(user.id, tx);
 				});
-				this.logger.log(`Hard deleted user: ${user.id}`);
+				this.#logger.log(`Hard deleted user: ${user.id}`);
 			} catch (error) {
-				this.logger.error(`Failed to hard delete user: ${user.id}`, error);
+				this.#logger.error(`Failed to hard delete user: ${user.id}`, error);
 			}
 		}
 
 		if (users.length > 0) {
-			this.logger.log(`Purged ${users.length} deleted accounts`);
+			this.#logger.log(`Purged ${users.length} deleted accounts`);
 		}
 	}
 }
