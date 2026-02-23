@@ -129,6 +129,9 @@ export class AiService {
 		} catch (error) {
 			this.#logger.error(`AI parsing failed: ${error}`);
 
+			// AI 호출 실패 시 사용량 롤백 (사용자에게 공평하게)
+			await this.#decrementUsage(userId);
+
 			// AI SDK 에러 타입 기반 분기 처리
 			if (error instanceof APICallError) {
 				// API 호출 실패 (네트워크, 인증, 서버 오류 등)
@@ -229,6 +232,28 @@ export class AiService {
 				});
 			}
 		});
+	}
+
+	/**
+	 * AI 호출 실패 시 사용량 롤백
+	 *
+	 * 롤백 자체가 실패해도 원래 에러 전파에 영향을 주지 않습니다.
+	 */
+	async #decrementUsage(userId: string): Promise<void> {
+		try {
+			await this.prisma.user.update({
+				where: { id: userId },
+				data: {
+					aiUsageCount: { decrement: 1 },
+				},
+			});
+			this.#logger.debug(`AI usage decremented for user: ${userId}`);
+		} catch (rollbackError) {
+			this.#logger.error(
+				`Failed to rollback AI usage for ${userId}:`,
+				rollbackError,
+			);
+		}
 	}
 
 	/**

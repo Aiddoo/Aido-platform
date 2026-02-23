@@ -188,12 +188,14 @@ export class AuthService {
 
 		// 트랜잭션 후 이메일 발송 (외부 서비스)
 		// 이메일 발송 실패는 로그만 남고 회원가입은 성공 처리
+		let emailSent = true;
 		try {
 			await this.verificationService.sendVerificationEmail(
 				email,
 				result.verificationCode,
 			);
 		} catch (error) {
+			emailSent = false;
 			this.#logger.error(
 				`Unexpected error sending verification email to ${email}:`,
 				error,
@@ -212,8 +214,10 @@ export class AuthService {
 		return {
 			userId: result.user.id,
 			email: result.user.email,
-			message:
-				"회원가입이 완료되었습니다. 이메일로 발송된 인증 코드를 확인해주세요.",
+			emailSent,
+			message: emailSent
+				? "회원가입이 완료되었습니다. 이메일로 발송된 인증 코드를 확인해주세요."
+				: "회원가입이 완료되었습니다. 인증 이메일 발송에 실패했습니다. 잠시 후 이메일 재발송을 시도해주세요.",
 		};
 	}
 
@@ -442,7 +446,22 @@ export class AuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 4. 사용자 상태 확인 (탈퇴 유예 기간 내 복구 처리)
+		// 4. 비밀번호 해시 파라미터 업그레이드 (비동기, fire-and-forget)
+		if (this.passwordService.needsRehash(account.password)) {
+			this.passwordService
+				.hash(password)
+				.then((newHash) =>
+					this.accountRepository.updatePassword(user.id, newHash),
+				)
+				.then(() =>
+					this.#logger.debug(`Password rehashed for user: ${user.id}`),
+				)
+				.catch((err) =>
+					this.#logger.error(`Password rehash failed for ${user.id}:`, err),
+				);
+		}
+
+		// 5. 사용자 상태 확인 (탈퇴 유예 기간 내 복구 처리)
 		const needsRestore = this.#isWithinGracePeriod(user);
 
 		if (!needsRestore) {
@@ -1094,7 +1113,7 @@ export class AuthService {
 
 	async deleteAccount(
 		userId: string,
-		sessionId: string,
+		_sessionId: string,
 		input: DeleteAccountInput,
 		metadata?: RequestMetadata,
 	): Promise<DeleteAccountResult> {
@@ -1126,7 +1145,11 @@ export class AuthService {
 		}
 		// 소셜 전용: JWT 인증 통과 = 확인 완료
 
-		// 3. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
+		// 3. 활성 세션 ID 조회 (캐시 무효화용, 트랜잭션 전에 조회)
+		const activeSessions =
+			await this.sessionRepository.findActiveByUserId(userId);
+
+		// 4. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
 		const deletedAt = now();
 		await this.database.$transaction(async (tx) => {
 			await this.userRepository.softDelete(userId, tx);
@@ -1152,8 +1175,10 @@ export class AuthService {
 			);
 		});
 
-		// 4. 캐시 무효화 (트랜잭션 완료 후)
-		await this.cacheService.invalidateSession(sessionId);
+		// 5. 캐시 무효화: 모든 기기의 세션 캐시 즉시 삭제
+		await Promise.all(
+			activeSessions.map((s) => this.cacheService.invalidateSession(s.id)),
+		);
 		await this.cacheService.invalidateUserProfile(userId);
 
 		this.#logger.log(`Account deletion requested: ${userId}`);

@@ -1453,6 +1453,9 @@ describe("AuthService", () => {
 				},
 			] as Account[]);
 			passwordService.verify.mockResolvedValue(true);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1540,6 +1543,9 @@ describe("AuthService", () => {
 					password: null,
 				},
 			] as Account[]);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1598,6 +1604,9 @@ describe("AuthService", () => {
 					password: null,
 				},
 			] as Account[]);
+			sessionRepo.findActiveByUserId.mockResolvedValue([
+				{ id: sessionId },
+			] as any);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),

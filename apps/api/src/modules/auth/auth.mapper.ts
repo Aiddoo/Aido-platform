@@ -40,6 +40,7 @@ export abstract class AuthMapper {
 		return {
 			message: result.message,
 			email: result.email,
+			emailSent: result.emailSent,
 		};
 	}
 

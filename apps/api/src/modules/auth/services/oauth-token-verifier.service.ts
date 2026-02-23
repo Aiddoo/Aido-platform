@@ -334,12 +334,12 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 			this.#logger.debug(`Naver token verified for user: ${naverUser.id}`);
 
-			// Naver는 이메일 인증 여부를 별도로 제공하지 않음
-			// 이메일이 있으면 인증된 것으로 간주
+			// Naver는 이메일 인증 여부를 제공하지 않으므로 false 설정
+			// 자동 계정 연동 불가 — 수동 연동 필요 (handleEmailConflict에서 처리)
 			return {
 				id: naverUser.id,
 				email: naverUser.email ?? null,
-				emailVerified: !!naverUser.email,
+				emailVerified: false,
 				name: naverUser.name || naverUser.nickname,
 				picture: naverUser.profile_image,
 			};

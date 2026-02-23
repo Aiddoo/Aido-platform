@@ -40,6 +40,7 @@ describe("AuthController", () => {
 				userId: "user-123",
 				message: "인증 코드가 발송되었습니다.",
 				email: "test@example.com",
+				emailSent: true,
 			};
 			mockAuthService.register.mockResolvedValue(serviceResult);
 
@@ -51,6 +52,7 @@ describe("AuthController", () => {
 			expect(result).toEqual({
 				message: serviceResult.message,
 				email: serviceResult.email,
+				emailSent: true,
 			});
 		});
 	});

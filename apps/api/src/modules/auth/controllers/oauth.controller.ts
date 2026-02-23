@@ -18,6 +18,7 @@ import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
 import {
+	ApiConflictError,
 	ApiCreatedResponse,
 	ApiDoc,
 	ApiErrorResponse,
@@ -786,6 +787,11 @@ provider에 따라 필수 토큰이 다릅니다:
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkSocialAccount(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: LinkSocialAccountDto,
@@ -843,6 +849,11 @@ provider에 따라 필수 토큰이 다릅니다:
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
+	@ApiConflictError(ErrorCode.KAKAO_0306)
+	@ApiConflictError(ErrorCode.APPLE_0355)
+	@ApiConflictError(ErrorCode.GOOGLE_0405)
+	@ApiConflictError(ErrorCode.NAVER_0455)
 	async linkWithExchangeCode(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ExchangeCodeDto,

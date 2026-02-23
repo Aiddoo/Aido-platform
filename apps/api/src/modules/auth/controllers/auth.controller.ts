@@ -80,6 +80,7 @@ export class AuthController {
 		`,
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
+	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
 	async register(@Body() dto: RegisterDto) {
 		const result = await this.authService.register(dto);
 		return AuthMapper.toRegisterResponse(result);

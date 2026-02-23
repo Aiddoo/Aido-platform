@@ -17,6 +17,8 @@ export interface CachedSession {
 	userId: string;
 	expiresAt: Date;
 	revokedAt: Date | null;
+	userStatus?: string;
+	userDeletedAt?: string | null;
 }
 
 export interface CachedUserProfile {

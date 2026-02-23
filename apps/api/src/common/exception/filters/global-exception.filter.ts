@@ -40,7 +40,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		if (exception instanceof BusinessException) {
 			// Business Exception 처리
 			statusCode = exception.getStatus();
-			errorResponse = exception.getResponse() as ErrorResponse;
+			const response = exception.getResponse() as ErrorResponse;
+
+			// 프로덕션에서는 details 필드 제거 (민감 정보 노출 방지)
+			if (
+				!this.configService.isDevelopment &&
+				response.error?.details !== undefined
+			) {
+				const { details: _, ...errorWithoutDetails } = response.error;
+				errorResponse = {
+					...response,
+					error: errorWithoutDetails,
+				};
+			} else {
+				errorResponse = response;
+			}
 		} else if (exception instanceof HttpException) {
 			// HTTP Exception 처리
 			statusCode = exception.getStatus();
@@ -73,12 +87,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 					timestamp: Date.now(),
 				};
 			}
-		} else if (
-			exception instanceof Prisma.PrismaClientKnownRequestError &&
-			exception.code === "P2002"
-		) {
-			// Prisma unique constraint 위반 처리
-			const businessException = this.#mapP2002ToBusinessException(exception);
+		} else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+			// Prisma 에러 처리
+			const businessException =
+				this.#mapPrismaErrorToBusinessException(exception);
 			statusCode = businessException.getStatus();
 			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {
@@ -119,6 +131,46 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		}
 
 		response.status(statusCode).json(errorResponse);
+	}
+
+	/**
+	 * Prisma 에러 → BusinessException 매핑
+	 *
+	 * P2002(unique), P2003(FK), P2025(not found) 등 주요 에러를 비즈니스 에러로 변환
+	 */
+	#mapPrismaErrorToBusinessException(
+		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
+	): BusinessException {
+		switch (error.code) {
+			case "P2002":
+				return this.#mapP2002ToBusinessException(error);
+			case "P2003":
+				// Foreign key constraint violation
+				this.logger.warn(
+					`Prisma P2003: FK constraint violation (meta: ${JSON.stringify(error.meta)})`,
+				);
+				return BusinessExceptions.invalidParameter(
+					this.configService.isDevelopment
+						? { reason: "Referenced record does not exist" }
+						: undefined,
+				);
+			case "P2025":
+				// Record not found
+				return BusinessExceptions.invalidParameter(
+					this.configService.isDevelopment
+						? { reason: "Record to update/delete not found" }
+						: undefined,
+				);
+			default:
+				this.logger.warn(
+					`Unhandled Prisma error: ${error.code} (meta: ${JSON.stringify(error.meta)})`,
+				);
+				return BusinessExceptions.internalServerError(
+					this.configService.isDevelopment
+						? { prismaCode: error.code }
+						: undefined,
+				);
+		}
 	}
 
 	/**

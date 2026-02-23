@@ -16,6 +16,7 @@ describe("AuthMapper", () => {
 			const result: RegisterResult = {
 				userId: "user-123",
 				email: "test@example.com",
+				emailSent: true,
 				message: "회원가입이 완료되었습니다.",
 			};
 
@@ -26,6 +27,7 @@ describe("AuthMapper", () => {
 			expect(response).toEqual({
 				message: "회원가입이 완료되었습니다.",
 				email: "test@example.com",
+				emailSent: true,
 			});
 		});
 	});

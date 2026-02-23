@@ -30,12 +30,18 @@ const DEFAULT_TEMPERATURE = 0.1;
 
 @Injectable()
 export class GeminiProvider implements AiProvider {
-	readonly #apiKey: string | undefined;
+	readonly #model: ReturnType<ReturnType<typeof createGoogleGenerativeAI>>;
+	readonly #available: boolean;
 
 	constructor(private readonly configService: ConfigService) {
-		this.#apiKey = this.configService.get<string>(
+		const apiKey = this.configService.get<string>(
 			"GOOGLE_GENERATIVE_AI_API_KEY",
 		);
+		this.#available = !!apiKey;
+		// API 키가 있으면 클라이언트와 모델을 한 번만 생성하여 재사용
+		this.#model = apiKey
+			? createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL)
+			: (undefined as never);
 	}
 
 	/**
@@ -47,18 +53,12 @@ export class GeminiProvider implements AiProvider {
 	async generateStructured<T>(
 		options: GenerateStructuredOptions<T>,
 	): Promise<GenerateStructuredResult<T>> {
-		if (!this.#apiKey) {
+		if (!this.#available) {
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
-		const google = createGoogleGenerativeAI({
-			apiKey: this.#apiKey,
-		});
-
-		const model = google(GEMINI_MODEL);
-
 		const { object, usage } = await generateObject({
-			model,
+			model: this.#model,
 			prompt: options.prompt,
 			schema: options.schema as z.ZodType<T>,
 			maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
@@ -81,6 +81,6 @@ export class GeminiProvider implements AiProvider {
 	 * @returns API 키 설정 여부
 	 */
 	isAvailable(): boolean {
-		return !!this.#apiKey;
+		return this.#available;
 	}
 }

@@ -3,6 +3,7 @@ import { TestBed } from "@suites/unit";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
 import type { JwtPayload } from "../services/token.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -11,6 +12,7 @@ describe("JwtStrategy", () => {
 	let strategy: JwtStrategy;
 	let sessionRepo: Mocked<SessionRepository>;
 	let cacheService: Mocked<CacheService>;
+	let database: Mocked<DatabaseService>;
 
 	const validPayload: JwtPayload = {
 		sub: "user-123",
@@ -34,6 +36,16 @@ describe("JwtStrategy", () => {
 			SessionRepository,
 		) as unknown as Mocked<SessionRepository>;
 		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+
+		// DatabaseService.user.findUnique mock 설정
+		(database as any).user = {
+			findUnique: jest
+				.fn()
+				.mockResolvedValue({ status: "ACTIVE", deletedAt: null }),
+		};
 	});
 
 	it("refresh 타입 토큰이면 에러를 던진다", async () => {
@@ -123,6 +135,8 @@ describe("JwtStrategy", () => {
 			userId: "user-123",
 			expiresAt: futureDate,
 			revokedAt: null,
+			userStatus: "ACTIVE",
+			userDeletedAt: null,
 		});
 	});
 

@@ -12,6 +12,7 @@ import type { TokenPair } from "../services/token.service";
 export interface RegisterResult {
 	userId: string;
 	email: string;
+	emailSent: boolean;
 	message: string;
 }
 

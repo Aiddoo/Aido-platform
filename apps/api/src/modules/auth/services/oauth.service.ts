@@ -640,7 +640,6 @@ export class OAuthService {
 
 		let userId: string;
 		let userEmail: string;
-		let wasRestored = false;
 
 		if (existingAccount) {
 			// 기존 사용자 로그인
@@ -657,20 +656,19 @@ export class OAuthService {
 					ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
 				);
 				if (user.deletedAt > gracePeriodCutoff) {
-					// 30일 이내 — 계정 복구
-					await this.#restoreDeletedAccount(user, {
+					// 30일 이내 — 복구 + 세션 생성을 원자적으로 처리
+					const loginResult = await this.#restoreAndCreateSession(user, {
 						ip,
 						userAgent,
+						provider,
 					});
-					wasRestored = true;
-				} else {
-					// 30일 초과 — 차단
-					throw BusinessExceptions.accountDeleted(userId);
+					return { ...loginResult, accountRestored: true };
 				}
-			} else {
-				this.#validateUserStatus(user.status);
+				// 30일 초과 — 차단
+				throw BusinessExceptions.accountDeleted(userId);
 			}
 
+			this.#validateUserStatus(user.status);
 			userEmail = user.email;
 
 			this.#logger.debug(`Existing ${provider} user login: ${userId}`);
@@ -727,14 +725,11 @@ export class OAuthService {
 		}
 
 		// 세션 생성 및 토큰 발급
-		const loginResult = await this.#createSessionAndTokens(userId, userEmail, {
+		return this.#createSessionAndTokens(userId, userEmail, {
 			ip,
 			userAgent,
 			provider,
 		});
-		return wasRestored
-			? { ...loginResult, accountRestored: true }
-			: loginResult;
 	}
 
 	// emailVerified=true → ACTIVE, emailVerified=false → PENDING_VERIFY (로그인은 허용)
@@ -816,6 +811,92 @@ export class OAuthService {
 		});
 	}
 
+	/**
+	 * 탈퇴 계정 복구 + 세션 생성을 원자적 트랜잭션으로 수행
+	 *
+	 * 복구와 세션 생성이 하나의 트랜잭션으로 묶여,
+	 * 세션 생성 실패 시 복구도 롤백됩니다.
+	 */
+	async #restoreAndCreateSession(
+		user: { id: string; email: string; deletedAt: Date | null },
+		options: { ip: string; userAgent: string; provider: AccountProvider },
+	): Promise<LoginResult> {
+		// 사용자 role 조회 (트랜잭션 밖)
+		const userRecord = await this.database.user.findUnique({
+			where: { id: user.id },
+			select: { role: true },
+		});
+
+		if (!userRecord) {
+			throw BusinessExceptions.userNotFound(user.id);
+		}
+
+		const result = await this.database.$transaction(async (tx) => {
+			// 1. 계정 복구
+			await this.#restoreDeletedAccount(
+				user,
+				{ ip: options.ip, userAgent: options.userAgent },
+				tx,
+			);
+
+			// 2. 세션 생성 + 보안 로그 + 로그인 시도 기록
+			const { sessionId, tokens } =
+				await this.sessionService.createSessionWithTokens(
+					{
+						userId: user.id,
+						email: user.email,
+						role: userRecord.role,
+						deviceFingerprint: options.userAgent,
+						userAgent: options.userAgent,
+						ipAddress: options.ip,
+					},
+					tx,
+				);
+
+			await this.securityLogRepository.create(
+				{
+					userId: user.id,
+					event: SECURITY_EVENT.LOGIN_SUCCESS,
+					ipAddress: options.ip,
+					userAgent: options.userAgent,
+					metadata: { provider: options.provider },
+				},
+				tx,
+			);
+
+			await this.loginAttemptRepository.create(
+				{
+					email: user.email,
+					provider: options.provider,
+					ipAddress: options.ip,
+					userAgent: options.userAgent,
+					success: true,
+				},
+				tx,
+			);
+
+			const userWithProfile = await this.userRepository.findByIdWithProfile(
+				user.id,
+				tx,
+			);
+
+			return {
+				userId: user.id,
+				userTag: userWithProfile?.userTag ?? "",
+				tokens,
+				sessionId,
+				name: userWithProfile?.profile?.name ?? null,
+				profileImage: userWithProfile?.profile?.profileImage ?? null,
+			};
+		});
+
+		// 트랜잭션 커밋 후 캐시 무효화
+		await this.cacheService.invalidateUserProfile(user.id);
+		this.#logger.log(`Deleted account restored on social login: ${user.id}`);
+
+		return result;
+	}
+
 	async #createSessionAndTokens(
 		userId: string,
 		email: string,
@@ -891,35 +972,32 @@ export class OAuthService {
 	}
 
 	/**
-	 * 탈퇴 계정 복구 처리
+	 * 탈퇴 계정 복구 처리 (트랜잭션 내부에서 호출)
 	 *
-	 * - 사용자 상태를 ACTIVE로 복원 + 보안 로그 기록 (트랜잭션)
-	 * - 트랜잭션 후 캐시 무효화 + 로깅
+	 * - 사용자 상태를 ACTIVE로 복원
+	 * - 보안 로그에 ACCOUNT_RESTORED 이벤트 기록
+	 * - 캐시 무효화는 트랜잭션 커밋 후 호출측에서 수행
 	 */
 	async #restoreDeletedAccount(
 		user: { id: string; deletedAt: Date | null },
 		metadata: { ip: string; userAgent: string },
+		tx: Prisma.TransactionClient,
 	): Promise<void> {
-		await this.database.$transaction(async (tx) => {
-			await this.userRepository.restore(user.id, tx);
+		await this.userRepository.restore(user.id, tx);
 
-			await this.securityLogRepository.create(
-				{
-					userId: user.id,
-					event: SECURITY_EVENT.ACCOUNT_RESTORED,
-					ipAddress: metadata.ip,
-					userAgent: metadata.userAgent,
-					metadata: {
-						deletedAt: user.deletedAt?.toISOString() ?? null,
-						restoredAt: now().toISOString(),
-					},
+		await this.securityLogRepository.create(
+			{
+				userId: user.id,
+				event: SECURITY_EVENT.ACCOUNT_RESTORED,
+				ipAddress: metadata.ip,
+				userAgent: metadata.userAgent,
+				metadata: {
+					deletedAt: user.deletedAt?.toISOString() ?? null,
+					restoredAt: now().toISOString(),
 				},
-				tx,
-			);
-		});
-
-		await this.cacheService.invalidateUserProfile(user.id);
-		this.#logger.log(`Deleted account restored on social login: ${user.id}`);
+			},
+			tx,
+		);
 	}
 
 	// PENDING_VERIFY 허용: 소셜 로그인은 OAuth Provider가 신원을 이미 검증함
@@ -981,22 +1059,16 @@ export class OAuthService {
 		},
 	): Promise<LoginResult> {
 		// 탈퇴 사용자: 유예 기간 내 복구 또는 차단
-		let wasRestored = false;
+		const needsRestore = !!existingUser.deletedAt;
 		if (existingUser.deletedAt) {
 			const gracePeriodCutoff = subtractDays(
 				ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
 			);
-			if (existingUser.deletedAt > gracePeriodCutoff) {
-				// 30일 이내 — 계정 복구
-				await this.#restoreDeletedAccount(existingUser, {
-					ip: options.ip,
-					userAgent: options.userAgent,
-				});
-				wasRestored = true;
-			} else {
+			if (existingUser.deletedAt <= gracePeriodCutoff) {
 				// 30일 초과 — 차단
 				throw BusinessExceptions.accountDeleted(existingUser.id);
 			}
+			// 30일 이내 — 아래에서 트랜잭션 내 복구 처리
 		}
 
 		const isTrusted = this.#isTrustedProvider(provider);
@@ -1008,14 +1080,52 @@ export class OAuthService {
 				`Auto-linking ${provider} account to existing user: ${existingUser.id}`,
 			);
 
-			// 사용자 상태 검증 (복구된 사용자는 이미 ACTIVE이므로 skip)
-			if (!wasRestored) {
+			// 사용자 상태 검증 (복구 대상은 skip — 트랜잭션 내에서 ACTIVE로 변경됨)
+			if (!needsRestore) {
 				this.#validateUserStatus(existingUser.status);
 			}
 
-			// 트랜잭션으로 계정 연동 및 로그 기록
+			if (needsRestore) {
+				// 복구 + 연동 + 세션 생성을 원자적 트랜잭션으로 수행
+				const loginResult = await this.#restoreAndCreateSession(existingUser, {
+					ip: options.ip,
+					userAgent: options.userAgent,
+					provider,
+				});
+
+				// 트랜잭션 커밋 후 OAuth Account 연결 (별도 트랜잭션)
+				await this.database.$transaction(async (tx) => {
+					await this.accountRepository.createOAuthAccount(
+						{
+							userId: existingUser.id,
+							provider,
+							providerAccountId,
+							refreshToken: options.appleRefreshToken,
+						},
+						tx,
+					);
+
+					await this.securityLogRepository.create(
+						{
+							userId: existingUser.id,
+							event: SECURITY_EVENT.OAUTH_AUTO_LINKED,
+							ipAddress: options.ip,
+							userAgent: options.userAgent,
+							metadata: {
+								provider,
+								autoLinked: true,
+								reason: "trusted_provider_verified_email",
+							},
+						},
+						tx,
+					);
+				});
+
+				return { ...loginResult, accountRestored: true };
+			}
+
+			// 기존 유저: 연동만 수행
 			await this.database.$transaction(async (tx) => {
-				// OAuth Account 연결
 				await this.accountRepository.createOAuthAccount(
 					{
 						userId: existingUser.id,
@@ -1026,7 +1136,6 @@ export class OAuthService {
 					tx,
 				);
 
-				// 보안 로그: 자동 연동
 				await this.securityLogRepository.create(
 					{
 						userId: existingUser.id,
@@ -1043,19 +1152,11 @@ export class OAuthService {
 				);
 			});
 
-			// 세션 생성 및 토큰 발급
-			const loginResult = await this.#createSessionAndTokens(
-				existingUser.id,
-				existingUser.email,
-				{
-					ip: options.ip,
-					userAgent: options.userAgent,
-					provider,
-				},
-			);
-			return wasRestored
-				? { ...loginResult, accountRestored: true }
-				: loginResult;
+			return this.#createSessionAndTokens(existingUser.id, existingUser.email, {
+				ip: options.ip,
+				userAgent: options.userAgent,
+				provider,
+			});
 		}
 
 		// 강제 연동 필요: 신뢰되지 않은 Provider 또는 이메일 미검증

@@ -283,7 +283,7 @@ describe("OAuthTokenVerifierService", () => {
 			expect(result).toEqual({
 				id: "naver-user-123",
 				email: "test@naver.com",
-				emailVerified: true, // 이메일이 있으면 true
+				emailVerified: false, // Naver는 이메일 인증 여부를 제공하지 않으므로 항상 false
 				name: "네이버유저",
 				picture: "https://phinf.pstatic.net/profile.jpg",
 			});
