@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Todo" ALTER COLUMN "scheduledTime" SET DATA TYPE TIMESTAMPTZ(3);
