@@ -158,14 +158,12 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
 
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [cooldown, setCooldown] = useCooldown(0);
-  const [isInvalid, setIsInvalid] = useState(false);
   const [code, setCode] = useState('');
 
   const forgotPasswordMutation = useMutation(forgotPasswordMutationOptions());
 
   const handleComplete = (completedCode: string) => {
-    setIsInvalid(false);
-    setValue('code', completedCode);
+    setValue('code', completedCode, { shouldValidate: true });
     onNext();
   };
 
@@ -179,7 +177,6 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
           setCooldown(VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
           setCode('');
           inputOTPRef.current?.clear();
-          setIsInvalid(false);
         },
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.VERIFY_0753)) {
@@ -217,7 +214,6 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
             value={code}
             onChange={setCode}
             onComplete={handleComplete}
-            isInvalid={isInvalid}
           >
             <InputOTP.Group>
               <InputOTP.Slot index={0} />
@@ -273,10 +269,7 @@ function NewPasswordStep() {
 
   const isNextEnabled = match(step)
     .with('newPassword', () => newPassword.length > 0 && !errors.newPassword)
-    .with(
-      'newPasswordConfirm',
-      () => newPasswordConfirm.length > 0 && !errors.newPassword && !errors.newPasswordConfirm,
-    )
+    .with('newPasswordConfirm', () => newPasswordConfirm.length > 0 && !errors.newPasswordConfirm)
     .exhaustive();
 
   const handleNext = () => {
@@ -316,7 +309,7 @@ function NewPasswordStep() {
                 if (finished) scheduleOnRN(focusConfirmInput);
               })}
           >
-            <VStack mb={8}>
+            <VStack mb={20}>
               <Controller
                 control={control}
                 name="newPasswordConfirm"
