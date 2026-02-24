@@ -7,6 +7,7 @@ export const toUser = (dto: CurrentUser): User => ({
   name: dto.name,
   profileImage: dto.profileImage,
   userTag: dto.userTag,
+  role: dto.role,
   subscriptionStatus: dto.subscriptionStatus,
   providers: dto.providers,
   createdAt: new Date(dto.createdAt),

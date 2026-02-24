@@ -251,19 +251,6 @@ export class NudgeRepository {
 	}
 
 	/**
-	 * 사용자 구독 상태 조회
-	 */
-	async getUserSubscriptionStatus(
-		userId: string,
-	): Promise<"FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { subscriptionStatus: true },
-		});
-		return user?.subscriptionStatus ?? null;
-	}
-
-	/**
 	 * Todo 존재 및 소유자 확인
 	 */
 	async findTodoWithOwner(

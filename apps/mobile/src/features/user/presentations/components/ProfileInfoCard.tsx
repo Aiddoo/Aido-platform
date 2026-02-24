@@ -33,8 +33,8 @@ export function ProfileInfoCard({
               <Avatar.Image source={getProfileIconSource(user.profileImage)} />
             </Avatar>
 
-            <Box className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-gray-3 items-center justify-center z-10">
-              <EditIcon width={14} height={14} colorClassName="text-gray-6" />
+            <Box className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-white dark:bg-gray-8 border border-gray-3 dark:border-gray-6 items-center justify-center z-10">
+              <EditIcon width={14} height={14} colorClassName="text-gray-6 dark:text-gray-4" />
             </Box>
           </Box>
         </PressableFeedback>

@@ -15,6 +15,13 @@ import { GlobalExceptionFilter } from "./global-exception.filter";
 
 jest.mock("@sentry/nestjs", () => ({
 	captureException: jest.fn(),
+	withScope: jest.fn((callback: (scope: unknown) => void) => {
+		callback({
+			setUser: jest.fn(),
+			setTags: jest.fn(),
+			setExtra: jest.fn(),
+		});
+	}),
 }));
 
 describe("GlobalExceptionFilter", () => {
@@ -237,7 +244,7 @@ describe("GlobalExceptionFilter", () => {
 			jest.clearAllMocks();
 		});
 
-		it("5xx 서버 에러는 Sentry에 캡처해야 한다", () => {
+		it("5xx 서버 에러는 Sentry에 scope 컨텍스트와 함께 캡처해야 한다", () => {
 			// Given
 			const exception = new Error("unexpected server error");
 
@@ -245,6 +252,7 @@ describe("GlobalExceptionFilter", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
+			expect(Sentry.withScope).toHaveBeenCalledTimes(1);
 			expect(Sentry.captureException).toHaveBeenCalledWith(exception);
 		});
 
@@ -259,6 +267,7 @@ describe("GlobalExceptionFilter", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
+			expect(Sentry.withScope).not.toHaveBeenCalled();
 			expect(Sentry.captureException).not.toHaveBeenCalled();
 		});
 
@@ -270,6 +279,7 @@ describe("GlobalExceptionFilter", () => {
 			filter.catch(exception, mockHost as never);
 
 			// Then
+			expect(Sentry.withScope).not.toHaveBeenCalled();
 			expect(Sentry.captureException).not.toHaveBeenCalled();
 		});
 	});

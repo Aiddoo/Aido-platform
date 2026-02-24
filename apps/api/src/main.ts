@@ -3,6 +3,7 @@ import "./instrument";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import * as Sentry from "@sentry/nestjs";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
@@ -252,6 +253,14 @@ async function bootstrap() {
 	logger.log(`📚 API Docs: http://localhost:${port}/api/docs`);
 	logger.log(`📚 Admin API Docs: http://localhost:${port}/api/admin/docs`);
 	logger.log(`💊 Health Check: http://localhost:${port}/health`);
+
+	// Graceful shutdown 시 Sentry 버퍼 flush
+	const shutdown = async (signal: string) => {
+		logger.log(`Received ${signal}, flushing Sentry events...`);
+		await Sentry.close(2000);
+	};
+	process.on("SIGTERM", () => shutdown("SIGTERM"));
+	process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 bootstrap();

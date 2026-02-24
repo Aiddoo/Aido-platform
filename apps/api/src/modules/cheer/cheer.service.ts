@@ -1,8 +1,11 @@
-import { CHEER_LIMITS, SUBSCRIPTION_CHEER_LIMITS } from "@aido/validators";
+import { CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { CacheService } from "@/common/cache/cache.service";
 import { addMilliseconds, now, startOfDayInTimezone } from "@/common/date";
+import {
+	EntitlementService,
+	Feature,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -42,7 +45,7 @@ export class CheerService {
 		private readonly paginationService: PaginationService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
-		private readonly cacheService: CacheService,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	// =========================================================================
@@ -86,17 +89,11 @@ export class CheerService {
 			// 3. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
 			const todayStart = startOfDayInTimezone(now(), tz);
 
-			const subscriptionStatus = await tx.user.findUnique({
-				where: { id: senderId },
-				select: { subscriptionStatus: true },
-			});
-
-			const status = subscriptionStatus?.subscriptionStatus ?? "FREE";
-			const limitKey = status as keyof typeof SUBSCRIPTION_CHEER_LIMITS;
-			const dailyLimit =
-				limitKey in SUBSCRIPTION_CHEER_LIMITS
-					? SUBSCRIPTION_CHEER_LIMITS[limitKey]
-					: CHEER_LIMITS.FREE_DAILY_LIMIT;
+			const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(
+				tx,
+				senderId,
+				Feature.CHEER,
+			);
 
 			const used = await tx.cheer.count({
 				where: {
@@ -273,28 +270,10 @@ export class CheerService {
 		userId: string,
 		tz: string = "UTC",
 	): Promise<CheerLimitInfo> {
-		// 구독 상태 조회 (캐시 우선)
-		let subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null;
-
-		const cachedSubscription = await this.cacheService.getSubscription(userId);
-		if (cachedSubscription !== undefined) {
-			subscriptionStatus = cachedSubscription.status;
-		} else {
-			subscriptionStatus =
-				await this.cheerRepository.getUserSubscriptionStatus(userId);
-			await this.cacheService.setSubscription(userId, {
-				status: subscriptionStatus,
-			});
-		}
-
-		// 구독 상태에 따른 제한
-		const status = subscriptionStatus ?? "FREE";
-		const limitKey = status as keyof typeof SUBSCRIPTION_CHEER_LIMITS;
-		// ACTIVE 구독자는 null(무제한)이므로 undefined만 체크
-		const dailyLimit =
-			limitKey in SUBSCRIPTION_CHEER_LIMITS
-				? SUBSCRIPTION_CHEER_LIMITS[limitKey]
-				: CHEER_LIMITS.FREE_DAILY_LIMIT;
+		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
+			userId,
+			Feature.CHEER,
+		);
 
 		// 오늘 사용량 조회
 		const today = startOfDayInTimezone(now(), tz);

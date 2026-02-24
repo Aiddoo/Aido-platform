@@ -25,6 +25,11 @@ export const externalSchema = z.object({
 			message: "SENTRY_DSN must be a valid HTTPS URL",
 		}),
 
+	// Sentry 트레이스 샘플링 비율 (0.0 ~ 1.0, 기본값: production=0.2, 나머지=1.0)
+	SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
+
+	// TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (SENTRY_RELEASE: z.string().optional())
+
 	// Google Generative AI (Gemini) 서비스 (선택)
 	GOOGLE_GENERATIVE_AI_API_KEY: z
 		.string()

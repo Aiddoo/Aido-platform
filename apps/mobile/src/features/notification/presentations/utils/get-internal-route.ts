@@ -28,7 +28,8 @@ export const getInternalRoute = (
 ): string | null => {
   return match(type)
     .with('FOLLOW_NEW', () => '/friends')
-    .with('FOLLOW_ACCEPTED', 'CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
+    .with('FOLLOW_ACCEPTED', () => '/feed')
+    .with('CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
       context?.friendId ? `/friends/${context.friendId}` : null,
     )
     .with('NUDGE_RECEIVED', () => (context?.friendId ? `/friends/${context.friendId}` : null))

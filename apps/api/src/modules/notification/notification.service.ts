@@ -3,8 +3,9 @@ import {
 	type NotificationCategory,
 	type Notification as NotificationDto,
 } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import {
@@ -42,6 +43,7 @@ export class NotificationService {
 		private readonly notificationRepository: NotificationRepository,
 		private readonly paginationService: PaginationService,
 		private readonly pushDeliveryService: PushDeliveryService,
+		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
 	// =========================================================================
@@ -88,10 +90,16 @@ export class NotificationService {
 		},
 	};
 
+	/** dedup 잠금 TTL (밀리초) — DB 조회 + 생성에 충분한 시간 */
+	private static readonly DEDUP_LOCK_TTL = 5_000;
+
 	/**
 	 * 중복 방지가 적용된 알림 생성 및 푸시 발송
 	 *
-	 * @returns 생성된 Notification 또는 null (중복 스킵)
+	 * Race Condition 방지: ILockProvider 기반 잠금으로
+	 * 같은 (userId, type, contextKeys) 조합의 동시 요청을 직렬화합니다.
+	 *
+	 * @returns 생성된 Notification 또는 null (중복 스킵 / 잠금 대기 스킵)
 	 */
 	async createAndSendWithDedup(
 		data: CreateNotificationData,
@@ -104,40 +112,76 @@ export class NotificationService {
 			return this.createAndSend(data, tx);
 		}
 
-		const since = new Date(Date.now() - strategy.windowMs);
-		const params: {
-			userId: string;
-			type: NotificationType;
-			since: Date;
-			friendId?: string;
-			todoId?: number;
-			nudgeId?: number;
-			cheerId?: number;
-		} = {
-			userId: data.userId,
-			type: data.type as NotificationType,
-			since,
-		};
-
-		for (const key of strategy.keys) {
-			const value = data[key];
-			if (value != null) {
-				(params as Record<string, unknown>)[key] = value;
-			}
-		}
-
-		const exists = await this.notificationRepository.existsRecentNotification(
-			params,
-			tx,
+		const dedupKey = this.#buildDedupKey(data, strategy);
+		const release = await this.lockProvider.acquire(
+			dedupKey,
+			NotificationService.DEDUP_LOCK_TTL,
 		);
-		if (exists) {
+
+		if (!release) {
 			this.#logger.debug(
-				`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
+				`Notification dedup: lock busy for ${data.type}, userId=${data.userId}`,
 			);
 			return null;
 		}
 
-		return this.createAndSend(data, tx);
+		try {
+			const since = new Date(Date.now() - strategy.windowMs);
+			const params: {
+				userId: string;
+				type: NotificationType;
+				since: Date;
+				friendId?: string;
+				todoId?: number;
+				nudgeId?: number;
+				cheerId?: number;
+			} = {
+				userId: data.userId,
+				type: data.type as NotificationType,
+				since,
+			};
+
+			for (const key of strategy.keys) {
+				const value = data[key];
+				if (value != null) {
+					(params as Record<string, unknown>)[key] = value;
+				}
+			}
+
+			const exists = await this.notificationRepository.existsRecentNotification(
+				params,
+				tx,
+			);
+			if (exists) {
+				this.#logger.debug(
+					`Notification dedup: skipped ${data.type} for userId=${data.userId}`,
+				);
+				return null;
+			}
+
+			return await this.createAndSend(data, tx);
+		} finally {
+			await release();
+		}
+	}
+
+	/**
+	 * 중복 방지 잠금 키 생성
+	 */
+	#buildDedupKey(
+		data: CreateNotificationData,
+		strategy: {
+			keys: Array<"friendId" | "todoId" | "nudgeId" | "cheerId">;
+		},
+	): string {
+		const parts = ["dedup", data.userId, data.type as string];
+		for (const key of strategy.keys) {
+			const value = data[key];
+			if (value != null) {
+				parts.push(`${key}:${String(value)}`);
+			}
+		}
+		return parts.join(":");
 	}
 
 	/**

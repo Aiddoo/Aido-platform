@@ -1,3 +1,9 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN');
+
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'LOCKED', 'SUSPENDED', 'PENDING_VERIFY');
 
@@ -8,30 +14,29 @@ CREATE TYPE "SubscriptionStatus" AS ENUM ('FREE', 'ACTIVE', 'EXPIRED', 'CANCELLE
 CREATE TYPE "AccountProvider" AS ENUM ('CREDENTIAL', 'KAKAO', 'APPLE', 'GOOGLE', 'NAVER');
 
 -- CreateEnum
-CREATE TYPE "SecurityEvent" AS ENUM ('REGISTRATION', 'LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGOUT', 'TOKEN_REFRESH', 'TOKEN_REVOKED', 'PASSWORD_CHANGED', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED', 'TWO_FACTOR_ENABLED', 'TWO_FACTOR_DISABLED', 'SUSPICIOUS_ACTIVITY', 'ACCOUNT_LOCKED', 'ACCOUNT_UNLOCKED', 'SESSION_REVOKED', 'SESSION_REVOKED_ALL', 'OAUTH_LINKED', 'OAUTH_UNLINKED');
+CREATE TYPE "SecurityEvent" AS ENUM ('REGISTRATION', 'LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGOUT', 'TOKEN_REFRESH', 'TOKEN_REVOKED', 'PASSWORD_CHANGED', 'PASSWORD_RESET_REQUESTED', 'EMAIL_VERIFIED', 'TWO_FACTOR_ENABLED', 'TWO_FACTOR_DISABLED', 'SUSPICIOUS_ACTIVITY', 'ACCOUNT_LOCKED', 'ACCOUNT_UNLOCKED', 'SESSION_REVOKED', 'SESSION_REVOKED_ALL', 'OAUTH_LINKED', 'OAUTH_UNLINKED', 'OAUTH_AUTO_LINKED', 'OAUTH_LINK_REQUIRED', 'ACCOUNT_DELETION_REQUESTED', 'ACCOUNT_HARD_DELETED', 'ACCOUNT_RESTORED', 'PASSWORD_SETUP');
 
 -- CreateEnum
-CREATE TYPE "VerificationType" AS ENUM ('EMAIL_VERIFY', 'PASSWORD_RESET');
+CREATE TYPE "VerificationType" AS ENUM ('EMAIL_VERIFY', 'PASSWORD_RESET', 'PASSWORD_SETUP');
 
 -- CreateEnum
 CREATE TYPE "TodoVisibility" AS ENUM ('PUBLIC', 'PRIVATE');
 
 -- CreateEnum
-CREATE TYPE "FriendshipStatus" AS ENUM ('PENDING', 'ACCEPTED', 'BLOCKED');
+CREATE TYPE "FollowStatus" AS ENUM ('PENDING', 'ACCEPTED');
 
 -- CreateEnum
 CREATE TYPE "Platform" AS ENUM ('IOS', 'ANDROID');
 
 -- CreateEnum
-CREATE TYPE "NotificationType" AS ENUM ('FRIEND_REQUEST', 'FRIEND_ACCEPTED', 'TODO_REMINDER', 'TODO_SHARED', 'WEEKLY_ACHIEVEMENT', 'SYSTEM_NOTICE');
-
--- CreateEnum
-CREATE TYPE "NotificationActionType" AS ENUM ('NONE', 'VIEW_TODO', 'VIEW_FRIEND', 'VIEW_FRIENDS', 'VIEW_ACHIEVEMENT', 'OPEN_URL');
+CREATE TYPE "NotificationType" AS ENUM ('FOLLOW_NEW', 'FOLLOW_ACCEPTED', 'NUDGE_RECEIVED', 'CHEER_RECEIVED', 'DAILY_COMPLETE', 'FRIEND_COMPLETED', 'TODO_REMINDER', 'TODO_SHARED', 'MORNING_REMINDER', 'EVENING_REMINDER', 'WEEKLY_ACHIEVEMENT', 'SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED');
 
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
+    "userTag" VARCHAR(8) NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
     "status" "UserStatus" NOT NULL DEFAULT 'PENDING_VERIFY',
     "emailVerifiedAt" TIMESTAMP(3),
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
@@ -39,6 +44,8 @@ CREATE TABLE "User" (
     "subscriptionStatus" "SubscriptionStatus" NOT NULL DEFAULT 'FREE',
     "subscriptionExpiresAt" TIMESTAMP(3),
     "revenueCatUserId" VARCHAR(255),
+    "aiUsageCount" INTEGER NOT NULL DEFAULT 0,
+    "aiUsageResetAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "lastLoginAt" TIMESTAMP(3),
@@ -63,6 +70,9 @@ CREATE TABLE "UserPreference" (
     "userId" TEXT NOT NULL,
     "pushEnabled" BOOLEAN NOT NULL DEFAULT false,
     "nightPushEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "timezone" VARCHAR(50) NOT NULL DEFAULT 'UTC',
+    "morningReminderHour" INTEGER NOT NULL DEFAULT 8,
+    "eveningReminderHour" INTEGER NOT NULL DEFAULT 18,
 
     CONSTRAINT "UserPreference_pkey" PRIMARY KEY ("id")
 );
@@ -121,6 +131,7 @@ CREATE TABLE "Session" (
 CREATE TABLE "LoginAttempt" (
     "id" SERIAL NOT NULL,
     "email" VARCHAR(255) NOT NULL,
+    "provider" "AccountProvider",
     "ipAddress" VARCHAR(45) NOT NULL,
     "userAgent" VARCHAR(500) NOT NULL,
     "success" BOOLEAN NOT NULL,
@@ -164,24 +175,50 @@ CREATE TABLE "OAuthState" (
     "codeVerifier" VARCHAR(128),
     "provider" "AccountProvider" NOT NULL,
     "redirectUri" VARCHAR(500) NOT NULL,
+    "mode" VARCHAR(10),
+    "initiatingUserId" VARCHAR(36),
+    "exchangeCode" VARCHAR(64),
+    "accessToken" VARCHAR(1000),
+    "refreshToken" VARCHAR(1000),
+    "userId" VARCHAR(255),
+    "userName" VARCHAR(100),
+    "profileImage" VARCHAR(500),
+    "accountRestored" BOOLEAN,
+    "ipAddress" VARCHAR(45),
+    "userAgent" VARCHAR(500),
     "expiresAt" TIMESTAMP(3) NOT NULL,
+    "exchangedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OAuthState_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
+CREATE TABLE "TodoCategory" (
+    "id" SERIAL NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
+    "color" VARCHAR(7) NOT NULL,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TodoCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Todo" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "userId" TEXT NOT NULL,
     "title" VARCHAR(200) NOT NULL,
     "content" VARCHAR(5000),
-    "color" VARCHAR(7),
+    "categoryId" INTEGER NOT NULL,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "completed" BOOLEAN NOT NULL DEFAULT false,
     "completedAt" TIMESTAMP(3),
     "startDate" DATE NOT NULL,
     "endDate" DATE,
-    "scheduledTime" TIMESTAMP(3),
+    "scheduledTime" TIMESTAMPTZ(3),
     "isAllDay" BOOLEAN NOT NULL DEFAULT true,
     "visibility" "TodoVisibility" NOT NULL DEFAULT 'PUBLIC',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -191,17 +228,54 @@ CREATE TABLE "Todo" (
 );
 
 -- CreateTable
-CREATE TABLE "Friendship" (
+CREATE TABLE "Follow" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "friendId" TEXT NOT NULL,
-    "status" "FriendshipStatus" NOT NULL DEFAULT 'PENDING',
-    "isRequester" BOOLEAN NOT NULL,
+    "followerId" TEXT NOT NULL,
+    "followingId" TEXT NOT NULL,
+    "status" "FollowStatus" NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "acceptedAt" TIMESTAMP(3),
 
-    CONSTRAINT "Friendship_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Follow_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Nudge" (
+    "id" SERIAL NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "receiverId" TEXT NOT NULL,
+    "todoId" INTEGER NOT NULL,
+    "message" VARCHAR(200),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP(3),
+
+    CONSTRAINT "Nudge_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Cheer" (
+    "id" SERIAL NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "receiverId" TEXT NOT NULL,
+    "message" VARCHAR(200),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP(3),
+
+    CONSTRAINT "Cheer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DailyCompletion" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "date" DATE NOT NULL,
+    "totalTodos" INTEGER NOT NULL,
+    "completedTodos" INTEGER NOT NULL,
+    "achievedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DailyCompletion_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -227,10 +301,11 @@ CREATE TABLE "Notification" (
     "title" VARCHAR(200) NOT NULL,
     "body" VARCHAR(500) NOT NULL,
     "isRead" BOOLEAN NOT NULL DEFAULT false,
-    "actionType" "NotificationActionType" NOT NULL DEFAULT 'NONE',
-    "actionTarget" VARCHAR(500),
-    "todoId" TEXT,
+    "todoId" INTEGER,
     "friendId" TEXT,
+    "nudgeId" INTEGER,
+    "cheerId" INTEGER,
+    "notificationDate" DATE,
     "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "readAt" TIMESTAMP(3),
@@ -274,6 +349,9 @@ CREATE TABLE "Subscription" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_userTag_key" ON "User"("userTag");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_revenueCatUserId_key" ON "User"("revenueCatUserId");
 
 -- CreateIndex
@@ -290,6 +368,9 @@ CREATE UNIQUE INDEX "UserProfile_userId_key" ON "UserProfile"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserPreference_userId_key" ON "UserPreference"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserPreference_pushEnabled_timezone_idx" ON "UserPreference"("pushEnabled", "timezone");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserConsent_userId_key" ON "UserConsent"("userId");
@@ -319,6 +400,9 @@ CREATE INDEX "LoginAttempt_email_createdAt_idx" ON "LoginAttempt"("email", "crea
 CREATE INDEX "LoginAttempt_ipAddress_createdAt_idx" ON "LoginAttempt"("ipAddress", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "LoginAttempt_provider_createdAt_idx" ON "LoginAttempt"("provider", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "LoginAttempt_createdAt_idx" ON "LoginAttempt"("createdAt");
 
 -- CreateIndex
@@ -340,7 +424,16 @@ CREATE INDEX "Verification_userId_type_idx" ON "Verification"("userId", "type");
 CREATE UNIQUE INDEX "OAuthState_state_key" ON "OAuthState"("state");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "OAuthState_exchangeCode_key" ON "OAuthState"("exchangeCode");
+
+-- CreateIndex
 CREATE INDEX "OAuthState_expiresAt_idx" ON "OAuthState"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "TodoCategory_userId_sortOrder_idx" ON "TodoCategory"("userId", "sortOrder");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TodoCategory_userId_name_key" ON "TodoCategory"("userId", "name");
 
 -- CreateIndex
 CREATE INDEX "Todo_userId_startDate_endDate_idx" ON "Todo"("userId", "startDate", "endDate");
@@ -349,13 +442,46 @@ CREATE INDEX "Todo_userId_startDate_endDate_idx" ON "Todo"("userId", "startDate"
 CREATE INDEX "Todo_userId_completed_startDate_idx" ON "Todo"("userId", "completed", "startDate");
 
 -- CreateIndex
-CREATE INDEX "Friendship_userId_status_idx" ON "Friendship"("userId", "status");
+CREATE INDEX "Todo_userId_categoryId_idx" ON "Todo"("userId", "categoryId");
 
 -- CreateIndex
-CREATE INDEX "Friendship_friendId_idx" ON "Friendship"("friendId");
+CREATE INDEX "Todo_userId_sortOrder_idx" ON "Todo"("userId", "sortOrder");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Friendship_userId_friendId_key" ON "Friendship"("userId", "friendId");
+CREATE INDEX "Todo_completed_scheduledTime_idx" ON "Todo"("completed", "scheduledTime");
+
+-- CreateIndex
+CREATE INDEX "Follow_followerId_status_idx" ON "Follow"("followerId", "status");
+
+-- CreateIndex
+CREATE INDEX "Follow_followingId_status_idx" ON "Follow"("followingId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Follow_followerId_followingId_key" ON "Follow"("followerId", "followingId");
+
+-- CreateIndex
+CREATE INDEX "Nudge_receiverId_createdAt_idx" ON "Nudge"("receiverId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Nudge_senderId_createdAt_idx" ON "Nudge"("senderId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Nudge_todoId_idx" ON "Nudge"("todoId");
+
+-- CreateIndex
+CREATE INDEX "Nudge_senderId_todoId_createdAt_idx" ON "Nudge"("senderId", "todoId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Cheer_receiverId_createdAt_idx" ON "Cheer"("receiverId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Cheer_senderId_createdAt_idx" ON "Cheer"("senderId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Cheer_senderId_receiverId_createdAt_idx" ON "Cheer"("senderId", "receiverId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DailyCompletion_userId_date_key" ON "DailyCompletion"("userId", "date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PushToken_token_key" ON "PushToken"("token");
@@ -374,6 +500,9 @@ CREATE INDEX "Notification_userId_type_idx" ON "Notification"("userId", "type");
 
 -- CreateIndex
 CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Notification_todoId_type_createdAt_idx" ON "Notification"("todoId", "type", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "WeeklyAchievement_userId_year_idx" ON "WeeklyAchievement"("userId", "year");
@@ -418,13 +547,37 @@ ALTER TABLE "SecurityLog" ADD CONSTRAINT "SecurityLog_userId_fkey" FOREIGN KEY (
 ALTER TABLE "Verification" ADD CONSTRAINT "Verification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TodoCategory" ADD CONSTRAINT "TodoCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Todo" ADD CONSTRAINT "Todo_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "TodoCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Todo" ADD CONSTRAINT "Todo_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Friendship" ADD CONSTRAINT "Friendship_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Friendship" ADD CONSTRAINT "Friendship_friendId_fkey" FOREIGN KEY ("friendId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Follow" ADD CONSTRAINT "Follow_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Nudge" ADD CONSTRAINT "Nudge_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Nudge" ADD CONSTRAINT "Nudge_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Nudge" ADD CONSTRAINT "Nudge_todoId_fkey" FOREIGN KEY ("todoId") REFERENCES "Todo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Cheer" ADD CONSTRAINT "Cheer_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Cheer" ADD CONSTRAINT "Cheer_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DailyCompletion" ADD CONSTRAINT "DailyCompletion_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PushToken" ADD CONSTRAINT "PushToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

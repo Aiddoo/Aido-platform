@@ -66,7 +66,7 @@ export type ParsedTodoResult = z.infer<typeof parsedTodoResultSchema>;
 
 export const aiUsageSchema = z.object({
   used: z.number(),
-  limit: z.number(),
+  limit: z.number().nullable(),
   resetsAt: z.string(),
 });
 export type AiUsage = z.infer<typeof aiUsageSchema>;
