@@ -4,7 +4,7 @@ import { datetimeSchema } from '../../common/datetime';
 
 export const aiUsageDataSchema = z.object({
   used: z.number().int().nonnegative().describe('현재까지 사용한 AI 요청 횟수 (0 이상)'),
-  limit: z.number().int().positive().describe('일일 최대 AI 요청 횟수 (양의 정수)'),
+  limit: z.number().int().positive().nullable().describe('일일 최대 AI 요청 횟수 (null = 무제한)'),
   resetsAt: datetimeSchema.describe(
     '사용량 리셋 시각 (ISO 8601 UTC, 예: 2026-01-18T00:00:00.000Z)',
   ),

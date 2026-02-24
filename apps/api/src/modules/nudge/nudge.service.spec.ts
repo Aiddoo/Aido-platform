@@ -14,6 +14,10 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
 import { addDays, getUserToday, subtractDays } from "@/common/date";
+import {
+	EntitlementService,
+	Feature,
+} from "@/common/entitlement/entitlement.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
@@ -32,6 +36,7 @@ describe("NudgeService", () => {
 	let paginationService: Mocked<PaginationService>;
 	let eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
+	let entitlementService: Mocked<EntitlementService>;
 
 	// Mock database transaction passthrough
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,9 +48,6 @@ describe("NudgeService", () => {
 			$transaction: jest.fn((callback: (tx: unknown) => unknown) =>
 				callback(mockDatabase),
 			),
-			user: {
-				findUnique: jest.fn(),
-			},
 			todo: {
 				findUnique: jest.fn(),
 			},
@@ -75,11 +77,27 @@ describe("NudgeService", () => {
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
 
 		// DatabaseService.$transaction passthrough mock 설정
 		database.$transaction.mockImplementation((callback) =>
 			callback(mockDatabase),
 		);
+
+		// EntitlementService 기본 mock 설정 (FREE 사용자)
+		(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+			dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
+
+		(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+			dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
 
 		// 기본 paginationService mock 설정
 		paginationService.normalizeCursorPagination.mockReturnValue({
@@ -123,9 +141,13 @@ describe("NudgeService", () => {
 		const setupSuccessfulSend = () => {
 			followService.isMutualFriend.mockResolvedValue(true);
 			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
+
 			mockDatabase.todo.findUnique.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
@@ -283,9 +305,13 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
+
 			mockDatabase.nudge.count.mockResolvedValue(NUDGE_LIMITS.FREE_DAILY_LIMIT);
 
 			// When & Then
@@ -319,10 +345,13 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
-				role: "USER",
 			});
+
 			mockDatabase.nudge.count.mockResolvedValue(100);
 			mockDatabase.nudge.findFirst.mockResolvedValue(null);
 
@@ -360,10 +389,13 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
 				subscriptionStatus: "FREE",
-				role: "ADMIN",
 			});
+
 			mockDatabase.nudge.count.mockResolvedValue(100);
 			mockDatabase.nudge.findFirst.mockResolvedValue(null);
 
@@ -401,9 +433,13 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
+
 			mockDatabase.nudge.count.mockResolvedValue(0);
 
 			const recentNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
@@ -455,9 +491,13 @@ describe("NudgeService", () => {
 			const tomorrow = addDays(1, todayMidnight);
 			followService.isMutualFriend.mockResolvedValue(true);
 			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
+
 			mockDatabase.todo.findUnique.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
@@ -520,9 +560,13 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockDatabase.user.findUnique.mockResolvedValue({
+
+			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
+
 			mockDatabase.nudge.count.mockResolvedValue(0);
 
 			const oldNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
@@ -660,9 +704,10 @@ describe("NudgeService", () => {
 	describe("getLimitInfo", () => {
 		it("FREE 사용자의 제한 정보를 조회한다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
-				role: "USER",
 			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(1);
 
@@ -677,9 +722,10 @@ describe("NudgeService", () => {
 
 		it("ACTIVE 사용자는 무제한이다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
-				role: "USER",
 			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(100);
 
@@ -694,9 +740,10 @@ describe("NudgeService", () => {
 
 		it("ADMIN은 구독 상태와 무관하게 무제한이다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
 				subscriptionStatus: "FREE",
-				role: "ADMIN",
 			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(100);
 
@@ -711,9 +758,10 @@ describe("NudgeService", () => {
 
 		it("EXPIRED 사용자는 FREE 제한이 적용된다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "EXPIRED",
-				role: "USER",
 			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(2);
 
@@ -725,16 +773,23 @@ describe("NudgeService", () => {
 			expect(result.remaining).toBe(NUDGE_LIMITS.FREE_DAILY_LIMIT - 2);
 		});
 
-		it("사용자가 없으면 FREE 제한이 적용된다", async () => {
+		it("EntitlementService에 올바른 Feature를 전달한다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue(null);
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
+				subscriptionStatus: "FREE",
+			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(0);
 
 			// When
-			const result = await service.getLimitInfo("unknown-id");
+			await service.getLimitInfo("user-id");
 
 			// Then
-			expect(result.dailyLimit).toBe(NUDGE_LIMITS.FREE_DAILY_LIMIT);
+			expect(entitlementService.getFeatureLimit).toHaveBeenCalledWith(
+				"user-id",
+				Feature.NUDGE,
+			);
 		});
 	});
 

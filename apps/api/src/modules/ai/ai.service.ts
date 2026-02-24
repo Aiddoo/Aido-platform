@@ -5,16 +5,20 @@
  *
  * 핵심 기능:
  * - 자연어 → 구조화된 투두 변환 (Gemini 2.0 Flash)
- * - 일일 사용량 추적 (무료 유저: 5회/일)
+ * - 일일 사용량 추적 (ADMIN/ACTIVE: 무제한, 그 외: 5회/일)
  * - KST 기준 자정 리셋
  */
 import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
-import { TypedConfigService } from "@/common/config/services/config.service";
+import {
+	EntitlementService,
+	Feature,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
+
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
 import {
 	AI_PROVIDER,
@@ -31,8 +35,8 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 export interface UsageInfo {
 	/** 오늘 사용한 횟수 */
 	used: number;
-	/** 일일 제한 횟수 */
-	limit: number;
+	/** 일일 제한 횟수 (null = 무제한) */
+	limit: number | null;
 	/** 다음 리셋 시간 (ISO 8601) */
 	resetsAt: string;
 }
@@ -67,13 +71,8 @@ export class AiService {
 		@Inject(AI_PROVIDER)
 		private readonly aiProvider: AiProvider,
 		private readonly prisma: DatabaseService,
-		private readonly configService: TypedConfigService,
+		private readonly entitlementService: EntitlementService,
 	) {}
-
-	/** 환경변수에서 일일 사용 제한 가져오기 (기본값: 5) */
-	get #dailyLimit(): number {
-		return this.configService.aiDailyLimit;
-	}
 
 	/**
 	 * 자연어 텍스트를 투두 데이터로 파싱
@@ -165,11 +164,12 @@ export class AiService {
 			throw BusinessExceptions.userNotFound(userId);
 		}
 
+		const dailyLimit = await this.#getDailyLimit(userId);
 		const isNewDay = this.#isNewDay(user.aiUsageResetAt);
 
 		return {
 			used: isNewDay ? 0 : user.aiUsageCount,
-			limit: this.#dailyLimit,
+			limit: dailyLimit,
 			resetsAt: this.#getNextResetTime(),
 		};
 	}
@@ -182,6 +182,11 @@ export class AiService {
 	 */
 	async checkUsageLimit(userId: string): Promise<boolean> {
 		const usage = await this.getUsage(userId);
+
+		if (usage.limit === null) {
+			return true;
+		}
+
 		return usage.used < usage.limit;
 	}
 
@@ -195,6 +200,8 @@ export class AiService {
 	 * @throws AI_1303 - 일일 사용량 초과
 	 */
 	async #checkAndIncrementUsage(userId: string): Promise<void> {
+		const dailyLimit = await this.#getDailyLimit(userId);
+
 		await this.prisma.$transaction(async (tx) => {
 			const user = await tx.user.findUnique({
 				where: { id: userId },
@@ -208,11 +215,9 @@ export class AiService {
 			const isNewDay = this.#isNewDay(user.aiUsageResetAt);
 			const currentUsage = isNewDay ? 0 : user.aiUsageCount;
 
-			if (currentUsage >= this.#dailyLimit) {
-				throw BusinessExceptions.aiUsageLimitExceeded(
-					currentUsage,
-					this.#dailyLimit,
-				);
+			// dailyLimit === null → 무제한 (ADMIN / ACTIVE 구독)
+			if (dailyLimit !== null && currentUsage >= dailyLimit) {
+				throw BusinessExceptions.aiUsageLimitExceeded(currentUsage, dailyLimit);
 			}
 
 			if (isNewDay) {
@@ -254,6 +259,15 @@ export class AiService {
 				rollbackError,
 			);
 		}
+	}
+
+	/** 사용자별 일일 제한 조회 (EntitlementService 위임) */
+	async #getDailyLimit(userId: string): Promise<number | null> {
+		const entitlement = await this.entitlementService.getFeatureLimit(
+			userId,
+			Feature.AI_PARSE,
+		);
+		return entitlement.dailyLimit;
 	}
 
 	/**

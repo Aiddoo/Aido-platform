@@ -18,6 +18,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
+    "test": "jest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

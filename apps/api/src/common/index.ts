@@ -12,6 +12,8 @@ export * from "./database";
 export * from "./date";
 // Encryption
 export * from "./encryption";
+// Entitlement
+export * from "./entitlement";
 
 // Exception
 export * from "./exception";

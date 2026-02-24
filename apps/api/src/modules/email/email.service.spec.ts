@@ -1,5 +1,14 @@
+/**
+ * EmailService 단위 테스트 (Suites + GWT 패턴)
+ *
+ * 이메일 발송, 재시도 로직, 지수 백오프, 태그 검증
+ *
+ * - Suites: 자동 Mock 생성 (TypedConfigService)
+ * - jest.mock("resend"): 생성자 내부 new Resend() 인스턴스화 때문에 모듈 레벨 mock 필수
+ * - GWT: Given/When/Then 주석
+ */
 import { Logger } from "@nestjs/common";
-import { Test, type TestingModule } from "@nestjs/testing";
+import { TestBed } from "@suites/unit";
 import { Resend } from "resend";
 import { TypedConfigService } from "../../common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "./constants/email.constants";
@@ -26,7 +35,6 @@ type ResendMock = {
 describe("EmailService", () => {
 	let service: EmailService;
 	let resendMock: ResendMock;
-	let configServiceMock: Partial<TypedConfigService>;
 	let setTimeoutCalls: number[];
 
 	// 테스트 데이터
@@ -47,27 +55,19 @@ describe("EmailService", () => {
 			return 0 as unknown as ReturnType<typeof setTimeout>;
 		});
 
-		// ConfigService mock 생성
-		configServiceMock = {
-			email: {
-				isConfigured: true,
-				apiKey: "test-api-key",
-				from: "noreply@test.com",
-				fromName: "Test App",
-				supportEmail: "support@aido.app",
-			},
-			nodeEnv: "test",
-		};
-
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				EmailService,
-				{
-					provide: TypedConfigService,
-					useValue: configServiceMock,
+		const { unit } = await TestBed.solitary(EmailService)
+			.mock(TypedConfigService)
+			.impl(() => ({
+				email: {
+					isConfigured: true,
+					apiKey: "test-api-key",
+					from: "noreply@test.com",
+					fromName: "Test App",
+					supportEmail: "support@aido.app",
 				},
-			],
-		}).compile();
+				nodeEnv: "test",
+			}))
+			.compile();
 
 		// Logger 출력 비활성화
 		jest.spyOn(Logger.prototype, "log").mockImplementation();
@@ -75,7 +75,7 @@ describe("EmailService", () => {
 		jest.spyOn(Logger.prototype, "error").mockImplementation();
 		jest.spyOn(Logger.prototype, "debug").mockImplementation();
 
-		service = module.get<EmailService>(EmailService);
+		service = unit;
 
 		// Resend mock 인스턴스에서 resendMock 참조 획득
 		const resendInstance =
@@ -86,6 +86,10 @@ describe("EmailService", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
+
+	// =========================================================================
+	// sendVerificationCode
+	// =========================================================================
 
 	describe("sendVerificationCode", () => {
 		it("성공적으로 인증 코드 이메일을 발송한다", async () => {
@@ -160,6 +164,10 @@ describe("EmailService", () => {
 		});
 	});
 
+	// =========================================================================
+	// sendPasswordResetCode
+	// =========================================================================
+
 	describe("sendPasswordResetCode", () => {
 		it("성공적으로 비밀번호 재설정 이메일을 발송한다", async () => {
 			// Given
@@ -187,6 +195,10 @@ describe("EmailService", () => {
 			);
 		});
 	});
+
+	// =========================================================================
+	// retry 로직
+	// =========================================================================
 
 	describe("retry 로직", () => {
 		it("application_error 발생 시 재시도한다", async () => {
@@ -330,30 +342,29 @@ describe("EmailService", () => {
 		});
 	});
 
+	// =========================================================================
+	// Resend가 설정되지 않은 경우
+	// =========================================================================
+
 	describe("Resend가 설정되지 않은 경우", () => {
 		beforeEach(async () => {
-			configServiceMock = {
-				email: {
-					isConfigured: false,
-					apiKey: "",
-					from: "noreply@test.com",
-					fromName: "Test App",
-					supportEmail: "support@aido.app",
-				},
-				nodeEnv: "test",
-			};
+			MockedResend.mockClear();
 
-			const module: TestingModule = await Test.createTestingModule({
-				providers: [
-					EmailService,
-					{
-						provide: TypedConfigService,
-						useValue: configServiceMock,
+			const { unit } = await TestBed.solitary(EmailService)
+				.mock(TypedConfigService)
+				.impl(() => ({
+					email: {
+						isConfigured: false,
+						apiKey: "",
+						from: "noreply@test.com",
+						fromName: "Test App",
+						supportEmail: "support@aido.app",
 					},
-				],
-			}).compile();
+					nodeEnv: "test",
+				}))
+				.compile();
 
-			service = module.get<EmailService>(EmailService);
+			service = unit;
 		});
 
 		it("mock 결과를 반환한다", async () => {
@@ -371,6 +382,10 @@ describe("EmailService", () => {
 			expect(result.retryCount).toBe(0);
 		});
 	});
+
+	// =========================================================================
+	// tags
+	// =========================================================================
 
 	describe("tags", () => {
 		it("verification 타입 태그가 포함된다", async () => {
@@ -435,6 +450,10 @@ describe("EmailService", () => {
 			);
 		});
 	});
+
+	// =========================================================================
+	// sendInquiry
+	// =========================================================================
 
 	describe("sendInquiry", () => {
 		const inquiryData: Parameters<EmailService["sendInquiry"]>[1] = {

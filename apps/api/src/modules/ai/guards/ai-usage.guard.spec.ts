@@ -15,7 +15,7 @@ describe("AiUsageGuard", () => {
 	// Mock Factory Functions
 	// ==========================================================================
 
-	const createMockUsage = (used: number, limit: number): UsageInfo => ({
+	const createMockUsage = (used: number, limit: number | null): UsageInfo => ({
 		used,
 		limit,
 		resetsAt: new Date().toISOString(),
@@ -112,6 +112,22 @@ describe("AiUsageGuard", () => {
 				expect(error).toBeInstanceOf(BusinessException);
 				expect((error as BusinessException).errorCode).toBe("AI_1303");
 			}
+		});
+
+		it("무제한 사용자(limit: null)는 사용량에 관계없이 true를 반환해야 한다", async () => {
+			// Given
+			const { context, request } = createMockExecutionContext({
+				user: mockUser,
+			});
+			const usage = createMockUsage(1000, null);
+			aiService.getUsage.mockResolvedValue(usage);
+
+			// When
+			const result = await guard.canActivate(context);
+
+			// Then
+			expect(result).toBe(true);
+			expect(request.aiUsage).toEqual(usage);
 		});
 
 		it("request에 aiUsage 정보를 첨부해야 한다", async () => {

@@ -13,7 +13,10 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { CheerBuilder } from "@test/builders";
-import { CacheService } from "@/common/cache/cache.service";
+import {
+	EntitlementService,
+	Feature,
+} from "@/common/entitlement/entitlement.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
@@ -33,7 +36,7 @@ describe("CheerService", () => {
 	let paginationService: Mocked<PaginationService>;
 	let eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
-	let cacheService: Mocked<CacheService>;
+	let entitlementService: Mocked<EntitlementService>;
 
 	// 테스트 데이터
 	const senderId = "sender-123";
@@ -61,17 +64,14 @@ describe("CheerService", () => {
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
 
 		// DatabaseService.$transaction passthrough mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
 			(callback: (tx: unknown) => Promise<unknown>) => {
 				const txProxy = {
-					user: {
-						findUnique: jest
-							.fn()
-							.mockResolvedValue({ subscriptionStatus: "FREE" }),
-					},
 					cheer: {
 						count: jest.fn().mockResolvedValue(0),
 						findFirst: jest.fn().mockResolvedValue(null),
@@ -81,6 +81,19 @@ describe("CheerService", () => {
 				return callback(txProxy);
 			},
 		);
+
+		// EntitlementService 기본 mock 설정 (FREE 사용자)
+		(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
+			dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
+
+		(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+			dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
 
 		// PaginationService 기본 mock 설정
 		(paginationService.normalizeCursorPagination as jest.Mock).mockReturnValue({
@@ -96,9 +109,6 @@ describe("CheerService", () => {
 				nextCursor: items.length > size ? items[size - 1].id : null,
 			},
 		}));
-
-		// CacheService 기본 mock 설정
-		(cacheService.getSubscription as jest.Mock).mockResolvedValue(undefined);
 	});
 
 	// ===========================================================================
@@ -125,11 +135,6 @@ describe("CheerService", () => {
 						.buildWithRelations();
 
 					const txProxy = {
-						user: {
-							findUnique: jest
-								.fn()
-								.mockResolvedValue({ subscriptionStatus: "FREE" }),
-						},
 						cheer: {
 							count: jest.fn().mockResolvedValue(0),
 							findFirst: jest.fn().mockResolvedValue(null),
@@ -173,11 +178,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -202,14 +202,17 @@ describe("CheerService", () => {
 		describe("일일 제한 체크", () => {
 			it("FREE 구독자가 일일 제한에 도달하면 에러를 던진다", async () => {
 				// Given
+				(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue(
+					{
+						dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+						isAdmin: false,
+						subscriptionStatus: "FREE",
+					},
+				);
+
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest
 									.fn()
@@ -233,15 +236,17 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: "테스트유저", profileImage: null })
 					.buildWithRelations();
 
+				(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue(
+					{
+						dailyLimit: null,
+						isAdmin: false,
+						subscriptionStatus: "ACTIVE",
+					},
+				);
+
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest.fn().mockResolvedValue({
-									subscriptionStatus: "ACTIVE",
-									role: "USER",
-								}),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(100),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -266,15 +271,17 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: "테스트유저", profileImage: null })
 					.buildWithRelations();
 
+				(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue(
+					{
+						dailyLimit: null,
+						isAdmin: true,
+						subscriptionStatus: "FREE",
+					},
+				);
+
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest.fn().mockResolvedValue({
-									subscriptionStatus: "FREE",
-									role: "ADMIN",
-								}),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(100),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -294,14 +301,17 @@ describe("CheerService", () => {
 
 			it("EXPIRED 구독자는 FREE와 동일한 제한을 받는다", async () => {
 				// Given
+				(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue(
+					{
+						dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+						isAdmin: false,
+						subscriptionStatus: "EXPIRED",
+					},
+				);
+
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "EXPIRED" }),
-							},
 							cheer: {
 								count: jest
 									.fn()
@@ -329,11 +339,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(recentCheer),
@@ -366,11 +371,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(oldCheer),
@@ -402,11 +402,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -474,11 +469,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -509,11 +499,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -550,11 +535,6 @@ describe("CheerService", () => {
 				(database.$transaction as jest.Mock).mockImplementation(
 					async (callback: (tx: unknown) => Promise<unknown>) => {
 						const txProxy = {
-							user: {
-								findUnique: jest
-									.fn()
-									.mockResolvedValue({ subscriptionStatus: "FREE" }),
-							},
 							cheer: {
 								count: jest.fn().mockResolvedValue(0),
 								findFirst: jest.fn().mockResolvedValue(null),
@@ -684,9 +664,10 @@ describe("CheerService", () => {
 		it("FREE 구독자의 일일 제한 정보를 반환한다", async () => {
 			// Given
 			const userId = "user-1";
-			(cheerRepo.getUserSubscriptionInfo as jest.Mock).mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
-				role: "USER",
 			});
 			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(1);
 
@@ -704,9 +685,10 @@ describe("CheerService", () => {
 		it("ACTIVE 구독자는 무제한 제한 정보를 반환한다", async () => {
 			// Given
 			const userId = "user-1";
-			(cheerRepo.getUserSubscriptionInfo as jest.Mock).mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
-				role: "USER",
 			});
 			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(50);
 
@@ -724,9 +706,10 @@ describe("CheerService", () => {
 		it("ADMIN은 구독 상태와 무관하게 무제한이다", async () => {
 			// Given
 			const userId = "user-1";
-			(cacheService.getSubscription as jest.Mock).mockResolvedValue({
-				status: "FREE",
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
 				isAdmin: true,
+				subscriptionStatus: "FREE",
 			});
 			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(100);
 
@@ -741,47 +724,33 @@ describe("CheerService", () => {
 			});
 		});
 
-		it("캐시 미스 시 ADMIN 정보를 DB에서 조회하여 캐싱한다", async () => {
+		it("EntitlementService에 올바른 Feature를 전달한다", async () => {
 			// Given
 			const userId = "user-1";
-			(cacheService.getSubscription as jest.Mock).mockResolvedValue(undefined);
-			(cheerRepo.getUserSubscriptionInfo as jest.Mock).mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
-				role: "ADMIN",
 			});
-			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(100);
-
-			// When
-			const result = await service.getLimitInfo(userId);
-
-			// Then
-			expect(result.dailyLimit).toBeNull();
-			expect(result.remaining).toBeNull();
-			expect(cacheService.setSubscription).toHaveBeenCalledWith(userId, {
-				status: "FREE",
-				isAdmin: true,
-			});
-		});
-
-		it("구독 상태가 없으면 FREE로 처리한다", async () => {
-			// Given
-			const userId = "user-1";
-			(cheerRepo.getUserSubscriptionInfo as jest.Mock).mockResolvedValue(null);
 			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(0);
 
 			// When
-			const result = await service.getLimitInfo(userId);
+			await service.getLimitInfo(userId);
 
 			// Then
-			expect(result.dailyLimit).toBe(CHEER_LIMITS.FREE_DAILY_LIMIT);
+			expect(entitlementService.getFeatureLimit).toHaveBeenCalledWith(
+				userId,
+				Feature.CHEER,
+			);
 		});
 
 		it("남은 횟수가 음수가 되지 않는다", async () => {
 			// Given
 			const userId = "user-1";
-			(cheerRepo.getUserSubscriptionInfo as jest.Mock).mockResolvedValue({
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+				isAdmin: false,
 				subscriptionStatus: "FREE",
-				role: "USER",
 			});
 			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(100); // 제한보다 많음
 
@@ -790,22 +759,6 @@ describe("CheerService", () => {
 
 			// Then
 			expect(result.remaining).toBe(0);
-		});
-
-		it("캐시된 구독 상태를 사용한다", async () => {
-			// Given
-			const userId = "user-1";
-			(cacheService.getSubscription as jest.Mock).mockResolvedValue({
-				status: "ACTIVE",
-			});
-			(cheerRepo.countTodayCheers as jest.Mock).mockResolvedValue(10);
-
-			// When
-			const result = await service.getLimitInfo(userId);
-
-			// Then
-			expect(result.dailyLimit).toBeNull();
-			expect(cheerRepo.getUserSubscriptionStatus).not.toHaveBeenCalled();
 		});
 	});
 

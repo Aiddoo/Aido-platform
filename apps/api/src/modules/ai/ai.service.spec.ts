@@ -1,37 +1,28 @@
-import { Test, type TestingModule } from "@nestjs/testing";
-import { TypedConfigService } from "@/common/config/services/config.service";
+/**
+ * AiService 단위 테스트 (Suites + GWT 패턴)
+ *
+ * 자연어 투두 파싱, 일일 사용량 관리, 권한별 제한 검증
+ *
+ * - Suites: 자동 Mock 생성 (DatabaseService, EntitlementService)
+ * - FakeAiProvider: AI_PROVIDER Symbol 토큰용 테스트 더블
+ * - GWT: Given/When/Then 주석
+ */
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
 import { AiService } from "./ai.service";
 import { AI_PROVIDER } from "./providers/ai.provider";
 
-interface MockUser {
-	id: string;
-	aiUsageCount: number;
-	aiUsageResetAt: Date;
-}
-
-interface AiUsageInfo {
-	aiUsageCount: number;
-	aiUsageResetAt: Date;
-}
-
-interface MockPrisma {
-	user: {
-		findUnique: jest.Mock<Promise<MockUser | AiUsageInfo | null>>;
-		update: jest.Mock<Promise<MockUser>>;
-	};
-	$transaction: jest.Mock;
-}
-
 describe("AiService", () => {
 	let service: AiService;
 	let fakeAiProvider: FakeAiProvider;
-	let mockPrisma: MockPrisma;
-	let mockConfigService: { aiDailyLimit: number };
+	let database: Mocked<DatabaseService>;
+	let entitlementService: Mocked<EntitlementService>;
 
-	const mockUser: MockUser = {
+	const mockUser = {
 		id: "user-1",
 		aiUsageCount: 0,
 		aiUsageResetAt: new Date(),
@@ -39,35 +30,41 @@ describe("AiService", () => {
 
 	beforeEach(async () => {
 		fakeAiProvider = new FakeAiProvider();
-		mockPrisma = {
-			user: {
-				findUnique: jest.fn(),
-				update: jest.fn(),
-			},
-			$transaction: jest.fn((callback: (tx: unknown) => unknown) =>
-				callback(mockPrisma),
-			),
-		};
-		mockConfigService = {
-			aiDailyLimit: 5,
-		};
 
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				AiService,
-				{ provide: AI_PROVIDER, useValue: fakeAiProvider },
-				{ provide: DatabaseService, useValue: mockPrisma },
-				{ provide: TypedConfigService, useValue: mockConfigService },
-			],
-		}).compile();
+		const { unit, unitRef } = await TestBed.solitary(AiService)
+			.mock(AI_PROVIDER)
+			.impl(() => fakeAiProvider)
+			.compile();
 
-		service = module.get<AiService>(AiService);
+		service = unit;
+		database = unitRef.get(
+			DatabaseService,
+		) as unknown as Mocked<DatabaseService>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
+
+		// $transaction passthrough
+		(database.$transaction as jest.Mock).mockImplementation(
+			(callback: (tx: unknown) => unknown) => callback(database),
+		);
+
+		// 기본: FREE 사용자 (dailyLimit: 5)
+		(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+			dailyLimit: 5,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
 	});
 
 	afterEach(() => {
 		fakeAiProvider.clear();
 		jest.clearAllMocks();
 	});
+
+	// =========================================================================
+	// parseTodo
+	// =========================================================================
 
 	describe("parseTodo", () => {
 		it("자연어를 구조화된 투두로 파싱한다", async () => {
@@ -78,8 +75,8 @@ describe("AiService", () => {
 				scheduledTime: "15:00",
 				isAllDay: false,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			const result = await service.parseTodo(
@@ -108,8 +105,8 @@ describe("AiService", () => {
 				scheduledTime: null,
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			const result = await service.parseTodo("다음주 월~금 출장", "user-1");
@@ -127,17 +124,17 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 3,
 			});
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			await service.parseTodo("테스트", "user-1");
 
 			// Then
-			expect(mockPrisma.user.update).toHaveBeenCalledWith({
+			expect(database.user.update).toHaveBeenCalledWith({
 				where: { id: "user-1" },
 				data: { aiUsageCount: { increment: 1 } },
 			});
@@ -154,18 +151,18 @@ describe("AiService", () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 5,
 				aiUsageResetAt: yesterday,
 			});
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			await service.parseTodo("테스트", "user-1");
 
 			// Then
-			expect(mockPrisma.user.update).toHaveBeenCalledWith({
+			expect(database.user.update).toHaveBeenCalledWith({
 				where: { id: "user-1" },
 				data: {
 					aiUsageCount: 1,
@@ -192,7 +189,7 @@ describe("AiService", () => {
 		it("AI 파싱 실패시 AI_1302 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setInvalidResponse(new Error("Parse error"));
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
 			// When & Then
 			await expect(service.parseTodo("테스트", "user-1")).rejects.toThrow(
@@ -212,8 +209,8 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			await service.parseTodo("내일 회의", "user-1");
@@ -232,7 +229,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue(null);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.parseTodo("테스트", "unknown-user")).rejects.toThrow(
@@ -247,7 +244,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: new Date(),
 			});
@@ -270,7 +267,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: new Date(),
 			});
@@ -281,12 +278,66 @@ describe("AiService", () => {
 			// Then
 			expect(fakeAiProvider.getCallCount()).toBe(0);
 		});
+
+		it("ADMIN 사용자는 사용량 초과해도 파싱 가능하다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
+				subscriptionStatus: "FREE",
+			});
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 100,
+			});
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+			// When
+			const result = await service.parseTodo("테스트", "user-1");
+
+			// Then
+			expect(result.data.title).toBe("테스트");
+		});
+
+		it("ACTIVE 구독자는 사용량 초과해도 파싱 가능하다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 100,
+			});
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+			// When
+			const result = await service.parseTodo("테스트", "user-1");
+
+			// Then
+			expect(result.data.title).toBe("테스트");
+		});
 	});
+
+	// =========================================================================
+	// getUsage
+	// =========================================================================
 
 	describe("getUsage", () => {
 		it("현재 사용량을 반환한다", async () => {
 			// Given
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 3,
 				aiUsageResetAt: new Date(),
 			});
@@ -309,7 +360,7 @@ describe("AiService", () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: yesterday,
 			});
@@ -324,19 +375,67 @@ describe("AiService", () => {
 
 		it("사용자를 찾을 수 없으면 에러를 던진다", async () => {
 			// Given
-			mockPrisma.user.findUnique.mockResolvedValue(null);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.getUsage("unknown-user")).rejects.toThrow(
 				BusinessException,
 			);
 		});
+
+		it("ADMIN 사용자는 limit이 null이다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
+				subscriptionStatus: "FREE",
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 3,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result).toMatchObject({
+				used: 3,
+				limit: null,
+			});
+		});
+
+		it("ACTIVE 구독자는 limit이 null이다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 10,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result).toMatchObject({
+				used: 10,
+				limit: null,
+			});
+		});
 	});
+
+	// =========================================================================
+	// checkUsageLimit
+	// =========================================================================
 
 	describe("checkUsageLimit", () => {
 		it("한도 내면 true를 반환한다", async () => {
 			// Given
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 4,
 				aiUsageResetAt: new Date(),
 			});
@@ -350,7 +449,7 @@ describe("AiService", () => {
 
 		it("한도에 도달하면 false를 반환한다", async () => {
 			// Given
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: new Date(),
 			});
@@ -364,7 +463,7 @@ describe("AiService", () => {
 
 		it("한도 초과면 false를 반환한다", async () => {
 			// Given
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 10,
 				aiUsageResetAt: new Date(),
 			});
@@ -381,7 +480,7 @@ describe("AiService", () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 
-			mockPrisma.user.findUnique.mockResolvedValue({
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: yesterday,
 			});
@@ -392,7 +491,49 @@ describe("AiService", () => {
 			// Then
 			expect(result).toBe(true);
 		});
+
+		it("ADMIN 사용자는 항상 true를 반환한다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
+				subscriptionStatus: "FREE",
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 1000,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.checkUsageLimit("user-1");
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("ACTIVE 구독자는 항상 true를 반환한다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 1000,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.checkUsageLimit("user-1");
+
+			// Then
+			expect(result).toBe(true);
+		});
 	});
+
+	// =========================================================================
+	// 토큰 사용량 추적
+	// =========================================================================
 
 	describe("토큰 사용량 추적", () => {
 		it("결과에 토큰 사용량이 포함된다", async () => {
@@ -403,8 +544,8 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			const result = await service.parseTodo("테스트", "user-1");
@@ -417,6 +558,10 @@ describe("AiService", () => {
 		});
 	});
 
+	// =========================================================================
+	// 연속 요청 처리
+	// =========================================================================
+
 	describe("연속 요청 처리", () => {
 		it("여러 응답을 순차적으로 반환한다", async () => {
 			// Given
@@ -425,8 +570,8 @@ describe("AiService", () => {
 				{ title: "두번째", startDate: "2025-01-27", isAllDay: true },
 				{ title: "세번째", startDate: "2025-01-28", isAllDay: true },
 			]);
-			mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-			mockPrisma.user.update.mockResolvedValue(mockUser);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
 			const result1 = await service.parseTodo("첫번째", "user-1");

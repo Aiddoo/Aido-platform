@@ -8,6 +8,7 @@ import {
 	AppConfigModule,
 	CacheModule,
 	EncryptionModule,
+	EntitlementModule,
 	ExceptionModule,
 	LockModule,
 	LoggerModule,
@@ -57,6 +58,7 @@ import { AppService } from "./app.service";
 		}),
 
 		// 4. Global Modules
+		EntitlementModule,
 		LoggerModule.forRootAsync(),
 		ExceptionModule,
 		ResponseModule,

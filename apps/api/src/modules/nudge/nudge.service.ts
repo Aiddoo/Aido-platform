@@ -1,4 +1,4 @@
-import { NUDGE_LIMITS, SUBSCRIPTION_NUDGE_LIMITS } from "@aido/validators";
+import { NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
@@ -7,6 +7,10 @@ import {
 	now,
 	startOfDayInTimezone,
 } from "@/common/date";
+import {
+	EntitlementService,
+	Feature,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -46,6 +50,7 @@ export class NudgeService {
 		private readonly paginationService: PaginationService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	// =========================================================================
@@ -124,19 +129,11 @@ export class NudgeService {
 			}
 
 			// 4. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
-			const subscriptionStatus = await tx.user.findUnique({
-				where: { id: senderId },
-				select: { subscriptionStatus: true, role: true },
-			});
-
-			const isAdmin = subscriptionStatus?.role === "ADMIN";
-			const status = subscriptionStatus?.subscriptionStatus ?? "FREE";
-			const limitKey = status as keyof typeof SUBSCRIPTION_NUDGE_LIMITS;
-			const dailyLimit = isAdmin
-				? null
-				: limitKey in SUBSCRIPTION_NUDGE_LIMITS
-					? SUBSCRIPTION_NUDGE_LIMITS[limitKey]
-					: NUDGE_LIMITS.FREE_DAILY_LIMIT;
+			const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(
+				tx,
+				senderId,
+				Feature.NUDGE,
+			);
 
 			const todayStart = startOfDayInTimezone(now(), tz);
 			const used = await tx.nudge.count({
@@ -322,19 +319,10 @@ export class NudgeService {
 		userId: string,
 		tz: string = "UTC",
 	): Promise<NudgeLimitInfo> {
-		// 구독 상태 및 역할 조회
-		const userInfo = await this.nudgeRepository.getUserSubscriptionInfo(userId);
-		const isAdmin = userInfo?.role === "ADMIN";
-
-		// 구독 상태에 따른 제한
-		const status = userInfo?.subscriptionStatus ?? "FREE";
-		const limitKey = status as keyof typeof SUBSCRIPTION_NUDGE_LIMITS;
-		// ADMIN은 무제한, ACTIVE 구독자도 null(무제한)
-		const dailyLimit = isAdmin
-			? null
-			: limitKey in SUBSCRIPTION_NUDGE_LIMITS
-				? SUBSCRIPTION_NUDGE_LIMITS[limitKey]
-				: NUDGE_LIMITS.FREE_DAILY_LIMIT;
+		const { dailyLimit } = await this.entitlementService.getFeatureLimit(
+			userId,
+			Feature.NUDGE,
+		);
 
 		// 오늘 사용량 조회
 		const today = startOfDayInTimezone(now(), tz);

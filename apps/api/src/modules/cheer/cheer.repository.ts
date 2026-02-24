@@ -274,31 +274,4 @@ export class CheerRepository {
 		});
 		return user?.profile?.name ?? null;
 	}
-
-	/**
-	 * 사용자 구독 상태 조회
-	 */
-	async getUserSubscriptionStatus(
-		userId: string,
-	): Promise<"FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { subscriptionStatus: true },
-		});
-		return user?.subscriptionStatus ?? null;
-	}
-
-	/**
-	 * 사용자 구독 상태 및 역할 조회 (ADMIN 우회 판단용)
-	 */
-	async getUserSubscriptionInfo(userId: string): Promise<{
-		subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED";
-		role: string;
-	} | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { subscriptionStatus: true, role: true },
-		});
-		return user ?? null;
-	}
 }

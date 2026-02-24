@@ -474,36 +474,6 @@ describe("NudgeRepository", () => {
 		});
 	});
 
-	describe("getUserSubscriptionStatus", () => {
-		it("사용자 구독 상태를 조회한다", async () => {
-			// Given
-			(db.user.findUnique as jest.Mock).mockResolvedValue({
-				subscriptionStatus: "ACTIVE",
-			});
-
-			// When
-			const result = await repository.getUserSubscriptionStatus("user-id");
-
-			// Then
-			expect(db.user.findUnique).toHaveBeenCalledWith({
-				where: { id: "user-id" },
-				select: { subscriptionStatus: true },
-			});
-			expect(result).toBe("ACTIVE");
-		});
-
-		it("사용자가 없으면 null을 반환한다", async () => {
-			// Given
-			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
-
-			// When
-			const result = await repository.getUserSubscriptionStatus("non-existent");
-
-			// Then
-			expect(result).toBeNull();
-		});
-	});
-
 	describe("findTodoWithOwner", () => {
 		it("Todo와 소유자 정보를 조회한다", async () => {
 			// Given
