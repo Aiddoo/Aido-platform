@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { SentryModule } from "@sentry/nestjs/setup";
 import {
 	AppConfigModule,
 	CacheModule,
@@ -38,7 +39,10 @@ import { AppService } from "./app.service";
 		// 1. Configuration (Must be loaded first)
 		AppConfigModule,
 
-		// 2. Infrastructure
+		// 2. Monitoring
+		SentryModule.forRoot(),
+
+		// 3. Infrastructure
 		DatabaseModule,
 		EncryptionModule,
 		CacheModule.forRoot(),
@@ -52,7 +56,7 @@ import { AppService } from "./app.service";
 			ignoreErrors: false,
 		}),
 
-		// 3. Global Modules
+		// 4. Global Modules
 		LoggerModule.forRootAsync(),
 		ExceptionModule,
 		ResponseModule,
@@ -67,7 +71,7 @@ import { AppService } from "./app.service";
 			],
 		}),
 
-		// 4. Features
+		// 5. Features
 		AdminModule,
 		AdminNotificationModule,
 		AiModule,

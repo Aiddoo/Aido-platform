@@ -6,7 +6,8 @@ import { z } from "zod";
  */
 export const externalSchema = z.object({
 	// RevenueCat 구독 관리
-	REVENUECAT_API_KEY: z.string().optional(),
+	REVENUECAT_SECRET_API_KEY: z.string().optional(),
+	REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
 
 	// Redis 캐시/세션 (선택) - 빈 문자열 허용
 	REDIS_URL: z

@@ -182,8 +182,11 @@ export class TypedConfigService {
 		return this.get("EXPO_ACCESS_TOKEN");
 	}
 
-	get revenueCatApiKey(): string | undefined {
-		return this.get("REVENUECAT_API_KEY");
+	get revenuecat() {
+		return {
+			secretApiKey: this.get("REVENUECAT_SECRET_API_KEY"),
+			webhookSecret: this.get("REVENUECAT_WEBHOOK_SECRET"),
+		};
 	}
 
 	get redisUrl(): string | undefined {
