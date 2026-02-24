@@ -6,11 +6,16 @@
 
 import { ErrorCode } from "@aido/errors";
 import { HttpException, HttpStatus } from "@nestjs/common";
+import * as Sentry from "@sentry/nestjs";
 import { PinoLogger } from "nestjs-pino";
 import type { TypedConfigService } from "@/common/config/services/config.service";
 import { Prisma } from "@/generated/prisma/client";
 import { BusinessExceptions } from "../services/business-exception.service";
 import { GlobalExceptionFilter } from "./global-exception.filter";
+
+jest.mock("@sentry/nestjs", () => ({
+	captureException: jest.fn(),
+}));
 
 describe("GlobalExceptionFilter", () => {
 	let filter: GlobalExceptionFilter;
@@ -224,6 +229,48 @@ describe("GlobalExceptionFilter", () => {
 			);
 			const jsonArg = mockResponse.json.mock.calls[0][0];
 			expect(jsonArg.error.code).toBe(ErrorCode.SYS_0001);
+		});
+	});
+
+	describe("Sentry 캡처", () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		it("5xx 서버 에러는 Sentry에 캡처해야 한다", () => {
+			// Given
+			const exception = new Error("unexpected server error");
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			expect(Sentry.captureException).toHaveBeenCalledWith(exception);
+		});
+
+		it("4xx 클라이언트 에러는 Sentry에 캡처하지 않아야 한다", () => {
+			// Given
+			const exception = new HttpException(
+				{ message: "Bad Request" },
+				HttpStatus.BAD_REQUEST,
+			);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			expect(Sentry.captureException).not.toHaveBeenCalled();
+		});
+
+		it("BusinessException(4xx)은 Sentry에 캡처하지 않아야 한다", () => {
+			// Given
+			const exception = BusinessExceptions.todoCategoryNotFound(1);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			expect(Sentry.captureException).not.toHaveBeenCalled();
 		});
 	});
 

@@ -6,6 +6,7 @@ import {
 	HttpException,
 	HttpStatus,
 } from "@nestjs/common";
+import * as Sentry from "@sentry/nestjs";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 import { TypedConfigService } from "@/common/config/services/config.service";
@@ -111,6 +112,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 				},
 				timestamp: Date.now(),
 			};
+		}
+
+		// 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
+		if (statusCode >= 500) {
+			Sentry.captureException(exception);
 		}
 
 		// 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
