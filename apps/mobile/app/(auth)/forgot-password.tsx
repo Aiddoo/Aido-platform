@@ -46,7 +46,7 @@ const ForgotPasswordScreen = () => {
   const { step, setStep } = useStepper(STEPS);
 
   return (
-    <View className="flex-1 bg-gray-1">
+    <View className="flex-1 bg-background">
       <FormProvider {...form}>
         {match(step)
           .with('이메일_입력', () => <EmailStep onNext={() => setStep('인증코드_입력')} />)
@@ -345,7 +345,7 @@ function NewPasswordStep() {
             control={control}
             name="newPassword"
             render={({ field: { onChange, value } }) => (
-              <VStack gap={8}>
+              <VStack gap={4}>
                 <PasswordInput
                   label="새 비밀번호"
                   placeholder="새 비밀번호를 입력해주세요"
@@ -354,8 +354,7 @@ function NewPasswordStep() {
                   autoFocus={step === 'newPassword'}
                   submitBehavior="submit"
                   returnKeyType="next"
-                  isInvalid={!!errors.newPassword}
-                  errorMessage={errors.newPassword?.message}
+                  renderErrorMessage={false}
                   onSubmitEditing={() => {
                     if (newPassword.length > 0 && !errors.newPassword) handleNext();
                   }}
