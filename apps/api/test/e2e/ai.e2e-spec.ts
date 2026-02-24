@@ -109,10 +109,11 @@ describe("AI (e2e)", () => {
 					isAllDay: false,
 				});
 
-				// When - 자연어 파싱 API 호출
+				// When - 자연어 파싱 API 호출 (X-Timezone 포함)
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 오후 3시에 팀 미팅" });
 
 				// Then - 파싱 결과와 메타데이터 검증
@@ -156,6 +157,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "다음주 월요일부터 금요일까지 출장" });
 
 				// Then - 종일 일정 파싱 결과 검증
@@ -178,6 +180,7 @@ describe("AI (e2e)", () => {
 					await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
+						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: `테스트 ${i + 1}` })
 						.expect(200);
 				}
@@ -232,6 +235,7 @@ describe("AI (e2e)", () => {
 					const response = await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
+						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: testCase.input });
 
 					// Then - 예상 결과와 일치하는 파싱 결과
@@ -255,6 +259,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트" });
 
 				// Then - 429 에러와 AI_1303 코드 반환
@@ -281,6 +286,7 @@ describe("AI (e2e)", () => {
 					await request(ctx.app.getHttpServer())
 						.post("/ai/parse-todo")
 						.set("Authorization", `Bearer ${accessToken}`)
+						.set("X-Timezone", "Asia/Seoul")
 						.send({ text: `테스트 ${i + 1}` })
 						.expect(200);
 				}
@@ -289,6 +295,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트 6" });
 
 				expect(response.status).toBe(429);
@@ -383,6 +390,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "내일 회의" });
 
 				// Then - 503 Service Unavailable 반환
@@ -398,6 +406,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "알 수 없는 입력" });
 
 				// Then - 422 Unprocessable Entity 반환
@@ -420,6 +429,7 @@ describe("AI (e2e)", () => {
 				const response = await request(ctx.app.getHttpServer())
 					.post("/ai/parse-todo")
 					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
 					.send({ text: "테스트" });
 
 				// Then - 설정한 토큰 사용량이 응답에 포함
@@ -540,6 +550,53 @@ describe("AI (e2e)", () => {
 	});
 
 	// ============================================
+	// 타임존 처리
+	// ============================================
+
+	describe("타임존 처리", () => {
+		it("X-Timezone 헤더가 프롬프트에 반영된다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+
+			// When - Asia/Seoul 타임존으로 요청
+			await request(ctx.app.getHttpServer())
+				.post("/ai/parse-todo")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ text: "테스트" })
+				.expect(200);
+
+			// Then - 프롬프트에 Korean Todo Parser가 포함됨
+			const prompt = fakeAiProvider.getLastPrompt();
+			expect(prompt).toContain("Korean Todo Parser");
+			expect(prompt).toContain('Parse: "테스트"');
+		});
+
+		it("X-Timezone 헤더 없이도 정상 동작한다 (UTC 폴백)", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+
+			// When - X-Timezone 없이 요청
+			const response = await request(ctx.app.getHttpServer())
+				.post("/ai/parse-todo")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ text: "테스트" });
+
+			// Then - 정상 응답
+			expect(response.status).toBe(200);
+			expect(response.body.data.data.title).toBe("테스트");
+		});
+	});
+
+	// ============================================
 	// 통합 시나리오 테스트
 	// ============================================
 
@@ -565,12 +622,14 @@ describe("AI (e2e)", () => {
 			await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트 1" })
 				.expect(200);
 
 			await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트 2" })
 				.expect(200);
 
@@ -596,6 +655,7 @@ describe("AI (e2e)", () => {
 			const failedResponse = await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트" });
 
 			// Then - 429 에러 반환
@@ -606,6 +666,7 @@ describe("AI (e2e)", () => {
 			const response = await request(ctx.app.getHttpServer())
 				.post("/ai/parse-todo")
 				.set("Authorization", `Bearer ${accessToken}`)
+				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "테스트" });
 
 			// Then - 요청 성공

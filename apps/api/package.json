@@ -48,7 +48,6 @@
 		"@sentry/nestjs": "^10.39.0",
 		"ai": "^6.0.86",
 		"argon2": "^0.44.0",
-		"date-fns": "^4.1.0",
 		"dayjs": "^1.11.19",
 		"expo-server-sdk": "^5.0.0",
 		"google-auth-library": "^10.0.0",

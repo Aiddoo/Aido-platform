@@ -84,7 +84,11 @@ export class AiService {
 	 * @throws AI_1302 - 파싱 실패
 	 * @throws AI_1303 - 일일 사용량 초과
 	 */
-	async parseTodo(text: string, userId: string): Promise<ParseTodoResult> {
+	async parseTodo(
+		text: string,
+		userId: string,
+		timezone: string,
+	): Promise<ParseTodoResult> {
 		const startTime = Date.now();
 
 		// 1. AI Provider 가용성 확인
@@ -97,7 +101,7 @@ export class AiService {
 		await this.#checkAndIncrementUsage(userId);
 
 		// 3. 최적화된 프롬프트 생성
-		const prompt = buildParseTodoPrompt(text, new Date());
+		const prompt = buildParseTodoPrompt(text, timezone, new Date());
 
 		this.#logger.debug(`Parsing todo: "${text}"`);
 
