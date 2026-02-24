@@ -1,10 +1,5 @@
 import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import { DATE_FORMAT, type DateFormatType } from "../constants";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 const DEFAULT_TIMEZONE = "UTC";
 

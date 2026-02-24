@@ -1,13 +1,10 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 
 import { DATE_FORMAT } from "@/common/date";
 import type {
 	DailyCompletionSummary,
 	TodoAggregateByDate,
 } from "./types/daily-completion.types";
-
-dayjs.extend(utc);
 
 /**
  * DailyCompletion 도메인의 Mapper 클래스

@@ -1,15 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { DailyCompletionMapper } from "./daily-completion.mapper";
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import type {
 	DailyCompletionsRangeResult,
 	GetDailyCompletionsRangeParams,
 } from "./types/daily-completion.types";
-
-// UTC 플러그인 활성화
-dayjs.extend(utc);
 
 // 타입 재내보내기 (기존 import 호환성 유지)
 export type {

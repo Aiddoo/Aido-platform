@@ -22,13 +22,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { DatabaseService } from "@/database/database.service";
 import { DailyCompletionRepository } from "@/modules/daily-completion/daily-completion.repository";
 import { DailyCompletionService } from "@/modules/daily-completion/daily-completion.service";
-
-// UTC 플러그인 활성화
-dayjs.extend(utc);
 
 import { TestDatabase } from "../setup/test-database";
 

@@ -1,4 +1,5 @@
 import "./instrument";
+import "./common/date/dayjs.setup";
 
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";

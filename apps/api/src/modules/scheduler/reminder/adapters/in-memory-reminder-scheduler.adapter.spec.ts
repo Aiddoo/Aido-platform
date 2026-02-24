@@ -1,6 +1,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
+import type { ILockProvider } from "@/common/lock";
+import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
@@ -23,13 +25,22 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 	let service: InMemoryReminderSchedulerAdapter;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
 
+		const mockLockProvider: ILockProvider = {
+			acquire: jest.fn(),
+			isLocked: jest.fn(),
+		};
+
 		const { unit, unitRef } = await TestBed.solitary(
 			InMemoryReminderSchedulerAdapter,
-		).compile();
+		)
+			.mock(LOCK_PROVIDER)
+			.impl(() => mockLockProvider)
+			.compile();
 
 		service = unit;
 		databaseService = unitRef.get(
@@ -38,6 +49,12 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 		notificationService = unitRef.get(
 			NotificationService,
 		) as unknown as Mocked<NotificationService>;
+		lockProvider = unitRef.get(
+			LOCK_PROVIDER,
+		) as unknown as Mocked<ILockProvider>;
+
+		// 기본: Lock 획득 성공 (release 함수 반환)
+		lockProvider.acquire.mockResolvedValue(jest.fn());
 	});
 
 	afterEach(() => {
@@ -303,6 +320,60 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 
 			// Then — 두 투두 모두 호출됨
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(2);
+		});
+
+		it("Lock 획득 실패 시 알림을 발송하지 않는다", async () => {
+			// Given — Lock이 이미 잠겨있음 (다른 시스템이 처리 중)
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			lockProvider.acquire.mockResolvedValue(null);
+			setupNotificationMock(null);
+
+			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+
+			// When — 60분 전 단계 실행
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
+			await jest.advanceTimersByTimeAsync(0);
+
+			// Then — Lock 획득 실패로 알림 미발송
+			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+		});
+
+		it("알림 발송 후 Lock이 정상적으로 해제된다", async () => {
+			// Given
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			const mockRelease = jest.fn();
+			lockProvider.acquire.mockResolvedValue(mockRelease);
+			setupNotificationMock(null);
+			notificationService.createAndSend.mockResolvedValue({} as never);
+
+			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+
+			// When — 60분 전 단계 실행
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
+			await jest.advanceTimersByTimeAsync(0);
+
+			// Then — Lock 해제됨
+			expect(mockRelease).toHaveBeenCalled();
+		});
+
+		it("알림 발송 실패 시에도 Lock이 해제된다", async () => {
+			// Given
+			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
+			const mockRelease = jest.fn();
+			lockProvider.acquire.mockResolvedValue(mockRelease);
+			setupNotificationMock(null);
+			notificationService.createAndSend.mockRejectedValue(
+				new Error("Push failed"),
+			);
+
+			service.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+
+			// When — 60분 전 단계 실행
+			jest.advanceTimersByTime(SIXTY_MIN_MS);
+			await jest.advanceTimersByTimeAsync(0);
+
+			// Then — 에러에도 불구하고 Lock 해제됨
+			expect(mockRelease).toHaveBeenCalled();
 		});
 	});
 

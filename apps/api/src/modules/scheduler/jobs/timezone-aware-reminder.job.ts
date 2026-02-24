@@ -1,16 +1,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 import { getUserToday } from "@/common/date/utils/date.util";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 /**
  * 타임존 인식 리마인더 크론 작업 — Hourly Sweep 패턴
