@@ -9,19 +9,20 @@ import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Avatar, Skeleton } from 'heroui-native';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 
 export function FriendList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    getFriendsQueryOptions(),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+    useSuspenseInfiniteQuery(getFriendsQueryOptions());
   const removeMutation = useMutation(removeFriendMutationOptions());
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allFriends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
@@ -87,6 +88,14 @@ export function FriendList() {
         }
       }}
       onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#FF6B43"
+          colors={['#FF6B43']}
+        />
+      }
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );
