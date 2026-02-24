@@ -1,14 +1,20 @@
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { getCalendarRange, getWeekRange, WEEKDAY_LABELS } from '@src/shared/utils/date';
+import {
+  getCalendarRange,
+  getMonthHeaderText,
+  getWeekHeaderText,
+  getWeekRange,
+  WEEKDAY_LABELS,
+} from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
 import { match } from 'ts-pattern';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
-import { CalendarHeaderText } from './CalendarHeaderText';
 import { CalendarMonthView } from './CalendarMonthView';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';
@@ -43,9 +49,10 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
   const completions = (showCompletions && data) || EMPTY_COMPLETIONS;
 
   return (
-    <VStack className="bg-background">
+    <VStack className="bg-background" gap={8}>
       <HStack className="px-4 py-2" justify="between" align="center">
         <CalendarHeaderText viewMode={viewMode} displayDate={value} />
+
         <HStack gap={8} align="center">
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />
           <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
@@ -61,6 +68,24 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
         ))
         .exhaustive()}
     </VStack>
+  );
+}
+
+interface CalendarHeaderTextProps {
+  viewMode: CalendarViewMode;
+  displayDate: Date;
+}
+
+function CalendarHeaderText({ viewMode, displayDate }: CalendarHeaderTextProps) {
+  const headerText = match(viewMode)
+    .with('week', () => getWeekHeaderText(displayDate))
+    .with('month', () => getMonthHeaderText(displayDate))
+    .exhaustive();
+
+  return (
+    <Text size="b1" weight="semibold">
+      {headerText}
+    </Text>
   );
 }
 
