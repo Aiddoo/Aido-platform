@@ -10,7 +10,7 @@ interface CalendarViewModeToggleProps {
   onChange: (mode: CalendarViewMode) => void;
 }
 
-const MODES: { value: CalendarViewMode; label: string }[] = [
+const CALENDAR_VIEW_MODE: { value: CalendarViewMode; label: string }[] = [
   { value: 'week', label: '주' },
   { value: 'month', label: '월' },
 ];
@@ -42,7 +42,7 @@ export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeTogg
   return (
     <View className="flex-row items-center bg-gray-2 rounded-lg" style={{ padding: PADDING }}>
       <Animated.View className="absolute bg-white rounded-md" style={indicatorStyle} />
-      {MODES.map((mode) => (
+      {CALENDAR_VIEW_MODE.map((mode) => (
         <Pressable
           key={mode.value}
           onPress={() => onChange(mode.value)}
