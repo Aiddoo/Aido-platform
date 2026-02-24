@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -7,7 +8,6 @@ import { DocsIcon } from '@src/shared/ui/Icon';
 import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
