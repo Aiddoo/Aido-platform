@@ -11,6 +11,9 @@ import {
   type DeleteAccountResponse,
   deleteAccountResponseSchema,
   type ExchangeCodeInput,
+  type ForgotPasswordInput,
+  type ForgotPasswordResponse,
+  forgotPasswordResponseSchema,
   type LinkedAccountsResponse,
   linkedAccountsResponseSchema,
   type PreferenceResponse,
@@ -19,8 +22,11 @@ import {
   type RegisterResponse,
   type ResendVerificationInput,
   type ResendVerificationResponse,
+  type ResetPasswordInput,
+  type ResetPasswordResponse,
   registerResponseSchema,
   resendVerificationResponseSchema,
+  resetPasswordResponseSchema,
   type UpdateMarketingConsentInput,
   type UpdateMarketingConsentResponse,
   type UpdatePreferenceInput,
@@ -45,11 +51,14 @@ import { Platform } from 'react-native';
 import { type AuthError, AuthErrors, isAuthError, isExpoCodedError } from '../models/auth.error';
 import type {
   AuthTokens,
+  ChangePasswordResult,
   Consent,
   DeleteAccountResult,
+  ForgotPasswordResult,
   Preference,
   RegisterResult,
   ResendVerificationResult,
+  ResetPasswordResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
 import type {
@@ -61,12 +70,15 @@ import type {
 } from '../models/oauth.model';
 import {
   toAuthTokens,
+  toChangePasswordResult,
   toConsent,
   toDeleteAccountResult,
+  toForgotPasswordResult,
   toLinkedAccounts,
   toPreference,
   toRegisterResult,
   toResendVerificationResult,
+  toResetPasswordResult,
   toUpdateMarketingConsentResult,
 } from './auth.mapper';
 
@@ -517,9 +529,45 @@ export class AuthService {
     return this.#authHttpClient.delete(`v1/auth/linked-accounts/${provider}`);
   };
 
+  forgotPassword = async (
+    input: ForgotPasswordInput,
+  ): Promise<Result<ForgotPasswordResult, ApiError>> => {
+    const result = await this.#publicHttpClient.post<ForgotPasswordResponse>(
+      'v1/auth/forgot-password',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = forgotPasswordResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid forgotPassword response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toForgotPasswordResult(parsed.data));
+  };
+
+  resetPassword = async (
+    input: ResetPasswordInput,
+  ): Promise<Result<ResetPasswordResult, ApiError>> => {
+    const result = await this.#publicHttpClient.post<ResetPasswordResponse>(
+      'v1/auth/reset-password',
+      input,
+    );
+    if (!result.ok) return result;
+
+    const parsed = resetPasswordResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AuthService] Invalid resetPassword response: ${parsed.error.message}`);
+    }
+
+    return ok(toResetPasswordResult(parsed.data));
+  };
+
   changePassword = async (
     input: ChangePasswordInput,
-  ): Promise<Result<{ message: string }, ApiError>> => {
+  ): Promise<Result<ChangePasswordResult, ApiError>> => {
     const result = await this.#authHttpClient.patch<ChangePasswordResponse>(
       'v1/auth/password',
       input,
@@ -533,7 +581,7 @@ export class AuthService {
       );
     }
 
-    return ok({ message: parsed.data.message });
+    return ok(toChangePasswordResult(parsed.data));
   };
 
   deleteAccount = async (

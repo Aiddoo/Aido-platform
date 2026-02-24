@@ -50,6 +50,21 @@ export const deleteAccountResultSchema = z.object({
 });
 export type DeleteAccountResult = z.infer<typeof deleteAccountResultSchema>;
 
+export const forgotPasswordResultSchema = z.object({
+  message: z.string(),
+});
+export type ForgotPasswordResult = z.infer<typeof forgotPasswordResultSchema>;
+
+export const resetPasswordResultSchema = z.object({
+  message: z.string(),
+});
+export type ResetPasswordResult = z.infer<typeof resetPasswordResultSchema>;
+
+export const changePasswordResultSchema = z.object({
+  message: z.string(),
+});
+export type ChangePasswordResult = z.infer<typeof changePasswordResultSchema>;
+
 export function hasLetter(password: string) {
   return PASSWORD_RULES.HAS_LETTER.test(password);
 }

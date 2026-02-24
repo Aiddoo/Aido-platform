@@ -17,10 +17,9 @@ import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, Image, type TextInput, View } from 'react-native';
+import { Image, type TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-// TODO: 비밀번호 찾기 기능 추가
 const EmailLoginScreen = () => {
   const passwordRef = useRef<TextInput>(null);
 
@@ -121,10 +120,7 @@ const EmailLoginScreen = () => {
             회원가입
           </TextButton>
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
-          <TextButton
-            size="medium"
-            onPress={() => Alert.alert('안내', '비밀번호 찾기 기능은 준비 중이에요')}
-          >
+          <TextButton size="medium" onPress={() => router.push('/(auth)/forgot-password')}>
             비밀번호 찾기
           </TextButton>
         </HStack>

@@ -3,10 +3,12 @@ import type {
   ChangePasswordResponse,
   ConsentResponse,
   DeleteAccountResponse,
+  ForgotPasswordResponse,
   LinkedAccountsResponse,
   PreferenceResponse,
   RegisterResponse,
   ResendVerificationResponse,
+  ResetPasswordResponse,
   UpdateMarketingConsentResponse,
 } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -122,6 +124,32 @@ export const createDeleteAccountDto = (
   overrides?: Partial<DeleteAccountResponse>,
 ): DeleteAccountResponse => ({
   ...generateDeleteAccountDto(),
+  ...overrides,
+});
+
+// -- Forgot Password --
+
+const generateForgotPasswordDto = (): ForgotPasswordResponse => ({
+  message: '등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.',
+});
+
+export const createForgotPasswordDto = (
+  overrides?: Partial<ForgotPasswordResponse>,
+): ForgotPasswordResponse => ({
+  ...generateForgotPasswordDto(),
+  ...overrides,
+});
+
+// -- Reset Password --
+
+const generateResetPasswordDto = (): ResetPasswordResponse => ({
+  message: '비밀번호가 성공적으로 변경되었습니다.',
+});
+
+export const createResetPasswordDto = (
+  overrides?: Partial<ResetPasswordResponse>,
+): ResetPasswordResponse => ({
+  ...generateResetPasswordDto(),
   ...overrides,
 });
 
