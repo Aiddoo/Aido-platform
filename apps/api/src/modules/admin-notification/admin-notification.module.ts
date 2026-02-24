@@ -1,6 +1,4 @@
 import { Module } from "@nestjs/common";
-import { EventEmitterModule } from "@nestjs/event-emitter";
-import { ScheduleModule } from "@nestjs/schedule";
 
 import { DatabaseModule } from "@/database";
 
@@ -10,11 +8,7 @@ import { ADMIN_NOTIFIER } from "./providers/admin-notifier.interface";
 import { DiscordWebhookProvider } from "./providers/discord-webhook.provider";
 
 @Module({
-	imports: [
-		EventEmitterModule.forRoot(),
-		ScheduleModule.forRoot(),
-		DatabaseModule,
-	],
+	imports: [DatabaseModule],
 	providers: [
 		{
 			provide: ADMIN_NOTIFIER,
