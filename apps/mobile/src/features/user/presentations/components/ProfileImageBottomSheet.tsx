@@ -49,7 +49,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
         <BottomSheet.Content
           enableDynamicSizing
           detached
-          bottomInset={insets.bottom + 12}
+          bottomInset={insets.bottom || 16}
           className="mx-4"
           backgroundClassName="rounded-[24px]"
         >
@@ -77,7 +77,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                       onPress={() => setSelectedIcon(icon.key)}
                       className="rounded-2xl overflow-visible"
                     >
-                      <VStack align="center" gap={8} py={8} className="overflow-visible">
+                      <VStack align="center" gap={8} p={8} className="overflow-visible">
                         <Avatar
                           isSelected={isSelected}
                           alt={icon.label}
@@ -106,6 +106,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
             <HStack gap={12}>
               <Button
                 variant="weak"
+                size="large"
                 color="dark"
                 display="block"
                 onPress={() => handleSave(null)}
@@ -115,6 +116,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                 지우기
               </Button>
               <Button
+                size="large"
                 color="primary"
                 display="block"
                 onPress={() => handleSave(selectedIcon)}

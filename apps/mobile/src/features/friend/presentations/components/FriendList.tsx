@@ -1,5 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -12,16 +13,16 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Avatar, Skeleton } from 'heroui-native';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 
 export function FriendList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    getFriendsQueryOptions(),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+    useSuspenseInfiniteQuery(getFriendsQueryOptions());
   const removeMutation = useMutation(removeFriendMutationOptions());
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allFriends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
@@ -66,7 +67,11 @@ export function FriendList() {
       }}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
-          <Result icon={<DocsIcon width={72} height={72} />} title="아직 친구가 없어요" />
+          <Result
+            icon={<DocsIcon width={72} height={72} />}
+            title="친구를 추가해 보세요"
+            description="검색 아이콘을 눌러 친구를 찾을 수 있어요"
+          />
         </Flex>
       }
       ListFooterComponent={
@@ -83,6 +88,14 @@ export function FriendList() {
         }
       }}
       onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#FF6B43"
+          colors={['#FF6B43']}
+        />
+      }
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );

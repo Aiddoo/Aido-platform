@@ -28,7 +28,7 @@ const NotificationsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '알림' }} />
+      <Stack.Screen name="index" options={{ title: '' }} />
     </Stack>
   );
 };

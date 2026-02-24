@@ -26,6 +26,7 @@ export {
   MoonIcon,
   MoreIcon,
   NaverIcon,
+  NotiIcon,
   PauseIcon,
   PawIcon,
   PersonIcon,

@@ -2,7 +2,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Flex } from '@src/shared/ui/Flex/Flex';
-import { BellIcon } from '@src/shared/ui/Icon';
+import { NotiIcon } from '@src/shared/ui/Icon';
 import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -63,7 +63,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
         }
         ListEmptyComponent={
           <Flex flex={1} justify="center" align="center">
-            <Result icon={<BellIcon width={72} height={72} />} title="아직 알림이 없어요" />
+            <Result icon={<NotiIcon width={72} height={72} />} title="아직 알림이 없어요" />
           </Flex>
         }
         ListFooterComponent={

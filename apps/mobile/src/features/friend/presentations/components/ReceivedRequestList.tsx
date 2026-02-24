@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -10,7 +11,7 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import type { FriendRequest } from '../../models/friend.model';
 import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
 import { getReceivedRequestsQueryOptions } from '../queries/get-received-requests-query-options';
@@ -18,10 +19,10 @@ import { rejectRequestMutationOptions } from '../queries/reject-request-mutation
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function ReceivedRequestList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    getReceivedRequestsQueryOptions(),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+    useSuspenseInfiniteQuery(getReceivedRequestsQueryOptions());
   const acceptMutation = useMutation(acceptRequestMutationOptions());
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
   const rejectMutation = useMutation(rejectRequestMutationOptions());
 
   const handleAccept = (userId: string) => {
@@ -99,6 +100,14 @@ export function ReceivedRequestList() {
         }
       }}
       onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#FF6B43"
+          colors={['#FF6B43']}
+        />
+      }
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );

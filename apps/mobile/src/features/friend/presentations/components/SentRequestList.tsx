@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -10,17 +11,17 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import type { FriendRequest } from '../../models/friend.model';
 import { cancelRequestMutationOptions } from '../queries/cancel-request-mutation-options';
 import { getSentRequestsQueryOptions } from '../queries/get-sent-requests-query-options';
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function SentRequestList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    getSentRequestsQueryOptions(),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+    useSuspenseInfiniteQuery(getSentRequestsQueryOptions());
   const cancelMutation = useMutation(cancelRequestMutationOptions());
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allRequests = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
@@ -75,6 +76,14 @@ export function SentRequestList() {
         }
       }}
       onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#FF6B43"
+          colors={['#FF6B43']}
+        />
+      }
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );
