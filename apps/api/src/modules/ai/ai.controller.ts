@@ -9,8 +9,8 @@ import {
 	Post,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -21,7 +21,6 @@ import {
 	ApiUnprocessableError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
-
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { JwtAuthGuard } from "../auth/guards";
 
@@ -98,6 +97,12 @@ export class AiController {
 	@Post("parse-todo")
 	@HttpCode(HttpStatus.OK)
 	@UseGuards(AiUsageGuard)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
 	@ApiDoc({
 		summary: "자연어 텍스트를 투두 데이터로 파싱",
 		operationId: "parseNaturalLanguageTodo",
@@ -196,10 +201,13 @@ if (confirmed) {
 	async parseTodo(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ParseTodoRequestDto,
+		@Timezone() tz: string,
 	): Promise<ParseTodoResponseDto> {
-		this.#logger.debug(`AI 파싱 요청: user=${user.userId}, text="${dto.text}"`);
+		this.#logger.debug(
+			`AI 파싱 요청: user=${user.userId}, tz=${tz}, text="${dto.text}"`,
+		);
 
-		const result = await this.aiService.parseTodo(dto.text, user.userId);
+		const result = await this.aiService.parseTodo(dto.text, user.userId, tz);
 
 		this.#logger.log(
 			`AI 파싱 완료: user=${user.userId}, title="${result.data.title}", ` +

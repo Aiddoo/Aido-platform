@@ -82,6 +82,7 @@ describe("AiService", () => {
 			const result = await service.parseTodo(
 				"내일 오후 3시에 팀 미팅",
 				"user-1",
+				"Asia/Seoul",
 			);
 
 			// Then
@@ -109,7 +110,11 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			const result = await service.parseTodo("다음주 월~금 출장", "user-1");
+			const result = await service.parseTodo(
+				"다음주 월~금 출장",
+				"user-1",
+				"Asia/Seoul",
+			);
 
 			// Then
 			expect(result.data.isAllDay).toBe(true);
@@ -131,7 +136,7 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			await service.parseTodo("테스트", "user-1");
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(database.user.update).toHaveBeenCalledWith({
@@ -159,7 +164,7 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			await service.parseTodo("테스트", "user-1");
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(database.user.update).toHaveBeenCalledWith({
@@ -176,14 +181,14 @@ describe("AiService", () => {
 			fakeAiProvider.setAvailable(false);
 
 			// When & Then
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toThrow(
-				BusinessException,
-			);
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
-				{
-					errorCode: "AI_1301",
-				},
-			);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1301",
+			});
 		});
 
 		it("AI 파싱 실패시 AI_1302 에러를 던진다", async () => {
@@ -192,14 +197,14 @@ describe("AiService", () => {
 			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
 			// When & Then
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toThrow(
-				BusinessException,
-			);
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
-				{
-					errorCode: "AI_1302",
-				},
-			);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1302",
+			});
 		});
 
 		it("프롬프트가 올바르게 생성되어 전달된다", async () => {
@@ -213,13 +218,35 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			await service.parseTodo("내일 회의", "user-1");
+			await service.parseTodo("내일 회의", "user-1", "Asia/Seoul");
 
 			// Then
 			const prompt = fakeAiProvider.getLastPrompt();
 			expect(prompt).toBeDefined();
 			expect(prompt).toContain("내일 회의");
 			expect(prompt).toContain("Korean Todo Parser");
+		});
+
+		it("타임존이 프롬프트에 반영된다", async () => {
+			// Given
+			fakeAiProvider.setResponses([
+				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
+				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
+			]);
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+			// When - 서로 다른 타임존으로 호출
+			await service.parseTodo("회의", "user-1", "Asia/Seoul");
+			const promptKST = fakeAiProvider.getLastPrompt();
+
+			await service.parseTodo("회의", "user-1", "America/New_York");
+			const promptNY = fakeAiProvider.getLastPrompt();
+
+			// Then - 타임존에 따라 프롬프트의 시간이 다르다
+			expect(promptKST).toContain("Korean Todo Parser");
+			expect(promptNY).toContain("Korean Todo Parser");
+			expect(promptKST).not.toBe(promptNY);
 		});
 
 		it("사용자를 찾을 수 없으면 USER_0001 에러를 던진다", async () => {
@@ -232,9 +259,9 @@ describe("AiService", () => {
 			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.parseTodo("테스트", "unknown-user")).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(
+				service.parseTodo("테스트", "unknown-user", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("일일 사용량 초과 시 AI_1303 에러를 던진다", async () => {
@@ -250,14 +277,14 @@ describe("AiService", () => {
 			});
 
 			// When & Then
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toThrow(
-				BusinessException,
-			);
-			await expect(service.parseTodo("테스트", "user-1")).rejects.toMatchObject(
-				{
-					errorCode: "AI_1303",
-				},
-			);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1303",
+			});
 		});
 
 		it("사용량 초과 시 AI Provider를 호출하지 않는다", async () => {
@@ -273,7 +300,7 @@ describe("AiService", () => {
 			});
 
 			// When
-			await service.parseTodo("테스트", "user-1").catch(() => {});
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul").catch(() => {});
 
 			// Then
 			expect(fakeAiProvider.getCallCount()).toBe(0);
@@ -298,7 +325,7 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			const result = await service.parseTodo("테스트", "user-1");
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(result.data.title).toBe("테스트");
@@ -323,7 +350,7 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			const result = await service.parseTodo("테스트", "user-1");
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(result.data.title).toBe("테스트");
@@ -548,7 +575,7 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			const result = await service.parseTodo("테스트", "user-1");
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(result.meta.tokenUsage).toEqual({
@@ -574,9 +601,9 @@ describe("AiService", () => {
 			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
 
 			// When
-			const result1 = await service.parseTodo("첫번째", "user-1");
-			const result2 = await service.parseTodo("두번째", "user-1");
-			const result3 = await service.parseTodo("세번째", "user-1");
+			const result1 = await service.parseTodo("첫번째", "user-1", "Asia/Seoul");
+			const result2 = await service.parseTodo("두번째", "user-1", "Asia/Seoul");
+			const result3 = await service.parseTodo("세번째", "user-1", "Asia/Seoul");
 
 			// Then
 			expect(result1.data.title).toBe("첫번째");

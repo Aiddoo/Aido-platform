@@ -45,12 +45,17 @@ describe("AiController", () => {
 			mockAiService.parseTodo.mockResolvedValue(serviceResult);
 
 			// When: parseTodo를 호출하면
-			const result = await controller.parseTodo(mockUser, dto as any);
+			const result = await controller.parseTodo(
+				mockUser,
+				dto as any,
+				"Asia/Seoul",
+			);
 
-			// Then: 서비스에 text와 userId를 전달하고 성공 응답을 반환해야 한다
+			// Then: 서비스에 text, userId, timezone을 전달하고 성공 응답을 반환해야 한다
 			expect(mockAiService.parseTodo).toHaveBeenCalledWith(
 				dto.text,
 				mockUser.userId,
+				"Asia/Seoul",
 			);
 			expect(result).toEqual({
 				success: true,

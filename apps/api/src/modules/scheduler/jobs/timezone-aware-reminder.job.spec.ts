@@ -1,8 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
-import timezone from "dayjs/plugin/timezone";
-import utc from "dayjs/plugin/utc";
 
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
@@ -11,9 +9,6 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../../notification/notification.service";
 import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
 import { TimezoneAwareReminderJob } from "./timezone-aware-reminder.job";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 // =============================================================================
 // Mock Factory Functions

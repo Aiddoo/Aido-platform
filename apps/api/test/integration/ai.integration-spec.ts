@@ -102,9 +102,10 @@ describe("AiController (Integration)", () => {
 			};
 			aiService.parseTodo.mockResolvedValue(mockResult);
 
-			// When - API 요청
+			// When - API 요청 (X-Timezone 헤더 포함)
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
 				.send(validRequest)
 				.expect(200);
 
@@ -117,6 +118,7 @@ describe("AiController (Integration)", () => {
 			expect(aiService.parseTodo).toHaveBeenCalledWith(
 				validRequest.text,
 				mockUser.userId,
+				"Asia/Seoul",
 			);
 		});
 
@@ -141,6 +143,7 @@ describe("AiController (Integration)", () => {
 			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
 				.send({ text: "다음주 월요일부터 금요일까지 출장" })
 				.expect(200);
 
@@ -186,6 +189,7 @@ describe("AiController (Integration)", () => {
 			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
 				.send(validRequest)
 				.expect(503);
 
@@ -204,6 +208,7 @@ describe("AiController (Integration)", () => {
 			// When - API 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
 				.send(validRequest)
 				.expect(422);
 
@@ -247,6 +252,7 @@ describe("AiController (Integration)", () => {
 			// When - 허용되지 않은 필드 포함 요청
 			const response = await request(app.getHttpServer())
 				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
 				.send({
 					text: "테스트",
 					unknownField: "value",
@@ -257,8 +263,41 @@ describe("AiController (Integration)", () => {
 			expect(aiService.parseTodo).toHaveBeenCalledWith(
 				"테스트",
 				mockUser.userId,
+				"Asia/Seoul",
 			);
 			expect(response.body.data.title).toBe("테스트");
+		});
+
+		it("X-Timezone 헤더 없으면 UTC를 기본값으로 사용", async () => {
+			// Given - AI 파싱 결과 설정
+			const mockResult = {
+				data: {
+					title: "테스트",
+					startDate: "2025-01-25",
+					endDate: null,
+					scheduledTime: null,
+					isAllDay: true,
+				},
+				meta: {
+					tokenUsage: { input: 120, output: 40 },
+					model: "google:gemini-2.0-flash",
+					processingTimeMs: 100,
+				},
+			};
+			aiService.parseTodo.mockResolvedValue(mockResult);
+
+			// When - X-Timezone 헤더 없이 요청
+			await request(app.getHttpServer())
+				.post("/ai/parse-todo")
+				.send({ text: "테스트" })
+				.expect(200);
+
+			// Then - UTC가 기본값으로 전달
+			expect(aiService.parseTodo).toHaveBeenCalledWith(
+				"테스트",
+				mockUser.userId,
+				"UTC",
+			);
 		});
 	});
 });

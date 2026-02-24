@@ -1,5 +1,4 @@
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
+import dayjs from "dayjs";
 
 /**
  * 최적화된 투두 파싱 프롬프트
@@ -14,14 +13,19 @@ import { ko } from "date-fns/locale";
  * 투두 파싱 프롬프트 생성
  *
  * @param text 사용자 입력 텍스트
+ * @param timezone 사용자 타임존 (IANA, 기본값: "UTC")
  * @param now 현재 시간 (기본값: new Date())
  * @returns 최적화된 프롬프트 문자열
  */
 export function buildParseTodoPrompt(
 	text: string,
+	tz: string = "UTC",
 	now: Date = new Date(),
 ): string {
-	const datetime = format(now, "yyyy-MM-dd HH:mm (EEEE)", { locale: ko });
+	const datetime = dayjs(now)
+		.tz(tz)
+		.locale("ko")
+		.format("YYYY-MM-DD HH:mm (dddd)");
 
 	return `Korean Todo Parser. Now: ${datetime}
 Time: 오전/아침→AM, 오후/저녁/밤→PM, 숫자만→context기반(지난시간=PM)

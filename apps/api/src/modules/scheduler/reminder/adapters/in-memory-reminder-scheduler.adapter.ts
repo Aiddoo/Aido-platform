@@ -1,10 +1,12 @@
 import {
+	Inject,
 	Injectable,
 	Logger,
 	type OnModuleDestroy,
 	type OnModuleInit,
 } from "@nestjs/common";
 
+import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
@@ -36,9 +38,13 @@ export class InMemoryReminderSchedulerAdapter
 	/** todoId → (stageLabel → timer) */
 	readonly #timers = new Map<number, Map<string, NodeJS.Timeout>>();
 
+	/** 리마인더 dedup Lock TTL (밀리초) — DB 조회 + 생성에 충분한 시간 */
+	private static readonly DEDUP_LOCK_TTL = 5_000;
+
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
+		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
 	async onModuleInit(): Promise<void> {
@@ -168,7 +174,10 @@ export class InMemoryReminderSchedulerAdapter
 	}
 
 	/**
-	 * 리마인더 알림 발송 (단계별 24시간 DB 중복 방지)
+	 * 리마인더 알림 발송 (Lock + DB 이중 중복 방지)
+	 *
+	 * Race Condition 방지: ILockProvider 기반 잠금으로
+	 * InMemoryScheduler와 TodoReminderJob 크론 간 동시 접근을 직렬화합니다.
 	 */
 	async #sendReminder(
 		todoId: number,
@@ -176,6 +185,19 @@ export class InMemoryReminderSchedulerAdapter
 		todoTitle: string,
 		stageLabel: string,
 	): Promise<void> {
+		const lockKey = `reminder:${todoId}:${stageLabel}`;
+		const release = await this.lockProvider.acquire(
+			lockKey,
+			InMemoryReminderSchedulerAdapter.DEDUP_LOCK_TTL,
+		);
+
+		if (!release) {
+			this.#logger.debug(
+				`Reminder dedup: lock busy for todoId=${todoId}, stage=${stageLabel}`,
+			);
+			return;
+		}
+
 		try {
 			const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -221,6 +243,8 @@ export class InMemoryReminderSchedulerAdapter
 				`Failed to send reminder: todoId=${todoId}, stage=${stageLabel}, ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+		} finally {
+			await release();
 		}
 	}
 

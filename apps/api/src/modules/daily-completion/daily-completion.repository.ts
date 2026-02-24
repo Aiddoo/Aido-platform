@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 
 import { DATE_FORMAT } from "@/common/date";
 import { DatabaseService } from "@/database/database.service";
@@ -8,9 +7,6 @@ import type {
 	FindTodosByDateRangeParams,
 	TodoAggregateByDate,
 } from "./types/daily-completion.types";
-
-// UTC 플러그인 활성화
-dayjs.extend(utc);
 
 // 타입 재내보내기 (기존 import 호환성 유지)
 export type {
