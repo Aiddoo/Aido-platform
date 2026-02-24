@@ -45,11 +45,11 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
   return (
     <VStack className="bg-background">
       <HStack className="px-4 py-2" justify="between" align="center">
+        <CalendarHeaderText viewMode={viewMode} displayDate={value} />
         <HStack gap={8} align="center">
-          <CalendarHeaderText viewMode={viewMode} displayDate={value} />
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />
+          <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
         </HStack>
-        <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
       </HStack>
 
       {match(viewMode)
