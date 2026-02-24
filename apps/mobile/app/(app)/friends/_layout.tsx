@@ -1,5 +1,4 @@
-import { FriendSearchBottomSheet } from '@src/features/friend/presentations/components/FriendSearchBottomSheet';
-import { ArrowLeftIcon } from '@src/shared/ui/Icon';
+import { ArrowLeftIcon, SearchIcon } from '@src/shared/ui/Icon';
 import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
@@ -14,6 +13,7 @@ const FriendsLayout = () => {
         headerShown: true,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
+        contentStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
           fontSize: 18,
           fontWeight: '600',
@@ -40,11 +40,14 @@ const FriendsLayout = () => {
           },
           headerRight: () => (
             <View className="justify-center items-center">
-              <FriendSearchBottomSheet />
+              <Pressable onPress={() => router.push('/friends/add')} hitSlop={8} className="p-2">
+                <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
+              </Pressable>
             </View>
           ),
         }}
       />
+      <Stack.Screen name="add" options={{ title: '' }} />
       <Stack.Screen name="[id]" options={{ title: '친구 프로필' }} />
     </Stack>
   );
