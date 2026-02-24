@@ -30,7 +30,7 @@ apps/mobile/
 
 # Documentation
 *.md
-!README.md
+myDocs/
 
 # Tests
 coverage/

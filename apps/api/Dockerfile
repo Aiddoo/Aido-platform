@@ -1,13 +1,10 @@
-# ==============================================================================
 # Stage 1: base - Node + pnpm
-# ==============================================================================
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app
 
-# ==============================================================================
+
 # Stage 2: deps - 의존성 설치
-# ==============================================================================
 FROM base AS deps
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -25,9 +22,7 @@ COPY tooling/vitest/package.json ./tooling/vitest/
 
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# ==============================================================================
 # Stage 3: builder - 빌드
-# ==============================================================================
 FROM base AS builder
 
 COPY --from=deps /app ./
@@ -40,27 +35,28 @@ RUN pnpm --filter @aido/errors build && \
     pnpm --filter @aido/validators build
 
 # Prisma generate + API build
-RUN pnpm --filter @aido/api prisma generate
+RUN cd apps/api && pnpm prisma generate
 RUN pnpm --filter @aido/api build
 
 # Production 의존성만 추출
 RUN pnpm --filter @aido/api deploy --prod /app/production
 
-# ==============================================================================
-# Stage 4: migrate - Prisma 마이그레이션 (ECS 별도 태스크)
-# ==============================================================================
+
+# Stage 4: migrate - Prisma 마이그레이션
 FROM base AS migrate
 
 COPY --from=deps /app ./
 COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/
 
 WORKDIR /app/apps/api
 
+RUN pnpm prisma generate
+
 CMD ["pnpm", "prisma", "migrate", "deploy"]
 
-# ==============================================================================
+
 # Stage 5: development - 개발 핫리로드
-# ==============================================================================
 FROM base AS development
 
 COPY --from=deps /app ./
@@ -70,7 +66,7 @@ RUN pnpm --filter @aido/errors build && \
     pnpm --filter @aido/utils build && \
     pnpm --filter @aido/validators build
 
-RUN pnpm --filter @aido/api prisma generate
+RUN cd apps/api && pnpm prisma generate
 
 WORKDIR /app/apps/api
 
@@ -79,9 +75,7 @@ EXPOSE 8080
 
 CMD ["pnpm", "dev"]
 
-# ==============================================================================
 # Stage 6: production - 최종 런타임
-# ==============================================================================
 FROM node:22-alpine AS production
 
 WORKDIR /app
