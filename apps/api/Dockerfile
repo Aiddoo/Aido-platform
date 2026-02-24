@@ -39,7 +39,7 @@ RUN cd apps/api && pnpm prisma generate
 RUN pnpm --filter @aido/api build
 
 # Production 의존성만 추출
-RUN pnpm --filter @aido/api deploy --prod /app/production
+RUN pnpm --filter @aido/api deploy --legacy --prod /app/production
 
 
 # Stage 4: migrate - Prisma 마이그레이션
