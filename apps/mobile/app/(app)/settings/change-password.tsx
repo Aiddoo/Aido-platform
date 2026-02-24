@@ -176,7 +176,7 @@ function NewPasswordStep() {
                 if (finished) scheduleOnRN(focusConfirmInput);
               })}
           >
-            <VStack mb={20}>
+            <VStack mb={8}>
               <Controller
                 control={control}
                 name="newPasswordConfirm"
