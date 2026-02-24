@@ -17,13 +17,13 @@ export function Result({ icon, title, description, button, className }: ResultPr
         </>
       )}
 
-      <Text size="b3" shade={6} align="center">
+      <Text size="b3" shade={6} align="center" weight="medium">
         {title}
       </Text>
 
       {description && (
         <>
-          <Spacing size={8} />
+          <Spacing size={4} />
           <Text size="b4" shade={5} align="center">
             {description}
           </Text>

@@ -49,7 +49,7 @@ export const KeyboardAdaptiveButton = ({
 
   return (
     <KeyboardStickyView offset={{ closed: STICKY_OFFSET, opened: STICKY_OFFSET }} enabled={enabled}>
-      <Animated.View style={containerStyle} className="bg-white pt-3">
+      <Animated.View style={containerStyle}>
         <Animated.View style={buttonStyle} className="overflow-hidden">
           <Button {...buttonProps} className="rounded-none" style={{ borderRadius: undefined }}>
             {children}
