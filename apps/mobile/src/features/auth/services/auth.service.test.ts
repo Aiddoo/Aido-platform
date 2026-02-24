@@ -2,12 +2,15 @@ import { createMockHttpClient, createMockStorage } from '@src/shared/__tests__';
 import {
   createAuthApiError,
   createAuthTokensDto,
+  createChangePasswordDto,
   createConsentDto,
   createDeleteAccountDto,
+  createForgotPasswordDto,
   createLinkedAccountsDto,
   createPreferenceDto,
   createRegisterDto,
   createResendVerificationDto,
+  createResetPasswordDto,
   createUpdateMarketingConsentDto,
   INVALID_DTO,
 } from '../__tests__/auth.factories';
@@ -336,7 +339,10 @@ describe('AuthService', () => {
   describe('getConsent', () => {
     test('정상 응답 → ISO 문자열을 Date로 변환', async () => {
       // Given
-      const dto = createConsentDto();
+      const termsAgreedAt = '2026-01-01T00:00:00.000Z';
+      const privacyAgreedAt = '2026-01-01T00:00:00.000Z';
+      const marketingAgreedAt = '2026-02-01T00:00:00.000Z';
+      const dto = createConsentDto({ termsAgreedAt, privacyAgreedAt, marketingAgreedAt });
       authHttpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -347,10 +353,10 @@ describe('AuthService', () => {
       expect(result).toEqual({
         ok: true,
         value: {
-          termsAgreedAt: new Date(dto.termsAgreedAt!),
-          privacyAgreedAt: new Date(dto.privacyAgreedAt!),
+          termsAgreedAt: new Date(termsAgreedAt),
+          privacyAgreedAt: new Date(privacyAgreedAt),
           agreedTermsVersion: dto.agreedTermsVersion,
-          marketingAgreedAt: new Date(dto.marketingAgreedAt!),
+          marketingAgreedAt: new Date(marketingAgreedAt),
         },
       });
     });
@@ -396,7 +402,8 @@ describe('AuthService', () => {
   describe('updateMarketingConsent', () => {
     test('동의 → ISO를 Date로 변환', async () => {
       // Given
-      const dto = createUpdateMarketingConsentDto();
+      const marketingAgreedAt = '2026-02-01T00:00:00.000Z';
+      const dto = createUpdateMarketingConsentDto({ marketingAgreedAt });
       authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -408,7 +415,7 @@ describe('AuthService', () => {
       });
       expect(result).toEqual({
         ok: true,
-        value: { marketingAgreedAt: new Date(dto.marketingAgreedAt!) },
+        value: { marketingAgreedAt: new Date(marketingAgreedAt) },
       });
     });
 
@@ -681,9 +688,9 @@ describe('AuthService', () => {
       newPasswordConfirm: 'NewPass1!',
     };
 
-    test('정상 응답 → message 반환', async () => {
+    test('정상 응답 → ChangePasswordResult 반환', async () => {
       // Given
-      const dto = { message: '비밀번호가 성공적으로 변경되었습니다.' };
+      const dto = createChangePasswordDto();
       authHttpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -776,6 +783,91 @@ describe('AuthService', () => {
 
       // When & Then
       await expect(service.deleteAccount(input)).rejects.toThrow('storage error');
+    });
+  });
+
+  // ── forgotPassword ────────────────────────
+
+  describe('forgotPassword', () => {
+    const input = { email: 'test@example.com' };
+
+    test('정상 응답 → ForgotPasswordResult 반환', async () => {
+      // Given
+      const dto = createForgotPasswordDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.forgotPassword(input);
+
+      // Then
+      expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/forgot-password', input);
+      expect(result).toEqual({ ok: true, value: { message: dto.message } });
+    });
+
+    test('HTTP 에러 → Result.err 반환', async () => {
+      // Given
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.forgotPassword(input);
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.forgotPassword(input)).rejects.toThrow(
+        'Invalid forgotPassword response',
+      );
+    });
+  });
+
+  // ── resetPassword ────────────────────────
+
+  describe('resetPassword', () => {
+    const input = {
+      email: 'test@example.com',
+      code: '123456',
+      newPassword: 'NewPass1!',
+      newPasswordConfirm: 'NewPass1!',
+    };
+
+    test('정상 응답 → ResetPasswordResult 반환', async () => {
+      // Given
+      const dto = createResetPasswordDto();
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.resetPassword(input);
+
+      // Then
+      expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/reset-password', input);
+      expect(result).toEqual({ ok: true, value: { message: dto.message } });
+    });
+
+    test('HTTP 에러 → Result.err 반환', async () => {
+      // Given
+      const apiError = createAuthApiError();
+      publicHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.resetPassword(input);
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      publicHttpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.resetPassword(input)).rejects.toThrow('Invalid resetPassword response');
     });
   });
 

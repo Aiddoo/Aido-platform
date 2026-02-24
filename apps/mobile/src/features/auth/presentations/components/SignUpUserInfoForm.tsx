@@ -2,18 +2,17 @@ import { emailSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Input } from '@src/shared/ui/Input';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { H3 } from '@src/shared/ui/Text/Typography';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { Chip } from 'heroui-native';
 import { useEffect, useRef } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, type TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { type SignUpFormData, signUpFormSchema } from '../schemas/sign-up-form.schema';
+import { SuggestedEmailDomainList } from './SuggestedEmailDomainList';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
 
@@ -106,7 +105,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                       if (isEmailValid) handleNext();
                     }}
                   />
-                  <SuggestedEmailDomainList />
+                  <SuggestedEmailDomainList<SignUpFormData> name="email" />
                 </VStack>
               )}
             />
@@ -144,65 +143,4 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
       </KeyboardAdaptiveButton>
     </View>
   );
-};
-
-const EMAIL_DOMAINS = [
-  'gmail.com',
-  'naver.com',
-  'daum.net',
-  'outlook.com',
-  'icloud.com',
-  'kakao.com',
-] as const;
-const MAX_SUGGESTED_DOMAINS = 3;
-
-const SuggestedEmailDomainList = () => {
-  const { setValue, control } = useFormContext<SignUpFormData>();
-  const email = useWatch({ control, name: 'email' });
-
-  const normalizedEmail = email ?? '';
-  const [localPart, domainPart] = splitEmail(normalizedEmail);
-  const suggestedDomains = getSuggestedDomains(normalizedEmail, domainPart);
-
-  if (suggestedDomains.length === 0) {
-    return null;
-  }
-
-  return (
-    <Animated.View entering={FadeInUp.duration(ANIMATION.duration.normal).springify()}>
-      <HStack gap={8} className="flex-wrap">
-        {suggestedDomains.slice(0, MAX_SUGGESTED_DOMAINS).map((domain) => (
-          <Chip
-            key={domain}
-            variant="soft"
-            color="default"
-            size="md"
-            onPress={() => setValue('email', `${localPart}@${domain}`)}
-          >
-            <Chip.Label>@{domain}</Chip.Label>
-          </Chip>
-        ))}
-      </HStack>
-    </Animated.View>
-  );
-};
-
-const splitEmail = (value: string): [string, string] => {
-  const atIndex = value.lastIndexOf('@');
-  if (atIndex === -1) {
-    return [value, ''];
-  }
-  return [value.substring(0, atIndex), value.substring(atIndex + 1)];
-};
-
-const getSuggestedDomains = (rawEmail: string, domainPart: string) => {
-  if (!rawEmail.includes('@')) {
-    return [];
-  }
-
-  if (domainPart && EMAIL_DOMAINS.includes(domainPart as (typeof EMAIL_DOMAINS)[number])) {
-    return [];
-  }
-
-  return EMAIL_DOMAINS.filter((domain) => domain.startsWith(domainPart));
 };

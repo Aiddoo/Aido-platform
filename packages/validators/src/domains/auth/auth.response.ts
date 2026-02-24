@@ -241,13 +241,11 @@ export type RefreshTokensResponse = z.infer<typeof refreshTokensResponseSchema>;
 export const forgotPasswordResponseSchema = z
   .object({
     message: z.string().describe('응답 메시지'),
-    email: z.string().email().describe('비밀번호 재설정 이메일을 발송한 주소'),
   })
   .describe('비밀번호 찾기 응답')
   .meta({
     example: {
-      message: '비밀번호 재설정 링크가 이메일로 발송되었습니다.',
-      email: 'dydals3440@gmail.com',
+      message: '등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.',
     },
   });
 

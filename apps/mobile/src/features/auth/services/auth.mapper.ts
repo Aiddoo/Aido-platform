@@ -1,21 +1,27 @@
 import type {
   AuthTokens as AuthTokensDTO,
+  ChangePasswordResponse,
   ConsentResponse,
   DeleteAccountResponse,
+  ForgotPasswordResponse,
   LinkedAccount as LinkedAccountDTO,
   LinkedAccountsResponse,
   PreferenceResponse,
   RegisterResponse,
   ResendVerificationResponse,
+  ResetPasswordResponse,
   UpdateMarketingConsentResponse,
 } from '@aido/validators';
 import type {
   AuthTokens,
+  ChangePasswordResult,
   Consent,
   DeleteAccountResult,
+  ForgotPasswordResult,
   Preference,
   RegisterResult,
   ResendVerificationResult,
+  ResetPasswordResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
 import type { LinkedAccount } from '../models/oauth.model';
@@ -64,6 +70,18 @@ export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccount
   message: dto.message,
   deletedAt: new Date(dto.deletedAt),
   gracePeriodDays: dto.gracePeriodDays,
+});
+
+export const toForgotPasswordResult = (dto: ForgotPasswordResponse): ForgotPasswordResult => ({
+  message: dto.message,
+});
+
+export const toResetPasswordResult = (dto: ResetPasswordResponse): ResetPasswordResult => ({
+  message: dto.message,
+});
+
+export const toChangePasswordResult = (dto: ChangePasswordResponse): ChangePasswordResult => ({
+  message: dto.message,
 });
 
 export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({

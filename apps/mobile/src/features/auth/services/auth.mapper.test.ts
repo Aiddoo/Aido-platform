@@ -1,21 +1,27 @@
 import {
   createAuthTokensDto,
+  createChangePasswordDto,
   createConsentDto,
   createDeleteAccountDto,
+  createForgotPasswordDto,
   createLinkedAccountsDto,
   createRegisterDto,
   createResendVerificationDto,
+  createResetPasswordDto,
   createUpdateMarketingConsentDto,
 } from '../__tests__/auth.factories';
 import {
   toAuthTokens,
+  toChangePasswordResult,
   toConsent,
   toDeleteAccountResult,
+  toForgotPasswordResult,
   toLinkedAccount,
   toLinkedAccounts,
   toPreference,
   toRegisterResult,
   toResendVerificationResult,
+  toResetPasswordResult,
   toUpdateMarketingConsentResult,
 } from './auth.mapper';
 
@@ -236,6 +242,45 @@ describe('toDeleteAccountResult', () => {
     expect(result.deletedAt).toBeInstanceOf(Date);
     expect(result.deletedAt.toISOString()).toBe('2026-02-13T10:00:00.000Z');
     expect(result.gracePeriodDays).toBe(30);
+  });
+});
+
+describe('toForgotPasswordResult', () => {
+  test('message 매핑', () => {
+    // Given
+    const dto = createForgotPasswordDto();
+
+    // When
+    const result = toForgotPasswordResult(dto);
+
+    // Then
+    expect(result).toEqual({ message: dto.message });
+  });
+});
+
+describe('toResetPasswordResult', () => {
+  test('message 매핑', () => {
+    // Given
+    const dto = createResetPasswordDto();
+
+    // When
+    const result = toResetPasswordResult(dto);
+
+    // Then
+    expect(result).toEqual({ message: dto.message });
+  });
+});
+
+describe('toChangePasswordResult', () => {
+  test('message 매핑', () => {
+    // Given
+    const dto = createChangePasswordDto();
+
+    // When
+    const result = toChangePasswordResult(dto);
+
+    // Then
+    expect(result).toEqual({ message: dto.message });
   });
 });
 
