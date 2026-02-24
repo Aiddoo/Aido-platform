@@ -321,6 +321,48 @@ describe("NudgeService", () => {
 			});
 			mockDatabase.user.findUnique.mockResolvedValue({
 				subscriptionStatus: "ACTIVE",
+				role: "USER",
+			});
+			mockDatabase.nudge.count.mockResolvedValue(100);
+			mockDatabase.nudge.findFirst.mockResolvedValue(null);
+
+			const nudgeWithRelations = NudgeBuilder.create(
+				"sender-id",
+				"receiver-id",
+				100,
+			)
+				.withSenderInfo({
+					id: "sender-id",
+					userTag: "sender_tag",
+					profile: { name: "보내는 사람", profileImage: null },
+				})
+				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
+				.buildWithRelations();
+
+			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
+
+			// When
+			const result = await service.sendNudge(defaultParams);
+
+			// Then
+			expect(result).toBeDefined();
+		});
+
+		it("ADMIN은 구독 상태와 무관하게 무제한 Nudge를 보낼 수 있다", async () => {
+			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			mockDatabase.todo.findUnique.mockResolvedValue({
+				id: 100,
+				userId: "receiver-id",
+				title: "테스트 할일",
+				startDate: todayMidnight,
+				endDate: null,
+				visibility: "PUBLIC",
+			});
+			mockDatabase.user.findUnique.mockResolvedValue({
+				subscriptionStatus: "FREE",
+				role: "ADMIN",
 			});
 			mockDatabase.nudge.count.mockResolvedValue(100);
 			mockDatabase.nudge.findFirst.mockResolvedValue(null);
@@ -618,7 +660,10 @@ describe("NudgeService", () => {
 	describe("getLimitInfo", () => {
 		it("FREE 사용자의 제한 정보를 조회한다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionStatus.mockResolvedValue("FREE");
+			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+				subscriptionStatus: "FREE",
+				role: "USER",
+			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(1);
 
 			// When
@@ -632,7 +677,27 @@ describe("NudgeService", () => {
 
 		it("ACTIVE 사용자는 무제한이다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionStatus.mockResolvedValue("ACTIVE");
+			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+				subscriptionStatus: "ACTIVE",
+				role: "USER",
+			});
+			nudgeRepository.countTodayNudges.mockResolvedValue(100);
+
+			// When
+			const result = await service.getLimitInfo("user-id");
+
+			// Then
+			expect(result.dailyLimit).toBeNull();
+			expect(result.used).toBe(100);
+			expect(result.remaining).toBeNull();
+		});
+
+		it("ADMIN은 구독 상태와 무관하게 무제한이다", async () => {
+			// Given
+			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+				subscriptionStatus: "FREE",
+				role: "ADMIN",
+			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(100);
 
 			// When
@@ -646,7 +711,10 @@ describe("NudgeService", () => {
 
 		it("EXPIRED 사용자는 FREE 제한이 적용된다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionStatus.mockResolvedValue("EXPIRED");
+			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue({
+				subscriptionStatus: "EXPIRED",
+				role: "USER",
+			});
 			nudgeRepository.countTodayNudges.mockResolvedValue(2);
 
 			// When
@@ -659,7 +727,7 @@ describe("NudgeService", () => {
 
 		it("사용자가 없으면 FREE 제한이 적용된다", async () => {
 			// Given
-			nudgeRepository.getUserSubscriptionStatus.mockResolvedValue(null);
+			nudgeRepository.getUserSubscriptionInfo.mockResolvedValue(null);
 			nudgeRepository.countTodayNudges.mockResolvedValue(0);
 
 			// When

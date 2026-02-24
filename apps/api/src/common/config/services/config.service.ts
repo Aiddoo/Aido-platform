@@ -197,6 +197,12 @@ export class TypedConfigService {
 		return this.get("SENTRY_DSN");
 	}
 
+	get sentryTracesSampleRate(): number | undefined {
+		return this.get("SENTRY_TRACES_SAMPLE_RATE");
+	}
+
+	// TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (sentryRelease getter)
+
 	// ============================================
 	// AI Config Helpers
 	// ============================================

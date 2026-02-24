@@ -114,15 +114,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			};
 		}
 
-		// 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
-		if (statusCode >= 500) {
-			Sentry.captureException(exception);
-		}
-
-		// 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
+		// 사용자 ID 추출 (Sentry 컨텍스트 + 로깅 공용)
 		const userId =
 			(request as Request & { user?: { userId?: string } }).user?.userId ??
 			"anonymous";
+
+		// 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
+		if (statusCode >= 500) {
+			Sentry.withScope((scope) => {
+				scope.setUser({
+					id: userId !== "anonymous" ? userId : undefined,
+					ip_address: "{{auto}}",
+				});
+				scope.setTags({
+					"http.method": request.method,
+					"http.url": request.url,
+					"http.status_code": String(statusCode),
+					"error.code": errorResponse.error.code,
+				});
+				scope.setExtra("errorResponse", errorResponse);
+				Sentry.captureException(exception);
+			});
+		}
+
+		// 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
 		if (statusCode >= 500) {
 			// 서버 에러: 스택 트레이스 포함
 			const stack = exception instanceof Error ? exception.stack : undefined;

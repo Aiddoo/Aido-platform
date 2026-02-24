@@ -88,13 +88,15 @@ export class CheerService {
 
 			const subscriptionStatus = await tx.user.findUnique({
 				where: { id: senderId },
-				select: { subscriptionStatus: true },
+				select: { subscriptionStatus: true, role: true },
 			});
 
+			const isAdmin = subscriptionStatus?.role === "ADMIN";
 			const status = subscriptionStatus?.subscriptionStatus ?? "FREE";
 			const limitKey = status as keyof typeof SUBSCRIPTION_CHEER_LIMITS;
-			const dailyLimit =
-				limitKey in SUBSCRIPTION_CHEER_LIMITS
+			const dailyLimit = isAdmin
+				? null
+				: limitKey in SUBSCRIPTION_CHEER_LIMITS
 					? SUBSCRIPTION_CHEER_LIMITS[limitKey]
 					: CHEER_LIMITS.FREE_DAILY_LIMIT;
 
@@ -275,24 +277,30 @@ export class CheerService {
 	): Promise<CheerLimitInfo> {
 		// 구독 상태 조회 (캐시 우선)
 		let subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED" | null;
+		let isAdmin = false;
 
 		const cachedSubscription = await this.cacheService.getSubscription(userId);
 		if (cachedSubscription !== undefined) {
 			subscriptionStatus = cachedSubscription.status;
+			isAdmin = cachedSubscription.isAdmin ?? false;
 		} else {
-			subscriptionStatus =
-				await this.cheerRepository.getUserSubscriptionStatus(userId);
+			const userInfo =
+				await this.cheerRepository.getUserSubscriptionInfo(userId);
+			subscriptionStatus = userInfo?.subscriptionStatus ?? null;
+			isAdmin = userInfo?.role === "ADMIN";
 			await this.cacheService.setSubscription(userId, {
 				status: subscriptionStatus,
+				isAdmin,
 			});
 		}
 
 		// 구독 상태에 따른 제한
 		const status = subscriptionStatus ?? "FREE";
 		const limitKey = status as keyof typeof SUBSCRIPTION_CHEER_LIMITS;
-		// ACTIVE 구독자는 null(무제한)이므로 undefined만 체크
-		const dailyLimit =
-			limitKey in SUBSCRIPTION_CHEER_LIMITS
+		// ADMIN은 무제한, ACTIVE 구독자도 null(무제한)
+		const dailyLimit = isAdmin
+			? null
+			: limitKey in SUBSCRIPTION_CHEER_LIMITS
 				? SUBSCRIPTION_CHEER_LIMITS[limitKey]
 				: CHEER_LIMITS.FREE_DAILY_LIMIT;
 

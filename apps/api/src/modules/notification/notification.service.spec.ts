@@ -18,6 +18,8 @@ import {
 	UserPreferenceBuilder,
 } from "@test/builders";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import type { ILockProvider } from "@/common/lock";
+import { LOCK_PROVIDER } from "@/common/lock";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
@@ -29,6 +31,7 @@ describe("NotificationService", () => {
 	let notificationRepo: Mocked<NotificationRepository>;
 	let paginationService: Mocked<PaginationService>;
 	let pushDeliveryService: Mocked<PushDeliveryService>;
+	let lockProvider: Mocked<ILockProvider>;
 
 	// 테스트 데이터
 	const mockUserId = "user-1";
@@ -39,9 +42,16 @@ describe("NotificationService", () => {
 		PushTokenBuilder.resetIdCounter();
 		UserPreferenceBuilder.resetIdCounter();
 
+		const mockLockProvider: ILockProvider = {
+			acquire: jest.fn(),
+			isLocked: jest.fn(),
+		};
+
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } =
-			await TestBed.solitary(NotificationService).compile();
+		const { unit, unitRef } = await TestBed.solitary(NotificationService)
+			.mock(LOCK_PROVIDER)
+			.impl(() => mockLockProvider)
+			.compile();
 
 		service = unit;
 		notificationRepo = unitRef.get(
@@ -53,6 +63,12 @@ describe("NotificationService", () => {
 		pushDeliveryService = unitRef.get(
 			PushDeliveryService,
 		) as unknown as Mocked<PushDeliveryService>;
+		lockProvider = unitRef.get(
+			LOCK_PROVIDER,
+		) as unknown as Mocked<ILockProvider>;
+
+		// 기본: Lock 획득 성공 (release 함수 반환)
+		lockProvider.acquire.mockResolvedValue(jest.fn());
 
 		// PaginationService 기본 동작 설정
 		paginationService.normalizeCursorPagination.mockReturnValue({
@@ -762,6 +778,90 @@ describe("NotificationService", () => {
 			);
 
 			jest.spyOn(Date, "now").mockRestore();
+		});
+
+		// ======================================================================
+		// 잠금(Lock) 관련 테스트
+		// ======================================================================
+
+		it("dedup 처리 시 잠금을 획득하고 해제해야 한다", async () => {
+			// Given
+			const mockRelease = jest.fn().mockResolvedValue(undefined);
+			lockProvider.acquire.mockResolvedValue(mockRelease);
+			notificationRepo.existsRecentNotification.mockResolvedValue(false);
+			baseSetup();
+
+			// When
+			await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "NUDGE_RECEIVED",
+				title: "콕!",
+				body: "찔러요",
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(lockProvider.acquire).toHaveBeenCalledWith(
+				expect.stringContaining("dedup:user-1:NUDGE_RECEIVED"),
+				5000,
+			);
+			expect(mockRelease).toHaveBeenCalled();
+		});
+
+		it("잠금 획득 실패 시 null을 반환하고 DB 조회를 하지 않아야 한다", async () => {
+			// Given
+			lockProvider.acquire.mockResolvedValue(null);
+
+			// When
+			const result = await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "NUDGE_RECEIVED",
+				title: "콕!",
+				body: "찔러요",
+				friendId: "friend-1",
+			});
+
+			// Then
+			expect(result).toBeNull();
+			expect(notificationRepo.existsRecentNotification).not.toHaveBeenCalled();
+			expect(notificationRepo.createNotification).not.toHaveBeenCalled();
+		});
+
+		it("DB 조회 실패 시에도 잠금이 해제되어야 한다", async () => {
+			// Given
+			const mockRelease = jest.fn().mockResolvedValue(undefined);
+			lockProvider.acquire.mockResolvedValue(mockRelease);
+			notificationRepo.existsRecentNotification.mockRejectedValue(
+				new Error("DB error"),
+			);
+
+			// When & Then
+			await expect(
+				service.createAndSendWithDedup({
+					userId: mockUserId,
+					type: "NUDGE_RECEIVED",
+					title: "콕!",
+					body: "찔러요",
+					friendId: "friend-1",
+				}),
+			).rejects.toThrow("DB error");
+			expect(mockRelease).toHaveBeenCalled();
+		});
+
+		it("전략이 없는 타입은 잠금을 획득하지 않아야 한다", async () => {
+			// Given
+			baseSetup();
+
+			// When
+			await service.createAndSendWithDedup({
+				userId: mockUserId,
+				type: "SYSTEM_NOTICE",
+				title: "공지",
+				body: "점검",
+			});
+
+			// Then
+			expect(lockProvider.acquire).not.toHaveBeenCalled();
 		});
 	});
 });

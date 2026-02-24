@@ -38,6 +38,7 @@ export interface CachedUserProfile {
 
 export interface CachedSubscription {
 	status: SubscriptionStatus | null;
+	isAdmin?: boolean;
 }
 
 /**

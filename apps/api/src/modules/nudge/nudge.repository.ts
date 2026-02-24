@@ -264,6 +264,20 @@ export class NudgeRepository {
 	}
 
 	/**
+	 * 사용자 구독 상태 및 역할 조회 (ADMIN 우회 판단용)
+	 */
+	async getUserSubscriptionInfo(userId: string): Promise<{
+		subscriptionStatus: "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED";
+		role: string;
+	} | null> {
+		const user = await this.database.user.findUnique({
+			where: { id: userId },
+			select: { subscriptionStatus: true, role: true },
+		});
+		return user ?? null;
+	}
+
+	/**
 	 * Todo 존재 및 소유자 확인
 	 */
 	async findTodoWithOwner(

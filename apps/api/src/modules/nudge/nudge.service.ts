@@ -126,13 +126,15 @@ export class NudgeService {
 			// 4. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
 			const subscriptionStatus = await tx.user.findUnique({
 				where: { id: senderId },
-				select: { subscriptionStatus: true },
+				select: { subscriptionStatus: true, role: true },
 			});
 
+			const isAdmin = subscriptionStatus?.role === "ADMIN";
 			const status = subscriptionStatus?.subscriptionStatus ?? "FREE";
 			const limitKey = status as keyof typeof SUBSCRIPTION_NUDGE_LIMITS;
-			const dailyLimit =
-				limitKey in SUBSCRIPTION_NUDGE_LIMITS
+			const dailyLimit = isAdmin
+				? null
+				: limitKey in SUBSCRIPTION_NUDGE_LIMITS
 					? SUBSCRIPTION_NUDGE_LIMITS[limitKey]
 					: NUDGE_LIMITS.FREE_DAILY_LIMIT;
 
@@ -320,16 +322,17 @@ export class NudgeService {
 		userId: string,
 		tz: string = "UTC",
 	): Promise<NudgeLimitInfo> {
-		// 구독 상태 조회
-		const subscriptionStatus =
-			await this.nudgeRepository.getUserSubscriptionStatus(userId);
+		// 구독 상태 및 역할 조회
+		const userInfo = await this.nudgeRepository.getUserSubscriptionInfo(userId);
+		const isAdmin = userInfo?.role === "ADMIN";
 
 		// 구독 상태에 따른 제한
-		const status = subscriptionStatus ?? "FREE";
+		const status = userInfo?.subscriptionStatus ?? "FREE";
 		const limitKey = status as keyof typeof SUBSCRIPTION_NUDGE_LIMITS;
-		// ACTIVE 구독자는 null(무제한)이므로 undefined만 체크
-		const dailyLimit =
-			limitKey in SUBSCRIPTION_NUDGE_LIMITS
+		// ADMIN은 무제한, ACTIVE 구독자도 null(무제한)
+		const dailyLimit = isAdmin
+			? null
+			: limitKey in SUBSCRIPTION_NUDGE_LIMITS
 				? SUBSCRIPTION_NUDGE_LIMITS[limitKey]
 				: NUDGE_LIMITS.FREE_DAILY_LIMIT;
 
