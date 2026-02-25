@@ -94,10 +94,10 @@ interface FriendTodoItemProps {
 function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
   const overlay = useOverlay();
   const showDateTime = todo.formattedTime && !todo.isAllDay;
-  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate({
-    targetDate: date,
-    isCompleted: todo.completed,
-  });
+  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
+    { targetDate: date, isCompleted: todo.completed },
+    new Date(),
+  );
 
   const openNudgeDialog = () => {
     overlay.open(({ isOpen, close, exit }) => (

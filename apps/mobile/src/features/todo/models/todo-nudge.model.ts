@@ -71,13 +71,13 @@ const getBannerState = (limitInfo: NudgeLimitInfo): NudgeBannerState => {
   };
 };
 
-const canNudgeOnDate = (targetDate: Date, now: Date = new Date()): boolean => {
+const canNudgeOnDate = (targetDate: Date, now: Date): boolean => {
   return isSameCalendarDay(targetDate, now);
 };
 
 const canNudgeTodoOnDate = (
   input: { targetDate: Date; isCompleted: boolean },
-  now: Date = new Date(),
+  now: Date,
 ): boolean => {
   return !input.isCompleted && canNudgeOnDate(input.targetDate, now);
 };
