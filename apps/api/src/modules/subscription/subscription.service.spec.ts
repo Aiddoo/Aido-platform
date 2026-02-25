@@ -191,7 +191,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("멱등성: 이미 존재하는 구독이면 create를 호출하지 않는다", async () => {
+		it("멱등성: 이미 존재하는 구독이면 create를 호출하지 않고 이벤트도 발행하지 않는다", async () => {
 			// Given
 			subscriptionRepository.findByRevenueCatId.mockResolvedValue({
 				id: "sub-1",
@@ -205,8 +205,11 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then
+			// Then — DB 미변경, 캐시 미무효화, 이벤트 미발행
 			expect(subscriptionRepository.create).not.toHaveBeenCalled();
+			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
+			expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
+			expect(eventEmitter.emit).not.toHaveBeenCalled();
 		});
 
 		it("purchased_at_ms가 누락되면 에러를 던진다", async () => {
@@ -342,7 +345,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("멱등성: 동일 expiresAt이고 ACTIVE이면 updateStatus를 호출하지 않는다", async () => {
+		it("멱등성: 동일 expiresAt이고 ACTIVE이면 updateStatus를 호출하지 않고 이벤트도 발행하지 않는다", async () => {
 			// Given
 			const expiresAtMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
 			const expiresAt = new Date(expiresAtMs);
@@ -360,8 +363,11 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then
+			// Then — DB 미변경, 캐시 미무효화, 이벤트 미발행
 			expect(subscriptionRepository.updateStatus).not.toHaveBeenCalled();
+			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
+			expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
+			expect(eventEmitter.emit).not.toHaveBeenCalled();
 		});
 	});
 
