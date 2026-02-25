@@ -66,6 +66,11 @@ const EVENT_META: Record<string, EventMeta> = {
 		color: 0x2ecc71,
 		emoji: "⏳",
 	},
+	"subscription.transferred": {
+		title: "구독 이전",
+		color: 0x1abc9c,
+		emoji: "🔀",
+	},
 };
 
 const DEFAULT_META: EventMeta = {

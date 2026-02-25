@@ -150,15 +150,14 @@ export class SubscriptionService {
 					break;
 
 				case "SUBSCRIBER_ALIAS":
+					// deprecated by RevenueCat — TRANSFER로 대체됨
 					this.#logger.log(
-						`Subscriber alias event received for appUserId=${appUserId}, no action required`,
+						`Subscriber alias event received for appUserId=${appUserId}, no action required (deprecated)`,
 					);
 					break;
 
 				case "TRANSFER":
-					this.#logger.log(
-						`Transfer event received for appUserId=${appUserId}, no action required`,
-					);
+					eventPayload = await this.#handleTransfer(user.id, user.email, event);
 					break;
 
 				default:
@@ -668,6 +667,47 @@ export class SubscriptionService {
 			transactionId,
 			expiresAt: expiresAt?.toISOString(),
 		} satisfies SubscriptionEventPayload;
+	}
+
+	/**
+	 * TRANSFER: 구독 이전
+	 *
+	 * RevenueCat에서 구독이 다른 사용자로 이전될 때 발생합니다.
+	 * revenueCatUserId를 새 appUserId로 갱신합니다.
+	 * subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
+	 */
+	async #handleTransfer(
+		userId: string,
+		email: string,
+		event: RevenueCatWebhookPayload["event"],
+	): Promise<SubscriptionEventPayload> {
+		const newAppUserId = event.app_user_id;
+
+		// revenueCatUserId를 새 appUserId로 갱신
+		// subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
+		await this.subscriptionRepository
+			.findUserByAppUserId(newAppUserId)
+			.then(async (existingUser) => {
+				// 이미 올바른 매핑이면 skip (idempotency)
+				if (existingUser?.id === userId) return;
+
+				await this.subscriptionRepository.updateUserSubscriptionStatus(userId, {
+					subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
+					revenueCatUserId: newAppUserId,
+				});
+			});
+
+		this.#logger.log(
+			`Transfer: userId=${userId}, revenueCatUserId → ${newAppUserId}`,
+		);
+
+		return {
+			userId,
+			email,
+			eventType: event.type,
+			productId: event.product_id,
+			store: event.store,
+		};
 	}
 
 	// =========================================================================

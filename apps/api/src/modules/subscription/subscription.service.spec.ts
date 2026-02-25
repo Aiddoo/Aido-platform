@@ -842,19 +842,56 @@ describe("SubscriptionService", () => {
 			expect(eventEmitter.emit).not.toHaveBeenCalled();
 		});
 
-		it("TRANSFER 이벤트는 로그만 남긴다", async () => {
+		it("TRANSFER 이벤트는 updateUserSubscriptionStatus를 호출하여 revenueCatUserId를 갱신한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.transfer()
-				.withAppUserId("user-123")
+				.withAppUserId("new-app-user-id")
 				.build();
+			// 첫 번째 호출: 기존 appUserId로 사용자 조회 (handleWebhookEvent)
+			// 두 번째 호출: 새 appUserId로 사용자 조회 (#handleTransfer 내부)
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser)
+				.mockResolvedValueOnce(null);
 
 			// When
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
-			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith("user-123", {
+				subscriptionStatus: "ACTIVE",
+				revenueCatUserId: "new-app-user-id",
+			});
+		});
+
+		it("TRANSFER 이벤트는 캐시를 무효화하고 subscription.transferred 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.transfer()
+				.withAppUserId("new-app-user-id")
+				.build();
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser)
+				.mockResolvedValueOnce(null);
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(cacheService.invalidateSubscription).toHaveBeenCalledWith(
+				"user-123",
+			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				"user-123",
+			);
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.transferred",
+				expect.objectContaining({
+					userId: "user-123",
+					email: "test@example.com",
+					eventType: "TRANSFER",
+				}),
+			);
 		});
 	});
 
