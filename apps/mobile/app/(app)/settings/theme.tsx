@@ -11,7 +11,7 @@ const ThemeSettingsScreen = () => {
   const { mode, setMode } = useTheme();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom', 'top']}>
       <ScrollView className="px-4 flex-1">
         <RadioGroup
           value={mode}
