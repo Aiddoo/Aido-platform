@@ -25,7 +25,7 @@ export function SubscriptionStatusCard({
   const dateLabel = subscriptionStatus === 'ACTIVE' ? '다음 결제일' : '만료일';
 
   return (
-    <VStack gap={12} className="bg-white rounded-2xl p-4">
+    <VStack gap={12} className="bg-white dark:bg-gray-2 rounded-2xl p-4">
       <HStack className="items-center justify-between">
         <Text size="b3" weight="bold" className="text-gray-9">
           프리미엄
@@ -52,7 +52,7 @@ export function SubscriptionStatusCard({
         </HStack>
       )}
 
-      <Text size="e1" className="text-gray-4">
+      <Text size="e1" className="text-gray-5">
         구독은 App Store 또는 Play Store 설정에서 관리할 수 있어요
       </Text>
     </VStack>

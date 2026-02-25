@@ -1,10 +1,14 @@
 import { ErrorCode } from "@aido/errors";
-import { revenueCatWebhookPayloadSchema } from "@aido/validators";
+import {
+	type RevenueCatWebhookPayload,
+	revenueCatWebhookPayloadSchema,
+} from "@aido/validators";
 import {
 	Controller,
 	HttpCode,
 	HttpException,
 	HttpStatus,
+	Inject,
 	Logger,
 	Post,
 	Req,
@@ -15,6 +19,10 @@ import * as Sentry from "@sentry/nestjs";
 import type { Request } from "express";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	type AdminNotifier,
+	PAYMENT_NOTIFIER,
+} from "@/modules/admin-notification/providers/admin-notifier.interface";
 import { Public } from "@/modules/auth/decorators/public.decorator";
 
 import { WebhookSignatureGuard } from "./guards/webhook-signature.guard";
@@ -35,7 +43,11 @@ import { SubscriptionService } from "./subscription.service";
 export class SubscriptionController {
 	readonly #logger = new Logger(SubscriptionController.name);
 
-	constructor(private readonly subscriptionService: SubscriptionService) {}
+	constructor(
+		private readonly subscriptionService: SubscriptionService,
+		@Inject(PAYMENT_NOTIFIER)
+		private readonly paymentNotifier: AdminNotifier,
+	) {}
 
 	@Post("revenuecat")
 	@Public()
@@ -69,14 +81,51 @@ export class SubscriptionController {
 					HttpStatus.TOO_MANY_REQUESTS,
 				);
 			}
-			// 그 외 에러 → 200 반환 (무한 재시도 방지)
+			// 그 외 에러 → Sentry + Discord 알림 + 200 반환 (무한 재시도 방지)
 			Sentry.captureException(error);
 			this.#logger.error(
 				`Failed to process webhook event: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
+
+			this.#notifyWebhookError(error, parseResult.data).catch(() => {});
 		}
 
 		return { received: true };
+	}
+
+	async #notifyWebhookError(
+		error: unknown,
+		payload: RevenueCatWebhookPayload,
+	): Promise<void> {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+
+		await this.paymentNotifier.send({
+			title: "Webhook 처리 에러",
+			body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
+			color: 0xff0000,
+			fields: [
+				{
+					name: "에러",
+					value: errorMessage.slice(0, 1024),
+					inline: false,
+				},
+				{
+					name: "이벤트 타입",
+					value: payload.event.type,
+					inline: true,
+				},
+				{
+					name: "사용자 ID",
+					value: payload.event.app_user_id,
+					inline: true,
+				},
+				{
+					name: "상품",
+					value: payload.event.product_id,
+					inline: true,
+				},
+			],
+		});
 	}
 }

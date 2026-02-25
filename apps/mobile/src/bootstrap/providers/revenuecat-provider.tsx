@@ -33,7 +33,9 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     if (isAuthenticated && user) {
       sdkManager.logIn(user.id);
-    } else if (status === 'unauthenticated') {
+    }
+
+    if (status === 'unauthenticated') {
       sdkManager.logOut();
     }
   }, [isAuthenticated, user, status, sdkManager]);
@@ -49,6 +51,7 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
     }
 
     Purchases.addCustomerInfoUpdateListener(onCustomerInfoUpdated);
+
     return () => {
       Purchases.removeCustomerInfoUpdateListener(onCustomerInfoUpdated);
     };

@@ -6,17 +6,27 @@ import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
 import type { Request } from "express";
 
+import { PAYMENT_NOTIFIER } from "@/modules/admin-notification/providers/admin-notifier.interface";
+
 import { SubscriptionController } from "./subscription.controller";
 import { SubscriptionService } from "./subscription.service";
 
 describe("SubscriptionController", () => {
 	let controller: SubscriptionController;
 	let mockService: Mocked<SubscriptionService>;
+	let mockNotifier: { send: jest.Mock; name: string; isConfigured: jest.Mock };
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SubscriptionController,
-		).compile();
+		mockNotifier = {
+			name: "fake",
+			send: jest.fn().mockResolvedValue({ success: true }),
+			isConfigured: jest.fn().mockReturnValue(true),
+		};
+
+		const { unit, unitRef } = await TestBed.solitary(SubscriptionController)
+			.mock(PAYMENT_NOTIFIER)
+			.impl(() => mockNotifier)
+			.compile();
 
 		controller = unit;
 		mockService = unitRef.get(
@@ -65,7 +75,7 @@ describe("SubscriptionController", () => {
 			expect(result).toEqual({ received: true });
 		});
 
-		it("서비스 에러 → Sentry 캡처 + { received: true }", async () => {
+		it("서비스 에러 → Sentry 캡처 + Discord 알림 + { received: true }", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
 			const error = new Error("Processing failed");
@@ -73,9 +83,27 @@ describe("SubscriptionController", () => {
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
+			// fire-and-forget 완료 대기
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
 			// Then
 			expect(Sentry.captureException).toHaveBeenCalledWith(error);
+			expect(mockNotifier.send).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "Webhook 처리 에러",
+					color: 0xff0000,
+					fields: expect.arrayContaining([
+						expect.objectContaining({
+							name: "에러",
+							value: "Processing failed",
+						}),
+						expect.objectContaining({
+							name: "이벤트 타입",
+							value: "INITIAL_PURCHASE",
+						}),
+					]),
+				}),
+			);
 			expect(result).toEqual({ received: true });
 		});
 
@@ -158,6 +186,21 @@ describe("SubscriptionController", () => {
 					}),
 				}),
 			);
+		});
+
+		it("Discord 알림 실패해도 webhook 응답에 영향 없다", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			mockService.handleWebhookEvent.mockRejectedValue(
+				new Error("Processing failed"),
+			);
+			mockNotifier.send.mockRejectedValue(new Error("Discord down"));
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(result).toEqual({ received: true });
 		});
 	});
 });

@@ -2,7 +2,7 @@ import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { Card, PressableFeedback } from 'heroui-native';
 import { View } from 'react-native';
 import type { SubscriptionPlan } from '../../models/subscription.model';
 import { SubscriptionPolicy } from '../../models/subscription.model';
@@ -55,65 +55,63 @@ interface PlanCardProps {
 
 function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: PlanCardProps) {
   const isAnnual = plan.planType === 'annual';
+
   const label = isAnnual ? '연간 구독' : '월간 구독';
   const periodLabel = isAnnual ? '/년' : '/월';
+
   const monthlyEquivalent = isAnnual ? SubscriptionPolicy.getMonthlyEquivalent(plan.price) : null;
 
   return (
-    <PressableFeedback
-      onPress={onPress}
-      className={cn(
-        'rounded-2xl border-2 bg-white p-4',
-        isSelected ? 'border-main' : 'border-gray-2',
-      )}
-    >
-      <PressableFeedback.Highlight className="rounded-2xl" />
-      <VStack gap={8}>
-        <HStack className="items-center justify-between">
-          <HStack gap={8} className="items-center">
-            <Text size="b3" weight="bold" className="text-gray-9">
-              {label}
-            </Text>
-            {isCurrent && (
-              <View className="bg-gray-2 px-2 py-0.5 rounded-full">
-                <Text size="e2" weight="bold" className="text-gray-6">
-                  현재 플랜
-                </Text>
-              </View>
-            )}
-            {isAnnual && discountPercent > 0 && !isCurrent && (
-              <View className="bg-main/10 px-2 py-0.5 rounded-full">
-                <Text size="e2" weight="bold" className="text-main">
-                  {discountPercent}% 할인
-                </Text>
-              </View>
-            )}
+    <PressableFeedback onPress={onPress} className="rounded-2xl">
+      <Card className={cn('border-2 dark:bg-gray-2', isSelected ? 'border-main' : 'border-gray-2')}>
+        <PressableFeedback.Highlight className="rounded-2xl" />
+        <VStack gap={8}>
+          <HStack className="items-center justify-between">
+            <HStack gap={8} className="items-center">
+              <Text size="b3" weight="bold" className="text-gray-9">
+                {label}
+              </Text>
+              {isCurrent && (
+                <View className="bg-gray-2 px-2 py-0.5 rounded-full">
+                  <Text size="e2" weight="bold" className="text-gray-6">
+                    현재 플랜
+                  </Text>
+                </View>
+              )}
+              {isAnnual && discountPercent > 0 && !isCurrent && (
+                <View className="bg-main/10 px-2 py-0.5 rounded-full">
+                  <Text size="e2" weight="bold" className="text-main">
+                    {discountPercent}% 할인
+                  </Text>
+                </View>
+              )}
+            </HStack>
+            <View
+              className={cn(
+                'size-5 rounded-full border-2 items-center justify-center',
+                isSelected ? 'border-main' : 'border-gray-3',
+              )}
+            >
+              {isSelected && <View className="size-2.5 rounded-full bg-main" />}
+            </View>
           </HStack>
-          <View
-            className={cn(
-              'size-5 rounded-full border-2 items-center justify-center',
-              isSelected ? 'border-main' : 'border-gray-3',
-            )}
-          >
-            {isSelected && <View className="size-2.5 rounded-full bg-main" />}
-          </View>
-        </HStack>
 
-        <HStack className="items-baseline" gap={4}>
-          <Text size="t2" weight="bold" className="text-gray-9">
-            {plan.priceString}
-          </Text>
-          <Text size="b4" className="text-gray-5">
-            {periodLabel}
-          </Text>
-        </HStack>
+          <HStack className="items-baseline" gap={4}>
+            <Text size="t2" weight="bold" className="text-gray-9">
+              {plan.priceString}
+            </Text>
+            <Text size="b4" className="text-gray-5">
+              {periodLabel}
+            </Text>
+          </HStack>
 
-        {monthlyEquivalent !== null && (
-          <Text size="e1" className="text-gray-5">
-            월 {SubscriptionPolicy.formatPrice(monthlyEquivalent, plan.currencyCode)} 상당
+          <Text size="e1" className={cn('text-gray-5', monthlyEquivalent === null && 'opacity-0')}>
+            {monthlyEquivalent !== null
+              ? `월 ${SubscriptionPolicy.formatPrice(monthlyEquivalent, plan.currencyCode)} 상당`
+              : '\u00A0'}
           </Text>
-        )}
-      </VStack>
+        </VStack>
+      </Card>
     </PressableFeedback>
   );
 }

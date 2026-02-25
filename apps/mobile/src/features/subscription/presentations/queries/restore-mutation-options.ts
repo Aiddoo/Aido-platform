@@ -22,7 +22,7 @@ export const restoreMutationOptions = () => {
       } else {
         success('복원할 구매 내역이 없어요');
       }
-      // 즉시 /me 갱신
+
       queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
     },
     onError: () => {

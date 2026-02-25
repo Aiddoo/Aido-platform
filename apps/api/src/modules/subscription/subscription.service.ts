@@ -709,17 +709,22 @@ export class SubscriptionService {
 
 		// revenueCatUserId를 새 appUserId로 갱신
 		// subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
-		await this.subscriptionRepository
-			.findUserByAppUserId(newAppUserId)
-			.then(async (existingUser) => {
-				// 이미 올바른 매핑이면 skip (idempotency)
-				if (existingUser?.id === userId) return;
+		await this.database.$transaction(async (tx) => {
+			const existingUser =
+				await this.subscriptionRepository.findUserByAppUserId(newAppUserId, tx);
 
-				await this.subscriptionRepository.updateUserSubscriptionStatus(userId, {
+			// 이미 올바른 매핑이면 skip (idempotency)
+			if (existingUser?.id === userId) return;
+
+			await this.subscriptionRepository.updateUserSubscriptionStatus(
+				userId,
+				{
 					subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
 					revenueCatUserId: newAppUserId,
-				});
-			});
+				},
+				tx,
+			);
+		});
 
 		this.#logger.log(
 			`Transfer: userId=${userId}, revenueCatUserId → ${newAppUserId}`,
@@ -731,7 +736,7 @@ export class SubscriptionService {
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
-		};
+		} satisfies SubscriptionEventPayload;
 	}
 
 	// =========================================================================

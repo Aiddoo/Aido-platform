@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import {
-	ADMIN_NOTIFIER,
 	type AdminNotifier,
+	PAYMENT_NOTIFIER,
 } from "@/modules/admin-notification/providers/admin-notifier.interface";
 
 import {
@@ -139,7 +139,7 @@ export class SubscriptionNotificationListener {
 	readonly #logger = new Logger(SubscriptionNotificationListener.name);
 
 	constructor(
-		@Inject(ADMIN_NOTIFIER)
+		@Inject(PAYMENT_NOTIFIER)
 		private readonly adminNotifier: AdminNotifier,
 	) {}
 

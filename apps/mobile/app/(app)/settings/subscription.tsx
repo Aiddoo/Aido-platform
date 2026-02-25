@@ -1,3 +1,7 @@
+import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsing.webp';
+import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
+import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
+import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-provider';
 import { SubscriptionPlanCard } from '@src/features/subscription/presentations/components/SubscriptionPlanCard';
 import { SubscriptionStatusCard } from '@src/features/subscription/presentations/components/SubscriptionStatusCard';
@@ -7,6 +11,7 @@ import { restoreMutationOptions } from '@src/features/subscription/presentations
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
+import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -18,61 +23,9 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Chip, Separator, Skeleton, Spinner } from 'heroui-native';
+import { Card, Chip, Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { Linking, Platform, ScrollView, View } from 'react-native';
-
-// App Store / Play Store 구독 관리 URL
-const STORE_SUBSCRIPTION_URL = Platform.select({
-  ios: 'https://apps.apple.com/account/subscriptions',
-  android: 'https://play.google.com/store/account/subscriptions',
-  default: '',
-});
-
-interface PremiumBenefit {
-  icon: StyledIconType;
-  iconColor: string;
-  iconBg: string;
-  title: string;
-  description: string;
-  /** 추후 이미지 추가 시 사용할 키 */
-  imageKey: string;
-}
-
-const PREMIUM_BENEFITS: PremiumBenefit[] = [
-  {
-    icon: DocsIcon,
-    iconColor: 'text-main',
-    iconBg: 'bg-main/10',
-    title: '무제한 할 일 AI 파싱',
-    description: '자연어로 입력하면 AI가 자동으로 할 일을 정리해요',
-    imageKey: 'ai-parsing',
-  },
-  {
-    icon: BellIcon,
-    iconColor: 'text-main',
-    iconBg: 'bg-main/10',
-    title: '고급 알림 설정',
-    description: '원하는 시간에 맞춤 알림을 받을 수 있어요',
-    imageKey: 'advanced-notifications',
-  },
-  {
-    icon: DeviceIcon,
-    iconColor: 'text-main',
-    iconBg: 'bg-main/10',
-    title: '앱 아이콘 커스터마이징',
-    description: '나만의 스타일로 앱 아이콘을 변경해요',
-    imageKey: 'app-icon-customization',
-  },
-  {
-    icon: SendIcon,
-    iconColor: 'text-main',
-    iconBg: 'bg-main/10',
-    title: '무제한 찌르기 & 응원',
-    description: '친구에게 제한 없이 찌르기와 응원을 보내요',
-    imageKey: 'unlimited-poke',
-  },
-];
+import { Image, type ImageSourcePropType, Linking, ScrollView, View } from 'react-native';
 
 const SubscriptionScreen = () => {
   return (
@@ -110,8 +63,8 @@ function SubscriberView() {
   const restore = useMutation(restoreMutationOptions());
 
   const handleManageSubscription = () => {
-    if (STORE_SUBSCRIPTION_URL) {
-      Linking.openURL(STORE_SUBSCRIPTION_URL);
+    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
+      Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
     }
   };
 
@@ -126,7 +79,36 @@ function SubscriberView() {
 
       <Spacing size={16} />
 
-      <PremiumBenefitsCard />
+      <VStack gap={12}>
+        <BenefitCard
+          icon={DocsIcon}
+          title="무제한 할 일 AI 파싱"
+          description="자연어로 입력하면 AI가 자동으로 할 일을 정리해요"
+          index={0}
+          image={benefitAiParsingImage}
+        />
+        <BenefitCard
+          icon={BellIcon}
+          title="고급 알림 설정"
+          description="원하는 시간에 맞춤 알림을 받을 수 있어요"
+          index={1}
+          image={benefitNotificationImage}
+        />
+        <BenefitCard
+          icon={DeviceIcon}
+          title="앱 아이콘 커스터마이징"
+          description="나만의 스타일로 앱 아이콘을 변경해요"
+          index={2}
+          image={benefitAppIconImage}
+        />
+        <BenefitCard
+          icon={SendIcon}
+          title="무제한 찌르기 & 응원"
+          description="친구에게 제한 없이 찌르기와 응원을 보내요"
+          index={3}
+          image={benefitNudgeImage}
+        />
+      </VStack>
 
       <Spacing size={16} />
 
@@ -177,20 +159,25 @@ function SubscriptionUnavailableView() {
 
 function OfferingsView() {
   const { data: offering } = useSuspenseQuery(getOfferingsQueryOptions());
+
   const purchase = useMutation(purchaseMutationOptions());
+
   const restore = useMutation(restoreMutationOptions());
 
+  const annualPlan = offering.plans.find((p) => p.planType === 'annual');
+  const defaultPlan = annualPlan ?? offering.plans[0];
+
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(
-    () =>
-      offering.plans.find((p) => p.planType === 'annual')?.identifier ??
-      offering.plans[0]?.identifier ??
-      null,
+    defaultPlan?.identifier ?? null,
   );
 
   const selectedPlan = offering.plans.find((p) => p.identifier === selectedPlanId);
 
   const handlePurchase = () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) {
+      return;
+    }
+
     purchase.mutate(selectedPlan.identifier);
   };
 
@@ -218,7 +205,36 @@ function OfferingsView() {
 
         <Spacing size={24} />
 
-        <PremiumBenefitsCard />
+        <VStack gap={12}>
+          <BenefitCard
+            icon={DocsIcon}
+            title="무제한 할 일 AI 파싱"
+            description="자연어로 입력하면 AI가 자동으로 할 일을 정리해요"
+            index={0}
+            image={benefitAiParsingImage}
+          />
+          <BenefitCard
+            icon={BellIcon}
+            title="고급 알림 설정"
+            description="원하는 시간에 맞춤 알림을 받을 수 있어요"
+            index={1}
+            image={benefitNotificationImage}
+          />
+          <BenefitCard
+            icon={DeviceIcon}
+            title="앱 아이콘 커스터마이징"
+            description="나만의 스타일로 앱 아이콘을 변경해요"
+            index={2}
+            image={benefitAppIconImage}
+          />
+          <BenefitCard
+            icon={SendIcon}
+            title="무제한 찌르기 & 응원"
+            description="친구에게 제한 없이 찌르기와 응원을 보내요"
+            index={3}
+            image={benefitNudgeImage}
+          />
+        </VStack>
 
         <Spacing size={24} />
 
@@ -242,7 +258,6 @@ function OfferingsView() {
         </VStack>
       </ScrollView>
 
-      {/* 하단 고정: 구독하기 버튼만 */}
       <View className="px-4 pb-4 pt-2">
         <Button
           onPress={handlePurchase}
@@ -256,44 +271,43 @@ function OfferingsView() {
   );
 }
 
-function PremiumBenefitsCard() {
+function BenefitCard({
+  icon: Icon,
+  title,
+  description,
+  index,
+  image,
+}: {
+  icon: StyledIconType;
+  title: string;
+  description: string;
+  index: number;
+  image: ImageSourcePropType;
+}) {
   return (
-    <VStack gap={12}>
-      {PREMIUM_BENEFITS.map((benefit, index) => (
-        <BenefitCard key={benefit.imageKey} benefit={benefit} index={index} />
-      ))}
-    </VStack>
-  );
-}
-
-function BenefitCard({ benefit, index }: { benefit: PremiumBenefit; index: number }) {
-  const IconComponent = benefit.icon;
-
-  return (
-    <VStack gap={12} className="bg-white rounded-2xl p-4">
-      {/* 뱃지 */}
-      <Chip size="sm" variant="soft" color="accent" className="self-start">
-        <Chip.Label>혜택 {index + 1}</Chip.Label>
-      </Chip>
-
-      {/* 아이콘 + 텍스트 */}
-      <HStack gap={12} className="items-center">
-        <View className={`${benefit.iconBg} w-10 h-10 rounded-xl items-center justify-center`}>
-          <IconComponent width={20} height={20} colorClassName={benefit.iconColor} />
+    <Card className="dark:bg-gray-2">
+      <VStack gap={12}>
+        <Chip size="sm" variant="soft" color="accent" className="self-start">
+          <Chip.Label>혜택 {index + 1}</Chip.Label>
+        </Chip>
+        <HStack gap={12} className="items-center">
+          <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
+            <Icon width={20} height={20} colorClassName="text-main" />
+          </View>
+          <VStack gap={2} className="flex-1">
+            <Text size="b3" weight="bold" shade={9}>
+              {title}
+            </Text>
+            <Text size="b4" shade={6}>
+              {description}
+            </Text>
+          </VStack>
+        </HStack>
+        <View className="w-full aspect-video rounded-xl overflow-hidden">
+          <Image source={image} className="w-full h-full" resizeMode="cover" />
         </View>
-        <VStack gap={2} className="flex-1">
-          <Text size="b3" weight="bold" shade={9}>
-            {benefit.title}
-          </Text>
-          <Text size="b4" shade={6}>
-            {benefit.description}
-          </Text>
-        </VStack>
-      </HStack>
-
-      {/* 이미지 플레이스홀더 — 추후 실제 이미지로 교체 */}
-      <Skeleton className="w-full aspect-video rounded-xl" />
-    </VStack>
+      </VStack>
+    </Card>
   );
 }
 

@@ -860,10 +860,14 @@ describe("SubscriptionService", () => {
 			// Then
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
-			).toHaveBeenCalledWith("user-123", {
-				subscriptionStatus: "ACTIVE",
-				revenueCatUserId: "new-app-user-id",
-			});
+			).toHaveBeenCalledWith(
+				"user-123",
+				{
+					subscriptionStatus: "ACTIVE",
+					revenueCatUserId: "new-app-user-id",
+				},
+				expect.anything(),
+			);
 		});
 
 		it("TRANSFER 이벤트는 캐시를 무효화하고 subscription.transferred 이벤트를 발행한다", async () => {
@@ -879,6 +883,7 @@ describe("SubscriptionService", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
+			expect(database.$transaction).toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).toHaveBeenCalledWith(
 				"user-123",
 			);
@@ -892,6 +897,40 @@ describe("SubscriptionService", () => {
 					email: "test@example.com",
 					eventType: "TRANSFER",
 				}),
+			);
+		});
+
+		it("TRANSFER 이벤트는 트랜잭션 내에서 findUserByAppUserId와 updateUserSubscriptionStatus를 호출한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.transfer()
+				.withAppUserId("new-app-user-id")
+				.build();
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser) // handleWebhookEvent 사용자 조회
+				.mockResolvedValueOnce(null); // #handleTransfer 내부 조회
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 트랜잭션 사용 확인
+			expect(database.$transaction).toHaveBeenCalled();
+
+			// findUserByAppUserId 두 번째 호출 (트랜잭션 내부)에 tx 전달 확인
+			expect(subscriptionRepository.findUserByAppUserId).toHaveBeenCalledWith(
+				"new-app-user-id",
+				expect.anything(), // tx
+			);
+
+			// updateUserSubscriptionStatus에 tx 전달 확인
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				{
+					subscriptionStatus: "ACTIVE",
+					revenueCatUserId: "new-app-user-id",
+				},
+				expect.anything(), // tx
 			);
 		});
 	});
