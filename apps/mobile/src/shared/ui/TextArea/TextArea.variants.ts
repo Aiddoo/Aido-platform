@@ -32,7 +32,7 @@ export const textAreaContainerVariants = tv({
   compoundVariants: [
     { variant: 'filled', isFocused: true, className: 'border-main' },
     { variant: 'line', isFocused: true, className: 'border-main' },
-    { variant: 'filled', isInvalid: true, className: 'bg-error/10' },
+    { variant: 'filled', isInvalid: true, className: 'bg-error-light' },
     { variant: 'line', isInvalid: true, className: 'border-error' },
   ],
   defaultVariants: {
