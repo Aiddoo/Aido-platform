@@ -625,4 +625,8 @@ export class BusinessExceptions {
 	static webhookProcessingFailed(details?: unknown) {
 		return new BusinessException(ErrorCode.SUBSCRIPTION_1604, details);
 	}
+
+	static webhookLockContention(appUserId: string) {
+		return new BusinessException(ErrorCode.SUBSCRIPTION_1605, { appUserId });
+	}
 }

@@ -60,10 +60,10 @@ export class SubscriptionService {
 		);
 
 		if (!release) {
-			this.#logger.log(
-				`Lock already held for appUserId=${appUserId}, skipping duplicate event: ${eventType}`,
+			this.#logger.warn(
+				`Lock contention for appUserId=${appUserId}, event=${eventType} — will retry via 429`,
 			);
-			return;
+			throw BusinessExceptions.webhookLockContention(appUserId);
 		}
 
 		try {

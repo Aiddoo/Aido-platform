@@ -93,17 +93,18 @@ describe("SubscriptionService", () => {
 	// =========================================================================
 
 	describe("Lock", () => {
-		it("Lock 획득 실패 시 이벤트를 처리하지 않고 종료한다", async () => {
+		it("Lock 획득 실패 시 BusinessException을 던진다", async () => {
 			// Given
 			lockProvider.acquire.mockResolvedValue(null);
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId("user-123")
 				.build();
 
-			// When
-			await service.handleWebhookEvent(payload);
+			// When & Then
+			await expect(service.handleWebhookEvent(payload)).rejects.toThrow(
+				BusinessException,
+			);
 
-			// Then
 			expect(subscriptionRepository.findUserByAppUserId).not.toHaveBeenCalled();
 			expect(database.$transaction).not.toHaveBeenCalled();
 		});

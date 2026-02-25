@@ -1,7 +1,9 @@
+import { ErrorCode } from "@aido/errors";
 import { revenueCatWebhookPayloadSchema } from "@aido/validators";
 import {
 	Controller,
 	HttpCode,
+	HttpException,
 	HttpStatus,
 	Logger,
 	Post,
@@ -12,6 +14,7 @@ import { SkipThrottle } from "@nestjs/throttler";
 import * as Sentry from "@sentry/nestjs";
 import type { Request } from "express";
 
+import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { Public } from "@/modules/auth/decorators/public.decorator";
 
 import { WebhookSignatureGuard } from "./guards/webhook-signature.guard";
@@ -55,6 +58,18 @@ export class SubscriptionController {
 		try {
 			await this.subscriptionService.handleWebhookEvent(parseResult.data);
 		} catch (error) {
+			// Lock 경합 → 429 반환 (RevenueCat 재시도 유도)
+			if (
+				error instanceof BusinessException &&
+				error.errorCode === ErrorCode.SUBSCRIPTION_1605
+			) {
+				this.#logger.warn(`Lock contention, returning 429: ${error.message}`);
+				throw new HttpException(
+					{ received: false, retryable: true },
+					HttpStatus.TOO_MANY_REQUESTS,
+				);
+			}
+			// 그 외 에러 → 200 반환 (무한 재시도 방지)
 			Sentry.captureException(error);
 			this.#logger.error(
 				`Failed to process webhook event: ${error}`,
