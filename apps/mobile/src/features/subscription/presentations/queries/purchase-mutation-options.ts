@@ -20,10 +20,8 @@ export const purchaseMutationOptions = () => {
       success('구독이 완료되었어요!');
     },
     onError: (err) => {
-      if (isPurchaseCancelledError(err)) {
-        success('구독이 취소되었어요');
-        return;
-      }
+      // 사용자가 직접 취소한 경우 — 이미 인지하고 있으므로 조용히 무시
+      if (isPurchaseCancelledError(err)) return;
 
       if (isPaymentPendingError(err)) {
         success('결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.');
