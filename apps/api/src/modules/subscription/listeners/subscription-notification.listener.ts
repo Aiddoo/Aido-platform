@@ -91,6 +91,17 @@ const STORE_LABELS: Record<string, string> = {
 };
 
 /**
+ * 스토어 → 기기 추정 라벨
+ */
+const DEVICE_LABELS: Record<string, string> = {
+	APP_STORE: "🍎 iOS",
+	PLAY_STORE: "🤖 Android",
+	STRIPE: "🌐 Web",
+	AMAZON: "📦 Amazon",
+	PROMOTIONAL: "🎁 프로모션",
+};
+
+/**
  * 가격 포맷
  */
 function formatPrice(price: number, currency?: string): string {
@@ -108,19 +119,15 @@ function formatPrice(price: number, currency?: string): string {
 }
 
 /**
- * ISO 날짜 문자열을 읽기 쉬운 형식으로 변환
+ * ISO 날짜 문자열을 Discord 타임스탬프 포맷으로 변환
+ *
+ * Discord가 사용자의 로컬 시간대에 맞춰 자동 렌더링합니다.
+ * @see https://discord.com/developers/docs/reference#message-formatting-formats
  */
 function formatDate(isoString: string): string {
 	try {
-		const date = new Date(isoString);
-		return date.toLocaleString("ko-KR", {
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-			hour: "2-digit",
-			minute: "2-digit",
-			timeZone: "Asia/Seoul",
-		});
+		const unixSeconds = Math.floor(new Date(isoString).getTime() / 1000);
+		return `<t:${unixSeconds}:f>`;
 	} catch {
 		return isoString;
 	}
@@ -170,6 +177,12 @@ export class SubscriptionNotificationListener {
 				fields.push({ name: "스토어", value: storeLabel, inline: true });
 			}
 
+			// 기기 (스토어 기반 추정)
+			if (payload.store) {
+				const deviceLabel = DEVICE_LABELS[payload.store] ?? payload.store;
+				fields.push({ name: "기기", value: deviceLabel, inline: true });
+			}
+
 			// 금액
 			if (payload.price != null) {
 				fields.push({
@@ -206,7 +219,7 @@ export class SubscriptionNotificationListener {
 
 			const result = await this.adminNotifier.send({
 				title: `${meta.emoji} ${meta.title}`,
-				body: `구독 이벤트가 발생했습니다. (${payload.eventType})`,
+				body: `**${payload.email}** 님의 구독 이벤트 (${payload.eventType})`,
 				color: meta.color,
 				fields,
 			});

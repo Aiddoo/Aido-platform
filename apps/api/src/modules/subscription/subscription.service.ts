@@ -219,13 +219,13 @@ export class SubscriptionService {
 	 * INITIAL_PURCHASE: 최초 구매
 	 *
 	 * Subscription 레코드 생성 + User 상태 ACTIVE
-	 * 멱등성: 동일 transactionId 구독이 이미 있으면 skip
+	 * 멱등성: 동일 transactionId 구독이 이미 있으면 skip → null 반환 (이벤트 미발행)
 	 */
 	async #handleInitialPurchase(
 		userId: string,
 		email: string,
 		event: RevenueCatWebhookPayload["event"],
-	): Promise<SubscriptionEventPayload> {
+	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
 		if (!event.purchased_at_ms) {
@@ -244,7 +244,7 @@ export class SubscriptionService {
 		const startedAt = new Date(event.purchased_at_ms);
 		const expiresAt = new Date(event.expiration_at_ms);
 
-		await this.database.$transaction(async (tx) => {
+		const skipped = await this.database.$transaction(async (tx) => {
 			// 멱등성 가드: 중복 webhook 재전송 대비
 			const existing = await this.subscriptionRepository.findByRevenueCatId(
 				transactionId,
@@ -254,7 +254,7 @@ export class SubscriptionService {
 				this.#logger.log(
 					`Subscription already exists for transactionId=${transactionId}, skipping create`,
 				);
-				return;
+				return true;
 			}
 
 			await this.subscriptionRepository.create(
@@ -278,7 +278,12 @@ export class SubscriptionService {
 				},
 				tx,
 			);
+			return false;
 		});
+
+		if (skipped) {
+			return null;
+		}
 
 		this.#logger.log(
 			`Initial purchase processed: userId=${userId}, productId=${event.product_id}, transactionId=${transactionId}`,
@@ -302,12 +307,13 @@ export class SubscriptionService {
 	 * RENEWAL: 갱신
 	 *
 	 * Subscription 갱신 + User 상태 ACTIVE + expiresAt 업데이트
+	 * 멱등성: 동일 expiresAt으로 이미 갱신되었으면 skip → null 반환 (이벤트 미발행)
 	 */
 	async #handleRenewal(
 		userId: string,
 		email: string,
 		event: RevenueCatWebhookPayload["event"],
-	): Promise<SubscriptionEventPayload> {
+	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
 		if (!event.expiration_at_ms) {
@@ -319,7 +325,7 @@ export class SubscriptionService {
 
 		const expiresAt = new Date(event.expiration_at_ms);
 
-		await this.database.$transaction(async (tx) => {
+		const skipped = await this.database.$transaction(async (tx) => {
 			// 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
 			const existing = await this.subscriptionRepository.findByRevenueCatId(
 				transactionId,
@@ -338,7 +344,7 @@ export class SubscriptionService {
 				this.#logger.log(
 					`Already renewed with same expiresAt, skipping: transactionId=${transactionId}`,
 				);
-				return;
+				return true;
 			}
 
 			await this.subscriptionRepository.updateStatus(
@@ -360,7 +366,12 @@ export class SubscriptionService {
 				},
 				tx,
 			);
+			return false;
 		});
+
+		if (skipped) {
+			return null;
+		}
 
 		this.#logger.log(
 			`Renewal processed: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt.toISOString()}`,
