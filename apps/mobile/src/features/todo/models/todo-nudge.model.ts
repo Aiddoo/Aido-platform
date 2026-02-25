@@ -1,3 +1,4 @@
+import { isSameDay } from '@src/shared/utils/date';
 import { z } from 'zod';
 
 export const nudgeLimitInfoSchema = z.object({
@@ -32,14 +33,6 @@ export type NudgeBannerState =
 
 const MAX_MESSAGE_LENGTH = 200;
 
-const isSameCalendarDay = (left: Date, right: Date) => {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-};
-
 const normalizeMessage = (message?: string | null): string | undefined => {
   if (message == null) return undefined;
   const trimmed = message.trim();
@@ -72,7 +65,7 @@ const getBannerState = (limitInfo: NudgeLimitInfo): NudgeBannerState => {
 };
 
 const canNudgeOnDate = (targetDate: Date, now: Date): boolean => {
-  return isSameCalendarDay(targetDate, now);
+  return isSameDay(targetDate, now);
 };
 
 const canNudgeTodoOnDate = (
