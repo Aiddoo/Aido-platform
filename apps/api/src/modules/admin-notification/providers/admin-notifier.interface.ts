@@ -52,3 +52,10 @@ export interface AdminNotifier {
  * Admin Notifier 토큰 (DI용)
  */
 export const ADMIN_NOTIFIER = Symbol("ADMIN_NOTIFIER");
+
+/**
+ * Payment Notifier 토큰 (DI용)
+ *
+ * 결제/구독 관련 알림 전용 채널 (DISCORD_PAYMENT_WEBHOOK_URL)
+ */
+export const PAYMENT_NOTIFIER = Symbol("PAYMENT_NOTIFIER");

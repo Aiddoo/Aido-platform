@@ -93,17 +93,18 @@ describe("SubscriptionService", () => {
 	// =========================================================================
 
 	describe("Lock", () => {
-		it("Lock 획득 실패 시 이벤트를 처리하지 않고 종료한다", async () => {
+		it("Lock 획득 실패 시 BusinessException을 던진다", async () => {
 			// Given
 			lockProvider.acquire.mockResolvedValue(null);
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId("user-123")
 				.build();
 
-			// When
-			await service.handleWebhookEvent(payload);
+			// When & Then
+			await expect(service.handleWebhookEvent(payload)).rejects.toThrow(
+				BusinessException,
+			);
 
-			// Then
 			expect(subscriptionRepository.findUserByAppUserId).not.toHaveBeenCalled();
 			expect(database.$transaction).not.toHaveBeenCalled();
 		});
@@ -368,7 +369,7 @@ describe("SubscriptionService", () => {
 	// CANCELLATION
 	// =========================================================================
 
-	describe("CANCELLATION", () => {
+	describe("CANCELLATION (일반 취소)", () => {
 		it("expiresAt이 미래이면 User를 ACTIVE로 유지한다", async () => {
 			// Given
 			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7일 후
@@ -449,6 +450,213 @@ describe("SubscriptionService", () => {
 					subscriptionStatus: "ACTIVE",
 				}),
 				expect.anything(),
+			);
+		});
+	});
+
+	// =========================================================================
+	// CANCELLATION (환불 — cancel_reason: CUSTOMER_SUPPORT)
+	// =========================================================================
+
+	describe("CANCELLATION (환불)", () => {
+		it("cancel_reason=CUSTOMER_SUPPORT이면 Subscription을 EXPIRED로, User를 즉시 FREE로 변경한다", async () => {
+			// Given
+			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+			const payload = SubscriptionEventBuilder.refundCancellation()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — Subscription: EXPIRED
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "EXPIRED",
+				}),
+				expect.anything(),
+			);
+			// Then — User: 즉시 FREE, expiresAt null
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "FREE",
+					subscriptionExpiresAt: null,
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("환불 시 subscription.refunded 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.refundCancellation()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.refunded",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "CANCELLATION",
+					cancelReason: "CUSTOMER_SUPPORT",
+				}),
+			);
+		});
+
+		it("일반 취소(UNSUBSCRIBE)는 기존 로직을 유지한다 (만료일 미래 → ACTIVE)", async () => {
+			// Given
+			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+			const payload = SubscriptionEventBuilder.cancellation()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — Subscription: CANCELLED (NOT EXPIRED)
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "CANCELLED",
+				}),
+				expect.anything(),
+			);
+			// Then — User: ACTIVE (만료일까지 유지)
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			// Then — subscription.cancelled 이벤트 (not refunded)
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.cancelled",
+				expect.objectContaining({
+					userId: "user-123",
+					cancelReason: "UNSUBSCRIBE",
+				}),
+			);
+		});
+	});
+
+	// =========================================================================
+	// NON_RENEWING_PURCHASE
+	// =========================================================================
+
+	describe("NON_RENEWING_PURCHASE", () => {
+		it("INITIAL_PURCHASE와 동일하게 구독을 생성하고 User를 ACTIVE로 변경한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.nonRenewingPurchase()
+				.withAppUserId("user-123")
+				.withProductId("premium_lifetime")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					productId: "premium_lifetime",
+					status: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("subscription.purchased 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.nonRenewingPurchase()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.purchased",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "NON_RENEWING_PURCHASE",
+				}),
+			);
+		});
+	});
+
+	// =========================================================================
+	// SUBSCRIPTION_EXTENDED
+	// =========================================================================
+
+	describe("SUBSCRIPTION_EXTENDED", () => {
+		it("expiresAt을 갱신하고 ACTIVE를 유지한다", async () => {
+			// Given
+			const futureMs = Date.now() + 60 * 24 * 60 * 60 * 1000; // 60일 후
+			const payload = SubscriptionEventBuilder.subscriptionExtended()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("subscription.extended 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.subscriptionExtended()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.extended",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "SUBSCRIPTION_EXTENDED",
+				}),
 			);
 		});
 	});
@@ -575,6 +783,29 @@ describe("SubscriptionService", () => {
 				expect.anything(),
 			);
 		});
+
+		it("expiration_at_ms가 없어도 User를 ACTIVE로 업데이트한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.productChange()
+				.withAppUserId("user-123")
+				.withProductId("premium_yearly")
+				.withoutExpiration()
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — User는 항상 ACTIVE로 갱신
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+		});
 	});
 
 	// =========================================================================
@@ -612,19 +843,95 @@ describe("SubscriptionService", () => {
 			expect(eventEmitter.emit).not.toHaveBeenCalled();
 		});
 
-		it("TRANSFER 이벤트는 로그만 남긴다", async () => {
+		it("TRANSFER 이벤트는 updateUserSubscriptionStatus를 호출하여 revenueCatUserId를 갱신한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.transfer()
-				.withAppUserId("user-123")
+				.withAppUserId("new-app-user-id")
 				.build();
+			// 첫 번째 호출: 기존 appUserId로 사용자 조회 (handleWebhookEvent)
+			// 두 번째 호출: 새 appUserId로 사용자 조회 (#handleTransfer 내부)
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser)
+				.mockResolvedValueOnce(null);
 
 			// When
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
-			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				{
+					subscriptionStatus: "ACTIVE",
+					revenueCatUserId: "new-app-user-id",
+				},
+				expect.anything(),
+			);
+		});
+
+		it("TRANSFER 이벤트는 캐시를 무효화하고 subscription.transferred 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.transfer()
+				.withAppUserId("new-app-user-id")
+				.build();
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser)
+				.mockResolvedValueOnce(null);
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(database.$transaction).toHaveBeenCalled();
+			expect(cacheService.invalidateSubscription).toHaveBeenCalledWith(
+				"user-123",
+			);
+			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
+				"user-123",
+			);
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.transferred",
+				expect.objectContaining({
+					userId: "user-123",
+					email: "test@example.com",
+					eventType: "TRANSFER",
+				}),
+			);
+		});
+
+		it("TRANSFER 이벤트는 트랜잭션 내에서 findUserByAppUserId와 updateUserSubscriptionStatus를 호출한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.transfer()
+				.withAppUserId("new-app-user-id")
+				.build();
+			subscriptionRepository.findUserByAppUserId
+				.mockResolvedValueOnce(mockUser) // handleWebhookEvent 사용자 조회
+				.mockResolvedValueOnce(null); // #handleTransfer 내부 조회
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 트랜잭션 사용 확인
+			expect(database.$transaction).toHaveBeenCalled();
+
+			// findUserByAppUserId 두 번째 호출 (트랜잭션 내부)에 tx 전달 확인
+			expect(subscriptionRepository.findUserByAppUserId).toHaveBeenCalledWith(
+				"new-app-user-id",
+				expect.anything(), // tx
+			);
+
+			// updateUserSubscriptionStatus에 tx 전달 확인
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				{
+					subscriptionStatus: "ACTIVE",
+					revenueCatUserId: "new-app-user-id",
+				},
+				expect.anything(), // tx
+			);
 		});
 	});
 
@@ -664,6 +971,99 @@ describe("SubscriptionService", () => {
 			// When & Then
 			await expect(service.handleWebhookEvent(payload)).rejects.toThrow(
 				BusinessException,
+			);
+		});
+	});
+
+	// =========================================================================
+	// event.id 기반 중복 방지
+	// =========================================================================
+
+	describe("event.id 중복 방지", () => {
+		it("동일 event.id 웹훅 재전송 시 이벤트를 처리하지 않고 종료한다", async () => {
+			// Given — 이미 처리된 event.id가 있는 구독
+			subscriptionRepository.findByRevenueCatId.mockResolvedValue({
+				lastProcessedEventId: "evt-duplicate",
+			} as never);
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-duplicate")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — DB 트랜잭션, 캐시 무효화, 이벤트 발행 모두 없음
+			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
+			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			// Lock은 여전히 해제됨
+			expect(mockRelease).toHaveBeenCalledTimes(1);
+		});
+
+		it("event.id가 없는 이벤트는 기존 로직 그대로 처리한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.initialPurchase()
+				.withAppUserId("user-123")
+				.withoutEventId()
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 정상 처리
+			expect(subscriptionRepository.create).toHaveBeenCalled();
+		});
+
+		it("event.id가 다르면 정상 처리한다", async () => {
+			// Given — 이전 event.id와 다른 새 이벤트
+			subscriptionRepository.findByRevenueCatId.mockResolvedValue({
+				lastProcessedEventId: "evt-old",
+				status: "ACTIVE",
+				expiresAt: new Date(),
+			} as never);
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-new")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 정상 처리 (트랜잭션 실행)
+			expect(database.$transaction).toHaveBeenCalled();
+		});
+
+		it("event.id가 있으면 updateStatus 시 lastProcessedEventId가 전달된다", async () => {
+			// Given
+			subscriptionRepository.findByRevenueCatId
+				.mockResolvedValueOnce({
+					lastProcessedEventId: "evt-old",
+					status: "ACTIVE",
+					expiresAt: new Date(),
+				} as never) // 중복 체크용
+				.mockResolvedValueOnce({
+					status: "ACTIVE",
+					expiresAt: new Date(Date.now() - 1000),
+				} as never); // renewal 핸들러 내부 조회용
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-new-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					lastProcessedEventId: "evt-new-123",
+				}),
+				expect.anything(),
 			);
 		});
 	});

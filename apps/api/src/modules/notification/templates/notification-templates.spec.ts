@@ -215,4 +215,28 @@ describe("notification-templates", () => {
 			expect(result.body).toBe(SCHEDULER_TEMPLATES.EVENING_NONE.body);
 		});
 	});
+
+	// =========================================================================
+	// NotificationMessageBuilder.billingIssue
+	// =========================================================================
+
+	describe("NotificationMessageBuilder.billingIssue", () => {
+		it("결제 문제 알림 title을 반환한다", () => {
+			// When
+			const result = NotificationMessageBuilder.billingIssue();
+
+			// Then
+			expect(result.title).toBe("결제 문제가 발생했어요");
+		});
+
+		it("결제 문제 알림 body를 반환한다", () => {
+			// When
+			const result = NotificationMessageBuilder.billingIssue();
+
+			// Then
+			expect(result.body).toBe(
+				"결제 수단을 확인해주세요. 구독이 중단될 수 있습니다.",
+			);
+		});
+	});
 });

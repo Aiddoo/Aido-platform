@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import {
-	ADMIN_NOTIFIER,
 	type AdminNotifier,
+	PAYMENT_NOTIFIER,
 } from "@/modules/admin-notification/providers/admin-notifier.interface";
 
 import {
@@ -54,6 +54,21 @@ const EVENT_META: Record<string, EventMeta> = {
 	"subscription.product_changed": {
 		title: "구독 상품 변경",
 		color: 0x9b59b6,
+		emoji: "🔀",
+	},
+	"subscription.refunded": {
+		title: "구독 환불",
+		color: 0xe91e63,
+		emoji: "💸",
+	},
+	"subscription.extended": {
+		title: "구독 연장",
+		color: 0x2ecc71,
+		emoji: "⏳",
+	},
+	"subscription.transferred": {
+		title: "구독 이전",
+		color: 0x1abc9c,
 		emoji: "🔀",
 	},
 };
@@ -124,7 +139,7 @@ export class SubscriptionNotificationListener {
 	readonly #logger = new Logger(SubscriptionNotificationListener.name);
 
 	constructor(
-		@Inject(ADMIN_NOTIFIER)
+		@Inject(PAYMENT_NOTIFIER)
 		private readonly adminNotifier: AdminNotifier,
 	) {}
 

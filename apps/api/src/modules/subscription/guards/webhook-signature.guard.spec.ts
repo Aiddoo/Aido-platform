@@ -85,12 +85,15 @@ describe("WebhookSignatureGuard", () => {
 			expect(() => guard.canActivate(context)).toThrow(BusinessException);
 		});
 
-		it("Bearer prefix 없는 값 → 거부", () => {
+		it("Bearer prefix 없는 raw 값 → 통과 (true)", () => {
 			// Given
 			const context = createMockContext("test-secret");
 
-			// When & Then
-			expect(() => guard.canActivate(context)).toThrow(BusinessException);
+			// When
+			const result = guard.canActivate(context);
+
+			// Then
+			expect(result).toBe(true);
 		});
 	});
 
@@ -106,6 +109,7 @@ describe("WebhookSignatureGuard", () => {
 					() =>
 						({
 							revenuecat: { webhookSecret: "" },
+							isProduction: false,
 						}) as unknown as TypedConfigService,
 				)
 				.compile();
@@ -122,6 +126,35 @@ describe("WebhookSignatureGuard", () => {
 
 			// Then
 			expect(result).toBe(true);
+		});
+	});
+
+	// =========================================================================
+	// Setup - secret 미설정 (프로덕션 환경)
+	// =========================================================================
+
+	describe("webhook secret이 미설정된 경우 (프로덕션 환경)", () => {
+		beforeEach(async () => {
+			const { unit } = await TestBed.solitary(WebhookSignatureGuard)
+				.mock(TypedConfigService)
+				.impl(
+					() =>
+						({
+							revenuecat: { webhookSecret: "" },
+							isProduction: true,
+						}) as unknown as TypedConfigService,
+				)
+				.compile();
+
+			guard = unit;
+		});
+
+		it("프로덕션 + secret 미설정 → BusinessException", () => {
+			// Given
+			const context = createMockContext();
+
+			// When & Then
+			expect(() => guard.canActivate(context)).toThrow(BusinessException);
 		});
 	});
 });

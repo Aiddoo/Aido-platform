@@ -17,6 +17,9 @@ const ExtraSchema = z.object({
   devMachineIp: z.string().optional(),
   isDevelopment: z.boolean(),
   isProduction: z.boolean(),
+  revenueCatAppleApiKey: z.string().optional(),
+  revenueCatGoogleApiKey: z.string().optional(),
+  revenueCatTestApiKey: z.string().optional(),
 });
 
 // =============================================================================
@@ -114,6 +117,15 @@ const resolveScheme = (): string => {
   return Array.isArray(scheme) ? (scheme[0] ?? 'aido') : (scheme ?? 'aido');
 };
 
+const resolveRevenueCatApiKey = (): string | undefined =>
+  match({ env: extra.env, platform: Platform.OS as PlatformType })
+    .with({ env: 'development' }, () => extra.revenueCatTestApiKey)
+    .with({ env: 'production', platform: 'ios' }, () => extra.revenueCatAppleApiKey)
+    .with({ env: 'production', platform: 'android' }, () => extra.revenueCatGoogleApiKey)
+    .with({ env: 'preview', platform: 'ios' }, () => extra.revenueCatAppleApiKey)
+    .with({ env: 'preview', platform: 'android' }, () => extra.revenueCatGoogleApiKey)
+    .otherwise(() => extra.revenueCatTestApiKey);
+
 // =============================================================================
 // Environment Configuration
 // =============================================================================
@@ -129,6 +141,7 @@ export const ENV = {
 
   API_URL: resolveApiUrl(),
   SCHEME: resolveScheme(),
+  REVENUECAT_API_KEY: resolveRevenueCatApiKey(),
 } as const;
 
 export type Env = typeof ENV;

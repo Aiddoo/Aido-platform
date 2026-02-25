@@ -41,7 +41,10 @@ const MyPageScreen = () => {
 
         <SettingNavigationSection>
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
-          <SettingNavigationItem label="구독 관리" onPress={() => console.log('구독 관리 클릭')} />
+          <SettingNavigationItem
+            label="구독 관리"
+            onPress={() => router.push('/settings/subscription')}
+          />
         </SettingNavigationSection>
 
         <Spacing size={12} />
@@ -238,6 +241,11 @@ function AppIconMenuItem() {
               exit();
             }
           }}
+          onSubscribe={() => {
+            close();
+            exit();
+            router.push('/settings/subscription');
+          }}
         />
       ));
       return;
@@ -257,9 +265,10 @@ function AppIconMenuItem() {
 interface AppIconLockDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onSubscribe: () => void;
 }
 
-const AppIconLockDialog = ({ isOpen, onOpenChange }: AppIconLockDialogProps) => (
+const AppIconLockDialog = ({ isOpen, onOpenChange, onSubscribe }: AppIconLockDialogProps) => (
   <ConfirmDialog
     isOpen={isOpen}
     onOpenChange={onOpenChange}
@@ -275,14 +284,7 @@ const AppIconLockDialog = ({ isOpen, onOpenChange }: AppIconLockDialogProps) => 
       </ConfirmDialog.CancelButton>
     }
     confirmButton={
-      <ConfirmDialog.ConfirmButton
-        onPress={() => {
-          /* TODO: 구독 페이지 이동 */
-          onOpenChange(false);
-        }}
-      >
-        구독하기
-      </ConfirmDialog.ConfirmButton>
+      <ConfirmDialog.ConfirmButton onPress={onSubscribe}>구독하기</ConfirmDialog.ConfirmButton>
     }
   />
 );

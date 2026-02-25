@@ -35,6 +35,7 @@ export interface CreateSubscriptionData {
 	status: SubscriptionStatus;
 	startedAt: Date;
 	expiresAt: Date;
+	lastProcessedEventId?: string;
 }
 
 /**
@@ -45,6 +46,7 @@ export interface UpdateSubscriptionStatusData {
 	expiresAt?: Date;
 	cancelledAt?: Date | null;
 	productId?: string;
+	lastProcessedEventId?: string;
 }
 
 /**
@@ -113,6 +115,9 @@ export class SubscriptionRepository {
 				status: data.status,
 				startedAt: data.startedAt,
 				expiresAt: data.expiresAt,
+				...(data.lastProcessedEventId && {
+					lastProcessedEventId: data.lastProcessedEventId,
+				}),
 			},
 		});
 	}

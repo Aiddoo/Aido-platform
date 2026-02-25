@@ -232,6 +232,7 @@ export const ErrorCode = {
   SUBSCRIPTION_1602: 'SUBSCRIPTION_1602',
   SUBSCRIPTION_1603: 'SUBSCRIPTION_1603',
   SUBSCRIPTION_1604: 'SUBSCRIPTION_1604',
+  SUBSCRIPTION_1605: 'SUBSCRIPTION_1605',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1037,5 +1038,11 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'Webhook 처리에 실패했습니다.',
     description: 'RevenueCat Webhook 이벤트 처리 중 오류가 발생했습니다.',
     httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorCode.SUBSCRIPTION_1605]: {
+    code: 'SUBSCRIPTION_1605',
+    message: 'Webhook Lock 경합이 발생했습니다.',
+    description: '동일 사용자에 대한 Webhook이 동시에 처리 중입니다. 잠시 후 재시도됩니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
 };

@@ -141,6 +141,12 @@ export const SYSTEM_TEMPLATES = {
 		type: "SYSTEM_NOTICE" as NotificationType,
 		defaultRoute: null,
 	},
+	BILLING_ISSUE: {
+		title: "결제 문제가 발생했어요",
+		body: "결제 수단을 확인해주세요. 구독이 중단될 수 있습니다.",
+		type: "SYSTEM_NOTICE" as NotificationType,
+		defaultRoute: null,
+	},
 } as const;
 
 /**
@@ -340,6 +346,16 @@ export class NotificationMessageBuilder {
 		return {
 			title: SCHEDULER_TEMPLATES.EVENING_NONE.title,
 			body: SCHEDULER_TEMPLATES.EVENING_NONE.body,
+		};
+	}
+
+	/**
+	 * 결제 문제 알림 메시지 생성
+	 */
+	static billingIssue(): { title: string; body: string } {
+		return {
+			title: SYSTEM_TEMPLATES.BILLING_ISSUE.title,
+			body: SYSTEM_TEMPLATES.BILLING_ISSUE.body,
 		};
 	}
 }

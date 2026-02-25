@@ -4,6 +4,7 @@ import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
+import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useUserIdentity } from '@src/shared/hooks/use-user-identity';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
@@ -87,11 +88,13 @@ const AppBootstrapLayout = () => {
             <QueryProvider>
               <DIProvider>
                 <AuthProvider>
-                  <NotificationProvider>
-                    <OverlayProvider>
-                      <AuthGateLayout />
-                    </OverlayProvider>
-                  </NotificationProvider>
+                  <RevenueCatProvider>
+                    <NotificationProvider>
+                      <OverlayProvider>
+                        <AuthGateLayout />
+                      </OverlayProvider>
+                    </NotificationProvider>
+                  </RevenueCatProvider>
                 </AuthProvider>
               </DIProvider>
             </QueryProvider>

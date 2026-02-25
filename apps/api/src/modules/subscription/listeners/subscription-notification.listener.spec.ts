@@ -1,6 +1,6 @@
 import { TestBed } from "@suites/unit";
 
-import { ADMIN_NOTIFIER } from "@/modules/admin-notification/providers/admin-notifier.interface";
+import { PAYMENT_NOTIFIER } from "@/modules/admin-notification/providers/admin-notifier.interface";
 
 import type { SubscriptionEventPayload } from "../events/subscription.events";
 import { SubscriptionNotificationListener } from "./subscription-notification.listener";
@@ -17,7 +17,7 @@ describe("SubscriptionNotificationListener", () => {
 		};
 
 		const { unit } = await TestBed.solitary(SubscriptionNotificationListener)
-			.mock(ADMIN_NOTIFIER)
+			.mock(PAYMENT_NOTIFIER)
 			.impl(() => mockNotifier)
 			.compile();
 

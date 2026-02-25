@@ -1,5 +1,4 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { TypedConfigService } from "@/common/config/services/config.service";
 import type {
 	AdminNotification,
 	AdminNotifier,
@@ -10,6 +9,7 @@ import type {
  * Discord Webhook Provider
  *
  * Discord Webhook을 통한 관리자 알림 발송
+ * 모듈에서 factory provider로 채널별 인스턴스를 생성합니다.
  *
  * @see https://discord.com/developers/docs/resources/webhook#execute-webhook
  */
@@ -19,19 +19,8 @@ export class DiscordWebhookProvider implements AdminNotifier {
 	readonly #logger = new Logger(DiscordWebhookProvider.name);
 	readonly #webhookUrl: string | undefined;
 
-	constructor(config: TypedConfigService) {
-		const isTestRuntime =
-			config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
-
-		if (isTestRuntime) {
-			this.#webhookUrl = undefined;
-			this.#logger.debug(
-				"Test runtime detected, Discord webhook notifications are disabled",
-			);
-			return;
-		}
-
-		this.#webhookUrl = config.discordSignupWebhookUrl;
+	constructor(webhookUrl: string | undefined) {
+		this.#webhookUrl = webhookUrl;
 	}
 
 	isConfigured(): boolean {

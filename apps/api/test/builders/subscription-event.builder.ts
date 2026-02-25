@@ -28,6 +28,7 @@ export class SubscriptionEventBuilder {
 		const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
 		this.event = {
+			id: `evt-${crypto.randomUUID().slice(0, 8)}`,
 			type,
 			app_user_id: `user-${crypto.randomUUID().slice(0, 8)}`,
 			product_id: "premium_monthly",
@@ -86,6 +87,21 @@ export class SubscriptionEventBuilder {
 
 	static transfer(): SubscriptionEventBuilder {
 		return new SubscriptionEventBuilder("TRANSFER");
+	}
+
+	/** 환불 취소 (cancel_reason: CUSTOMER_SUPPORT) */
+	static refundCancellation(): SubscriptionEventBuilder {
+		const builder = new SubscriptionEventBuilder("CANCELLATION");
+		builder.event.cancel_reason = "CUSTOMER_SUPPORT";
+		return builder;
+	}
+
+	static nonRenewingPurchase(): SubscriptionEventBuilder {
+		return new SubscriptionEventBuilder("NON_RENEWING_PURCHASE");
+	}
+
+	static subscriptionExtended(): SubscriptionEventBuilder {
+		return new SubscriptionEventBuilder("SUBSCRIPTION_EXTENDED");
 	}
 
 	/** 알 수 없는(미래에 추가될) 이벤트 타입으로 빌더 생성 */
@@ -170,6 +186,16 @@ export class SubscriptionEventBuilder {
 	withoutTransactionIds(): this {
 		this.event.transaction_id = undefined;
 		this.event.original_transaction_id = undefined;
+		return this;
+	}
+
+	withEventId(eventId: string): this {
+		this.event.id = eventId;
+		return this;
+	}
+
+	withoutEventId(): this {
+		this.event.id = undefined;
 		return this;
 	}
 

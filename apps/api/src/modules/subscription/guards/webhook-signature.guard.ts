@@ -29,8 +29,14 @@ export class WebhookSignatureGuard implements CanActivate {
 		const request = context.switchToHttp().getRequest<Request>();
 		const webhookSecret = this.config.revenuecat.webhookSecret;
 
-		// webhook secret이 미설정이면 개발 환경으로 간주
+		// webhook secret이 미설정이면 환경에 따라 분기
 		if (!webhookSecret) {
+			if (this.config.isProduction) {
+				this.#logger.error(
+					"REVENUECAT_WEBHOOK_SECRET not configured in production",
+				);
+				throw BusinessExceptions.webhookSignatureInvalid();
+			}
 			this.#logger.warn(
 				"REVENUECAT_WEBHOOK_SECRET not configured, skipping signature verification",
 			);
@@ -43,16 +49,19 @@ export class WebhookSignatureGuard implements CanActivate {
 			throw BusinessExceptions.webhookSignatureInvalid();
 		}
 
-		const expected = `Bearer ${webhookSecret}`;
-
-		// timing-safe comparison (타이밍 공격 방지)
+		// Bearer prefix 포함/미포함 모두 지원 (RevenueCat은 설정값을 그대로 전송)
+		const candidates = [`Bearer ${webhookSecret}`, webhookSecret];
 		const authBuffer = Buffer.from(authHeader);
-		const expectedBuffer = Buffer.from(expected);
 
-		if (
-			authBuffer.length !== expectedBuffer.length ||
-			!timingSafeEqual(authBuffer, expectedBuffer)
-		) {
+		const isValid = candidates.some((candidate) => {
+			const candidateBuffer = Buffer.from(candidate);
+			return (
+				authBuffer.length === candidateBuffer.length &&
+				timingSafeEqual(authBuffer, candidateBuffer)
+			);
+		});
+
+		if (!isValid) {
 			this.#logger.warn("Webhook signature verification failed");
 			throw BusinessExceptions.webhookSignatureInvalid();
 		}
