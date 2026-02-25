@@ -9,15 +9,6 @@ catalogs:
     jest:
       specifier: ^29.7.0
       version: 29.7.0
-    typescript:
-      specifier: ^5.9.3
-      version: 5.9.3
-    vitest:
-      specifier: ^4.0.0
-      version: 4.0.18
-    zod:
-      specifier: ^4.3.5
-      version: 4.3.6
 
 importers:
 
@@ -477,9 +468,6 @@ importers:
       react-native-purchases:
         specifier: ^9.10.4
         version: 9.10.4(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-      react-native-purchases-ui:
-        specifier: ^9.10.4
-        version: 9.10.4(react-native-purchases@9.10.4(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-reanimated:
         specifier: ~4.1.1
         version: 4.1.6(@babel/core@7.29.0)(react-native-worklets@0.5.1(@babel/core@7.29.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -8167,17 +8155,6 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
-
-  react-native-purchases-ui@9.10.4:
-    resolution: {integrity: sha512-MNnfzzCiWsQBPXsI1YhZgrVoB2zzJ7WqBuBnBZgxvbVoERRxHuRlSd9lCcP1RMRwHkdkMh1GKOndTkLL/q0gqA==}
-    peerDependencies:
-      react: '*'
-      react-native: '>= 0.73.0'
-      react-native-purchases: 9.10.4
-      react-native-web: '*'
-    peerDependenciesMeta:
-      react-native-web:
-        optional: true
 
   react-native-purchases@9.10.4:
     resolution: {integrity: sha512-dc5kj+BGfrpQwJrYfQV1CsVHdt1H7xb7pP3zODH2BmV8J1ULy4AWUF2y/hQJ1lYbc7olSDHlr637agxApvOcvw==}
@@ -18739,15 +18716,6 @@ snapshots:
     dependencies:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
-
-  react-native-purchases-ui@9.10.4(react-native-purchases@9.10.4(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
-    dependencies:
-      '@revenuecat/purchases-typescript-internal': 17.41.0
-      react: 19.1.0
-      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
-      react-native-purchases: 9.10.4(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
-    optionalDependencies:
-      react-native-web: 0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
 
   react-native-purchases@9.10.4(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:

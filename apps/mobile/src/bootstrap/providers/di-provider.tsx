@@ -10,6 +10,8 @@ import { NotificationRepositoryImpl } from '@src/features/notification/repositor
 import { DeviceIdService } from '@src/features/notification/services/device-id.service';
 import { NotificationService } from '@src/features/notification/services/notification.service';
 import { PushTokenService } from '@src/features/notification/services/push-token.service';
+import { RevenueCatSdkManager } from '@src/features/subscription/services/revenuecat-sdk-manager';
+import { SubscriptionService } from '@src/features/subscription/services/subscription.service';
 import { TodoRepositoryImpl } from '@src/features/todo/repositories/todo.repository.impl';
 import { TodoCategoryRepositoryImpl } from '@src/features/todo/repositories/todo-category.repository.impl';
 import { TodoNudgeRepositoryImpl } from '@src/features/todo/repositories/todo-nudge.repository.impl';
@@ -53,6 +55,8 @@ export interface DIContainer {
   notificationService: NotificationService;
   todoNudgeService: TodoNudgeService;
   userService: UserService;
+  revenueCatSdkManager: RevenueCatSdkManager;
+  subscriptionService: SubscriptionService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -119,6 +123,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // User
     const userService = new UserService(authHttpClient);
 
+    // Subscription
+    const revenueCatSdkManager = new RevenueCatSdkManager();
+    const subscriptionService = new SubscriptionService(revenueCatSdkManager);
+
     return {
       storage,
       logger,
@@ -131,6 +139,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       notificationService,
       todoNudgeService,
       userService,
+      revenueCatSdkManager,
+      subscriptionService,
     };
   });
 
@@ -161,3 +171,5 @@ export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useUserService = () => useDI().userService;
+export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
+export const useSubscriptionService = () => useDI().subscriptionService;

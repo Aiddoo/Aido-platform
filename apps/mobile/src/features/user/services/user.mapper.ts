@@ -9,6 +9,7 @@ export const toUser = (dto: CurrentUser): User => ({
   userTag: dto.userTag,
   role: dto.role,
   subscriptionStatus: dto.subscriptionStatus,
+  subscriptionExpiresAt: dto.subscriptionExpiresAt ? new Date(dto.subscriptionExpiresAt) : null,
   providers: dto.providers,
   createdAt: new Date(dto.createdAt),
 });

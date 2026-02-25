@@ -37,6 +37,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="edit-name" options={{ title: '이름 변경' }} />
       <Stack.Screen name="change-password" options={{ title: '비밀번호 변경' }} />
       <Stack.Screen name="delete-account" options={{ title: '회원 탈퇴' }} />
+      <Stack.Screen name="subscription" options={{ title: '구독 관리' }} />
     </Stack>
   );
 }

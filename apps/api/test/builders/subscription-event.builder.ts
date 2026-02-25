@@ -88,6 +88,21 @@ export class SubscriptionEventBuilder {
 		return new SubscriptionEventBuilder("TRANSFER");
 	}
 
+	/** 환불 취소 (cancel_reason: CUSTOMER_SUPPORT) */
+	static refundCancellation(): SubscriptionEventBuilder {
+		const builder = new SubscriptionEventBuilder("CANCELLATION");
+		builder.event.cancel_reason = "CUSTOMER_SUPPORT";
+		return builder;
+	}
+
+	static nonRenewingPurchase(): SubscriptionEventBuilder {
+		return new SubscriptionEventBuilder("NON_RENEWING_PURCHASE");
+	}
+
+	static subscriptionExtended(): SubscriptionEventBuilder {
+		return new SubscriptionEventBuilder("SUBSCRIPTION_EXTENDED");
+	}
+
 	/** 알 수 없는(미래에 추가될) 이벤트 타입으로 빌더 생성 */
 	static customType(type: string): SubscriptionEventBuilder {
 		return new SubscriptionEventBuilder(type);

@@ -9,6 +9,7 @@ const createUser = (overrides?: Partial<User>): User => ({
   userTag: 'TEST2025',
   role: 'USER',
   subscriptionStatus: 'FREE',
+  subscriptionExpiresAt: null,
   providers: ['CREDENTIAL'],
   createdAt: new Date('2026-01-01T09:00:00.000Z'),
   ...overrides,

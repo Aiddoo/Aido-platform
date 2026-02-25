@@ -368,7 +368,7 @@ describe("SubscriptionService", () => {
 	// CANCELLATION
 	// =========================================================================
 
-	describe("CANCELLATION", () => {
+	describe("CANCELLATION (일반 취소)", () => {
 		it("expiresAt이 미래이면 User를 ACTIVE로 유지한다", async () => {
 			// Given
 			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7일 후
@@ -449,6 +449,213 @@ describe("SubscriptionService", () => {
 					subscriptionStatus: "ACTIVE",
 				}),
 				expect.anything(),
+			);
+		});
+	});
+
+	// =========================================================================
+	// CANCELLATION (환불 — cancel_reason: CUSTOMER_SUPPORT)
+	// =========================================================================
+
+	describe("CANCELLATION (환불)", () => {
+		it("cancel_reason=CUSTOMER_SUPPORT이면 Subscription을 EXPIRED로, User를 즉시 FREE로 변경한다", async () => {
+			// Given
+			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+			const payload = SubscriptionEventBuilder.refundCancellation()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — Subscription: EXPIRED
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "EXPIRED",
+				}),
+				expect.anything(),
+			);
+			// Then — User: 즉시 FREE, expiresAt null
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "FREE",
+					subscriptionExpiresAt: null,
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("환불 시 subscription.refunded 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.refundCancellation()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.refunded",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "CANCELLATION",
+					cancelReason: "CUSTOMER_SUPPORT",
+				}),
+			);
+		});
+
+		it("일반 취소(UNSUBSCRIBE)는 기존 로직을 유지한다 (만료일 미래 → ACTIVE)", async () => {
+			// Given
+			const futureMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+			const payload = SubscriptionEventBuilder.cancellation()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — Subscription: CANCELLED (NOT EXPIRED)
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "CANCELLED",
+				}),
+				expect.anything(),
+			);
+			// Then — User: ACTIVE (만료일까지 유지)
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			// Then — subscription.cancelled 이벤트 (not refunded)
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.cancelled",
+				expect.objectContaining({
+					userId: "user-123",
+					cancelReason: "UNSUBSCRIBE",
+				}),
+			);
+		});
+	});
+
+	// =========================================================================
+	// NON_RENEWING_PURCHASE
+	// =========================================================================
+
+	describe("NON_RENEWING_PURCHASE", () => {
+		it("INITIAL_PURCHASE와 동일하게 구독을 생성하고 User를 ACTIVE로 변경한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.nonRenewingPurchase()
+				.withAppUserId("user-123")
+				.withProductId("premium_lifetime")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-123",
+					productId: "premium_lifetime",
+					status: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("subscription.purchased 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.nonRenewingPurchase()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.purchased",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "NON_RENEWING_PURCHASE",
+				}),
+			);
+		});
+	});
+
+	// =========================================================================
+	// SUBSCRIPTION_EXTENDED
+	// =========================================================================
+
+	describe("SUBSCRIPTION_EXTENDED", () => {
+		it("expiresAt을 갱신하고 ACTIVE를 유지한다", async () => {
+			// Given
+			const futureMs = Date.now() + 60 * 24 * 60 * 60 * 1000; // 60일 후
+			const payload = SubscriptionEventBuilder.subscriptionExtended()
+				.withAppUserId("user-123")
+				.withExpirationAtMs(futureMs)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					status: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("subscription.extended 이벤트를 발행한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.subscriptionExtended()
+				.withAppUserId("user-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(eventEmitter.emit).toHaveBeenCalledWith(
+				"subscription.extended",
+				expect.objectContaining({
+					userId: "user-123",
+					eventType: "SUBSCRIPTION_EXTENDED",
+				}),
 			);
 		});
 	});
@@ -571,6 +778,29 @@ describe("SubscriptionService", () => {
 				expect.any(String),
 				expect.objectContaining({
 					productId: "premium_yearly",
+				}),
+				expect.anything(),
+			);
+		});
+
+		it("expiration_at_ms가 없어도 User를 ACTIVE로 업데이트한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.productChange()
+				.withAppUserId("user-123")
+				.withProductId("premium_yearly")
+				.withoutExpiration()
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — User는 항상 ACTIVE로 갱신
+			expect(
+				subscriptionRepository.updateUserSubscriptionStatus,
+			).toHaveBeenCalledWith(
+				"user-123",
+				expect.objectContaining({
+					subscriptionStatus: "ACTIVE",
 				}),
 				expect.anything(),
 			);

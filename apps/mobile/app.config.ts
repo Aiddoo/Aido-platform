@@ -396,6 +396,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       devMachineIp: process.env.EXPO_PUBLIC_DEV_MACHINE_IP,
       isDevelopment,
       isProduction,
+      revenueCatAppleApiKey: process.env.REVENUECAT_APPLE_API_KEY,
+      revenueCatGoogleApiKey: process.env.REVENUECAT_GOOGLE_API_KEY,
+      revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY,
     },
   };
 };

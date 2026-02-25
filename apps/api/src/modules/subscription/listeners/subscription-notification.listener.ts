@@ -56,6 +56,16 @@ const EVENT_META: Record<string, EventMeta> = {
 		color: 0x9b59b6,
 		emoji: "🔀",
 	},
+	"subscription.refunded": {
+		title: "구독 환불",
+		color: 0xe91e63,
+		emoji: "💸",
+	},
+	"subscription.extended": {
+		title: "구독 연장",
+		color: 0x2ecc71,
+		emoji: "⏳",
+	},
 };
 
 const DEFAULT_META: EventMeta = {

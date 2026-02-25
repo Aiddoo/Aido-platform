@@ -10,6 +10,7 @@ import { DatabaseService } from "@/database/database.service";
 import {
 	REVENUECAT_EVENT_TO_INTERNAL,
 	type SubscriptionEventPayload,
+	SubscriptionEvents,
 } from "./events/subscription.events";
 import { SubscriptionRepository } from "./subscription.repository";
 
@@ -118,8 +119,24 @@ export class SubscriptionService {
 					eventPayload = this.#handleBillingIssue(user.id, user.email, event);
 					break;
 
+				case "NON_RENEWING_PURCHASE":
+					eventPayload = await this.#handleInitialPurchase(
+						user.id,
+						user.email,
+						event,
+					);
+					break;
+
 				case "PRODUCT_CHANGE":
 					eventPayload = await this.#handleProductChange(
+						user.id,
+						user.email,
+						event,
+					);
+					break;
+
+				case "SUBSCRIPTION_EXTENDED":
+					eventPayload = await this.#handleSubscriptionExtended(
 						user.id,
 						user.email,
 						event,
@@ -157,7 +174,14 @@ export class SubscriptionService {
 				]);
 
 				// 4. 이벤트 발행
-				const emitEventName = this.#getEmitEventName(eventType);
+				let emitEventName = this.#getEmitEventName(eventType);
+				// 환불(CANCELLATION + CUSTOMER_SUPPORT)은 refunded 이벤트로 발행
+				if (
+					eventType === "CANCELLATION" &&
+					eventPayload.cancelReason === "CUSTOMER_SUPPORT"
+				) {
+					emitEventName = SubscriptionEvents.REFUNDED;
+				}
 				if (emitEventName) {
 					this.eventEmitter.emit(emitEventName, eventPayload);
 					this.#logger.log(
@@ -338,10 +362,12 @@ export class SubscriptionService {
 	}
 
 	/**
-	 * CANCELLATION: 취소
+	 * CANCELLATION: 취소 또는 환불
 	 *
-	 * Subscription CANCELLED + User는 만료일까지 ACTIVE 유지.
-	 * Apple/Google 스토어에서 취소해도 만료일까지 구독 혜택 유지.
+	 * - 일반 취소 (UNSUBSCRIBE 등): Subscription CANCELLED + User는 만료일까지 ACTIVE 유지
+	 * - 환불 (CUSTOMER_SUPPORT): Subscription EXPIRED + User 즉시 FREE (접근 권한 회수)
+	 *
+	 * RevenueCat은 환불을 별도 이벤트로 보내지 않고 CANCELLATION + cancel_reason으로 구분합니다.
 	 */
 	async #handleCancellation(
 		userId: string,
@@ -352,6 +378,7 @@ export class SubscriptionService {
 		const webhookExpiresAt = event.expiration_at_ms
 			? new Date(event.expiration_at_ms)
 			: null;
+		const isRefund = event.cancel_reason === "CUSTOMER_SUPPORT";
 
 		await this.database.$transaction(async (tx) => {
 			// webhook expiresAt 없으면 DB 기존값 fallback
@@ -364,35 +391,48 @@ export class SubscriptionService {
 				expiresAt = existing?.expiresAt ?? null;
 			}
 
+			// 환불: Subscription EXPIRED, 일반 취소: Subscription CANCELLED
 			await this.subscriptionRepository.updateStatus(
 				transactionId,
 				{
-					status: "CANCELLED",
+					status: isRefund ? "EXPIRED" : "CANCELLED",
 					cancelledAt: new Date(),
 				},
 				tx,
 			);
 
-			// CANCELLATION 정책: expiresAt > now이면 User는 ACTIVE 유지
-			// 60초 grace period로 clock skew 대응
-			const gracePeriodMs = 60_000;
-			const userStatus =
-				expiresAt && expiresAt.getTime() > Date.now() - gracePeriodMs
-					? "ACTIVE"
-					: "CANCELLED";
+			if (isRefund) {
+				// 환불: 즉시 접근 권한 회수
+				await this.subscriptionRepository.updateUserSubscriptionStatus(
+					userId,
+					{
+						subscriptionStatus: "FREE",
+						subscriptionExpiresAt: null,
+					},
+					tx,
+				);
+			} else {
+				// 일반 취소: 만료일까지 ACTIVE 유지
+				// 60초 grace period로 clock skew 대응
+				const gracePeriodMs = 60_000;
+				const userStatus =
+					expiresAt && expiresAt.getTime() > Date.now() - gracePeriodMs
+						? "ACTIVE"
+						: "CANCELLED";
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
-				{
-					subscriptionStatus: userStatus,
-					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-				},
-				tx,
-			);
+				await this.subscriptionRepository.updateUserSubscriptionStatus(
+					userId,
+					{
+						subscriptionStatus: userStatus,
+						...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+					},
+					tx,
+				);
+			}
 		});
 
 		this.#logger.log(
-			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, expiresAt=${webhookExpiresAt?.toISOString() ?? "N/A"}`,
+			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt?.toISOString() ?? "N/A"}`,
 		);
 
 		return {
@@ -554,20 +594,69 @@ export class SubscriptionService {
 				tx,
 			);
 
-			if (expiresAt) {
-				await this.subscriptionRepository.updateUserSubscriptionStatus(
-					userId,
-					{
-						subscriptionStatus: "ACTIVE",
-						subscriptionExpiresAt: expiresAt,
-					},
-					tx,
-				);
-			}
+			await this.subscriptionRepository.updateUserSubscriptionStatus(
+				userId,
+				{
+					subscriptionStatus: "ACTIVE",
+					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+				},
+				tx,
+			);
 		});
 
 		this.#logger.log(
 			`Product change processed: userId=${userId}, newProductId=${event.product_id}, transactionId=${transactionId}`,
+		);
+
+		return {
+			userId,
+			email,
+			eventType: event.type,
+			productId: event.product_id,
+			store: event.store,
+			transactionId,
+			expiresAt: expiresAt?.toISOString(),
+		} satisfies SubscriptionEventPayload;
+	}
+
+	/**
+	 * SUBSCRIPTION_EXTENDED: 구독 연장
+	 *
+	 * Apple/Google이 서비스 크레딧 등으로 구독을 연장할 때 발생합니다.
+	 * expiresAt 갱신 + ACTIVE 유지
+	 */
+	async #handleSubscriptionExtended(
+		userId: string,
+		email: string,
+		event: RevenueCatWebhookPayload["event"],
+	): Promise<SubscriptionEventPayload> {
+		const transactionId = this.#resolveTransactionId(event);
+		const expiresAt = event.expiration_at_ms
+			? new Date(event.expiration_at_ms)
+			: undefined;
+
+		await this.database.$transaction(async (tx) => {
+			await this.subscriptionRepository.updateStatus(
+				transactionId,
+				{
+					status: "ACTIVE",
+					...(expiresAt && { expiresAt }),
+				},
+				tx,
+			);
+
+			await this.subscriptionRepository.updateUserSubscriptionStatus(
+				userId,
+				{
+					subscriptionStatus: "ACTIVE",
+					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+				},
+				tx,
+			);
+		});
+
+		this.#logger.log(
+			`Subscription extended: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt?.toISOString() ?? "N/A"}`,
 		);
 
 		return {

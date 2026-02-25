@@ -15,6 +15,8 @@ export const SubscriptionEvents = {
 	BILLING_ISSUE: "subscription.billing_issue",
 	UNCANCELLED: "subscription.uncancelled",
 	PRODUCT_CHANGED: "subscription.product_changed",
+	REFUNDED: "subscription.refunded",
+	EXTENDED: "subscription.extended",
 } as const;
 
 export type SubscriptionEventName =
@@ -36,6 +38,8 @@ export const REVENUECAT_EVENT_TO_INTERNAL: Record<
 	BILLING_ISSUE: SubscriptionEvents.BILLING_ISSUE,
 	UNCANCELLATION: SubscriptionEvents.UNCANCELLED,
 	PRODUCT_CHANGE: SubscriptionEvents.PRODUCT_CHANGED,
+	NON_RENEWING_PURCHASE: SubscriptionEvents.PURCHASED,
+	SUBSCRIPTION_EXTENDED: SubscriptionEvents.EXTENDED,
 };
 
 /**

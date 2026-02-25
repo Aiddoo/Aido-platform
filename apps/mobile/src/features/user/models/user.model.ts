@@ -16,6 +16,7 @@ export const userSchema = z.object({
   userTag: z.string(),
   role: userRoleSchema,
   subscriptionStatus: subscriptionStatusSchema,
+  subscriptionExpiresAt: z.coerce.date().nullable(),
   providers: z.array(accountProviderSchema),
   createdAt: z.coerce.date(),
 });

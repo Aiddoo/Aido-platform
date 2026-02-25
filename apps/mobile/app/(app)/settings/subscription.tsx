@@ -18,8 +18,9 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Chip, Separator, Skeleton, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, ScrollView, View } from 'react-native';
+import { Linking, Platform, ScrollView, View } from 'react-native';
 
 // App Store / Play Store 구독 관리 URL
 const STORE_SUBSCRIPTION_URL = Platform.select({
@@ -80,7 +81,7 @@ const SubscriptionScreen = () => {
         <Suspense
           fallback={
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" />
+              <Spinner size="lg" color="default" />
             </View>
           }
         >
@@ -163,10 +164,10 @@ function SubscriptionUnavailableView() {
   return (
     <View className="flex-1 items-center justify-center px-8">
       <VStack gap={8} className="items-center">
-        <Text size="t3" weight="bold" className="text-gray-9">
+        <Text size="t3" weight="bold" shade={9}>
           구독을 준비 중이에요
         </Text>
-        <Text size="b4" className="text-gray-6 text-center">
+        <Text size="b4" shade={6} align="center">
           현재 구독 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요.
         </Text>
       </VStack>
@@ -199,17 +200,13 @@ function OfferingsView() {
         <Spacing size={24} />
 
         <VStack gap={4} className="items-center">
-          <Text size="t1" weight="bold" className="text-gray-9">
+          <Text size="t1" weight="bold" shade={9}>
             프리미엄으로 업그레이드
           </Text>
-          <Text size="b4" className="text-gray-6">
+          <Text size="b4" shade={6}>
             모든 기능을 제한 없이 사용해보세요
           </Text>
         </VStack>
-
-        <Spacing size={24} />
-
-        <PremiumBenefitsCard />
 
         <Spacing size={24} />
 
@@ -218,19 +215,19 @@ function OfferingsView() {
           selectedPlanId={selectedPlanId}
           onPlanSelect={setSelectedPlanId}
         />
-      </ScrollView>
 
-      {/* 하단 고정 영역 */}
-      <VStack gap={12} className="px-4 pb-4 pt-2">
-        <Button
-          onPress={handlePurchase}
-          isLoading={purchase.isPending}
-          isDisabled={!selectedPlan || purchase.isPending}
-        >
-          구독하기
-        </Button>
+        <Spacing size={24} />
+
+        <PremiumBenefitsCard />
+
+        <Spacing size={24} />
+
+        <Separator className="bg-gray-2" />
+
+        <Spacing size={16} />
+
         <VStack gap={8} className="items-center">
-          <Text size="e1" className="text-gray-5">
+          <Text size="e1" shade={5}>
             언제든지 취소할 수 있어요
           </Text>
           <TermsNotice />
@@ -243,7 +240,18 @@ function OfferingsView() {
             이전 구매 복원
           </TextButton>
         </VStack>
-      </VStack>
+      </ScrollView>
+
+      {/* 하단 고정: 구독하기 버튼만 */}
+      <View className="px-4 pb-4 pt-2">
+        <Button
+          onPress={handlePurchase}
+          isLoading={purchase.isPending}
+          isDisabled={!selectedPlan || purchase.isPending}
+        >
+          구독하기
+        </Button>
+      </View>
     </View>
   );
 }
@@ -264,11 +272,9 @@ function BenefitCard({ benefit, index }: { benefit: PremiumBenefit; index: numbe
   return (
     <VStack gap={12} className="bg-white rounded-2xl p-4">
       {/* 뱃지 */}
-      <View className="self-start bg-main/10 px-2.5 py-1 rounded-full">
-        <Text size="e2" weight="bold" className="text-main">
-          혜택 {index + 1}
-        </Text>
-      </View>
+      <Chip size="sm" variant="soft" color="accent" className="self-start">
+        <Chip.Label>혜택 {index + 1}</Chip.Label>
+      </Chip>
 
       {/* 아이콘 + 텍스트 */}
       <HStack gap={12} className="items-center">
@@ -276,21 +282,17 @@ function BenefitCard({ benefit, index }: { benefit: PremiumBenefit; index: numbe
           <IconComponent width={20} height={20} colorClassName={benefit.iconColor} />
         </View>
         <VStack gap={2} className="flex-1">
-          <Text size="b3" weight="bold" className="text-gray-9">
+          <Text size="b3" weight="bold" shade={9}>
             {benefit.title}
           </Text>
-          <Text size="b4" className="text-gray-6">
+          <Text size="b4" shade={6}>
             {benefit.description}
           </Text>
         </VStack>
       </HStack>
 
       {/* 이미지 플레이스홀더 — 추후 실제 이미지로 교체 */}
-      <View className="w-full h-44 bg-gray-1 rounded-xl items-center justify-center">
-        <Text size="e1" className="text-gray-4">
-          미리보기 이미지
-        </Text>
-      </View>
+      <Skeleton className="w-full aspect-video rounded-xl" />
     </VStack>
   );
 }
@@ -299,13 +301,13 @@ function TermsNotice() {
   const openUrl = useOpenUrl();
 
   return (
-    <Text size="e2" className="text-gray-4 text-center">
+    <Text size="e2" shade={4} align="center">
       구매 시{' '}
-      <Text size="e2" className="text-gray-5" underline onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.TERMS)}>
         이용약관
       </Text>
       {' 및 '}
-      <Text size="e2" className="text-gray-5" underline onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
         개인정보처리방침
       </Text>
       에 동의하게 됩니다.
