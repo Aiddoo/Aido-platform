@@ -14,12 +14,13 @@ import {
   ControlField,
   Description,
   Label,
+  PressableFeedback,
   Separator,
   Skeleton,
   SkeletonGroup,
 } from 'heroui-native';
 import { Suspense } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 const TermsSettingsScreen = () => {
   return (
@@ -56,8 +57,8 @@ function TermsSettingsForm() {
 
   return (
     <>
-      <VStack p={8} gap={8} className="bg-white rounded-2xl">
-        <Pressable className="py-2 active:opacity-60" onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+      <VStack p={16} gap={8} className="bg-white rounded-2xl">
+        <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.TERMS)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" weight="medium">
@@ -76,11 +77,11 @@ function TermsSettingsForm() {
             </VStack>
             <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
           </HStack>
-        </Pressable>
+        </PressableFeedback>
 
         <Separator className="bg-gray-2" />
 
-        <Pressable className="py-2 active:opacity-60" onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+        <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" weight="medium">
@@ -99,17 +100,16 @@ function TermsSettingsForm() {
             </VStack>
             <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
           </HStack>
-        </Pressable>
+        </PressableFeedback>
       </VStack>
 
       <Spacing size={12} />
 
-      <VStack p={8} className="bg-white rounded-2xl">
+      <VStack p={16} className="bg-white rounded-2xl">
         <ControlField
           isSelected={marketingAgreed}
           onSelectedChange={(agreed) => updateMutation.mutate({ agreed })}
           isDisabled={updateMutation.isPending}
-          className="py-2"
         >
           <View className="flex-1">
             <Label>마케팅 수신 동의</Label>

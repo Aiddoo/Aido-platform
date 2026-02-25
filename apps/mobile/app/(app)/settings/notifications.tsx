@@ -39,12 +39,11 @@ function NotificationSettingsForm() {
   const updateMutation = useMutation(updatePreferenceMutationOptions());
 
   return (
-    <VStack p={8} gap={8} className="bg-white rounded-2xl">
+    <VStack p={16} gap={12} className="bg-white rounded-2xl">
       <ControlField
         isSelected={preference.pushEnabled}
         onSelectedChange={(enabled) => updateMutation.mutate({ pushEnabled: enabled })}
         isDisabled={updateMutation.isPending}
-        className="py-2"
       >
         <View className="flex-1">
           <Label>푸시 알림</Label>
@@ -62,7 +61,6 @@ function NotificationSettingsForm() {
           updateMutation.mutate({ nightPushEnabled: enabled });
         }}
         isDisabled={updateMutation.isPending || !preference.pushEnabled}
-        className="py-2"
       >
         <View className="flex-1">
           <Label>야간 푸시 알림</Label>

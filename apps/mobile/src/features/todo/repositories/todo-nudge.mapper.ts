@@ -3,8 +3,11 @@ import type {
   NudgeCooldownInfo as NudgeCooldownInfoDTO,
   NudgeLimitInfo as NudgeLimitInfoDTO,
 } from '@aido/validators';
-import type { NudgeCooldownInfo, NudgeLimitInfo } from '../models/todo-nudge.model';
-import type { SendNudgeResult } from './todo-nudge.repository';
+import type {
+  NudgeCooldownInfo,
+  NudgeLimitInfo,
+  SendTodoNudgeResult,
+} from '../models/todo-nudge.model';
 
 export const toNudgeLimitInfo = (dto: NudgeLimitInfoDTO): NudgeLimitInfo => ({
   dailyLimit: dto.dailyLimit,
@@ -19,6 +22,6 @@ export const toNudgeCooldownInfo = (dto: NudgeCooldownInfoDTO): NudgeCooldownInf
   remainingSeconds: dto.remainingSeconds ?? null,
 });
 
-export const toSendNudgeResult = (dto: CreateNudgeResponse): SendNudgeResult => ({
+export const toSendNudgeResult = (dto: CreateNudgeResponse): SendTodoNudgeResult => ({
   message: dto.message,
 });

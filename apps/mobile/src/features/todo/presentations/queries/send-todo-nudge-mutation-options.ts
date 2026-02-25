@@ -5,7 +5,7 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isTodoNudgeError } from '../../models/todo-nudge.error';
-import type { SendNudgeInput } from '../../repositories/todo-nudge.repository';
+import type { SendTodoNudgeInput } from '../../models/todo-nudge.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export const sendTodoNudgeMutationOptions = () => {
@@ -14,7 +14,7 @@ export const sendTodoNudgeMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (input: SendNudgeInput) => {
+    mutationFn: async (input: SendTodoNudgeInput) => {
       const result = await todoNudgeService.sendNudge(input);
       return unwrap(result);
     },

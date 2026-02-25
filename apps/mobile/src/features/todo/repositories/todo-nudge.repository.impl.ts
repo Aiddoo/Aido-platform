@@ -11,9 +11,14 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { NudgeCooldownInfo, NudgeLimitInfo } from '../models/todo-nudge.model';
+import type {
+  NudgeCooldownInfo,
+  NudgeLimitInfo,
+  SendTodoNudgeInput,
+  SendTodoNudgeResult,
+} from '../models/todo-nudge.model';
 import { toNudgeCooldownInfo, toNudgeLimitInfo, toSendNudgeResult } from './todo-nudge.mapper';
-import type { SendNudgeInput, SendNudgeResult, TodoNudgeRepository } from './todo-nudge.repository';
+import type { TodoNudgeRepository } from './todo-nudge.repository';
 
 export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
   readonly #httpClient: HttpClient;
@@ -22,7 +27,7 @@ export class TodoNudgeRepositoryImpl implements TodoNudgeRepository {
     this.#httpClient = httpClient;
   }
 
-  async sendNudge(input: SendNudgeInput): Promise<Result<SendNudgeResult, ApiError>> {
+  async sendNudge(input: SendTodoNudgeInput): Promise<Result<SendTodoNudgeResult, ApiError>> {
     const result = await this.#httpClient.post<CreateNudgeResponse>('v1/nudges', {
       receiverId: input.receiverId,
       todoId: input.todoId,

@@ -8,12 +8,14 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
+import { match } from 'ts-pattern';
 import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 export function PokeBanner() {
   const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
-  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
+  const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
+  const isLimitReached = bannerState.type === 'limitReached';
 
   const overlay = useOverlay();
   const handlePress = () => {
@@ -32,23 +34,30 @@ export function PokeBanner() {
     }
   };
 
-  const bannerText = isLimitReached
-    ? {
-        title: '오늘 콕 찌르기를 다 썼어요',
-        description: '구독하면 무제한으로 찌를 수 있어요',
-      }
-    : {
-        title: (
-          <>
-            친구를{' '}
-            <Text size="b3" weight="bold" className="text-main">
-              콕
-            </Text>{' '}
-            찌를까요?
-          </>
-        ),
-        description: '잊고 있는 것 같다면 🐾 을 눌러 알림을 보내보세요!',
-      };
+  const defaultTitle = (
+    <>
+      친구를{' '}
+      <Text size="b3" weight="bold" className="text-main">
+        콕
+      </Text>{' '}
+      찌를까요?
+    </>
+  );
+
+  const bannerText = match(bannerState)
+    .with({ type: 'limitReached' }, () => ({
+      title: '오늘 콕 찌르기를 다 썼어요',
+      description: '구독하면 무제한으로 찌를 수 있어요',
+    }))
+    .with({ type: 'available' }, () => ({
+      title: defaultTitle,
+      description: '잊고 있는 것 같다면 🐾 을 눌러 알림을 보내보세요!',
+    }))
+    .with({ type: 'remaining' }, ({ remainingToday }) => ({
+      title: defaultTitle,
+      description: `오늘 ${remainingToday}회 남았어요 (구독하면 무제한)`,
+    }))
+    .exhaustive();
 
   return (
     <Pressable onPress={handlePress} disabled={!isLimitReached}>

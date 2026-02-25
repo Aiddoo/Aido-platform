@@ -10,7 +10,7 @@ import {
   WEEKDAY_LABELS,
 } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
 import { match } from 'ts-pattern';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
@@ -51,7 +51,17 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
   return (
     <VStack className="bg-background" gap={8}>
       <HStack className="px-4 py-2" justify="between" align="center">
-        <CalendarHeaderText viewMode={viewMode} displayDate={value} />
+        <HStack gap={8} align="center">
+          <CalendarHeaderText viewMode={viewMode} displayDate={value} />
+          <PressableFeedback
+            onPress={() => onChange(new Date())}
+            className="px-2 py-0.5 bg-gray-2 rounded-full"
+          >
+            <Text size="e1" weight="medium" shade={7}>
+              오늘
+            </Text>
+          </PressableFeedback>
+        </HStack>
 
         <HStack gap={8} align="center">
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />

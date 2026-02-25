@@ -4,7 +4,7 @@ import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 import { Text } from '../Text/Text';
 import { VStack } from '../VStack/VStack';
-import type { TextAreaProps } from './TextArea.types';
+import type { TextAreaInternalProps } from './TextArea.types';
 import {
   textAreaContainerVariants,
   textAreaLabelVariants,
@@ -13,7 +13,7 @@ import {
 
 const StyledTextInput = withUniwind(TextInput);
 
-export const TextArea = forwardRef<TextInput, TextAreaProps>(
+export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
   (
     {
       variant = 'filled',
@@ -23,6 +23,7 @@ export const TextArea = forwardRef<TextInput, TextAreaProps>(
       errorMessage,
       placeholder,
       className,
+      textInputComponent,
       onFocus,
       onBlur,
       ...props
@@ -30,6 +31,7 @@ export const TextArea = forwardRef<TextInput, TextAreaProps>(
     ref,
   ) => {
     const [isFocused, setIsFocused] = useState(false);
+    const InputComponent = textInputComponent ?? StyledTextInput;
 
     return (
       <View className="gap-2">
@@ -49,7 +51,7 @@ export const TextArea = forwardRef<TextInput, TextAreaProps>(
               className,
             )}
           >
-            <StyledTextInput
+            <InputComponent
               ref={ref}
               placeholder={placeholder}
               editable={!isDisabled}

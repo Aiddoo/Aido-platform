@@ -18,7 +18,7 @@ import { Pressable } from 'react-native';
 import { getFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
-import { NudgeDialog } from './NudgeDialog';
+import { NudgeBottomSheet } from './NudgeBottomSheet';
 import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 interface FriendTodoListProps {
@@ -60,6 +60,7 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
                 todo={todo}
                 friend={friend}
                 isLimitReached={isLimitReached}
+                date={date}
               />
             ))}
           </Box>
@@ -87,15 +88,20 @@ interface FriendTodoItemProps {
   todo: TodoItemViewModel;
   friend: FriendUserViewModel;
   isLimitReached: boolean;
+  date: Date;
 }
 
-function FriendTodoItem({ todo, friend, isLimitReached }: FriendTodoItemProps) {
+function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
   const overlay = useOverlay();
   const showDateTime = todo.formattedTime && !todo.isAllDay;
+  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
+    { targetDate: date, isCompleted: todo.completed },
+    new Date(),
+  );
 
   const openNudgeDialog = () => {
     overlay.open(({ isOpen, close, exit }) => (
-      <NudgeDialog
+      <NudgeBottomSheet
         friend={friend}
         todo={todo}
         isOpen={isOpen}
@@ -158,7 +164,7 @@ function FriendTodoItem({ todo, friend, isLimitReached }: FriendTodoItemProps) {
             </Text>
           )}
         </VStack>
-        {!todo.completed && (
+        {canNudgeTodo && (
           <Pressable onPress={handleNudgePress} hitSlop={8}>
             <PawIcon width={18} height={18} colorClassName="text-gray-6" />
           </Pressable>

@@ -2,13 +2,14 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { err, type Result } from '@src/shared/errors/result';
 
 import { type TodoNudgeError, TodoNudgeErrors } from '../models/todo-nudge.error';
-import type { NudgeCooldownInfo, NudgeLimitInfo } from '../models/todo-nudge.model';
-import { TodoNudgePolicy } from '../models/todo-nudge.model';
 import type {
-  SendNudgeInput,
-  SendNudgeResult,
-  TodoNudgeRepository,
-} from '../repositories/todo-nudge.repository';
+  NudgeCooldownInfo,
+  NudgeLimitInfo,
+  SendTodoNudgeInput,
+  SendTodoNudgeResult,
+} from '../models/todo-nudge.model';
+import { TodoNudgePolicy } from '../models/todo-nudge.model';
+import type { TodoNudgeRepository } from '../repositories/todo-nudge.repository';
 
 export type TodoNudgeServiceError = ApiError | TodoNudgeError;
 
@@ -20,8 +21,8 @@ export class TodoNudgeService {
   }
 
   sendNudge = async (
-    input: SendNudgeInput,
-  ): Promise<Result<SendNudgeResult, TodoNudgeServiceError>> => {
+    input: SendTodoNudgeInput,
+  ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {
     const normalizedMessage = TodoNudgePolicy.normalizeMessage(input.message);
 
     if (TodoNudgePolicy.isMessageTooLong(normalizedMessage)) {
