@@ -15,23 +15,79 @@ export const nudgeCooldownInfoSchema = z.object({
 });
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
+export interface SendTodoNudgeInput {
+  receiverId: string;
+  todoId: number;
+  message?: string;
+}
+
+export interface SendTodoNudgeResult {
+  message: string;
+}
+
+export type NudgeBannerState =
+  | { type: 'limitReached' }
+  | { type: 'available' }
+  | { type: 'remaining'; remainingToday: number; dailyLimit: number | null };
+
 const MAX_MESSAGE_LENGTH = 200;
+
+const isSameCalendarDay = (left: Date, right: Date) => {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+};
+
+const normalizeMessage = (message?: string | null): string | undefined => {
+  if (message == null) return undefined;
+  const trimmed = message.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const isMessageTooLong = (message?: string | null): boolean => {
+  if (!message) return false;
+  return message.trim().length > MAX_MESSAGE_LENGTH;
+};
+
+const isLimitReached = (limitInfo: NudgeLimitInfo): boolean => {
+  return limitInfo.remainingToday !== null && limitInfo.remainingToday <= 0;
+};
+
+const getBannerState = (limitInfo: NudgeLimitInfo): NudgeBannerState => {
+  if (isLimitReached(limitInfo)) {
+    return { type: 'limitReached' };
+  }
+
+  if (limitInfo.isUnlimited || limitInfo.usedToday === 0 || limitInfo.remainingToday === null) {
+    return { type: 'available' };
+  }
+
+  return {
+    type: 'remaining',
+    remainingToday: limitInfo.remainingToday,
+    dailyLimit: limitInfo.dailyLimit,
+  };
+};
+
+const canNudgeOnDate = (targetDate: Date, now: Date = new Date()): boolean => {
+  return isSameCalendarDay(targetDate, now);
+};
+
+const canNudgeTodoOnDate = (
+  input: { targetDate: Date; isCompleted: boolean },
+  now: Date = new Date(),
+): boolean => {
+  return !input.isCompleted && canNudgeOnDate(input.targetDate, now);
+};
 
 export const TodoNudgePolicy = {
   maxMessageLength: MAX_MESSAGE_LENGTH,
-
-  normalizeMessage(message?: string | null): string | undefined {
-    if (message == null) return undefined;
-    const trimmed = message.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-  },
-
-  isMessageTooLong(message?: string | null): boolean {
-    if (!message) return false;
-    return message.trim().length > TodoNudgePolicy.maxMessageLength;
-  },
-
-  isLimitReached(limitInfo: NudgeLimitInfo): boolean {
-    return limitInfo.remainingToday !== null && limitInfo.remainingToday <= 0;
-  },
+  normalizeMessage,
+  isMessageTooLong,
+  isLimitReached,
+  getBannerState,
+  canNudgeOnDate,
+  canNudgeTodoOnDate,
 } as const;
