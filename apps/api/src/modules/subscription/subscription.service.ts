@@ -514,6 +514,7 @@ export class SubscriptionService {
 		email: string,
 		event: RevenueCatWebhookPayload["event"],
 	): SubscriptionEventPayload {
+		const transactionId = this.#resolveTransactionId(event);
 		this.#logger.log(
 			`Billing issue detected: userId=${userId}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
 		);
@@ -524,7 +525,7 @@ export class SubscriptionService {
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
-			transactionId: event.original_transaction_id ?? event.transaction_id,
+			transactionId,
 		} satisfies SubscriptionEventPayload;
 	}
 
