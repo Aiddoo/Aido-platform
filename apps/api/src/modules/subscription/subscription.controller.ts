@@ -82,13 +82,29 @@ export class SubscriptionController {
 				);
 			}
 			// 그 외 에러 → Sentry + Discord 알림 + 200 반환 (무한 재시도 방지)
-			Sentry.captureException(error);
+			Sentry.withScope((scope) => {
+				scope.setTag("domain", "payment");
+				scope.setTag("webhook.event_type", parseResult.data.event.type);
+				scope.setTag(
+					"webhook.store",
+					parseResult.data.event.store ?? "unknown",
+				);
+				scope.setExtra(
+					"webhook.app_user_id",
+					parseResult.data.event.app_user_id,
+				);
+				scope.setExtra("webhook.product_id", parseResult.data.event.product_id);
+				scope.setExtra("webhook.event_id", parseResult.data.event.id);
+				Sentry.captureException(error);
+			});
 			this.#logger.error(
 				`Failed to process webhook event: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 
-			this.#notifyWebhookError(error, parseResult.data).catch(() => {});
+			this.#notifyWebhookError(error, parseResult.data).catch((e) =>
+				this.#logger.warn(`Failed to send webhook error notification: ${e}`),
+			);
 		}
 
 		return { received: true };

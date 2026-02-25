@@ -1,4 +1,12 @@
-jest.mock("@sentry/nestjs", () => ({ captureException: jest.fn() }));
+jest.mock("@sentry/nestjs", () => ({
+	captureException: jest.fn(),
+	withScope: jest.fn((callback) =>
+		callback({
+			setTag: jest.fn(),
+			setExtra: jest.fn(),
+		}),
+	),
+}));
 
 import * as Sentry from "@sentry/nestjs";
 import type { Mocked } from "@suites/doubles.jest";
@@ -75,19 +83,33 @@ describe("SubscriptionController", () => {
 			expect(result).toEqual({ received: true });
 		});
 
-		it("서비스 에러 → Sentry 캡처 + Discord 알림 + { received: true }", async () => {
+		it("서비스 에러 → Sentry 캡처 (결제 context 포함) + Discord 알림 + { received: true }", async () => {
 			// Given
 			const request = { body: validPayload } as unknown as Request;
 			const error = new Error("Processing failed");
 			mockService.handleWebhookEvent.mockRejectedValue(error);
+			const mockScope = { setTag: jest.fn(), setExtra: jest.fn() };
+			(Sentry.withScope as jest.Mock).mockImplementation((cb) => cb(mockScope));
 
 			// When
 			const result = await controller.handleRevenueCatWebhook(request);
 			// fire-and-forget 완료 대기
 			await new Promise((resolve) => setTimeout(resolve, 0));
 
-			// Then
+			// Then — Sentry context 검증
+			expect(Sentry.withScope).toHaveBeenCalledTimes(1);
+			expect(mockScope.setTag).toHaveBeenCalledWith("domain", "payment");
+			expect(mockScope.setTag).toHaveBeenCalledWith(
+				"webhook.event_type",
+				"INITIAL_PURCHASE",
+			);
+			expect(mockScope.setExtra).toHaveBeenCalledWith(
+				"webhook.app_user_id",
+				"user-123",
+			);
 			expect(Sentry.captureException).toHaveBeenCalledWith(error);
+
+			// Then — Discord 알림 검증
 			expect(mockNotifier.send).toHaveBeenCalledWith(
 				expect.objectContaining({
 					title: "Webhook 처리 에러",
