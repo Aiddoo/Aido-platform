@@ -75,7 +75,24 @@ export class SubscriptionService {
 				throw BusinessExceptions.subscriptionUserNotFound(appUserId);
 			}
 
-			// 2. 이벤트 타입별 처리
+			// 2. event.id 기반 중복 체크 (event.id가 있고, 기존 구독이 있는 경우)
+			const eventId = event.id;
+			if (eventId) {
+				const transactionId =
+					event.original_transaction_id ?? event.transaction_id;
+				if (transactionId) {
+					const existing =
+						await this.subscriptionRepository.findByRevenueCatId(transactionId);
+					if (existing?.lastProcessedEventId === eventId) {
+						this.#logger.log(
+							`Duplicate event detected: eventId=${eventId}, transactionId=${transactionId} — skipping`,
+						);
+						return;
+					}
+				}
+			}
+
+			// 3. 이벤트 타입별 처리
 			let eventPayload: SubscriptionEventPayload | null = null;
 
 			switch (eventType) {
@@ -165,14 +182,14 @@ export class SubscriptionService {
 					break;
 			}
 
-			// 3. 캐시 무효화 (DB 변경이 있었을 때만)
+			// 4. 캐시 무효화 (DB 변경이 있었을 때만)
 			if (eventPayload) {
 				await Promise.all([
 					this.cacheService.invalidateSubscription(user.id),
 					this.cacheService.invalidateUserProfile(user.id),
 				]);
 
-				// 4. 이벤트 발행
+				// 5. 이벤트 발행
 				let emitEventName = this.#getEmitEventName(eventType);
 				// 환불(CANCELLATION + CUSTOMER_SUPPORT)은 refunded 이벤트로 발행
 				if (
@@ -189,7 +206,7 @@ export class SubscriptionService {
 				}
 			}
 		} finally {
-			// 5. Lock 해제
+			// 6. Lock 해제
 			await release();
 		}
 	}
@@ -248,6 +265,7 @@ export class SubscriptionService {
 					status: "ACTIVE",
 					startedAt,
 					expiresAt,
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -329,6 +347,7 @@ export class SubscriptionService {
 					status: "ACTIVE",
 					expiresAt,
 					cancelledAt: null,
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -396,6 +415,7 @@ export class SubscriptionService {
 				{
 					status: isRefund ? "EXPIRED" : "CANCELLED",
 					cancelledAt: new Date(),
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -468,6 +488,7 @@ export class SubscriptionService {
 					status: "ACTIVE",
 					cancelledAt: null,
 					...(expiresAt && { expiresAt }),
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -515,6 +536,7 @@ export class SubscriptionService {
 				transactionId,
 				{
 					status: "EXPIRED",
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -589,6 +611,7 @@ export class SubscriptionService {
 				{
 					productId: event.product_id,
 					...(expiresAt && { expiresAt }),
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);
@@ -640,6 +663,7 @@ export class SubscriptionService {
 				{
 					status: "ACTIVE",
 					...(expiresAt && { expiresAt }),
+					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
 			);

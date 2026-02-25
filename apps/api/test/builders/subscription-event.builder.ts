@@ -28,6 +28,7 @@ export class SubscriptionEventBuilder {
 		const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
 		this.event = {
+			id: `evt-${crypto.randomUUID().slice(0, 8)}`,
 			type,
 			app_user_id: `user-${crypto.randomUUID().slice(0, 8)}`,
 			product_id: "premium_monthly",
@@ -185,6 +186,16 @@ export class SubscriptionEventBuilder {
 	withoutTransactionIds(): this {
 		this.event.transaction_id = undefined;
 		this.event.original_transaction_id = undefined;
+		return this;
+	}
+
+	withEventId(eventId: string): this {
+		this.event.id = eventId;
+		return this;
+	}
+
+	withoutEventId(): this {
+		this.event.id = undefined;
 		return this;
 	}
 

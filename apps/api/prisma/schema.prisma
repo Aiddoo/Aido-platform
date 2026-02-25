@@ -694,6 +694,9 @@ model Subscription {
   expiresAt   DateTime
   cancelledAt DateTime?
 
+  // 웹훅 이벤트 중복 방지
+  lastProcessedEventId String? @db.VarChar(255)
+
   // 데이터 보관
   dataRetentionUntil DateTime? // 해지 후 보관 기한
 

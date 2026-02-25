@@ -935,4 +935,97 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
+
+	// =========================================================================
+	// event.id 기반 중복 방지
+	// =========================================================================
+
+	describe("event.id 중복 방지", () => {
+		it("동일 event.id 웹훅 재전송 시 이벤트를 처리하지 않고 종료한다", async () => {
+			// Given — 이미 처리된 event.id가 있는 구독
+			subscriptionRepository.findByRevenueCatId.mockResolvedValue({
+				lastProcessedEventId: "evt-duplicate",
+			} as never);
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-duplicate")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — DB 트랜잭션, 캐시 무효화, 이벤트 발행 모두 없음
+			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
+			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			// Lock은 여전히 해제됨
+			expect(mockRelease).toHaveBeenCalledTimes(1);
+		});
+
+		it("event.id가 없는 이벤트는 기존 로직 그대로 처리한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.initialPurchase()
+				.withAppUserId("user-123")
+				.withoutEventId()
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 정상 처리
+			expect(subscriptionRepository.create).toHaveBeenCalled();
+		});
+
+		it("event.id가 다르면 정상 처리한다", async () => {
+			// Given — 이전 event.id와 다른 새 이벤트
+			subscriptionRepository.findByRevenueCatId.mockResolvedValue({
+				lastProcessedEventId: "evt-old",
+				status: "ACTIVE",
+				expiresAt: new Date(),
+			} as never);
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-new")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then — 정상 처리 (트랜잭션 실행)
+			expect(database.$transaction).toHaveBeenCalled();
+		});
+
+		it("event.id가 있으면 updateStatus 시 lastProcessedEventId가 전달된다", async () => {
+			// Given
+			subscriptionRepository.findByRevenueCatId
+				.mockResolvedValueOnce({
+					lastProcessedEventId: "evt-old",
+					status: "ACTIVE",
+					expiresAt: new Date(),
+				} as never) // 중복 체크용
+				.mockResolvedValueOnce({
+					status: "ACTIVE",
+					expiresAt: new Date(Date.now() - 1000),
+				} as never); // renewal 핸들러 내부 조회용
+
+			const payload = SubscriptionEventBuilder.renewal()
+				.withAppUserId("user-123")
+				.withEventId("evt-new-123")
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(subscriptionRepository.updateStatus).toHaveBeenCalledWith(
+				expect.any(String),
+				expect.objectContaining({
+					lastProcessedEventId: "evt-new-123",
+				}),
+				expect.anything(),
+			);
+		});
+	});
 });
