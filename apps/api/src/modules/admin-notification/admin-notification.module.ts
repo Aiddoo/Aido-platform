@@ -17,5 +17,6 @@ import { DiscordWebhookProvider } from "./providers/discord-webhook.provider";
 		UserRegistrationListener,
 		DailySignupSummaryJob,
 	],
+	exports: [ADMIN_NOTIFIER],
 })
 export class AdminNotificationModule {}

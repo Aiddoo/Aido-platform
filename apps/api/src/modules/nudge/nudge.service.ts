@@ -233,6 +233,7 @@ export class NudgeService {
 			senderName,
 			todoId,
 			todoTitle: nudge.todo.title,
+			message,
 		} satisfies NudgeSentEventPayload);
 
 		return nudge;

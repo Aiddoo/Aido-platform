@@ -99,6 +99,12 @@ export const SOCIAL_TEMPLATES = {
 		type: "NUDGE_RECEIVED" as NotificationType,
 		defaultRoute: "/todos/{todoId}",
 	},
+	NUDGE_RECEIVED_WITH_MESSAGE: {
+		title: "콕! {senderName}",
+		body: "{message}",
+		type: "NUDGE_RECEIVED" as NotificationType,
+		defaultRoute: "/todos/{todoId}",
+	},
 	CHEER_RECEIVED: {
 		title: "{senderName}의 한마디",
 		body: "{message}",
@@ -183,7 +189,23 @@ export class NotificationMessageBuilder {
 	/**
 	 * Nudge 수신 알림 메시지 생성
 	 */
-	static nudgeReceived(senderName: string): { title: string; body: string } {
+	static nudgeReceived(
+		senderName: string,
+		message?: string,
+	): { title: string; body: string } {
+		if (message) {
+			return {
+				title: fillTemplate(
+					SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.title,
+					{
+						senderName,
+					},
+				),
+				body: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.body, {
+					message,
+				}),
+			};
+		}
 		return {
 			title: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED.title, {
 				senderName,

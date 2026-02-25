@@ -33,6 +33,7 @@ export {
 export { PushTokenBuilder } from "./push-token.builder";
 export { SecurityLogBuilder } from "./security-log.builder";
 export { SessionBuilder } from "./session.builder";
+export { SubscriptionEventBuilder } from "./subscription-event.builder";
 export { TodoBuilder } from "./todo.builder";
 export {
 	TodoCategoryBuilder,

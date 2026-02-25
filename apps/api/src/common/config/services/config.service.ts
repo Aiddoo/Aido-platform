@@ -252,4 +252,8 @@ export class TypedConfigService {
 	get discordSignupWebhookUrl(): string | undefined {
 		return this.get("DISCORD_SIGNUP_WEBHOOK_URL");
 	}
+
+	get discordPaymentWebhookUrl(): string | undefined {
+		return this.get("DISCORD_PAYMENT_WEBHOOK_URL");
+	}
 }

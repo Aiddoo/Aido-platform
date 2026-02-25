@@ -606,4 +606,23 @@ export class BusinessExceptions {
 	static inquiryEmailFailed(details?: unknown) {
 		return new BusinessException(ErrorCode.INQUIRY_1501, details);
 	}
+
+	// =========================================================================
+	// 구독 (Subscription)
+	// =========================================================================
+	static webhookSignatureInvalid() {
+		return new BusinessException(ErrorCode.SUBSCRIPTION_1601);
+	}
+
+	static subscriptionUserNotFound(appUserId: string) {
+		return new BusinessException(ErrorCode.SUBSCRIPTION_1602, { appUserId });
+	}
+
+	static unknownWebhookEventType(eventType: string) {
+		return new BusinessException(ErrorCode.SUBSCRIPTION_1603, { eventType });
+	}
+
+	static webhookProcessingFailed(details?: unknown) {
+		return new BusinessException(ErrorCode.SUBSCRIPTION_1604, details);
+	}
 }

@@ -97,6 +97,8 @@ export interface NudgeSentEventPayload {
 	todoId?: number;
 	/** 대상 할일 제목 (선택) */
 	todoTitle?: string;
+	/** 찌르기 메시지 (선택) */
+	message?: string;
 }
 
 /**

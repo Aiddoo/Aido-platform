@@ -5,7 +5,6 @@ import { z } from "zod";
  */
 export const databaseSchema = z.object({
 	DATABASE_URL: z
-		.string()
 		.url("DATABASE_URL must be a valid URL")
 		.refine(
 			(url) => url.startsWith("postgresql://") || url.startsWith("postgres://"),

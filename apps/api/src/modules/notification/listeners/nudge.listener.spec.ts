@@ -30,6 +30,7 @@ describe("NudgeListener", () => {
 			receiverId: "receiver-1",
 			senderName: "홍길동",
 			todoId: 10,
+			message: "할일 화이팅!",
 		};
 
 		it("NUDGE_RECEIVED 알림을 createAndSendWithDedup으로 생성한다", async () => {
@@ -47,6 +48,68 @@ describe("NudgeListener", () => {
 					nudgeId: 1,
 					friendId: "sender-1",
 					todoId: 10,
+				}),
+			);
+		});
+
+		it("message가 있으면 body에 message가 포함된다", async () => {
+			// Given
+			notificationService.createAndSendWithDedup.mockResolvedValue({} as never);
+
+			// When
+			await listener.handleNudgeSent(payload);
+
+			// Then
+			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith(
+				expect.objectContaining({
+					body: "할일 화이팅!",
+				}),
+			);
+		});
+
+		it("message가 없으면 기본 body를 사용한다", async () => {
+			// Given
+			notificationService.createAndSendWithDedup.mockResolvedValue({} as never);
+			const payloadWithoutMessage = { ...payload, message: undefined };
+
+			// When
+			await listener.handleNudgeSent(payloadWithoutMessage);
+
+			// Then
+			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith(
+				expect.objectContaining({
+					body: "뭐 하고 있었는지 다 보인다",
+				}),
+			);
+		});
+
+		it("message가 있으면 metadata에 message를 저장한다", async () => {
+			// Given
+			notificationService.createAndSendWithDedup.mockResolvedValue({} as never);
+
+			// When
+			await listener.handleNudgeSent(payload);
+
+			// Then
+			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith(
+				expect.objectContaining({
+					metadata: { message: "할일 화이팅!" },
+				}),
+			);
+		});
+
+		it("message가 없으면 metadata가 undefined이다", async () => {
+			// Given
+			notificationService.createAndSendWithDedup.mockResolvedValue({} as never);
+			const payloadWithoutMessage = { ...payload, message: undefined };
+
+			// When
+			await listener.handleNudgeSent(payloadWithoutMessage);
+
+			// Then
+			expect(notificationService.createAndSendWithDedup).toHaveBeenCalledWith(
+				expect.objectContaining({
+					metadata: undefined,
 				}),
 			);
 		});

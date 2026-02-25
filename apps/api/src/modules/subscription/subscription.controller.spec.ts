@@ -1,0 +1,163 @@
+jest.mock("@sentry/nestjs", () => ({ captureException: jest.fn() }));
+
+import * as Sentry from "@sentry/nestjs";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { SubscriptionEventBuilder } from "@test/builders";
+import type { Request } from "express";
+
+import { SubscriptionController } from "./subscription.controller";
+import { SubscriptionService } from "./subscription.service";
+
+describe("SubscriptionController", () => {
+	let controller: SubscriptionController;
+	let mockService: Mocked<SubscriptionService>;
+
+	beforeEach(async () => {
+		const { unit, unitRef } = await TestBed.solitary(
+			SubscriptionController,
+		).compile();
+
+		controller = unit;
+		mockService = unitRef.get(
+			SubscriptionService,
+		) as unknown as Mocked<SubscriptionService>;
+	});
+
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
+	// =========================================================================
+	// handleRevenueCatWebhook
+	// =========================================================================
+
+	describe("handleRevenueCatWebhook", () => {
+		const validPayload = SubscriptionEventBuilder.initialPurchase()
+			.withAppUserId("user-123")
+			.withProductId("premium_monthly")
+			.withPrice(4900, "KRW")
+			.build();
+
+		it("유효한 payload → 서비스 호출 + { received: true } 반환", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(result).toEqual({ received: true });
+		});
+
+		it("Zod 검증 실패 (invalid payload) → 서비스 미호출 + { received: true }", async () => {
+			// Given
+			const invalidBody = { invalid: "data" };
+			const request = { body: invalidBody } as unknown as Request;
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).not.toHaveBeenCalled();
+			expect(result).toEqual({ received: true });
+		});
+
+		it("서비스 에러 → Sentry 캡처 + { received: true }", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			const error = new Error("Processing failed");
+			mockService.handleWebhookEvent.mockRejectedValue(error);
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(Sentry.captureException).toHaveBeenCalledWith(error);
+			expect(result).toEqual({ received: true });
+		});
+
+		it("서비스 정상 처리 후 { received: true } 반환 확인", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(result).toEqual({ received: true });
+			expect(Sentry.captureException).not.toHaveBeenCalled();
+		});
+
+		it("request.body가 빈 객체 → 서비스 미호출", async () => {
+			// Given
+			const request = { body: {} } as unknown as Request;
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).not.toHaveBeenCalled();
+			expect(result).toEqual({ received: true });
+		});
+
+		it("알 수 없는 이벤트 타입도 Zod 검증을 통과하고 서비스가 호출된다", async () => {
+			// Given — RevenueCat이 새로 추가한 이벤트 타입 시뮬레이션
+			const unknownEventPayload = SubscriptionEventBuilder.customType(
+				"FUTURE_NEW_EVENT",
+			)
+				.withAppUserId("user-123")
+				.build();
+			const request = { body: unknownEventPayload } as unknown as Request;
+			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(result).toEqual({ received: true });
+		});
+
+		it("알 수 없는 스토어 값도 Zod 검증을 통과한다", async () => {
+			// Given — RevenueCat이 새로 추가한 스토어 시뮬레이션
+			const payload = SubscriptionEventBuilder.initialPurchase()
+				.withAppUserId("user-123")
+				.withStore("ROKU")
+				.build();
+			const request = { body: payload } as unknown as Request;
+			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+
+			// When
+			const result = await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).toHaveBeenCalledTimes(1);
+			expect(result).toEqual({ received: true });
+		});
+
+		it("서비스 호출 시 Zod 파싱된 데이터가 전달된다", async () => {
+			// Given
+			const request = { body: validPayload } as unknown as Request;
+			mockService.handleWebhookEvent.mockResolvedValue(undefined);
+
+			// When
+			await controller.handleRevenueCatWebhook(request);
+
+			// Then
+			expect(mockService.handleWebhookEvent).toHaveBeenCalledWith(
+				expect.objectContaining({
+					event: expect.objectContaining({
+						type: "INITIAL_PURCHASE",
+						app_user_id: "user-123",
+						product_id: "premium_monthly",
+					}),
+				}),
+			);
+		});
+	});
+});

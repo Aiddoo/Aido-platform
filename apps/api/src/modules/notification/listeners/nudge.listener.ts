@@ -37,6 +37,7 @@ export class NudgeListener {
 		try {
 			const message = NotificationMessageBuilder.nudgeReceived(
 				payload.senderName,
+				payload.message,
 			);
 
 			await this.notificationService.createAndSendWithDedup({
@@ -47,6 +48,7 @@ export class NudgeListener {
 				nudgeId: payload.nudgeId,
 				friendId: payload.senderId,
 				todoId: payload.todoId,
+				metadata: payload.message ? { message: payload.message } : undefined,
 			});
 
 			this.#logger.log(

@@ -29,6 +29,7 @@ import { InquiryModule } from "@/modules/inquiry/inquiry.module";
 import { NotificationModule } from "@/modules/notification/notification.module";
 import { NudgeModule } from "@/modules/nudge/nudge.module";
 import { SchedulerModule } from "@/modules/scheduler/scheduler.module";
+import { SubscriptionModule } from "@/modules/subscription";
 import { TodoModule } from "@/modules/todo";
 import { TodoCategoryModule } from "@/modules/todo-category";
 import { UserSettingsModule } from "@/modules/user-settings/user-settings.module";
@@ -86,6 +87,7 @@ import { AppService } from "./app.service";
 		NotificationModule,
 		NudgeModule,
 		SchedulerModule,
+		SubscriptionModule,
 		TodoModule,
 		TodoCategoryModule,
 		UserSettingsModule,

@@ -2,6 +2,7 @@ import {
 	fillTemplate,
 	NotificationMessageBuilder,
 	SCHEDULER_TEMPLATES,
+	SOCIAL_TEMPLATES,
 } from "./notification-templates";
 
 // =============================================================================
@@ -123,6 +124,39 @@ describe("notification-templates", () => {
 
 			// Then
 			expect(result.body).toBe(SCHEDULER_TEMPLATES.MORNING_NO_TODO.body);
+		});
+	});
+
+	// =========================================================================
+	// NotificationMessageBuilder.nudgeReceived
+	// =========================================================================
+
+	describe("NotificationMessageBuilder.nudgeReceived", () => {
+		it("message가 있으면 body에 message가 포함된다", () => {
+			// When
+			const result = NotificationMessageBuilder.nudgeReceived(
+				"홍길동",
+				"할일 화이팅!",
+			);
+
+			// Then
+			expect(result.body).toBe("할일 화이팅!");
+		});
+
+		it("message가 없으면 기본 body를 반환한다", () => {
+			// When
+			const result = NotificationMessageBuilder.nudgeReceived("홍길동");
+
+			// Then
+			expect(result.body).toBe(SOCIAL_TEMPLATES.NUDGE_RECEIVED.body);
+		});
+
+		it("title에 senderName이 치환된다", () => {
+			// When
+			const result = NotificationMessageBuilder.nudgeReceived("홍길동");
+
+			// Then
+			expect(result.title).toBe("콕! 홍길동");
 		});
 	});
 
