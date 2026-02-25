@@ -24,6 +24,7 @@ import type { ErrorDefinition } from './types';
  * - AI      (1300-1399): AI 서비스
  * - ADMIN   (1400-1499): 관리자
  * - INQUIRY (1500-1599): 문의
+ * - SUBSCRIPTION (1600-1699): 구독
  */
 export const ErrorCode = {
   // =========================================================================
@@ -223,6 +224,14 @@ export const ErrorCode = {
   // =========================================================================
   /** 문의 이메일 발송에 실패했습니다 */
   INQUIRY_1501: 'INQUIRY_1501',
+
+  // =========================================================================
+  // 구독 (SUBSCRIPTION_1600-1699)
+  // =========================================================================
+  SUBSCRIPTION_1601: 'SUBSCRIPTION_1601',
+  SUBSCRIPTION_1602: 'SUBSCRIPTION_1602',
+  SUBSCRIPTION_1603: 'SUBSCRIPTION_1603',
+  SUBSCRIPTION_1604: 'SUBSCRIPTION_1604',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1000,5 +1009,33 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '문의 이메일 발송에 실패했습니다.',
     description: '문의 이메일 발송 서비스 오류가 발생했습니다.',
     httpStatus: HttpStatus.BAD_GATEWAY,
+  },
+
+  // =========================================================================
+  // 구독 (SUBSCRIPTION_1600-1699)
+  // =========================================================================
+  [ErrorCode.SUBSCRIPTION_1601]: {
+    code: 'SUBSCRIPTION_1601',
+    message: 'Webhook 서명 검증에 실패했습니다.',
+    description: 'RevenueCat Webhook 요청의 인증 헤더가 유효하지 않습니다.',
+    httpStatus: HttpStatus.UNAUTHORIZED,
+  },
+  [ErrorCode.SUBSCRIPTION_1602]: {
+    code: 'SUBSCRIPTION_1602',
+    message: '구독 사용자를 찾을 수 없습니다.',
+    description: 'Webhook의 app_user_id에 해당하는 사용자가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.SUBSCRIPTION_1603]: {
+    code: 'SUBSCRIPTION_1603',
+    message: '지원하지 않는 Webhook 이벤트 타입입니다.',
+    description: '처리할 수 없는 RevenueCat 이벤트 타입입니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.SUBSCRIPTION_1604]: {
+    code: 'SUBSCRIPTION_1604',
+    message: 'Webhook 처리에 실패했습니다.',
+    description: 'RevenueCat Webhook 이벤트 처리 중 오류가 발생했습니다.',
+    httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
   },
 };

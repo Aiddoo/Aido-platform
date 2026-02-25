@@ -14,6 +14,7 @@ export * from './domains/follow';
 export * from './domains/inquiry';
 export * from './domains/notification';
 export * from './domains/nudge';
+export * from './domains/subscription';
 export * from './domains/todo';
 export * from './domains/todo-category';
 export * from './domains/user-consent';
