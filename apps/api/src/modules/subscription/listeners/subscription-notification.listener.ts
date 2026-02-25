@@ -6,7 +6,10 @@ import {
 	type AdminNotifier,
 } from "@/modules/admin-notification/providers/admin-notifier.interface";
 
-import type { SubscriptionEventPayload } from "../events/subscription.events";
+import {
+	REVENUECAT_EVENT_TO_INTERNAL,
+	type SubscriptionEventPayload,
+} from "../events/subscription.events";
 
 /**
  * 이벤트 타입별 알림 메타데이터
@@ -212,23 +215,6 @@ export class SubscriptionNotificationListener {
 	 * RevenueCat 이벤트 타입을 내부 이벤트 키로 변환
 	 */
 	#resolveEventKey(eventType: string): string {
-		switch (eventType) {
-			case "INITIAL_PURCHASE":
-				return "subscription.purchased";
-			case "RENEWAL":
-				return "subscription.renewed";
-			case "CANCELLATION":
-				return "subscription.cancelled";
-			case "EXPIRATION":
-				return "subscription.expired";
-			case "BILLING_ISSUE_DETECTED":
-				return "subscription.billing_issue";
-			case "UNCANCELLATION":
-				return "subscription.uncancelled";
-			case "PRODUCT_CHANGE":
-				return "subscription.product_changed";
-			default:
-				return eventType;
-		}
+		return REVENUECAT_EVENT_TO_INTERNAL[eventType] ?? eventType;
 	}
 }

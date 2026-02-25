@@ -249,6 +249,7 @@ describe("NudgeService", () => {
 					senderName: "보내는 사람",
 					todoId: 100,
 					todoTitle: "테스트 할일",
+					message: "할일 화이팅!",
 				}),
 			);
 		});

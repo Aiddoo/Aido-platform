@@ -21,6 +21,24 @@ export type SubscriptionEventName =
 	(typeof SubscriptionEvents)[keyof typeof SubscriptionEvents];
 
 /**
+ * RevenueCat 이벤트 타입 → 내부 이벤트명 매핑
+ *
+ * Service의 #getEmitEventName과 Listener의 #resolveEventKey에서 공용 사용
+ */
+export const REVENUECAT_EVENT_TO_INTERNAL: Record<
+	string,
+	SubscriptionEventName
+> = {
+	INITIAL_PURCHASE: SubscriptionEvents.PURCHASED,
+	RENEWAL: SubscriptionEvents.RENEWED,
+	CANCELLATION: SubscriptionEvents.CANCELLED,
+	EXPIRATION: SubscriptionEvents.EXPIRED,
+	BILLING_ISSUE: SubscriptionEvents.BILLING_ISSUE,
+	UNCANCELLATION: SubscriptionEvents.UNCANCELLED,
+	PRODUCT_CHANGE: SubscriptionEvents.PRODUCT_CHANGED,
+};
+
+/**
  * 구독 이벤트 페이로드
  */
 export interface SubscriptionEventPayload {

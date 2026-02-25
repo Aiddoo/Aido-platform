@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import type { TransactionClient } from "@/common/database";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
-import type { Subscription } from "@/generated/prisma/client";
+import { Prisma, type Subscription } from "@/generated/prisma/client";
 import type { SubscriptionStatus } from "@/generated/prisma/enums";
 
 /**
@@ -125,10 +126,22 @@ export class SubscriptionRepository {
 		tx?: TransactionClient,
 	): Promise<Subscription> {
 		const client = tx ?? this.database;
-		return client.subscription.update({
-			where: { revenueCatId },
-			data,
-		});
+		try {
+			return await client.subscription.update({
+				where: { revenueCatId },
+				data,
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2025"
+			) {
+				throw BusinessExceptions.webhookProcessingFailed({
+					reason: `Subscription not found: ${revenueCatId}`,
+				});
+			}
+			throw error;
+		}
 	}
 
 	/**

@@ -8,8 +8,8 @@ import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import {
+	REVENUECAT_EVENT_TO_INTERNAL,
 	type SubscriptionEventPayload,
-	SubscriptionEvents,
 } from "./events/subscription.events";
 import { SubscriptionRepository } from "./subscription.repository";
 
@@ -49,7 +49,7 @@ export class SubscriptionService {
 		const eventType = event.type;
 
 		this.#logger.log(
-			`Processing webhook event: type=${eventType}, appUserId=${appUserId}, productId=${event.product_id}`,
+			`Processing webhook event: type=${eventType}, appUserId=${appUserId}, productId=${event.product_id}${event.id ? `, eventId=${event.id}` : ""}`,
 		);
 
 		// 1. Lock 획득
@@ -114,7 +114,7 @@ export class SubscriptionService {
 					);
 					break;
 
-				case "BILLING_ISSUE_DETECTED":
+				case "BILLING_ISSUE":
 					eventPayload = this.#handleBillingIssue(user.id, user.email, event);
 					break;
 
@@ -123,6 +123,12 @@ export class SubscriptionService {
 						user.id,
 						user.email,
 						event,
+					);
+					break;
+
+				case "TEST":
+					this.#logger.log(
+						`Test webhook event received for appUserId=${appUserId}`,
 					);
 					break;
 
@@ -181,12 +187,22 @@ export class SubscriptionService {
 		event: RevenueCatWebhookPayload["event"],
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const startedAt = event.purchased_at_ms
-			? new Date(event.purchased_at_ms)
-			: new Date();
-		const expiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: new Date();
+
+		if (!event.purchased_at_ms) {
+			throw BusinessExceptions.webhookProcessingFailed({
+				reason: "Missing purchased_at_ms for INITIAL_PURCHASE",
+				eventType: event.type,
+			});
+		}
+		if (!event.expiration_at_ms) {
+			throw BusinessExceptions.webhookProcessingFailed({
+				reason: "Missing expiration_at_ms for INITIAL_PURCHASE",
+				eventType: event.type,
+			});
+		}
+
+		const startedAt = new Date(event.purchased_at_ms);
+		const expiresAt = new Date(event.expiration_at_ms);
 
 		await this.database.$transaction(async (tx) => {
 			// 멱등성 가드: 중복 webhook 재전송 대비
@@ -252,11 +268,38 @@ export class SubscriptionService {
 		event: RevenueCatWebhookPayload["event"],
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const expiresAt = event.expiration_at_ms
-			? new Date(event.expiration_at_ms)
-			: new Date();
+
+		if (!event.expiration_at_ms) {
+			throw BusinessExceptions.webhookProcessingFailed({
+				reason: "Missing expiration_at_ms for RENEWAL",
+				eventType: event.type,
+			});
+		}
+
+		const expiresAt = new Date(event.expiration_at_ms);
 
 		await this.database.$transaction(async (tx) => {
+			// 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
+			const existing = await this.subscriptionRepository.findByRevenueCatId(
+				transactionId,
+				tx,
+			);
+			if (!existing) {
+				throw BusinessExceptions.webhookProcessingFailed({
+					reason: `Subscription not found for RENEWAL: ${transactionId}`,
+					eventType: event.type,
+				});
+			}
+			if (
+				existing.status === "ACTIVE" &&
+				existing.expiresAt.getTime() === expiresAt.getTime()
+			) {
+				this.#logger.log(
+					`Already renewed with same expiresAt, skipping: transactionId=${transactionId}`,
+				);
+				return;
+			}
+
 			await this.subscriptionRepository.updateStatus(
 				transactionId,
 				{
@@ -306,11 +349,21 @@ export class SubscriptionService {
 		event: RevenueCatWebhookPayload["event"],
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
-		const expiresAt = event.expiration_at_ms
+		const webhookExpiresAt = event.expiration_at_ms
 			? new Date(event.expiration_at_ms)
 			: null;
 
 		await this.database.$transaction(async (tx) => {
+			// webhook expiresAt 없으면 DB 기존값 fallback
+			let expiresAt = webhookExpiresAt;
+			if (!expiresAt) {
+				const existing = await this.subscriptionRepository.findByRevenueCatId(
+					transactionId,
+					tx,
+				);
+				expiresAt = existing?.expiresAt ?? null;
+			}
+
 			await this.subscriptionRepository.updateStatus(
 				transactionId,
 				{
@@ -321,8 +374,12 @@ export class SubscriptionService {
 			);
 
 			// CANCELLATION 정책: expiresAt > now이면 User는 ACTIVE 유지
+			// 60초 grace period로 clock skew 대응
+			const gracePeriodMs = 60_000;
 			const userStatus =
-				expiresAt && expiresAt.getTime() > Date.now() ? "ACTIVE" : "CANCELLED";
+				expiresAt && expiresAt.getTime() > Date.now() - gracePeriodMs
+					? "ACTIVE"
+					: "CANCELLED";
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
 				userId,
@@ -335,7 +392,7 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, expiresAt=${expiresAt?.toISOString() ?? "N/A"}`,
+			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, expiresAt=${webhookExpiresAt?.toISOString() ?? "N/A"}`,
 		);
 
 		return {
@@ -345,7 +402,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: expiresAt?.toISOString(),
+			expiresAt: webhookExpiresAt?.toISOString(),
 			cancelReason: event.cancel_reason,
 		} satisfies SubscriptionEventPayload;
 	}
@@ -404,7 +461,8 @@ export class SubscriptionService {
 	/**
 	 * EXPIRATION: 만료
 	 *
-	 * Subscription EXPIRED + User EXPIRED
+	 * Subscription EXPIRED + User FREE (무료 사용자로 복귀)
+	 * subscriptionExpiresAt도 null로 초기화
 	 */
 	async #handleExpiration(
 		userId: string,
@@ -425,7 +483,8 @@ export class SubscriptionService {
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
 				userId,
 				{
-					subscriptionStatus: "EXPIRED",
+					subscriptionStatus: "FREE",
+					subscriptionExpiresAt: null,
 				},
 				tx,
 			);
@@ -446,7 +505,7 @@ export class SubscriptionService {
 	}
 
 	/**
-	 * BILLING_ISSUE_DETECTED: 결제 문제 감지
+	 * BILLING_ISSUE: 결제 문제 감지
 	 *
 	 * 로그만 남기고 구독은 유지합니다.
 	 */
@@ -546,23 +605,6 @@ export class SubscriptionService {
 	 * 이벤트 타입에 대응하는 내부 이벤트명 반환
 	 */
 	#getEmitEventName(eventType: string): string | null {
-		switch (eventType) {
-			case "INITIAL_PURCHASE":
-				return SubscriptionEvents.PURCHASED;
-			case "RENEWAL":
-				return SubscriptionEvents.RENEWED;
-			case "CANCELLATION":
-				return SubscriptionEvents.CANCELLED;
-			case "EXPIRATION":
-				return SubscriptionEvents.EXPIRED;
-			case "BILLING_ISSUE_DETECTED":
-				return SubscriptionEvents.BILLING_ISSUE;
-			case "UNCANCELLATION":
-				return SubscriptionEvents.UNCANCELLED;
-			case "PRODUCT_CHANGE":
-				return SubscriptionEvents.PRODUCT_CHANGED;
-			default:
-				return null;
-		}
+		return REVENUECAT_EVENT_TO_INTERNAL[eventType] ?? null;
 	}
 }
