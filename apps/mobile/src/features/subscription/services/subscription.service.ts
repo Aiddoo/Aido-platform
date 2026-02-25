@@ -41,19 +41,27 @@ export class SubscriptionService {
     }
   };
 
-  purchase = async (identifier: string): Promise<Result<void, SubscriptionError>> => {
+  purchase = async (identifier: string): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#sdkManager.isConfigured()) {
       return err(SubscriptionErrors.notConfigured());
     }
 
-    const rcPackage = this.#packageMap.get(identifier);
+    let rcPackage = this.#packageMap.get(identifier);
     if (!rcPackage) {
-      return err(SubscriptionErrors.purchaseFailed('구독 상품 정보를 찾을 수 없어요'));
+      const refetchResult = await this.getOfferings();
+      if (!refetchResult.ok) {
+        return err(SubscriptionErrors.purchaseFailed('구독 상품 정보를 불러올 수 없어요'));
+      }
+      rcPackage = this.#packageMap.get(identifier);
+      if (!rcPackage) {
+        return err(SubscriptionErrors.purchaseFailed('구독 상품 정보를 찾을 수 없어요'));
+      }
     }
 
     try {
-      await Purchases.purchasePackage(rcPackage);
-      return ok(undefined);
+      const { customerInfo } = await Purchases.purchasePackage(rcPackage);
+      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
+      return ok(hasActive);
     } catch (error) {
       return err(SubscriptionErrors.fromPurchaseError(error));
     }

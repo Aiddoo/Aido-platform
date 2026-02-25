@@ -19,10 +19,8 @@ export const purchaseMutationOptions = () => {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       success('구독이 완료되었어요!');
-      // 웹훅 도달 대기 후 쿼리 무효화
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
-      }, 2_000);
+      // SDK 응답이 성공 = 구독 확정. 즉시 /me 갱신
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
     },
     onError: (err) => {
       // 구매 취소는 조용히 무시
