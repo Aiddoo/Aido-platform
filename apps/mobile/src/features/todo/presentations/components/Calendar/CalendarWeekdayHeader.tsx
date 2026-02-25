@@ -22,7 +22,7 @@ export const CalendarWeekdayHeader = () => {
 
         return (
           <Box key={label} className="flex-1 items-center py-2">
-            <Text size="e1" weight="medium" shade={style.shade} tone={style.tone}>
+            <Text size="b4" weight="medium" shade={style.shade} tone={style.tone}>
               {label}
             </Text>
           </Box>

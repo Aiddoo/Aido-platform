@@ -47,13 +47,13 @@ export const CalendarDateCell = ({
         {isAllComplete ? (
           <FishIcon width={20} height={13} colorClassName="text-fish" />
         ) : (
-          <Text size="b4" weight="medium" tone={getDayTone()} shade={7}>
+          <Text size="b3" weight="medium" tone={getDayTone()} shade={7}>
             {dayOfMonth}
           </Text>
         )}
       </Box>
-      {showCompletedCount && (
-        <Text size="e2" weight="medium" className="mt-0.5 text-main/80">
+      {showCompletedCount && !isAllComplete && (
+        <Text size="e1" weight="medium" className="mt-0.5 text-main/80">
           +{completion.completedTodos}
         </Text>
       )}

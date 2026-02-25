@@ -51,7 +51,7 @@ export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeTogg
           className="items-center justify-center rounded-md"
           style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
         >
-          <Text size="e2" weight="medium" shade={value === mode.value ? 9 : 5}>
+          <Text size="e1" weight="medium" shade={value === mode.value ? 9 : 5}>
             {mode.label}
           </Text>
         </Pressable>
