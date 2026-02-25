@@ -89,9 +89,10 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
           />
         ));
       }}
+      hitSlop={8}
       className="self-start flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-2"
     >
-      <Text size="b4" weight="semibold" style={{ color: category.color }}>
+      <Text size="b3" weight="semibold" style={{ color: category.color }}>
         {category.name}
       </Text>
       <PlusIcon width={14} height={14} colorClassName="text-gray-6" />
