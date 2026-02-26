@@ -1,60 +1,88 @@
+import {
+  isActiveSubscription,
+  isCancelledSubscription,
+  SubscriptionPolicy,
+} from '@src/features/subscription/models/subscription.model';
 import type { SubscriptionStatus } from '@src/features/user/models/user.model';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { View } from 'react-native';
+import { formatFullDate } from '@src/shared/utils/date';
+import { Card, Chip, Separator } from 'heroui-native';
 
 interface SubscriptionStatusCardProps {
   subscriptionStatus: SubscriptionStatus;
   subscriptionExpiresAt: Date | null;
 }
 
-const STATUS_CONFIG: Record<SubscriptionStatus, { label: string; color: string; bgColor: string }> =
-  {
-    ACTIVE: { label: '구독 중', color: 'text-main', bgColor: 'bg-main/10' },
-    CANCELLED: { label: '취소됨', color: 'text-gray-6', bgColor: 'bg-gray-2' },
-    EXPIRED: { label: '만료됨', color: 'text-gray-6', bgColor: 'bg-gray-2' },
-    FREE: { label: '무료', color: 'text-gray-6', bgColor: 'bg-gray-2' },
-  };
+const STATUS_CONFIG: Record<SubscriptionStatus, { label: string; description: string }> = {
+  ACTIVE: { label: '구독 중', description: '모든 프리미엄 기능을 이용 중이에요' },
+  CANCELLED: { label: '취소됨', description: '구독이 취소되었어요' },
+  EXPIRED: { label: '만료됨', description: '구독이 만료되었어요' },
+  FREE: { label: '무료', description: '무료 플랜을 이용 중이에요' },
+};
 
 export function SubscriptionStatusCard({
   subscriptionStatus,
   subscriptionExpiresAt,
 }: SubscriptionStatusCardProps) {
   const config = STATUS_CONFIG[subscriptionStatus];
-  const dateLabel = subscriptionStatus === 'ACTIVE' ? '다음 결제일' : '만료일';
+  const isActive = isActiveSubscription(subscriptionStatus);
+  const showDetails = SubscriptionPolicy.shouldShowExpirationDetails(
+    subscriptionStatus,
+    subscriptionExpiresAt,
+  );
+
+  const description =
+    isCancelledSubscription(subscriptionStatus) && subscriptionExpiresAt
+      ? `구독이 취소되었어요. ${formatFullDate(subscriptionExpiresAt)}까지 이용할 수 있어요`
+      : config.description;
 
   return (
-    <VStack gap={12} className="bg-white dark:bg-gray-2 rounded-2xl p-4">
-      <HStack className="items-center justify-between">
-        <Text size="b3" weight="bold" className="text-gray-9">
-          프리미엄
-        </Text>
-        <View className={`${config.bgColor} px-2.5 py-1 rounded-full`}>
-          <Text size="e2" weight="bold" className={config.color}>
-            {config.label}
+    <Card className="dark:bg-gray-2">
+      <VStack gap={12}>
+        <HStack justify="between" align="center">
+          <Text size="t3" weight="bold" shade={9}>
+            Aido 프리미엄
           </Text>
-        </View>
-      </HStack>
 
-      {subscriptionExpiresAt && (
-        <HStack className="items-center justify-between">
-          <Text size="b4" className="text-gray-5">
-            {dateLabel}
-          </Text>
-          <Text size="b4" weight="semibold" className="text-gray-8">
-            {subscriptionExpiresAt.toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </Text>
+          <Chip size="sm" variant="soft" color="accent">
+            <Chip.Label>{config.label}</Chip.Label>
+          </Chip>
         </HStack>
-      )}
 
-      <Text size="e1" className="text-gray-5">
-        구독은 App Store 또는 Play Store 설정에서 관리할 수 있어요
-      </Text>
-    </VStack>
+        <Text size="b4" shade={6}>
+          {description}
+        </Text>
+
+        {showDetails && (
+          <>
+            <Separator className="bg-gray-2 dark:bg-gray-3" />
+
+            <VStack gap={8}>
+              <HStack className="items-center justify-between">
+                <Text size="b4" shade={5}>
+                  {isActive ? '다음 결제일' : '만료일'}
+                </Text>
+                <Text size="b4" weight="semibold" shade={8}>
+                  {formatFullDate(subscriptionExpiresAt)}
+                </Text>
+              </HStack>
+
+              {isActive && (
+                <HStack className="items-center justify-between">
+                  <Text size="b4" shade={5}>
+                    구독 상태
+                  </Text>
+                  <Text size="b4" weight="semibold" tone="brand">
+                    자동 갱신
+                  </Text>
+                </HStack>
+              )}
+            </VStack>
+          </>
+        )}
+      </VStack>
+    </Card>
   );
 }

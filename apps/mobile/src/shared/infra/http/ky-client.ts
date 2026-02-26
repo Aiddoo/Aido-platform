@@ -56,13 +56,13 @@ export class KyHttpClient implements HttpClient {
     );
   }
 
-  async delete<T>(
-    url: string,
-    data?: unknown,
-    config?: RequestConfig,
-  ): Promise<Result<T, ApiError>> {
+  async delete<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>> {
+    const { body, ...restConfig } = config ?? {};
     return this.#request<T>(() =>
-      this.#client.delete(url, { ...this.#buildOptions(config), json: data }),
+      this.#client.delete(url, {
+        ...this.#buildOptions(restConfig),
+        ...(body !== undefined ? { json: body } : {}),
+      }),
     );
   }
 

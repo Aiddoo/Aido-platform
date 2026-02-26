@@ -5,6 +5,7 @@ export interface RequestConfig {
   params?: Record<string, string | number | boolean | undefined>;
   headers?: Record<string, string>;
   timeout?: number;
+  body?: unknown;
 }
 
 /**
@@ -17,5 +18,5 @@ export interface HttpClient {
   post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
   put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
   patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
-  delete<T>(url: string, data?: unknown, config?: RequestConfig): Promise<Result<T, ApiError>>;
+  delete<T>(url: string, config?: RequestConfig): Promise<Result<T, ApiError>>;
 }

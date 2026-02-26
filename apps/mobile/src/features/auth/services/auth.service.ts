@@ -587,10 +587,9 @@ export class AuthService {
   deleteAccount = async (
     input: DeleteAccountInput,
   ): Promise<Result<DeleteAccountResult, ApiError>> => {
-    const result = await this.#authHttpClient.delete<DeleteAccountResponse>(
-      'v1/auth/account',
-      input,
-    );
+    const result = await this.#authHttpClient.delete<DeleteAccountResponse>('v1/auth/account', {
+      body: input,
+    });
     if (!result.ok) return result;
 
     const parsed = deleteAccountResponseSchema.safeParse(result.value);
