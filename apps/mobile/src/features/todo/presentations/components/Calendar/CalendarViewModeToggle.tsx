@@ -1,4 +1,5 @@
 import { Text } from '@src/shared/ui/Text/Text';
+import { cn } from '@src/shared/utils/cn';
 import { useCallback, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -61,7 +62,10 @@ export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeTogg
           onPress={() => onChange(mode.value)}
           onLayout={(e) => handleLayout(mode.value, e)}
           hitSlop={4}
-          className={`items-center justify-center rounded-md ${value === mode.value ? 'bg-white' : ''}`}
+          className={cn(
+            'items-center justify-center rounded-md',
+            value === mode.value && 'bg-white',
+          )}
           style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
         >
           <Text size="e1" weight="medium" shade={value === mode.value ? 9 : 5}>
