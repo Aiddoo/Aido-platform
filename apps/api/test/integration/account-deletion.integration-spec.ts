@@ -41,6 +41,7 @@ import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { VerificationRepository } from "@/modules/auth/repositories/verification.repository";
 import { AuthService } from "@/modules/auth/services/auth.service";
 import { PasswordService } from "@/modules/auth/services/password.service";
+import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
 import { TokenService } from "@/modules/auth/services/token.service";
 import { VerificationService } from "@/modules/auth/services/verification.service";
 import { EmailService } from "@/modules/email/email.service";
@@ -51,6 +52,7 @@ import { TestDatabase } from "../setup/test-database";
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
 	let authService: AuthService;
+	let passwordManagementService: PasswordManagementService;
 	let purgeJob: AccountPurgeJob;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -165,6 +167,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		}).compile();
 
 		authService = module.get<AuthService>(AuthService);
+		passwordManagementService = module.get<PasswordManagementService>(
+			PasswordManagementService,
+		);
 		purgeJob = module.get<AccountPurgeJob>(AccountPurgeJob);
 		_userRepository = module.get<UserRepository>(UserRepository);
 		_accountRepository = module.get<AccountRepository>(AccountRepository);
@@ -420,7 +425,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			await authService.deleteAccount(userId, "test-session", { password });
 
 			// When
-			const result = await authService.forgotPassword(email);
+			const result = await passwordManagementService.forgotPassword(email);
 
 			// Then - 동일 응답 반환 (보안상)
 			expect(result.message).toBeDefined();

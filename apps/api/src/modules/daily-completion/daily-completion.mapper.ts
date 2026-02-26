@@ -1,6 +1,4 @@
-import dayjs from "dayjs";
-
-import { DATE_FORMAT } from "@/common/date";
+import { toDateString } from "@/common/date";
 import type {
 	DailyCompletionSummary,
 	TodoAggregateByDate,
@@ -23,7 +21,7 @@ export abstract class DailyCompletionMapper {
 	): DailyCompletionSummary[] {
 		return aggregates
 			.map(({ date, total, completed }) => ({
-				date: dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY),
+				date: toDateString(date),
 				totalTodos: total,
 				completedTodos: completed,
 				isComplete: total > 0 && total === completed,

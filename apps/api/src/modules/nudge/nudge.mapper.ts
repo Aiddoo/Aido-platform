@@ -5,12 +5,13 @@
  */
 
 import type { Nudge, NudgeDetail, NudgeLimitInfo } from "@aido/validators";
+import { toISOString, toISOStringOrNull } from "@/common/date";
 import type {
 	NudgeWithRelations,
 	NudgeLimitInfo as ServiceLimitInfo,
 } from "./types";
 
-export class NudgeMapper {
+export abstract class NudgeMapper {
 	/**
 	 * NudgeWithRelations → NudgeDetail DTO 형식
 	 */
@@ -21,8 +22,8 @@ export class NudgeMapper {
 			receiverId: nudge.receiverId,
 			todoId: nudge.todoId,
 			message: nudge.message,
-			createdAt: nudge.createdAt.toISOString(),
-			readAt: nudge.readAt?.toISOString() ?? null,
+			createdAt: toISOString(nudge.createdAt),
+			readAt: toISOStringOrNull(nudge.readAt ?? null),
 			sender: {
 				id: nudge.sender.id,
 				userTag: nudge.sender.userTag,
@@ -47,8 +48,8 @@ export class NudgeMapper {
 			receiverId: nudge.receiverId,
 			todoId: nudge.todoId,
 			message: nudge.message,
-			createdAt: nudge.createdAt.toISOString(),
-			readAt: nudge.readAt?.toISOString() ?? null,
+			createdAt: toISOString(nudge.createdAt),
+			readAt: toISOStringOrNull(nudge.readAt ?? null),
 		};
 	}
 

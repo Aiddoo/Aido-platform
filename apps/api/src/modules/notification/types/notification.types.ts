@@ -133,7 +133,7 @@ export interface CreateNotificationData {
 	 * | WEEKLY_ACHIEVEMENT | 주간 달성 | - |
 	 * | SYSTEM_NOTICE | 시스템 공지 | action.url 필요 |
 	 */
-	type: Prisma.NotificationCreateInput["type"];
+	type: NotificationType;
 
 	/** 알림 제목 (푸시 알림 타이틀) */
 	title: string;

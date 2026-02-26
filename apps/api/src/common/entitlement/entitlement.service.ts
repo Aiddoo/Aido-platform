@@ -9,6 +9,7 @@ import {
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database";
+import type { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 
 export const Feature = {
@@ -97,13 +98,40 @@ export class EntitlementService {
 		const role = user?.role ?? "USER";
 		const subscriptionStatus = user?.subscriptionStatus ?? "FREE";
 		const dailyLimit = resolveFeatureLimit(role, subscriptionStatus, feature);
-		return { dailyLimit, isAdmin: role === "ADMIN", subscriptionStatus };
+		return {
+			dailyLimit,
+			isAdmin: role === "ADMIN",
+			subscriptionStatus,
+		};
+	}
+
+	/**
+	 * 기능 사용 한도를 검증하고, 초과 시 예외를 발생시킵니다.
+	 */
+	enforceLimit(
+		entitlement: FeatureEntitlement,
+		currentUsage: number,
+		errorFactory: (used: number, limit: number) => BusinessException,
+	): void {
+		if (entitlement.dailyLimit === null) return;
+		if (currentUsage < entitlement.dailyLimit) return;
+
+		throw errorFactory(currentUsage, entitlement.dailyLimit);
+	}
+
+	/**
+	 * 잔여 횟수를 계산합니다.
+	 */
+	calculateRemaining(dailyLimit: number | null, used: number): number | null {
+		if (dailyLimit === null) return null;
+		return Math.max(0, dailyLimit - used);
 	}
 
 	async #resolveUserInfo(
 		userId: string,
 	): Promise<{ role: string; subscriptionStatus: string }> {
 		const cached = await this.cacheService.getSubscription(userId);
+
 		if (cached !== undefined) {
 			return {
 				role: cached.isAdmin ? "ADMIN" : "USER",

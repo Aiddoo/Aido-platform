@@ -1,3 +1,4 @@
+import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
@@ -8,6 +9,7 @@ import {
 
 import {
 	REVENUECAT_EVENT_TO_INTERNAL,
+	type SubscriptionEventName,
 	type SubscriptionEventPayload,
 } from "../events/subscription.events";
 
@@ -20,7 +22,7 @@ interface EventMeta {
 	emoji: string;
 }
 
-const EVENT_META: Record<string, EventMeta> = {
+const EVENT_META: Record<SubscriptionEventName, EventMeta> = {
 	"subscription.purchased": {
 		title: "새로운 구독 구매",
 		color: 0x57f287,
@@ -82,7 +84,7 @@ const DEFAULT_META: EventMeta = {
 /**
  * 스토어 이름 변환
  */
-const STORE_LABELS: Record<string, string> = {
+const STORE_LABELS: Partial<Record<RevenueCatStore, string>> = {
 	APP_STORE: "Apple App Store",
 	PLAY_STORE: "Google Play Store",
 	STRIPE: "Stripe",
@@ -93,7 +95,7 @@ const STORE_LABELS: Record<string, string> = {
 /**
  * 스토어 → 기기 추정 라벨
  */
-const DEVICE_LABELS: Record<string, string> = {
+const DEVICE_LABELS: Partial<Record<RevenueCatStore, string>> = {
 	APP_STORE: "🍎 iOS",
 	PLAY_STORE: "🤖 Android",
 	STRIPE: "🌐 Web",
@@ -160,7 +162,7 @@ export class SubscriptionNotificationListener {
 
 		try {
 			const eventKey = this.#resolveEventKey(payload.eventType);
-			const meta = EVENT_META[eventKey] ?? DEFAULT_META;
+			const meta = eventKey ? EVENT_META[eventKey] : DEFAULT_META;
 
 			const fields: Array<{ name: string; value: string; inline?: boolean }> =
 				[];
@@ -242,7 +244,9 @@ export class SubscriptionNotificationListener {
 	/**
 	 * RevenueCat 이벤트 타입을 내부 이벤트 키로 변환
 	 */
-	#resolveEventKey(eventType: string): string {
-		return REVENUECAT_EVENT_TO_INTERNAL[eventType] ?? eventType;
+	#resolveEventKey(
+		eventType: RevenueCatEventType,
+	): SubscriptionEventName | undefined {
+		return REVENUECAT_EVENT_TO_INTERNAL[eventType];
 	}
 }

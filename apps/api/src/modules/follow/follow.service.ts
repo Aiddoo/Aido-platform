@@ -82,6 +82,7 @@ export class FollowService {
 
 		// 2. 대상 사용자 존재 체크
 		const targetExists = await this.followRepository.userExists(targetUserId);
+
 		if (!targetExists) {
 			throw BusinessExceptions.followTargetNotFound(targetUserId);
 		}
@@ -93,11 +94,11 @@ export class FollowService {
 				targetUserId,
 			);
 
+		if (existingFollow?.status === "ACCEPTED") {
+			throw BusinessExceptions.alreadyFriends(targetUserId);
+		}
+
 		if (existingFollow) {
-			if (existingFollow.status === "ACCEPTED") {
-				throw BusinessExceptions.alreadyFriends(targetUserId);
-			}
-			// PENDING 상태로 이미 보낸 경우
 			throw BusinessExceptions.followRequestAlreadySent(targetUserId);
 		}
 
@@ -108,70 +109,70 @@ export class FollowService {
 				userId,
 			);
 
-		if (reverseFollow) {
-			if (reverseFollow.status === "PENDING") {
-				// 상대방이 보낸 요청이 PENDING 상태면 자동 수락 (트랜잭션으로 처리)
-				let follow: Follow;
-				try {
-					follow = await this.database.$transaction(async (tx) => {
-						await this.followRepository.updateByFollowerAndFollowing(
-							targetUserId,
-							userId,
-							{ status: "ACCEPTED" },
-							tx,
-						);
-
-						// 내 쪽도 ACCEPTED로 생성
-						return this.followRepository.create(
-							{
-								follower: { connect: { id: userId } },
-								following: { connect: { id: targetUserId } },
-								status: "ACCEPTED",
-							},
-							tx,
-						);
-					});
-				} catch (error) {
-					if (
-						error instanceof Prisma.PrismaClientKnownRequestError &&
-						error.code === "P2002"
-					) {
-						throw BusinessExceptions.followRequestAlreadySent(targetUserId);
-					}
-					throw error;
-				}
-
-				this.#logger.log(
-					`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
-				);
-
-				// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
-				const [userName, targetUserName] = await Promise.all([
-					this.followRepository.getUserName(userId),
-					this.followRepository.getUserName(targetUserId),
-				]);
-
-				// userId에게 알림 (targetUserId와 친구가 됨)
-				this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
-					userId,
-					friendId: targetUserId,
-					friendName: targetUserName ?? "알 수 없음",
-				} satisfies FollowMutualEventPayload);
-
-				// targetUserId에게 알림 (userId와 친구가 됨)
-				this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
-					userId: targetUserId,
-					friendId: userId,
-					friendName: userName ?? "알 수 없음",
-				} satisfies FollowMutualEventPayload);
-
-				// 캐시 무효화 (친구 관계 변경)
-				await this.cacheService.invalidateMutualFriend(userId, targetUserId);
-
-				return { follow, autoAccepted: true };
-			}
-			// 이미 ACCEPTED 상태
+		if (reverseFollow?.status === "ACCEPTED") {
 			throw BusinessExceptions.alreadyFriends(targetUserId);
+		}
+
+		if (reverseFollow?.status === "PENDING") {
+			// 상대방이 보낸 요청이 PENDING 상태면 자동 수락 (트랜잭션으로 처리)
+			let follow: Follow;
+			try {
+				follow = await this.database.$transaction(async (tx) => {
+					await this.followRepository.updateByFollowerAndFollowing(
+						targetUserId,
+						userId,
+						{ status: "ACCEPTED" },
+						tx,
+					);
+
+					// 내 쪽도 ACCEPTED로 생성
+					return this.followRepository.create(
+						{
+							follower: { connect: { id: userId } },
+							following: { connect: { id: targetUserId } },
+							status: "ACCEPTED",
+						},
+						tx,
+					);
+				});
+			} catch (error) {
+				if (
+					error instanceof Prisma.PrismaClientKnownRequestError &&
+					error.code === "P2002"
+				) {
+					throw BusinessExceptions.followRequestAlreadySent(targetUserId);
+				}
+				throw error;
+			}
+
+			this.#logger.log(
+				`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
+			);
+
+			// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
+			const [userName, targetUserName] = await Promise.all([
+				this.followRepository.getUserName(userId),
+				this.followRepository.getUserName(targetUserId),
+			]);
+
+			// userId에게 알림 (targetUserId와 친구가 됨)
+			this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+				userId,
+				friendId: targetUserId,
+				friendName: targetUserName ?? "알 수 없음",
+			} satisfies FollowMutualEventPayload);
+
+			// targetUserId에게 알림 (userId와 친구가 됨)
+			this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+				userId: targetUserId,
+				friendId: userId,
+				friendName: userName ?? "알 수 없음",
+			} satisfies FollowMutualEventPayload);
+
+			// 캐시 무효화 (친구 관계 변경)
+			await this.cacheService.invalidateMutualFriend(userId, targetUserId);
+
+			return { follow, autoAccepted: true };
 		}
 
 		// 5. 새 친구 요청 생성
@@ -249,25 +250,20 @@ export class FollowService {
 					tx,
 				);
 
-			let createdFollow: Follow;
-			if (existingReverse) {
-				// 이미 존재하면 ACCEPTED로 업데이트
-				createdFollow = await this.followRepository.update(
-					existingReverse.id,
-					{ status: "ACCEPTED" },
-					tx,
-				);
-			} else {
-				// 없으면 새로 생성
-				createdFollow = await this.followRepository.create(
-					{
-						follower: { connect: { id: userId } },
-						following: { connect: { id: requesterUserId } },
-						status: "ACCEPTED",
-					},
-					tx,
-				);
-			}
+			const createdFollow = existingReverse
+				? await this.followRepository.update(
+						existingReverse.id,
+						{ status: "ACCEPTED" },
+						tx,
+					)
+				: await this.followRepository.create(
+						{
+							follower: { connect: { id: userId } },
+							following: { connect: { id: requesterUserId } },
+							status: "ACCEPTED",
+						},
+						tx,
+					);
 
 			// 생성된 Follow에 사용자 정보를 포함하여 반환
 			const followWithUser = await this.followRepository.findByIdWithUser(
@@ -533,5 +529,19 @@ export class FollowService {
 	 */
 	async countSentRequests(userId: string): Promise<number> {
 		return this.followRepository.countSentRequests(userId);
+	}
+
+	/**
+	 * 사용자 이름 조회 (알림용)
+	 */
+	async getUserName(userId: string): Promise<string | null> {
+		return this.followRepository.getUserName(userId);
+	}
+
+	/**
+	 * 맞팔 친구 ID 목록 조회 (알림 발송용)
+	 */
+	async getMutualFriendIds(userId: string): Promise<string[]> {
+		return this.followRepository.getMutualFriendIds(userId);
 	}
 }

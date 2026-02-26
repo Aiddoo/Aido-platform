@@ -1,7 +1,13 @@
 import { CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { addMilliseconds, now, startOfDayInTimezone } from "@/common/date";
+import {
+	addMilliseconds,
+	calculateCooldown,
+	now,
+	startOfDayInTimezone,
+	TIME_UNIT,
+} from "@/common/date";
 import {
 	EntitlementService,
 	Feature,
@@ -89,7 +95,7 @@ export class CheerService {
 			// 3. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
 			const todayStart = startOfDayInTimezone(now(), tz);
 
-			const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(
+			const entitlement = await this.entitlementService.getFeatureLimitInTx(
 				tx,
 				senderId,
 				Feature.CHEER,
@@ -104,9 +110,9 @@ export class CheerService {
 				},
 			});
 
-			if (dailyLimit !== null && used >= dailyLimit) {
-				throw BusinessExceptions.cheerDailyLimitExceeded(dailyLimit);
-			}
+			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
+				BusinessExceptions.cheerDailyLimitExceeded(limit),
+			);
 
 			// 4. 쿨다운 체크 (트랜잭션 내에서 실시간 조회)
 			const lastCheer = await tx.cheer.findFirst({
@@ -120,13 +126,15 @@ export class CheerService {
 			});
 
 			if (lastCheer) {
-				const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
+				const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * TIME_UNIT.MS_PER_HOUR;
 				const canCheerAt = addMilliseconds(cooldownMs, lastCheer.createdAt);
 				const currentTime = now();
 
 				if (currentTime < canCheerAt) {
 					const remainingMs = canCheerAt.getTime() - currentTime.getTime();
-					const remainingSeconds = Math.ceil(remainingMs / 1000);
+					const remainingSeconds = Math.ceil(
+						remainingMs / TIME_UNIT.MS_PER_SECOND,
+					);
 					throw BusinessExceptions.cheerCooldownActive(
 						receiverId,
 						remainingSeconds,
@@ -275,21 +283,16 @@ export class CheerService {
 			Feature.CHEER,
 		);
 
-		// 오늘 사용량 조회
 		const today = startOfDayInTimezone(now(), tz);
 		const used = await this.cheerRepository.countTodayCheers({
 			senderId: userId,
 			date: today,
 		});
 
-		// 남은 횟수 계산
-		const remaining =
-			dailyLimit === null ? null : Math.max(0, dailyLimit - used);
-
 		return {
 			dailyLimit,
 			used,
-			remaining,
+			remaining: this.entitlementService.calculateRemaining(dailyLimit, used),
 		};
 	}
 
@@ -356,33 +359,10 @@ export class CheerService {
 	 * 쿨다운 정보 계산
 	 */
 	#calculateCooldownInfo(lastCheerTime?: Date | null): CheerCooldownInfo {
-		if (!lastCheerTime) {
-			return {
-				isActive: false,
-				remainingSeconds: 0,
-				canCheerAt: null,
-			};
-		}
-
-		const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-		const canCheerAt = addMilliseconds(cooldownMs, lastCheerTime);
-		const currentTime = now();
-
-		if (currentTime >= canCheerAt) {
-			return {
-				isActive: false,
-				remainingSeconds: 0,
-				canCheerAt: null,
-			};
-		}
-
-		const remainingMs = canCheerAt.getTime() - currentTime.getTime();
-		const remainingSeconds = Math.ceil(remainingMs / 1000);
-
-		return {
-			isActive: true,
-			remainingSeconds,
-			canCheerAt,
-		};
+		const { isActive, remainingSeconds, endsAt } = calculateCooldown(
+			lastCheerTime ?? null,
+			CHEER_LIMITS.COOLDOWN_HOURS,
+		);
+		return { isActive, remainingSeconds, canCheerAt: endsAt };
 	}
 }

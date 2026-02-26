@@ -1,3 +1,3 @@
-export { HealthController } from "./health.controller";
-export { HealthModule } from "./health.module";
-export { DatabaseHealthIndicator } from "./indicators/database.health";
+export * from "./health.controller";
+export * from "./health.module";
+export * from "./indicators/database.health";

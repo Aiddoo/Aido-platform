@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { now } from "@/common/date";
+import { now, toISOStringOrNull } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
@@ -110,7 +110,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 		});
 
 		const userStatus = user?.status;
-		const userDeletedAt = user?.deletedAt?.toISOString() ?? null;
+		const userDeletedAt = toISOStringOrNull(user?.deletedAt ?? null);
 
 		if (userStatus) {
 			this.#assertUserStatus(userStatus, userDeletedAt);

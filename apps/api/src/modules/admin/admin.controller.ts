@@ -21,8 +21,17 @@ import {
 	BroadcastNotificationDto,
 	BroadcastResultDto,
 	TargetedNotificationDto,
-} from "./dto";
+} from "./dtos";
 
+/**
+ * Admin API 컨트롤러
+ *
+ * 관리자 전용 알림 발송 API입니다. @Admin() 가드 필수.
+ *
+ * ### 알림 발송
+ * - POST /admin/notifications/broadcast - 전체/조건별 알림 발송
+ * - POST /admin/notifications/targeted - 특정 사용자 알림 발송
+ */
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
 @ApiBearerAuth()
 @Controller("admin/notifications")

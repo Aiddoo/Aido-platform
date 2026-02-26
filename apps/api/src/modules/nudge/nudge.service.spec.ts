@@ -43,6 +43,8 @@ describe("NudgeService", () => {
 	let mockDatabase: any;
 
 	beforeEach(async () => {
+		jest.clearAllMocks();
+
 		// Mock database 초기화
 		mockDatabase = {
 			$transaction: jest.fn((callback: (tx: unknown) => unknown) =>
@@ -99,6 +101,21 @@ describe("NudgeService", () => {
 			subscriptionStatus: "FREE",
 		});
 
+		// enforceLimit / calculateRemaining — 실제 로직 위임
+		(entitlementService.enforceLimit as jest.Mock).mockImplementation(
+			(entitlement, currentUsage, errorFactory) => {
+				if (entitlement.dailyLimit === null) return;
+				if (currentUsage < entitlement.dailyLimit) return;
+				throw errorFactory(currentUsage, entitlement.dailyLimit);
+			},
+		);
+		(entitlementService.calculateRemaining as jest.Mock).mockImplementation(
+			(dailyLimit, used) => {
+				if (dailyLimit === null) return null;
+				return Math.max(0, dailyLimit - used);
+			},
+		);
+
 		// 기본 paginationService mock 설정
 		paginationService.normalizeCursorPagination.mockReturnValue({
 			cursor: undefined,
@@ -140,7 +157,6 @@ describe("NudgeService", () => {
 
 		const setupSuccessfulSend = () => {
 			followService.isMutualFriend.mockResolvedValue(true);
-			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 
 			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
 				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
@@ -370,7 +386,6 @@ describe("NudgeService", () => {
 				.buildWithRelations();
 
 			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
-			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -414,7 +429,6 @@ describe("NudgeService", () => {
 				.buildWithRelations();
 
 			mockDatabase.nudge.create.mockResolvedValue(nudgeWithRelations);
-			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -491,7 +505,6 @@ describe("NudgeService", () => {
 			const yesterday = subtractDays(1, todayMidnight);
 			const tomorrow = addDays(1, todayMidnight);
 			followService.isMutualFriend.mockResolvedValue(true);
-			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
 
 			(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
 				dailyLimit: NUDGE_LIMITS.FREE_DAILY_LIMIT,
@@ -552,7 +565,7 @@ describe("NudgeService", () => {
 		it("쿨다운이 지나면 같은 Todo에 다시 Nudge를 보낼 수 있다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			nudgeRepository.getUserName.mockResolvedValue("보내는 사람");
+
 			mockDatabase.todo.findUnique.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",

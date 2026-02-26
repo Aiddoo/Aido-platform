@@ -384,4 +384,24 @@ export class FollowRepository {
 			select: { id: true },
 		});
 	}
+
+	/**
+	 * 맞팔 친구 ID 목록 조회 (알림 발송용)
+	 *
+	 * Raw SQL JOIN으로 최적화 (3단계 중첩 쿼리 대신)
+	 */
+	async getMutualFriendIds(userId: string): Promise<string[]> {
+		const result = await this.database.$queryRaw<{ followingId: string }[]>`
+			SELECT DISTINCT f1."followingId"
+			FROM "Follow" f1
+			INNER JOIN "Follow" f2
+				ON f1."followingId" = f2."followerId"
+				AND f2."followingId" = f1."followerId"
+			WHERE f1."followerId" = ${userId}
+				AND f1."status" = 'ACCEPTED'
+				AND f2."status" = 'ACCEPTED'
+		`;
+
+		return result.map((r) => r.followingId);
+	}
 }

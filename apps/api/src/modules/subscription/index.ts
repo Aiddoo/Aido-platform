@@ -1,2 +1,2 @@
-export { SubscriptionModule } from "./subscription.module";
-export { SubscriptionService } from "./subscription.service";
+export * from "./subscription.module";
+export * from "./subscription.service";

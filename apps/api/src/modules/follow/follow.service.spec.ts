@@ -12,6 +12,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { FollowBuilder } from "@test/builders";
+import { type TransactionCallback } from "@test/mocks";
 import { CacheService } from "@/common/cache/cache.service";
 import {
 	BusinessException,
@@ -24,10 +25,6 @@ import { type Follow, Prisma } from "@/generated/prisma/client";
 import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
 import type { FollowWithUser } from "./types/follow.types";
-
-// Transaction callback 타입
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TransactionCallback = (tx: any) => Promise<any>;
 
 describe("FollowService", () => {
 	let service: FollowService;
@@ -46,6 +43,8 @@ describe("FollowService", () => {
 	const mockTxContext = {};
 
 	beforeEach(async () => {
+		jest.clearAllMocks();
+
 		// Suites가 모든 의존성을 자동으로 mock
 		const { unit, unitRef } = await TestBed.solitary(FollowService).compile();
 

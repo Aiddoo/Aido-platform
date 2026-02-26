@@ -10,6 +10,8 @@ import {
 	type AdminNotifier,
 } from "../providers/admin-notifier.interface";
 
+type Provider = UserRegisteredEventPayload["provider"];
+
 /**
  * ISO 날짜 문자열을 Discord 타임스탬프 포맷으로 변환
  */
@@ -22,7 +24,7 @@ function formatDate(isoString: string): string {
 	}
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
+const PROVIDER_LABELS: Record<Provider, string> = {
 	credential: "이메일",
 	apple: "Apple",
 	google: "Google",
@@ -33,7 +35,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 /**
  * 가입 방식 → 기기 추정 라벨 (Apple/Google만 추정 가능)
  */
-const PROVIDER_DEVICE_LABELS: Record<string, string> = {
+const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
 	apple: "🍎 iOS (추정)",
 	google: "🤖 Android (추정)",
 };

@@ -1,2 +1,2 @@
-export * from "./request";
-export * from "./response";
+export * from "./request/create-inquiry.dto";
+export * from "./response/create-inquiry.response.dto";

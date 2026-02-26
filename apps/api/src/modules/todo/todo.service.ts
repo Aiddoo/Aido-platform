@@ -1,12 +1,12 @@
 import type { Todo } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import type { TransactionClient } from "@/common/database";
 import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
-
 import { FollowService } from "../follow/follow.service";
 import {
 	type FriendCompletedEventPayload,
@@ -17,7 +17,7 @@ import {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
 } from "../scheduler/reminder";
-import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
+import { TodoCategoryService } from "../todo-category/todo-category.service";
 
 import { TodoMapper } from "./todo.mapper";
 import { TodoRepository } from "./todo.repository";
@@ -36,7 +36,7 @@ export class TodoService {
 
 	constructor(
 		private readonly todoRepository: TodoRepository,
-		private readonly todoCategoryRepository: TodoCategoryRepository,
+		private readonly todoCategoryService: TodoCategoryService,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
 		private readonly eventEmitter: EventEmitter2,
@@ -68,14 +68,10 @@ export class TodoService {
 	 */
 	async create(data: CreateTodoData): Promise<Todo> {
 		// 카테고리 존재 및 소유권 확인
-		const category = await this.todoCategoryRepository.findByIdAndUserId(
+		await this.todoCategoryService.validateOwnership(
 			data.categoryId,
 			data.userId,
 		);
-
-		if (!category) {
-			throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
-		}
 
 		// 새 Todo의 sortOrder 결정 (맨 뒤에 추가)
 		const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
@@ -232,13 +228,7 @@ export class TodoService {
 
 		// 카테고리 변경 시 소유권 확인
 		if (data.categoryId !== undefined) {
-			const category = await this.todoCategoryRepository.findByIdAndUserId(
-				data.categoryId,
-				userId,
-			);
-			if (!category) {
-				throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
-			}
+			await this.todoCategoryService.validateOwnership(data.categoryId, userId);
 		}
 
 		// 완료 상태 변경 시 completedAt 자동 설정
@@ -350,8 +340,8 @@ export class TodoService {
 
 				// 2. 친구들에게 알림 이벤트 발행
 				const [friendIds, userName] = await Promise.all([
-					this.todoRepository.getMutualFriendIds(userId),
-					this.todoRepository.getUserName(userId),
+					this.followService.getMutualFriendIds(userId),
+					this.followService.getUserName(userId),
 				]);
 
 				if (friendIds.length > 0) {
@@ -416,14 +406,7 @@ export class TodoService {
 		}
 
 		// 새 카테고리 소유권 확인
-		const category = await this.todoCategoryRepository.findByIdAndUserId(
-			data.categoryId,
-			userId,
-		);
-
-		if (!category) {
-			throw BusinessExceptions.todoCategoryNotFound(data.categoryId);
-		}
+		await this.todoCategoryService.validateOwnership(data.categoryId, userId);
 
 		const updatedTodo = await this.todoRepository.update(id, {
 			category: { connect: { id: data.categoryId } },
@@ -541,82 +524,19 @@ export class TodoService {
 				throw BusinessExceptions.todoNotFound(id);
 			}
 
-			// 자기 자신을 target으로 지정한 경우 무시
 			if (targetTodoId === id) {
 				return TodoMapper.toResponse(todo);
 			}
 
-			const currentSortOrder = todo.sortOrder;
-			let newSortOrder: number;
-
-			if (targetTodoId) {
-				// targetTodoId가 있는 경우: target 앞 또는 뒤로 이동
-				const targetTodo = await this.todoRepository.findByIdAndUserId(
-					targetTodoId,
-					userId,
-					tx,
-				);
-
-				if (!targetTodo) {
-					throw BusinessExceptions.todoReorderTargetNotFound(targetTodoId);
-				}
-
-				const targetSortOrder = targetTodo.sortOrder;
-
-				if (position === "before") {
-					newSortOrder = targetSortOrder;
-				} else {
-					newSortOrder = targetSortOrder + 1;
-				}
-
-				if (currentSortOrder < newSortOrder) {
-					// 아래로 이동: 사이의 항목들을 위로 한 칸씩 이동
-					await this.todoRepository.shiftSortOrders(
-						userId,
-						currentSortOrder + 1,
-						newSortOrder - 1,
-						-1,
-						tx,
-					);
-					newSortOrder -= 1;
-				} else {
-					// 위로 이동: 사이의 항목들을 아래로 한 칸씩 이동
-					await this.todoRepository.shiftSortOrders(
-						userId,
-						newSortOrder,
-						currentSortOrder - 1,
-						1,
-						tx,
-					);
-				}
-			} else {
-				// targetTodoId가 없는 경우: 맨 처음 또는 맨 끝으로 이동
-				if (position === "before") {
-					// 맨 앞으로 이동
-					newSortOrder = 0;
-					await this.todoRepository.shiftSortOrders(
-						userId,
-						0,
-						currentSortOrder - 1,
-						1,
-						tx,
-					);
-				} else {
-					// 맨 뒤로 이동
-					const maxSortOrder = await this.todoRepository.getMaxSortOrder(
+			const newSortOrder = targetTodoId
+				? await this.#reorderRelativeTo(
+						todo.sortOrder,
+						targetTodoId,
+						position,
 						userId,
 						tx,
-					);
-					newSortOrder = maxSortOrder;
-					await this.todoRepository.shiftSortOrders(
-						userId,
-						currentSortOrder + 1,
-						null,
-						-1,
-						tx,
-					);
-				}
-			}
+					)
+				: await this.#reorderToEdge(todo.sortOrder, position, userId, tx);
 
 			const updatedTodo = await this.todoRepository.updateSortOrder(
 				id,
@@ -630,5 +550,75 @@ export class TodoService {
 
 			return TodoMapper.toResponse(updatedTodo);
 		});
+	}
+
+	async #reorderRelativeTo(
+		currentSortOrder: number,
+		targetTodoId: number,
+		position: "before" | "after",
+		userId: string,
+		tx: TransactionClient,
+	): Promise<number> {
+		const targetTodo = await this.todoRepository.findByIdAndUserId(
+			targetTodoId,
+			userId,
+			tx,
+		);
+
+		if (!targetTodo) {
+			throw BusinessExceptions.todoReorderTargetNotFound(targetTodoId);
+		}
+
+		let newSortOrder =
+			position === "before" ? targetTodo.sortOrder : targetTodo.sortOrder + 1;
+
+		if (currentSortOrder < newSortOrder) {
+			await this.todoRepository.shiftSortOrders(
+				userId,
+				currentSortOrder + 1,
+				newSortOrder - 1,
+				-1,
+				tx,
+			);
+			newSortOrder -= 1;
+		} else {
+			await this.todoRepository.shiftSortOrders(
+				userId,
+				newSortOrder,
+				currentSortOrder - 1,
+				1,
+				tx,
+			);
+		}
+
+		return newSortOrder;
+	}
+
+	async #reorderToEdge(
+		currentSortOrder: number,
+		position: "before" | "after",
+		userId: string,
+		tx: TransactionClient,
+	): Promise<number> {
+		if (position === "before") {
+			await this.todoRepository.shiftSortOrders(
+				userId,
+				0,
+				currentSortOrder - 1,
+				1,
+				tx,
+			);
+			return 0;
+		}
+
+		const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId, tx);
+		await this.todoRepository.shiftSortOrders(
+			userId,
+			currentSortOrder + 1,
+			null,
+			-1,
+			tx,
+		);
+		return maxSortOrder;
 	}
 }

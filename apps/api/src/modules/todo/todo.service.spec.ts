@@ -13,7 +13,10 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 
@@ -22,7 +25,7 @@ import {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
 } from "../scheduler/reminder";
-import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
+import { TodoCategoryService } from "../todo-category/todo-category.service";
 
 import { TodoRepository } from "./todo.repository";
 import { TodoService } from "./todo.service";
@@ -31,7 +34,7 @@ import type { CreateTodoData, TodoWithCategory } from "./types/todo.types";
 describe("TodoService", () => {
 	let service: TodoService;
 	let todoRepo: Mocked<TodoRepository>;
-	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let todoCategoryService: Mocked<TodoCategoryService>;
 	let paginationService: Mocked<PaginationService>;
 	let followService: Mocked<FollowService>;
 	let _eventEmitter: Mocked<EventEmitter2>;
@@ -42,6 +45,8 @@ describe("TodoService", () => {
 	const mockUserId = "user-123";
 
 	beforeEach(async () => {
+		jest.clearAllMocks();
+
 		// Given: ID 카운터 리셋으로 테스트 간 격리 보장
 		TodoBuilder.resetIdCounter();
 		TodoCategoryBuilder.resetIdCounter();
@@ -56,9 +61,9 @@ describe("TodoService", () => {
 
 		service = unit;
 		todoRepo = unitRef.get(TodoRepository) as unknown as Mocked<TodoRepository>;
-		todoCategoryRepo = unitRef.get(
-			TodoCategoryRepository,
-		) as unknown as Mocked<TodoCategoryRepository>;
+		todoCategoryService = unitRef.get(
+			TodoCategoryService,
+		) as unknown as Mocked<TodoCategoryService>;
 		paginationService = unitRef.get(
 			PaginationService,
 		) as unknown as Mocked<PaginationService>;
@@ -111,7 +116,7 @@ describe("TodoService", () => {
 				.withCategoryId(createInput.categoryId)
 				.build();
 
-			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(mockCategory);
+			todoCategoryService.validateOwnership.mockResolvedValue(mockCategory);
 			todoRepo.getMaxSortOrder.mockResolvedValue(0);
 			todoRepo.create.mockResolvedValue(mockTodo);
 		});
@@ -124,7 +129,7 @@ describe("TodoService", () => {
 
 			// Then: 생성된 Todo가 올바르게 반환됨
 			expect(result.title).toBe(createInput.title);
-			expect(todoCategoryRepo.findByIdAndUserId).toHaveBeenCalledWith(
+			expect(todoCategoryService.validateOwnership).toHaveBeenCalledWith(
 				createInput.categoryId,
 				mockUserId,
 			);
@@ -219,7 +224,9 @@ describe("TodoService", () => {
 
 		it("존재하지 않는 카테고리면 에러를 던진다", async () => {
 			// Given: 카테고리가 존재하지 않음
-			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
 
 			// When & Then: BusinessException 발생
 			await expect(service.create(createInput)).rejects.toThrow(
@@ -598,7 +605,9 @@ describe("TodoService", () => {
 			// Given: 존재하지 않는 카테고리로 변경 시도
 			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
 			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
 			const updateWithCategory = { categoryId: 999 };
 
 			// When & Then: BusinessException 발생
@@ -930,7 +939,7 @@ describe("TodoService", () => {
 				.withName("할 일")
 				.build();
 			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(newCategory);
+			todoCategoryService.validateOwnership.mockResolvedValue(newCategory);
 			todoRepo.update.mockImplementation(
 				async (_id: number, data: Record<string, unknown>) => {
 					const categoryData = data.category as
@@ -964,7 +973,9 @@ describe("TodoService", () => {
 			// Given: 존재하지 않는 카테고리
 			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
 			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoCategoryRepo.findByIdAndUserId.mockResolvedValue(null);
+			todoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
 
 			// When & Then: BusinessException 발생
 			await expect(

@@ -46,6 +46,28 @@ import {
 	extractMetadata,
 } from "./auth-controller.utils";
 
+/**
+ * OAuth API 컨트롤러
+ *
+ * 소셜 로그인(Apple, Google, Kakao, Naver) 및 계정 연동 API입니다.
+ *
+ * ### 교환 코드
+ * - POST /auth/exchange - 교환 코드로 토큰 획득
+ *
+ * ### 소셜 로그인 (모바일 네이티브)
+ * - POST /auth/apple/callback - Apple 로그인
+ * - POST /auth/google/callback - Google 로그인
+ * - POST /auth/kakao/callback - Kakao 로그인
+ * - POST /auth/naver/callback - Naver 로그인
+ *
+ * ### 소셜 로그인 (웹 브라우저)
+ * - GET /auth/{provider}/start - OAuth 시작 (리다이렉트)
+ * - GET /auth/{provider}/web-callback - OAuth 콜백
+ *
+ * ### 소셜 계정 연동
+ * - POST /auth/link - 소셜 계정 연동 (토큰 직접 전송)
+ * - POST /auth/link-with-code - 소셜 계정 연동 (교환 코드)
+ */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 @UseGuards(JwtAuthGuard)

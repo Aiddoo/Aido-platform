@@ -39,14 +39,43 @@ import {
 } from "../dtos";
 import { JwtAuthGuard, JwtRefreshGuard } from "../guards";
 import { AuthService } from "../services/auth.service";
+import { PasswordManagementService } from "../services/password-management.service";
 import type { RefreshTokenPayload } from "../strategies/jwt-refresh.strategy";
 import { extractMetadata } from "./auth-controller.utils";
 
+/**
+ * Auth API 컨트롤러
+ *
+ * 이메일 회원가입, 로그인, 토큰 갱신 등 인증 관련 API입니다.
+ *
+ * ### 회원가입 및 인증
+ * - POST /auth/register - 회원가입
+ * - POST /auth/verify-email - 이메일 인증 코드 확인
+ * - POST /auth/resend-verification - 인증 코드 재발송
+ *
+ * ### 로그인 및 로그아웃
+ * - POST /auth/login - 이메일 로그인
+ * - POST /auth/logout - 로그아웃 (현재 기기)
+ * - POST /auth/logout-all - 전체 로그아웃 (모든 기기)
+ *
+ * ### 토큰 관리
+ * - POST /auth/refresh - 토큰 갱신
+ *
+ * ### 비밀번호 관리
+ * - POST /auth/forgot-password - 비밀번호 재설정 코드 요청
+ * - POST /auth/reset-password - 비밀번호 재설정
+ * - POST /auth/password/setup-code - 비밀번호 최초 설정 코드 요청 (소셜 계정)
+ * - POST /auth/password - 비밀번호 최초 설정 (소셜 계정)
+ * - PATCH /auth/password - 비밀번호 변경
+ */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 @UseGuards(JwtAuthGuard)
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(
+		private readonly authService: AuthService,
+		private readonly passwordManagementService: PasswordManagementService,
+	) {}
 
 	// ============================================
 	// 회원가입 및 인증
@@ -347,7 +376,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	async forgotPassword(@Body() dto: ForgotPasswordDto) {
-		const result = await this.authService.forgotPassword(dto.email);
+		const result = await this.passwordManagementService.forgotPassword(
+			dto.email,
+		);
 		return result;
 	}
 
@@ -390,7 +421,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
 	async resetPassword(@Body() dto: ResetPasswordDto) {
-		const result = await this.authService.resetPassword(
+		const result = await this.passwordManagementService.resetPassword(
 			dto.email,
 			dto.code,
 			dto.newPassword,
@@ -434,7 +465,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
 	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
 	async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-		return this.authService.requestPasswordSetupCode(user.userId);
+		return this.passwordManagementService.requestPasswordSetupCode(user.userId);
 	}
 
 	@Post("password")
@@ -482,7 +513,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		return this.authService.setPassword(
+		return this.passwordManagementService.setPassword(
 			user.userId,
 			dto.code,
 			dto.newPassword,
@@ -531,7 +562,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		@Req() req: Request,
 	) {
 		const metadata = extractMetadata(req);
-		const result = await this.authService.changePassword(
+		const result = await this.passwordManagementService.changePassword(
 			user.userId,
 			dto.currentPassword,
 			dto.newPassword,

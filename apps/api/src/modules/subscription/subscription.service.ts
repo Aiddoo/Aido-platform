@@ -1,14 +1,19 @@
-import type { RevenueCatWebhookPayload } from "@aido/validators";
+import type {
+	RevenueCatEventType,
+	RevenueCatWebhookPayload,
+} from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { CacheService } from "@/common/cache/cache.service";
+import { toISOString } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import {
 	REVENUECAT_EVENT_TO_INTERNAL,
+	type SubscriptionEventName,
 	type SubscriptionEventPayload,
 	SubscriptionEvents,
 } from "./events/subscription.events";
@@ -26,12 +31,47 @@ import { SubscriptionRepository } from "./subscription.repository";
  * 4. 이벤트 발행 (Discord 알림 등)
  * 5. Lock 해제
  */
+type RevenueCatEvent = RevenueCatWebhookPayload["event"];
+
 @Injectable()
 export class SubscriptionService {
 	readonly #logger = new Logger(SubscriptionService.name);
 
 	/** Lock TTL: 10초 */
 	static readonly LOCK_TTL = 10_000;
+
+	/** 무시할 이벤트 타입 (로그만 남김) */
+	readonly #IGNORED_EVENTS = new Set(["TEST", "SUBSCRIBER_ALIAS"]);
+
+	/** 이벤트 타입별 핸들러 맵 */
+	readonly #eventHandlers = new Map<
+		RevenueCatEventType,
+		(
+			userId: string,
+			email: string,
+			event: RevenueCatEvent,
+		) => Promise<SubscriptionEventPayload | null>
+	>([
+		["INITIAL_PURCHASE", (u, e, ev) => this.#handleInitialPurchase(u, e, ev)],
+		["RENEWAL", (u, e, ev) => this.#handleRenewal(u, e, ev)],
+		["CANCELLATION", (u, e, ev) => this.#handleCancellation(u, e, ev)],
+		["UNCANCELLATION", (u, e, ev) => this.#handleUncancellation(u, e, ev)],
+		["EXPIRATION", (u, e, ev) => this.#handleExpiration(u, e, ev)],
+		[
+			"BILLING_ISSUE",
+			(u, e, ev) => Promise.resolve(this.#handleBillingIssue(u, e, ev)),
+		],
+		[
+			"NON_RENEWING_PURCHASE",
+			(u, e, ev) => this.#handleInitialPurchase(u, e, ev),
+		],
+		["PRODUCT_CHANGE", (u, e, ev) => this.#handleProductChange(u, e, ev)],
+		[
+			"SUBSCRIPTION_EXTENDED",
+			(u, e, ev) => this.#handleSubscriptionExtended(u, e, ev),
+		],
+		["TRANSFER", (u, e, ev) => this.#handleTransfer(u, e, ev)],
+	]);
 
 	constructor(
 		private readonly subscriptionRepository: SubscriptionRepository,
@@ -92,112 +132,36 @@ export class SubscriptionService {
 				}
 			}
 
-			// 3. 이벤트 타입별 처리
-			let eventPayload: SubscriptionEventPayload | null = null;
-
-			switch (eventType) {
-				case "INITIAL_PURCHASE":
-					eventPayload = await this.#handleInitialPurchase(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "RENEWAL":
-					eventPayload = await this.#handleRenewal(user.id, user.email, event);
-					break;
-
-				case "CANCELLATION":
-					eventPayload = await this.#handleCancellation(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "UNCANCELLATION":
-					eventPayload = await this.#handleUncancellation(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "EXPIRATION":
-					eventPayload = await this.#handleExpiration(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "BILLING_ISSUE":
-					eventPayload = this.#handleBillingIssue(user.id, user.email, event);
-					break;
-
-				case "NON_RENEWING_PURCHASE":
-					eventPayload = await this.#handleInitialPurchase(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "PRODUCT_CHANGE":
-					eventPayload = await this.#handleProductChange(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "SUBSCRIPTION_EXTENDED":
-					eventPayload = await this.#handleSubscriptionExtended(
-						user.id,
-						user.email,
-						event,
-					);
-					break;
-
-				case "TEST":
-					this.#logger.log(
-						`Test webhook event received for appUserId=${appUserId}`,
-					);
-					break;
-
-				case "SUBSCRIBER_ALIAS":
-					// deprecated by RevenueCat — TRANSFER로 대체됨
-					this.#logger.log(
-						`Subscriber alias event received for appUserId=${appUserId}, no action required (deprecated)`,
-					);
-					break;
-
-				case "TRANSFER":
-					eventPayload = await this.#handleTransfer(user.id, user.email, event);
-					break;
-
-				default:
-					this.#logger.warn(`Unknown event type: ${eventType}`);
-					break;
+			// 3. 무시할 이벤트 타입 처리
+			if (this.#IGNORED_EVENTS.has(eventType)) {
+				this.#logger.log(
+					`Ignored event: ${eventType} for appUserId=${appUserId}`,
+				);
+				return;
 			}
 
-			// 4. 캐시 무효화 (DB 변경이 있었을 때만)
+			// 4. 이벤트 타입별 핸들러 실행
+			const handler = this.#eventHandlers.get(eventType);
+			if (!handler) {
+				this.#logger.warn(`Unknown event type: ${eventType}`);
+				return;
+			}
+
+			const eventPayload = await handler(user.id, user.email, event);
+
+			// 5. 캐시 무효화 + 이벤트 발행 (DB 변경이 있었을 때만)
 			if (eventPayload) {
 				await Promise.all([
 					this.cacheService.invalidateSubscription(user.id),
 					this.cacheService.invalidateUserProfile(user.id),
 				]);
 
-				// 5. 이벤트 발행
-				let emitEventName = this.#getEmitEventName(eventType);
-				// 환불(CANCELLATION + CUSTOMER_SUPPORT)은 refunded 이벤트로 발행
-				if (
+				const emitEventName =
 					eventType === "CANCELLATION" &&
 					eventPayload.cancelReason === "CUSTOMER_SUPPORT"
-				) {
-					emitEventName = SubscriptionEvents.REFUNDED;
-				}
+						? SubscriptionEvents.REFUNDED
+						: this.#getEmitEventName(eventType);
+
 				if (emitEventName) {
 					this.eventEmitter.emit(emitEventName, eventPayload);
 					this.#logger.log(
@@ -224,7 +188,7 @@ export class SubscriptionService {
 	async #handleInitialPurchase(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
@@ -296,8 +260,8 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			purchasedAt: startedAt.toISOString(),
-			expiresAt: expiresAt.toISOString(),
+			purchasedAt: toISOString(startedAt),
+			expiresAt: toISOString(expiresAt),
 			price: event.price,
 			currency: event.currency,
 		} satisfies SubscriptionEventPayload;
@@ -312,7 +276,7 @@ export class SubscriptionService {
 	async #handleRenewal(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
 
@@ -374,7 +338,7 @@ export class SubscriptionService {
 		}
 
 		this.#logger.log(
-			`Renewal processed: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt.toISOString()}`,
+			`Renewal processed: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${toISOString(expiresAt)}`,
 		);
 
 		return {
@@ -384,7 +348,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: expiresAt.toISOString(),
+			expiresAt: toISOString(expiresAt),
 			price: event.price,
 			currency: event.currency,
 		} satisfies SubscriptionEventPayload;
@@ -401,7 +365,7 @@ export class SubscriptionService {
 	async #handleCancellation(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 		const webhookExpiresAt = event.expiration_at_ms
@@ -462,7 +426,7 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt?.toISOString() ?? "N/A"}`,
+			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt ? toISOString(webhookExpiresAt) : "N/A"}`,
 		);
 
 		return {
@@ -472,7 +436,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: webhookExpiresAt?.toISOString(),
+			expiresAt: webhookExpiresAt ? toISOString(webhookExpiresAt) : undefined,
 			cancelReason: event.cancel_reason,
 		} satisfies SubscriptionEventPayload;
 	}
@@ -485,7 +449,7 @@ export class SubscriptionService {
 	async #handleUncancellation(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 		const expiresAt = event.expiration_at_ms
@@ -525,7 +489,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: expiresAt?.toISOString(),
+			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
 
@@ -538,7 +502,7 @@ export class SubscriptionService {
 	async #handleExpiration(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 
@@ -584,7 +548,7 @@ export class SubscriptionService {
 	#handleBillingIssue(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): SubscriptionEventPayload {
 		const transactionId = this.#resolveTransactionId(event);
 		this.#logger.log(
@@ -609,7 +573,7 @@ export class SubscriptionService {
 	async #handleProductChange(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 		const expiresAt = event.expiration_at_ms
@@ -648,7 +612,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: expiresAt?.toISOString(),
+			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
 
@@ -661,7 +625,7 @@ export class SubscriptionService {
 	async #handleSubscriptionExtended(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 		const expiresAt = event.expiration_at_ms
@@ -690,7 +654,7 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Subscription extended: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt?.toISOString() ?? "N/A"}`,
+			`Subscription extended: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt ? toISOString(expiresAt) : "N/A"}`,
 		);
 
 		return {
@@ -700,7 +664,7 @@ export class SubscriptionService {
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
-			expiresAt: expiresAt?.toISOString(),
+			expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
 		} satisfies SubscriptionEventPayload;
 	}
 
@@ -714,7 +678,7 @@ export class SubscriptionService {
 	async #handleTransfer(
 		userId: string,
 		email: string,
-		event: RevenueCatWebhookPayload["event"],
+		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const newAppUserId = event.app_user_id;
 
@@ -760,7 +724,7 @@ export class SubscriptionService {
 	 * RevenueCat은 original_transaction_id를 갱신 체인 식별에 사용합니다.
 	 * 둘 다 없으면 webhook 처리 실패로 간주합니다.
 	 */
-	#resolveTransactionId(event: RevenueCatWebhookPayload["event"]): string {
+	#resolveTransactionId(event: RevenueCatEvent): string {
 		const transactionId = event.original_transaction_id ?? event.transaction_id;
 		if (!transactionId) {
 			throw BusinessExceptions.webhookProcessingFailed({
@@ -774,7 +738,9 @@ export class SubscriptionService {
 	/**
 	 * 이벤트 타입에 대응하는 내부 이벤트명 반환
 	 */
-	#getEmitEventName(eventType: string): string | null {
+	#getEmitEventName(
+		eventType: RevenueCatEventType,
+	): SubscriptionEventName | null {
 		return REVENUECAT_EVENT_TO_INTERNAL[eventType] ?? null;
 	}
 }

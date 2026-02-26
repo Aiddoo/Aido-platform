@@ -3,9 +3,11 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
 	addMilliseconds,
+	calculateCooldown,
 	getUserToday,
 	now,
 	startOfDayInTimezone,
+	TIME_UNIT,
 } from "@/common/date";
 import {
 	EntitlementService,
@@ -129,7 +131,7 @@ export class NudgeService {
 			}
 
 			// 4. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
-			const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(
+			const entitlement = await this.entitlementService.getFeatureLimitInTx(
 				tx,
 				senderId,
 				Feature.NUDGE,
@@ -143,12 +145,9 @@ export class NudgeService {
 				},
 			});
 
-			const remaining =
-				dailyLimit === null ? null : Math.max(0, dailyLimit - used);
-
-			if (remaining !== null && remaining <= 0) {
-				throw BusinessExceptions.nudgeDailyLimitExceeded(dailyLimit as number);
-			}
+			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
+				BusinessExceptions.nudgeDailyLimitExceeded(limit),
+			);
 
 			// 5. 쿨다운 체크 (트랜잭션 내에서 실시간 조회)
 			const lastNudge = await tx.nudge.findFirst({
@@ -160,13 +159,15 @@ export class NudgeService {
 			});
 
 			if (lastNudge) {
-				const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
+				const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * TIME_UNIT.MS_PER_HOUR;
 				const cooldownEndsAt = addMilliseconds(cooldownMs, lastNudge.createdAt);
 				const currentTime = now();
 
 				if (currentTime < cooldownEndsAt) {
 					const remainingMs = cooldownEndsAt.getTime() - currentTime.getTime();
-					const remainingSeconds = Math.ceil(remainingMs / 1000);
+					const remainingSeconds = Math.ceil(
+						remainingMs / TIME_UNIT.MS_PER_SECOND,
+					);
 					throw BusinessExceptions.nudgeCooldownActive(
 						receiverId,
 						remainingSeconds,
@@ -325,21 +326,16 @@ export class NudgeService {
 			Feature.NUDGE,
 		);
 
-		// 오늘 사용량 조회
 		const today = startOfDayInTimezone(now(), tz);
 		const used = await this.nudgeRepository.countTodayNudges({
 			senderId: userId,
 			date: today,
 		});
 
-		// 남은 횟수 계산
-		const remaining =
-			dailyLimit === null ? null : Math.max(0, dailyLimit - used);
-
 		return {
 			dailyLimit,
 			used,
-			remaining,
+			remaining: this.entitlementService.calculateRemaining(dailyLimit, used),
 		};
 	}
 
@@ -410,33 +406,10 @@ export class NudgeService {
 	 * 쿨다운 정보 계산
 	 */
 	#calculateCooldownInfo(lastNudgeTime?: Date | null): NudgeCooldownInfo {
-		if (!lastNudgeTime) {
-			return {
-				isActive: false,
-				remainingSeconds: 0,
-				cooldownEndsAt: null,
-			};
-		}
-
-		const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * 60 * 60 * 1000;
-		const cooldownEndsAt = addMilliseconds(cooldownMs, lastNudgeTime);
-		const currentTime = now();
-
-		if (currentTime >= cooldownEndsAt) {
-			return {
-				isActive: false,
-				remainingSeconds: 0,
-				cooldownEndsAt: null,
-			};
-		}
-
-		const remainingMs = cooldownEndsAt.getTime() - currentTime.getTime();
-		const remainingSeconds = Math.ceil(remainingMs / 1000);
-
-		return {
-			isActive: true,
-			remainingSeconds,
-			cooldownEndsAt,
-		};
+		const { isActive, remainingSeconds, endsAt } = calculateCooldown(
+			lastNudgeTime ?? null,
+			NUDGE_LIMITS.COOLDOWN_HOURS,
+		);
+		return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
 	}
 }

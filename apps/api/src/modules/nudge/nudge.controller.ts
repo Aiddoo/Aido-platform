@@ -14,6 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+import { toISOStringOrNull } from "@/common/date";
 import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
@@ -260,7 +261,7 @@ export class NudgeController {
 
 		return {
 			canNudge: !cooldownInfo.isActive,
-			cooldownEndsAt: cooldownInfo.cooldownEndsAt?.toISOString() ?? null,
+			cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
 			remainingSeconds:
 				cooldownInfo.remainingSeconds > 0
 					? cooldownInfo.remainingSeconds

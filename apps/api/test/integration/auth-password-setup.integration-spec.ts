@@ -25,6 +25,7 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
 import { AuthService } from "@/modules/auth/services/auth.service";
+import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -32,6 +33,7 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory";
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
 	let authService: AuthService;
+	let passwordManagementService: PasswordManagementService;
 	let fakeEmailService: FakeEmailService;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -45,6 +47,9 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
 		authService = module.get<AuthService>(AuthService);
+		passwordManagementService = module.get<PasswordManagementService>(
+			PasswordManagementService,
+		);
 	}, 60000);
 
 	beforeEach(async () => {
@@ -107,7 +112,8 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const userId = await createSocialOnlyUser(email);
 
 			// When
-			const result = await authService.requestPasswordSetupCode(userId);
+			const result =
+				await passwordManagementService.requestPasswordSetupCode(userId);
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -121,14 +127,14 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const userId = await createSocialOnlyUser(email);
 
 			// 비밀번호 설정 코드 요청 및 설정
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
-			await authService.setPassword(userId, code, "NewPassword1");
+			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// When & Then
 			await expect(
-				authService.requestPasswordSetupCode(userId),
+				passwordManagementService.requestPasswordSetupCode(userId),
 			).rejects.toThrow(BusinessException);
 		});
 	});
@@ -143,11 +149,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const email = "set-pw-test@example.com";
 			const userId = await createSocialOnlyUser(email);
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
 			// When
-			const result = await authService.setPassword(
+			const result = await passwordManagementService.setPassword(
 				userId,
 				code,
 				"NewPassword1",
@@ -174,14 +180,19 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const email = "seclog-pw-test@example.com";
 			const userId = await createSocialOnlyUser(email);
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
 			// When
-			await authService.setPassword(userId, code, "NewPassword1", {
-				ip: "192.168.1.1",
-				userAgent: "IntegrationTest/1.0",
-			});
+			await passwordManagementService.setPassword(
+				userId,
+				code,
+				"NewPassword1",
+				{
+					ip: "192.168.1.1",
+					userAgent: "IntegrationTest/1.0",
+				},
+			);
 
 			// Then
 			const prisma = testDb.getPrisma();
@@ -199,10 +210,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const password = "NewPassword1";
 			const userId = await createSocialOnlyUser(email);
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
-			await authService.setPassword(userId, code, password);
+			await passwordManagementService.setPassword(userId, code, password);
 
 			// When - 이메일/비밀번호로 로그인
 			const loginResult = await authService.login({ email, password });
@@ -217,11 +228,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const email = "wrong-code-test@example.com";
 			const userId = await createSocialOnlyUser(email);
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 
 			// When & Then
 			await expect(
-				authService.setPassword(userId, "000000", "NewPassword1"),
+				passwordManagementService.setPassword(userId, "000000", "NewPassword1"),
 			).rejects.toThrow(BusinessException);
 		});
 
@@ -230,14 +241,14 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const email = "duplicate-setup@example.com";
 			const userId = await createSocialOnlyUser(email);
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
-			await authService.setPassword(userId, code, "NewPassword1");
+			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// When & Then - 다시 설정 시도 (코드 요청도 실패해야 함)
 			await expect(
-				authService.requestPasswordSetupCode(userId),
+				passwordManagementService.requestPasswordSetupCode(userId),
 			).rejects.toThrow(BusinessException);
 		});
 
@@ -246,11 +257,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			const email = "keep-social@example.com";
 			const userId = await createSocialOnlyUser(email, "KAKAO");
 
-			await authService.requestPasswordSetupCode(userId);
+			await passwordManagementService.requestPasswordSetupCode(userId);
 			const code = getCode(email);
 
 			// When
-			await authService.setPassword(userId, code, "NewPassword1");
+			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// Then - KAKAO 계정과 CREDENTIAL 계정 모두 존재
 			const prisma = testDb.getPrisma();

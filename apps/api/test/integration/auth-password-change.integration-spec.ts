@@ -25,6 +25,7 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
 import { AuthService } from "@/modules/auth/services/auth.service";
+import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -32,6 +33,7 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory";
 describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
 	let authService: AuthService;
+	let passwordManagementService: PasswordManagementService;
 	let fakeEmailService: FakeEmailService;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -45,6 +47,9 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
 		authService = module.get<AuthService>(AuthService);
+		passwordManagementService = module.get<PasswordManagementService>(
+			PasswordManagementService,
+		);
 	}, 60000);
 
 	beforeEach(async () => {
@@ -146,7 +151,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			const sessionId = await loginAndGetSession(email, currentPassword);
 
 			// When
-			const result = await authService.changePassword(
+			const result = await passwordManagementService.changePassword(
 				userId,
 				currentPassword,
 				newPassword,
@@ -173,7 +178,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			const userId = await createCredentialUser(email, currentPassword);
 			const sessionId = await loginAndGetSession(email, currentPassword);
 
-			await authService.changePassword(
+			await passwordManagementService.changePassword(
 				userId,
 				currentPassword,
 				newPassword,
@@ -200,7 +205,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			const userId = await createCredentialUser(email, currentPassword);
 			const sessionId = await loginAndGetSession(email, currentPassword);
 
-			await authService.changePassword(
+			await passwordManagementService.changePassword(
 				userId,
 				currentPassword,
 				newPassword,
@@ -226,7 +231,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			const otherSessionId = await loginAndGetSession(email, currentPassword);
 
 			// When
-			await authService.changePassword(
+			await passwordManagementService.changePassword(
 				userId,
 				currentPassword,
 				newPassword,
@@ -257,7 +262,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(
-				authService.changePassword(
+				passwordManagementService.changePassword(
 					userId,
 					"WrongPassword999!",
 					"NewPassword456!",
@@ -272,7 +277,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
 			// When & Then
 			await expect(
-				authService.changePassword(
+				passwordManagementService.changePassword(
 					userId,
 					"AnyPassword123!",
 					"NewPassword456!",
@@ -289,7 +294,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			const sessionId = await loginAndGetSession(email, currentPassword);
 
 			// When
-			await authService.changePassword(
+			await passwordManagementService.changePassword(
 				userId,
 				currentPassword,
 				newPassword,

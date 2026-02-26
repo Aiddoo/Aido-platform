@@ -41,6 +41,22 @@ import { AuthService } from "../services/auth.service";
 import { OAuthService } from "../services/oauth.service";
 import { extractMetadata } from "./auth-controller.utils";
 
+/**
+ * Account API 컨트롤러
+ *
+ * 사용자 계정 프로필 및 계정 관리 API입니다.
+ *
+ * ### 프로필
+ * - GET /auth/me - 내 정보 조회
+ * - PATCH /auth/profile - 프로필 수정
+ *
+ * ### 소셜 계정
+ * - GET /auth/linked-accounts - 연동된 소셜 계정 조회
+ * - DELETE /auth/linked-accounts/:provider - 소셜 계정 연동 해제
+ *
+ * ### 계정 삭제
+ * - DELETE /auth/account - 회원 탈퇴
+ */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 @UseGuards(JwtAuthGuard)

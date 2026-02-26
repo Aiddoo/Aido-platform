@@ -5,12 +5,13 @@
  */
 
 import type { Cheer, CheerDetail, CheerLimitInfo } from "@aido/validators";
+import { toISOString, toISOStringOrNull } from "@/common/date";
 import type {
 	CheerWithRelations,
 	CheerLimitInfo as ServiceLimitInfo,
 } from "./types";
 
-export class CheerMapper {
+export abstract class CheerMapper {
 	/**
 	 * CheerWithRelations → CheerDetail DTO 형식
 	 */
@@ -20,8 +21,8 @@ export class CheerMapper {
 			senderId: cheer.senderId,
 			receiverId: cheer.receiverId,
 			message: cheer.message,
-			createdAt: cheer.createdAt.toISOString(),
-			readAt: cheer.readAt?.toISOString() ?? null,
+			createdAt: toISOString(cheer.createdAt),
+			readAt: toISOStringOrNull(cheer.readAt ?? null),
 			sender: {
 				id: cheer.sender.id,
 				userTag: cheer.sender.userTag,
@@ -40,8 +41,8 @@ export class CheerMapper {
 			senderId: cheer.senderId,
 			receiverId: cheer.receiverId,
 			message: cheer.message,
-			createdAt: cheer.createdAt.toISOString(),
-			readAt: cheer.readAt?.toISOString() ?? null,
+			createdAt: toISOString(cheer.createdAt),
+			readAt: toISOStringOrNull(cheer.readAt ?? null),
 		};
 	}
 

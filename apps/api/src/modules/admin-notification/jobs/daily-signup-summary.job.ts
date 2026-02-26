@@ -1,23 +1,27 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
+import {
+	midnightInTimezone,
+	startOfDayInTimezone,
+	subtractDays,
+	toDateString,
+} from "@/common/date";
 import { DatabaseService } from "@/database/database.service";
+import type { AccountProvider } from "@/generated/prisma/client";
 
 import {
 	ADMIN_NOTIFIER,
 	type AdminNotifier,
 } from "../providers/admin-notifier.interface";
 
-const PROVIDER_LABELS: Record<string, string> = {
+const PROVIDER_LABELS: Record<AccountProvider, string> = {
 	CREDENTIAL: "이메일",
 	APPLE: "Apple",
 	GOOGLE: "Google",
 	KAKAO: "Kakao",
 	NAVER: "Naver",
 };
-
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * 일일 가입 요약 크론 작업
@@ -119,17 +123,17 @@ export class DailySignupSummaryJob {
 		endUtc: Date;
 		reportDateStr: string;
 	} {
-		const nowMs = now.getTime();
-		const kstNowMs = nowMs + KST_OFFSET_MS;
-		const kstTodayStartMs = Math.floor(kstNowMs / ONE_DAY_MS) * ONE_DAY_MS;
-		const kstPreviousDayStartMs = kstTodayStartMs - ONE_DAY_MS;
+		const kstTodayMidnight = midnightInTimezone(now, "Asia/Seoul");
+		const kstYesterdayMidnight = subtractDays(1, kstTodayMidnight);
+		const kstYesterdayDate = startOfDayInTimezone(
+			kstYesterdayMidnight,
+			"Asia/Seoul",
+		);
 
-		const startUtc = new Date(kstPreviousDayStartMs - KST_OFFSET_MS);
-		const endUtc = new Date(kstTodayStartMs - KST_OFFSET_MS);
-		const reportDateStr = new Date(kstPreviousDayStartMs)
-			.toISOString()
-			.slice(0, 10);
-
-		return { startUtc, endUtc, reportDateStr };
+		return {
+			startUtc: kstYesterdayMidnight,
+			endUtc: kstTodayMidnight,
+			reportDateStr: toDateString(kstYesterdayDate),
+		};
 	}
 }

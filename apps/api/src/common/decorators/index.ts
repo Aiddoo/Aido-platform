@@ -1,1 +1,1 @@
-export { Timezone } from "./timezone.decorator";
+export * from "./timezone.decorator";

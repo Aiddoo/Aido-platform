@@ -43,6 +43,8 @@ describe("CheerService", () => {
 	const receiverId = "receiver-456";
 
 	beforeEach(async () => {
+		jest.clearAllMocks();
+
 		// ID 카운터 리셋
 		CheerBuilder.resetIdCounter();
 
@@ -94,6 +96,21 @@ describe("CheerService", () => {
 			isAdmin: false,
 			subscriptionStatus: "FREE",
 		});
+
+		// enforceLimit / calculateRemaining — 실제 로직 위임
+		(entitlementService.enforceLimit as jest.Mock).mockImplementation(
+			(entitlement, currentUsage, errorFactory) => {
+				if (entitlement.dailyLimit === null) return;
+				if (currentUsage < entitlement.dailyLimit) return;
+				throw errorFactory(currentUsage, entitlement.dailyLimit);
+			},
+		);
+		(entitlementService.calculateRemaining as jest.Mock).mockImplementation(
+			(dailyLimit, used) => {
+				if (dailyLimit === null) return null;
+				return Math.max(0, dailyLimit - used);
+			},
+		);
 
 		// PaginationService 기본 mock 설정
 		(paginationService.normalizeCursorPagination as jest.Mock).mockReturnValue({

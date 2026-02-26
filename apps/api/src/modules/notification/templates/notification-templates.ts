@@ -11,8 +11,8 @@ export interface NotificationTemplate {
 	title: string;
 	body: string;
 	type: NotificationType;
-	/** 기본 라우트 패턴 (동적 값은 빌더에서 설정) */
-	defaultRoute?: string;
+	/** 기본 라우트 패턴 (동적 값은 빌더에서 설정, null이면 라우트 없음) */
+	defaultRoute?: string | null;
 }
 
 /**
@@ -24,51 +24,51 @@ export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
 		title: "{todoTitle}, 1시간 남음",
 		body: "지금 안 하면 진짜 못 한다",
-		type: "TODO_REMINDER" as NotificationType,
+		type: "TODO_REMINDER",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	TODO_REMINDER_60MIN: {
 		title: "{todoTitle}, 1시간 남음",
 		body: "지금 안 하면 진짜 못 한다",
-		type: "TODO_REMINDER" as NotificationType,
+		type: "TODO_REMINDER",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	TODO_REMINDER_10MIN: {
 		title: "{todoTitle}, 10분 남음",
 		body: "진짜 마지막이다. 지금 당장!",
-		type: "TODO_REMINDER" as NotificationType,
+		type: "TODO_REMINDER",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	TODO_REMINDER_IMMEDIATE: {
 		title: "{todoTitle}, 곧 시작",
 		body: "아직 시간 있어. 지금 바로 시작해",
-		type: "TODO_REMINDER" as NotificationType,
+		type: "TODO_REMINDER",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	MORNING_REMINDER: {
 		title: "오늘 할일 {count}개",
 		body: "미루면 저녁의 내가 울어",
-		type: "MORNING_REMINDER" as NotificationType,
+		type: "MORNING_REMINDER",
 		defaultRoute: "/todos",
-	},
+	} satisfies NotificationTemplate,
 	EVENING_COMPLETE: {
 		title: "다 했다. 진짜 대단한데?",
 		body: "오늘 너 좀 멋있었어",
-		type: "EVENING_REMINDER" as NotificationType,
+		type: "EVENING_REMINDER",
 		defaultRoute: "/",
-	},
+	} satisfies NotificationTemplate,
 	EVENING_PARTIAL: {
 		title: "{remaining}개 남았는데 자려고?",
 		body: "조금만 더 하면 끝이야",
-		type: "EVENING_REMINDER" as NotificationType,
+		type: "EVENING_REMINDER",
 		defaultRoute: "/todos",
-	},
+	} satisfies NotificationTemplate,
 	EVENING_NONE: {
 		title: "오늘 하나도 안 했어",
 		body: "한 개만. 딱 한 개만 해보자",
-		type: "EVENING_REMINDER" as NotificationType,
+		type: "EVENING_REMINDER",
 		defaultRoute: "/todos",
-	},
+	} satisfies NotificationTemplate,
 	MORNING_NO_TODO: {
 		title: "할일이 하나도 없다",
 		body: "한가한 거 맞아? 뭐라도 적어봐",
@@ -84,45 +84,45 @@ export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
 		title: "{senderName}의 친구 요청",
 		body: "수락하면 서로 감시 시작",
-		type: "FOLLOW_NEW" as NotificationType,
+		type: "FOLLOW_NEW",
 		defaultRoute: "/friends/requests",
-	},
+	} satisfies NotificationTemplate,
 	FOLLOW_ACCEPTED: {
 		title: "{senderName}, 이제 친구다",
 		body: "서로 할일이 다 보여. 각오해",
-		type: "FOLLOW_ACCEPTED" as NotificationType,
+		type: "FOLLOW_ACCEPTED",
 		defaultRoute: "/friends/{friendId}",
-	},
+	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED: {
 		title: "콕! {senderName}",
 		body: "뭐 하고 있었는지 다 보인다",
-		type: "NUDGE_RECEIVED" as NotificationType,
+		type: "NUDGE_RECEIVED",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED_WITH_MESSAGE: {
 		title: "콕! {senderName}",
 		body: "{message}",
-		type: "NUDGE_RECEIVED" as NotificationType,
+		type: "NUDGE_RECEIVED",
 		defaultRoute: "/todos/{todoId}",
-	},
+	} satisfies NotificationTemplate,
 	CHEER_RECEIVED: {
 		title: "{senderName}의 한마디",
 		body: "{message}",
-		type: "CHEER_RECEIVED" as NotificationType,
+		type: "CHEER_RECEIVED",
 		defaultRoute: "/friends/{friendId}",
-	},
+	} satisfies NotificationTemplate,
 	CHEER_RECEIVED_NO_MESSAGE: {
 		title: "{senderName}, 보고 있다",
 		body: "네가 잘하는 거 알고 있어",
-		type: "CHEER_RECEIVED" as NotificationType,
+		type: "CHEER_RECEIVED",
 		defaultRoute: "/friends/{friendId}",
-	},
+	} satisfies NotificationTemplate,
 	FRIEND_COMPLETED: {
 		title: "{friendName}, 오늘 다 끝냈대",
 		body: "너는?",
-		type: "FRIEND_COMPLETED" as NotificationType,
+		type: "FRIEND_COMPLETED",
 		defaultRoute: "/friends/{friendId}",
-	},
+	} satisfies NotificationTemplate,
 } as const;
 
 /**
@@ -132,21 +132,21 @@ export const SYSTEM_TEMPLATES = {
 	WEEKLY_ACHIEVEMENT: {
 		title: "이번 주 {completedCount}개 클리어",
 		body: "다음 주엔 더 할 수 있잖아",
-		type: "WEEKLY_ACHIEVEMENT" as NotificationType,
+		type: "WEEKLY_ACHIEVEMENT",
 		defaultRoute: "/stats",
-	},
+	} satisfies NotificationTemplate,
 	SYSTEM_NOTICE: {
 		title: "Aido",
 		body: "{message}",
-		type: "SYSTEM_NOTICE" as NotificationType,
+		type: "SYSTEM_NOTICE",
 		defaultRoute: null,
-	},
+	} satisfies NotificationTemplate,
 	BILLING_ISSUE: {
 		title: "결제 문제가 발생했어요",
 		body: "결제 수단을 확인해주세요. 구독이 중단될 수 있습니다.",
-		type: "SYSTEM_NOTICE" as NotificationType,
+		type: "SYSTEM_NOTICE",
 		defaultRoute: null,
-	},
+	} satisfies NotificationTemplate,
 } as const;
 
 /**

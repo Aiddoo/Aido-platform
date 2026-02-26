@@ -1,15 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import dayjs from "dayjs";
 
-import { DATE_FORMAT } from "@/common/date";
+import { addDays, startOfDay, toDateString } from "@/common/date";
 import { DatabaseService } from "@/database/database.service";
 import type {
-	FindTodosByDateRangeParams,
-	TodoAggregateByDate,
-} from "./types/daily-completion.types";
-
-// 타입 재내보내기 (기존 import 호환성 유지)
-export type {
 	FindTodosByDateRangeParams,
 	TodoAggregateByDate,
 } from "./types/daily-completion.types";
@@ -52,7 +45,7 @@ export class DailyCompletionRepository {
 		// 완료 수를 Map으로 변환하여 O(1) 조회
 		const completedMap = new Map(
 			completedAggregations.map((item) => [
-				dayjs.utc(item.startDate).format(DATE_FORMAT.DATE_ONLY),
+				toDateString(item.startDate),
 				item._count.id,
 			]),
 		);
@@ -60,10 +53,7 @@ export class DailyCompletionRepository {
 		return aggregations.map((item) => ({
 			date: item.startDate,
 			total: item._count.id,
-			completed:
-				completedMap.get(
-					dayjs.utc(item.startDate).format(DATE_FORMAT.DATE_ONLY),
-				) ?? 0,
+			completed: completedMap.get(toDateString(item.startDate)) ?? 0,
 		}));
 	}
 
@@ -78,12 +68,12 @@ export class DailyCompletionRepository {
 		userId: string,
 		date: Date,
 	): Promise<TodoAggregateByDate | null> {
-		const startOfDay = dayjs.utc(date).startOf("day").toDate();
-		const endOfDay = dayjs.utc(date).add(1, "day").startOf("day").toDate();
+		const dayStart = startOfDay(date);
+		const dayEnd = addDays(1, dayStart);
 
 		const whereClause = {
 			userId,
-			startDate: { gte: startOfDay, lt: endOfDay },
+			startDate: { gte: dayStart, lt: dayEnd },
 		};
 
 		const [totalCount, completedCount] = await Promise.all([

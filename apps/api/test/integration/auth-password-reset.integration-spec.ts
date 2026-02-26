@@ -25,6 +25,7 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
 import { AuthService } from "@/modules/auth/services/auth.service";
+import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
@@ -32,6 +33,7 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory";
 describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 	let module: TestingModule;
 	let authService: AuthService;
+	let passwordManagementService: PasswordManagementService;
 	let fakeEmailService: FakeEmailService;
 	let testDb: TestDatabase;
 	let databaseService: DatabaseService;
@@ -45,6 +47,9 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
 		authService = module.get<AuthService>(AuthService);
+		passwordManagementService = module.get<PasswordManagementService>(
+			PasswordManagementService,
+		);
 	}, 60000);
 
 	beforeEach(async () => {
@@ -133,7 +138,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await createCredentialUser(email, "Password123!");
 
 			// When
-			const result = await authService.forgotPassword(email);
+			const result = await passwordManagementService.forgotPassword(email);
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -146,7 +151,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const email = "nonexistent@example.com";
 
 			// When
-			const result = await authService.forgotPassword(email);
+			const result = await passwordManagementService.forgotPassword(email);
 
 			// Then
 			expect(result.message).toBeDefined();
@@ -166,11 +171,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const originalPassword = "Password123!";
 			await createCredentialUser(email, originalPassword);
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
 
 			// When
-			const result = await authService.resetPassword(
+			const result = await passwordManagementService.resetPassword(
 				email,
 				code,
 				"NewPassword456!",
@@ -197,9 +202,9 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const newPassword = "NewPassword456!";
 			await createCredentialUser(email, originalPassword);
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
-			await authService.resetPassword(email, code, newPassword);
+			await passwordManagementService.resetPassword(email, code, newPassword);
 
 			// When
 			const loginResult = await authService.login({
@@ -219,9 +224,9 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const newPassword = "NewPassword456!";
 			await createCredentialUser(email, originalPassword);
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
-			await authService.resetPassword(email, code, newPassword);
+			await passwordManagementService.resetPassword(email, code, newPassword);
 
 			// When & Then
 			await expect(
@@ -239,11 +244,15 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await authService.login({ email, password: originalPassword });
 			await authService.login({ email, password: originalPassword });
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
 
 			// When
-			await authService.resetPassword(email, code, "NewPassword456!");
+			await passwordManagementService.resetPassword(
+				email,
+				code,
+				"NewPassword456!",
+			);
 
 			// Then - 모든 세션의 revokedAt이 설정됨
 			const prisma = testDb.getPrisma();
@@ -263,11 +272,15 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const email = "reset-seclog@example.com";
 			await createCredentialUser(email, "Password123!");
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
 
 			// When
-			await authService.resetPassword(email, code, "NewPassword456!");
+			await passwordManagementService.resetPassword(
+				email,
+				code,
+				"NewPassword456!",
+			);
 
 			// Then
 			const prisma = testDb.getPrisma();
@@ -292,12 +305,12 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await createSocialOnlyUser(email);
 
 			// forgotPassword는 보안상 동일 응답 (에러 없음)
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 			const code = getCode(email);
 
 			// When & Then - resetPassword에서 USER_0613 에러
 			await expect(
-				authService.resetPassword(email, code, "NewPassword456!"),
+				passwordManagementService.resetPassword(email, code, "NewPassword456!"),
 			).rejects.toThrow(BusinessException);
 		});
 
@@ -306,11 +319,15 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			const email = "reset-wrong-code@example.com";
 			await createCredentialUser(email, "Password123!");
 
-			await authService.forgotPassword(email);
+			await passwordManagementService.forgotPassword(email);
 
 			// When & Then
 			await expect(
-				authService.resetPassword(email, "000000", "NewPassword456!"),
+				passwordManagementService.resetPassword(
+					email,
+					"000000",
+					"NewPassword456!",
+				),
 			).rejects.toThrow(BusinessException);
 		});
 	});

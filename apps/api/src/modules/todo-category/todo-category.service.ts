@@ -208,22 +208,17 @@ export class TodoCategoryService {
 				tx,
 			);
 
-			if (todoCount > 0) {
-				// Todo가 있으면 이동 대상 카테고리 필수
-				if (!moveToCategoryId) {
-					throw BusinessExceptions.todoCategoryHasTodos(categoryId, todoCount);
-				}
-
-				// 삭제 대상과 이동 대상이 같으면 에러
-				if (moveToCategoryId === categoryId) {
-					throw BusinessExceptions.invalidParameter({
-						message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
-						categoryId,
-						moveToCategoryId,
-					});
-				}
-
-				// 이동 대상 카테고리 확인
+			if (todoCount > 0 && !moveToCategoryId) {
+				throw BusinessExceptions.todoCategoryHasTodos(categoryId, todoCount);
+			}
+			if (todoCount > 0 && moveToCategoryId === categoryId) {
+				throw BusinessExceptions.invalidParameter({
+					message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
+					categoryId,
+					moveToCategoryId,
+				});
+			}
+			if (todoCount > 0 && moveToCategoryId) {
 				const targetCategory =
 					await this.todoCategoryRepository.findByIdAndUserId(
 						moveToCategoryId,
@@ -235,7 +230,6 @@ export class TodoCategoryService {
 					throw BusinessExceptions.todoCategoryNotFound(moveToCategoryId);
 				}
 
-				// Todo 이동
 				await this.todoCategoryRepository.moveTodosToCategory(
 					categoryId,
 					moveToCategoryId,
@@ -266,7 +260,6 @@ export class TodoCategoryService {
 		const { userId, categoryId, targetCategoryId, position } = params;
 
 		return this.database.$transaction(async (tx) => {
-			// 1. 이동할 카테고리 확인
 			const category = await this.todoCategoryRepository.findByIdAndUserId(
 				categoryId,
 				userId,
@@ -277,84 +270,20 @@ export class TodoCategoryService {
 				throw BusinessExceptions.todoCategoryNotFound(categoryId);
 			}
 
-			const currentSortOrder = category.sortOrder;
-			let newSortOrder: number;
-
-			if (targetCategoryId) {
-				// 2a. 특정 카테고리 기준으로 이동
-				const targetCategory =
-					await this.todoCategoryRepository.findByIdAndUserId(
-						targetCategoryId,
-						userId,
-						tx,
-					);
-
-				if (!targetCategory) {
-					throw BusinessExceptions.todoCategoryNotFound(targetCategoryId);
-				}
-
-				// 같은 카테고리면 무시
-				if (categoryId === targetCategoryId) {
-					return category;
-				}
-
-				const targetSortOrder = targetCategory.sortOrder;
-
-				if (position === "before") {
-					newSortOrder = targetSortOrder;
-				} else {
-					newSortOrder = targetSortOrder + 1;
-				}
-
-				// 이동 방향에 따라 다른 카테고리들 shift
-				if (currentSortOrder < newSortOrder) {
-					// 아래로 이동: 사이 카테고리들을 위로 shift
-					await this.todoCategoryRepository.shiftSortOrders(
-						userId,
-						currentSortOrder + 1,
-						newSortOrder - 1,
-						-1,
-						tx,
-					);
-					newSortOrder -= 1;
-				} else {
-					// 위로 이동: 사이 카테고리들을 아래로 shift
-					await this.todoCategoryRepository.shiftSortOrders(
-						userId,
-						newSortOrder,
-						currentSortOrder - 1,
-						1,
-						tx,
-					);
-				}
-			} else {
-				// 2b. 맨 앞 또는 맨 뒤로 이동
-				if (position === "before") {
-					// 맨 앞으로
-					newSortOrder = 0;
-					await this.todoCategoryRepository.shiftSortOrders(
-						userId,
-						0,
-						currentSortOrder - 1,
-						1,
-						tx,
-					);
-				} else {
-					// 맨 뒤로
-					const maxSortOrder =
-						await this.todoCategoryRepository.getMaxSortOrder(userId, tx);
-					newSortOrder = maxSortOrder;
-					await this.todoCategoryRepository.shiftSortOrders(
-						userId,
-						currentSortOrder + 1,
-						null,
-						-1,
-						tx,
-					);
-				}
+			if (categoryId === targetCategoryId) {
+				return category;
 			}
 
-			// 3. 카테고리 sortOrder 업데이트
+			const newSortOrder = targetCategoryId
+				? await this.#reorderRelativeTo(
+						category.sortOrder,
+						targetCategoryId,
+						position,
+						userId,
+						tx,
+					)
+				: await this.#reorderToEdge(category.sortOrder, position, userId, tx);
+
 			const updatedCategory = await this.todoCategoryRepository.update(
 				categoryId,
 				{ sortOrder: newSortOrder },
@@ -367,6 +296,81 @@ export class TodoCategoryService {
 
 			return updatedCategory;
 		});
+	}
+
+	async #reorderRelativeTo(
+		currentSortOrder: number,
+		targetCategoryId: number,
+		position: "before" | "after",
+		userId: string,
+		tx: Parameters<Parameters<DatabaseService["$transaction"]>[0]>[0],
+	): Promise<number> {
+		const targetCategory = await this.todoCategoryRepository.findByIdAndUserId(
+			targetCategoryId,
+			userId,
+			tx,
+		);
+
+		if (!targetCategory) {
+			throw BusinessExceptions.todoCategoryNotFound(targetCategoryId);
+		}
+
+		let newSortOrder =
+			position === "before"
+				? targetCategory.sortOrder
+				: targetCategory.sortOrder + 1;
+
+		if (currentSortOrder < newSortOrder) {
+			await this.todoCategoryRepository.shiftSortOrders(
+				userId,
+				currentSortOrder + 1,
+				newSortOrder - 1,
+				-1,
+				tx,
+			);
+			newSortOrder -= 1;
+		} else {
+			await this.todoCategoryRepository.shiftSortOrders(
+				userId,
+				newSortOrder,
+				currentSortOrder - 1,
+				1,
+				tx,
+			);
+		}
+
+		return newSortOrder;
+	}
+
+	async #reorderToEdge(
+		currentSortOrder: number,
+		position: "before" | "after",
+		userId: string,
+		tx: Parameters<Parameters<DatabaseService["$transaction"]>[0]>[0],
+	): Promise<number> {
+		if (position === "before") {
+			await this.todoCategoryRepository.shiftSortOrders(
+				userId,
+				0,
+				currentSortOrder - 1,
+				1,
+				tx,
+			);
+			return 0;
+		}
+
+		const maxSortOrder = await this.todoCategoryRepository.getMaxSortOrder(
+			userId,
+			tx,
+		);
+		await this.todoCategoryRepository.shiftSortOrders(
+			userId,
+			currentSortOrder + 1,
+			null,
+			-1,
+			tx,
+		);
+		return maxSortOrder;
 	}
 
 	/**
