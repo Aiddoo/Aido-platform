@@ -46,9 +46,10 @@ export class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   async unregisterToken(deviceId?: string): Promise<Result<void, ApiError>> {
-    const result = await this.#httpClient.delete<unknown>('v1/notifications/token', {
-      params: deviceId ? { deviceId } : undefined,
-    });
+    const result = await this.#httpClient.delete<unknown>(
+      'v1/notifications/token',
+      deviceId ? { params: { deviceId } } : undefined,
+    );
 
     if (!result.ok) return result;
 

@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from '@src/features/user/models/user.model';
 import { z } from 'zod';
 
 export const planTypeSchema = z.enum(['monthly', 'annual']);
@@ -20,24 +21,41 @@ export const subscriptionOfferingSchema = z.object({
 });
 export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
-/** Subscription 도메인 비즈니스 규칙 */
+// Filters & Predicates
+
+export function isActiveSubscription(status: SubscriptionStatus) {
+  return status === 'ACTIVE';
+}
+
+export function isCancelledSubscription(status: SubscriptionStatus) {
+  return status === 'CANCELLED';
+}
+
+// Calculations
+
+export function getAnnualDiscountPercent(monthlyPrice: number, annualPrice: number) {
+  return Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
+}
+
+export function getMonthlyEquivalent(annualPrice: number) {
+  return Math.round((annualPrice / 12) * 100) / 100;
+}
+
+export function formatPrice(amount: number, currencyCode: string) {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currencyCode,
+    maximumFractionDigits: currencyCode === 'KRW' || currencyCode === 'JPY' ? 0 : 2,
+  }).format(amount);
+}
+
+// Policy (Business Logic)
+
 export const SubscriptionPolicy = {
-  /** 연간 할인율 계산 (%) */
-  getAnnualDiscountPercent(monthlyPrice: number, annualPrice: number): number {
-    return Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
-  },
-
-  /** 연간 가격의 월 환산 가격 */
-  getMonthlyEquivalent(annualPrice: number): number {
-    return Math.round((annualPrice / 12) * 100) / 100;
-  },
-
-  /** 통화 코드에 맞게 금액을 포맷 (예: ₩8,250, $6.67) */
-  formatPrice(amount: number, currencyCode: string): string {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currencyCode,
-      maximumFractionDigits: currencyCode === 'KRW' || currencyCode === 'JPY' ? 0 : 2,
-    }).format(amount);
+  shouldShowExpirationDetails(
+    status: SubscriptionStatus,
+    expiresAt: Date | null,
+  ): expiresAt is Date {
+    return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt !== null;
   },
 } as const;

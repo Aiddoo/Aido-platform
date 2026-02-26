@@ -21,6 +21,11 @@ export const formatTime = (date: Date | string | number): string => {
   return d.isValid() ? d.format('A h:mm') : '';
 };
 
+export const formatFullDate = (date: Date | string | number): string => {
+  const d = dayjs(date);
+  return d.isValid() ? d.format('YYYY년 M월 D일') : '';
+};
+
 export const formatMonthDay = (date: Date | string | number): string => {
   const d = dayjs(date);
   return d.isValid() ? d.format('M월 D일') : '';

@@ -741,7 +741,7 @@ describe('AuthService', () => {
       const result = await service.deleteAccount(input);
 
       // Then
-      expect(authHttpClient.delete).toHaveBeenCalledWith('v1/auth/account', input);
+      expect(authHttpClient.delete).toHaveBeenCalledWith('v1/auth/account', { body: input });
       expect(storage.remove).toHaveBeenCalledWith('accessToken');
       expect(storage.remove).toHaveBeenCalledWith('refreshToken');
       expect(result).toEqual({

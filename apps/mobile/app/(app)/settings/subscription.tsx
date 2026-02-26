@@ -95,18 +95,18 @@ function SubscriberView() {
           image={benefitNotificationImage}
         />
         <BenefitCard
-          icon={DeviceIcon}
-          title="앱 아이콘 커스터마이징"
-          description="나만의 스타일로 앱 아이콘을 변경해요"
-          index={2}
-          image={benefitAppIconImage}
-        />
-        <BenefitCard
           icon={SendIcon}
           title="무제한 찌르기 & 응원"
           description="친구에게 제한 없이 찌르기와 응원을 보내요"
-          index={3}
+          index={2}
           image={benefitNudgeImage}
+        />
+        <BenefitCard
+          icon={DeviceIcon}
+          title="앱 아이콘 커스터마이징"
+          description="나만의 스타일로 앱 아이콘을 변경해요"
+          index={3}
+          image={benefitAppIconImage}
         />
       </VStack>
 
@@ -221,18 +221,18 @@ function OfferingsView() {
             image={benefitNotificationImage}
           />
           <BenefitCard
-            icon={DeviceIcon}
-            title="앱 아이콘 커스터마이징"
-            description="나만의 스타일로 앱 아이콘을 변경해요"
-            index={2}
-            image={benefitAppIconImage}
-          />
-          <BenefitCard
             icon={SendIcon}
             title="무제한 찌르기 & 응원"
             description="친구에게 제한 없이 찌르기와 응원을 보내요"
-            index={3}
+            index={2}
             image={benefitNudgeImage}
+          />
+          <BenefitCard
+            icon={DeviceIcon}
+            title="앱 아이콘 커스터마이징"
+            description="나만의 스타일로 앱 아이콘을 변경해요"
+            index={3}
+            image={benefitAppIconImage}
           />
         </VStack>
 
@@ -243,9 +243,6 @@ function OfferingsView() {
         <Spacing size={16} />
 
         <VStack gap={8} className="items-center">
-          <Text size="e1" shade={5}>
-            언제든지 취소할 수 있어요
-          </Text>
           <TermsNotice />
           <TextButton
             size="small"

@@ -4,8 +4,12 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { Card, PressableFeedback } from 'heroui-native';
 import { View } from 'react-native';
-import type { SubscriptionPlan } from '../../models/subscription.model';
-import { SubscriptionPolicy } from '../../models/subscription.model';
+import {
+  formatPrice,
+  getAnnualDiscountPercent,
+  getMonthlyEquivalent,
+  type SubscriptionPlan,
+} from '../../models/subscription.model';
 
 interface SubscriptionPlanCardProps {
   plans: SubscriptionPlan[];
@@ -25,9 +29,7 @@ export function SubscriptionPlanCard({
 
   const annualPlan = plans.find((p) => p.planType === 'annual');
   const discountPercent =
-    monthlyPlan && annualPlan
-      ? SubscriptionPolicy.getAnnualDiscountPercent(monthlyPlan.price, annualPlan.price)
-      : 0;
+    monthlyPlan && annualPlan ? getAnnualDiscountPercent(monthlyPlan.price, annualPlan.price) : 0;
 
   return (
     <VStack gap={12}>
@@ -59,7 +61,7 @@ function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: Pla
   const label = isAnnual ? '연간 구독' : '월간 구독';
   const periodLabel = isAnnual ? '/년' : '/월';
 
-  const monthlyEquivalent = isAnnual ? SubscriptionPolicy.getMonthlyEquivalent(plan.price) : null;
+  const monthlyEquivalent = isAnnual ? getMonthlyEquivalent(plan.price) : null;
 
   return (
     <PressableFeedback onPress={onPress} className="rounded-2xl">
@@ -107,7 +109,7 @@ function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: Pla
 
           <Text size="e1" className={cn('text-gray-5', monthlyEquivalent === null && 'opacity-0')}>
             {monthlyEquivalent !== null
-              ? `월 ${SubscriptionPolicy.formatPrice(monthlyEquivalent, plan.currencyCode)} 상당`
+              ? `월 ${formatPrice(monthlyEquivalent, plan.currencyCode)} 상당`
               : '\u00A0'}
           </Text>
         </VStack>
