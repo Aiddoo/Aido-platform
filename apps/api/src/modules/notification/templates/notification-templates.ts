@@ -91,37 +91,37 @@ export const SOCIAL_TEMPLATES = {
 		title: "{senderName}, 이제 친구다",
 		body: "서로 할일이 다 보여. 각오해",
 		type: "FOLLOW_ACCEPTED",
-		defaultRoute: "/friends/{friendId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED: {
 		title: "콕! {senderName}",
 		body: "뭐 하고 있었는지 다 보인다",
 		type: "NUDGE_RECEIVED",
-		defaultRoute: "/todos/{todoId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED_WITH_MESSAGE: {
 		title: "콕! {senderName}",
 		body: "{message}",
 		type: "NUDGE_RECEIVED",
-		defaultRoute: "/todos/{todoId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	CHEER_RECEIVED: {
 		title: "{senderName}의 한마디",
 		body: "{message}",
 		type: "CHEER_RECEIVED",
-		defaultRoute: "/friends/{friendId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	CHEER_RECEIVED_NO_MESSAGE: {
 		title: "{senderName}, 보고 있다",
 		body: "네가 잘하는 거 알고 있어",
 		type: "CHEER_RECEIVED",
-		defaultRoute: "/friends/{friendId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	FRIEND_COMPLETED: {
 		title: "{friendName}, 오늘 다 끝냈대",
 		body: "너는?",
 		type: "FRIEND_COMPLETED",
-		defaultRoute: "/friends/{friendId}",
+		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 } as const;
 

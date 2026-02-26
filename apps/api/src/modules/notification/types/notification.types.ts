@@ -170,7 +170,7 @@ export interface CreateNotificationData {
 	 *
 	 * 사용 타입: FOLLOW_NEW, FOLLOW_ACCEPTED, NUDGE_RECEIVED,
 	 *           CHEER_RECEIVED, FRIEND_COMPLETED
-	 * 클라이언트가 `/friends/{friendId}`로 라우팅 결정에 사용
+	 * 클라이언트가 `/feed/friend/{friendId}`로 라우팅 결정에 사용
 	 */
 	friendId?: string | null;
 
