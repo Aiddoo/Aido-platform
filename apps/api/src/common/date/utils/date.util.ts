@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { DATE_FORMAT, type DateFormatType } from "../constants";
+import { DATE_FORMAT, type DateFormatType, TIME_UNIT } from "../constants";
 
 const DEFAULT_TIMEZONE = "UTC";
 
@@ -318,7 +318,7 @@ export function calculateCooldown(
 		return { isActive: false, remainingSeconds: 0, endsAt: null };
 	}
 
-	const cooldownMs = cooldownHours * 60 * 60 * 1000;
+	const cooldownMs = cooldownHours * TIME_UNIT.MS_PER_HOUR;
 	const endsAt = addMilliseconds(cooldownMs, lastActionTime);
 	const currentTime = now();
 
@@ -329,7 +329,7 @@ export function calculateCooldown(
 	const remainingMs = endsAt.getTime() - currentTime.getTime();
 	return {
 		isActive: true,
-		remainingSeconds: Math.ceil(remainingMs / 1000),
+		remainingSeconds: Math.ceil(remainingMs / TIME_UNIT.MS_PER_SECOND),
 		endsAt,
 	};
 }
