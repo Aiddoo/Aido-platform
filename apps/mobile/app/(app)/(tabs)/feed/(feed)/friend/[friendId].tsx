@@ -3,7 +3,7 @@ import { Calendar } from '@src/features/todo/presentations/components/Calendar/C
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
-import { useFeedDate } from '@src/features/todo/presentations/providers/feed-date-provider';
+import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
@@ -14,7 +14,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 
 const FriendFeedScreen = () => {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
-  const { selectedDate, setSelectedDate } = useFeedDate();
+  const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
   const invalidateTodos = useCallback(
     () => queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
@@ -37,7 +37,7 @@ const FriendFeedScreen = () => {
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Calendar value={selectedDate} onChange={setSelectedDate} showCompletions={false} />
+      <Calendar showCompletions={false} />
 
       <Spacing size={8} />
 

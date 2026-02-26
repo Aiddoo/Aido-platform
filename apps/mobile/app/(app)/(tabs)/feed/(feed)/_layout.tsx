@@ -1,5 +1,5 @@
 import { getFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
-import { FeedDateProvider } from '@src/features/todo/presentations/providers/feed-date-provider';
+import { FeedCalendarProvider } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -17,7 +17,7 @@ import { ScrollView, View } from 'react-native';
 
 export default function FeedGroupLayout() {
   return (
-    <FeedDateProvider>
+    <FeedCalendarProvider>
       <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
         <VStack>
           <QueryErrorBoundary>
@@ -28,7 +28,7 @@ export default function FeedGroupLayout() {
         </VStack>
         <Slot />
       </StyledSafeAreaView>
-    </FeedDateProvider>
+    </FeedCalendarProvider>
   );
 }
 
