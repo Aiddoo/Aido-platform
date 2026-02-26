@@ -13,6 +13,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
+import { type TransactionCallback } from "@test/mocks";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import {
@@ -50,10 +51,6 @@ interface OAuthProfile {
 	name?: string;
 	picture?: string;
 }
-
-// Transaction callback 타입
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TransactionCallback = (tx: any) => Promise<any>;
 
 describe("OAuthService", () => {
 	let service: OAuthService;

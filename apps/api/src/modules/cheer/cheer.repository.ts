@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
+import { addDays, startOfDay } from "@/common/date";
 import { DatabaseService } from "@/database/database.service";
-import type { Cheer, Prisma } from "@/generated/prisma/client";
+import type { Cheer } from "@/generated/prisma/client";
 
 import type {
 	CheckCooldownParams,
 	CheckDailyLimitParams,
 	CheerWithRelations,
 	FindCheersParams,
-	TransactionClient,
 } from "./types";
 
 // =============================================================================
@@ -44,60 +44,19 @@ export class CheerRepository {
 	// =========================================================================
 
 	/**
-	 * Cheer 생성
-	 */
-	async create(
-		data: Prisma.CheerCreateInput,
-		tx?: TransactionClient,
-	): Promise<Cheer> {
-		const client = tx ?? this.database;
-		return client.cheer.create({ data });
-	}
-
-	/**
-	 * Cheer 생성 (관계 정보 포함 반환)
-	 */
-	async createWithRelations(
-		data: Prisma.CheerCreateInput,
-		tx?: TransactionClient,
-	): Promise<CheerWithRelations> {
-		const client = tx ?? this.database;
-		return client.cheer.create({
-			data,
-			include: this.#cheerInclude,
-		});
-	}
-
-	/**
 	 * ID로 Cheer 조회
 	 */
-	async findById(id: number, tx?: TransactionClient): Promise<Cheer | null> {
-		const client = tx ?? this.database;
-		return client.cheer.findUnique({
+	async findById(id: number): Promise<Cheer | null> {
+		return this.database.cheer.findUnique({
 			where: { id },
-		});
-	}
-
-	/**
-	 * ID로 Cheer 조회 (관계 정보 포함)
-	 */
-	async findByIdWithRelations(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<CheerWithRelations | null> {
-		const client = tx ?? this.database;
-		return client.cheer.findUnique({
-			where: { id },
-			include: this.#cheerInclude,
 		});
 	}
 
 	/**
 	 * Cheer 읽음 처리
 	 */
-	async markAsRead(id: number, tx?: TransactionClient): Promise<Cheer> {
-		const client = tx ?? this.database;
-		return client.cheer.update({
+	async markAsRead(id: number): Promise<Cheer> {
+		return this.database.cheer.update({
 			where: { id },
 			data: { readAt: new Date() },
 		});
@@ -106,13 +65,8 @@ export class CheerRepository {
 	/**
 	 * 여러 Cheer 읽음 처리
 	 */
-	async markManyAsRead(
-		ids: number[],
-		receiverId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.cheer.updateMany({
+	async markManyAsRead(ids: number[], receiverId: string): Promise<number> {
+		const result = await this.database.cheer.updateMany({
 			where: {
 				id: { in: ids },
 				receiverId,
@@ -171,36 +125,6 @@ export class CheerRepository {
 		});
 	}
 
-	/**
-	 * 받은 Cheer 총 개수 조회
-	 */
-	async countReceivedCheers(userId: string): Promise<number> {
-		return this.database.cheer.count({
-			where: { receiverId: userId },
-		});
-	}
-
-	/**
-	 * 받은 Cheer 중 읽지 않은 개수 조회
-	 */
-	async countUnreadCheers(userId: string): Promise<number> {
-		return this.database.cheer.count({
-			where: {
-				receiverId: userId,
-				readAt: null,
-			},
-		});
-	}
-
-	/**
-	 * 보낸 Cheer 총 개수 조회
-	 */
-	async countSentCheers(userId: string): Promise<number> {
-		return this.database.cheer.count({
-			where: { senderId: userId },
-		});
-	}
-
 	// =========================================================================
 	// 제한 및 쿨다운 체크
 	// =========================================================================
@@ -211,18 +135,15 @@ export class CheerRepository {
 	async countTodayCheers(params: CheckDailyLimitParams): Promise<number> {
 		const { senderId, date } = params;
 
-		// 해당 날짜의 시작과 끝
-		const startOfDay = new Date(date);
-		startOfDay.setHours(0, 0, 0, 0);
-		const endOfDay = new Date(date);
-		endOfDay.setHours(23, 59, 59, 999);
+		const dayStart = startOfDay(date);
+		const dayEnd = addDays(1, dayStart);
 
 		return this.database.cheer.count({
 			where: {
 				senderId,
 				createdAt: {
-					gte: startOfDay,
-					lte: endOfDay,
+					gte: dayStart,
+					lt: dayEnd,
 				},
 			},
 		});
@@ -243,35 +164,5 @@ export class CheerRepository {
 			},
 			orderBy: { createdAt: "desc" },
 		});
-	}
-
-	// =========================================================================
-	// 사용자 정보 조회
-	// =========================================================================
-
-	/**
-	 * 사용자 존재 확인
-	 */
-	async userExists(userId: string): Promise<boolean> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { id: true },
-		});
-		return user !== null;
-	}
-
-	/**
-	 * 사용자 이름 조회 (알림용)
-	 */
-	async getUserName(userId: string): Promise<string | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: {
-				profile: {
-					select: { name: true },
-				},
-			},
-		});
-		return user?.profile?.name ?? null;
 	}
 }

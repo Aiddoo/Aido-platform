@@ -65,7 +65,7 @@ export abstract class TodoMapper {
 			endDate: toDateStringOrNull(entity.endDate),
 			scheduledTime: toISOStringOrNull(entity.scheduledTime),
 			isAllDay: entity.isAllDay,
-			visibility: entity.visibility as "PUBLIC" | "PRIVATE",
+			visibility: entity.visibility,
 			category: {
 				id: entity.category.id,
 				name: entity.category.name,

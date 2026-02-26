@@ -13,6 +13,13 @@ import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
 import {
+	addDays,
+	isSameDay,
+	midnightInTimezone,
+	startOfDayInTimezone,
+	toISOString,
+} from "@/common/date";
+import {
 	EntitlementService,
 	Feature,
 } from "@/common/entitlement/entitlement.service";
@@ -25,9 +32,6 @@ import {
 	type AiProvider,
 	type TokenUsage,
 } from "./providers/ai.provider";
-
-/** KST 시간대 오프셋 (밀리초) */
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 /**
  * AI 사용량 정보
@@ -219,10 +223,11 @@ export class AiService {
 			const isNewDay = this.#isNewDay(user.aiUsageResetAt);
 			const currentUsage = isNewDay ? 0 : user.aiUsageCount;
 
-			// dailyLimit === null → 무제한 (ADMIN / ACTIVE 구독)
-			if (dailyLimit !== null && currentUsage >= dailyLimit) {
-				throw BusinessExceptions.aiUsageLimitExceeded(currentUsage, dailyLimit);
-			}
+			this.entitlementService.enforceLimit(
+				{ dailyLimit, isAdmin: false, subscriptionStatus: "" },
+				currentUsage,
+				BusinessExceptions.aiUsageLimitExceeded,
+			);
 
 			if (isNewDay) {
 				await tx.user.update({
@@ -281,12 +286,9 @@ export class AiService {
 	 * @returns 새로운 날 여부
 	 */
 	#isNewDay(lastReset: Date): boolean {
-		const now = new Date();
-		const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
-		const kstLast = new Date(lastReset.getTime() + KST_OFFSET_MS);
-
-		// KST 기준 날짜 비교
-		return kstNow.toDateString() !== kstLast.toDateString();
+		const kstToday = startOfDayInTimezone(new Date(), "Asia/Seoul");
+		const kstLastDay = startOfDayInTimezone(lastReset, "Asia/Seoul");
+		return !isSameDay(kstToday, kstLastDay);
 	}
 
 	/**
@@ -295,16 +297,8 @@ export class AiService {
 	 * @returns ISO 8601 형식의 다음 리셋 시간
 	 */
 	#getNextResetTime(): string {
-		const now = new Date();
-		const kstNow = new Date(now.getTime() + KST_OFFSET_MS);
-
-		// KST 기준 내일 자정
-		const tomorrow = new Date(kstNow);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		tomorrow.setHours(0, 0, 0, 0);
-
-		// UTC로 변환하여 반환
-		const utcMidnight = new Date(tomorrow.getTime() - KST_OFFSET_MS);
-		return utcMidnight.toISOString();
+		const kstTodayMidnight = midnightInTimezone(new Date(), "Asia/Seoul");
+		const kstTomorrowMidnight = addDays(1, kstTodayMidnight);
+		return toISOString(kstTomorrowMidnight);
 	}
 }

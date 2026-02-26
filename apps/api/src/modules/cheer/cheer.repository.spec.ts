@@ -43,86 +43,6 @@ describe("CheerRepository", () => {
 	// 기본 CRUD 테스트
 	// ===========================================================================
 
-	describe("create", () => {
-		it("Cheer를 생성하고 반환한다", async () => {
-			// Given
-			const createData = {
-				sender: { connect: { id: "sender-1" } },
-				receiver: { connect: { id: "receiver-1" } },
-				message: "축하해요!",
-			};
-			const expectedCheer = CheerBuilder.create("sender-1", "receiver-1")
-				.withMessage("축하해요!")
-				.build();
-			(db.cheer.create as jest.Mock).mockResolvedValue(expectedCheer);
-
-			// When
-			const result = await repository.create(createData);
-
-			// Then
-			expect(result).toEqual(expectedCheer);
-			expect(db.cheer.create).toHaveBeenCalledWith({
-				data: createData,
-			});
-		});
-
-		it("트랜잭션 클라이언트가 주어지면 해당 클라이언트를 사용한다", async () => {
-			// Given
-			const createData = {
-				sender: { connect: { id: "sender-1" } },
-				receiver: { connect: { id: "receiver-1" } },
-			};
-			const expectedCheer = CheerBuilder.create(
-				"sender-1",
-				"receiver-1",
-			).build();
-			const mockTx = {
-				cheer: {
-					create: jest.fn().mockResolvedValue(expectedCheer),
-				},
-			};
-
-			// When
-			const result = await repository.create(createData, mockTx as never);
-
-			// Then
-			expect(result).toEqual(expectedCheer);
-			expect(mockTx.cheer.create).toHaveBeenCalled();
-			expect(db.cheer.create).not.toHaveBeenCalled();
-		});
-	});
-
-	describe("createWithRelations", () => {
-		it("Cheer를 생성하고 관계 정보와 함께 반환한다", async () => {
-			// Given
-			const createData = {
-				sender: { connect: { id: "sender-1" } },
-				receiver: { connect: { id: "receiver-1" } },
-				message: "잘했어요!",
-			};
-			const expectedCheer = CheerBuilder.create("sender-1", "receiver-1")
-				.withMessage("잘했어요!")
-				.withSenderProfile({ name: "보내는 사람", profileImage: null })
-				.withReceiverProfile({ name: "받는 사람", profileImage: null })
-				.buildWithRelations();
-			(db.cheer.create as jest.Mock).mockResolvedValue(expectedCheer);
-
-			// When
-			const result = await repository.createWithRelations(createData);
-
-			// Then
-			expect(result).toEqual(expectedCheer);
-			expect(result.sender).toBeDefined();
-			expect(result.receiver).toBeDefined();
-			expect(db.cheer.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					data: createData,
-					include: expect.any(Object),
-				}),
-			);
-		});
-	});
-
 	describe("findById", () => {
 		it("ID로 Cheer를 조회한다", async () => {
 			// Given
@@ -151,25 +71,6 @@ describe("CheerRepository", () => {
 
 			// Then
 			expect(result).toBeNull();
-		});
-	});
-
-	describe("findByIdWithRelations", () => {
-		it("ID로 Cheer를 관계 정보와 함께 조회한다", async () => {
-			// Given
-			const cheerId = 1;
-			const expectedCheer = CheerBuilder.create("sender-1", "receiver-1")
-				.withId(cheerId)
-				.buildWithRelations();
-			(db.cheer.findUnique as jest.Mock).mockResolvedValue(expectedCheer);
-
-			// When
-			const result = await repository.findByIdWithRelations(cheerId);
-
-			// Then
-			expect(result).toEqual(expectedCheer);
-			expect(result?.sender).toBeDefined();
-			expect(result?.receiver).toBeDefined();
 		});
 	});
 
@@ -321,60 +222,6 @@ describe("CheerRepository", () => {
 		});
 	});
 
-	describe("countReceivedCheers", () => {
-		it("받은 Cheer 총 개수를 반환한다", async () => {
-			// Given
-			const userId = "receiver-1";
-			(db.cheer.count as jest.Mock).mockResolvedValue(15);
-
-			// When
-			const result = await repository.countReceivedCheers(userId);
-
-			// Then
-			expect(result).toBe(15);
-			expect(db.cheer.count).toHaveBeenCalledWith({
-				where: { receiverId: userId },
-			});
-		});
-	});
-
-	describe("countUnreadCheers", () => {
-		it("읽지 않은 Cheer 개수를 반환한다", async () => {
-			// Given
-			const userId = "receiver-1";
-			(db.cheer.count as jest.Mock).mockResolvedValue(5);
-
-			// When
-			const result = await repository.countUnreadCheers(userId);
-
-			// Then
-			expect(result).toBe(5);
-			expect(db.cheer.count).toHaveBeenCalledWith({
-				where: {
-					receiverId: userId,
-					readAt: null,
-				},
-			});
-		});
-	});
-
-	describe("countSentCheers", () => {
-		it("보낸 Cheer 총 개수를 반환한다", async () => {
-			// Given
-			const userId = "sender-1";
-			(db.cheer.count as jest.Mock).mockResolvedValue(10);
-
-			// When
-			const result = await repository.countSentCheers(userId);
-
-			// Then
-			expect(result).toBe(10);
-			expect(db.cheer.count).toHaveBeenCalledWith({
-				where: { senderId: userId },
-			});
-		});
-	});
-
 	// ===========================================================================
 	// 제한 및 쿨다운 체크 테스트
 	// ===========================================================================
@@ -398,13 +245,13 @@ describe("CheerRepository", () => {
 					senderId: params.senderId,
 					createdAt: {
 						gte: expect.any(Date),
-						lte: expect.any(Date),
+						lt: expect.any(Date),
 					},
 				},
 			});
 		});
 
-		it("날짜 범위가 해당 날짜의 00:00:00부터 23:59:59까지이다", async () => {
+		it("날짜 범위가 해당 날짜의 00:00:00부터 다음날 00:00:00까지이다", async () => {
 			// Given
 			const testDate = new Date("2024-01-15T15:00:00Z");
 			const params: CheckDailyLimitParams = {
@@ -419,14 +266,15 @@ describe("CheerRepository", () => {
 			// Then
 			const callArgs = (db.cheer.count as jest.Mock).mock.calls[0][0];
 			const startDate = callArgs.where.createdAt.gte;
-			const endDate = callArgs.where.createdAt.lte;
+			const endDate = callArgs.where.createdAt.lt;
 
-			expect(startDate.getHours()).toBe(0);
-			expect(startDate.getMinutes()).toBe(0);
-			expect(startDate.getSeconds()).toBe(0);
-			expect(endDate.getHours()).toBe(23);
-			expect(endDate.getMinutes()).toBe(59);
-			expect(endDate.getSeconds()).toBe(59);
+			expect(startDate.getUTCHours()).toBe(0);
+			expect(startDate.getUTCMinutes()).toBe(0);
+			expect(startDate.getUTCSeconds()).toBe(0);
+			expect(endDate.getUTCDate()).toBe(startDate.getUTCDate() + 1);
+			expect(endDate.getUTCHours()).toBe(0);
+			expect(endDate.getUTCMinutes()).toBe(0);
+			expect(endDate.getUTCSeconds()).toBe(0);
 		});
 	});
 
@@ -467,86 +315,6 @@ describe("CheerRepository", () => {
 
 			// When
 			const result = await repository.findLastCheerToUser(params);
-
-			// Then
-			expect(result).toBeNull();
-		});
-	});
-
-	// ===========================================================================
-	// 사용자 정보 조회 테스트
-	// ===========================================================================
-
-	describe("userExists", () => {
-		it("사용자가 존재하면 true를 반환한다", async () => {
-			// Given
-			const userId = "user-1";
-			(db.user.findUnique as jest.Mock).mockResolvedValue({ id: userId });
-
-			// When
-			const result = await repository.userExists(userId);
-
-			// Then
-			expect(result).toBe(true);
-			expect(db.user.findUnique).toHaveBeenCalledWith({
-				where: { id: userId },
-				select: { id: true },
-			});
-		});
-
-		it("사용자가 존재하지 않으면 false를 반환한다", async () => {
-			// Given
-			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
-
-			// When
-			const result = await repository.userExists("non-existent");
-
-			// Then
-			expect(result).toBe(false);
-		});
-	});
-
-	describe("getUserName", () => {
-		it("사용자 이름을 반환한다", async () => {
-			// Given
-			const userId = "user-1";
-			const expectedName = "테스트유저";
-			(db.user.findUnique as jest.Mock).mockResolvedValue({
-				profile: { name: expectedName },
-			});
-
-			// When
-			const result = await repository.getUserName(userId);
-
-			// Then
-			expect(result).toBe(expectedName);
-			expect(db.user.findUnique).toHaveBeenCalledWith({
-				where: { id: userId },
-				select: {
-					profile: {
-						select: { name: true },
-					},
-				},
-			});
-		});
-
-		it("프로필이 없으면 null을 반환한다", async () => {
-			// Given
-			(db.user.findUnique as jest.Mock).mockResolvedValue({ profile: null });
-
-			// When
-			const result = await repository.getUserName("user-1");
-
-			// Then
-			expect(result).toBeNull();
-		});
-
-		it("사용자가 없으면 null을 반환한다", async () => {
-			// Given
-			(db.user.findUnique as jest.Mock).mockResolvedValue(null);
-
-			// When
-			const result = await repository.getUserName("non-existent");
 
 			// Then
 			expect(result).toBeNull();

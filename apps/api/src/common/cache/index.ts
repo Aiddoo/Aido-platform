@@ -5,9 +5,6 @@
  * - Strategy Pattern + Dependency Injection으로 인메모리 ↔ Redis 무중단 전환 가능
  */
 
-// Adapters
-export * from "./adapters/in-memory-cache.adapter";
-export * from "./adapters/redis-cache.adapter";
 // Module & Service
 export * from "./cache.module";
 export * from "./cache.service";

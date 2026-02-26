@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { toISOString } from "@/common/date";
 import type {
 	AdminNotification,
 	AdminNotifier,
@@ -47,7 +48,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 							description: notification.body,
 							color: notification.color ?? 0x5865f2,
 							fields: notification.fields ?? [],
-							timestamp: new Date().toISOString(),
+							timestamp: toISOString(new Date()),
 						},
 					],
 				}),

@@ -6,7 +6,6 @@ import {
 import {
 	Controller,
 	HttpCode,
-	HttpException,
 	HttpStatus,
 	Inject,
 	Logger,
@@ -71,15 +70,13 @@ export class SubscriptionController {
 			await this.subscriptionService.handleWebhookEvent(parseResult.data);
 		} catch (error) {
 			// Lock 경합 → 429 반환 (RevenueCat 재시도 유도)
+			// SUBSCRIPTION_1605는 httpStatus=429이므로 GlobalExceptionFilter가 그대로 처리
 			if (
 				error instanceof BusinessException &&
 				error.errorCode === ErrorCode.SUBSCRIPTION_1605
 			) {
 				this.#logger.warn(`Lock contention, returning 429: ${error.message}`);
-				throw new HttpException(
-					{ received: false, retryable: true },
-					HttpStatus.TOO_MANY_REQUESTS,
-				);
+				throw error;
 			}
 			// 그 외 에러 → Sentry + Discord 알림 + 200 반환 (무한 재시도 방지)
 			Sentry.withScope((scope) => {
@@ -97,6 +94,7 @@ export class SubscriptionController {
 				scope.setExtra("webhook.event_id", parseResult.data.event.id);
 				Sentry.captureException(error);
 			});
+
 			this.#logger.error(
 				`Failed to process webhook event: ${error}`,
 				error instanceof Error ? error.stack : undefined,

@@ -7,6 +7,8 @@
  * @see apps/api/src/modules/admin-notification/events/admin-notification.events.ts
  */
 
+import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
+
 export const SubscriptionEvents = {
 	PURCHASED: "subscription.purchased",
 	RENEWED: "subscription.renewed",
@@ -28,9 +30,8 @@ export type SubscriptionEventName =
  *
  * Service의 #getEmitEventName과 Listener의 #resolveEventKey에서 공용 사용
  */
-export const REVENUECAT_EVENT_TO_INTERNAL: Record<
-	string,
-	SubscriptionEventName
+export const REVENUECAT_EVENT_TO_INTERNAL: Partial<
+	Record<RevenueCatEventType, SubscriptionEventName>
 > = {
 	INITIAL_PURCHASE: SubscriptionEvents.PURCHASED,
 	RENEWAL: SubscriptionEvents.RENEWED,
@@ -53,11 +54,11 @@ export interface SubscriptionEventPayload {
 	/** 이메일 */
 	email: string;
 	/** 이벤트 타입 (RevenueCat 원본 이벤트명) */
-	eventType: string;
+	eventType: RevenueCatEventType;
 	/** 상품 ID */
 	productId: string;
-	/** 스토어 (app_store / play_store / stripe 등) */
-	store?: string;
+	/** 스토어 (APP_STORE / PLAY_STORE / STRIPE 등) */
+	store?: RevenueCatStore;
 	/** 트랜잭션 ID */
 	transactionId?: string;
 	/** 구매 시각 (ISO string) */

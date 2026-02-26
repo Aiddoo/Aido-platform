@@ -60,8 +60,9 @@ function buildDateRangeFilter(
 	}
 
 	// 단일 날짜만 전달 시 → exact match (오픈 레인지 방지)
-	const effectiveStart = startDate ?? (endDate as Date);
-	const effectiveEnd = endDate ?? (startDate as Date);
+	// 가드 통과 후 둘 중 하나는 반드시 존재
+	const effectiveStart: Date = startDate ?? endDate ?? new Date();
+	const effectiveEnd: Date = endDate ?? startDate ?? new Date();
 
 	// 다일 투두 (endDate가 있는 경우): Overlapping Intervals
 	const multiDayCondition: Prisma.TodoWhereInput = {
@@ -268,42 +269,6 @@ export class TodoRepository {
 		]);
 
 		return { total, completed };
-	}
-
-	/**
-	 * 사용자 이름 조회 (알림용)
-	 */
-	async getUserName(userId: string): Promise<string | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: {
-				profile: {
-					select: { name: true },
-				},
-			},
-		});
-		return user?.profile?.name ?? null;
-	}
-
-	/**
-	 * 사용자의 맞팔 친구 ID 목록 조회 (알림 발송용)
-	 *
-	 * 최적화: 3단계 중첩 쿼리 대신 Raw SQL JOIN으로 성능 개선
-	 */
-	async getMutualFriendIds(userId: string): Promise<string[]> {
-		// Raw SQL로 최적화된 JOIN 쿼리 (3단계 중첩 쿼리 대신)
-		const result = await this.database.$queryRaw<{ followingId: string }[]>`
-			SELECT DISTINCT f1."followingId"
-			FROM "Follow" f1
-			INNER JOIN "Follow" f2
-				ON f1."followingId" = f2."followerId"
-				AND f2."followingId" = f1."followerId"
-			WHERE f1."followerId" = ${userId}
-				AND f1."status" = 'ACCEPTED'
-				AND f2."status" = 'ACCEPTED'
-		`;
-
-		return result.map((r) => r.followingId);
 	}
 
 	// =========================================================================

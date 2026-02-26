@@ -55,6 +55,15 @@ describe("AiService", () => {
 			isAdmin: false,
 			subscriptionStatus: "FREE",
 		});
+
+		// enforceLimit — 실제 로직 위임
+		(entitlementService.enforceLimit as jest.Mock).mockImplementation(
+			(entitlement, currentUsage, errorFactory) => {
+				if (entitlement.dailyLimit === null) return;
+				if (currentUsage < entitlement.dailyLimit) return;
+				throw errorFactory(currentUsage, entitlement.dailyLimit);
+			},
+		);
 	});
 
 	afterEach(() => {

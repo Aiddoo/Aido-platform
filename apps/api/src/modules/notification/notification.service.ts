@@ -4,6 +4,7 @@ import {
 	type Notification as NotificationDto,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { TIME_UNIT } from "@/common/date";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
@@ -58,9 +59,9 @@ export class NotificationService {
 	 * - 서비스 dedup 필요 타입: windowMs + 체크 키 정의
 	 */
 	private static readonly DEDUP_WINDOW = {
-		NUDGE: 60 * 60 * 1000, // 1시간
-		CHEER: 5 * 60 * 1000, // 5분
-		FOLLOW: 24 * 60 * 60 * 1000, // 24시간
+		NUDGE: TIME_UNIT.MS_PER_HOUR, // 1시간
+		CHEER: 5 * TIME_UNIT.MS_PER_MINUTE, // 5분
+		FOLLOW: 24 * TIME_UNIT.MS_PER_HOUR, // 24시간
 	} as const;
 
 	private static readonly DEDUP_STRATEGIES: Partial<
@@ -105,8 +106,7 @@ export class NotificationService {
 		data: CreateNotificationData,
 		tx?: TransactionClient,
 	): Promise<Notification | null> {
-		const strategy =
-			NotificationService.DEDUP_STRATEGIES[data.type as NotificationType];
+		const strategy = NotificationService.DEDUP_STRATEGIES[data.type];
 
 		if (!strategy) {
 			return this.createAndSend(data, tx);
@@ -127,26 +127,24 @@ export class NotificationService {
 
 		try {
 			const since = new Date(Date.now() - strategy.windowMs);
-			const params: {
-				userId: string;
-				type: NotificationType;
-				since: Date;
+			const contextFields: {
 				friendId?: string;
 				todoId?: number;
 				nudgeId?: number;
 				cheerId?: number;
-			} = {
-				userId: data.userId,
-				type: data.type as NotificationType,
-				since,
-			};
-
+			} = {};
 			for (const key of strategy.keys) {
 				const value = data[key];
 				if (value != null) {
-					(params as Record<string, unknown>)[key] = value;
+					(contextFields as Record<string, string | number>)[key] = value;
 				}
 			}
+			const params = {
+				userId: data.userId,
+				type: data.type,
+				since,
+				...contextFields,
+			};
 
 			const exists = await this.notificationRepository.existsRecentNotification(
 				params,
@@ -174,7 +172,7 @@ export class NotificationService {
 			keys: Array<"friendId" | "todoId" | "nudgeId" | "cheerId">;
 		},
 	): string {
-		const parts = ["dedup", data.userId, data.type as string];
+		const parts = ["dedup", data.userId, data.type];
 		for (const key of strategy.keys) {
 			const value = data[key];
 			if (value != null) {
@@ -202,7 +200,7 @@ export class NotificationService {
 
 		const shouldSend = await this.pushDeliveryService.shouldSendPush(
 			data.userId,
-			data.type as NotificationType,
+			data.type,
 		);
 
 		if (!shouldSend) {

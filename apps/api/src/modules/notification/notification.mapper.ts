@@ -8,9 +8,10 @@ import type {
 	NotificationContext,
 	Notification as NotificationDto,
 } from "@aido/validators";
+import { toISOString, toISOStringOrNull } from "@/common/date";
 import type { Notification } from "@/generated/prisma/client";
 
-export class NotificationMapper {
+export abstract class NotificationMapper {
 	/**
 	 * Prisma Notification → Response DTO 형식
 	 */
@@ -31,8 +32,8 @@ export class NotificationMapper {
 			isRead: notification.isRead,
 			metadata: notification.metadata as Record<string, unknown> | null,
 			...(hasContext && { context }),
-			createdAt: notification.createdAt.toISOString(),
-			readAt: notification.readAt?.toISOString() ?? null,
+			createdAt: toISOString(notification.createdAt),
+			readAt: toISOStringOrNull(notification.readAt ?? null),
 		};
 	}
 

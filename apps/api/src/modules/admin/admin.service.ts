@@ -4,7 +4,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../notification/notification.service";
-import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dto";
+import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dtos";
 
 export interface BroadcastResult {
 	successCount: number;

@@ -1,15 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
+import { addDays, toDateOnly } from "@/common/date";
 import { DailyCompletionMapper } from "./daily-completion.mapper";
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import type {
-	DailyCompletionsRangeResult,
-	GetDailyCompletionsRangeParams,
-} from "./types/daily-completion.types";
-
-// 타입 재내보내기 (기존 import 호환성 유지)
-export type {
-	DailyCompletionSummary,
 	DailyCompletionsRangeResult,
 	GetDailyCompletionsRangeParams,
 } from "./types/daily-completion.types";
@@ -33,8 +26,8 @@ export class DailyCompletionService {
 	): Promise<DailyCompletionsRangeResult> {
 		const { userId, startDate, endDate } = params;
 
-		const start = dayjs.utc(startDate).startOf("day").toDate();
-		const end = dayjs.utc(endDate).add(1, "day").startOf("day").toDate();
+		const start = toDateOnly(startDate);
+		const end = addDays(1, toDateOnly(endDate));
 
 		const aggregates =
 			await this.dailyCompletionRepository.aggregateTodosByDateRange({

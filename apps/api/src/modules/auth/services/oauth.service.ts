@@ -3,7 +3,12 @@ import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { now, subtractDays } from "@/common/date";
+import {
+	now,
+	subtractDays,
+	toISOString,
+	toISOStringOrNull,
+} from "@/common/date";
 import { EncryptionService } from "@/common/encryption";
 import {
 	BusinessException,
@@ -44,6 +49,20 @@ import {
 } from "./oauth-providers";
 import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
 import { SessionService } from "./session.service";
+
+/**
+ * AccountProvider → 이벤트 페이로드 provider 매핑
+ */
+const ACCOUNT_PROVIDER_TO_EVENT: Record<
+	AccountProvider,
+	UserRegisteredEventPayload["provider"]
+> = {
+	CREDENTIAL: "credential",
+	APPLE: "apple",
+	GOOGLE: "google",
+	KAKAO: "kakao",
+	NAVER: "naver",
+};
 
 // Apple, Google, Kakao, Naver OAuth 소셜 로그인 처리
 @Injectable()
@@ -718,9 +737,8 @@ export class OAuthService {
 			this.eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
 				userId,
 				email: effectiveEmail,
-				provider:
-					provider.toLowerCase() as UserRegisteredEventPayload["provider"],
-				registeredAt: new Date().toISOString(),
+				provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
+				registeredAt: toISOString(now()),
 			} satisfies UserRegisteredEventPayload);
 		}
 
@@ -992,8 +1010,8 @@ export class OAuthService {
 				ipAddress: metadata.ip,
 				userAgent: metadata.userAgent,
 				metadata: {
-					deletedAt: user.deletedAt?.toISOString() ?? null,
-					restoredAt: now().toISOString(),
+					deletedAt: toISOStringOrNull(user.deletedAt ?? null),
+					restoredAt: toISOString(now()),
 				},
 			},
 			tx,
@@ -1021,7 +1039,9 @@ export class OAuthService {
 		provider: AccountProvider,
 		providerAccountId: string,
 	): BusinessException {
-		const exceptionMap: Record<string, (id: string) => BusinessException> = {
+		const exceptionMap: Partial<
+			Record<AccountProvider, (id: string) => BusinessException>
+		> = {
 			KAKAO: BusinessExceptions.kakaoAccountAlreadyLinked,
 			APPLE: BusinessExceptions.appleAccountAlreadyLinked,
 			GOOGLE: BusinessExceptions.googleAccountAlreadyLinked,

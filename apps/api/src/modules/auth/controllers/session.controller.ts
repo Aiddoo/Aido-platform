@@ -26,6 +26,15 @@ import { JwtAuthGuard } from "../guards";
 import { AuthService } from "../services/auth.service";
 import { extractMetadata } from "./auth-controller.utils";
 
+/**
+ * Session API 컨트롤러
+ *
+ * 사용자 세션(로그인 기기) 관리 API입니다.
+ *
+ * ### 세션 관리
+ * - GET /auth/sessions - 활성 세션 목록 조회
+ * - DELETE /auth/sessions/:sessionId - 특정 세션 종료
+ */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 @UseGuards(JwtAuthGuard)

@@ -1,13 +1,13 @@
 import { Injectable } from "@nestjs/common";
+import { addDays, startOfDay } from "@/common/date";
 import { DatabaseService } from "@/database/database.service";
-import type { Nudge, Prisma } from "@/generated/prisma/client";
+import type { Nudge } from "@/generated/prisma/client";
 
 import type {
 	CheckCooldownParams,
 	CheckDailyLimitParams,
 	FindNudgesParams,
 	NudgeWithRelations,
-	TransactionClient,
 } from "./types";
 
 // =============================================================================
@@ -53,60 +53,19 @@ export class NudgeRepository {
 	// =========================================================================
 
 	/**
-	 * Nudge 생성
-	 */
-	async create(
-		data: Prisma.NudgeCreateInput,
-		tx?: TransactionClient,
-	): Promise<Nudge> {
-		const client = tx ?? this.database;
-		return client.nudge.create({ data });
-	}
-
-	/**
-	 * Nudge 생성 (관계 정보 포함 반환)
-	 */
-	async createWithRelations(
-		data: Prisma.NudgeCreateInput,
-		tx?: TransactionClient,
-	): Promise<NudgeWithRelations> {
-		const client = tx ?? this.database;
-		return client.nudge.create({
-			data,
-			include: this.#nudgeInclude,
-		});
-	}
-
-	/**
 	 * ID로 Nudge 조회
 	 */
-	async findById(id: number, tx?: TransactionClient): Promise<Nudge | null> {
-		const client = tx ?? this.database;
-		return client.nudge.findUnique({
+	async findById(id: number): Promise<Nudge | null> {
+		return this.database.nudge.findUnique({
 			where: { id },
-		});
-	}
-
-	/**
-	 * ID로 Nudge 조회 (관계 정보 포함)
-	 */
-	async findByIdWithRelations(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<NudgeWithRelations | null> {
-		const client = tx ?? this.database;
-		return client.nudge.findUnique({
-			where: { id },
-			include: this.#nudgeInclude,
 		});
 	}
 
 	/**
 	 * Nudge 읽음 처리
 	 */
-	async markAsRead(id: number, tx?: TransactionClient): Promise<Nudge> {
-		const client = tx ?? this.database;
-		return client.nudge.update({
+	async markAsRead(id: number): Promise<Nudge> {
+		return this.database.nudge.update({
 			where: { id },
 			data: { readAt: new Date() },
 		});
@@ -170,18 +129,15 @@ export class NudgeRepository {
 	async countTodayNudges(params: CheckDailyLimitParams): Promise<number> {
 		const { senderId, date } = params;
 
-		// 해당 날짜의 시작과 끝
-		const startOfDay = new Date(date);
-		startOfDay.setHours(0, 0, 0, 0);
-		const endOfDay = new Date(date);
-		endOfDay.setHours(23, 59, 59, 999);
+		const dayStart = startOfDay(date);
+		const dayEnd = addDays(1, dayStart);
 
 		return this.database.nudge.count({
 			where: {
 				senderId,
 				createdAt: {
-					gte: startOfDay,
-					lte: endOfDay,
+					gte: dayStart,
+					lt: dayEnd,
 				},
 			},
 		});
@@ -218,62 +174,5 @@ export class NudgeRepository {
 			},
 			orderBy: { createdAt: "desc" },
 		});
-	}
-
-	// =========================================================================
-	// 사용자 및 Todo 존재 확인
-	// =========================================================================
-
-	/**
-	 * 사용자 존재 확인
-	 */
-	async userExists(userId: string): Promise<boolean> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { id: true },
-		});
-		return user !== null;
-	}
-
-	/**
-	 * 사용자 이름 조회 (알림용)
-	 */
-	async getUserName(userId: string): Promise<string | null> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: {
-				profile: {
-					select: { name: true },
-				},
-			},
-		});
-		return user?.profile?.name ?? null;
-	}
-
-	/**
-	 * Todo 존재 및 소유자 확인
-	 */
-	async findTodoWithOwner(
-		todoId: number,
-	): Promise<{ id: number; userId: string; title: string } | null> {
-		return this.database.todo.findUnique({
-			where: { id: todoId },
-			select: {
-				id: true,
-				userId: true,
-				title: true,
-			},
-		});
-	}
-
-	/**
-	 * Todo 가시성 확인 (PUBLIC인지)
-	 */
-	async isTodoPublic(todoId: number): Promise<boolean> {
-		const todo = await this.database.todo.findUnique({
-			where: { id: todoId },
-			select: { visibility: true },
-		});
-		return todo?.visibility === "PUBLIC";
 	}
 }

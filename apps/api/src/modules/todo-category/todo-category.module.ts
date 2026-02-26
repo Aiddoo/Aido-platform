@@ -12,6 +12,6 @@ import { TodoCategoryService } from "./todo-category.service";
 		TodoCategoryRepository,
 		UserRegisteredCategoryListener,
 	],
-	exports: [TodoCategoryService, TodoCategoryRepository],
+	exports: [TodoCategoryService],
 })
 export class TodoCategoryModule {}

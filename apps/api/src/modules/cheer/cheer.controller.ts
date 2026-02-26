@@ -14,6 +14,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+import { toISOStringOrNull } from "@/common/date";
 import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
@@ -259,7 +260,7 @@ export class CheerController {
 			userId: targetUserId,
 			canCheer: !cooldownInfo.isActive,
 			remainingSeconds: cooldownInfo.remainingSeconds,
-			cooldownEndsAt: cooldownInfo.canCheerAt?.toISOString() ?? null,
+			cooldownEndsAt: toISOStringOrNull(cooldownInfo.canCheerAt ?? null),
 		};
 	}
 

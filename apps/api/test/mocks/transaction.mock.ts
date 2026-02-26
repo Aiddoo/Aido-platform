@@ -1,6 +1,14 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
+ * $transaction 콜백 타입
+ *
+ * Suites mock에서 database.$transaction을 구현할 때 사용
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type TransactionCallback = (tx: any) => Promise<any>;
+
+/**
  * Prisma 모델별 Mock 델리게이트 타입
  */
 interface MockModelDelegate {

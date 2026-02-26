@@ -1,2 +1,2 @@
-export { EncryptionModule } from "./encryption.module";
-export { EncryptionService } from "./encryption.service";
+export * from "./encryption.module";
+export * from "./encryption.service";

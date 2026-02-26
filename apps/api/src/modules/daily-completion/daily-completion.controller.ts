@@ -11,14 +11,12 @@ import {
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { JwtAuthGuard } from "../auth/guards";
 
-import {
-	DailyCompletionService,
-	type DailyCompletionsRangeResult,
-} from "./daily-completion.service";
+import { DailyCompletionService } from "./daily-completion.service";
 import {
 	DailyCompletionsRangeResponseDto,
 	GetDailyCompletionsRangeDto,
 } from "./dtos";
+import type { DailyCompletionsRangeResult } from "./types/daily-completion.types";
 
 /**
  * DailyCompletion API 컨트롤러

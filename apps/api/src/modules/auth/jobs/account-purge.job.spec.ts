@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { type TransactionCallback } from "@test/mocks";
 import {
 	type ILockProvider,
 	LOCK_PROVIDER,
@@ -10,9 +11,6 @@ import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AccountPurgeJob } from "./account-purge.job";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TransactionCallback = (tx: any) => Promise<any>;
 
 describe("AccountPurgeJob", () => {
 	let job: AccountPurgeJob;

@@ -25,6 +25,7 @@ import {
 	AuthService,
 	OAuthService,
 	OAuthTokenVerifierService,
+	PasswordManagementService,
 	PasswordService,
 	SessionService,
 	TokenService,
@@ -73,6 +74,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		VerificationService,
 		OAuthTokenVerifierService,
 		AuthService,
+		PasswordManagementService,
 		OAuthService,
 		// Strategies
 		JwtStrategy,

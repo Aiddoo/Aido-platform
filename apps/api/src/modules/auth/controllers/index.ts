@@ -1,4 +1,4 @@
-export { AccountController } from "./account.controller";
-export { AuthController } from "./auth.controller";
-export { OAuthController } from "./oauth.controller";
-export { SessionController } from "./session.controller";
+export * from "./account.controller";
+export * from "./auth.controller";
+export * from "./oauth.controller";
+export * from "./session.controller";

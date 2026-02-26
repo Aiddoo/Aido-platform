@@ -26,6 +26,14 @@ import { JwtAuthGuard } from "../auth/guards";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
 import { InquiryService } from "./inquiry.service";
 
+/**
+ * Inquiry API 컨트롤러
+ *
+ * 사용자 문의사항 접수 API입니다.
+ *
+ * ### 문의
+ * - POST /inquiries - 문의 등록
+ */
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

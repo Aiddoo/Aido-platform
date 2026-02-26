@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { DATE_FORMAT, type DateFormatType } from "../constants";
+import { DATE_FORMAT, type DateFormatType, TIME_UNIT } from "../constants";
 
 const DEFAULT_TIMEZONE = "UTC";
 
@@ -24,20 +24,6 @@ export function timestamp(): number {
 // ============================================
 // 파싱
 // ============================================
-
-/**
- * 날짜 문자열을 UTC Date 객체로 파싱
- */
-export function parseDate(dateString: string): Date {
-	return dayjs.utc(dateString).toDate();
-}
-
-/**
- * 날짜 문자열을 UTC Date 객체로 파싱 (parseDate의 별칭)
- */
-export function toDate(dateString: string): Date {
-	return dayjs.utc(dateString).toDate();
-}
 
 /**
  * DATE 타입 필드용 날짜 변환
@@ -287,8 +273,10 @@ export function toScheduledTime(
 }
 
 /**
- * 지정된 타임존에서 특정 시점의 날짜 시작(자정)을 UTC Date로 반환
- * @example startOfDayInTimezone(new Date(), 'Asia/Seoul') → 해당 시점의 KST 자정을 UTC로 표현
+ * 지정된 타임존에서 특정 시점의 날짜를 UTC midnight(00:00:00.000Z) Date로 반환
+ * PostgreSQL DATE(@db.Date) 컬럼과 비교할 때 사용
+ * @example startOfDayInTimezone(new Date('2026-02-06T20:00:00Z'), 'Asia/Seoul')
+ *   // KST 2/7 → 2026-02-07T00:00:00.000Z
  */
 export function startOfDayInTimezone(
 	date: Date = now(),
@@ -296,4 +284,52 @@ export function startOfDayInTimezone(
 ): Date {
 	const localDateStr = dayjs(date).tz(tz).format("YYYY-MM-DD");
 	return dayjs.utc(localDateStr).startOf("day").toDate();
+}
+
+/**
+ * 지정된 타임존의 자정을 실제 UTC timestamp로 반환
+ * TIMESTAMPTZ 컬럼 범위 쿼리에 사용 (tz 자정 = UTC 오프셋 적용)
+ * @example midnightInTimezone(new Date('2026-02-11T00:00:00+09:00'), 'Asia/Seoul')
+ *   // KST 2/11 자정 → 2026-02-10T15:00:00.000Z
+ */
+export function midnightInTimezone(
+	date: Date = now(),
+	tz: string = DEFAULT_TIMEZONE,
+): Date {
+	return dayjs(date).tz(tz).startOf("day").utc().toDate();
+}
+
+// ============================================
+// 쿨다운
+// ============================================
+
+/**
+ * 쿨다운 상태를 계산합니다.
+ *
+ * @param lastActionTime - 마지막 액션 시각
+ * @param cooldownHours - 쿨다운 시간 (시 단위)
+ * @returns 쿨다운 활성 여부, 남은 초, 쿨다운 종료 시각
+ */
+export function calculateCooldown(
+	lastActionTime: Date | null | undefined,
+	cooldownHours: number,
+): { isActive: boolean; remainingSeconds: number; endsAt: Date | null } {
+	if (!lastActionTime) {
+		return { isActive: false, remainingSeconds: 0, endsAt: null };
+	}
+
+	const cooldownMs = cooldownHours * TIME_UNIT.MS_PER_HOUR;
+	const endsAt = addMilliseconds(cooldownMs, lastActionTime);
+	const currentTime = now();
+
+	if (currentTime >= endsAt) {
+		return { isActive: false, remainingSeconds: 0, endsAt: null };
+	}
+
+	const remainingMs = endsAt.getTime() - currentTime.getTime();
+	return {
+		isActive: true,
+		remainingSeconds: Math.ceil(remainingMs / TIME_UNIT.MS_PER_SECOND),
+		endsAt,
+	};
 }
