@@ -1,5 +1,4 @@
 import {
-  formatPrice,
   getAnnualDiscountPercent,
   getMonthlyEquivalent,
   isActiveSubscription,
@@ -44,20 +43,6 @@ describe('getMonthlyEquivalent', () => {
 
   test('연간 12,000원이면 월 1,000원을 반환한다', () => {
     expect(getMonthlyEquivalent(12_000)).toBe(1_000);
-  });
-});
-
-describe('formatPrice', () => {
-  test('KRW는 소수점 없이 포맷한다', () => {
-    expect(formatPrice(8_900, 'KRW')).toContain('8,900');
-  });
-
-  test('USD는 소수점 2자리로 포맷한다', () => {
-    expect(formatPrice(6.99, 'USD')).toContain('6.99');
-  });
-
-  test('JPY는 소수점 없이 포맷한다', () => {
-    expect(formatPrice(1_200, 'JPY')).toContain('1,200');
   });
 });
 

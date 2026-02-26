@@ -41,14 +41,6 @@ export function getMonthlyEquivalent(annualPrice: number) {
   return Math.round((annualPrice / 12) * 100) / 100;
 }
 
-export function formatPrice(amount: number, currencyCode: string) {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: currencyCode,
-    maximumFractionDigits: currencyCode === 'KRW' || currencyCode === 'JPY' ? 0 : 2,
-  }).format(amount);
-}
-
 // Policy (Business Logic)
 
 export const SubscriptionPolicy = {
