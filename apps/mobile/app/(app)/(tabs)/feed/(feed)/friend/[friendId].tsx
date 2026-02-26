@@ -17,7 +17,11 @@ const FriendFeedScreen = () => {
   const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
   const invalidateTodos = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
+        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudges() }),
+      ]),
     [queryClient],
   );
   const [refreshing, onRefresh] = useRefresh(invalidateTodos);

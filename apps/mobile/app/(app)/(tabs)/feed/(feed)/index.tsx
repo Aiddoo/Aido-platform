@@ -13,7 +13,11 @@ const MyFeedScreen = () => {
   const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
   const invalidateTodos = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
+        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
+      ]),
     [queryClient],
   );
   const [refreshing, onRefresh] = useRefresh(invalidateTodos);
