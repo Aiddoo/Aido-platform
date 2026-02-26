@@ -137,11 +137,13 @@ const getCategoryLabel = (type: NotificationType): string =>
 const getInternalRoute = (type: NotificationType, context?: NotificationContext): string | null =>
   match(type)
     .with('FOLLOW_NEW', () => '/friends')
-    .with('FOLLOW_ACCEPTED', () => '/feed')
-    .with('CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
-      context?.friendId ? `/friends/${context.friendId}` : null,
+    .with('FOLLOW_ACCEPTED', () =>
+      context?.friendId ? `/feed/friend/${context.friendId}` : '/feed',
     )
-    .with('NUDGE_RECEIVED', () => (context?.friendId ? `/friends/${context.friendId}` : null))
+    .with('CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
+      context?.friendId ? `/feed/friend/${context.friendId}` : null,
+    )
+    .with('NUDGE_RECEIVED', () => (context?.friendId ? `/feed/friend/${context.friendId}` : null))
     .with(
       'TODO_REMINDER',
       'TODO_SHARED',

@@ -1,3 +1,4 @@
+import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -11,7 +12,7 @@ import {
 } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
@@ -22,23 +23,21 @@ import { CalendarWeekView } from './CalendarWeekView';
 import type { CalendarViewMode } from './calendar.types';
 
 interface CalendarProps {
-  value: Date;
-  onChange: (date: Date) => void;
   showCompletions?: boolean;
 }
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 
-export function Calendar({ value, onChange, showCompletions = true }: CalendarProps) {
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
+export function Calendar({ showCompletions = true }: CalendarProps) {
+  const { selectedDate, setSelectedDate, viewMode, setViewMode } = useFeedCalendar();
 
   const { rangeStart, rangeEnd } = useMemo(
     () =>
       match(viewMode)
-        .with('week', () => getWeekRange(value))
-        .with('month', () => getCalendarRange(value))
+        .with('week', () => getWeekRange(selectedDate))
+        .with('month', () => getCalendarRange(selectedDate))
         .exhaustive(),
-    [viewMode, value],
+    [viewMode, selectedDate],
   );
 
   const { data } = useQuery({
@@ -52,9 +51,9 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
     <VStack className="bg-background" gap={8}>
       <HStack className="px-4 py-2" justify="between" align="center">
         <HStack gap={8} align="center">
-          <CalendarHeaderText viewMode={viewMode} displayDate={value} />
+          <CalendarHeaderText viewMode={viewMode} displayDate={selectedDate} />
           <PressableFeedback
-            onPress={() => onChange(new Date())}
+            onPress={() => setSelectedDate(new Date())}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>
@@ -65,16 +64,24 @@ export function Calendar({ value, onChange, showCompletions = true }: CalendarPr
 
         <HStack gap={8} align="center">
           <CalendarViewModeToggle value={viewMode} onChange={setViewMode} />
-          <CalendarNavigation viewMode={viewMode} value={value} onChange={onChange} />
+          <CalendarNavigation viewMode={viewMode} value={selectedDate} onChange={setSelectedDate} />
         </HStack>
       </HStack>
 
       {match(viewMode)
         .with('week', () => (
-          <CalendarWeekView value={value} onChange={onChange} completions={completions} />
+          <CalendarWeekView
+            value={selectedDate}
+            onChange={setSelectedDate}
+            completions={completions}
+          />
         ))
         .with('month', () => (
-          <CalendarMonthView value={value} onChange={onChange} completions={completions} />
+          <CalendarMonthView
+            value={selectedDate}
+            onChange={setSelectedDate}
+            completions={completions}
+          />
         ))
         .exhaustive()}
     </VStack>

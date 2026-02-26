@@ -1,7 +1,8 @@
 import { Text } from '@src/shared/ui/Text/Text';
-import { useCallback, useState } from 'react';
+import { cn } from '@src/shared/utils/cn';
+import { useCallback, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import type { CalendarViewMode } from './calendar.types';
 
@@ -21,6 +22,10 @@ const SPRING_CONFIG = { stiffness: 500, damping: 30, mass: 0.8 };
 
 export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeToggleProps) => {
   const [itemLayouts, setItemLayouts] = useState<Record<string, { x: number; width: number }>>({});
+  const hasAnimated = useRef(false);
+  const translateX = useSharedValue(0);
+  const indicatorWidth = useSharedValue(0);
+  const showIndicator = useSharedValue(0);
 
   const handleLayout = useCallback((mode: CalendarViewMode, e: LayoutChangeEvent) => {
     const { x, width } = e.nativeEvent.layout;
@@ -29,15 +34,24 @@ export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeTogg
 
   const activeLayout = itemLayouts[value];
 
-  const indicatorStyle = useAnimatedStyle(() => {
-    if (!activeLayout) return { opacity: 0 };
-    return {
-      opacity: 1,
-      height: ITEM_HEIGHT,
-      transform: [{ translateX: withSpring(activeLayout.x, SPRING_CONFIG) }],
-      width: withSpring(activeLayout.width, SPRING_CONFIG),
-    };
-  }, [activeLayout]);
+  if (activeLayout) {
+    if (!hasAnimated.current) {
+      translateX.value = activeLayout.x;
+      indicatorWidth.value = activeLayout.width;
+      showIndicator.value = 1;
+      hasAnimated.current = true;
+    } else {
+      translateX.value = withSpring(activeLayout.x, SPRING_CONFIG);
+      indicatorWidth.value = withSpring(activeLayout.width, SPRING_CONFIG);
+    }
+  }
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: showIndicator.value,
+    height: ITEM_HEIGHT,
+    transform: [{ translateX: translateX.value }],
+    width: indicatorWidth.value,
+  }));
 
   return (
     <View className="flex-row items-center bg-gray-2 rounded-lg" style={{ padding: PADDING }}>
@@ -48,7 +62,10 @@ export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeTogg
           onPress={() => onChange(mode.value)}
           onLayout={(e) => handleLayout(mode.value, e)}
           hitSlop={4}
-          className="items-center justify-center rounded-md"
+          className={cn(
+            'items-center justify-center rounded-md',
+            value === mode.value && 'bg-white',
+          )}
           style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
         >
           <Text size="e1" weight="medium" shade={value === mode.value ? 9 : 5}>
