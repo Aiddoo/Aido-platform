@@ -453,6 +453,10 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.FOLLOW_0908, { targetUserId });
 	}
 
+	static friendLimitExceeded(current: number, limit: number) {
+		return new BusinessException(ErrorCode.FOLLOW_0909, { current, limit });
+	}
+
 	// =========================================================================
 	// 알림/푸시 (Notification)
 	// =========================================================================
@@ -581,6 +585,17 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.TODO_CATEGORY_0856);
 	}
 
+	static todoActiveLimitExceeded(current: number, limit: number) {
+		return new BusinessException(ErrorCode.TODO_0811, { current, limit });
+	}
+
+	static todoCategoryLimitExceeded(current: number, limit: number) {
+		return new BusinessException(ErrorCode.TODO_CATEGORY_0857, {
+			current,
+			limit,
+		});
+	}
+
 	static todoReorderTargetNotFound(targetTodoId: number) {
 		return new BusinessException(ErrorCode.TODO_0810, { targetTodoId });
 	}
@@ -628,5 +643,12 @@ export class BusinessExceptions {
 
 	static webhookLockContention(appUserId: string) {
 		return new BusinessException(ErrorCode.SUBSCRIPTION_1605, { appUserId });
+	}
+
+	// =========================================================================
+	// 설정 (Preference)
+	// =========================================================================
+	static reminderPremiumRequired() {
+		return new BusinessException(ErrorCode.PREFERENCE_1701);
 	}
 }

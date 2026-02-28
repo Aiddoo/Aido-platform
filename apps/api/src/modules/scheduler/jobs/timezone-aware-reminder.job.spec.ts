@@ -538,6 +538,72 @@ describe("TimezoneAwareReminderJob", () => {
 		});
 
 		// =====================================================================
+		// 구독 상태 필터링 (프리미엄 전용)
+		// =====================================================================
+
+		describe("구독 상태 필터링", () => {
+			it("아침 리마인더 쿼리에 subscriptionStatus/role OR 조건이 포함된다", async () => {
+				// Given - KST 08:00
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 아침 리마인더 호출(첫 번째)에 OR 조건 확인
+				const morningCall = databaseService.user.findMany.mock
+					.calls[0]?.[0] as {
+					where?: {
+						OR?: Array<Record<string, string>>;
+					};
+				};
+				expect(morningCall?.where?.OR).toEqual([
+					{ subscriptionStatus: "ACTIVE" },
+					{ role: "ADMIN" },
+				]);
+
+				jest.useRealTimers();
+			});
+
+			it("저녁 리마인더 쿼리에 subscriptionStatus/role OR 조건이 포함된다", async () => {
+				// Given - KST 18:00
+				const fakeNow = new Date("2024-01-15T09:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 저녁 리마인더 호출(두 번째)에 OR 조건 확인
+				const eveningCall = databaseService.user.findMany.mock
+					.calls[1]?.[0] as {
+					where?: {
+						OR?: Array<Record<string, string>>;
+					};
+				};
+				expect(eveningCall?.where?.OR).toEqual([
+					{ subscriptionStatus: "ACTIVE" },
+					{ role: "ADMIN" },
+				]);
+
+				jest.useRealTimers();
+			});
+		});
+
+		// =====================================================================
 		// 알림 대상 없음
 		// =====================================================================
 

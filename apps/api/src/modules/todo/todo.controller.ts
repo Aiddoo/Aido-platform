@@ -75,6 +75,30 @@ export class TodoController {
 	constructor(private readonly todoService: TodoService) {}
 
 	// ============================================
+	// 리소스 제한 정보
+	// ============================================
+
+	/**
+	 * GET /todos/resource-limit - 활성 할 일 리소스 제한 정보
+	 */
+	@Get("resource-limit")
+	@ApiDoc({
+		summary: "활성 할 일 리소스 제한 정보 조회",
+		operationId: "getTodoResourceLimit",
+		description: `현재 활성(미완료) 할 일 개수와 최대 한도를 조회합니다.
+
+**응답 필드**
+- \`activeCount\`: 현재 활성 할 일 개수
+- \`maxCount\`: 최대 한도 (null이면 무제한)`,
+	})
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getResourceLimit(
+		@CurrentUser() user: CurrentUserPayload,
+	): Promise<{ activeCount: number; maxCount: number | null }> {
+		return this.todoService.getResourceLimitInfo(user.userId);
+	}
+
+	// ============================================
 	// CREATE - 할 일 생성
 	// ============================================
 
@@ -111,6 +135,7 @@ export class TodoController {
 	@ApiUnauthorizedError()
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+	@ApiForbiddenError(ErrorCode.TODO_0811)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateTodoDto,

@@ -73,6 +73,13 @@ describe("TodoCategory (e2e)", () => {
 				testPassword,
 			);
 			accessToken = user.accessToken;
+
+			// CRUD 테스트는 카테고리를 여러 개 생성하므로 프리미엄 유저로 전환
+			const prisma = ctx.testDatabase.getPrisma();
+			await prisma.user.update({
+				where: { id: user.userId },
+				data: { subscriptionStatus: "ACTIVE" },
+			});
 		});
 
 		describe("POST /todo-categories - 카테고리 생성", () => {
@@ -703,6 +710,13 @@ describe("TodoCategory (e2e)", () => {
 			);
 			user1Token = user1.accessToken;
 			user2Token = user2.accessToken;
+
+			// 격리 테스트는 카테고리를 추가 생성하므로 프리미엄 유저로 전환
+			const prisma = ctx.testDatabase.getPrisma();
+			await prisma.user.updateMany({
+				where: { id: { in: [user1.userId, user2.userId] } },
+				data: { subscriptionStatus: "ACTIVE" },
+			});
 
 			// user1의 카테고리 생성
 			const response = await request(ctx.app.getHttpServer())

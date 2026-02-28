@@ -1,4 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
+import {
+	EntitlementService,
+	Resource,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma, type TodoCategory } from "@/generated/prisma/client";
@@ -19,13 +23,38 @@ export class TodoCategoryService {
 
 	constructor(
 		private readonly todoCategoryRepository: TodoCategoryRepository,
+		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
 	) {}
+
+	/**
+	 * 카테고리 리소스 제한 정보 조회
+	 */
+	async getResourceLimitInfo(
+		userId: string,
+	): Promise<{ categoryCount: number; maxCount: number | null }> {
+		const [entitlement, categoryCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(userId, Resource.CATEGORY),
+			this.todoCategoryRepository.countByUserId(userId),
+		]);
+		return { categoryCount, maxCount: entitlement.maxCount };
+	}
 
 	/**
 	 * 카테고리 생성
 	 */
 	async create(data: CreateTodoCategoryData): Promise<TodoCategory> {
+		// 리소스 제한 체크
+		const [entitlement, categoryCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(data.userId, Resource.CATEGORY),
+			this.todoCategoryRepository.countByUserId(data.userId),
+		]);
+		this.entitlementService.enforceResourceLimit(
+			categoryCount,
+			entitlement.maxCount,
+			BusinessExceptions.todoCategoryLimitExceeded,
+		);
+
 		// 동일 이름 존재 확인
 		const exists = await this.todoCategoryRepository.existsByUserIdAndName(
 			data.userId,

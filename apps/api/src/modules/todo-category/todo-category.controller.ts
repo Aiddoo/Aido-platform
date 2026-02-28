@@ -66,6 +66,30 @@ export class TodoCategoryController {
 	constructor(private readonly todoCategoryService: TodoCategoryService) {}
 
 	// ============================================
+	// 리소스 제한 정보
+	// ============================================
+
+	/**
+	 * GET /todo-categories/resource-limit - 카테고리 리소스 제한 정보
+	 */
+	@Get("resource-limit")
+	@ApiDoc({
+		summary: "카테고리 리소스 제한 정보 조회",
+		operationId: "getTodoCategoryResourceLimit",
+		description: `현재 카테고리 개수와 최대 한도를 조회합니다.
+
+**응답 필드**
+- \`categoryCount\`: 현재 카테고리 개수
+- \`maxCount\`: 최대 한도 (null이면 무제한)`,
+	})
+	@ApiUnauthorizedError()
+	async getResourceLimit(
+		@CurrentUser() user: CurrentUserPayload,
+	): Promise<{ categoryCount: number; maxCount: number | null }> {
+		return this.todoCategoryService.getResourceLimitInfo(user.userId);
+	}
+
+	// ============================================
 	// CREATE - 카테고리 생성
 	// ============================================
 
@@ -92,6 +116,7 @@ export class TodoCategoryController {
 	@ApiUnauthorizedError()
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
+	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
 	async create(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateTodoCategoryDto,

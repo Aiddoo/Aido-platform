@@ -8,12 +8,14 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
+import { FOLLOW_LIMITS } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { FollowBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
 import { CacheService } from "@/common/cache/cache.service";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
 	BusinessExceptions,
@@ -30,6 +32,7 @@ describe("FollowService", () => {
 	let service: FollowService;
 	let followRepo: Mocked<FollowRepository>;
 	let paginationService: Mocked<PaginationService>;
+	let entitlementService: Mocked<EntitlementService>;
 	let database: Mocked<DatabaseService>;
 	let _eventEmitter: Mocked<EventEmitter2>;
 	let cacheService: Mocked<CacheService>;
@@ -55,6 +58,9 @@ describe("FollowService", () => {
 		paginationService = unitRef.get(
 			PaginationService,
 		) as unknown as Mocked<PaginationService>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
@@ -67,6 +73,13 @@ describe("FollowService", () => {
 		database.$transaction.mockImplementation((callback: TransactionCallback) =>
 			callback(mockTxContext),
 		);
+
+		// 리소스 제한 기본 mock (Premium 유저 = 무제한)
+		entitlementService.getResourceLimit.mockResolvedValue({
+			maxCount: null,
+			isAdmin: false,
+			subscriptionStatus: "ACTIVE",
+		});
 	});
 
 	// ============================================
@@ -329,6 +342,58 @@ describe("FollowService", () => {
 			await expect(
 				service.sendRequest(mockUserId, mockTargetUserId),
 			).rejects.toThrow(BusinessException);
+		});
+
+		describe("리소스 제한", () => {
+			it("Free 유저가 친구 한도에 도달하면 요청이 거부된다", async () => {
+				// Given
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: FOLLOW_LIMITS.FREE_MAX_FRIENDS,
+					isAdmin: false,
+					subscriptionStatus: "FREE",
+				});
+				followRepo.countMutualFriends.mockResolvedValue(
+					FOLLOW_LIMITS.FREE_MAX_FRIENDS,
+				);
+				entitlementService.enforceResourceLimit.mockImplementation(
+					(current, max, factory) => {
+						if (max !== null && current >= max) {
+							throw factory(current, max);
+						}
+					},
+				);
+
+				// When & Then
+				await expect(
+					service.sendRequest(mockUserId, mockTargetUserId),
+				).rejects.toThrow(BusinessException);
+				expect(followRepo.userExists).not.toHaveBeenCalled();
+			});
+
+			it("Premium 유저는 제한 없이 친구 요청을 보낼 수 있다", async () => {
+				// Given
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+				followRepo.countMutualFriends.mockResolvedValue(20);
+
+				const mockFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+					.pending()
+					.build();
+				followRepo.userExists.mockResolvedValue(true);
+				followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
+				followRepo.create.mockResolvedValue(mockFollow);
+				followRepo.getUserName.mockResolvedValue("테스트 유저");
+
+				// When
+				const result = await service.sendRequest(mockUserId, mockTargetUserId);
+
+				// Then
+				expect(result.follow).toEqual(mockFollow);
+				expect(result.autoAccepted).toBe(false);
+			});
 		});
 	});
 

@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiDoc,
+	ApiForbiddenError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
@@ -84,6 +85,10 @@ export class SettingsController {
 ### ⏰ 리마인더 시간 커스텀
 - 사용자의 로컬 타임존 기준으로 동작합니다
 - 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
+
+### 💎 프리미엄 전용
+- 아침/저녁 리마인더 시간 커스텀은 프리미엄 구독 사용자 전용 기능입니다.
+- Free 유저도 설정값은 조회 가능하나, 리마인드 알림은 수신되지 않습니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: PreferenceResponseDto })
@@ -122,6 +127,10 @@ export class SettingsController {
 - 사용자의 로컬 타임존 기준으로 동작합니다
 - 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
 
+### 💎 프리미엄 전용
+- \`morningReminderHour\`, \`eveningReminderHour\` 변경은 프리미엄 구독 사용자만 가능합니다.
+- Free 유저가 변경 시도 시 \`403 PREFERENCE_1701\` 에러가 반환됩니다.
+
 ### ⚠️ 주의
 - 야간 푸시를 허용하려면 먼저 \`pushEnabled\`가 true여야 합니다.
 - 일일 완료(DAILY_COMPLETE), 콕 찌르기(NUDGE_RECEIVED)는 \`nightPushEnabled=false\`여도 야간에 발송됩니다.
@@ -130,6 +139,7 @@ export class SettingsController {
 	})
 	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.PREFERENCE_1701)
 	async updatePreference(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdatePreferenceDto,

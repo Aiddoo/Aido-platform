@@ -8,6 +8,8 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 
 import { toISOStringOrNull } from "@/common/date";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 
 import { UserConsentRepository } from "../repositories/user-consent.repository";
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
@@ -19,6 +21,7 @@ export class UserSettingsService {
 	constructor(
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly userConsentRepository: UserConsentRepository,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	async getPreference(userId: string): Promise<PreferenceResponse> {
@@ -48,6 +51,17 @@ export class UserSettingsService {
 		userId: string,
 		input: UpdatePreferenceInput,
 	): Promise<UpdatePreferenceResponse> {
+		// 리마인더 시간 변경 시 프리미엄 체크
+		if (
+			input.morningReminderHour !== undefined ||
+			input.eveningReminderHour !== undefined
+		) {
+			const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+			if (!hasPremium) {
+				throw BusinessExceptions.reminderPremiumRequired();
+			}
+		}
+
 		// upsert로 없으면 생성, 있으면 업데이트
 		const updated = await this.userPreferenceRepository.upsert(userId, {
 			pushEnabled: input.pushEnabled,

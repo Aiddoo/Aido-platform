@@ -9,10 +9,12 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
+import { TODO_LIMITS } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
 	BusinessExceptions,
@@ -37,6 +39,7 @@ describe("TodoService", () => {
 	let todoCategoryService: Mocked<TodoCategoryService>;
 	let paginationService: Mocked<PaginationService>;
 	let followService: Mocked<FollowService>;
+	let entitlementService: Mocked<EntitlementService>;
 	let _eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
 	let reminderScheduler: Mocked<IReminderScheduler>;
@@ -70,6 +73,9 @@ describe("TodoService", () => {
 		followService = unitRef.get(
 			FollowService,
 		) as unknown as Mocked<FollowService>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
 		_eventEmitter = unitRef.get(
 			EventEmitter2,
 		) as unknown as Mocked<EventEmitter2>;
@@ -103,6 +109,14 @@ describe("TodoService", () => {
 		};
 
 		beforeEach(() => {
+			// Given: 리소스 제한 기본 설정 (무제한)
+			entitlementService.getResourceLimit.mockResolvedValue({
+				maxCount: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			todoRepo.countActive.mockResolvedValue(0);
+
 			// Given: 카테고리와 Todo 생성 mock 설정
 			const mockCategory = TodoCategoryBuilder.create(mockUserId)
 				.withId(1)
@@ -232,6 +246,65 @@ describe("TodoService", () => {
 			await expect(service.create(createInput)).rejects.toThrow(
 				BusinessException,
 			);
+		});
+
+		describe("리소스 제한", () => {
+			it("Free 유저가 활성 todo 한도에 도달하면 생성이 거부된다", async () => {
+				// Given: Free 유저, 활성 todo가 한도(30)에 도달
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: TODO_LIMITS.FREE_MAX_ACTIVE,
+					isAdmin: false,
+					subscriptionStatus: "FREE",
+				});
+				todoRepo.countActive.mockResolvedValue(TODO_LIMITS.FREE_MAX_ACTIVE);
+				entitlementService.enforceResourceLimit.mockImplementation(
+					(current, max, factory) => {
+						if (max !== null && current >= max) {
+							throw factory(current, max);
+						}
+					},
+				);
+
+				// When & Then
+				await expect(service.create(createInput)).rejects.toThrow(
+					BusinessException,
+				);
+				expect(todoRepo.create).not.toHaveBeenCalled();
+			});
+
+			it("Free 유저가 활성 todo 한도 미만이면 생성에 성공한다", async () => {
+				// Given: Free 유저, 활성 todo가 한도 미만
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: TODO_LIMITS.FREE_MAX_ACTIVE,
+					isAdmin: false,
+					subscriptionStatus: "FREE",
+				});
+				todoRepo.countActive.mockResolvedValue(TODO_LIMITS.FREE_MAX_ACTIVE - 1);
+
+				// When
+				const result = await service.create(createInput);
+
+				// Then
+				expect(result.title).toBe(createInput.title);
+				expect(todoRepo.create).toHaveBeenCalled();
+			});
+
+			it("Premium 유저는 제한 없이 생성할 수 있다", async () => {
+				// Given: Premium 유저 (무제한)
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+				todoRepo.countActive.mockResolvedValue(100);
+
+				// When
+				const result = await service.create(createInput);
+
+				// Then
+				expect(result.title).toBe(createInput.title);
+				expect(todoRepo.create).toHaveBeenCalled();
+			});
 		});
 	});
 

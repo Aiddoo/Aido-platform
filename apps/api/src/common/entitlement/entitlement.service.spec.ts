@@ -9,16 +9,29 @@
  * - getFeatureLimit: 캐시 우선 조회 경로 (ADMIN/USER, 구독 상태별, 캐시 히트/미스)
  * - getFeatureLimitInTx: 트랜잭션 내 실시간 조회 경로
  */
-import { AI_PARSE_LIMITS, CHEER_LIMITS, NUDGE_LIMITS } from "@aido/validators";
+import {
+	AI_PARSE_LIMITS,
+	CHEER_LIMITS,
+	FOLLOW_LIMITS,
+	NUDGE_LIMITS,
+	TODO_CATEGORY_LIMITS,
+	TODO_LIMITS,
+} from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { CacheService } from "@/common/cache/cache.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 
 import {
 	EntitlementService,
 	Feature,
 	type FeatureEntitlement,
+	Resource,
+	type ResourceEntitlement,
 } from "./entitlement.service";
 
 // =============================================================================
@@ -55,7 +68,7 @@ describe("EntitlementService", () => {
 				["AI_PARSE", Feature.AI_PARSE],
 			] as const)("ADMIN은 %s 기능이 무제한이다", async (_name, feature) => {
 				// Given - 캐시에 ADMIN 사용자 정보 존재
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
 					status: "FREE",
 					isAdmin: true,
 				});
@@ -79,7 +92,7 @@ describe("EntitlementService", () => {
 				["AI_PARSE", Feature.AI_PARSE],
 			] as const)("ACTIVE 구독 + %s 기능은 무제한이다", async (_name, feature) => {
 				// Given - 캐시에 ACTIVE 구독 사용자 정보 존재
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
 					status: "ACTIVE",
 					isAdmin: false,
 				});
@@ -124,7 +137,7 @@ describe("EntitlementService", () => {
 				],
 			] as const)("%s 구독 + %s 기능은 일일 %d회 제한이다", async (status, _featureName, feature, expectedLimit) => {
 				// Given
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
 					status,
 					isAdmin: false,
 				});
@@ -144,7 +157,7 @@ describe("EntitlementService", () => {
 		describe("캐시 동작", () => {
 			it("캐시 히트 시 DB 조회를 하지 않는다", async () => {
 				// Given - 캐시에 데이터 존재 (히트)
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue({
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
 					status: "FREE",
 					isAdmin: false,
 				});
@@ -157,9 +170,9 @@ describe("EntitlementService", () => {
 			});
 
 			it("캐시 미스 시 DB 조회 후 캐싱한다", async () => {
-				// Given - 캐시 미스 (undefined 반환), DB에 사용자 존재
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue(
-					undefined,
+				// Given - wrapSubscription이 팩토리 실행 (캐시 미스 시뮬레이션)
+				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
 				(database.user.findUnique as jest.Mock).mockResolvedValue({
 					role: "USER",
@@ -175,11 +188,11 @@ describe("EntitlementService", () => {
 					select: { role: true, subscriptionStatus: true },
 				});
 
-				// Then - 캐시에 저장 확인
-				expect(cacheService.setSubscription).toHaveBeenCalledWith(userId, {
-					status: "FREE",
-					isAdmin: false,
-				});
+				// Then - wrapSubscription 호출 확인 (내부적으로 캐싱 처리)
+				expect(cacheService.wrapSubscription).toHaveBeenCalledWith(
+					userId,
+					expect.any(Function),
+				);
 
 				// Then - 올바른 결과 반환
 				expect(result).toEqual<FeatureEntitlement>({
@@ -190,9 +203,9 @@ describe("EntitlementService", () => {
 			});
 
 			it("캐시 미스 + DB에 사용자 없으면 기본값(USER/FREE)을 사용한다", async () => {
-				// Given - 캐시 미스, DB에도 사용자 없음
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue(
-					undefined,
+				// Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에도 사용자 없음
+				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
 				(database.user.findUnique as jest.Mock).mockResolvedValue(null);
 
@@ -205,18 +218,12 @@ describe("EntitlementService", () => {
 					isAdmin: false,
 					subscriptionStatus: "FREE",
 				});
-
-				// Then - 기본값으로 캐싱
-				expect(cacheService.setSubscription).toHaveBeenCalledWith(userId, {
-					status: null,
-					isAdmin: false,
-				});
 			});
 
 			it("캐시 미스 + DB에 ADMIN 사용자면 isAdmin: true로 캐싱한다", async () => {
-				// Given - 캐시 미스, DB에 ADMIN 사용자 존재
-				(cacheService.getSubscription as jest.Mock).mockResolvedValue(
-					undefined,
+				// Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에 ADMIN 사용자 존재
+				(cacheService.wrapSubscription as jest.Mock).mockImplementation(
+					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
 				(database.user.findUnique as jest.Mock).mockResolvedValue({
 					role: "ADMIN",
@@ -231,12 +238,6 @@ describe("EntitlementService", () => {
 					dailyLimit: null,
 					isAdmin: true,
 					subscriptionStatus: "FREE",
-				});
-
-				// Then - isAdmin: true로 캐싱
-				expect(cacheService.setSubscription).toHaveBeenCalledWith(userId, {
-					status: "FREE",
-					isAdmin: true,
 				});
 			});
 		});
@@ -391,8 +392,220 @@ describe("EntitlementService", () => {
 			await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
 
 			// Then - 캐시 서비스 미호출 (TOCTOU 방지)
-			expect(cacheService.getSubscription).not.toHaveBeenCalled();
-			expect(cacheService.setSubscription).not.toHaveBeenCalled();
+			expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
+		});
+	});
+
+	// =========================================================================
+	// getResourceLimit (리소스 보유량 제한)
+	// =========================================================================
+
+	describe("getResourceLimit", () => {
+		describe("ADMIN 역할", () => {
+			it.each([
+				["TODO_ACTIVE", Resource.TODO_ACTIVE],
+				["CATEGORY", Resource.CATEGORY],
+				["FRIEND", Resource.FRIEND],
+			] as const)("ADMIN은 %s 리소스가 무제한이다", async (_name, resource) => {
+				// Given
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					status: "FREE",
+					isAdmin: true,
+				});
+
+				// When
+				const result = await service.getResourceLimit(userId, resource);
+
+				// Then
+				expect(result).toEqual<ResourceEntitlement>({
+					maxCount: null,
+					isAdmin: true,
+					subscriptionStatus: "FREE",
+				});
+			});
+		});
+
+		describe("ACTIVE 구독 (무제한)", () => {
+			it.each([
+				["TODO_ACTIVE", Resource.TODO_ACTIVE],
+				["CATEGORY", Resource.CATEGORY],
+				["FRIEND", Resource.FRIEND],
+			] as const)("ACTIVE 구독 + %s 리소스는 무제한이다", async (_name, resource) => {
+				// Given
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					status: "ACTIVE",
+					isAdmin: false,
+				});
+
+				// When
+				const result = await service.getResourceLimit(userId, resource);
+
+				// Then
+				expect(result).toEqual<ResourceEntitlement>({
+					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+			});
+		});
+
+		describe("비프리미엄 구독 (제한 적용)", () => {
+			it.each([
+				[
+					"FREE",
+					"TODO_ACTIVE",
+					Resource.TODO_ACTIVE,
+					TODO_LIMITS.FREE_MAX_ACTIVE,
+				],
+				[
+					"FREE",
+					"CATEGORY",
+					Resource.CATEGORY,
+					TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+				],
+				["FREE", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
+				[
+					"EXPIRED",
+					"TODO_ACTIVE",
+					Resource.TODO_ACTIVE,
+					TODO_LIMITS.FREE_MAX_ACTIVE,
+				],
+				[
+					"CANCELLED",
+					"FRIEND",
+					Resource.FRIEND,
+					FOLLOW_LIMITS.FREE_MAX_FRIENDS,
+				],
+			] as const)("%s 구독 + %s 리소스는 최대 %d개 제한이다", async (status, _name, resource, expectedLimit) => {
+				// Given
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					status,
+					isAdmin: false,
+				});
+
+				// When
+				const result = await service.getResourceLimit(userId, resource);
+
+				// Then
+				expect(result).toEqual<ResourceEntitlement>({
+					maxCount: expectedLimit,
+					isAdmin: false,
+					subscriptionStatus: status,
+				});
+			});
+		});
+	});
+
+	// =========================================================================
+	// hasPremiumAccess (프리미엄 접근 권한)
+	// =========================================================================
+
+	describe("hasPremiumAccess", () => {
+		it("ADMIN 역할은 true를 반환한다", async () => {
+			// Given
+			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				status: "FREE",
+				isAdmin: true,
+			});
+
+			// When
+			const result = await service.hasPremiumAccess(userId);
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("ACTIVE 구독은 true를 반환한다", async () => {
+			// Given
+			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				status: "ACTIVE",
+				isAdmin: false,
+			});
+
+			// When
+			const result = await service.hasPremiumAccess(userId);
+
+			// Then
+			expect(result).toBe(true);
+		});
+
+		it("FREE 구독은 false를 반환한다", async () => {
+			// Given
+			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				status: "FREE",
+				isAdmin: false,
+			});
+
+			// When
+			const result = await service.hasPremiumAccess(userId);
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("EXPIRED 구독은 false를 반환한다", async () => {
+			// Given
+			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				status: "EXPIRED",
+				isAdmin: false,
+			});
+
+			// When
+			const result = await service.hasPremiumAccess(userId);
+
+			// Then
+			expect(result).toBe(false);
+		});
+
+		it("CANCELLED 구독은 false를 반환한다", async () => {
+			// Given
+			(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+				status: "CANCELLED",
+				isAdmin: false,
+			});
+
+			// When
+			const result = await service.hasPremiumAccess(userId);
+
+			// Then
+			expect(result).toBe(false);
+		});
+	});
+
+	// =========================================================================
+	// enforceResourceLimit
+	// =========================================================================
+
+	describe("enforceResourceLimit", () => {
+		const errorFactory = (current: number, limit: number) =>
+			BusinessExceptions.todoActiveLimitExceeded(current, limit);
+
+		it("maxCount가 null이면 예외를 발생시키지 않는다 (무제한)", () => {
+			// When & Then
+			expect(() => {
+				service.enforceResourceLimit(100, null, errorFactory);
+			}).not.toThrow();
+		});
+
+		it("currentCount가 maxCount 미만이면 통과한다", () => {
+			// When & Then
+			expect(() => {
+				service.enforceResourceLimit(29, 30, errorFactory);
+			}).not.toThrow();
+		});
+
+		it("currentCount가 maxCount와 같으면 예외를 발생시킨다", () => {
+			// When & Then
+			expect(() => {
+				service.enforceResourceLimit(30, 30, errorFactory);
+			}).toThrow(BusinessException);
+		});
+
+		it("currentCount가 maxCount를 초과하면 예외를 발생시킨다", () => {
+			// When & Then
+			expect(() => {
+				service.enforceResourceLimit(31, 30, errorFactory);
+			}).toThrow(BusinessException);
 		});
 	});
 });

@@ -11,6 +11,8 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
+import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { UserConsent, UserPreference } from "@/generated/prisma/client";
 
 import { UserConsentRepository } from "../repositories/user-consent.repository";
@@ -21,6 +23,7 @@ describe("UserSettingsService", () => {
 	let service: UserSettingsService;
 	let userPreferenceRepo: Mocked<UserPreferenceRepository>;
 	let userConsentRepo: Mocked<UserConsentRepository>;
+	let entitlementService: Mocked<EntitlementService>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -34,6 +37,12 @@ describe("UserSettingsService", () => {
 		userConsentRepo = unitRef.get(
 			UserConsentRepository,
 		) as unknown as Mocked<UserConsentRepository>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
+
+		// 기본: 프리미엄 접근 허용 (기존 테스트 호환)
+		entitlementService.hasPremiumAccess.mockResolvedValue(true);
 	});
 
 	// ============================================
@@ -164,6 +173,94 @@ describe("UserSettingsService", () => {
 				pushEnabled: false,
 				nightPushEnabled: undefined,
 			});
+		});
+	});
+
+	// ============================================
+	// updatePreference — 리마인더 프리미엄 체크
+	// ============================================
+
+	describe("리마인더 시간 변경 — 프리미엄 체크", () => {
+		const userId = "user-123";
+
+		const updatedPreference: UserPreference = {
+			id: "pref-123",
+			userId,
+			pushEnabled: true,
+			nightPushEnabled: false,
+			timezone: "Asia/Seoul",
+			morningReminderHour: 7,
+			eveningReminderHour: 20,
+		};
+
+		it("Free 유저가 morningReminderHour 변경 시 PREFERENCE_1701 에러", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then
+			await expect(
+				service.updatePreference(userId, { morningReminderHour: 7 }),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("Free 유저가 eveningReminderHour 변경 시 PREFERENCE_1701 에러", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then
+			await expect(
+				service.updatePreference(userId, { eveningReminderHour: 20 }),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("Free 유저가 pushEnabled만 변경 시 정상 동작", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(false);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue({
+				...updatedPreference,
+				pushEnabled: false,
+			});
+
+			// When
+			const result = await service.updatePreference(userId, {
+				pushEnabled: false,
+			});
+
+			// Then — hasPremiumAccess 호출되지 않음 (리마인더 시간 미변경)
+			expect(entitlementService.hasPremiumAccess).not.toHaveBeenCalled();
+			expect(result.pushEnabled).toBe(false);
+		});
+
+		it("Premium 유저는 morningReminderHour 변경 가능", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue(
+				updatedPreference,
+			);
+
+			// When
+			const result = await service.updatePreference(userId, {
+				morningReminderHour: 7,
+			});
+
+			// Then
+			expect(result.morningReminderHour).toBe(7);
+		});
+
+		it("Premium 유저는 eveningReminderHour 변경 가능", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue(
+				updatedPreference,
+			);
+
+			// When
+			const result = await service.updatePreference(userId, {
+				eveningReminderHour: 20,
+			});
+
+			// Then
+			expect(result.eveningReminderHour).toBe(20);
 		});
 	});
 

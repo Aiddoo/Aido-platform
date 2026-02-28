@@ -3,6 +3,10 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { TransactionClient } from "@/common/database";
 import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
+import {
+	EntitlementService,
+	Resource,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -39,6 +43,7 @@ export class TodoService {
 		private readonly todoCategoryService: TodoCategoryService,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
+		private readonly entitlementService: EntitlementService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
 		@Inject(REMINDER_SCHEDULER)
@@ -67,6 +72,20 @@ export class TodoService {
 	 * Todo 생성
 	 */
 	async create(data: CreateTodoData): Promise<Todo> {
+		// 리소스 제한 체크
+		const [entitlement, activeCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(
+				data.userId,
+				Resource.TODO_ACTIVE,
+			),
+			this.todoRepository.countActive(data.userId),
+		]);
+		this.entitlementService.enforceResourceLimit(
+			activeCount,
+			entitlement.maxCount,
+			BusinessExceptions.todoActiveLimitExceeded,
+		);
+
 		// 카테고리 존재 및 소유권 확인
 		await this.todoCategoryService.validateOwnership(
 			data.categoryId,
@@ -109,6 +128,19 @@ export class TodoService {
 		}
 
 		return TodoMapper.toResponse(todo);
+	}
+
+	/**
+	 * 활성 Todo 리소스 제한 정보 조회
+	 */
+	async getResourceLimitInfo(
+		userId: string,
+	): Promise<{ activeCount: number; maxCount: number | null }> {
+		const [entitlement, activeCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(userId, Resource.TODO_ACTIVE),
+			this.todoRepository.countActive(userId),
+		]);
+		return { activeCount, maxCount: entitlement.maxCount };
 	}
 
 	/**

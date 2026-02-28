@@ -19,6 +19,7 @@ import {
 	ApiConflictError,
 	ApiCreatedResponse,
 	ApiDoc,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -140,6 +141,7 @@ export class FollowController {
 	@ApiNotFoundError(ErrorCode.FOLLOW_0905)
 	@ApiConflictError(ErrorCode.FOLLOW_0901)
 	@ApiConflictError(ErrorCode.FOLLOW_0902)
+	@ApiForbiddenError(ErrorCode.FOLLOW_0909)
 	async sendRequest(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserTagParamDto,
@@ -269,6 +271,27 @@ export class FollowController {
 		return {
 			message: "친구를 삭제했습니다.",
 		};
+	}
+
+	// ============================================
+	// 리소스 제한 정보
+	// ============================================
+
+	@Get("resource-limit")
+	@ApiDoc({
+		summary: "친구 리소스 제한 정보 조회",
+		operationId: "getFollowResourceLimit",
+		description: `현재 친구 수와 최대 한도를 조회합니다.
+
+**응답 필드**
+- \`friendCount\`: 현재 친구 수
+- \`maxCount\`: 최대 한도 (null이면 무제한)`,
+	})
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getResourceLimit(
+		@CurrentUser() user: CurrentUserPayload,
+	): Promise<{ friendCount: number; maxCount: number | null }> {
+		return this.followService.getResourceLimitInfo(user.userId);
 	}
 
 	// ============================================

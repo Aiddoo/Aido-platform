@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
+import {
+	EntitlementService,
+	Resource,
+} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -31,10 +35,28 @@ export class FollowService {
 	constructor(
 		private readonly followRepository: FollowRepository,
 		private readonly paginationService: PaginationService,
+		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly cacheService: CacheService,
 	) {}
+
+	// =========================================================================
+	// 리소스 제한 정보
+	// =========================================================================
+
+	/**
+	 * 친구 리소스 제한 정보 조회
+	 */
+	async getResourceLimitInfo(
+		userId: string,
+	): Promise<{ friendCount: number; maxCount: number | null }> {
+		const [entitlement, friendCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(userId, Resource.FRIEND),
+			this.countFriends(userId),
+		]);
+		return { friendCount, maxCount: entitlement.maxCount };
+	}
 
 	// =========================================================================
 	// 친구 요청 보내기
@@ -80,14 +102,26 @@ export class FollowService {
 			throw BusinessExceptions.cannotFollowSelf();
 		}
 
-		// 2. 대상 사용자 존재 체크
+		// 2. 리소스 제한 체크
+		const entitlement = await this.entitlementService.getResourceLimit(
+			userId,
+			Resource.FRIEND,
+		);
+		const friendCount = await this.countFriends(userId);
+		this.entitlementService.enforceResourceLimit(
+			friendCount,
+			entitlement.maxCount,
+			BusinessExceptions.friendLimitExceeded,
+		);
+
+		// 3. 대상 사용자 존재 체크
 		const targetExists = await this.followRepository.userExists(targetUserId);
 
 		if (!targetExists) {
 			throw BusinessExceptions.followTargetNotFound(targetUserId);
 		}
 
-		// 3. 기존 관계 체크
+		// 4. 기존 관계 체크
 		const existingFollow =
 			await this.followRepository.findByFollowerAndFollowing(
 				userId,
@@ -102,7 +136,7 @@ export class FollowService {
 			throw BusinessExceptions.followRequestAlreadySent(targetUserId);
 		}
 
-		// 4. 상대방이 이미 친구 요청을 보냈는지 확인
+		// 5. 상대방이 이미 친구 요청을 보냈는지 확인
 		const reverseFollow =
 			await this.followRepository.findByFollowerAndFollowing(
 				targetUserId,
