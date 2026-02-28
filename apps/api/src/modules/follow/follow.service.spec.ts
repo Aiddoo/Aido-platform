@@ -394,6 +394,39 @@ describe("FollowService", () => {
 				expect(result.follow).toEqual(mockFollow);
 				expect(result.autoAccepted).toBe(false);
 			});
+
+			it("getResourceLimit와 countFriends가 병렬로 호출된다", async () => {
+				// Given — 두 호출 모두 실행 순서에 무관하게 결과 반환
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+				followRepo.countMutualFriends.mockResolvedValue(2);
+
+				const mockFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+					.pending()
+					.build();
+				followRepo.userExists.mockResolvedValue(true);
+				followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
+				followRepo.create.mockResolvedValue(mockFollow);
+				followRepo.getUserName.mockResolvedValue("테스트 유저");
+
+				// When
+				await service.sendRequest(mockUserId, mockTargetUserId);
+
+				// Then — 두 호출 모두 enforceResourceLimit 전에 수행됨
+				expect(entitlementService.getResourceLimit).toHaveBeenCalledWith(
+					mockUserId,
+					"FRIEND",
+				);
+				expect(followRepo.countMutualFriends).toHaveBeenCalledWith(mockUserId);
+				expect(entitlementService.enforceResourceLimit).toHaveBeenCalledWith(
+					2,
+					null,
+					expect.any(Function),
+				);
+			});
 		});
 	});
 

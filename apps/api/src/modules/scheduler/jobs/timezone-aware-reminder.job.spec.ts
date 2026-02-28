@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -714,6 +715,77 @@ describe("TimezoneAwareReminderJob", () => {
 				// When & Then - 에러가 throw되지 않고 내부에서 처리됨
 				await expect(job.handleHourlySweep()).resolves.not.toThrow();
 
+				jest.useRealTimers();
+			});
+
+			it("한 타임존 실패 시 다른 타임존은 정상 처리된다", async () => {
+				// Given - UTC 00:00
+				// Asia/Seoul: 09:00 (아침), America/New_York: 19:00 (저녁)
+				const fakeNow = new Date("2024-01-16T00:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+					createMockTimezoneRecord("America/New_York"),
+				] as never);
+
+				// Seoul: user.findMany에서 에러 발생 (아침 리마인더 쿼리)
+				const dbError = new Error("Seoul query failed");
+
+				const nyEveningUser = createMockEveningUser({
+					id: "user-ny",
+					todos: [{ completed: true }],
+				});
+
+				// Seoul 아침 → 에러, Seoul 저녁은 호출 안 됨 (아침에서 에러 전파)
+				// NY 아침 → 빈 배열, NY 저녁 → 사용자 있음
+				databaseService.user.findMany
+					.mockRejectedValueOnce(dbError) // Seoul 아침 → 에러
+					.mockResolvedValueOnce([] as never) // NY 아침
+					.mockResolvedValueOnce([nyEveningUser] as never); // NY 저녁
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - NY 저녁 리마인더는 정상 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(getFirstNotification(batch).userId).toBe("user-ny");
+				expect(getFirstNotification(batch).type).toBe("EVENING_REMINDER");
+
+				jest.useRealTimers();
+			});
+
+			it("타임존 실패 시 에러 로그에 타임존 정보가 포함된다", async () => {
+				// Given - UTC 00:00, Asia/Seoul만 있고 에러 발생
+				const fakeNow = new Date("2024-01-16T00:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				const loggerErrorSpy = jest.spyOn(Logger.prototype, "error");
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const dbError = new Error("Query failed");
+				databaseService.user.findMany.mockRejectedValue(dbError);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 에러 로그에 타임존 정보 포함
+				expect(loggerErrorSpy).toHaveBeenCalledWith(
+					expect.stringContaining("Asia/Seoul"),
+					expect.anything(),
+				);
+
+				loggerErrorSpy.mockRestore();
 				jest.useRealTimers();
 			});
 		});

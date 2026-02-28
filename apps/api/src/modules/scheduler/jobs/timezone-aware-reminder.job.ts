@@ -65,14 +65,15 @@ export class TimezoneAwareReminderJob {
 			});
 
 			const results = await Promise.allSettled(tasks);
-			for (const result of results) {
+			results.forEach((result, index) => {
 				if (result.status === "rejected") {
+					const tz = timezones[index]?.timezone ?? "unknown";
 					this.#logger.error(
-						`Timezone reminder task failed: ${result.reason}`,
+						`Timezone reminder task failed for tz=${tz}: ${result.reason}`,
 						result.reason instanceof Error ? result.reason.stack : undefined,
 					);
 				}
-			}
+			});
 
 			this.#logger.log("Hourly sweep reminder job completed");
 		} catch (error) {

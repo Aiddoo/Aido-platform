@@ -103,11 +103,10 @@ export class FollowService {
 		}
 
 		// 2. 리소스 제한 체크
-		const entitlement = await this.entitlementService.getResourceLimit(
-			userId,
-			Resource.FRIEND,
-		);
-		const friendCount = await this.countFriends(userId);
+		const [entitlement, friendCount] = await Promise.all([
+			this.entitlementService.getResourceLimit(userId, Resource.FRIEND),
+			this.countFriends(userId),
+		]);
 		this.entitlementService.enforceResourceLimit(
 			friendCount,
 			entitlement.maxCount,
