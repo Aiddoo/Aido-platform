@@ -27,6 +27,7 @@ import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
 	ApiDoc,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -277,6 +278,7 @@ export class NotificationController {
 	@ApiSuccessResponse({ type: MarkReadResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.NOTIFICATION_1004)
+	@ApiForbiddenError(ErrorCode.NOTIFICATION_1005)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("id", ParseIntPipe) id: number,

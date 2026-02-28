@@ -1,10 +1,16 @@
 import {
 	AI_PARSE_LIMITS,
 	CHEER_LIMITS,
+	FOLLOW_LIMITS,
 	NUDGE_LIMITS,
 	SUBSCRIPTION_AI_PARSE_LIMITS,
 	SUBSCRIPTION_CHEER_LIMITS,
+	SUBSCRIPTION_FOLLOW_LIMITS,
 	SUBSCRIPTION_NUDGE_LIMITS,
+	SUBSCRIPTION_TODO_CATEGORY_LIMITS,
+	SUBSCRIPTION_TODO_LIMITS,
+	TODO_CATEGORY_LIMITS,
+	TODO_LIMITS,
 } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
@@ -31,6 +37,42 @@ const FEATURE_FREE_DEFAULTS: Record<Feature, number> = {
 	AI_PARSE: AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
 };
 
+// =========================================================================
+// 리소스 제한 (총 보유량)
+// =========================================================================
+
+export const Resource = {
+	TODO_ACTIVE: "TODO_ACTIVE",
+	CATEGORY: "CATEGORY",
+	FRIEND: "FRIEND",
+} as const;
+export type Resource = (typeof Resource)[keyof typeof Resource];
+
+const RESOURCE_LIMITS: Record<Resource, Record<string, number | null>> = {
+	TODO_ACTIVE: { ...SUBSCRIPTION_TODO_LIMITS },
+	CATEGORY: { ...SUBSCRIPTION_TODO_CATEGORY_LIMITS },
+	FRIEND: { ...SUBSCRIPTION_FOLLOW_LIMITS },
+};
+
+const RESOURCE_FREE_DEFAULTS: Record<Resource, number> = {
+	TODO_ACTIVE: TODO_LIMITS.FREE_MAX_ACTIVE,
+	CATEGORY: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+	FRIEND: FOLLOW_LIMITS.FREE_MAX_FRIENDS,
+};
+
+function resolveResourceLimit(
+	role: string,
+	subscriptionStatus: string,
+	resource: Resource,
+): number | null {
+	if (role === "ADMIN") return null;
+	const limits = RESOURCE_LIMITS[resource];
+	if (subscriptionStatus in limits) {
+		return limits[subscriptionStatus] as number | null;
+	}
+	return RESOURCE_FREE_DEFAULTS[resource];
+}
+
 function resolveFeatureLimit(
 	role: string,
 	subscriptionStatus: string,
@@ -46,6 +88,12 @@ function resolveFeatureLimit(
 
 export interface FeatureEntitlement {
 	dailyLimit: number | null;
+	isAdmin: boolean;
+	subscriptionStatus: string;
+}
+
+export interface ResourceEntitlement {
+	maxCount: number | null;
 	isAdmin: boolean;
 	subscriptionStatus: string;
 }
@@ -119,6 +167,54 @@ export class EntitlementService {
 		throw errorFactory(currentUsage, entitlement.dailyLimit);
 	}
 
+	// =========================================================================
+	// 리소스 제한 (총 보유량)
+	// =========================================================================
+
+	/**
+	 * 리소스 보유량 제한 정보를 조회합니다. (캐시 우선)
+	 *
+	 * 일일 사용량(Feature)이 아닌 총 보유량(Resource) 제한에 사용합니다.
+	 */
+	async getResourceLimit(
+		userId: string,
+		resource: Resource,
+	): Promise<ResourceEntitlement> {
+		const { role, subscriptionStatus } = await this.#resolveUserInfo(userId);
+		const maxCount = resolveResourceLimit(role, subscriptionStatus, resource);
+		return { maxCount, isAdmin: role === "ADMIN", subscriptionStatus };
+	}
+
+	/**
+	 * 리소스 보유량 제한을 검증하고, 초과 시 예외를 발생시킵니다.
+	 */
+	enforceResourceLimit(
+		currentCount: number,
+		maxCount: number | null,
+		errorFactory: (current: number, limit: number) => BusinessException,
+	): void {
+		if (maxCount === null) return;
+		if (currentCount < maxCount) return;
+
+		throw errorFactory(currentCount, maxCount);
+	}
+
+	// =========================================================================
+	// 프리미엄 접근 권한
+	// =========================================================================
+
+	/**
+	 * 프리미엄 기능 접근 가능 여부 확인 (ADMIN 또는 ACTIVE 구독)
+	 */
+	async hasPremiumAccess(userId: string): Promise<boolean> {
+		const { role, subscriptionStatus } = await this.#resolveUserInfo(userId);
+		return role === "ADMIN" || subscriptionStatus === "ACTIVE";
+	}
+
+	// =========================================================================
+	// 공통 유틸리티
+	// =========================================================================
+
 	/**
 	 * 잔여 횟수를 계산합니다.
 	 */
@@ -130,27 +226,23 @@ export class EntitlementService {
 	async #resolveUserInfo(
 		userId: string,
 	): Promise<{ role: string; subscriptionStatus: string }> {
-		const cached = await this.cacheService.getSubscription(userId);
+		const cached = await this.cacheService.wrapSubscription(
+			userId,
+			async () => {
+				const user = await this.database.user.findUnique({
+					where: { id: userId },
+					select: { role: true, subscriptionStatus: true },
+				});
+				return {
+					status: user?.subscriptionStatus ?? null,
+					isAdmin: (user?.role ?? "USER") === "ADMIN",
+				};
+			},
+		);
 
-		if (cached !== undefined) {
-			return {
-				role: cached.isAdmin ? "ADMIN" : "USER",
-				subscriptionStatus: cached.status ?? "FREE",
-			};
-		}
-
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { role: true, subscriptionStatus: true },
-		});
-		const role = user?.role ?? "USER";
-		const subscriptionStatus = user?.subscriptionStatus ?? "FREE";
-
-		await this.cacheService.setSubscription(userId, {
-			status: user?.subscriptionStatus ?? null,
-			isAdmin: role === "ADMIN",
-		});
-
-		return { role, subscriptionStatus };
+		return {
+			role: cached?.isAdmin ? "ADMIN" : "USER",
+			subscriptionStatus: cached?.status ?? "FREE",
+		};
 	}
 }

@@ -58,29 +58,22 @@ export class TimezoneAwareReminderJob {
 				distinct: ["timezone"],
 			});
 
-			for (const { timezone: tz } of timezones) {
+			// 2. 각 타임존별 아침/저녁 리마인더를 병렬 처리
+			const tasks = timezones.map(({ timezone: tz }) => {
 				const localHour = dayjs(now).tz(tz).hour();
+				return this.#processTimezone(tz, localHour);
+			});
 
-				// 2. 아침 리마인더: morningReminderHour가 현재 시간인 사용자
-				try {
-					await this.#sendMorningReminders(tz, localHour);
-				} catch (error) {
+			const results = await Promise.allSettled(tasks);
+			results.forEach((result, index) => {
+				if (result.status === "rejected") {
+					const tz = timezones[index]?.timezone ?? "unknown";
 					this.#logger.error(
-						`Morning reminder failed for tz=${tz}: ${error}`,
-						error instanceof Error ? error.stack : undefined,
+						`Timezone reminder task failed for tz=${tz}: ${result.reason}`,
+						result.reason instanceof Error ? result.reason.stack : undefined,
 					);
 				}
-
-				// 3. 저녁 리마인더: eveningReminderHour가 현재 시간인 사용자
-				try {
-					await this.#sendEveningReminders(tz, localHour);
-				} catch (error) {
-					this.#logger.error(
-						`Evening reminder failed for tz=${tz}: ${error}`,
-						error instanceof Error ? error.stack : undefined,
-					);
-				}
-			}
+			});
 
 			this.#logger.log("Hourly sweep reminder job completed");
 		} catch (error) {
@@ -93,6 +86,11 @@ export class TimezoneAwareReminderJob {
 		}
 	}
 
+	async #processTimezone(tz: string, localHour: number): Promise<void> {
+		await this.#sendMorningReminders(tz, localHour);
+		await this.#sendEveningReminders(tz, localHour);
+	}
+
 	async #sendMorningReminders(tz: string, localHour: number): Promise<void> {
 		const today = getUserToday(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
@@ -102,6 +100,7 @@ export class TimezoneAwareReminderJob {
 				pushTokens: {
 					some: {},
 				},
+				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				preference: {
 					timezone: tz,
 					pushEnabled: true,
@@ -169,6 +168,7 @@ export class TimezoneAwareReminderJob {
 				pushTokens: {
 					some: {},
 				},
+				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				preference: {
 					timezone: tz,
 					pushEnabled: true,

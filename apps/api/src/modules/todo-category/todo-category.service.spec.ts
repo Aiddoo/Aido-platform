@@ -9,11 +9,16 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
+import { TODO_CATEGORY_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoCategoryBuilder } from "@test/builders";
 
-import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -27,6 +32,7 @@ import type {
 describe("TodoCategoryService", () => {
 	let service: TodoCategoryService;
 	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
+	let entitlementService: Mocked<EntitlementService>;
 	let database: Mocked<DatabaseService>;
 
 	const userId = "user-123";
@@ -43,6 +49,9 @@ describe("TodoCategoryService", () => {
 		todoCategoryRepo = unitRef.get(
 			TodoCategoryRepository,
 		) as unknown as Mocked<TodoCategoryRepository>;
+		entitlementService = unitRef.get(
+			EntitlementService,
+		) as unknown as Mocked<EntitlementService>;
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
@@ -53,6 +62,13 @@ describe("TodoCategoryService", () => {
 		database.$transaction.mockImplementation(async (callback) =>
 			callback(todoCategoryRepo as unknown as TransactionClient),
 		);
+
+		// 리소스 제한 기본 mock (Premium 유저 = 무제한)
+		entitlementService.getResourceLimit.mockResolvedValue({
+			maxCount: null,
+			isAdmin: false,
+			subscriptionStatus: "ACTIVE",
+		});
 	});
 
 	// ============================================
@@ -133,6 +149,56 @@ describe("TodoCategoryService", () => {
 			expect(todoCategoryRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ sortOrder: 6 }),
 			);
+		});
+
+		describe("리소스 제한", () => {
+			it("Free 유저가 카테고리 한도에 도달하면 생성이 거부된다", async () => {
+				// Given
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+					isAdmin: false,
+					subscriptionStatus: "FREE",
+				});
+				todoCategoryRepo.countByUserId.mockResolvedValue(
+					TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+				);
+				entitlementService.enforceResourceLimit.mockImplementation(
+					(current, max, factory) => {
+						if (max !== null && current >= max) {
+							throw factory(current, max);
+						}
+					},
+				);
+
+				// When & Then
+				await expect(service.create(createData)).rejects.toThrow(
+					BusinessException,
+				);
+				expect(todoCategoryRepo.existsByUserIdAndName).not.toHaveBeenCalled();
+			});
+
+			it("Premium 유저는 제한 없이 카테고리를 생성할 수 있다", async () => {
+				// Given
+				entitlementService.getResourceLimit.mockResolvedValue({
+					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+				todoCategoryRepo.countByUserId.mockResolvedValue(10);
+
+				const expectedCategory = TodoCategoryBuilder.create(userId)
+					.withName("새 카테고리")
+					.build();
+				todoCategoryRepo.existsByUserIdAndName.mockResolvedValue(false);
+				todoCategoryRepo.getMaxSortOrder.mockResolvedValue(9);
+				todoCategoryRepo.create.mockResolvedValue(expectedCategory);
+
+				// When
+				const result = await service.create(createData);
+
+				// Then
+				expect(result.name).toBe("새 카테고리");
+			});
 		});
 	});
 

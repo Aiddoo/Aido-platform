@@ -152,6 +152,7 @@ export const ErrorCode = {
   // =========================================================================
   TODO_0801: 'TODO_0801',
   TODO_0810: 'TODO_0810',
+  TODO_0811: 'TODO_0811',
 
   // =========================================================================
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
@@ -162,6 +163,7 @@ export const ErrorCode = {
   TODO_CATEGORY_0854: 'TODO_CATEGORY_0854',
   TODO_CATEGORY_0855: 'TODO_CATEGORY_0855',
   TODO_CATEGORY_0856: 'TODO_CATEGORY_0856',
+  TODO_CATEGORY_0857: 'TODO_CATEGORY_0857',
 
   // =========================================================================
   // 친구/팔로우 (FOLLOW_0900-0999)
@@ -174,6 +176,7 @@ export const ErrorCode = {
   FOLLOW_0906: 'FOLLOW_0906',
   FOLLOW_0907: 'FOLLOW_0907',
   FOLLOW_0908: 'FOLLOW_0908',
+  FOLLOW_0909: 'FOLLOW_0909',
 
   // =========================================================================
   // 알림/푸시 (NOTIFICATION_1000-1099)
@@ -233,6 +236,11 @@ export const ErrorCode = {
   SUBSCRIPTION_1603: 'SUBSCRIPTION_1603',
   SUBSCRIPTION_1604: 'SUBSCRIPTION_1604',
   SUBSCRIPTION_1605: 'SUBSCRIPTION_1605',
+
+  // =========================================================================
+  // 설정 (PREFERENCE_1700-1799)
+  // =========================================================================
+  PREFERENCE_1701: 'PREFERENCE_1701',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -757,6 +765,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description: '순서 변경 시 기준이 되는 할 일이 존재하지 않습니다.',
     httpStatus: HttpStatus.NOT_FOUND,
   },
+  [ErrorCode.TODO_0811]: {
+    code: 'TODO_0811',
+    message: '활성 할 일 개수가 최대 한도에 도달했습니다.',
+    description:
+      '무료 사용자의 활성(미완료) 할 일 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
 
   // =========================================================================
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
@@ -796,6 +811,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '이동할 카테고리를 지정해주세요.',
     description: '카테고리 삭제 시 할 일을 이동할 카테고리 ID가 필요합니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_CATEGORY_0857]: {
+    code: 'TODO_CATEGORY_0857',
+    message: '카테고리 개수가 최대 한도에 도달했습니다.',
+    description:
+      '무료 사용자의 카테고리 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 
   // =========================================================================
@@ -848,6 +870,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '이미 상대방이 친구 요청을 보냈습니다.',
     description: '상대방의 친구 요청을 수락하거나 거절해주세요.',
     httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.FOLLOW_0909]: {
+    code: 'FOLLOW_0909',
+    message: '친구 수가 최대 한도에 도달했습니다.',
+    description:
+      '무료 사용자의 친구 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 
   // =========================================================================
@@ -1044,5 +1073,15 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'Webhook Lock 경합이 발생했습니다.',
     description: '동일 사용자에 대한 Webhook이 동시에 처리 중입니다. 잠시 후 재시도됩니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+
+  // =========================================================================
+  // 설정 (PREFERENCE_1700-1799)
+  // =========================================================================
+  [ErrorCode.PREFERENCE_1701]: {
+    code: 'PREFERENCE_1701',
+    message: '리마인드 알림은 프리미엄 기능입니다.',
+    description: '아침/저녁 리마인드 알림 설정은 프리미엄 구독 사용자만 변경할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 };

@@ -129,6 +129,8 @@ model UserPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([pushEnabled, timezone]) // 타임존별 활성 사용자 스캔
+  @@index([pushEnabled, timezone, morningReminderHour]) // 아침 리마인더 스윕
+  @@index([pushEnabled, timezone, eveningReminderHour]) // 저녁 리마인더 스윕
 }
 
 // =============================================================================
@@ -609,6 +611,7 @@ model Notification {
   // - Notification_friend_dedup: friendId IS NOT NULL인 타입 (FRIEND_COMPLETED)
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
+  @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리
   @@index([createdAt]) // 정리 배치용 (90일 보관)
   @@index([todoId, type, createdAt]) // TODO_REMINDER 단계별 중복 체크
 }
