@@ -241,6 +241,7 @@ export const ErrorCode = {
   // 설정 (PREFERENCE_1700-1799)
   // =========================================================================
   PREFERENCE_1701: 'PREFERENCE_1701',
+  PREFERENCE_1702: 'PREFERENCE_1702',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1083,5 +1084,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '리마인드 알림은 프리미엄 기능입니다.',
     description: '아침/저녁 리마인드 알림 설정은 프리미엄 구독 사용자만 변경할 수 있습니다.',
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.PREFERENCE_1702]: {
+    code: 'PREFERENCE_1702',
+    message: '리마인더 시간 범위가 올바르지 않습니다.',
+    description:
+      '오전 리마인더는 0:00-11:30, 오후 리마인더는 12:00-23:30만 설정할 수 있습니다. 분은 0 또는 30만 허용됩니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 };

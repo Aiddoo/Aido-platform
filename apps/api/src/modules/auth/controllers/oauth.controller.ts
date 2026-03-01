@@ -11,7 +11,6 @@ import {
 	Query,
 	Req,
 	Res,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -39,7 +38,6 @@ import {
 	MessageResponseDto,
 	NaverMobileCallbackDto,
 } from "../dtos";
-import { JwtAuthGuard } from "../guards";
 import { OAuthService } from "../services/oauth.service";
 import {
 	buildOAuthErrorParams,
@@ -70,7 +68,6 @@ import {
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
-@UseGuards(JwtAuthGuard)
 export class OAuthController {
 	readonly #logger = new Logger(OAuthController.name);
 

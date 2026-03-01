@@ -330,6 +330,39 @@ describe("UserPreferenceRepository", () => {
 			});
 		});
 
+		it("리마인더 분(minute) 필드를 업데이트한다", async () => {
+			// Given
+			const updateData: UpdatePreferenceData = {
+				morningReminderHour: 9,
+				morningReminderMinute: 30,
+				eveningReminderHour: 20,
+				eveningReminderMinute: 30,
+			};
+			const expectedPreference = UserPreferenceBuilder.create("user-123")
+				.withId("pref-123")
+				.withMorningReminderHour(9)
+				.withMorningReminderMinute(30)
+				.withEveningReminderHour(20)
+				.withEveningReminderMinute(30)
+				.build();
+			db.userPreference.update.mockResolvedValue(expectedPreference);
+
+			// When
+			const result = await repository.update("user-123", updateData);
+
+			// Then
+			expect(result).toEqual(expectedPreference);
+			expect(db.userPreference.update).toHaveBeenCalledWith({
+				where: { userId: "user-123" },
+				data: {
+					morningReminderHour: 9,
+					morningReminderMinute: 30,
+					eveningReminderHour: 20,
+					eveningReminderMinute: 30,
+				},
+			});
+		});
+
 		it("트랜잭션 내에서 업데이트한다", async () => {
 			// Given
 			const mockTx = createMockTxClient();

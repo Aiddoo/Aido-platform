@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Logger, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -9,7 +9,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import { DailyCompletionService } from "./daily-completion.service";
 import {
@@ -31,7 +30,6 @@ import type { DailyCompletionsRangeResult } from "./types/daily-completion.types
  */
 @ApiTags(SWAGGER_TAGS.DAILY_COMPLETIONS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("daily-completions")
 export class DailyCompletionController {
 	readonly #logger = new Logger(DailyCompletionController.name);

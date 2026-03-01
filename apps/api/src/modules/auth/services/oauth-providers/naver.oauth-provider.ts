@@ -29,7 +29,7 @@ interface OAuthConfig {
  */
 export class NaverOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "NAVER" as const;
-	readonly failureEmail = "naver_unknown@social.aido.app";
+	readonly failureEmail = "naver_unknown@social.aido.kr";
 
 	readonly #getConfig: () => OAuthConfig;
 	readonly #verifier: OAuthTokenVerifierService;

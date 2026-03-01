@@ -1,4 +1,4 @@
-import { getDateWithTime, toHHmm } from './time';
+import { formatReminderTime, getDateWithTime, timeToDate, toHHmm } from './time';
 
 const FALLBACK_TIME = '09:00';
 
@@ -46,6 +46,66 @@ describe('time utils', () => {
       expect(result.getMinutes()).toBe(0);
       expect(result.getSeconds()).toBe(0);
       expect(result.getMilliseconds()).toBe(0);
+    });
+  });
+
+  describe('timeToDate', () => {
+    it('주어진 시간과 분이 Date 객체에 반영되어야 한다', () => {
+      const result = timeToDate(14, 30);
+
+      expect(result.getHours()).toBe(14);
+      expect(result.getMinutes()).toBe(30);
+    });
+
+    it('seconds, milliseconds가 0으로 초기화되어야 한다', () => {
+      const result = timeToDate(9, 0);
+
+      expect(result.getSeconds()).toBe(0);
+      expect(result.getMilliseconds()).toBe(0);
+    });
+
+    it('경계값 0시 0분을 처리해야 한다', () => {
+      const result = timeToDate(0, 0);
+      expect(result.getHours()).toBe(0);
+      expect(result.getMinutes()).toBe(0);
+    });
+
+    it('경계값 23시 30분을 처리해야 한다', () => {
+      const result = timeToDate(23, 30);
+      expect(result.getHours()).toBe(23);
+      expect(result.getMinutes()).toBe(30);
+    });
+  });
+
+  describe('formatReminderTime', () => {
+    it('0시 0분 → 12:00 AM/오전 형태', () => {
+      const result = formatReminderTime(0, 0);
+      expect(result).toMatch(/12/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('8시 0분 → 8:00 AM/오전 형태', () => {
+      const result = formatReminderTime(8, 0);
+      expect(result).toMatch(/8/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('8시 30분 → 8:30 AM/오전 형태', () => {
+      const result = formatReminderTime(8, 30);
+      expect(result).toMatch(/8/);
+      expect(result).toMatch(/30/);
+    });
+
+    it('12시 0분 → 12:00 PM/오후 형태', () => {
+      const result = formatReminderTime(12, 0);
+      expect(result).toMatch(/12/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('18시 30분 → 6:30 PM/오후 형태', () => {
+      const result = formatReminderTime(18, 30);
+      expect(result).toMatch(/6/);
+      expect(result).toMatch(/30/);
     });
   });
 });

@@ -10,7 +10,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
@@ -27,7 +26,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import {
 	AcceptFriendRequestResponseDto,
@@ -109,7 +107,6 @@ import { FollowService } from "./follow.service";
  */
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("follows")
 export class FollowController {
 	readonly #logger = new Logger(FollowController.name);

@@ -1,12 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Body,
-	Controller,
-	HttpCode,
-	HttpStatus,
-	Post,
-	UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
 	ApiBadRequestError,
@@ -21,7 +14,6 @@ import {
 	CurrentUser,
 	type CurrentUserPayload,
 } from "../auth/decorators/current-user.decorator";
-import { JwtAuthGuard } from "../auth/guards";
 
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
 import { InquiryService } from "./inquiry.service";
@@ -36,7 +28,6 @@ import { InquiryService } from "./inquiry.service";
  */
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("inquiries")
 export class InquiryController {
 	constructor(private readonly inquiryService: InquiryService) {}

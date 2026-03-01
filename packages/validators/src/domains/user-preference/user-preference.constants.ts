@@ -3,7 +3,9 @@ export const USER_PREFERENCE_DEFAULTS = {
   NIGHT_PUSH_ENABLED: false,
   TIMEZONE: 'UTC',
   MORNING_REMINDER_HOUR: 8,
+  MORNING_REMINDER_MINUTE: 0,
   EVENING_REMINDER_HOUR: 18,
+  EVENING_REMINDER_MINUTE: 0,
 } as const;
 
 export const NIGHT_TIME_CONFIG = {
@@ -11,7 +13,12 @@ export const NIGHT_TIME_CONFIG = {
   END_HOUR: 8,
 } as const;
 
-export const REMINDER_HOUR_RANGE = {
+export const MORNING_REMINDER_HOUR_RANGE = {
   MIN: 0,
+  MAX: 11,
+} as const;
+
+export const EVENING_REMINDER_HOUR_RANGE = {
+  MIN: 12,
   MAX: 23,
 } as const;

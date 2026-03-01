@@ -25,6 +25,9 @@ export const NotificationEvents = {
 
 	// Friend 관련 이벤트 (친구의 할일 완료)
 	FRIEND_COMPLETED: "friend.completed",
+
+	// 리마인더 설정 변경 이벤트
+	REMINDER_HOUR_CHANGED: "preference.reminder_hour_changed",
 } as const;
 
 export type NotificationEventName =
@@ -132,6 +135,27 @@ export interface FriendCompletedEventPayload {
 }
 
 /**
+ * 리마인더 시간 변경 이벤트 페이로드
+ *
+ * 사용자가 아침/저녁 리마인더 시간을 변경했을 때 발행됩니다.
+ * 변경된 시간이 현재 로컬 시간과 같으면 즉시 리마인더를 보내기 위함.
+ */
+export interface ReminderHourChangedEventPayload {
+	/** 사용자 ID */
+	userId: string;
+	/** 사용자 타임존 (IANA) */
+	timezone: string;
+	/** 변경된 아침 리마인더 시간 (undefined면 변경 안 됨) */
+	morningReminderHour?: number;
+	/** 변경된 아침 리마인더 분 (undefined면 변경 안 됨) */
+	morningReminderMinute?: number;
+	/** 변경된 저녁 리마인더 시간 (undefined면 변경 안 됨) */
+	eveningReminderHour?: number;
+	/** 변경된 저녁 리마인더 분 (undefined면 변경 안 됨) */
+	eveningReminderMinute?: number;
+}
+
+/**
  * 이벤트 타입 맵
  */
 export interface NotificationEventPayloadMap {
@@ -142,4 +166,5 @@ export interface NotificationEventPayloadMap {
 	[NotificationEvents.NUDGE_SENT]: NudgeSentEventPayload;
 	[NotificationEvents.CHEER_SENT]: CheerSentEventPayload;
 	[NotificationEvents.FRIEND_COMPLETED]: FriendCompletedEventPayload;
+	[NotificationEvents.REMINDER_HOUR_CHANGED]: ReminderHourChangedEventPayload;
 }

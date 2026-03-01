@@ -11,7 +11,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 import { toISOStringOrNull } from "@/common/date";
@@ -30,7 +29,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import {
 	CreateNudgeResponseDto,
@@ -68,7 +66,6 @@ import { NudgeService } from "./nudge.service";
  */
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("nudges")
 export class NudgeController {
 	readonly #logger = new Logger(NudgeController.name);

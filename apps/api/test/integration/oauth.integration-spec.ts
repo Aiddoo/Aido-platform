@@ -304,7 +304,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// LoginAttempt 기록 확인
 			const attempts = await databaseService.loginAttempt.findMany({
-				where: { email: "google_unknown@social.aido.app" },
+				where: { email: "google_unknown@social.aido.kr" },
 			});
 			expect(attempts).toHaveLength(1);
 			expect(attempts[0]?.success).toBe(false);
@@ -388,7 +388,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 			// LoginAttempt 확인
 			const attempts = await databaseService.loginAttempt.findMany({
-				where: { email: "naver_unknown@social.aido.app" },
+				where: { email: "naver_unknown@social.aido.kr" },
 			});
 			expect(attempts).toHaveLength(1);
 			expect(attempts[0]?.success).toBe(false);

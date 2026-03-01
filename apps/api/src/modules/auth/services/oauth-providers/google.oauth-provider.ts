@@ -29,7 +29,7 @@ interface OAuthConfig {
  */
 export class GoogleOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "GOOGLE" as const;
-	readonly failureEmail = "google_unknown@social.aido.app";
+	readonly failureEmail = "google_unknown@social.aido.kr";
 
 	readonly #getConfig: () => OAuthConfig;
 	readonly #verifier: OAuthTokenVerifierService;

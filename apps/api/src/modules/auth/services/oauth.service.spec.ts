@@ -383,7 +383,7 @@ describe("OAuthService", () => {
 				};
 				const mockUser = UserBuilder.create()
 					.withId("new-user-id")
-					.withEmail("apple_apple-user-456@social.aido.app")
+					.withEmail("apple_apple-user-456@social.aido.kr")
 					.verified()
 					.build();
 
@@ -401,7 +401,7 @@ describe("OAuthService", () => {
 				expect(result.tokens).toHaveProperty("accessToken");
 				expect(userRepo.create).toHaveBeenCalledWith(
 					expect.objectContaining({
-						email: "apple_apple-user-456@social.aido.app",
+						email: "apple_apple-user-456@social.aido.kr",
 					}),
 					expect.anything(),
 				);
@@ -1401,7 +1401,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
-					email: "apple_unknown@social.aido.app",
+					email: "apple_unknown@social.aido.kr",
 					provider: "APPLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
@@ -1472,7 +1472,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
-					email: "google_unknown@social.aido.app",
+					email: "google_unknown@social.aido.kr",
 					provider: "GOOGLE",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
@@ -1545,7 +1545,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
-					email: "kakao_unknown@social.aido.app",
+					email: "kakao_unknown@social.aido.kr",
 					provider: "KAKAO",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
@@ -1618,7 +1618,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
-					email: "naver_unknown@social.aido.app",
+					email: "naver_unknown@social.aido.kr",
 					provider: "NAVER",
 					ipAddress: mockMetadata.ip,
 					userAgent: mockMetadata.userAgent,
@@ -1687,7 +1687,7 @@ describe("OAuthService", () => {
 				).rejects.toThrow();
 
 				expect(loginAttemptRepo.create).toHaveBeenCalledWith({
-					email: "apple_unknown@social.aido.app",
+					email: "apple_unknown@social.aido.kr",
 					provider: "APPLE",
 					ipAddress: "unknown",
 					userAgent: "unknown",

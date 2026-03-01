@@ -696,7 +696,7 @@ export class OAuthService {
 			// 이메일이 없는 경우 (카카오 등) 플레이스홀더 이메일 생성
 			const effectiveEmail =
 				email ??
-				`${provider.toLowerCase()}_${providerAccountId}@social.aido.app`;
+				`${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
 
 			// 이메일로 기존 사용자 확인 (실제 이메일인 경우에만)
 			if (email) {

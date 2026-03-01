@@ -17,7 +17,7 @@ import type {
  */
 export class AppleOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "APPLE" as const;
-	readonly failureEmail = "apple_unknown@social.aido.app";
+	readonly failureEmail = "apple_unknown@social.aido.kr";
 
 	readonly #verifier: OAuthTokenVerifierService;
 

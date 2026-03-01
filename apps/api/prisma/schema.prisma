@@ -123,14 +123,16 @@ model UserPreference {
   pushEnabled         Boolean @default(false) // 푸시 알림 전체 on/off
   nightPushEnabled    Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
   timezone            String  @default("UTC") @db.VarChar(50) // IANA timezone (e.g. "Asia/Seoul")
-  morningReminderHour Int     @default(8) // 0-23, 사용자 로컬 시간 기준 아침 리마인더
-  eveningReminderHour Int     @default(18) // 0-23, 사용자 로컬 시간 기준 저녁 리마인더
+  morningReminderHour   Int     @default(8) // 0-11, 사용자 로컬 시간 기준 아침 리마인더
+  morningReminderMinute Int     @default(0) // 0-59
+  eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
+  eveningReminderMinute Int     @default(0) // 0-59
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([pushEnabled, timezone]) // 타임존별 활성 사용자 스캔
-  @@index([pushEnabled, timezone, morningReminderHour]) // 아침 리마인더 스윕
-  @@index([pushEnabled, timezone, eveningReminderHour]) // 저녁 리마인더 스윕
+  @@index([pushEnabled, timezone, morningReminderHour, morningReminderMinute]) // 아침 리마인더 스윕
+  @@index([pushEnabled, timezone, eveningReminderHour, eveningReminderMinute]) // 저녁 리마인더 스윕
 }
 
 // =============================================================================

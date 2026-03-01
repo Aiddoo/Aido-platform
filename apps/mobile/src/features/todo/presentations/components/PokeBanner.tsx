@@ -2,7 +2,7 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { useOverlay } from '@src/shared/ui/Overlay';
+import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -10,27 +10,19 @@ import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
 import { match } from 'ts-pattern';
 import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
-import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 export function PokeBanner() {
   const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
 
-  const overlay = useOverlay();
+  const premiumDialog = usePremiumDialog();
   const handlePress = () => {
     if (isLimitReached) {
-      overlay.open(({ isOpen, close, exit }) => (
-        <NudgeLimitDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-        />
-      ));
+      premiumDialog.open({
+        title: '오늘 콕 찌르기를 다 했어요',
+        description: '구독하면 무제한으로 찌를 수 있어요',
+      });
     }
   };
 
