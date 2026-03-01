@@ -95,8 +95,8 @@ COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/src/generated ./src/generated
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
 
-# RDS CA 인증서 다운로드 (COPY 이후에 배치해야 덮어쓰기 방지)
-ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
+# RDS CA 인증서 다운로드 (COPY 이후에 배치 — nestjs 유저가 읽을 수 있도록 chown)
+ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 
 ENV NODE_ENV=production
 ENV PORT=8080
