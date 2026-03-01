@@ -35,7 +35,9 @@ const generatePreferenceDto = (): PreferenceResponse => ({
   nightPushEnabled: false,
   timezone: 'Asia/Seoul',
   morningReminderHour: 8,
+  morningReminderMinute: 0,
   eveningReminderHour: 21,
+  eveningReminderMinute: 0,
 });
 
 export const createPreferenceDto = (

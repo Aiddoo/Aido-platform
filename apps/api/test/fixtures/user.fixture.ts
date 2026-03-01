@@ -100,7 +100,9 @@ export const UserFixture = {
 			nightPushEnabled: preferenceOverrides.nightPushEnabled ?? false,
 			timezone: preferenceOverrides.timezone ?? "UTC",
 			morningReminderHour: preferenceOverrides.morningReminderHour ?? 8,
+			morningReminderMinute: preferenceOverrides.morningReminderMinute ?? 0,
 			eveningReminderHour: preferenceOverrides.eveningReminderHour ?? 18,
+			eveningReminderMinute: preferenceOverrides.eveningReminderMinute ?? 0,
 		};
 
 		return { user, profile, preference };

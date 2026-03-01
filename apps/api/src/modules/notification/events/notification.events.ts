@@ -147,8 +147,12 @@ export interface ReminderHourChangedEventPayload {
 	timezone: string;
 	/** 변경된 아침 리마인더 시간 (undefined면 변경 안 됨) */
 	morningReminderHour?: number;
+	/** 변경된 아침 리마인더 분 (undefined면 변경 안 됨) */
+	morningReminderMinute?: number;
 	/** 변경된 저녁 리마인더 시간 (undefined면 변경 안 됨) */
 	eveningReminderHour?: number;
+	/** 변경된 저녁 리마인더 분 (undefined면 변경 안 됨) */
+	eveningReminderMinute?: number;
 }
 
 /**

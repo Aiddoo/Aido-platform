@@ -8,7 +8,9 @@ export interface UpdatePreferenceData {
 	nightPushEnabled?: boolean;
 	timezone?: string;
 	morningReminderHour?: number;
+	morningReminderMinute?: number;
 	eveningReminderHour?: number;
+	eveningReminderMinute?: number;
 }
 
 @Injectable()
@@ -40,8 +42,14 @@ export class UserPreferenceRepository {
 				...(data?.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
 				}),
+				...(data?.morningReminderMinute !== undefined && {
+					morningReminderMinute: data.morningReminderMinute,
+				}),
 				...(data?.eveningReminderHour !== undefined && {
 					eveningReminderHour: data.eveningReminderHour,
+				}),
+				...(data?.eveningReminderMinute !== undefined && {
+					eveningReminderMinute: data.eveningReminderMinute,
 				}),
 			},
 		});
@@ -63,8 +71,14 @@ export class UserPreferenceRepository {
 				...(data.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
 				}),
+				...(data.morningReminderMinute !== undefined && {
+					morningReminderMinute: data.morningReminderMinute,
+				}),
 				...(data.eveningReminderHour !== undefined && {
 					eveningReminderHour: data.eveningReminderHour,
+				}),
+				...(data.eveningReminderMinute !== undefined && {
+					eveningReminderMinute: data.eveningReminderMinute,
 				}),
 			},
 			update: {
@@ -78,8 +92,14 @@ export class UserPreferenceRepository {
 				...(data.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
 				}),
+				...(data.morningReminderMinute !== undefined && {
+					morningReminderMinute: data.morningReminderMinute,
+				}),
 				...(data.eveningReminderHour !== undefined && {
 					eveningReminderHour: data.eveningReminderHour,
+				}),
+				...(data.eveningReminderMinute !== undefined && {
+					eveningReminderMinute: data.eveningReminderMinute,
 				}),
 			},
 		});
@@ -104,8 +124,14 @@ export class UserPreferenceRepository {
 				...(data.morningReminderHour !== undefined && {
 					morningReminderHour: data.morningReminderHour,
 				}),
+				...(data.morningReminderMinute !== undefined && {
+					morningReminderMinute: data.morningReminderMinute,
+				}),
 				...(data.eveningReminderHour !== undefined && {
 					eveningReminderHour: data.eveningReminderHour,
+				}),
+				...(data.eveningReminderMinute !== undefined && {
+					eveningReminderMinute: data.eveningReminderMinute,
 				}),
 			},
 		});

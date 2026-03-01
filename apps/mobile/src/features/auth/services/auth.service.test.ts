@@ -270,7 +270,9 @@ describe('AuthService', () => {
           pushEnabled: dto.pushEnabled,
           nightPushEnabled: dto.nightPushEnabled,
           morningReminderHour: dto.morningReminderHour,
+          morningReminderMinute: dto.morningReminderMinute,
           eveningReminderHour: dto.eveningReminderHour,
+          eveningReminderMinute: dto.eveningReminderMinute,
         },
       });
     });
@@ -316,7 +318,9 @@ describe('AuthService', () => {
           pushEnabled: dto.pushEnabled,
           nightPushEnabled: dto.nightPushEnabled,
           morningReminderHour: dto.morningReminderHour,
+          morningReminderMinute: dto.morningReminderMinute,
           eveningReminderHour: dto.eveningReminderHour,
+          eveningReminderMinute: dto.eveningReminderMinute,
         },
       });
     });

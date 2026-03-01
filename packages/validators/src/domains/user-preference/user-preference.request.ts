@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   EVENING_REMINDER_HOUR_RANGE,
   MORNING_REMINDER_HOUR_RANGE,
+  REMINDER_MINUTE_VALUES,
 } from './user-preference.constants';
 
 export const updatePreferenceSchema = z
@@ -21,6 +22,14 @@ export const updatePreferenceSchema = z
       .max(MORNING_REMINDER_HOUR_RANGE.MAX)
       .optional()
       .describe('아침 리마인더 시간 (0-11, 오전만 허용)'),
+    morningReminderMinute: z
+      .number()
+      .int()
+      .refine((v) => (REMINDER_MINUTE_VALUES as readonly number[]).includes(v), {
+        message: '분 값은 0 또는 30만 허용됩니다',
+      })
+      .optional()
+      .describe('아침 리마인더 분 (0 또는 30)'),
     eveningReminderHour: z
       .number()
       .int()
@@ -28,6 +37,14 @@ export const updatePreferenceSchema = z
       .max(EVENING_REMINDER_HOUR_RANGE.MAX)
       .optional()
       .describe('저녁 리마인더 시간 (12-23, 오후만 허용)'),
+    eveningReminderMinute: z
+      .number()
+      .int()
+      .refine((v) => (REMINDER_MINUTE_VALUES as readonly number[]).includes(v), {
+        message: '분 값은 0 또는 30만 허용됩니다',
+      })
+      .optional()
+      .describe('저녁 리마인더 분 (0 또는 30)'),
   })
   .refine(
     (data) =>
@@ -35,7 +52,9 @@ export const updatePreferenceSchema = z
       data.nightPushEnabled !== undefined ||
       data.timezone !== undefined ||
       data.morningReminderHour !== undefined ||
-      data.eveningReminderHour !== undefined,
+      data.morningReminderMinute !== undefined ||
+      data.eveningReminderHour !== undefined ||
+      data.eveningReminderMinute !== undefined,
     { message: '최소 하나의 설정 값이 필요합니다' },
   );
 

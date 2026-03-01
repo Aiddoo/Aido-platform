@@ -15,7 +15,9 @@ export const preferenceSchema = z.object({
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
   morningReminderHour: z.number().int(),
+  morningReminderMinute: z.number().int(),
   eveningReminderHour: z.number().int(),
+  eveningReminderMinute: z.number().int(),
 });
 export type Preference = z.infer<typeof preferenceSchema>;
 

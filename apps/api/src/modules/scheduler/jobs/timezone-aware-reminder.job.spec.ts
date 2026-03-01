@@ -181,11 +181,17 @@ describe("TimezoneAwareReminderJob", () => {
 				// 아침 리마인더 user.findMany 호출 확인
 				const morningCall = databaseService.user.findMany.mock
 					.calls[0]?.[0] as {
-					where?: { preference?: { morningReminderHour?: number } };
+					where?: {
+						preference?: {
+							morningReminderHour?: number;
+							morningReminderMinute?: number;
+						};
+					};
 				};
 				expect(morningCall?.where?.preference?.morningReminderHour).toBe(
 					expectedLocalHour,
 				);
+				expect(morningCall?.where?.preference?.morningReminderMinute).toBe(0);
 
 				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 				const batch = getBatchCallArg(
@@ -199,6 +205,48 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(notification.notificationDate).toEqual(
 					dayjs.utc("2024-01-16").startOf("day").toDate(),
 				);
+
+				jest.useRealTimers();
+			});
+
+			it("Asia/Seoul 사용자가 morningReminderMinute=30이고 현재 KST 08:30일 때 아침 리마인더 발송", async () => {
+				// Given - KST 08:30 = UTC 2024-01-15T23:30:00Z
+				const fakeNow = new Date("2024-01-15T23:30:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const mockUser = createMockMorningUser({
+					id: "user-seoul-30",
+					_count: { todos: 2 },
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([mockUser] as never)
+					.mockResolvedValueOnce([] as never);
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - morningReminderMinute=30으로 쿼리됨
+				const morningCall = databaseService.user.findMany.mock
+					.calls[0]?.[0] as {
+					where?: {
+						preference?: {
+							morningReminderHour?: number;
+							morningReminderMinute?: number;
+						};
+					};
+				};
+				expect(morningCall?.where?.preference?.morningReminderHour).toBe(8);
+				expect(morningCall?.where?.preference?.morningReminderMinute).toBe(30);
+
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
 				jest.useRealTimers();
 			});
@@ -323,6 +371,53 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(notification.notificationDate).toEqual(
 					dayjs.utc("2024-01-15").startOf("day").toDate(),
 				);
+
+				jest.useRealTimers();
+			});
+
+			it("eveningReminderMinute=30인 사용자에게 저녁 리마인더 발송 (KST 18:30)", async () => {
+				// Given - KST 18:30 = UTC 09:30
+				const fakeNow = new Date("2024-01-15T09:30:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const mockUser = createMockEveningUser({
+					id: "user-evening-30",
+					todos: [{ completed: true }, { completed: false }],
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([] as never)
+					.mockResolvedValueOnce([mockUser] as never);
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - eveningReminderMinute=30으로 쿼리됨
+				const eveningCall = databaseService.user.findMany.mock
+					.calls[1]?.[0] as {
+					where?: {
+						preference?: {
+							eveningReminderHour?: number;
+							eveningReminderMinute?: number;
+						};
+					};
+				};
+				expect(eveningCall?.where?.preference?.eveningReminderHour).toBe(18);
+				expect(eveningCall?.where?.preference?.eveningReminderMinute).toBe(30);
+
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(getFirstNotification(batch).userId).toBe("user-evening-30");
+				expect(getFirstNotification(batch).type).toBe("EVENING_REMINDER");
 
 				jest.useRealTimers();
 			});

@@ -11,9 +11,9 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
 /**
- * 타임존 인식 리마인더 크론 작업 — Hourly Sweep 패턴
+ * 타임존 인식 리마인더 크론 작업 — Half-Hourly Sweep 패턴
  *
- * 매시간 정각에 실행되어 각 타임존별 로컬 시간을 확인하고,
+ * 매 30분마다 실행되어 각 타임존별 로컬 시간(시+분)을 확인하고,
  * 해당 시간에 아침/저녁 리마인더를 원하는 사용자에게 알림을 발송합니다.
  *
  * 기존 MorningReminderJob + EveningReminderJob을 통합 대체합니다.
@@ -29,25 +29,23 @@ export class TimezoneAwareReminderJob {
 	) {}
 
 	/**
-	 * 매시간 정각 실행 — Hourly Sweep 패턴
+	 * 매 30분마다 실행 — Half-Hourly Sweep 패턴
 	 *
 	 * 1. DB에서 활성화된 고유 타임존 목록 조회 (1 query)
-	 * 2. 각 타임존의 현재 로컬 시간 확인
+	 * 2. 각 타임존의 현재 로컬 시간(시+분) 확인
 	 * 3. 해당 시간에 아침/저녁 리마인더를 원하는 사용자에게 발송
 	 */
-	@Cron("0 * * * *")
+	@Cron("0,30 * * * *")
 	async handleHourlySweep(): Promise<void> {
-		this.#logger.log("Starting hourly sweep reminder job...");
+		this.#logger.log("Starting half-hourly sweep reminder job...");
 
 		const release = await this.lockProvider.acquire(
 			"timezone-reminder",
-			55 * 60 * 1000,
+			25 * 60 * 1000,
 		);
 
 		if (!release) {
-			this.#logger.warn(
-				"Skipping hourly sweep — another instance holds the lock",
-			);
+			this.#logger.warn("Skipping sweep — another instance holds the lock");
 			return;
 		}
 
@@ -63,8 +61,10 @@ export class TimezoneAwareReminderJob {
 
 			// 2. 각 타임존별 아침/저녁 리마인더를 병렬 처리
 			const tasks = timezones.map(({ timezone: tz }) => {
-				const localHour = dayjs(now).tz(tz).hour();
-				return this.#processTimezone(tz, localHour);
+				const local = dayjs(now).tz(tz);
+				const localHour = local.hour();
+				const localMinute = local.minute() >= 30 ? 30 : 0;
+				return this.#processTimezone(tz, localHour, localMinute);
 			});
 
 			const results = await Promise.allSettled(tasks);
@@ -78,10 +78,10 @@ export class TimezoneAwareReminderJob {
 				}
 			});
 
-			this.#logger.log("Hourly sweep reminder job completed");
+			this.#logger.log("Half-hourly sweep reminder job completed");
 		} catch (error) {
 			this.#logger.error(
-				`Hourly sweep reminder job failed: ${error}`,
+				`Sweep reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		} finally {
@@ -93,7 +93,7 @@ export class TimezoneAwareReminderJob {
 	 * 리마인더 시간 변경 이벤트 핸들러 — Catch-up 패턴
 	 *
 	 * 사용자가 리마인더 시간을 변경했을 때, 변경된 시간이 현재 로컬 시간과
-	 * 같으면 즉시 리마인더를 발송합니다. (정각 크론이 이미 실행된 후 변경한 경우 보완)
+	 * 같으면 즉시 리마인더를 발송합니다. (크론이 이미 실행된 후 변경한 경우 보완)
 	 *
 	 * 중복 방지: `notificationDate` 기반이므로 크론에서 이미 발송했으면 스킵됩니다.
 	 */
@@ -102,32 +102,38 @@ export class TimezoneAwareReminderJob {
 		payload: ReminderHourChangedEventPayload,
 	): Promise<void> {
 		try {
-			const localHour = dayjs().tz(payload.timezone).hour();
+			const now = dayjs().tz(payload.timezone);
+			const localHour = now.hour();
+			const localMinute = now.minute() >= 30 ? 30 : 0;
 
 			if (
 				payload.morningReminderHour !== undefined &&
-				payload.morningReminderHour === localHour
+				payload.morningReminderHour === localHour &&
+				(payload.morningReminderMinute ?? 0) === localMinute
 			) {
 				this.#logger.log(
-					`Catch-up morning reminder for user=${payload.userId}, hour=${localHour}`,
+					`Catch-up morning reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
 				);
 				await this.#sendMorningReminders(
 					payload.timezone,
 					localHour,
+					localMinute,
 					payload.userId,
 				);
 			}
 
 			if (
 				payload.eveningReminderHour !== undefined &&
-				payload.eveningReminderHour === localHour
+				payload.eveningReminderHour === localHour &&
+				(payload.eveningReminderMinute ?? 0) === localMinute
 			) {
 				this.#logger.log(
-					`Catch-up evening reminder for user=${payload.userId}, hour=${localHour}`,
+					`Catch-up evening reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
 				);
 				await this.#sendEveningReminders(
 					payload.timezone,
 					localHour,
+					localMinute,
 					payload.userId,
 				);
 			}
@@ -139,14 +145,19 @@ export class TimezoneAwareReminderJob {
 		}
 	}
 
-	async #processTimezone(tz: string, localHour: number): Promise<void> {
-		await this.#sendMorningReminders(tz, localHour);
-		await this.#sendEveningReminders(tz, localHour);
+	async #processTimezone(
+		tz: string,
+		localHour: number,
+		localMinute: number,
+	): Promise<void> {
+		await this.#sendMorningReminders(tz, localHour, localMinute);
+		await this.#sendEveningReminders(tz, localHour, localMinute);
 	}
 
 	async #sendMorningReminders(
 		tz: string,
 		localHour: number,
+		localMinute: number,
 		userId?: string,
 	): Promise<void> {
 		const today = getUserToday(tz);
@@ -163,6 +174,7 @@ export class TimezoneAwareReminderJob {
 					timezone: tz,
 					pushEnabled: true,
 					morningReminderHour: localHour,
+					morningReminderMinute: localMinute,
 				},
 			},
 			select: {
@@ -213,13 +225,14 @@ export class TimezoneAwareReminderJob {
 
 		await this.notificationService.createAndSendBatch(notifications);
 		this.#logger.log(
-			`Morning reminder: tz=${tz}, hour=${localHour}, count=${notifications.length}`,
+			`Morning reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);
 	}
 
 	async #sendEveningReminders(
 		tz: string,
 		localHour: number,
+		localMinute: number,
 		userId?: string,
 	): Promise<void> {
 		const today = getUserToday(tz);
@@ -236,6 +249,7 @@ export class TimezoneAwareReminderJob {
 					timezone: tz,
 					pushEnabled: true,
 					eveningReminderHour: localHour,
+					eveningReminderMinute: localMinute,
 				},
 				todos: {
 					some: {
@@ -294,7 +308,7 @@ export class TimezoneAwareReminderJob {
 
 		await this.notificationService.createAndSendBatch(notifications);
 		this.#logger.log(
-			`Evening reminder: tz=${tz}, hour=${localHour}, count=${notifications.length}`,
+			`Evening reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
 		);
 	}
 }

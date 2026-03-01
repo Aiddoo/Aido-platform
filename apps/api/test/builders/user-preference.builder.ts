@@ -28,7 +28,9 @@ export class UserPreferenceBuilder {
 			nightPushEnabled: false,
 			timezone: "UTC",
 			morningReminderHour: 8,
+			morningReminderMinute: 0,
 			eveningReminderHour: 18,
+			eveningReminderMinute: 0,
 		};
 	}
 
@@ -77,8 +79,18 @@ export class UserPreferenceBuilder {
 		return this;
 	}
 
+	withMorningReminderMinute(minute: number): UserPreferenceBuilder {
+		this.data.morningReminderMinute = minute;
+		return this;
+	}
+
 	withEveningReminderHour(hour: number): UserPreferenceBuilder {
 		this.data.eveningReminderHour = hour;
+		return this;
+	}
+
+	withEveningReminderMinute(minute: number): UserPreferenceBuilder {
+		this.data.eveningReminderMinute = minute;
 		return this;
 	}
 

@@ -1433,7 +1433,12 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/preference - morningReminderHour 유효값 (8) → 200", async () => {
-			// Given - 로그인된 사용자
+			// Given - 프리미엄 사용자 (리마인더 시간 변경은 프리미엄 기능)
+			const prisma = ctx.module.get(DatabaseService);
+			await prisma.user.update({
+				where: { email: settingsEmail },
+				data: { subscriptionStatus: "ACTIVE" },
+			});
 
 			// When - 오전 리마인더에 유효한 오전 시간 설정
 			const response = await request(ctx.app.getHttpServer())
@@ -1447,7 +1452,7 @@ describe("Auth (e2e)", () => {
 		});
 
 		it("PATCH /auth/preference - eveningReminderHour 유효값 (18) → 200", async () => {
-			// Given - 로그인된 사용자
+			// Given - 프리미엄 사용자 (이전 테스트에서 ACTIVE로 변경됨)
 
 			// When - 오후 리마인더에 유효한 오후 시간 설정
 			const response = await request(ctx.app.getHttpServer())

@@ -1088,7 +1088,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.PREFERENCE_1702]: {
     code: 'PREFERENCE_1702',
     message: '리마인더 시간 범위가 올바르지 않습니다.',
-    description: '오전 리마인더는 0-11시, 오후 리마인더는 12-23시만 설정할 수 있습니다.',
+    description:
+      '오전 리마인더는 0:00-11:30, 오후 리마인더는 12:00-23:30만 설정할 수 있습니다. 분은 0 또는 30만 허용됩니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
   },
 };

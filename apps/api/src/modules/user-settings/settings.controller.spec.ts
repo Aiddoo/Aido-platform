@@ -34,7 +34,9 @@ describe("SettingsController", () => {
 				nightPushEnabled: false,
 				timezone: "Asia/Seoul",
 				morningReminderHour: 8,
+				morningReminderMinute: 0,
 				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
 
@@ -52,7 +54,9 @@ describe("SettingsController", () => {
 				nightPushEnabled: false,
 				timezone: "UTC",
 				morningReminderHour: 8,
+				morningReminderMinute: 0,
 				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
 
@@ -70,7 +74,9 @@ describe("SettingsController", () => {
 				nightPushEnabled: true,
 				timezone: "Asia/Seoul",
 				morningReminderHour: 8,
+				morningReminderMinute: 0,
 				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,
@@ -92,7 +98,9 @@ describe("SettingsController", () => {
 				nightPushEnabled: false,
 				timezone: "UTC",
 				morningReminderHour: 8,
+				morningReminderMinute: 0,
 				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,

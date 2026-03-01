@@ -91,7 +91,9 @@ describe('toPreference', () => {
       nightPushEnabled: false,
       timezone: 'Asia/Seoul',
       morningReminderHour: 8,
+      morningReminderMinute: 0,
       eveningReminderHour: 21,
+      eveningReminderMinute: 0,
     };
 
     // When
@@ -102,7 +104,9 @@ describe('toPreference', () => {
       pushEnabled: true,
       nightPushEnabled: false,
       morningReminderHour: 8,
+      morningReminderMinute: 0,
       eveningReminderHour: 21,
+      eveningReminderMinute: 0,
     });
     expect(result).not.toHaveProperty('timezone');
   });

@@ -11,7 +11,7 @@ import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
-import { formatReminderHour, hourToDate } from '@src/shared/utils/time';
+import { formatReminderTime, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -167,11 +167,18 @@ interface ReminderSectionProps {
   preference: {
     pushEnabled: boolean;
     morningReminderHour: number;
+    morningReminderMinute: number;
     eveningReminderHour: number;
+    eveningReminderMinute: number;
   };
   isPremium: boolean;
   isPending: boolean;
-  onTimeChange: (input: { morningReminderHour?: number; eveningReminderHour?: number }) => void;
+  onTimeChange: (input: {
+    morningReminderHour?: number;
+    morningReminderMinute?: number;
+    eveningReminderHour?: number;
+    eveningReminderMinute?: number;
+  }) => void;
 }
 
 function ReminderSection({ preference, isPremium, isPending, onTimeChange }: ReminderSectionProps) {
@@ -179,13 +186,18 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
   const overlay = useOverlay();
   const [pickerConfig, setPickerConfig] = useState<{
     open: boolean;
-    field: 'morningReminderHour' | 'eveningReminderHour';
+    field: 'morning' | 'evening';
     currentHour: number;
-  }>({ open: false, field: 'morningReminderHour', currentHour: 8 });
+    currentMinute: number;
+  }>({ open: false, field: 'morning', currentHour: 8, currentMinute: 0 });
 
   const disabled = !preference.pushEnabled || isPending;
 
-  const handlePress = (field: typeof pickerConfig.field, currentHour: number) => {
+  const handlePress = (
+    field: 'morning' | 'evening',
+    currentHour: number,
+    currentMinute: number,
+  ) => {
     if (disabled) return;
 
     if (!isPremium) {
@@ -208,7 +220,7 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
       return;
     }
 
-    setPickerConfig({ open: true, field, currentHour });
+    setPickerConfig({ open: true, field, currentHour, currentMinute });
   };
 
   return (
@@ -227,8 +239,12 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
       <ReminderTimeRow
         label="오전 리마인드"
         hour={preference.morningReminderHour}
+        minute={preference.morningReminderMinute}
+        description="오전 시간대(0:00-11:30)에 오늘의 할일을 알려줘요"
         disabled={disabled}
-        onPress={() => handlePress('morningReminderHour', preference.morningReminderHour)}
+        onPress={() =>
+          handlePress('morning', preference.morningReminderHour, preference.morningReminderMinute)
+        }
       />
 
       <Separator className="bg-gray-2" />
@@ -236,24 +252,38 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
       <ReminderTimeRow
         label="오후 리마인드"
         hour={preference.eveningReminderHour}
+        minute={preference.eveningReminderMinute}
+        description="오후 시간대(12:00-23:30)에 남은 할일을 알려줘요"
         disabled={disabled}
-        onPress={() => handlePress('eveningReminderHour', preference.eveningReminderHour)}
+        onPress={() =>
+          handlePress('evening', preference.eveningReminderHour, preference.eveningReminderMinute)
+        }
       />
 
       <DatePicker
         modal
         open={pickerConfig.open}
-        date={hourToDate(pickerConfig.currentHour)}
-        minimumDate={hourToDate(pickerConfig.field === 'morningReminderHour' ? 0 : 12)}
-        maximumDate={hourToDate(pickerConfig.field === 'morningReminderHour' ? 11 : 23)}
+        date={timeToDate(pickerConfig.currentHour, pickerConfig.currentMinute)}
+        minimumDate={timeToDate(pickerConfig.field === 'morning' ? 0 : 12, 0)}
+        maximumDate={timeToDate(pickerConfig.field === 'morning' ? 11 : 23, 30)}
         onConfirm={(date) => {
           setPickerConfig((prev) => ({ ...prev, open: false }));
-          onTimeChange({ [pickerConfig.field]: date.getHours() });
+          if (pickerConfig.field === 'morning') {
+            onTimeChange({
+              morningReminderHour: date.getHours(),
+              morningReminderMinute: date.getMinutes(),
+            });
+          } else {
+            onTimeChange({
+              eveningReminderHour: date.getHours(),
+              eveningReminderMinute: date.getMinutes(),
+            });
+          }
         }}
         onCancel={() => setPickerConfig((prev) => ({ ...prev, open: false }))}
         mode="time"
         minuteInterval={30}
-        title={pickerConfig.field === 'morningReminderHour' ? '오전 시간 선택' : '오후 시간 선택'}
+        title={pickerConfig.field === 'morning' ? '오전 시간 선택' : '오후 시간 선택'}
         confirmText="확인"
         cancelText="취소"
         locale={Intl.DateTimeFormat().resolvedOptions().locale}
@@ -265,22 +295,34 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
 interface ReminderTimeRowProps {
   label: string;
   hour: number;
+  minute: number;
+  description: string;
   disabled: boolean;
   onPress: () => void;
 }
 
-function ReminderTimeRow({ label, hour, disabled, onPress }: ReminderTimeRowProps) {
+function ReminderTimeRow({
+  label,
+  hour,
+  minute,
+  description,
+  disabled,
+  onPress,
+}: ReminderTimeRowProps) {
   return (
-    <PressableFeedback onPress={onPress} isDisabled={disabled} className="rounded-lg">
-      <PressableFeedback.Highlight className="rounded-lg" />
-      <HStack py={12} justify="between" align="center" className={cn(disabled && 'opacity-40')}>
-        <Label>{label}</Label>
-        <HStack gap={4} align="center">
-          <Description>{formatReminderHour(hour)}</Description>
-          <ArrowRightIcon colorClassName="text-gray-6" />
+    <VStack>
+      <PressableFeedback onPress={onPress} isDisabled={disabled} className="rounded-lg">
+        <PressableFeedback.Highlight className="rounded-lg" />
+        <HStack py={12} justify="between" align="center" className={cn(disabled && 'opacity-40')}>
+          <Label>{label}</Label>
+          <HStack gap={4} align="center">
+            <Description>{formatReminderTime(hour, minute)}</Description>
+            <ArrowRightIcon colorClassName="text-gray-6" />
+          </HStack>
         </HStack>
-      </HStack>
-    </PressableFeedback>
+      </PressableFeedback>
+      <Description className="text-xs pb-1">{description}</Description>
+    </VStack>
   );
 }
 

@@ -38,7 +38,9 @@ export class UserSettingsService {
 				nightPushEnabled: false,
 				timezone: "UTC",
 				morningReminderHour: 8,
+				morningReminderMinute: 0,
 				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
 			};
 		}
 
@@ -47,7 +49,9 @@ export class UserSettingsService {
 			nightPushEnabled: preference.nightPushEnabled,
 			timezone: preference.timezone,
 			morningReminderHour: preference.morningReminderHour,
+			morningReminderMinute: preference.morningReminderMinute,
 			eveningReminderHour: preference.eveningReminderHour,
+			eveningReminderMinute: preference.eveningReminderMinute,
 		};
 	}
 
@@ -58,7 +62,9 @@ export class UserSettingsService {
 		// 리마인더 시간 변경 시 프리미엄 체크
 		if (
 			input.morningReminderHour !== undefined ||
-			input.eveningReminderHour !== undefined
+			input.morningReminderMinute !== undefined ||
+			input.eveningReminderHour !== undefined ||
+			input.eveningReminderMinute !== undefined
 		) {
 			const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
 			if (!hasPremium) {
@@ -86,7 +92,9 @@ export class UserSettingsService {
 			nightPushEnabled: input.nightPushEnabled,
 			timezone: input.timezone,
 			morningReminderHour: input.morningReminderHour,
+			morningReminderMinute: input.morningReminderMinute,
 			eveningReminderHour: input.eveningReminderHour,
+			eveningReminderMinute: input.eveningReminderMinute,
 		});
 
 		this.#logger.log(
@@ -97,13 +105,17 @@ export class UserSettingsService {
 		// (현재 시간과 동일한 시간으로 변경했을 때 크론이 이미 지나간 경우 보완)
 		if (
 			input.morningReminderHour !== undefined ||
-			input.eveningReminderHour !== undefined
+			input.morningReminderMinute !== undefined ||
+			input.eveningReminderHour !== undefined ||
+			input.eveningReminderMinute !== undefined
 		) {
 			this.eventEmitter.emit(NotificationEvents.REMINDER_HOUR_CHANGED, {
 				userId,
 				timezone: updated.timezone,
 				morningReminderHour: input.morningReminderHour,
+				morningReminderMinute: input.morningReminderMinute,
 				eveningReminderHour: input.eveningReminderHour,
+				eveningReminderMinute: input.eveningReminderMinute,
 			} satisfies ReminderHourChangedEventPayload);
 		}
 
@@ -112,7 +124,9 @@ export class UserSettingsService {
 			nightPushEnabled: updated.nightPushEnabled,
 			timezone: updated.timezone,
 			morningReminderHour: updated.morningReminderHour,
+			morningReminderMinute: updated.morningReminderMinute,
 			eveningReminderHour: updated.eveningReminderHour,
+			eveningReminderMinute: updated.eveningReminderMinute,
 		};
 	}
 
