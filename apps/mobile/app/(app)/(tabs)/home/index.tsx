@@ -1,32 +1,28 @@
 import homeIdoCatImage from '@assets/images/home_ido_cat.webp';
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { ParsedTodoData } from '@src/features/todo/models/todo.model';
-import { createTodoMutationOptions } from '@src/features/todo/presentations/queries/create-todo-mutation-options';
+import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
+import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
 import { parseTodoMutationOptions } from '@src/features/todo/presentations/queries/parse-todo-mutation-options';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
-import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
+import { useOverlay } from '@src/shared/ui/Overlay';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VoiceTextField } from '@src/shared/ui/VoiceTextField/VoiceTextField';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { useMutation } from '@tanstack/react-query';
-import { BottomSheet, PressableFeedback } from 'heroui-native';
-import { type PropsWithChildren, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { PressableFeedback } from 'heroui-native';
+import { useState } from 'react';
 import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
-import { z } from 'zod';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 100 : 16;
 
 const HomeScreen = () => {
   const [inputText, setInputText] = useState('');
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [parsedData, setParsedData] = useState<ParsedTodoData | null>(null);
 
   const toast = useAppToast();
+  const overlay = useOverlay();
 
   const { isRecognizing, start, stop } = useSpeechRecognition({
     onResult: setInputText,
@@ -34,10 +30,40 @@ const HomeScreen = () => {
   });
 
   const parseMutation = useMutation(parseTodoMutationOptions());
-  const createMutation = useMutation(createTodoMutationOptions());
+  const { data: categoriesData } = useQuery(getTodoCategoriesQueryOptions());
+  const defaultCategoryId = categoriesData?.categories[0]?.id;
 
   const handleMicPress = () => {
     isRecognizing ? stop() : start();
+  };
+
+  const openTodoSheet = (data: ParsedTodoData) => {
+    if (!defaultCategoryId) return;
+
+    overlay.open(({ isOpen, close, exit }) => (
+      <AddTodoBottomSheet
+        mode="create"
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+        onClose={close}
+        selectedDate={new Date(data.startDate)}
+        categoryId={defaultCategoryId}
+        initialValues={{
+          title: data.title,
+          scheduledTime: data.scheduledTime,
+          isAllDay: data.isAllDay,
+          endDate: data.endDate ? new Date(data.endDate) : null,
+        }}
+        onSuccess={() => {
+          setInputText('');
+        }}
+      />
+    ));
   };
 
   const handleSubmit = () => {
@@ -47,8 +73,7 @@ const HomeScreen = () => {
 
     parseMutation.mutate(inputText.trim(), {
       onSuccess: (result) => {
-        setParsedData(result.data);
-        setIsSheetOpen(true);
+        openTodoSheet(result.data);
       },
     });
   };
@@ -57,90 +82,55 @@ const HomeScreen = () => {
     setInputText(text);
   };
 
-  const handleCreateTodo = ({ title, startDate, scheduledTime, isAllDay }: ParsedTodoData) => {
-    createMutation.mutate(
-      {
-        title,
-        startDate,
-        scheduledTime,
-        isAllDay,
-        visibility: 'PUBLIC',
-        categoryId: 1,
-      },
-      {
-        onSuccess: () => {
-          setInputText('');
-          setParsedData(null);
-          setIsSheetOpen(false);
-          toast.success('할 일이 추가되었어요!');
-        },
-        onError: (err) => {
-          toast.error(err.message, { fallback: '할 일 추가에 실패했어요' });
-        },
-      },
-    );
-  };
-
   return (
-    <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        className="bg-white"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      className="bg-white"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          className="flex-1 px-4"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Spacing size={20} />
+        <Spacing size={20} />
 
-          <ExampleTexts onPress={handleExamplePress} />
+        <ExampleTexts onPress={handleExamplePress} />
 
-          <Spacing size={32} />
+        <Spacing size={32} />
 
-          <VStack align="center" gap={8}>
-            <Text size="t1" weight="bold" className="text-center">
-              생각나는 대로{'\n'}적거나 말씀하세요!
-            </Text>
-          </VStack>
+        <VStack align="center" gap={8}>
+          <Text size="t1" weight="bold" className="text-center">
+            생각나는 대로{'\n'}적거나 말씀하세요!
+          </Text>
+        </VStack>
 
-          <Spacing size={24} />
+        <Spacing size={24} />
 
-          <VStack align="center">
-            <Image
-              source={homeIdoCatImage}
-              style={{ width: 200, height: 200 }}
-              resizeMode="contain"
-            />
-          </VStack>
+        <VStack align="center">
+          <Image
+            source={homeIdoCatImage}
+            style={{ width: 200, height: 200 }}
+            resizeMode="contain"
+          />
+        </VStack>
 
-          <View style={{ flex: 1 }} />
+        <View style={{ flex: 1 }} />
 
-          <View style={{ paddingBottom: TAB_BAR_HEIGHT }}>
-            <VoiceTextField
-              value={inputText}
-              onChangeText={setInputText}
-              onMicPress={handleMicPress}
-              onSubmit={handleSubmit}
-              isRecognizing={isRecognizing}
-              isLoading={parseMutation.isPending}
-              placeholder="예시) 매주 금요일 밤 11시 분리수거"
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <ParsedTodoConfirmSheet
-        key={parsedData?.title ?? 'empty'}
-        isOpen={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
-        parsedData={parsedData}
-        onConfirm={handleCreateTodo}
-        isLoading={createMutation.isPending}
-      />
-    </>
+        <View style={{ paddingBottom: TAB_BAR_HEIGHT }}>
+          <VoiceTextField
+            value={inputText}
+            onChangeText={setInputText}
+            onMicPress={handleMicPress}
+            onSubmit={handleSubmit}
+            isRecognizing={isRecognizing}
+            isLoading={parseMutation.isPending}
+            placeholder="예시) 매주 금요일 밤 11시 분리수거"
+          />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -176,156 +166,6 @@ const ExampleTexts = ({ onPress }: ExampleTextsProps) => {
           </PressableFeedback>
         ))}
       </HStack>
-    </VStack>
-  );
-};
-
-const confirmFormSchema = z.object({
-  title: z.string().min(1, '제목을 입력해주세요'),
-  startDate: z.string(),
-  scheduledTime: z.string().nullable(),
-  isAllDay: z.boolean(),
-});
-
-type ConfirmFormInput = z.infer<typeof confirmFormSchema>;
-
-interface ParsedTodoConfirmSheetProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  parsedData: ParsedTodoData | null;
-  onConfirm: (data: ParsedTodoData) => void;
-  isLoading: boolean;
-}
-
-const ParsedTodoConfirmSheet = ({
-  isOpen,
-  onOpenChange,
-  parsedData,
-  onConfirm,
-  isLoading,
-}: ParsedTodoConfirmSheetProps) => {
-  const { control, handleSubmit } = useForm<ConfirmFormInput>({
-    resolver: zodResolver(confirmFormSchema),
-    defaultValues: {
-      title: parsedData?.title ?? '',
-      startDate: parsedData?.startDate ?? '',
-      scheduledTime: parsedData?.scheduledTime ?? null,
-      isAllDay: parsedData?.isAllDay ?? true,
-    },
-  });
-
-  const handleConfirm = (data: ConfirmFormInput) => {
-    onConfirm({
-      title: data.title,
-      startDate: data.startDate,
-      endDate: null,
-      scheduledTime: data.scheduledTime,
-      isAllDay: data.isAllDay,
-    });
-  };
-
-  return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content
-          className="px-1"
-          enableDynamicSizing
-          keyboardBehavior="interactive"
-          keyboardBlurBehavior="restore"
-          android_keyboardInputMode="adjustResize"
-        >
-          <BottomSheet.Title>
-            <Text size="b3" weight="medium">
-              할 일 확인
-            </Text>
-          </BottomSheet.Title>
-
-          <Spacing size={12} />
-
-          <VStack gap={16} pb={16}>
-            <Controller
-              control={control}
-              name="title"
-              render={({ field: { onChange, value }, fieldState: { error } }) => (
-                <ConfirmFormField label="할 일" error={error?.message}>
-                  <BottomSheetTextInput
-                    value={value}
-                    onChangeText={onChange}
-                    placeholder="할 일을 입력하세요"
-                    style={{ fontSize: 16 }}
-                    maxLength={200}
-                  />
-                </ConfirmFormField>
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="startDate"
-              render={({ field: { onChange, value } }) => (
-                <ConfirmFormField label="날짜">
-                  <BottomSheetTextInput
-                    value={value}
-                    onChangeText={onChange}
-                    placeholder="YYYY-MM-DD"
-                    style={{ fontSize: 16 }}
-                  />
-                </ConfirmFormField>
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="scheduledTime"
-              render={({ field: { onChange, value } }) => (
-                <ConfirmFormField label="시간 (선택)">
-                  <BottomSheetTextInput
-                    value={value ?? ''}
-                    onChangeText={(text) => onChange(text || null)}
-                    placeholder="HH:mm"
-                    style={{ fontSize: 16 }}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </ConfirmFormField>
-              )}
-            />
-
-            <Spacing size={8} />
-
-            <Button onPress={handleSubmit(handleConfirm)} isLoading={isLoading}>
-              추가하기
-            </Button>
-          </VStack>
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
-    </BottomSheet>
-  );
-};
-
-interface ConfirmFormFieldProps {
-  label: string;
-  error?: string;
-}
-
-const ConfirmFormField = ({ label, error, children }: PropsWithChildren<ConfirmFormFieldProps>) => {
-  return (
-    <VStack gap={4}>
-      <Text size="b4" shade={6} className="px-1">
-        {label}
-      </Text>
-      <View
-        className={`rounded-xl border bg-gray-1 px-3 py-2 ${
-          error ? 'border-red-500' : 'border-gray-3'
-        }`}
-      >
-        {children}
-      </View>
-      {error && (
-        <Text size="e1" tone="danger" className="px-1">
-          {error}
-        </Text>
-      )}
     </VStack>
   );
 };

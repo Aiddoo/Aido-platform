@@ -32,6 +32,13 @@ interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
   mode: 'create';
   selectedDate: Date;
   categoryId: number;
+  initialValues?: {
+    title?: string;
+    scheduledTime?: string | null;
+    isAllDay?: boolean;
+    endDate?: Date | null;
+  };
+  onSuccess?: () => void;
 }
 
 interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
@@ -56,12 +63,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       categoryId: todo.category.id,
       visibility: todo.visibility,
     }))
-    .with({ mode: 'create' }, ({ selectedDate, categoryId }) => ({
-      title: '',
+    .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
+      title: initialValues?.title ?? '',
       startDate: selectedDate,
-      endDate: null,
-      scheduledTime: undefined,
-      isAllDay: true,
+      endDate: initialValues?.endDate ?? null,
+      scheduledTime: initialValues?.scheduledTime ?? undefined,
+      isAllDay: initialValues?.isAllDay ?? true,
       categoryId,
       visibility: 'PUBLIC' as const,
     }))
@@ -98,7 +105,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           { onSuccess: onClose },
         );
       })
-      .with({ mode: 'create' }, () => {
+      .with({ mode: 'create' }, (createProps) => {
         createMutation.mutate(
           {
             title: data.title,
@@ -109,7 +116,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             visibility: data.visibility,
             categoryId: data.categoryId,
           },
-          { onSuccess: onClose },
+          {
+            onSuccess: () => {
+              onClose();
+              createProps.onSuccess?.();
+            },
+          },
         );
       })
       .exhaustive();
