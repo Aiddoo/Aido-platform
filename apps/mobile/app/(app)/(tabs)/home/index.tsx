@@ -98,13 +98,11 @@ const HomeScreen = () => {
 
         <ExampleTexts onPress={handleExamplePress} />
 
-        <Spacing size={32} />
+        <Spacing size={40} />
 
-        <VStack align="center" gap={8}>
-          <Text size="t1" weight="bold" className="text-center">
-            생각나는 대로{'\n'}적거나 말씀하세요!
-          </Text>
-        </VStack>
+        <Text size="t2" weight="bold" align="center">
+          생각나는 대로{'\n'}적거나 말씀하세요!
+        </Text>
 
         <Spacing size={24} />
 
@@ -115,6 +113,8 @@ const HomeScreen = () => {
             resizeMode="contain"
           />
         </VStack>
+
+        <Spacing size={24} />
 
         <View style={{ flex: 1 }} />
 

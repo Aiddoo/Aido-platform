@@ -14,7 +14,7 @@ const TodosLayout = () => {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: '600',
           color: titleColor.color as string,
         },
