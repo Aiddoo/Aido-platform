@@ -1,10 +1,13 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { updatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/update-preference-mutation-options';
+import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
+import { useOverlay } from '@src/shared/ui/Overlay';
 import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
@@ -23,7 +26,7 @@ import {
   SkeletonGroup,
 } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 
 const NotificationSettingsScreen = () => {
   return (
@@ -112,9 +115,7 @@ function PushSettingsSection() {
     <VStack p={16} gap={12} className="bg-white rounded-2xl">
       <ControlField
         isSelected={preference.pushEnabled}
-        onSelectedChange={(enabled) => {
-          updateMutation.mutate({ pushEnabled: enabled });
-        }}
+        onSelectedChange={(enabled) => updateMutation.mutate({ pushEnabled: enabled })}
         isDisabled={updateMutation.isPending}
       >
         <View className="flex-1">
@@ -129,9 +130,7 @@ function PushSettingsSection() {
       <ControlField
         isSelected={preference.nightPushEnabled}
         onSelectedChange={(enabled) => {
-          if (!preference.pushEnabled) {
-            return;
-          }
+          if (!preference.pushEnabled) return;
           updateMutation.mutate({ nightPushEnabled: enabled });
         }}
         isDisabled={updateMutation.isPending || !preference.pushEnabled}
@@ -152,9 +151,6 @@ function PushSettingsSection() {
 
 function ReminderSection() {
   const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const updateMutation = useMutation(updatePreferenceMutationOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
 
   return (
     <VStack gap={8}>
@@ -170,30 +166,16 @@ function ReminderSection() {
       <VStack p={16} gap={12} className="bg-white rounded-2xl">
         <ReminderTimeRow
           label="오전 리마인드"
-          hour={preference.morningReminderHour}
-          minute={preference.morningReminderMinute}
           description="오전 시간대(0:00~11:59)에 오늘의 할일을 알려줘요"
-          disabled={!preference.pushEnabled || updateMutation.isPending}
-          isPremium={isPremium}
           field="morning"
-          onTimeChange={(hour, minute) =>
-            updateMutation.mutate({ morningReminderHour: hour, morningReminderMinute: minute })
-          }
         />
 
         <Separator className="bg-gray-2" />
 
         <ReminderTimeRow
           label="오후 리마인드"
-          hour={preference.eveningReminderHour}
-          minute={preference.eveningReminderMinute}
           description="오후 시간대(12:00~23:59)에 남은 할일을 알려줘요"
-          disabled={!preference.pushEnabled || updateMutation.isPending}
-          isPremium={isPremium}
           field="evening"
-          onTimeChange={(hour, minute) =>
-            updateMutation.mutate({ eveningReminderHour: hour, eveningReminderMinute: minute })
-          }
         />
       </VStack>
     </VStack>
@@ -202,32 +184,35 @@ function ReminderSection() {
 
 interface ReminderTimeRowProps {
   label: string;
-  hour: number;
-  minute: number;
   description: string;
-  disabled: boolean;
-  isPremium: boolean;
   field: 'morning' | 'evening';
-  onTimeChange: (hour: number, minute: number) => void;
 }
 
-function ReminderTimeRow({
-  label,
-  hour,
-  minute,
-  description,
-  disabled,
-  isPremium,
-  field,
-  onTimeChange,
-}: ReminderTimeRowProps) {
+function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
+  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
+  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const updateMutation = useMutation(updatePreferenceMutationOptions());
   const premiumDialog = usePremiumDialog();
-  const [open, setOpen] = useState(false);
+  const overlay = useOverlay();
+  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+
+  const isPremium = UserPolicy.isPremiumUser(user);
+  const disabled = !preference.pushEnabled || updateMutation.isPending;
+  const hour =
+    field === 'morning' ? preference.morningReminderHour : preference.eveningReminderHour;
+  const minute =
+    field === 'morning' ? preference.morningReminderMinute : preference.eveningReminderMinute;
+
+  const handleTimeChange = (h: number, m: number) => {
+    const input =
+      field === 'morning'
+        ? { morningReminderHour: h, morningReminderMinute: m }
+        : { eveningReminderHour: h, eveningReminderMinute: m };
+    updateMutation.mutate(input);
+  };
 
   const handlePress = () => {
-    if (disabled) {
-      return;
-    }
+    if (disabled) return;
 
     if (!isPremium) {
       premiumDialog.open({
@@ -236,7 +221,19 @@ function ReminderTimeRow({
       return;
     }
 
-    setOpen(true);
+    if (Platform.OS === 'android') {
+      setAndroidPickerOpen(true);
+      return;
+    }
+
+    openTimePickerBottomSheet({
+      label,
+      field,
+      hour,
+      minute,
+      overlay,
+      onConfirm: handleTimeChange,
+    });
   };
 
   return (
@@ -261,23 +258,85 @@ function ReminderTimeRow({
         </HStack>
       </PressableFeedback>
 
-      {open && (
+      {androidPickerOpen && (
         <DateTimePicker
           value={timeToDate(hour, minute)}
           minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
           maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
-          onChange={(_event, date) => {
-            setOpen(false);
-            if (date) {
-              onTimeChange(date.getHours(), date.getMinutes());
+          onChange={(event, date) => {
+            setAndroidPickerOpen(false);
+
+            if (event.type === 'set' && date) {
+              handleTimeChange(date.getHours(), date.getMinutes());
             }
           }}
           mode="time"
           display="spinner"
           minuteInterval={1}
-          locale={Intl.DateTimeFormat().resolvedOptions().locale}
         />
       )}
     </VStack>
   );
+}
+
+function openTimePickerBottomSheet({
+  label,
+  field,
+  hour,
+  minute,
+  overlay,
+  onConfirm,
+}: {
+  label: string;
+  field: 'morning' | 'evening';
+  hour: number;
+  minute: number;
+  overlay: ReturnType<typeof useOverlay>;
+  onConfirm: (hour: number, minute: number) => void;
+}) {
+  let tempDate = timeToDate(hour, minute);
+
+  overlay.open(({ isOpen, close, exit }) => (
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          close();
+          exit();
+        }
+      }}
+    >
+      <VStack gap={24}>
+        <PickerHeader
+          title={label}
+          onCancel={() => {
+            close();
+            exit();
+          }}
+          onConfirm={() => {
+            onConfirm(tempDate.getHours(), tempDate.getMinutes());
+            close();
+            exit();
+          }}
+        />
+        <View style={{ height: 216 }}>
+          <DateTimePicker
+            value={tempDate}
+            minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
+            maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
+            onChange={(_event, date) => {
+              if (date) {
+                tempDate = date;
+              }
+            }}
+            mode="time"
+            display="spinner"
+            minuteInterval={1}
+            locale={Intl.DateTimeFormat().resolvedOptions().locale}
+            style={{ height: 216 }}
+          />
+        </View>
+      </VStack>
+    </KeyboardBottomSheet>
+  ));
 }
