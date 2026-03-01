@@ -37,7 +37,7 @@ import {
 	SetPasswordDto,
 	VerifyEmailDto,
 } from "../dtos";
-import { JwtAuthGuard, JwtRefreshGuard } from "../guards";
+import { JwtRefreshGuard } from "../guards";
 import { AuthService } from "../services/auth.service";
 import { PasswordManagementService } from "../services/password-management.service";
 import type { RefreshTokenPayload } from "../strategies/jwt-refresh.strategy";
@@ -70,7 +70,6 @@ import { extractMetadata } from "./auth-controller.utils";
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
-@UseGuards(JwtAuthGuard)
 export class AuthController {
 	constructor(
 		private readonly authService: AuthService,

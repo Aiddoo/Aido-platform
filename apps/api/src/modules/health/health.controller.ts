@@ -3,6 +3,7 @@ import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { ApiDoc, SWAGGER_TAGS } from "@/common/swagger";
+import { Public } from "@/modules/auth/decorators/public.decorator";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
 
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
@@ -16,6 +17,7 @@ export class HealthController {
 	) {}
 
 	@Get()
+	@Public()
 	@HealthCheck()
 	@ApiDoc({
 		summary: "서버 상태 확인",

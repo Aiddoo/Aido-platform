@@ -13,7 +13,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import {
 	ApiBearerAuth,
@@ -35,7 +34,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import {
 	GetNotificationsQueryDto,
@@ -82,7 +80,6 @@ import { PushDeliveryService } from "./push-delivery.service";
  */
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("notifications")
 export class NotificationController {
 	readonly #logger = new Logger(NotificationController.name);

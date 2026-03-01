@@ -22,7 +22,6 @@ import {
 	SWAGGER_TAGS,
 } from "@/common/swagger";
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import { AiService } from "./ai.service";
 import {
@@ -55,7 +54,6 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("ai")
 export class AiController {
 	readonly #logger = new Logger(AiController.name);

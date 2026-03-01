@@ -21,6 +21,7 @@ import { AdminModule } from "@/modules/admin";
 import { AdminNotificationModule } from "@/modules/admin-notification";
 import { AiModule } from "@/modules/ai";
 import { AuthModule } from "@/modules/auth";
+import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { CheerModule } from "@/modules/cheer";
 import { DailyCompletionModule } from "@/modules/daily-completion";
 import { FollowModule } from "@/modules/follow";
@@ -100,6 +101,10 @@ import { AppService } from "./app.service";
 		AppService,
 
 		// Global Guards
+		{
+			provide: APP_GUARD,
+			useClass: JwtAuthGuard,
+		},
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerGuard,

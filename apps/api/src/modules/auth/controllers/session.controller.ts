@@ -7,7 +7,6 @@ import {
 	HttpStatus,
 	Param,
 	Req,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
@@ -22,7 +21,6 @@ import {
 
 import { CurrentUser, type CurrentUserPayload } from "../decorators";
 import { MessageResponseDto, SessionListDto } from "../dtos";
-import { JwtAuthGuard } from "../guards";
 import { AuthService } from "../services/auth.service";
 import { extractMetadata } from "./auth-controller.utils";
 
@@ -37,7 +35,6 @@ import { extractMetadata } from "./auth-controller.utils";
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
-@UseGuards(JwtAuthGuard)
 export class SessionController {
 	constructor(private readonly authService: AuthService) {}
 

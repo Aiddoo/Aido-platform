@@ -11,7 +11,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { toDateOnly, toScheduledTime } from "@/common/date";
@@ -29,7 +28,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 import { UserIdParamDto } from "../follow/dtos";
 
 import {
@@ -67,7 +65,6 @@ import { TodoService } from "./todo.service";
  */
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("todos")
 export class TodoController {
 	readonly #logger = new Logger(TodoController.name);

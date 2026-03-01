@@ -11,7 +11,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -28,7 +27,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import {
 	CreateTodoCategoryDto,
@@ -58,7 +56,6 @@ import { TodoCategoryService } from "./todo-category.service";
  */
 @ApiTags(SWAGGER_TAGS.TODO_CATEGORIES)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("todo-categories")
 export class TodoCategoryController {
 	readonly #logger = new Logger(TodoCategoryController.name);

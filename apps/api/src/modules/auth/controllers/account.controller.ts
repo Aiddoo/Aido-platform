@@ -9,7 +9,6 @@ import {
 	Param,
 	Patch,
 	Req,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -36,7 +35,6 @@ import {
 	UpdateProfileDto,
 	UpdateProfileResponseDto,
 } from "../dtos";
-import { JwtAuthGuard } from "../guards";
 import { AuthService } from "../services/auth.service";
 import { OAuthService } from "../services/oauth.service";
 import { extractMetadata } from "./auth-controller.utils";
@@ -59,7 +57,6 @@ import { extractMetadata } from "./auth-controller.utils";
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
-@UseGuards(JwtAuthGuard)
 export class AccountController {
 	constructor(
 		private readonly authService: AuthService,

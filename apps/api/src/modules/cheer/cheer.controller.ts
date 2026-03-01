@@ -11,7 +11,6 @@ import {
 	Patch,
 	Post,
 	Query,
-	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 import { toISOStringOrNull } from "@/common/date";
@@ -30,7 +29,6 @@ import {
 } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { JwtAuthGuard } from "../auth/guards";
 
 import { CheerMapper } from "./cheer.mapper";
 import { CheerService } from "./cheer.service";
@@ -70,7 +68,6 @@ import {
  */
 @ApiTags(SWAGGER_TAGS.CHEERS)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("cheers")
 export class CheerController {
 	readonly #logger = new Logger(CheerController.name);
