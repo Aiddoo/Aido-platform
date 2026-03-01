@@ -9,7 +9,7 @@ import {
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-interface DatePickerState {
+export interface DatePickerState {
   startDate: Date;
   endDate: Date | null;
   displayMonth: Date;
@@ -29,7 +29,10 @@ const getPickerMode = (state: DatePickerState): PickerMode => {
   return 'reselect';
 };
 
-const datePickerReducer = (state: DatePickerState, action: DatePickerAction): DatePickerState =>
+export const datePickerReducer = (
+  state: DatePickerState,
+  action: DatePickerAction,
+): DatePickerState =>
   match(action)
     .with({ type: 'selectDate' }, ({ date }) =>
       match(getPickerMode(state))
