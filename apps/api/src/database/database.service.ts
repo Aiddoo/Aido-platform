@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import {
 	Inject,
 	Injectable,
@@ -19,7 +20,16 @@ export class DatabaseService
 		configService: ConfigService<EnvConfig, true>,
 	) {
 		const connectionString = configService.get("DATABASE_URL", { infer: true });
-		const adapter = new PrismaPg({ connectionString });
+
+		const caCertPath = process.env.NODE_EXTRA_CA_CERTS;
+		const ssl =
+			caCertPath && existsSync(caCertPath)
+				? { ca: readFileSync(caCertPath, "utf8") }
+				: undefined;
+
+		const adapter = new PrismaPg(
+			ssl ? { connectionString, ssl } : { connectionString },
+		);
 
 		super({ adapter });
 	}
