@@ -8,6 +8,7 @@ import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { useOverlay } from '@src/shared/ui/Overlay';
+import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
@@ -228,26 +229,13 @@ function AccountActionButtons() {
 function AppIconMenuItem() {
   const { data: user } = useSuspenseQuery(getMeQueryOptions());
   const router = useRouter();
-  const overlay = useOverlay();
+  const premiumDialog = usePremiumDialog();
 
   const handlePress = () => {
     if (!UserPolicy.isPremiumUser(user)) {
-      overlay.open(({ isOpen, close, exit }) => (
-        <AppIconLockDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-          onSubscribe={() => {
-            close();
-            exit();
-            router.push('/settings/subscription');
-          }}
-        />
-      ));
+      premiumDialog.open({
+        description: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.',
+      });
       return;
     }
     router.push('/settings/app-icon');
@@ -261,30 +249,3 @@ function AppIconMenuItem() {
     />
   );
 }
-
-interface AppIconLockDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubscribe: () => void;
-}
-
-const AppIconLockDialog = ({ isOpen, onOpenChange, onSubscribe }: AppIconLockDialogProps) => (
-  <ConfirmDialog
-    isOpen={isOpen}
-    onOpenChange={onOpenChange}
-    title={<ConfirmDialog.Title>프리미엄 기능</ConfirmDialog.Title>}
-    description={
-      <ConfirmDialog.Description>
-        앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.
-      </ConfirmDialog.Description>
-    }
-    cancelButton={
-      <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-        닫기
-      </ConfirmDialog.CancelButton>
-    }
-    confirmButton={
-      <ConfirmDialog.ConfirmButton onPress={onSubscribe}>구독하기</ConfirmDialog.ConfirmButton>
-    }
-  />
-);

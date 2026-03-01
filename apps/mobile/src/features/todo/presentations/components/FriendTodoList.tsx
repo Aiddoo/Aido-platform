@@ -5,6 +5,7 @@ import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { DocsIcon, PawIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
+import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -19,7 +20,6 @@ import { getFriendTodosQueryOptions } from '../queries/get-friend-todos-query-op
 import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeBottomSheet } from './NudgeBottomSheet';
-import { NudgeLimitDialog } from './NudgeLimitDialog';
 
 interface FriendTodoListProps {
   friend: FriendUserViewModel;
@@ -93,6 +93,7 @@ interface FriendTodoItemProps {
 
 function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
   const overlay = useOverlay();
+  const premiumDialog = usePremiumDialog();
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
@@ -116,17 +117,10 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   };
 
   const openLimitDialog = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <NudgeLimitDialog
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      />
-    ));
+    premiumDialog.open({
+      title: '오늘 콕 찌르기를 다 했어요',
+      description: '구독하면 무제한으로 찌를 수 있어요',
+    });
   };
 
   const handleNudgePress = () => {
