@@ -1,84 +1,149 @@
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
-import { ArrowRightIcon, ClockIcon, EditIcon, TrashIcon } from '@src/shared/ui/Icon';
+import { Box } from '@src/shared/ui/Box/Box';
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  ClockIcon,
+  EditIcon,
+  SunIcon,
+  TrashIcon,
+} from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { VStack } from '@src/shared/ui/VStack/VStack';
+import { formatDate, getNextDay } from '@src/shared/utils/date';
+import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { deleteTodoMutationOptions } from '../../queries/delete-todo-mutation-options';
+import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
+import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 
 interface TodoActionsBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onRequestClose: () => void;
-  onEdit: () => void;
-  onUpdateDateTime: () => void;
-  onDelete: () => void;
-  isDeletePending?: boolean;
+  onClose: () => void;
+  todo: TodoItemViewModel;
+  onNavigate: (action: 'edit' | 'date' | 'time') => void;
 }
 
 export const TodoActionsBottomSheet = ({
   isOpen,
   onOpenChange,
-  onRequestClose,
-  onEdit,
-  onUpdateDateTime,
-  onDelete,
-  isDeletePending = false,
+  onClose,
+  todo,
+  onNavigate,
 }: TodoActionsBottomSheetProps) => {
-  const insets = useSafeAreaInsets();
+  const deleteMutation = useMutation(deleteTodoMutationOptions());
+  const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
+
+  const handleDoTomorrow = () => {
+    const tomorrow = getNextDay(todo.startDateObj);
+    updateScheduleMutation.mutate({
+      todoId: todo.id,
+      input: {
+        startDate: formatDate(tomorrow),
+        endDate: todo.endDateObj ? formatDate(getNextDay(todo.endDateObj)) : null,
+        scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
+        isAllDay: todo.isAllDay,
+      },
+    });
+    onClose();
+  };
+
+  const handleDelete = () => {
+    deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate });
+    onClose();
+  };
 
   return (
     <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack mb={insets.bottom} gap={8}>
+      <VStack gap={8}>
         <PressableFeedback
           onPress={() => {
-            onEdit();
-            onRequestClose();
+            onNavigate('edit');
+            onClose();
           }}
-          isDisabled={isDeletePending}
+          isDisabled={deleteMutation.isPending}
         >
           <ListRow
             horizontalPadding="medium"
             verticalPadding="medium"
-            left={<EditIcon width={18} height={18} colorClassName="text-gray-6" />}
-            contents={<ListRow.Texts type="1RowTypeA" top="수정하기" topProps={{ size: 'b3' }} />}
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-8" />}
-          />
-        </PressableFeedback>
-
-        <PressableFeedback
-          onPress={() => {
-            onUpdateDateTime();
-            onRequestClose();
-          }}
-          isDisabled={isDeletePending}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={<ClockIcon width={18} height={18} colorClassName="text-gray-6" />}
-            contents={
-              <ListRow.Texts type="1RowTypeA" top="날짜/시간 변경" topProps={{ size: 'b3' }} />
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <EditIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
             }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-8" />}
+            contents={<ListRow.Texts type="1RowTypeA" top="수정하기" topProps={{ size: 'b2' }} />}
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>
 
         <PressableFeedback
           onPress={() => {
-            onDelete();
-            onRequestClose();
+            onNavigate('date');
+            onClose();
           }}
-          isDisabled={isDeletePending}
+          isDisabled={deleteMutation.isPending}
         >
           <ListRow
             horizontalPadding="medium"
             verticalPadding="medium"
-            left={<TrashIcon width={18} height={18} colorClassName="text-error" />}
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={<ListRow.Texts type="1RowTypeA" top="날짜 변경" topProps={{ size: 'b2' }} />}
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback
+          onPress={() => {
+            onNavigate('time');
+            onClose();
+          }}
+          isDisabled={deleteMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <ClockIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={<ListRow.Texts type="1RowTypeA" top="시간 변경" topProps={{ size: 'b2' }} />}
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback onPress={handleDoTomorrow} isDisabled={deleteMutation.isPending}>
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <SunIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={<ListRow.Texts type="1RowTypeA" top="내일하기" topProps={{ size: 'b2' }} />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback onPress={handleDelete} isDisabled={deleteMutation.isPending}>
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
+                <TrashIcon width={16} height={16} colorClassName="text-error" />
+              </Box>
+            }
             contents={
               <ListRow.Texts
                 type="1RowTypeA"
-                top={isDeletePending ? '삭제 중...' : '삭제하기'}
-                topProps={{ size: 'b3', tone: 'danger' }}
+                top={deleteMutation.isPending ? '삭제 중...' : '삭제하기'}
+                topProps={{ size: 'b2', tone: 'danger' }}
               />
             }
           />

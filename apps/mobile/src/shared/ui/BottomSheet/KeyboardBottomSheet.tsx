@@ -170,7 +170,7 @@ export const KeyboardBottomSheet = ({
     >
       <BottomSheetView
         onLayout={handleContentLayout}
-        style={[styles.content, { paddingBottom: insets.bottom }]}
+        style={[styles.content, { paddingBottom: insets.bottom || 20 }]}
       >
         {children}
       </BottomSheetView>

@@ -1,11 +1,11 @@
 import { Box } from '@src/shared/ui/Box/Box';
 import { FishIcon } from '@src/shared/ui/Icon/icons';
 import { Text } from '@src/shared/ui/Text/Text';
-import type { TextTone } from '@src/shared/ui/Text/Text.types';
 import { cn } from '@src/shared/utils/cn';
-import { isDateToday, isSameDay, isSaturday, isSunday } from '@src/shared/utils/date';
+import { isSameDay } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
 import type { DailyCompletionSummary } from '../../../models/todo.model';
+import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
 
 interface CalendarDateCellProps {
   date: Date;
@@ -22,15 +22,8 @@ export const CalendarDateCell = ({
 }: CalendarDateCellProps) => {
   const dayOfMonth = date.getDate();
   const isSelected = isSameDay(date, selectedDate);
-  const isToday = isDateToday(date);
-
-  const getDayTone = (): TextTone => {
-    if (isSelected) return 'white';
-    if (isSunday(date)) return 'danger';
-    if (isSaturday(date)) return 'info';
-    if (isToday) return 'brand';
-    return 'neutral';
-  };
+  const dayStyle = getMonthViewDayStyle({ date, isSelected });
+  const highlightToday = isTodayHighlighted({ date, isSelected });
 
   const isAllComplete = !!completion?.isComplete;
   const showCompletedCount = !!completion?.completedTodos;
@@ -41,18 +34,18 @@ export const CalendarDateCell = ({
         className={cn(
           'size-8 items-center justify-center overflow-hidden rounded-2xl',
           isSelected && 'bg-main',
-          isToday && !isSelected && 'bg-main/10 dark:bg-main/20',
+          highlightToday && 'bg-main/10 dark:bg-main/20',
         )}
       >
         {isAllComplete ? (
           <FishIcon width={20} height={13} colorClassName="text-fish" />
         ) : (
-          <Text size="b3" weight="medium" tone={getDayTone()} shade={7}>
+          <Text size="b3" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
             {dayOfMonth}
           </Text>
         )}
       </Box>
-      {showCompletedCount && !isAllComplete && (
+      {showCompletedCount && (
         <Text size="e1" weight="medium" className="mt-0.5 text-main/80">
           +{completion.completedTodos}
         </Text>

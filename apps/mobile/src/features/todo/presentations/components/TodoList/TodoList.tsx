@@ -79,7 +79,7 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
             selectedDate={date}
             categoryId={category.id}
             isOpen={isOpen}
-            onRequestClose={close}
+            onClose={close}
             onOpenChange={(open) => {
               if (!open) {
                 close();

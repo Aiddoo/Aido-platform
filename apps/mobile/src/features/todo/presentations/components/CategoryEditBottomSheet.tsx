@@ -17,14 +17,14 @@ import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 interface CategoryEditBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onRequestClose: () => void;
+  onClose: () => void;
   category: TodoCategory;
 }
 
 export const CategoryEditBottomSheet = ({
   isOpen,
   onOpenChange,
-  onRequestClose,
+  onClose,
   category,
 }: CategoryEditBottomSheetProps) => {
   const updateMutation = useMutation(updateTodoCategoryMutationOptions());
@@ -42,7 +42,7 @@ export const CategoryEditBottomSheet = ({
     updateMutation.mutate(
       { id: category.id, input: data },
       {
-        onSuccess: onRequestClose,
+        onSuccess: onClose,
       },
     );
   };

@@ -105,6 +105,10 @@ export const getWeekEnd = (date: Date): Date => {
   return dayjs(date).endOf('week').toDate();
 };
 
+export const getNextDay = (date: Date): Date => {
+  return dayjs(date).add(1, 'day').toDate();
+};
+
 export const getPreviousWeek = (date: Date): Date => {
   return dayjs(date).subtract(1, 'week').toDate();
 };

@@ -40,7 +40,7 @@ export const CategoryList = () => {
     editOverlay.open(({ isOpen, close, exit }) => (
       <CategoryEditBottomSheet
         isOpen={isOpen}
-        onRequestClose={close}
+        onClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();

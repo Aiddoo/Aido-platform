@@ -1,3 +1,4 @@
+import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { LockIcon, MoreIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
@@ -7,12 +8,13 @@ import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
-import { deleteTodoMutationOptions } from '../../queries/delete-todo-mutation-options';
+import { match } from 'ts-pattern';
 import { toggleTodoMutationOptions } from '../../queries/toggle-todo-mutation-options';
 import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
-import { TodoDateTimeBottomSheet } from '../TodoDateTimeBottomSheet';
+import { TodoDatePickerContent } from '../TodoDatePickerContent';
+import { TodoTimePickerContent } from '../TodoTimePickerContent';
 import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
 
 interface TodoItemProps {
@@ -26,7 +28,6 @@ interface TodoItemProps {
 export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: TodoItemProps) => {
   const overlay = useOverlay();
   const toggleMutation = useMutation(toggleTodoMutationOptions());
-  const deleteMutation = useMutation(deleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
   const showDateTime = todo.formattedTime && !todo.isAllDay;
 
@@ -36,7 +37,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
         mode="edit"
         todo={todo}
         isOpen={isOpen}
-        onRequestClose={close}
+        onClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();
@@ -47,30 +48,72 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
     ));
   };
 
-  const openDateTimeBottomSheet = () => {
+  const openDatePickerBottomSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
-      <TodoDateTimeBottomSheet
+      <KeyboardBottomSheet
         isOpen={isOpen}
-        onRequestClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();
             exit();
           }
         }}
-        todo={todo}
-        onConfirm={({ startDate, endDate, scheduledTime, isAllDay }) => {
-          updateScheduleMutation.mutate({
-            todoId: todo.id,
-            input: {
-              startDate: formatDate(startDate),
-              endDate: endDate ? formatDate(endDate) : null,
-              scheduledTime: isAllDay ? null : (scheduledTime ?? null),
-              isAllDay,
-            },
-          });
+      >
+        {isOpen && (
+          <TodoDatePickerContent
+            startDate={todo.startDateObj}
+            endDate={todo.endDateObj}
+            onCancel={close}
+            onConfirm={(startDate, endDate) => {
+              updateScheduleMutation.mutate({
+                todoId: todo.id,
+                input: {
+                  startDate: formatDate(startDate),
+                  endDate: endDate ? formatDate(endDate) : null,
+                  scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
+                  isAllDay: todo.isAllDay,
+                },
+              });
+              close();
+            }}
+          />
+        )}
+      </KeyboardBottomSheet>
+    ));
+  };
+
+  const openTimePickerBottomSheet = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <KeyboardBottomSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
         }}
-      />
+      >
+        {isOpen && (
+          <TodoTimePickerContent
+            draftDate={todo.startDateObj}
+            scheduledTime={todo.scheduledTime24}
+            isAllDay={todo.isAllDay}
+            onCancel={close}
+            onConfirm={(scheduledTime, isAllDay) => {
+              updateScheduleMutation.mutate({
+                todoId: todo.id,
+                input: {
+                  startDate: formatDate(todo.startDateObj),
+                  endDate: todo.endDateObj ? formatDate(todo.endDateObj) : null,
+                  scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+                  isAllDay,
+                },
+              });
+              close();
+            }}
+          />
+        )}
+      </KeyboardBottomSheet>
     ));
   };
 
@@ -80,8 +123,8 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
     overlay.open(({ isOpen, close, exit }) => (
       <TodoActionsBottomSheet
         isOpen={isOpen}
-        isDeletePending={deleteMutation.isPending}
-        onRequestClose={close}
+        todo={todo}
+        onClose={close}
         onOpenChange={(open) => {
           if (!open) {
             close();
@@ -89,14 +132,12 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
             afterClose?.();
           }
         }}
-        onEdit={() => {
-          afterClose = openEditBottomSheet;
-        }}
-        onUpdateDateTime={() => {
-          afterClose = openDateTimeBottomSheet;
-        }}
-        onDelete={() => {
-          afterClose = () => deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate });
+        onNavigate={(action) => {
+          afterClose = match(action)
+            .with('edit', () => openEditBottomSheet)
+            .with('date', () => openDatePickerBottomSheet)
+            .with('time', () => openTimePickerBottomSheet)
+            .exhaustive();
         }}
       />
     ));
