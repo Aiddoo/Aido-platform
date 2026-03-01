@@ -37,21 +37,22 @@ export const TodoActionsBottomSheet = ({
 
   const handleDoTomorrow = () => {
     const tomorrow = getNextDay(todo.startDateObj);
-    updateScheduleMutation.mutate({
-      todoId: todo.id,
-      input: {
-        startDate: formatDate(tomorrow),
-        endDate: todo.endDateObj ? formatDate(getNextDay(todo.endDateObj)) : null,
-        scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
-        isAllDay: todo.isAllDay,
+    updateScheduleMutation.mutate(
+      {
+        todoId: todo.id,
+        input: {
+          startDate: formatDate(tomorrow),
+          endDate: todo.endDateObj ? formatDate(getNextDay(todo.endDateObj)) : null,
+          scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
+          isAllDay: todo.isAllDay,
+        },
       },
-    });
-    onClose();
+      { onSuccess: onClose },
+    );
   };
 
   const handleDelete = () => {
-    deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate });
-    onClose();
+    deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate }, { onSuccess: onClose });
   };
 
   return (
