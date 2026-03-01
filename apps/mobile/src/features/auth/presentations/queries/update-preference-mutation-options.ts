@@ -1,6 +1,9 @@
+import { ErrorCode } from '@aido/errors';
 import type { UpdatePreferenceInput } from '@aido/validators';
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -10,6 +13,7 @@ import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 export const updatePreferenceMutationOptions = () => {
   const authService = useAuthService();
   const queryClient = useQueryClient();
+  const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: async (input: UpdatePreferenceInput) => {
@@ -32,12 +36,25 @@ export const updatePreferenceMutationOptions = () => {
       // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
       queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), data);
     },
-    onError: (_error, _input, context) => {
+    onError: (error, _input, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (context?.previousData) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.preference(), context.previousData);
       }
+
+      if (isApiError(error)) {
+        if (error.hasCode(ErrorCode.PREFERENCE_1701)) {
+          toast.error('리마인드 시간 변경은 프리미엄 기능이에요');
+          return;
+        }
+        if (error.hasCode(ErrorCode.PREFERENCE_1702)) {
+          toast.error('시간 범위가 올바르지 않아요');
+          return;
+        }
+      }
+
+      toast.error(error, { fallback: '설정 변경에 실패했어요' });
     },
   });
 };
