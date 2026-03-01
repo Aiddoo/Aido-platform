@@ -45,12 +45,12 @@ RUN pnpm --filter @aido/api deploy --legacy --prod /app/production
 # Stage 4: migrate - Prisma 마이그레이션
 FROM base AS migrate
 
-# RDS CA 인증서 다운로드
-ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
-
 COPY --from=deps /app ./
 COPY apps/api/prisma ./apps/api/prisma
 COPY apps/api/prisma.config.ts ./apps/api/
+
+# RDS CA 인증서 다운로드 (COPY 이후에 배치해야 덮어쓰기 방지)
+ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 
 WORKDIR /app/apps/api
 
@@ -89,14 +89,14 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-# RDS CA 인증서 다운로드
-ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
-
 # Production deps + Prisma client
 COPY --from=builder --chown=nestjs:nodejs /app/production ./
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/src/generated ./src/generated
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
+
+# RDS CA 인증서 다운로드 (COPY 이후에 배치해야 덮어쓰기 방지)
+ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 
 ENV NODE_ENV=production
 ENV PORT=8080
