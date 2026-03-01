@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowUpIcon, CalendarIcon, EyeIcon, LockIcon } from '@src/shared/ui/Icon';
+import { ArrowUpIcon, CalendarIcon, ClockIcon, EyeIcon, EyeOffIcon } from '@src/shared/ui/Icon';
 import { BottomSheetInput } from '@src/shared/ui/Input';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -19,18 +19,26 @@ import { updateTodoMutationOptions } from '../queries/update-todo-mutation-optio
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
-import { TodoDateTimeEditorContent } from './TodoDateTimeEditorContent';
+import { TodoDatePickerContent } from './TodoDatePickerContent';
+import { TodoTimePickerContent } from './TodoTimePickerContent';
 
 interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onRequestClose: () => void;
+  onClose: () => void;
 }
 
 interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
   mode: 'create';
   selectedDate: Date;
   categoryId: number;
+  initialValues?: {
+    title?: string;
+    scheduledTime?: string | null;
+    isAllDay?: boolean;
+    endDate?: Date | null;
+  };
+  onSuccess?: () => void;
 }
 
 interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
@@ -40,9 +48,10 @@ interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
 
 type AddTodoBottomSheetProps = AddTodoBottomSheetCreateProps | AddTodoBottomSheetEditProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
+type PickerView = 'form' | 'date' | 'time';
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
-  const { isOpen, onOpenChange, onRequestClose } = props;
+  const { isOpen, onOpenChange, onClose } = props;
 
   const defaultValues: AddTodoFormValues = match(props)
     .with({ mode: 'edit' }, ({ todo }) => ({
@@ -54,12 +63,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       categoryId: todo.category.id,
       visibility: todo.visibility,
     }))
-    .with({ mode: 'create' }, ({ selectedDate, categoryId }) => ({
-      title: '',
+    .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
+      title: initialValues?.title ?? '',
       startDate: selectedDate,
-      endDate: null,
-      scheduledTime: undefined,
-      isAllDay: true,
+      endDate: initialValues?.endDate ?? null,
+      scheduledTime: initialValues?.scheduledTime ?? undefined,
+      isAllDay: initialValues?.isAllDay ?? true,
       categoryId,
       visibility: 'PUBLIC' as const,
     }))
@@ -70,7 +79,8 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     defaultValues,
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeView, setActiveView] = useState<PickerView>('form');
+
   const createMutation = useMutation(createTodoMutationOptions());
   const updateMutation = useMutation(updateTodoMutationOptions());
 
@@ -92,10 +102,10 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               visibility: data.visibility,
             },
           },
-          { onSuccess: onRequestClose },
+          { onSuccess: onClose },
         );
       })
-      .with({ mode: 'create' }, () => {
+      .with({ mode: 'create' }, (createProps) => {
         createMutation.mutate(
           {
             title: data.title,
@@ -106,7 +116,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             visibility: data.visibility,
             categoryId: data.categoryId,
           },
-          { onSuccess: onRequestClose },
+          {
+            onSuccess: () => {
+              onClose();
+              createProps.onSuccess?.();
+            },
+          },
         );
       })
       .exhaustive();
@@ -115,11 +130,11 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   return (
     <FormProvider {...methods}>
       <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-        {showDatePicker ? (
-          <TodoDateTimePicker onClose={() => setShowDatePicker(false)} />
-        ) : (
-          <VStack gap={12}>
-            <VStack gap={10}>
+        {match(activeView)
+          .with('date', () => <FormDatePicker onDone={() => setActiveView('form')} />)
+          .with('time', () => <FormTimePicker onDone={() => setActiveView('form')} />)
+          .with('form', () => (
+            <VStack>
               <Controller
                 control={methods.control}
                 name="title"
@@ -141,31 +156,19 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
                 <HStack gap={4} align="center">
                   <DateLabelButton
                     onPress={() => {
-                      setShowDatePicker(true);
+                      setActiveView('date');
                       Keyboard.dismiss();
                     }}
                   />
 
-                  <Controller
-                    control={methods.control}
-                    name="visibility"
-                    render={({ field: { value, onChange } }) => {
-                      const isPrivate = (value ?? 'PUBLIC') === 'PRIVATE';
-
-                      return (
-                        <PressableFeedback
-                          onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
-                          className="size-10 items-center justify-center"
-                        >
-                          {isPrivate ? (
-                            <LockIcon width={20} height={20} colorClassName="text-gray-6" />
-                          ) : (
-                            <EyeIcon width={22} height={22} colorClassName="text-gray-5" />
-                          )}
-                        </PressableFeedback>
-                      );
+                  <TimeLabelButton
+                    onPress={() => {
+                      setActiveView('time');
+                      Keyboard.dismiss();
                     }}
                   />
+
+                  <VisibilityChip />
                 </HStack>
 
                 <PressableFeedback
@@ -180,8 +183,8 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
                 </PressableFeedback>
               </HStack>
             </VStack>
-          </VStack>
-        )}
+          ))
+          .exhaustive()}
       </KeyboardBottomSheet>
     </FormProvider>
   );
@@ -190,50 +193,118 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 const DateLabelButton = ({ onPress }: { onPress: () => void }) => {
   const { control } = useFormContext<AddTodoFormInput>();
 
-  const [startDate, endDate, scheduledTime, isAllDay] = useWatch({
+  const [startDate, endDate] = useWatch({
     control,
-    name: ['startDate', 'endDate', 'scheduledTime', 'isAllDay'],
+    name: ['startDate', 'endDate'],
   });
 
-  const dateLabel = formatTodoDateLabel({ startDate, endDate, scheduledTime, isAllDay });
+  const dateLabel = formatTodoDateLabel({
+    startDate,
+    endDate,
+    scheduledTime: null,
+    isAllDay: true,
+  });
 
   return (
-    <PressableFeedback onPress={onPress} className="h-10 flex-row items-center gap-1 px-2">
-      <CalendarIcon width={22} height={22} colorClassName="text-main" />
-      <Text size="b3" tone="brand" weight="medium">
+    <PressableFeedback
+      onPress={onPress}
+      className="h-8 flex-row items-center gap-1.5 rounded-full bg-main/10 px-3"
+    >
+      <CalendarIcon width={16} height={16} colorClassName="text-main" />
+      <Text size="e1" tone="brand" weight="medium">
         {dateLabel}
       </Text>
     </PressableFeedback>
   );
 };
 
-const TodoDateTimePicker = ({ onClose }: { onClose: () => void }) => {
-  const { control, setValue } = useFormContext<AddTodoFormInput>();
-  const [startDate, endDate, scheduledTime, isAllDay] = useWatch({
+const TimeLabelButton = ({ onPress }: { onPress: () => void }) => {
+  const { control } = useFormContext<AddTodoFormInput>();
+
+  const [scheduledTime, isAllDay] = useWatch({
     control,
-    name: ['startDate', 'endDate', 'scheduledTime', 'isAllDay'],
+    name: ['scheduledTime', 'isAllDay'],
   });
 
+  const hasTime = !isAllDay && !!scheduledTime;
+  const timeLabel = isAllDay ? '종일' : (scheduledTime ?? '종일');
+
   return (
-    <TodoDateTimeEditorContent
-      initialValue={{
-        startDate,
-        endDate,
-        scheduledTime,
-        isAllDay,
+    <PressableFeedback
+      onPress={onPress}
+      className={cn(
+        'h-8 flex-row items-center gap-1.5 rounded-full px-3',
+        hasTime ? 'bg-main/10' : 'bg-gray-2',
+      )}
+    >
+      <ClockIcon width={16} height={16} colorClassName={hasTime ? 'text-main' : 'text-gray-5'} />
+      <Text size="e1" weight="medium" {...(hasTime ? { tone: 'brand' } : { shade: 6 })}>
+        {timeLabel}
+      </Text>
+    </PressableFeedback>
+  );
+};
+
+const FormDatePicker = ({ onDone }: { onDone: () => void }) => {
+  const { getValues, setValue } = useFormContext<AddTodoFormValues>();
+
+  return (
+    <TodoDatePickerContent
+      startDate={getValues('startDate')}
+      endDate={getValues('endDate') ?? null}
+      onConfirm={(start, end) => {
+        setValue('startDate', start);
+        setValue('endDate', end);
+        onDone();
       }}
-      onCancel={onClose}
-      onConfirm={({
-        startDate: nextStartDate,
-        endDate: nextEndDate,
-        scheduledTime: nextScheduledTime,
-        isAllDay: nextIsAllDay,
-      }) => {
-        setValue('startDate', nextStartDate);
-        setValue('endDate', nextEndDate);
-        setValue('scheduledTime', nextScheduledTime);
-        setValue('isAllDay', nextIsAllDay);
-        onClose();
+      onCancel={onDone}
+    />
+  );
+};
+
+const FormTimePicker = ({ onDone }: { onDone: () => void }) => {
+  const { getValues, setValue } = useFormContext<AddTodoFormValues>();
+
+  return (
+    <TodoTimePickerContent
+      draftDate={getValues('startDate')}
+      scheduledTime={getValues('scheduledTime') ?? undefined}
+      isAllDay={getValues('isAllDay') ?? true}
+      onConfirm={(time, allDay) => {
+        setValue('scheduledTime', time);
+        setValue('isAllDay', allDay);
+        onDone();
+      }}
+      onCancel={onDone}
+    />
+  );
+};
+
+const VisibilityChip = () => {
+  const { control } = useFormContext<AddTodoFormInput>();
+
+  return (
+    <Controller
+      control={control}
+      name="visibility"
+      render={({ field: { value, onChange } }) => {
+        const isPrivate = (value ?? 'PUBLIC') === 'PRIVATE';
+
+        return (
+          <PressableFeedback
+            onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
+            className="h-8 flex-row items-center gap-1.5 rounded-full bg-gray-2 px-3"
+          >
+            {isPrivate ? (
+              <EyeOffIcon width={16} height={16} colorClassName="text-gray-6" />
+            ) : (
+              <EyeIcon width={16} height={16} colorClassName="text-gray-5" />
+            )}
+            <Text size="e1" weight="medium" shade={6}>
+              {isPrivate ? '비공개' : '공개'}
+            </Text>
+          </PressableFeedback>
+        );
       }}
     />
   );

@@ -9,6 +9,7 @@ export {
   CheckIcon,
   CheckmarkIcon,
   ClockIcon,
+  CloseIcon,
   CopyIcon,
   DeviceIcon,
   DocsIcon,

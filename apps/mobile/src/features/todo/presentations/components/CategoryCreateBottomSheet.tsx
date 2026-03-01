@@ -16,13 +16,13 @@ import { CATEGORY_COLORS, DEFAULT_COLOR } from '../constants/todo-category.const
 interface CategoryCreateBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onRequestClose: () => void;
+  onClose: () => void;
 }
 
 export const CategoryCreateBottomSheet = ({
   isOpen,
   onOpenChange,
-  onRequestClose,
+  onClose,
 }: CategoryCreateBottomSheetProps) => {
   const createMutation = useMutation(createTodoCategoryMutationOptions());
 
@@ -37,7 +37,7 @@ export const CategoryCreateBottomSheet = ({
 
   const onSubmit = (data: CreateTodoCategoryInput) => {
     createMutation.mutate(data, {
-      onSuccess: onRequestClose,
+      onSuccess: onClose,
     });
   };
 
