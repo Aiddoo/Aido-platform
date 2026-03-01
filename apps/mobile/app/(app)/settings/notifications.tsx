@@ -252,7 +252,9 @@ function ReminderTimeRow({
                 {formatReminderTime(hour, minute)}
               </Description>
             </HStack>
-            <Description>{description}</Description>
+            <Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+              {description}
+            </Description>
           </VStack>
 
           <ArrowRightIcon colorClassName="text-gray-6" />
