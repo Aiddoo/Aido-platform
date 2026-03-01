@@ -29,7 +29,11 @@ export const toTodoItem = (dto: Todo): TodoItem => ({
 export const toTodoItems = (dtos: Todo[]): TodoItem[] => dtos.map(toTodoItem);
 
 export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => ({
-  data: dto.data,
+  data: {
+    ...dto.data,
+    startDate: new Date(dto.data.startDate),
+    endDate: dto.data.endDate ? new Date(dto.data.endDate) : null,
+  },
   meta: dto.meta,
 });
 

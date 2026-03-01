@@ -51,13 +51,13 @@ const HomeScreen = () => {
           }
         }}
         onClose={close}
-        selectedDate={new Date(data.startDate)}
+        selectedDate={data.startDate}
         categoryId={defaultCategoryId}
         initialValues={{
           title: data.title,
           scheduledTime: data.scheduledTime,
           isAllDay: data.isAllDay,
-          endDate: data.endDate ? new Date(data.endDate) : null,
+          endDate: data.endDate,
         }}
         onSuccess={() => {
           setInputText('');

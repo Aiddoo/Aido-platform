@@ -38,8 +38,8 @@ export type TodosResult = z.infer<typeof todosResultSchema>;
 
 export const parsedTodoDataSchema = z.object({
   title: z.string(),
-  startDate: z.string(),
-  endDate: z.string().nullable(),
+  startDate: z.date(),
+  endDate: z.date().nullable(),
   scheduledTime: z.string().nullable(),
   isAllDay: z.boolean(),
 });
