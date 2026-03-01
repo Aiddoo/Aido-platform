@@ -19,19 +19,23 @@ export class DatabaseService
 		@Inject(ConfigService)
 		configService: ConfigService<EnvConfig, true>,
 	) {
-		const connectionString = configService.get("DATABASE_URL", { infer: true });
+		const rawUrl = configService.get("DATABASE_URL", { infer: true });
 
 		const caCertPath = process.env.NODE_EXTRA_CA_CERTS;
-		const ssl =
-			caCertPath && existsSync(caCertPath)
-				? { ca: readFileSync(caCertPath, "utf8") }
-				: undefined;
-
-		const adapter = new PrismaPg(
-			ssl ? { connectionString, ssl } : { connectionString },
-		);
-
-		super({ adapter });
+		if (caCertPath && existsSync(caCertPath)) {
+			// pg 라이브러리가 connectionString을 파싱할 때 sslmode → ssl: {} 로 변환하여
+			// 명시적 ssl 옵션을 덮어쓰므로, sslmode 파라미터를 제거하고 직접 전달
+			const url = new URL(rawUrl);
+			url.searchParams.delete("sslmode");
+			const adapter = new PrismaPg({
+				connectionString: url.toString(),
+				ssl: { ca: readFileSync(caCertPath, "utf8") },
+			});
+			super({ adapter });
+		} else {
+			const adapter = new PrismaPg({ connectionString: rawUrl });
+			super({ adapter });
+		}
 	}
 
 	async onModuleInit() {
