@@ -1,4 +1,4 @@
-import { getDateWithTime, toHHmm } from './time';
+import { formatReminderHour, getDateWithTime, hourToDate, toHHmm } from './time';
 
 const FALLBACK_TIME = '09:00';
 
@@ -46,6 +46,56 @@ describe('time utils', () => {
       expect(result.getMinutes()).toBe(0);
       expect(result.getSeconds()).toBe(0);
       expect(result.getMilliseconds()).toBe(0);
+    });
+  });
+
+  describe('hourToDate', () => {
+    it('주어진 시간이 Date 객체에 반영되어야 한다', () => {
+      const result = hourToDate(14);
+
+      expect(result.getHours()).toBe(14);
+    });
+
+    it('minutes, seconds, milliseconds가 0으로 초기화되어야 한다', () => {
+      const result = hourToDate(9);
+
+      expect(result.getMinutes()).toBe(0);
+      expect(result.getSeconds()).toBe(0);
+      expect(result.getMilliseconds()).toBe(0);
+    });
+
+    it('경계값 0시를 처리해야 한다', () => {
+      expect(hourToDate(0).getHours()).toBe(0);
+    });
+
+    it('경계값 23시를 처리해야 한다', () => {
+      expect(hourToDate(23).getHours()).toBe(23);
+    });
+  });
+
+  describe('formatReminderHour', () => {
+    it('0시 → 12시 AM/오전 형태', () => {
+      const result = formatReminderHour(0);
+      expect(result).toMatch(/12/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('8시 → 8시 AM/오전 형태', () => {
+      const result = formatReminderHour(8);
+      expect(result).toMatch(/8/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('12시 → 12시 PM/오후 형태', () => {
+      const result = formatReminderHour(12);
+      expect(result).toMatch(/12/);
+      expect(result).toMatch(/00/);
+    });
+
+    it('18시 → 6시 PM/오후 형태', () => {
+      const result = formatReminderHour(18);
+      expect(result).toMatch(/6/);
+      expect(result).toMatch(/00/);
     });
   });
 });

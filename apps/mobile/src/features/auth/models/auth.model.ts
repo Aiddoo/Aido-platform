@@ -14,6 +14,8 @@ export type AuthTokens = z.infer<typeof authTokensSchema>;
 export const preferenceSchema = z.object({
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
+  morningReminderHour: z.number().int(),
+  eveningReminderHour: z.number().int(),
 });
 export type Preference = z.infer<typeof preferenceSchema>;
 

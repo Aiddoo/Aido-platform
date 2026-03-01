@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { REMINDER_HOUR_RANGE } from './user-preference.constants';
+import {
+  EVENING_REMINDER_HOUR_RANGE,
+  MORNING_REMINDER_HOUR_RANGE,
+} from './user-preference.constants';
 
 export const updatePreferenceSchema = z
   .object({
@@ -14,17 +17,17 @@ export const updatePreferenceSchema = z
     morningReminderHour: z
       .number()
       .int()
-      .min(REMINDER_HOUR_RANGE.MIN)
-      .max(REMINDER_HOUR_RANGE.MAX)
+      .min(MORNING_REMINDER_HOUR_RANGE.MIN)
+      .max(MORNING_REMINDER_HOUR_RANGE.MAX)
       .optional()
-      .describe('아침 리마인더 시간 (0-23, 사용자 로컬 시간 기준)'),
+      .describe('아침 리마인더 시간 (0-11, 오전만 허용)'),
     eveningReminderHour: z
       .number()
       .int()
-      .min(REMINDER_HOUR_RANGE.MIN)
-      .max(REMINDER_HOUR_RANGE.MAX)
+      .min(EVENING_REMINDER_HOUR_RANGE.MIN)
+      .max(EVENING_REMINDER_HOUR_RANGE.MAX)
       .optional()
-      .describe('저녁 리마인더 시간 (0-23, 사용자 로컬 시간 기준)'),
+      .describe('저녁 리마인더 시간 (12-23, 오후만 허용)'),
   })
   .refine(
     (data) =>

@@ -15,3 +15,13 @@ export const REMINDER_HOUR_RANGE = {
   MIN: 0,
   MAX: 23,
 } as const;
+
+export const MORNING_REMINDER_HOUR_RANGE = {
+  MIN: 0,
+  MAX: 11,
+} as const;
+
+export const EVENING_REMINDER_HOUR_RANGE = {
+  MIN: 12,
+  MAX: 23,
+} as const;

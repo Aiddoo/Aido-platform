@@ -6,10 +6,13 @@ import type {
 	UpdatePreferenceResponse,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { toISOStringOrNull } from "@/common/date";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
+import { NotificationEvents } from "@/modules/notification/events/notification.events";
 
 import { UserConsentRepository } from "../repositories/user-consent.repository";
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
@@ -22,6 +25,7 @@ export class UserSettingsService {
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly entitlementService: EntitlementService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	async getPreference(userId: string): Promise<PreferenceResponse> {
@@ -62,6 +66,20 @@ export class UserSettingsService {
 			}
 		}
 
+		// 리마인더 시간 범위 검증 (오전: 0-11, 오후: 12-23)
+		if (
+			input.morningReminderHour !== undefined &&
+			input.morningReminderHour > 11
+		) {
+			throw BusinessExceptions.reminderHourOutOfRange();
+		}
+		if (
+			input.eveningReminderHour !== undefined &&
+			input.eveningReminderHour < 12
+		) {
+			throw BusinessExceptions.reminderHourOutOfRange();
+		}
+
 		// upsert로 없으면 생성, 있으면 업데이트
 		const updated = await this.userPreferenceRepository.upsert(userId, {
 			pushEnabled: input.pushEnabled,
@@ -74,6 +92,20 @@ export class UserSettingsService {
 		this.#logger.log(
 			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
 		);
+
+		// 리마인더 시간 변경 시 즉시 반영 이벤트 발행
+		// (현재 시간과 동일한 시간으로 변경했을 때 크론이 이미 지나간 경우 보완)
+		if (
+			input.morningReminderHour !== undefined ||
+			input.eveningReminderHour !== undefined
+		) {
+			this.eventEmitter.emit(NotificationEvents.REMINDER_HOUR_CHANGED, {
+				userId,
+				timezone: updated.timezone,
+				morningReminderHour: input.morningReminderHour,
+				eveningReminderHour: input.eveningReminderHour,
+			} satisfies ReminderHourChangedEventPayload);
+		}
 
 		return {
 			pushEnabled: updated.pushEnabled,

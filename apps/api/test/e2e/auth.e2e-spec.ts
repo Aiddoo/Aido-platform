@@ -1407,6 +1407,58 @@ describe("Auth (e2e)", () => {
 				.send({ pushEnabled: true })
 				.expect(401);
 		});
+
+		it("PATCH /auth/preference - morningReminderHour 범위 초과 (12) → 400", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 오전 리마인더에 오후 시간 설정
+			// Then - 400 Bad Request (Zod 검증 실패)
+			await request(ctx.app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ morningReminderHour: 12 })
+				.expect(400);
+		});
+
+		it("PATCH /auth/preference - eveningReminderHour 범위 미달 (11) → 400", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 오후 리마인더에 오전 시간 설정
+			// Then - 400 Bad Request (Zod 검증 실패)
+			await request(ctx.app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ eveningReminderHour: 11 })
+				.expect(400);
+		});
+
+		it("PATCH /auth/preference - morningReminderHour 유효값 (8) → 200", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 오전 리마인더에 유효한 오전 시간 설정
+			const response = await request(ctx.app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ morningReminderHour: 8 })
+				.expect(200);
+
+			// Then - 설정값 반영
+			expect(response.body.data.morningReminderHour).toBe(8);
+		});
+
+		it("PATCH /auth/preference - eveningReminderHour 유효값 (18) → 200", async () => {
+			// Given - 로그인된 사용자
+
+			// When - 오후 리마인더에 유효한 오후 시간 설정
+			const response = await request(ctx.app.getHttpServer())
+				.patch("/auth/preference")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ eveningReminderHour: 18 })
+				.expect(200);
+
+			// Then - 설정값 반영
+			expect(response.body.data.eveningReminderHour).toBe(18);
+		});
 	});
 
 	describe("약관 동의 관리", () => {

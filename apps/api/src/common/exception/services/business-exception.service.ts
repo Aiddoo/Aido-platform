@@ -651,4 +651,8 @@ export class BusinessExceptions {
 	static reminderPremiumRequired() {
 		return new BusinessException(ErrorCode.PREFERENCE_1701);
 	}
+
+	static reminderHourOutOfRange() {
+		return new BusinessException(ErrorCode.PREFERENCE_1702);
+	}
 }

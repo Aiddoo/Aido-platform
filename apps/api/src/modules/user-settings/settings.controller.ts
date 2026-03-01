@@ -11,6 +11,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
+	ApiBadRequestError,
 	ApiDoc,
 	ApiForbiddenError,
 	ApiSuccessResponse,
@@ -75,8 +76,8 @@ export class SettingsController {
 | \`pushEnabled\` | boolean | 푸시 알림 전체 on/off |
 | \`nightPushEnabled\` | boolean | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 단, 일일 완료(DAILY_COMPLETE)와 콕 찌르기(NUDGE_RECEIVED)는 야간에도 항상 발송 |
 | \`timezone\` | string | IANA 타임존 (e.g. "Asia/Seoul") |
-| \`morningReminderHour\` | number | 아침 리마인더 시간 (0-23, 기본 8) |
-| \`eveningReminderHour\` | number | 저녁 리마인더 시간 (0-23, 기본 18) |
+| \`morningReminderHour\` | number | 아침 리마인더 시간 (0-11, 오전만 허용, 기본 8) |
+| \`eveningReminderHour\` | number | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 18) |
 
 ### 🌏 타임존
 - 앱 실행 시 푸시 토큰 등록과 함께 자동 설정됩니다
@@ -84,6 +85,8 @@ export class SettingsController {
 
 ### ⏰ 리마인더 시간 커스텀
 - 사용자의 로컬 타임존 기준으로 동작합니다
+- 오전 리마인드: 0-11시 (AM) 범위만 허용
+- 오후 리마인드: 12-23시 (PM) 범위만 허용
 - 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
 
 ### 💎 프리미엄 전용
@@ -116,8 +119,8 @@ export class SettingsController {
 | \`pushEnabled\` | boolean? | 푸시 알림 전체 on/off |
 | \`nightPushEnabled\` | boolean? | 야간 푸시 동의 (21:00-08:00 사용자 로컬 시간). 단, 일일 완료(DAILY_COMPLETE)와 콕 찌르기(NUDGE_RECEIVED)는 야간에도 항상 발송 |
 | \`timezone\` | string? | IANA 타임존 (e.g. "Asia/Seoul") |
-| \`morningReminderHour\` | number? | 아침 리마인더 시간 (0-23, 기본 8) |
-| \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (0-23, 기본 18) |
+| \`morningReminderHour\` | number? | 아침 리마인더 시간 (0-11, 오전만 허용, 기본 8) |
+| \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 18) |
 
 ### 🌏 타임존
 - 앱 실행 시 푸시 토큰 등록과 함께 자동 설정됩니다
@@ -125,11 +128,17 @@ export class SettingsController {
 
 ### ⏰ 리마인더 시간 커스텀
 - 사용자의 로컬 타임존 기준으로 동작합니다
+- 오전 리마인드: 0-11시 (AM) 범위만 허용
+- 오후 리마인드: 12-23시 (PM) 범위만 허용
 - 예: timezone="Asia/Seoul", morningReminderHour=7 → KST 07:00에 아침 알림
 
 ### 💎 프리미엄 전용
 - \`morningReminderHour\`, \`eveningReminderHour\` 변경은 프리미엄 구독 사용자만 가능합니다.
 - Free 유저가 변경 시도 시 \`403 PREFERENCE_1701\` 에러가 반환됩니다.
+
+### ⏱️ 시간 범위 검증
+- \`morningReminderHour\`는 0-11 (오전) 범위만 허용합니다. 범위 밖 값은 \`400 PREFERENCE_1702\` 에러가 반환됩니다.
+- \`eveningReminderHour\`는 12-23 (오후) 범위만 허용합니다. 범위 밖 값은 \`400 PREFERENCE_1702\` 에러가 반환됩니다.
 
 ### ⚠️ 주의
 - 야간 푸시를 허용하려면 먼저 \`pushEnabled\`가 true여야 합니다.
@@ -140,6 +149,7 @@ export class SettingsController {
 	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiForbiddenError(ErrorCode.PREFERENCE_1701)
+	@ApiBadRequestError(ErrorCode.PREFERENCE_1702)
 	async updatePreference(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: UpdatePreferenceDto,

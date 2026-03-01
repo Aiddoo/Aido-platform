@@ -38,6 +38,8 @@ export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
 export const toPreference = (dto: PreferenceResponse): Preference => ({
   pushEnabled: dto.pushEnabled,
   nightPushEnabled: dto.nightPushEnabled,
+  morningReminderHour: dto.morningReminderHour,
+  eveningReminderHour: dto.eveningReminderHour,
 });
 
 export const toConsent = (dto: ConsentResponse): Consent => ({

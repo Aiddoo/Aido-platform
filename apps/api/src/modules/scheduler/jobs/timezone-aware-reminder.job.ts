@@ -1,9 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 import { Cron } from "@nestjs/schedule";
 import dayjs from "dayjs";
 import { getUserToday } from "@/common/date/utils/date.util";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
+import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
+import { NotificationEvents } from "@/modules/notification/events/notification.events";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
@@ -83,6 +86,48 @@ export class TimezoneAwareReminderJob {
 			);
 		} finally {
 			await release();
+		}
+	}
+
+	/**
+	 * 리마인더 시간 변경 이벤트 핸들러 — Catch-up 패턴
+	 *
+	 * 사용자가 리마인더 시간을 변경했을 때, 변경된 시간이 현재 로컬 시간과
+	 * 같으면 즉시 리마인더를 발송합니다. (정각 크론이 이미 실행된 후 변경한 경우 보완)
+	 *
+	 * 중복 방지: `notificationDate` 기반이므로 크론에서 이미 발송했으면 스킵됩니다.
+	 */
+	@OnEvent(NotificationEvents.REMINDER_HOUR_CHANGED)
+	async handleReminderHourChanged(
+		payload: ReminderHourChangedEventPayload,
+	): Promise<void> {
+		try {
+			const localHour = dayjs().tz(payload.timezone).hour();
+
+			if (
+				payload.morningReminderHour !== undefined &&
+				payload.morningReminderHour === localHour
+			) {
+				this.#logger.log(
+					`Catch-up morning reminder for user=${payload.userId}, hour=${localHour}`,
+				);
+				await this.#sendMorningReminders(payload.timezone, localHour);
+			}
+
+			if (
+				payload.eveningReminderHour !== undefined &&
+				payload.eveningReminderHour === localHour
+			) {
+				this.#logger.log(
+					`Catch-up evening reminder for user=${payload.userId}, hour=${localHour}`,
+				);
+				await this.#sendEveningReminders(payload.timezone, localHour);
+			}
+		} catch (error) {
+			this.#logger.error(
+				`Catch-up reminder failed for user=${payload.userId}: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
 		}
 	}
 

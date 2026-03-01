@@ -265,6 +265,112 @@ describe("UserSettingsService", () => {
 	});
 
 	// ============================================
+	// updatePreference — 리마인더 시간 범위 검증
+	// ============================================
+
+	describe("리마인더 시간 범위 검증", () => {
+		const userId = "user-123";
+
+		const basePref: UserPreference = {
+			id: "pref-123",
+			userId,
+			pushEnabled: true,
+			nightPushEnabled: false,
+			timezone: "Asia/Seoul",
+			morningReminderHour: 7,
+			eveningReminderHour: 20,
+		};
+
+		it("morningReminderHour가 12 이상이면 PREFERENCE_1702 에러", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+
+			// When & Then
+			await expect(
+				service.updatePreference(userId, { morningReminderHour: 12 }),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("eveningReminderHour가 11 이하이면 PREFERENCE_1702 에러", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+
+			// When & Then
+			await expect(
+				service.updatePreference(userId, { eveningReminderHour: 11 }),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("morningReminderHour 0 (경계값) 정상 동작", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue({
+				...basePref,
+				morningReminderHour: 0,
+			});
+
+			// When
+			const result = await service.updatePreference(userId, {
+				morningReminderHour: 0,
+			});
+
+			// Then
+			expect(result.morningReminderHour).toBe(0);
+		});
+
+		it("morningReminderHour 11 (경계값) 정상 동작", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue({
+				...basePref,
+				morningReminderHour: 11,
+			});
+
+			// When
+			const result = await service.updatePreference(userId, {
+				morningReminderHour: 11,
+			});
+
+			// Then
+			expect(result.morningReminderHour).toBe(11);
+		});
+
+		it("eveningReminderHour 12 (경계값) 정상 동작", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue({
+				...basePref,
+				eveningReminderHour: 12,
+			});
+
+			// When
+			const result = await service.updatePreference(userId, {
+				eveningReminderHour: 12,
+			});
+
+			// Then
+			expect(result.eveningReminderHour).toBe(12);
+		});
+
+		it("eveningReminderHour 23 (경계값) 정상 동작", async () => {
+			// Given
+			entitlementService.hasPremiumAccess.mockResolvedValue(true);
+			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue({
+				...basePref,
+				eveningReminderHour: 23,
+			});
+
+			// When
+			const result = await service.updatePreference(userId, {
+				eveningReminderHour: 23,
+			});
+
+			// Then
+			expect(result.eveningReminderHour).toBe(23);
+		});
+	});
+
+	// ============================================
 	// getConsent
 	// ============================================
 

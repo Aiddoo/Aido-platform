@@ -84,7 +84,7 @@ describe('toAuthTokens', () => {
 });
 
 describe('toPreference', () => {
-  test('pushEnabled, nightPushEnabled만 추출', () => {
+  test('preference 필드 전체 매핑', () => {
     // Given
     const dto = {
       pushEnabled: true,
@@ -101,9 +101,10 @@ describe('toPreference', () => {
     expect(result).toEqual({
       pushEnabled: true,
       nightPushEnabled: false,
+      morningReminderHour: 8,
+      eveningReminderHour: 21,
     });
     expect(result).not.toHaveProperty('timezone');
-    expect(result).not.toHaveProperty('morningReminderHour');
   });
 });
 
