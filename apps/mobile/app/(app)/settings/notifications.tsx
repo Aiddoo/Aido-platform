@@ -1,3 +1,4 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { getPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
 import { updatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/update-preference-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
@@ -23,7 +24,6 @@ import {
 } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import DatePicker from 'react-native-date-picker';
 
 const NotificationSettingsScreen = () => {
   return (
@@ -255,24 +255,22 @@ function ReminderTimeRow({
         <Description className="text-xs pb-1">{description}</Description>
       </PressableFeedback>
 
-      <DatePicker
-        modal
-        open={open}
-        date={timeToDate(hour, minute)}
-        minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
-        maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
-        onConfirm={(date) => {
-          setOpen(false);
-          onTimeChange(date.getHours(), date.getMinutes());
-        }}
-        onCancel={() => setOpen(false)}
-        mode="time"
-        minuteInterval={1}
-        title={field === 'morning' ? '오전 시간 선택' : '오후 시간 선택'}
-        confirmText="확인"
-        cancelText="취소"
-        locale={Intl.DateTimeFormat().resolvedOptions().locale}
-      />
+      {open && (
+        <DateTimePicker
+          value={timeToDate(hour, minute)}
+          minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
+          maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
+          onChange={(_event, date) => {
+            setOpen(false);
+            if (date) {
+              onTimeChange(date.getHours(), date.getMinutes());
+            }
+          }}
+          mode="time"
+          minuteInterval={1}
+          locale={Intl.DateTimeFormat().resolvedOptions().locale}
+        />
+      )}
     </VStack>
   );
 }
