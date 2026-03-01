@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
 import {
 	Inject,
 	Injectable,
@@ -21,21 +20,20 @@ export class DatabaseService
 	) {
 		const rawUrl = configService.get("DATABASE_URL", { infer: true });
 
-		const caCertPath = process.env.NODE_EXTRA_CA_CERTS;
-		if (caCertPath && existsSync(caCertPath)) {
-			// pg 라이브러리가 connectionString을 파싱할 때 sslmode → ssl: {} 로 변환하여
-			// 명시적 ssl 옵션을 덮어쓰므로, sslmode 파라미터를 제거하고 직접 전달
-			const url = new URL(rawUrl);
-			url.searchParams.delete("sslmode");
-			const adapter = new PrismaPg({
-				connectionString: url.toString(),
-				ssl: { ca: readFileSync(caCertPath, "utf8") },
-			});
-			super({ adapter });
-		} else {
-			const adapter = new PrismaPg({ connectionString: rawUrl });
-			super({ adapter });
-		}
+		// pg 라이브러리가 connectionString의 sslmode를 파싱할 때 ssl: {} 로 변환하여
+		// 명시적 ssl 옵션을 덮어쓰므로, sslmode 파라미터를 제거하고 직접 전달
+		const url = new URL(rawUrl);
+		const hasSslMode = url.searchParams.has("sslmode");
+		url.searchParams.delete("sslmode");
+
+		const adapter = new PrismaPg({
+			connectionString: url.toString(),
+			// Prisma 7 (node-pg 기반)은 SSL 인증서 검증이 엄격함.
+			// RDS는 VPC 내부 전용이므로 rejectUnauthorized: false로 충분.
+			// NODE_EXTRA_CA_CERTS는 Prisma CLI(migrate)에서 활용됨.
+			...(hasSslMode && { ssl: { rejectUnauthorized: false } }),
+		});
+		super({ adapter });
 	}
 
 	async onModuleInit() {
