@@ -1,6 +1,6 @@
-# Full Docker 개발 환경 (DB + API)
+# Docker 개발 환경 (DB + API)
 # 사용: pnpm docker:dev:up
-
+# DB는 로컬 Docker 컨테이너, API는 DATABASE_URL로 연결
 services:
   db:
     image: postgres:16-alpine
@@ -18,6 +18,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    container_name: aido-dev-migrate
+    env_file:
+      - .env.docker.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   api:
     build:
@@ -42,8 +60,8 @@ services:
       start_period: 30s
       retries: 3
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   dev_postgres_data:
