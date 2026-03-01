@@ -45,7 +45,7 @@ export default NotificationSettingsScreen;
 
 function NotificationSettingsForm() {
   return (
-    <VStack gap={12}>
+    <VStack gap={24}>
       <PushSettingsSection />
 
       <ReminderSection />
@@ -157,8 +157,8 @@ function ReminderSection() {
   const isPremium = UserPolicy.isPremiumUser(user);
 
   return (
-    <VStack p={16} gap={12} className="bg-white rounded-2xl">
-      <View>
+    <VStack gap={8}>
+      <View className="px-2">
         <Label>리마인드 알림</Label>
         <Description>
           {preference.pushEnabled
@@ -167,35 +167,35 @@ function ReminderSection() {
         </Description>
       </View>
 
-      <Separator className="bg-gray-2" />
+      <VStack p={16} gap={12} className="bg-white rounded-2xl">
+        <ReminderTimeRow
+          label="오전 리마인드"
+          hour={preference.morningReminderHour}
+          minute={preference.morningReminderMinute}
+          description="오전 시간대(0:00~11:59)에 오늘의 할일을 알려줘요"
+          disabled={!preference.pushEnabled || updateMutation.isPending}
+          isPremium={isPremium}
+          field="morning"
+          onTimeChange={(hour, minute) =>
+            updateMutation.mutate({ morningReminderHour: hour, morningReminderMinute: minute })
+          }
+        />
 
-      <ReminderTimeRow
-        label="오전 리마인드"
-        hour={preference.morningReminderHour}
-        minute={preference.morningReminderMinute}
-        description="오전 시간대(0:00~11:59)에 오늘의 할일을 알려줘요"
-        disabled={!preference.pushEnabled || updateMutation.isPending}
-        isPremium={isPremium}
-        field="morning"
-        onTimeChange={(hour, minute) =>
-          updateMutation.mutate({ morningReminderHour: hour, morningReminderMinute: minute })
-        }
-      />
+        <Separator className="bg-gray-2" />
 
-      <Separator className="bg-gray-2" />
-
-      <ReminderTimeRow
-        label="오후 리마인드"
-        hour={preference.eveningReminderHour}
-        minute={preference.eveningReminderMinute}
-        description="오후 시간대(12:00~23:59)에 남은 할일을 알려줘요"
-        disabled={!preference.pushEnabled || updateMutation.isPending}
-        isPremium={isPremium}
-        field="evening"
-        onTimeChange={(hour, minute) =>
-          updateMutation.mutate({ eveningReminderHour: hour, eveningReminderMinute: minute })
-        }
-      />
+        <ReminderTimeRow
+          label="오후 리마인드"
+          hour={preference.eveningReminderHour}
+          minute={preference.eveningReminderMinute}
+          description="오후 시간대(12:00~23:59)에 남은 할일을 알려줘요"
+          disabled={!preference.pushEnabled || updateMutation.isPending}
+          isPremium={isPremium}
+          field="evening"
+          onTimeChange={(hour, minute) =>
+            updateMutation.mutate({ eveningReminderHour: hour, eveningReminderMinute: minute })
+          }
+        />
+      </VStack>
     </VStack>
   );
 }
@@ -244,15 +244,21 @@ function ReminderTimeRow({
       <PressableFeedback onPress={handlePress} isDisabled={disabled} className="rounded-lg">
         <PressableFeedback.Highlight className="rounded-lg" />
 
-        <HStack py={12} justify="between" align="center" className={cn(disabled && 'opacity-40')}>
-          <Label>{label}</Label>
+        <HStack justify="between" align="center" className={cn(disabled && 'opacity-40')} gap={20}>
+          <VStack className="flex-1">
+            <HStack gap={8} align="center">
+              <Label>{label}</Label>
+              <Description className="text-main break-keep">
+                {formatReminderTime(hour, minute)}
+              </Description>
+            </HStack>
+            <Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+              {description}
+            </Description>
+          </VStack>
 
-          <HStack gap={4} align="center">
-            <Description>{formatReminderTime(hour, minute)}</Description>
-            <ArrowRightIcon colorClassName="text-gray-6" />
-          </HStack>
+          <ArrowRightIcon colorClassName="text-gray-6" />
         </HStack>
-        <Description className="text-xs pb-1">{description}</Description>
       </PressableFeedback>
 
       {open && (

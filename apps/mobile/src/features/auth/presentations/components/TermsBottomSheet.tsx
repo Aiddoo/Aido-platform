@@ -74,7 +74,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
         <BottomSheet.Content
           enableDynamicSizing
           detached
-          bottomInset={insets.bottom}
+          bottomInset={insets.bottom || 16}
           className="mx-4"
           backgroundClassName="rounded-[24px]"
         >

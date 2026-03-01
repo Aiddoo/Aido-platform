@@ -1,17 +1,53 @@
-import { Ionicons } from '@expo/vector-icons';
+import FillCheckIconSvg from '@assets/icons/ic_fill_check.svg';
+import ListIconSvg from '@assets/icons/ic_list.svg';
+import PersonIconSvg from '@assets/icons/ic_person.svg';
+import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
+import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
-
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { Platform } from 'react-native';
-import { match } from 'ts-pattern';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Platform } from 'react-native';
 
 import { useResolveClassNames } from 'uniwind';
 
+function useLiquidGlassAvailable() {
+  const [state, setState] = useState<{ ready: boolean; available: boolean }>({
+    ready: Platform.OS !== 'ios',
+    available: false,
+  });
+
+  useEffect(() => {
+    const check = async () => {
+      if (Platform.OS !== 'ios') return;
+      if (!isLiquidGlassAvailable() || !isGlassEffectAPIAvailable()) {
+        setState({ ready: true, available: false });
+        return;
+      }
+
+      try {
+        const reduce = await AccessibilityInfo.isReduceTransparencyEnabled();
+        setState({ ready: true, available: !reduce });
+      } catch {
+        setState({ ready: true, available: false });
+      }
+    };
+
+    check();
+  }, []);
+
+  return state;
+}
+
 export default function TabsLayout() {
-  return match(Platform.OS)
-    .with('ios', () => <IOSLiquidGlassTabs />)
-    .with('android', () => <AndroidBottomTabs />)
-    .otherwise(() => <AndroidBottomTabs />);
+  const { ready, available } = useLiquidGlassAvailable();
+
+  if (!ready) return null;
+
+  if (available) {
+    return <IOSLiquidGlassTabs />;
+  }
+
+  return <AndroidBottomTabs />;
 }
 
 function IOSLiquidGlassTabs() {
@@ -39,13 +75,20 @@ function IOSLiquidGlassTabs() {
 
 function AndroidBottomTabs() {
   const activeStyle = useResolveClassNames('text-main');
-  const inactiveStyle = useResolveClassNames('text-gray-6');
+  const inactiveStyle = useResolveClassNames('text-gray-5');
+  const tabBarBg = useResolveClassNames('bg-white');
+  const tabBarBorder = useResolveClassNames('border-gray-3');
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeStyle.color as string,
         tabBarInactiveTintColor: inactiveStyle.color as string,
+        tabBarStyle: {
+          backgroundColor: tabBarBg.backgroundColor as string,
+          borderTopWidth: 0.5,
+          borderTopColor: tabBarBorder.borderColor as string,
+        },
         headerShown: false,
         animation: 'shift',
       }}
@@ -55,8 +98,11 @@ function AndroidBottomTabs() {
         options={{
           title: '홈',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkmark-circle" size={size} color={color} />
+            <FillCheckIconSvg width={size} height={size} color={color} />
           ),
+        }}
+        listeners={{
+          tabPress: () => Haptics.selectionAsync(),
         }}
       />
 
@@ -64,7 +110,10 @@ function AndroidBottomTabs() {
         name="feed"
         options={{
           title: '피드',
-          tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <ListIconSvg width={size} height={size} color={color} />,
+        }}
+        listeners={{
+          tabPress: () => Haptics.selectionAsync(),
         }}
       />
 
@@ -72,7 +121,12 @@ function AndroidBottomTabs() {
         name="mypage"
         options={{
           title: '마이',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <PersonIconSvg width={size} height={size} color={color} />
+          ),
+        }}
+        listeners={{
+          tabPress: () => Haptics.selectionAsync(),
         }}
       />
     </Tabs>

@@ -14,7 +14,7 @@ const NotificationsLayout = () => {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: '600',
           color: titleColor.color as string,
         },
@@ -28,7 +28,7 @@ const NotificationsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '' }} />
+      <Stack.Screen name="index" options={{ title: '알림' }} />
     </Stack>
   );
 };

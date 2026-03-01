@@ -17,6 +17,7 @@ import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { BellIcon, DeviceIcon, DocsIcon, SendIcon, type StyledIconType } from '@src/shared/ui/Icon';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { Result } from '@src/shared/ui/Result/Result';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
@@ -144,16 +145,11 @@ function NonSubscriberView() {
 
 function SubscriptionUnavailableView() {
   return (
-    <View className="flex-1 items-center justify-center px-8">
-      <VStack gap={8} className="items-center">
-        <Text size="t3" weight="bold" shade={9}>
-          구독을 준비 중이에요
-        </Text>
-        <Text size="b4" shade={6} align="center">
-          현재 구독 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요.
-        </Text>
-      </VStack>
-    </View>
+    <Result
+      icon={<DocsIcon width={72} height={72} />}
+      title="구독을 준비 중이에요"
+      description="현재 구독 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요."
+    />
   );
 }
 
