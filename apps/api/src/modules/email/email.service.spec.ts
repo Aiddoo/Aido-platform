@@ -63,7 +63,7 @@ describe("EmailService", () => {
 					apiKey: "test-api-key",
 					from: "noreply@test.com",
 					fromName: "Test App",
-					supportEmail: "support@aido.app",
+					supportEmail: "support@aido.kr",
 				},
 				nodeEnv: "test",
 			}))
@@ -358,7 +358,7 @@ describe("EmailService", () => {
 						apiKey: "",
 						from: "noreply@test.com",
 						fromName: "Test App",
-						supportEmail: "support@aido.app",
+						supportEmail: "support@aido.kr",
 					},
 					nodeEnv: "test",
 				}))
@@ -472,7 +472,7 @@ describe("EmailService", () => {
 			});
 
 			// When
-			const result = await service.sendInquiry("support@aido.app", inquiryData);
+			const result = await service.sendInquiry("support@aido.kr", inquiryData);
 
 			// Then
 			expect(result.success).toBe(true);
@@ -488,7 +488,7 @@ describe("EmailService", () => {
 			});
 
 			// When
-			await service.sendInquiry("support@aido.app", inquiryData);
+			await service.sendInquiry("support@aido.kr", inquiryData);
 
 			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
@@ -509,7 +509,7 @@ describe("EmailService", () => {
 			});
 
 			// When
-			await service.sendInquiry("support@aido.app", inquiryData);
+			await service.sendInquiry("support@aido.kr", inquiryData);
 
 			// Then
 			const call = resendMock.emails.send.mock.calls[0][0];
@@ -524,7 +524,7 @@ describe("EmailService", () => {
 			});
 
 			// When
-			await service.sendInquiry("support@aido.app", {
+			await service.sendInquiry("support@aido.kr", {
 				userEmail: 'user@example.com"><img src=x onerror=alert(1)>',
 				category: "OTHER",
 				categoryLabel: "<b>기타</b>",

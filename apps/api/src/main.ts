@@ -52,7 +52,7 @@ async function bootstrap() {
 		exclude: ["health"],
 	});
 
-	if (nodeEnv !== "production") {
+	if (nodeEnv === "development") {
 		const config = new DocumentBuilder()
 			.setTitle("Aido API")
 			.setDescription(`AI TodoList 앱을 위한 백엔드 API
@@ -94,8 +94,8 @@ async function bootstrap() {
 			.setVersion("1.0.0")
 			// 환경별 서버 URL
 			.addServer("http://localhost:8080", "Local Development")
-			.addServer("https://api-staging.aido.app", "Staging")
-			.addServer("https://api.aido.app", "Production")
+			.addServer("https://api-staging.aido.kr", "Staging")
+			.addServer("https://api.aido.kr", "Production")
 			.addBearerAuth({
 				type: "http",
 				scheme: "bearer",
@@ -195,8 +195,8 @@ async function bootstrap() {
 `)
 			.setVersion("1.0.0")
 			.addServer("http://localhost:8080", "Local Development")
-			.addServer("https://api-staging.aido.app", "Staging")
-			.addServer("https://api.aido.app", "Production")
+			.addServer("https://api-staging.aido.kr", "Staging")
+			.addServer("https://api.aido.kr", "Production")
 			.addBearerAuth({
 				type: "http",
 				scheme: "bearer",

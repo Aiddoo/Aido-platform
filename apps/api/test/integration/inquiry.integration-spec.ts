@@ -30,7 +30,7 @@ describe("InquiryService 통합 테스트 (Mock DB)", () => {
 	// Mock TypedConfigService
 	const mockConfigService = {
 		email: {
-			supportEmail: "support@aido.app",
+			supportEmail: "support@aido.kr",
 			apiKey: "test",
 			from: "noreply@test.com",
 			fromName: "Test",
@@ -92,7 +92,7 @@ describe("InquiryService 통합 테스트 (Mock DB)", () => {
 
 			// Then
 			expect(mockEmailService.sendInquiry).toHaveBeenCalledWith(
-				"support@aido.app",
+				"support@aido.kr",
 				expect.objectContaining({
 					userEmail: "test@example.com",
 					category: "OTHER",

@@ -29,7 +29,7 @@ interface OAuthConfig {
  */
 export class KakaoOAuthProvider implements IOAuthProviderStrategy {
 	readonly provider = "KAKAO" as const;
-	readonly failureEmail = "kakao_unknown@social.aido.app";
+	readonly failureEmail = "kakao_unknown@social.aido.kr";
 
 	readonly #getConfig: () => OAuthConfig;
 	readonly #verifier: OAuthTokenVerifierService;

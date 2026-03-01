@@ -31,7 +31,7 @@ describe("InquiryService", () => {
 		// config.email.supportEmail 기본 설정
 		Object.defineProperty(configService, "email", {
 			get: () => ({
-				supportEmail: "support@aido.app",
+				supportEmail: "support@aido.kr",
 				apiKey: "test",
 				from: "noreply@test.com",
 				fromName: "Test",
@@ -54,7 +54,7 @@ describe("InquiryService", () => {
 
 			// Then
 			expect(emailService.sendInquiry).toHaveBeenCalledWith(
-				"support@aido.app",
+				"support@aido.kr",
 				expect.objectContaining({
 					userEmail: "user@example.com",
 					category: "BUG_REPORT",
@@ -82,7 +82,7 @@ describe("InquiryService", () => {
 			// Given
 			Object.defineProperty(configService, "email", {
 				get: () => ({
-					supportEmail: "custom-support@aido.app",
+					supportEmail: "custom-support@aido.kr",
 					apiKey: "test",
 					from: "noreply@test.com",
 					fromName: "Test",
@@ -101,7 +101,7 @@ describe("InquiryService", () => {
 
 			// Then
 			expect(emailService.sendInquiry).toHaveBeenCalledWith(
-				"custom-support@aido.app",
+				"custom-support@aido.kr",
 				expect.any(Object),
 			);
 		});
