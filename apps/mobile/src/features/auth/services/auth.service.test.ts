@@ -266,7 +266,12 @@ describe('AuthService', () => {
       expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/preference');
       expect(result).toEqual({
         ok: true,
-        value: { pushEnabled: dto.pushEnabled, nightPushEnabled: dto.nightPushEnabled },
+        value: {
+          pushEnabled: dto.pushEnabled,
+          nightPushEnabled: dto.nightPushEnabled,
+          morningReminderHour: dto.morningReminderHour,
+          eveningReminderHour: dto.eveningReminderHour,
+        },
       });
     });
 
@@ -307,7 +312,12 @@ describe('AuthService', () => {
       expect(authHttpClient.patch).toHaveBeenCalledWith('v1/auth/preference', input);
       expect(result).toEqual({
         ok: true,
-        value: { pushEnabled: dto.pushEnabled, nightPushEnabled: dto.nightPushEnabled },
+        value: {
+          pushEnabled: dto.pushEnabled,
+          nightPushEnabled: dto.nightPushEnabled,
+          morningReminderHour: dto.morningReminderHour,
+          eveningReminderHour: dto.eveningReminderHour,
+        },
       });
     });
 
