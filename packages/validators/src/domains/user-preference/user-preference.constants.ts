@@ -8,8 +8,6 @@ export const USER_PREFERENCE_DEFAULTS = {
   EVENING_REMINDER_MINUTE: 0,
 } as const;
 
-export const REMINDER_MINUTE_VALUES = [0, 30] as const;
-
 export const NIGHT_TIME_CONFIG = {
   START_HOUR: 21,
   END_HOUR: 8,

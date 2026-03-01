@@ -2,10 +2,9 @@ import { getPreferenceQueryOptions } from '@src/features/auth/presentations/quer
 import { updatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/update-preference-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
-import { useOverlay } from '@src/shared/ui/Overlay';
+import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
@@ -13,7 +12,6 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
 import {
   ControlField,
   Description,
@@ -32,6 +30,7 @@ const NotificationSettingsScreen = () => {
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
         <Spacing size={20} />
+
         <QueryErrorBoundary>
           <Suspense fallback={<NotificationSettingsForm.Loading />}>
             <NotificationSettingsForm />
@@ -45,26 +44,11 @@ const NotificationSettingsScreen = () => {
 export default NotificationSettingsScreen;
 
 function NotificationSettingsForm() {
-  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const updateMutation = useMutation(updatePreferenceMutationOptions());
-
-  const isPremium = UserPolicy.isPremiumUser(user);
-
   return (
     <VStack gap={12}>
-      <PushSettingsSection
-        preference={preference}
-        isPending={updateMutation.isPending}
-        onToggle={(input) => updateMutation.mutate(input)}
-      />
+      <PushSettingsSection />
 
-      <ReminderSection
-        preference={preference}
-        isPremium={isPremium}
-        isPending={updateMutation.isPending}
-        onTimeChange={(input) => updateMutation.mutate(input)}
-      />
+      <ReminderSection />
     </VStack>
   );
 }
@@ -79,6 +63,7 @@ NotificationSettingsForm.Loading = function Loading() {
               <Skeleton className="h-5 w-24 rounded" />
               <Skeleton className="h-4 w-48 rounded" />
             </VStack>
+
             <Skeleton className="h-8 w-14 rounded-full" />
           </HStack>
 
@@ -89,6 +74,7 @@ NotificationSettingsForm.Loading = function Loading() {
               <Skeleton className="h-5 w-32 rounded" />
               <Skeleton className="h-4 w-56 rounded" />
             </VStack>
+
             <Skeleton className="h-8 w-14 rounded-full" />
           </HStack>
         </SkeletonGroup>
@@ -118,19 +104,18 @@ NotificationSettingsForm.Loading = function Loading() {
   );
 };
 
-interface PushSettingsSectionProps {
-  preference: { pushEnabled: boolean; nightPushEnabled: boolean };
-  isPending: boolean;
-  onToggle: (input: { pushEnabled?: boolean; nightPushEnabled?: boolean }) => void;
-}
+function PushSettingsSection() {
+  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
+  const updateMutation = useMutation(updatePreferenceMutationOptions());
 
-function PushSettingsSection({ preference, isPending, onToggle }: PushSettingsSectionProps) {
   return (
     <VStack p={16} gap={12} className="bg-white rounded-2xl">
       <ControlField
         isSelected={preference.pushEnabled}
-        onSelectedChange={(enabled) => onToggle({ pushEnabled: enabled })}
-        isDisabled={isPending}
+        onSelectedChange={(enabled) => {
+          updateMutation.mutate({ pushEnabled: enabled });
+        }}
+        isDisabled={updateMutation.isPending}
       >
         <View className="flex-1">
           <Label>푸시 알림</Label>
@@ -144,10 +129,12 @@ function PushSettingsSection({ preference, isPending, onToggle }: PushSettingsSe
       <ControlField
         isSelected={preference.nightPushEnabled}
         onSelectedChange={(enabled) => {
-          if (!preference.pushEnabled) return;
-          onToggle({ nightPushEnabled: enabled });
+          if (!preference.pushEnabled) {
+            return;
+          }
+          updateMutation.mutate({ nightPushEnabled: enabled });
         }}
-        isDisabled={isPending || !preference.pushEnabled}
+        isDisabled={updateMutation.isPending || !preference.pushEnabled}
       >
         <View className="flex-1">
           <Label>야간 푸시 알림</Label>
@@ -163,65 +150,11 @@ function PushSettingsSection({ preference, isPending, onToggle }: PushSettingsSe
   );
 }
 
-interface ReminderSectionProps {
-  preference: {
-    pushEnabled: boolean;
-    morningReminderHour: number;
-    morningReminderMinute: number;
-    eveningReminderHour: number;
-    eveningReminderMinute: number;
-  };
-  isPremium: boolean;
-  isPending: boolean;
-  onTimeChange: (input: {
-    morningReminderHour?: number;
-    morningReminderMinute?: number;
-    eveningReminderHour?: number;
-    eveningReminderMinute?: number;
-  }) => void;
-}
-
-function ReminderSection({ preference, isPremium, isPending, onTimeChange }: ReminderSectionProps) {
-  const router = useRouter();
-  const overlay = useOverlay();
-  const [pickerConfig, setPickerConfig] = useState<{
-    open: boolean;
-    field: 'morning' | 'evening';
-    currentHour: number;
-    currentMinute: number;
-  }>({ open: false, field: 'morning', currentHour: 8, currentMinute: 0 });
-
-  const disabled = !preference.pushEnabled || isPending;
-
-  const handlePress = (
-    field: 'morning' | 'evening',
-    currentHour: number,
-    currentMinute: number,
-  ) => {
-    if (disabled) return;
-
-    if (!isPremium) {
-      overlay.open(({ isOpen, close, exit }) => (
-        <PremiumReminderLockDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-          onSubscribe={() => {
-            close();
-            exit();
-            router.push('/settings/subscription');
-          }}
-        />
-      ));
-      return;
-    }
-
-    setPickerConfig({ open: true, field, currentHour, currentMinute });
-  };
+function ReminderSection() {
+  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
+  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const updateMutation = useMutation(updatePreferenceMutationOptions());
+  const isPremium = UserPolicy.isPremiumUser(user);
 
   return (
     <VStack p={16} gap={12} className="bg-white rounded-2xl">
@@ -240,10 +173,12 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
         label="오전 리마인드"
         hour={preference.morningReminderHour}
         minute={preference.morningReminderMinute}
-        description="오전 시간대(0:00-11:30)에 오늘의 할일을 알려줘요"
-        disabled={disabled}
-        onPress={() =>
-          handlePress('morning', preference.morningReminderHour, preference.morningReminderMinute)
+        description="오전 시간대(0:00~11:59)에 오늘의 할일을 알려줘요"
+        disabled={!preference.pushEnabled || updateMutation.isPending}
+        isPremium={isPremium}
+        field="morning"
+        onTimeChange={(hour, minute) =>
+          updateMutation.mutate({ morningReminderHour: hour, morningReminderMinute: minute })
         }
       />
 
@@ -253,40 +188,13 @@ function ReminderSection({ preference, isPremium, isPending, onTimeChange }: Rem
         label="오후 리마인드"
         hour={preference.eveningReminderHour}
         minute={preference.eveningReminderMinute}
-        description="오후 시간대(12:00-23:30)에 남은 할일을 알려줘요"
-        disabled={disabled}
-        onPress={() =>
-          handlePress('evening', preference.eveningReminderHour, preference.eveningReminderMinute)
+        description="오후 시간대(12:00~23:59)에 남은 할일을 알려줘요"
+        disabled={!preference.pushEnabled || updateMutation.isPending}
+        isPremium={isPremium}
+        field="evening"
+        onTimeChange={(hour, minute) =>
+          updateMutation.mutate({ eveningReminderHour: hour, eveningReminderMinute: minute })
         }
-      />
-
-      <DatePicker
-        modal
-        open={pickerConfig.open}
-        date={timeToDate(pickerConfig.currentHour, pickerConfig.currentMinute)}
-        minimumDate={timeToDate(pickerConfig.field === 'morning' ? 0 : 12, 0)}
-        maximumDate={timeToDate(pickerConfig.field === 'morning' ? 11 : 23, 30)}
-        onConfirm={(date) => {
-          setPickerConfig((prev) => ({ ...prev, open: false }));
-          if (pickerConfig.field === 'morning') {
-            onTimeChange({
-              morningReminderHour: date.getHours(),
-              morningReminderMinute: date.getMinutes(),
-            });
-          } else {
-            onTimeChange({
-              eveningReminderHour: date.getHours(),
-              eveningReminderMinute: date.getMinutes(),
-            });
-          }
-        }}
-        onCancel={() => setPickerConfig((prev) => ({ ...prev, open: false }))}
-        mode="time"
-        minuteInterval={30}
-        title={pickerConfig.field === 'morning' ? '오전 시간 선택' : '오후 시간 선택'}
-        confirmText="확인"
-        cancelText="취소"
-        locale={Intl.DateTimeFormat().resolvedOptions().locale}
       />
     </VStack>
   );
@@ -298,7 +206,9 @@ interface ReminderTimeRowProps {
   minute: number;
   description: string;
   disabled: boolean;
-  onPress: () => void;
+  isPremium: boolean;
+  field: 'morning' | 'evening';
+  onTimeChange: (hour: number, minute: number) => void;
 }
 
 function ReminderTimeRow({
@@ -307,54 +217,62 @@ function ReminderTimeRow({
   minute,
   description,
   disabled,
-  onPress,
+  isPremium,
+  field,
+  onTimeChange,
 }: ReminderTimeRowProps) {
+  const premiumDialog = usePremiumDialog();
+  const [open, setOpen] = useState(false);
+
+  const handlePress = () => {
+    if (disabled) {
+      return;
+    }
+
+    if (!isPremium) {
+      premiumDialog.open({
+        description: '리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.',
+      });
+      return;
+    }
+
+    setOpen(true);
+  };
+
   return (
     <VStack>
-      <PressableFeedback onPress={onPress} isDisabled={disabled} className="rounded-lg">
+      <PressableFeedback onPress={handlePress} isDisabled={disabled} className="rounded-lg">
         <PressableFeedback.Highlight className="rounded-lg" />
+
         <HStack py={12} justify="between" align="center" className={cn(disabled && 'opacity-40')}>
           <Label>{label}</Label>
+
           <HStack gap={4} align="center">
             <Description>{formatReminderTime(hour, minute)}</Description>
             <ArrowRightIcon colorClassName="text-gray-6" />
           </HStack>
         </HStack>
+        <Description className="text-xs pb-1">{description}</Description>
       </PressableFeedback>
-      <Description className="text-xs pb-1">{description}</Description>
+
+      <DatePicker
+        modal
+        open={open}
+        date={timeToDate(hour, minute)}
+        minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
+        maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
+        onConfirm={(date) => {
+          setOpen(false);
+          onTimeChange(date.getHours(), date.getMinutes());
+        }}
+        onCancel={() => setOpen(false)}
+        mode="time"
+        minuteInterval={1}
+        title={field === 'morning' ? '오전 시간 선택' : '오후 시간 선택'}
+        confirmText="확인"
+        cancelText="취소"
+        locale={Intl.DateTimeFormat().resolvedOptions().locale}
+      />
     </VStack>
-  );
-}
-
-interface PremiumReminderLockDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubscribe: () => void;
-}
-
-function PremiumReminderLockDialog({
-  isOpen,
-  onOpenChange,
-  onSubscribe,
-}: PremiumReminderLockDialogProps) {
-  return (
-    <ConfirmDialog
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>프리미엄 기능</ConfirmDialog.Title>}
-      description={
-        <ConfirmDialog.Description>
-          리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.
-        </ConfirmDialog.Description>
-      }
-      cancelButton={
-        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          닫기
-        </ConfirmDialog.CancelButton>
-      }
-      confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={onSubscribe}>구독하기</ConfirmDialog.ConfirmButton>
-      }
-    />
   );
 }

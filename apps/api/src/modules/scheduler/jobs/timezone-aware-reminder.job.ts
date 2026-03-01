@@ -106,10 +106,12 @@ export class TimezoneAwareReminderJob {
 			const localHour = now.hour();
 			const localMinute = now.minute() >= 30 ? 30 : 0;
 
+			const morningMinute = payload.morningReminderMinute ?? 0;
 			if (
 				payload.morningReminderHour !== undefined &&
 				payload.morningReminderHour === localHour &&
-				(payload.morningReminderMinute ?? 0) === localMinute
+				morningMinute >= localMinute &&
+				morningMinute < localMinute + 30
 			) {
 				this.#logger.log(
 					`Catch-up morning reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
@@ -122,10 +124,12 @@ export class TimezoneAwareReminderJob {
 				);
 			}
 
+			const eveningMinute = payload.eveningReminderMinute ?? 0;
 			if (
 				payload.eveningReminderHour !== undefined &&
 				payload.eveningReminderHour === localHour &&
-				(payload.eveningReminderMinute ?? 0) === localMinute
+				eveningMinute >= localMinute &&
+				eveningMinute < localMinute + 30
 			) {
 				this.#logger.log(
 					`Catch-up evening reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
@@ -174,7 +178,7 @@ export class TimezoneAwareReminderJob {
 					timezone: tz,
 					pushEnabled: true,
 					morningReminderHour: localHour,
-					morningReminderMinute: localMinute,
+					morningReminderMinute: { gte: localMinute, lt: localMinute + 30 },
 				},
 			},
 			select: {
@@ -249,7 +253,7 @@ export class TimezoneAwareReminderJob {
 					timezone: tz,
 					pushEnabled: true,
 					eveningReminderHour: localHour,
-					eveningReminderMinute: localMinute,
+					eveningReminderMinute: { gte: localMinute, lt: localMinute + 30 },
 				},
 				todos: {
 					some: {

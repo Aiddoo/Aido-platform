@@ -6,9 +6,9 @@ export const userPreferenceSchema = z
     nightPushEnabled: z.boolean().describe('야간 푸시 알림 활성화 여부 (21:00-08:00)'),
     timezone: z.string().describe('IANA 타임존'),
     morningReminderHour: z.number().int().describe('아침 리마인더 시간 (0-11)'),
-    morningReminderMinute: z.number().int().describe('아침 리마인더 분 (0 또는 30)'),
+    morningReminderMinute: z.number().int().describe('아침 리마인더 분 (0-59)'),
     eveningReminderHour: z.number().int().describe('저녁 리마인더 시간 (12-23)'),
-    eveningReminderMinute: z.number().int().describe('저녁 리마인더 분 (0 또는 30)'),
+    eveningReminderMinute: z.number().int().describe('저녁 리마인더 분 (0-59)'),
   })
   .meta({
     example: {
