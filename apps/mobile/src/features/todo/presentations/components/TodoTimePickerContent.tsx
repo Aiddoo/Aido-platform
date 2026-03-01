@@ -9,6 +9,8 @@ import { Platform } from 'react-native';
 import { DEFAULT_TIME } from '../constants/todo.constant';
 import { PickerHeader } from './PickerHeader';
 
+const isIOS = Platform.OS === 'ios';
+
 interface TodoTimePickerContentProps {
   draftDate: Date;
   scheduledTime: string | undefined;
@@ -26,6 +28,7 @@ export const TodoTimePickerContent = ({
 }: TodoTimePickerContentProps) => {
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TIME);
+  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
 
   const handleConfirm = () => {
     onConfirm(localIsAllDay ? undefined : localTime, localIsAllDay);
@@ -66,11 +69,11 @@ export const TodoTimePickerContent = ({
                   시간 선택
                 </Text>
               </PressableFeedback>
-            ) : (
+            ) : isIOS ? (
               <DateTimePicker
                 value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
                 mode="time"
-                display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                display="compact"
                 locale="ko"
                 onChange={(_event, date) => {
                   if (date) {
@@ -78,6 +81,30 @@ export const TodoTimePickerContent = ({
                   }
                 }}
               />
+            ) : (
+              <>
+                <PressableFeedback
+                  onPress={() => setShowAndroidPicker(true)}
+                  className="h-[34px] justify-center"
+                >
+                  <Text size="b1" tone="brand" weight="medium">
+                    {localTime}
+                  </Text>
+                </PressableFeedback>
+                {showAndroidPicker && (
+                  <DateTimePicker
+                    value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
+                    mode="time"
+                    display="spinner"
+                    onChange={(_event, date) => {
+                      setShowAndroidPicker(false);
+                      if (date) {
+                        setLocalTime(toHHmm(date));
+                      }
+                    }}
+                  />
+                )}
+              </>
             )
           }
           horizontalPadding="medium"

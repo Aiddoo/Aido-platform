@@ -267,6 +267,7 @@ function ReminderTimeRow({
             }
           }}
           mode="time"
+          display="spinner"
           minuteInterval={1}
           locale={Intl.DateTimeFormat().resolvedOptions().locale}
         />
