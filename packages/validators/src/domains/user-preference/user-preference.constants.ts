@@ -11,11 +11,6 @@ export const NIGHT_TIME_CONFIG = {
   END_HOUR: 8,
 } as const;
 
-export const REMINDER_HOUR_RANGE = {
-  MIN: 0,
-  MAX: 23,
-} as const;
-
 export const MORNING_REMINDER_HOUR_RANGE = {
   MIN: 0,
   MAX: 11,

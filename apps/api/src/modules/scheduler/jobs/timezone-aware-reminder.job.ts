@@ -111,7 +111,11 @@ export class TimezoneAwareReminderJob {
 				this.#logger.log(
 					`Catch-up morning reminder for user=${payload.userId}, hour=${localHour}`,
 				);
-				await this.#sendMorningReminders(payload.timezone, localHour);
+				await this.#sendMorningReminders(
+					payload.timezone,
+					localHour,
+					payload.userId,
+				);
 			}
 
 			if (
@@ -121,7 +125,11 @@ export class TimezoneAwareReminderJob {
 				this.#logger.log(
 					`Catch-up evening reminder for user=${payload.userId}, hour=${localHour}`,
 				);
-				await this.#sendEveningReminders(payload.timezone, localHour);
+				await this.#sendEveningReminders(
+					payload.timezone,
+					localHour,
+					payload.userId,
+				);
 			}
 		} catch (error) {
 			this.#logger.error(
@@ -136,12 +144,17 @@ export class TimezoneAwareReminderJob {
 		await this.#sendEveningReminders(tz, localHour);
 	}
 
-	async #sendMorningReminders(tz: string, localHour: number): Promise<void> {
+	async #sendMorningReminders(
+		tz: string,
+		localHour: number,
+		userId?: string,
+	): Promise<void> {
 		const today = getUserToday(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
 		const users = await this.database.user.findMany({
 			where: {
+				...(userId && { id: userId }),
 				pushTokens: {
 					some: {},
 				},
@@ -204,12 +217,17 @@ export class TimezoneAwareReminderJob {
 		);
 	}
 
-	async #sendEveningReminders(tz: string, localHour: number): Promise<void> {
+	async #sendEveningReminders(
+		tz: string,
+		localHour: number,
+		userId?: string,
+	): Promise<void> {
 		const today = getUserToday(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
 		const users = await this.database.user.findMany({
 			where: {
+				...(userId && { id: userId }),
 				pushTokens: {
 					some: {},
 				},
