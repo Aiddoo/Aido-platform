@@ -1,6 +1,7 @@
 import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
 import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
 import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { Button } from '@src/shared/ui/Button';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
@@ -11,7 +12,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
 import times from 'es-toolkit/compat/times';
-import { Button, Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
+import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -203,9 +204,9 @@ const ProviderListRow = memo(function ProviderListRow({
             variant="soft"
             color={isLinked ? 'accent' : 'default'}
             size="sm"
-            className="self-start mt-0.5 px-1 rounded-md"
+            className="self-start mt-0.5 px-2 rounded-lg"
           >
-            <Chip.Label>{isLinked ? '연결됨' : '연결 안 됨'}</Chip.Label>
+            <Chip.Label className="text-e2">{isLinked ? '연결됨' : '연결 안 됨'}</Chip.Label>
           </Chip>
         </VStack>
       }
@@ -215,21 +216,12 @@ const ProviderListRow = memo(function ProviderListRow({
             <Spinner size="sm" />
           </View>
         ) : isLinked ? (
-          <Button
-            size="sm"
-            className="border-gray-3 rounded-lg px-4 h-8 bg-transparent"
-            onPress={handleUnlinkPress}
-            isDisabled={!canUnlink}
-          >
-            <Text size="e1" weight="semibold" tone="neutral" shade={8}>
-              해제
-            </Text>
+          <Button size="small" variant="weak" onPress={handleUnlinkPress} isDisabled={!canUnlink}>
+            해제
           </Button>
         ) : (
-          <Button size="sm" className="bg-main rounded-lg px-4 h-8" onPress={handleLinkPress}>
-            <Text size="e1" weight="semibold" tone="white">
-              연결
-            </Text>
+          <Button size="small" onPress={handleLinkPress}>
+            연결
           </Button>
         )
       }

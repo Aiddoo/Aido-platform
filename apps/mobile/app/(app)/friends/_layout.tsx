@@ -32,12 +32,7 @@ const FriendsLayout = () => {
       <Stack.Screen
         name="index"
         options={{
-          title: '',
-          headerTitleStyle: {
-            fontSize: 13,
-            fontWeight: '500',
-            color: titleColor.color as string,
-          },
+          title: '친구 관리',
           headerRight: () => (
             <View className="justify-center items-center">
               <Pressable onPress={() => router.push('/friends/add')} hitSlop={8} className="p-2">

@@ -68,11 +68,6 @@ const MyPageScreen = () => {
         <Spacing size={12} />
 
         <SettingNavigationSection>
-          <SettingNavigationItem label="공지사항" onPress={() => console.log('공지사항 클릭')} />
-          <SettingNavigationItem
-            label="의견 보내기"
-            onPress={() => console.log('의견 보내기 클릭')}
-          />
           <SettingNavigationItem
             label="약관 및 정책"
             onPress={() => router.push('/settings/terms')}
