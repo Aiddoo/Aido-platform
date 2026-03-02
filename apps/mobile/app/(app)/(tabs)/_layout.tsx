@@ -5,49 +5,56 @@ import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-ef
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
 import { useResolveClassNames } from 'uniwind';
 
 function useLiquidGlassAvailable() {
-  const [state, setState] = useState<{ ready: boolean; available: boolean }>({
-    ready: Platform.OS !== 'ios',
-    available: false,
-  });
+  const glassSupported = useMemo(
+    () => Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable(),
+    [],
+  );
+
+  const [available, setAvailable] = useState(glassSupported);
 
   useEffect(() => {
-    const check = async () => {
-      if (Platform.OS !== 'ios') return;
-      if (!isLiquidGlassAvailable() || !isGlassEffectAPIAvailable()) {
-        setState({ ready: true, available: false });
-        return;
-      }
+    if (!glassSupported) return;
 
+    let isMounted = true;
+
+    const check = async () => {
       try {
         const reduce = await AccessibilityInfo.isReduceTransparencyEnabled();
-        setState({ ready: true, available: !reduce });
-      } catch {
-        setState({ ready: true, available: false });
+        if (isMounted) {
+          setAvailable(!reduce);
+        }
+      } catch (error) {
+        console.warn('[TabsLayout] Failed to check reduce transparency:', error);
       }
     };
 
     check();
-  }, []);
 
-  return state;
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceTransparencyChanged',
+      (reduceEnabled) => {
+        setAvailable(!reduceEnabled);
+      },
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, [glassSupported]);
+
+  return available;
 }
 
 export default function TabsLayout() {
-  const { ready, available } = useLiquidGlassAvailable();
-
-  if (!ready) return null;
-
-  if (available) {
-    return <IOSLiquidGlassTabs />;
-  }
-
-  return <AndroidBottomTabs />;
+  const liquidGlass = useLiquidGlassAvailable();
+  return liquidGlass ? <IOSLiquidGlassTabs /> : <AndroidBottomTabs />;
 }
 
 function IOSLiquidGlassTabs() {
