@@ -45,7 +45,7 @@ export const buttonVariants = tv({
       dark: '',
     },
     isDisabled: {
-      true: 'opacity-40',
+      true: '',
     },
   },
 
@@ -58,6 +58,10 @@ export const buttonVariants = tv({
     { variant: 'weak', color: 'primary', className: 'bg-main/5 dark:bg-main/20' },
     { variant: 'weak', color: 'danger', className: 'bg-error/5 dark:bg-error/20' },
     { variant: 'weak', color: 'dark', className: 'bg-gray-9/5 dark:bg-gray-9/20' },
+    // fill + disabled variants (solid colors, no alpha)
+    { variant: 'fill', color: 'primary', isDisabled: true, className: 'bg-gray-5 dark:bg-gray-4' },
+    { variant: 'fill', color: 'danger', isDisabled: true, className: 'bg-gray-5 dark:bg-gray-4' },
+    { variant: 'fill', color: 'dark', isDisabled: true, className: 'bg-gray-7 dark:bg-gray-4' },
   ],
 
   defaultVariants: {

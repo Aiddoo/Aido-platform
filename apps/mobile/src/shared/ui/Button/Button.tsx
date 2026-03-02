@@ -39,7 +39,8 @@ export function Button({
     },
   } as const;
 
-  const textColor = variant === 'fill' ? textColorMap.fill[color] : textColorMap.weak[color];
+  const baseTextColor = variant === 'fill' ? textColorMap.fill[color] : textColorMap.weak[color];
+  const textColor = disabled ? `${baseTextColor} opacity-40` : baseTextColor;
 
   const renderContent = () => {
     if (isLoading) {
