@@ -1,3 +1,9 @@
+import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { resetAuthClient } from '@src/shared/infra/http/auth-client';
+import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Result } from '@src/shared/ui/Result/Result';
+import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -25,3 +31,36 @@ const AppLayout = () => {
 };
 
 export default AppLayout;
+
+interface ErrorBoundaryProps {
+  error: Error;
+  retry: () => void;
+}
+
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  const { setStatus } = useAuth();
+  const queryClient = useQueryClient();
+
+  const handleLogout = () => {
+    setStatus('unauthenticated');
+    queryClient.clear();
+    resetAuthClient();
+  };
+
+  return (
+    <StyledSafeAreaView className="flex-1 bg-white">
+      <Result
+        title="문제가 발생했어요"
+        description="잠시 후 다시 시도해주세요"
+        button={
+          <HStack gap={8}>
+            <Result.Button onPress={retry}>재시도</Result.Button>
+            <Result.Button color="primary" onPress={handleLogout}>
+              로그아웃
+            </Result.Button>
+          </HStack>
+        }
+      />
+    </StyledSafeAreaView>
+  );
+}
