@@ -82,7 +82,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
             <VStack gap={16}>
               <ControlField isSelected={isAllAgreed} onSelectedChange={toggleAll}>
                 <ControlField.Indicator>
-                  <Checkbox />
+                  <Checkbox className="shadow-none border border-main size-5 rounded-md" />
                 </ControlField.Indicator>
                 <Label>
                   <Text size="b2" weight="semibold">
@@ -151,7 +151,7 @@ const TermsAgreementItem = ({
   return (
     <ControlField isSelected={isSelected} onSelectedChange={onSelectedChange}>
       <ControlField.Indicator>
-        <Checkbox />
+        <Checkbox className="shadow-none border border-main size-5 rounded-md" />
       </ControlField.Indicator>
       <HStack flex={1} justify="between" align="center">
         <Label>

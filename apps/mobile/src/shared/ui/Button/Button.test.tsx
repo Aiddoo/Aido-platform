@@ -56,7 +56,12 @@ describe('buttonVariants', () => {
     expect(buttonVariants({ size: 'xlarge' })).toContain('h-14');
   });
 
-  test('비활성화 상태에서는 투명도가 낮아진다', () => {
-    expect(buttonVariants({ isDisabled: true })).toContain('opacity-40');
+  test('비활성화 상태에서는 뮤트된 배경색으로 전환된다', () => {
+    const primaryDisabled = buttonVariants({ variant: 'fill', color: 'primary', isDisabled: true });
+    const darkDisabled = buttonVariants({ variant: 'fill', color: 'dark', isDisabled: true });
+
+    expect(primaryDisabled).not.toContain('opacity-40');
+    expect(primaryDisabled).toContain('bg-gray-5');
+    expect(darkDisabled).toContain('bg-gray-7');
   });
 });
