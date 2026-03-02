@@ -5,28 +5,48 @@ import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-ef
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
 import { useResolveClassNames } from 'uniwind';
 
 function useLiquidGlassAvailable() {
-  const glassSupported =
-    Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+  const glassSupported = useMemo(
+    () => Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable(),
+    [],
+  );
 
   const [available, setAvailable] = useState(glassSupported);
 
   useEffect(() => {
     if (!glassSupported) return;
+
+    let isMounted = true;
+
     const check = async () => {
       try {
         const reduce = await AccessibilityInfo.isReduceTransparencyEnabled();
-        if (reduce) setAvailable(false);
+        if (isMounted) {
+          setAvailable(!reduce);
+        }
       } catch (error) {
         console.warn('[TabsLayout] Failed to check reduce transparency:', error);
       }
     };
+
     check();
+
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceTransparencyChanged',
+      (reduceEnabled) => {
+        setAvailable(!reduceEnabled);
+      },
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
   }, [glassSupported]);
 
   return available;
