@@ -371,20 +371,25 @@ export class TodoRepository {
 	}
 
 	/**
-	 * 트랜잭션 내에서 여러 Todo를 순차 생성 (각 Todo에 category include 포함)
+	 * 트랜잭션 내에서 여러 Todo를 일괄 생성 (createMany + findMany, 2쿼리)
+	 *
+	 * @description
+	 * Prisma의 `createMany`는 `include`를 지원하지 않으므로,
+	 * 1) `createMany`로 일괄 INSERT
+	 * 2) `findMany`로 생성된 레코드를 category include와 함께 조회
+	 *
+	 * 기존 순차 N쿼리(`for...of await`) 대비 2쿼리로 대폭 개선.
 	 */
-	async createManyInTransaction(
-		dataArray: Prisma.TodoCreateInput[],
+	async createManyBatch(
+		dataArray: Prisma.TodoCreateManyInput[],
+		recurrenceGroupId: string,
 		tx: TransactionClient,
 	): Promise<TodoWithCategory[]> {
-		const results: TodoWithCategory[] = [];
-		for (const data of dataArray) {
-			const todo = await tx.todo.create({
-				data,
-				include: TODO_CATEGORY_INCLUDE,
-			});
-			results.push(todo as TodoWithCategory);
-		}
-		return results;
+		await tx.todo.createMany({ data: dataArray });
+		return tx.todo.findMany({
+			where: { recurrenceGroupId },
+			include: TODO_CATEGORY_INCLUDE,
+			orderBy: { sortOrder: "asc" },
+		}) as Promise<TodoWithCategory[]>;
 	}
 }

@@ -389,4 +389,70 @@ describe("TodoRepository", () => {
 			]);
 		});
 	});
+
+	// ==========================================================================
+	// createManyBatch
+	// ==========================================================================
+
+	describe("createManyBatch", () => {
+		const recurrenceGroupId = "test-group-id";
+		const mockTx = {
+			todo: {
+				createMany: jest.fn().mockResolvedValue({ count: 2 }),
+				findMany: jest
+					.fn()
+					.mockResolvedValue([
+						TodoBuilder.create("user-1").withId(1).build(),
+						TodoBuilder.create("user-1").withId(2).build(),
+					]),
+			},
+		};
+
+		it("createMany로 일괄 INSERT 후 findMany로 조회한다", async () => {
+			// Given
+			const dataArray = [
+				{
+					userId: "user-1",
+					categoryId: 1,
+					title: "할 일 1",
+					sortOrder: 0,
+					startDate: new Date("2024-01-15"),
+					recurrenceGroupId,
+				},
+				{
+					userId: "user-1",
+					categoryId: 1,
+					title: "할 일 2",
+					sortOrder: 1,
+					startDate: new Date("2024-01-16"),
+					recurrenceGroupId,
+				},
+			];
+
+			// When
+			const result = await repository.createManyBatch(
+				dataArray,
+				recurrenceGroupId,
+				mockTx as never,
+			);
+
+			// Then: createMany가 전체 데이터로 호출됨
+			expect(mockTx.todo.createMany).toHaveBeenCalledWith({
+				data: dataArray,
+			});
+
+			// Then: findMany가 recurrenceGroupId로 조회됨
+			expect(mockTx.todo.findMany).toHaveBeenCalledWith({
+				where: { recurrenceGroupId },
+				include: {
+					category: {
+						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+				},
+				orderBy: { sortOrder: "asc" },
+			});
+
+			expect(result).toHaveLength(2);
+		});
+	});
 });

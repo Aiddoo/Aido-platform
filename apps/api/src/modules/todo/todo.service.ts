@@ -15,6 +15,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
+import type { Prisma } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";
 import {
 	type FriendCompletedEventPayload,
@@ -76,39 +77,46 @@ export class TodoService {
 	 * Todo 생성
 	 */
 	async create(data: CreateTodoData): Promise<Todo> {
-		// 카테고리 존재 및 소유권 확인
+		// 카테고리 존재 및 소유권 확인 (읽기 전용, TX 외부)
 		await this.todoCategoryService.validateOwnership(
 			data.categoryId,
 			data.userId,
 		);
 
-		// 카테고리당 활성 투두 제한 체크
-		const activeInCategory = await this.todoRepository.countActiveByCategory(
-			data.userId,
-			data.categoryId,
-		);
-		if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
-			throw BusinessExceptions.todoCategoryFull(
-				activeInCategory,
-				TODO_LIMITS.MAX_PER_CATEGORY,
+		// TX 내에서 제한 체크 + sortOrder 결정 + 생성 (race condition 방지)
+		const todo = await this.database.$transaction(async (tx) => {
+			const activeInCategory = await this.todoRepository.countActiveByCategory(
+				data.userId,
+				data.categoryId,
+				tx,
 			);
-		}
+			if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
+				throw BusinessExceptions.todoCategoryFull(
+					activeInCategory,
+					TODO_LIMITS.MAX_PER_CATEGORY,
+				);
+			}
 
-		// 새 Todo의 sortOrder 결정 (맨 뒤에 추가)
-		const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
-		const newSortOrder = maxSortOrder + 1;
+			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
+				data.userId,
+				tx,
+			);
 
-		const todo = await this.todoRepository.create({
-			user: { connect: { id: data.userId } },
-			category: { connect: { id: data.categoryId } },
-			title: data.title,
-			content: data.content,
-			sortOrder: newSortOrder,
-			startDate: data.startDate,
-			endDate: data.endDate,
-			scheduledTime: data.scheduledTime,
-			isAllDay: data.isAllDay ?? true,
-			visibility: data.visibility ?? "PUBLIC",
+			return this.todoRepository.create(
+				{
+					user: { connect: { id: data.userId } },
+					category: { connect: { id: data.categoryId } },
+					title: data.title,
+					content: data.content,
+					sortOrder: maxSortOrder + 1,
+					startDate: data.startDate,
+					endDate: data.endDate,
+					scheduledTime: data.scheduledTime,
+					isAllDay: data.isAllDay ?? true,
+					visibility: data.visibility ?? "PUBLIC",
+				},
+				tx,
+			);
 		});
 
 		this.#logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
@@ -443,26 +451,29 @@ export class TodoService {
 			throw BusinessExceptions.todoNotFound(id);
 		}
 
-		// 새 카테고리 소유권 확인
+		// 새 카테고리 소유권 확인 (읽기 전용, TX 외부)
 		await this.todoCategoryService.validateOwnership(data.categoryId, userId);
 
-		// 활성 투두 이동 시 대상 카테고리 한도 체크
-		if (!todo.completed) {
-			const activeInTarget = await this.todoRepository.countActiveByCategory(
-				userId,
-				data.categoryId,
-			);
-			if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
-				throw BusinessExceptions.todoCategoryFull(
-					activeInTarget,
-					TODO_LIMITS.MAX_PER_CATEGORY,
-				);
-			}
-		}
+		const updateData = { category: { connect: { id: data.categoryId } } };
 
-		const updatedTodo = await this.todoRepository.update(id, {
-			category: { connect: { id: data.categoryId } },
-		});
+		// 활성 투두 이동 시 TX 내에서 check + update (race condition 방지)
+		const updatedTodo = !todo.completed
+			? await this.database.$transaction(async (tx) => {
+					const activeInTarget =
+						await this.todoRepository.countActiveByCategory(
+							userId,
+							data.categoryId,
+							tx,
+						);
+					if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
+						throw BusinessExceptions.todoCategoryFull(
+							activeInTarget,
+							TODO_LIMITS.MAX_PER_CATEGORY,
+						);
+					}
+					return this.todoRepository.update(id, updateData, tx);
+				})
+			: await this.todoRepository.update(id, updateData);
 
 		this.#logger.log(
 			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,
@@ -711,52 +722,59 @@ export class TodoService {
 			);
 		}
 
-		// 3. 카테고리 소유권 확인
+		// 3. 카테고리 소유권 확인 (읽기 전용, TX 외부)
 		await this.todoCategoryService.validateOwnership(
 			data.categoryId,
 			data.userId,
 		);
 
-		// 4. 카테고리당 활성 투두 제한 체크 (activeInCategory + todoCount <= MAX_PER_CATEGORY)
-		const activeInCategory = await this.todoRepository.countActiveByCategory(
-			data.userId,
-			data.categoryId,
-		);
-
-		if (activeInCategory + todoCount > TODO_LIMITS.MAX_PER_CATEGORY) {
-			throw BusinessExceptions.recurringTodoWouldExceedCategoryLimit(
-				activeInCategory,
-				todoCount,
-				TODO_LIMITS.MAX_PER_CATEGORY,
-			);
-		}
-
-		// 5. 트랜잭션 내에서 일괄 생성
+		// 4. TX 내에서 제한 체크 + 일괄 생성 (race condition 방지)
 		const recurrenceGroupId = randomUUID();
 
 		const todos = await this.database.$transaction(async (tx) => {
+			// 카테고리당 활성 투두 제한 체크
+			const activeInCategory = await this.todoRepository.countActiveByCategory(
+				data.userId,
+				data.categoryId,
+				tx,
+			);
+
+			if (activeInCategory + todoCount > TODO_LIMITS.MAX_PER_CATEGORY) {
+				throw BusinessExceptions.recurringTodoWouldExceedCategoryLimit(
+					activeInCategory,
+					todoCount,
+					TODO_LIMITS.MAX_PER_CATEGORY,
+				);
+			}
+
 			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
 				data.userId,
 				tx,
 			);
 
-			const createInputs = matchingDates.map((dateStr, index) => ({
-				user: { connect: { id: data.userId } },
-				category: { connect: { id: data.categoryId } },
-				title: data.title,
-				content: data.content,
-				sortOrder: maxSortOrder + 1 + index,
-				startDate: toDateOnly(dateStr),
-				endDate: undefined,
-				scheduledTime: data.scheduledTime
-					? toScheduledTime(dateStr, data.scheduledTime, tz)
-					: null,
-				isAllDay: data.isAllDay ?? true,
-				visibility: data.visibility ?? "PUBLIC",
-				recurrenceGroupId,
-			}));
+			// flat 포맷 (createMany용 — TodoCreateManyInput)
+			const createInputs: Prisma.TodoCreateManyInput[] = matchingDates.map(
+				(dateStr, index) => ({
+					userId: data.userId,
+					categoryId: data.categoryId,
+					title: data.title,
+					content: data.content,
+					sortOrder: maxSortOrder + 1 + index,
+					startDate: toDateOnly(dateStr),
+					scheduledTime: data.scheduledTime
+						? toScheduledTime(dateStr, data.scheduledTime, tz)
+						: null,
+					isAllDay: data.isAllDay ?? true,
+					visibility: data.visibility ?? "PUBLIC",
+					recurrenceGroupId,
+				}),
+			);
 
-			return this.todoRepository.createManyInTransaction(createInputs, tx);
+			return this.todoRepository.createManyBatch(
+				createInputs,
+				recurrenceGroupId,
+				tx,
+			);
 		});
 
 		this.#logger.log(

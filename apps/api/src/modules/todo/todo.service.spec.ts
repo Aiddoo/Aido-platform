@@ -134,7 +134,10 @@ describe("TodoService", () => {
 				createInput.categoryId,
 				mockUserId,
 			);
-			expect(todoRepo.create).toHaveBeenCalledWith(
+			// TX 내에서 create 호출
+			expect(database.$transaction).toHaveBeenCalled();
+			const createArgs = todoRepo.create.mock.calls[0]?.[0];
+			expect(createArgs).toEqual(
 				expect.objectContaining({
 					user: { connect: { id: mockUserId } },
 					category: { connect: { id: createInput.categoryId } },
@@ -157,7 +160,8 @@ describe("TodoService", () => {
 			await service.create(minimalInput);
 
 			// Then: 기본값이 적용됨
-			expect(todoRepo.create).toHaveBeenCalledWith(
+			const createArgs = todoRepo.create.mock.calls[0]?.[0];
+			expect(createArgs).toEqual(
 				expect.objectContaining({
 					isAllDay: true,
 					visibility: "PUBLIC",
@@ -179,7 +183,8 @@ describe("TodoService", () => {
 			await service.create(inputWithNulls);
 
 			// Then: content가 null로 저장됨
-			expect(todoRepo.create).toHaveBeenCalledWith(
+			const createArgs = todoRepo.create.mock.calls[0]?.[0];
+			expect(createArgs).toEqual(
 				expect.objectContaining({
 					content: null,
 				}),
@@ -979,14 +984,18 @@ describe("TodoService", () => {
 
 	describe("updateCategory", () => {
 		it("카테고리를 변경한다", async () => {
-			// Given: 존재하는 Todo와 새 카테고리
-			const mockTodo = TodoBuilder.create(mockUserId).withId(1).build();
+			// Given: 존재하는 Todo와 새 카테고리 (미완료 → TX 사용)
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
 			const newCategory = TodoCategoryBuilder.create(mockUserId)
 				.withId(2)
 				.withName("할 일")
 				.build();
 			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
 			todoCategoryService.validateOwnership.mockResolvedValue(newCategory);
+			todoRepo.countActiveByCategory.mockResolvedValue(0);
 			todoRepo.update.mockImplementation(
 				async (_id: number, data: Record<string, unknown>) => {
 					const categoryData = data.category as
@@ -1010,9 +1019,14 @@ describe("TodoService", () => {
 				categoryId: 2,
 			});
 
-			// Then: 카테고리가 변경됨
+			// Then: 카테고리가 변경됨 (TX 내에서 check + update)
 			expect(result.category.id).toBe(2);
-			expect(todoRepo.update).toHaveBeenCalledWith(mockTodo.id, {
+			expect(database.$transaction).toHaveBeenCalled();
+			expect(todoRepo.countActiveByCategory).toHaveBeenCalled();
+			expect(todoRepo.update).toHaveBeenCalled();
+			const updateArgs = todoRepo.update.mock.calls[0];
+			expect(updateArgs?.[0]).toBe(mockTodo.id);
+			expect(updateArgs?.[1]).toEqual({
 				category: { connect: { id: 2 } },
 			});
 		});
@@ -1641,9 +1655,9 @@ describe("TodoService", () => {
 			// Given: sortOrder 기본값
 			todoRepo.getMaxSortOrder.mockResolvedValue(0);
 
-			// Given: createManyInTransaction mock
-			todoRepo.createManyInTransaction.mockImplementation(
-				async (dataArray: Prisma.TodoCreateInput[]) =>
+			// Given: createManyBatch mock (flat 포맷: TodoCreateManyInput)
+			todoRepo.createManyBatch.mockImplementation(
+				async (dataArray: Prisma.TodoCreateManyInput[]) =>
 					dataArray.map((data, index) =>
 						TodoBuilder.create(mockUserId)
 							.withId(index + 1)
@@ -1665,15 +1679,15 @@ describe("TodoService", () => {
 			expect(result.count).toBe(13);
 			expect(result.todos).toHaveLength(13);
 
-			// Then: 올바른 데이터로 createManyInTransaction이 호출됨
-			const createInputs = todoRepo.createManyInTransaction.mock
-				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			// Then: 올바른 데이터로 createManyBatch이 호출됨 (flat 포맷)
+			const createInputs = todoRepo.createManyBatch.mock
+				.calls[0]?.[0] as Prisma.TodoCreateManyInput[];
 			expect(createInputs).toHaveLength(13);
 			expect(createInputs[0]).toEqual(
 				expect.objectContaining({
 					title: "약 먹기",
-					user: { connect: { id: mockUserId } },
-					category: { connect: { id: 1 } },
+					userId: mockUserId,
+					categoryId: 1,
 					content: "매일 비타민 복용",
 					visibility: "PUBLIC",
 					isAllDay: true,
@@ -1689,8 +1703,8 @@ describe("TodoService", () => {
 			await service.createRecurring(recurringInput);
 
 			// Then: sortOrder가 6부터 순차적으로 할당됨
-			const createInputs = todoRepo.createManyInTransaction.mock
-				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			const createInputs = todoRepo.createManyBatch.mock
+				.calls[0]?.[0] as Prisma.TodoCreateManyInput[];
 			expect(createInputs[0]?.sortOrder).toBe(6);
 			expect(createInputs[1]?.sortOrder).toBe(7);
 			expect(createInputs[createInputs.length - 1]?.sortOrder).toBe(
@@ -1705,8 +1719,8 @@ describe("TodoService", () => {
 			await service.createRecurring(recurringInput);
 
 			// Then: 모든 Todo에 동일한 recurrenceGroupId가 할당됨
-			const createInputs = todoRepo.createManyInTransaction.mock
-				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			const createInputs = todoRepo.createManyBatch.mock
+				.calls[0]?.[0] as Prisma.TodoCreateManyInput[];
 			const groupId = createInputs[0]?.recurrenceGroupId;
 			expect(groupId).toBeDefined();
 			expect(typeof groupId).toBe("string");
@@ -1727,8 +1741,8 @@ describe("TodoService", () => {
 			await service.createRecurring(inputWithTime, "Asia/Seoul");
 
 			// Then: 각 Todo에 scheduledTime이 설정됨
-			const createInputs = todoRepo.createManyInTransaction.mock
-				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			const createInputs = todoRepo.createManyBatch.mock
+				.calls[0]?.[0] as Prisma.TodoCreateManyInput[];
 			for (const input of createInputs) {
 				expect(input.scheduledTime).toBeInstanceOf(Date);
 				expect(input.isAllDay).toBe(false);
@@ -1738,7 +1752,7 @@ describe("TodoService", () => {
 		it("scheduledTime이 있는 Todo에 대해 리마인더 스케줄링을 호출한다", async () => {
 			// Given: scheduledTime이 있는 Todo가 생성됨
 			const scheduledTime = new Date("2026-03-02T00:00:00Z");
-			todoRepo.createManyInTransaction.mockResolvedValue(
+			todoRepo.createManyBatch.mockResolvedValue(
 				Array.from({ length: 3 }, (_, i) =>
 					TodoBuilder.create(mockUserId)
 						.withId(i + 1)
@@ -1777,7 +1791,7 @@ describe("TodoService", () => {
 			await expect(service.createRecurring(noMatchInput)).rejects.toThrow(
 				BusinessException,
 			);
-			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+			expect(todoRepo.createManyBatch).not.toHaveBeenCalled();
 		});
 
 		it("인스턴스가 100개를 초과하면 TODO_0812 에러를 던진다", async () => {
@@ -1793,7 +1807,7 @@ describe("TodoService", () => {
 			await expect(service.createRecurring(tooManyInput)).rejects.toThrow(
 				BusinessException,
 			);
-			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+			expect(todoRepo.createManyBatch).not.toHaveBeenCalled();
 		});
 
 		it("카테고리 활성 투두 + batchSize가 카테고리 한도를 초과하면 TODO_0813 에러를 던진다", async () => {
@@ -1804,7 +1818,7 @@ describe("TodoService", () => {
 			await expect(service.createRecurring(recurringInput)).rejects.toThrow(
 				BusinessException,
 			);
-			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+			expect(todoRepo.createManyBatch).not.toHaveBeenCalled();
 		});
 
 		it("카테고리 한도 내이면 리소스 체크를 통과한다", async () => {
@@ -1816,7 +1830,7 @@ describe("TodoService", () => {
 
 			// Then: 정상 생성됨
 			expect(result.count).toBe(13);
-			expect(todoRepo.createManyInTransaction).toHaveBeenCalled();
+			expect(todoRepo.createManyBatch).toHaveBeenCalled();
 		});
 
 		it("카테고리 소유권 실패 시 예외가 전파된다", async () => {
@@ -1834,13 +1848,13 @@ describe("TodoService", () => {
 			await expect(
 				service.createRecurring(inputWithBadCategory),
 			).rejects.toThrow(BusinessException);
-			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+			expect(todoRepo.createManyBatch).not.toHaveBeenCalled();
 		});
 
 		it("리마인더 스케줄링 실패해도 생성 결과는 정상 반환된다", async () => {
 			// Given: 리마인더 스케줄링이 실패하도록 설정
 			const scheduledTime = new Date("2026-03-02T00:00:00Z");
-			todoRepo.createManyInTransaction.mockResolvedValue(
+			todoRepo.createManyBatch.mockResolvedValue(
 				Array.from({ length: 2 }, (_, i) =>
 					TodoBuilder.create(mockUserId)
 						.withId(i + 1)
