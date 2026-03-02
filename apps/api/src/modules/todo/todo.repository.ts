@@ -1,13 +1,11 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
-
 import type {
 	FindFriendTodosParams,
 	FindTodosParams,
 	TodoWithCategory,
-	TransactionClient,
 } from "./types/todo.types.ts";
 
 /**
@@ -253,6 +251,20 @@ export class TodoRepository {
 		});
 	}
 
+	/**
+	 * 특정 카테고리 내 활성(미완료) Todo 개수 조회
+	 */
+	async countActiveByCategory(
+		userId: string,
+		categoryId: number,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		return client.todo.count({
+			where: { userId, categoryId, completed: false },
+		});
+	}
+
 	// =========================================================================
 	// 알림용 집계 메서드
 	// =========================================================================
@@ -356,5 +368,23 @@ export class TodoRepository {
 				},
 			},
 		}) as Promise<TodoWithCategory>;
+	}
+
+	/**
+	 * 트랜잭션 내에서 여러 Todo를 순차 생성 (각 Todo에 category include 포함)
+	 */
+	async createManyInTransaction(
+		dataArray: Prisma.TodoCreateInput[],
+		tx: TransactionClient,
+	): Promise<TodoWithCategory[]> {
+		const results: TodoWithCategory[] = [];
+		for (const data of dataArray) {
+			const todo = await tx.todo.create({
+				data,
+				include: TODO_CATEGORY_INCLUDE,
+			});
+			results.push(todo as TodoWithCategory);
+		}
+		return results;
 	}
 }

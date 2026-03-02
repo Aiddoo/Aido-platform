@@ -52,22 +52,12 @@ describe("FollowService", () => {
 		const { unit, unitRef } = await TestBed.solitary(FollowService).compile();
 
 		service = unit;
-		followRepo = unitRef.get(
-			FollowRepository,
-		) as unknown as Mocked<FollowRepository>;
-		paginationService = unitRef.get(
-			PaginationService,
-		) as unknown as Mocked<PaginationService>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		_eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		followRepo = unitRef.get(FollowRepository);
+		paginationService = unitRef.get(PaginationService);
+		entitlementService = unitRef.get(EntitlementService);
+		database = unitRef.get(DatabaseService);
+		_eventEmitter = unitRef.get(EventEmitter2);
+		cacheService = unitRef.get(CacheService);
 
 		// DatabaseService.$transaction passthrough 구현 (tx context 전달)
 		database.$transaction.mockImplementation((callback: TransactionCallback) =>

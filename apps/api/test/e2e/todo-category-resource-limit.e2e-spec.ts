@@ -7,7 +7,10 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { TODO_CATEGORY_LIMITS } from "@aido/validators";
+import {
+	SUBSCRIPTION_TODO_CATEGORY_LIMITS,
+	TODO_CATEGORY_LIMITS,
+} from "@aido/validators";
 import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
@@ -109,13 +112,15 @@ describe("TodoCategory Resource Limit (e2e)", () => {
 			}
 		});
 
-		it("GET /todo-categories/resource-limit - maxCount가 null (무제한)", async () => {
+		it("GET /todo-categories/resource-limit - maxCount가 30 (ACTIVE 구독)", async () => {
 			const response = await request(ctx.app.getHttpServer())
 				.get("/todo-categories/resource-limit")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
-			expect(response.body.data.maxCount).toBeNull();
+			expect(response.body.data.maxCount).toBe(
+				SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE,
+			);
 			expect(response.body.data.categoryCount).toBe(5); // 기본 2 + 추가 3
 		});
 	});

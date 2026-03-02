@@ -153,6 +153,8 @@ export const ErrorCode = {
   TODO_0801: 'TODO_0801',
   TODO_0810: 'TODO_0810',
   TODO_0811: 'TODO_0811',
+  TODO_0812: 'TODO_0812',
+  TODO_0813: 'TODO_0813',
 
   // =========================================================================
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
@@ -768,9 +770,22 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.TODO_0811]: {
     code: 'TODO_0811',
-    message: '활성 할 일 개수가 최대 한도에 도달했습니다.',
+    message: '카테고리의 활성 할 일이 최대 한도에 도달했습니다.',
     description:
-      '무료 사용자의 활성(미완료) 할 일 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.',
+      '카테고리당 활성(미완료) 할 일 수가 최대 한도를 초과했습니다. 할 일을 완료하거나 다른 카테고리로 이동해주세요.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0812]: {
+    code: 'TODO_0812',
+    message: '반복 할 일 생성 한도를 초과했습니다.',
+    description: '한 번에 생성할 수 있는 반복 할 일은 최대 100개입니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0813]: {
+    code: 'TODO_0813',
+    message: '반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.',
+    description:
+      '반복 할 일 생성 시 카테고리의 활성(미완료) 할 일 수가 최대 한도를 초과합니다. 할 일을 완료하거나 다른 카테고리로 이동해주세요.',
     httpStatus: HttpStatus.FORBIDDEN,
   },
 

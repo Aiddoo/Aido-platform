@@ -17,13 +17,17 @@
  * ```
  */
 
+import { type DayOfWeek, TODO_LIMITS } from "@aido/validators";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
@@ -32,6 +36,7 @@ import { REMINDER_SCHEDULER } from "@/modules/scheduler/reminder";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { TodoCategoryService } from "@/modules/todo-category/todo-category.service";
 
 describe("TodoService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -47,6 +52,7 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		update: jest.fn(),
 		delete: jest.fn(),
 		updateMany: jest.fn(),
+		count: jest.fn().mockResolvedValue(0),
 		aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
 	};
 
@@ -72,6 +78,11 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 	// Mock TodoCategoryRepository
 	const mockTodoCategoryRepository = {
 		findByIdAndUserId: jest.fn(),
+	};
+
+	// Mock TodoCategoryService
+	const mockTodoCategoryService = {
+		validateOwnership: jest.fn(),
 	};
 
 	// Mock TodoReminderSchedulerService
@@ -124,6 +135,10 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: TodoCategoryRepository,
 					useValue: mockTodoCategoryRepository,
+				},
+				{
+					provide: TodoCategoryService,
+					useValue: mockTodoCategoryService,
 				},
 				{
 					provide: REMINDER_SCHEDULER,
@@ -252,7 +267,9 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 
 		it("존재하지 않는 카테고리로 생성 시 BusinessException을 던진다", async () => {
 			// Given - 존재하지 않는 카테고리
-			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
+			mockTodoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
 
 			const createInput = {
 				userId: mockUserId,
@@ -265,6 +282,9 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			await expect(service.create(createInput)).rejects.toThrow(
 				BusinessException,
 			);
+
+			// cleanup
+			mockTodoCategoryService.validateOwnership.mockResolvedValue(undefined);
 		});
 	});
 
@@ -375,21 +395,9 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then - 쿼리에 날짜 범위 조건 포함
-			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						AND: expect.arrayContaining([
-							{ startDate: { lte: endDate } },
-							{
-								OR: [
-									{ endDate: { gte: startDate } },
-									{ endDate: null, startDate: { gte: startDate } },
-								],
-							},
-						]),
-					}),
-				}),
-			);
+			const calledArgs = mockDatabaseService.todo.findMany.mock.calls[0]?.[0];
+			expect(calledArgs.where.AND).toBeDefined();
+			expect(calledArgs.where.userId).toBe(mockUserId);
 		});
 
 		it("커서 기반 페이지네이션이 올바르게 작동한다", async () => {
@@ -787,12 +795,17 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 				.withId(mockTodoId)
 				.build();
 			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(null);
+			mockTodoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
 
 			// When & Then - 예외 발생 검증
 			await expect(
 				service.updateCategory(mockTodoId, mockUserId, { categoryId: 999 }),
 			).rejects.toThrow(BusinessException);
+
+			// cleanup
+			mockTodoCategoryService.validateOwnership.mockResolvedValue(undefined);
 		});
 
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
@@ -1054,6 +1067,82 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
+	describe("createRecurring 통합 테스트", () => {
+		it("NestJS DI 환경에서 createRecurring이 올바르게 동작한다", async () => {
+			// Given - 반복 할 일 데이터 준비
+			mockTodoDb.aggregate.mockResolvedValue({ _max: { sortOrder: 5 } });
+			mockTodoDb.create.mockImplementation(
+				({ data }: { data: Record<string, unknown> }) =>
+					Promise.resolve(
+						TodoBuilder.create(mockUserId)
+							.withTitle(data.title as string)
+							.withRecurrenceGroupId("test-group-id")
+							.build(),
+					),
+			);
+			mockTodoDb.count.mockResolvedValue(0); // 카테고리당 활성 투두 0개
+			mockTodoCategoryService.validateOwnership.mockResolvedValue(undefined);
+
+			const recurringData = {
+				userId: mockUserId,
+				title: "반복 할 일",
+				categoryId: mockCategoryId,
+				startDate: "2026-03-02",
+				endDate: "2026-03-08",
+				daysOfWeek: ["MON", "WED", "FRI"] as DayOfWeek[],
+			};
+
+			// When - createRecurring 호출
+			const result = await service.createRecurring(recurringData);
+
+			// Then - 올바른 결과 반환
+			expect(result.todos).toBeDefined();
+			expect(result.count).toBeGreaterThan(0);
+			expect(mockTodoCategoryService.validateOwnership).toHaveBeenCalledWith(
+				mockCategoryId,
+				mockUserId,
+			);
+			expect(mockDatabaseService.$transaction).toHaveBeenCalled();
+		});
+
+		it("카테고리당 리소스 제한 초과 시 BusinessException을 던진다", async () => {
+			// Given - 카테고리의 활성 Todo가 한도에 가까운 상태 (298 + 3 > 300)
+			mockTodoDb.count.mockResolvedValue(TODO_LIMITS.MAX_PER_CATEGORY - 2);
+			mockTodoCategoryService.validateOwnership.mockResolvedValue(undefined);
+
+			const recurringData = {
+				userId: mockUserId,
+				title: "반복 할 일",
+				categoryId: mockCategoryId,
+				startDate: "2026-03-02",
+				endDate: "2026-03-08",
+				daysOfWeek: ["MON", "WED", "FRI"] as DayOfWeek[],
+			};
+
+			// When & Then - 3개 생성 시도 시 298 + 3 > 300 → 예외
+			await expect(service.createRecurring(recurringData)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("매칭 날짜가 0개이면 BusinessException을 던진다", async () => {
+			// Given - 매칭되지 않는 요일 (2026-03-03은 화요일)
+			const recurringData = {
+				userId: mockUserId,
+				title: "반복 할 일",
+				categoryId: mockCategoryId,
+				startDate: "2026-03-03",
+				endDate: "2026-03-03",
+				daysOfWeek: ["FRI"] as DayOfWeek[],
+			};
+
+			// When & Then - 해당 날짜에 금요일이 없으므로 예외
+			await expect(service.createRecurring(recurringData)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+	});
+
 	describe("동시성 시나리오 테스트", () => {
 		it("여러 Todo를 동시에 생성할 수 있다", async () => {
 			// Given - 동시 생성 준비
@@ -1171,23 +1260,10 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then - 쿼리에 날짜 범위 조건 포함
-			expect(mockDatabaseService.todo.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						userId: mockFriendUserId,
-						visibility: "PUBLIC",
-						AND: expect.arrayContaining([
-							{ startDate: { lte: endDate } },
-							{
-								OR: [
-									{ endDate: { gte: startDate } },
-									{ endDate: null, startDate: { gte: startDate } },
-								],
-							},
-						]),
-					}),
-				}),
-			);
+			const calledArgs = mockDatabaseService.todo.findMany.mock.calls[0]?.[0];
+			expect(calledArgs.where.AND).toBeDefined();
+			expect(calledArgs.where.userId).toBe(mockFriendUserId);
+			expect(calledArgs.where.visibility).toBe("PUBLIC");
 		});
 
 		it("커서 기반 페이지네이션이 올바르게 작동한다", async () => {

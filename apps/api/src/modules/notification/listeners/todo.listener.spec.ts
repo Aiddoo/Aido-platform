@@ -8,6 +8,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { NotificationBuilder } from "@test/builders";
 
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
@@ -38,12 +39,8 @@ describe("TodoListener", () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoListener).compile();
 
 		listener = unit;
-		notificationService = unitRef.get(
-			NotificationService,
-		) as unknown as Mocked<NotificationService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
+		notificationService = unitRef.get(NotificationService);
+		database = unitRef.get(DatabaseService);
 
 		// DatabaseService.$transaction passthrough mock 설정
 		database.$transaction.mockImplementation((callback) =>
@@ -65,7 +62,9 @@ describe("TodoListener", () => {
 		it("오늘 첫 전체 완료 시 DAILY_COMPLETE 알림을 발송한다", async () => {
 			// Given: 오늘 DAILY_COMPLETE 알림이 없음
 			notificationService.existsNotification.mockResolvedValue(false);
-			notificationService.createAndSend.mockResolvedValue({} as any);
+			notificationService.createAndSend.mockResolvedValue(
+				NotificationBuilder.create("user-1").build(),
+			);
 
 			// When
 			await listener.handleTodoAllCompleted(payload);
@@ -112,7 +111,9 @@ describe("TodoListener", () => {
 		it("트랜잭션 내에서 중복 체크가 수행된다", async () => {
 			// Given
 			notificationService.existsNotification.mockResolvedValue(false);
-			notificationService.createAndSend.mockResolvedValue({} as any);
+			notificationService.createAndSend.mockResolvedValue(
+				NotificationBuilder.create("user-1").build(),
+			);
 
 			// When
 			await listener.handleTodoAllCompleted(payload);
@@ -185,7 +186,7 @@ describe("TodoListener", () => {
 			const batchArg =
 				notificationService.createAndSendBatch.mock.calls[0]?.[0] ?? [];
 			expect(batchArg).toHaveLength(2);
-			expect(batchArg.map((n: any) => n.userId)).toEqual(["user-2", "user-3"]);
+			expect(batchArg.map((n) => n.userId)).toEqual(["user-2", "user-3"]);
 		});
 
 		it("모든 유저가 이미 알림을 받았으면 발송하지 않는다", async () => {
@@ -256,7 +257,9 @@ describe("TodoListener", () => {
 
 		it("TODO_REMINDER 알림을 createAndSend로 생성한다", async () => {
 			// Given
-			notificationService.createAndSend.mockResolvedValue({} as any);
+			notificationService.createAndSend.mockResolvedValue(
+				NotificationBuilder.create("user-1").build(),
+			);
 
 			// When
 			await listener.handleTodoReminder(payload);

@@ -2,6 +2,8 @@
  * Todo 모듈 타입 정의
  */
 
+import type { DayOfWeek } from "@aido/validators";
+
 // 공통 타입 재내보내기
 export type { TransactionClient } from "@/common/database";
 
@@ -18,6 +20,22 @@ export interface CreateTodoData {
 	startDate: Date;
 	endDate?: Date | null;
 	scheduledTime?: Date | null;
+	isAllDay?: boolean;
+	visibility?: "PUBLIC" | "PRIVATE";
+}
+
+/**
+ * 반복 Todo 생성 시 필요한 데이터
+ */
+export interface CreateRecurringTodoData {
+	userId: string;
+	title: string;
+	content?: string | null;
+	categoryId: number;
+	startDate: string;
+	endDate: string;
+	daysOfWeek: DayOfWeek[];
+	scheduledTime?: string | null;
 	isAllDay?: boolean;
 	visibility?: "PUBLIC" | "PRIVATE";
 }
@@ -105,6 +123,7 @@ export interface TodoWithCategory {
 	scheduledTime: Date | null;
 	isAllDay: boolean;
 	visibility: "PUBLIC" | "PRIVATE";
+	recurrenceGroupId: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 	category: {

@@ -54,18 +54,10 @@ describe("NotificationService", () => {
 			.compile();
 
 		service = unit;
-		notificationRepo = unitRef.get(
-			NotificationRepository,
-		) as unknown as Mocked<NotificationRepository>;
-		paginationService = unitRef.get(
-			PaginationService,
-		) as unknown as Mocked<PaginationService>;
-		pushDeliveryService = unitRef.get(
-			PushDeliveryService,
-		) as unknown as Mocked<PushDeliveryService>;
-		lockProvider = unitRef.get(
-			LOCK_PROVIDER,
-		) as unknown as Mocked<ILockProvider>;
+		notificationRepo = unitRef.get(NotificationRepository);
+		paginationService = unitRef.get(PaginationService);
+		pushDeliveryService = unitRef.get(PushDeliveryService);
+		lockProvider = unitRef.get(LOCK_PROVIDER);
 
 		// 기본: Lock 획득 성공 (release 함수 반환)
 		lockProvider.acquire.mockResolvedValue(jest.fn());

@@ -25,6 +25,7 @@ export const todoSchema = z
     ),
     isAllDay: z.boolean().describe('종일 일정 여부'),
     visibility: todoVisibilitySchema.describe('공개 범위 (PUBLIC | FRIENDS | PRIVATE)'),
+    recurrenceGroupId: z.string().nullable().describe('반복 생성 그룹 ID (null이면 단일 생성)'),
     category: todoCategorySummarySchema.describe('카테고리 정보'),
     createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)'),
     updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)'),
@@ -43,6 +44,7 @@ export const todoSchema = z
       scheduledTime: '2024-01-15T09:00:00.000Z',
       isAllDay: false,
       visibility: 'PUBLIC',
+      recurrenceGroupId: null,
       category: {
         id: 1,
         name: '중요한 일',
@@ -219,3 +221,37 @@ export const reorderTodoResponseSchema = z
   });
 
 export type ReorderTodoResponse = z.infer<typeof reorderTodoResponseSchema>;
+
+export const createRecurringTodoResponseSchema = z
+  .object({
+    message: z.string(),
+    todos: z.array(todoSchema),
+    count: z.number().int().describe('생성된 반복 할 일 수'),
+  })
+  .meta({
+    example: {
+      message: '반복 할 일이 13개 생성되었습니다.',
+      todos: [],
+      count: 13,
+    },
+  });
+
+export type CreateRecurringTodoResponse = z.infer<typeof createRecurringTodoResponseSchema>;
+
+export const todoResourceLimitResponseSchema = z
+  .object({
+    maxPerCategory: z.number().int().describe('카테고리당 최대 활성 할 일 수'),
+    activeCount: z
+      .number()
+      .int()
+      .optional()
+      .describe('해당 카테고리의 현재 활성 할 일 개수 (categoryId 지정 시)'),
+  })
+  .meta({
+    example: {
+      maxPerCategory: 300,
+      activeCount: 15,
+    },
+  });
+
+export type TodoResourceLimitResponse = z.infer<typeof todoResourceLimitResponseSchema>;

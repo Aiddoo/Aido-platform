@@ -5,6 +5,7 @@ import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
 import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
+import type { ParseTodoRequestDto } from "./dtos";
 
 describe("AiController", () => {
 	let controller: AiController;
@@ -21,7 +22,7 @@ describe("AiController", () => {
 		const { unit, unitRef } = await TestBed.solitary(AiController).compile();
 
 		controller = unit;
-		mockAiService = unitRef.get(AiService) as unknown as Mocked<AiService>;
+		mockAiService = unitRef.get(AiService);
 	});
 
 	describe("parseTodo", () => {
@@ -47,7 +48,7 @@ describe("AiController", () => {
 			// When: parseTodo를 호출하면
 			const result = await controller.parseTodo(
 				mockUser,
-				dto as any,
+				dto as unknown as ParseTodoRequestDto,
 				"Asia/Seoul",
 			);
 

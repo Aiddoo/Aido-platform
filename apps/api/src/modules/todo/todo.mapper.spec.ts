@@ -71,6 +71,7 @@ describe("TodoMapper", () => {
 				scheduledTime: "2024-01-15T10:00:00.000Z",
 				isAllDay: false,
 				visibility: "PUBLIC",
+				recurrenceGroupId: null,
 				category: {
 					id: 1,
 					name: "중요한 일",

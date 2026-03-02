@@ -3,9 +3,11 @@ import type { Prisma } from "@/generated/prisma/client";
 /**
  * $transaction 콜백 타입
  *
- * Suites mock에서 database.$transaction을 구현할 때 사용
+ * Suites mock에서 database.$transaction을 구현할 때 사용.
+ * any 사용 이유: Prisma.TransactionClient와 MockTransactionClient 간
+ * 함수 파라미터 반공변성(contravariance) 호환을 위해 불가피.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Prisma $transaction mock 호환성
 export type TransactionCallback = (tx: any) => Promise<any>;
 
 /**
@@ -67,6 +69,7 @@ export interface MockTransactionClient {
 	nudge: MockModelDelegate;
 	userPreference: MockModelDelegate;
 	userConsent: MockModelDelegate;
+	subscription: MockModelDelegate;
 }
 
 /**
@@ -96,6 +99,7 @@ export function createMockTxClient(): MockTransactionClient {
 		nudge: createMockModelDelegate(),
 		userPreference: createMockModelDelegate(),
 		userConsent: createMockModelDelegate(),
+		subscription: createMockModelDelegate(),
 	};
 }
 

@@ -14,13 +14,17 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
-import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
+import type {
+	CursorPaginatedResponse,
+	NormalizedCursorPagination,
+} from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
+import type { Prisma } from "@/generated/prisma/client";
 
 import { FollowService } from "../follow/follow.service";
 import {
@@ -31,7 +35,11 @@ import { TodoCategoryService } from "../todo-category/todo-category.service";
 
 import { TodoRepository } from "./todo.repository";
 import { TodoService } from "./todo.service";
-import type { CreateTodoData, TodoWithCategory } from "./types/todo.types";
+import type {
+	CreateRecurringTodoData,
+	CreateTodoData,
+	TodoWithCategory,
+} from "./types/todo.types";
 
 describe("TodoService", () => {
 	let service: TodoService;
@@ -39,7 +47,6 @@ describe("TodoService", () => {
 	let todoCategoryService: Mocked<TodoCategoryService>;
 	let paginationService: Mocked<PaginationService>;
 	let followService: Mocked<FollowService>;
-	let entitlementService: Mocked<EntitlementService>;
 	let _eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
 	let reminderScheduler: Mocked<IReminderScheduler>;
@@ -63,28 +70,13 @@ describe("TodoService", () => {
 			.compile();
 
 		service = unit;
-		todoRepo = unitRef.get(TodoRepository) as unknown as Mocked<TodoRepository>;
-		todoCategoryService = unitRef.get(
-			TodoCategoryService,
-		) as unknown as Mocked<TodoCategoryService>;
-		paginationService = unitRef.get(
-			PaginationService,
-		) as unknown as Mocked<PaginationService>;
-		followService = unitRef.get(
-			FollowService,
-		) as unknown as Mocked<FollowService>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
-		_eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		reminderScheduler = unitRef.get(
-			REMINDER_SCHEDULER,
-		) as unknown as Mocked<IReminderScheduler>;
+		todoRepo = unitRef.get(TodoRepository);
+		todoCategoryService = unitRef.get(TodoCategoryService);
+		paginationService = unitRef.get(PaginationService);
+		followService = unitRef.get(FollowService);
+		_eventEmitter = unitRef.get(EventEmitter2);
+		database = unitRef.get(DatabaseService);
+		reminderScheduler = unitRef.get(REMINDER_SCHEDULER);
 
 		// Given: 기본 transaction mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -109,13 +101,8 @@ describe("TodoService", () => {
 		};
 
 		beforeEach(() => {
-			// Given: 리소스 제한 기본 설정 (무제한)
-			entitlementService.getResourceLimit.mockResolvedValue({
-				maxCount: null,
-				isAdmin: false,
-				subscriptionStatus: "ACTIVE",
-			});
-			todoRepo.countActive.mockResolvedValue(0);
+			// Given: 카테고리당 활성 투두 0개 (제한 미도달)
+			todoRepo.countActiveByCategory.mockResolvedValue(0);
 
 			// Given: 카테고리와 Todo 생성 mock 설정
 			const mockCategory = TodoCategoryBuilder.create(mockUserId)
@@ -248,21 +235,11 @@ describe("TodoService", () => {
 			);
 		});
 
-		describe("리소스 제한", () => {
-			it("Free 유저가 활성 todo 한도에 도달하면 생성이 거부된다", async () => {
-				// Given: Free 유저, 활성 todo가 한도(30)에 도달
-				entitlementService.getResourceLimit.mockResolvedValue({
-					maxCount: TODO_LIMITS.FREE_MAX_ACTIVE,
-					isAdmin: false,
-					subscriptionStatus: "FREE",
-				});
-				todoRepo.countActive.mockResolvedValue(TODO_LIMITS.FREE_MAX_ACTIVE);
-				entitlementService.enforceResourceLimit.mockImplementation(
-					(current, max, factory) => {
-						if (max !== null && current >= max) {
-							throw factory(current, max);
-						}
-					},
+		describe("리소스 제한 (카테고리당)", () => {
+			it("카테고리당 활성 todo가 한도(300)에 도달하면 생성이 거부된다", async () => {
+				// Given: 카테고리의 활성 todo가 한도(300)에 도달
+				todoRepo.countActiveByCategory.mockResolvedValue(
+					TODO_LIMITS.MAX_PER_CATEGORY,
 				);
 
 				// When & Then
@@ -272,14 +249,11 @@ describe("TodoService", () => {
 				expect(todoRepo.create).not.toHaveBeenCalled();
 			});
 
-			it("Free 유저가 활성 todo 한도 미만이면 생성에 성공한다", async () => {
-				// Given: Free 유저, 활성 todo가 한도 미만
-				entitlementService.getResourceLimit.mockResolvedValue({
-					maxCount: TODO_LIMITS.FREE_MAX_ACTIVE,
-					isAdmin: false,
-					subscriptionStatus: "FREE",
-				});
-				todoRepo.countActive.mockResolvedValue(TODO_LIMITS.FREE_MAX_ACTIVE - 1);
+			it("카테고리당 활성 todo가 한도 미만이면 생성에 성공한다", async () => {
+				// Given: 카테고리의 활성 todo가 한도 미만
+				todoRepo.countActiveByCategory.mockResolvedValue(
+					TODO_LIMITS.MAX_PER_CATEGORY - 1,
+				);
 
 				// When
 				const result = await service.create(createInput);
@@ -289,14 +263,9 @@ describe("TodoService", () => {
 				expect(todoRepo.create).toHaveBeenCalled();
 			});
 
-			it("Premium 유저는 제한 없이 생성할 수 있다", async () => {
-				// Given: Premium 유저 (무제한)
-				entitlementService.getResourceLimit.mockResolvedValue({
-					maxCount: null,
-					isAdmin: false,
-					subscriptionStatus: "ACTIVE",
-				});
-				todoRepo.countActive.mockResolvedValue(100);
+			it("구독 유형에 관계없이 동일한 카테고리당 제한이 적용된다", async () => {
+				// Given: 카테고리의 활성 todo가 한도 미만 (구독 무관)
+				todoRepo.countActiveByCategory.mockResolvedValue(100);
 
 				// When
 				const result = await service.create(createInput);
@@ -371,13 +340,15 @@ describe("TodoService", () => {
 				.build(),
 		];
 
-		const mockPaginatedResponse = {
+		const mockPaginatedResponse: CursorPaginatedResponse<
+			TodoWithCategory,
+			number
+		> = {
 			items: mockTodos,
 			pagination: {
 				nextCursor: 3,
-				prevCursor: null,
 				hasNext: false,
-				hasPrevious: false,
+				size: 20,
 			},
 		};
 
@@ -387,10 +358,13 @@ describe("TodoService", () => {
 				cursor: undefined,
 				size: 20,
 				take: 21,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 			todoRepo.findManyByUserId.mockResolvedValue(mockTodos);
 			paginationService.createCursorPaginatedResponse.mockReturnValue(
-				mockPaginatedResponse as any,
+				mockPaginatedResponse as CursorPaginatedResponse<
+					TodoWithCategory,
+					number
+				>,
 			);
 		});
 
@@ -418,7 +392,7 @@ describe("TodoService", () => {
 				cursor: 1,
 				size: 10,
 				take: 11,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 
 			// When: 커서 기반 조회
 			await service.findMany(params);
@@ -762,7 +736,7 @@ describe("TodoService", () => {
 					({
 						...uncompletedTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 0 });
 
@@ -796,7 +770,7 @@ describe("TodoService", () => {
 					({
 						...completedTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 1 });
 
@@ -856,7 +830,7 @@ describe("TodoService", () => {
 					({
 						...uncompletedTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 0 });
 
@@ -883,7 +857,7 @@ describe("TodoService", () => {
 					({
 						...completedTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 미완료로 변경
@@ -907,7 +881,7 @@ describe("TodoService", () => {
 					({
 						...uncompletedTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 1 });
 
@@ -944,7 +918,7 @@ describe("TodoService", () => {
 					({
 						...publicTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: PRIVATE로 변경
@@ -971,7 +945,7 @@ describe("TodoService", () => {
 					({
 						...privateTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: PUBLIC으로 변경
@@ -1025,8 +999,9 @@ describe("TodoService", () => {
 							id: categoryData?.connect?.id ?? 1,
 							name: "할 일",
 							color: "#FF6B43",
+							sortOrder: 0,
 						},
-					} as any;
+					} as TodoWithCategory;
 				},
 			);
 
@@ -1065,6 +1040,72 @@ describe("TodoService", () => {
 				service.updateCategory(999, mockUserId, { categoryId: 1 }),
 			).rejects.toThrow(BusinessException);
 		});
+
+		it("활성 투두 이동 시 대상 카테고리가 꽉 찼으면 에러를 던진다", async () => {
+			// Given: 미완료 Todo, 대상 카테고리가 한도에 도달
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			const newCategory = TodoCategoryBuilder.create(mockUserId)
+				.withId(2)
+				.withName("할 일")
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoCategoryService.validateOwnership.mockResolvedValue(newCategory);
+			todoRepo.countActiveByCategory.mockResolvedValue(
+				TODO_LIMITS.MAX_PER_CATEGORY,
+			);
+
+			// When & Then: BusinessException 발생
+			await expect(
+				service.updateCategory(mockTodo.id, mockUserId, { categoryId: 2 }),
+			).rejects.toThrow(BusinessException);
+			expect(todoRepo.update).not.toHaveBeenCalled();
+		});
+
+		it("완료된 투두 이동 시 대상 카테고리가 꽉 차도 이동할 수 있다", async () => {
+			// Given: 완료된 Todo, 대상 카테고리가 한도에 도달
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.completed()
+				.build();
+			const newCategory = TodoCategoryBuilder.create(mockUserId)
+				.withId(2)
+				.withName("할 일")
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
+			todoCategoryService.validateOwnership.mockResolvedValue(newCategory);
+			todoRepo.countActiveByCategory.mockResolvedValue(
+				TODO_LIMITS.MAX_PER_CATEGORY,
+			);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) => {
+					const categoryData = data.category as
+						| { connect?: { id: number } }
+						| undefined;
+					return {
+						...mockTodo,
+						...data,
+						category: {
+							id: categoryData?.connect?.id ?? 1,
+							name: "할 일",
+							color: "#FF6B43",
+							sortOrder: 0,
+						},
+					} as TodoWithCategory;
+				},
+			);
+
+			// When: 카테고리 변경
+			const result = await service.updateCategory(mockTodo.id, mockUserId, {
+				categoryId: 2,
+			});
+
+			// Then: 완료된 투두는 이동 가능
+			expect(result.category.id).toBe(2);
+			expect(todoRepo.update).toHaveBeenCalled();
+		});
 	});
 
 	// ============================================
@@ -1081,7 +1122,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 일정 변경
@@ -1114,7 +1155,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: endDate와 scheduledTime을 null로 설정
@@ -1147,7 +1188,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: isAllDay를 생략
@@ -1240,7 +1281,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 제목만 변경
@@ -1268,7 +1309,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 내용만 변경
@@ -1296,7 +1337,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 제목과 내용 동시 변경
@@ -1325,7 +1366,7 @@ describe("TodoService", () => {
 					({
 						...mockTodo,
 						...data,
-					}) as any,
+					}) as TodoWithCategory,
 			);
 
 			// When: 내용을 null로 설정
@@ -1417,24 +1458,29 @@ describe("TodoService", () => {
 					.asPublic()
 					.build(),
 			];
-			const mockPaginatedResponse = {
+			const mockPaginatedResponse: CursorPaginatedResponse<
+				TodoWithCategory,
+				number
+			> = {
 				items: mockFriendTodos,
 				pagination: {
 					nextCursor: 11,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
 			};
 			paginationService.normalizeCursorPagination.mockReturnValue({
 				cursor: undefined,
 				size: 20,
 				take: 21,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 			followService.isMutualFriend.mockResolvedValue(true);
 			todoRepo.findPublicTodosByUserId.mockResolvedValue(mockFriendTodos);
 			paginationService.createCursorPaginatedResponse.mockReturnValue(
-				mockPaginatedResponse as any,
+				mockPaginatedResponse as CursorPaginatedResponse<
+					TodoWithCategory,
+					number
+				>,
 			);
 
 			// When: 친구 Todo 조회
@@ -1463,7 +1509,7 @@ describe("TodoService", () => {
 				cursor: undefined,
 				size: 20,
 				take: 21,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 			followService.isMutualFriend.mockResolvedValue(false);
 
 			// When & Then: BusinessException 발생
@@ -1482,18 +1528,17 @@ describe("TodoService", () => {
 				cursor: 5,
 				size: 10,
 				take: 11,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 			followService.isMutualFriend.mockResolvedValue(true);
 			todoRepo.findPublicTodosByUserId.mockResolvedValue(mockFriendTodos);
 			paginationService.createCursorPaginatedResponse.mockReturnValue({
 				items: mockFriendTodos,
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 10,
 				},
-			} as any);
+			} as CursorPaginatedResponse<TodoWithCategory, number>);
 
 			// When: 커서 기반 조회
 			await service.findFriendTodos({
@@ -1520,18 +1565,17 @@ describe("TodoService", () => {
 				cursor: undefined,
 				size: 20,
 				take: 21,
-			} as any);
+			} as NormalizedCursorPagination<number>);
 			followService.isMutualFriend.mockResolvedValue(true);
 			todoRepo.findPublicTodosByUserId.mockResolvedValue(mockFriendTodos);
 			paginationService.createCursorPaginatedResponse.mockReturnValue({
 				items: mockFriendTodos,
 				pagination: {
 					nextCursor: null,
-					prevCursor: null,
 					hasNext: false,
-					hasPrevious: false,
+					size: 20,
 				},
-			} as any);
+			} as CursorPaginatedResponse<TodoWithCategory, number>);
 
 			// When: 날짜 범위로 필터링
 			await service.findFriendTodos({
@@ -1563,6 +1607,267 @@ describe("TodoService", () => {
 			).rejects.toThrow(BusinessException);
 			expect(followService.isMutualFriend).not.toHaveBeenCalled();
 			expect(todoRepo.findPublicTodosByUserId).not.toHaveBeenCalled();
+		});
+	});
+
+	// ============================================
+	// createRecurring
+	// ============================================
+
+	describe("createRecurring", () => {
+		const recurringInput: CreateRecurringTodoData = {
+			userId: mockUserId,
+			title: "약 먹기",
+			content: "매일 비타민 복용",
+			categoryId: 1,
+			startDate: "2026-03-01",
+			endDate: "2026-03-31",
+			daysOfWeek: ["MON", "WED", "FRI"],
+		};
+
+		const mockCategory = TodoCategoryBuilder.create(mockUserId)
+			.withId(1)
+			.withName("건강")
+			.withColor("#4CAF50")
+			.build();
+
+		beforeEach(() => {
+			// Given: 카테고리당 활성 투두 0개 (제한 미도달)
+			todoRepo.countActiveByCategory.mockResolvedValue(0);
+
+			// Given: 카테고리 소유권 확인 통과
+			todoCategoryService.validateOwnership.mockResolvedValue(mockCategory);
+
+			// Given: sortOrder 기본값
+			todoRepo.getMaxSortOrder.mockResolvedValue(0);
+
+			// Given: createManyInTransaction mock
+			todoRepo.createManyInTransaction.mockImplementation(
+				async (dataArray: Prisma.TodoCreateInput[]) =>
+					dataArray.map((data, index) =>
+						TodoBuilder.create(mockUserId)
+							.withId(index + 1)
+							.withTitle(data.title)
+							.withSortOrder(data.sortOrder ?? 0)
+							.withRecurrenceGroupId("test-uuid")
+							.build(),
+					),
+			);
+		});
+
+		it("날짜 범위와 요일에 맞는 Todo들을 일괄 생성한다", async () => {
+			// Given: 3/1~3/31 월수금 (2026년 3월)
+
+			// When: 반복 Todo 생성
+			const result = await service.createRecurring(recurringInput);
+
+			// Then: 월수금에 해당하는 날짜만큼 Todo가 생성됨 (13개)
+			expect(result.count).toBe(13);
+			expect(result.todos).toHaveLength(13);
+
+			// Then: 올바른 데이터로 createManyInTransaction이 호출됨
+			const createInputs = todoRepo.createManyInTransaction.mock
+				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			expect(createInputs).toHaveLength(13);
+			expect(createInputs[0]).toEqual(
+				expect.objectContaining({
+					title: "약 먹기",
+					user: { connect: { id: mockUserId } },
+					category: { connect: { id: 1 } },
+					content: "매일 비타민 복용",
+					visibility: "PUBLIC",
+					isAllDay: true,
+				}),
+			);
+		});
+
+		it("각 Todo에 순차적 sortOrder를 할당한다", async () => {
+			// Given: 기존 maxSortOrder가 5
+			todoRepo.getMaxSortOrder.mockResolvedValue(5);
+
+			// When: 반복 Todo 생성
+			await service.createRecurring(recurringInput);
+
+			// Then: sortOrder가 6부터 순차적으로 할당됨
+			const createInputs = todoRepo.createManyInTransaction.mock
+				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			expect(createInputs[0]?.sortOrder).toBe(6);
+			expect(createInputs[1]?.sortOrder).toBe(7);
+			expect(createInputs[createInputs.length - 1]?.sortOrder).toBe(
+				5 + createInputs.length,
+			);
+		});
+
+		it("동일한 recurrenceGroupId를 부여한다", async () => {
+			// Given: beforeEach에서 설정됨
+
+			// When: 반복 Todo 생성
+			await service.createRecurring(recurringInput);
+
+			// Then: 모든 Todo에 동일한 recurrenceGroupId가 할당됨
+			const createInputs = todoRepo.createManyInTransaction.mock
+				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			const groupId = createInputs[0]?.recurrenceGroupId;
+			expect(groupId).toBeDefined();
+			expect(typeof groupId).toBe("string");
+			for (const input of createInputs) {
+				expect(input.recurrenceGroupId).toBe(groupId);
+			}
+		});
+
+		it("scheduledTime 제공 시 각 날짜별로 생성 데이터에 포함된다", async () => {
+			// Given: scheduledTime이 있는 입력
+			const inputWithTime: CreateRecurringTodoData = {
+				...recurringInput,
+				scheduledTime: "09:00",
+				isAllDay: false,
+			};
+
+			// When: 반복 Todo 생성
+			await service.createRecurring(inputWithTime, "Asia/Seoul");
+
+			// Then: 각 Todo에 scheduledTime이 설정됨
+			const createInputs = todoRepo.createManyInTransaction.mock
+				.calls[0]?.[0] as Prisma.TodoCreateInput[];
+			for (const input of createInputs) {
+				expect(input.scheduledTime).toBeInstanceOf(Date);
+				expect(input.isAllDay).toBe(false);
+			}
+		});
+
+		it("scheduledTime이 있는 Todo에 대해 리마인더 스케줄링을 호출한다", async () => {
+			// Given: scheduledTime이 있는 Todo가 생성됨
+			const scheduledTime = new Date("2026-03-02T00:00:00Z");
+			todoRepo.createManyInTransaction.mockResolvedValue(
+				Array.from({ length: 3 }, (_, i) =>
+					TodoBuilder.create(mockUserId)
+						.withId(i + 1)
+						.withTitle("약 먹기")
+						.withScheduledTime(scheduledTime)
+						.withRecurrenceGroupId("test-uuid")
+						.build(),
+				),
+			);
+
+			const inputWithTime: CreateRecurringTodoData = {
+				...recurringInput,
+				startDate: "2026-03-02",
+				endDate: "2026-03-06",
+				daysOfWeek: ["MON", "WED", "FRI"],
+				scheduledTime: "09:00",
+			};
+
+			// When: 반복 Todo 생성
+			await service.createRecurring(inputWithTime, "Asia/Seoul");
+
+			// Then: 각 Todo에 대해 리마인더 스케줄링이 호출됨
+			expect(reminderScheduler.scheduleReminder).toHaveBeenCalledTimes(3);
+		});
+
+		it("매칭 날짜가 0개이면 invalidParameter 에러를 던진다", async () => {
+			// Given: 기간 내 해당 요일이 없는 입력 (3/1~3/2는 일/월)
+			const noMatchInput: CreateRecurringTodoData = {
+				...recurringInput,
+				startDate: "2026-03-01",
+				endDate: "2026-03-01",
+				daysOfWeek: ["TUE"], // 3/1은 일요일
+			};
+
+			// When & Then: BusinessException 발생
+			await expect(service.createRecurring(noMatchInput)).rejects.toThrow(
+				BusinessException,
+			);
+			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+		});
+
+		it("인스턴스가 100개를 초과하면 TODO_0812 에러를 던진다", async () => {
+			// Given: 넓은 범위와 매일 반복으로 100개 초과
+			const tooManyInput: CreateRecurringTodoData = {
+				...recurringInput,
+				startDate: "2026-01-01",
+				endDate: "2026-12-31",
+				daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+			};
+
+			// When & Then: BusinessException 발생
+			await expect(service.createRecurring(tooManyInput)).rejects.toThrow(
+				BusinessException,
+			);
+			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+		});
+
+		it("카테고리 활성 투두 + batchSize가 카테고리 한도를 초과하면 TODO_0813 에러를 던진다", async () => {
+			// Given: 카테고리에 활성 todo가 295개 (295+13 > 300)
+			todoRepo.countActiveByCategory.mockResolvedValue(295);
+
+			// When & Then: BusinessException 발생
+			await expect(service.createRecurring(recurringInput)).rejects.toThrow(
+				BusinessException,
+			);
+			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+		});
+
+		it("카테고리 한도 내이면 리소스 체크를 통과한다", async () => {
+			// Given: 카테고리에 활성 todo가 100개 (100+13 <= 300)
+			todoRepo.countActiveByCategory.mockResolvedValue(100);
+
+			// When: 반복 Todo 생성
+			const result = await service.createRecurring(recurringInput);
+
+			// Then: 정상 생성됨
+			expect(result.count).toBe(13);
+			expect(todoRepo.createManyInTransaction).toHaveBeenCalled();
+		});
+
+		it("카테고리 소유권 실패 시 예외가 전파된다", async () => {
+			// Given: 카테고리 소유권 확인 실패
+			todoCategoryService.validateOwnership.mockRejectedValue(
+				BusinessExceptions.todoCategoryNotFound(999),
+			);
+
+			const inputWithBadCategory: CreateRecurringTodoData = {
+				...recurringInput,
+				categoryId: 999,
+			};
+
+			// When & Then: BusinessException 발생
+			await expect(
+				service.createRecurring(inputWithBadCategory),
+			).rejects.toThrow(BusinessException);
+			expect(todoRepo.createManyInTransaction).not.toHaveBeenCalled();
+		});
+
+		it("리마인더 스케줄링 실패해도 생성 결과는 정상 반환된다", async () => {
+			// Given: 리마인더 스케줄링이 실패하도록 설정
+			const scheduledTime = new Date("2026-03-02T00:00:00Z");
+			todoRepo.createManyInTransaction.mockResolvedValue(
+				Array.from({ length: 2 }, (_, i) =>
+					TodoBuilder.create(mockUserId)
+						.withId(i + 1)
+						.withTitle("약 먹기")
+						.withScheduledTime(scheduledTime)
+						.withRecurrenceGroupId("test-uuid")
+						.build(),
+				),
+			);
+			reminderScheduler.scheduleReminder.mockImplementation(() => {
+				throw new Error("Scheduler error");
+			});
+
+			const inputWithTime: CreateRecurringTodoData = {
+				...recurringInput,
+				startDate: "2026-03-02",
+				endDate: "2026-03-04",
+				daysOfWeek: ["MON", "WED"],
+				scheduledTime: "09:00",
+			};
+
+			// When: 반복 Todo 생성
+			const result = await service.createRecurring(inputWithTime, "Asia/Seoul");
+
+			// Then: 생성 결과는 정상 반환 (리마인더 실패는 무시)
+			expect(result.count).toBe(2);
+			expect(result.todos).toHaveLength(2);
 		});
 	});
 });

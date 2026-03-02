@@ -32,6 +32,8 @@ import { UserIdParamDto } from "../follow/dtos";
 
 import {
 	ChangeTodoCategoryDto,
+	CreateRecurringTodoDto,
+	CreateRecurringTodoResponseDto,
 	CreateTodoDto,
 	CreateTodoResponseDto,
 	DeleteTodoResponseDto,
@@ -40,6 +42,8 @@ import {
 	ReorderTodoResponseDto,
 	TodoIdParamDto,
 	TodoListResponseDto,
+	TodoResourceLimitQueryDto,
+	TodoResourceLimitResponseDto,
 	TodoResponseDto,
 	ToggleTodoCompleteDto,
 	UpdateTodoContentDto,
@@ -76,23 +80,25 @@ export class TodoController {
 	// ============================================
 
 	/**
-	 * GET /todos/resource-limit - 활성 할 일 리소스 제한 정보
+	 * GET /todos/resource-limit - 카테고리당 활성 할 일 리소스 제한 정보
 	 */
 	@Get("resource-limit")
 	@ApiDoc({
-		summary: "활성 할 일 리소스 제한 정보 조회",
+		summary: "카테고리당 활성 할 일 리소스 제한 정보 조회",
 		operationId: "getTodoResourceLimit",
-		description: `현재 활성(미완료) 할 일 개수와 최대 한도를 조회합니다.
+		description: `카테고리당 활성(미완료) 할 일 최대 한도를 조회합니다.
+categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수도 함께 반환합니다.
 
 **응답 필드**
-- \`activeCount\`: 현재 활성 할 일 개수
-- \`maxCount\`: 최대 한도 (null이면 무제한)`,
+- \`maxPerCategory\`: 카테고리당 최대 활성 할 일 수 (모든 구독 동일, ADMIN은 무제한)
+- \`activeCount\`: 해당 카테고리의 현재 활성 할 일 개수 (categoryId 지정 시)`,
 	})
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
-	): Promise<{ activeCount: number; maxCount: number | null }> {
-		return this.todoService.getResourceLimitInfo(user.userId);
+		@Query() query: TodoResourceLimitQueryDto,
+	): Promise<TodoResourceLimitResponseDto> {
+		return this.todoService.getResourceLimitInfo(user.userId, query.categoryId);
 	}
 
 	// ============================================
@@ -159,6 +165,78 @@ export class TodoController {
 		return {
 			message: "할 일이 생성되었습니다.",
 			todo,
+		};
+	}
+
+	/**
+	 * POST /todos/recurring - 반복 할 일 생성
+	 *
+	 * 날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
+	 */
+	@Post("recurring")
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
+	@ApiDoc({
+		summary: "반복 할 일 생성",
+		operationId: "createRecurringTodo",
+		description: `날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
+
+**필수 필드**
+- \`title\`: 할 일 제목 (1-200자)
+- \`categoryId\`: 카테고리 ID
+- \`startDate\`: 반복 시작 날짜 (YYYY-MM-DD)
+- \`endDate\`: 반복 종료 날짜 (YYYY-MM-DD)
+- \`daysOfWeek\`: 반복할 요일 배열 (MON/TUE/WED/THU/FRI/SAT/SUN)
+
+**예시**: 3월 1일~31일, 매주 월/수/금 → 약 13개의 독립 할 일 생성
+
+**제한사항**
+- 한 번에 최대 100개까지 생성 가능
+- 활성(미완료) 할 일 한도를 초과하면 전체 요청 거부`,
+	})
+	@ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
+	@ApiUnauthorizedError()
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	@ApiBadRequestError(ErrorCode.TODO_0812)
+	@ApiForbiddenError(ErrorCode.TODO_0813)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+	async createRecurring(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: CreateRecurringTodoDto,
+		@Timezone() tz: string,
+	): Promise<CreateRecurringTodoResponseDto> {
+		this.#logger.debug(
+			`반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
+		);
+
+		const result = await this.todoService.createRecurring(
+			{
+				userId: user.userId,
+				title: dto.title,
+				content: dto.content,
+				categoryId: dto.categoryId,
+				startDate: dto.startDate,
+				endDate: dto.endDate,
+				daysOfWeek: dto.daysOfWeek,
+				scheduledTime: dto.scheduledTime,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+			},
+			tz,
+		);
+
+		this.#logger.log(
+			`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`,
+		);
+
+		return {
+			message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
+			todos: result.todos,
+			count: result.count,
 		};
 	}
 

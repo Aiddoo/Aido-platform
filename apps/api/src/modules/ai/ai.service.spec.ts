@@ -37,12 +37,8 @@ describe("AiService", () => {
 			.compile();
 
 		service = unit;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
+		database = unitRef.get(DatabaseService);
+		entitlementService = unitRef.get(EntitlementService);
 
 		// $transaction passthrough
 		(database.$transaction as jest.Mock).mockImplementation(

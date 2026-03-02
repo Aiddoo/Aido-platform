@@ -1,8 +1,10 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { PushTokenBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
+import { RegisterPushTokenDto } from "./dtos/request/register-token.dto";
 import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 import { PushDeliveryService } from "./push-delivery.service";
@@ -25,12 +27,8 @@ describe("NotificationController", () => {
 		).compile();
 
 		controller = unit;
-		mockNotificationService = unitRef.get(
-			NotificationService,
-		) as unknown as Mocked<NotificationService>;
-		mockPushDeliveryService = unitRef.get(
-			PushDeliveryService,
-		) as unknown as Mocked<PushDeliveryService>;
+		mockNotificationService = unitRef.get(NotificationService);
+		mockPushDeliveryService = unitRef.get(PushDeliveryService);
 	});
 
 	describe("getUnreadCount", () => {
@@ -69,11 +67,15 @@ describe("NotificationController", () => {
 			};
 			const tz = "Asia/Seoul";
 			mockPushDeliveryService.registerPushToken.mockResolvedValue(
-				undefined as any,
+				PushTokenBuilder.create(mockUser.userId).withToken(dto.token).build(),
 			);
 
 			// When: registerToken을 호출하면
-			const result = await controller.registerToken(mockUser, dto as any, tz);
+			const result = await controller.registerToken(
+				mockUser,
+				dto as unknown as RegisterPushTokenDto,
+				tz,
+			);
 
 			// Then: 서비스에 올바른 파라미터를 전달하고 성공 응답을 반환해야 한다
 			expect(mockPushDeliveryService.registerPushToken).toHaveBeenCalledWith({

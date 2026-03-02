@@ -1,12 +1,16 @@
-import type { Todo } from "@aido/validators";
+import { randomUUID } from "node:crypto";
+import {
+	DAY_OF_WEEK_MAP,
+	type DayOfWeek,
+	RECURRING_TODO_LIMITS,
+	TODO_LIMITS,
+	type Todo,
+} from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import dayjs from "dayjs";
 import type { TransactionClient } from "@/common/database";
 import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
-import {
-	EntitlementService,
-	Resource,
-} from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -26,6 +30,7 @@ import { TodoCategoryService } from "../todo-category/todo-category.service";
 import { TodoMapper } from "./todo.mapper";
 import { TodoRepository } from "./todo.repository";
 import type {
+	CreateRecurringTodoData,
 	CreateTodoData,
 	FindFriendTodosParams,
 	FindTodosParams,
@@ -43,7 +48,6 @@ export class TodoService {
 		private readonly todoCategoryService: TodoCategoryService,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
-		private readonly entitlementService: EntitlementService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
 		@Inject(REMINDER_SCHEDULER)
@@ -72,25 +76,23 @@ export class TodoService {
 	 * Todo 생성
 	 */
 	async create(data: CreateTodoData): Promise<Todo> {
-		// 리소스 제한 체크
-		const [entitlement, activeCount] = await Promise.all([
-			this.entitlementService.getResourceLimit(
-				data.userId,
-				Resource.TODO_ACTIVE,
-			),
-			this.todoRepository.countActive(data.userId),
-		]);
-		this.entitlementService.enforceResourceLimit(
-			activeCount,
-			entitlement.maxCount,
-			BusinessExceptions.todoActiveLimitExceeded,
-		);
-
 		// 카테고리 존재 및 소유권 확인
 		await this.todoCategoryService.validateOwnership(
 			data.categoryId,
 			data.userId,
 		);
+
+		// 카테고리당 활성 투두 제한 체크
+		const activeInCategory = await this.todoRepository.countActiveByCategory(
+			data.userId,
+			data.categoryId,
+		);
+		if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
+			throw BusinessExceptions.todoCategoryFull(
+				activeInCategory,
+				TODO_LIMITS.MAX_PER_CATEGORY,
+			);
+		}
 
 		// 새 Todo의 sortOrder 결정 (맨 뒤에 추가)
 		const maxSortOrder = await this.todoRepository.getMaxSortOrder(data.userId);
@@ -131,16 +133,20 @@ export class TodoService {
 	}
 
 	/**
-	 * 활성 Todo 리소스 제한 정보 조회
+	 * 카테고리당 활성 Todo 리소스 제한 정보 조회
 	 */
 	async getResourceLimitInfo(
 		userId: string,
-	): Promise<{ activeCount: number; maxCount: number | null }> {
-		const [entitlement, activeCount] = await Promise.all([
-			this.entitlementService.getResourceLimit(userId, Resource.TODO_ACTIVE),
-			this.todoRepository.countActive(userId),
-		]);
-		return { activeCount, maxCount: entitlement.maxCount };
+		categoryId?: number,
+	): Promise<{ activeCount?: number; maxPerCategory: number }> {
+		if (categoryId) {
+			const activeCount = await this.todoRepository.countActiveByCategory(
+				userId,
+				categoryId,
+			);
+			return { activeCount, maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY };
+		}
+		return { maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY };
 	}
 
 	/**
@@ -440,6 +446,20 @@ export class TodoService {
 		// 새 카테고리 소유권 확인
 		await this.todoCategoryService.validateOwnership(data.categoryId, userId);
 
+		// 활성 투두 이동 시 대상 카테고리 한도 체크
+		if (!todo.completed) {
+			const activeInTarget = await this.todoRepository.countActiveByCategory(
+				userId,
+				data.categoryId,
+			);
+			if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
+				throw BusinessExceptions.todoCategoryFull(
+					activeInTarget,
+					TODO_LIMITS.MAX_PER_CATEGORY,
+				);
+			}
+		}
+
 		const updatedTodo = await this.todoRepository.update(id, {
 			category: { connect: { id: data.categoryId } },
 		});
@@ -652,5 +672,142 @@ export class TodoService {
 			tx,
 		);
 		return maxSortOrder;
+	}
+
+	// ===== 반복 Todo 생성 =====
+
+	/**
+	 * 반복 Todo 생성
+	 *
+	 * 날짜 범위와 요일 조합에 따라 여러 개의 독립적인 Todo를 일괄 생성합니다.
+	 * 각 Todo는 해당 날짜에 대한 독립적인 완료 상태를 가집니다.
+	 */
+	async createRecurring(
+		data: CreateRecurringTodoData,
+		tz: string = "UTC",
+	): Promise<{ todos: Todo[]; count: number }> {
+		// 1. 날짜 확장 (요일 매칭)
+		const matchingDates = this.#expandRecurringDates(
+			data.startDate,
+			data.endDate,
+			data.daysOfWeek,
+		);
+		const todoCount = matchingDates.length;
+
+		// 2. 인스턴스 수 검증
+		if (todoCount === 0) {
+			throw BusinessExceptions.invalidParameter({
+				message: "선택한 기간과 요일에 해당하는 날짜가 없습니다",
+				startDate: data.startDate,
+				endDate: data.endDate,
+				daysOfWeek: data.daysOfWeek,
+			});
+		}
+
+		if (todoCount > RECURRING_TODO_LIMITS.MAX_INSTANCES) {
+			throw BusinessExceptions.recurringTodoInstanceLimitExceeded(
+				todoCount,
+				RECURRING_TODO_LIMITS.MAX_INSTANCES,
+			);
+		}
+
+		// 3. 카테고리 소유권 확인
+		await this.todoCategoryService.validateOwnership(
+			data.categoryId,
+			data.userId,
+		);
+
+		// 4. 카테고리당 활성 투두 제한 체크 (activeInCategory + todoCount <= MAX_PER_CATEGORY)
+		const activeInCategory = await this.todoRepository.countActiveByCategory(
+			data.userId,
+			data.categoryId,
+		);
+
+		if (activeInCategory + todoCount > TODO_LIMITS.MAX_PER_CATEGORY) {
+			throw BusinessExceptions.recurringTodoWouldExceedCategoryLimit(
+				activeInCategory,
+				todoCount,
+				TODO_LIMITS.MAX_PER_CATEGORY,
+			);
+		}
+
+		// 5. 트랜잭션 내에서 일괄 생성
+		const recurrenceGroupId = randomUUID();
+
+		const todos = await this.database.$transaction(async (tx) => {
+			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
+				data.userId,
+				tx,
+			);
+
+			const createInputs = matchingDates.map((dateStr, index) => ({
+				user: { connect: { id: data.userId } },
+				category: { connect: { id: data.categoryId } },
+				title: data.title,
+				content: data.content,
+				sortOrder: maxSortOrder + 1 + index,
+				startDate: toDateOnly(dateStr),
+				endDate: undefined,
+				scheduledTime: data.scheduledTime
+					? toScheduledTime(dateStr, data.scheduledTime, tz)
+					: null,
+				isAllDay: data.isAllDay ?? true,
+				visibility: data.visibility ?? "PUBLIC",
+				recurrenceGroupId,
+			}));
+
+			return this.todoRepository.createManyInTransaction(createInputs, tx);
+		});
+
+		this.#logger.log(
+			`Recurring todos created: ${todoCount} items, group: ${recurrenceGroupId}, user: ${data.userId}`,
+		);
+
+		// 6. 리마인더 스케줄링 (트랜잭션 외부)
+		for (const todo of todos) {
+			if (todo.scheduledTime) {
+				try {
+					this.reminderScheduler.scheduleReminder(
+						todo.id,
+						todo.scheduledTime,
+						data.userId,
+						todo.title,
+					);
+				} catch (error) {
+					this.#logger.error(
+						`Failed to schedule reminder for recurring todo ${todo.id}: ${error}`,
+						error instanceof Error ? error.stack : undefined,
+					);
+				}
+			}
+		}
+
+		return {
+			todos: TodoMapper.toManyResponse(todos),
+			count: todoCount,
+		};
+	}
+
+	/**
+	 * 날짜 범위와 요일 목록으로 매칭되는 날짜 배열을 생성합니다.
+	 */
+	#expandRecurringDates(
+		startDate: string,
+		endDate: string,
+		daysOfWeek: DayOfWeek[],
+	): string[] {
+		const targetDays = new Set(daysOfWeek.map((d) => DAY_OF_WEEK_MAP[d]));
+		const dates: string[] = [];
+		let current = dayjs.utc(startDate);
+		const end = dayjs.utc(endDate);
+
+		while (current.isBefore(end) || current.isSame(end, "day")) {
+			if (targetDays.has(current.day())) {
+				dates.push(current.format("YYYY-MM-DD"));
+			}
+			current = current.add(1, "day");
+		}
+
+		return dates;
 	}
 }

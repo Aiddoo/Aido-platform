@@ -35,7 +35,7 @@ describe("TodoRepository", () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
+		db = unitRef.get(DatabaseService);
 	});
 
 	// ==========================================================================

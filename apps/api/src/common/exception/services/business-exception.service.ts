@@ -585,8 +585,11 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.TODO_CATEGORY_0856);
 	}
 
-	static todoActiveLimitExceeded(current: number, limit: number) {
-		return new BusinessException(ErrorCode.TODO_0811, { current, limit });
+	static todoCategoryFull(activeCount: number, maxPerCategory: number) {
+		return new BusinessException(ErrorCode.TODO_0811, {
+			activeCount,
+			maxPerCategory,
+		});
 	}
 
 	static todoCategoryLimitExceeded(current: number, limit: number) {
@@ -598,6 +601,22 @@ export class BusinessExceptions {
 
 	static todoReorderTargetNotFound(targetTodoId: number) {
 		return new BusinessException(ErrorCode.TODO_0810, { targetTodoId });
+	}
+
+	static recurringTodoInstanceLimitExceeded(count: number, limit: number) {
+		return new BusinessException(ErrorCode.TODO_0812, { count, limit });
+	}
+
+	static recurringTodoWouldExceedCategoryLimit(
+		activeInCategory: number,
+		batchSize: number,
+		maxPerCategory: number,
+	) {
+		return new BusinessException(ErrorCode.TODO_0813, {
+			activeInCategory,
+			batchSize,
+			maxPerCategory,
+		});
 	}
 
 	// =========================================================================

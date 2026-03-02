@@ -1342,6 +1342,168 @@ describe("Todo (e2e)", () => {
 		});
 	});
 
+	describe("POST /todos/recurring - 반복 할 일 생성", () => {
+		const recurringEmail = "recurring-test@example.com";
+		const testPassword = "Test1234!";
+		let accessToken: string;
+		let categoryId: number;
+
+		beforeAll(async () => {
+			const user = await ctx.helpers.createVerifiedUser(
+				recurringEmail,
+				testPassword,
+			);
+			accessToken = user.accessToken;
+			categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+		});
+
+		it("필수 필드로 반복 할 일 생성 (201)", async () => {
+			// Given - 인증된 사용자와 기본 카테고리
+
+			// When - 반복 할 일 생성 API 호출 (2026-03-02~2026-03-08, 월수금)
+			const response = await request(ctx.app.getHttpServer())
+				.post("/todos/recurring")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "반복 할 일 테스트",
+					categoryId,
+					startDate: "2026-03-02",
+					endDate: "2026-03-08",
+					daysOfWeek: ["MON", "WED", "FRI"],
+				})
+				.expect(201);
+
+			// Then - 반복 할 일 생성 성공 검증
+			expect(response.body.data.count).toBe(3); // 월(3/2), 수(3/4), 금(3/6)
+			expect(response.body.data.todos).toHaveLength(3);
+			expect(response.body.data.message).toContain("3개");
+
+			// 각 Todo가 올바른 필드를 갖고 있는지 검증
+			for (const todo of response.body.data.todos) {
+				expect(todo.title).toBe("반복 할 일 테스트");
+				expect(todo.completed).toBe(false);
+				expect(todo.recurrenceGroupId).toBeTruthy();
+				expect(todo.category.id).toBe(categoryId);
+			}
+
+			// 모두 같은 recurrenceGroupId
+			const groupIds = new Set(
+				response.body.data.todos.map((t: Todo) => t.recurrenceGroupId),
+			);
+			expect(groupIds.size).toBe(1);
+		});
+
+		it("생성된 반복 할 일이 GET /todos로 조회된다", async () => {
+			// Given - 이전 테스트에서 생성된 반복 할 일 (3/2, 3/4, 3/6)
+
+			// When - 해당 기간 할 일 목록 조회
+			const response = await request(ctx.app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2026-03-02", endDate: "2026-03-08" })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			// Then - 반복 할 일이 조회됨
+			const recurringTodos = response.body.data.items.filter(
+				(t: Todo) => t.recurrenceGroupId !== null,
+			);
+			expect(recurringTodos.length).toBe(3);
+		});
+
+		it("각 반복 할 일이 독립적으로 완료 처리된다", async () => {
+			// Given - 반복 할 일 조회
+			const listResponse = await request(ctx.app.getHttpServer())
+				.get("/todos")
+				.query({ startDate: "2026-03-02", endDate: "2026-03-08" })
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+
+			const recurringTodos = listResponse.body.data.items.filter(
+				(t: Todo) => t.recurrenceGroupId !== null,
+			);
+			const firstTodoId = recurringTodos[0].id;
+			const secondTodoId = recurringTodos[1].id;
+
+			// When - 첫 번째만 완료 처리
+			await request(ctx.app.getHttpServer())
+				.patch(`/todos/${firstTodoId}/complete`)
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({ completed: true })
+				.expect(200);
+
+			// Then - 첫 번째만 완료, 나머지는 미완료
+			const firstTodo = await request(ctx.app.getHttpServer())
+				.get(`/todos/${firstTodoId}`)
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+			expect(firstTodo.body.data.todo.completed).toBe(true);
+
+			const secondTodo = await request(ctx.app.getHttpServer())
+				.get(`/todos/${secondTodoId}`)
+				.set("Authorization", `Bearer ${accessToken}`)
+				.expect(200);
+			expect(secondTodo.body.data.todo.completed).toBe(false);
+		});
+
+		it("잘못된 요일 값은 400 에러", async () => {
+			// Given - 잘못된 요일 값
+
+			// When - 잘못된 요일로 반복 할 일 생성
+			const response = await request(ctx.app.getHttpServer())
+				.post("/todos/recurring")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "잘못된 요일",
+					categoryId,
+					startDate: "2026-03-01",
+					endDate: "2026-03-31",
+					daysOfWeek: ["INVALID"],
+				})
+				.expect(400);
+
+			// Then - 400 Bad Request 검증
+			expect(response.body.success).toBe(false);
+		});
+
+		it("startDate > endDate이면 400 에러", async () => {
+			// Given - startDate가 endDate보다 늦음
+
+			// When - 잘못된 날짜 범위로 반복 할 일 생성
+			const response = await request(ctx.app.getHttpServer())
+				.post("/todos/recurring")
+				.set("Authorization", `Bearer ${accessToken}`)
+				.send({
+					title: "잘못된 범위",
+					categoryId,
+					startDate: "2026-03-31",
+					endDate: "2026-03-01",
+					daysOfWeek: ["MON"],
+				})
+				.expect(400);
+
+			// Then - 400 Bad Request 검증
+			expect(response.body.success).toBe(false);
+		});
+
+		it("인증 없이 요청 시 401 에러", async () => {
+			// Given - 인증 토큰 없음
+
+			// When - 인증 없이 반복 할 일 생성
+			await request(ctx.app.getHttpServer())
+				.post("/todos/recurring")
+				.send({
+					title: "인증 없음",
+					categoryId: 1,
+					startDate: "2026-03-01",
+					endDate: "2026-03-31",
+					daysOfWeek: ["MON"],
+				})
+				.expect(401);
+
+			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+		});
+	});
+
 	describe("카테고리 순서 기반 정렬 테스트", () => {
 		const sortEmail = "sort-test@example.com";
 		const testPassword = "Test1234!";
