@@ -15,7 +15,6 @@ import {
 	FOLLOW_LIMITS,
 	NUDGE_LIMITS,
 	TODO_CATEGORY_LIMITS,
-	TODO_LIMITS,
 } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -50,10 +49,8 @@ describe("EntitlementService", () => {
 			await TestBed.solitary(EntitlementService).compile();
 
 		service = unit;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
+		cacheService = unitRef.get(CacheService);
+		database = unitRef.get(DatabaseService);
 	});
 
 	// =========================================================================
@@ -403,7 +400,6 @@ describe("EntitlementService", () => {
 	describe("getResourceLimit", () => {
 		describe("ADMIN 역할", () => {
 			it.each([
-				["TODO_ACTIVE", Resource.TODO_ACTIVE],
 				["CATEGORY", Resource.CATEGORY],
 				["FRIEND", Resource.FRIEND],
 			] as const)("ADMIN은 %s 리소스가 무제한이다", async (_name, resource) => {
@@ -425,12 +421,8 @@ describe("EntitlementService", () => {
 			});
 		});
 
-		describe("ACTIVE 구독 (무제한)", () => {
-			it.each([
-				["TODO_ACTIVE", Resource.TODO_ACTIVE],
-				["CATEGORY", Resource.CATEGORY],
-				["FRIEND", Resource.FRIEND],
-			] as const)("ACTIVE 구독 + %s 리소스는 무제한이다", async (_name, resource) => {
+		describe("ACTIVE 구독", () => {
+			it("ACTIVE 구독 + FRIEND 리소스는 무제한이다", async () => {
 				// Given
 				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
 					status: "ACTIVE",
@@ -438,11 +430,32 @@ describe("EntitlementService", () => {
 				});
 
 				// When
-				const result = await service.getResourceLimit(userId, resource);
+				const result = await service.getResourceLimit(userId, Resource.FRIEND);
 
 				// Then
 				expect(result).toEqual<ResourceEntitlement>({
 					maxCount: null,
+					isAdmin: false,
+					subscriptionStatus: "ACTIVE",
+				});
+			});
+
+			it("ACTIVE 구독 + CATEGORY 리소스는 30개 제한이다", async () => {
+				// Given
+				(cacheService.wrapSubscription as jest.Mock).mockResolvedValue({
+					status: "ACTIVE",
+					isAdmin: false,
+				});
+
+				// When
+				const result = await service.getResourceLimit(
+					userId,
+					Resource.CATEGORY,
+				);
+
+				// Then
+				expect(result).toEqual<ResourceEntitlement>({
+					maxCount: TODO_CATEGORY_LIMITS.ACTIVE_MAX_COUNT,
 					isAdmin: false,
 					subscriptionStatus: "ACTIVE",
 				});
@@ -453,23 +466,11 @@ describe("EntitlementService", () => {
 			it.each([
 				[
 					"FREE",
-					"TODO_ACTIVE",
-					Resource.TODO_ACTIVE,
-					TODO_LIMITS.FREE_MAX_ACTIVE,
-				],
-				[
-					"FREE",
 					"CATEGORY",
 					Resource.CATEGORY,
 					TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
 				],
 				["FREE", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
-				[
-					"EXPIRED",
-					"TODO_ACTIVE",
-					Resource.TODO_ACTIVE,
-					TODO_LIMITS.FREE_MAX_ACTIVE,
-				],
 				[
 					"CANCELLED",
 					"FRIEND",
@@ -578,7 +579,7 @@ describe("EntitlementService", () => {
 
 	describe("enforceResourceLimit", () => {
 		const errorFactory = (current: number, limit: number) =>
-			BusinessExceptions.todoActiveLimitExceeded(current, limit);
+			BusinessExceptions.todoCategoryFull(current, limit);
 
 		it("maxCount가 null이면 예외를 발생시키지 않는다 (무제한)", () => {
 			// When & Then

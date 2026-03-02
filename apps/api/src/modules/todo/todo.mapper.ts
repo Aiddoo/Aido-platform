@@ -66,6 +66,7 @@ export abstract class TodoMapper {
 			scheduledTime: toISOStringOrNull(entity.scheduledTime),
 			isAllDay: entity.isAllDay,
 			visibility: entity.visibility,
+			recurrenceGroupId: entity.recurrenceGroupId,
 			category: {
 				id: entity.category.id,
 				name: entity.category.name,

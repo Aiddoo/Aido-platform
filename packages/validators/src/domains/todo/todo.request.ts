@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { reorderPositionSchema } from '../todo-category/todo-category.common';
-import { todoVisibilitySchema } from './todo.common';
+import { dayOfWeekSchema, todoVisibilitySchema } from './todo.common';
+import { RECURRING_TODO_LIMITS } from './todo.constants';
 
 export { todoVisibilitySchema } from './todo.common';
 
@@ -249,3 +250,72 @@ export const reorderTodoSchema = z.object({
 });
 
 export type ReorderTodoInput = z.infer<typeof reorderTodoSchema>;
+
+export const createRecurringTodoSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, '제목을 입력해주세요')
+      .max(200, '제목은 200자 이하로 입력해주세요')
+      .describe('할 일 제목 (1-200자, 예: 약먹기)'),
+    content: z
+      .string()
+      .max(5000, '내용은 5000자 이하로 입력해주세요')
+      .nullish()
+      .describe('할 일 내용 (선택, 최대 5000자)'),
+    categoryId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 카테고리 ID입니다')
+      .describe('카테고리 ID (양의 정수)'),
+    startDate: z.iso
+      .date('유효한 날짜 형식이 아닙니다')
+      .describe('반복 시작 날짜 (YYYY-MM-DD, 예: 2026-03-01)'),
+    endDate: z.iso
+      .date('유효한 날짜 형식이 아닙니다')
+      .describe('반복 종료 날짜 (YYYY-MM-DD, 예: 2026-03-31)'),
+    daysOfWeek: z
+      .array(dayOfWeekSchema)
+      .min(1, '요일을 최소 1개 선택해주세요')
+      .max(7, '요일은 최대 7개까지 선택할 수 있습니다')
+      .describe('반복할 요일 (MON/TUE/WED/THU/FRI/SAT/SUN)'),
+    scheduledTime: z
+      .string()
+      .regex(timeRegex, '시간 형식이 올바르지 않습니다 (HH:mm)')
+      .nullish()
+      .describe('예정 시간 (HH:mm, 선택)'),
+    isAllDay: z.boolean().default(true).describe('종일 일정 여부 (기본값: true)'),
+    visibility: todoVisibilitySchema
+      .default('PUBLIC')
+      .describe('공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)'),
+  })
+  .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
+    message: '종료 날짜는 시작 날짜 이후여야 합니다',
+    path: ['endDate'],
+  })
+  .refine(
+    (data) => {
+      const diffDays = Math.ceil(
+        (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      return diffDays <= RECURRING_TODO_LIMITS.MAX_DAYS_RANGE;
+    },
+    {
+      message: `날짜 범위는 최대 ${RECURRING_TODO_LIMITS.MAX_DAYS_RANGE}일입니다`,
+      path: ['endDate'],
+    },
+  );
+
+export type CreateRecurringTodoInput = z.infer<typeof createRecurringTodoSchema>;
+
+export const todoResourceLimitQuerySchema = z.object({
+  categoryId: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 카테고리 ID입니다')
+    .optional()
+    .describe('카테고리 ID (지정 시 해당 카테고리의 activeCount도 반환)'),
+});
+
+export type TodoResourceLimitQuery = z.infer<typeof todoResourceLimitQuerySchema>;

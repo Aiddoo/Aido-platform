@@ -8,9 +8,7 @@ import {
 	SUBSCRIPTION_FOLLOW_LIMITS,
 	SUBSCRIPTION_NUDGE_LIMITS,
 	SUBSCRIPTION_TODO_CATEGORY_LIMITS,
-	SUBSCRIPTION_TODO_LIMITS,
 	TODO_CATEGORY_LIMITS,
-	TODO_LIMITS,
 } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
@@ -42,20 +40,17 @@ const FEATURE_FREE_DEFAULTS: Record<Feature, number> = {
 // =========================================================================
 
 export const Resource = {
-	TODO_ACTIVE: "TODO_ACTIVE",
 	CATEGORY: "CATEGORY",
 	FRIEND: "FRIEND",
 } as const;
 export type Resource = (typeof Resource)[keyof typeof Resource];
 
 const RESOURCE_LIMITS: Record<Resource, Record<string, number | null>> = {
-	TODO_ACTIVE: { ...SUBSCRIPTION_TODO_LIMITS },
 	CATEGORY: { ...SUBSCRIPTION_TODO_CATEGORY_LIMITS },
 	FRIEND: { ...SUBSCRIPTION_FOLLOW_LIMITS },
 };
 
 const RESOURCE_FREE_DEFAULTS: Record<Resource, number> = {
-	TODO_ACTIVE: TODO_LIMITS.FREE_MAX_ACTIVE,
 	CATEGORY: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
 	FRIEND: FOLLOW_LIMITS.FREE_MAX_FRIENDS,
 };

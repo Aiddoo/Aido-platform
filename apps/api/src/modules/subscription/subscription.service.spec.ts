@@ -54,19 +54,11 @@ describe("SubscriptionService", () => {
 			.compile();
 
 		service = unit;
-		subscriptionRepository = unitRef.get(
-			SubscriptionRepository,
-		) as unknown as Mocked<SubscriptionRepository>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
-		eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
-		lockProvider = unitRef.get(
-			LOCK_PROVIDER,
-		) as unknown as Mocked<ILockProvider>;
+		subscriptionRepository = unitRef.get(SubscriptionRepository);
+		database = unitRef.get(DatabaseService);
+		cacheService = unitRef.get(CacheService);
+		eventEmitter = unitRef.get(EventEmitter2);
+		lockProvider = unitRef.get(LOCK_PROVIDER);
 
 		// 기본 mock 설정
 		lockProvider.acquire.mockResolvedValue(mockRelease);

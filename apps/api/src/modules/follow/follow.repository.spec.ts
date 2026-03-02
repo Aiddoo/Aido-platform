@@ -30,7 +30,7 @@ describe("FollowRepository", () => {
 			await TestBed.solitary(FollowRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
+		db = unitRef.get(DatabaseService);
 	});
 
 	// ==========================================================================

@@ -6,8 +6,9 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { PushTokenBuilder } from "@test/builders";
+import { PushTokenBuilder, UserPreferenceBuilder } from "@test/builders";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import type { PushToken } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
 import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
 import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
@@ -53,18 +54,10 @@ describe("PushDeliveryService", () => {
 			.compile();
 
 		service = unit;
-		notificationRepository = unitRef.get(
-			NotificationRepository,
-		) as unknown as Mocked<NotificationRepository>;
-		pushProvider = unitRef.get(
-			PUSH_PROVIDER,
-		) as unknown as Mocked<PushProvider>;
-		userPreferenceRepository = unitRef.get(
-			UserPreferenceRepository,
-		) as unknown as Mocked<UserPreferenceRepository>;
-		userConsentRepository = unitRef.get(
-			UserConsentRepository,
-		) as unknown as Mocked<UserConsentRepository>;
+		notificationRepository = unitRef.get(NotificationRepository);
+		pushProvider = unitRef.get(PUSH_PROVIDER);
+		userPreferenceRepository = unitRef.get(UserPreferenceRepository);
+		userConsentRepository = unitRef.get(UserConsentRepository);
 
 		// 기본 mock 설정
 		mockedIsNightTime.mockReturnValue(false);
@@ -217,11 +210,9 @@ describe("PushDeliveryService", () => {
 
 		it("pushEnabled가 false면 false를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: false,
-				nightPushEnabled: false,
-				timezone: "UTC",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1").withPushDisabled().build(),
+			);
 
 			// When
 			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
@@ -232,11 +223,11 @@ describe("PushDeliveryService", () => {
 
 		it("야간 시간에 nightPushEnabled가 false면 false를 반환한다 (면제 타입 제외)", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: false,
-				timezone: "Asia/Seoul",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1")
+					.withTimezone("Asia/Seoul")
+					.build(),
+			);
 			mockedIsNightTime.mockReturnValue(true);
 
 			// When — CHEER_RECEIVED는 야간 면제 타입이 아님
@@ -248,11 +239,12 @@ describe("PushDeliveryService", () => {
 
 		it("모든 조건 통과 시 true를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: true,
-				timezone: "Asia/Seoul",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1")
+					.withNightPushEnabled(true)
+					.withTimezone("Asia/Seoul")
+					.build(),
+			);
 
 			// When
 			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
@@ -263,11 +255,11 @@ describe("PushDeliveryService", () => {
 
 		it("야간이지만 DAILY_COMPLETE는 nightPushEnabled=false여도 발송한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: false,
-				timezone: "Asia/Seoul",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1")
+					.withTimezone("Asia/Seoul")
+					.build(),
+			);
 			mockedIsNightTime.mockReturnValue(true);
 
 			// When
@@ -279,11 +271,11 @@ describe("PushDeliveryService", () => {
 
 		it("야간이지만 NUDGE_RECEIVED는 nightPushEnabled=false여도 발송한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: false,
-				timezone: "Asia/Seoul",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1")
+					.withTimezone("Asia/Seoul")
+					.build(),
+			);
 			mockedIsNightTime.mockReturnValue(true);
 
 			// When
@@ -295,11 +287,11 @@ describe("PushDeliveryService", () => {
 
 		it("1시간 내 15건 초과 시 rate limit으로 false를 반환한다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: true,
-				timezone: "UTC",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-rate")
+					.withNightPushEnabled(true)
+					.build(),
+			);
 
 			// When — 15건 발송 (모두 true)
 			for (let i = 0; i < 15; i++) {
@@ -320,11 +312,11 @@ describe("PushDeliveryService", () => {
 
 		it("다른 사용자의 rate limit은 독립적이다", async () => {
 			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue({
-				pushEnabled: true,
-				nightPushEnabled: true,
-				timezone: "UTC",
-			} as any);
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-a")
+					.withNightPushEnabled(true)
+					.build(),
+			);
 
 			// When — user-a 15건 소진
 			for (let i = 0; i < 15; i++) {
@@ -440,9 +432,13 @@ describe("PushDeliveryService", () => {
 			const token2 = PushTokenBuilder.create("user-2").build();
 
 			userPreferenceRepository.findByUserIds.mockResolvedValue([
-				{ userId: "user-1", pushEnabled: true, nightPushEnabled: true },
-				{ userId: "user-2", pushEnabled: true, nightPushEnabled: true },
-			] as any);
+				UserPreferenceBuilder.create("user-1")
+					.withNightPushEnabled(true)
+					.build(),
+				UserPreferenceBuilder.create("user-2")
+					.withNightPushEnabled(true)
+					.build(),
+			]);
 			userConsentRepository.findByUserIds.mockResolvedValue([]);
 			notificationRepository.findActivePushTokensByUsers.mockResolvedValue([
 				token1,
@@ -480,9 +476,11 @@ describe("PushDeliveryService", () => {
 		it("설정 미충족 사용자를 필터링한다", async () => {
 			// Given — user-2는 pushEnabled=false
 			userPreferenceRepository.findByUserIds.mockResolvedValue([
-				{ userId: "user-1", pushEnabled: true, nightPushEnabled: true },
-				{ userId: "user-2", pushEnabled: false, nightPushEnabled: false },
-			] as any);
+				UserPreferenceBuilder.create("user-1")
+					.withNightPushEnabled(true)
+					.build(),
+				UserPreferenceBuilder.create("user-2").withPushDisabled().build(),
+			]);
 			userConsentRepository.findByUserIds.mockResolvedValue([]);
 			const token1 = PushTokenBuilder.create("user-1").build();
 			notificationRepository.findActivePushTokensByUsers.mockResolvedValue([
@@ -522,8 +520,8 @@ describe("PushDeliveryService", () => {
 		it("대상자가 없으면 발송하지 않는다", async () => {
 			// Given — 모든 사용자가 pushEnabled=false
 			userPreferenceRepository.findByUserIds.mockResolvedValue([
-				{ userId: "user-1", pushEnabled: false, nightPushEnabled: false },
-			] as any);
+				UserPreferenceBuilder.create("user-1").withPushDisabled().build(),
+			]);
 			userConsentRepository.findByUserIds.mockResolvedValue([]);
 
 			// When
@@ -563,7 +561,7 @@ describe("PushDeliveryService", () => {
 			});
 
 			notificationRepository.findPushTokensByUser.mockReturnValue(
-				slowPromise.then(() => []) as any,
+				slowPromise.then((): PushToken[] => []),
 			);
 
 			service.fireAndForgetPush(

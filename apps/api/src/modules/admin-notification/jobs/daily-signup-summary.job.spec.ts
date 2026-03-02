@@ -26,9 +26,7 @@ describe("DailySignupSummaryJob", () => {
 			.compile();
 
 		job = unit;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
+		database = unitRef.get(DatabaseService);
 		notifier = mockNotifier;
 
 		// database.account.groupBy, database.user.count mock 설정

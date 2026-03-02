@@ -1,8 +1,10 @@
 import {
+	createRecurringTodoResponseSchema,
 	createTodoResponseSchema,
 	deleteTodoResponseSchema,
 	reorderTodoResponseSchema,
 	todoListResponseSchema,
+	todoResourceLimitResponseSchema,
 	todoSchema,
 	updateTodoResponseSchema,
 } from "@aido/validators";
@@ -13,6 +15,9 @@ export class TodoListResponseDto extends createZodDto(todoListResponseSchema) {}
 export class CreateTodoResponseDto extends createZodDto(
 	createTodoResponseSchema,
 ) {}
+export class CreateRecurringTodoResponseDto extends createZodDto(
+	createRecurringTodoResponseSchema,
+) {}
 export class UpdateTodoResponseDto extends createZodDto(
 	updateTodoResponseSchema,
 ) {}
@@ -21,4 +26,7 @@ export class DeleteTodoResponseDto extends createZodDto(
 ) {}
 export class ReorderTodoResponseDto extends createZodDto(
 	reorderTodoResponseSchema,
+) {}
+export class TodoResourceLimitResponseDto extends createZodDto(
+	todoResourceLimitResponseSchema,
 ) {}

@@ -91,6 +91,7 @@ export const TodoFixture = {
 			isAllDay: overrides.isAllDay ?? true,
 			sortOrder: overrides.sortOrder ?? id,
 			visibility: overrides.visibility ?? ("PRIVATE" as TodoVisibility),
+			recurrenceGroupId: overrides.recurrenceGroupId ?? null,
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,
 		};

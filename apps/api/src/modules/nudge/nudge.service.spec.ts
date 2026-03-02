@@ -64,24 +64,12 @@ describe("NudgeService", () => {
 		const { unit, unitRef } = await TestBed.solitary(NudgeService).compile();
 
 		service = unit;
-		nudgeRepository = unitRef.get(
-			NudgeRepository,
-		) as unknown as Mocked<NudgeRepository>;
-		followService = unitRef.get(
-			FollowService,
-		) as unknown as Mocked<FollowService>;
-		paginationService = unitRef.get(
-			PaginationService,
-		) as unknown as Mocked<PaginationService>;
-		eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
+		nudgeRepository = unitRef.get(NudgeRepository);
+		followService = unitRef.get(FollowService);
+		paginationService = unitRef.get(PaginationService);
+		eventEmitter = unitRef.get(EventEmitter2);
+		database = unitRef.get(DatabaseService);
+		entitlementService = unitRef.get(EntitlementService);
 
 		// DatabaseService.$transaction passthrough mock 설정
 		database.$transaction.mockImplementation((callback) =>

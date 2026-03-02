@@ -43,15 +43,9 @@ describe("InMemoryReminderSchedulerAdapter", () => {
 			.compile();
 
 		service = unit;
-		databaseService = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		notificationService = unitRef.get(
-			NotificationService,
-		) as unknown as Mocked<NotificationService>;
-		lockProvider = unitRef.get(
-			LOCK_PROVIDER,
-		) as unknown as Mocked<ILockProvider>;
+		databaseService = unitRef.get(DatabaseService);
+		notificationService = unitRef.get(NotificationService);
+		lockProvider = unitRef.get(LOCK_PROVIDER);
 
 		// 기본: Lock 획득 성공 (release 함수 반환)
 		lockProvider.acquire.mockResolvedValue(jest.fn());

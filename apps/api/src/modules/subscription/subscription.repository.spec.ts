@@ -1,6 +1,6 @@
-import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
@@ -14,33 +14,27 @@ import { SubscriptionRepository } from "./subscription.repository";
 
 describe("SubscriptionRepository", () => {
 	let repository: SubscriptionRepository;
-	let database: Mocked<DatabaseService>;
 
-	const mockSubscription = {
-		findUnique: jest.fn(),
-		findFirst: jest.fn(),
-		create: jest.fn(),
-		update: jest.fn(),
-	};
-
-	const mockUser = {
-		update: jest.fn(),
-		findFirst: jest.fn(),
-	};
+	const mockDb = createMockDatabaseService({
+		subscription: {
+			findUnique: jest.fn(),
+			findFirst: jest.fn(),
+			create: jest.fn(),
+			update: jest.fn(),
+		},
+		user: {
+			update: jest.fn(),
+			findFirst: jest.fn(),
+		},
+	});
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			SubscriptionRepository,
-		).compile();
+		const { unit } = await TestBed.solitary(SubscriptionRepository)
+			.mock(DatabaseService)
+			.impl(() => mockDb)
+			.compile();
 
 		repository = unit;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-
-		// Prisma 모델 delegate 주입
-		(database as any).subscription = mockSubscription;
-		(database as any).user = mockUser;
 	});
 
 	afterEach(() => {
@@ -59,13 +53,13 @@ describe("SubscriptionRepository", () => {
 				revenueCatId: "otxn-123",
 				status: "ACTIVE",
 			};
-			mockSubscription.findUnique.mockResolvedValue(subscription);
+			mockDb.subscription.findUnique.mockResolvedValue(subscription);
 
 			// When
 			const result = await repository.findByRevenueCatId("otxn-123");
 
 			// Then
-			expect(mockSubscription.findUnique).toHaveBeenCalledWith({
+			expect(mockDb.subscription.findUnique).toHaveBeenCalledWith({
 				where: { revenueCatId: "otxn-123" },
 			});
 			expect(result).toEqual(subscription);
@@ -73,17 +67,17 @@ describe("SubscriptionRepository", () => {
 
 		it("tx 전달 시 tx의 subscription을 사용해야 한다", async () => {
 			// Given
-			const txSubscription = { findUnique: jest.fn().mockResolvedValue(null) };
-			const tx = { subscription: txSubscription } as any;
+			const txMock = createMockTxClient();
+			txMock.subscription.findUnique.mockResolvedValue(null);
 
 			// When
-			await repository.findByRevenueCatId("otxn-123", tx);
+			await repository.findByRevenueCatId("otxn-123", asTxClient(txMock));
 
 			// Then
-			expect(txSubscription.findUnique).toHaveBeenCalledWith({
+			expect(txMock.subscription.findUnique).toHaveBeenCalledWith({
 				where: { revenueCatId: "otxn-123" },
 			});
-			expect(mockSubscription.findUnique).not.toHaveBeenCalled();
+			expect(mockDb.subscription.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
@@ -99,13 +93,13 @@ describe("SubscriptionRepository", () => {
 				userId: "user-1",
 				status: "ACTIVE",
 			};
-			mockSubscription.findFirst.mockResolvedValue(subscription);
+			mockDb.subscription.findFirst.mockResolvedValue(subscription);
 
 			// When
 			const result = await repository.findActiveByUserId("user-1");
 
 			// Then
-			expect(mockSubscription.findFirst).toHaveBeenCalledWith({
+			expect(mockDb.subscription.findFirst).toHaveBeenCalledWith({
 				where: {
 					userId: "user-1",
 					status: "ACTIVE",
@@ -133,13 +127,13 @@ describe("SubscriptionRepository", () => {
 				expiresAt: new Date("2024-02-01"),
 			};
 			const created = { id: "sub-1", ...data };
-			mockSubscription.create.mockResolvedValue(created);
+			mockDb.subscription.create.mockResolvedValue(created);
 
 			// When
 			const result = await repository.create(data);
 
 			// Then
-			expect(mockSubscription.create).toHaveBeenCalledWith({
+			expect(mockDb.subscription.create).toHaveBeenCalledWith({
 				data: {
 					user: { connect: { id: "user-1" } },
 					revenueCatId: "otxn-123",
@@ -169,13 +163,13 @@ describe("SubscriptionRepository", () => {
 				revenueCatId: "otxn-123",
 				status: "CANCELLED",
 			};
-			mockSubscription.update.mockResolvedValue(updated);
+			mockDb.subscription.update.mockResolvedValue(updated);
 
 			// When
 			const result = await repository.updateStatus("otxn-123", data);
 
 			// Then
-			expect(mockSubscription.update).toHaveBeenCalledWith({
+			expect(mockDb.subscription.update).toHaveBeenCalledWith({
 				where: { revenueCatId: "otxn-123" },
 				data,
 			});
@@ -188,7 +182,7 @@ describe("SubscriptionRepository", () => {
 				code: "P2025",
 				clientVersion: "5.0.0",
 			});
-			mockSubscription.update.mockRejectedValue(p2025Error);
+			mockDb.subscription.update.mockRejectedValue(p2025Error);
 
 			// When & Then
 			await expect(
@@ -199,7 +193,7 @@ describe("SubscriptionRepository", () => {
 		it("P2025 이외의 에러 → 그대로 throw", async () => {
 			// Given
 			const genericError = new Error("Database connection failed");
-			mockSubscription.update.mockRejectedValue(genericError);
+			mockDb.subscription.update.mockRejectedValue(genericError);
 
 			// When & Then
 			await expect(
@@ -220,13 +214,13 @@ describe("SubscriptionRepository", () => {
 				subscriptionExpiresAt: new Date("2024-02-01"),
 				revenueCatUserId: "rc-user-123",
 			};
-			mockUser.update.mockResolvedValue({ id: "user-1" });
+			mockDb.user.update.mockResolvedValue({ id: "user-1" });
 
 			// When
 			await repository.updateUserSubscriptionStatus("user-1", data);
 
 			// Then
-			expect(mockUser.update).toHaveBeenCalledWith({
+			expect(mockDb.user.update).toHaveBeenCalledWith({
 				where: { id: "user-1" },
 				data: {
 					subscriptionStatus: "ACTIVE",
@@ -251,13 +245,13 @@ describe("SubscriptionRepository", () => {
 				subscriptionExpiresAt: null,
 				revenueCatUserId: null,
 			};
-			mockUser.findFirst.mockResolvedValue(user);
+			mockDb.user.findFirst.mockResolvedValue(user);
 
 			// When
 			const result = await repository.findUserByAppUserId("user-1");
 
 			// Then
-			expect(mockUser.findFirst).toHaveBeenCalledWith({
+			expect(mockDb.user.findFirst).toHaveBeenCalledWith({
 				where: {
 					OR: [{ revenueCatUserId: "user-1" }, { id: "user-1" }],
 				},
@@ -274,14 +268,14 @@ describe("SubscriptionRepository", () => {
 
 		it("tx 전달 시 tx의 user를 사용해야 한다", async () => {
 			// Given
-			const txUser = { findFirst: jest.fn().mockResolvedValue(null) };
-			const tx = { user: txUser } as any;
+			const txMock = createMockTxClient();
+			txMock.user.findFirst.mockResolvedValue(null);
 
 			// When
-			await repository.findUserByAppUserId("user-1", tx);
+			await repository.findUserByAppUserId("user-1", asTxClient(txMock));
 
 			// Then
-			expect(txUser.findFirst).toHaveBeenCalledWith({
+			expect(txMock.user.findFirst).toHaveBeenCalledWith({
 				where: {
 					OR: [{ revenueCatUserId: "user-1" }, { id: "user-1" }],
 				},
@@ -290,7 +284,7 @@ describe("SubscriptionRepository", () => {
 					email: true,
 				}),
 			});
-			expect(mockUser.findFirst).not.toHaveBeenCalled();
+			expect(mockDb.user.findFirst).not.toHaveBeenCalled();
 		});
 	});
 });

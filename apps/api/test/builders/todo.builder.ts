@@ -34,6 +34,7 @@ export class TodoBuilder {
 			scheduledTime: null,
 			isAllDay: true,
 			visibility: "PUBLIC",
+			recurrenceGroupId: null,
 			completed: false,
 			completedAt: null,
 			createdAt: now,
@@ -143,6 +144,13 @@ export class TodoBuilder {
 
 	asPublic(): TodoBuilder {
 		this.data.visibility = "PUBLIC";
+		return this;
+	}
+
+	// === 반복 생성 그룹 관련 ===
+
+	withRecurrenceGroupId(groupId: string | null): TodoBuilder {
+		this.data.recurrenceGroupId = groupId;
 		return this;
 	}
 

@@ -1,7 +1,9 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Request } from "express";
 
 import type { CurrentUserPayload } from "../decorators";
+import type { LoginDto, RegisterDto } from "../dtos";
 import { AuthService } from "../services/auth.service";
 import { AuthController } from "./auth.controller";
 
@@ -20,9 +22,7 @@ describe("AuthController", () => {
 		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
 		controller = unit;
-		mockAuthService = unitRef.get(
-			AuthService,
-		) as unknown as Mocked<AuthService>;
+		mockAuthService = unitRef.get(AuthService);
 	});
 
 	describe("register", () => {
@@ -45,7 +45,7 @@ describe("AuthController", () => {
 			mockAuthService.register.mockResolvedValue(serviceResult);
 
 			// When: register를 호출하면
-			const result = await controller.register(dto as any);
+			const result = await controller.register(dto as unknown as RegisterDto);
 
 			// Then: 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
 			expect(mockAuthService.register).toHaveBeenCalledWith(dto);
@@ -82,10 +82,13 @@ describe("AuthController", () => {
 			const mockReq = {
 				ip: "127.0.0.1",
 				headers: { "user-agent": "test-agent" },
-			} as any;
+			} as unknown as Request;
 
 			// When: login을 호출하면
-			const result = await controller.login(dto as any, mockReq);
+			const result = await controller.login(
+				dto as unknown as LoginDto,
+				mockReq,
+			);
 
 			// Then: 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
 			expect(mockAuthService.login).toHaveBeenCalledWith(

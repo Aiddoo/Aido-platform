@@ -430,6 +430,9 @@ model Todo {
   // 가시성
   visibility TodoVisibility @default(PUBLIC)
 
+  // 반복 생성 그룹 (null = 단일 생성)
+  recurrenceGroupId String? @db.VarChar(36)
+
   // 타임스탬프
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -443,6 +446,7 @@ model Todo {
   @@index([userId, categoryId])
   @@index([userId, sortOrder])
   @@index([completed, scheduledTime]) // 리마인더 대상 조회
+  @@index([recurrenceGroupId])
 }
 
 enum TodoVisibility {

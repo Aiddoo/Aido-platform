@@ -1,5 +1,6 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
@@ -12,7 +13,14 @@ describe("JwtStrategy", () => {
 	let strategy: JwtStrategy;
 	let sessionRepo: Mocked<SessionRepository>;
 	let cacheService: Mocked<CacheService>;
-	let database: Mocked<DatabaseService>;
+
+	const mockDb = createMockDatabaseService({
+		user: {
+			findUnique: jest
+				.fn()
+				.mockResolvedValue({ status: "ACTIVE", deletedAt: null }),
+		},
+	});
 
 	const validPayload: JwtPayload = {
 		sub: "user-123",
@@ -29,6 +37,8 @@ describe("JwtStrategy", () => {
 				...mock,
 				get: jest.fn().mockReturnValue("test-jwt-secret-key"),
 			}))
+			.mock(DatabaseService)
+			.impl(() => mockDb)
 			.compile();
 
 		strategy = unit;
@@ -36,16 +46,6 @@ describe("JwtStrategy", () => {
 			SessionRepository,
 		) as unknown as Mocked<SessionRepository>;
 		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-
-		// DatabaseService.user.findUnique mock 설정
-		(database as any).user = {
-			findUnique: jest
-				.fn()
-				.mockResolvedValue({ status: "ACTIVE", deletedAt: null }),
-		};
 	});
 
 	it("refresh 타입 토큰이면 에러를 던진다", async () => {

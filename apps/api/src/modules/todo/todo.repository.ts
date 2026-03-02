@@ -1,13 +1,11 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
-
 import type {
 	FindFriendTodosParams,
 	FindTodosParams,
 	TodoWithCategory,
-	TransactionClient,
 } from "./types/todo.types.ts";
 
 /**
@@ -253,6 +251,20 @@ export class TodoRepository {
 		});
 	}
 
+	/**
+	 * 특정 카테고리 내 활성(미완료) Todo 개수 조회
+	 */
+	async countActiveByCategory(
+		userId: string,
+		categoryId: number,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		return client.todo.count({
+			where: { userId, categoryId, completed: false },
+		});
+	}
+
 	// =========================================================================
 	// 알림용 집계 메서드
 	// =========================================================================
@@ -356,5 +368,28 @@ export class TodoRepository {
 				},
 			},
 		}) as Promise<TodoWithCategory>;
+	}
+
+	/**
+	 * 트랜잭션 내에서 여러 Todo를 일괄 생성 (createMany + findMany, 2쿼리)
+	 *
+	 * @description
+	 * Prisma의 `createMany`는 `include`를 지원하지 않으므로,
+	 * 1) `createMany`로 일괄 INSERT
+	 * 2) `findMany`로 생성된 레코드를 category include와 함께 조회
+	 *
+	 * 기존 순차 N쿼리(`for...of await`) 대비 2쿼리로 대폭 개선.
+	 */
+	async createManyBatch(
+		dataArray: Prisma.TodoCreateManyInput[],
+		recurrenceGroupId: string,
+		tx: TransactionClient,
+	): Promise<TodoWithCategory[]> {
+		await tx.todo.createMany({ data: dataArray });
+		return tx.todo.findMany({
+			where: { recurrenceGroupId },
+			include: TODO_CATEGORY_INCLUDE,
+			orderBy: { sortOrder: "asc" },
+		}) as Promise<TodoWithCategory[]>;
 	}
 }

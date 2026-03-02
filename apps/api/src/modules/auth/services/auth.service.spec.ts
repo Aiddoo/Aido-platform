@@ -70,36 +70,18 @@ describe("AuthService", () => {
 		const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
 
 		service = unit;
-		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
-		accountRepo = unitRef.get(
-			AccountRepository,
-		) as unknown as Mocked<AccountRepository>;
-		sessionRepo = unitRef.get(
-			SessionRepository,
-		) as unknown as Mocked<SessionRepository>;
-		passwordService = unitRef.get(
-			PasswordService,
-		) as unknown as Mocked<PasswordService>;
-		tokenService = unitRef.get(TokenService) as unknown as Mocked<TokenService>;
-		verificationService = unitRef.get(
-			VerificationService,
-		) as unknown as Mocked<VerificationService>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		securityLogRepo = unitRef.get(
-			SecurityLogRepository,
-		) as unknown as Mocked<SecurityLogRepository>;
-		loginAttemptRepo = unitRef.get(
-			LoginAttemptRepository,
-		) as unknown as Mocked<LoginAttemptRepository>;
-		sessionService = unitRef.get(
-			SessionService,
-		) as unknown as Mocked<SessionService>;
-		eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
+		userRepo = unitRef.get(UserRepository);
+		accountRepo = unitRef.get(AccountRepository);
+		sessionRepo = unitRef.get(SessionRepository);
+		passwordService = unitRef.get(PasswordService);
+		tokenService = unitRef.get(TokenService);
+		verificationService = unitRef.get(VerificationService);
+		cacheService = unitRef.get(CacheService);
+		database = unitRef.get(DatabaseService);
+		securityLogRepo = unitRef.get(SecurityLogRepository);
+		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
+		sessionService = unitRef.get(SessionService);
+		eventEmitter = unitRef.get(EventEmitter2);
 	});
 
 	// ============================================
@@ -1053,8 +1035,8 @@ describe("AuthService", () => {
 			] as Account[]);
 			passwordService.verify.mockResolvedValue(true);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
-				{ id: sessionId },
-			] as any);
+				SessionBuilder.create(userId).withId(sessionId).build(),
+			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1143,8 +1125,8 @@ describe("AuthService", () => {
 				},
 			] as Account[]);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
-				{ id: sessionId },
-			] as any);
+				SessionBuilder.create(userId).withId(sessionId).build(),
+			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
@@ -1204,8 +1186,8 @@ describe("AuthService", () => {
 				},
 			] as Account[]);
 			sessionRepo.findActiveByUserId.mockResolvedValue([
-				{ id: sessionId },
-			] as any);
+				SessionBuilder.create(userId).withId(sessionId).build(),
+			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
 					callback({} as Prisma.TransactionClient),
