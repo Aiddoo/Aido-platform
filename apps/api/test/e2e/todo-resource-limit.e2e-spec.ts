@@ -177,7 +177,7 @@ describe("Todo Resource Limit (e2e)", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ name: "빈 카테고리", color: "#00FF00" })
 				.expect(201);
-			emptyCategoryId = catResponse.body.data.todoCategory.id;
+			emptyCategoryId = catResponse.body.data.category.id;
 
 			// 첫 번째 카테고리에 CATEGORY_LIMIT개 삽입
 			const prisma = ctx.testDatabase.getPrisma();

@@ -1436,13 +1436,13 @@ describe("Todo (e2e)", () => {
 				.get(`/todos/${firstTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
-			expect(firstTodo.body.data.todo.completed).toBe(true);
+			expect(firstTodo.body.data.completed).toBe(true);
 
 			const secondTodo = await request(ctx.app.getHttpServer())
 				.get(`/todos/${secondTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
-			expect(secondTodo.body.data.todo.completed).toBe(false);
+			expect(secondTodo.body.data.completed).toBe(false);
 		});
 
 		it("잘못된 요일 값은 400 에러", async () => {
