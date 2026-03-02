@@ -10,11 +10,12 @@ import {
 } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
 import { VStack } from '@src/shared/ui/VStack/VStack';
-import { formatDate, getNextDay } from '@src/shared/utils/date';
+import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { deleteTodoMutationOptions } from '../../queries/delete-todo-mutation-options';
 import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
+import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 
 interface TodoActionsBottomSheetProps {
@@ -36,13 +37,13 @@ export const TodoActionsBottomSheet = ({
   const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
 
   const handleDoTomorrow = () => {
-    const tomorrow = getNextDay(todo.startDateObj);
+    const { startDate, endDate } = calculateTomorrowSchedule(todo.endDateObj);
     updateScheduleMutation.mutate(
       {
         todoId: todo.id,
         input: {
-          startDate: formatDate(tomorrow),
-          endDate: todo.endDateObj ? formatDate(getNextDay(todo.endDateObj)) : null,
+          startDate: formatDate(startDate),
+          endDate: endDate ? formatDate(endDate) : null,
           scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
           isAllDay: todo.isAllDay,
         },
