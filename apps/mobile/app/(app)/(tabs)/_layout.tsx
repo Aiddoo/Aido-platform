@@ -11,43 +11,30 @@ import { AccessibilityInfo, Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 function useLiquidGlassAvailable() {
-  const [state, setState] = useState<{ ready: boolean; available: boolean }>({
-    ready: Platform.OS !== 'ios',
-    available: false,
-  });
+  const glassSupported =
+    Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+
+  const [available, setAvailable] = useState(glassSupported);
 
   useEffect(() => {
+    if (!glassSupported) return;
     const check = async () => {
-      if (Platform.OS !== 'ios') return;
-      if (!isLiquidGlassAvailable() || !isGlassEffectAPIAvailable()) {
-        setState({ ready: true, available: false });
-        return;
-      }
-
       try {
         const reduce = await AccessibilityInfo.isReduceTransparencyEnabled();
-        setState({ ready: true, available: !reduce });
-      } catch {
-        setState({ ready: true, available: false });
+        if (reduce) setAvailable(false);
+      } catch (error) {
+        console.warn('[TabsLayout] Failed to check reduce transparency:', error);
       }
     };
-
     check();
-  }, []);
+  }, [glassSupported]);
 
-  return state;
+  return available;
 }
 
 export default function TabsLayout() {
-  const { ready, available } = useLiquidGlassAvailable();
-
-  if (!ready) return null;
-
-  if (available) {
-    return <IOSLiquidGlassTabs />;
-  }
-
-  return <AndroidBottomTabs />;
+  const liquidGlass = useLiquidGlassAvailable();
+  return liquidGlass ? <IOSLiquidGlassTabs /> : <AndroidBottomTabs />;
 }
 
 function IOSLiquidGlassTabs() {
