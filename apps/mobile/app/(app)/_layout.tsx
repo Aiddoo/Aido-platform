@@ -1,4 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
+import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { Result } from '@src/shared/ui/Result/Result';
@@ -37,9 +38,12 @@ interface ErrorBoundaryProps {
   retry: () => void;
 }
 
-export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { setStatus } = useAuth();
   const queryClient = useQueryClient();
+  const errorReporter = useErrorReporter();
+
+  errorReporter.captureException(error, { feature: 'error_boundary' });
 
   const handleLogout = () => {
     setStatus('unauthenticated');

@@ -9,7 +9,19 @@ export default function NotFoundScreen() {
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title="페이지를 찾을 수 없어요"
-        button={<Result.Button onPress={() => router.back()}>돌아가기</Result.Button>}
+        button={
+          <Result.Button
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/feed');
+              }
+            }}
+          >
+            돌아가기
+          </Result.Button>
+        }
       />
     </StyledSafeAreaView>
   );
