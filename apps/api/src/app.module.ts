@@ -21,6 +21,7 @@ import { AdminModule } from "@/modules/admin";
 import { AdminNotificationModule } from "@/modules/admin-notification";
 import { AiModule } from "@/modules/ai";
 import { AiReportModule } from "@/modules/ai-report";
+import { AiSuggestionModule } from "@/modules/ai-suggestion";
 import { AuthModule } from "@/modules/auth";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { CheerModule } from "@/modules/cheer";
@@ -81,6 +82,7 @@ import { AppService } from "./app.service";
 		AdminNotificationModule,
 		AiModule,
 		AiReportModule,
+		AiSuggestionModule,
 		AuthModule,
 		CheerModule,
 		DailyCompletionModule,
