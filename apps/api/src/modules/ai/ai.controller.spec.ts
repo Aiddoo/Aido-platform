@@ -36,6 +36,8 @@ describe("AiController", () => {
 					endDate: null,
 					scheduledTime: "15:00",
 					isAllDay: false,
+					isRecurring: false,
+					recurrence: null,
 				},
 				meta: {
 					model: "google:gemini-2.0-flash",

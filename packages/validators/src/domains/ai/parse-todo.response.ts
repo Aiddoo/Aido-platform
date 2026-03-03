@@ -1,9 +1,17 @@
 import { z } from 'zod';
 
 import { dateSchema, nullableDateSchema } from '../../common/datetime';
+import { dayOfWeekSchema } from '../todo/todo.common';
 import { tokenUsageSchema } from './ai-usage.response';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+export const todoRecurrenceSchema = z.object({
+  daysOfWeek: z.array(dayOfWeekSchema).min(1).max(7),
+  endDate: dateSchema,
+});
+
+export type TodoRecurrence = z.infer<typeof todoRecurrenceSchema>;
 
 export const parsedTodoDataSchema = z.object({
   title: z
@@ -19,6 +27,11 @@ export const parsedTodoDataSchema = z.object({
     .nullable()
     .describe('예정 시간 (HH:mm 24시간 형식, 예: 15:30, 종일 일정은 null)'),
   isAllDay: z.boolean().describe('종일 일정 여부'),
+  isRecurring: z.boolean().default(false).describe('반복 일정 여부'),
+  recurrence: todoRecurrenceSchema
+    .nullable()
+    .default(null)
+    .describe('반복 설정 (비반복 일정은 null)'),
 });
 
 export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
@@ -46,6 +59,14 @@ export const llmParsedResultSchema = z.object({
   endDate: z.string().nullable(),
   scheduledTime: z.string().nullable(),
   isAllDay: z.boolean(),
+  isRecurring: z.boolean().default(false),
+  recurrence: z
+    .object({
+      daysOfWeek: z.array(z.string()),
+      endDate: z.string(),
+    })
+    .nullable()
+    .default(null),
   reasoning: z.string(),
 });
 

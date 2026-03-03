@@ -214,6 +214,10 @@ export const ErrorCode = {
   AI_1301: 'AI_1301',
   AI_1302: 'AI_1302',
   AI_1303: 'AI_1303',
+  AI_1304: 'AI_1304',
+  AI_1305: 'AI_1305',
+  AI_1306: 'AI_1306',
+  AI_1307: 'AI_1307',
 
   // =========================================================================
   // 관리자 (ADMIN_1400-1499)
@@ -1023,6 +1027,30 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '일일 AI 사용 횟수를 초과했습니다.',
     description: '무료 사용자는 하루 5회까지만 AI 기능을 사용할 수 있습니다.',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.AI_1304]: {
+    code: 'AI_1304',
+    message: '리포트를 찾을 수 없습니다.',
+    description: '요청한 AI 리포트가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.AI_1305]: {
+    code: 'AI_1305',
+    message: '제안을 찾을 수 없습니다.',
+    description: '요청한 AI 제안이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.AI_1306]: {
+    code: 'AI_1306',
+    message: '이미 처리된 제안입니다.',
+    description: '해당 제안은 이미 수락 또는 거절되었습니다.',
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.AI_1307]: {
+    code: 'AI_1307',
+    message: '만료된 제안입니다.',
+    description: '해당 제안의 유효기간이 지났습니다.',
+    httpStatus: HttpStatus.GONE,
   },
 
   // =========================================================================
