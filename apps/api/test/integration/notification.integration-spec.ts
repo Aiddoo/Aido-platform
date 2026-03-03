@@ -615,9 +615,10 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then - morningNoTodo 메시지가 그대로 저장되어야 함
-			expect(result.title).toBe("할일이 하나도 없다");
-			expect(result.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
-			expect(result.type).toBe("MORNING_REMINDER");
+			expect(result).not.toBeNull();
+			expect(result?.title).toBe("할일이 하나도 없다");
+			expect(result?.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			expect(result?.type).toBe("MORNING_REMINDER");
 			expect(mockNotificationDb.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					data: expect.objectContaining({

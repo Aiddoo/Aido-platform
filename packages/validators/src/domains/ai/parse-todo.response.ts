@@ -37,7 +37,7 @@ export const parsedTodoDataSchema = z.object({
 export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
 
 export const parseTodoMetaSchema = z.object({
-  model: z.string().describe('사용된 AI 모델명 (예: gpt-4o-mini)'),
+  model: z.string().describe('사용된 AI 모델명 (예: google:gemini-2.5-flash-lite)'),
   processingTimeMs: z.number().int().nonnegative().describe('AI 처리 시간 (밀리초, 0 이상)'),
   tokenUsage: tokenUsageSchema.describe('AI 토큰 사용량 정보'),
 });

@@ -13,6 +13,7 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import {
 	type Notification,
 	type NotificationType,
+	Prisma,
 } from "@/generated/prisma/client";
 
 import { NotificationMapper } from "./notification.mapper";
@@ -186,18 +187,32 @@ export class NotificationService {
 	/**
 	 * 알림 생성 및 푸시 발송
 	 *
-	 * 1. DB에 알림 레코드 생성
+	 * 1. DB에 알림 레코드 생성 (P2002 unique violation 시 graceful skip → null 반환)
 	 * 2. 사용자 푸시 설정 확인
 	 * 3. 설정에 따라 푸시 발송 (fire-and-forget)
 	 */
 	async createAndSend(
 		data: CreateNotificationData,
 		tx?: TransactionClient,
-	): Promise<Notification> {
-		const notification = await this.notificationRepository.createNotification(
-			data,
-			tx,
-		);
+	): Promise<Notification | null> {
+		let notification: Notification;
+		try {
+			notification = await this.notificationRepository.createNotification(
+				data,
+				tx,
+			);
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				this.#logger.debug(
+					`Notification dedup: unique constraint prevented duplicate ${data.type} for userId=${data.userId}`,
+				);
+				return null;
+			}
+			throw error;
+		}
 
 		const shouldSend = await this.pushDeliveryService.shouldSendPush(
 			data.userId,

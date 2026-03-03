@@ -617,9 +617,10 @@ model Notification {
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 중복 방지: PostgreSQL partial unique index (20260304000000 migration 참고)
+  // 중복 방지: PostgreSQL partial unique index (migration 참고)
   // - Notification_daily_dedup: (userId, type, notificationDate) WHERE friendId IS NULL
   // - Notification_friend_dedup: (userId, type, friendId, notificationDate) WHERE friendId IS NOT NULL
+  // - Notification_todo_reminder_dedup: (todoId, type, metadata.stage) WHERE type = TODO_REMINDER
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리
