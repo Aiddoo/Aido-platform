@@ -13,6 +13,8 @@ export const notificationTypeSchema = z.enum([
   'MORNING_REMINDER',
   'EVENING_REMINDER',
   'WEEKLY_ACHIEVEMENT',
+  'MONTHLY_REPORT',
+  'AI_SUGGESTION',
   'SYSTEM_NOTICE',
   'ADMIN_BROADCAST',
   'ADMIN_TARGETED',
@@ -130,6 +132,7 @@ const getCategoryLabel = (type: NotificationType): string =>
     .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => '달성')
     .with('TODO_REMINDER', 'TODO_SHARED', () => '할일')
     .with('MORNING_REMINDER', 'EVENING_REMINDER', () => '리마인더')
+    .with('MONTHLY_REPORT', 'AI_SUGGESTION', () => 'AI')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => '공지')
     .exhaustive();
 
@@ -152,7 +155,8 @@ const getInternalRoute = (type: NotificationType, context?: NotificationContext)
       'EVENING_REMINDER',
       () => '/feed',
     )
-    .with('WEEKLY_ACHIEVEMENT', () => '/achievements')
+    .with('WEEKLY_ACHIEVEMENT', 'MONTHLY_REPORT', () => '/achievements')
+    .with('AI_SUGGESTION', () => null)
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
     .exhaustive();
 

@@ -1,0 +1,175 @@
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
+import { DatabaseService } from "@/database/database.service";
+import type { NotificationType } from "@/generated/prisma/client";
+import { NotificationService } from "../../notification/notification.service";
+import { AiReportService } from "../ai-report.service";
+
+/** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
+const WEEKLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
+const MONTHLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
+
+/**
+ * AI 리포트 생성 크론 작업
+ *
+ * - 주간 리포트: 매주 일요일 UTC 22:00 (KST 월요일 07:00)
+ * - 월간 리포트: 매월 마지막 날 UTC 22:00 (KST 1일 07:00)
+ *
+ * 분산 락으로 중복 실행을 방지합니다.
+ */
+@Injectable()
+export class ReportGenerationJob {
+	readonly #logger = new Logger(ReportGenerationJob.name);
+
+	constructor(
+		private readonly database: DatabaseService,
+		private readonly aiReportService: AiReportService,
+		private readonly notificationService: NotificationService,
+		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+	) {}
+
+	/**
+	 * 주간 리포트 생성 — 매주 일요일 UTC 22:00
+	 */
+	@Cron("0 22 * * 0")
+	async handleWeeklyReport(): Promise<void> {
+		this.#logger.log("Starting weekly report generation job...");
+
+		const release = await this.lockProvider.acquire(
+			"report-weekly",
+			WEEKLY_LOCK_TTL,
+		);
+
+		if (!release) {
+			this.#logger.warn(
+				"Skipping weekly report — another instance holds the lock",
+			);
+			return;
+		}
+
+		try {
+			await this.#generateReportsForUsers("WEEKLY");
+		} catch (error) {
+			this.#logger.error(
+				`Weekly report generation job failed: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		} finally {
+			await release();
+		}
+	}
+
+	/**
+	 * 월간 리포트 생성 — 매월 마지막 날 UTC 22:00
+	 */
+	@Cron("0 22 L * *")
+	async handleMonthlyReport(): Promise<void> {
+		this.#logger.log("Starting monthly report generation job...");
+
+		const release = await this.lockProvider.acquire(
+			"report-monthly",
+			MONTHLY_LOCK_TTL,
+		);
+
+		if (!release) {
+			this.#logger.warn(
+				"Skipping monthly report — another instance holds the lock",
+			);
+			return;
+		}
+
+		try {
+			await this.#generateReportsForUsers("MONTHLY");
+		} catch (error) {
+			this.#logger.error(
+				`Monthly report generation job failed: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		} finally {
+			await release();
+		}
+	}
+
+	/**
+	 * 푸시 알림이 활성화된 사용자들에 대해 리포트 생성
+	 */
+	async #generateReportsForUsers(type: "WEEKLY" | "MONTHLY"): Promise<void> {
+		// 푸시 알림이 활성화된 사용자 조회
+		const users = await this.database.user.findMany({
+			where: {
+				pushTokens: {
+					some: {},
+				},
+			},
+			select: {
+				id: true,
+				preference: {
+					select: { timezone: true },
+				},
+			},
+		});
+
+		this.#logger.log(
+			`${type} report: found ${users.length} users with push enabled`,
+		);
+
+		let successCount = 0;
+		let skipCount = 0;
+		let errorCount = 0;
+
+		for (const user of users) {
+			try {
+				const timezone = user.preference?.timezone ?? "Asia/Seoul";
+
+				const report =
+					type === "WEEKLY"
+						? await this.aiReportService.generateWeeklyReport(user.id, timezone)
+						: await this.aiReportService.generateMonthlyReport(
+								user.id,
+								timezone,
+							);
+
+				if (!report) {
+					skipCount++;
+					continue;
+				}
+
+				// 리포트 생성 알림 발송
+				const notificationType: NotificationType =
+					type === "WEEKLY" ? "WEEKLY_ACHIEVEMENT" : "MONTHLY_REPORT";
+
+				const message =
+					type === "WEEKLY"
+						? {
+								title: "주간 리포트가 도착했다냥",
+								body: "이번 주 어땠는지 같이 볼까?",
+							}
+						: {
+								title: "월간 리포트가 도착했다냥",
+								body: "한 달 동안 고생했어!",
+							};
+
+				await this.notificationService.createAndSend({
+					userId: user.id,
+					type: notificationType,
+					title: message.title,
+					body: message.body,
+				});
+
+				successCount++;
+			} catch (error) {
+				// 개별 사용자 에러는 격리하여 다른 사용자에게 영향을 주지 않음
+				errorCount++;
+				this.#logger.error(
+					`${type} report failed for userId=${user.id}: ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			}
+		}
+
+		this.#logger.log(
+			`${type} report completed: success=${successCount}, skipped=${skipCount}, errors=${errorCount}`,
+		);
+	}
+}

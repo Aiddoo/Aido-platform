@@ -20,6 +20,7 @@ import { DatabaseModule } from "@/database";
 import { AdminModule } from "@/modules/admin";
 import { AdminNotificationModule } from "@/modules/admin-notification";
 import { AiModule } from "@/modules/ai";
+import { AiReportModule } from "@/modules/ai-report";
 import { AuthModule } from "@/modules/auth";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
 import { CheerModule } from "@/modules/cheer";
@@ -79,6 +80,7 @@ import { AppService } from "./app.service";
 		AdminModule,
 		AdminNotificationModule,
 		AiModule,
+		AiReportModule,
 		AuthModule,
 		CheerModule,
 		DailyCompletionModule,
