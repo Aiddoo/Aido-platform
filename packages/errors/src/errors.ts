@@ -220,6 +220,7 @@ export const ErrorCode = {
   AI_1307: 'AI_1307',
   AI_1308: 'AI_1308',
   AI_1309: 'AI_1309',
+  AI_1310: 'AI_1310',
 
   // =========================================================================
   // 관리자 (ADMIN_1400-1499)
@@ -1065,6 +1066,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: 'AI 제안은 프리미엄 기능입니다.',
     description: 'AI 반복 제안 기능은 프리미엄 구독 사용자만 이용할 수 있습니다.',
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.AI_1310]: {
+    code: 'AI_1310',
+    message: 'AI 요청이 너무 많습니다.',
+    description: '잠시 후 다시 시도해 주세요.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
 
   // =========================================================================

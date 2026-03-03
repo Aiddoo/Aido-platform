@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import type { TodoSummaryForAnalysis } from "../types";
 
 /**
@@ -38,7 +39,7 @@ export function buildDetectPatternsPrompt(
 	const todoLines = todos
 		.map((t) => {
 			const time = t.scheduledTime ? ` (${t.scheduledTime})` : "";
-			return `- ${t.startDate}: ${t.title}${time}`;
+			return `- ${t.startDate}: ${sanitizeForPrompt(t.title)}${time}`;
 		})
 		.join("\n");
 

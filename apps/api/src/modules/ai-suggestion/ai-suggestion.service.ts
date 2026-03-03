@@ -122,33 +122,40 @@ export class AiSuggestionService {
 					.toDate(),
 			);
 
-		const result = await this.todoService.createRecurring(
-			{
-				userId,
-				title: suggestion.title,
-				categoryId: dto.categoryId,
-				startDate,
-				endDate,
-				daysOfWeek: daysOfWeek as never,
-				scheduledTime: suggestion.scheduledTime,
-			},
-			timezone,
-		);
-
+		// 상태를 먼저 ACCEPTED로 변경 (재수락 방지)
 		const updated = await this.aiSuggestionRepository.updateStatus(
 			suggestionId,
 			"ACCEPTED",
 		);
 
-		this.#logger.log(
-			`제안 수락: id=${suggestionId}, userId=${userId}, createdTodos=${result.count}`,
-		);
+		try {
+			const result = await this.todoService.createRecurring(
+				{
+					userId,
+					title: suggestion.title,
+					categoryId: dto.categoryId,
+					startDate,
+					endDate,
+					daysOfWeek: daysOfWeek as never,
+					scheduledTime: suggestion.scheduledTime,
+				},
+				timezone,
+			);
 
-		return {
-			message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
-			suggestion: AiSuggestionMapper.toResponse(updated),
-			createdTodosCount: result.count,
-		};
+			this.#logger.log(
+				`제안 수락: id=${suggestionId}, userId=${userId}, createdTodos=${result.count}`,
+			);
+
+			return {
+				message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
+				suggestion: AiSuggestionMapper.toResponse(updated),
+				createdTodosCount: result.count,
+			};
+		} catch (error) {
+			// 투두 생성 실패 시 상태를 PENDING으로 롤백
+			await this.aiSuggestionRepository.updateStatus(suggestionId, "PENDING");
+			throw error;
+		}
 	}
 
 	async #enforcePremium(userId: string): Promise<void> {

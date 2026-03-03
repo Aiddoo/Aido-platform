@@ -582,6 +582,10 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.AI_1309);
 	}
 
+	static aiRateLimitExceeded() {
+		return new BusinessException(ErrorCode.AI_1310);
+	}
+
 	// =========================================================================
 	// Todo 카테고리 (TodoCategory)
 	// =========================================================================

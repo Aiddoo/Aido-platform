@@ -217,7 +217,7 @@ describe("AiSuggestionService", () => {
 			expect(mockTodoService.createRecurring).not.toHaveBeenCalled();
 		});
 
-		it("수락 시 TodoService.createRecurring을 호출하고 ACCEPTED로 업데이트해야 한다", async () => {
+		it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 TodoService.createRecurring을 호출해야 한다", async () => {
 			// Given: PENDING 상태의 제안과 TodoService 응답
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
@@ -240,7 +240,14 @@ describe("AiSuggestionService", () => {
 				"Asia/Seoul",
 			);
 
-			// Then: TodoService.createRecurring이 호출되고 ACCEPTED로 업데이트되어야 한다
+			// Then: 상태가 먼저 ACCEPTED로 변경되고, 그 후 투두가 생성되어야 한다
+			const updateStatusOrder =
+				mockRepository.updateStatus.mock.invocationCallOrder[0];
+			const createRecurringOrder =
+				mockTodoService.createRecurring.mock.invocationCallOrder[0];
+			expect(updateStatusOrder).toBeLessThan(createRecurringOrder as number);
+
+			expect(mockRepository.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
 			expect(mockTodoService.createRecurring).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUserId,
@@ -251,9 +258,46 @@ describe("AiSuggestionService", () => {
 				}),
 				"Asia/Seoul",
 			);
-			expect(mockRepository.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
 			expect(result.suggestion.status).toBe("ACCEPTED");
 			expect(result.createdTodosCount).toBe(12);
+		});
+
+		it("수락 시 투두 생성 실패하면 상태가 PENDING으로 롤백되어야 한다", async () => {
+			// Given: PENDING 상태의 제안, 투두 생성 실패
+			const suggestion = createMockSuggestionEntity();
+			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
+
+			const updatedSuggestion = createMockSuggestionEntity({
+				status: "ACCEPTED",
+			});
+			mockRepository.updateStatus.mockResolvedValue(updatedSuggestion);
+
+			mockTodoService.createRecurring.mockRejectedValue(
+				new Error("투두 생성 실패"),
+			);
+
+			// When & Then: 에러가 전파되어야 한다
+			await expect(
+				service.handleAction(
+					mockUserId,
+					1,
+					{ action: "accept", categoryId: 5 },
+					"Asia/Seoul",
+				),
+			).rejects.toThrow("투두 생성 실패");
+
+			// Then: 상태가 ACCEPTED → PENDING으로 롤백되어야 한다
+			expect(mockRepository.updateStatus).toHaveBeenCalledTimes(2);
+			expect(mockRepository.updateStatus).toHaveBeenNthCalledWith(
+				1,
+				1,
+				"ACCEPTED",
+			);
+			expect(mockRepository.updateStatus).toHaveBeenNthCalledWith(
+				2,
+				1,
+				"PENDING",
+			);
 		});
 	});
 

@@ -12,7 +12,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { generateObject } from "ai";
+import { APICallError, generateObject } from "ai";
 import type { z } from "zod";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -57,22 +57,29 @@ export class GeminiProvider implements AiProvider {
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
-		const { object, usage } = await generateObject({
-			model: this.#model,
-			prompt: options.prompt,
-			schema: options.schema as z.ZodType<T>,
-			maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
-			temperature: options.temperature ?? DEFAULT_TEMPERATURE,
-		});
+		try {
+			const { object, usage } = await generateObject({
+				model: this.#model,
+				prompt: options.prompt,
+				schema: options.schema as z.ZodType<T>,
+				maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
+				temperature: options.temperature ?? DEFAULT_TEMPERATURE,
+			});
 
-		return {
-			output: object,
-			model: `google:${GEMINI_MODEL}`,
-			usage: {
-				input: usage.inputTokens ?? 0,
-				output: usage.outputTokens ?? 0,
-			},
-		};
+			return {
+				output: object,
+				model: `google:${GEMINI_MODEL}`,
+				usage: {
+					input: usage.inputTokens ?? 0,
+					output: usage.outputTokens ?? 0,
+				},
+			};
+		} catch (error) {
+			if (APICallError.isInstance(error) && error.statusCode === 429) {
+				throw BusinessExceptions.aiRateLimitExceeded();
+			}
+			throw error;
+		}
 	}
 
 	/**

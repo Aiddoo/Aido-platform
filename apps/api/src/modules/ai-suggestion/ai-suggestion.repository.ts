@@ -54,7 +54,7 @@ export class AiSuggestionRepository {
 	 */
 	async updateStatus(
 		id: number,
-		status: "ACCEPTED" | "DISMISSED",
+		status: "PENDING" | "ACCEPTED" | "DISMISSED",
 		tx?: TransactionClient,
 	): Promise<RecurringSuggestion> {
 		const client = tx ?? this.database;

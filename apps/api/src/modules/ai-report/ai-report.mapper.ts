@@ -4,14 +4,15 @@
  * Prisma AiReport 엔티티를 응답 DTO로 변환하는 Static 메서드를 제공합니다.
  */
 
-import type {
-	AiReport as AiReportDto,
-	CategoryBreakdownItem,
-	DayPatternItem,
-	ReportStats,
-	TimePatternItem,
+import type { AiReport as AiReportDto } from "@aido/validators";
+import {
+	categoryBreakdownItemSchema,
+	dayPatternItemSchema,
+	reportStatsSchema,
+	timePatternItemSchema,
 } from "@aido/validators";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { toDateString } from "@/common/date/utils/format";
 import type { AiReport } from "@/generated/prisma/client";
 
@@ -94,13 +95,21 @@ export abstract class AiReportMapper {
 				entity.year,
 				entity.period,
 			),
-			stats: entity.stats as unknown as ReportStats,
-			categoryBreakdown:
-				entity.categoryBreakdown as unknown as CategoryBreakdownItem[],
-			dayPatterns: entity.dayPatterns as unknown as DayPatternItem[],
-			timePatterns: entity.timePatterns as unknown as TimePatternItem[],
+			stats: AiReportMapper.#parseStats(entity.stats),
+			categoryBreakdown: AiReportMapper.#parseArray(
+				z.array(categoryBreakdownItemSchema),
+				entity.categoryBreakdown,
+			),
+			dayPatterns: AiReportMapper.#parseArray(
+				z.array(dayPatternItemSchema),
+				entity.dayPatterns,
+			),
+			timePatterns: AiReportMapper.#parseArray(
+				z.array(timePatternItemSchema),
+				entity.timePatterns,
+			),
 			aiSummary: entity.aiSummary,
-			aiTips: entity.aiTips as unknown as string[],
+			aiTips: AiReportMapper.#parseArray(z.array(z.string()), entity.aiTips),
 			hasActivity: entity.hasActivity,
 			generatedAt: entity.generatedAt.toISOString(),
 		};
@@ -111,5 +120,22 @@ export abstract class AiReportMapper {
 	 */
 	static toManyResponse(entities: AiReport[]): AiReportDto[] {
 		return entities.map((entity) => AiReportMapper.toResponse(entity));
+	}
+
+	static #parseStats(raw: unknown) {
+		const result = reportStatsSchema.safeParse(raw);
+		if (result.success) return result.data;
+		return {
+			totalTodos: 0,
+			completedTodos: 0,
+			completionRate: 0,
+			prevCompletionRate: null,
+			streakDays: 0,
+		};
+	}
+
+	static #parseArray<T>(schema: z.ZodType<T[]>, raw: unknown): T[] {
+		const result = schema.safeParse(raw);
+		return result.success ? result.data : [];
 	}
 }
