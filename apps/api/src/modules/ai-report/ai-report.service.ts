@@ -3,7 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { now } from "@/common/date/utils/core";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { ReportType } from "@/generated/prisma/client";
+import type { Prisma, ReportType } from "@/generated/prisma/client";
 
 import { AiReportMapper } from "./ai-report.mapper";
 import { AiReportRepository } from "./ai-report.repository";
@@ -265,11 +265,14 @@ export class AiReportService {
 				prevCompletionRate: aggregatedData.prevCompletionRate,
 				streakDays: aggregatedData.streakDays,
 			},
-			categoryBreakdown: aggregatedData.categoryBreakdown as never,
-			dayPatterns: aggregatedData.dayPatterns as never,
-			timePatterns: aggregatedData.timePatterns as never,
+			categoryBreakdown:
+				aggregatedData.categoryBreakdown as unknown as Prisma.InputJsonValue,
+			dayPatterns:
+				aggregatedData.dayPatterns as unknown as Prisma.InputJsonValue,
+			timePatterns:
+				aggregatedData.timePatterns as unknown as Prisma.InputJsonValue,
 			aiSummary: aiContent.aiSummary,
-			aiTips: aiContent.aiTips as never,
+			aiTips: aiContent.aiTips as unknown as Prisma.InputJsonValue,
 			hasActivity: aggregatedData.hasActivity,
 			generatedAt: now(),
 		});

@@ -52,11 +52,7 @@ export abstract class AiReportMapper {
 	): { startDate: string; endDate: string } {
 		if (type === "WEEKLY") {
 			// ISO week: 해당 연도, 해당 주차의 월요일 ~ 일요일
-			const monday = dayjs()
-				.utc()
-				.year(year)
-				.isoWeek(period)
-				.startOf("isoWeek");
+			const monday = dayjs.utc().year(year).isoWeek(period).startOf("isoWeek");
 			const sunday = monday.endOf("isoWeek");
 			return {
 				startDate: toDateString(monday.toDate()),
