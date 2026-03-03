@@ -26,10 +26,12 @@ export function buildParseTodoPrompt(
 		.tz(tz)
 		.locale("ko")
 		.format("YYYY-MM-DD HH:mm (dddd)");
+	const fourWeeksLater = dayjs(now).tz(tz).add(4, "week").format("YYYY-MM-DD");
 
 	return `Korean Todo Parser. Now: ${datetime}
 Time: 오전/아침→AM, 오후/저녁/밤→PM, 숫자만→context기반(지난시간=PM)
 Date: 내일→+1d, 모레→+2d, 다음주→+7d, 이번주→this week
-JSON: {"title":"string","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD|null","scheduledTime":"HH:mm|null","isAllDay":boolean}
+Repeat: 매주→isRecurring:true+요일, 매일→MON~SUN, 주말→SAT+SUN, 평일→MON~FRI, 격주/매달→isRecurring:false
+JSON: {"title":"str","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD|null","scheduledTime":"HH:mm|null","isAllDay":bool,"isRecurring":bool,"recurrence":{"daysOfWeek":["MON"],"endDate":"${fourWeeksLater}"}|null}
 Parse: "${text}"`;
 }

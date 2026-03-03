@@ -110,9 +110,32 @@ describe("buildParseTodoPrompt", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
 
 			// Then
-			expect(prompt).toContain('"title":"string"');
+			expect(prompt).toContain('"title":"str"');
 			expect(prompt).toContain('"startDate":"YYYY-MM-DD"');
-			expect(prompt).toContain('"isAllDay":boolean');
+			expect(prompt).toContain('"isAllDay":bool');
+			expect(prompt).toContain('"isRecurring":bool');
+			expect(prompt).toContain('"recurrence"');
+		});
+
+		it("반복 해석 규칙이 포함된다", () => {
+			// When
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+
+			// Then
+			expect(prompt).toContain("매주→isRecurring:true+요일");
+			expect(prompt).toContain("매일→MON~SUN");
+			expect(prompt).toContain("평일→MON~FRI");
+		});
+
+		it("recurrence endDate에 4주 후 날짜가 포함된다", () => {
+			// Given
+			const now = new Date("2026-03-01T00:00:00.000Z");
+
+			// When
+			const prompt = buildParseTodoPrompt("매주 운동", "UTC", now);
+
+			// Then - 4주 후 = 2026-03-29
+			expect(prompt).toContain("2026-03-29");
 		});
 	});
 

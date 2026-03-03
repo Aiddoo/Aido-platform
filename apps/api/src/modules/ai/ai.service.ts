@@ -114,7 +114,7 @@ export class AiService {
 			const result = await this.aiProvider.generateStructured({
 				prompt,
 				schema: parsedTodoDataSchema,
-				maxTokens: 150,
+				maxTokens: 200,
 				temperature: 0.1,
 			});
 
