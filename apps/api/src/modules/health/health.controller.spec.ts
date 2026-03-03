@@ -45,7 +45,9 @@ describe("HealthController", () => {
 			expect(mockHealthCheckService.check).toHaveBeenCalledWith(
 				expect.any(Array),
 			);
-			expect(result).toEqual(healthResult);
+			expect(result).toMatchObject(healthResult);
+			expect(result).toHaveProperty("instanceId");
+			expect(typeof result.instanceId).toBe("string");
 		});
 
 		it("데이터베이스 연결 실패 시에도 결과를 반환해야 한다", async () => {
