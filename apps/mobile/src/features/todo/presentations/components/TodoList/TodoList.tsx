@@ -10,7 +10,7 @@ import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { getAllTodosQueryOptions } from '../../queries/get-all-todos-query-options';
 import { getTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
@@ -121,10 +121,9 @@ function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableLi
   });
 
   return (
-    <DraggableFlatList
+    <NestableDraggableFlatList
       data={draggableTodos}
       keyExtractor={(item) => String(item.id)}
-      scrollEnabled={false}
       renderItem={({ item, drag, isActive }) => (
         <ScaleDecorator activeScale={1.015}>
           <TodoItem
