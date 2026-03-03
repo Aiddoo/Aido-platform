@@ -138,7 +138,7 @@ export const SYSTEM_TEMPLATES = {
 	WEEKLY_REPORT: {
 		title: "주간 리포트가 도착했다냥!",
 		body: "이번 주 성적표를 확인해보라냥",
-		type: "WEEKLY_ACHIEVEMENT",
+		type: "WEEKLY_REPORT",
 		defaultRoute: "/reports",
 	} satisfies NotificationTemplate,
 	MONTHLY_REPORT: {

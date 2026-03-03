@@ -349,6 +349,7 @@ describe("NotificationService", () => {
 						"ADMIN_BROADCAST",
 						"ADMIN_TARGETED",
 						"WEEKLY_ACHIEVEMENT",
+						"WEEKLY_REPORT",
 					]),
 				}),
 			);
@@ -465,6 +466,7 @@ describe("NotificationService", () => {
 						"ADMIN_BROADCAST",
 						"ADMIN_TARGETED",
 						"WEEKLY_ACHIEVEMENT",
+						"WEEKLY_REPORT",
 					]),
 				}),
 			);

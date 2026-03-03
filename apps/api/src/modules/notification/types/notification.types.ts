@@ -131,6 +131,7 @@ export interface CreateNotificationData {
 	 * | MORNING_REMINDER | 아침 리마인더 | - |
 	 * | EVENING_REMINDER | 저녁 리마인더 | - |
 	 * | WEEKLY_ACHIEVEMENT | 주간 달성 | - |
+	 * | WEEKLY_REPORT | 주간 AI 리포트 | - |
 	 * | SYSTEM_NOTICE | 시스템 공지 | action.url 필요 |
 	 */
 	type: NotificationType;

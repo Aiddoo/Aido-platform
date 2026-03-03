@@ -328,6 +328,7 @@ describe("Notification (e2e)", () => {
 						"ADMIN_BROADCAST",
 						"ADMIN_TARGETED",
 						"WEEKLY_ACHIEVEMENT",
+						"WEEKLY_REPORT",
 					];
 					for (const notification of notifications) {
 						expect(noticeTypes).toContain(notification.type);

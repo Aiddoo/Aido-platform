@@ -654,6 +654,7 @@ enum NotificationType {
   WEEKLY_ACHIEVEMENT
 
   // AI
+  WEEKLY_REPORT // 주간 AI 리포트
   MONTHLY_REPORT // 월간 AI 리포트
   AI_SUGGESTION // AI 반복 제안
 

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import dayjs from "dayjs";
 import type { TransactionClient } from "@/common/database";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
@@ -121,6 +122,7 @@ export class AiSuggestionRepository {
 		userId: string,
 		from: Date,
 		to: Date,
+		timezone: string,
 		tx?: TransactionClient,
 	): Promise<TodoSummaryForAnalysis[]> {
 		const client = tx ?? this.database;
@@ -145,7 +147,7 @@ export class AiSuggestionRepository {
 			title: t.title,
 			startDate: toDateString(t.startDate),
 			scheduledTime: t.scheduledTime
-				? `${String(t.scheduledTime.getUTCHours()).padStart(2, "0")}:${String(t.scheduledTime.getUTCMinutes()).padStart(2, "0")}`
+				? dayjs(t.scheduledTime).tz(timezone).format("HH:mm")
 				: null,
 		}));
 	}

@@ -214,14 +214,14 @@ describe("AiSuggestionRepository", () => {
 
 	describe("findRecentTodos", () => {
 		it("비반복 할 일만 조회하고 요약 형식으로 반환해야 한다", async () => {
-			// Given: 최근 할 일 목록
+			// Given: 최근 할 일 목록 (scheduledTime은 UTC 저장, Asia/Seoul은 +9)
 			const from = new Date("2026-02-04T00:00:00.000Z");
 			const to = new Date("2026-03-04T00:00:00.000Z");
 			const mockTodos = [
 				{
 					title: "팀 미팅",
 					startDate: new Date("2026-02-10T00:00:00.000Z"),
-					scheduledTime: new Date("2026-02-10T10:00:00.000Z"),
+					scheduledTime: new Date("2026-02-10T01:00:00.000Z"), // UTC 01:00 → KST 10:00
 				},
 				{
 					title: "운동",
@@ -232,9 +232,14 @@ describe("AiSuggestionRepository", () => {
 			(db.todo.findMany as jest.Mock).mockResolvedValue(mockTodos);
 
 			// When: findRecentTodos를 호출하면
-			const result = await repository.findRecentTodos("user-123", from, to);
+			const result = await repository.findRecentTodos(
+				"user-123",
+				from,
+				to,
+				"Asia/Seoul",
+			);
 
-			// Then: 비반복 조건으로 조회하고 요약 형식을 반환해야 한다
+			// Then: 비반복 조건으로 조회하고 사용자 타임존 기준 시간을 반환해야 한다
 			expect(db.todo.findMany).toHaveBeenCalledWith({
 				where: {
 					userId: "user-123",

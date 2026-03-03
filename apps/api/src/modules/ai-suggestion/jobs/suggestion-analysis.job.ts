@@ -88,13 +88,16 @@ export class SuggestionAnalysisJob {
 							},
 						},
 					},
-					select: { id: true },
+					select: {
+						id: true,
+						preference: { select: { timezone: true } },
+					},
 					orderBy: { id: "asc" },
 					take,
 				}),
 			onBatch: async (batch) => {
 				const results = await Promise.allSettled(
-					batch.map(({ id }) => this.#processUserAnalysis(id)),
+					batch.map((user) => this.#processUserAnalysis(user)),
 				);
 
 				for (const result of results) {
@@ -123,9 +126,16 @@ export class SuggestionAnalysisJob {
 	/**
 	 * 개별 사용자 패턴 분석 및 알림 발송
 	 */
-	async #processUserAnalysis(userId: string): Promise<"success" | "skipped"> {
+	async #processUserAnalysis(user: {
+		id: string;
+		preference: { timezone: string } | null;
+	}): Promise<"success" | "skipped"> {
+		const timezone = user.preference?.timezone ?? "Asia/Seoul";
 		const createdCount =
-			await this.aiSuggestionService.analyzeAndCreateSuggestions(userId);
+			await this.aiSuggestionService.analyzeAndCreateSuggestions(
+				user.id,
+				timezone,
+			);
 
 		if (createdCount === 0) {
 			return "skipped";
@@ -134,7 +144,7 @@ export class SuggestionAnalysisJob {
 		// 새 제안 생성 알림 발송
 		const message = NotificationMessageBuilder.aiSuggestion();
 		await this.notificationService.createAndSend({
-			userId,
+			userId: user.id,
 			type: "AI_SUGGESTION",
 			title: message.title,
 			body: message.body,

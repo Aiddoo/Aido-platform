@@ -111,7 +111,10 @@ describe("AiSuggestionService", () => {
 			mockRepository.findRecentTodos.mockResolvedValue([]);
 
 			// When: analyzeAndCreateSuggestions를 호출하면
-			const result = await service.analyzeAndCreateSuggestions(mockUserId);
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
 
 			// Then: 프리미엄 체크 없이 정상 동작
 			expect(mockEntitlementService.hasPremiumAccess).not.toHaveBeenCalled();
@@ -347,7 +350,10 @@ describe("AiSuggestionService", () => {
 			]);
 
 			// When: analyzeAndCreateSuggestions를 호출하면
-			const result = await service.analyzeAndCreateSuggestions(mockUserId);
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
 
 			// Then: AI가 호출되지 않고 0을 반환해야 한다
 			expect(result).toBe(0);
@@ -385,7 +391,10 @@ describe("AiSuggestionService", () => {
 			mockRepository.create.mockResolvedValue(createMockSuggestionEntity());
 
 			// When: analyzeAndCreateSuggestions를 호출하면
-			const result = await service.analyzeAndCreateSuggestions(mockUserId);
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
 
 			// Then: 새 제안이 생성되어야 한다
 			expect(result).toBe(1);
@@ -424,7 +433,10 @@ describe("AiSuggestionService", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 
 			// When: analyzeAndCreateSuggestions를 호출하면
-			const result = await service.analyzeAndCreateSuggestions(mockUserId);
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
 
 			// Then: 중복이므로 생성되지 않아야 한다
 			expect(result).toBe(0);

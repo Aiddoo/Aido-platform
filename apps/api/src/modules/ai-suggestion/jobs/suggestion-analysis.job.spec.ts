@@ -97,7 +97,10 @@ describe("SuggestionAnalysisJob", () => {
 	describe("사용자 반복 처리", () => {
 		it("최근 할 일이 있는 모든 사용자에 대해 분석을 수행해야 한다", async () => {
 			// Given: 2명의 사용자
-			const users = [{ id: "user-1" }, { id: "user-2" }];
+			const users = [
+				{ id: "user-1", preference: { timezone: "Asia/Seoul" } },
+				{ id: "user-2", preference: { timezone: "America/New_York" } },
+			];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(1);
@@ -112,15 +115,15 @@ describe("SuggestionAnalysisJob", () => {
 			).toHaveBeenCalledTimes(2);
 			expect(
 				mockAiSuggestionService.analyzeAndCreateSuggestions,
-			).toHaveBeenCalledWith("user-1");
+			).toHaveBeenCalledWith("user-1", "Asia/Seoul");
 			expect(
 				mockAiSuggestionService.analyzeAndCreateSuggestions,
-			).toHaveBeenCalledWith("user-2");
+			).toHaveBeenCalledWith("user-2", "America/New_York");
 		});
 
 		it("제안이 생성되지 않으면 알림을 보내지 않아야 한다", async () => {
 			// Given: 제안 생성이 0을 반환 (패턴 없음)
-			const users = [{ id: "user-1" }];
+			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(0);
@@ -134,7 +137,7 @@ describe("SuggestionAnalysisJob", () => {
 
 		it("제안이 생성되면 알림을 발송해야 한다", async () => {
 			// Given: 제안 생성 성공
-			const users = [{ id: "user-1" }];
+			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(2);
@@ -162,7 +165,10 @@ describe("SuggestionAnalysisJob", () => {
 	describe("에러 격리", () => {
 		it("한 사용자의 에러가 다른 사용자 처리에 영향을 주지 않아야 한다", async () => {
 			// Given: user-1은 에러, user-2는 정상
-			const users = [{ id: "user-1" }, { id: "user-2" }];
+			const users = [
+				{ id: "user-1", preference: { timezone: "Asia/Seoul" } },
+				{ id: "user-2", preference: { timezone: "Asia/Seoul" } },
+			];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 

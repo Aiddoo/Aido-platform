@@ -171,7 +171,7 @@ export class ReportGenerationJob {
 
 		// 리포트 생성 알림 발송
 		const notificationType: NotificationType =
-			type === "WEEKLY" ? "WEEKLY_ACHIEVEMENT" : "MONTHLY_REPORT";
+			type === "WEEKLY" ? "WEEKLY_REPORT" : "MONTHLY_REPORT";
 
 		const message =
 			type === "WEEKLY"

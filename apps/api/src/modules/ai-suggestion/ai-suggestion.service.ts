@@ -181,7 +181,10 @@ export class AiSuggestionService {
 	 *
 	 * @returns 생성된 제안 수
 	 */
-	async analyzeAndCreateSuggestions(userId: string): Promise<number> {
+	async analyzeAndCreateSuggestions(
+		userId: string,
+		timezone: string,
+	): Promise<number> {
 		const currentDate = dayjs.utc(now());
 		const from = currentDate
 			.subtract(AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS, "week")
@@ -193,6 +196,7 @@ export class AiSuggestionService {
 			userId,
 			from,
 			to,
+			timezone,
 		);
 
 		if (todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES) {

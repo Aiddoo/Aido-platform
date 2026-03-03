@@ -169,7 +169,7 @@ describe("ReportGenerationJob", () => {
 			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-1",
-					type: "WEEKLY_ACHIEVEMENT",
+					type: "WEEKLY_REPORT",
 					title: expect.any(String),
 					body: expect.any(String),
 				}),
