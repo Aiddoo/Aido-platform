@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { forEachBatch } from "@/common/database";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../../notification/notification.service";
@@ -8,6 +9,9 @@ import { AiSuggestionService } from "../ai-suggestion.service";
 
 /** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
 const LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
+
+/** Gemini API rate limit 고려하여 동시 처리 수 제한 */
+const BATCH_SIZE = 5;
 
 /**
  * AI 반복 제안 분석 크론 작업
@@ -63,62 +67,79 @@ export class SuggestionAnalysisJob {
 	 * 최근 할 일이 있는 사용자들의 패턴 분석 수행
 	 */
 	async #analyzeUsers(): Promise<void> {
-		// 최근 4주간 할 일이 있는 사용자 조회
 		const fourWeeksAgo = new Date();
 		fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-
-		const users = await this.database.todo.findMany({
-			where: {
-				startDate: { gte: fourWeeksAgo },
-				recurrenceGroupId: null,
-				user: {
-					OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-				},
-			},
-			select: { userId: true },
-			distinct: ["userId"],
-		});
-
-		this.#logger.log(
-			`Suggestion analysis: found ${users.length} users with recent todos`,
-		);
 
 		let successCount = 0;
 		let skipCount = 0;
 		let errorCount = 0;
 
-		for (const { userId } of users) {
-			try {
-				const createdCount =
-					await this.aiSuggestionService.analyzeAndCreateSuggestions(userId);
-
-				if (createdCount === 0) {
-					skipCount++;
-					continue;
-				}
-
-				// 새 제안 생성 알림 발송
-				const message = NotificationMessageBuilder.aiSuggestion();
-				await this.notificationService.createAndSend({
-					userId,
-					type: "AI_SUGGESTION",
-					title: message.title,
-					body: message.body,
-				});
-
-				successCount++;
-			} catch (error) {
-				// 개별 사용자 에러는 격리하여 다른 사용자에게 영향을 주지 않음
-				errorCount++;
-				this.#logger.error(
-					`Suggestion analysis failed for userId=${userId}: ${error}`,
-					error instanceof Error ? error.stack : undefined,
+		await forEachBatch({
+			batchSize: BATCH_SIZE,
+			fetchPage: (cursor, take) =>
+				this.database.user.findMany({
+					where: {
+						...(cursor && { id: { gt: cursor } }),
+						OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+						todos: {
+							some: {
+								startDate: { gte: fourWeeksAgo },
+								recurrenceGroupId: null,
+							},
+						},
+					},
+					select: { id: true },
+					orderBy: { id: "asc" },
+					take,
+				}),
+			onBatch: async (batch) => {
+				const results = await Promise.allSettled(
+					batch.map(({ id }) => this.#processUserAnalysis(id)),
 				);
-			}
-		}
+
+				for (const result of results) {
+					if (result.status === "fulfilled") {
+						if (result.value === "skipped") {
+							skipCount++;
+						} else {
+							successCount++;
+						}
+					} else {
+						errorCount++;
+						this.#logger.error(
+							`Suggestion analysis failed: ${result.reason}`,
+							result.reason instanceof Error ? result.reason.stack : undefined,
+						);
+					}
+				}
+			},
+		});
 
 		this.#logger.log(
 			`Suggestion analysis completed: success=${successCount}, skipped=${skipCount}, errors=${errorCount}`,
 		);
+	}
+
+	/**
+	 * 개별 사용자 패턴 분석 및 알림 발송
+	 */
+	async #processUserAnalysis(userId: string): Promise<"success" | "skipped"> {
+		const createdCount =
+			await this.aiSuggestionService.analyzeAndCreateSuggestions(userId);
+
+		if (createdCount === 0) {
+			return "skipped";
+		}
+
+		// 새 제안 생성 알림 발송
+		const message = NotificationMessageBuilder.aiSuggestion();
+		await this.notificationService.createAndSend({
+			userId,
+			type: "AI_SUGGESTION",
+			title: message.title,
+			body: message.body,
+		});
+
+		return "success";
 	}
 }

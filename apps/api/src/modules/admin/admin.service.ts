@@ -1,10 +1,13 @@
 import { BROADCAST_TARGET_FILTER } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { forEachBatch } from "@/common/database";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../notification/notification.service";
 import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dtos";
+
+const BROADCAST_BATCH_SIZE = 500;
 
 export interface BroadcastResult {
 	successCount: number;
@@ -30,38 +33,51 @@ export class AdminService {
 		dto: BroadcastNotificationDto,
 	): Promise<BroadcastResult> {
 		const { title, body, targetFilter } = dto;
+		const whereClause = this.#buildTargetWhere(targetFilter);
 
-		// 대상 사용자 조회
-		const targetUsers = await this.#getTargetUsers(targetFilter);
+		let totalTargets = 0;
+		let successCount = 0;
 
-		if (targetUsers.length === 0) {
+		await forEachBatch({
+			batchSize: BROADCAST_BATCH_SIZE,
+			fetchPage: (cursor, take) =>
+				this.database.user.findMany({
+					where: {
+						...whereClause,
+						...(cursor && { id: { gt: cursor } }),
+					},
+					select: { id: true },
+					orderBy: { id: "asc" },
+					take,
+				}),
+			onBatch: async (batch) => {
+				totalTargets += batch.length;
+
+				const notifications = batch.map((user) => ({
+					userId: user.id,
+					type: "ADMIN_BROADCAST" as const,
+					title,
+					body,
+				}));
+
+				const result =
+					await this.notificationService.createAndSendBatch(notifications);
+				successCount += result.count;
+			},
+		});
+
+		if (totalTargets === 0) {
 			throw BusinessExceptions.adminNotificationTargetNotFound();
 		}
 
 		this.#logger.log(
-			`Broadcasting notification to ${targetUsers.length} users with filter: ${targetFilter}`,
-		);
-
-		// 알림 데이터 생성
-		const notifications = targetUsers.map((userId) => ({
-			userId,
-			type: "ADMIN_BROADCAST" as const,
-			title,
-			body,
-		}));
-
-		// 배치로 알림 생성 및 발송
-		const result =
-			await this.notificationService.createAndSendBatch(notifications);
-
-		this.#logger.log(
-			`Broadcast notification completed: ${result.count} notifications sent`,
+			`Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${targetFilter}`,
 		);
 
 		return {
-			successCount: result.count,
-			failCount: targetUsers.length - result.count,
-			totalTargets: targetUsers.length,
+			successCount,
+			failCount: totalTargets - successCount,
+			totalTargets,
 		};
 	}
 
@@ -118,77 +134,35 @@ export class AdminService {
 	/**
 	 * 대상 필터에 따른 사용자 ID 조회
 	 */
-	async #getTargetUsers(
+	#buildTargetWhere(
 		targetFilter: (typeof BROADCAST_TARGET_FILTER)[keyof typeof BROADCAST_TARGET_FILTER],
-	): Promise<string[]> {
+	): Record<string, unknown> {
 		const baseWhere = {
 			deletedAt: null,
 			status: "ACTIVE" as const,
 		};
 
 		switch (targetFilter) {
-			case BROADCAST_TARGET_FILTER.ALL: {
-				// 모든 활성 사용자
-				const users = await this.database.user.findMany({
-					where: baseWhere,
-					select: { id: true },
-				});
-				return users.map((u) => u.id);
-			}
+			case BROADCAST_TARGET_FILTER.ALL:
+				return baseWhere;
 
-			case BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN: {
-				// 푸시 토큰이 있는 사용자만
-				const users = await this.database.user.findMany({
-					where: {
-						...baseWhere,
-						pushTokens: { some: {} },
-					},
-					select: { id: true },
-				});
-				return users.map((u) => u.id);
-			}
+			case BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN:
+				return { ...baseWhere, pushTokens: { some: {} } };
 
 			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS: {
-				// 최근 7일 로그인 사용자
 				const sevenDaysAgo = new Date();
 				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-				const users = await this.database.user.findMany({
-					where: {
-						...baseWhere,
-						lastLoginAt: { gte: sevenDaysAgo },
-					},
-					select: { id: true },
-				});
-				return users.map((u) => u.id);
+				return { ...baseWhere, lastLoginAt: { gte: sevenDaysAgo } };
 			}
 
 			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS: {
-				// 최근 30일 로그인 사용자
 				const thirtyDaysAgo = new Date();
 				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-				const users = await this.database.user.findMany({
-					where: {
-						...baseWhere,
-						lastLoginAt: { gte: thirtyDaysAgo },
-					},
-					select: { id: true },
-				});
-				return users.map((u) => u.id);
+				return { ...baseWhere, lastLoginAt: { gte: thirtyDaysAgo } };
 			}
 
-			case BROADCAST_TARGET_FILTER.SUBSCRIBERS: {
-				// 유료 구독자
-				const users = await this.database.user.findMany({
-					where: {
-						...baseWhere,
-						subscriptionStatus: "ACTIVE",
-					},
-					select: { id: true },
-				});
-				return users.map((u) => u.id);
-			}
+			case BROADCAST_TARGET_FILTER.SUBSCRIBERS:
+				return { ...baseWhere, subscriptionStatus: "ACTIVE" };
 
 			default:
 				throw BusinessExceptions.adminInvalidFilterCondition({

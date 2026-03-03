@@ -51,7 +51,7 @@ describe("SuggestionAnalysisJob", () => {
 		it("잠금을 획득하고 작업 완료 후 해제해야 한다", async () => {
 			// Given: 잠금 획득 성공
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockResolvedValue([]);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
 
 			// When: handleWeeklyAnalysis를 호출하면
 			await job.handleWeeklyAnalysis();
@@ -72,13 +72,13 @@ describe("SuggestionAnalysisJob", () => {
 			await job.handleWeeklyAnalysis();
 
 			// Then: 사용자 조회가 호출되지 않아야 한다
-			expect(mockDatabase.todo.findMany).not.toHaveBeenCalled();
+			expect(mockDatabase.user.findMany).not.toHaveBeenCalled();
 		});
 
 		it("작업 중 에러가 발생해도 잠금이 해제되어야 한다", async () => {
 			// Given: 잠금 획득 성공하지만 조회에서 에러 발생
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockRejectedValue(
+			(mockDatabase.user.findMany as jest.Mock).mockRejectedValue(
 				new Error("DB error"),
 			);
 
@@ -97,9 +97,9 @@ describe("SuggestionAnalysisJob", () => {
 	describe("사용자 반복 처리", () => {
 		it("최근 할 일이 있는 모든 사용자에 대해 분석을 수행해야 한다", async () => {
 			// Given: 2명의 사용자
-			const users = [{ userId: "user-1" }, { userId: "user-2" }];
+			const users = [{ id: "user-1" }, { id: "user-2" }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockResolvedValue(users);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(1);
 			mockNotificationService.createAndSend.mockResolvedValue({} as never);
 
@@ -120,9 +120,9 @@ describe("SuggestionAnalysisJob", () => {
 
 		it("제안이 생성되지 않으면 알림을 보내지 않아야 한다", async () => {
 			// Given: 제안 생성이 0을 반환 (패턴 없음)
-			const users = [{ userId: "user-1" }];
+			const users = [{ id: "user-1" }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockResolvedValue(users);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(0);
 
 			// When: handleWeeklyAnalysis를 호출하면
@@ -134,9 +134,9 @@ describe("SuggestionAnalysisJob", () => {
 
 		it("제안이 생성되면 알림을 발송해야 한다", async () => {
 			// Given: 제안 생성 성공
-			const users = [{ userId: "user-1" }];
+			const users = [{ id: "user-1" }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockResolvedValue(users);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(2);
 			mockNotificationService.createAndSend.mockResolvedValue({} as never);
 
@@ -162,9 +162,9 @@ describe("SuggestionAnalysisJob", () => {
 	describe("에러 격리", () => {
 		it("한 사용자의 에러가 다른 사용자 처리에 영향을 주지 않아야 한다", async () => {
 			// Given: user-1은 에러, user-2는 정상
-			const users = [{ userId: "user-1" }, { userId: "user-2" }];
+			const users = [{ id: "user-1" }, { id: "user-2" }];
 			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.todo.findMany as jest.Mock).mockResolvedValue(users);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 
 			mockAiSuggestionService.analyzeAndCreateSuggestions
 				.mockRejectedValueOnce(new Error("user-1 에러"))

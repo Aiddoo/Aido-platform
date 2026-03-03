@@ -88,6 +88,8 @@ describe("AdminService", () => {
 					status: "ACTIVE",
 				},
 				select: { id: true },
+				orderBy: { id: "asc" },
+				take: 500,
 			});
 
 			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
@@ -143,6 +145,8 @@ describe("AdminService", () => {
 					pushTokens: { some: {} },
 				},
 				select: { id: true },
+				orderBy: { id: "asc" },
+				take: 500,
 			});
 		});
 
@@ -230,6 +234,8 @@ describe("AdminService", () => {
 					subscriptionStatus: "ACTIVE",
 				},
 				select: { id: true },
+				orderBy: { id: "asc" },
+				take: 500,
 			});
 		});
 	});

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { forEachBatch } from "@/common/database";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import type { NotificationType } from "@/generated/prisma/client";
@@ -10,6 +11,9 @@ import { AiReportService } from "../ai-report.service";
 /** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
 const WEEKLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
 const MONTHLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
+
+/** Gemini API rate limit 고려하여 동시 처리 수 제한 */
+const BATCH_SIZE = 5;
 
 /**
  * AI 리포트 생성 크론 작업
@@ -98,73 +102,89 @@ export class ReportGenerationJob {
 	 * 푸시 알림이 활성화된 사용자들에 대해 리포트 생성
 	 */
 	async #generateReportsForUsers(type: "WEEKLY" | "MONTHLY"): Promise<void> {
-		// 프리미엄(ACTIVE 구독 또는 ADMIN) 사용자 조회
-		const users = await this.database.user.findMany({
-			where: {
-				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-			},
-			select: {
-				id: true,
-				preference: {
-					select: { timezone: true },
-				},
-			},
-		});
-
-		this.#logger.log(
-			`${type} report: found ${users.length} users with push enabled`,
-		);
-
 		let successCount = 0;
 		let skipCount = 0;
 		let errorCount = 0;
 
-		for (const user of users) {
-			try {
-				const timezone = user.preference?.timezone ?? "Asia/Seoul";
-
-				const report =
-					type === "WEEKLY"
-						? await this.aiReportService.generateWeeklyReport(user.id, timezone)
-						: await this.aiReportService.generateMonthlyReport(
-								user.id,
-								timezone,
-							);
-
-				if (!report) {
-					skipCount++;
-					continue;
-				}
-
-				// 리포트 생성 알림 발송
-				const notificationType: NotificationType =
-					type === "WEEKLY" ? "WEEKLY_ACHIEVEMENT" : "MONTHLY_REPORT";
-
-				const message =
-					type === "WEEKLY"
-						? NotificationMessageBuilder.weeklyReport()
-						: NotificationMessageBuilder.monthlyReport();
-
-				await this.notificationService.createAndSend({
-					userId: user.id,
-					type: notificationType,
-					title: message.title,
-					body: message.body,
-				});
-
-				successCount++;
-			} catch (error) {
-				// 개별 사용자 에러는 격리하여 다른 사용자에게 영향을 주지 않음
-				errorCount++;
-				this.#logger.error(
-					`${type} report failed for userId=${user.id}: ${error}`,
-					error instanceof Error ? error.stack : undefined,
+		await forEachBatch({
+			batchSize: BATCH_SIZE,
+			fetchPage: (cursor, take) =>
+				this.database.user.findMany({
+					where: {
+						...(cursor && { id: { gt: cursor } }),
+						OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+					},
+					select: {
+						id: true,
+						preference: {
+							select: { timezone: true },
+						},
+					},
+					orderBy: { id: "asc" },
+					take,
+				}),
+			onBatch: async (batch) => {
+				const results = await Promise.allSettled(
+					batch.map((user) => this.#processUserReport(user, type)),
 				);
-			}
-		}
+
+				for (const result of results) {
+					if (result.status === "fulfilled") {
+						if (result.value === "skipped") {
+							skipCount++;
+						} else {
+							successCount++;
+						}
+					} else {
+						errorCount++;
+						this.#logger.error(
+							`${type} report failed: ${result.reason}`,
+							result.reason instanceof Error ? result.reason.stack : undefined,
+						);
+					}
+				}
+			},
+		});
 
 		this.#logger.log(
 			`${type} report completed: success=${successCount}, skipped=${skipCount}, errors=${errorCount}`,
 		);
+	}
+
+	/**
+	 * 개별 사용자 리포트 생성 및 알림 발송
+	 */
+	async #processUserReport(
+		user: { id: string; preference: { timezone: string } | null },
+		type: "WEEKLY" | "MONTHLY",
+	): Promise<"success" | "skipped"> {
+		const timezone = user.preference?.timezone ?? "Asia/Seoul";
+
+		const report =
+			type === "WEEKLY"
+				? await this.aiReportService.generateWeeklyReport(user.id, timezone)
+				: await this.aiReportService.generateMonthlyReport(user.id, timezone);
+
+		if (!report) {
+			return "skipped";
+		}
+
+		// 리포트 생성 알림 발송
+		const notificationType: NotificationType =
+			type === "WEEKLY" ? "WEEKLY_ACHIEVEMENT" : "MONTHLY_REPORT";
+
+		const message =
+			type === "WEEKLY"
+				? NotificationMessageBuilder.weeklyReport()
+				: NotificationMessageBuilder.monthlyReport();
+
+		await this.notificationService.createAndSend({
+			userId: user.id,
+			type: notificationType,
+			title: message.title,
+			body: message.body,
+		});
+
+		return "success";
 	}
 }
