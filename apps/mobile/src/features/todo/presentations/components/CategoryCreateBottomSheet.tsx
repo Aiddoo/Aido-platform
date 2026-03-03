@@ -64,7 +64,13 @@ export const CategoryCreateBottomSheet = ({
 
   return (
     <>
-      <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <KeyboardBottomSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open && premiumOpen) return;
+          onOpenChange(open);
+        }}
+      >
         <VStack gap={40} pb={12}>
           <VStack gap={20}>
             <Controller
