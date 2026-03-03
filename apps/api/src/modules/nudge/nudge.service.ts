@@ -1,14 +1,13 @@
 import { NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { isSameDay } from "@/common/date/utils/compare";
+import { calculateCooldown } from "@/common/date/utils/cooldown";
+import { now } from "@/common/date/utils/core";
 import {
-	addMilliseconds,
-	calculateCooldown,
-	getUserToday,
-	now,
 	startOfDayInTimezone,
-	TIME_UNIT,
-} from "@/common/date";
+	todayInTimezone,
+} from "@/common/date/utils/timezone";
 import {
 	EntitlementService,
 	Feature,
@@ -121,10 +120,10 @@ export class NudgeService {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
 
-			const today = getUserToday(tz);
+			const today = todayInTimezone(tz);
 			const isTodayTodo = todo.endDate
 				? todo.startDate <= today && today <= todo.endDate
-				: todo.startDate.getTime() === today.getTime();
+				: isSameDay(todo.startDate, today);
 
 			if (!isTodayTodo) {
 				throw BusinessExceptions.nudgeTodoNotToday(todoId);
@@ -159,18 +158,14 @@ export class NudgeService {
 			});
 
 			if (lastNudge) {
-				const cooldownMs = NUDGE_LIMITS.COOLDOWN_HOURS * TIME_UNIT.MS_PER_HOUR;
-				const cooldownEndsAt = addMilliseconds(cooldownMs, lastNudge.createdAt);
-				const currentTime = now();
-
-				if (currentTime < cooldownEndsAt) {
-					const remainingMs = cooldownEndsAt.getTime() - currentTime.getTime();
-					const remainingSeconds = Math.ceil(
-						remainingMs / TIME_UNIT.MS_PER_SECOND,
-					);
+				const cooldown = calculateCooldown(
+					lastNudge.createdAt,
+					NUDGE_LIMITS.COOLDOWN_HOURS,
+				);
+				if (cooldown.isActive) {
 					throw BusinessExceptions.nudgeCooldownActive(
 						receiverId,
-						remainingSeconds,
+						cooldown.remainingSeconds,
 					);
 				}
 			}

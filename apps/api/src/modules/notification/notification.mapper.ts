@@ -8,7 +8,7 @@ import type {
 	NotificationContext,
 	Notification as NotificationDto,
 } from "@aido/validators";
-import { toISOString, toISOStringOrNull } from "@/common/date";
+import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import type { Notification } from "@/generated/prisma/client";
 
 export abstract class NotificationMapper {

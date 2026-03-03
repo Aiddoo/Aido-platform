@@ -12,13 +12,13 @@ import type { ParsedTodoData } from "@aido/validators";
 import { parsedTodoDataSchema } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
+import { addDays } from "@/common/date/utils/arithmetic";
+import { isSameDay } from "@/common/date/utils/compare";
+import { toISOString } from "@/common/date/utils/format";
 import {
-	addDays,
-	isSameDay,
 	midnightInTimezone,
 	startOfDayInTimezone,
-	toISOString,
-} from "@/common/date";
+} from "@/common/date/utils/timezone";
 import {
 	EntitlementService,
 	Feature,

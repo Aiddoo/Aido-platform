@@ -1,13 +1,9 @@
 import { CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import {
-	addMilliseconds,
-	calculateCooldown,
-	now,
-	startOfDayInTimezone,
-	TIME_UNIT,
-} from "@/common/date";
+import { calculateCooldown } from "@/common/date/utils/cooldown";
+import { now } from "@/common/date/utils/core";
+import { startOfDayInTimezone } from "@/common/date/utils/timezone";
 import {
 	EntitlementService,
 	Feature,
@@ -126,18 +122,14 @@ export class CheerService {
 			});
 
 			if (lastCheer) {
-				const cooldownMs = CHEER_LIMITS.COOLDOWN_HOURS * TIME_UNIT.MS_PER_HOUR;
-				const canCheerAt = addMilliseconds(cooldownMs, lastCheer.createdAt);
-				const currentTime = now();
-
-				if (currentTime < canCheerAt) {
-					const remainingMs = canCheerAt.getTime() - currentTime.getTime();
-					const remainingSeconds = Math.ceil(
-						remainingMs / TIME_UNIT.MS_PER_SECOND,
-					);
+				const cooldown = calculateCooldown(
+					lastCheer.createdAt,
+					CHEER_LIMITS.COOLDOWN_HOURS,
+				);
+				if (cooldown.isActive) {
 					throw BusinessExceptions.cheerCooldownActive(
 						receiverId,
-						remainingSeconds,
+						cooldown.remainingSeconds,
 					);
 				}
 			}

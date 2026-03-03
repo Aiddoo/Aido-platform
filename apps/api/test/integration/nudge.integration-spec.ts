@@ -25,7 +25,8 @@ import { NudgeBuilder, TodoBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { getUserToday, subtractDays } from "@/common/date";
+import { subtractDays } from "@/common/date/utils/arithmetic";
+import { todayInTimezone } from "@/common/date/utils/timezone";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
@@ -117,7 +118,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 		jest.restoreAllMocks();
 	});
 
-	const todayMidnight = getUserToday("UTC");
+	const todayMidnight = todayInTimezone("UTC");
 
 	beforeEach(() => {
 		jest.clearAllMocks();

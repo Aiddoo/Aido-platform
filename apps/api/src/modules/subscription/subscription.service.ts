@@ -6,7 +6,9 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { CacheService } from "@/common/cache/cache.service";
-import { toISOString } from "@/common/date";
+import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
+import { isAfter, isSame } from "@/common/date/utils/compare";
+import { toISOString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
@@ -303,7 +305,7 @@ export class SubscriptionService {
 			}
 			if (
 				existing.status === "ACTIVE" &&
-				existing.expiresAt.getTime() === expiresAt.getTime()
+				isSame(existing.expiresAt, expiresAt)
 			) {
 				this.#logger.log(
 					`Already renewed with same expiresAt, skipping: transactionId=${transactionId}`,
@@ -410,7 +412,7 @@ export class SubscriptionService {
 				// 60초 grace period로 clock skew 대응
 				const gracePeriodMs = 60_000;
 				const userStatus =
-					expiresAt && expiresAt.getTime() > Date.now() - gracePeriodMs
+					expiresAt && isAfter(expiresAt, subtractMilliseconds(gracePeriodMs))
 						? "ACTIVE"
 						: "CANCELLED";
 

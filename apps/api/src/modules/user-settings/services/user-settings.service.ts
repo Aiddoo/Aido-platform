@@ -8,7 +8,7 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
-import { toISOStringOrNull } from "@/common/date";
+import { toISOStringOrNull } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";

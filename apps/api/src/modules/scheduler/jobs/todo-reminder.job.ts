@@ -1,6 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
+import { addMilliseconds, subtractDays } from "@/common/date/utils/arithmetic";
+import { now } from "@/common/date/utils/core";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
@@ -58,17 +60,18 @@ export class TodoReminderJob {
 	}
 
 	async #execute(): Promise<void> {
-		const now = new Date();
-		const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+		const currentTime = now();
+		const twentyFourHoursAgo = subtractDays(1, currentTime);
 		const cronIntervalMs = 10 * 60 * 1000;
 
 		for (const stage of REMINDER_STAGES) {
 			try {
 				// 이 단계의 스캔 윈도우: [now + leadTime - 10분, now + leadTime)
-				const reminderStart = new Date(
-					now.getTime() + stage.leadTimeMs - cronIntervalMs,
+				const reminderStart = addMilliseconds(
+					stage.leadTimeMs - cronIntervalMs,
+					currentTime,
 				);
-				const reminderEnd = new Date(now.getTime() + stage.leadTimeMs);
+				const reminderEnd = addMilliseconds(stage.leadTimeMs, currentTime);
 
 				const todosToNotify = await this.database.todo.findMany({
 					where: {

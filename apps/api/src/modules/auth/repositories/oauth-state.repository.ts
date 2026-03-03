@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 
-import { addMinutes, now } from "@/common/date/utils";
+import { addMinutes } from "@/common/date/utils/arithmetic";
+import { now } from "@/common/date/utils/core";
 import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
 import type { AccountProvider, OAuthState } from "@/generated/prisma/client";

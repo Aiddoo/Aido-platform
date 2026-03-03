@@ -8,8 +8,7 @@ export * from "./cache";
 export * from "./config";
 // Database (향후 확장용)
 export * from "./database";
-// Date
-export * from "./date";
+// Date (직접 import: @/common/date/utils/core, arithmetic, compare, format, timezone, cooldown, range)
 // Encryption
 export * from "./encryption";
 // Entitlement

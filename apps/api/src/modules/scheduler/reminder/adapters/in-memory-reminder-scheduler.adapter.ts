@@ -6,6 +6,7 @@ import {
 	type OnModuleInit,
 } from "@nestjs/common";
 
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
@@ -199,7 +200,7 @@ export class InMemoryReminderSchedulerAdapter
 		}
 
 		try {
-			const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+			const twentyFourHoursAgo = subtractDays(1);
 
 			const exists = await this.database.notification.findFirst({
 				where: {

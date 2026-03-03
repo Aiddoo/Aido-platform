@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
-import { getUserToday } from "@/common/date/utils/date.util";
+import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
@@ -51,7 +51,7 @@ export class TodoListener {
 		);
 
 		try {
-			const today = getUserToday(payload.timezone);
+			const today = todayInTimezone(payload.timezone);
 
 			await this.database.$transaction(async (tx) => {
 				const alreadySent = await this.notificationService.existsNotification(
@@ -165,7 +165,7 @@ export class TodoListener {
 		}
 
 		try {
-			const today = getUserToday(payload.timezone);
+			const today = todayInTimezone(payload.timezone);
 
 			await this.database.$transaction(async (tx) => {
 				const alreadyNotified =

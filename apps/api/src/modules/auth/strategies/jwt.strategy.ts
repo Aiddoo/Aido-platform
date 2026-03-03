@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { toISOStringOrNull } from "@/common/date";
+import { toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";

@@ -1,7 +1,8 @@
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import { addMilliseconds, now } from "@/common/date";
+import { addMilliseconds } from "@/common/date/utils/arithmetic";
+import { isExpired } from "@/common/date/utils/compare";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -127,7 +128,7 @@ export class SessionService {
 				? session.expiresAt
 				: new Date(session.expiresAt);
 
-		if (expiresAt < now()) {
+		if (isExpired(expiresAt)) {
 			throw BusinessExceptions.sessionExpired(sessionId);
 		}
 	}

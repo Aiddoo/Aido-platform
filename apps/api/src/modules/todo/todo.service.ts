@@ -10,7 +10,13 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import dayjs from "dayjs";
 import type { TransactionClient } from "@/common/database";
-import { getUserToday, now, toDateOnly, toScheduledTime } from "@/common/date";
+import { isAfter } from "@/common/date/utils/compare";
+import { now } from "@/common/date/utils/core";
+import { parseDateOnly } from "@/common/date/utils/parse";
+import {
+	parseLocalDateTime,
+	todayInTimezone,
+} from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -64,7 +70,7 @@ export class TodoService {
 			return;
 		}
 
-		if (startDate.getTime() > endDate.getTime()) {
+		if (isAfter(startDate, endDate)) {
 			throw BusinessExceptions.invalidParameter({
 				message: "startDate must be less than or equal to endDate",
 				startDate,
@@ -368,7 +374,7 @@ export class TodoService {
 		tz: string = "UTC",
 	): Promise<void> {
 		try {
-			const today = getUserToday(tz);
+			const today = todayInTimezone(tz);
 			const stats = await this.todoRepository.getTodayTodoStats(userId, today);
 
 			// 오늘 할일이 있고, 모두 완료된 경우
@@ -503,10 +509,10 @@ export class TodoService {
 		}
 
 		const updatedTodo = await this.todoRepository.update(id, {
-			startDate: toDateOnly(data.startDate),
-			endDate: data.endDate ? toDateOnly(data.endDate) : null,
+			startDate: parseDateOnly(data.startDate),
+			endDate: data.endDate ? parseDateOnly(data.endDate) : null,
 			scheduledTime: data.scheduledTime
-				? toScheduledTime(data.startDate, data.scheduledTime, tz)
+				? parseLocalDateTime(data.startDate, data.scheduledTime, tz)
 				: null,
 			isAllDay: data.isAllDay ?? true,
 		});
@@ -760,9 +766,9 @@ export class TodoService {
 					title: data.title,
 					content: data.content,
 					sortOrder: maxSortOrder + 1 + index,
-					startDate: toDateOnly(dateStr),
+					startDate: parseDateOnly(dateStr),
 					scheduledTime: data.scheduledTime
-						? toScheduledTime(dateStr, data.scheduledTime, tz)
+						? parseLocalDateTime(dateStr, data.scheduledTime, tz)
 						: null,
 					isAllDay: data.isAllDay ?? true,
 					visibility: data.visibility ?? "PUBLIC",

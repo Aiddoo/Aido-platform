@@ -12,7 +12,7 @@ import type {
 	TodoCategorySummary,
 	TodoCategoryWithCount,
 } from "@aido/validators";
-import { toISOString } from "@/common/date";
+import { toISOString } from "@/common/date/utils/format";
 import type { TodoCategory as TodoCategoryEntity } from "@/generated/prisma/client";
 
 import type { TodoCategoryWithCount as TodoCategoryWithCountEntity } from "./types/todo-category.types";
