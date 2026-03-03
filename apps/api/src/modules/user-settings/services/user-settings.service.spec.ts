@@ -57,10 +57,10 @@ describe("UserSettingsService", () => {
 			userId,
 			pushEnabled: true,
 			nightPushEnabled: false,
-			timezone: "UTC",
-			morningReminderHour: 8,
-			morningReminderMinute: 0,
-			eveningReminderHour: 18,
+			timezone: "Asia/Seoul",
+			morningReminderHour: 7,
+			morningReminderMinute: 30,
+			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
 		};
 
@@ -77,10 +77,10 @@ describe("UserSettingsService", () => {
 			expect(result).toEqual({
 				pushEnabled: true,
 				nightPushEnabled: false,
-				timezone: "UTC",
-				morningReminderHour: 8,
-				morningReminderMinute: 0,
-				eveningReminderHour: 18,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 7,
+				morningReminderMinute: 30,
+				eveningReminderHour: 20,
 				eveningReminderMinute: 0,
 			});
 			expect(userPreferenceRepo.findByUserId).toHaveBeenCalledWith(userId);
@@ -98,6 +98,77 @@ describe("UserSettingsService", () => {
 				pushEnabled: false,
 				nightPushEnabled: false,
 				timezone: "UTC",
+				morningReminderHour: 8,
+				morningReminderMinute: 0,
+				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
+			});
+		});
+
+		it("무료 유저의 getPreference가 고정 리마인더 시간을 반환한다", async () => {
+			// Given - 무료 유저
+			entitlementService.hasPremiumAccess.mockResolvedValue(false);
+			(userPreferenceRepo.findByUserId as jest.Mock).mockResolvedValue(
+				mockPreference,
+			);
+
+			// When
+			const result = await service.getPreference(userId);
+
+			// Then - 리마인더 시간은 고정값, 나머지는 DB 값
+			expect(result).toEqual({
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 8,
+				morningReminderMinute: 0,
+				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
+			});
+		});
+
+		it("프리미엄 유저의 getPreference가 DB 저장값을 반환한다", async () => {
+			// Given - 프리미엄 유저 (기본 mock은 true)
+			(userPreferenceRepo.findByUserId as jest.Mock).mockResolvedValue(
+				mockPreference,
+			);
+
+			// When
+			const result = await service.getPreference(userId);
+
+			// Then - DB 저장값 그대로 반환
+			expect(result).toEqual({
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 7,
+				morningReminderMinute: 30,
+				eveningReminderHour: 20,
+				eveningReminderMinute: 0,
+			});
+		});
+
+		it("무료 유저도 pushEnabled/timezone은 DB 저장값을 반환한다", async () => {
+			// Given - 무료 유저, pushEnabled=false, timezone=America/New_York
+			entitlementService.hasPremiumAccess.mockResolvedValue(false);
+			const customPref: UserPreference = {
+				...mockPreference,
+				pushEnabled: false,
+				nightPushEnabled: true,
+				timezone: "America/New_York",
+			};
+			(userPreferenceRepo.findByUserId as jest.Mock).mockResolvedValue(
+				customPref,
+			);
+
+			// When
+			const result = await service.getPreference(userId);
+
+			// Then - push/timezone은 DB값, 리마인더 시간은 고정값
+			expect(result).toEqual({
+				pushEnabled: false,
+				nightPushEnabled: true,
+				timezone: "America/New_York",
 				morningReminderHour: 8,
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,

@@ -159,10 +159,11 @@ describe("TimezoneAwareReminderJob", () => {
 					_count: { todos: 3 },
 				});
 
-				// user.findMany: 아침 리마인더 대상 → 저녁 리마인더 대상 순으로 호출
+				// user.findMany: 아침 프리미엄 → 아침 무료 → 저녁 프리미엄 순으로 호출
 				databaseService.user.findMany
-					.mockResolvedValueOnce([mockUser] as never) // 아침 리마인더
-					.mockResolvedValueOnce([] as never); // 저녁 리마인더
+					.mockResolvedValueOnce([mockUser] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -170,7 +171,7 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				// Then - 아침 리마인더가 발송됨
-				expect(databaseService.user.findMany).toHaveBeenCalledTimes(2);
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(3);
 
 				// 아침 리마인더 user.findMany 호출 확인
 				const morningCall = databaseService.user.findMany.mock
@@ -267,8 +268,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([mockUser] as never)
-					.mockResolvedValueOnce([] as never);
+					.mockResolvedValueOnce([mockUser] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -303,8 +305,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([mockUser] as never)
-					.mockResolvedValueOnce([] as never);
+					.mockResolvedValueOnce([mockUser] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -349,8 +352,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([] as never) // 아침 리마인더 (매칭 안 됨)
-					.mockResolvedValueOnce([mockUser] as never); // 저녁 리마인더
+					.mockResolvedValueOnce([] as never) // 아침 프리미엄 (매칭 안 됨)
+					.mockResolvedValueOnce([mockUser] as never) // 저녁 프리미엄
+					.mockResolvedValueOnce([] as never); // 저녁 무료
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -523,8 +527,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([] as never)
-					.mockResolvedValueOnce([mockUser] as never);
+					.mockResolvedValueOnce([] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([mockUser] as never) // 저녁 프리미엄
+					.mockResolvedValueOnce([] as never); // 저녁 무료
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -741,7 +746,7 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				// Then - createAndSendBatch 호출 안 됨
-				expect(databaseService.user.findMany).toHaveBeenCalledTimes(2); // 아침 + 저녁
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(3); // 아침 프리미엄 + 아침 무료 + 저녁 프리미엄
 				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 
 				jest.useRealTimers();
@@ -804,8 +809,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([mockUser] as never)
-					.mockResolvedValueOnce([] as never);
+					.mockResolvedValueOnce([mockUser] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				const error = new Error("Push notification failed");
 				notificationService.createAndSendBatch.mockRejectedValue(error);
@@ -913,8 +919,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([user1, user2] as never) // 아침
-					.mockResolvedValueOnce([] as never); // 저녁
+					.mockResolvedValueOnce([user1, user2] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				// user-1은 이미 아침 리마인더를 받음
 				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
@@ -957,8 +964,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([] as never) // 아침
-					.mockResolvedValueOnce([user1, user2] as never); // 저녁
+					.mockResolvedValueOnce([] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([user1, user2] as never) // 저녁 프리미엄
+					.mockResolvedValueOnce([] as never); // 저녁 무료
 
 				// user-1은 이미 저녁 리마인더를 받음
 				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
@@ -1001,8 +1009,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([user1, user2] as never) // 아침
-					.mockResolvedValueOnce([] as never); // 저녁
+					.mockResolvedValueOnce([user1, user2] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				// 모든 사용자가 이미 아침 리마인더를 받음
 				notificationService.findAlreadyNotifiedUserIds.mockResolvedValueOnce(
@@ -1034,8 +1043,9 @@ describe("TimezoneAwareReminderJob", () => {
 				});
 
 				databaseService.user.findMany
-					.mockResolvedValueOnce([mockUser] as never)
-					.mockResolvedValueOnce([] as never);
+					.mockResolvedValueOnce([mockUser] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
 
 				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
 
@@ -1050,6 +1060,193 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(notification.notificationDate).toEqual(
 					dayjs.utc("2024-01-16").startOf("day").toDate(),
 				);
+
+				jest.useRealTimers();
+			});
+		});
+
+		// =====================================================================
+		// 무료 사용자 고정 시간 리마인더
+		// =====================================================================
+
+		describe("무료 사용자 고정 시간 리마인더", () => {
+			it("무료 사용자가 08:00에 아침 리마인더를 받는다", async () => {
+				// Given - KST 08:00
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const freeUser = createMockMorningUser({
+					id: "free-user-1",
+					_count: { todos: 2 },
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([] as never) // 아침 프리미엄 (매칭 없음)
+					.mockResolvedValueOnce([freeUser] as never) // 아침 무료
+					.mockResolvedValueOnce([] as never); // 저녁 프리미엄
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 무료 사용자에게 아침 리마인더 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batch).toHaveLength(1);
+				expect(getFirstNotification(batch).userId).toBe("free-user-1");
+				expect(getFirstNotification(batch).type).toBe("MORNING_REMINDER");
+
+				jest.useRealTimers();
+			});
+
+			it("무료 사용자가 18:00에 저녁 리마인더를 받는다", async () => {
+				// Given - KST 18:00
+				const fakeNow = new Date("2024-01-15T09:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				const freeUser = createMockEveningUser({
+					id: "free-user-1",
+					todos: [{ completed: true }, { completed: false }],
+				});
+
+				databaseService.user.findMany
+					.mockResolvedValueOnce([] as never) // 아침 프리미엄
+					.mockResolvedValueOnce([] as never) // 저녁 프리미엄
+					.mockResolvedValueOnce([freeUser] as never); // 저녁 무료
+
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 무료 사용자에게 저녁 리마인더 발송
+				expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
+				const batch = getBatchCallArg(
+					notificationService.createAndSendBatch as unknown as jest.Mock,
+				);
+				expect(batch).toHaveLength(1);
+				expect(getFirstNotification(batch).userId).toBe("free-user-1");
+				expect(getFirstNotification(batch).type).toBe("EVENING_REMINDER");
+
+				jest.useRealTimers();
+			});
+
+			it("무료 사용자는 09:00(비고정 시간)에 리마인더를 받지 않는다", async () => {
+				// Given - KST 09:00 = UTC 00:00
+				const fakeNow = new Date("2024-01-16T00:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				// 프리미엄 쿼리만 실행됨 (09:00은 무료 고정 시간 아님)
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 2번만 호출 (프리미엄 아침 + 프리미엄 저녁, 무료 쿼리 없음)
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(2);
+
+				jest.useRealTimers();
+			});
+
+			it("무료 사용자 쿼리에 subscriptionStatus/role NOT 조건이 포함된다", async () => {
+				// Given - KST 08:00
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 두 번째 호출(무료 아침)에 NOT 조건 확인
+				const freeCall = databaseService.user.findMany.mock.calls[1]?.[0] as {
+					where?: {
+						subscriptionStatus?: { not: string };
+						role?: { not: string };
+					};
+				};
+				expect(freeCall?.where?.subscriptionStatus).toEqual({ not: "ACTIVE" });
+				expect(freeCall?.where?.role).toEqual({ not: "ADMIN" });
+
+				jest.useRealTimers();
+			});
+
+			it("Catch-up 핸들러에서 무료 사용자 쿼리가 실행되지 않는다", async () => {
+				// Given - KST 08:00 (무료 아침 시간)
+				const fakeNow = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				const mockUser = createMockMorningUser({ id: "premium-user" });
+				databaseService.user.findMany.mockResolvedValueOnce([
+					mockUser,
+				] as never);
+				notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+				// When - catch-up 핸들러 (userId 전달)
+				await job.handleReminderHourChanged({
+					userId: "premium-user",
+					timezone: "Asia/Seoul",
+					morningReminderHour: 8,
+					morningReminderMinute: 0,
+				});
+
+				// Then - user.findMany 1번만 호출 (프리미엄만, 무료 쿼리 없음)
+				expect(databaseService.user.findMany).toHaveBeenCalledTimes(1);
+
+				jest.useRealTimers();
+			});
+		});
+
+		// =====================================================================
+		// pushTokens 조건 제거
+		// =====================================================================
+
+		describe("pushTokens 조건 제거", () => {
+			it("프리미엄 아침 리마인더 쿼리에 pushTokens 조건이 없다", async () => {
+				// Given - KST 09:00 (무료 쿼리 안 나가는 시간)
+				const fakeNow = new Date("2024-01-16T00:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(fakeNow);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					createMockTimezoneRecord("Asia/Seoul"),
+				] as never);
+
+				databaseService.user.findMany.mockResolvedValue([] as never);
+
+				// When
+				await job.handleHourlySweep();
+
+				// Then - 첫 번째 호출(프리미엄 아침)에 pushTokens 조건 없음
+				const morningCall = databaseService.user.findMany.mock
+					.calls[0]?.[0] as {
+					where?: Record<string, unknown>;
+				};
+				expect(morningCall?.where).not.toHaveProperty("pushTokens");
 
 				jest.useRealTimers();
 			});

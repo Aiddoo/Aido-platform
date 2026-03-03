@@ -1,9 +1,10 @@
-import type {
-	ConsentResponse,
-	PreferenceResponse,
-	UpdateMarketingConsentResponse,
-	UpdatePreferenceInput,
-	UpdatePreferenceResponse,
+import {
+	type ConsentResponse,
+	type PreferenceResponse,
+	type UpdateMarketingConsentResponse,
+	type UpdatePreferenceInput,
+	type UpdatePreferenceResponse,
+	USER_PREFERENCE_DEFAULTS,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -41,6 +42,20 @@ export class UserSettingsService {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+			};
+		}
+
+		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+
+		if (!hasPremium) {
+			return {
+				pushEnabled: preference.pushEnabled,
+				nightPushEnabled: preference.nightPushEnabled,
+				timezone: preference.timezone,
+				morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+				morningReminderMinute: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+				eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+				eveningReminderMinute: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
 			};
 		}
 

@@ -1,3 +1,4 @@
+import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { Cron } from "@nestjs/schedule";
@@ -167,12 +168,26 @@ export class TimezoneAwareReminderJob {
 		const today = todayInTimezone(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
-		const users = await this.database.user.findMany({
+		const selectClause = {
+			id: true,
+			_count: {
+				select: {
+					todos: {
+						where: {
+							startDate: {
+								gte: today,
+								lt: tomorrow,
+							},
+						},
+					},
+				},
+			},
+		} as const;
+
+		// 프리미엄 사용자: 커스텀 시간에 리마인더 발송
+		const premiumUsers = await this.database.user.findMany({
 			where: {
 				...(userId && { id: userId }),
-				pushTokens: {
-					some: {},
-				},
 				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				preference: {
 					timezone: tz,
@@ -181,22 +196,33 @@ export class TimezoneAwareReminderJob {
 					morningReminderMinute: { gte: localMinute, lt: localMinute + 30 },
 				},
 			},
-			select: {
-				id: true,
-				_count: {
-					select: {
-						todos: {
-							where: {
-								startDate: {
-									gte: today,
-									lt: tomorrow,
-								},
-							},
-						},
+			select: selectClause,
+		});
+
+		// 무료 사용자: 고정 시간(08:00)에만 리마인더 발송 (catch-up 핸들러에서는 스킵)
+		const defaultHour = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR;
+		const defaultMinute = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE;
+		const isFreeReminderTime =
+			localHour === defaultHour &&
+			defaultMinute >= localMinute &&
+			defaultMinute < localMinute + 30;
+
+		let freeUsers: typeof premiumUsers = [];
+		if (!userId && isFreeReminderTime) {
+			freeUsers = await this.database.user.findMany({
+				where: {
+					subscriptionStatus: { not: "ACTIVE" },
+					role: { not: "ADMIN" },
+					preference: {
+						timezone: tz,
+						pushEnabled: true,
 					},
 				},
-			},
-		});
+				select: selectClause,
+			});
+		}
+
+		const users = [...premiumUsers, ...freeUsers];
 
 		if (users.length === 0) return;
 
@@ -242,12 +268,25 @@ export class TimezoneAwareReminderJob {
 		const today = todayInTimezone(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
-		const users = await this.database.user.findMany({
+		const selectClause = {
+			id: true,
+			todos: {
+				where: {
+					startDate: {
+						gte: today,
+						lt: tomorrow,
+					},
+				},
+				select: {
+					completed: true,
+				},
+			},
+		} as const;
+
+		// 프리미엄 사용자: 커스텀 시간에 리마인더 발송
+		const premiumUsers = await this.database.user.findMany({
 			where: {
 				...(userId && { id: userId }),
-				pushTokens: {
-					some: {},
-				},
 				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				preference: {
 					timezone: tz,
@@ -264,21 +303,41 @@ export class TimezoneAwareReminderJob {
 					},
 				},
 			},
-			select: {
-				id: true,
-				todos: {
-					where: {
-						startDate: {
-							gte: today,
-							lt: tomorrow,
+			select: selectClause,
+		});
+
+		// 무료 사용자: 고정 시간(18:00)에만 리마인더 발송 (catch-up 핸들러에서는 스킵)
+		const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
+		const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
+		const isFreeReminderTime =
+			localHour === defaultHour &&
+			defaultMinute >= localMinute &&
+			defaultMinute < localMinute + 30;
+
+		let freeUsers: typeof premiumUsers = [];
+		if (!userId && isFreeReminderTime) {
+			freeUsers = await this.database.user.findMany({
+				where: {
+					subscriptionStatus: { not: "ACTIVE" },
+					role: { not: "ADMIN" },
+					preference: {
+						timezone: tz,
+						pushEnabled: true,
+					},
+					todos: {
+						some: {
+							startDate: {
+								gte: today,
+								lt: tomorrow,
+							},
 						},
 					},
-					select: {
-						completed: true,
-					},
 				},
-			},
-		});
+				select: selectClause,
+			});
+		}
+
+		const users = [...premiumUsers, ...freeUsers];
 
 		if (users.length === 0) return;
 
