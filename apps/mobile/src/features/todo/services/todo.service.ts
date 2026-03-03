@@ -1,4 +1,5 @@
 import type {
+  CreateRecurringTodoInput,
   CreateTodoInput,
   GetTodosQuery,
   ReorderTodoInput,
@@ -85,5 +86,11 @@ export class TodoService {
     input: ReorderTodoInput,
   ): Promise<Result<TodoItem, ApiError>> => {
     return this.#todoRepository.reorderTodo(todoId, input);
+  };
+
+  createRecurringTodo = async (
+    params: CreateRecurringTodoInput,
+  ): Promise<Result<TodoItem[], ApiError>> => {
+    return this.#todoRepository.createRecurringTodo(params);
   };
 }

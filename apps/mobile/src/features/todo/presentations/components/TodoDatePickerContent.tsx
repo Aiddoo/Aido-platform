@@ -1,3 +1,4 @@
+import type { DayOfWeek } from '@aido/validators';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowLeftIcon, ArrowRightIcon } from '@src/shared/ui/Icon';
@@ -19,37 +20,141 @@ import { PressableFeedback, Switch } from 'heroui-native';
 import { useMemo } from 'react';
 import { type DatePicker, useDatePicker } from '../hooks/useDatePicker';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
+import { getDayOfWeekFromDate } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
 import { PickerHeader } from './PickerHeader';
 
+const DAY_LABELS: { key: DayOfWeek; label: string }[] = [
+  { key: 'MON', label: '월' },
+  { key: 'TUE', label: '화' },
+  { key: 'WED', label: '수' },
+  { key: 'THU', label: '목' },
+  { key: 'FRI', label: '금' },
+  { key: 'SAT', label: '토' },
+  { key: 'SUN', label: '일' },
+];
+
+interface RepeatState {
+  isRecurring: boolean;
+  daysOfWeek: DayOfWeek[];
+  repeatEndDate: Date | null;
+}
+
 interface TodoDatePickerContentProps {
   startDate: Date;
-  endDate: Date | null;
-  onConfirm: (startDate: Date, endDate: Date | null) => void;
+  repeat?: RepeatState;
+  showRepeat?: boolean;
+  onConfirm: (startDate: Date, repeat: RepeatState | null) => void;
   onCancel: () => void;
 }
 
+const getInitialSelectedDays = (startDate: Date, repeat?: RepeatState): DayOfWeek[] => {
+  if (repeat?.daysOfWeek && repeat.daysOfWeek.length > 0) return repeat.daysOfWeek;
+
+  const dayOfWeek = getDayOfWeekFromDate(startDate);
+  return dayOfWeek ? [dayOfWeek] : [];
+};
+
 export const TodoDatePickerContent = ({
   startDate,
-  endDate,
+  repeat,
+  showRepeat = false,
   onConfirm,
   onCancel,
 }: TodoDatePickerContentProps) => {
-  const picker = useDatePicker({ startDate, endDate });
+  const picker = useDatePicker({
+    startDate,
+    endDate: repeat?.repeatEndDate ?? null,
+    isRange: repeat?.isRecurring ?? false,
+    selectedDays: getInitialSelectedDays(startDate, repeat),
+  });
+
+  const handleConfirm = () => {
+    if (picker.isRange) {
+      onConfirm(picker.localStartDate, {
+        isRecurring: true,
+        daysOfWeek: picker.selectedDays,
+        repeatEndDate: picker.localEndDate,
+      });
+    } else {
+      onConfirm(
+        picker.localStartDate,
+        showRepeat ? { isRecurring: false, daysOfWeek: [], repeatEndDate: null } : null,
+      );
+    }
+  };
+
+  const handleQuickSelect = (date: Date) => {
+    onConfirm(
+      date,
+      showRepeat ? { isRecurring: false, daysOfWeek: [], repeatEndDate: null } : null,
+    );
+  };
 
   return (
     <VStack gap={20}>
-      <PickerHeader
-        title="날짜"
-        onCancel={onCancel}
-        onConfirm={() => onConfirm(picker.localStartDate, picker.localEndDate)}
-      />
+      <PickerHeader title="날짜" onCancel={onCancel} onConfirm={handleConfirm} />
 
-      <QuickDateOptions picker={picker} onSelect={(date) => onConfirm(date, null)} />
+      {!picker.isRange && <QuickDateOptions picker={picker} onSelect={handleQuickSelect} />}
+
+      {picker.isRange && (
+        <VStack gap={12} px={16}>
+          <Text size="b3" weight="medium" shade={7}>
+            반복 요일
+          </Text>
+          <HStack gap={6} align="center" justify="between">
+            {DAY_LABELS.map(({ key, label }) => {
+              const isSelected = picker.selectedDays.includes(key);
+              return (
+                <PressableFeedback
+                  key={key}
+                  onPress={() => picker.toggleDay(key)}
+                  className={cn(
+                    'size-8 items-center justify-center rounded-4xl',
+                    isSelected ? 'bg-main' : 'bg-gray-2',
+                  )}
+                >
+                  <Text
+                    size="b4"
+                    weight="medium"
+                    className={isSelected ? 'text-white' : undefined}
+                    shade={isSelected ? undefined : 7}
+                  >
+                    {label}
+                  </Text>
+                </PressableFeedback>
+              );
+            })}
+            <PressableFeedback
+              onPress={picker.toggleAllDays}
+              className={cn(
+                'h-8 items-center justify-center rounded-4xl px-3',
+                picker.isAllDaysSelected ? 'bg-main' : 'bg-gray-2',
+              )}
+            >
+              <Text
+                size="b4"
+                weight="medium"
+                className={picker.isAllDaysSelected ? 'text-white' : undefined}
+                shade={picker.isAllDaysSelected ? undefined : 7}
+              >
+                매일
+              </Text>
+            </PressableFeedback>
+          </HStack>
+        </VStack>
+      )}
 
       <DatePickerCalendar picker={picker} />
 
-      <RangeDateToggle picker={picker} />
+      {showRepeat && (
+        <RepeatToggle
+          isRange={picker.isRange}
+          startDate={picker.localStartDate}
+          endDate={picker.localEndDate}
+          onToggle={picker.setRange}
+        />
+      )}
     </VStack>
   );
 };
@@ -75,13 +180,13 @@ interface QuickDateOptionsProps {
 }
 
 const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
-  const { isRange, localStartDate } = picker;
+  const { localStartDate } = picker;
   const options = useMemo(() => getQuickDateOptions(), []);
 
   return (
     <VStack gap={4}>
       {options.map((option) => {
-        const isSelected = !isRange && isSameDay(localStartDate, option.date);
+        const isSelected = isSameDay(localStartDate, option.date);
         const tone = isSelected ? 'brand' : 'neutral';
         return (
           <PressableFeedback
@@ -233,13 +338,14 @@ const DatePickerDateCell = ({
   );
 };
 
-interface RangeDateToggleProps {
-  picker: DatePicker;
+interface RepeatToggleProps {
+  isRange: boolean;
+  startDate: Date;
+  endDate: Date | null;
+  onToggle: (enabled: boolean) => void;
 }
 
-const RangeDateToggle = ({ picker }: RangeDateToggleProps) => {
-  const { isRange, localStartDate, localEndDate, toggleRange } = picker;
-
+const RepeatToggle = ({ isRange, startDate, endDate, onToggle }: RepeatToggleProps) => {
   return (
     <ListRow
       contents={
@@ -248,18 +354,18 @@ const RangeDateToggle = ({ picker }: RangeDateToggleProps) => {
           top={
             <HStack gap={8} align="center">
               <Text size="b2" weight="medium" shade={8}>
-                기간 선택
+                반복 설정
               </Text>
-              {isRange && localEndDate && !isSameDay(localStartDate, localEndDate) && (
+              {isRange && endDate && !isSameDay(startDate, endDate) && (
                 <Text size="b3" tone="brand">
-                  {formatMonthDay(localStartDate)} - {formatMonthDay(localEndDate)}
+                  {formatMonthDay(startDate)} - {formatMonthDay(endDate)}
                 </Text>
               )}
             </HStack>
           }
         />
       }
-      right={<Switch isSelected={isRange} onSelectedChange={toggleRange} />}
+      right={<Switch isSelected={isRange} onSelectedChange={onToggle} />}
       horizontalPadding="medium"
       verticalPadding="medium"
       className="border-t border-gray-2"

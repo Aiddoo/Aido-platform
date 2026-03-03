@@ -7,6 +7,7 @@ export interface TodoItemViewModel extends TodoItem {
   startDateObj: Date;
   endDateObj: Date | null;
   scheduledTime24: string | undefined;
+  isRecurring: boolean;
 }
 
 export const toTodoItemViewModel = (todo: TodoItem): TodoItemViewModel => ({
@@ -16,4 +17,5 @@ export const toTodoItemViewModel = (todo: TodoItem): TodoItemViewModel => ({
   startDateObj: toDate(todo.startDate),
   endDateObj: toNullableDate(todo.endDate),
   scheduledTime24: todo.scheduledTime ? formatTime24(todo.scheduledTime) : undefined,
+  isRecurring: todo.recurrenceGroupId !== null,
 });

@@ -14,6 +14,7 @@ import { Controller, FormProvider, useForm, useFormContext, useWatch } from 'rea
 import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
+import { createRecurringTodoMutationOptions } from '../queries/create-recurring-todo-mutation-options';
 import { createTodoMutationOptions } from '../queries/create-todo-mutation-options';
 import { updateTodoMutationOptions } from '../queries/update-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
@@ -62,6 +63,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       isAllDay: todo.isAllDay,
       categoryId: todo.category.id,
       visibility: todo.visibility,
+      isRecurring: false,
+      repeatEndDate: null,
+      daysOfWeek: [],
     }))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -71,6 +75,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       isAllDay: initialValues?.isAllDay ?? true,
       categoryId,
       visibility: 'PUBLIC' as const,
+      isRecurring: false,
+      repeatEndDate: null,
+      daysOfWeek: [],
     }))
     .exhaustive();
 
@@ -83,9 +90,14 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const createMutation = useMutation(createTodoMutationOptions());
   const updateMutation = useMutation(updateTodoMutationOptions());
+  const createRecurringMutation = useMutation(createRecurringTodoMutationOptions());
 
   const title = methods.watch('title');
-  const isSubmitDisabled = !title?.trim() || createMutation.isPending || updateMutation.isPending;
+  const isSubmitDisabled =
+    !title?.trim() ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    createRecurringMutation.isPending;
 
   const onSubmit = methods.handleSubmit((data: AddTodoFormInput) => {
     match(props)
@@ -106,23 +118,38 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         );
       })
       .with({ mode: 'create' }, (createProps) => {
-        createMutation.mutate(
-          {
-            title: data.title,
-            startDate: formatDate(data.startDate),
-            endDate: data.endDate ? formatDate(data.endDate) : undefined,
-            scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-            isAllDay: data.isAllDay,
-            visibility: data.visibility,
-            categoryId: data.categoryId,
-          },
-          {
-            onSuccess: () => {
-              onClose();
-              createProps.onSuccess?.();
+        const onMutationSuccess = () => {
+          onClose();
+          createProps.onSuccess?.();
+        };
+
+        if (data.isRecurring) {
+          createRecurringMutation.mutate(
+            {
+              title: data.title,
+              startDate: formatDate(data.startDate),
+              endDate: formatDate(data.repeatEndDate ?? data.startDate),
+              daysOfWeek: data.daysOfWeek,
+              scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+              isAllDay: data.isAllDay,
+              visibility: data.visibility,
+              categoryId: data.categoryId,
             },
-          },
-        );
+            { onSuccess: onMutationSuccess },
+          );
+        } else {
+          createMutation.mutate(
+            {
+              title: data.title,
+              startDate: formatDate(data.startDate),
+              scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+              isAllDay: data.isAllDay,
+              visibility: data.visibility,
+              categoryId: data.categoryId,
+            },
+            { onSuccess: onMutationSuccess },
+          );
+        }
       })
       .exhaustive();
   });
@@ -131,7 +158,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     <FormProvider {...methods}>
       <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
         {match(activeView)
-          .with('date', () => <FormDatePicker onDone={() => setActiveView('form')} />)
+          .with('date', () => (
+            <FormDatePicker
+              onDone={() => setActiveView('form')}
+              showRepeat={props.mode === 'create'}
+            />
+          ))
           .with('time', () => <FormTimePicker onDone={() => setActiveView('form')} />)
           .with('form', () => (
             <VStack>
@@ -153,7 +185,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               />
 
               <HStack align="center" justify="between" className="w-full">
-                <HStack gap={4} align="center">
+                <HStack gap={4} align="center" className="flex-1 flex-wrap">
                   <DateLabelButton
                     onPress={() => {
                       setActiveView('date');
@@ -193,16 +225,17 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 const DateLabelButton = ({ onPress }: { onPress: () => void }) => {
   const { control } = useFormContext<AddTodoFormInput>();
 
-  const [startDate, endDate] = useWatch({
+  const [startDate, isRecurring, repeatEndDate] = useWatch({
     control,
-    name: ['startDate', 'endDate'],
+    name: ['startDate', 'isRecurring', 'repeatEndDate'],
   });
 
   const dateLabel = formatTodoDateLabel({
     startDate,
-    endDate,
     scheduledTime: null,
     isAllDay: true,
+    isRecurring,
+    repeatEndDate,
   });
 
   return (
@@ -245,16 +278,29 @@ const TimeLabelButton = ({ onPress }: { onPress: () => void }) => {
   );
 };
 
-const FormDatePicker = ({ onDone }: { onDone: () => void }) => {
+const FormDatePicker = ({ onDone, showRepeat }: { onDone: () => void; showRepeat: boolean }) => {
   const { getValues, setValue } = useFormContext<AddTodoFormValues>();
+
+  const repeat = showRepeat
+    ? {
+        isRecurring: getValues('isRecurring') ?? false,
+        daysOfWeek: getValues('daysOfWeek') ?? [],
+        repeatEndDate: getValues('repeatEndDate') ?? null,
+      }
+    : undefined;
 
   return (
     <TodoDatePickerContent
       startDate={getValues('startDate')}
-      endDate={getValues('endDate') ?? null}
-      onConfirm={(start, end) => {
+      repeat={repeat}
+      showRepeat={showRepeat}
+      onConfirm={(start, repeatResult) => {
         setValue('startDate', start);
-        setValue('endDate', end);
+        if (repeatResult) {
+          setValue('isRecurring', repeatResult.isRecurring);
+          setValue('daysOfWeek', repeatResult.daysOfWeek);
+          setValue('repeatEndDate', repeatResult.repeatEndDate);
+        }
         onDone();
       }}
       onCancel={onDone}

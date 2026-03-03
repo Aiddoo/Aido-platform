@@ -1,33 +1,25 @@
-import {
-  formatDayOfMonth,
-  formatMonthDay,
-  isDateToday,
-  isSameDay,
-  isSameMonth,
-} from '@src/shared/utils/date';
+import { formatMonthDay, isDateToday } from '@src/shared/utils/date';
 
 interface FormatTodoDateLabelParams {
   startDate: Date;
-  endDate: Date | null;
   scheduledTime: string | null | undefined;
   isAllDay: boolean;
+  isRecurring?: boolean;
+  repeatEndDate?: Date | null;
 }
 
 export const formatTodoDateLabel = ({
   startDate,
-  endDate,
   scheduledTime,
   isAllDay,
+  isRecurring,
+  repeatEndDate,
 }: FormatTodoDateLabelParams): string => {
-  const start = isDateToday(startDate) ? '오늘' : formatMonthDay(startDate);
+  let label = isDateToday(startDate) ? '오늘' : formatMonthDay(startDate);
 
-  let label = start;
-
-  if (endDate && !isSameDay(startDate, endDate)) {
-    const end = isSameMonth(startDate, endDate)
-      ? formatDayOfMonth(endDate)
-      : formatMonthDay(endDate);
-    label += ` - ${end}`;
+  if (isRecurring && repeatEndDate) {
+    const endLabel = formatMonthDay(repeatEndDate);
+    label += ` - ${endLabel}`;
   }
 
   if (!isAllDay && scheduledTime) {

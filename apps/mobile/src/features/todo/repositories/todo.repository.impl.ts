@@ -1,7 +1,10 @@
 import {
   type AiUsageResponse,
   aiUsageResponseSchema,
+  type CreateRecurringTodoInput,
+  type CreateRecurringTodoResponse,
   type CreateTodoInput,
+  createRecurringTodoResponseSchema,
   type DeleteTodoResponse,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
@@ -228,6 +231,26 @@ export class TodoRepositoryImpl implements TodoRepository {
     }
 
     return ok(toDailyCompletionsResult(parsed.data));
+  }
+
+  async createRecurringTodo(
+    params: CreateRecurringTodoInput,
+  ): Promise<Result<TodoItem[], ApiError>> {
+    const result = await this.#httpClient.post<CreateRecurringTodoResponse>(
+      'v1/todos/recurring',
+      params,
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = createRecurringTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoRepository] Invalid createRecurringTodo response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodoItems(parsed.data.todos));
   }
 
   async reorderTodo(todoId: number, input: ReorderTodoInput): Promise<Result<TodoItem, ApiError>> {

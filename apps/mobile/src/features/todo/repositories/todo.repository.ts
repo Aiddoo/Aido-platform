@@ -1,4 +1,5 @@
 import type {
+  CreateRecurringTodoInput,
   CreateTodoInput,
   GetTodosQuery,
   ReorderTodoInput,
@@ -41,4 +42,5 @@ export interface TodoRepository {
     endDate: string,
   ): Promise<Result<DailyCompletionsResult, ApiError>>;
   reorderTodo(todoId: number, input: ReorderTodoInput): Promise<Result<TodoItem, ApiError>>;
+  createRecurringTodo(params: CreateRecurringTodoInput): Promise<Result<TodoItem[], ApiError>>;
 }

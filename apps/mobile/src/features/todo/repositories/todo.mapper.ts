@@ -24,6 +24,7 @@ export const toTodoItem = (dto: Todo): TodoItem => ({
   scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
+  recurrenceGroupId: dto.recurrenceGroupId,
 });
 
 export const toTodoItems = (dtos: Todo[]): TodoItem[] => dtos.map(toTodoItem);

@@ -62,14 +62,13 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
         {isOpen && (
           <TodoDatePickerContent
             startDate={todo.startDateObj}
-            endDate={todo.endDateObj}
             onCancel={close}
-            onConfirm={(startDate, endDate) => {
+            onConfirm={(startDate) => {
               updateScheduleMutation.mutate({
                 todoId: todo.id,
                 input: {
                   startDate: formatDate(startDate),
-                  endDate: endDate ? formatDate(endDate) : null,
+                  endDate: null,
                   scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
                   isAllDay: todo.isAllDay,
                 },
