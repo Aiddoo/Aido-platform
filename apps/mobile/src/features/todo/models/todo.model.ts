@@ -20,6 +20,7 @@ export const todoItemSchema = z.object({
   scheduledTime: z.date().nullable(),
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
+  recurrenceGroupId: z.string().nullable(),
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
 

@@ -7,7 +7,8 @@ import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryError
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { useQueryClient } from '@tanstack/react-query';
 import { Suspense, useCallback } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl } from 'react-native';
+import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 
 const MyFeedScreen = () => {
   const { selectedDate } = useFeedCalendar();
@@ -23,7 +24,7 @@ const MyFeedScreen = () => {
   const [refreshing, onRefresh] = useRefresh(invalidateTodos);
 
   return (
-    <ScrollView
+    <NestableScrollContainer
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -37,7 +38,7 @@ const MyFeedScreen = () => {
           <TodoList date={selectedDate} />
         </Suspense>
       </QueryErrorBoundary>
-    </ScrollView>
+    </NestableScrollContainer>
   );
 };
 

@@ -17,6 +17,7 @@
   },
 
   "biome.enabled": true,
+  "biome.lspBin": "./node_modules/@biomejs/biome/bin/biome",
   "eslint.enable": false,
   "prettier.enable": false,
 

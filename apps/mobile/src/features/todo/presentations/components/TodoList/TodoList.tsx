@@ -10,7 +10,7 @@ import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { getAllTodosQueryOptions } from '../../queries/get-all-todos-query-options';
 import { getTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
@@ -92,7 +92,7 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       hitSlop={8}
       className="self-start flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-2"
     >
-      <Text size="b3" weight="semibold" style={{ color: category.color }}>
+      <Text size="b4" weight="semibold" style={{ color: category.color }}>
         {category.name}
       </Text>
       <PlusIcon width={14} height={14} colorClassName="text-gray-6" />
@@ -121,10 +121,9 @@ function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableLi
   });
 
   return (
-    <DraggableFlatList
+    <NestableDraggableFlatList
       data={draggableTodos}
       keyExtractor={(item) => String(item.id)}
-      scrollEnabled={false}
       renderItem={({ item, drag, isActive }) => (
         <ScaleDecorator activeScale={1.015}>
           <TodoItem
