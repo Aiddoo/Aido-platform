@@ -21,6 +21,7 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { Prisma } from "@/generated/prisma/client";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
 import { PushDeliveryService } from "./push-delivery.service";
@@ -152,6 +153,53 @@ describe("NotificationService", () => {
 			// Then - 알림 생성만 되고 푸시는 발송되지 않음
 			expect(result).toEqual(notification);
 			expect(pushDeliveryService.fireAndForgetPush).not.toHaveBeenCalled();
+		});
+
+		it("P2002 unique constraint 위반 시 null을 반환하고 크래시하지 않아야 한다", async () => {
+			// Given - DB unique constraint violation (partial index 중복 방지)
+			const data: CreateNotificationData = {
+				userId: mockUserId,
+				type: "TODO_REMINDER",
+				title: "리마인더",
+				body: "할일 마감 임박",
+				todoId: 1,
+				metadata: { stage: "60min" },
+			};
+
+			notificationRepo.createNotification.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Unique constraint", {
+					code: "P2002",
+					clientVersion: "5.0.0",
+				}),
+			);
+
+			// When - 중복 알림 생성 시도
+			const result = await service.createAndSend(data);
+
+			// Then - null 반환, 에러 미발생
+			expect(result).toBeNull();
+			expect(pushDeliveryService.shouldSendPush).not.toHaveBeenCalled();
+			expect(pushDeliveryService.fireAndForgetPush).not.toHaveBeenCalled();
+		});
+
+		it("P2002 외의 Prisma 에러는 그대로 throw해야 한다", async () => {
+			// Given - P2025 (record not found) 등 다른 Prisma 에러
+			const data: CreateNotificationData = {
+				userId: mockUserId,
+				type: "FOLLOW_NEW",
+				title: "팔로우",
+				body: "새 팔로워",
+			};
+
+			notificationRepo.createNotification.mockRejectedValue(
+				new Prisma.PrismaClientKnownRequestError("Not found", {
+					code: "P2025",
+					clientVersion: "5.0.0",
+				}),
+			);
+
+			// When & Then - 에러가 그대로 throw됨
+			await expect(service.createAndSend(data)).rejects.toThrow();
 		});
 	});
 

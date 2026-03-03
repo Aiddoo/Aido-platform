@@ -37,7 +37,7 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
  * 자연어 텍스트를 분석하여 구조화된 데이터로 변환하는 AI 기반 API입니다.
  *
  * ### 주요 기능
- * - 한국어 자연어 → 투두 데이터 파싱 (Google Gemini 2.0 Flash)
+ * - 한국어 자연어 → 투두 데이터 파싱 (Google Gemini 2.5 Flash-Lite)
  * - 스마트 시간 해석 (현재 시간 기반 AM/PM 자동 판단)
  * - 날짜 표현 처리 (내일, 모레, 다음주 월요일 등)
  * - 일일 사용량 추적 및 제한
@@ -49,8 +49,8 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
  * | 프리미엄 | 무제한 | - |
  *
  * ### 사용 모델
- * - Google Gemini 2.0 Flash (비용 효율적)
- * - Input: $0.10/1M tokens, Output: $0.40/1M tokens
+ * - Google Gemini 2.5 Flash-Lite (비용 효율적)
+ * - Input: $0.075/1M tokens, Output: $0.30/1M tokens
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -77,15 +77,17 @@ export class AiController {
 	 *
 	 * // Response
 	 * {
-	 *   "message": "자연어 파싱 완료",
+	 *   "success": true,
 	 *   "data": {
 	 *     "title": "팀 미팅",
 	 *     "startDate": "2025-01-26",
 	 *     "scheduledTime": "15:00",
-	 *     "isAllDay": false
+	 *     "isAllDay": false,
+	 *     "isRecurring": false,
+	 *     "recurrence": null
 	 *   },
 	 *   "meta": {
-	 *     "model": "google:gemini-2.0-flash",
+	 *     "model": "google:gemini-2.5-flash-lite",
 	 *     "processingTimeMs": 185,
 	 *     "tokenUsage": { "input": 180, "output": 45 }
 	 *   }
@@ -116,9 +118,13 @@ export class AiController {
 |------|------|------|------|
 | \`title\` | string | ✅ | 추출된 할 일 제목 |
 | \`startDate\` | string | ✅ | 시작 날짜 (YYYY-MM-DD) |
-| \`endDate\` | string | ❌ | 종료 날짜 (기간 일정용) |
-| \`scheduledTime\` | string | ❌ | 예정 시간 (HH:mm, 24시간) |
+| \`endDate\` | string \\| null | ❌ | 종료 날짜 (기간 일정용, 단일 날짜는 null) |
+| \`scheduledTime\` | string \\| null | ❌ | 예정 시간 (HH:mm, 24시간, 종일 일정은 null) |
 | \`isAllDay\` | boolean | ✅ | 종일 여부 |
+| \`isRecurring\` | boolean | ✅ | 반복 일정 여부 |
+| \`recurrence\` | object \\| null | ❌ | 반복 설정 (비반복 일정은 null) |
+| \`recurrence.daysOfWeek\` | string[] | - | 반복 요일 (\`MON\`~\`SUN\`) |
+| \`recurrence.endDate\` | string | - | 반복 종료일 (YYYY-MM-DD) |
 
 ## 📊 메타데이터 (\`meta\`)
 | 필드 | 타입 | 설명 |
@@ -233,13 +239,23 @@ if (confirmed) {
 	 * // Request
 	 * GET /ai/usage
 	 *
-	 * // Response
+	 * // Response (무료 유저)
 	 * {
-	 *   "message": "AI 사용량 조회 완료",
+	 *   "success": true,
 	 *   "data": {
 	 *     "used": 3,
 	 *     "limit": 5,
-	 *     "resetsAt": "2025-01-26T15:00:00.000Z"
+	 *     "resetsAt": "2026-03-05T15:00:00.000Z"
+	 *   }
+	 * }
+	 *
+	 * // Response (프리미엄 유저)
+	 * {
+	 *   "success": true,
+	 *   "data": {
+	 *     "used": 12,
+	 *     "limit": null,
+	 *     "resetsAt": "2026-03-05T15:00:00.000Z"
 	 *   }
 	 * }
 	 * ```
@@ -255,7 +271,7 @@ if (confirmed) {
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`used\` | number | 오늘 사용한 횟수 |
-| \`limit\` | number | 일일 제한 횟수 |
+| \`limit\` | number \\| null | 일일 제한 횟수 (null = 무제한, 프리미엄) |
 | \`resetsAt\` | string | 다음 리셋 시간 (ISO 8601, UTC) |
 
 ## ⏰ 리셋 규칙
@@ -267,7 +283,7 @@ if (confirmed) {
 const usage = await fetch('/ai/usage');
 const { used, limit, resetsAt } = usage.data;
 
-if (used >= limit) {
+if (limit !== null && used >= limit) {
   const resetTime = new Date(resetsAt);
   console.log(\`사용 제한 도달. \${resetTime.toLocaleString()}에 리셋됩니다.\`);
 }

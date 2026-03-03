@@ -38,7 +38,7 @@ export const SWAGGER_TAGS = {
 	/** 🎉 응원하기 - 친구 응원 메시지, 쿨다운/제한 관리 */
 	CHEERS: "Cheers",
 
-	/** 🤖 AI - 자연어 파싱, 스마트 입력 */
+	/** 🤖 AI - 자연어 파싱, 주간/월간 리포트, 반복 제안 */
 	AI: "AI",
 
 	/** 📩 문의 - 사용자 문의 접수 */
@@ -117,7 +117,7 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 		"친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
 
 	[SWAGGER_TAGS.AI]:
-		"자연어 텍스트를 할 일 데이터로 파싱. 스마트 시간 해석 지원",
+		"자연어 파싱 (스마트 시간 해석), 주간/월간 AI 리포트, 반복 패턴 제안. 리포트/제안은 프리미엄 전용",
 
 	[SWAGGER_TAGS.INQUIRIES]:
 		"사용자 문의 접수. 카테고리(버그 신고/기능 요청/기타) + 내용을 관리자 이메일로 발송",
