@@ -91,7 +91,8 @@ export class SettingsController {
 
 ### 💎 프리미엄 전용
 - 아침/저녁 리마인더 시간 커스텀은 프리미엄 구독 사용자 전용 기능입니다.
-- Free 유저도 설정값은 조회 가능하나, 리마인드 알림은 수신되지 않습니다.
+- 무료 유저는 매일 오전 08:00, 오후 18:00 고정 시간에 리마인더를 수신합니다.
+- 무료 유저의 응답에는 항상 고정 시간(08:00/18:00)이 반환됩니다.
 		`,
 	})
 	@ApiSuccessResponse({ type: PreferenceResponseDto })
@@ -137,7 +138,8 @@ export class SettingsController {
 
 ### 💎 프리미엄 전용
 - \`morningReminderHour\`, \`morningReminderMinute\`, \`eveningReminderHour\`, \`eveningReminderMinute\` 변경은 프리미엄 구독 사용자만 가능합니다.
-- Free 유저가 변경 시도 시 \`403 PREFERENCE_1701\` 에러가 반환됩니다.
+- 무료 유저가 변경 시도 시 \`403 PREFERENCE_1701\` 에러가 반환됩니다.
+- 무료 유저는 매일 오전 08:00, 오후 18:00 고정 시간에 리마인더를 수신합니다.
 
 ### ⏱️ 시간 범위 검증
 - \`morningReminderHour\`는 0-11 (오전) 범위만 허용합니다. 범위 밖 값은 \`400 PREFERENCE_1702\` 에러가 반환됩니다.
