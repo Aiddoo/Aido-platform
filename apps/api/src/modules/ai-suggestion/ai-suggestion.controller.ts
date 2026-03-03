@@ -5,6 +5,7 @@ import { Timezone } from "@/common/decorators/timezone.decorator";
 
 import {
 	ApiDoc,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -51,6 +52,7 @@ export class AiSuggestionController {
 	})
 	@ApiSuccessResponse({ type: SuggestionListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.AI_1309)
 	async getPendingSuggestions(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<SuggestionListResponseDto> {
@@ -82,6 +84,7 @@ export class AiSuggestionController {
 	})
 	@ApiSuccessResponse({ type: SuggestionActionResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.AI_1309)
 	@ApiNotFoundError(ErrorCode.AI_1305)
 	async handleSuggestion(
 		@CurrentUser() user: CurrentUserPayload,

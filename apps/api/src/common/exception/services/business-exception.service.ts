@@ -574,6 +574,14 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.AI_1307, { suggestionId });
 	}
 
+	static aiReportPremiumRequired() {
+		return new BusinessException(ErrorCode.AI_1308);
+	}
+
+	static aiSuggestionPremiumRequired() {
+		return new BusinessException(ErrorCode.AI_1309);
+	}
+
 	// =========================================================================
 	// Todo 카테고리 (TodoCategory)
 	// =========================================================================

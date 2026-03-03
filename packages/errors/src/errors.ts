@@ -218,6 +218,8 @@ export const ErrorCode = {
   AI_1305: 'AI_1305',
   AI_1306: 'AI_1306',
   AI_1307: 'AI_1307',
+  AI_1308: 'AI_1308',
+  AI_1309: 'AI_1309',
 
   // =========================================================================
   // 관리자 (ADMIN_1400-1499)
@@ -1051,6 +1053,18 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '만료된 제안입니다.',
     description: '해당 제안의 유효기간이 지났습니다.',
     httpStatus: HttpStatus.GONE,
+  },
+  [ErrorCode.AI_1308]: {
+    code: 'AI_1308',
+    message: 'AI 리포트는 프리미엄 기능입니다.',
+    description: 'AI 리포트 조회는 프리미엄 구독 사용자만 이용할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.AI_1309]: {
+    code: 'AI_1309',
+    message: 'AI 제안은 프리미엄 기능입니다.',
+    description: 'AI 반복 제안 기능은 프리미엄 구독 사용자만 이용할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 
   // =========================================================================

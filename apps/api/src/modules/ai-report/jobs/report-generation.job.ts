@@ -98,12 +98,10 @@ export class ReportGenerationJob {
 	 * 푸시 알림이 활성화된 사용자들에 대해 리포트 생성
 	 */
 	async #generateReportsForUsers(type: "WEEKLY" | "MONTHLY"): Promise<void> {
-		// 푸시 알림이 활성화된 사용자 조회
+		// 프리미엄(ACTIVE 구독 또는 ADMIN) 사용자 조회
 		const users = await this.database.user.findMany({
 			where: {
-				pushTokens: {
-					some: {},
-				},
+				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 			},
 			select: {
 				id: true,

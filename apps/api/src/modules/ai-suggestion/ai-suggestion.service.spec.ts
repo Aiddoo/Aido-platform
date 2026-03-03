@@ -8,6 +8,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { RecurringSuggestion } from "@/generated/prisma/client";
 
@@ -22,6 +23,7 @@ describe("AiSuggestionService", () => {
 	let mockRepository: Mocked<AiSuggestionRepository>;
 	let mockTodoService: Mocked<TodoService>;
 	let mockAiProvider: Mocked<AiProvider>;
+	let mockEntitlementService: Mocked<EntitlementService>;
 
 	const mockUserId = "user-123";
 
@@ -63,6 +65,58 @@ describe("AiSuggestionService", () => {
 		mockRepository = unitRef.get(AiSuggestionRepository);
 		mockTodoService = unitRef.get(TodoService);
 		mockAiProvider = unitRef.get(AI_PROVIDER);
+		mockEntitlementService = unitRef.get(EntitlementService);
+
+		// 기본: 프리미엄 사용자
+		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+	});
+
+	// =========================================================================
+	// 프리미엄 체크
+	// =========================================================================
+
+	describe("프리미엄 체크", () => {
+		it("비프리미엄 사용자가 getPendingSuggestions를 호출하면 AI_1309 예외를 던져야 한다", async () => {
+			// Given: 비프리미엄 사용자
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then: 프리미엄 필수 예외가 발생해야 한다
+			await expect(service.getPendingSuggestions(mockUserId)).rejects.toThrow(
+				BusinessException,
+			);
+
+			expect(mockRepository.findPendingByUserId).not.toHaveBeenCalled();
+		});
+
+		it("비프리미엄 사용자가 handleAction을 호출하면 AI_1309 예외를 던져야 한다", async () => {
+			// Given: 비프리미엄 사용자
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then: 프리미엄 필수 예외가 발생해야 한다
+			await expect(
+				service.handleAction(
+					mockUserId,
+					1,
+					{ action: "dismiss" },
+					"Asia/Seoul",
+				),
+			).rejects.toThrow(BusinessException);
+
+			expect(mockRepository.findByIdAndUserId).not.toHaveBeenCalled();
+		});
+
+		it("analyzeAndCreateSuggestions는 프리미엄 체크 없이 동작해야 한다", async () => {
+			// Given: 비프리미엄 사용자이지만 크론잡 호출
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+			mockRepository.findRecentTodos.mockResolvedValue([]);
+
+			// When: analyzeAndCreateSuggestions를 호출하면
+			const result = await service.analyzeAndCreateSuggestions(mockUserId);
+
+			// Then: 프리미엄 체크 없이 정상 동작
+			expect(mockEntitlementService.hasPremiumAccess).not.toHaveBeenCalled();
+			expect(result).toBe(0);
+		});
 	});
 
 	// =========================================================================

@@ -2,6 +2,7 @@ import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { now } from "@/common/date/utils/core";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma, ReportType } from "@/generated/prisma/client";
 
@@ -24,6 +25,7 @@ export class AiReportService {
 		private readonly aiReportRepository: AiReportRepository,
 		private readonly reportAggregatorService: ReportAggregatorService,
 		private readonly reportGeneratorService: ReportGeneratorService,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	// =========================================================================
@@ -39,6 +41,7 @@ export class AiReportService {
 		userId: string,
 		timezone: string,
 	): Promise<ReportStatus> {
+		await this.#enforcePremium(userId);
 		const currentTime = now();
 		const localNow = dayjs(currentTime).tz(timezone);
 
@@ -77,6 +80,7 @@ export class AiReportService {
 		userId: string,
 		params: { type?: ReportType; limit: number },
 	): Promise<AiReportDto[]> {
+		await this.#enforcePremium(userId);
 		const findParams: FindReportsParams = {
 			userId,
 			type: params.type,
@@ -91,6 +95,7 @@ export class AiReportService {
 	 * 리포트 상세 조회
 	 */
 	async getReportById(userId: string, id: number): Promise<AiReportDto> {
+		await this.#enforcePremium(userId);
 		const report = await this.aiReportRepository.findByIdAndUserId(id, userId);
 
 		if (!report) {
@@ -201,6 +206,13 @@ export class AiReportService {
 			prevEndDate: prevMonthEnd.utc().toDate(),
 			periodLabel: AiReportMapper.computePeriodLabel("MONTHLY", year, period),
 		});
+	}
+
+	async #enforcePremium(userId: string): Promise<void> {
+		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+		if (!hasPremium) {
+			throw BusinessExceptions.aiReportPremiumRequired();
+		}
 	}
 
 	/**

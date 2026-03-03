@@ -7,6 +7,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { AI_PROVIDER, type AiProvider } from "../ai/providers/ai.provider";
@@ -32,6 +33,7 @@ export class AiSuggestionService {
 		private readonly aiSuggestionRepository: AiSuggestionRepository,
 		private readonly todoService: TodoService,
 		@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
+		private readonly entitlementService: EntitlementService,
 	) {}
 
 	// =========================================================================
@@ -44,6 +46,7 @@ export class AiSuggestionService {
 	async getPendingSuggestions(
 		userId: string,
 	): Promise<RecurringSuggestionDto[]> {
+		await this.#enforcePremium(userId);
 		const suggestions =
 			await this.aiSuggestionRepository.findPendingByUserId(userId);
 		return AiSuggestionMapper.toManyResponse(suggestions);
@@ -62,6 +65,8 @@ export class AiSuggestionService {
 		dto: SuggestionActionDto,
 		timezone: string,
 	): Promise<SuggestionActionResponse> {
+		await this.#enforcePremium(userId);
+
 		// 1. 제안 조회
 		const suggestion = await this.aiSuggestionRepository.findByIdAndUserId(
 			suggestionId,
@@ -144,6 +149,13 @@ export class AiSuggestionService {
 			suggestion: AiSuggestionMapper.toResponse(updated),
 			createdTodosCount: result.count,
 		};
+	}
+
+	async #enforcePremium(userId: string): Promise<void> {
+		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+		if (!hasPremium) {
+			throw BusinessExceptions.aiSuggestionPremiumRequired();
+		}
 	}
 
 	// =========================================================================

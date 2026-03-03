@@ -9,6 +9,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { AiReport } from "@/generated/prisma/client";
 
@@ -23,6 +24,7 @@ describe("AiReportService", () => {
 	let mockRepository: Mocked<AiReportRepository>;
 	let mockAggregator: Mocked<ReportAggregatorService>;
 	let mockGenerator: Mocked<ReportGeneratorService>;
+	let mockEntitlementService: Mocked<EntitlementService>;
 
 	const mockUserId = "user-123";
 	const mockTimezone = "Asia/Seoul";
@@ -85,6 +87,68 @@ describe("AiReportService", () => {
 		mockRepository = unitRef.get(AiReportRepository);
 		mockAggregator = unitRef.get(ReportAggregatorService);
 		mockGenerator = unitRef.get(ReportGeneratorService);
+		mockEntitlementService = unitRef.get(EntitlementService);
+
+		// 기본: 프리미엄 사용자
+		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+	});
+
+	// =========================================================================
+	// 프리미엄 체크
+	// =========================================================================
+
+	describe("프리미엄 체크", () => {
+		it("비프리미엄 사용자가 getReportStatus를 호출하면 AI_1308 예외를 던져야 한다", async () => {
+			// Given: 비프리미엄 사용자
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then: 프리미엄 필수 예외가 발생해야 한다
+			await expect(
+				service.getReportStatus(mockUserId, mockTimezone),
+			).rejects.toThrow(BusinessException);
+
+			expect(mockRepository.findLatest).not.toHaveBeenCalled();
+		});
+
+		it("비프리미엄 사용자가 getReports를 호출하면 AI_1308 예외를 던져야 한다", async () => {
+			// Given: 비프리미엄 사용자
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then: 프리미엄 필수 예외가 발생해야 한다
+			await expect(
+				service.getReports(mockUserId, { type: "WEEKLY", limit: 10 }),
+			).rejects.toThrow(BusinessException);
+
+			expect(mockRepository.findMany).not.toHaveBeenCalled();
+		});
+
+		it("비프리미엄 사용자가 getReportById를 호출하면 AI_1308 예외를 던져야 한다", async () => {
+			// Given: 비프리미엄 사용자
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+
+			// When & Then: 프리미엄 필수 예외가 발생해야 한다
+			await expect(service.getReportById(mockUserId, 1)).rejects.toThrow(
+				BusinessException,
+			);
+
+			expect(mockRepository.findByIdAndUserId).not.toHaveBeenCalled();
+		});
+
+		it("generateWeeklyReport는 프리미엄 체크 없이 동작해야 한다", async () => {
+			// Given: 비프리미엄 사용자이지만 크론잡 호출
+			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+			mockRepository.exists.mockResolvedValue(true);
+
+			// When: generateWeeklyReport를 호출하면
+			const result = await service.generateWeeklyReport(
+				mockUserId,
+				mockTimezone,
+			);
+
+			// Then: 프리미엄 체크 없이 정상 동작 (이미 존재하므로 null)
+			expect(mockEntitlementService.hasPremiumAccess).not.toHaveBeenCalled();
+			expect(result).toBeNull();
+		});
 	});
 
 	// =========================================================================

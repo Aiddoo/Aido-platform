@@ -71,6 +71,9 @@ export class SuggestionAnalysisJob {
 			where: {
 				startDate: { gte: fourWeeksAgo },
 				recurrenceGroupId: null,
+				user: {
+					OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+				},
 			},
 			select: { userId: true },
 			distinct: ["userId"],

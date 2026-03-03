@@ -12,6 +12,7 @@ import { Timezone } from "@/common/decorators/timezone.decorator";
 
 import {
 	ApiDoc,
+	ApiForbiddenError,
 	ApiNotFoundError,
 	ApiSuccessResponse,
 	ApiUnauthorizedError,
@@ -64,6 +65,7 @@ export class AiReportController {
 	})
 	@ApiSuccessResponse({ type: ReportStatusResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.AI_1308)
 	async getStatus(
 		@CurrentUser() user: CurrentUserPayload,
 		@Timezone() tz: string,
@@ -90,6 +92,7 @@ export class AiReportController {
 	})
 	@ApiSuccessResponse({ type: AiReportListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.AI_1308)
 	async getReports(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetAiReportsQueryDto,
@@ -117,6 +120,7 @@ export class AiReportController {
 	})
 	@ApiSuccessResponse({ type: AiReportResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiForbiddenError(ErrorCode.AI_1308)
 	@ApiNotFoundError(ErrorCode.AI_1304)
 	async getReport(
 		@CurrentUser() user: CurrentUserPayload,
