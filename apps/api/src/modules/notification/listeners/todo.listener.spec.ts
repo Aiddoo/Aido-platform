@@ -16,9 +16,15 @@ import { Prisma } from "@/generated/prisma/client";
 import { NotificationService } from "../notification.service";
 import { TodoListener } from "./todo.listener";
 
-jest.mock("@/common/date/utils/date.util", () => ({
-	getUserToday: jest.fn(() => new Date("2026-02-06T00:00:00.000Z")),
-}));
+beforeAll(() => {
+	jest.useFakeTimers();
+	// KST 2026-02-06T21:00:00 → todayInTimezone("Asia/Seoul") = 2026-02-06T00:00:00Z
+	jest.setSystemTime(new Date("2026-02-06T12:00:00Z"));
+});
+
+afterAll(() => {
+	jest.useRealTimers();
+});
 
 describe("TodoListener", () => {
 	let listener: TodoListener;

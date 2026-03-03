@@ -1,0 +1,36 @@
+import dayjs from "dayjs";
+import { DATE_FORMAT } from "../constants/date.constant";
+
+/**
+ * Date → ISO 8601 문자열
+ * @example toISOString(date) // "2024-01-15T09:30:00.000Z"
+ */
+export function toISOString(date: Date): string {
+	return dayjs.utc(date).toISOString();
+}
+
+/**
+ * Date → 날짜 문자열 (YYYY-MM-DD)
+ * @example toDateString(date) // "2024-01-15"
+ */
+export function toDateString(date: Date): string {
+	return dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY);
+}
+
+/**
+ * Date | null → ISO 문자열 | null
+ * @example toISOStringOrNull(date) // "2024-01-15T09:30:00.000Z"
+ * @example toISOStringOrNull(null) // null
+ */
+export function toISOStringOrNull(date: Date | null): string | null {
+	return date ? dayjs.utc(date).toISOString() : null;
+}
+
+/**
+ * Date | null → 날짜 문자열 | null
+ * @example toDateStringOrNull(date) // "2024-01-15"
+ * @example toDateStringOrNull(null) // null
+ */
+export function toDateStringOrNull(date: Date | null): string | null {
+	return date ? dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY) : null;
+}

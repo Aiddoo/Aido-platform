@@ -5,7 +5,7 @@
  */
 
 import type { Cheer, CheerDetail, CheerLimitInfo } from "@aido/validators";
-import { toISOString, toISOStringOrNull } from "@/common/date";
+import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import type {
 	CheerWithRelations,
 	CheerLimitInfo as ServiceLimitInfo,

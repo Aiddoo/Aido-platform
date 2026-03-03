@@ -13,7 +13,7 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
-import { toISOStringOrNull } from "@/common/date";
+import { toISOStringOrNull } from "@/common/date/utils/format";
 import { Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,

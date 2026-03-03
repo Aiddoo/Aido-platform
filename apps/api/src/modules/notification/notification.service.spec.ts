@@ -749,10 +749,9 @@ describe("NotificationService", () => {
 			// Given
 			notificationRepo.existsRecentNotification.mockResolvedValue(false);
 			baseSetup();
-			const now = Date.now();
-			jest.spyOn(Date, "now").mockReturnValue(now);
 
 			// When
+			const before = Date.now();
 			await service.createAndSendWithDedup({
 				userId: mockUserId,
 				type: "NUDGE_RECEIVED",
@@ -761,15 +760,12 @@ describe("NotificationService", () => {
 				friendId: "friend-1",
 			});
 
-			// Then — since가 현재 - 1시간
-			expect(notificationRepo.existsRecentNotification).toHaveBeenCalledWith(
-				expect.objectContaining({
-					since: new Date(now - 60 * 60 * 1000),
-				}),
-				undefined,
-			);
-
-			jest.spyOn(Date, "now").mockRestore();
+			// Then — since가 현재 - 1시간 (NUDGE windowMs = MS_PER_HOUR)
+			const calledSince = notificationRepo.existsRecentNotification.mock
+				.calls[0]?.[0]?.since as Date;
+			expect(calledSince).toBeInstanceOf(Date);
+			const expectedMs = before - 3_600_000;
+			expect(Math.abs(calledSince.getTime() - expectedMs)).toBeLessThan(100);
 		});
 
 		// ======================================================================

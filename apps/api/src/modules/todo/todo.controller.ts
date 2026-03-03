@@ -13,7 +13,8 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
-import { toDateOnly, toScheduledTime } from "@/common/date";
+import { parseDateOnly } from "@/common/date/utils/parse";
+import { parseLocalDateTime } from "@/common/date/utils/timezone";
 import { Timezone } from "@/common/decorators/timezone.decorator";
 
 import {
@@ -151,8 +152,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			title: dto.title,
 			content: dto.content,
 			categoryId: dto.categoryId,
-			startDate: toDateOnly(dto.startDate),
-			endDate: dto.endDate ? toDateOnly(dto.endDate) : undefined,
+			startDate: parseDateOnly(dto.startDate),
+			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
 			scheduledTime: dto.scheduledTime
 				? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
 				: undefined,
@@ -392,9 +393,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			size: query.size,
 			completed: query.completed,
 			categoryId: query.categoryId,
-			// DATE 타입 필드는 시간 정보가 없으므로 toDateOnly 사용
-			startDate: query.startDate ? toDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? toDateOnly(query.endDate) : undefined,
+			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
 		});
 
 		return {
@@ -490,9 +491,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			friendUserId: params.userId,
 			cursor: query.cursor,
 			size: query.size,
-			// DATE 타입 필드는 시간 정보가 없으므로 toDateOnly 사용
-			startDate: query.startDate ? toDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? toDateOnly(query.endDate) : undefined,
+			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
 		});
 
 		return {
@@ -542,12 +543,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			title: dto.title,
 			content: dto.content,
 			categoryId: dto.categoryId,
-			startDate: dto.startDate ? toDateOnly(dto.startDate) : undefined,
+			startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
 			endDate:
 				dto.endDate === null
 					? null
 					: dto.endDate
-						? toDateOnly(dto.endDate)
+						? parseDateOnly(dto.endDate)
 						: undefined,
 			scheduledTime:
 				dto.scheduledTime === null
@@ -862,6 +863,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	 * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
 	 */
 	#parseScheduledTime(dateStr: string, timeStr: string, tz: string): Date {
-		return toScheduledTime(dateStr, timeStr, tz);
+		return parseLocalDateTime(dateStr, timeStr, tz);
 	}
 }

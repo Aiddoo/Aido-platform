@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { now } from "@/common/date/utils";
+import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,

@@ -1,4 +1,4 @@
-import { InMemoryCacheAdapter } from "../../adapters/in-memory-cache.adapter";
+import { InMemoryCacheAdapter } from "./in-memory-cache.adapter";
 
 describe("InMemoryCacheAdapter", () => {
 	let cache: InMemoryCacheAdapter;

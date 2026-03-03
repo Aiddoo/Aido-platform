@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { Cron } from "@nestjs/schedule";
 import dayjs from "dayjs";
-import { getUserToday } from "@/common/date/utils/date.util";
+import { todayInTimezone } from "@/common/date/utils/timezone";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
@@ -164,7 +164,7 @@ export class TimezoneAwareReminderJob {
 		localMinute: number,
 		userId?: string,
 	): Promise<void> {
-		const today = getUserToday(tz);
+		const today = todayInTimezone(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
 		const users = await this.database.user.findMany({
@@ -239,7 +239,7 @@ export class TimezoneAwareReminderJob {
 		localMinute: number,
 		userId?: string,
 	): Promise<void> {
-		const today = getUserToday(tz);
+		const today = todayInTimezone(tz);
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
 		const users = await this.database.user.findMany({

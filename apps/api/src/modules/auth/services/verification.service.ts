@@ -1,7 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { addMinutes, subtractSeconds } from "@/common/date";
+import { addMinutes, subtractSeconds } from "@/common/date/utils/arithmetic";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma, VerificationType } from "@/generated/prisma/client";
 import { EmailService } from "@/modules/email/email.service";

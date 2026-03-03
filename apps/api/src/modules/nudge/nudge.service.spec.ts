@@ -13,7 +13,8 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
-import { addDays, getUserToday, subtractDays } from "@/common/date";
+import { addDays, subtractDays } from "@/common/date/utils/arithmetic";
+import { todayInTimezone } from "@/common/date/utils/timezone";
 import {
 	EntitlementService,
 	Feature,
@@ -141,7 +142,7 @@ describe("NudgeService", () => {
 		/**
 		 * 성공 시나리오 mock 설정 헬퍼
 		 */
-		const todayMidnight = getUserToday("UTC");
+		const todayMidnight = todayInTimezone("UTC");
 
 		const setupSuccessfulSend = () => {
 			followService.isMutualFriend.mockResolvedValue(true);

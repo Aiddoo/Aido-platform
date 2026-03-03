@@ -5,7 +5,7 @@
  */
 
 import type { Nudge, NudgeDetail, NudgeLimitInfo } from "@aido/validators";
-import { toISOString, toISOStringOrNull } from "@/common/date";
+import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import type {
 	NudgeWithRelations,
 	NudgeLimitInfo as ServiceLimitInfo,

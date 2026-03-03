@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { subtractDays } from "@/common/date/utils";
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { DatabaseService } from "@/database";
 import type {
 	Prisma,

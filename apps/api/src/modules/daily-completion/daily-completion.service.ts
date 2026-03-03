@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { addDays, toDateOnly } from "@/common/date";
+import { addDays } from "@/common/date/utils/arithmetic";
+import { parseDateOnly } from "@/common/date/utils/parse";
 import { DailyCompletionMapper } from "./daily-completion.mapper";
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import type {
@@ -26,8 +27,8 @@ export class DailyCompletionService {
 	): Promise<DailyCompletionsRangeResult> {
 		const { userId, startDate, endDate } = params;
 
-		const start = toDateOnly(startDate);
-		const end = addDays(1, toDateOnly(endDate));
+		const start = parseDateOnly(startDate);
+		const end = addDays(1, parseDateOnly(endDate));
 
 		const aggregates =
 			await this.dailyCompletionRepository.aggregateTodosByDateRange({

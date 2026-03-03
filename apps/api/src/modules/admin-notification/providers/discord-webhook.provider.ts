@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { toISOString } from "@/common/date";
+import { toISOString } from "@/common/date/utils/format";
 import type {
 	AdminNotification,
 	AdminNotifier,

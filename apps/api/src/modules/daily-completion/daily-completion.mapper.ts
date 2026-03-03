@@ -1,4 +1,4 @@
-import { toDateString } from "@/common/date";
+import { toDateString } from "@/common/date/utils/format";
 import type {
 	DailyCompletionSummary,
 	TodoAggregateByDate,

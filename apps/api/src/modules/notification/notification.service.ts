@@ -4,7 +4,8 @@ import {
 	type Notification as NotificationDto,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { TIME_UNIT } from "@/common/date";
+import { TIME_UNIT } from "@/common/date/constants/date.constant";
+import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
@@ -126,7 +127,7 @@ export class NotificationService {
 		}
 
 		try {
-			const since = new Date(Date.now() - strategy.windowMs);
+			const since = subtractMilliseconds(strategy.windowMs);
 			const contextFields: {
 				friendId?: string;
 				todoId?: number;

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { addDays, startOfDay } from "@/common/date";
+import { addDays } from "@/common/date/utils/arithmetic";
+import { startOfDay } from "@/common/date/utils/range";
 import { DatabaseService } from "@/database/database.service";
 import type { Nudge } from "@/generated/prisma/client";
 

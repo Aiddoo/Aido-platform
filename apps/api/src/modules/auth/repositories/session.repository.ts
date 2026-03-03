@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 
-import { now } from "@/common/date/utils";
+import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database";
 import type { Prisma, Session } from "@/generated/prisma/client";
 

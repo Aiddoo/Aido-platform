@@ -120,7 +120,7 @@ describe("TodoController", () => {
 			// When: findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then: 날짜가 toDateOnly로 변환되어 서비스에 전달되어야 한다
+			// Then: 날짜가 parseDateOnly로 변환되어 서비스에 전달되어야 한다
 			expect(mockTodoService.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: mockUser.userId,

@@ -962,6 +962,9 @@ describe("AuthService", () => {
 			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
+			sessionService.assertSessionValid.mockImplementation(() => {
+				throw BusinessExceptions.sessionRevoked();
+			});
 
 			// When & Then
 			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
@@ -981,6 +984,9 @@ describe("AuthService", () => {
 			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
+			sessionService.assertSessionValid.mockImplementation(() => {
+				throw BusinessExceptions.sessionExpired();
+			});
 
 			// When & Then
 			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(

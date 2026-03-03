@@ -10,13 +10,13 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { CacheService } from "../../cache.service";
+import { createMockUserProfile } from "./__tests__/test-utils";
+import { CacheService } from "./cache.service";
 import {
 	CACHE_SERVICE,
 	type ICacheService,
 	type TtlValue,
-} from "../../interfaces/cache.interface";
-import { createMockUserProfile } from "../test-utils";
+} from "./interfaces/cache.interface";
 
 describe("CacheService", () => {
 	let service: CacheService;

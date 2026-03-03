@@ -9,13 +9,9 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
-import {
-	now,
-	subtractDays,
-	subtractMinutes,
-	toISOString,
-	toISOStringOrNull,
-} from "@/common/date";
+import { subtractDays, subtractMinutes } from "@/common/date/utils/arithmetic";
+import { now } from "@/common/date/utils/core";
+import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
@@ -688,13 +684,7 @@ export class AuthService {
 		}
 
 		// 3. 세션 유효성 확인
-		if (session.revokedAt) {
-			throw BusinessExceptions.sessionRevoked();
-		}
-
-		if (session.expiresAt < now()) {
-			throw BusinessExceptions.sessionExpired();
-		}
+		this.sessionService.assertSessionValid(session);
 
 		if (session.userId !== userId || session.id !== sessionId) {
 			throw BusinessExceptions.sessionNotFound();

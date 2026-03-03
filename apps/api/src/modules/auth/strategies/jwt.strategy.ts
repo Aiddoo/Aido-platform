@@ -5,10 +5,11 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { now, toISOStringOrNull } from "@/common/date";
+import { toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
+import { SessionService } from "../services/session.service";
 import type { JwtPayload } from "../services/token.service";
 
 /**
@@ -27,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	constructor(
 		readonly configService: TypedConfigService,
 		private readonly sessionRepository: SessionRepository,
+		private readonly sessionService: SessionService,
 		private readonly cacheService: CacheService,
 		private readonly database: DatabaseService,
 	) {
@@ -65,12 +67,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 
 		if (cachedSession) {
 			// 캐시 히트: 캐시된 데이터로 유효성 검증
-			if (cachedSession.revokedAt) {
-				throw BusinessExceptions.sessionRevoked();
-			}
-			if (new Date(cachedSession.expiresAt) < now()) {
-				throw BusinessExceptions.sessionExpired();
-			}
+			this.sessionService.assertSessionValid(cachedSession, payload.sessionId);
 
 			// Defense in Depth: 캐시된 사용자 상태 검증
 			if (cachedSession.userStatus) {
@@ -90,18 +87,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 
 		// 2. 캐시 미스: DB에서 세션 조회
 		const session = await this.sessionRepository.findById(payload.sessionId);
-
-		if (!session) {
-			throw BusinessExceptions.sessionNotFound();
-		}
-
-		if (session.revokedAt) {
-			throw BusinessExceptions.sessionRevoked();
-		}
-
-		if (session.expiresAt < now()) {
-			throw BusinessExceptions.sessionExpired();
-		}
+		this.sessionService.assertSessionValid(session, payload.sessionId);
 
 		// 3. 사용자 상태 조회 (Defense in Depth)
 		const user = await this.database.user.findUnique({

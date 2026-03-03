@@ -15,7 +15,7 @@ import type {
 	ReceivedRequestsResponse,
 	SentRequestsResponse,
 } from "@aido/validators";
-import { toISOString } from "@/common/date";
+import { toISOString } from "@/common/date/utils/format";
 import type { Follow as FollowEntity } from "@/generated/prisma/client";
 import type { FollowWithUser } from "./types/follow.types";
 
