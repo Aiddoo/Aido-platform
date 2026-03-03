@@ -138,15 +138,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: ICON,
     userInterfaceStyle: 'automatic',
 
-    // Notification
-    notification: {
-      icon: NOTIFICATION_ICON,
-      color: BRAND_COLOR,
-      iosDisplayInForeground: true,
-      androidMode: 'default',
-      androidCollapsedTitle: APP_NAME,
-    },
-
     // Splash
     splash: {
       image: SPLASH,
