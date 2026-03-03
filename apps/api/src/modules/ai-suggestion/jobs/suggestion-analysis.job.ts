@@ -3,6 +3,7 @@ import { Cron } from "@nestjs/schedule";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../../notification/notification.service";
+import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
 import { AiSuggestionService } from "../ai-suggestion.service";
 
 /** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
@@ -94,11 +95,12 @@ export class SuggestionAnalysisJob {
 				}
 
 				// 새 제안 생성 알림 발송
+				const message = NotificationMessageBuilder.aiSuggestion();
 				await this.notificationService.createAndSend({
 					userId,
 					type: "AI_SUGGESTION",
-					title: "새로운 반복 제안이 도착했다냥",
-					body: "패턴을 분석해봤어! 확인해볼래?",
+					title: message.title,
+					body: message.body,
 				});
 
 				successCount++;

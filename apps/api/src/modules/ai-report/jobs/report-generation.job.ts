@@ -4,6 +4,7 @@ import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import type { NotificationType } from "@/generated/prisma/client";
 import { NotificationService } from "../../notification/notification.service";
+import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
 import { AiReportService } from "../ai-report.service";
 
 /** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
@@ -141,14 +142,8 @@ export class ReportGenerationJob {
 
 				const message =
 					type === "WEEKLY"
-						? {
-								title: "주간 리포트가 도착했다냥",
-								body: "이번 주 어땠는지 같이 볼까?",
-							}
-						: {
-								title: "월간 리포트가 도착했다냥",
-								body: "한 달 동안 고생했어!",
-							};
+						? NotificationMessageBuilder.weeklyReport()
+						: NotificationMessageBuilder.monthlyReport();
 
 				await this.notificationService.createAndSend({
 					userId: user.id,
