@@ -299,6 +299,39 @@ describe("AiSuggestionService", () => {
 				"PENDING",
 			);
 		});
+
+		it("수락 시 투두 생성 실패 후 롤백도 실패하면 원본 에러가 전파되어야 한다", async () => {
+			// Given: PENDING 상태의 제안, 투두 생성 실패 + 롤백 실패
+			const suggestion = createMockSuggestionEntity();
+			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
+
+			mockRepository.updateStatus
+				.mockResolvedValueOnce(
+					createMockSuggestionEntity({ status: "ACCEPTED" }),
+				)
+				.mockRejectedValueOnce(new Error("DB 연결 끊김"));
+
+			mockTodoService.createRecurring.mockRejectedValue(
+				new Error("투두 생성 실패"),
+			);
+
+			// When & Then: 롤백 실패와 무관하게 원본 에러("투두 생성 실패")가 전파되어야 한다
+			await expect(
+				service.handleAction(
+					mockUserId,
+					1,
+					{ action: "accept", categoryId: 5 },
+					"Asia/Seoul",
+				),
+			).rejects.toThrow("투두 생성 실패");
+
+			// Then: 롤백 시도는 되어야 한다
+			expect(mockRepository.updateStatus).toHaveBeenNthCalledWith(
+				2,
+				1,
+				"PENDING",
+			);
+		});
 	});
 
 	// =========================================================================

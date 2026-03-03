@@ -153,7 +153,14 @@ export class AiSuggestionService {
 			};
 		} catch (error) {
 			// 투두 생성 실패 시 상태를 PENDING으로 롤백
-			await this.aiSuggestionRepository.updateStatus(suggestionId, "PENDING");
+			try {
+				await this.aiSuggestionRepository.updateStatus(suggestionId, "PENDING");
+			} catch (rollbackError) {
+				this.#logger.error(
+					`제안 롤백 실패: id=${suggestionId}, rollbackError=${rollbackError}`,
+					rollbackError instanceof Error ? rollbackError.stack : undefined,
+				);
+			}
 			throw error;
 		}
 	}
