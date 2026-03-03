@@ -98,7 +98,14 @@ export class AiSuggestionService {
 			};
 		}
 
-		// accept 처리
+		// accept 처리: categoryId 필수 검증
+		if (!dto.categoryId) {
+			throw BusinessExceptions.invalidParameter({
+				field: "categoryId",
+				reason: "수락 시 categoryId는 필수입니다",
+			});
+		}
+
 		const daysOfWeek = suggestion.daysOfWeek as unknown as string[];
 		const currentDate = dayjs.utc(now());
 		const startDate = dto.startDate ?? toDateString(currentDate.toDate());
@@ -114,7 +121,7 @@ export class AiSuggestionService {
 			{
 				userId,
 				title: suggestion.title,
-				categoryId: dto.categoryId ?? 1,
+				categoryId: dto.categoryId,
 				startDate,
 				endDate,
 				daysOfWeek: daysOfWeek as never,

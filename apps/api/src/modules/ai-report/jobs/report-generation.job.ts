@@ -62,9 +62,11 @@ export class ReportGenerationJob {
 	}
 
 	/**
-	 * 월간 리포트 생성 — 매월 마지막 날 UTC 22:00
+	 * 월간 리포트 생성 — 매월 1일 UTC 22:00 (KST 2일 07:00)
+	 *
+	 * 전월 데이터를 기반으로 리포트를 생성합니다.
 	 */
-	@Cron("0 22 L * *")
+	@Cron("0 22 1 * *")
 	async handleMonthlyReport(): Promise<void> {
 		this.#logger.log("Starting monthly report generation job...");
 
