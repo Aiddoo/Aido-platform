@@ -1,4 +1,9 @@
-import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import {
+	Injectable,
+	Logger,
+	type OnModuleDestroy,
+	type OnModuleInit,
+} from "@nestjs/common";
 import type { ILockProvider } from "../interfaces/lock.interface";
 
 interface LockEntry {
@@ -14,7 +19,9 @@ interface LockEntry {
  * - 단일 프로세스 환경에서만 유효 (수평 확장 시 Redis 잠금 필요)
  */
 @Injectable()
-export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy {
+export class InMemoryLockAdapter
+	implements ILockProvider, OnModuleDestroy, OnModuleInit
+{
 	readonly #logger = new Logger(InMemoryLockAdapter.name);
 	readonly #locks = new Map<string, LockEntry>();
 	readonly #cleanupInterval: NodeJS.Timeout;
@@ -25,6 +32,13 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy {
 		this.#cleanupInterval = setInterval(
 			() => this.#cleanup(),
 			cleanupIntervalMs,
+		);
+	}
+
+	onModuleInit(): void {
+		this.#logger.warn(
+			"Using in-memory lock provider — SINGLE INSTANCE ONLY. " +
+				"Set LOCK_PROVIDER=redis for multi-instance deployments.",
 		);
 	}
 

@@ -5,9 +5,22 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { GeminiProvider } from "./gemini.provider";
 
 // Vercel AI SDK mock
-jest.mock("ai", () => ({
-	generateObject: jest.fn(),
-}));
+jest.mock("ai", () => {
+	class _MockAPICallError extends Error {
+		readonly statusCode: number;
+		constructor(message: string, statusCode: number) {
+			super(message);
+			this.statusCode = statusCode;
+		}
+		static isInstance(error: unknown): error is _MockAPICallError {
+			return error instanceof _MockAPICallError;
+		}
+	}
+	return {
+		generateObject: jest.fn(),
+		APICallError: _MockAPICallError,
+	};
+});
 
 jest.mock("@ai-sdk/google", () => ({
 	createGoogleGenerativeAI: jest.fn(() => jest.fn(() => "mock-model")),
@@ -148,7 +161,7 @@ describe("GeminiProvider", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			expect(result.model).toBe("google:gemini-2.0-flash");
+			expect(result.model).toBe("google:gemini-2.5-flash-lite");
 			expect(result.usage).toEqual({
 				input: 100,
 				output: 50,
@@ -196,6 +209,44 @@ describe("GeminiProvider", () => {
 					schema: testSchema,
 				}),
 			).rejects.toThrow("API error");
+		});
+
+		it("429 에러 시 aiRateLimitExceeded BusinessException을 던진다", async () => {
+			// Given - generateObject가 429 에러를 던짐
+			const { generateObject, APICallError } = require("ai");
+			generateObject.mockRejectedValue(
+				new APICallError("Rate limit exceeded", 429),
+			);
+
+			mockConfigService.get.mockReturnValue("test-api-key");
+			const provider = await createProvider();
+
+			// When & Then - BusinessException이 발생함
+			await expect(
+				provider.generateStructured({
+					prompt: "테스트",
+					schema: testSchema,
+				}),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("429가 아닌 APICallError는 그대로 전파한다", async () => {
+			// Given - generateObject가 500 에러를 던짐
+			const { generateObject, APICallError } = require("ai");
+			generateObject.mockRejectedValue(
+				new APICallError("Internal server error", 500),
+			);
+
+			mockConfigService.get.mockReturnValue("test-api-key");
+			const provider = await createProvider();
+
+			// When & Then - 원래 에러가 전파됨
+			await expect(
+				provider.generateStructured({
+					prompt: "테스트",
+					schema: testSchema,
+				}),
+			).rejects.toThrow("Internal server error");
 		});
 	});
 });

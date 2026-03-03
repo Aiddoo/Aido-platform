@@ -1,18 +1,18 @@
 /**
  * Google Gemini Provider
  *
- * Vercel AI SDK를 사용하여 Google Gemini 2.0 Flash 모델과 통신합니다.
- * 토큰 비용 최적화를 위해 Flash 모델을 기본으로 사용합니다.
+ * Vercel AI SDK를 사용하여 Google Gemini 2.5 Flash-Lite 모델과 통신합니다.
+ * 토큰 비용 최적화를 위해 Flash-Lite 모델을 기본으로 사용합니다.
  *
- * 가격 (2026년 1월 기준):
- * - Input: $0.10 / 1M tokens
- * - Output: $0.40 / 1M tokens
- * - 무료 티어: 1,500 RPD, 15 RPM
+ * 가격 (2026년 3월 기준):
+ * - Input: $0.075 / 1M tokens
+ * - Output: $0.30 / 1M tokens
+ * - 무료 티어: 1,000 RPD, 15 RPM
  */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { generateObject } from "ai";
+import { APICallError, generateObject } from "ai";
 import type { z } from "zod";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -24,7 +24,7 @@ import type {
 } from "./ai.provider";
 
 /** Gemini 모델 설정 */
-const GEMINI_MODEL = "gemini-2.0-flash" as const;
+const GEMINI_MODEL = "gemini-2.5-flash-lite" as const;
 const DEFAULT_MAX_TOKENS = 150;
 const DEFAULT_TEMPERATURE = 0.1;
 
@@ -57,22 +57,29 @@ export class GeminiProvider implements AiProvider {
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
-		const { object, usage } = await generateObject({
-			model: this.#model,
-			prompt: options.prompt,
-			schema: options.schema as z.ZodType<T>,
-			maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
-			temperature: options.temperature ?? DEFAULT_TEMPERATURE,
-		});
+		try {
+			const { object, usage } = await generateObject({
+				model: this.#model,
+				prompt: options.prompt,
+				schema: options.schema as z.ZodType<T>,
+				maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
+				temperature: options.temperature ?? DEFAULT_TEMPERATURE,
+			});
 
-		return {
-			output: object,
-			model: `google:${GEMINI_MODEL}`,
-			usage: {
-				input: usage.inputTokens ?? 0,
-				output: usage.outputTokens ?? 0,
-			},
-		};
+			return {
+				output: object,
+				model: `google:${GEMINI_MODEL}`,
+				usage: {
+					input: usage.inputTokens ?? 0,
+					output: usage.outputTokens ?? 0,
+				},
+			};
+		} catch (error) {
+			if (APICallError.isInstance(error) && error.statusCode === 429) {
+				throw BusinessExceptions.aiRateLimitExceeded();
+			}
+			throw error;
+		}
 	}
 
 	/**

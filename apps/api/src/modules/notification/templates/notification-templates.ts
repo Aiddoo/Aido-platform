@@ -135,6 +135,24 @@ export const SYSTEM_TEMPLATES = {
 		type: "WEEKLY_ACHIEVEMENT",
 		defaultRoute: "/stats",
 	} satisfies NotificationTemplate,
+	WEEKLY_REPORT: {
+		title: "주간 리포트가 도착했다냥!",
+		body: "이번 주 성적표를 확인해보라냥",
+		type: "WEEKLY_REPORT",
+		defaultRoute: "/reports",
+	} satisfies NotificationTemplate,
+	MONTHLY_REPORT: {
+		title: "월간 리포트 왔다냥!",
+		body: "한 달 동안 얼마나 했는지 볼까냥",
+		type: "MONTHLY_REPORT",
+		defaultRoute: "/reports",
+	} satisfies NotificationTemplate,
+	AI_SUGGESTION: {
+		title: "반복 패턴을 발견했다냥!",
+		body: "자동으로 만들어줄까냥?",
+		type: "AI_SUGGESTION",
+		defaultRoute: "/suggestions",
+	} satisfies NotificationTemplate,
 	SYSTEM_NOTICE: {
 		title: "Aido",
 		body: "{message}",
@@ -346,6 +364,36 @@ export class NotificationMessageBuilder {
 		return {
 			title: SCHEDULER_TEMPLATES.EVENING_NONE.title,
 			body: SCHEDULER_TEMPLATES.EVENING_NONE.body,
+		};
+	}
+
+	/**
+	 * 주간 리포트 알림 메시지 생성
+	 */
+	static weeklyReport(): { title: string; body: string } {
+		return {
+			title: SYSTEM_TEMPLATES.WEEKLY_REPORT.title,
+			body: SYSTEM_TEMPLATES.WEEKLY_REPORT.body,
+		};
+	}
+
+	/**
+	 * 월간 리포트 알림 메시지 생성
+	 */
+	static monthlyReport(): { title: string; body: string } {
+		return {
+			title: SYSTEM_TEMPLATES.MONTHLY_REPORT.title,
+			body: SYSTEM_TEMPLATES.MONTHLY_REPORT.body,
+		};
+	}
+
+	/**
+	 * AI 반복 제안 알림 메시지 생성
+	 */
+	static aiSuggestion(): { title: string; body: string } {
+		return {
+			title: SYSTEM_TEMPLATES.AI_SUGGESTION.title,
+			body: SYSTEM_TEMPLATES.AI_SUGGESTION.body,
 		};
 	}
 

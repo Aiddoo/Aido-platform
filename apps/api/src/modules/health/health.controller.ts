@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Controller, Get, Logger } from "@nestjs/common";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
@@ -5,6 +6,8 @@ import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { ApiDoc, SWAGGER_TAGS } from "@/common/swagger";
 import { Public } from "@/modules/auth/decorators/public.decorator";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
+
+const INSTANCE_ID = process.env.INSTANCE_ID ?? randomUUID().slice(0, 8);
 
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
 @Controller("health")
@@ -73,12 +76,12 @@ curl https://api.aido.com/health
 			},
 		},
 	})
-	async check(): Promise<HealthCheckResult> {
+	async check(): Promise<HealthCheckResult & { instanceId: string }> {
 		this.#logger.debug("헬스 체크 요청");
 		const result = await this.health.check([
 			() => this.databaseHealth.isHealthy("database"),
 		]);
 		this.#logger.log(`헬스 체크 완료: ${result.status}`);
-		return result;
+		return { ...result, instanceId: INSTANCE_ID };
 	}
 }

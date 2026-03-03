@@ -64,6 +64,8 @@ export class FakeAiProvider implements AiProvider {
 		endDate: null,
 		scheduledTime: null,
 		isAllDay: true,
+		isRecurring: false,
+		recurrence: null,
 	};
 	private _callHistory: CallRecord[] = [];
 	private _isAvailable = true;

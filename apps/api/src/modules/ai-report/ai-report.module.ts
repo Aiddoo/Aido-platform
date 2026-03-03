@@ -1,0 +1,39 @@
+import { Module } from "@nestjs/common";
+
+import { AiModule } from "../ai/ai.module";
+import { NotificationModule } from "../notification/notification.module";
+
+import { AiReportController } from "./ai-report.controller";
+import { AiReportRepository } from "./ai-report.repository";
+import { AiReportService } from "./ai-report.service";
+import { ReportGenerationJob } from "./jobs/report-generation.job";
+import { ReportAggregatorService } from "./report-aggregator.service";
+import { ReportGeneratorService } from "./report-generator.service";
+
+/**
+ * AI 리포트 모듈
+ *
+ * 주간/월간 AI 분석 리포트를 제공합니다.
+ *
+ * ### 주요 기능
+ * - 리포트 상태 조회 (다음 리포트 예정일, 최신 리포트)
+ * - 리포트 목록/상세 조회
+ * - 크론 작업을 통한 자동 리포트 생성
+ *
+ * ### 의존성
+ * - AiModule: AI Provider (Gemini)를 통한 분석 콘텐츠 생성
+ * - NotificationModule: 리포트 생성 완료 알림 발송
+ */
+@Module({
+	imports: [AiModule, NotificationModule],
+	controllers: [AiReportController],
+	providers: [
+		AiReportRepository,
+		AiReportService,
+		ReportAggregatorService,
+		ReportGeneratorService,
+		ReportGenerationJob,
+	],
+	exports: [AiReportService],
+})
+export class AiReportModule {}

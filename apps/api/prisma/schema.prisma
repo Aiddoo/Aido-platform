@@ -76,9 +76,14 @@ model User {
   weeklyAchievements WeeklyAchievement[]
   subscriptions      Subscription[]
 
+  // 관계: AI
+  aiReports            AiReport[]
+  recurringSuggestions RecurringSuggestion[]
+
   @@index([status])
   @@index([subscriptionStatus])
   @@index([deletedAt])
+  @@index([status, deletedAt, lastLoginAt]) // Admin 7/30일 필터
 }
 
 enum UserRole {
@@ -612,9 +617,9 @@ model Notification {
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 중복 방지: PostgreSQL partial unique index (migration SQL 참고)
-  // - Notification_daily_dedup: friendId IS NULL인 타입 (DAILY_COMPLETE, MORNING_REMINDER, EVENING_REMINDER)
-  // - Notification_friend_dedup: friendId IS NOT NULL인 타입 (FRIEND_COMPLETED)
+  // 중복 방지: PostgreSQL partial unique index (20260304000000 migration 참고)
+  // - Notification_daily_dedup: (userId, type, notificationDate) WHERE friendId IS NULL
+  // - Notification_friend_dedup: (userId, type, friendId, notificationDate) WHERE friendId IS NOT NULL
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리
@@ -647,6 +652,11 @@ enum NotificationType {
 
   // 달성
   WEEKLY_ACHIEVEMENT
+
+  // AI
+  WEEKLY_REPORT // 주간 AI 리포트
+  MONTHLY_REPORT // 월간 AI 리포트
+  AI_SUGGESTION // AI 반복 제안
 
   // 시스템
   SYSTEM_NOTICE
@@ -722,4 +732,84 @@ model Subscription {
   @@index([userId])
   @@index([status, expiresAt])
   @@index([deletedAt])
+}
+
+// =============================================================================
+// AI - 리포트
+// =============================================================================
+
+enum ReportType {
+  WEEKLY
+  MONTHLY
+}
+
+model AiReport {
+  id     Int        @id @default(autoincrement())
+  userId String
+  type   ReportType
+
+  // 기간 식별
+  year   Int
+  period Int // WEEKLY: 주차(1-53), MONTHLY: 월(1-12)
+
+  // 통계 데이터
+  stats             Json
+  categoryBreakdown Json
+  dayPatterns       Json
+  timePatterns      Json
+
+  // AI 분석 결과
+  aiSummary String  @db.Text
+  aiTips    Json
+
+  // 상태
+  hasActivity Boolean
+  generatedAt DateTime
+
+  // 타임스탬프
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, year, period])
+  @@index([userId, type])
+}
+
+// =============================================================================
+// AI - 반복 제안
+// =============================================================================
+
+enum SuggestionStatus {
+  PENDING
+  ACCEPTED
+  DISMISSED
+}
+
+model RecurringSuggestion {
+  id     Int    @id @default(autoincrement())
+  userId String
+
+  // 제안 내용
+  title         String
+  daysOfWeek    Json // DayOfWeek[] (예: ["MON", "WED", "FRI"])
+  scheduledTime String? // HH:mm 형식
+  confidence    Float
+  reason        String
+
+  // 매칭된 기존 할 일
+  matchedTodos Json // 참고한 Todo 정보
+
+  // 상태
+  status    SuggestionStatus @default(PENDING)
+  expiresAt DateTime
+
+  // 타임스탬프
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
 }

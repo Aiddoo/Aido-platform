@@ -317,6 +317,7 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 								"ADMIN_BROADCAST",
 								"ADMIN_TARGETED",
 								"WEEKLY_ACHIEVEMENT",
+								"WEEKLY_REPORT",
 							]),
 						},
 					}),

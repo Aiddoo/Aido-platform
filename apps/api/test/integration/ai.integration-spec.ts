@@ -93,6 +93,8 @@ describe("AiController (Integration)", () => {
 					endDate: null,
 					scheduledTime: "15:00",
 					isAllDay: false,
+					isRecurring: false,
+					recurrence: null,
 				},
 				meta: {
 					tokenUsage: { input: 150, output: 50 },
@@ -131,6 +133,8 @@ describe("AiController (Integration)", () => {
 					endDate: "2025-01-31",
 					scheduledTime: null,
 					isAllDay: true,
+					isRecurring: false,
+					recurrence: null,
 				},
 				meta: {
 					tokenUsage: { input: 160, output: 55 },
@@ -240,6 +244,8 @@ describe("AiController (Integration)", () => {
 					endDate: null,
 					scheduledTime: null,
 					isAllDay: true,
+					isRecurring: false,
+					recurrence: null,
 				},
 				meta: {
 					tokenUsage: { input: 120, output: 40 },
@@ -277,6 +283,8 @@ describe("AiController (Integration)", () => {
 					endDate: null,
 					scheduledTime: null,
 					isAllDay: true,
+					isRecurring: false,
+					recurrence: null,
 				},
 				meta: {
 					tokenUsage: { input: 120, output: 40 },

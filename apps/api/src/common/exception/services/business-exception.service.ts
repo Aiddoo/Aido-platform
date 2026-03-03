@@ -555,6 +555,37 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.AI_1303, { used, limit });
 	}
 
+	static aiReportNotFound(reportId: number) {
+		return new BusinessException(ErrorCode.AI_1304, { reportId });
+	}
+
+	static aiSuggestionNotFound(suggestionId: number) {
+		return new BusinessException(ErrorCode.AI_1305, { suggestionId });
+	}
+
+	static aiSuggestionAlreadyProcessed(suggestionId: number, status: string) {
+		return new BusinessException(ErrorCode.AI_1306, {
+			suggestionId,
+			currentStatus: status,
+		});
+	}
+
+	static aiSuggestionExpired(suggestionId: number) {
+		return new BusinessException(ErrorCode.AI_1307, { suggestionId });
+	}
+
+	static aiReportPremiumRequired() {
+		return new BusinessException(ErrorCode.AI_1308);
+	}
+
+	static aiSuggestionPremiumRequired() {
+		return new BusinessException(ErrorCode.AI_1309);
+	}
+
+	static aiRateLimitExceeded() {
+		return new BusinessException(ErrorCode.AI_1310);
+	}
+
 	// =========================================================================
 	// Todo 카테고리 (TodoCategory)
 	// =========================================================================
