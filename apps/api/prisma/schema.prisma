@@ -83,6 +83,7 @@ model User {
   @@index([status])
   @@index([subscriptionStatus])
   @@index([deletedAt])
+  @@index([status, deletedAt, lastLoginAt]) // Admin 7/30일 필터
 }
 
 enum UserRole {
@@ -616,9 +617,9 @@ model Notification {
   // 관계
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 중복 방지: PostgreSQL partial unique index (migration SQL 참고)
-  // - Notification_daily_dedup: friendId IS NULL인 타입 (DAILY_COMPLETE, MORNING_REMINDER, EVENING_REMINDER)
-  // - Notification_friend_dedup: friendId IS NOT NULL인 타입 (FRIEND_COMPLETED)
+  // 중복 방지: PostgreSQL partial unique index (20260304000000 migration 참고)
+  // - Notification_daily_dedup: (userId, type, notificationDate) WHERE friendId IS NULL
+  // - Notification_friend_dedup: (userId, type, friendId, notificationDate) WHERE friendId IS NOT NULL
   @@index([userId, isRead, createdAt])
   @@index([userId, type])
   @@index([userId, type, notificationDate]) // 리마인더/일일완료 중복 방지 쿼리
