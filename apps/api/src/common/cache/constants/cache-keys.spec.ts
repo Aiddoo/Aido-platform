@@ -1,4 +1,4 @@
-import { CacheKeys } from "../../constants/cache-keys";
+import { CacheKeys } from "./cache-keys";
 
 describe("CacheKeys", () => {
 	describe("TTL 상수", () => {

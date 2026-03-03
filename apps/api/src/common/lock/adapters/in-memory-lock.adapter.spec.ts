@@ -1,4 +1,4 @@
-import { InMemoryLockAdapter } from "../../adapters/in-memory-lock.adapter";
+import { InMemoryLockAdapter } from "./in-memory-lock.adapter";
 
 describe("InMemoryLockAdapter", () => {
 	let lock: InMemoryLockAdapter;

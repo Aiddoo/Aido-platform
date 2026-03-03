@@ -688,13 +688,7 @@ export class AuthService {
 		}
 
 		// 3. 세션 유효성 확인
-		if (session.revokedAt) {
-			throw BusinessExceptions.sessionRevoked();
-		}
-
-		if (session.expiresAt < now()) {
-			throw BusinessExceptions.sessionExpired();
-		}
+		this.sessionService.assertSessionValid(session);
 
 		if (session.userId !== userId || session.id !== sessionId) {
 			throw BusinessExceptions.sessionNotFound();

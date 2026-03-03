@@ -1,7 +1,8 @@
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
-import { addMilliseconds } from "@/common/date";
+import { addMilliseconds, now } from "@/common/date";
+import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma } from "@/generated/prisma/client";
 
 import { SessionRepository } from "../repositories/session.repository";
@@ -21,6 +22,15 @@ export interface CreateSessionResult {
 	sessionId: string;
 	tokens: TokenPair;
 	tokenFamily: string;
+}
+
+/**
+ * 세션 유효성 검증에 필요한 최소 데이터
+ * DB Session과 CachedSession 모두 호환
+ */
+export interface SessionValidatable {
+	revokedAt: Date | string | null;
+	expiresAt: Date | string;
 }
 
 /**
@@ -91,5 +101,34 @@ export class SessionService {
 			tokens,
 			tokenFamily,
 		};
+	}
+
+	/**
+	 * 세션 유효성을 검증하고, 유효하지 않으면 BusinessException을 던진다
+	 *
+	 * @throws sessionNotFound - 세션이 존재하지 않음
+	 * @throws sessionRevoked - 세션이 폐기됨
+	 * @throws sessionExpired - 세션이 만료됨
+	 */
+	assertSessionValid(
+		session: SessionValidatable | null | undefined,
+		sessionId?: string,
+	): asserts session is SessionValidatable {
+		if (!session) {
+			throw BusinessExceptions.sessionNotFound(sessionId);
+		}
+
+		if (session.revokedAt) {
+			throw BusinessExceptions.sessionRevoked(sessionId);
+		}
+
+		const expiresAt =
+			session.expiresAt instanceof Date
+				? session.expiresAt
+				: new Date(session.expiresAt);
+
+		if (expiresAt < now()) {
+			throw BusinessExceptions.sessionExpired(sessionId);
+		}
 	}
 }

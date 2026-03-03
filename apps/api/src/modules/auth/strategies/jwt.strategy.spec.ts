@@ -3,15 +3,20 @@ import { TestBed } from "@suites/unit";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
+import { SessionService } from "../services/session.service";
 import type { JwtPayload } from "../services/token.service";
 import { JwtStrategy } from "./jwt.strategy";
 
 describe("JwtStrategy", () => {
 	let strategy: JwtStrategy;
 	let sessionRepo: Mocked<SessionRepository>;
+	let sessionService: Mocked<SessionService>;
 	let cacheService: Mocked<CacheService>;
 
 	const mockDb = createMockDatabaseService({
@@ -45,6 +50,9 @@ describe("JwtStrategy", () => {
 		sessionRepo = unitRef.get(
 			SessionRepository,
 		) as unknown as Mocked<SessionRepository>;
+		sessionService = unitRef.get(
+			SessionService,
+		) as unknown as Mocked<SessionService>;
 		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
 	});
 
@@ -93,6 +101,9 @@ describe("JwtStrategy", () => {
 			expiresAt: new Date(Date.now() + 86400000),
 			revokedAt: new Date(),
 		});
+		sessionService.assertSessionValid.mockImplementation(() => {
+			throw BusinessExceptions.sessionRevoked();
+		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
@@ -106,6 +117,9 @@ describe("JwtStrategy", () => {
 			userId: "user-123",
 			expiresAt: new Date(Date.now() - 1000),
 			revokedAt: null,
+		});
+		sessionService.assertSessionValid.mockImplementation(() => {
+			throw BusinessExceptions.sessionExpired();
 		});
 
 		// When & Then
@@ -144,6 +158,9 @@ describe("JwtStrategy", () => {
 		// Given
 		(cacheService.getSession as jest.Mock).mockResolvedValue(null);
 		(sessionRepo.findById as jest.Mock).mockResolvedValue(null);
+		sessionService.assertSessionValid.mockImplementation(() => {
+			throw BusinessExceptions.sessionNotFound();
+		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
@@ -160,6 +177,9 @@ describe("JwtStrategy", () => {
 			expiresAt: new Date(Date.now() + 86400000),
 			revokedAt: new Date(),
 		});
+		sessionService.assertSessionValid.mockImplementation(() => {
+			throw BusinessExceptions.sessionRevoked();
+		});
 
 		// When & Then
 		await expect(strategy.validate(validPayload)).rejects.toThrow(
@@ -175,6 +195,9 @@ describe("JwtStrategy", () => {
 			userId: "user-123",
 			expiresAt: new Date(Date.now() - 1000),
 			revokedAt: null,
+		});
+		sessionService.assertSessionValid.mockImplementation(() => {
+			throw BusinessExceptions.sessionExpired();
 		});
 
 		// When & Then
