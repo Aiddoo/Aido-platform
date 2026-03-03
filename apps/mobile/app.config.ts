@@ -30,7 +30,7 @@ const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
 const SPLASH_ANDROID = './assets/images/splash-icon-android.png';
 const FAVICON = './assets/images/favicon.png';
-// TODO: 알림 아이콘 추가 필요 (96x96, 흰색 투명 배경 PNG) → ./assets/images/notification-icon.png
+const NOTIFICATION_ICON = './assets/images/notification-icon.png';
 
 // Environment
 
@@ -140,8 +140,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Notification
     notification: {
-      // TODO: notification-icon.png 추가 후 주석 해제
-      // icon: NOTIFICATION_ICON,
+      icon: NOTIFICATION_ICON,
       color: BRAND_COLOR,
       iosDisplayInForeground: true,
       androidMode: 'default',
@@ -310,11 +309,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      // TODO: notification-icon.png 추가 후 icon 설정
       [
         'expo-notifications',
         {
-          // icon: NOTIFICATION_ICON,
+          icon: NOTIFICATION_ICON,
           color: BRAND_COLOR,
           // TODO: 알림음 파일 추가 시 설정
           // sounds: ["./assets/sounds/notification.wav"],
