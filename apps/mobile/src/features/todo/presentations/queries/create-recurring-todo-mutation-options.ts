@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import type { CreateRecurringTodoInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
@@ -27,6 +28,11 @@ export const createRecurringTodoMutationOptions = () => {
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
+        toast.error('반복 할 일을 생성하면 카테고리 한도를 초과해요. 날짜 범위를 줄여주세요.');
+        return;
+      }
 
       if (isTodoError(error) || isApiError(error)) {
         toast.error(error.message);

@@ -20,6 +20,7 @@ const TodoCategorySettingsScreen = () => {
       <CategoryCreateBottomSheet
         isOpen={isOpen}
         onClose={close}
+        onExit={exit}
         onOpenChange={(open) => {
           if (!open) {
             close();

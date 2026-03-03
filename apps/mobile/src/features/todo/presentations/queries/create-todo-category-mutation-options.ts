@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import type { CreateTodoCategoryInput } from '@aido/validators';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
@@ -26,6 +27,11 @@ export const createTodoCategoryMutationOptions = () => {
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      // 프리미엄 제한 에러는 컴포넌트에서 PremiumDialog로 처리
+      if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
+        return;
+      }
 
       if (isTodoCategoryError(error) || isApiError(error)) {
         toast.error(error.message);
