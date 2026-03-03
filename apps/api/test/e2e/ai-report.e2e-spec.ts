@@ -13,6 +13,8 @@
  */
 
 import request from "supertest";
+import { CacheService } from "@/common/cache/cache.service";
+import { DatabaseService } from "@/database/database.service";
 import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
@@ -41,6 +43,16 @@ describe("AI Report (e2e)", () => {
 			testUser.password,
 		);
 		accessToken = user.accessToken;
+
+		// AI Report는 프리미엄 기능이므로 구독 상태를 ACTIVE로 변경
+		const prisma = ctx.module.get(DatabaseService);
+		await prisma.user.update({
+			where: { id: user.userId },
+			data: { subscriptionStatus: "ACTIVE" },
+		});
+		// 캐시 무효화 (EntitlementService가 구독 상태를 캐시함)
+		const cacheService = ctx.module.get(CacheService);
+		await cacheService.invalidateSubscription(user.userId);
 	}, 60000);
 
 	afterAll(async () => {
