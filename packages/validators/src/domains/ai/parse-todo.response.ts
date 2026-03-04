@@ -32,6 +32,12 @@ export const parsedTodoDataSchema = z.object({
     .nullable()
     .default(null)
     .describe('반복 설정 (비반복 일정은 null)'),
+  categoryId: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('카테고리 ID (프론트에서 전달한 값을 그대로 반환)'),
 });
 
 export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;

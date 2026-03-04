@@ -1,13 +1,15 @@
+import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { type TransactionCallback } from "@test/mocks";
-import {
-	type ILockProvider,
-	LOCK_PROVIDER,
-} from "@/common/lock/interfaces/lock.interface";
+import type { Queue } from "bullmq";
 import { DatabaseService } from "@/database";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
+import {
+	ACCOUNT_PURGE_QUEUE,
+	AccountPurgeProcessor,
+} from "../processors/account-purge.processor";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AccountPurgeJob } from "./account-purge.job";
@@ -17,10 +19,16 @@ describe("AccountPurgeJob", () => {
 	let userRepo: Mocked<UserRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
 	let database: Mocked<DatabaseService>;
-	let lockProvider: Mocked<ILockProvider>;
+	let mockQueue: Mocked<Queue>;
+	let mockProcessor: Mocked<AccountPurgeProcessor>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob).compile();
+		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob)
+			.mock(getQueueToken(ACCOUNT_PURGE_QUEUE))
+			.impl(() => ({
+				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
+			}))
+			.compile();
 
 		job = unit;
 		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
@@ -30,13 +38,39 @@ describe("AccountPurgeJob", () => {
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
-		lockProvider = unitRef.get(
-			LOCK_PROVIDER,
-		) as unknown as Mocked<ILockProvider>;
-
-		// Lock을 항상 획득 성공하도록 mock
-		lockProvider.acquire.mockResolvedValue(jest.fn());
+		mockQueue = unitRef.get(getQueueToken(ACCOUNT_PURGE_QUEUE));
+		mockProcessor = unitRef.get(AccountPurgeProcessor);
 	});
+
+	// =========================================================================
+	// onModuleInit 스케줄러 등록
+	// =========================================================================
+
+	describe("onModuleInit 스케줄러 등록", () => {
+		it("서버 시작 시 일일 계정 정리 스케줄러를 등록해야 한다", async () => {
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
+				"daily-account-purge-scheduler",
+				{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
+				{ name: "purge-accounts", data: {} },
+			);
+		});
+
+		it("Processor에 자신을 등록해야 한다", async () => {
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockProcessor.setPurgeJob).toHaveBeenCalledWith(job);
+		});
+	});
+
+	// =========================================================================
+	// purgeDeletedAccounts
+	// =========================================================================
 
 	it("유예 기간이 지난 사용자를 hard delete 한다", async () => {
 		// Given

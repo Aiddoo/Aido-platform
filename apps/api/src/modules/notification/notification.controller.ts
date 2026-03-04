@@ -146,6 +146,11 @@ export class NotificationController {
 **쿼리 파라미터**
 - \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제`,
 	})
+	@ApiQuery({
+		name: "deviceId",
+		required: false,
+		description: "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제",
+	})
 	@ApiSuccessResponse({ type: RegisterTokenResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async unregisterToken(

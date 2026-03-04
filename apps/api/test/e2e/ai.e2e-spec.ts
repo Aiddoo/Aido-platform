@@ -143,6 +143,48 @@ describe("AI (e2e)", () => {
 				expect(fakeAiProvider.getCallCount()).toBe(1);
 			});
 
+			it("categoryId가 포함된 요청 시 응답에 categoryId가 반환됨", async () => {
+				// Given - AI 응답 설정
+				fakeAiProvider.setResponse({
+					title: "팀 미팅",
+					startDate: "2025-01-26",
+					scheduledTime: "15:00",
+					isAllDay: false,
+				});
+
+				// When - categoryId를 포함하여 파싱 요청
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-todo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ text: "내일 오후 3시에 팀 미팅", categoryId: 5 });
+
+				// Then - 응답에 categoryId가 포함됨
+				expect(response.status).toBe(200);
+				expect(response.body.data.data.categoryId).toBe(5);
+			});
+
+			it("categoryId 없이 요청 시 응답에 categoryId가 없음", async () => {
+				// Given - AI 응답 설정
+				fakeAiProvider.setResponse({
+					title: "팀 미팅",
+					startDate: "2025-01-26",
+					scheduledTime: "15:00",
+					isAllDay: false,
+				});
+
+				// When - categoryId 없이 파싱 요청
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-todo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ text: "내일 오후 3시에 팀 미팅" });
+
+				// Then - 응답에 categoryId가 없음
+				expect(response.status).toBe(200);
+				expect(response.body.data.data).not.toHaveProperty("categoryId");
+			});
+
 			it("종일 일정을 올바르게 파싱", async () => {
 				// Given - 종일 일정 AI 응답 설정
 				fakeAiProvider.setResponse({

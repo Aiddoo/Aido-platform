@@ -1,29 +1,28 @@
 import { InjectQueue } from "@nestjs/bullmq";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import type { Queue } from "bullmq";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import type { Job, Queue } from "bullmq";
+import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
-import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
+import { subtractDays } from "@/common/date/utils/arithmetic";
+import { toIsoWeekId } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
 import {
 	AI_SUGGESTION_QUEUE,
+	type AiSuggestionAnalyzeData,
 	type AiSuggestionJobData,
+	AiSuggestionJobName,
+	SuggestionAnalysisProcessor,
 } from "../processors/suggestion-analysis.processor";
-
-/** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
-const LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
 /**
- * AI 반복 제안 분석 크론 작업 (Dispatcher)
+ * AI 반복 제안 분석 스케줄러 (Dispatcher)
  *
- * 매주 토요일 UTC 13:00 (KST 일요일 22:00)에 실행됩니다.
- * 최근 할 일이 있는 사용자들을 조회하여 BullMQ 큐에 per-user 잡을 등록합니다.
- * 실제 처리는 SuggestionAnalysisProcessor가 담당합니다.
- *
- * 분산 락으로 중복 등록을 방지합니다.
+ * 매주 일요일 UTC 11:00 (KST 일요일 20:00)에 실행됩니다.
+ * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
+ * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
  */
 @Injectable()
 export class SuggestionAnalysisJob implements OnModuleInit {
@@ -33,55 +32,29 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		private readonly database: DatabaseService,
 		@InjectQueue(AI_SUGGESTION_QUEUE)
 		private readonly queue: Queue<AiSuggestionJobData>,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		private readonly processor: SuggestionAnalysisProcessor,
 	) {}
 
-	/**
-	 * 서버 시작 시 누락된 크론 catch-up
-	 *
-	 * 안전: 분산 락 + BullMQ jobId + PENDING 교체로 중복 방지
-	 */
 	async onModuleInit(): Promise<void> {
-		await this.handleWeeklyAnalysis();
-	}
+		// Processor에 자신을 등록 (순환 참조 방지)
+		this.processor.setSuggestionJob(this);
 
-	/**
-	 * 주간 패턴 분석 — 매주 토요일 UTC 13:00 (KST 일요일 22:00)
-	 */
-	@Cron("0 13 * * 6")
-	async handleWeeklyAnalysis(): Promise<void> {
-		this.#logger.log("Starting weekly suggestion analysis job...");
-
-		const release = await this.lockProvider.acquire(
-			"suggestion-analysis",
-			LOCK_TTL,
+		await this.queue.upsertJobScheduler(
+			"weekly-suggestion-scheduler",
+			{ pattern: "0 11 * * 0" },
+			{ name: AiSuggestionJobName.DISPATCH, data: {} },
 		);
 
-		if (!release) {
-			this.#logger.warn(
-				"Skipping suggestion analysis — another instance holds the lock",
-			);
-			return;
-		}
-
-		try {
-			await this.#enqueueAnalysis();
-		} catch (error) {
-			this.#logger.error(
-				`Suggestion analysis job failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		} finally {
-			await release();
-		}
+		this.#logger.log("Suggestion analysis scheduler registered");
 	}
 
 	/**
 	 * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
 	 */
-	async #enqueueAnalysis(): Promise<void> {
-		const fourWeeksAgo = new Date();
-		fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+	async dispatchAnalysis(dispatchJob?: Job): Promise<void> {
+		this.#logger.log("Starting suggestion analysis dispatch...");
+
+		const fourWeeksAgo = subtractDays(28);
 
 		const periodId = this.#getJobDeduplicationId();
 		let totalEnqueued = 0;
@@ -109,22 +82,20 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 				}),
 			onBatch: async (batch) => {
 				const jobs = batch.map((user) => ({
-					name: "analyze-suggestion",
+					name: AiSuggestionJobName.ANALYZE,
 					data: {
 						userId: user.id,
 						timezone: user.preference?.timezone ?? "Asia/Seoul",
-					} satisfies AiSuggestionJobData,
+					} satisfies AiSuggestionAnalyzeData,
 					opts: {
+						...AI_PER_USER_JOB_OPTS,
 						jobId: `suggestion_${user.id}_${periodId}`,
-						attempts: 3,
-						backoff: { type: "exponential" as const, delay: 5_000 },
-						removeOnComplete: { age: 604_800, count: 10_000 },
-						removeOnFail: 100,
 					},
 				}));
 
 				await this.queue.addBulk(jobs);
 				totalEnqueued += jobs.length;
+				await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
 			},
 		});
 
@@ -134,16 +105,9 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	}
 
 	/**
-	 * jobId 중복 방지용 식별자 생성
+	 * jobId 중복 방지용 ISO 주번호 식별자 생성
 	 */
 	#getJobDeduplicationId(): string {
-		const now = new Date();
-		const year = now.getFullYear();
-		const jan1 = new Date(year, 0, 1);
-		const days = Math.floor(
-			(now.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000),
-		);
-		const weekNumber = Math.ceil((days + jan1.getDay() + 1) / 7);
-		return `${year}-W${String(weekNumber).padStart(2, "0")}`;
+		return toIsoWeekId();
 	}
 }

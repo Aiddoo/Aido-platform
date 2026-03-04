@@ -187,8 +187,11 @@ export class TodoRepositoryImpl implements TodoRepository {
     return ok(undefined);
   }
 
-  async parseTodo(text: string): Promise<Result<ParsedTodoResult, ApiError>> {
-    const result = await this.#httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', { text });
+  async parseTodo(text: string, categoryId?: number): Promise<Result<ParsedTodoResult, ApiError>> {
+    const result = await this.#httpClient.post<ParseTodoResponse>('v1/ai/parse-todo', {
+      text,
+      ...(categoryId != null && { categoryId }),
+    });
 
     if (!result.ok) return result;
 

@@ -34,6 +34,7 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
     ...dto.data,
     startDate: new Date(dto.data.startDate),
     endDate: dto.data.endDate ? new Date(dto.data.endDate) : null,
+    ...(dto.data.categoryId != null && { categoryId: dto.data.categoryId }),
   },
   meta: dto.meta,
 });

@@ -8,11 +8,13 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Job } from "bullmq";
 
 import { NotificationService } from "../../notification/notification.service";
 import { AiSuggestionService } from "../ai-suggestion.service";
 import {
 	type AiSuggestionJobData,
+	AiSuggestionJobName,
 	SuggestionAnalysisProcessor,
 } from "./suggestion-analysis.processor";
 
@@ -33,8 +35,11 @@ describe("SuggestionAnalysisProcessor", () => {
 		mockNotificationService = unitRef.get(NotificationService);
 	});
 
-	function makeJob(data: AiSuggestionJobData) {
-		return { data } as any;
+	function makeJob(data: AiSuggestionJobData): Job<AiSuggestionJobData> {
+		return {
+			name: AiSuggestionJobName.ANALYZE,
+			data,
+		} as unknown as Job<AiSuggestionJobData>;
 	}
 
 	// =========================================================================

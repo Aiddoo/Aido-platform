@@ -39,6 +39,19 @@ export class TodoReminderProcessor extends WorkerHost {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
+	@OnWorkerEvent("error")
+	onError(error: Error) {
+		this.#logger.error(`Worker error: ${error.message}`, error.stack);
+	}
+
+	@OnWorkerEvent("failed")
+	onFailed(job: Job | undefined, error: Error) {
+		this.#logger.error(
+			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
+			error.stack,
+		);
+	}
+
 	async process(job: Job<ReminderJobData>): Promise<void> {
 		const { todoId, userId, todoTitle, stageLabel } = job.data;
 

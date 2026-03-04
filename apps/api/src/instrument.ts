@@ -1,7 +1,9 @@
 import * as Sentry from "@sentry/nestjs";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 Sentry.init({
-	dsn: process.env.SENTRY_DSN,
+	dsn: isProduction ? process.env.SENTRY_DSN : undefined,
 	environment: process.env.NODE_ENV || "development",
 	// TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (e.g., release: process.env.SENTRY_RELEASE)
 	tracesSampleRate:

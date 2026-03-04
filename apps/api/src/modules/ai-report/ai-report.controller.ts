@@ -94,7 +94,7 @@ export class AiReportController {
 | 계층 | 메커니즘 | 효과 |
 |------|---------|------|
 | **1. 분산 락** | Redis \`SET NX PX\` (23h TTL) | 다중 인스턴스 동시 크론 실행 방지 |
-| **2. BullMQ jobId** | \`report:{TYPE}:{userId}:{year}-W{xx}\` (7일 보관) | 같은 주 동일 유저 중복 잡 방지 |
+| **2. BullMQ jobId** | \`report_{TYPE}_{userId}_{year}-W{xx}\` (7일 보관) | 같은 주 동일 유저 중복 잡 방지 |
 | **3. DB 중복 체크** | \`exists(userId, type, year, period)\` | 같은 기간 리포트 중복 생성 방지 |
 
 ### 서버 재시작 시 동작

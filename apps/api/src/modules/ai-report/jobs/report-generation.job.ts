@@ -1,31 +1,29 @@
 import { InjectQueue } from "@nestjs/bullmq";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
-import type { Queue } from "bullmq";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import type { Job, Queue } from "bullmq";
+import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
-import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
+import { toIsoWeekId } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
 import {
 	AI_REPORT_QUEUE,
+	type AiReportGenerateData,
 	type AiReportJobData,
+	AiReportJobName,
+	ReportGenerationProcessor,
 } from "../processors/report-generation.processor";
-
-/** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
-const WEEKLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
-const MONTHLY_LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
 /**
- * AI 리포트 생성 크론 작업 (Dispatcher)
+ * AI 리포트 생성 스케줄러 (Dispatcher)
  *
  * - 주간 리포트: 매주 일요일 UTC 22:00 (KST 월요일 07:00)
  * - 월간 리포트: 매월 1일 UTC 22:00 (KST 2일 07:00)
  *
- * 크론이 유저 목록을 조회하여 BullMQ 큐에 per-user 잡을 등록합니다.
- * 실제 처리는 ReportGenerationProcessor가 담당합니다.
- * 분산 락으로 중복 등록을 방지합니다.
+ * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
+ * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
  */
 @Injectable()
 export class ReportGenerationJob implements OnModuleInit {
@@ -35,87 +33,42 @@ export class ReportGenerationJob implements OnModuleInit {
 		private readonly database: DatabaseService,
 		@InjectQueue(AI_REPORT_QUEUE)
 		private readonly queue: Queue<AiReportJobData>,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		private readonly processor: ReportGenerationProcessor,
 	) {}
 
-	/**
-	 * 서버 시작 시 누락된 크론 catch-up
-	 *
-	 * 안전: 분산 락 + BullMQ jobId + DB exists() 체크로 중복 방지
-	 */
 	async onModuleInit(): Promise<void> {
-		await this.handleWeeklyReport();
-		await this.handleMonthlyReport();
-	}
+		// Processor에 자신을 등록 (순환 참조 방지)
+		this.processor.setReportJob(this);
 
-	/**
-	 * 주간 리포트 생성 — 매주 일요일 UTC 22:00
-	 */
-	@Cron("0 22 * * 0")
-	async handleWeeklyReport(): Promise<void> {
-		this.#logger.log("Starting weekly report generation job...");
-
-		const release = await this.lockProvider.acquire(
-			"report-weekly",
-			WEEKLY_LOCK_TTL,
+		await this.queue.upsertJobScheduler(
+			"weekly-report-scheduler",
+			{ pattern: "0 22 * * 0" },
+			{
+				name: AiReportJobName.DISPATCH,
+				data: { reportType: "WEEKLY" } satisfies AiReportJobData,
+			},
+		);
+		await this.queue.upsertJobScheduler(
+			"monthly-report-scheduler",
+			{ pattern: "0 22 1 * *" },
+			{
+				name: AiReportJobName.DISPATCH,
+				data: { reportType: "MONTHLY" } satisfies AiReportJobData,
+			},
 		);
 
-		if (!release) {
-			this.#logger.warn(
-				"Skipping weekly report — another instance holds the lock",
-			);
-			return;
-		}
-
-		try {
-			await this.#enqueueReports("WEEKLY");
-		} catch (error) {
-			this.#logger.error(
-				`Weekly report generation job failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		} finally {
-			await release();
-		}
-	}
-
-	/**
-	 * 월간 리포트 생성 — 매월 1일 UTC 22:00 (KST 2일 07:00)
-	 *
-	 * 전월 데이터를 기반으로 리포트를 생성합니다.
-	 */
-	@Cron("0 22 1 * *")
-	async handleMonthlyReport(): Promise<void> {
-		this.#logger.log("Starting monthly report generation job...");
-
-		const release = await this.lockProvider.acquire(
-			"report-monthly",
-			MONTHLY_LOCK_TTL,
-		);
-
-		if (!release) {
-			this.#logger.warn(
-				"Skipping monthly report — another instance holds the lock",
-			);
-			return;
-		}
-
-		try {
-			await this.#enqueueReports("MONTHLY");
-		} catch (error) {
-			this.#logger.error(
-				`Monthly report generation job failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		} finally {
-			await release();
-		}
+		this.#logger.log("Report generation schedulers registered");
 	}
 
 	/**
 	 * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
 	 */
-	async #enqueueReports(type: "WEEKLY" | "MONTHLY"): Promise<void> {
+	async dispatchReports(
+		type: "WEEKLY" | "MONTHLY",
+		dispatchJob?: Job,
+	): Promise<void> {
+		this.#logger.log(`Starting ${type} report dispatch...`);
+
 		const periodId = this.#getJobDeduplicationId();
 		let totalEnqueued = 0;
 
@@ -138,23 +91,21 @@ export class ReportGenerationJob implements OnModuleInit {
 				}),
 			onBatch: async (batch) => {
 				const jobs = batch.map((user) => ({
-					name: "generate-report",
+					name: AiReportJobName.GENERATE,
 					data: {
 						userId: user.id,
 						timezone: user.preference?.timezone ?? "Asia/Seoul",
 						reportType: type,
-					} satisfies AiReportJobData,
+					} satisfies AiReportGenerateData,
 					opts: {
+						...AI_PER_USER_JOB_OPTS,
 						jobId: `report_${type}_${user.id}_${periodId}`,
-						attempts: 3,
-						backoff: { type: "exponential" as const, delay: 5_000 },
-						removeOnComplete: { age: 604_800, count: 10_000 },
-						removeOnFail: 100,
 					},
 				}));
 
 				await this.queue.addBulk(jobs);
 				totalEnqueued += jobs.length;
+				await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
 			},
 		});
 
@@ -162,19 +113,12 @@ export class ReportGenerationJob implements OnModuleInit {
 	}
 
 	/**
-	 * jobId 중복 방지용 식별자 생성
+	 * jobId 중복 방지용 ISO 주번호 식별자 생성
 	 *
 	 * 같은 주/월에 동일 사용자에 대해 중복 잡 등록을 방지합니다.
 	 * ISO 주번호 기반: "2026-W10" 형식
 	 */
 	#getJobDeduplicationId(): string {
-		const now = new Date();
-		const year = now.getFullYear();
-		const jan1 = new Date(year, 0, 1);
-		const days = Math.floor(
-			(now.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000),
-		);
-		const weekNumber = Math.ceil((days + jan1.getDay() + 1) / 7);
-		return `${year}-W${String(weekNumber).padStart(2, "0")}`;
+		return toIsoWeekId();
 	}
 }

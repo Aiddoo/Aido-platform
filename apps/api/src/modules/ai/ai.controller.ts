@@ -211,7 +211,12 @@ if (confirmed) {
 			`AI 파싱 요청: user=${user.userId}, tz=${tz}, text="${dto.text}"`,
 		);
 
-		const result = await this.aiService.parseTodo(dto.text, user.userId, tz);
+		const result = await this.aiService.parseTodo(
+			dto.text,
+			user.userId,
+			tz,
+			dto.categoryId,
+		);
 
 		this.#logger.log(
 			`AI 파싱 완료: user=${user.userId}, title="${result.data.title}", ` +

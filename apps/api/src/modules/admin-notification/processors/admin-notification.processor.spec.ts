@@ -7,6 +7,7 @@
  */
 
 import { TestBed } from "@suites/unit";
+import type { Job } from "bullmq";
 
 import {
 	ADMIN_NOTIFIER,
@@ -14,7 +15,9 @@ import {
 } from "../providers/admin-notifier.interface";
 import {
 	type AdminNotificationJobData,
+	AdminNotificationJobName,
 	AdminNotificationProcessor,
+	type AdminNotificationSendData,
 } from "./admin-notification.processor";
 
 describe("AdminNotificationProcessor", () => {
@@ -46,8 +49,13 @@ describe("AdminNotificationProcessor", () => {
 		paymentNotifier = mockPaymentNotifier;
 	});
 
-	function makeJob(data: AdminNotificationJobData) {
-		return { data } as any;
+	function makeJob(
+		data: AdminNotificationSendData,
+	): Job<AdminNotificationJobData> {
+		return {
+			name: AdminNotificationJobName.SEND,
+			data,
+		} as unknown as Job<AdminNotificationJobData>;
 	}
 
 	// =========================================================================

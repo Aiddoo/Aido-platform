@@ -232,6 +232,51 @@ describe("AiService", () => {
 			expect(prompt).toContain("Korean Todo Parser");
 		});
 
+		it("categoryId가 전달되면 결과에 포함된다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+			// When
+			const result = await service.parseTodo(
+				"내일 오후 3시에 팀 미팅",
+				"user-1",
+				"Asia/Seoul",
+				42,
+			);
+
+			// Then
+			expect(result.data.categoryId).toBe(42);
+		});
+
+		it("categoryId가 없으면 결과에 포함되지 않는다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+
+			// When
+			const result = await service.parseTodo(
+				"내일 오후 3시에 팀 미팅",
+				"user-1",
+				"Asia/Seoul",
+			);
+
+			// Then
+			expect(result.data).not.toHaveProperty("categoryId");
+		});
+
 		it("타임존이 프롬프트에 반영된다", async () => {
 			// Given
 			fakeAiProvider.setResponses([

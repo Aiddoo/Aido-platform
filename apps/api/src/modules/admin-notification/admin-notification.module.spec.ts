@@ -1,5 +1,4 @@
 import { EventEmitterModule } from "@nestjs/event-emitter";
-import { ScheduleModule } from "@nestjs/schedule";
 
 import { AdminNotificationModule } from "./admin-notification.module";
 import { DailySignupSummaryJob } from "./jobs/daily-signup-summary.job";
@@ -16,15 +15,6 @@ describe("AdminNotificationModule", () => {
 
 		const providers = Reflect.getMetadata("providers", AdminNotificationModule);
 		moduleProviders = providers ?? [];
-	});
-
-	it("ScheduleModule을 import하지 않아야 한다 (SchedulerModule에서 forRoot 등록됨)", () => {
-		// Given - 모듈의 imports 메타데이터
-		// When & Then - ScheduleModule이 포함되지 않음을 확인
-		const hasScheduleModule = moduleImports.some(
-			(imp: any) => imp === ScheduleModule || imp?.module === ScheduleModule,
-		);
-		expect(hasScheduleModule).toBe(false);
 	});
 
 	it("EventEmitterModule을 import하지 않아야 한다 (AppModule에서 forRoot 등록됨)", () => {

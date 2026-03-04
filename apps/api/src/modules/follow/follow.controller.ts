@@ -29,6 +29,7 @@ import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
 import {
 	AcceptFriendRequestResponseDto,
+	FollowResourceLimitResponseDto,
 	FriendsListResponseDto,
 	GetFollowsQueryDto,
 	GetFriendsQueryDto,
@@ -208,6 +209,12 @@ export class FollowController {
 
 	@Patch(":userId/reject")
 	@HttpCode(HttpStatus.OK)
+	@ApiParam({
+		name: "userId",
+		description:
+			"거절할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
 	@ApiDoc({
 		summary: "친구 요청 거절",
 		operationId: "rejectFriendRequest",
@@ -284,10 +291,11 @@ export class FollowController {
 - \`friendCount\`: 현재 친구 수
 - \`maxCount\`: 최대 한도 (null이면 무제한)`,
 	})
+	@ApiSuccessResponse({ type: FollowResourceLimitResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
-	): Promise<{ friendCount: number; maxCount: number | null }> {
+	): Promise<FollowResourceLimitResponseDto> {
 		return this.followService.getResourceLimitInfo(user.userId);
 	}
 

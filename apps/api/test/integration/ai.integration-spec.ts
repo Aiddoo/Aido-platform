@@ -121,7 +121,46 @@ describe("AiController (Integration)", () => {
 				validRequest.text,
 				mockUser.userId,
 				"Asia/Seoul",
+				undefined,
 			);
+		});
+
+		it("categoryId가 포함된 요청을 서비스에 전달", async () => {
+			// Given - categoryId가 포함된 AI 파싱 결과 설정
+			const mockResult = {
+				data: {
+					title: "팀 미팅",
+					startDate: "2025-01-26",
+					endDate: null,
+					scheduledTime: "15:00",
+					isAllDay: false,
+					isRecurring: false,
+					recurrence: null,
+					categoryId: 7,
+				},
+				meta: {
+					tokenUsage: { input: 150, output: 50 },
+					model: "google:gemini-2.0-flash",
+					processingTimeMs: 245,
+				},
+			};
+			aiService.parseTodo.mockResolvedValue(mockResult);
+
+			// When - categoryId가 포함된 API 요청
+			const response = await request(app.getHttpServer())
+				.post("/ai/parse-todo")
+				.set("X-Timezone", "Asia/Seoul")
+				.send({ text: "내일 오후 3시에 팀 미팅", categoryId: 7 })
+				.expect(200);
+
+			// Then - categoryId가 서비스에 전달되고 응답에 포함
+			expect(aiService.parseTodo).toHaveBeenCalledWith(
+				"내일 오후 3시에 팀 미팅",
+				mockUser.userId,
+				"Asia/Seoul",
+				7,
+			);
+			expect(response.body.data.categoryId).toBe(7);
 		});
 
 		it("종일 일정 파싱 성공", async () => {
@@ -270,6 +309,7 @@ describe("AiController (Integration)", () => {
 				"테스트",
 				mockUser.userId,
 				"Asia/Seoul",
+				undefined,
 			);
 			expect(response.body.data.title).toBe("테스트");
 		});
@@ -305,6 +345,7 @@ describe("AiController (Integration)", () => {
 				"테스트",
 				mockUser.userId,
 				"UTC",
+				undefined,
 			);
 		});
 	});

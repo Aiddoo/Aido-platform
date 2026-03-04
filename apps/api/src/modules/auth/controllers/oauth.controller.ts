@@ -18,7 +18,6 @@ import type { Request, Response } from "express";
 
 import {
 	ApiConflictError,
-	ApiCreatedResponse,
 	ApiDoc,
 	ApiErrorResponse,
 	ApiSuccessResponse,
@@ -115,7 +114,7 @@ export class OAuthController {
 - 응답의 \`accountRestored: true\`로 복구 여부 확인
 - 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시`,
 	})
-	@ApiCreatedResponse({
+	@ApiSuccessResponse({
 		description: "토큰 교환 성공",
 		type: AuthTokensDto,
 	})
@@ -288,6 +287,11 @@ export class OAuthController {
 		description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
 		enum: ["login", "link"],
 		example: "link",
+	})
+	@ApiQuery({
+		name: "user_hint",
+		required: false,
+		description: "계정 연동 시 사용자 이메일 힌트",
 	})
 	async googleOAuthStart(
 		@Query("state") state: string | undefined,
@@ -481,6 +485,11 @@ export class OAuthController {
 		enum: ["login", "link"],
 		example: "link",
 	})
+	@ApiQuery({
+		name: "user_hint",
+		required: false,
+		description: "계정 연동 시 사용자 이메일 힌트",
+	})
 	async kakaoOAuthStart(
 		@Query("state") state: string | undefined,
 		@Query("redirect_uri") redirectUri: string | undefined,
@@ -666,6 +675,11 @@ export class OAuthController {
 		description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
 		enum: ["login", "link"],
 		example: "link",
+	})
+	@ApiQuery({
+		name: "user_hint",
+		required: false,
+		description: "계정 연동 시 사용자 이메일 힌트",
 	})
 	async naverOAuthStart(
 		@Query("state") state: string | undefined,

@@ -5,6 +5,7 @@ import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { ApiDoc, SWAGGER_TAGS } from "@/common/swagger";
 import { Public } from "@/modules/auth/decorators/public.decorator";
+import { BullHealthIndicator } from "./indicators/bull.health";
 import { DatabaseHealthIndicator } from "./indicators/database.health";
 
 const INSTANCE_ID = process.env.INSTANCE_ID ?? randomUUID().slice(0, 8);
@@ -17,6 +18,7 @@ export class HealthController {
 	constructor(
 		private readonly health: HealthCheckService,
 		private readonly databaseHealth: DatabaseHealthIndicator,
+		private readonly bullHealth: BullHealthIndicator,
 	) {}
 
 	@Get()
@@ -34,6 +36,7 @@ export class HealthController {
 | 항목 | 설명 |
 |------|------|
 | \`database\` | PostgreSQL 데이터베이스 연결 상태 |
+| \`queues\` | BullMQ 큐 상태 (일시정지 여부, 잡 카운트) |
 
 ### 응답 상태
 - \`up\`: 정상 동작 중
@@ -56,9 +59,15 @@ curl https://api.aido.com/health
 		schema: {
 			example: {
 				status: "ok",
-				info: { database: { status: "up" } },
+				info: {
+					database: { status: "up" },
+					queues: { status: "up" },
+				},
 				error: {},
-				details: { database: { status: "up" } },
+				details: {
+					database: { status: "up" },
+					queues: { status: "up" },
+				},
 			},
 		},
 	})
@@ -68,10 +77,11 @@ curl https://api.aido.com/health
 		schema: {
 			example: {
 				status: "error",
-				info: {},
+				info: { queues: { status: "up" } },
 				error: { database: { status: "down", message: "Connection refused" } },
 				details: {
 					database: { status: "down", message: "Connection refused" },
+					queues: { status: "up" },
 				},
 			},
 		},
@@ -80,6 +90,7 @@ curl https://api.aido.com/health
 		this.#logger.debug("헬스 체크 요청");
 		const result = await this.health.check([
 			() => this.databaseHealth.isHealthy("database"),
+			() => this.bullHealth.isHealthy("queues"),
 		]);
 		this.#logger.log(`헬스 체크 완료: ${result.status}`);
 		return { ...result, instanceId: INSTANCE_ID };

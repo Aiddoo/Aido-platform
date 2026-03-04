@@ -35,7 +35,7 @@ export interface TodoRepository {
     input: UpdateTodoScheduleInput,
   ): Promise<Result<TodoItem, ApiError>>;
   deleteTodo(todoId: number): Promise<Result<void, ApiError>>;
-  parseTodo(text: string): Promise<Result<ParsedTodoResult, ApiError>>;
+  parseTodo(text: string, categoryId?: number): Promise<Result<ParsedTodoResult, ApiError>>;
   getAiUsage(): Promise<Result<AiUsage, ApiError>>;
   getDailyCompletions(
     startDate: string,

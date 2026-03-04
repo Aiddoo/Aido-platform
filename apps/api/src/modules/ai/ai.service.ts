@@ -92,6 +92,7 @@ export class AiService {
 		text: string,
 		userId: string,
 		timezone: string,
+		categoryId?: number,
 	): Promise<ParseTodoResult> {
 		const startTime = Date.now();
 
@@ -126,7 +127,10 @@ export class AiService {
 			);
 
 			return {
-				data: result.output,
+				data: {
+					...result.output,
+					...(categoryId != null && { categoryId }),
+				},
 				meta: {
 					model: result.model,
 					processingTimeMs,

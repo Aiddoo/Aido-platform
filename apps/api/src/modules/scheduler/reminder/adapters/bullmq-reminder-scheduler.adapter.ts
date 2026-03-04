@@ -113,7 +113,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 						jobId: `reminder_${todoId}_${stage.label}`,
 						delay,
 						removeOnComplete: true,
-						removeOnFail: 100,
+						removeOnFail: { count: 100, age: 86_400 },
 					},
 				);
 
@@ -137,7 +137,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 					jobId: `reminder_${todoId}_${REMINDER_IMMEDIATE_LABEL}`,
 					delay: 0,
 					removeOnComplete: true,
-					removeOnFail: 100,
+					removeOnFail: { count: 100, age: 86_400 },
 				},
 			);
 
