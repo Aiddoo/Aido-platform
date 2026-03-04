@@ -39,22 +39,13 @@ export class ReportGenerationJob implements OnModuleInit {
 	) {}
 
 	/**
-	 * 서버 시작 시 놓친 리포트 catch-up
+	 * 서버 시작 시 누락된 크론 catch-up
 	 *
-	 * Redis 분산 락(23h TTL)이 존재하면 최근 크론이 성공한 것이므로 스킵.
-	 * 락이 만료되었으면 서버 다운 중 크론을 놓친 것이므로 즉시 실행.
+	 * 안전: 분산 락 + BullMQ jobId + DB exists() 체크로 중복 방지
 	 */
 	async onModuleInit(): Promise<void> {
-		try {
-			this.#logger.log("Checking for missed report generation...");
-			await this.handleWeeklyReport();
-			await this.handleMonthlyReport();
-		} catch (error) {
-			this.#logger.error(
-				`Report catch-up failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
+		await this.handleWeeklyReport();
+		await this.handleMonthlyReport();
 	}
 
 	/**
@@ -157,7 +148,7 @@ export class ReportGenerationJob implements OnModuleInit {
 						jobId: `report:${type}:${user.id}:${periodId}`,
 						attempts: 3,
 						backoff: { type: "exponential" as const, delay: 5_000 },
-						removeOnComplete: true,
+						removeOnComplete: { age: 604_800 },
 						removeOnFail: 100,
 					},
 				}));

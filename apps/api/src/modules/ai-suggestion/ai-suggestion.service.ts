@@ -226,14 +226,11 @@ export class AiSuggestionService {
 			return 0;
 		}
 
-		// 3. 기존 PENDING 제안 제목 조회 (중복 방지)
-		const existingTitles =
-			await this.aiSuggestionRepository.findPendingTitles(userId);
-
-		// 4. 만료된 제안 삭제
+		// 3. 기존 PENDING 제안 교체 + 만료 정리
+		await this.aiSuggestionRepository.deletePending(userId);
 		await this.aiSuggestionRepository.deleteExpired(userId);
 
-		// 5. 새 제안 저장 (최대 5개, 중복 제외)
+		// 4. 새 제안 저장 (최대 5개)
 		const expiresAt = currentDate
 			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
 			.toDate();
@@ -242,10 +239,6 @@ export class AiSuggestionService {
 		for (const pattern of patterns) {
 			if (createdCount >= AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER) {
 				break;
-			}
-
-			if (existingTitles.has(pattern.title)) {
-				continue;
 			}
 
 			await this.aiSuggestionRepository.create({

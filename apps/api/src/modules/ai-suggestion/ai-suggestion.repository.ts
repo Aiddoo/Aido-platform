@@ -77,23 +77,19 @@ export class AiSuggestionRepository {
 	}
 
 	/**
-	 * 사용자의 대기 중인 제안 제목 목록 조회
+	 * 사용자의 대기 중인(PENDING) 제안 전체 삭제
 	 *
-	 * 중복 제안 방지를 위해 기존 PENDING 제안의 제목을 Set으로 반환합니다.
+	 * 매 분석 시 기존 PENDING 제안을 교체하기 위해 사용합니다.
 	 */
-	async findPendingTitles(
+	async deletePending(
 		userId: string,
 		tx?: TransactionClient,
-	): Promise<Set<string>> {
+	): Promise<{ count: number }> {
 		const client = tx ?? this.database;
-		const suggestions = await client.recurringSuggestion.findMany({
-			where: {
-				userId,
-				status: "PENDING",
-			},
-			select: { title: true },
+		const result = await client.recurringSuggestion.deleteMany({
+			where: { userId, status: "PENDING" },
 		});
-		return new Set(suggestions.map((s) => s.title));
+		return { count: result.count };
 	}
 
 	/**

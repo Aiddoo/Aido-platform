@@ -161,25 +161,40 @@ describe("AiSuggestionRepository", () => {
 	});
 
 	// =========================================================================
-	// findPendingTitles
+	// deletePending
 	// =========================================================================
 
-	describe("findPendingTitles", () => {
-		it("대기 중인 제안 제목을 Set으로 반환해야 한다", async () => {
-			// Given: PENDING 제안들
-			const mockSuggestions = [{ title: "팀 미팅" }, { title: "운동" }];
-			(db.recurringSuggestion.findMany as jest.Mock).mockResolvedValue(
-				mockSuggestions,
-			);
+	describe("deletePending", () => {
+		it("사용자의 PENDING 제안을 전부 삭제해야 한다", async () => {
+			// Given: 삭제할 PENDING 제안이 존재
+			(db.recurringSuggestion.deleteMany as jest.Mock).mockResolvedValue({
+				count: 3,
+			});
 
-			// When: findPendingTitles를 호출하면
-			const result = await repository.findPendingTitles("user-123");
+			// When: deletePending을 호출하면
+			const result = await repository.deletePending("user-123");
 
-			// Then: 제목 Set을 반환해야 한다
-			expect(result).toBeInstanceOf(Set);
-			expect(result.has("팀 미팅")).toBe(true);
-			expect(result.has("운동")).toBe(true);
-			expect(result.size).toBe(2);
+			// Then: userId와 PENDING 조건으로 삭제해야 한다
+			expect(db.recurringSuggestion.deleteMany).toHaveBeenCalledWith({
+				where: { userId: "user-123", status: "PENDING" },
+			});
+			expect(result).toEqual({ count: 3 });
+		});
+
+		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
+			// Given: 트랜잭션 클라이언트
+			const mockTx = {
+				recurringSuggestion: {
+					deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+				},
+			};
+
+			// When: tx를 전달하여 호출하면
+			await repository.deletePending("user-123", mockTx as never);
+
+			// Then: tx를 사용해야 한다
+			expect(mockTx.recurringSuggestion.deleteMany).toHaveBeenCalled();
+			expect(db.recurringSuggestion.deleteMany).not.toHaveBeenCalled();
 		});
 	});
 
