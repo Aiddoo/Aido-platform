@@ -789,6 +789,12 @@ describe("AuthService", () => {
 
 		it("사용자의 모든 세션을 비활성화한다", async () => {
 			// Given
+			const mockSessions = [
+				SessionBuilder.create(userId).withId("session-1").build(),
+				SessionBuilder.create(userId).withId("session-2").build(),
+				SessionBuilder.create(userId).withId("session-3").build(),
+			];
+			sessionRepo.findActiveByUserId.mockResolvedValue(mockSessions);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
@@ -803,8 +809,28 @@ describe("AuthService", () => {
 			expect(result.revokedCount).toBe(3);
 		});
 
+		it("모든 활성 세션의 캐시를 즉시 무효화한다", async () => {
+			// Given
+			const mockSessions = [
+				SessionBuilder.create(userId).withId("session-1").build(),
+				SessionBuilder.create(userId).withId("session-2").build(),
+			];
+			sessionRepo.findActiveByUserId.mockResolvedValue(mockSessions);
+			sessionRepo.revokeAllByUserId.mockResolvedValue(2);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When
+			await service.logoutAll(userId);
+
+			// Then
+			expect(cacheService.invalidateSession).toHaveBeenCalledWith("session-1");
+			expect(cacheService.invalidateSession).toHaveBeenCalledWith("session-2");
+			expect(cacheService.invalidateSession).toHaveBeenCalledTimes(2);
+		});
+
 		it("보안 이벤트를 기록한다", async () => {
 			// Given
+			sessionRepo.findActiveByUserId.mockResolvedValue([]);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(3);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
