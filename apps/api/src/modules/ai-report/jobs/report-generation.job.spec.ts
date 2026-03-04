@@ -2,7 +2,7 @@
  * ReportGenerationJob (Dispatcher) 단위 테스트
  *
  * Suites + GWT 패턴 적용
- * - 분산 락 획득/해제 검증
+ * - BullMQ Job Scheduler 등록 검증
  * - BullMQ 큐에 per-user 잡 등록 검증
  */
 
@@ -10,155 +10,83 @@ import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Queue } from "bullmq";
-import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
-
-import { AI_REPORT_QUEUE } from "../processors/report-generation.processor";
+import {
+	AI_REPORT_QUEUE,
+	ReportGenerationProcessor,
+} from "../processors/report-generation.processor";
 import { ReportGenerationJob } from "./report-generation.job";
 
 describe("ReportGenerationJob", () => {
 	let job: ReportGenerationJob;
 	let mockDatabase: Mocked<DatabaseService>;
 	let mockQueue: Mocked<Queue>;
-	let mockLockProvider: Mocked<ILockProvider>;
-
-	const mockRelease = jest.fn().mockResolvedValue(undefined);
+	let mockProcessor: Mocked<ReportGenerationProcessor>;
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
 
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
-			.mock(LOCK_PROVIDER)
-			.impl(() => ({
-				acquire: jest.fn(),
-				isLocked: jest.fn(),
-			}))
 			.mock(getQueueToken(AI_REPORT_QUEUE))
 			.impl(() => ({
 				addBulk: jest.fn().mockResolvedValue(undefined),
+				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
 
 		job = unit;
 		mockDatabase = unitRef.get(DatabaseService);
 		mockQueue = unitRef.get(getQueueToken(AI_REPORT_QUEUE));
-		mockLockProvider = unitRef.get(LOCK_PROVIDER);
+		mockProcessor = unitRef.get(ReportGenerationProcessor);
 	});
 
 	// =========================================================================
-	// onModuleInit catch-up
+	// onModuleInit 스케줄러 등록
 	// =========================================================================
 
-	describe("onModuleInit catch-up", () => {
-		it("서버 시작 시 주간/월간 리포트 생성을 모두 실행해야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
-
-			// When
-			await job.onModuleInit();
-
-			// Then: 주간 + 월간 각각 한 번씩 잠금 획득
-			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
-				"report-weekly",
-				expect.any(Number),
-			);
-			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
-				"report-monthly",
-				expect.any(Number),
-			);
-		});
-
-		it("잠금 획득 실패 시 안전하게 건너뛰어야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(null);
-
+	describe("onModuleInit 스케줄러 등록", () => {
+		it("서버 시작 시 주간/월간 스케줄러를 등록해야 한다", async () => {
 			// When
 			await job.onModuleInit();
 
 			// Then
-			expect(mockDatabase.user.findMany).not.toHaveBeenCalled();
+			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledTimes(2);
+			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
+				"weekly-report-scheduler",
+				{ pattern: "0 22 * * 0" },
+				{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
+			);
+			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
+				"monthly-report-scheduler",
+				{ pattern: "0 22 1 * *" },
+				{ name: "dispatch-reports", data: { reportType: "MONTHLY" } },
+			);
+		});
+
+		it("Processor에 자신을 등록해야 한다", async () => {
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockProcessor.setReportJob).toHaveBeenCalledWith(job);
 		});
 	});
 
 	// =========================================================================
-	// 분산 락
+	// dispatchReports (BullMQ 잡 등록)
 	// =========================================================================
 
-	describe("분산 락", () => {
-		it("주간 리포트 잠금을 획득하고 작업 완료 후 해제해야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
-
-			// When
-			await job.handleWeeklyReport();
-
-			// Then
-			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
-				"report-weekly",
-				expect.any(Number),
-			);
-			expect(mockRelease).toHaveBeenCalledTimes(1);
-		});
-
-		it("잠금 획득 실패 시 작업을 건너뛰어야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(null);
-
-			// When
-			await job.handleWeeklyReport();
-
-			// Then
-			expect(mockDatabase.user.findMany).not.toHaveBeenCalled();
-		});
-
-		it("월간 리포트 잠금을 획득해야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
-
-			// When
-			await job.handleMonthlyReport();
-
-			// Then
-			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
-				"report-monthly",
-				expect.any(Number),
-			);
-		});
-
-		it("작업 중 에러가 발생해도 잠금이 해제되어야 한다", async () => {
-			// Given
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
-			(mockDatabase.user.findMany as jest.Mock).mockRejectedValue(
-				new Error("DB error"),
-			);
-
-			// When
-			await job.handleWeeklyReport();
-
-			// Then
-			expect(mockRelease).toHaveBeenCalledTimes(1);
-		});
-	});
-
-	// =========================================================================
-	// BullMQ 잡 등록
-	// =========================================================================
-
-	describe("BullMQ 잡 등록", () => {
+	describe("dispatchReports", () => {
 		it("모든 사용자에 대해 큐에 잡을 등록해야 한다", async () => {
 			// Given
 			const users = [
 				{ id: "user-1", preference: { timezone: "Asia/Seoul" } },
 				{ id: "user-2", preference: { timezone: "America/New_York" } },
 			];
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 
 			// When
-			await job.handleWeeklyReport();
+			await job.dispatchReports("WEEKLY");
 
 			// Then
 			expect(mockQueue.addBulk).toHaveBeenCalledTimes(1);
@@ -187,11 +115,10 @@ describe("ReportGenerationJob", () => {
 		it("월간 리포트 잡은 MONTHLY reportType으로 등록해야 한다", async () => {
 			// Given
 			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 
 			// When
-			await job.handleMonthlyReport();
+			await job.dispatchReports("MONTHLY");
 
 			// Then
 			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
@@ -207,11 +134,10 @@ describe("ReportGenerationJob", () => {
 		it("preference가 없으면 기본 타임존 'Asia/Seoul'을 사용해야 한다", async () => {
 			// Given
 			const users = [{ id: "user-1", preference: null }];
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 
 			// When
-			await job.handleWeeklyReport();
+			await job.dispatchReports("WEEKLY");
 
 			// Then
 			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
@@ -225,11 +151,10 @@ describe("ReportGenerationJob", () => {
 		it("잡에 retry 옵션이 설정되어야 한다", async () => {
 			// Given
 			const users = [{ id: "user-1", preference: { timezone: "Asia/Seoul" } }];
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue(users);
 
 			// When
-			await job.handleWeeklyReport();
+			await job.dispatchReports("WEEKLY");
 
 			// Then
 			const jobs = mockQueue.addBulk.mock.calls[0]?.[0];
@@ -238,18 +163,17 @@ describe("ReportGenerationJob", () => {
 					attempts: 3,
 					backoff: { type: "exponential", delay: 5_000 },
 					removeOnComplete: { age: 604_800, count: 10_000 },
-					removeOnFail: 100,
+					removeOnFail: { count: 100, age: 86_400 },
 				}),
 			);
 		});
 
 		it("사용자가 없으면 큐에 잡을 등록하지 않아야 한다", async () => {
 			// Given
-			mockLockProvider.acquire.mockResolvedValue(mockRelease);
 			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
 
 			// When
-			await job.handleWeeklyReport();
+			await job.dispatchReports("WEEKLY");
 
 			// Then
 			expect(mockQueue.addBulk).not.toHaveBeenCalled();

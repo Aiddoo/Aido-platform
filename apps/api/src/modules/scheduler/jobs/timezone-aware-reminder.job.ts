@@ -1,23 +1,29 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { Cron } from "@nestjs/schedule";
+import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
-import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
 import { NotificationEvents } from "@/modules/notification/events/notification.events";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import {
+	TIMEZONE_REMINDER_QUEUE,
+	type TimezoneReminderJobData,
+	TimezoneReminderProcessor,
+} from "../processors/timezone-reminder.processor";
 
 /**
- * 타임존 인식 리마인더 크론 작업 — Every-Minute Sweep 패턴
+ * 타임존 인식 리마인더 — Every-Minute Sweep 패턴
  *
  * 매분 실행되어 각 타임존별 로컬 시간(시:분)을 확인하고,
  * 해당 시간에 아침/저녁 리마인더를 원하는 사용자에게 알림을 발송합니다.
  *
- * 기존 MorningReminderJob + EveningReminderJob을 통합 대체합니다.
+ * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
+ * @OnEvent 핸들러는 BullMQ와 무관하게 유지됩니다.
  */
 @Injectable()
 export class TimezoneAwareReminderJob implements OnModuleInit {
@@ -26,25 +32,22 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		@InjectQueue(TIMEZONE_REMINDER_QUEUE)
+		private readonly queue: Queue<TimezoneReminderJobData>,
+		private readonly processor: TimezoneReminderProcessor,
 	) {}
 
-	/**
-	 * 서버 시작 시 즉시 1회 sweep 실행
-	 *
-	 * 서버 다운 중 놓친 아침/저녁 리마인더를 보완합니다.
-	 * notificationDate 기반 dedup으로 중복 발송이 방지됩니다.
-	 */
 	async onModuleInit(): Promise<void> {
-		try {
-			this.#logger.log("Running timezone reminder catch-up on startup...");
-			await this.handleHourlySweep();
-		} catch (error) {
-			this.#logger.error(
-				`Timezone reminder catch-up failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
+		// Processor에 자신을 등록 (순환 참조 방지)
+		this.processor.setReminderJob(this);
+
+		await this.queue.upsertJobScheduler(
+			"tz-reminder-sweep-scheduler",
+			{ pattern: "* * * * *" },
+			{ name: "sweep-reminders", data: {} },
+		);
+
+		this.#logger.log("Timezone reminder scheduler registered");
 	}
 
 	/**
@@ -54,19 +57,8 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	 * 2. 각 타임존의 현재 로컬 시간(시:분) 확인
 	 * 3. 해당 시간에 아침/저녁 리마인더를 원하는 사용자에게 발송
 	 */
-	@Cron("* * * * *")
 	async handleHourlySweep(): Promise<void> {
 		this.#logger.log("Starting every-minute sweep reminder job...");
-
-		const release = await this.lockProvider.acquire(
-			"timezone-reminder",
-			55 * 1000,
-		);
-
-		if (!release) {
-			this.#logger.warn("Skipping sweep — another instance holds the lock");
-			return;
-		}
 
 		try {
 			const now = new Date();
@@ -103,8 +95,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 				`Sweep reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
-		} finally {
-			await release();
 		}
 	}
 

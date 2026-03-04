@@ -2,6 +2,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Inject, Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
+import type { DailySignupSummaryJob } from "../jobs/daily-signup-summary.job";
 import {
 	ADMIN_NOTIFIER,
 	type AdminNotification,
@@ -11,36 +12,52 @@ import {
 
 export const ADMIN_NOTIFICATION_QUEUE = "admin-notification";
 
-/**
- * 관리자 알림 잡 데이터
- *
- * - channel: 발송 대상 채널 (admin=가입, payment=결제)
- * - notification: Discord Embed 페이로드
- */
-export interface AdminNotificationJobData {
+/** 잡 이름 상수 */
+export const AdminNotificationJobName = {
+	DISPATCH_SUMMARY: "dispatch-signup-summary",
+	SEND: "send-notification",
+} as const;
+
+/** send-notification 잡 데이터 */
+export interface AdminNotificationSendData {
 	channel: "admin" | "payment";
 	notification: AdminNotification;
 }
+
+/** 잡 이름 → 데이터 타입 매핑 */
+export interface AdminNotificationJobMap {
+	[AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
+	[AdminNotificationJobName.SEND]: AdminNotificationSendData;
+}
+
+export type AdminNotificationJobData =
+	AdminNotificationJobMap[keyof AdminNotificationJobMap];
 
 /** 잡 등록 시 공통 옵션 */
 export const ADMIN_NOTIFICATION_JOB_OPTS = {
 	attempts: 3,
 	backoff: { type: "exponential" as const, delay: 5_000 },
 	removeOnComplete: true,
-	removeOnFail: 100,
+	removeOnFail: { count: 100, age: 86_400 },
 } as const;
 
 /**
  * 관리자 알림 BullMQ Processor
  *
- * Discord 웹훅 발송을 담당합니다.
- * 실패 시 BullMQ가 자동 재시도 (3회, exponential backoff).
+ * - dispatch-signup-summary: 스케줄러 트리거 → DailySignupSummaryJob.handleDailySummary()
+ * - send-notification: Discord 웹훅 발송
  *
  * concurrency=3: Discord rate limit (30 req/min/webhook) 대응
  */
 @Processor(ADMIN_NOTIFICATION_QUEUE, { concurrency: 3 })
 export class AdminNotificationProcessor extends WorkerHost {
 	readonly #logger = new Logger(AdminNotificationProcessor.name);
+
+	/** @see DailySignupSummaryJob — 순환 참조 방지를 위해 setter injection */
+	#dailySummaryJob!: DailySignupSummaryJob;
+	setDailySummaryJob(job: DailySignupSummaryJob) {
+		this.#dailySummaryJob = job;
+	}
 
 	constructor(
 		@Inject(ADMIN_NOTIFIER)
@@ -56,8 +73,32 @@ export class AdminNotificationProcessor extends WorkerHost {
 		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
+	@OnWorkerEvent("error")
+	onError(error: Error) {
+		this.#logger.error(`Worker error: ${error.message}`, error.stack);
+	}
+
+	@OnWorkerEvent("failed")
+	onFailed(job: Job | undefined, error: Error) {
+		this.#logger.error(
+			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
+			error.stack,
+		);
+	}
+
 	async process(job: Job<AdminNotificationJobData>): Promise<void> {
-		const { channel, notification } = job.data;
+		if (job.name === AdminNotificationJobName.DISPATCH_SUMMARY) {
+			await this.#dailySummaryJob.handleDailySummary();
+			return;
+		}
+
+		if (job.name !== AdminNotificationJobName.SEND) {
+			this.#logger.warn(`Unknown job name: ${job.name}`);
+			return;
+		}
+
+		const { channel, notification } =
+			job.data as AdminNotificationJobMap[typeof AdminNotificationJobName.SEND];
 		const notifier =
 			channel === "payment" ? this.paymentNotifier : this.adminNotifier;
 

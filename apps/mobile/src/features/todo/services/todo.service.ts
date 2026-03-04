@@ -66,8 +66,11 @@ export class TodoService {
     return this.#todoRepository.deleteTodo(todoId);
   };
 
-  parseTodo = async (text: string): Promise<Result<ParsedTodoResult, ApiError>> => {
-    return this.#todoRepository.parseTodo(text);
+  parseTodo = async (
+    text: string,
+    categoryId?: number,
+  ): Promise<Result<ParsedTodoResult, ApiError>> => {
+    return this.#todoRepository.parseTodo(text, categoryId);
   };
 
   getAiUsage = async (): Promise<Result<AiUsage, ApiError>> => {

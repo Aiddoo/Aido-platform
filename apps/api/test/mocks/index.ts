@@ -4,6 +4,7 @@
 export * from "./execution-context.mock";
 // Fake 서비스
 export * from "./fake-ai.provider";
+export * from "./fake-bull-queue";
 export * from "./fake-email.service";
 export * from "./jose.mock";
 export * from "./prisma.mock";

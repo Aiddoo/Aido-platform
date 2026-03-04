@@ -71,11 +71,15 @@ const HomeScreen = () => {
 
     Keyboard.dismiss();
 
-    parseMutation.mutate(inputText.trim(), {
-      onSuccess: (result) => {
-        openTodoSheet(result.data);
+    // TODO: 홈 화면 제거 후 피드 화면에서 카테고리별 "+" 버튼으로 categoryId 전달
+    parseMutation.mutate(
+      { text: inputText.trim(), categoryId: defaultCategoryId },
+      {
+        onSuccess: (result) => {
+          openTodoSheet(result.data);
+        },
       },
-    });
+    );
   };
 
   const handleExamplePress = (text: string) => {

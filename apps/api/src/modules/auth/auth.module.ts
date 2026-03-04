@@ -1,3 +1,4 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
@@ -12,6 +13,10 @@ import {
 } from "./controllers";
 import { JwtAuthGuard, JwtRefreshGuard } from "./guards";
 import { AccountPurgeJob } from "./jobs/account-purge.job";
+import {
+	ACCOUNT_PURGE_QUEUE,
+	AccountPurgeProcessor,
+} from "./processors/account-purge.processor";
 import {
 	AccountRepository,
 	LoginAttemptRepository,
@@ -50,6 +55,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 				} as JwtSignOptions,
 			}),
 		}),
+		BullModule.registerQueue({ name: ACCOUNT_PURGE_QUEUE }),
 		EmailModule,
 	],
 	controllers: [
@@ -84,6 +90,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		JwtRefreshGuard,
 		// Jobs
 		AccountPurgeJob,
+		AccountPurgeProcessor,
 	],
 	exports: [AuthService, JwtAuthGuard, JwtRefreshGuard],
 })

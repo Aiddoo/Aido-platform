@@ -10,7 +10,8 @@ import {
 import {
 	ADMIN_NOTIFICATION_JOB_OPTS,
 	ADMIN_NOTIFICATION_QUEUE,
-	type AdminNotificationJobData,
+	AdminNotificationJobName,
+	type AdminNotificationSendData,
 } from "../processors/admin-notification.processor";
 
 type Provider = UserRegisteredEventPayload["provider"];
@@ -55,7 +56,7 @@ export class UserRegistrationListener {
 
 	constructor(
 		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
-		private readonly queue: Queue<AdminNotificationJobData>,
+		private readonly queue: Queue<AdminNotificationSendData>,
 	) {}
 
 	@OnEvent(AdminNotificationEvents.USER_REGISTERED)
@@ -90,7 +91,7 @@ export class UserRegistrationListener {
 			);
 
 			await this.queue.add(
-				"send-notification",
+				AdminNotificationJobName.SEND,
 				{
 					channel: "admin",
 					notification: {
@@ -99,7 +100,7 @@ export class UserRegistrationListener {
 						color: 0x57f287,
 						fields,
 					},
-				},
+				} satisfies AdminNotificationSendData,
 				ADMIN_NOTIFICATION_JOB_OPTS,
 			);
 

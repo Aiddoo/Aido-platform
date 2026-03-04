@@ -34,3 +34,14 @@ export function toISOStringOrNull(date: Date | null): string | null {
 export function toDateStringOrNull(date: Date | null): string | null {
 	return date ? dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY) : null;
 }
+
+/**
+ * ISO 주번호 식별자 (예: "2026-W10")
+ *
+ * BullMQ jobId 중복 방지용으로 사용합니다.
+ * @example toIsoWeekId(new Date("2026-03-04")) // "2026-W10"
+ */
+export function toIsoWeekId(date: Date = new Date()): string {
+	const d = dayjs.utc(date);
+	return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
+}

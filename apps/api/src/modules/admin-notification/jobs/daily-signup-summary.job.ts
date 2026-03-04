@@ -1,6 +1,5 @@
 import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Queue } from "bullmq";
 
 import { subtractDays } from "@/common/date/utils/arithmetic";
@@ -16,6 +15,9 @@ import {
 	ADMIN_NOTIFICATION_JOB_OPTS,
 	ADMIN_NOTIFICATION_QUEUE,
 	type AdminNotificationJobData,
+	AdminNotificationJobName,
+	AdminNotificationProcessor,
+	type AdminNotificationSendData,
 } from "../processors/admin-notification.processor";
 
 const PROVIDER_LABELS: Record<AccountProvider, string> = {
@@ -27,26 +29,41 @@ const PROVIDER_LABELS: Record<AccountProvider, string> = {
 };
 
 /**
- * 일일 가입 요약 크론 작업
+ * 일일 가입 요약 스케줄러
  *
  * 매일 KST 00:00에 실행되어
  * 전일(KST) 신규 가입자 수와 총 사용자 수를 집계한 후
  * BullMQ 큐에 알림 잡을 등록합니다.
+ *
+ * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  */
 @Injectable()
-export class DailySignupSummaryJob {
+export class DailySignupSummaryJob implements OnModuleInit {
 	readonly #logger = new Logger(DailySignupSummaryJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
 		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
 		private readonly queue: Queue<AdminNotificationJobData>,
+		private readonly processor: AdminNotificationProcessor,
 	) {}
 
+	async onModuleInit(): Promise<void> {
+		// Processor에 자신을 등록 (순환 참조 방지)
+		this.processor.setDailySummaryJob(this);
+
+		await this.queue.upsertJobScheduler(
+			"daily-signup-summary-scheduler",
+			{ pattern: "0 0 * * *", tz: "Asia/Seoul" },
+			{ name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
+		);
+
+		this.#logger.log("Daily signup summary scheduler registered");
+	}
+
 	/**
-	 * 매일 KST 00:00 실행
+	 * 전일 가입 통계 집계 후 알림 잡 등록
 	 */
-	@Cron("0 0 * * *", { timeZone: "Asia/Seoul" })
 	async handleDailySummary(): Promise<void> {
 		this.#logger.log("Starting daily signup summary job...");
 
@@ -80,7 +97,7 @@ export class DailySignupSummaryJob {
 				.join("\n");
 
 			await this.queue.add(
-				"send-notification",
+				AdminNotificationJobName.SEND,
 				{
 					channel: "admin",
 					notification: {
@@ -108,7 +125,7 @@ export class DailySignupSummaryJob {
 							},
 						],
 					},
-				},
+				} satisfies AdminNotificationSendData,
 				{
 					...ADMIN_NOTIFICATION_JOB_OPTS,
 					jobId: `signup-summary_${reportDateStr}`,

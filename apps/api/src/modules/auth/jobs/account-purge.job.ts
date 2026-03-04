@@ -1,18 +1,23 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { Cron, CronExpression } from "@nestjs/schedule";
-import {
-	type ILockProvider,
-	LOCK_PROVIDER,
-} from "@/common/lock/interfaces/lock.interface";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import type { Queue } from "bullmq";
 import { DatabaseService } from "@/database";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
+import {
+	ACCOUNT_PURGE_QUEUE,
+	type AccountPurgeJobData,
+	AccountPurgeProcessor,
+} from "../processors/account-purge.processor";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { UserRepository } from "../repositories/user.repository";
 
-const PURGE_LOCK_KEY = "cron:account-purge";
-const PURGE_LOCK_TTL_MS = 5 * 60 * 1000; // 5분
-
+/**
+ * 계정 정리 스케줄러
+ *
+ * 매일 KST 03:00에 실행되어 유예 기간이 지난 soft-deleted 사용자를 hard delete합니다.
+ * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
+ */
 @Injectable()
 export class AccountPurgeJob implements OnModuleInit {
 	readonly #logger = new Logger(AccountPurgeJob.name);
@@ -21,49 +26,27 @@ export class AccountPurgeJob implements OnModuleInit {
 		private readonly database: DatabaseService,
 		private readonly userRepository: UserRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		@InjectQueue(ACCOUNT_PURGE_QUEUE)
+		private readonly queue: Queue<AccountPurgeJobData>,
+		private readonly processor: AccountPurgeProcessor,
 	) {}
 
-	/**
-	 * 서버 시작 시 계정 정리 catch-up
-	 *
-	 * grace period 기반이므로 멱등성 보장.
-	 * 서버 다운 중 놓친 정리 작업을 즉시 실행합니다.
-	 */
 	async onModuleInit(): Promise<void> {
-		try {
-			this.#logger.log("Running account purge catch-up on startup...");
-			await this.purgeDeletedAccounts();
-		} catch (error) {
-			this.#logger.error(
-				`Account purge catch-up failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
+		// Processor에 자신을 등록 (순환 참조 방지)
+		this.processor.setPurgeJob(this);
 
-	@Cron(CronExpression.EVERY_DAY_AT_3AM, { timeZone: "Asia/Seoul" })
-	async purgeDeletedAccounts(): Promise<void> {
-		const release = await this.lockProvider.acquire(
-			PURGE_LOCK_KEY,
-			PURGE_LOCK_TTL_MS,
+		await this.queue.upsertJobScheduler(
+			"daily-account-purge-scheduler",
+			{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
+			{ name: "purge-accounts", data: {} },
 		);
 
-		if (!release) {
-			this.#logger.debug(
-				"Account purge already running on another instance, skipping",
-			);
-			return;
-		}
-
-		try {
-			await this.#executePurge();
-		} finally {
-			await release();
-		}
+		this.#logger.log("Account purge scheduler registered");
 	}
 
-	async #executePurge(): Promise<void> {
+	async purgeDeletedAccounts(): Promise<void> {
+		this.#logger.log("Starting account purge...");
+
 		const users = await this.userRepository.findSoftDeletedForPurge(
 			ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
 		);

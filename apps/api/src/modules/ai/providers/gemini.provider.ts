@@ -27,6 +27,7 @@ import type {
 const GEMINI_MODEL = "gemini-2.5-flash-lite" as const;
 const DEFAULT_MAX_TOKENS = 150;
 const DEFAULT_TEMPERATURE = 0.1;
+const API_TIMEOUT_MS = 30_000;
 
 @Injectable()
 export class GeminiProvider implements AiProvider {
@@ -64,6 +65,7 @@ export class GeminiProvider implements AiProvider {
 				schema: options.schema as z.ZodType<T>,
 				maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
 				temperature: options.temperature ?? DEFAULT_TEMPERATURE,
+				abortSignal: AbortSignal.timeout(API_TIMEOUT_MS),
 			});
 
 			return {

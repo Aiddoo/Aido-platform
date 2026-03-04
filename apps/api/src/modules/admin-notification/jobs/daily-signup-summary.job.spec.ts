@@ -136,7 +136,7 @@ describe("DailySignupSummaryJob", () => {
 				attempts: 3,
 				backoff: { type: "exponential", delay: 5_000 },
 				removeOnComplete: true,
-				removeOnFail: 100,
+				removeOnFail: { count: 100, age: 86_400 },
 			}),
 		);
 	});

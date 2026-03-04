@@ -43,6 +43,7 @@ export const parsedTodoDataSchema = z.object({
   endDate: z.date().nullable(),
   scheduledTime: z.string().nullable(),
   isAllDay: z.boolean(),
+  categoryId: z.number().optional(),
 });
 export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
 

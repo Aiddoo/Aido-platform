@@ -13,6 +13,7 @@ import {
 	Req,
 	UseGuards,
 } from "@nestjs/common";
+import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import * as Sentry from "@sentry/nestjs";
 import type { Request } from "express";
@@ -50,6 +51,7 @@ export class SubscriptionController {
 
 	@Post("revenuecat")
 	@Public()
+	@ApiExcludeEndpoint()
 	@UseGuards(WebhookSignatureGuard)
 	@HttpCode(HttpStatus.OK)
 	async handleRevenueCatWebhook(

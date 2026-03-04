@@ -37,6 +37,7 @@ import {
 	ReorderTodoCategoryResponseDto,
 	TodoCategoryIdParamDto,
 	TodoCategoryListResponseDto,
+	TodoCategoryResourceLimitResponseDto,
 	TodoCategoryResponseDto,
 	UpdateTodoCategoryDto,
 	UpdateTodoCategoryResponseDto,
@@ -79,10 +80,11 @@ export class TodoCategoryController {
 - \`categoryCount\`: 현재 카테고리 개수
 - \`maxCount\`: 최대 한도 (null이면 무제한)`,
 	})
+	@ApiSuccessResponse({ type: TodoCategoryResourceLimitResponseDto })
 	@ApiUnauthorizedError()
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
-	): Promise<{ categoryCount: number; maxCount: number | null }> {
+	): Promise<TodoCategoryResourceLimitResponseDto> {
 		return this.todoCategoryService.getResourceLimitInfo(user.userId);
 	}
 

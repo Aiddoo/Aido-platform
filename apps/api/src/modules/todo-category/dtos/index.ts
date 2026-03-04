@@ -4,3 +4,4 @@ export * from "./request/reorder-todo-category.dto";
 export * from "./request/todo-category-id-param.dto";
 export * from "./request/update-todo-category.dto";
 export * from "./response/todo-category.response.dto";
+export * from "./response/todo-category-resource-limit.response.dto";

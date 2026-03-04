@@ -7,7 +7,8 @@ import type { Queue } from "bullmq";
 import {
 	ADMIN_NOTIFICATION_JOB_OPTS,
 	ADMIN_NOTIFICATION_QUEUE,
-	type AdminNotificationJobData,
+	AdminNotificationJobName,
+	type AdminNotificationSendData,
 } from "@/modules/admin-notification/processors/admin-notification.processor";
 
 import {
@@ -152,7 +153,7 @@ export class SubscriptionNotificationListener {
 
 	constructor(
 		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
-		private readonly queue: Queue<AdminNotificationJobData>,
+		private readonly queue: Queue<AdminNotificationSendData>,
 	) {}
 
 	@OnEvent("subscription.*")
@@ -223,7 +224,7 @@ export class SubscriptionNotificationListener {
 			});
 
 			await this.queue.add(
-				"send-notification",
+				AdminNotificationJobName.SEND,
 				{
 					channel: "payment",
 					notification: {
@@ -232,7 +233,7 @@ export class SubscriptionNotificationListener {
 						color: meta.color,
 						fields,
 					},
-				},
+				} satisfies AdminNotificationSendData,
 				ADMIN_NOTIFICATION_JOB_OPTS,
 			);
 

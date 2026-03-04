@@ -13,8 +13,8 @@ export const parseTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (text: string) => {
-      const result = await todoService.parseTodo(text);
+    mutationFn: async (params: { text: string; categoryId?: number }) => {
+      const result = await todoService.parseTodo(params.text, params.categoryId);
       return unwrap(result);
     },
     onError: (error) => {
