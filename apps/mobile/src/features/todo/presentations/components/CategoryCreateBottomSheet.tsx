@@ -49,10 +49,7 @@ export const CategoryCreateBottomSheet = ({
 
   const onSubmit = (data: CreateTodoCategoryInput) => {
     createMutation.mutate(data, {
-      onSuccess: () => {
-        onClose();
-        onExit();
-      },
+      onSuccess: onClose,
       onError: (error) => {
         if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
           onClose();
