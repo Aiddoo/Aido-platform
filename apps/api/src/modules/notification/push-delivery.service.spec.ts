@@ -19,6 +19,7 @@ import {
 	type PushProvider,
 } from "./providers/push-provider.interface";
 import { PushDeliveryService } from "./push-delivery.service";
+import { type IPushRateLimiter, PUSH_RATE_LIMITER } from "./rate-limiter";
 
 // isNightTime을 제어 가능하게 mock
 jest.mock("./utils", () => ({
@@ -48,9 +49,22 @@ describe("PushDeliveryService", () => {
 			validateToken: jest.fn(),
 		};
 
+		// 실제 슬라이딩 윈도우 동작을 재현하는 rate limiter mock
+		const rateLimitCounts = new Map<string, number>();
+		const mockRateLimiter: IPushRateLimiter = {
+			isRateLimited: jest.fn(async (userId: string) => {
+				const count = rateLimitCounts.get(userId) ?? 0;
+				if (count >= 15) return true;
+				rateLimitCounts.set(userId, count + 1);
+				return false;
+			}),
+		};
+
 		const { unit, unitRef } = await TestBed.solitary(PushDeliveryService)
 			.mock(PUSH_PROVIDER)
 			.impl(() => mockPushProvider)
+			.mock(PUSH_RATE_LIMITER)
+			.impl(() => mockRateLimiter)
 			.compile();
 
 		service = unit;

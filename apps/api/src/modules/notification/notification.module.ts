@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
+import type Redis from "ioredis";
 
+import { TypedConfigService } from "@/common/config/services/config.service";
+import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { UserSettingsModule } from "@/modules/user-settings/user-settings.module";
 
 import {
@@ -14,6 +17,12 @@ import { NotificationService } from "./notification.service";
 import { ExpoPushProvider } from "./providers/expo-push.provider";
 import { PUSH_PROVIDER } from "./providers/push-provider.interface";
 import { PushDeliveryService } from "./push-delivery.service";
+import {
+	InMemoryPushRateLimiter,
+	type IPushRateLimiter,
+	PUSH_RATE_LIMITER,
+	RedisPushRateLimiter,
+} from "./rate-limiter";
 
 /**
  * Notification 모듈
@@ -44,6 +53,20 @@ import { PushDeliveryService } from "./push-delivery.service";
 		{
 			provide: PUSH_PROVIDER,
 			useClass: ExpoPushProvider,
+		},
+		// Push Rate Limiter (Strategy Pattern)
+		{
+			provide: PUSH_RATE_LIMITER,
+			useFactory: (
+				configService: TypedConfigService,
+				redis?: Redis,
+			): IPushRateLimiter => {
+				if (configService.cache.type === "redis" && redis) {
+					return new RedisPushRateLimiter(redis);
+				}
+				return new InMemoryPushRateLimiter();
+			},
+			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
 		},
 		// Event Listeners
 		FollowListener,

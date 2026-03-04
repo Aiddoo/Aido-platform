@@ -1,3 +1,4 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
@@ -7,6 +8,10 @@ import { AiReportController } from "./ai-report.controller";
 import { AiReportRepository } from "./ai-report.repository";
 import { AiReportService } from "./ai-report.service";
 import { ReportGenerationJob } from "./jobs/report-generation.job";
+import {
+	AI_REPORT_QUEUE,
+	ReportGenerationProcessor,
+} from "./processors/report-generation.processor";
 import { ReportAggregatorService } from "./report-aggregator.service";
 import { ReportGeneratorService } from "./report-generator.service";
 
@@ -25,7 +30,11 @@ import { ReportGeneratorService } from "./report-generator.service";
  * - NotificationModule: 리포트 생성 완료 알림 발송
  */
 @Module({
-	imports: [AiModule, NotificationModule],
+	imports: [
+		AiModule,
+		NotificationModule,
+		BullModule.registerQueue({ name: AI_REPORT_QUEUE }),
+	],
 	controllers: [AiReportController],
 	providers: [
 		AiReportRepository,
@@ -33,6 +42,7 @@ import { ReportGeneratorService } from "./report-generator.service";
 		ReportAggregatorService,
 		ReportGeneratorService,
 		ReportGenerationJob,
+		ReportGenerationProcessor,
 	],
 	exports: [AiReportService],
 })

@@ -4,13 +4,14 @@ import {
 	Module,
 	type Provider,
 } from "@nestjs/common";
+import type Redis from "ioredis";
 import { TypedConfigService } from "../config/services/config.service";
+import { REDIS_CLIENT } from "../redis/redis.constants";
 import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter";
 import { RedisCacheAdapter } from "./adapters/redis-cache.adapter";
 import { CacheService } from "./cache.service";
 import {
 	CACHE_SERVICE,
-	type CacheConfig,
 	type ICacheService,
 } from "./interfaces/cache.interface";
 
@@ -38,45 +39,27 @@ export class CacheModule {
 	 * - CACHE_DEFAULT_TTL_MS: 기본 TTL (기본값: 60000)
 	 * - CACHE_MAX_ITEMS: 최대 항목 수 (기본값: 1000, 인메모리 전용)
 	 * - CACHE_CLEANUP_INTERVAL_MS: 만료된 항목 정리 주기 (기본값: 30000, 최소: 1000)
-	 * - REDIS_HOST: Redis 호스트 (redis 사용 시 필수)
-	 * - REDIS_PORT: Redis 포트 (기본값: 6379)
-	 * - REDIS_PASSWORD: Redis 비밀번호 (선택)
-	 * - REDIS_DB: Redis DB 번호 (기본값: 0)
 	 */
 	static forRoot(): DynamicModule {
 		const cacheProvider: Provider = {
 			provide: CACHE_SERVICE,
-			useFactory: (configService: TypedConfigService): ICacheService => {
+			useFactory: (
+				configService: TypedConfigService,
+				redis?: Redis,
+			): ICacheService => {
 				const cacheConfig = configService.cache;
-				const redisConfig = configService.redis;
 
-				const config: CacheConfig = {
-					type: cacheConfig.type,
-					defaultTtlMs: cacheConfig.defaultTtlMs,
-					maxItems: cacheConfig.maxItems,
-					cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
-					redis:
-						cacheConfig.type === "redis"
-							? {
-									host: redisConfig.host ?? "localhost",
-									port: redisConfig.port ?? 6379,
-									password: redisConfig.password,
-									db: redisConfig.db ?? 0,
-								}
-							: undefined,
-				};
-
-				if (config.type === "redis" && config.redis) {
-					return new RedisCacheAdapter(config);
+				if (cacheConfig.type === "redis" && redis) {
+					return new RedisCacheAdapter(redis, cacheConfig.defaultTtlMs);
 				}
 
 				return new InMemoryCacheAdapter({
-					defaultTtlMs: config.defaultTtlMs,
-					maxItems: config.maxItems,
-					cleanupIntervalMs: config.cleanupIntervalMs,
+					defaultTtlMs: cacheConfig.defaultTtlMs,
+					maxItems: cacheConfig.maxItems,
+					cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
 				});
 			},
-			inject: [TypedConfigService],
+			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
 		};
 
 		return {

@@ -595,15 +595,20 @@ export class AuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
+		// 활성 세션 ID 조회 (캐시 무효화용, revoke 전에 조회)
+		const activeSessions =
+			await this.sessionRepository.findActiveByUserId(userId);
+
 		// 모든 세션 만료 처리
 		const revokedCount = await this.sessionRepository.revokeAllByUserId(
 			userId,
 			REVOKE_REASON.USER_LOGOUT_ALL,
 		);
 
-		// NOTE: 세션 캐시는 30초 TTL로 자동 만료됨
-		// 개별 세션 ID를 조회하는 추가 쿼리 없이 TTL 만료에 의존
-		// 보안상 30초 지연은 허용 가능한 수준
+		// 모든 세션 캐시 즉시 무효화
+		await Promise.all(
+			activeSessions.map((s) => this.cacheService.invalidateSession(s.id)),
+		);
 
 		// 보안 로그 기록
 		await this.securityLogRepository.create({

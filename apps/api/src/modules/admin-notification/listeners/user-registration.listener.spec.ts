@@ -1,26 +1,26 @@
+import { getQueueToken } from "@nestjs/bullmq";
+import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Queue } from "bullmq";
+
 import type { UserRegisteredEventPayload } from "../events/admin-notification.events";
-import { ADMIN_NOTIFIER } from "../providers/admin-notifier.interface";
+import { ADMIN_NOTIFICATION_QUEUE } from "../processors/admin-notification.processor";
 import { UserRegistrationListener } from "./user-registration.listener";
 
 describe("UserRegistrationListener", () => {
 	let listener: UserRegistrationListener;
-	let notifier: { send: jest.Mock };
+	let mockQueue: Mocked<Queue>;
 
 	beforeEach(async () => {
-		const mockNotifier = {
-			name: "fake",
-			send: jest.fn().mockResolvedValue({ success: true }),
-			isConfigured: jest.fn().mockReturnValue(true),
-		};
-
-		const { unit } = await TestBed.solitary(UserRegistrationListener)
-			.mock(ADMIN_NOTIFIER)
-			.impl(() => mockNotifier)
+		const { unit, unitRef } = await TestBed.solitary(UserRegistrationListener)
+			.mock(getQueueToken(ADMIN_NOTIFICATION_QUEUE))
+			.impl(() => ({
+				add: jest.fn().mockResolvedValue(undefined),
+			}))
 			.compile();
 
 		listener = unit;
-		notifier = mockNotifier;
+		mockQueue = unitRef.get(getQueueToken(ADMIN_NOTIFICATION_QUEUE));
 	});
 
 	const basePayload: UserRegisteredEventPayload = {
@@ -30,35 +30,42 @@ describe("UserRegistrationListener", () => {
 		registeredAt: "2026-02-09T00:00:00.000Z",
 	};
 
-	/** send 호출의 첫 번째 인자 반환 */
-	function getSendArg() {
-		return notifier.send.mock.calls[0]?.[0];
+	/** queue.add 호출의 job data에서 notification 추출 */
+	function getNotification() {
+		return mockQueue.add.mock.calls[0]?.[1]?.notification;
 	}
 
-	/** 특정 이름의 필드 반환 */
+	/** notification의 특정 이름 필드 반환 */
 	function getField(name: string) {
-		return getSendArg()?.fields?.find((f: { name: string }) => f.name === name);
+		return getNotification()?.fields?.find(
+			(f: { name: string }) => f.name === name,
+		);
 	}
 
 	// =========================================================================
 	// 기본 동작
 	// =========================================================================
 
-	it("회원가입 이벤트를 받으면 알림을 발송한다", async () => {
+	it("회원가입 이벤트를 받으면 큐에 알림 잡을 등록한다", async () => {
 		// When
 		await listener.handleUserRegistered(basePayload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
+		expect(mockQueue.add).toHaveBeenCalledWith(
+			"send-notification",
 			expect.objectContaining({
-				title: "새로운 회원가입",
-				fields: expect.arrayContaining([
-					expect.objectContaining({
-						name: "이메일",
-						value: "test@example.com",
-					}),
-				]),
+				channel: "admin",
+				notification: expect.objectContaining({
+					title: "새로운 회원가입",
+					fields: expect.arrayContaining([
+						expect.objectContaining({
+							name: "이메일",
+							value: "test@example.com",
+						}),
+					]),
+				}),
 			}),
+			expect.any(Object),
 		);
 	});
 
@@ -67,7 +74,7 @@ describe("UserRegistrationListener", () => {
 		await listener.handleUserRegistered(basePayload);
 
 		// Then
-		expect(getSendArg().body).toContain("**test@example.com**");
+		expect(getNotification()?.body).toContain("**test@example.com**");
 	});
 
 	it("소셜 로그인 provider를 한국어 라벨로 변환한다", async () => {
@@ -81,12 +88,10 @@ describe("UserRegistrationListener", () => {
 		await listener.handleUserRegistered(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
-			expect.objectContaining({
-				fields: expect.arrayContaining([
-					expect.objectContaining({ name: "가입 방식", value: "Google" }),
-				]),
-			}),
+		expect(getNotification()?.fields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: "가입 방식", value: "Google" }),
+			]),
 		);
 	});
 
@@ -152,22 +157,9 @@ describe("UserRegistrationListener", () => {
 	// 에러 처리
 	// =========================================================================
 
-	it("알림 발송 실패해도 예외가 전파되지 않는다", async () => {
+	it("큐 등록 실패해도 예외가 전파되지 않는다", async () => {
 		// Given
-		notifier.send.mockResolvedValue({
-			success: false,
-			error: "Webhook failed",
-		});
-
-		// When & Then
-		await expect(
-			listener.handleUserRegistered(basePayload),
-		).resolves.not.toThrow();
-	});
-
-	it("알림 발송 중 예외가 발생해도 전파되지 않는다", async () => {
-		// Given
-		notifier.send.mockRejectedValue(new Error("Network error"));
+		mockQueue.add.mockRejectedValue(new Error("Queue error"));
 
 		// When & Then
 		await expect(

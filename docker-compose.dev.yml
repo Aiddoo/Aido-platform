@@ -1,4 +1,4 @@
-# Docker 개발 환경 (DB + API)
+# Docker 개발 환경 (DB + Redis + API)
 # 사용: pnpm docker:dev:up
 # DB는 로컬 Docker 컨테이너, API는 DATABASE_URL로 연결
 services:
@@ -15,6 +15,19 @@ services:
       - dev_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d aido"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: aido-dev-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - dev_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -60,8 +73,11 @@ services:
       start_period: 30s
       retries: 3
     depends_on:
+      redis:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
 
 volumes:
   dev_postgres_data:
+  dev_redis_data:

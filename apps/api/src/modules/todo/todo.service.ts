@@ -9,6 +9,7 @@ import {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import dayjs from "dayjs";
+import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database";
 import { isAfter } from "@/common/date/utils/compare";
 import { now } from "@/common/date/utils/core";
@@ -57,6 +58,7 @@ export class TodoService {
 		private readonly followService: FollowService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly database: DatabaseService,
+		private readonly cacheService: CacheService,
 		@Inject(REMINDER_SCHEDULER)
 		private readonly reminderScheduler: IReminderScheduler,
 	) {}
@@ -126,6 +128,8 @@ export class TodoService {
 		});
 
 		this.#logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
+
+		await this.cacheService.invalidateTodoCategories(data.userId);
 
 		if (todo.scheduledTime) {
 			try {
@@ -304,6 +308,10 @@ export class TodoService {
 			this.reminderScheduler.cancelReminder(id);
 		}
 
+		if (data.categoryId !== undefined) {
+			await this.cacheService.invalidateTodoCategories(userId);
+		}
+
 		this.#logger.log(`Todo updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
@@ -321,6 +329,8 @@ export class TodoService {
 
 		await this.todoRepository.delete(id);
 		this.reminderScheduler.cancelReminder(id);
+
+		await this.cacheService.invalidateTodoCategories(userId);
 
 		this.#logger.log(`Todo deleted: ${id} for user: ${userId}`);
 	}
@@ -480,6 +490,8 @@ export class TodoService {
 					return this.todoRepository.update(id, updateData, tx);
 				})
 			: await this.todoRepository.update(id, updateData);
+
+		await this.cacheService.invalidateTodoCategories(userId);
 
 		this.#logger.log(
 			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,

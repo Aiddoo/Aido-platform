@@ -1,6 +1,8 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AdminNotificationModule } from "@/modules/admin-notification/admin-notification.module";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/modules/admin-notification/processors/admin-notification.processor";
 import { NotificationModule } from "@/modules/notification/notification.module";
 
 import { WebhookSignatureGuard } from "./guards/webhook-signature.guard";
@@ -11,7 +13,11 @@ import { SubscriptionRepository } from "./subscription.repository";
 import { SubscriptionService } from "./subscription.service";
 
 @Module({
-	imports: [AdminNotificationModule, NotificationModule],
+	imports: [
+		AdminNotificationModule,
+		NotificationModule,
+		BullModule.registerQueue({ name: ADMIN_NOTIFICATION_QUEUE }),
+	],
 	controllers: [SubscriptionController],
 	providers: [
 		SubscriptionService,

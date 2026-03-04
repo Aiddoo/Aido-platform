@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
 import {
 	EntitlementService,
 	Resource,
@@ -25,6 +26,7 @@ export class TodoCategoryService {
 		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
+		private readonly cacheService: CacheService,
 	) {}
 
 	/**
@@ -92,6 +94,8 @@ export class TodoCategoryService {
 			`TodoCategory created: ${category.id} for user: ${data.userId}`,
 		);
 
+		await this.cacheService.invalidateTodoCategories(data.userId);
+
 		return category;
 	}
 
@@ -114,6 +118,8 @@ export class TodoCategoryService {
 		this.#logger.log(
 			`Default categories created: ${count} for user: ${userId}`,
 		);
+
+		await this.cacheService.invalidateTodoCategories(userId);
 
 		return count;
 	}
@@ -138,17 +144,19 @@ export class TodoCategoryService {
 	}
 
 	/**
-	 * 카테고리 목록 조회 (Todo 개수 포함)
+	 * 카테고리 목록 조회 (Todo 개수 포함, 캐시 적용)
 	 */
 	async findMany(userId: string): Promise<TodoCategoryWithCount[]> {
-		const categories =
-			await this.todoCategoryRepository.findManyByUserId(userId);
+		return this.cacheService.wrapTodoCategories(userId, async () => {
+			const categories =
+				await this.todoCategoryRepository.findManyByUserId(userId);
 
-		this.#logger.debug(
-			`TodoCategories listed: ${categories.length} items for user: ${userId}`,
-		);
+			this.#logger.debug(
+				`TodoCategories listed: ${categories.length} items for user: ${userId}`,
+			);
 
-		return categories;
+			return categories;
+		});
 	}
 
 	/**
@@ -195,6 +203,8 @@ export class TodoCategoryService {
 		}
 
 		this.#logger.log(`TodoCategory updated: ${id} for user: ${userId}`);
+
+		await this.cacheService.invalidateTodoCategories(userId);
 
 		return updatedCategory;
 	}
@@ -277,6 +287,8 @@ export class TodoCategoryService {
 				`TodoCategory deleted: ${categoryId} for user: ${userId}`,
 			);
 		});
+
+		await this.cacheService.invalidateTodoCategories(userId);
 	}
 
 	/**
@@ -288,7 +300,7 @@ export class TodoCategoryService {
 	async reorder(params: ReorderTodoCategoryParams): Promise<TodoCategory> {
 		const { userId, categoryId, targetCategoryId, position } = params;
 
-		return this.database.$transaction(async (tx) => {
+		const result = await this.database.$transaction(async (tx) => {
 			const category = await this.todoCategoryRepository.findByIdAndUserId(
 				categoryId,
 				userId,
@@ -325,6 +337,10 @@ export class TodoCategoryService {
 
 			return updatedCategory;
 		});
+
+		await this.cacheService.invalidateTodoCategories(userId);
+
+		return result;
 	}
 
 	async #reorderRelativeTo(

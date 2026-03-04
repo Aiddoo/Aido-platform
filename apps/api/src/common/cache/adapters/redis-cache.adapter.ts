@@ -1,6 +1,6 @@
-import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import type Redis from "ioredis";
 import type {
-	CacheConfig,
 	CacheStats,
 	ICacheService,
 	TtlValue,
@@ -8,277 +8,178 @@ import type {
 import { parseTtl } from "../interfaces/cache.interface";
 
 /**
- * Redis 캐시 어댑터 (스텁)
+ * Redis 캐시 어댑터
  *
- * 나중에 Redis로 전환 시 ioredis 패키지 설치 후 구현
- * 현재는 환경변수 CACHE_TYPE=redis로 설정 시에만 사용됨
- *
- * 전환 방법:
- * 1. pnpm add ioredis
- * 2. 아래 주석 해제 및 TODO 부분 구현
- * 3. CACHE_TYPE=redis로 환경변수 변경
+ * 공유 ioredis 인스턴스를 사용하여 Redis 캐시를 구현합니다.
+ * RedisModule이 제공하는 REDIS_CLIENT를 주입받아 사용합니다.
  *
  * Redis 명령어 매핑:
- * - get()       → GET + JSON.parse
- * - set()       → SET + PX (밀리초 TTL)
- * - del()       → DEL
+ * - get()         → GET + JSON.parse
+ * - set()         → SET + PX (밀리초 TTL)
+ * - del()         → DEL
  * - delByPattern() → SCAN + DEL (cursor 기반)
- * - reset()     → FLUSHDB
- * - getStats()  → DBSIZE
- * - wrap()      → GET + SET (cache-aside 패턴)
- * - mget()      → MGET
- * - mset()      → Pipeline SET
- * - has()       → EXISTS
- * - ttl()       → PTTL (밀리초 단위)
- * - touch()     → PEXPIRE
+ * - reset()       → SCAN + DEL (cache: prefix 기반)
+ * - getStats()    → 내부 카운터 (keys는 -1 반환)
+ * - wrap()        → GET → miss면 factory() → SET
+ * - mget()        → MGET + JSON.parse
+ * - mset()        → Pipeline SET
+ * - has()         → EXISTS
+ * - ttl()         → PTTL (밀리초 단위)
+ * - touch()       → PEXPIRE
  */
-
-// import Redis from 'ioredis';
-
 @Injectable()
-export class RedisCacheAdapter implements ICacheService, OnModuleDestroy {
+export class RedisCacheAdapter implements ICacheService {
 	readonly #logger = new Logger(RedisCacheAdapter.name);
-	// private readonly client: Redis;
+	readonly #redis: Redis;
 	readonly #defaultTtlMs: number;
+	readonly #keyPrefix = "cache:";
 	#stats = { hits: 0, misses: 0 };
 
-	constructor(config: CacheConfig) {
-		this.#defaultTtlMs = config.defaultTtlMs;
+	constructor(redis: Redis, defaultTtlMs: number) {
+		this.#redis = redis;
+		this.#defaultTtlMs = defaultTtlMs;
+		this.#logger.log("RedisCacheAdapter initialized");
+	}
 
-		if (!config.redis) {
-			throw new Error("Redis configuration is required for RedisCacheAdapter");
+	async get<T>(key: string): Promise<T | undefined> {
+		const data = await this.#redis.get(this.#keyPrefix + key);
+
+		if (data === null) {
+			this.#stats.misses++;
+			return undefined;
 		}
 
-		// TODO: Redis 전환 시 주석 해제
-		// this.client = new Redis({
-		//   host: config.redis.host,
-		//   port: config.redis.port,
-		//   password: config.redis.password,
-		//   db: config.redis.db ?? 0,
-		//   keyPrefix: config.redis.keyPrefix,
-		//   connectTimeout: config.redis.connectTimeout ?? 10000,
-		//   commandTimeout: config.redis.commandTimeout ?? 5000,
-		//   retryStrategy: (times) => Math.min(times * 50, 2000),
-		// });
-		//
-		// this.client.on('error', (err) => this.#logger.error('Redis error:', err));
-		// this.client.on('connect', () => this.#logger.log('Redis connected'));
+		this.#stats.hits++;
+		return JSON.parse(data) as T;
+	}
 
-		this.#logger.warn(
-			"RedisCacheAdapter is a stub. Install ioredis and implement for production use.",
+	async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
+		const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
+		await this.#redis.set(
+			this.#keyPrefix + key,
+			JSON.stringify(value),
+			"PX",
+			ttlMs,
 		);
 	}
 
-	async onModuleDestroy() {
-		// await this.client.quit();
+	async del(key: string): Promise<void> {
+		await this.#redis.del(this.#keyPrefix + key);
 	}
 
-	async get<T>(_key: string): Promise<T | undefined> {
-		// TODO: Redis 전환 시 구현
-		// const data = await this.client.get(key);
-		//
-		// if (!data) {
-		//   this.#stats.misses++;
-		//   this.#logger.debug(`MISS ${key}`);
-		//   return undefined;
-		// }
-		//
-		// this.#stats.hits++;
-		// this.#logger.debug(`HIT ${key}`);
-		// return JSON.parse(data) as T;
+	async delByPattern(pattern: string): Promise<number> {
+		const fullPattern = this.#keyPrefix + pattern;
+		let cursor = "0";
+		let count = 0;
 
-		this.#stats.misses++;
-		this.#logger.debug("MISS (Redis stub)");
-		return undefined;
-	}
+		do {
+			const [nextCursor, keys] = await this.#redis.scan(
+				cursor,
+				"MATCH",
+				fullPattern,
+				"COUNT",
+				100,
+			);
+			cursor = nextCursor;
 
-	async set<T>(_key: string, _value: T, ttl?: TtlValue): Promise<void> {
-		const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
+			if (keys.length > 0) {
+				await this.#redis.del(...keys);
+				count += keys.length;
+			}
+		} while (cursor !== "0");
 
-		// TODO: Redis 전환 시 구현
-		// await this.client.set(key, JSON.stringify(value), 'PX', ttlMs);
-
-		this.#logger.debug(`SET (TTL: ${ttlMs}ms) (Redis stub)`);
-	}
-
-	async del(_key: string): Promise<void> {
-		// TODO: Redis 전환 시 구현
-		// await this.client.del(key);
-
-		this.#logger.debug("DEL (Redis stub)");
-	}
-
-	async delByPattern(_pattern: string): Promise<number> {
-		// TODO: Redis 전환 시 구현 - SCAN으로 패턴 매칭 키 조회 후 삭제
-		// let cursor = '0';
-		// let count = 0;
-		//
-		// do {
-		//   const [nextCursor, keys] = await this.client.scan(
-		//     cursor,
-		//     'MATCH',
-		//     pattern,
-		//     'COUNT',
-		//     100,
-		//   );
-		//   cursor = nextCursor;
-		//
-		//   if (keys.length > 0) {
-		//     await this.client.del(...keys);
-		//     count += keys.length;
-		//   }
-		// } while (cursor !== '0');
-		//
-		// this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
-		// return count;
-
-		this.#logger.debug("DEL_PATTERN (Redis stub)");
-		return 0;
+		this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
+		return count;
 	}
 
 	async reset(): Promise<void> {
-		// TODO: Redis 전환 시 구현
-		// await this.client.flushdb();
+		const fullPattern = `${this.#keyPrefix}*`;
+		let cursor = "0";
+
+		do {
+			const [nextCursor, keys] = await this.#redis.scan(
+				cursor,
+				"MATCH",
+				fullPattern,
+				"COUNT",
+				100,
+			);
+			cursor = nextCursor;
+
+			if (keys.length > 0) {
+				await this.#redis.del(...keys);
+			}
+		} while (cursor !== "0");
 
 		this.#stats = { hits: 0, misses: 0 };
-		this.#logger.debug("RESET (Redis stub)");
+		this.#logger.debug("RESET completed");
 	}
 
 	getStats(): CacheStats {
-		// TODO: Redis 전환 시 DBSIZE로 키 수 조회
-		// const keys = await this.client.dbsize();
-		// return { ...this.#stats, keys };
-
 		return {
 			...this.#stats,
 			keys: -1,
 		};
 	}
 
-	/**
-	 * Cache-aside 패턴 구현 (wrap)
-	 *
-	 * 캐시에 데이터가 있으면 반환, 없으면 factory 실행 후 캐싱
-	 *
-	 * @param key - 캐시 키
-	 * @param factory - 캐시 미스 시 실행할 팩토리 함수
-	 * @param ttl - TTL (선택적, 기본값 사용)
-	 * @returns 캐시된 값 또는 factory 결과
-	 */
 	async wrap<T>(
-		_key: string,
+		key: string,
 		factory: () => Promise<T>,
-		_ttl?: TtlValue,
+		ttl?: TtlValue,
 	): Promise<T> {
-		// TODO: Redis 전환 시 구현
-		// const cached = await this.get<T>(_key);
-		// if (cached !== undefined) {
-		//   return cached;
-		// }
-		//
-		// const value = await factory();
-		// if (value !== undefined && value !== null) {
-		//   await this.set(_key, value, _ttl);
-		// }
-		// return value;
+		const cached = await this.get<T>(key);
+		if (cached !== undefined) {
+			return cached;
+		}
 
-		this.#logger.debug("WRAP called (Redis stub - calling factory directly)");
-		return factory();
+		const value = await factory();
+		if (value !== undefined && value !== null) {
+			await this.set(key, value, ttl);
+		}
+		return value;
 	}
 
-	/**
-	 * 다중 키 조회 (MGET)
-	 *
-	 * @param keys - 조회할 키 배열
-	 * @returns 각 키에 대한 값 배열 (없으면 undefined)
-	 */
 	async mget<T>(keys: string[]): Promise<(T | undefined)[]> {
-		// TODO: Redis 전환 시 구현
-		// if (keys.length === 0) return [];
-		//
-		// const values = await this.client.mget(...keys);
-		// return values.map((data, index) => {
-		//   if (!data) {
-		//     this.#stats.misses++;
-		//     return undefined;
-		//   }
-		//   this.#stats.hits++;
-		//   return JSON.parse(data) as T;
-		// });
+		if (keys.length === 0) return [];
 
-		this.#logger.debug(`MGET [${keys.length} keys] (Redis stub)`);
-		this.#stats.misses += keys.length;
-		return keys.map(() => undefined);
+		const prefixedKeys = keys.map((k) => this.#keyPrefix + k);
+		const values = await this.#redis.mget(...prefixedKeys);
+
+		return values.map((data) => {
+			if (data === null) {
+				this.#stats.misses++;
+				return undefined;
+			}
+			this.#stats.hits++;
+			return JSON.parse(data) as T;
+		});
 	}
 
-	/**
-	 * 다중 키 저장 (Pipeline SET)
-	 *
-	 * Redis Pipeline을 사용하여 여러 SET 명령을 한 번에 실행
-	 *
-	 * @param entries - 저장할 키-값-TTL 배열
-	 */
 	async mset<T>(
 		entries: Array<{ key: string; value: T; ttl?: TtlValue }>,
 	): Promise<void> {
-		// TODO: Redis 전환 시 구현
-		// if (entries.length === 0) return;
-		//
-		// const pipeline = this.client.pipeline();
-		// for (const { key, value, ttl } of entries) {
-		//   const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
-		//   pipeline.set(key, JSON.stringify(value), 'PX', ttlMs);
-		// }
-		// await pipeline.exec();
+		if (entries.length === 0) return;
 
-		this.#logger.debug(`MSET [${entries.length} entries] (Redis stub)`);
+		const pipeline = this.#redis.pipeline();
+		for (const { key, value, ttl } of entries) {
+			const ttlMs = ttl ? parseTtl(ttl) : this.#defaultTtlMs;
+			pipeline.set(this.#keyPrefix + key, JSON.stringify(value), "PX", ttlMs);
+		}
+		await pipeline.exec();
 	}
 
-	/**
-	 * 키 존재 여부 확인 (EXISTS)
-	 *
-	 * @param key - 확인할 키
-	 * @returns 존재하면 true, 아니면 false
-	 */
 	async has(key: string): Promise<boolean> {
-		// TODO: Redis 전환 시 구현
-		// const exists = await this.client.exists(key);
-		// return exists === 1;
-
-		this.#logger.debug(`HAS ${key} (Redis stub - always false)`);
-		return false;
+		const exists = await this.#redis.exists(this.#keyPrefix + key);
+		return exists === 1;
 	}
 
-	/**
-	 * 키의 남은 TTL 조회 (PTTL)
-	 *
-	 * @param key - 조회할 키
-	 * @returns 남은 밀리초, -1 (TTL 없음), -2 (키 없음)
-	 */
 	async ttl(key: string): Promise<number> {
-		// TODO: Redis 전환 시 구현
-		// const pttl = await this.client.pttl(key);
-		// return pttl; // Redis PTTL returns: -2 if key doesn't exist, -1 if no TTL
-
-		this.#logger.debug(`TTL ${key} (Redis stub - returning -2)`);
-		return -2; // 키 없음
+		return this.#redis.pttl(this.#keyPrefix + key);
 	}
 
-	/**
-	 * 키의 TTL 갱신 (PEXPIRE)
-	 *
-	 * @param key - 갱신할 키
-	 * @param ttl - 새 TTL 값
-	 * @returns 성공 시 true, 키가 없으면 false
-	 */
 	async touch(key: string, ttl: TtlValue): Promise<boolean> {
 		const ttlMs = parseTtl(ttl);
-
-		// TODO: Redis 전환 시 구현
-		// const result = await this.client.pexpire(key, ttlMs);
-		// return result === 1;
-
-		this.#logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms) (Redis stub - false)`);
-		return false;
+		const result = await this.#redis.pexpire(this.#keyPrefix + key, ttlMs);
+		return result === 1;
 	}
 }

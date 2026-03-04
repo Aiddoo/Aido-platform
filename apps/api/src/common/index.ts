@@ -20,9 +20,10 @@ export * from "./exception";
 export * from "./lock";
 // Logger
 export * from "./logger";
-
 // Pagination
 export * from "./pagination";
+// Redis
+export * from "./redis";
 
 // Response
 export * from "./response";
