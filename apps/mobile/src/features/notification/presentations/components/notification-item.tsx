@@ -1,9 +1,12 @@
+import { type User, UserPolicy } from '@src/features/user/models/user.model';
+import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatRelativeTime } from '@src/shared/utils/date';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
@@ -19,6 +22,8 @@ interface NotificationItemProps {
 export function NotificationItem({ notification }: NotificationItemProps) {
   const { mutate: markAsRead } = useMutation(markAsReadMutationOptions());
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const premiumDialog = usePremiumDialog();
   const isUnread = NotificationPolicy.isUnread(notification);
   const categoryLabel = NotificationPolicy.categoryLabel(notification);
   const relativeTime = formatRelativeTime(notification.createdAt);
@@ -34,7 +39,18 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       return;
     }
 
-    // 3. 타입 + context 기반 내부 라우팅
+    // 3. AI 기능 프리미엄 체크
+    if (NotificationPolicy.isAiFeature(notification)) {
+      const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
+      if (user && !UserPolicy.isPremiumUser(user)) {
+        premiumDialog.open({
+          description: '구독하면 AI 리포트와 제안을 확인할 수 있어요',
+        });
+        return;
+      }
+    }
+
+    // 4. 타입 + context 기반 내부 라우팅
     const route = NotificationPolicy.internalRoute(notification);
     if (route) router.push(route as Href);
   };

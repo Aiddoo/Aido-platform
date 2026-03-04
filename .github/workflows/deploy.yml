@@ -24,6 +24,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           command_timeout: 30m
+          script_stop: true
           script: |
             ~/apps/deploy.sh
             # 배포 후 Docker 빌드 캐시/미사용 리소스 정리

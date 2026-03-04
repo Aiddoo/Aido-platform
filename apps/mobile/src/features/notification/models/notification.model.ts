@@ -158,14 +158,23 @@ const getInternalRoute = (type: NotificationType, context?: NotificationContext)
     )
     .with('WEEKLY_ACHIEVEMENT', () => '/achievements')
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', () => '/reports')
-    .with('AI_SUGGESTION', () => null)
+    .with('AI_SUGGESTION', () => '/suggestions')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
     .exhaustive();
 
 // ─── Policy (비즈니스 로직의 유일한 거처) ───
 
+const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
+  'WEEKLY_REPORT',
+  'MONTHLY_REPORT',
+  'AI_SUGGESTION',
+]);
+
 export const NotificationPolicy = {
   isUnread: (notification: { isRead: boolean }): boolean => !notification.isRead,
+
+  isAiFeature: (notification: { type: NotificationType }): boolean =>
+    AI_FEATURE_TYPES.has(notification.type),
 
   hasExternalUrl: (notification: { metadata: Record<string, unknown> | null }): boolean =>
     typeof notification.metadata?.externalUrl === 'string',
