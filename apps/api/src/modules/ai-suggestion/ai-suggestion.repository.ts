@@ -77,6 +77,17 @@ export class AiSuggestionRepository {
 	}
 
 	/**
+	 * 제안 일괄 생성
+	 */
+	async createMany(
+		data: Prisma.RecurringSuggestionCreateManyInput[],
+		tx?: TransactionClient,
+	): Promise<{ count: number }> {
+		const client = tx ?? this.database;
+		return client.recurringSuggestion.createMany({ data });
+	}
+
+	/**
 	 * 사용자의 대기 중인(PENDING) 제안 전체 삭제
 	 *
 	 * 매 분석 시 기존 PENDING 제안을 교체하기 위해 사용합니다.

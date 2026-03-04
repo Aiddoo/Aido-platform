@@ -10,6 +10,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { DatabaseService } from "@/database/database.service";
 import type { RecurringSuggestion } from "@/generated/prisma/client";
 
 import type { AiProvider } from "../ai/providers/ai.provider";
@@ -24,6 +25,7 @@ describe("AiSuggestionService", () => {
 	let mockTodoService: Mocked<TodoService>;
 	let mockAiProvider: Mocked<AiProvider>;
 	let mockEntitlementService: Mocked<EntitlementService>;
+	let mockDatabase: Mocked<DatabaseService>;
 
 	const mockUserId = "user-123";
 
@@ -66,9 +68,15 @@ describe("AiSuggestionService", () => {
 		mockTodoService = unitRef.get(TodoService);
 		mockAiProvider = unitRef.get(AI_PROVIDER);
 		mockEntitlementService = unitRef.get(EntitlementService);
+		mockDatabase = unitRef.get(DatabaseService);
 
 		// 기본: 프리미엄 사용자
 		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+
+		// $transaction passthrough mock
+		mockDatabase.$transaction.mockImplementation((callback) =>
+			callback(mockRepository as never),
+		);
 	});
 
 	// =========================================================================
@@ -388,7 +396,7 @@ describe("AiSuggestionService", () => {
 
 			mockRepository.deletePending.mockResolvedValue({ count: 2 });
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
-			mockRepository.create.mockResolvedValue(createMockSuggestionEntity());
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
 
 			// When: analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
@@ -396,11 +404,11 @@ describe("AiSuggestionService", () => {
 				"Asia/Seoul",
 			);
 
-			// Then: 기존 PENDING 삭제 후 새 제안이 생성되어야 한다
-			expect(mockRepository.deletePending).toHaveBeenCalledWith(mockUserId);
-			expect(mockRepository.deleteExpired).toHaveBeenCalledWith(mockUserId);
+			// Then: 기존 PENDING 삭제 후 새 제안이 일괄 생성되어야 한다
+			expect(mockRepository.deletePending.mock.calls[0]?.[0]).toBe(mockUserId);
+			expect(mockRepository.deleteExpired.mock.calls[0]?.[0]).toBe(mockUserId);
 			expect(result).toBe(1);
-			expect(mockRepository.create).toHaveBeenCalledTimes(1);
+			expect(mockRepository.createMany).toHaveBeenCalledTimes(1);
 		});
 
 		it("deletePending이 deleteExpired보다 먼저 호출되어야 한다", async () => {
@@ -431,7 +439,7 @@ describe("AiSuggestionService", () => {
 
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
-			mockRepository.create.mockResolvedValue(createMockSuggestionEntity());
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
 
 			// When: analyzeAndCreateSuggestions를 호출하면
 			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
@@ -442,6 +450,84 @@ describe("AiSuggestionService", () => {
 			const deleteExpiredOrder =
 				mockRepository.deleteExpired.mock.invocationCallOrder[0];
 			expect(deletePendingOrder).toBeLessThan(deleteExpiredOrder as number);
+		});
+
+		it("제안 교체 로직은 트랜잭션 내에서 실행되어야 한다", async () => {
+			// Given: 패턴이 감지되는 상황
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "독서",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+			}));
+			mockRepository.findRecentTodos.mockResolvedValue(todos);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "독서",
+							daysOfWeek: ["TUE"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "이유",
+							matchedTitles: ["독서"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When: analyzeAndCreateSuggestions를 호출하면
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then: $transaction이 호출되어야 한다
+			expect(mockDatabase.$transaction).toHaveBeenCalledTimes(1);
+		});
+
+		it("createMany 에러 발생 시 트랜잭션이 롤백되어야 한다", async () => {
+			// Given: 패턴 감지, createMany에서 에러
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "운동",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+			}));
+			mockRepository.findRecentTodos.mockResolvedValue(todos);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "운동",
+							daysOfWeek: ["MON"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "이유",
+							matchedTitles: ["운동"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockRejectedValue(new Error("DB 에러"));
+
+			// $transaction이 에러를 전파하도록 설정
+			mockDatabase.$transaction.mockImplementation(async (callback) => {
+				return callback(mockRepository as never);
+			});
+
+			// When & Then: 에러가 전파되어야 한다
+			await expect(
+				service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul"),
+			).rejects.toThrow("DB 에러");
 		});
 
 		it("최대 5개까지만 생성해야 한다", async () => {
@@ -470,7 +556,7 @@ describe("AiSuggestionService", () => {
 
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
-			mockRepository.create.mockResolvedValue(createMockSuggestionEntity());
+			mockRepository.createMany.mockResolvedValue({ count: 5 });
 
 			// When: analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
@@ -480,7 +566,9 @@ describe("AiSuggestionService", () => {
 
 			// Then: 최대 5개만 생성되어야 한다
 			expect(result).toBe(5);
-			expect(mockRepository.create).toHaveBeenCalledTimes(5);
+			const createManyArg = mockRepository.createMany.mock
+				.calls[0]?.[0] as unknown[];
+			expect(createManyArg).toHaveLength(5);
 		});
 	});
 });

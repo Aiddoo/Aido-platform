@@ -161,6 +161,69 @@ describe("AiSuggestionRepository", () => {
 	});
 
 	// =========================================================================
+	// createMany
+	// =========================================================================
+
+	describe("createMany", () => {
+		it("여러 제안을 한 번에 생성해야 한다", async () => {
+			// Given: 생성할 데이터 배열
+			const data = [
+				{
+					userId: "user-123",
+					title: "운동",
+					daysOfWeek: ["MON"],
+					scheduledTime: null,
+					confidence: 0.8,
+					reason: "이유",
+					matchedTodos: [],
+					expiresAt: new Date(),
+				},
+				{
+					userId: "user-123",
+					title: "독서",
+					daysOfWeek: ["TUE"],
+					scheduledTime: null,
+					confidence: 0.7,
+					reason: "이유",
+					matchedTodos: [],
+					expiresAt: new Date(),
+				},
+			];
+			(db.recurringSuggestion.createMany as jest.Mock).mockResolvedValue({
+				count: 2,
+			});
+
+			// When: createMany를 호출하면
+			const result = await repository.createMany(data as never);
+
+			// Then: Prisma createMany에 올바른 데이터를 전달해야 한다
+			expect(db.recurringSuggestion.createMany).toHaveBeenCalledWith({
+				data,
+			});
+			expect(result).toEqual({ count: 2 });
+		});
+
+		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
+			// Given: 트랜잭션 클라이언트
+			const mockTx = {
+				recurringSuggestion: {
+					createMany: jest.fn().mockResolvedValue({ count: 1 }),
+				},
+			};
+
+			// When: tx를 전달하여 호출하면
+			await repository.createMany(
+				[{ userId: "user-123", title: "운동" }] as never,
+				mockTx as never,
+			);
+
+			// Then: tx를 사용해야 한다
+			expect(mockTx.recurringSuggestion.createMany).toHaveBeenCalled();
+			expect(db.recurringSuggestion.createMany).not.toHaveBeenCalled();
+		});
+	});
+
+	// =========================================================================
 	// deletePending
 	// =========================================================================
 
