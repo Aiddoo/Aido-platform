@@ -14,6 +14,10 @@ export const CacheKeys = {
 		SUBSCRIPTION: 10 * 60_000,
 		/** 친구 관계 - 1분 (실시간성 중요) */
 		MUTUAL_FRIEND: 60_000,
+		/** 카테고리 목록 - 5분 (변경 빈도 낮음) */
+		TODO_CATEGORIES: 5 * 60_000,
+		/** 친구 ID 목록 - 5분 (알림 발송용, 변경 빈도 낮음) */
+		MUTUAL_FRIEND_IDS: 5 * 60_000,
 	},
 
 	// === 키 빌더 ===
@@ -42,6 +46,18 @@ export const CacheKeys = {
 	 */
 	mutualFriend: (userId: string, targetUserId: string) =>
 		`friends:mutual:${userId}:${targetUserId}`,
+
+	/**
+	 * 카테고리 목록 캐시 키
+	 * @example category:list:user_123
+	 */
+	todoCategories: (userId: string) => `category:list:${userId}`,
+
+	/**
+	 * 친구 ID 목록 캐시 키
+	 * @example friends:ids:user_123
+	 */
+	mutualFriendIds: (userId: string) => `friends:ids:${userId}`,
 
 	// === 패턴 빌더 (와일드카드) ===
 

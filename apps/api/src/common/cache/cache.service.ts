@@ -5,6 +5,7 @@ import {
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/enums";
+import type { TodoCategoryWithCount } from "@/modules/todo-category/types/todo-category.types";
 import { CacheKeys } from "./constants/cache-keys";
 import {
 	CACHE_SERVICE,
@@ -275,6 +276,69 @@ export class CacheService {
 			CacheKeys.mutualFriend(userId, targetUserId),
 			factory,
 			CacheKeys.TTL.MUTUAL_FRIEND,
+		);
+	}
+
+	// === Todo Category Methods ===
+
+	async getTodoCategories(
+		userId: string,
+	): Promise<TodoCategoryWithCount[] | undefined> {
+		return this.get<TodoCategoryWithCount[]>(CacheKeys.todoCategories(userId));
+	}
+
+	async setTodoCategories(
+		userId: string,
+		categories: TodoCategoryWithCount[],
+	): Promise<void> {
+		return this.set(
+			CacheKeys.todoCategories(userId),
+			categories,
+			CacheKeys.TTL.TODO_CATEGORIES,
+		);
+	}
+
+	async invalidateTodoCategories(userId: string): Promise<void> {
+		return this.del(CacheKeys.todoCategories(userId));
+	}
+
+	async wrapTodoCategories(
+		userId: string,
+		factory: () => Promise<TodoCategoryWithCount[]>,
+	): Promise<TodoCategoryWithCount[]> {
+		return this.wrap(
+			CacheKeys.todoCategories(userId),
+			factory,
+			CacheKeys.TTL.TODO_CATEGORIES,
+		);
+	}
+
+	// === Mutual Friend IDs Methods ===
+
+	async getMutualFriendIdsList(userId: string): Promise<string[] | undefined> {
+		return this.get<string[]>(CacheKeys.mutualFriendIds(userId));
+	}
+
+	async setMutualFriendIdsList(userId: string, ids: string[]): Promise<void> {
+		return this.set(
+			CacheKeys.mutualFriendIds(userId),
+			ids,
+			CacheKeys.TTL.MUTUAL_FRIEND_IDS,
+		);
+	}
+
+	async invalidateMutualFriendIds(userId: string): Promise<void> {
+		return this.del(CacheKeys.mutualFriendIds(userId));
+	}
+
+	async wrapMutualFriendIds(
+		userId: string,
+		factory: () => Promise<string[]>,
+	): Promise<string[]> {
+		return this.wrap(
+			CacheKeys.mutualFriendIds(userId),
+			factory,
+			CacheKeys.TTL.MUTUAL_FRIEND_IDS,
 		);
 	}
 }

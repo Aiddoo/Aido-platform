@@ -14,6 +14,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoCategoryBuilder } from "@test/builders";
 
+import { CacheService } from "@/common/cache/cache.service";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
@@ -34,6 +35,7 @@ describe("TodoCategoryService", () => {
 	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
 	let entitlementService: Mocked<EntitlementService>;
 	let database: Mocked<DatabaseService>;
+	let cacheService: Mocked<CacheService>;
 
 	const userId = "user-123";
 
@@ -61,6 +63,13 @@ describe("TodoCategoryService", () => {
 		// 실제로는 서비스가 tx를 repository에 전달하고, mock이 tx 없이도 동작하도록 설정됨
 		database.$transaction.mockImplementation(async (callback) =>
 			callback(todoCategoryRepo as unknown as TransactionClient),
+		);
+
+		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+
+		// wrapTodoCategories는 factory를 통과시키도록 설정
+		cacheService.wrapTodoCategories.mockImplementation((_userId, factory) =>
+			factory(),
 		);
 
 		// 리소스 제한 기본 mock (Premium 유저 = 무제한)

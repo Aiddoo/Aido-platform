@@ -203,7 +203,11 @@ export class FollowService {
 			} satisfies FollowMutualEventPayload);
 
 			// 캐시 무효화 (친구 관계 변경)
-			await this.cacheService.invalidateMutualFriend(userId, targetUserId);
+			await Promise.all([
+				this.cacheService.invalidateMutualFriend(userId, targetUserId),
+				this.cacheService.invalidateMutualFriendIds(userId),
+				this.cacheService.invalidateMutualFriendIds(targetUserId),
+			]);
 
 			return { follow, autoAccepted: true };
 		}
@@ -319,7 +323,11 @@ export class FollowService {
 		);
 
 		// 캐시 무효화 (친구 관계 변경)
-		await this.cacheService.invalidateMutualFriend(userId, requesterUserId);
+		await Promise.all([
+			this.cacheService.invalidateMutualFriend(userId, requesterUserId),
+			this.cacheService.invalidateMutualFriendIds(userId),
+			this.cacheService.invalidateMutualFriendIds(requesterUserId),
+		]);
 
 		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
 		const [userName, requesterName] = await Promise.all([
@@ -405,7 +413,11 @@ export class FollowService {
 		});
 
 		// 캐시 무효화 (친구 관계 변경)
-		await this.cacheService.invalidateMutualFriend(userId, targetUserId);
+		await Promise.all([
+			this.cacheService.invalidateMutualFriend(userId, targetUserId),
+			this.cacheService.invalidateMutualFriendIds(userId),
+			this.cacheService.invalidateMutualFriendIds(targetUserId),
+		]);
 
 		this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}
@@ -572,9 +584,11 @@ export class FollowService {
 	}
 
 	/**
-	 * 맞팔 친구 ID 목록 조회 (알림 발송용)
+	 * 맞팔 친구 ID 목록 조회 (알림 발송용, 캐시 적용)
 	 */
 	async getMutualFriendIds(userId: string): Promise<string[]> {
-		return this.followRepository.getMutualFriendIds(userId);
+		return this.cacheService.wrapMutualFriendIds(userId, () =>
+			this.followRepository.getMutualFriendIds(userId),
+		);
 	}
 }
