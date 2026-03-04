@@ -51,6 +51,7 @@ WORKDIR /app/apps/api
 COPY apps/api/prisma ./prisma
 COPY apps/api/prisma.config.ts ./
 COPY apps/api/package.json ./
+COPY pnpm-workspace.yaml /app/
 
 # prisma CLI만 설치
 RUN pnpm add prisma@latest
