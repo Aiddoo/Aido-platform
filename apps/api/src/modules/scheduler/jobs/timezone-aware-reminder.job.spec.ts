@@ -3,8 +3,6 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
-import type { ILockProvider } from "@/common/lock";
-import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../notification/notification.service";
@@ -108,26 +106,16 @@ describe("TimezoneAwareReminderJob", () => {
 	let job: TimezoneAwareReminderJob;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
-	let lockProvider: Mocked<ILockProvider>;
 
 	beforeEach(async () => {
-		const mockLockProvider: ILockProvider = {
-			acquire: jest.fn(),
-			isLocked: jest.fn(),
-		};
-
-		const { unit, unitRef } = await TestBed.solitary(TimezoneAwareReminderJob)
-			.mock(LOCK_PROVIDER)
-			.impl(() => mockLockProvider)
-			.compile();
+		const { unit, unitRef } = await TestBed.solitary(
+			TimezoneAwareReminderJob,
+		).compile();
 
 		job = unit;
 		databaseService = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
-		lockProvider = unitRef.get(LOCK_PROVIDER);
 
-		// 기본: Lock 획득 성공 (release 함수 반환)
-		lockProvider.acquire.mockResolvedValue(jest.fn());
 		// 기본: 중복 알림 없음
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 	});
@@ -1240,76 +1228,6 @@ describe("TimezoneAwareReminderJob", () => {
 					where?: Record<string, unknown>;
 				};
 				expect(morningCall?.where).not.toHaveProperty("pushTokens");
-
-				jest.useRealTimers();
-			});
-		});
-
-		// =====================================================================
-		// Lock 기반 겹침 방지
-		// =====================================================================
-
-		describe("Lock 기반 겹침 방지", () => {
-			it("Lock 획득 실패 시 작업을 스킵한다", async () => {
-				// Given - Lock 획득 실패 (다른 인스턴스가 이미 점유)
-				const fakeNow = new Date("2024-01-15T23:00:00Z");
-				jest.useFakeTimers();
-				jest.setSystemTime(fakeNow);
-
-				lockProvider.acquire.mockResolvedValue(null);
-
-				// When
-				await job.handleHourlySweep();
-
-				// Then - DB 조회 자체가 실행되지 않음
-				expect(databaseService.userPreference.findMany).not.toHaveBeenCalled();
-				expect(databaseService.user.findMany).not.toHaveBeenCalled();
-				expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
-			});
-
-			it("작업 완료 후 Lock이 해제된다", async () => {
-				// Given - Lock 획득 성공
-				const fakeNow = new Date("2024-01-15T23:00:00Z");
-				jest.useFakeTimers();
-				jest.setSystemTime(fakeNow);
-
-				const mockRelease = jest.fn().mockResolvedValue(undefined);
-				lockProvider.acquire.mockResolvedValue(mockRelease);
-
-				databaseService.userPreference.findMany.mockResolvedValue([
-					createMockTimezoneRecord("Asia/Seoul"),
-				] as never);
-
-				databaseService.user.findMany.mockResolvedValue([] as never);
-
-				// When
-				await job.handleHourlySweep();
-
-				// Then - release 함수가 호출됨
-				expect(mockRelease).toHaveBeenCalledTimes(1);
-
-				jest.useRealTimers();
-			});
-
-			it("작업 실패 시에도 Lock이 해제된다", async () => {
-				// Given - Lock 획득 성공, 하지만 DB 에러 발생
-				const fakeNow = new Date("2024-01-15T23:00:00Z");
-				jest.useFakeTimers();
-				jest.setSystemTime(fakeNow);
-
-				const mockRelease = jest.fn().mockResolvedValue(undefined);
-				lockProvider.acquire.mockResolvedValue(mockRelease);
-
-				const error = new Error("Database connection failed");
-				databaseService.userPreference.findMany.mockRejectedValue(error);
-
-				// When - 에러가 발생해도 정상 종료
-				await expect(job.handleHourlySweep()).resolves.not.toThrow();
-
-				// Then - release 함수가 반드시 호출됨 (finally 블록)
-				expect(mockRelease).toHaveBeenCalledTimes(1);
 
 				jest.useRealTimers();
 			});

@@ -1,11 +1,10 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { InjectQueue } from "@nestjs/bullmq";
-import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
-import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
 import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
 import { NotificationEvents } from "@/modules/notification/events/notification.events";
@@ -33,7 +32,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 		@InjectQueue(TIMEZONE_REMINDER_QUEUE)
 		private readonly queue: Queue<TimezoneReminderJobData>,
 		private readonly processor: TimezoneReminderProcessor,
@@ -61,16 +59,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	 */
 	async handleHourlySweep(): Promise<void> {
 		this.#logger.log("Starting every-minute sweep reminder job...");
-
-		const release = await this.lockProvider.acquire(
-			"timezone-reminder",
-			55 * 1000,
-		);
-
-		if (!release) {
-			this.#logger.warn("Skipping sweep — another instance holds the lock");
-			return;
-		}
 
 		try {
 			const now = new Date();
@@ -107,8 +95,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 				`Sweep reminder job failed: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
-		} finally {
-			await release();
 		}
 	}
 
