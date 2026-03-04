@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/errors';
 import type { CreateTodoInput } from '@aido/validators';
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
@@ -27,6 +28,13 @@ export const createTodoMutationOptions = () => {
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
+        toast.error(
+          '이 카테고리의 할 일이 최대 한도에 도달했어요. 완료하거나 다른 카테고리로 이동해 주세요.',
+        );
+        return;
+      }
 
       if (isTodoError(error) || isApiError(error)) {
         toast.error(error.message);
