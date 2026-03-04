@@ -18,8 +18,8 @@ import { parseTtl } from "../interfaces/cache.interface";
  * - set()         → SET + PX (밀리초 TTL)
  * - del()         → DEL
  * - delByPattern() → SCAN + DEL (cursor 기반)
- * - reset()       → FLUSHDB (주의: 전용 DB 사용 시만)
- * - getStats()    → DBSIZE + 내부 카운터
+ * - reset()       → SCAN + DEL (cache: prefix 기반)
+ * - getStats()    → 내부 카운터 (keys는 -1 반환)
  * - wrap()        → GET → miss면 factory() → SET
  * - mget()        → MGET + JSON.parse
  * - mset()        → Pipeline SET
