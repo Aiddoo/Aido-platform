@@ -20,8 +20,8 @@ export const CacheKeys = {
 		MUTUAL_FRIEND_IDS: 5 * 60_000,
 		/** 푸시 토큰 - 5분 (토큰 변경 빈도 낮음) */
 		PUSH_TOKENS: 5 * 60_000,
-		/** 사용자 설정 - 5분 (설정 변경 빈도 낮음) */
-		USER_PREFERENCE: 5 * 60_000,
+		/** 사용자 설정 - 10분 (설정 변경 빈도 낮음) */
+		USER_PREFERENCE: 10 * 60_000,
 		/** 친구 수 - 5분 (친구 변경 빈도 낮음) */
 		FRIEND_COUNT: 5 * 60_000,
 	},
