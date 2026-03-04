@@ -9,6 +9,7 @@
  * - PinoLogger 억제
  */
 
+import { getQueueToken } from "@nestjs/bullmq";
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
 import RedisMock from "ioredis-mock";
@@ -18,22 +19,78 @@ import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
 import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { DatabaseService } from "@/database";
+import { DailySignupSummaryJob } from "@/modules/admin-notification/jobs/daily-signup-summary.job";
+import {
+	ADMIN_NOTIFICATION_QUEUE,
+	AdminNotificationProcessor,
+} from "@/modules/admin-notification/processors/admin-notification.processor";
 import {
 	ADMIN_NOTIFIER,
 	PAYMENT_NOTIFIER,
 } from "@/modules/admin-notification/providers/admin-notifier.interface";
 import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
+import { ReportGenerationJob } from "@/modules/ai-report/jobs/report-generation.job";
+import {
+	AI_REPORT_QUEUE,
+	ReportGenerationProcessor,
+} from "@/modules/ai-report/processors/report-generation.processor";
+import { SuggestionAnalysisJob } from "@/modules/ai-suggestion/jobs/suggestion-analysis.job";
+import {
+	AI_SUGGESTION_QUEUE,
+	SuggestionAnalysisProcessor,
+} from "@/modules/ai-suggestion/processors/suggestion-analysis.processor";
+import { AccountPurgeJob } from "@/modules/auth/jobs/account-purge.job";
+import {
+	ACCOUNT_PURGE_QUEUE,
+	AccountPurgeProcessor,
+} from "@/modules/auth/processors/account-purge.processor";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { EmailService } from "@/modules/email/email.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
+import { TimezoneAwareReminderJob } from "@/modules/scheduler/jobs/timezone-aware-reminder.job";
+import {
+	TIMEZONE_REMINDER_QUEUE,
+	TimezoneReminderProcessor,
+} from "@/modules/scheduler/processors/timezone-reminder.processor";
+import { TODO_REMINDER_QUEUE } from "@/modules/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
+import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
+import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
 import { FakeLogger } from "../../mocks/fake-logger.service";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service";
 import { FakePushProvider } from "../../mocks/fake-push.provider";
 import { TestDatabase } from "../../setup/test-database";
 import { E2eHelpers } from "./e2e-helpers";
+
+/* ── BullMQ 격리 대상 ─────────────────────────────────── */
+
+const BULL_QUEUES = [
+	ADMIN_NOTIFICATION_QUEUE,
+	TIMEZONE_REMINDER_QUEUE,
+	TODO_REMINDER_QUEUE,
+	AI_SUGGESTION_QUEUE,
+	AI_REPORT_QUEUE,
+	ACCOUNT_PURGE_QUEUE,
+];
+
+const BULL_PROCESSORS = [
+	AdminNotificationProcessor,
+	TimezoneReminderProcessor,
+	TodoReminderProcessor,
+	SuggestionAnalysisProcessor,
+	ReportGenerationProcessor,
+	AccountPurgeProcessor,
+];
+
+const BULL_JOBS = [
+	DailySignupSummaryJob,
+	TimezoneAwareReminderJob,
+	SuggestionAnalysisJob,
+	ReportGenerationJob,
+	AccountPurgeJob,
+];
 
 export interface E2eTestContext {
 	app: INestApplication<App>;
@@ -87,6 +144,23 @@ export async function createE2eApp(
 		.useValue(fakeAiProvider)
 		.overrideProvider(PinoLogger)
 		.useClass(FakeLogger);
+
+	// BullMQ 격리: Queue 토큰 → mock queue
+	for (const queueName of BULL_QUEUES) {
+		builder = builder
+			.overrideProvider(getQueueToken(queueName))
+			.useValue(createMockBullQueue());
+	}
+
+	// BullMQ 격리: Processor → no-op (Worker 생성 차단)
+	for (const processor of BULL_PROCESSORS) {
+		builder = builder.overrideProvider(processor).useValue({});
+	}
+
+	// BullMQ 격리: Job/Scheduler → no-op (onModuleInit 차단)
+	for (const job of BULL_JOBS) {
+		builder = builder.overrideProvider(job).useValue({});
+	}
 
 	if (options?.customizeBuilder) {
 		builder = options.customizeBuilder(builder);

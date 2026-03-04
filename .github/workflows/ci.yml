@@ -86,6 +86,8 @@ jobs:
           JWT_REFRESH_EXPIRES_IN: 7d
           EMAIL_FROM: noreply@test.aido.app
           EMAIL_FROM_NAME: Aido Test
+          TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
+          NODE_ENV: test
         run: pnpm turbo run test:e2e
 
   build:

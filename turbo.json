@@ -27,7 +27,9 @@
         "JWT_REFRESH_EXPIRES_IN",
         "RESEND_API_KEY",
         "EMAIL_FROM",
-        "EMAIL_FROM_NAME"
+        "EMAIL_FROM_NAME",
+        "TOKEN_ENCRYPTION_KEY",
+        "NODE_ENV"
       ]
     },
     "test:cov": {
