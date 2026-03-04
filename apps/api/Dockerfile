@@ -50,11 +50,9 @@ WORKDIR /app/apps/api
 # Prisma 관련 파일만 복사
 COPY apps/api/prisma ./prisma
 COPY apps/api/prisma.config.ts ./
-COPY apps/api/package.json ./
-COPY pnpm-workspace.yaml /app/
 
-# prisma CLI만 설치
-RUN pnpm add prisma@latest
+# 빈 프로젝트에 prisma CLI만 설치 (workspace/catalog 의존 회피)
+RUN pnpm init && pnpm add prisma@latest
 
 # RDS CA 인증서
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
