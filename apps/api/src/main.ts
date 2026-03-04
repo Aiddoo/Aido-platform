@@ -255,10 +255,12 @@ async function bootstrap() {
 	logger.log(`📚 Admin API Docs: http://localhost:${port}/api/admin/docs`);
 	logger.log(`💊 Health Check: http://localhost:${port}/health`);
 
-	// Graceful shutdown 시 Sentry 버퍼 flush
+	// Graceful shutdown: NestJS 모듈 종료 (BullMQ Worker 포함) → Sentry flush
 	const shutdown = async (signal: string) => {
-		logger.log(`Received ${signal}, flushing Sentry events...`);
+		logger.log(`Received ${signal}, shutting down gracefully...`);
+		await app.close();
 		await Sentry.close(2000);
+		process.exit(0);
 	};
 	process.on("SIGTERM", () => shutdown("SIGTERM"));
 	process.on("SIGINT", () => shutdown("SIGINT"));

@@ -237,7 +237,7 @@ describe("ReportGenerationJob", () => {
 				expect.objectContaining({
 					attempts: 3,
 					backoff: { type: "exponential", delay: 5_000 },
-					removeOnComplete: { age: 604_800 },
+					removeOnComplete: { age: 604_800, count: 10_000 },
 					removeOnFail: 100,
 				}),
 			);

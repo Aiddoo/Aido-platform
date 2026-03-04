@@ -11,6 +11,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
+import { CacheService } from "@/common/cache/cache.service";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { UserConsent, UserPreference } from "@/generated/prisma/client";
@@ -24,6 +25,7 @@ describe("UserSettingsService", () => {
 	let userPreferenceRepo: Mocked<UserPreferenceRepository>;
 	let userConsentRepo: Mocked<UserConsentRepository>;
 	let entitlementService: Mocked<EntitlementService>;
+	let cacheService: Mocked<CacheService>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -40,9 +42,15 @@ describe("UserSettingsService", () => {
 		entitlementService = unitRef.get(
 			EntitlementService,
 		) as unknown as Mocked<EntitlementService>;
+		cacheService = unitRef.get(CacheService);
 
 		// 기본: 프리미엄 접근 허용 (기존 테스트 호환)
 		entitlementService.hasPremiumAccess.mockResolvedValue(true);
+
+		// 캐시 기본 동작: pass-through (캐시 미스 시뮬레이션)
+		cacheService.wrapUserPreference.mockImplementation((_userId, factory) =>
+			factory(),
+		);
 	});
 
 	// ============================================
@@ -222,6 +230,9 @@ describe("UserSettingsService", () => {
 				pushEnabled: true,
 				nightPushEnabled: true,
 			});
+			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
+				userId,
+			);
 		});
 
 		it("일부 설정만 업데이트할 수 있어야 한다", async () => {

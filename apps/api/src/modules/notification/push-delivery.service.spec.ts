@@ -7,6 +7,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { PushTokenBuilder, UserPreferenceBuilder } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { PushToken } from "@/generated/prisma/client";
 import { Prisma } from "@/generated/prisma/client";
@@ -38,6 +39,7 @@ describe("PushDeliveryService", () => {
 	let pushProvider: Mocked<PushProvider>;
 	let userPreferenceRepository: Mocked<UserPreferenceRepository>;
 	let userConsentRepository: Mocked<UserConsentRepository>;
+	let cacheService: Mocked<CacheService>;
 
 	beforeEach(async () => {
 		PushTokenBuilder.resetIdCounter();
@@ -72,6 +74,15 @@ describe("PushDeliveryService", () => {
 		pushProvider = unitRef.get(PUSH_PROVIDER);
 		userPreferenceRepository = unitRef.get(UserPreferenceRepository);
 		userConsentRepository = unitRef.get(UserConsentRepository);
+		cacheService = unitRef.get(CacheService);
+
+		// 캐시 기본 동작: pass-through (캐시 미스 시뮬레이션)
+		cacheService.wrapPushTokens.mockImplementation((_userId, factory) =>
+			factory(),
+		);
+		cacheService.mget.mockImplementation(async (keys: string[]) =>
+			keys.map(() => undefined),
+		);
 
 		// 기본 mock 설정
 		mockedIsNightTime.mockReturnValue(false);
@@ -112,6 +123,10 @@ describe("PushDeliveryService", () => {
 				"user-1",
 				"Asia/Seoul",
 			);
+			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
+			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
+				"user-1",
+			);
 			expect(result).toEqual(expectedToken);
 		});
 
@@ -131,6 +146,8 @@ describe("PushDeliveryService", () => {
 
 			// Then
 			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
+			expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
 		});
 
 		it("유효하지 않은 토큰이면 BusinessException을 던진다", async () => {
@@ -166,6 +183,7 @@ describe("PushDeliveryService", () => {
 				"user-1",
 				"device-1",
 			);
+			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		});
 
 		it("존재하지 않는 토큰(P2025)이면 조용히 무시한다", async () => {
@@ -203,6 +221,7 @@ describe("PushDeliveryService", () => {
 			expect(
 				notificationRepository.deleteAllPushTokensByUser,
 			).toHaveBeenCalledWith("user-1");
+			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		});
 	});
 
@@ -432,6 +451,7 @@ describe("PushDeliveryService", () => {
 			expect(
 				notificationRepository.deactivateInvalidTokens,
 			).toHaveBeenCalledWith([token.token]);
+			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		});
 	});
 

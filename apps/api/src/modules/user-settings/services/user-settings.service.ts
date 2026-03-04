@@ -8,6 +8,7 @@ import {
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CacheService } from "@/common/cache/cache.service";
 
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
@@ -27,10 +28,26 @@ export class UserSettingsService {
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly entitlementService: EntitlementService,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly cacheService: CacheService,
 	) {}
 
 	async getPreference(userId: string): Promise<PreferenceResponse> {
-		const preference = await this.userPreferenceRepository.findByUserId(userId);
+		const preference = await this.cacheService.wrapUserPreference(
+			userId,
+			async () => {
+				const raw = await this.userPreferenceRepository.findByUserId(userId);
+				if (!raw) return null;
+				return {
+					pushEnabled: raw.pushEnabled,
+					nightPushEnabled: raw.nightPushEnabled,
+					timezone: raw.timezone,
+					morningReminderHour: raw.morningReminderHour,
+					morningReminderMinute: raw.morningReminderMinute,
+					eveningReminderHour: raw.eveningReminderHour,
+					eveningReminderMinute: raw.eveningReminderMinute,
+				};
+			},
+		);
 
 		// 설정이 없으면 기본값 반환 (기존 사용자 호환성)
 		if (!preference) {
@@ -111,6 +128,7 @@ export class UserSettingsService {
 			eveningReminderHour: input.eveningReminderHour,
 			eveningReminderMinute: input.eveningReminderMinute,
 		});
+		await this.cacheService.invalidateUserPreference(userId);
 
 		this.#logger.log(
 			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,

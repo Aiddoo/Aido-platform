@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
@@ -37,6 +37,11 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 		private readonly notificationService: NotificationService,
 	) {
 		super();
+	}
+
+	@OnWorkerEvent("stalled")
+	onStalled(jobId: string) {
+		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
 	async process(job: Job<AiSuggestionJobData>): Promise<void> {

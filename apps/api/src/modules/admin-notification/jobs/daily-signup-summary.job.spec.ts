@@ -82,7 +82,7 @@ describe("DailySignupSummaryJob", () => {
 				}),
 			}),
 			expect.objectContaining({
-				jobId: "signup-summary:2026-02-10",
+				jobId: "signup-summary_2026-02-10",
 			}),
 		);
 

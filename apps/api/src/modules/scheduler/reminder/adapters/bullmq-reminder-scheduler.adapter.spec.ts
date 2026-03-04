@@ -71,7 +71,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 					stageLabel: "60min",
 				}),
 				expect.objectContaining({
-					jobId: "reminder:1:60min",
+					jobId: "reminder_1_60min",
 					removeOnComplete: true,
 				}),
 			);
@@ -80,7 +80,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				"send-reminder",
 				expect.objectContaining({ stageLabel: "10min" }),
-				expect.objectContaining({ jobId: "reminder:1:10min" }),
+				expect.objectContaining({ jobId: "reminder_1_10min" }),
 			);
 		});
 
@@ -97,7 +97,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			expect(queue.add).toHaveBeenCalledWith(
 				"send-reminder",
 				expect.objectContaining({ stageLabel: "10min" }),
-				expect.objectContaining({ jobId: "reminder:1:10min" }),
+				expect.objectContaining({ jobId: "reminder_1_10min" }),
 			);
 		});
 
@@ -118,7 +118,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 					todoId: 1,
 				}),
 				expect.objectContaining({
-					jobId: `reminder:1:${REMINDER_IMMEDIATE_LABEL}`,
+					jobId: `reminder_1_${REMINDER_IMMEDIATE_LABEL}`,
 					delay: 0,
 				}),
 			);
@@ -164,7 +164,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 
 			// Then — 60분 단계의 delay 확인
 			const firstCall = queue.add.mock.calls.find(
-				(call) => (call[2] as { jobId: string }).jobId === "reminder:1:60min",
+				(call) => (call[2] as { jobId: string }).jobId === "reminder_1_60min",
 			);
 			expect(firstCall).toBeDefined();
 			const options = firstCall?.[2] as { delay: number };

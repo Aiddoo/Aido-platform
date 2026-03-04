@@ -145,10 +145,10 @@ export class ReportGenerationJob implements OnModuleInit {
 						reportType: type,
 					} satisfies AiReportJobData,
 					opts: {
-						jobId: `report:${type}:${user.id}:${periodId}`,
+						jobId: `report_${type}_${user.id}_${periodId}`,
 						attempts: 3,
 						backoff: { type: "exponential" as const, delay: 5_000 },
-						removeOnComplete: { age: 604_800 },
+						removeOnComplete: { age: 604_800, count: 10_000 },
 						removeOnFail: 100,
 					},
 				}));

@@ -111,7 +111,7 @@ export class DailySignupSummaryJob {
 				},
 				{
 					...ADMIN_NOTIFICATION_JOB_OPTS,
-					jobId: `signup-summary:${reportDateStr}`,
+					jobId: `signup-summary_${reportDateStr}`,
 				},
 			);
 
