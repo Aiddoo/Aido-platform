@@ -121,6 +121,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                     returnKeyType="next"
                     isInvalid={!!errors.password}
                     errorMessage={errors.password?.message}
+                    renderErrorMessage={false}
                     onSubmitEditing={() => {
                       if (isPasswordValid) handleNext();
                     }}
