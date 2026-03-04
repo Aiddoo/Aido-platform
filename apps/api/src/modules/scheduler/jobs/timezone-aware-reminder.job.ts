@@ -1,5 +1,5 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { Cron } from "@nestjs/schedule";
 import dayjs from "dayjs";
@@ -20,7 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
  * 기존 MorningReminderJob + EveningReminderJob을 통합 대체합니다.
  */
 @Injectable()
-export class TimezoneAwareReminderJob {
+export class TimezoneAwareReminderJob implements OnModuleInit {
 	readonly #logger = new Logger(TimezoneAwareReminderJob.name);
 
 	constructor(
@@ -28,6 +28,24 @@ export class TimezoneAwareReminderJob {
 		private readonly notificationService: NotificationService,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
+
+	/**
+	 * 서버 시작 시 즉시 1회 sweep 실행
+	 *
+	 * 서버 다운 중 놓친 아침/저녁 리마인더를 보완합니다.
+	 * notificationDate 기반 dedup으로 중복 발송이 방지됩니다.
+	 */
+	async onModuleInit(): Promise<void> {
+		try {
+			this.#logger.log("Running timezone reminder catch-up on startup...");
+			await this.handleHourlySweep();
+		} catch (error) {
+			this.#logger.error(
+				`Timezone reminder catch-up failed: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+	}
 
 	/**
 	 * 매분 실행 — Every-Minute Sweep 패턴

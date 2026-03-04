@@ -1,33 +1,31 @@
+import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Queue } from "bullmq";
 
 import { DatabaseService } from "@/database/database.service";
 
-import { ADMIN_NOTIFIER } from "../providers/admin-notifier.interface";
+import { ADMIN_NOTIFICATION_QUEUE } from "../processors/admin-notification.processor";
 import { DailySignupSummaryJob } from "./daily-signup-summary.job";
 
 describe("DailySignupSummaryJob", () => {
 	let job: DailySignupSummaryJob;
 	let database: Mocked<DatabaseService>;
-	let notifier: { send: jest.Mock };
+	let mockQueue: Mocked<Queue>;
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
 
-		const mockNotifier = {
-			name: "fake",
-			send: jest.fn().mockResolvedValue({ success: true }),
-			isConfigured: jest.fn().mockReturnValue(true),
-		};
-
 		const { unit, unitRef } = await TestBed.solitary(DailySignupSummaryJob)
-			.mock(ADMIN_NOTIFIER)
-			.impl(() => mockNotifier)
+			.mock(getQueueToken(ADMIN_NOTIFICATION_QUEUE))
+			.impl(() => ({
+				add: jest.fn().mockResolvedValue(undefined),
+			}))
 			.compile();
 
 		job = unit;
 		database = unitRef.get(DatabaseService);
-		notifier = mockNotifier;
+		mockQueue = unitRef.get(getQueueToken(ADMIN_NOTIFICATION_QUEUE));
 
 		// database.account.groupBy, database.user.count mock 설정
 		Object.defineProperty(database, "account", {
@@ -46,7 +44,12 @@ describe("DailySignupSummaryJob", () => {
 		jest.useRealTimers();
 	});
 
-	it("일일 가입 요약을 발송한다", async () => {
+	/** queue.add 호출의 job data에서 notification 추출 */
+	function getNotification() {
+		return mockQueue.add.mock.calls[0]?.[1]?.notification;
+	}
+
+	it("일일 가입 요약을 큐에 등록한다", async () => {
 		// Given
 		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
 		(database.account.groupBy as jest.Mock).mockResolvedValue([
@@ -59,20 +62,27 @@ describe("DailySignupSummaryJob", () => {
 		await job.handleDailySummary();
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
+		expect(mockQueue.add).toHaveBeenCalledWith(
+			"send-notification",
 			expect.objectContaining({
-				title: "일일 가입 리포트 | 2026-02-10 (KST)",
-				body: "전일 신규 가입은 5명입니다.\n\n가입 채널별\n- 이메일: 3명\n- Google: 2명",
-				fields: expect.arrayContaining([
-					expect.objectContaining({
-						name: "전일 신규 가입",
-						value: "5명",
-					}),
-					expect.objectContaining({
-						name: "집계 기준",
-						value: "2026-02-10 00:00 ~ 23:59 (KST)",
-					}),
-				]),
+				channel: "admin",
+				notification: expect.objectContaining({
+					title: "일일 가입 리포트 | 2026-02-10 (KST)",
+					body: "전일 신규 가입은 5명입니다.\n\n가입 채널별\n- 이메일: 3명\n- Google: 2명",
+					fields: expect.arrayContaining([
+						expect.objectContaining({
+							name: "전일 신규 가입",
+							value: "5명",
+						}),
+						expect.objectContaining({
+							name: "집계 기준",
+							value: "2026-02-10 00:00 ~ 23:59 (KST)",
+						}),
+					]),
+				}),
+			}),
+			expect.objectContaining({
+				jobId: "signup-summary:2026-02-10",
 			}),
 		);
 
@@ -98,19 +108,35 @@ describe("DailySignupSummaryJob", () => {
 		await job.handleDailySummary();
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
+		const notification = getNotification();
+		expect(notification?.body).toBe("전일 신규 가입은 0명입니다.");
+		expect(notification?.fields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "전일 신규 가입",
+					value: "0명",
+				}),
+			]),
+		);
+	});
+
+	it("잡에 retry 옵션이 설정되어야 한다", async () => {
+		// Given
+		jest.setSystemTime(new Date("2026-02-11T00:00:00+09:00"));
+		(database.account.groupBy as jest.Mock).mockResolvedValue([]);
+		(database.user.count as jest.Mock).mockResolvedValue(100);
+
+		// When
+		await job.handleDailySummary();
+
+		// Then
+		const opts = mockQueue.add.mock.calls[0]?.[2];
+		expect(opts).toEqual(
 			expect.objectContaining({
-				body: "전일 신규 가입은 0명입니다.",
-				fields: expect.arrayContaining([
-					expect.objectContaining({
-						name: "전일 신규 가입",
-						value: "0명",
-					}),
-					expect.objectContaining({
-						name: "집계 기준",
-						value: "2026-02-10 00:00 ~ 23:59 (KST)",
-					}),
-				]),
+				attempts: 3,
+				backoff: { type: "exponential", delay: 5_000 },
+				removeOnComplete: true,
+				removeOnFail: 100,
 			}),
 		);
 	});
@@ -125,11 +151,11 @@ describe("DailySignupSummaryJob", () => {
 		await expect(job.handleDailySummary()).resolves.not.toThrow();
 	});
 
-	it("알림 발송 실패해도 예외가 전파되지 않는다", async () => {
+	it("큐 등록 실패해도 예외가 전파되지 않는다", async () => {
 		// Given
 		(database.account.groupBy as jest.Mock).mockResolvedValue([]);
 		(database.user.count as jest.Mock).mockResolvedValue(100);
-		notifier.send.mockRejectedValue(new Error("Webhook error"));
+		mockQueue.add.mockRejectedValue(new Error("Queue error"));
 
 		// When & Then
 		await expect(job.handleDailySummary()).resolves.not.toThrow();

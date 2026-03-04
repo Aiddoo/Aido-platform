@@ -1,11 +1,14 @@
 import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+import type { Queue } from "bullmq";
 
 import {
-	type AdminNotifier,
-	PAYMENT_NOTIFIER,
-} from "@/modules/admin-notification/providers/admin-notifier.interface";
+	ADMIN_NOTIFICATION_JOB_OPTS,
+	ADMIN_NOTIFICATION_QUEUE,
+	type AdminNotificationJobData,
+} from "@/modules/admin-notification/processors/admin-notification.processor";
 
 import {
 	REVENUECAT_EVENT_TO_INTERNAL,
@@ -148,8 +151,8 @@ export class SubscriptionNotificationListener {
 	readonly #logger = new Logger(SubscriptionNotificationListener.name);
 
 	constructor(
-		@Inject(PAYMENT_NOTIFIER)
-		private readonly adminNotifier: AdminNotifier,
+		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
+		private readonly queue: Queue<AdminNotificationJobData>,
 	) {}
 
 	@OnEvent("subscription.*")
@@ -219,20 +222,23 @@ export class SubscriptionNotificationListener {
 				inline: false,
 			});
 
-			const result = await this.adminNotifier.send({
-				title: `${meta.emoji} ${meta.title}`,
-				body: `**${payload.email}** 님의 구독 이벤트 (${payload.eventType})`,
-				color: meta.color,
-				fields,
-			});
+			await this.queue.add(
+				"send-notification",
+				{
+					channel: "payment",
+					notification: {
+						title: `${meta.emoji} ${meta.title}`,
+						body: `**${payload.email}** 님의 구독 이벤트 (${payload.eventType})`,
+						color: meta.color,
+						fields,
+					},
+				},
+				ADMIN_NOTIFICATION_JOB_OPTS,
+			);
 
-			if (result.success) {
-				this.#logger.log(
-					`Admin notification sent for subscription event: ${payload.eventType}, userId=${payload.userId}`,
-				);
-			} else {
-				this.#logger.warn(`Admin notification failed: ${result.error}`);
-			}
+			this.#logger.log(
+				`Admin notification enqueued for subscription event: ${payload.eventType}, userId=${payload.userId}`,
+			);
 		} catch (error) {
 			this.#logger.error(
 				`Failed to send admin notification: ${error}`,

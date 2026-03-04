@@ -1,3 +1,4 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
@@ -8,6 +9,10 @@ import { AiSuggestionController } from "./ai-suggestion.controller";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { AiSuggestionService } from "./ai-suggestion.service";
 import { SuggestionAnalysisJob } from "./jobs/suggestion-analysis.job";
+import {
+	AI_SUGGESTION_QUEUE,
+	SuggestionAnalysisProcessor,
+} from "./processors/suggestion-analysis.processor";
 
 /**
  * AI 반복 제안 모듈
@@ -25,12 +30,18 @@ import { SuggestionAnalysisJob } from "./jobs/suggestion-analysis.job";
  * - TodoModule: 제안 수락 시 반복 할 일 생성
  */
 @Module({
-	imports: [AiModule, NotificationModule, TodoModule],
+	imports: [
+		AiModule,
+		NotificationModule,
+		TodoModule,
+		BullModule.registerQueue({ name: AI_SUGGESTION_QUEUE }),
+	],
 	controllers: [AiSuggestionController],
 	providers: [
 		AiSuggestionRepository,
 		AiSuggestionService,
 		SuggestionAnalysisJob,
+		SuggestionAnalysisProcessor,
 	],
 	exports: [AiSuggestionService],
 })

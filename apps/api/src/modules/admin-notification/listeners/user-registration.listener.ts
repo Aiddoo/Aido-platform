@@ -1,14 +1,17 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+import type { Queue } from "bullmq";
 
 import {
 	AdminNotificationEvents,
 	type UserRegisteredEventPayload,
 } from "../events/admin-notification.events";
 import {
-	ADMIN_NOTIFIER,
-	type AdminNotifier,
-} from "../providers/admin-notifier.interface";
+	ADMIN_NOTIFICATION_JOB_OPTS,
+	ADMIN_NOTIFICATION_QUEUE,
+	type AdminNotificationJobData,
+} from "../processors/admin-notification.processor";
 
 type Provider = UserRegisteredEventPayload["provider"];
 
@@ -44,15 +47,15 @@ const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
  * 회원가입 이벤트 리스너
  *
  * AuthService/OAuthService에서 발행하는 user.registered 이벤트를 수신하여
- * 관리자 알림 채널(Discord 등)에 알림을 발송합니다.
+ * BullMQ 큐에 관리자 알림 잡을 등록합니다.
  */
 @Injectable()
 export class UserRegistrationListener {
 	readonly #logger = new Logger(UserRegistrationListener.name);
 
 	constructor(
-		@Inject(ADMIN_NOTIFIER)
-		private readonly adminNotifier: AdminNotifier,
+		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
+		private readonly queue: Queue<AdminNotificationJobData>,
 	) {}
 
 	@OnEvent(AdminNotificationEvents.USER_REGISTERED)
@@ -86,23 +89,26 @@ export class UserRegistrationListener {
 				},
 			);
 
-			const result = await this.adminNotifier.send({
-				title: "새로운 회원가입",
-				body: `**${payload.email}** 님이 가입했습니다.`,
-				color: 0x57f287,
-				fields,
-			});
+			await this.queue.add(
+				"send-notification",
+				{
+					channel: "admin",
+					notification: {
+						title: "새로운 회원가입",
+						body: `**${payload.email}** 님이 가입했습니다.`,
+						color: 0x57f287,
+						fields,
+					},
+				},
+				ADMIN_NOTIFICATION_JOB_OPTS,
+			);
 
-			if (result.success) {
-				this.#logger.log(
-					`Admin notification sent for new registration: ${payload.userId}`,
-				);
-			} else {
-				this.#logger.warn(`Admin notification failed: ${result.error}`);
-			}
+			this.#logger.log(
+				`Admin notification enqueued for new registration: ${payload.userId}`,
+			);
 		} catch (error) {
 			this.#logger.error(
-				`Failed to send admin notification: ${error}`,
+				`Failed to enqueue admin notification: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		}

@@ -42,19 +42,21 @@ RUN pnpm --filter @aido/api build
 RUN pnpm --filter @aido/api deploy --legacy --prod /app/production
 
 
-# Stage 4: migrate - Prisma 마이그레이션
-FROM base AS migrate
-
-COPY --from=deps /app ./
-COPY apps/api/prisma ./apps/api/prisma
-COPY apps/api/prisma.config.ts ./apps/api/
-
-# RDS CA 인증서 다운로드 (COPY 이후에 배치해야 덮어쓰기 방지)
-ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
-
+# Stage 4: migrate - Prisma 마이그레이션 (경량화)
+FROM node:22-alpine AS migrate
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 WORKDIR /app/apps/api
 
-# Prisma migrate도 SSL 인증서 검증
+# Prisma 관련 파일만 복사
+COPY apps/api/prisma ./prisma
+COPY apps/api/prisma.config.ts ./
+COPY apps/api/package.json ./
+
+# prisma CLI만 설치
+RUN pnpm add prisma@latest
+
+# RDS CA 인증서
+ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 
 RUN pnpm prisma generate
@@ -109,4 +111,4 @@ USER nestjs
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "--max-old-space-size=384", "dist/main.js"]

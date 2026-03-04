@@ -1,36 +1,58 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import type { Queue } from "bullmq";
 import { forEachBatch } from "@/common/database";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
-import { NotificationService } from "../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
-import { AiSuggestionService } from "../ai-suggestion.service";
+import {
+	AI_SUGGESTION_QUEUE,
+	type AiSuggestionJobData,
+} from "../processors/suggestion-analysis.processor";
 
 /** 잠금 TTL: 크론 간격보다 약간 짧게 설정 */
 const LOCK_TTL = 23 * 60 * 60 * 1000; // 23시간
 
-/** Gemini API rate limit 고려하여 동시 처리 수 제한 */
-const BATCH_SIZE = 5;
+/** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
+const ENQUEUE_BATCH_SIZE = 50;
 
 /**
- * AI 반복 제안 분석 크론 작업
+ * AI 반복 제안 분석 크론 작업 (Dispatcher)
  *
  * 매주 토요일 UTC 13:00 (KST 일요일 22:00)에 실행됩니다.
- * 최근 할 일이 있는 사용자들의 패턴을 분석하여 반복 제안을 생성합니다.
+ * 최근 할 일이 있는 사용자들을 조회하여 BullMQ 큐에 per-user 잡을 등록합니다.
+ * 실제 처리는 SuggestionAnalysisProcessor가 담당합니다.
  *
- * 분산 락으로 중복 실행을 방지합니다.
+ * 분산 락으로 중복 등록을 방지합니다.
  */
 @Injectable()
-export class SuggestionAnalysisJob {
+export class SuggestionAnalysisJob implements OnModuleInit {
 	readonly #logger = new Logger(SuggestionAnalysisJob.name);
 
 	constructor(
 		private readonly database: DatabaseService,
-		private readonly aiSuggestionService: AiSuggestionService,
-		private readonly notificationService: NotificationService,
+		@InjectQueue(AI_SUGGESTION_QUEUE)
+		private readonly queue: Queue<AiSuggestionJobData>,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
+
+	/**
+	 * 서버 시작 시 놓친 제안 분석 catch-up
+	 *
+	 * Redis 분산 락(23h TTL)이 존재하면 최근 크론이 성공한 것이므로 스킵.
+	 * 락이 만료되었으면 서버 다운 중 크론을 놓친 것이므로 즉시 실행.
+	 */
+	async onModuleInit(): Promise<void> {
+		try {
+			this.#logger.log("Checking for missed suggestion analysis...");
+			await this.handleWeeklyAnalysis();
+		} catch (error) {
+			this.#logger.error(
+				`Suggestion analysis catch-up failed: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+	}
 
 	/**
 	 * 주간 패턴 분석 — 매주 토요일 UTC 13:00 (KST 일요일 22:00)
@@ -52,7 +74,7 @@ export class SuggestionAnalysisJob {
 		}
 
 		try {
-			await this.#analyzeUsers();
+			await this.#enqueueAnalysis();
 		} catch (error) {
 			this.#logger.error(
 				`Suggestion analysis job failed: ${error}`,
@@ -64,18 +86,17 @@ export class SuggestionAnalysisJob {
 	}
 
 	/**
-	 * 최근 할 일이 있는 사용자들의 패턴 분석 수행
+	 * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
 	 */
-	async #analyzeUsers(): Promise<void> {
+	async #enqueueAnalysis(): Promise<void> {
 		const fourWeeksAgo = new Date();
 		fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
-		let successCount = 0;
-		let skipCount = 0;
-		let errorCount = 0;
+		const periodId = this.#getJobDeduplicationId();
+		let totalEnqueued = 0;
 
 		await forEachBatch({
-			batchSize: BATCH_SIZE,
+			batchSize: ENQUEUE_BATCH_SIZE,
 			fetchPage: (cursor, take) =>
 				this.database.user.findMany({
 					where: {
@@ -96,60 +117,42 @@ export class SuggestionAnalysisJob {
 					take,
 				}),
 			onBatch: async (batch) => {
-				const results = await Promise.allSettled(
-					batch.map((user) => this.#processUserAnalysis(user)),
-				);
+				const jobs = batch.map((user) => ({
+					name: "analyze-suggestion",
+					data: {
+						userId: user.id,
+						timezone: user.preference?.timezone ?? "Asia/Seoul",
+					} satisfies AiSuggestionJobData,
+					opts: {
+						jobId: `suggestion:${user.id}:${periodId}`,
+						attempts: 3,
+						backoff: { type: "exponential" as const, delay: 5_000 },
+						removeOnComplete: true,
+						removeOnFail: 100,
+					},
+				}));
 
-				for (const result of results) {
-					if (result.status === "fulfilled") {
-						if (result.value === "skipped") {
-							skipCount++;
-						} else {
-							successCount++;
-						}
-					} else {
-						errorCount++;
-						this.#logger.error(
-							`Suggestion analysis failed: ${result.reason}`,
-							result.reason instanceof Error ? result.reason.stack : undefined,
-						);
-					}
-				}
+				await this.queue.addBulk(jobs);
+				totalEnqueued += jobs.length;
 			},
 		});
 
 		this.#logger.log(
-			`Suggestion analysis completed: success=${successCount}, skipped=${skipCount}, errors=${errorCount}`,
+			`Suggestion analysis jobs enqueued: total=${totalEnqueued}`,
 		);
 	}
 
 	/**
-	 * 개별 사용자 패턴 분석 및 알림 발송
+	 * jobId 중복 방지용 식별자 생성
 	 */
-	async #processUserAnalysis(user: {
-		id: string;
-		preference: { timezone: string } | null;
-	}): Promise<"success" | "skipped"> {
-		const timezone = user.preference?.timezone ?? "Asia/Seoul";
-		const createdCount =
-			await this.aiSuggestionService.analyzeAndCreateSuggestions(
-				user.id,
-				timezone,
-			);
-
-		if (createdCount === 0) {
-			return "skipped";
-		}
-
-		// 새 제안 생성 알림 발송
-		const message = NotificationMessageBuilder.aiSuggestion();
-		await this.notificationService.createAndSend({
-			userId: user.id,
-			type: "AI_SUGGESTION",
-			title: message.title,
-			body: message.body,
-		});
-
-		return "success";
+	#getJobDeduplicationId(): string {
+		const now = new Date();
+		const year = now.getFullYear();
+		const jan1 = new Date(year, 0, 1);
+		const days = Math.floor(
+			(now.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000),
+		);
+		const weekNumber = Math.ceil((days + jan1.getDay() + 1) / 7);
+		return `${year}-W${String(weekNumber).padStart(2, "0")}`;
 	}
 }

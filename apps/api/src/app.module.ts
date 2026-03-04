@@ -1,9 +1,11 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
+import type Redis from "ioredis";
 import {
 	AppConfigModule,
 	CacheModule,
@@ -13,9 +15,12 @@ import {
 	LockModule,
 	LoggerModule,
 	PaginationModule,
+	REDIS_CLIENT,
+	RedisModule,
 	ResponseModule,
 } from "@/common";
 import type { EnvConfig } from "@/common/config";
+import { RedisThrottlerStorage } from "@/common/throttle";
 import { DatabaseModule } from "@/database";
 import { AdminModule } from "@/modules/admin";
 import { AdminNotificationModule } from "@/modules/admin-notification";
@@ -50,8 +55,22 @@ import { AppService } from "./app.service";
 		// 3. Infrastructure
 		DatabaseModule,
 		EncryptionModule,
+		RedisModule.forRoot(),
 		CacheModule.forRoot(),
 		LockModule.forRoot(),
+		BullModule.forRootAsync({
+			inject: [REDIS_CLIENT],
+			useFactory: (redis: Redis) => ({
+				// ioredis 직접 설치 버전 vs bullmq 번들 버전 차이로 인한 타입 캐스팅
+				connection: redis as never,
+				defaultJobOptions: {
+					attempts: 3,
+					backoff: { type: "exponential" as const, delay: 1_000 },
+					removeOnComplete: true,
+					removeOnFail: 100,
+				},
+			}),
+		}),
 		EventEmitterModule.forRoot({
 			// 와일드카드 패턴 지원 (e.g., follow.*)
 			wildcard: true,
@@ -68,13 +87,18 @@ import { AppService } from "./app.service";
 		ResponseModule,
 		PaginationModule,
 		ThrottlerModule.forRootAsync({
-			inject: [ConfigService],
-			useFactory: (config: ConfigService<EnvConfig, true>) => [
-				{
-					ttl: config.get("THROTTLE_TTL", { infer: true }),
-					limit: config.get("THROTTLE_LIMIT", { infer: true }),
-				},
-			],
+			inject: [ConfigService, { token: REDIS_CLIENT, optional: true }],
+			useFactory: (config: ConfigService<EnvConfig, true>, redis?: Redis) => ({
+				throttlers: [
+					{
+						ttl: config.get("THROTTLE_TTL", { infer: true }),
+						limit: config.get("THROTTLE_LIMIT", { infer: true }),
+					},
+				],
+				...(redis && {
+					storage: new RedisThrottlerStorage(redis),
+				}),
+			}),
 		}),
 
 		// 5. Features

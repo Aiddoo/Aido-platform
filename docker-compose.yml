@@ -1,4 +1,4 @@
-# 로컬 개발용 인프라 (DB only)
+# 로컬 개발용 인프라 (DB + Redis)
 # API는 네이티브 실행: pnpm dev
 
 services:
@@ -19,5 +19,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: aido-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  redis_data:

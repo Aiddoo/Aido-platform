@@ -1,5 +1,7 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import type { Queue } from "bullmq";
 
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { toDateString } from "@/common/date/utils/format";
@@ -11,9 +13,10 @@ import { DatabaseService } from "@/database/database.service";
 import type { AccountProvider } from "@/generated/prisma/client";
 
 import {
-	ADMIN_NOTIFIER,
-	type AdminNotifier,
-} from "../providers/admin-notifier.interface";
+	ADMIN_NOTIFICATION_JOB_OPTS,
+	ADMIN_NOTIFICATION_QUEUE,
+	type AdminNotificationJobData,
+} from "../processors/admin-notification.processor";
 
 const PROVIDER_LABELS: Record<AccountProvider, string> = {
 	CREDENTIAL: "이메일",
@@ -27,7 +30,8 @@ const PROVIDER_LABELS: Record<AccountProvider, string> = {
  * 일일 가입 요약 크론 작업
  *
  * 매일 KST 00:00에 실행되어
- * 전일(KST) 신규 가입자 수와 총 사용자 수를 관리자 채널에 발송합니다.
+ * 전일(KST) 신규 가입자 수와 총 사용자 수를 집계한 후
+ * BullMQ 큐에 알림 잡을 등록합니다.
  */
 @Injectable()
 export class DailySignupSummaryJob {
@@ -35,8 +39,8 @@ export class DailySignupSummaryJob {
 
 	constructor(
 		private readonly database: DatabaseService,
-		@Inject(ADMIN_NOTIFIER)
-		private readonly adminNotifier: AdminNotifier,
+		@InjectQueue(ADMIN_NOTIFICATION_QUEUE)
+		private readonly queue: Queue<AdminNotificationJobData>,
 	) {}
 
 	/**
@@ -75,41 +79,45 @@ export class DailySignupSummaryJob {
 				})
 				.join("\n");
 
-			const result = await this.adminNotifier.send({
-				title: `일일 가입 리포트 | ${reportDateStr} (KST)`,
-				body:
-					previousDayTotal > 0
-						? `전일 신규 가입은 ${previousDayTotal}명입니다.\n\n가입 채널별\n${providerBreakdown}`
-						: "전일 신규 가입은 0명입니다.",
-				color: 0x5865f2,
-				fields: [
-					{
-						name: "전일 신규 가입",
-						value: `${previousDayTotal}명`,
-						inline: true,
+			await this.queue.add(
+				"send-notification",
+				{
+					channel: "admin",
+					notification: {
+						title: `일일 가입 리포트 | ${reportDateStr} (KST)`,
+						body:
+							previousDayTotal > 0
+								? `전일 신규 가입은 ${previousDayTotal}명입니다.\n\n가입 채널별\n${providerBreakdown}`
+								: "전일 신규 가입은 0명입니다.",
+						color: 0x5865f2,
+						fields: [
+							{
+								name: "전일 신규 가입",
+								value: `${previousDayTotal}명`,
+								inline: true,
+							},
+							{
+								name: "총 사용자 수",
+								value: `${totalUsers.toLocaleString()}명`,
+								inline: true,
+							},
+							{
+								name: "집계 기준",
+								value: `${reportDateStr} 00:00 ~ 23:59 (KST)`,
+								inline: false,
+							},
+						],
 					},
-					{
-						name: "총 사용자 수",
-						value: `${totalUsers.toLocaleString()}명`,
-						inline: true,
-					},
-					{
-						name: "집계 기준",
-						value: `${reportDateStr} 00:00 ~ 23:59 (KST)`,
-						inline: false,
-					},
-				],
-			});
+				},
+				{
+					...ADMIN_NOTIFICATION_JOB_OPTS,
+					jobId: `signup-summary:${reportDateStr}`,
+				},
+			);
 
-			if (result.success) {
-				this.#logger.log(
-					`Daily signup summary sent: ${previousDayTotal} new, ${totalUsers} total`,
-				);
-			} else {
-				this.#logger.warn(
-					`Daily signup summary notification failed: ${result.error}`,
-				);
-			}
+			this.#logger.log(
+				`Daily signup summary job enqueued: ${previousDayTotal} new, ${totalUsers} total`,
+			);
 		} catch (error) {
 			this.#logger.error(
 				`Daily signup summary job failed: ${error}`,

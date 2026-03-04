@@ -7,6 +7,7 @@
 
 // Adapters
 export * from "./adapters/in-memory-lock.adapter";
+export * from "./adapters/redis-lock.adapter";
 // Interfaces
 export * from "./interfaces/lock.interface";
 // Module

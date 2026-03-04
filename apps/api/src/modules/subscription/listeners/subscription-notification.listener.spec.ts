@@ -1,28 +1,29 @@
+import { getQueueToken } from "@nestjs/bullmq";
+import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import type { Queue } from "bullmq";
 
-import { PAYMENT_NOTIFIER } from "@/modules/admin-notification/providers/admin-notifier.interface";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/modules/admin-notification/processors/admin-notification.processor";
 
 import type { SubscriptionEventPayload } from "../events/subscription.events";
 import { SubscriptionNotificationListener } from "./subscription-notification.listener";
 
 describe("SubscriptionNotificationListener", () => {
 	let listener: SubscriptionNotificationListener;
-	let notifier: { send: jest.Mock; name: string; isConfigured: jest.Mock };
+	let mockQueue: Mocked<Queue>;
 
 	beforeEach(async () => {
-		const mockNotifier = {
-			name: "fake",
-			send: jest.fn().mockResolvedValue({ success: true }),
-			isConfigured: jest.fn().mockReturnValue(true),
-		};
-
-		const { unit } = await TestBed.solitary(SubscriptionNotificationListener)
-			.mock(PAYMENT_NOTIFIER)
-			.impl(() => mockNotifier)
+		const { unit, unitRef } = await TestBed.solitary(
+			SubscriptionNotificationListener,
+		)
+			.mock(getQueueToken(ADMIN_NOTIFICATION_QUEUE))
+			.impl(() => ({
+				add: jest.fn().mockResolvedValue(undefined),
+			}))
 			.compile();
 
 		listener = unit;
-		notifier = mockNotifier;
+		mockQueue = unitRef.get(getQueueToken(ADMIN_NOTIFICATION_QUEUE));
 	});
 
 	afterEach(() => {
@@ -46,14 +47,16 @@ describe("SubscriptionNotificationListener", () => {
 		currency: "KRW",
 	};
 
-	/** send 호출의 첫 번째 인자 반환 */
-	function getSendArg() {
-		return notifier.send.mock.calls[0]?.[0];
+	/** queue.add 호출의 job data에서 notification 추출 */
+	function getNotification() {
+		return mockQueue.add.mock.calls[0]?.[1]?.notification;
 	}
 
-	/** 특정 이름의 필드 반환 */
+	/** notification의 특정 이름 필드 반환 */
 	function getField(name: string) {
-		return getSendArg()?.fields?.find((f: { name: string }) => f.name === name);
+		return getNotification()?.fields?.find(
+			(f: { name: string }) => f.name === name,
+		);
 	}
 
 	// =========================================================================
@@ -68,12 +71,17 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
+		expect(mockQueue.add).toHaveBeenCalledWith(
+			"send-notification",
 			expect.objectContaining({
-				title: "🎉 새로운 구독 구매",
-				body: expect.stringContaining("INITIAL_PURCHASE"),
-				color: 0x57f287,
+				channel: "payment",
+				notification: expect.objectContaining({
+					title: "🎉 새로운 구독 구매",
+					body: expect.stringContaining("INITIAL_PURCHASE"),
+					color: 0x57f287,
+				}),
 			}),
+			expect.any(Object),
 		);
 	});
 
@@ -89,12 +97,9 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
-			expect.objectContaining({
-				title: "❌ 구독 취소",
-				color: 0xe74c3c,
-			}),
-		);
+		const notification = getNotification();
+		expect(notification?.title).toBe("❌ 구독 취소");
+		expect(notification?.color).toBe(0xe74c3c);
 	});
 
 	it("알 수 없는 이벤트 타입 → DEFAULT_META 사용", async () => {
@@ -108,12 +113,9 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
-			expect.objectContaining({
-				title: "📋 구독 이벤트",
-				color: 0x7289da,
-			}),
-		);
+		const notification = getNotification();
+		expect(notification?.title).toBe("📋 구독 이벤트");
+		expect(notification?.color).toBe(0x7289da);
 	});
 
 	// =========================================================================
@@ -128,21 +130,20 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
-			expect.objectContaining({
-				fields: expect.arrayContaining([
-					expect.objectContaining({
-						name: "이메일",
-						value: "test@example.com",
-					}),
-					expect.objectContaining({ name: "상품", value: "premium_monthly" }),
-					expect.objectContaining({ name: "스토어", value: "Apple App Store" }),
-					expect.objectContaining({ name: "기기" }),
-					expect.objectContaining({ name: "금액" }),
-					expect.objectContaining({ name: "만료일" }),
-					expect.objectContaining({ name: "사용자 ID", value: "user-123" }),
-				]),
-			}),
+		const notification = getNotification();
+		expect(notification?.fields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "이메일",
+					value: "test@example.com",
+				}),
+				expect.objectContaining({ name: "상품", value: "premium_monthly" }),
+				expect.objectContaining({ name: "스토어", value: "Apple App Store" }),
+				expect.objectContaining({ name: "기기" }),
+				expect.objectContaining({ name: "금액" }),
+				expect.objectContaining({ name: "만료일" }),
+				expect.objectContaining({ name: "사용자 ID", value: "user-123" }),
+			]),
 		);
 	});
 
@@ -158,7 +159,23 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(getSendArg().body).toContain("**test@example.com**");
+		expect(getNotification()?.body).toContain("**test@example.com**");
+	});
+
+	// =========================================================================
+	// 채널
+	// =========================================================================
+
+	it("payment 채널로 등록되어야 한다", async () => {
+		// When
+		await listener.handleSubscriptionEvent(basePayload);
+
+		// Then
+		expect(mockQueue.add).toHaveBeenCalledWith(
+			"send-notification",
+			expect.objectContaining({ channel: "payment" }),
+			expect.any(Object),
+		);
 	});
 
 	// =========================================================================
@@ -260,15 +277,14 @@ describe("SubscriptionNotificationListener", () => {
 		await listener.handleSubscriptionEvent(payload);
 
 		// Then
-		expect(notifier.send).toHaveBeenCalledWith(
-			expect.objectContaining({
-				fields: expect.arrayContaining([
-					expect.objectContaining({
-						name: "취소 사유",
-						value: "UNSUBSCRIBE",
-					}),
-				]),
-			}),
+		const notification = getNotification();
+		expect(notification?.fields).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "취소 사유",
+					value: "UNSUBSCRIBE",
+				}),
+			]),
 		);
 	});
 
@@ -276,9 +292,9 @@ describe("SubscriptionNotificationListener", () => {
 	// 에러 처리
 	// =========================================================================
 
-	it("발송 실패해도 예외가 전파되지 않는다", async () => {
+	it("큐 등록 실패해도 예외가 전파되지 않는다", async () => {
 		// Given
-		notifier.send.mockRejectedValue(new Error("Network error"));
+		mockQueue.add.mockRejectedValue(new Error("Queue error"));
 
 		// When & Then
 		await expect(

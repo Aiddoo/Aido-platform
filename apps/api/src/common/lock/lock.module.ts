@@ -4,8 +4,11 @@ import {
 	Module,
 	type Provider,
 } from "@nestjs/common";
+import type Redis from "ioredis";
 import { TypedConfigService } from "../config/services/config.service";
+import { REDIS_CLIENT } from "../redis/redis.constants";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter";
+import { RedisLockAdapter } from "./adapters/redis-lock.adapter";
 import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface";
 
 /**
@@ -34,17 +37,19 @@ export class LockModule {
 	static forRoot(): DynamicModule {
 		const lockProvider: Provider = {
 			provide: LOCK_PROVIDER,
-			useFactory: (configService: TypedConfigService): ILockProvider => {
+			useFactory: (
+				configService: TypedConfigService,
+				redis?: Redis,
+			): ILockProvider => {
 				const cacheType = configService.cache.type;
 
-				if (cacheType === "redis") {
-					// TODO: RedisLockAdapter 구현 후 교체
-					// return new RedisLockAdapter(configService.redis);
+				if (cacheType === "redis" && redis) {
+					return new RedisLockAdapter(redis);
 				}
 
 				return new InMemoryLockAdapter();
 			},
-			inject: [TypedConfigService],
+			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
 		};
 
 		return {

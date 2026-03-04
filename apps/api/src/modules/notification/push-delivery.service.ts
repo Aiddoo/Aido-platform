@@ -7,7 +7,6 @@ import {
 	Inject,
 	Injectable,
 	Logger,
-	type OnModuleDestroy,
 } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import {
@@ -24,6 +23,7 @@ import {
 	type PushPayload,
 	type PushProvider,
 } from "./providers/push-provider.interface";
+import { type IPushRateLimiter, PUSH_RATE_LIMITER } from "./rate-limiter";
 import type {
 	CreateNotificationData,
 	RegisterPushTokenData,
@@ -63,27 +63,17 @@ const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
  * - Graceful Shutdown (pending push 대기)
  */
 @Injectable()
-export class PushDeliveryService
-	implements BeforeApplicationShutdown, OnModuleDestroy
-{
+export class PushDeliveryService implements BeforeApplicationShutdown {
 	readonly #logger = new Logger(PushDeliveryService.name);
 	readonly #pendingPushes = new Set<Promise<void>>();
-
-	// =========================================================================
-	// 수신자별 Rate Limiting (인메모리 슬라이딩 윈도우)
-	// =========================================================================
-
-	/** 1시간 윈도우 내 최대 푸시 횟수 */
-	private static readonly RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-	private static readonly RATE_LIMIT_MAX = 15;
-
-	readonly #pushTimestamps = new Map<string, number[]>();
 
 	constructor(
 		private readonly notificationRepository: NotificationRepository,
 		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly userConsentRepository: UserConsentRepository,
+		@Inject(PUSH_RATE_LIMITER)
+		private readonly rateLimiter: IPushRateLimiter,
 	) {}
 
 	// =========================================================================
@@ -269,7 +259,7 @@ export class PushDeliveryService
 			}
 		}
 
-		if (this.#isRateLimited(userId)) {
+		if (await this.rateLimiter.isRateLimited(userId)) {
 			this.#logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
 			return false;
 		}
@@ -436,46 +426,6 @@ export class PushDeliveryService
 		this.#logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
-	}
-
-	// =========================================================================
-	// Rate Limiting
-	// =========================================================================
-
-	/**
-	 * 사용자별 푸시 발송 빈도 제한 (1시간 15건)
-	 *
-	 * 알림 DB 기록은 정상 생성하되, 푸시 발송만 제한한다.
-	 * 앱 내 알림 목록에서는 모두 확인 가능.
-	 */
-	#isRateLimited(userId: string): boolean {
-		const now = Date.now();
-		const windowStart = now - PushDeliveryService.RATE_LIMIT_WINDOW_MS;
-
-		let timestamps = this.#pushTimestamps.get(userId);
-		if (!timestamps) {
-			timestamps = [];
-			this.#pushTimestamps.set(userId, timestamps);
-		}
-
-		// 윈도우 밖 타임스탬프 제거
-		const filtered = timestamps.filter((t) => t > windowStart);
-		this.#pushTimestamps.set(userId, filtered);
-
-		if (filtered.length >= PushDeliveryService.RATE_LIMIT_MAX) {
-			return true;
-		}
-
-		filtered.push(now);
-		return false;
-	}
-
-	// =========================================================================
-	// Lifecycle
-	// =========================================================================
-
-	onModuleDestroy(): void {
-		this.#pushTimestamps.clear();
 	}
 
 	// =========================================================================
