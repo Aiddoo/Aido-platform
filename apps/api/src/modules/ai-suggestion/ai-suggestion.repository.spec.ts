@@ -161,25 +161,103 @@ describe("AiSuggestionRepository", () => {
 	});
 
 	// =========================================================================
-	// findPendingTitles
+	// createMany
 	// =========================================================================
 
-	describe("findPendingTitles", () => {
-		it("대기 중인 제안 제목을 Set으로 반환해야 한다", async () => {
-			// Given: PENDING 제안들
-			const mockSuggestions = [{ title: "팀 미팅" }, { title: "운동" }];
-			(db.recurringSuggestion.findMany as jest.Mock).mockResolvedValue(
-				mockSuggestions,
+	describe("createMany", () => {
+		it("여러 제안을 한 번에 생성해야 한다", async () => {
+			// Given: 생성할 데이터 배열
+			const data = [
+				{
+					userId: "user-123",
+					title: "운동",
+					daysOfWeek: ["MON"],
+					scheduledTime: null,
+					confidence: 0.8,
+					reason: "이유",
+					matchedTodos: [],
+					expiresAt: new Date(),
+				},
+				{
+					userId: "user-123",
+					title: "독서",
+					daysOfWeek: ["TUE"],
+					scheduledTime: null,
+					confidence: 0.7,
+					reason: "이유",
+					matchedTodos: [],
+					expiresAt: new Date(),
+				},
+			];
+			(db.recurringSuggestion.createMany as jest.Mock).mockResolvedValue({
+				count: 2,
+			});
+
+			// When: createMany를 호출하면
+			const result = await repository.createMany(data as never);
+
+			// Then: Prisma createMany에 올바른 데이터를 전달해야 한다
+			expect(db.recurringSuggestion.createMany).toHaveBeenCalledWith({
+				data,
+			});
+			expect(result).toEqual({ count: 2 });
+		});
+
+		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
+			// Given: 트랜잭션 클라이언트
+			const mockTx = {
+				recurringSuggestion: {
+					createMany: jest.fn().mockResolvedValue({ count: 1 }),
+				},
+			};
+
+			// When: tx를 전달하여 호출하면
+			await repository.createMany(
+				[{ userId: "user-123", title: "운동" }] as never,
+				mockTx as never,
 			);
 
-			// When: findPendingTitles를 호출하면
-			const result = await repository.findPendingTitles("user-123");
+			// Then: tx를 사용해야 한다
+			expect(mockTx.recurringSuggestion.createMany).toHaveBeenCalled();
+			expect(db.recurringSuggestion.createMany).not.toHaveBeenCalled();
+		});
+	});
 
-			// Then: 제목 Set을 반환해야 한다
-			expect(result).toBeInstanceOf(Set);
-			expect(result.has("팀 미팅")).toBe(true);
-			expect(result.has("운동")).toBe(true);
-			expect(result.size).toBe(2);
+	// =========================================================================
+	// deletePending
+	// =========================================================================
+
+	describe("deletePending", () => {
+		it("사용자의 PENDING 제안을 전부 삭제해야 한다", async () => {
+			// Given: 삭제할 PENDING 제안이 존재
+			(db.recurringSuggestion.deleteMany as jest.Mock).mockResolvedValue({
+				count: 3,
+			});
+
+			// When: deletePending을 호출하면
+			const result = await repository.deletePending("user-123");
+
+			// Then: userId와 PENDING 조건으로 삭제해야 한다
+			expect(db.recurringSuggestion.deleteMany).toHaveBeenCalledWith({
+				where: { userId: "user-123", status: "PENDING" },
+			});
+			expect(result).toEqual({ count: 3 });
+		});
+
+		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
+			// Given: 트랜잭션 클라이언트
+			const mockTx = {
+				recurringSuggestion: {
+					deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+				},
+			};
+
+			// When: tx를 전달하여 호출하면
+			await repository.deletePending("user-123", mockTx as never);
+
+			// Then: tx를 사용해야 한다
+			expect(mockTx.recurringSuggestion.deleteMany).toHaveBeenCalled();
+			expect(db.recurringSuggestion.deleteMany).not.toHaveBeenCalled();
 		});
 	});
 

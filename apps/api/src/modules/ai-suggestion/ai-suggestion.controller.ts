@@ -34,7 +34,13 @@ import {
  * ### 분석 스케줄
  * - 매주 토요일 UTC 13:00 (KST 일요일 22:00)에 자동 분석
  * - 최근 4주간의 비반복 할 일 패턴을 AI가 분석
- * - 최대 5개 제안 생성, 14일 후 자동 만료
+ * - 매 분석 시 기존 PENDING 제안을 교체하여 최대 5개 유지 (누적 X)
+ * - 14일 후 자동 만료
+ *
+ * ### 안전성
+ * - 분산 락 + BullMQ jobId (7일 보관) + PENDING 교체 — 중복 생성/알림 없음
+ * - 서버 재시작 시 미처리 잡은 Redis에서 자동 이어서 처리
+ * - 서버 재시작 시 onModuleInit catch-up (이미 처리된 주는 jobId로 자동 스킵)
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -75,9 +81,8 @@ export class AiSuggestionController {
 1. \`subscriptionStatus = ACTIVE\` 또는 \`role = ADMIN\`
 2. 최근 4주 내 비반복(\`recurrenceGroupId = null\`) 할 일이 존재
 3. AI가 동일 패턴을 **3회 이상** 감지
-4. 이미 같은 제목의 PENDING 제안이 없어야 함
 
-**제안 수량**: 분석 1회당 사용자 최대 **5개** 생성
+**제안 수량**: 매 분석 시 기존 PENDING 제안을 **교체**하여 최대 **5개** 유지 (누적되지 않음)
 
 **만료**: 생성 후 **14일** 경과 시 자동 만료 (목록에서 사라짐)
 
@@ -126,6 +131,21 @@ export class AiSuggestionController {
 }
 \`\`\`
 > "영어공부"는 2회뿐이라 최소 3회 조건 미달 → 제안 생성 안 됨
+
+## 🔒 안전성 보장
+
+### 중복 방지 (3중 방어)
+| 계층 | 메커니즘 | 효과 |
+|------|---------|------|
+| **1. 분산 락** | Redis \`SET NX PX\` (23h TTL) | 다중 인스턴스 동시 크론 실행 방지 |
+| **2. BullMQ jobId** | \`suggestion:{userId}:{year}-W{xx}\` (7일 보관) | 같은 주 동일 유저 중복 잡 방지 |
+| **3. PENDING 교체** | 분석 전 기존 PENDING 전부 삭제 후 새로 생성 | 누적 없이 항상 최대 5개 유지 |
+
+### 서버 재시작 시 동작
+- 이미 큐에 들어간 잡: Redis에서 자동 이어서 처리 (유실 없음)
+- 크론 누락 catch-up: 서버 시작 시 \`onModuleInit\`이 자동으로 dispatch 재시도
+- 이미 처리된 주: 완료된 잡이 7일간 Redis에 보관되어 jobId 중복으로 자동 스킵 (불필요한 API 호출 없음)
+- 알림 중복: jobId 기반 dedup + PENDING 교체로 중복 불가
 
 ## 📱 클라이언트 통합 가이드
 

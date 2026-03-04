@@ -44,6 +44,11 @@ import {
  * |------|----------|----------|
  * | 주간 | 매주 일요일 UTC 22:00 (KST 월요일 07:00) | 직전 주 월~일 |
  * | 월간 | 매월 1일 UTC 22:00 (KST 2일 07:00) | 전월 전체 |
+ *
+ * ### 안전성
+ * - 분산 락 + BullMQ jobId (7일 보관) + DB 중복 체크 — 중복 생성/알림 없음
+ * - 서버 재시작 시 미처리 잡은 Redis에서 자동 이어서 처리
+ * - 서버 재시작 시 onModuleInit catch-up (이미 처리된 주는 jobId로 자동 스킵)
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -82,6 +87,21 @@ export class AiReportController {
 **생성 조건**: \`subscriptionStatus = ACTIVE\` 또는 \`role = ADMIN\`
 - 할 일이 0개인 주/월도 리포트는 생성됩니다 (\`hasActivity: false\`, 격려 메시지 포함).
 - 같은 기간의 리포트가 이미 존재하면 중복 생성하지 않습니다.
+
+## 🔒 안전성 보장
+
+### 중복 방지 (3중 방어)
+| 계층 | 메커니즘 | 효과 |
+|------|---------|------|
+| **1. 분산 락** | Redis \`SET NX PX\` (23h TTL) | 다중 인스턴스 동시 크론 실행 방지 |
+| **2. BullMQ jobId** | \`report:{TYPE}:{userId}:{year}-W{xx}\` (7일 보관) | 같은 주 동일 유저 중복 잡 방지 |
+| **3. DB 중복 체크** | \`exists(userId, type, year, period)\` | 같은 기간 리포트 중복 생성 방지 |
+
+### 서버 재시작 시 동작
+- 이미 큐에 들어간 잡: Redis에서 자동 이어서 처리 (유실 없음)
+- 크론 누락 catch-up: 서버 시작 시 \`onModuleInit\`이 자동으로 dispatch 재시도
+- 이미 처리된 주: 완료된 잡이 7일간 Redis에 보관되어 jobId 중복으로 자동 스킵
+- 리포트 중복: 서비스 레벨 \`exists()\` 체크로 같은 기간 리포트 2번 생성 불가
 
 ## 🔍 구체적 예시
 

@@ -9,6 +9,7 @@ import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { AI_PROVIDER, type AiProvider } from "../ai/providers/ai.provider";
 import { TodoService } from "../todo/todo.service";
@@ -34,6 +35,7 @@ export class AiSuggestionService {
 		private readonly todoService: TodoService,
 		@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
 		private readonly entitlementService: EntitlementService,
+		private readonly database: DatabaseService,
 	) {}
 
 	// =========================================================================
@@ -226,41 +228,36 @@ export class AiSuggestionService {
 			return 0;
 		}
 
-		// 3. 기존 PENDING 제안 제목 조회 (중복 방지)
-		const existingTitles =
-			await this.aiSuggestionRepository.findPendingTitles(userId);
-
-		// 4. 만료된 제안 삭제
-		await this.aiSuggestionRepository.deleteExpired(userId);
-
-		// 5. 새 제안 저장 (최대 5개, 중복 제외)
+		// 3. 기존 PENDING 교체 + 만료 정리 + 새 제안 저장 (트랜잭션)
 		const expiresAt = currentDate
 			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
 			.toDate();
 
-		let createdCount = 0;
-		for (const pattern of patterns) {
-			if (createdCount >= AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER) {
-				break;
-			}
+		const limitedPatterns = patterns.slice(
+			0,
+			AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER,
+		);
 
-			if (existingTitles.has(pattern.title)) {
-				continue;
-			}
+		const createdCount = await this.database.$transaction(async (tx) => {
+			await this.aiSuggestionRepository.deletePending(userId, tx);
+			await this.aiSuggestionRepository.deleteExpired(userId, tx);
 
-			await this.aiSuggestionRepository.create({
-				user: { connect: { id: userId } },
-				title: pattern.title,
-				daysOfWeek: pattern.daysOfWeek as unknown as Prisma.InputJsonValue,
-				scheduledTime: pattern.scheduledTime,
-				confidence: pattern.confidence,
-				reason: pattern.reason,
-				matchedTodos: pattern.matchedTitles as unknown as Prisma.InputJsonValue,
-				expiresAt,
-			});
-
-			createdCount++;
-		}
+			const { count } = await this.aiSuggestionRepository.createMany(
+				limitedPatterns.map((pattern) => ({
+					userId,
+					title: pattern.title,
+					daysOfWeek: pattern.daysOfWeek as unknown as Prisma.InputJsonValue,
+					scheduledTime: pattern.scheduledTime,
+					confidence: pattern.confidence,
+					reason: pattern.reason,
+					matchedTodos:
+						pattern.matchedTitles as unknown as Prisma.InputJsonValue,
+					expiresAt,
+				})),
+				tx,
+			);
+			return count;
+		});
 
 		this.#logger.log(
 			`제안 생성 완료: userId=${userId}, patterns=${patterns.length}, created=${createdCount}`,

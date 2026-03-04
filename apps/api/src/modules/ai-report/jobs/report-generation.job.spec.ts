@@ -46,6 +46,42 @@ describe("ReportGenerationJob", () => {
 	});
 
 	// =========================================================================
+	// onModuleInit catch-up
+	// =========================================================================
+
+	describe("onModuleInit catch-up", () => {
+		it("서버 시작 시 주간/월간 리포트 생성을 모두 실행해야 한다", async () => {
+			// Given
+			mockLockProvider.acquire.mockResolvedValue(mockRelease);
+			(mockDatabase.user.findMany as jest.Mock).mockResolvedValue([]);
+
+			// When
+			await job.onModuleInit();
+
+			// Then: 주간 + 월간 각각 한 번씩 잠금 획득
+			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
+				"report-weekly",
+				expect.any(Number),
+			);
+			expect(mockLockProvider.acquire).toHaveBeenCalledWith(
+				"report-monthly",
+				expect.any(Number),
+			);
+		});
+
+		it("잠금 획득 실패 시 안전하게 건너뛰어야 한다", async () => {
+			// Given
+			mockLockProvider.acquire.mockResolvedValue(null);
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockDatabase.user.findMany).not.toHaveBeenCalled();
+		});
+	});
+
+	// =========================================================================
 	// 분산 락
 	// =========================================================================
 
@@ -201,7 +237,7 @@ describe("ReportGenerationJob", () => {
 				expect.objectContaining({
 					attempts: 3,
 					backoff: { type: "exponential", delay: 5_000 },
-					removeOnComplete: true,
+					removeOnComplete: { age: 604_800 },
 					removeOnFail: 100,
 				}),
 			);
