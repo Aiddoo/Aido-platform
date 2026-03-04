@@ -7,8 +7,9 @@ import { TypedConfigService } from "./services/config.service";
  * 환경변수 설정 모듈
  *
  * 환경별 .env 파일을 로드하고 Zod로 검증합니다.
- * - development/test: .env.development
  * - production: .env
+ * - test: .env.test
+ * - development: .env.development
  *
  * @Global() 데코레이터로 전역 모듈로 등록됩니다.
  */
@@ -31,9 +32,12 @@ export class AppConfigModule {}
  * NODE_ENV에 따른 .env 파일 경로 반환
  *
  * - production → .env
- * - 그 외 (development, test) → .env.development
+ * - test → .env.test (외부 서비스 비활성)
+ * - development → .env.development
  */
 function getEnvFilePath(): string {
 	const env = process.env.NODE_ENV || "development";
-	return env === "production" ? ".env" : ".env.development";
+	if (env === "production") return ".env";
+	if (env === "test") return ".env.test";
+	return ".env.development";
 }

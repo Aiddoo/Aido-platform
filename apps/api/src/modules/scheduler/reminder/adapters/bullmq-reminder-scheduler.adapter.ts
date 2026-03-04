@@ -110,7 +110,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 					"send-reminder",
 					{ todoId, userId, todoTitle, stageLabel: stage.label },
 					{
-						jobId: `reminder:${todoId}:${stage.label}`,
+						jobId: `reminder_${todoId}_${stage.label}`,
 						delay,
 						removeOnComplete: true,
 						removeOnFail: 100,
@@ -134,7 +134,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 					stageLabel: REMINDER_IMMEDIATE_LABEL,
 				},
 				{
-					jobId: `reminder:${todoId}:${REMINDER_IMMEDIATE_LABEL}`,
+					jobId: `reminder_${todoId}_${REMINDER_IMMEDIATE_LABEL}`,
 					delay: 0,
 					removeOnComplete: true,
 					removeOnFail: 100,
@@ -152,7 +152,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		];
 
 		for (const label of stages) {
-			const jobId = `reminder:${todoId}:${label}`;
+			const jobId = `reminder_${todoId}_${label}`;
 			try {
 				const job = await this.queue.getJob(jobId);
 				if (job) {

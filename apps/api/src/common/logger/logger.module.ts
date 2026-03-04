@@ -56,7 +56,11 @@ export class LoggerModule {
 						transport: prettyPrint
 							? {
 									target: "pino-pretty",
-									options: { colorize: true, customColors: "warn:red" },
+									options: {
+										colorize: true,
+										customColors: "warn:red",
+										translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+									},
 								}
 							: undefined,
 						level,
@@ -124,7 +128,11 @@ export class LoggerModule {
 								transport: prettyPrint
 									? {
 											target: "pino-pretty",
-											options: { colorize: true, customColors: "warn:red" },
+											options: {
+												colorize: true,
+												customColors: "warn:red",
+												translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+											},
 										}
 									: undefined,
 								level,

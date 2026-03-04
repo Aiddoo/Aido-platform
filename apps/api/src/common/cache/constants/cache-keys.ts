@@ -18,6 +18,12 @@ export const CacheKeys = {
 		TODO_CATEGORIES: 5 * 60_000,
 		/** 친구 ID 목록 - 5분 (알림 발송용, 변경 빈도 낮음) */
 		MUTUAL_FRIEND_IDS: 5 * 60_000,
+		/** 푸시 토큰 - 5분 (토큰 변경 빈도 낮음) */
+		PUSH_TOKENS: 5 * 60_000,
+		/** 사용자 설정 - 5분 (설정 변경 빈도 낮음) */
+		USER_PREFERENCE: 5 * 60_000,
+		/** 친구 수 - 5분 (친구 변경 빈도 낮음) */
+		FRIEND_COUNT: 5 * 60_000,
 	},
 
 	// === 키 빌더 ===
@@ -58,6 +64,24 @@ export const CacheKeys = {
 	 * @example friends:ids:user_123
 	 */
 	mutualFriendIds: (userId: string) => `friends:ids:${userId}`,
+
+	/**
+	 * 푸시 토큰 캐시 키
+	 * @example push:tokens:user_123
+	 */
+	pushTokens: (userId: string) => `push:tokens:${userId}`,
+
+	/**
+	 * 사용자 설정 캐시 키
+	 * @example user:preference:user_123
+	 */
+	userPreference: (userId: string) => `user:preference:${userId}`,
+
+	/**
+	 * 친구 수 캐시 키
+	 * @example friends:count:user_123
+	 */
+	friendCount: (userId: string) => `friends:count:${userId}`,
 
 	// === 패턴 빌더 (와일드카드) ===
 

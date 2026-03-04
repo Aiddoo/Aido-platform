@@ -42,6 +42,16 @@ export interface CachedSubscription {
 	isAdmin?: boolean;
 }
 
+export interface CachedUserPreference {
+	pushEnabled: boolean;
+	nightPushEnabled: boolean;
+	timezone: string;
+	morningReminderHour: number;
+	morningReminderMinute: number;
+	eveningReminderHour: number;
+	eveningReminderMinute: number;
+}
+
 /**
  * 캐시 서비스 Facade
  *
@@ -339,6 +349,100 @@ export class CacheService {
 			CacheKeys.mutualFriendIds(userId),
 			factory,
 			CacheKeys.TTL.MUTUAL_FRIEND_IDS,
+		);
+	}
+
+	// === Push Token Methods ===
+
+	async getPushTokens(userId: string): Promise<string[] | undefined> {
+		return this.get<string[]>(CacheKeys.pushTokens(userId));
+	}
+
+	async setPushTokens(userId: string, tokens: string[]): Promise<void> {
+		return this.set(
+			CacheKeys.pushTokens(userId),
+			tokens,
+			CacheKeys.TTL.PUSH_TOKENS,
+		);
+	}
+
+	async invalidatePushTokens(userId: string): Promise<void> {
+		return this.del(CacheKeys.pushTokens(userId));
+	}
+
+	async wrapPushTokens(
+		userId: string,
+		factory: () => Promise<string[]>,
+	): Promise<string[]> {
+		return this.wrap(
+			CacheKeys.pushTokens(userId),
+			factory,
+			CacheKeys.TTL.PUSH_TOKENS,
+		);
+	}
+
+	// === User Preference Methods ===
+
+	async getUserPreference(
+		userId: string,
+	): Promise<CachedUserPreference | null | undefined> {
+		return this.get<CachedUserPreference | null>(
+			CacheKeys.userPreference(userId),
+		);
+	}
+
+	async setUserPreference(
+		userId: string,
+		preference: CachedUserPreference | null,
+	): Promise<void> {
+		return this.set(
+			CacheKeys.userPreference(userId),
+			preference,
+			CacheKeys.TTL.USER_PREFERENCE,
+		);
+	}
+
+	async invalidateUserPreference(userId: string): Promise<void> {
+		return this.del(CacheKeys.userPreference(userId));
+	}
+
+	async wrapUserPreference(
+		userId: string,
+		factory: () => Promise<CachedUserPreference | null>,
+	): Promise<CachedUserPreference | null> {
+		return this.wrap(
+			CacheKeys.userPreference(userId),
+			factory,
+			CacheKeys.TTL.USER_PREFERENCE,
+		);
+	}
+
+	// === Friend Count Methods ===
+
+	async getFriendCount(userId: string): Promise<number | undefined> {
+		return this.get<number>(CacheKeys.friendCount(userId));
+	}
+
+	async setFriendCount(userId: string, count: number): Promise<void> {
+		return this.set(
+			CacheKeys.friendCount(userId),
+			count,
+			CacheKeys.TTL.FRIEND_COUNT,
+		);
+	}
+
+	async invalidateFriendCount(userId: string): Promise<void> {
+		return this.del(CacheKeys.friendCount(userId));
+	}
+
+	async wrapFriendCount(
+		userId: string,
+		factory: () => Promise<number>,
+	): Promise<number> {
+		return this.wrap(
+			CacheKeys.friendCount(userId),
+			factory,
+			CacheKeys.TTL.FRIEND_COUNT,
 		);
 	}
 }

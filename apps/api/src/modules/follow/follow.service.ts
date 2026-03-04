@@ -207,6 +207,8 @@ export class FollowService {
 				this.cacheService.invalidateMutualFriend(userId, targetUserId),
 				this.cacheService.invalidateMutualFriendIds(userId),
 				this.cacheService.invalidateMutualFriendIds(targetUserId),
+				this.cacheService.invalidateFriendCount(userId),
+				this.cacheService.invalidateFriendCount(targetUserId),
 			]);
 
 			return { follow, autoAccepted: true };
@@ -327,6 +329,8 @@ export class FollowService {
 			this.cacheService.invalidateMutualFriend(userId, requesterUserId),
 			this.cacheService.invalidateMutualFriendIds(userId),
 			this.cacheService.invalidateMutualFriendIds(requesterUserId),
+			this.cacheService.invalidateFriendCount(userId),
+			this.cacheService.invalidateFriendCount(requesterUserId),
 		]);
 
 		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
@@ -417,6 +421,8 @@ export class FollowService {
 			this.cacheService.invalidateMutualFriend(userId, targetUserId),
 			this.cacheService.invalidateMutualFriendIds(userId),
 			this.cacheService.invalidateMutualFriendIds(targetUserId),
+			this.cacheService.invalidateFriendCount(userId),
+			this.cacheService.invalidateFriendCount(targetUserId),
 		]);
 
 		this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
@@ -559,7 +565,9 @@ export class FollowService {
 	 * 친구 수 조회
 	 */
 	async countFriends(userId: string): Promise<number> {
-		return this.followRepository.countMutualFriends(userId);
+		return this.cacheService.wrapFriendCount(userId, () =>
+			this.followRepository.countMutualFriends(userId),
+		);
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Inject, Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
@@ -49,6 +49,11 @@ export class AdminNotificationProcessor extends WorkerHost {
 		private readonly paymentNotifier: AdminNotifier,
 	) {
 		super();
+	}
+
+	@OnWorkerEvent("stalled")
+	onStalled(jobId: string) {
+		this.#logger.warn(`Job stalled: jobId=${jobId}`);
 	}
 
 	async process(job: Job<AdminNotificationJobData>): Promise<void> {

@@ -70,6 +70,11 @@ describe("FollowService", () => {
 			isAdmin: false,
 			subscriptionStatus: "ACTIVE",
 		});
+
+		// wrapFriendCount passthrough (countFriends 내부에서 사용)
+		cacheService.wrapFriendCount.mockImplementation((_userId, factory) =>
+			factory(),
+		);
 	});
 
 	// ============================================
@@ -1000,7 +1005,7 @@ describe("FollowService", () => {
 	// ============================================
 
 	describe("countFriends", () => {
-		it("친구 수를 반환한다", async () => {
+		it("친구 수를 반환한다 (캐시 wrap)", async () => {
 			// Given
 			followRepo.countMutualFriends.mockResolvedValue(5);
 
@@ -1009,7 +1014,10 @@ describe("FollowService", () => {
 
 			// Then
 			expect(result).toBe(5);
-			expect(followRepo.countMutualFriends).toHaveBeenCalledWith(mockUserId);
+			expect(cacheService.wrapFriendCount).toHaveBeenCalledWith(
+				mockUserId,
+				expect.any(Function),
+			);
 		});
 	});
 

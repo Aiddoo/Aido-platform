@@ -115,10 +115,10 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 						timezone: user.preference?.timezone ?? "Asia/Seoul",
 					} satisfies AiSuggestionJobData,
 					opts: {
-						jobId: `suggestion:${user.id}:${periodId}`,
+						jobId: `suggestion_${user.id}_${periodId}`,
 						attempts: 3,
 						backoff: { type: "exponential" as const, delay: 5_000 },
-						removeOnComplete: { age: 604_800 },
+						removeOnComplete: { age: 604_800, count: 10_000 },
 						removeOnFail: 100,
 					},
 				}));

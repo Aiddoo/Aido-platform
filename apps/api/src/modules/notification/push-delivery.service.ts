@@ -8,6 +8,8 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
+import { CacheKeys } from "@/common/cache/constants/cache-keys";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import {
 	type NotificationType,
@@ -74,6 +76,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		private readonly userConsentRepository: UserConsentRepository,
 		@Inject(PUSH_RATE_LIMITER)
 		private readonly rateLimiter: IPushRateLimiter,
+		private readonly cacheService: CacheService,
 	) {}
 
 	// =========================================================================
@@ -86,12 +89,14 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		}
 
 		const pushToken = await this.notificationRepository.registerPushToken(data);
+		await this.cacheService.invalidatePushTokens(data.userId);
 
 		if (data.timezone) {
 			await this.userPreferenceRepository.upsertTimezone(
 				data.userId,
 				data.timezone,
 			);
+			await this.cacheService.invalidateUserPreference(data.userId);
 		}
 
 		this.#logger.log(
@@ -104,6 +109,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 	async unregisterPushToken(userId: string, deviceId: string): Promise<void> {
 		try {
 			await this.notificationRepository.deletePushToken(userId, deviceId);
+			await this.cacheService.invalidatePushTokens(userId);
 			this.#logger.log(
 				`Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
 			);
@@ -124,6 +130,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 	async unregisterAllPushTokens(userId: string): Promise<void> {
 		const result =
 			await this.notificationRepository.deleteAllPushTokensByUser(userId);
+		await this.cacheService.invalidatePushTokens(userId);
 		this.#logger.log(
 			`All push tokens unregistered: userId=${userId}, count=${result.count}`,
 		);
@@ -345,19 +352,25 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		userId: string,
 		payload: Omit<PushPayload, "token">,
 	): Promise<void> {
-		const tokens = await this.notificationRepository.findPushTokensByUser({
+		const tokenStrings = await this.cacheService.wrapPushTokens(
 			userId,
-			activeOnly: true,
-		});
+			async () => {
+				const tokens = await this.notificationRepository.findPushTokensByUser({
+					userId,
+					activeOnly: true,
+				});
+				return tokens.map((t) => t.token);
+			},
+		);
 
-		if (tokens.length === 0) {
+		if (tokenStrings.length === 0) {
 			this.#logger.debug(`No active push tokens for user: ${userId}`);
 			return;
 		}
 
-		const payloads: PushPayload[] = tokens.map((t) => ({
+		const payloads: PushPayload[] = tokenStrings.map((token) => ({
 			...payload,
-			token: t.token,
+			token,
 		}));
 
 		const result = await this.pushProvider.sendBatch(payloads);
@@ -366,6 +379,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			await this.notificationRepository.deactivateInvalidTokens(
 				result.invalidTokens,
 			);
+			await this.cacheService.invalidatePushTokens(userId);
 			this.#logger.warn(
 				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
 			);
@@ -380,19 +394,11 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		userIds: string[],
 		payloads: Array<{ userId: string } & Omit<PushPayload, "token">>,
 	): Promise<void> {
-		const tokens =
-			await this.notificationRepository.findActivePushTokensByUsers(userIds);
+		const tokensByUser = await this.#resolveTokensByUsers(userIds);
 
-		if (tokens.length === 0) {
+		if (tokensByUser.size === 0) {
 			this.#logger.debug("No active push tokens for users");
 			return;
-		}
-
-		const tokensByUser = new Map<string, string[]>();
-		for (const token of tokens) {
-			const userTokens = tokensByUser.get(token.userId) ?? [];
-			userTokens.push(token.token);
-			tokensByUser.set(token.userId, userTokens);
 		}
 
 		const pushPayloads: PushPayload[] = [];
@@ -418,6 +424,9 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			await this.notificationRepository.deactivateInvalidTokens(
 				result.invalidTokens,
 			);
+			await Promise.all(
+				userIds.map((uid) => this.cacheService.invalidatePushTokens(uid)),
+			);
 			this.#logger.warn(
 				`Deactivated invalid tokens: ${result.invalidTokens.length}`,
 			);
@@ -426,6 +435,62 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		this.#logger.debug(
 			`Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
 		);
+	}
+
+	/**
+	 * scatter-gather 패턴으로 다수 사용자의 푸시 토큰 조회
+	 *
+	 * 1) mget: 1회 Redis 호출로 모든 사용자 토큰 조회
+	 * 2) 캐시 미스분만 배치 DB 쿼리 1회
+	 * 3) mset: 1회 Redis 호출로 캐시 적재 (negative cache 포함)
+	 */
+	async #resolveTokensByUsers(
+		userIds: string[],
+	): Promise<Map<string, string[]>> {
+		const tokensByUser = new Map<string, string[]>();
+
+		const cacheKeys = userIds.map((uid) => CacheKeys.pushTokens(uid));
+		const cached = await this.cacheService.mget<string[]>(cacheKeys);
+
+		const missedUserIds: string[] = [];
+		for (const [i, uid] of userIds.entries()) {
+			const entry = cached[i];
+			if (entry !== undefined) {
+				if (entry.length > 0) {
+					tokensByUser.set(uid, entry);
+				}
+			} else {
+				missedUserIds.push(uid);
+			}
+		}
+
+		if (missedUserIds.length > 0) {
+			const dbTokens =
+				await this.notificationRepository.findActivePushTokensByUsers(
+					missedUserIds,
+				);
+
+			const dbTokensByUser = new Map<string, string[]>();
+			for (const t of dbTokens) {
+				const arr = dbTokensByUser.get(t.userId) ?? [];
+				arr.push(t.token);
+				dbTokensByUser.set(t.userId, arr);
+			}
+
+			await this.cacheService.mset(
+				missedUserIds.map((uid) => ({
+					key: CacheKeys.pushTokens(uid),
+					value: dbTokensByUser.get(uid) ?? [],
+					ttl: CacheKeys.TTL.PUSH_TOKENS,
+				})),
+			);
+
+			for (const [uid, tokens] of dbTokensByUser) {
+				tokensByUser.set(uid, tokens);
+			}
+		}
+
+		return tokensByUser;
 	}
 
 	// =========================================================================
