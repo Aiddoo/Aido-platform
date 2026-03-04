@@ -11,10 +11,12 @@
 
 import type { INestApplication } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
+import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
+import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { DatabaseService } from "@/database";
 import {
 	ADMIN_NOTIFIER,
@@ -62,9 +64,13 @@ export async function createE2eApp(
 	const fakePushProvider = new FakePushProvider();
 	const fakeAiProvider = new FakeAiProvider();
 
+	const redisMock = new RedisMock();
+
 	let builder = Test.createTestingModule({
 		imports: [AppModule],
 	})
+		.overrideProvider(REDIS_CLIENT)
+		.useValue(redisMock)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
 		.overrideProvider(EmailService)
