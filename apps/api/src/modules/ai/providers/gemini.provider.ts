@@ -4,10 +4,11 @@
  * Vercel AI SDK를 사용하여 Google Gemini 2.5 Flash-Lite 모델과 통신합니다.
  * 토큰 비용 최적화를 위해 Flash-Lite 모델을 기본으로 사용합니다.
  *
- * 가격 (2026년 3월 기준):
- * - Input: $0.075 / 1M tokens
- * - Output: $0.30 / 1M tokens
- * - 무료 티어: 1,000 RPD, 15 RPM
+ * 가격 (2026년 3월 기준, Gemini Developer API Standard / text,image,video):
+ * - Input: $0.10 / 1M tokens
+ * - Output: $0.40 / 1M tokens
+ * - Context caching: $0.01 / 1M tokens (+ storage $1.00 / 1M tokens/hour)
+ * 출처: https://ai.google.dev/gemini-api/docs/pricing
  */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Injectable } from "@nestjs/common";

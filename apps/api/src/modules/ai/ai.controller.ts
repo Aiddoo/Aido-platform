@@ -50,7 +50,7 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
  *
  * ### 사용 모델
  * - Google Gemini 2.5 Flash-Lite (비용 효율적)
- * - Input: $0.075/1M tokens, Output: $0.30/1M tokens
+ * - Standard 가격 기준: Input $0.10/1M tokens, Output $0.40/1M tokens
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
