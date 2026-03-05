@@ -1,7 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
-import { updateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/update-todo-category-mutation-options';
+import { useUpdateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-update-todo-category-mutation-options';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
 import { Flex } from '@src/shared/ui/Flex/Flex';
@@ -27,7 +27,7 @@ export const CategoryEditBottomSheet = ({
   onClose,
   category,
 }: CategoryEditBottomSheetProps) => {
-  const updateMutation = useMutation(updateTodoCategoryMutationOptions());
+  const updateMutation = useMutation(useUpdateTodoCategoryMutationOptions());
 
   const {
     control,

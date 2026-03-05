@@ -3,7 +3,7 @@ import PersonIconSvg from '@assets/icons/ic_person.svg';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
@@ -62,13 +62,13 @@ function IOSLiquidGlassTabs() {
   return (
     <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="feed">
-        <Label>피드</Label>
-        <Icon sf="list.bullet" />
+        <NativeTabs.Trigger.Label>피드</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mypage">
-        <Label>마이</Label>
-        <Icon sf="person.fill" />
+        <NativeTabs.Trigger.Label>마이</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.fill" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

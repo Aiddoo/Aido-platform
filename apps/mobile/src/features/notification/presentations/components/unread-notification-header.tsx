@@ -5,12 +5,12 @@ import { TextButton } from '@src/shared/ui/TextButton/TextButton';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, SkeletonGroup } from 'heroui-native';
 import { useCallback } from 'react';
-import { getUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
-import { markAllAsReadMutationOptions } from '../queries/mark-all-as-read-mutation-options';
+import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
+import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
 
 export function UnreadNotificationHeader() {
-  const { data: unreadCount = 0 } = useSuspenseQuery(getUnreadCountQueryOptions());
-  const markAllAsRead = useMutation(markAllAsReadMutationOptions());
+  const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
+  const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
 
   const handleMarkAllAsRead = useCallback(() => {
     if (unreadCount > 0 && !markAllAsRead.isPending) {

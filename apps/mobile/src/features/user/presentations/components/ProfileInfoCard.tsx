@@ -7,7 +7,7 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
-import { getMeQueryOptions } from '../queries/get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 import { getProfileIconSource } from '../utils/profile-icon.util';
 
 interface ProfileInfoCardProps {
@@ -21,7 +21,7 @@ export function ProfileInfoCard({
   onNamePress,
   onChangePasswordPress,
 }: ProfileInfoCardProps) {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const hasCredential = UserPolicy.hasCredential(user);
 
   return (

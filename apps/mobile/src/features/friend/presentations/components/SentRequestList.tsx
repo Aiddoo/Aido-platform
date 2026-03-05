@@ -13,14 +13,14 @@ import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import type { FriendRequest } from '../../models/friend.model';
-import { cancelRequestMutationOptions } from '../queries/cancel-request-mutation-options';
-import { getSentRequestsQueryOptions } from '../queries/get-sent-requests-query-options';
+import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
+import { useGetSentRequestsQueryOptions } from '../queries/use-get-sent-requests-query-options';
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function SentRequestList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
-    useSuspenseInfiniteQuery(getSentRequestsQueryOptions());
-  const cancelMutation = useMutation(cancelRequestMutationOptions());
+    useSuspenseInfiniteQuery(useGetSentRequestsQueryOptions());
+  const cancelMutation = useMutation(useCancelRequestMutationOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allRequests = data.pages.flatMap((page) => page.items);

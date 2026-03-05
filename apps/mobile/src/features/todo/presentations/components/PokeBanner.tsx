@@ -9,10 +9,10 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
 import { match } from 'ts-pattern';
-import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 
 export function PokeBanner() {
-  const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
+  const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
 

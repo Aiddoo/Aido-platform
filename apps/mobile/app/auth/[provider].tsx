@@ -29,7 +29,7 @@ export default function OAuthCallbackScreen() {
   // exchangeCode가 완료되면 status가 'authenticated'로 변경됨
   // 이를 감지하여 직접 home으로 이동 (중간 redirect 제거)
   if (status === 'authenticated') {
-    return <Redirect href="/(app)/(tabs)/home" />;
+    return <Redirect href="/feed" />;
   }
 
   // 아직 exchangeCode가 진행 중이거나 실패한 경우

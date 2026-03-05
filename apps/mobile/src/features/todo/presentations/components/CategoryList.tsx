@@ -1,6 +1,6 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
-import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
-import { reorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/reorder-todo-category-mutation-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-reorder-todo-category-mutation-options';
 import { Box } from '@src/shared/ui/Box/Box';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { EditIcon, TrashIcon } from '@src/shared/ui/Icon';
@@ -22,8 +22,8 @@ export const CategoryList = () => {
   const editOverlay = useOverlay();
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
-  const { data, dataUpdatedAt } = useSuspenseQuery(getTodoCategoriesQueryOptions());
-  const reorderMutation = useMutation(reorderTodoCategoryMutationOptions());
+  const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const { items: draggableCategories, onDragEnd } = useDraggableReorderList({
     items: data.categories,
     updatedAt: dataUpdatedAt,

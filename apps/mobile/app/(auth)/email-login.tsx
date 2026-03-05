@@ -1,7 +1,7 @@
 import idoCatHiImage from '@assets/images/ido_cat_hi.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
-import { emailLoginMutationOptions } from '@src/features/auth/presentations/queries/email-login-mutation-options';
+import { useEmailLoginMutationOptions } from '@src/features/auth/presentations/queries/use-email-login-mutation-options';
 import {
   type EmailLoginFormData,
   emailLoginFormSchema,
@@ -33,7 +33,7 @@ const EmailLoginScreen = () => {
     mode: 'onTouched',
   });
 
-  const emailLoginMutation = useMutation(emailLoginMutationOptions());
+  const emailLoginMutation = useMutation(useEmailLoginMutationOptions());
 
   const onSubmit = handleSubmit((data) => {
     emailLoginMutation.mutate({ email: data.email, password: data.password });

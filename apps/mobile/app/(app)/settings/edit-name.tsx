@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type UpdateNameInput, updateNameInputSchema } from '@src/features/user/models/user.model';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { updateProfileMutationOptions } from '@src/features/user/presentations/queries/update-profile-mutation-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
 import { Input } from '@src/shared/ui/Input';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
@@ -28,8 +28,8 @@ const EditNameScreen = () => {
 export default EditNameScreen;
 
 function EditNameForm() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const updateProfileMutation = useMutation(updateProfileMutationOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
   const router = useRouter();
 
   const {

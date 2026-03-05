@@ -1,4 +1,4 @@
-import { getFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
+import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
@@ -26,7 +26,7 @@ const FriendFeedScreen = () => {
   );
   const [refreshing, onRefresh] = useRefresh(invalidateTodos);
 
-  const { data: friendsData } = useSuspenseInfiniteQuery(getFriendsQueryOptions());
+  const { data: friendsData } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
   const friend = useMemo(
     () => friendsData.pages.flatMap((p) => p.items).find((f) => f.id === friendId),

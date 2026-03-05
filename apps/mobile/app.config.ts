@@ -68,29 +68,32 @@ const restoreBase64File = ({
 const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig => {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-  return match(environment)
-    .with('production', () => ({
-      name: APP_NAME,
-      bundleIdentifier: BUNDLE_IDENTIFIER,
-      packageName: PACKAGE_NAME,
-      scheme: SCHEME,
-      apiUrl: apiUrl ?? 'https://api.aido.kr',
-    }))
-    .with('preview', () => ({
-      name: `${APP_NAME} Preview`,
-      bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-      packageName: `${PACKAGE_NAME}.preview`,
-      scheme: `${SCHEME}-preview`,
-      apiUrl: apiUrl ?? 'https://api.aido.kr',
-    }))
-    .with('development', () => ({
-      name: `${APP_NAME} Development`,
-      bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
-      packageName: `${PACKAGE_NAME}.dev`,
-      scheme: `${SCHEME}-dev`,
-      apiUrl: apiUrl ?? 'http://localhost:8080',
-    }))
-    .exhaustive();
+  return (
+    match(environment)
+      .with('production', () => ({
+        name: APP_NAME,
+        bundleIdentifier: BUNDLE_IDENTIFIER,
+        packageName: PACKAGE_NAME,
+        scheme: SCHEME,
+        apiUrl: apiUrl ?? 'https://api.aido.kr',
+      }))
+      .with('preview', () => ({
+        name: `${APP_NAME} Preview`,
+        bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
+        packageName: `${PACKAGE_NAME}.preview`,
+        scheme: `${SCHEME}-preview`,
+        apiUrl: apiUrl ?? 'https://api.aido.kr',
+      }))
+      // TODO: google-services.json에 .dev 패키지 추가 후 suffix 복원 (`${BUNDLE_IDENTIFIER}.dev`, `${PACKAGE_NAME}.dev`)
+      .with('development', () => ({
+        name: `${APP_NAME} Development`,
+        bundleIdentifier: BUNDLE_IDENTIFIER,
+        packageName: PACKAGE_NAME,
+        scheme: `${SCHEME}-dev`,
+        apiUrl: apiUrl ?? 'http://localhost:8080',
+      }))
+      .exhaustive()
+  );
 };
 
 const resolveEnvironment = (rawEnv: string): AppEnvironment =>
@@ -156,16 +159,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         usesNonExemptEncryption: false,
       },
       infoPlist: {
-        NSCameraUsageDescription:
-          '$(PRODUCT_NAME)이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
-        NSPhotoLibraryUsageDescription:
-          '$(PRODUCT_NAME)이(가) 사진 선택을 위해 사진 라이브러리에 접근하려고 합니다.',
         NSMicrophoneUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
-        NSCalendarsUsageDescription:
-          '$(PRODUCT_NAME)이(가) 일정 동기화를 위해 캘린더에 접근하려고 합니다.',
-        NSCalendarsWriteUsageDescription:
-          '$(PRODUCT_NAME)이(가) 일정 추가를 위해 캘린더 쓰기 권한이 필요합니다.',
         NSFaceIDUsageDescription:
           '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         NSSpeechRecognitionUsageDescription:
@@ -194,10 +189,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         foregroundImage: ADAPTIVE_ICON,
         backgroundColor: BRAND_COLOR,
       },
-      edgeToEdgeEnabled: true,
-      ...(isDevelopment && {
-        usesCleartextTraffic: true,
-      }),
       intentFilters: [
         {
           action: 'VIEW',
@@ -210,22 +201,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       permissions: [
-        'CAMERA',
-        'READ_EXTERNAL_STORAGE',
-        'WRITE_EXTERNAL_STORAGE',
-        'READ_MEDIA_IMAGES',
-        'READ_MEDIA_AUDIO',
         'RECORD_AUDIO',
-        'READ_CALENDAR',
-        'WRITE_CALENDAR',
         'VIBRATE',
         'RECEIVE_BOOT_COMPLETED',
         'USE_BIOMETRIC',
         'USE_FINGERPRINT',
         'POST_NOTIFICATIONS',
-        'FOREGROUND_SERVICE',
-        'FOREGROUND_SERVICE_DATA_SYNC',
-        'WAKE_LOCK',
       ],
       googleServicesFile: './google-services.json',
     },
@@ -247,6 +228,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ios: {
             useFrameworks: 'static',
             forceStaticLinking: ['RNFBApp', 'RNFBAnalytics', 'RNFBCrashlytics'],
+          },
+          android: {
+            edgeToEdgeEnabled: true,
+            ...(isDevelopment && { usesCleartextTraffic: true }),
           },
         },
       ],
@@ -278,44 +263,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
 
       [
-        'expo-camera',
-        {
-          // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
-          cameraPermission: '${PRODUCT_NAME}이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
-          microphonePermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
-            '${PRODUCT_NAME}이(가) 동영상 녹화를 위해 마이크에 접근하려고 합니다.',
-          recordAudioAndroid: true,
-        },
-      ],
-
-      [
-        'expo-image-picker',
-        {
-          photosPermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
-            '${PRODUCT_NAME}이(가) 사진 선택을 위해 사진 라이브러리에 접근하려고 합니다.',
-          // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
-          cameraPermission: '${PRODUCT_NAME}이(가) 사진 촬영을 위해 카메라에 접근하려고 합니다.',
-        },
-      ],
-
-      [
         'expo-notifications',
         {
           icon: NOTIFICATION_ICON,
           color: BRAND_COLOR,
           // TODO: 알림음 파일 추가 시 설정
           // sounds: ["./assets/sounds/notification.wav"],
-        },
-      ],
-
-      [
-        'expo-calendar',
-        {
-          calendarPermission:
-            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
-            '${PRODUCT_NAME}이(가) 일정 동기화를 위해 캘린더에 접근하려고 합니다.',
         },
       ],
 
@@ -330,9 +283,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
       'expo-secure-store',
       'expo-system-ui',
-      'expo-sqlite',
-      'expo-task-manager',
-      'expo-background-fetch',
+      'expo-web-browser',
 
       [
         'expo-speech-recognition',
@@ -364,8 +315,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Experiments
     experiments: {
       typedRoutes: true,
+      reactCompiler: true,
     },
-    newArchEnabled: true,
 
     // EAS Updates
     ...(EAS_PROJECT_ID && {

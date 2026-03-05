@@ -7,9 +7,9 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
-import { createRecurringTodoMutationOptions } from '../queries/create-recurring-todo-mutation-options';
-import { createTodoMutationOptions } from '../queries/create-todo-mutation-options';
-import { updateTodoMutationOptions } from '../queries/update-todo-mutation-options';
+import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
+import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
+import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { TodoDatePickerContent } from './TodoDatePickerContent';
@@ -81,9 +81,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const [activeView, setActiveView] = useState<PickerView>('form');
 
-  const createMutation = useMutation(createTodoMutationOptions());
-  const updateMutation = useMutation(updateTodoMutationOptions());
-  const createRecurringMutation = useMutation(createRecurringTodoMutationOptions());
+  const createMutation = useMutation(useCreateTodoMutationOptions());
+  const updateMutation = useMutation(useUpdateTodoMutationOptions());
+  const createRecurringMutation = useMutation(useCreateRecurringTodoMutationOptions());
 
   const isSubmitting =
     createMutation.isPending || updateMutation.isPending || createRecurringMutation.isPending;

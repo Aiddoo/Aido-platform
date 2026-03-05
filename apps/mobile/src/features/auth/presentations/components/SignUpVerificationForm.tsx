@@ -15,8 +15,8 @@ import { Controller, useForm, useFormContext } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useCooldown } from '../hooks/useCooldown';
-import { resendVerificationMutationOptions } from '../queries/resend-verification-mutation-options';
-import { verifyEmailMutationOptions } from '../queries/verify-email-mutation-options';
+import { useResendVerificationMutationOptions } from '../queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutation-options';
 import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 export const SignUpVerificationForm = () => {
@@ -32,8 +32,8 @@ export const SignUpVerificationForm = () => {
     defaultValues: { email, code: '' },
   });
 
-  const verify = useMutation(verifyEmailMutationOptions());
-  const resend = useMutation(resendVerificationMutationOptions());
+  const verify = useMutation(useVerifyEmailMutationOptions());
+  const resend = useMutation(useResendVerificationMutationOptions());
 
   const onSubmit = (data: VerifyEmailInput) => {
     setIsInvalid(false);

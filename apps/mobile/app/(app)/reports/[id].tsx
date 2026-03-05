@@ -4,7 +4,7 @@ import {
   getSampleReport,
   isSampleReportId,
 } from '@src/features/ai/presentations/constants/sample-reports.constant';
-import { getReportDetailQueryOptions } from '@src/features/ai/presentations/queries/get-report-detail-query-options';
+import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-detail-query-options';
 import { Button } from '@src/shared/ui/Button/Button';
 import { usePremiumDialog } from '@src/shared/ui/PremiumDialog/PremiumDialog';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
@@ -43,7 +43,7 @@ const ReportDetailScreen = () => {
 export default ReportDetailScreen;
 
 function ReportDetailBody({ id }: { id: number }) {
-  const { data: report } = useSuspenseQuery(getReportDetailQueryOptions(id));
+  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions(id));
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">

@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/create-todo-category-mutation-options';
+import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-create-todo-category-mutation-options';
 import { isApiError } from '@src/shared/errors';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
@@ -30,7 +30,7 @@ export const CategoryCreateBottomSheet = ({
   onClose,
   onExit,
 }: CategoryCreateBottomSheetProps) => {
-  const createMutation = useMutation(createTodoCategoryMutationOptions());
+  const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
   const [premiumOpen, setPremiumOpen] = useState(false);
 
   const {

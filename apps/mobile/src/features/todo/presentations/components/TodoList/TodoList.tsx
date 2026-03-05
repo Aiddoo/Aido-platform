@@ -12,9 +12,9 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
-import { getAllTodosQueryOptions } from '../../queries/get-all-todos-query-options';
-import { getTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
-import { reorderTodoMutationOptions } from '../../queries/reorder-todo-mutation-options';
+import { useGetAllTodosQueryOptions } from '../../queries/use-get-all-todos-query-options';
+import { useGetTodoCategoriesQueryOptions } from '../../queries/use-get-todo-categories-query-options';
+import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
 import { TodoItem } from './TodoItem';
@@ -31,9 +31,9 @@ interface TodoListProps {
 
 export function TodoList({ date }: TodoListProps) {
   const formattedDate = formatDate(date);
-  const { data, dataUpdatedAt } = useSuspenseQuery(getAllTodosQueryOptions(formattedDate));
+  const { data, dataUpdatedAt } = useSuspenseQuery(useGetAllTodosQueryOptions(formattedDate));
   const { data: categoriesData } = useSuspenseQuery({
-    ...getTodoCategoriesQueryOptions(),
+    ...useGetTodoCategoriesQueryOptions(),
     select: (data) => ({
       categories: data.categories.map(
         (c): TodoCategoryViewModel => ({ id: c.id, name: c.name, color: c.color }),
@@ -106,7 +106,7 @@ interface CategoryTodoDraggableListProps {
 }
 
 function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableListProps) {
-  const reorderMutation = useMutation(reorderTodoMutationOptions());
+  const reorderMutation = useMutation(useReorderTodoMutationOptions());
 
   const { items: draggableTodos, onDragEnd } = useDraggableReorderList({
     items: todos,

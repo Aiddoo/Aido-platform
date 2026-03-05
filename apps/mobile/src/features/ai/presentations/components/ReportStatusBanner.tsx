@@ -4,11 +4,11 @@ import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Separator, SkeletonGroup } from 'heroui-native';
-import { getReportStatusQueryOptions } from '../queries/get-report-status-query-options';
+import { useGetReportStatusQueryOptions } from '../queries/use-get-report-status-query-options';
 import { formatDday } from '../utils/format-report';
 
 export function ReportStatusBanner() {
-  const { data: status } = useSuspenseQuery(getReportStatusQueryOptions());
+  const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
 
   return (
     <Card className="border border-gray-3 dark:bg-gray-2">

@@ -14,7 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Dialog } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
 import { Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { sendTodoNudgeMutationOptions } from '../queries/send-todo-nudge-mutation-options';
+import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
 import { type NudgeFormInput, nudgeFormSchema } from '../schemas/nudge-form.schema';
 
 interface NudgeDialogProps {
@@ -25,7 +25,7 @@ interface NudgeDialogProps {
 }
 
 export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogProps) {
-  const sendNudgeMutation = useMutation(sendTodoNudgeMutationOptions());
+  const sendNudgeMutation = useMutation(useSendTodoNudgeMutationOptions());
   const {
     control,
     handleSubmit,
