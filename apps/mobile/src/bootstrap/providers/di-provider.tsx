@@ -2,6 +2,7 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
+import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { FriendRepositoryImpl } from '@src/features/friend/repositories/friend.repository.impl';
 import { FriendService } from '@src/features/friend/services/friend.service';
@@ -48,6 +49,7 @@ export interface DIContainer {
   errorReporter: ErrorReporter;
 
   // Services
+  aiService: AiService;
   authService: AuthService;
   friendService: FriendService;
   todoService: TodoService;
@@ -89,6 +91,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const authKyInstance = createAuthClient(storage);
     const authHttpClient = new KyHttpClient(authKyInstance);
+
+    // AI
+    const aiService = new AiService(authHttpClient);
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, storage);
@@ -132,6 +137,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       logger,
       analytics,
       errorReporter,
+      aiService,
       authService,
       friendService,
       todoService,
@@ -164,6 +170,7 @@ export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
 
 // Service Hooks
+export const useAiService = () => useDI().aiService;
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
 export const useTodoService = () => useDI().todoService;
