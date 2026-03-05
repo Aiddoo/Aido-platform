@@ -15,15 +15,15 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Avatar, Skeleton } from 'heroui-native';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
-import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
-import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
+import { useGetFriendsQueryOptions } from '../queries/use-get-friends-query-options';
+import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 import { FriendDeleteConfirmDialog } from './FriendDeleteConfirmDialog';
 
 export function FriendList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
-    useSuspenseInfiniteQuery(getFriendsQueryOptions());
-  const removeMutation = useMutation(removeFriendMutationOptions());
+    useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+  const removeMutation = useMutation(useRemoveFriendMutationOptions());
   const overlay = useOverlay();
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 

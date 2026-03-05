@@ -14,8 +14,8 @@ import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
-import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
-import { getDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
+import type { CompletionsByDate } from '../../queries/use-get-daily-completions-query-options';
+import { useGetDailyCompletionsQueryOptions } from '../../queries/use-get-daily-completions-query-options';
 import { CalendarMonthView } from './CalendarMonthView';
 import { CalendarNavigation } from './CalendarNavigation';
 import { CalendarViewModeToggle } from './CalendarViewModeToggle';
@@ -41,7 +41,7 @@ export function Calendar({ showCompletions = true }: CalendarProps) {
   );
 
   const { data } = useQuery({
-    ...getDailyCompletionsQueryOptions(rangeStart, rangeEnd),
+    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd),
     enabled: showCompletions,
   });
 

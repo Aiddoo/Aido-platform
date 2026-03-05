@@ -1,8 +1,8 @@
-import { deleteAccountMutationOptions } from '@src/features/auth/presentations/queries/delete-account-mutation-options';
-import { logoutMutationOptions } from '@src/features/auth/presentations/queries/logout-mutation-options';
+import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
+import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
@@ -118,10 +118,10 @@ const SettingNavigationItem = ({ label, onPress, right, locked }: SettingNavigat
 );
 
 function AccountActionButtons() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const router = useRouter();
-  const logout = useMutation(logoutMutationOptions());
-  const deleteAccount = useMutation(deleteAccountMutationOptions());
+  const logout = useMutation(useLogoutMutationOptions());
+  const deleteAccount = useMutation(useDeleteAccountMutationOptions());
   const overlay = useOverlay();
 
   const handleLogoutPress = () => {
@@ -223,7 +223,7 @@ function AccountActionButtons() {
 }
 
 function AppIconMenuItem() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const router = useRouter();
   const premiumDialog = usePremiumDialog();
 

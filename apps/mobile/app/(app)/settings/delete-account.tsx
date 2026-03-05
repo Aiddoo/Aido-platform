@@ -1,5 +1,5 @@
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
-import { deleteAccountMutationOptions } from '@src/features/auth/presentations/queries/delete-account-mutation-options';
+import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
@@ -29,7 +29,7 @@ export default DeleteAccountScreen;
 
 function DeleteAccountForm() {
   const [password, setPassword] = useState('');
-  const deleteAccountMutation = useMutation(deleteAccountMutationOptions());
+  const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
   const overlay = useOverlay();
 
   const isValid = password.length > 0;

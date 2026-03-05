@@ -9,8 +9,8 @@ import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
-import { toggleTodoMutationOptions } from '../../queries/toggle-todo-mutation-options';
-import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
+import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
+import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
 import { TodoDatePickerContent } from '../TodoDatePickerContent';
@@ -27,8 +27,8 @@ interface TodoItemProps {
 
 export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: TodoItemProps) => {
   const overlay = useOverlay();
-  const toggleMutation = useMutation(toggleTodoMutationOptions());
-  const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
+  const toggleMutation = useMutation(useToggleTodoMutationOptions());
+  const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const showDateTime = todo.formattedTime && !todo.isAllDay;
 
   const openEditBottomSheet = () => {

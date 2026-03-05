@@ -11,7 +11,9 @@
       "!**/build",
       "!**/coverage",
       "!**/*.generated.*",
-      "!uniwind-types.d.ts"
+      "!uniwind-types.d.ts",
+      "!.agents",
+      "!.claude/skills"
     ]
   },
   "css": {

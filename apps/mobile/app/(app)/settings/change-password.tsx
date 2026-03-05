@@ -2,7 +2,7 @@ import { type ChangePasswordInput, changePasswordSchema } from '@aido/validators
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
 import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';
-import { changePasswordMutationOptions } from '@src/features/auth/presentations/queries/change-password-mutation-options';
+import { useChangePasswordMutationOptions } from '@src/features/auth/presentations/queries/use-change-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
@@ -124,7 +124,7 @@ function NewPasswordStep() {
     handleSubmit,
     formState: { errors },
   } = useFormContext<ChangePasswordInput>();
-  const changePasswordMutation = useMutation(changePasswordMutationOptions());
+  const changePasswordMutation = useMutation(useChangePasswordMutationOptions());
 
   const [newPassword, newPasswordConfirm] = useWatch({
     control,

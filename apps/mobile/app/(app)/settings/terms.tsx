@@ -1,5 +1,5 @@
-import { getConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
-import { updateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/update-marketing-consent-mutation-options';
+import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
+import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -40,8 +40,8 @@ const TermsSettingsScreen = () => {
 export default TermsSettingsScreen;
 
 function TermsSettingsForm() {
-  const { data: consent } = useSuspenseQuery(getConsentQueryOptions());
-  const updateMutation = useMutation(updateMarketingConsentMutationOptions());
+  const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
+  const updateMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const openUrl = useOpenUrl();
 
   const formatDate = (date: Date | null) => {

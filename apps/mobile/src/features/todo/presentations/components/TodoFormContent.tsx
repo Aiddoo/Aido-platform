@@ -20,8 +20,8 @@ import { PressableFeedback, Spinner } from 'heroui-native';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 import { AiUsagePolicy } from '../../models/todo.model';
-import { getAiUsageQueryOptions } from '../queries/get-ai-usage-query-options';
-import { parseTodoMutationOptions } from '../queries/parse-todo-mutation-options';
+import { useGetAiUsageQueryOptions } from '../queries/use-get-ai-usage-query-options';
+import { useParseTodoMutationOptions } from '../queries/use-parse-todo-mutation-options';
 import type { AddTodoFormInput } from '../schemas/add-todo-form.schema';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 
@@ -44,10 +44,10 @@ export const TodoFormContent = ({
   const toast = useAppToast();
   const premiumDialog = usePremiumDialog();
 
-  const { data: aiUsage } = useQuery(getAiUsageQueryOptions());
+  const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
   const isAiLimitReached = aiUsage != null && AiUsagePolicy.isLimitReached(aiUsage);
 
-  const parseMutation = useMutation(parseTodoMutationOptions());
+  const parseMutation = useMutation(useParseTodoMutationOptions());
 
   const handleRecognitionEnd = () => {
     const currentTitle = methods.getValues('title');

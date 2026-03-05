@@ -14,7 +14,7 @@ import { useFormContext } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { registerMutationOptions } from '../queries/register-mutation-options';
+import { useRegisterMutationOptions } from '../queries/use-register-mutation-options';
 import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
@@ -34,7 +34,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     marketing: false,
   }));
 
-  const register = useMutation(registerMutationOptions());
+  const register = useMutation(useRegisterMutationOptions());
 
   const isAllAgreed = agreements.terms && agreements.privacy && agreements.marketing;
   const isRequiredAgreed = agreements.terms && agreements.privacy;

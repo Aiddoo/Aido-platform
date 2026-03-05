@@ -5,11 +5,11 @@ import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 import { Pressable, View } from 'react-native';
-import { getUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
+import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
 
 export const NotificationBell = () => {
   const router = useRouter();
-  const { data: unreadCount } = useSuspenseQuery(getUnreadCountQueryOptions());
+  const { data: unreadCount } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const hasUnread = (unreadCount ?? 0) > 0;
 
   return (

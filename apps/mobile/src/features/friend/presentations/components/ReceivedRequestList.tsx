@@ -13,17 +13,17 @@ import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import type { FriendRequest } from '../../models/friend.model';
-import { acceptRequestMutationOptions } from '../queries/accept-request-mutation-options';
-import { getReceivedRequestsQueryOptions } from '../queries/get-received-requests-query-options';
-import { rejectRequestMutationOptions } from '../queries/reject-request-mutation-options';
+import { useAcceptRequestMutationOptions } from '../queries/use-accept-request-mutation-options';
+import { useGetReceivedRequestsQueryOptions } from '../queries/use-get-received-requests-query-options';
+import { useRejectRequestMutationOptions } from '../queries/use-reject-request-mutation-options';
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function ReceivedRequestList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
-    useSuspenseInfiniteQuery(getReceivedRequestsQueryOptions());
-  const acceptMutation = useMutation(acceptRequestMutationOptions());
+    useSuspenseInfiniteQuery(useGetReceivedRequestsQueryOptions());
+  const acceptMutation = useMutation(useAcceptRequestMutationOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
-  const rejectMutation = useMutation(rejectRequestMutationOptions());
+  const rejectMutation = useMutation(useRejectRequestMutationOptions());
 
   const handleAccept = (userId: string) => {
     acceptMutation.mutate(userId);

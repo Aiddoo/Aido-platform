@@ -1,9 +1,9 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
-import { updatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/update-preference-mutation-options';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
@@ -108,8 +108,8 @@ NotificationSettingsForm.Loading = function Loading() {
 };
 
 function PushSettingsSection() {
-  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
-  const updateMutation = useMutation(updatePreferenceMutationOptions());
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
 
   return (
     <VStack p={16} gap={12} className="bg-white rounded-2xl">
@@ -150,7 +150,7 @@ function PushSettingsSection() {
 }
 
 function ReminderSection() {
-  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
 
   return (
     <VStack gap={8}>
@@ -189,9 +189,9 @@ interface ReminderTimeRowProps {
 }
 
 function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
-  const { data: preference } = useSuspenseQuery(getPreferenceQueryOptions());
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const updateMutation = useMutation(updatePreferenceMutationOptions());
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const premiumDialog = usePremiumDialog();
   const overlay = useOverlay();
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);

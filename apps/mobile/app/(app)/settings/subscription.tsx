@@ -5,11 +5,11 @@ import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-provider';
 import { SubscriptionPlanCard } from '@src/features/subscription/presentations/components/SubscriptionPlanCard';
 import { SubscriptionStatusCard } from '@src/features/subscription/presentations/components/SubscriptionStatusCard';
-import { getOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/get-offerings-query-options';
-import { purchaseMutationOptions } from '@src/features/subscription/presentations/queries/purchase-mutation-options';
-import { restoreMutationOptions } from '@src/features/subscription/presentations/queries/restore-mutation-options';
+import { useGetOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/use-get-offerings-query-options';
+import { usePurchaseMutationOptions } from '@src/features/subscription/presentations/queries/use-purchase-mutation-options';
+import { useRestoreMutationOptions } from '@src/features/subscription/presentations/queries/use-restore-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
@@ -49,7 +49,7 @@ const SubscriptionScreen = () => {
 export default SubscriptionScreen;
 
 function SubscriptionContent() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
 
   if (isPremium) {
@@ -60,8 +60,8 @@ function SubscriptionContent() {
 }
 
 function SubscriberView() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
-  const restore = useMutation(restoreMutationOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const restore = useMutation(useRestoreMutationOptions());
 
   const handleManageSubscription = () => {
     if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
@@ -154,11 +154,11 @@ function SubscriptionUnavailableView() {
 }
 
 function OfferingsView() {
-  const { data: offering } = useSuspenseQuery(getOfferingsQueryOptions());
+  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
 
-  const purchase = useMutation(purchaseMutationOptions());
+  const purchase = useMutation(usePurchaseMutationOptions());
 
-  const restore = useMutation(restoreMutationOptions());
+  const restore = useMutation(useRestoreMutationOptions());
 
   const annualPlan = offering.plans.find((p) => p.planType === 'annual');
   const defaultPlan = annualPlan ?? offering.plans[0];

@@ -1,6 +1,6 @@
 import { userTagParamSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { sendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/send-request-by-tag-mutation-options';
+import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
 import { Input } from '@src/shared/ui/Input';
 import { Spacing } from '@src/shared/ui/Spacing/Spacing';
@@ -15,7 +15,7 @@ import type { z } from 'zod';
 type FormData = z.infer<typeof userTagParamSchema>;
 
 const AddFriendScreen = () => {
-  const sendRequestMutation = useMutation(sendRequestByTagMutationOptions());
+  const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
   const router = useRouter();
 
   const {

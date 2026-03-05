@@ -2,9 +2,9 @@ import { ReportCard } from '@src/features/ai/presentations/components/ReportCard
 import { ReportPremiumBanner } from '@src/features/ai/presentations/components/ReportPremiumBanner';
 import { ReportStatusBanner } from '@src/features/ai/presentations/components/ReportStatusBanner';
 import { getSampleReport } from '@src/features/ai/presentations/constants/sample-reports.constant';
-import { getReportsQueryOptions } from '@src/features/ai/presentations/queries/get-reports-query-options';
+import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { DocsIcon } from '@src/shared/ui/Icon';
 import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
 import { Result } from '@src/shared/ui/Result/Result';
@@ -34,7 +34,7 @@ const ReportsScreen = () => {
 export default ReportsScreen;
 
 function ReportsContent() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
   const [activeTab, setActiveTab] = useState<ReportType>('WEEKLY');
 
@@ -108,7 +108,7 @@ function FreeReportPreview({ type }: { type: ReportType }) {
 }
 
 function ReportList({ type }: { type: ReportType }) {
-  const { data: reports } = useSuspenseQuery(getReportsQueryOptions({ type }));
+  const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type }));
 
   if (reports.length === 0) {
     return (

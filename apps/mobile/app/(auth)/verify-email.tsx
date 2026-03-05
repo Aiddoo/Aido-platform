@@ -1,8 +1,8 @@
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCooldown } from '@src/features/auth/presentations/hooks/useCooldown';
-import { resendVerificationMutationOptions } from '@src/features/auth/presentations/queries/resend-verification-mutation-options';
-import { verifyEmailMutationOptions } from '@src/features/auth/presentations/queries/verify-email-mutation-options';
+import { useResendVerificationMutationOptions } from '@src/features/auth/presentations/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -38,8 +38,8 @@ const VerifyEmailScreen = () => {
     defaultValues: { email: email ?? '', code: '' },
   });
 
-  const verify = useMutation(verifyEmailMutationOptions());
-  const resend = useMutation(resendVerificationMutationOptions());
+  const verify = useMutation(useVerifyEmailMutationOptions());
+  const resend = useMutation(useResendVerificationMutationOptions());
 
   const onSubmit = (data: VerifyEmailInput) => {
     setIsInvalid(false);

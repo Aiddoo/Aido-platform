@@ -12,7 +12,7 @@ import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
 import type { NotificationCategory } from '../../models/notification.model';
-import { getNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
+import { useGetNotificationsInfiniteQueryOptions } from '../queries/use-get-notifications-infinite-query-options';
 import { NotificationItem } from './notification-item';
 
 interface NotificationListProps {
@@ -29,7 +29,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
     isFetchingNextPage,
     refetch,
   } = useSuspenseInfiniteQuery(
-    getNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
+    useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
   );
 
   const [isRefreshing, handleRefresh] = useRefresh(refetch);

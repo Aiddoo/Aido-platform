@@ -1,6 +1,6 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
-import { deleteTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/delete-todo-category-mutation-options';
-import { getTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
+import { useDeleteTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-delete-todo-category-mutation-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { Box } from '@src/shared/ui/Box/Box';
 import { Button } from '@src/shared/ui/Button/Button';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
@@ -26,8 +26,8 @@ export const CategoryDeleteDialog = ({
   isOpen,
   onOpenChange,
 }: CategoryDeleteDialogProps) => {
-  const deleteMutation = useMutation(deleteTodoCategoryMutationOptions());
-  const { data } = useSuspenseQuery(getTodoCategoriesQueryOptions());
+  const deleteMutation = useMutation(useDeleteTodoCategoryMutationOptions());
+  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   const category = data.categories.find((c) => c.id === categoryId);
   const otherCategories = data.categories.filter((c) => c.id !== categoryId);

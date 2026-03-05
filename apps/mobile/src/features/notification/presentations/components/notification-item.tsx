@@ -13,14 +13,14 @@ import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import type { Notification } from '../../models/notification.model';
 import { NotificationPolicy } from '../../models/notification.model';
-import { markAsReadMutationOptions } from '../queries/mark-as-read-mutation-options';
+import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 
 interface NotificationItemProps {
   notification: Notification;
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-  const { mutate: markAsRead } = useMutation(markAsReadMutationOptions());
+  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const router = useRouter();
   const queryClient = useQueryClient();
   const premiumDialog = usePremiumDialog();

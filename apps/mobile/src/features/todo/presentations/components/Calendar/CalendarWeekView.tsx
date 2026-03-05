@@ -1,7 +1,7 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate, getWeekDates, getWeekStart } from '@src/shared/utils/date';
-import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
+import type { CompletionsByDate } from '../../queries/use-get-daily-completions-query-options';
 import { CalendarDateCell } from './CalendarDateCell';
 import { CalendarWeekdayHeader } from './CalendarWeekdayHeader';
 

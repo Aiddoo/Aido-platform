@@ -5,8 +5,8 @@ import { PasswordInput } from '@src/features/auth/presentations/components/Passw
 import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';
 import { SuggestedEmailDomainList } from '@src/features/auth/presentations/components/SuggestedEmailDomainList';
 import { useCooldown } from '@src/features/auth/presentations/hooks/useCooldown';
-import { forgotPasswordMutationOptions } from '@src/features/auth/presentations/queries/forgot-password-mutation-options';
-import { resetPasswordMutationOptions } from '@src/features/auth/presentations/queries/reset-password-mutation-options';
+import { useForgotPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-forgot-password-mutation-options';
+import { useResetPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-reset-password-mutation-options';
 import {
   type ForgotPasswordFormData,
   forgotPasswordFormSchema,
@@ -75,7 +75,7 @@ function EmailStep({ onNext }: EmailStepProps) {
   const email = useWatch({ control, name: 'email' });
   const isValid = email.length > 0 && !errors.email;
 
-  const forgotPasswordMutation = useMutation(forgotPasswordMutationOptions());
+  const forgotPasswordMutation = useMutation(useForgotPasswordMutationOptions());
 
   const handleNext = async () => {
     const emailValue = getValues('email');
@@ -160,7 +160,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   const [cooldown, setCooldown] = useCooldown(0);
   const [code, setCode] = useState('');
 
-  const forgotPasswordMutation = useMutation(forgotPasswordMutationOptions());
+  const forgotPasswordMutation = useMutation(useForgotPasswordMutationOptions());
 
   const handleComplete = (completedCode: string) => {
     setValue('code', completedCode, { shouldValidate: true });
@@ -257,7 +257,7 @@ function NewPasswordStep() {
     handleSubmit,
     formState: { errors },
   } = useFormContext<ForgotPasswordFormData>();
-  const resetPasswordMutation = useMutation(resetPasswordMutationOptions());
+  const resetPasswordMutation = useMutation(useResetPasswordMutationOptions());
 
   const [newPassword, newPasswordConfirm] = useWatch({
     control,

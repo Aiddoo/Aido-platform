@@ -5,14 +5,14 @@ import {
   type OAuthProvider,
   type OAuthProviderSlug,
 } from '../../models/oauth.model';
-import { getLinkedAccountsQueryOptions } from '../queries/get-linked-accounts-query-options';
-import { linkAccountMutationOptions } from '../queries/link-account-mutation-options';
-import { unlinkAccountMutationOptions } from '../queries/unlink-account-mutation-options';
+import { useGetLinkedAccountsQueryOptions } from '../queries/use-get-linked-accounts-query-options';
+import { useLinkAccountMutationOptions } from '../queries/use-link-account-mutation-options';
+import { useUnlinkAccountMutationOptions } from '../queries/use-unlink-account-mutation-options';
 
 export function useLinkedAccounts() {
-  const { data: accounts } = useSuspenseQuery<LinkedAccount[]>(getLinkedAccountsQueryOptions());
-  const linkMutation = useMutation(linkAccountMutationOptions());
-  const unlinkMutation = useMutation(unlinkAccountMutationOptions());
+  const { data: accounts } = useSuspenseQuery<LinkedAccount[]>(useGetLinkedAccountsQueryOptions());
+  const linkMutation = useMutation(useLinkAccountMutationOptions());
+  const unlinkMutation = useMutation(useUnlinkAccountMutationOptions());
 
   const accountMap = new Map(accounts.map((account) => [account.provider, account]));
   const linkedCount = accounts.filter((account) => account.linked).length;

@@ -10,10 +10,10 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
-import { getMeQueryOptions } from '../queries/get-me-query-options';
+import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 
 export function ProfileCard() {
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { copyToClipboard } = useClipboard();
   const router = useRouter();

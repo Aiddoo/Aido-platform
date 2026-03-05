@@ -13,8 +13,8 @@ import { VStack } from '@src/shared/ui/VStack/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { deleteTodoMutationOptions } from '../../queries/delete-todo-mutation-options';
-import { updateTodoScheduleMutationOptions } from '../../queries/update-todo-schedule-mutation-options';
+import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-mutation-options';
+import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 
@@ -33,8 +33,8 @@ export const TodoActionsBottomSheet = ({
   todo,
   onNavigate,
 }: TodoActionsBottomSheetProps) => {
-  const deleteMutation = useMutation(deleteTodoMutationOptions());
-  const updateScheduleMutation = useMutation(updateTodoScheduleMutationOptions());
+  const deleteMutation = useMutation(useDeleteTodoMutationOptions());
+  const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
 
   const handleDoTomorrow = () => {
     const { startDate, endDate } = calculateTomorrowSchedule(todo.endDateObj);

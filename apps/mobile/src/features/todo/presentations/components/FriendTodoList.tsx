@@ -16,8 +16,8 @@ import times from 'es-toolkit/compat/times';
 import { Checkbox, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Pressable } from 'react-native';
-import { getFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
-import { getTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
+import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeBottomSheet } from './NudgeBottomSheet';
 
@@ -27,8 +27,8 @@ interface FriendTodoListProps {
 }
 
 export function FriendTodoList({ friend, date }: FriendTodoListProps) {
-  const { data } = useSuspenseQuery(getFriendTodosQueryOptions(friend.id, formatDate(date)));
-  const { data: limitInfo } = useSuspenseQuery(getTodoNudgeLimitQueryOptions());
+  const { data } = useSuspenseQuery(useGetFriendTodosQueryOptions(friend.id, formatDate(date)));
+  const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const categoryGroups = useMemo(() => {

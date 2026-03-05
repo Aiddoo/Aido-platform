@@ -8,7 +8,7 @@ import times from 'es-toolkit/compat/times';
 import { useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { InView } from 'react-native-intersection-observer';
-import { getTodosInfiniteQueryOptions } from '../../queries/get-todos-infinite-query-options';
+import { useGetTodosInfiniteQueryOptions } from '../../queries/use-get-todos-infinite-query-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { TodoItem } from './TodoItem';
 
@@ -19,7 +19,7 @@ interface CategoryTodoListProps {
 
 export function CategoryTodoList({ date, categoryId }: CategoryTodoListProps) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    getTodosInfiniteQueryOptions(formatDate(date), categoryId),
+    useGetTodosInfiniteQueryOptions(formatDate(date), categoryId),
   );
 
   const handleLoadMore = useCallback(() => {

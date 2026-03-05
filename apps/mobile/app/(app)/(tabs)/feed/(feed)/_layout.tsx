@@ -1,6 +1,6 @@
-import { getFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
+import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
 import { FeedCalendarProvider } from '@src/features/todo/presentations/providers/feed-calendar-provider';
-import { getMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
@@ -35,13 +35,13 @@ export default function FeedGroupLayout() {
 function UserAvatarList() {
   const { friendId } = useGlobalSearchParams<{ friendId?: string }>();
   const selectedFriendId = friendId ?? null;
-  const { data: user } = useSuspenseQuery(getMeQueryOptions());
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
     data: friendsData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useSuspenseInfiniteQuery(getFriendsQueryOptions());
+  } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
   const friends = useMemo(
     () => friendsData.pages.flatMap((page) => page.items),

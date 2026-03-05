@@ -64,8 +64,8 @@ features/{feature}/
     ├── constants/
     │   └── {feature}-query-keys.constant.ts
     ├── queries/
-    │   ├── {action}-query-options.ts
-    │   └── {action}-mutation-options.ts
+    │   ├── use-{action}-query-options.ts
+    │   └── use-{action}-mutation-options.ts
     └── components/
         └── {ComponentName}.tsx
 ```
@@ -281,13 +281,13 @@ export const {FEATURE}_QUERY_KEYS = {
 ### 7. Query/Mutation Options
 
 ```typescript
-// presentations/queries/get-{feature}-query-options.ts
+// presentations/queries/use-get-{feature}-query-options.ts
 import { use{Feature}Service } from '@src/bootstrap/providers/di-provider';
 import { queryOptions } from '@tanstack/react-query';
 import { unwrap } from '@src/shared/errors/result';
 import { {FEATURE}_QUERY_KEYS } from '../constants/{feature}-query-keys.constant';
 
-export const get{Feature}QueryOptions = (id: string) => {
+export const useGet{Feature}QueryOptions = (id: string) => {
   const service = use{Feature}Service();
 
   return queryOptions({
@@ -303,7 +303,7 @@ export const get{Feature}QueryOptions = (id: string) => {
 **Mutation — 에러 코드로 직접 UI 분기:**
 
 ```typescript
-// presentations/queries/create-{feature}-mutation-options.ts
+// presentations/queries/use-create-{feature}-mutation-options.ts
 import { use{Feature}Service } from '@src/bootstrap/providers/di-provider';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@src/shared/errors/result';
@@ -312,7 +312,7 @@ import { ErrorCode } from '@src/shared/errors';
 import { is{Feature}Error } from '../models/{feature}.error';
 import { {FEATURE}_QUERY_KEYS } from '../constants/{feature}-query-keys.constant';
 
-export const create{Feature}MutationOptions = () => {
+export const useCreate{Feature}MutationOptions = () => {
   const service = use{Feature}Service();
   const queryClient = useQueryClient();
 
@@ -444,8 +444,8 @@ if (!parsed.success) {
 | 매퍼 | `{feature}.mapper.ts` | `todo.mapper.ts` (repositories/ 하위) |
 | Repository 인터페이스 | `{feature}.repository.ts` | `todo.repository.ts` |
 | Repository 구현 | `{feature}.repository.impl.ts` | `todo.repository.impl.ts` |
-| Query Options | `{action}-query-options.ts` | `get-todos-query-options.ts` |
-| Mutation Options | `{action}-mutation-options.ts` | `create-todo-mutation-options.ts` |
+| Query Options | `use-{action}-query-options.ts` | `use-get-todos-query-options.ts` |
+| Mutation Options | `use-{action}-mutation-options.ts` | `use-create-todo-mutation-options.ts` |
 | Query Keys | `{feature}-query-keys.constant.ts` | `todo-query-keys.constant.ts` |
 
 ---

@@ -1,9 +1,9 @@
 import appIconImage from '@assets/images/icon.png';
-import { exchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/exchange-code-mutation-options';
-import { openAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-apple-login-mutation-options';
-import { openGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/open-google-login-mutation-options';
-import { openKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/open-kakao-login-mutation-options';
-import { openNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/open-naver-login-mutation-options';
+import { useExchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/use-exchange-code-mutation-options';
+import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-apple-login-mutation-options';
+import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
+import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
+import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
 
 import { Button } from '@src/shared/ui/Button/Button';
 import { HStack } from '@src/shared/ui/HStack/HStack';
@@ -22,9 +22,9 @@ import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
 const LoginScreen = () => {
-  const exchangeCodeMutation = useMutation(exchangeCodeMutationOptions());
+  const exchangeCodeMutation = useMutation(useExchangeCodeMutationOptions());
 
-  const kakaoLoginMutation = useMutation(openKakaoLoginMutationOptions());
+  const kakaoLoginMutation = useMutation(useOpenKakaoLoginMutationOptions());
 
   const handleKakaoLogin = () => {
     kakaoLoginMutation.mutate(undefined, {
@@ -38,7 +38,7 @@ const LoginScreen = () => {
     });
   };
 
-  const naverLoginMutation = useMutation(openNaverLoginMutationOptions());
+  const naverLoginMutation = useMutation(useOpenNaverLoginMutationOptions());
   const handleNaverLogin = () => {
     naverLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
@@ -49,7 +49,7 @@ const LoginScreen = () => {
     });
   };
 
-  const googleLoginMutation = useMutation(openGoogleLoginMutationOptions());
+  const googleLoginMutation = useMutation(useOpenGoogleLoginMutationOptions());
   const handleGoogleLogin = () => {
     googleLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
@@ -60,7 +60,7 @@ const LoginScreen = () => {
     });
   };
 
-  const appleLoginMutation = useMutation(openAppleLoginMutationOptions());
+  const appleLoginMutation = useMutation(useOpenAppleLoginMutationOptions());
   const handleAppleLogin = () => {
     appleLoginMutation.mutate(undefined);
   };
