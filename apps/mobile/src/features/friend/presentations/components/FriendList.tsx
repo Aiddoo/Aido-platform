@@ -7,6 +7,7 @@ import { Flex } from '@src/shared/ui/Flex/Flex';
 import { HStack } from '@src/shared/ui/HStack/HStack';
 import { DocsIcon } from '@src/shared/ui/Icon';
 import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { useOverlay } from '@src/shared/ui/Overlay';
 import { Result } from '@src/shared/ui/Result/Result';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
@@ -17,15 +18,42 @@ import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { getFriendsQueryOptions } from '../queries/get-friends-query-options';
 import { removeFriendMutationOptions } from '../queries/remove-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
+import { FriendDeleteConfirmDialog } from './FriendDeleteConfirmDialog';
 
 export function FriendList() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(getFriendsQueryOptions());
   const removeMutation = useMutation(removeFriendMutationOptions());
+  const overlay = useOverlay();
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allFriends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
+
+  const openDeleteConfirmDialog = (id: string) => {
+    overlay.open(({ isOpen, close, exit }) => {
+      const closeDialog = () => {
+        close();
+        exit();
+      };
+      const isProcessing = removeMutation.isPending && removeMutation.variables === id;
+
+      return (
+        <FriendDeleteConfirmDialog
+          isOpen={isOpen}
+          isProcessing={isProcessing}
+          onOpenChange={(open) => {
+            if (!open) closeDialog();
+          }}
+          onCancel={closeDialog}
+          onConfirm={() => {
+            closeDialog();
+            removeMutation.mutate(id);
+          }}
+        />
+      );
+    });
+  };
 
   return (
     <FlashList
@@ -56,7 +84,7 @@ export function FriendList() {
                 color="danger"
                 size="small"
                 display="inline"
-                onPress={() => removeMutation.mutate(item.id)}
+                onPress={() => openDeleteConfirmDialog(item.id)}
                 disabled={isProcessing}
               >
                 삭제
