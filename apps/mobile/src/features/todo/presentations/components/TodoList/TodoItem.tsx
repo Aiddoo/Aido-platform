@@ -180,7 +180,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
           )}
         </VStack>
 
-        <PressableFeedback className="p-1" onPress={openActionsBottomSheet}>
+        <PressableFeedback onPress={openActionsBottomSheet} hitSlop={8}>
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       </HStack>
