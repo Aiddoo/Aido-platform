@@ -8,11 +8,13 @@ export function PremiumDialog({
   onOpenChange,
   title = '프리미엄 기능',
   description,
+  onConfirm,
 }: PremiumDialogProps) {
   const router = useRouter();
 
   const handleSubscribe = () => {
     onOpenChange(false);
+    onConfirm?.();
     router.push('/settings/subscription');
   };
 
@@ -40,7 +42,7 @@ export function usePremiumDialog() {
   const overlay = useOverlay();
 
   return {
-    open: (options: { title?: string; description: string }) => {
+    open: (options: { title?: string; description: string; onConfirm?: () => void }) => {
       overlay.open(({ isOpen, close, exit }) => (
         <PremiumDialog
           isOpen={isOpen}
@@ -52,6 +54,7 @@ export function usePremiumDialog() {
           }}
           title={options.title}
           description={options.description}
+          onConfirm={options.onConfirm}
         />
       ));
     },

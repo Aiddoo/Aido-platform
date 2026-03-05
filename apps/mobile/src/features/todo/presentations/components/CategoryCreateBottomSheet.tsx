@@ -42,11 +42,6 @@ export const CategoryCreateBottomSheet = ({
     defaultValues: { name: '', color: DEFAULT_COLOR },
   });
 
-  const dismiss = () => {
-    setPremiumOpen(false);
-    onExit();
-  };
-
   const onSubmit = (data: CreateTodoCategoryInput) => {
     createMutation.mutate(data, {
       onSuccess: onClose,
@@ -127,8 +122,12 @@ export const CategoryCreateBottomSheet = ({
       <PremiumDialog
         isOpen={premiumOpen}
         onOpenChange={(open) => {
-          if (!open) dismiss();
+          if (!open) {
+            setPremiumOpen(false);
+            onExit();
+          }
         }}
+        onConfirm={onExit}
         description="프리미엄 구독으로 더 많은 카테고리를 만들 수 있어요"
       />
     </>
