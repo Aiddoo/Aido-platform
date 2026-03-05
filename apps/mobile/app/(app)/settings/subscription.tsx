@@ -40,7 +40,7 @@ import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { Image, type ImageSourcePropType, Linking, ScrollView, View } from 'react-native';
+import { Image, Linking, ScrollView, View } from 'react-native';
 
 /** 이미지가 있는 핵심 프리미엄 기능 */
 const HIGHLIGHT_BENEFITS = [
@@ -342,16 +342,7 @@ function OfferingsView() {
   );
 }
 
-function BenefitCard({
-  benefit,
-}: {
-  benefit: {
-    icon: typeof DocsIcon;
-    title: string;
-    description: string;
-    image: ImageSourcePropType;
-  };
-}) {
+function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number] }) {
   const Icon = benefit.icon;
 
   return (
