@@ -21,6 +21,10 @@ import { ScrollView } from 'react-native';
 const ReportDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
 
+  if (!id) {
+    return null;
+  }
+
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       {isSampleReportId(id) ? (

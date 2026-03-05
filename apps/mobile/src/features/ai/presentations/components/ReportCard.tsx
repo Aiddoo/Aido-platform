@@ -1,5 +1,4 @@
 import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
 import { Text } from '@src/shared/ui/Text/Text';
 import { VStack } from '@src/shared/ui/VStack/VStack';
 import { cn } from '@src/shared/utils/cn';
@@ -97,7 +96,6 @@ ReportCard.Loading = function Loading() {
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
               </HStack>
               <SkeletonGroup.Item className="h-4 w-full rounded-md" />
-              <Spacing size={0} />
             </VStack>
           </SkeletonGroup>
         </Card>

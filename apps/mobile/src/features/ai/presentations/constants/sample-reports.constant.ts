@@ -107,7 +107,8 @@ export const SAMPLE_REPORTS: Record<string, AiReport> = {
 };
 
 /** route param이 샘플 리포트 ID인지 판별 */
-export const isSampleReportId = (id: string): boolean => id in SAMPLE_REPORTS;
+export const isSampleReportId = (id?: string): boolean => !!id && id in SAMPLE_REPORTS;
 
 /** 샘플 리포트 조회 (없으면 주간 폴백) */
-export const getSampleReport = (id: string): AiReport => SAMPLE_REPORTS[id] ?? SAMPLE_WEEKLY_REPORT;
+export const getSampleReport = (id?: string): AiReport =>
+  (id ? SAMPLE_REPORTS[id] : undefined) ?? SAMPLE_WEEKLY_REPORT;
