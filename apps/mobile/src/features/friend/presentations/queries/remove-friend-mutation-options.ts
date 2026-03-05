@@ -4,7 +4,6 @@ import { unwrap } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.type';
 import type { InfiniteData } from '@tanstack/react-query';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import { partition } from 'es-toolkit';
 import * as Haptics from 'expo-haptics';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
@@ -28,28 +27,14 @@ export const removeFriendMutationOptions = () => {
       queryClient.setQueryData<FriendsInfiniteData>(friendsQueryKey, (old) => {
         if (!old) return old;
 
-        let hasRemoved = false;
-        const nextPages = old.pages.map((page) => {
-          const [nextItems, removedItems] = partition(page.items, (item) => item.id !== userId);
-
-          if (removedItems.length === 0) {
-            return page;
-          }
-
-          hasRemoved = true;
-
-          return {
-            ...page,
-            items: nextItems,
-          };
-        });
-
-        if (!hasRemoved) return old;
+        const exists = old.pages.some((page) => page.items.some((item) => item.id === userId));
+        if (!exists) return old;
 
         return {
           ...old,
-          pages: nextPages.map((page) => ({
+          pages: old.pages.map((page) => ({
             ...page,
+            items: page.items.filter((item) => item.id !== userId),
             totalCount: Math.max(0, page.totalCount - 1),
           })),
         };
