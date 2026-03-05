@@ -15,6 +15,7 @@
     "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
     "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f api",
     "docker:dev:migrate": "DATABASE_URL=postgresql://postgres:postgres@localhost:${DB_PORT:-5433}/aido pnpm --filter @aido/api db:deploy",
+    "docker:dev:studio": "DATABASE_URL=postgresql://postgres:postgres@localhost:${DB_PORT:-5433}/aido pnpm --filter @aido/api db:studio",
     "docker:dev:up": "docker compose --env-file .env.docker.dev -f docker-compose.dev.yml up -d",
     "docker:down": "docker compose down",
     "docker:prod:build": "docker compose --env-file .env.docker.prod -f docker-compose.prod.yml build",

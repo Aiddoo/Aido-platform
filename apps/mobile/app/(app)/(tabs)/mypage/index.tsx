@@ -41,6 +41,7 @@ const MyPageScreen = () => {
         <Spacing size={12} />
 
         <SettingNavigationSection>
+          <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
           <SettingNavigationItem
             label="구독 관리"
