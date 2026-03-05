@@ -165,6 +165,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         NSSpeechRecognitionUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.',
+        NSPhotoLibraryUsageDescription:
+          '$(PRODUCT_NAME)이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다.',
         ...(isDevelopment && {
           NSAppTransportSecurity: {
             NSAllowsArbitraryLoads: true,
