@@ -5,6 +5,8 @@ import { useRef, useState } from 'react';
 interface UseSpeechRecognitionEventsOptions {
   /** 인식 결과 콜백 */
   onResult?: (transcript: string) => void;
+  /** 음성 인식 종료 콜백 (정상 종료 시에만 호출, 에러 시 미호출) */
+  onEnd?: () => void;
   /** 에러 콜백 (에러 코드 전달) */
   onError?: (errorCode: ExpoSpeechRecognitionErrorCode) => void;
 }
@@ -37,7 +39,7 @@ interface UseSpeechRecognitionEventsReturn {
 export const useSpeechRecognitionEvents = (
   options: UseSpeechRecognitionEventsOptions = {},
 ): UseSpeechRecognitionEventsReturn => {
-  const { onResult, onError } = options;
+  const { onResult, onEnd, onError } = options;
 
   const [isRecognizing, setIsRecognizing] = useState(false);
   // 에러가 한 번만 호출되도록 ref로 추적
@@ -50,6 +52,9 @@ export const useSpeechRecognitionEvents = (
 
   useSpeechRecognitionEvent('end', () => {
     setIsRecognizing(false);
+    if (!hasErrorFiredRef.current) {
+      onEnd?.();
+    }
   });
 
   useSpeechRecognitionEvent('result', (event) => {

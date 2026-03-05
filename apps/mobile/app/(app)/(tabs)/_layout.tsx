@@ -1,4 +1,3 @@
-import FillCheckIconSvg from '@assets/icons/ic_fill_check.svg';
 import ListIconSvg from '@assets/icons/ic_list.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -62,11 +61,6 @@ function IOSLiquidGlassTabs() {
 
   return (
     <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
-      <NativeTabs.Trigger name="home">
-        <Label>홈</Label>
-        <Icon sf="checkmark.circle.fill" />
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="feed">
         <Label>피드</Label>
         <Icon sf="list.bullet" />
@@ -100,19 +94,6 @@ function AndroidBottomTabs() {
         animation: 'shift',
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: '홈',
-          tabBarIcon: ({ color, size }) => (
-            <FillCheckIconSvg width={size} height={size} color={color} />
-          ),
-        }}
-        listeners={{
-          tabPress: () => Haptics.selectionAsync(),
-        }}
-      />
-
       <Tabs.Screen
         name="feed"
         options={{
