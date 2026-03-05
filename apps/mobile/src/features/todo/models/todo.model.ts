@@ -1,3 +1,4 @@
+import { dayOfWeekSchema } from '@aido/validators';
 import { z } from 'zod';
 
 export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
@@ -37,12 +38,20 @@ export const todosResultSchema = z.object({
 });
 export type TodosResult = z.infer<typeof todosResultSchema>;
 
+export const todoRecurrenceSchema = z.object({
+  daysOfWeek: z.array(dayOfWeekSchema).min(1).max(7),
+  endDate: z.date(),
+});
+export type TodoRecurrence = z.infer<typeof todoRecurrenceSchema>;
+
 export const parsedTodoDataSchema = z.object({
   title: z.string(),
   startDate: z.date(),
   endDate: z.date().nullable(),
   scheduledTime: z.string().nullable(),
   isAllDay: z.boolean(),
+  isRecurring: z.boolean(),
+  recurrence: todoRecurrenceSchema.nullable(),
   categoryId: z.number().optional(),
 });
 export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
@@ -92,3 +101,11 @@ export const dailyCompletionsResultSchema = z.object({
   }),
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
+
+/** AI 사용량 관련 도메인 규칙 */
+export const AiUsagePolicy = {
+  /** 무료 사용자의 AI 파싱 한도에 도달했는지 (limit이 null이면 프리미엄 = 무제한) */
+  isLimitReached(usage: AiUsage): boolean {
+    return usage.limit != null && usage.used >= usage.limit;
+  },
+} as const;

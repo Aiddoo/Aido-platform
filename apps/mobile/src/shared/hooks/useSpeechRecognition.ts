@@ -14,6 +14,8 @@ export interface UseSpeechRecognitionOptions {
   continuous?: boolean;
   /** 인식 결과 콜백 */
   onResult?: (transcript: string) => void;
+  /** 음성 인식 정상 종료 콜백 (에러 시 미호출) */
+  onEnd?: () => void;
   /** 에러 콜백 (한국어 메시지, 한 번만 호출됨) */
   onError?: (message: string) => void;
 }
@@ -54,7 +56,14 @@ export interface UseSpeechRecognitionReturn {
 export const useSpeechRecognition = (
   options: UseSpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn => {
-  const { lang = 'ko-KR', interimResults = true, continuous = false, onResult, onError } = options;
+  const {
+    lang = 'ko-KR',
+    interimResults = true,
+    continuous = false,
+    onResult,
+    onEnd,
+    onError,
+  } = options;
 
   // 에러 코드를 한국어 메시지로 변환하여 콜백 호출
   const handleError = useCallback(
@@ -68,6 +77,7 @@ export const useSpeechRecognition = (
   // 이벤트 처리 (isRecognizing 상태 관리)
   const { isRecognizing, resetErrorFlag } = useSpeechRecognitionEvents({
     onResult,
+    onEnd,
     onError: handleError,
   });
 
