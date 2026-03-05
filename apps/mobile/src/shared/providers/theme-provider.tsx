@@ -36,8 +36,8 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
   const systemColorScheme = useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>(readSavedMode);
 
-  const scheme = systemColorScheme === 'unspecified' ? null : systemColorScheme;
-  const resolvedTheme: ResolvedTheme = mode === 'system' ? (scheme ?? 'light') : mode;
+  const resolvedTheme: ResolvedTheme =
+    mode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : mode;
 
   useEffect(() => {
     Uniwind.setTheme(mode);
