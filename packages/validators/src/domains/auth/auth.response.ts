@@ -364,6 +364,7 @@ export const linkedAccountsResponseSchema = z
     accounts: z
       .array(linkedAccountSchema)
       .describe('소셜 계정 연결 상태 목록 (항상 4개 제공자 포함)'),
+    canUnlink: z.boolean().describe('소셜 계정 연결 해제 가능 여부'),
   })
   .describe('소셜 계정 연결 상태 목록 응답')
   .meta({
@@ -394,6 +395,7 @@ export const linkedAccountsResponseSchema = z
           linkedAt: null,
         },
       ],
+      canUnlink: true,
     },
   });
 

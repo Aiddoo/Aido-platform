@@ -26,9 +26,3 @@ export const linkedAccountSchema = z.object({
   linkedAt: z.date().nullable(),
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
-
-export const AuthPolicy = {
-  canUnlinkAccount: (linkedCount: number): boolean => {
-    return linkedCount > 1;
-  },
-} as const;

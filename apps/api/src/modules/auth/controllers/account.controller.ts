@@ -169,8 +169,7 @@ export class AccountController {
 	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-		const accounts = await this.oauthService.getLinkedAccounts(user.userId);
-		return { accounts };
+		return this.oauthService.getLinkedAccounts(user.userId);
 	}
 
 	@Delete("linked-accounts/:provider")

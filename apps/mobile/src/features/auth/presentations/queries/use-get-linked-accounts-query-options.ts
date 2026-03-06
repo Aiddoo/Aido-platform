@@ -7,7 +7,7 @@ import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 export const useGetLinkedAccountsQueryOptions = () => {
   const authService = useAuthService();
 
-  return queryOptions<LinkedAccount[]>({
+  return queryOptions<{ accounts: LinkedAccount[]; canUnlink: boolean }>({
     queryKey: AUTH_QUERY_KEYS.linkedAccounts(),
     queryFn: async () => {
       const result = await authService.getLinkedAccounts();

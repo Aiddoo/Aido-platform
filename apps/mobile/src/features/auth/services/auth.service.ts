@@ -453,7 +453,9 @@ export class AuthService {
     return ok(toResendVerificationResult(parsed.data));
   };
 
-  getLinkedAccounts = async (): Promise<Result<LinkedAccount[], ApiError>> => {
+  getLinkedAccounts = async (): Promise<
+    Result<{ accounts: LinkedAccount[]; canUnlink: boolean }, ApiError>
+  > => {
     const result =
       await this.#authHttpClient.get<LinkedAccountsResponse>('v1/auth/linked-accounts');
     if (!result.ok) return result;

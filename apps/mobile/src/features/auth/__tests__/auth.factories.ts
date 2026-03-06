@@ -172,6 +172,7 @@ const generateLinkedAccountsDto = (): LinkedAccountsResponse => ({
       linkedAt: null,
     },
   ],
+  canUnlink: true,
 });
 
 export const createLinkedAccountsDto = (

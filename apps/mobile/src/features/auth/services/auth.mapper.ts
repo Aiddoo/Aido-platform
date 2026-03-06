@@ -95,5 +95,9 @@ export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({
   linkedAt: dto.linkedAt ? new Date(dto.linkedAt) : null,
 });
 
-export const toLinkedAccounts = (dto: LinkedAccountsResponse): LinkedAccount[] =>
-  dto.accounts.map(toLinkedAccount);
+export const toLinkedAccounts = (
+  dto: LinkedAccountsResponse,
+): { accounts: LinkedAccount[]; canUnlink: boolean } => ({
+  accounts: dto.accounts.map(toLinkedAccount),
+  canUnlink: dto.canUnlink,
+});
