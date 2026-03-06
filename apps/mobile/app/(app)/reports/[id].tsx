@@ -5,13 +5,15 @@ import {
   isSampleReportId,
 } from '@src/features/ai/presentations/constants/sample-reports.constant';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-detail-query-options';
-import { Button } from '@src/shared/ui/Button/Button';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog/PremiumDialog';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing';
-import { Text } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import {
+  Button,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  usePremiumDialog,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';

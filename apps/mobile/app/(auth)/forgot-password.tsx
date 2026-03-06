@@ -14,12 +14,15 @@ import {
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { useStepper } from '@src/shared/hooks/useStepper';
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { HStack } from '@src/shared/ui/HStack';
-import { Input } from '@src/shared/ui/Input';
-import { H3, Text } from '@src/shared/ui/Text';
-import { TextButton } from '@src/shared/ui/TextButton';
-import { VStack } from '@src/shared/ui/VStack';
+import {
+  H3,
+  HStack,
+  Input,
+  KeyboardAdaptiveButton,
+  Text,
+  TextButton,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
 import { useCallback, useRef, useState } from 'react';

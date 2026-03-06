@@ -1,8 +1,13 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
-import { DeviceIcon, MoonIcon, type StyledIconType, SunIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import {
+  DeviceIcon,
+  ListRow,
+  MoonIcon,
+  type StyledIconType,
+  StyledSafeAreaView,
+  SunIcon,
+} from '@src/shared/ui';
 import { Radio, RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';

@@ -1,7 +1,4 @@
-import { HStack } from '@src/shared/ui/HStack';
-import { BellIcon } from '@src/shared/ui/Icon';
-import { Text } from '@src/shared/ui/Text';
-import { TextButton } from '@src/shared/ui/TextButton';
+import { BellIcon, HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, SkeletonGroup } from 'heroui-native';
 import { useCallback } from 'react';

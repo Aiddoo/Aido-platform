@@ -2,8 +2,7 @@ import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation
 import { FriendList } from '@src/features/friend/presentations/components/FriendList';
 import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
 import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
-import { Text } from '@src/shared/ui/Text';
+import { QueryErrorBoundary, Text } from '@src/shared/ui';
 import { useNavigation } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';

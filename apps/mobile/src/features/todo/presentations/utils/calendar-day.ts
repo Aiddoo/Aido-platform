@@ -1,4 +1,4 @@
-import type { TextTone } from '@src/shared/ui/Text';
+import type { TextTone } from '@src/shared/ui';
 import { isDateToday, isSaturday, isSunday } from '@src/shared/utils/date';
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';

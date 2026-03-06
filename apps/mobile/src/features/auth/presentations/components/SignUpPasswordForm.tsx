@@ -1,9 +1,7 @@
 import { passwordSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { H3 } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import { H3, KeyboardAdaptiveButton, VStack } from '@src/shared/ui';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard, ScrollView, type TextInput, View } from 'react-native';

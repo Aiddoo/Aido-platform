@@ -1,4 +1,4 @@
-import { Text } from '@src/shared/ui/Text';
+import { Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useCallback, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, View } from 'react-native';

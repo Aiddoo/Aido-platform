@@ -8,7 +8,7 @@ import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useUserIdentity } from '@src/shared/hooks/use-user-identity';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
-import { OverlayProvider } from '@src/shared/ui/Overlay';
+import { OverlayProvider } from '@src/shared/ui';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';

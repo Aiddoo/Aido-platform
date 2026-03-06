@@ -4,15 +4,17 @@ import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentat
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
-import { HStack } from '@src/shared/ui/HStack';
-import { ArrowRightIcon } from '@src/shared/ui/Icon';
-import { useOverlay } from '@src/shared/ui/Overlay';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing';
-import { VStack } from '@src/shared/ui/VStack';
+import {
+  ArrowRightIcon,
+  HStack,
+  KeyboardBottomSheet,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  useOverlay,
+  usePremiumDialog,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';

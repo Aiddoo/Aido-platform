@@ -1,5 +1,4 @@
-import { BellIcon } from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
+import { BellIcon, QueryErrorBoundary } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';

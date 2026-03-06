@@ -1,5 +1,4 @@
-import { EyeIcon, EyeOffIcon } from '@src/shared/ui/Icon/icons';
-import { Input, type InputProps } from '@src/shared/ui/Input';
+import { EyeIcon, EyeOffIcon, Input, type InputProps } from '@src/shared/ui';
 import { forwardRef, useState } from 'react';
 import { Pressable, type TextInput } from 'react-native';
 

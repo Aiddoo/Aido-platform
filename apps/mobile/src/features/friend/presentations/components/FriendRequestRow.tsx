@@ -1,5 +1,5 @@
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
-import { ListRow } from '@src/shared/ui/ListRow';
+import { ListRow } from '@src/shared/ui';
 import { Avatar } from 'heroui-native';
 import type { ReactNode } from 'react';
 import type { FriendRequest } from '../../models/friend.model';

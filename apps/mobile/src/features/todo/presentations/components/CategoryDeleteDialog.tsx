@@ -1,13 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { useDeleteTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-delete-todo-category-mutation-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
-import { Box } from '@src/shared/ui/Box';
-import { Button } from '@src/shared/ui/Button/Button';
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
-import { HStack } from '@src/shared/ui/HStack';
-import { Spacing } from '@src/shared/ui/Spacing';
-import { H4, Text } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import { Box, Button, ConfirmDialog, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Dialog } from 'heroui-native';

@@ -3,18 +3,21 @@ import { useLogoutMutationOptions } from '@src/features/auth/presentations/queri
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
-import { HStack } from '@src/shared/ui/HStack';
-import { ArrowRightIcon, LockIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow';
-import { useOverlay } from '@src/shared/ui/Overlay';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing';
-import { H3 } from '@src/shared/ui/Text';
-import { TextButton } from '@src/shared/ui/TextButton';
-import { VStack } from '@src/shared/ui/VStack';
+import {
+  ArrowRightIcon,
+  ConfirmDialog,
+  H3,
+  HStack,
+  ListRow,
+  LockIcon,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  TextButton,
+  useOverlay,
+  usePremiumDialog,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';

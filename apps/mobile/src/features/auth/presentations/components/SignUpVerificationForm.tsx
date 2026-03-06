@@ -3,10 +3,7 @@ import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@ai
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
-import { HStack } from '@src/shared/ui/HStack';
-import { H3, Text } from '@src/shared/ui/Text';
-import { TextButton } from '@src/shared/ui/TextButton';
-import { VStack } from '@src/shared/ui/VStack';
+import { H3, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';

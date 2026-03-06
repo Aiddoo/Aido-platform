@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
+import { KeyboardBottomSheet } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';

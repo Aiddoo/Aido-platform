@@ -1,5 +1,4 @@
-import { Button } from '@src/shared/ui/Button/Button';
-import type { ButtonProps } from '@src/shared/ui/Button/Button.types';
+import { Button, type ButtonProps } from '@src/shared/ui/Button';
 import { HStack } from '@src/shared/ui/HStack';
 import { H4, Text } from '@src/shared/ui/Text';
 import { VStack } from '@src/shared/ui/VStack';

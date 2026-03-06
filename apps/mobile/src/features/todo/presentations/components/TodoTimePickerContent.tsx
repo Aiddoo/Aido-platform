@@ -1,7 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ListRow } from '@src/shared/ui/ListRow';
-import { Text } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import { ListRow, Text, VStack } from '@src/shared/ui';
 import { getDateWithTime, toHHmm } from '@src/shared/utils/time';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';

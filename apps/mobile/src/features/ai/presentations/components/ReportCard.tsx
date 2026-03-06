@@ -1,6 +1,4 @@
-import { HStack } from '@src/shared/ui/HStack';
-import { Text } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { times } from 'es-toolkit/compat';
 import { type Href, useRouter } from 'expo-router';

@@ -5,14 +5,20 @@ import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentati
 import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
 import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
 
-import { Button } from '@src/shared/ui/Button/Button';
-import { HStack } from '@src/shared/ui/HStack';
-import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing';
-import { H1, Text } from '@src/shared/ui/Text';
-import { TextButton } from '@src/shared/ui/TextButton';
-import { VStack } from '@src/shared/ui/VStack';
+import {
+  AppleIcon,
+  Button,
+  GoogleIcon,
+  H1,
+  HStack,
+  KakaoIcon,
+  NaverIcon,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  TextButton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';

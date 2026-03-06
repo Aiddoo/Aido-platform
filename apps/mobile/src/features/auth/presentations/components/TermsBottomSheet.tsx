@@ -1,11 +1,7 @@
 import type { RegisterInput } from '@aido/validators';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
-import { Button } from '@src/shared/ui/Button/Button';
-import { HStack } from '@src/shared/ui/HStack';
-import { ArrowRightIcon } from '@src/shared/ui/Icon';
-import { Text } from '@src/shared/ui/Text';
-import { VStack } from '@src/shared/ui/VStack';
+import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import { useState } from 'react';
