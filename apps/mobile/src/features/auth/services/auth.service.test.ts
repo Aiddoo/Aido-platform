@@ -595,18 +595,21 @@ describe('AuthService', () => {
       expect(authHttpClient.get).toHaveBeenCalledWith('v1/auth/linked-accounts');
       expect(result).toEqual({
         ok: true,
-        value: [
-          expect.objectContaining({
-            provider: 'GOOGLE',
-            linked: true,
-            linkedAt: expect.any(Date),
-          }),
-          expect.objectContaining({
-            provider: 'KAKAO',
-            linked: false,
-            linkedAt: null,
-          }),
-        ],
+        value: {
+          accounts: [
+            expect.objectContaining({
+              provider: 'GOOGLE',
+              linked: true,
+              linkedAt: expect.any(Date),
+            }),
+            expect.objectContaining({
+              provider: 'KAKAO',
+              linked: false,
+              linkedAt: null,
+            }),
+          ],
+          canUnlink: true,
+        },
       });
     });
 
