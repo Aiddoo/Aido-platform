@@ -5,14 +5,16 @@ import { useResendVerificationMutationOptions } from '@src/features/auth/present
 import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowLeftIcon } from '@src/shared/ui/Icon';
-import { Result } from '@src/shared/ui/Result/Result';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  ArrowLeftIcon,
+  H3,
+  HStack,
+  Result,
+  StyledSafeAreaView,
+  Text,
+  TextButton,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { InputOTP, type InputOTPRef, PressableFeedback } from 'heroui-native';

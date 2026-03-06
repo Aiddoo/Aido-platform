@@ -1,4 +1,4 @@
-import { ArrowLeftIcon } from '@src/shared/ui/Icon';
+import { ArrowLeftIcon } from '@src/shared/ui';
 import { router, Stack } from 'expo-router';
 import { Platform, Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';

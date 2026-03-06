@@ -6,12 +6,7 @@ import {
   type EmailLoginFormData,
   emailLoginFormSchema,
 } from '@src/features/auth/presentations/schemas/email-login-form.schema';
-import { Button } from '@src/shared/ui/Button/Button';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Input } from '@src/shared/ui/Input';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
+import { Button, H3, HStack, Input, Spacing, TextButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';

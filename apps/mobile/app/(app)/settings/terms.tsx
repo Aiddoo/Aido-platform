@@ -2,13 +2,15 @@ import { useGetConsentQueryOptions } from '@src/features/auth/presentations/quer
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowRightIcon } from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  ArrowRightIcon,
+  HStack,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import {
   ControlField,

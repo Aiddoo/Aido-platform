@@ -1,10 +1,7 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { HStack, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';

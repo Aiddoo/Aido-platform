@@ -5,13 +5,15 @@ import { getSampleReport } from '@src/features/ai/presentations/constants/sample
 import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { DocsIcon } from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Result } from '@src/shared/ui/Result/Result';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  DocsIcon,
+  QueryErrorBoundary,
+  Result,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense, useState } from 'react';

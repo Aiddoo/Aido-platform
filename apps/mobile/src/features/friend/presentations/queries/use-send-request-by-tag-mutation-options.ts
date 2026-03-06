@@ -3,7 +3,7 @@ import { useFriendService } from '@src/bootstrap/providers/di-provider';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog/PremiumDialog';
+import { usePremiumDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isFriendError } from '../../models/friend.error';

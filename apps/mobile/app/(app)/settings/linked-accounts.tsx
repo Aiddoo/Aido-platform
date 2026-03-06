@@ -1,15 +1,17 @@
 import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
 import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
 import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
-import { Button } from '@src/shared/ui/Button';
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  Button,
+  ConfirmDialog,
+  HStack,
+  ListRow,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import times from 'es-toolkit/compat/times';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';

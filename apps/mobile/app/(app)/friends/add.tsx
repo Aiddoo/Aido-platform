@@ -1,11 +1,7 @@
 import { userTagParamSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { Input } from '@src/shared/ui/Input';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H3 } from '@src/shared/ui/Text/Typography';
+import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';

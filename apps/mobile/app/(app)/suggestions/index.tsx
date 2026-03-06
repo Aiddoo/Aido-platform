@@ -1,4 +1,4 @@
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { StyledSafeAreaView } from '@src/shared/ui';
 import { ScrollView, Text } from 'react-native';
 
 const SuggestionsScreen = () => {

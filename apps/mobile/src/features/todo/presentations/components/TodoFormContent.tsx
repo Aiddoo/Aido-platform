@@ -1,19 +1,19 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
-import { HStack } from '@src/shared/ui/HStack/HStack';
 import {
   ArrowUpIcon,
+  BottomSheetInput,
   CalendarIcon,
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
+  HStack,
   MicIcon,
   PauseIcon,
-} from '@src/shared/ui/Icon';
-import { BottomSheetInput } from '@src/shared/ui/Input';
-import { usePremiumDialog } from '@src/shared/ui/PremiumDialog/PremiumDialog';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+  Text,
+  usePremiumDialog,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';

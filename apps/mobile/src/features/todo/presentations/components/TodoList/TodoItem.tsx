@@ -1,9 +1,12 @@
-import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { LockIcon, MoreIcon } from '@src/shared/ui/Icon';
-import { useOverlay } from '@src/shared/ui/Overlay';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  HStack,
+  KeyboardBottomSheet,
+  LockIcon,
+  MoreIcon,
+  Text,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';

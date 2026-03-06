@@ -1,9 +1,7 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Result } from '@src/shared/ui/Result/Result';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';

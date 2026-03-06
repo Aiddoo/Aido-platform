@@ -1,8 +1,5 @@
 import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Box, HStack, Text, VStack } from '@src/shared/ui';
 import {
   getCalendarRange,
   getMonthHeaderText,

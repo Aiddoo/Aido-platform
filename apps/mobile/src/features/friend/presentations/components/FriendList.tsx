@@ -1,16 +1,18 @@
 import { FlashList } from '@shopify/flash-list';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { Box } from '@src/shared/ui/Box/Box';
-import { Button } from '@src/shared/ui/Button/Button';
-import { Flex } from '@src/shared/ui/Flex/Flex';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { DocsIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { useOverlay } from '@src/shared/ui/Overlay';
-import { Result } from '@src/shared/ui/Result/Result';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  Box,
+  Button,
+  DocsIcon,
+  Flex,
+  HStack,
+  ListRow,
+  Result,
+  Text,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Avatar, Skeleton } from 'heroui-native';

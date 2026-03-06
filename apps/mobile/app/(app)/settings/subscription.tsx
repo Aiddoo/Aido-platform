@@ -16,26 +16,26 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/u
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
-import { Button } from '@src/shared/ui/Button/Button';
-import { HStack } from '@src/shared/ui/HStack/HStack';
 import {
   BellIcon,
+  Button,
   CalendarIcon,
   CheckmarkIcon,
   DeviceIcon,
   DocsIcon,
   FillCheckIcon,
+  HStack,
   ListIcon,
   PersonIcon,
+  QueryErrorBoundary,
+  Result,
   SendIcon,
-} from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Result } from '@src/shared/ui/Result/Result';
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  TextButton,
+  VStack,
+} from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Separator, Spinner } from 'heroui-native';

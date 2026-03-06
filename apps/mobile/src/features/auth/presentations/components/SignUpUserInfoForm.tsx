@@ -1,11 +1,7 @@
 import { emailSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { Input } from '@src/shared/ui/Input';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { H3, Input, KeyboardAdaptiveButton, Spacing, VStack } from '@src/shared/ui';
 import { useEffect, useRef } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, type TextInput, View } from 'react-native';

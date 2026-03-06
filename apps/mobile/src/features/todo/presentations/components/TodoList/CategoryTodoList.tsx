@@ -1,6 +1,4 @@
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Box, HStack, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';

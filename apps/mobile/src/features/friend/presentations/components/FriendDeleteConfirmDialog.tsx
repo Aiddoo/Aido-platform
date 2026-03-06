@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
+import { ConfirmDialog } from '@src/shared/ui';
 
 interface FriendDeleteConfirmDialogProps {
   isOpen: boolean;

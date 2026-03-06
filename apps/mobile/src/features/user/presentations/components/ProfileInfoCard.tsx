@@ -1,10 +1,5 @@
 import { UserPolicy } from '@src/features/user/models/user.model';
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ArrowRightIcon, EditIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { ArrowRightIcon, Box, EditIcon, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';

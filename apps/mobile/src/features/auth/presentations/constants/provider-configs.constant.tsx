@@ -1,5 +1,5 @@
 import { useTheme } from '@src/shared/providers/theme-provider';
-import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui/Icon';
+import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui';
 import type { ReactNode } from 'react';
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
 

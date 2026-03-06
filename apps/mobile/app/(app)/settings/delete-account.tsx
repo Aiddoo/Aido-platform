@@ -1,13 +1,15 @@
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
-import { useOverlay } from '@src/shared/ui/Overlay';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import {
+  ConfirmDialog,
+  H3,
+  KeyboardAdaptiveButton,
+  QueryErrorBoundary,
+  Text,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense, useState } from 'react';
 import { Keyboard, ScrollView, View } from 'react-native';

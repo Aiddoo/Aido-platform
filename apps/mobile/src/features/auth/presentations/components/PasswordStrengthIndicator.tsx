@@ -1,8 +1,6 @@
 import { PASSWORD_RULES } from '@aido/validators';
 import { PasswordPolicy } from '@src/features/auth/models/auth.model';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { CheckmarkIcon } from '@src/shared/ui/Icon/icons';
-import { Text } from '@src/shared/ui/Text/Text';
+import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 
 export interface PasswordStrengthIndicatorProps {
   password: string | undefined;
