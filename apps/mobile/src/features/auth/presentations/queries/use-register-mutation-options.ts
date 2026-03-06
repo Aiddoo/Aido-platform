@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import type { RegisterInput } from '@aido/validators';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useAuthService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -10,12 +11,16 @@ import { router } from 'expo-router';
 
 export const useRegisterMutationOptions = () => {
   const authService = useAuthService();
+  const analytics = useAnalytics();
   const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: async (input: RegisterInput) => {
       const result = await authService.register(input);
       return unwrap(result);
+    },
+    onSuccess: () => {
+      track(analytics, 'auth_signup', { method: 'email' });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

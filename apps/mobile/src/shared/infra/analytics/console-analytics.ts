@@ -17,4 +17,7 @@ export const createConsoleAnalytics = (): Analytics => ({
   setUserProperties(properties: Record<string, string | number | boolean>): void {
     console.info('[Analytics] setUserProperties:', properties);
   },
+  resetData(): void {
+    console.info('[Analytics] resetData');
+  },
 });

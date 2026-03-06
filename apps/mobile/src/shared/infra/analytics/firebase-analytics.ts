@@ -33,5 +33,10 @@ export const createFirebaseAnalytics = (): Analytics => {
         });
       }
     },
+    async resetData(): Promise<void> {
+      await firebaseAnalytics.resetAnalyticsData().catch((e) => {
+        if (__DEV__) console.warn('[FirebaseAnalytics] resetData failed:', e);
+      });
+    },
   };
 };

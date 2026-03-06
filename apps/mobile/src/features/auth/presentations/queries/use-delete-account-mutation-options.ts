@@ -2,10 +2,12 @@ import { ErrorCode } from '@aido/errors';
 import type { DeleteAccountInput } from '@aido/validators';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
+  useAnalytics,
   useAuthService,
   useLogger,
   useNotificationService,
 } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -15,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 
 export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
+  const analytics = useAnalytics();
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -40,6 +43,7 @@ export const useDeleteAccountMutationOptions = () => {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success('계정이 탈퇴 처리되었어요');
+      track(analytics, 'auth_account_deleted');
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

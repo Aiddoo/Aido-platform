@@ -60,7 +60,7 @@ function NotificationSettingsForm() {
 
 NotificationSettingsForm.Loading = function Loading() {
   return (
-    <VStack gap={12}>
+    <VStack gap={24}>
       <VStack p={16} gap={12} className="bg-white rounded-2xl">
         <SkeletonGroup isLoading isSkeletonOnly>
           <HStack justify="between" align="center" className="py-2">
@@ -85,25 +85,27 @@ NotificationSettingsForm.Loading = function Loading() {
         </SkeletonGroup>
       </VStack>
 
-      <VStack p={16} gap={12} className="bg-white rounded-2xl">
-        <SkeletonGroup isLoading isSkeletonOnly>
-          <VStack gap={2}>
-            <Skeleton className="h-5 w-28 rounded" />
-            <Skeleton className="h-4 w-52 rounded" />
-          </VStack>
+      <VStack gap={8}>
+        <VStack gap={2} className="px-2">
+          <Skeleton className="h-5 w-28 rounded" />
+          <Skeleton className="h-4 w-52 rounded" />
+        </VStack>
 
-          <HStack justify="between" align="center" className="py-2">
-            <Skeleton className="h-5 w-24 rounded" />
-            <Skeleton className="h-5 w-20 rounded" />
-          </HStack>
+        <VStack p={16} gap={12} className="bg-white rounded-2xl">
+          <SkeletonGroup isLoading isSkeletonOnly>
+            <HStack justify="between" align="center" className="py-2">
+              <Skeleton className="h-5 w-24 rounded" />
+              <Skeleton className="h-5 w-20 rounded" />
+            </HStack>
 
-          <Separator className="bg-gray-2" />
+            <Separator className="bg-gray-2" />
 
-          <HStack justify="between" align="center" className="py-2">
-            <Skeleton className="h-5 w-24 rounded" />
-            <Skeleton className="h-5 w-20 rounded" />
-          </HStack>
-        </SkeletonGroup>
+            <HStack justify="between" align="center" className="py-2">
+              <Skeleton className="h-5 w-24 rounded" />
+              <Skeleton className="h-5 w-20 rounded" />
+            </HStack>
+          </SkeletonGroup>
+        </VStack>
       </VStack>
     </VStack>
   );
@@ -132,7 +134,9 @@ function PushSettingsSection() {
       <ControlField
         isSelected={preference.nightPushEnabled}
         onSelectedChange={(enabled) => {
-          if (!preference.pushEnabled) return;
+          if (!preference.pushEnabled) {
+            return;
+          }
           updateMutation.mutate({ nightPushEnabled: enabled });
         }}
         isDisabled={updateMutation.isPending || !preference.pushEnabled}

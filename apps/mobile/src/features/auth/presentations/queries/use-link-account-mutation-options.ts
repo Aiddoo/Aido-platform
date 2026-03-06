@@ -1,4 +1,5 @@
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useAuthService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -11,6 +12,7 @@ import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useLinkAccountMutationOptions = () => {
   const authService = useAuthService();
+  const analytics = useAnalytics();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -24,6 +26,7 @@ export const useLinkAccountMutationOptions = () => {
       toast.success(
         `${OAUTH_PROVIDER_LABELS[provider.toUpperCase() as OAuthProvider]} 계정이 연결되었습니다`,
       );
+      track(analytics, 'auth_social_linked', { provider });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

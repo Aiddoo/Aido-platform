@@ -73,7 +73,7 @@ PokeBanner.Loading = function Loading() {
   return (
     <HStack mx={16} px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
       <Skeleton className="size-[72px] rounded-full" />
-      <VStack flex={1} gap={4}>
+      <VStack flex={1} gap={2}>
         <Skeleton className="h-5 w-3/4 rounded" />
         <Skeleton className="h-4 w-full rounded" />
       </VStack>

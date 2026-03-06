@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/errors';
-import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useTodoService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -9,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 
 export const useParseTodoMutationOptions = () => {
   const todoService = useTodoService();
+  const analytics = useAnalytics();
   const premiumDialog = usePremiumDialog();
   const toast = useAppToast();
 
@@ -17,7 +19,11 @@ export const useParseTodoMutationOptions = () => {
       const result = await todoService.parseTodo(params.text, params.categoryId);
       return unwrap(result);
     },
+    onSuccess: () => {
+      track(analytics, 'ai_parse_used', { success: true });
+    },
     onError: (error) => {
+      track(analytics, 'ai_parse_used', { success: false });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
