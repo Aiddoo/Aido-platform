@@ -114,42 +114,45 @@ describe("AccountController", () => {
 	describe("getLinkedAccounts", () => {
 		it("연동된 소셜 계정 목록을 서비스에서 조회하고 결과를 반환해야 한다", async () => {
 			// Given: 연동 계정 서비스 응답이 준비되었을 때
-			const accounts = [
-				{
-					provider: "APPLE" as const,
-					linked: false,
-					providerAccountId: null,
-					linkedAt: null,
-				},
-				{
-					provider: "GOOGLE" as const,
-					linked: true,
-					providerAccountId: "102938475647382910",
-					linkedAt: new Date("2026-01-15T10:30:00.000Z"),
-				},
-				{
-					provider: "KAKAO" as const,
-					linked: false,
-					providerAccountId: null,
-					linkedAt: null,
-				},
-				{
-					provider: "NAVER" as const,
-					linked: false,
-					providerAccountId: null,
-					linkedAt: null,
-				},
-			];
-			mockOAuthService.getLinkedAccounts.mockResolvedValue(accounts);
+			const serviceResult = {
+				accounts: [
+					{
+						provider: "APPLE" as const,
+						linked: false,
+						providerAccountId: null,
+						linkedAt: null,
+					},
+					{
+						provider: "GOOGLE" as const,
+						linked: true,
+						providerAccountId: "102938475647382910",
+						linkedAt: new Date("2026-01-15T10:30:00.000Z"),
+					},
+					{
+						provider: "KAKAO" as const,
+						linked: false,
+						providerAccountId: null,
+						linkedAt: null,
+					},
+					{
+						provider: "NAVER" as const,
+						linked: false,
+						providerAccountId: null,
+						linkedAt: null,
+					},
+				],
+				canUnlink: true,
+			};
+			mockOAuthService.getLinkedAccounts.mockResolvedValue(serviceResult);
 
 			// When: getLinkedAccounts를 호출하면
 			const result = await controller.getLinkedAccounts(mockUser);
 
-			// Then: 서비스에 userId를 전달하고 accounts를 래핑하여 반환해야 한다
+			// Then: 서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
 			expect(mockOAuthService.getLinkedAccounts).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
-			expect(result).toEqual({ accounts });
+			expect(result).toEqual(serviceResult);
 		});
 	});
 

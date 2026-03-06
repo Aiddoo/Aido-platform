@@ -598,14 +598,15 @@ export class OAuthService {
 		return { message: "계정 연결이 해제되었습니다." };
 	}
 
-	async getLinkedAccounts(userId: string): Promise<
-		{
+	async getLinkedAccounts(userId: string): Promise<{
+		accounts: {
 			provider: (typeof OAUTH_PROVIDERS)[number];
 			linked: boolean;
 			providerAccountId: string | null;
 			linkedAt: Date | null;
-		}[]
-	> {
+		}[];
+		canUnlink: boolean;
+	}> {
 		const accounts = await this.accountRepository.findAllByUserId(userId);
 
 		const linkedMap = new Map(
@@ -620,7 +621,7 @@ export class OAuthService {
 				]),
 		);
 
-		return OAUTH_PROVIDERS.map((provider) => {
+		const mappedAccounts = OAUTH_PROVIDERS.map((provider) => {
 			const linked = linkedMap.get(provider);
 			return {
 				provider,
@@ -629,6 +630,11 @@ export class OAuthService {
 				linkedAt: linked?.linkedAt ?? null,
 			};
 		});
+
+		return {
+			accounts: mappedAccounts,
+			canUnlink: accounts.length > 1,
+		};
 	}
 
 	async #handleSocialLogin(

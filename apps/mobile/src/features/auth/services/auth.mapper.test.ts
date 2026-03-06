@@ -336,19 +336,21 @@ describe('toLinkedAccounts', () => {
     const result = toLinkedAccounts(dto);
 
     // Then
-    expect(result).toHaveLength(2);
-    expect(result[0]?.provider).toBe('GOOGLE');
-    expect(result[1]?.provider).toBe('KAKAO');
+    expect(result.accounts).toHaveLength(2);
+    expect(result.accounts[0]?.provider).toBe('GOOGLE');
+    expect(result.accounts[1]?.provider).toBe('KAKAO');
+    expect(result.canUnlink).toBe(true);
   });
 
   test('빈 배열 → 빈 배열', () => {
     // Given
-    const dto = { accounts: [] };
+    const dto = { accounts: [], canUnlink: false };
 
     // When
     const result = toLinkedAccounts(dto);
 
     // Then
-    expect(result).toEqual([]);
+    expect(result.accounts).toEqual([]);
+    expect(result.canUnlink).toBe(false);
   });
 });

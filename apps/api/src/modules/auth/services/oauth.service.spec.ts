@@ -788,10 +788,10 @@ describe("OAuthService", () => {
 			const result = await service.getLinkedAccounts("user-123");
 
 			// Then - 항상 4개 provider 반환
-			expect(result).toHaveLength(4);
+			expect(result.accounts).toHaveLength(4);
 
 			// APPLE은 linked
-			expect(result).toContainEqual({
+			expect(result.accounts).toContainEqual({
 				provider: "APPLE",
 				linked: true,
 				providerAccountId: "apple-account-456",
@@ -800,7 +800,7 @@ describe("OAuthService", () => {
 
 			// 나머지 3개는 unlinked
 			for (const provider of ["GOOGLE", "KAKAO", "NAVER"]) {
-				expect(result).toContainEqual({
+				expect(result.accounts).toContainEqual({
 					provider,
 					linked: false,
 					providerAccountId: null,
@@ -809,9 +809,12 @@ describe("OAuthService", () => {
 			}
 
 			// CREDENTIAL은 포함되지 않음
-			expect(result).not.toContainEqual(
+			expect(result.accounts).not.toContainEqual(
 				expect.objectContaining({ provider: "CREDENTIAL" }),
 			);
+
+			// canUnlink: CREDENTIAL + APPLE = 2개이므로 true
+			expect(result.canUnlink).toBe(true);
 		});
 
 		it("소셜 계정이 없으면 모든 제공자가 미연결 상태로 반환된다", async () => {
@@ -828,10 +831,45 @@ describe("OAuthService", () => {
 			const result = await service.getLinkedAccounts("user-123");
 
 			// Then - 4개 전부 미연결
-			expect(result).toHaveLength(4);
-			expect(result.every((a) => a.linked === false)).toBe(true);
-			expect(result.every((a) => a.providerAccountId === null)).toBe(true);
-			expect(result.every((a) => a.linkedAt === null)).toBe(true);
+			expect(result.accounts).toHaveLength(4);
+			expect(result.accounts.every((a) => a.linked === false)).toBe(true);
+			expect(result.accounts.every((a) => a.providerAccountId === null)).toBe(
+				true,
+			);
+			expect(result.accounts.every((a) => a.linkedAt === null)).toBe(true);
+
+			// canUnlink: CREDENTIAL 1개만 있으므로 false
+			expect(result.canUnlink).toBe(false);
+		});
+
+		it("CREDENTIAL + 1개 OAuth이면 canUnlink: true", async () => {
+			// Given - CREDENTIAL + GOOGLE 계정
+			const linkedAt = new Date("2024-01-15");
+			const credentialAccount = AccountBuilder.create("user-123")
+				.asCredential()
+				.withCreatedAt(linkedAt)
+				.build();
+			const googleAccount = AccountBuilder.create("user-123")
+				.asGoogle("google-account-789")
+				.withCreatedAt(linkedAt)
+				.build();
+
+			accountRepo.findAllByUserId.mockResolvedValue([
+				credentialAccount,
+				googleAccount,
+			]);
+
+			// When
+			const result = await service.getLinkedAccounts("user-123");
+
+			// Then - 2개 계정이므로 canUnlink: true
+			expect(result.canUnlink).toBe(true);
+			expect(result.accounts).toContainEqual({
+				provider: "GOOGLE",
+				linked: true,
+				providerAccountId: "google-account-789",
+				linkedAt,
+			});
 		});
 	});
 

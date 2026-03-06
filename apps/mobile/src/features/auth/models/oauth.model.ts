@@ -27,8 +27,8 @@ export const linkedAccountSchema = z.object({
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
 
-export const AuthPolicy = {
-  canUnlinkAccount: (linkedCount: number): boolean => {
-    return linkedCount > 1;
-  },
-} as const;
+export const linkedAccountsResultSchema = z.object({
+  accounts: z.array(linkedAccountSchema),
+  canUnlink: z.boolean(),
+});
+export type LinkedAccountsResult = z.infer<typeof linkedAccountsResultSchema>;

@@ -62,7 +62,7 @@ import type {
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
 import type {
-  LinkedAccount,
+  LinkedAccountsResult,
   OAuthProvider,
   OAuthProviderSlug,
   OAuthStartMode,
@@ -453,7 +453,7 @@ export class AuthService {
     return ok(toResendVerificationResult(parsed.data));
   };
 
-  getLinkedAccounts = async (): Promise<Result<LinkedAccount[], ApiError>> => {
+  getLinkedAccounts = async (): Promise<Result<LinkedAccountsResult, ApiError>> => {
     const result =
       await this.#authHttpClient.get<LinkedAccountsResponse>('v1/auth/linked-accounts');
     if (!result.ok) return result;
