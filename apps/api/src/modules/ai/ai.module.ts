@@ -18,10 +18,12 @@ import { GeminiProvider } from "./providers/gemini.provider";
  * - 일일 사용량 제한 (무료 유저: 5회/일)
  *
  * ### AI Provider
- * Google Gemini 2.0 Flash를 사용하여 비용 효율적인 AI 처리:
+ * Google Gemini 2.5 Flash-Lite를 사용하여 비용 효율적인 AI 처리:
  * - Input: $0.10/1M 토큰
  * - Output: $0.40/1M 토큰
- * - 예상 비용: 1,000명 × 5회/일 = ~$10.50/월
+ * - 예시 원가(파싱 1회 input 180 / output 45 기준): 약 $0.000036 / 회
+ * - 예시 월 원가(1,000명 x 5회/일 x 30일): 약 $5.40 / 월
+ * 출처: https://ai.google.dev/gemini-api/docs/pricing
  *
  * ### 환경 변수
  * | 변수 | 필수 | 설명 |
