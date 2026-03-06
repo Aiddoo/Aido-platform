@@ -1,9 +1,9 @@
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';

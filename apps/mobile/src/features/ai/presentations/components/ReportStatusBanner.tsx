@@ -1,7 +1,7 @@
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { HStack } from '@src/shared/ui/HStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Separator, SkeletonGroup } from 'heroui-native';
 import { useGetReportStatusQueryOptions } from '../queries/use-get-report-status-query-options';

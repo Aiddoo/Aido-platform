@@ -1,7 +1,6 @@
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Text } from '@src/shared/ui/Text/Text';
-import type { TextShade, TextTone } from '@src/shared/ui/Text/Text.types';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
+import { Text, type TextShade, type TextTone } from '@src/shared/ui/Text';
 import { WEEKDAY_LABELS } from '@src/shared/utils/date';
 import { match } from 'ts-pattern';
 

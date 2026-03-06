@@ -1,17 +1,16 @@
 import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
 import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
-import { Avatar } from '@src/shared/ui/Avatar/Avatar';
-import { Box } from '@src/shared/ui/Box/Box';
+import { Avatar } from '@src/shared/ui/Avatar';
+import { Box } from '@src/shared/ui/Box';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
-import { Grid } from '@src/shared/ui/Grid/Grid';
-import { GridItem } from '@src/shared/ui/Grid/GridItem';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Grid, GridItem } from '@src/shared/ui/Grid';
+import { HStack } from '@src/shared/ui/HStack';
 import { useOverlay } from '@src/shared/ui/Overlay/useOverlay';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { PressableFeedback } from 'heroui-native';
 import { Platform, ScrollView } from 'react-native';
 

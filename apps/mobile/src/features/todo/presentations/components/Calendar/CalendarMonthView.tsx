@@ -1,6 +1,6 @@
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
+import { VStack } from '@src/shared/ui/VStack';
 import { formatDate, getMonthWeeks, isSameMonth } from '@src/shared/utils/date';
 import type { CompletionsByDate } from '../../queries/use-get-daily-completions-query-options';
 import { CalendarDateCell } from './CalendarDateCell';

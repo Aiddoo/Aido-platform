@@ -1,10 +1,10 @@
 import type { DayOfWeek } from '@aido/validators';
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
 import { ArrowLeftIcon, ArrowRightIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { ListRow } from '@src/shared/ui/ListRow';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { cn } from '@src/shared/utils/cn';
 import {
   formatMonthDay,

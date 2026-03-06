@@ -1,6 +1,6 @@
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { HStack } from '@src/shared/ui/HStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { formatPrice } from '@src/shared/utils/format';
 import { Card, PressableFeedback } from 'heroui-native';

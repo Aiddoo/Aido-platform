@@ -1,5 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { Chip } from 'heroui-native';
 import { type FieldValues, type Path, useFormContext, useWatch } from 'react-hook-form';
 import Animated, { FadeInUp } from 'react-native-reanimated';

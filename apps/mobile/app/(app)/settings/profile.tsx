@@ -1,8 +1,8 @@
 import { ProfileImageBottomSheet } from '@src/features/user/presentations/components/ProfileImageBottomSheet';
 import { ProfileInfoCard } from '@src/features/user/presentations/components/ProfileInfoCard';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
+import { Spacing } from '@src/shared/ui/Spacing';
 import { useRouter } from 'expo-router';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';

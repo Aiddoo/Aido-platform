@@ -6,12 +6,12 @@ import { useGetReportsQueryOptions } from '@src/features/ai/presentations/querie
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { DocsIcon } from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Result } from '@src/shared/ui/Result/Result';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
+import { Result } from '@src/shared/ui/Result';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense, useState } from 'react';

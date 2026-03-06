@@ -1,6 +1,5 @@
-import { Text } from '@src/shared/ui/Text/Text';
-import type { TextProps } from '@src/shared/ui/Text/Text.types';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Text, type TextProps } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import type { ReactNode } from 'react';
 
 interface ListRowTexts1RowType {

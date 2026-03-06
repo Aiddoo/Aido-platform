@@ -1,14 +1,14 @@
 import { CategoryCreateBottomSheet } from '@src/features/todo/presentations/components/CategoryCreateBottomSheet';
 import { CategoryList } from '@src/features/todo/presentations/components/CategoryList';
 import type { ButtonProps } from '@src/shared/ui/Button';
-import { Flex } from '@src/shared/ui/Flex/Flex';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Flex } from '@src/shared/ui/Flex';
+import { HStack } from '@src/shared/ui/HStack';
 import { InfoIcon, PlusIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense } from 'react';
 

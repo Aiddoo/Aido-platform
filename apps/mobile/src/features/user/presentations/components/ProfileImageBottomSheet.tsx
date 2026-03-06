@@ -1,12 +1,11 @@
 import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
-import { Avatar } from '@src/shared/ui/Avatar/Avatar';
+import { Avatar } from '@src/shared/ui/Avatar';
 import { Button } from '@src/shared/ui/Button';
-import { Grid } from '@src/shared/ui/Grid/Grid';
-import { GridItem } from '@src/shared/ui/Grid/GridItem';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Grid, GridItem } from '@src/shared/ui/Grid';
+import { HStack } from '@src/shared/ui/HStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { BottomSheet, PressableFeedback } from 'heroui-native';
 import { useEffect, useState } from 'react';

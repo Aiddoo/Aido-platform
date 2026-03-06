@@ -1,11 +1,11 @@
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { Box } from '@src/shared/ui/Box/Box';
-import { Flex } from '@src/shared/ui/Flex/Flex';
+import { Box } from '@src/shared/ui/Box';
+import { Flex } from '@src/shared/ui/Flex';
 import { NotiIcon } from '@src/shared/ui/Icon';
-import { Result } from '@src/shared/ui/Result/Result';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Result } from '@src/shared/ui/Result';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { Separator, Skeleton, Spinner } from 'heroui-native';

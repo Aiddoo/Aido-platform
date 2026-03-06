@@ -4,9 +4,9 @@ import {
   SubscriptionPolicy,
 } from '@src/features/subscription/models/subscription.model';
 import type { SubscriptionStatus } from '@src/features/user/models/user.model';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { HStack } from '@src/shared/ui/HStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { formatFullDate } from '@src/shared/utils/date';
 import { Card, Chip, Separator } from 'heroui-native';
 

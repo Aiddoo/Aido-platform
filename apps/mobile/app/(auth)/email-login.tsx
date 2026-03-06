@@ -7,11 +7,11 @@ import {
   emailLoginFormSchema,
 } from '@src/features/auth/presentations/schemas/email-login-form.schema';
 import { Button } from '@src/shared/ui/Button/Button';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { Input } from '@src/shared/ui/Input';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { H3 } from '@src/shared/ui/Text';
+import { TextButton } from '@src/shared/ui/TextButton';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';

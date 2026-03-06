@@ -1,5 +1,5 @@
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
-import { Box } from '@src/shared/ui/Box/Box';
+import { Box } from '@src/shared/ui/Box';
 import {
   ArrowRightIcon,
   CalendarIcon,
@@ -8,8 +8,8 @@ import {
   SunIcon,
   TrashIcon,
 } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { ListRow } from '@src/shared/ui/ListRow';
+import { VStack } from '@src/shared/ui/VStack';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';

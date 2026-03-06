@@ -2,12 +2,12 @@ import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/qu
 import { FeedCalendarProvider } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { PlusIcon } from '@src/shared/ui/Icon';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router, Slot, useGlobalSearchParams } from 'expo-router';

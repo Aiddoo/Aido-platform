@@ -1,10 +1,10 @@
 import { type User, UserPolicy } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { HStack } from '@src/shared/ui/HStack';
+import { ListRow } from '@src/shared/ui/ListRow';
 import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';

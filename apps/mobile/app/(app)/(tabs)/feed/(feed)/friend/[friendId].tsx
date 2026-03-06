@@ -5,8 +5,8 @@ import { PokeBanner } from '@src/features/todo/presentations/components/PokeBann
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
+import { Spacing } from '@src/shared/ui/Spacing';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Suspense, useCallback, useMemo } from 'react';

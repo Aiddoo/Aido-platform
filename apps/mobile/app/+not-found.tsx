@@ -1,5 +1,5 @@
 import { DocsIcon } from '@src/shared/ui/Icon';
-import { Result } from '@src/shared/ui/Result/Result';
+import { Result } from '@src/shared/ui/Result';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
 import { router } from 'expo-router';
 

@@ -1,8 +1,8 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { ArrowLeftIcon, EditIcon, MenuIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
-import { Text } from '@src/shared/ui/Text/Text';
+import { ListRow } from '@src/shared/ui/ListRow';
+import { Text } from '@src/shared/ui/Text';
 import { router, Stack } from 'expo-router';
 import { Popover, type PopoverTriggerRef, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useRef } from 'react';

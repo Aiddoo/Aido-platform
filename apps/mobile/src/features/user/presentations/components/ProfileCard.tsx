@@ -1,11 +1,10 @@
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { ArrowRightIcon, CopyIcon } from '@src/shared/ui/Icon';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H4 } from '@src/shared/ui/Text/Typography';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { H4, Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';

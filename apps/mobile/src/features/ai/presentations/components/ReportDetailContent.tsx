@@ -1,7 +1,7 @@
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { HStack } from '@src/shared/ui/HStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { Card, Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';

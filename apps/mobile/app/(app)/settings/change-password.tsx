@@ -6,9 +6,9 @@ import { useChangePasswordMutationOptions } from '@src/features/auth/presentatio
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { H3 } from '@src/shared/ui/Text/Typography';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
+import { H3 } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense, useCallback, useRef } from 'react';
 import { Controller, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';

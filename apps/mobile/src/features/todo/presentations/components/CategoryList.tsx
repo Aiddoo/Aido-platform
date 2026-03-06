@@ -1,13 +1,13 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-reorder-todo-category-mutation-options';
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
 import { EditIcon, TrashIcon } from '@src/shared/ui/Icon';
-import { ListRow } from '@src/shared/ui/ListRow/ListRow';
+import { ListRow } from '@src/shared/ui/ListRow';
 import { useOverlay } from '@src/shared/ui/Overlay';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';

@@ -1,4 +1,4 @@
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { ArrowLeftIcon, ArrowRightIcon } from '@src/shared/ui/Icon';
 import {
   getNextMonth,

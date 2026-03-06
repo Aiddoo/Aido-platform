@@ -5,14 +5,14 @@ import { PickerHeader } from '@src/features/todo/presentations/components/Picker
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { HStack } from '@src/shared/ui/HStack';
 import { ArrowRightIcon } from '@src/shared/ui/Icon';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { usePremiumDialog } from '@src/shared/ui/PremiumDialog';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { VStack } from '@src/shared/ui/VStack';
 import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';

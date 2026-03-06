@@ -4,10 +4,9 @@ import type { FriendUserViewModel } from '@src/features/friend/presentations/vie
 import type { TodoItem } from '@src/features/todo/models/todo.model';
 import { KeyboardBottomSheet } from '@src/shared/ui/BottomSheet';
 import { Button } from '@src/shared/ui/Button/Button';
-import { Text } from '@src/shared/ui/Text/Text';
-import { H4 } from '@src/shared/ui/Text/Typography';
+import { H4, Text } from '@src/shared/ui/Text';
 import { BottomSheetTextArea } from '@src/shared/ui/TextArea';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { VStack } from '@src/shared/ui/VStack';
 import { useMutation } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { Image, View } from 'react-native';

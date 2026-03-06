@@ -4,9 +4,9 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/u
 import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
 import { KeyboardAdaptiveButton } from '@src/shared/ui/Button';
 import { Input } from '@src/shared/ui/Input';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { H3 } from '@src/shared/ui/Text/Typography';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { H3 } from '@src/shared/ui/Text';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Suspense } from 'react';

@@ -1,7 +1,7 @@
 import { Button } from '@src/shared/ui/Button/Button';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
-import { Text } from '@src/shared/ui/Text/Text';
-import { VStack } from '@src/shared/ui/VStack/VStack';
+import { Spacing } from '@src/shared/ui/Spacing';
+import { Text } from '@src/shared/ui/Text';
+import { VStack } from '@src/shared/ui/VStack';
 import { useRouter } from 'expo-router';
 import { Card } from 'heroui-native';
 

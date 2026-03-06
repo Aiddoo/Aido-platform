@@ -1,6 +1,6 @@
-import { Box } from '@src/shared/ui/Box/Box';
+import { Box } from '@src/shared/ui/Box';
 import { FishIcon } from '@src/shared/ui/Icon/icons';
-import { Text } from '@src/shared/ui/Text/Text';
+import { Text } from '@src/shared/ui/Text';
 import { cn } from '@src/shared/utils/cn';
 import { isSameDay } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';

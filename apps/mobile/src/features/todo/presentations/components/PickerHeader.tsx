@@ -1,7 +1,7 @@
-import { Box } from '@src/shared/ui/Box/Box';
-import { HStack } from '@src/shared/ui/HStack/HStack';
+import { Box } from '@src/shared/ui/Box';
+import { HStack } from '@src/shared/ui/HStack';
 import { CloseIcon } from '@src/shared/ui/Icon';
-import { Text } from '@src/shared/ui/Text/Text';
+import { Text } from '@src/shared/ui/Text';
 import { PressableFeedback } from 'heroui-native';
 
 interface PickerHeaderProps {

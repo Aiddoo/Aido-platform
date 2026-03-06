@@ -6,9 +6,9 @@ import {
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
-import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary/QueryErrorBoundary';
+import { QueryErrorBoundary } from '@src/shared/ui/QueryErrorBoundary';
 import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
-import { Text } from '@src/shared/ui/Text/Text';
+import { Text } from '@src/shared/ui/Text';
 import { useNavigation } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
