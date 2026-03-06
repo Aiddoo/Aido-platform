@@ -1,4 +1,4 @@
-import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Separator, SkeletonGroup } from 'heroui-native';
 import { useGetReportStatusQueryOptions } from '../queries/use-get-report-status-query-options';
@@ -41,7 +41,6 @@ ReportStatusBanner.Loading = function Loading() {
         <HStack className="items-stretch">
           <VStack gap={4} align="center" className="flex-1 py-2">
             <SkeletonGroup.Item className="h-4 w-24 rounded-md" />
-            <Spacing size={2} />
             <SkeletonGroup.Item className="h-7 w-12 rounded-md" />
           </VStack>
 
@@ -49,7 +48,6 @@ ReportStatusBanner.Loading = function Loading() {
 
           <VStack gap={4} align="center" className="flex-1 py-2">
             <SkeletonGroup.Item className="h-4 w-24 rounded-md" />
-            <Spacing size={2} />
             <SkeletonGroup.Item className="h-7 w-12 rounded-md" />
           </VStack>
         </HStack>

@@ -66,10 +66,12 @@ function TermsSettingsForm() {
               <Text size="b2" weight="medium">
                 서비스 이용약관
               </Text>
+
               <VStack gap={2}>
                 <Text size="b4" shade={6}>
                   동의일: {formatDate(consent.termsAgreedAt)}
                 </Text>
+
                 {consent.agreedTermsVersion && (
                   <Text size="b4" shade={6}>
                     버전: {consent.agreedTermsVersion}
@@ -89,10 +91,12 @@ function TermsSettingsForm() {
               <Text size="b2" weight="medium">
                 개인정보처리방침
               </Text>
+
               <VStack gap={2}>
                 <Text size="b4" shade={6}>
                   동의일: {formatDate(consent.privacyAgreedAt)}
                 </Text>
+
                 {consent.agreedTermsVersion && (
                   <Text size="b4" shade={6}>
                     버전: {consent.agreedTermsVersion}
@@ -127,7 +131,7 @@ function TermsSettingsForm() {
 TermsSettingsForm.Loading = function Loading() {
   return (
     <>
-      <VStack p={8} gap={8} className="bg-white rounded-2xl">
+      <VStack p={16} gap={8} className="bg-white rounded-2xl">
         <SkeletonGroup isLoading isSkeletonOnly>
           <VStack gap={4} className="py-2">
             <Skeleton className="h-5 w-28 rounded" />
@@ -151,7 +155,7 @@ TermsSettingsForm.Loading = function Loading() {
 
       <Spacing size={12} />
 
-      <VStack p={8} className="bg-white rounded-2xl">
+      <VStack p={16} className="bg-white rounded-2xl">
         <SkeletonGroup isLoading isSkeletonOnly>
           <HStack justify="between" align="center" className="py-2">
             <VStack flex={1} gap={2}>

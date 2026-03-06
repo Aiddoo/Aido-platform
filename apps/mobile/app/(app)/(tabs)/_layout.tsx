@@ -1,12 +1,13 @@
 import ListIconSvg from '@assets/icons/ic_list.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useTheme } from '@src/shared/providers/theme-provider';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
-
 import { useResolveClassNames } from 'uniwind';
 
 function useLiquidGlassAvailable() {
@@ -58,19 +59,22 @@ export default function TabsLayout() {
 
 function IOSLiquidGlassTabs() {
   const activeStyle = useResolveClassNames('text-main');
+  const { resolvedTheme } = useTheme();
 
   return (
-    <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
-      <NativeTabs.Trigger name="feed">
-        <NativeTabs.Trigger.Label>할 일</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="list.bullet" />
-      </NativeTabs.Trigger>
+    <ThemeProvider value={resolvedTheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
+        <NativeTabs.Trigger name="feed">
+          <NativeTabs.Trigger.Label>할 일</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="list.bullet" />
+        </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="mypage">
-        <NativeTabs.Trigger.Label>마이</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="person.fill" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+        <NativeTabs.Trigger name="mypage">
+          <NativeTabs.Trigger.Label>마이</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="person.fill" />
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    </ThemeProvider>
   );
 }
 

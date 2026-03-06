@@ -71,14 +71,18 @@ export function ProfileInfoCard({
 
 ProfileInfoCard.Loading = function Loading() {
   return (
-    <SkeletonGroup isLoading isSkeletonOnly>
-      <VStack align="center" py={32}>
-        <SkeletonGroup.Item className="size-24 rounded-full" />
-      </VStack>
+    <VStack gap={24}>
+      <SkeletonGroup isLoading isSkeletonOnly>
+        <VStack align="center" py={32}>
+          <SkeletonGroup.Item className="size-24 rounded-full" />
+        </VStack>
+      </SkeletonGroup>
 
       <VStack p={8} className="bg-white rounded-2xl">
-        <SkeletonGroup.Item className="h-14 w-full rounded-lg" />
+        <SkeletonGroup isLoading isSkeletonOnly>
+          <SkeletonGroup.Item className="h-14 w-full rounded-lg" />
+        </SkeletonGroup>
       </VStack>
-    </SkeletonGroup>
+    </VStack>
   );
 };

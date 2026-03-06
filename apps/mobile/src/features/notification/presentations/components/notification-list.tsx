@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { Box, Flex, NotiIcon, Result, Text, VStack } from '@src/shared/ui';
+import { Box, Flex, HStack, NotiIcon, Result, Text, VStack } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
@@ -90,17 +90,19 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
 NotificationList.Loading = function Loading() {
   return (
     <ScrollView className="flex-1">
-      <Box px={16} py={12}>
-        <Skeleton className="w-32 h-4" />
+      <Box px={16} py={8}>
+        <Skeleton className="w-32 h-5" />
       </Box>
       <VStack>
         {times(5, (i) => (
-          <Box key={i} px={16} py={14}>
-            <VStack gap={6}>
-              <Skeleton className="w-10 h-3" />
-              <Skeleton className="w-3/4 h-4" />
-              <Skeleton className="w-full h-3" />
-              <Skeleton className="w-16 h-3" />
+          <Box key={i} px={16} py={16}>
+            <VStack gap={4}>
+              <HStack justify="between">
+                <Skeleton className="w-10 h-4" />
+                <Skeleton className="w-12 h-4" />
+              </HStack>
+              <Skeleton className="w-3/4 h-5" />
+              <Skeleton className="w-full h-4" />
             </VStack>
           </Box>
         ))}

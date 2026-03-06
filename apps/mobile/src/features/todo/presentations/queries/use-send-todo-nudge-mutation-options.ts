@@ -1,4 +1,5 @@
-import { useTodoNudgeService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useTodoNudgeService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -10,6 +11,7 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export const useSendTodoNudgeMutationOptions = () => {
   const todoNudgeService = useTodoNudgeService();
+  const analytics = useAnalytics();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -24,6 +26,7 @@ export const useSendTodoNudgeMutationOptions = () => {
         queryKey: TODO_QUERY_KEYS.nudgeCooldown(variables.receiverId),
       });
       toast.success('콕 찔렀어요!');
+      track(analytics, 'nudge_sent');
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

@@ -122,33 +122,26 @@ function LinkedAccountsList() {
 
 LinkedAccountsList.Loading = function Loading() {
   return (
-    <>
-      <View className="px-2 pb-2">
-        <SkeletonGroup isLoading isSkeletonOnly>
-          <Skeleton className="h-4 w-64 rounded" />
-        </SkeletonGroup>
-      </View>
-      <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
-        <SkeletonGroup isLoading isSkeletonOnly>
-          {times(4, (index) => (
-            <Fragment key={`linked-account-skeleton-${index}`}>
-              <SkeletonRow />
-              {index < 3 && <Separator className="mx-4 bg-gray-2" />}
-            </Fragment>
-          ))}
-        </SkeletonGroup>
-      </VStack>
-    </>
+    <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
+      <SkeletonGroup isLoading isSkeletonOnly>
+        {times(4, (index) => (
+          <Fragment key={`linked-account-skeleton-${index}`}>
+            <SkeletonRow />
+            {index < 3 && <Separator className="mx-4 bg-gray-2" />}
+          </Fragment>
+        ))}
+      </SkeletonGroup>
+    </VStack>
   );
 };
 
 function SkeletonRow() {
   return (
-    <HStack align="center" gap={12} className="px-4 py-3.5">
-      <Skeleton className="w-9 h-9 rounded-full" />
+    <HStack align="center" gap={12} className="px-4 py-4">
+      <Skeleton className="size-10 rounded-full" />
       <VStack flex={1} gap={2}>
-        <Skeleton className="h-4 w-16 rounded" />
-        <Skeleton className="h-3 w-12 rounded" />
+        <Skeleton className="h-5 w-16 rounded" />
+        <Skeleton className="h-4 w-12 rounded" />
       </VStack>
       <Skeleton className="h-8 w-16 rounded-lg" />
     </HStack>

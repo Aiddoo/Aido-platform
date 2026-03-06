@@ -37,7 +37,7 @@ const LoginScreen = () => {
         if (code) {
           // exchangeCode 성공 시 AuthProvider가 status를 'authenticated'로 변경하고
           // Stack.Protected가 자동으로 (app) 그룹으로 라우팅 처리
-          exchangeCodeMutation.mutate({ code });
+          exchangeCodeMutation.mutate({ code, provider: 'kakao' });
         }
       },
     });
@@ -48,7 +48,7 @@ const LoginScreen = () => {
     naverLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
         if (code) {
-          exchangeCodeMutation.mutate({ code });
+          exchangeCodeMutation.mutate({ code, provider: 'naver' });
         }
       },
     });
@@ -59,7 +59,7 @@ const LoginScreen = () => {
     googleLoginMutation.mutate(undefined, {
       onSuccess: (code) => {
         if (code) {
-          exchangeCodeMutation.mutate({ code });
+          exchangeCodeMutation.mutate({ code, provider: 'google' });
         }
       },
     });

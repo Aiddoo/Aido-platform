@@ -1,15 +1,17 @@
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useAuthService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import type { OAuthProvider } from '../../models/oauth.model';
+import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
 import { OAUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useUnlinkAccountMutationOptions = () => {
   const authService = useAuthService();
+  const analytics = useAnalytics();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -21,6 +23,9 @@ export const useUnlinkAccountMutationOptions = () => {
     onSuccess: (_data, provider) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
       toast.success(`${OAUTH_PROVIDER_LABELS[provider]} 계정 연결이 해제되었습니다`);
+      track(analytics, 'auth_social_unlinked', {
+        provider: provider.toLowerCase() as OAuthProviderSlug,
+      });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

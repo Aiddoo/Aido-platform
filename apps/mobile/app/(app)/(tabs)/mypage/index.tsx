@@ -43,22 +43,16 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
+        {/* 핵심 기능 */}
         <SettingNavigationSection>
           <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
-          <SettingNavigationItem
-            label="구독 관리"
-            onPress={() => router.push('/settings/subscription')}
-          />
         </SettingNavigationSection>
 
         <Spacing size={12} />
 
+        {/* 환경설정 */}
         <SettingNavigationSection>
-          <SettingNavigationItem
-            label="연결된 계정"
-            onPress={() => router.push('/settings/linked-accounts')}
-          />
           <SettingNavigationItem
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
@@ -71,6 +65,21 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
+        {/* 계정 관리 */}
+        <SettingNavigationSection>
+          <SettingNavigationItem
+            label="구독 관리"
+            onPress={() => router.push('/settings/subscription')}
+          />
+          <SettingNavigationItem
+            label="연결된 계정"
+            onPress={() => router.push('/settings/linked-accounts')}
+          />
+        </SettingNavigationSection>
+
+        <Spacing size={12} />
+
+        {/* 정보 */}
         <SettingNavigationSection>
           <SettingNavigationItem
             label="약관 및 정책"

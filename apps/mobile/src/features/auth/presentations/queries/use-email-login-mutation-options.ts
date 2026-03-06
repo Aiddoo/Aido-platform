@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useAuthService } from '@src/bootstrap/providers/di-provider';
+import { track } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -10,6 +11,7 @@ import { router } from 'expo-router';
 
 export const useEmailLoginMutationOptions = () => {
   const authService = useAuthService();
+  const analytics = useAnalytics();
   const { setStatus } = useAuth();
   const toast = useAppToast();
 
@@ -23,6 +25,7 @@ export const useEmailLoginMutationOptions = () => {
       if (data.accountRestored) {
         toast.success('탈퇴한 계정이 복구되었어요');
       }
+      track(analytics, 'auth_login', { method: 'email' });
     },
     onError: (error, variables) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
