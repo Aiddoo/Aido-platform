@@ -26,3 +26,9 @@ export const linkedAccountSchema = z.object({
   linkedAt: z.date().nullable(),
 });
 export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
+
+export const linkedAccountsResultSchema = z.object({
+  accounts: z.array(linkedAccountSchema),
+  canUnlink: z.boolean(),
+});
+export type LinkedAccountsResult = z.infer<typeof linkedAccountsResultSchema>;

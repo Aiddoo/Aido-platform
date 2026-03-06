@@ -152,6 +152,7 @@ export class AccountController {
 | \`linked\` | boolean | 연결 여부 |
 | \`providerAccountId\` | string \\| null | 제공자 측 계정 고유 ID (미연결 시 null) |
 | \`linkedAt\` | string \\| null | 계정 연결 시각 (ISO 8601 UTC, 미연결 시 null) |
+| \`canUnlink\` | boolean | 소셜 계정 연결 해제 가능 여부 (계정이 2개 이상일 때 true) |
 
 ### 💡 응답 예시
 \`\`\`json
@@ -161,7 +162,8 @@ export class AccountController {
     { "provider": "GOOGLE", "linked": true, "providerAccountId": "102938475647382910", "linkedAt": "2026-01-15T10:30:00.000Z" },
     { "provider": "KAKAO", "linked": true, "providerAccountId": "3456789012", "linkedAt": "2026-02-01T14:00:00.000Z" },
     { "provider": "NAVER", "linked": false, "providerAccountId": null, "linkedAt": null }
-  ]
+  ],
+  "canUnlink": true
 }
 \`\`\`
 		`,

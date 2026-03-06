@@ -1,13 +1,12 @@
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
-import type { LinkedAccount } from '../../models/oauth.model';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useGetLinkedAccountsQueryOptions = () => {
   const authService = useAuthService();
 
-  return queryOptions<{ accounts: LinkedAccount[]; canUnlink: boolean }>({
+  return queryOptions({
     queryKey: AUTH_QUERY_KEYS.linkedAccounts(),
     queryFn: async () => {
       const result = await authService.getLinkedAccounts();

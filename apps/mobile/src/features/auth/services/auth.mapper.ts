@@ -24,7 +24,7 @@ import type {
   ResetPasswordResult,
   UpdateMarketingConsentResult,
 } from '../models/auth.model';
-import type { LinkedAccount } from '../models/oauth.model';
+import type { LinkedAccount, LinkedAccountsResult } from '../models/oauth.model';
 
 export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userId: dto.userId,
@@ -95,9 +95,7 @@ export const toLinkedAccount = (dto: LinkedAccountDTO): LinkedAccount => ({
   linkedAt: dto.linkedAt ? new Date(dto.linkedAt) : null,
 });
 
-export const toLinkedAccounts = (
-  dto: LinkedAccountsResponse,
-): { accounts: LinkedAccount[]; canUnlink: boolean } => ({
+export const toLinkedAccounts = (dto: LinkedAccountsResponse): LinkedAccountsResult => ({
   accounts: dto.accounts.map(toLinkedAccount),
   canUnlink: dto.canUnlink,
 });
