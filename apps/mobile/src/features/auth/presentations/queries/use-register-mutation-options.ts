@@ -21,12 +21,10 @@ export const useRegisterMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
-        toast.toast('이미 가입된 이메일이에요', {
-          variant: 'accent',
+        toast.error('이미 가입된 이메일이에요', {
           action: {
             label: '로그인하기',
-            onPress: ({ hide }) => {
-              hide();
+            onPress: () => {
               router.replace('/(auth)/email-login');
             },
           },

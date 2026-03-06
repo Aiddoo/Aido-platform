@@ -35,6 +35,9 @@ import PlusIconSvg from '@assets/icons/ic_plus.svg';
 import SearchIconSvg from '@assets/icons/ic_search.svg';
 import SendIconSvg from '@assets/icons/ic_send.svg';
 import SunIconSvg from '@assets/icons/ic_sun.svg';
+import ToastErrorIconSvg from '@assets/icons/ic_toast_error.svg';
+import ToastSuccessIconSvg from '@assets/icons/ic_toast_success.svg';
+import ToastWarningIconSvg from '@assets/icons/ic_toast_warning.svg';
 import TrashIconSvg from '@assets/icons/ic_trash.svg';
 import { createStyledIcon } from './createStyledIcon';
 
@@ -76,4 +79,7 @@ export const PlusIcon = createStyledIcon(PlusIconSvg);
 export const SearchIcon = createStyledIcon(SearchIconSvg);
 export const SendIcon = createStyledIcon(SendIconSvg);
 export const SunIcon = createStyledIcon(SunIconSvg);
+export const ToastErrorIcon = createStyledIcon(ToastErrorIconSvg);
+export const ToastSuccessIcon = createStyledIcon(ToastSuccessIconSvg);
+export const ToastWarningIcon = createStyledIcon(ToastWarningIconSvg);
 export const TrashIcon = createStyledIcon(TrashIconSvg);

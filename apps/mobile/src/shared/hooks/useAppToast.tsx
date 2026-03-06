@@ -1,15 +1,12 @@
+import { AppToast, type AppToastVariant } from '@src/shared/ui/Toast';
 import { useToast } from 'heroui-native';
 import { useCallback } from 'react';
 
-export type AppToastVariant = 'default' | 'accent' | 'success' | 'warning' | 'danger';
-
-export interface ToastActionHelpers {
-  hide: () => void;
-}
+export type { AppToastVariant };
 
 export interface ToastAction {
   label: string;
-  onPress?: (helpers: ToastActionHelpers) => void;
+  onPress?: () => void;
 }
 
 export interface ToastOptions {
@@ -23,11 +20,6 @@ export interface ToastOptions {
 export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
   fallback?: string;
 }
-
-const DEFAULT_ACTION: ToastAction = {
-  label: '닫기',
-  onPress: ({ hide }) => hide(),
-};
 
 const DEFAULT_ERROR_MESSAGE = '오류가 발생했어요';
 
@@ -62,7 +54,7 @@ const extractErrorMessage = (
  * // 커스텀 액션
  * toast('오류', {
  *   variant: 'danger',
- *   action: { label: '재시도', onPress: ({ hide }) => { retry(); hide(); } },
+ *   action: { label: '재시도', onPress: () => retry() },
  * });
  */
 export const useAppToast = () => {
@@ -70,16 +62,18 @@ export const useAppToast = () => {
 
   const toast = useCallback(
     (label: string, options?: ToastOptions) => {
-      const action = options?.action ?? DEFAULT_ACTION;
-
       heroUIToast.show({
-        label,
-        description: options?.description,
-        variant: options?.variant ?? 'default',
         duration: options?.duration,
-        icon: options?.icon,
-        actionLabel: action.label,
-        onActionPress: action.onPress,
+        component: (props) => (
+          <AppToast
+            label={label}
+            description={options?.description}
+            variant={options?.variant ?? 'default'}
+            icon={options?.icon}
+            action={options?.action}
+            toastProps={props}
+          />
+        ),
       });
     },
     [heroUIToast],

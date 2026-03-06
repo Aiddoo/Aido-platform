@@ -37,5 +37,8 @@ export {
   SearchIcon,
   SendIcon,
   SunIcon,
+  ToastErrorIcon,
+  ToastSuccessIcon,
+  ToastWarningIcon,
   TrashIcon,
 } from './icons';

@@ -7,7 +7,6 @@ export const HeroUIProvider = ({ children }: PropsWithChildren) => {
       config={{
         toast: {
           defaultProps: {
-            variant: 'accent',
             placement: 'top',
           },
         },
