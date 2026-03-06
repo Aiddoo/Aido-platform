@@ -3,11 +3,17 @@ description: 새로운 기능이나 개선 사항을 제안해주세요.
 title: "[Feature]: "
 labels: ["type: feat"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        `type: feat` 라벨은 자동으로 추가됩니다.
+        `scope:*`, `priority:*`, `status:*` 라벨은 이슈 생성 후 내용에 맞게 추가합니다.
+
   - type: dropdown
     id: assignee
     attributes:
       label: 담당자
-      description: 이 기능P을 담당할 팀원을 선택해주세요.
+      description: 이 기능을 담당할 팀원을 선택해주세요.
       options:
         - 미정
         - 매튜
@@ -23,9 +29,11 @@ body:
       options:
         - apps/api
         - apps/mobile
-        - packages/utils
         - packages/validators
-        - 전체
+        - packages/utils
+        - packages/errors
+        - tooling/*
+        - multiple
     validations:
       required: true
 
@@ -33,10 +41,11 @@ body:
     id: priority
     attributes:
       label: 우선순위
+      description: GitHub `priority:*` 라벨 기준으로 선택해주세요.
       options:
-        - 🟢 낮음 - 있으면 좋음
-        - 🟡 보통 - 사용성 개선
-        - 🔴 높음 - 핵심 기능
+        - priority: low - 있으면 좋음
+        - priority: medium - 사용성 개선
+        - priority: high - 핵심 기능
     validations:
       required: true
 
