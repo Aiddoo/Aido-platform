@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ListRow, Text, VStack } from '@src/shared/ui';
+import { HStack, InfoIcon, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
 import { getDateWithTime, toHHmm } from '@src/shared/utils/time';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
@@ -33,8 +33,10 @@ export const TodoTimePickerContent = ({
   };
 
   return (
-    <VStack gap={24}>
+    <VStack>
       <PickerHeader title="시간" onCancel={onCancel} onConfirm={handleConfirm} />
+
+      <Spacing size={24} />
 
       <VStack className="rounded-xl bg-gray-1" px={4} py={8} gap={8}>
         <ListRow
@@ -110,6 +112,15 @@ export const TodoTimePickerContent = ({
           disabled={localIsAllDay}
         />
       </VStack>
+
+      <Spacing size={8} />
+
+      <HStack gap={4} align="center" px={4} justify="center">
+        <InfoIcon width={20} height={20} colorClassName="text-gray-5" />
+        <Text size="b3" shade={5}>
+          설정한 시간 10분 전에 알림을 보내드려요
+        </Text>
+      </HStack>
     </VStack>
   );
 };

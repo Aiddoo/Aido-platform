@@ -62,7 +62,7 @@ function IOSLiquidGlassTabs() {
   return (
     <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="feed">
-        <NativeTabs.Trigger.Label>피드</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>할 일</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>
 
@@ -97,7 +97,7 @@ function AndroidBottomTabs() {
       <Tabs.Screen
         name="feed"
         options={{
-          title: '피드',
+          title: '할 일',
           tabBarIcon: ({ color, size }) => <ListIconSvg width={size} height={size} color={color} />,
         }}
         listeners={{

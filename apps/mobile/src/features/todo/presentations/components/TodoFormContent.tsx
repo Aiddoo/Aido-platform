@@ -59,19 +59,20 @@ export const TodoFormContent = ({
       {
         onSuccess: (result) => {
           const { data } = result;
-          methods.setValue('title', data.title);
-          methods.setValue('startDate', data.startDate);
-          methods.setValue('endDate', data.endDate);
-          methods.setValue('scheduledTime', data.scheduledTime);
-          methods.setValue('isAllDay', data.scheduledTime ? false : data.isAllDay);
-          methods.setValue('isRecurring', data.isRecurring);
-          if (data.recurrence) {
-            methods.setValue('daysOfWeek', data.recurrence.daysOfWeek);
-            methods.setValue('repeatEndDate', data.recurrence.endDate);
-          } else {
-            methods.setValue('daysOfWeek', []);
-            methods.setValue('repeatEndDate', null);
-          }
+          methods.reset(
+            (prev) => ({
+              ...prev,
+              title: data.title,
+              startDate: data.startDate,
+              endDate: data.endDate,
+              scheduledTime: data.scheduledTime,
+              isAllDay: data.scheduledTime ? false : data.isAllDay,
+              isRecurring: data.isRecurring,
+              daysOfWeek: data.recurrence?.daysOfWeek ?? [],
+              repeatEndDate: data.recurrence?.endDate ?? null,
+            }),
+            { keepDirtyValues: true },
+          );
         },
       },
     );

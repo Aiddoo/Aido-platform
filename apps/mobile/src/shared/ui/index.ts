@@ -55,6 +55,9 @@ export {
   SendIcon,
   type StyledIconType,
   SunIcon,
+  ToastErrorIcon,
+  ToastSuccessIcon,
+  ToastWarningIcon,
   TrashIcon,
 } from './Icon';
 export {
@@ -104,4 +107,5 @@ export {
   type TextAreaVariant,
 } from './TextArea';
 export { TextButton } from './TextButton';
+export { AppToast, type AppToastVariant } from './Toast';
 export { VStack } from './VStack';
