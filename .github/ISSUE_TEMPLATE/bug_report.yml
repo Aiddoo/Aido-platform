@@ -1,8 +1,14 @@
 name: 🐛 버그 리포트
 description: 버그를 발견하셨나요? 자세히 알려주세요.
 title: "[Bug]: "
-labels: ["bug"]
+labels: ["type: fix"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        `type: fix` 라벨은 자동으로 추가됩니다.
+        `scope:*`, `priority:*`, `status:*` 라벨은 이슈 생성 후 내용에 맞게 추가합니다.
+
   - type: dropdown
     id: assignee
     attributes:
@@ -23,21 +29,24 @@ body:
       options:
         - apps/api
         - apps/mobile
-        - packages/utils
         - packages/validators
-        - 전체
+        - packages/utils
+        - packages/errors
+        - tooling/*
+        - multiple
     validations:
       required: true
 
   - type: dropdown
     id: severity
     attributes:
-      label: 심각도
+      label: 우선순위
+      description: GitHub `priority:*` 라벨 기준으로 선택해주세요.
       options:
-        - 🟢 낮음 - 사소한 문제
-        - 🟡 보통 - 불편하지만 사용 가능
-        - 🟠 높음 - 주요 기능에 영향
-        - 🔴 치명적 - 서비스 불가
+        - priority: low - 사소한 문제
+        - priority: medium - 불편하지만 사용 가능
+        - priority: high - 주요 기능에 영향
+        - priority: critical - 서비스 사용 불가
     validations:
       required: true
 
