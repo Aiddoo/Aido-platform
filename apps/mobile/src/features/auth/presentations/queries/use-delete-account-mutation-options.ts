@@ -44,6 +44,7 @@ export const useDeleteAccountMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success('계정이 탈퇴 처리되었어요');
       track(analytics, 'auth_account_deleted');
+      analytics.resetData();
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

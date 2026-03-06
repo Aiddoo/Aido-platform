@@ -31,7 +31,8 @@ export const useUpdateTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 수정했어요');
-      track(analytics, 'todo_edited', { todo_id: variables.todoId, field: 'general' });
+      const field = Object.keys(variables.input).join(',');
+      track(analytics, 'todo_edited', { todo_id: variables.todoId, field });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
