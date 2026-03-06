@@ -69,11 +69,7 @@ export {
   type ListRowAlignment,
   type ListRowBorder,
   type ListRowHorizontalPadding,
-  ListRowImage,
-  type ListRowImageProps,
   type ListRowProps,
-  ListRowTexts,
-  type ListRowTextsProps,
   type ListRowVerticalPadding,
 } from './ListRow';
 export { OverlayProvider, type OverlayRender, useOverlay } from './Overlay';
