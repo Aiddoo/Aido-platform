@@ -152,6 +152,29 @@ export class UserPreferenceRepository {
 	}
 
 	/**
+	 * 스트릭 필드 업데이트
+	 */
+	async updateStreak(
+		userId: string,
+		data: {
+			currentStreak: number;
+			longestStreak: number;
+			lastCompletedDate: Date | null;
+		},
+		tx?: Prisma.TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.userPreference.update({
+			where: { userId },
+			data: {
+				currentStreak: data.currentStreak,
+				longestStreak: data.longestStreak,
+				lastCompletedDate: data.lastCompletedDate,
+			},
+		});
+	}
+
+	/**
 	 * 사용자 타임존 upsert (없으면 생성, 있으면 갱신)
 	 */
 	async upsertTimezone(

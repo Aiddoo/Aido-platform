@@ -50,6 +50,7 @@ export class UserBuilder {
 			createdAt: now,
 			updatedAt: now,
 			lastLoginAt: null,
+			lastActiveAt: null,
 			deletedAt: null,
 		};
 	}

@@ -377,6 +377,23 @@ export class NotificationService {
 	}
 
 	/**
+	 * metadata JSON 경로 기반 알림 존재 여부 확인
+	 * - WINBACK 단계별 중복 방지용
+	 */
+	async hasNotificationWithMetadata(
+		userId: string,
+		type: NotificationType,
+		metadataPath: string[],
+		metadataValue: string,
+		tx?: TransactionClient,
+	): Promise<boolean> {
+		return this.notificationRepository.existsNotificationWithMetadata(
+			{ userId, type, metadataPath, metadataValue },
+			tx,
+		);
+	}
+
+	/**
 	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
 	 */
 	async findAlreadyNotifiedUserIds(

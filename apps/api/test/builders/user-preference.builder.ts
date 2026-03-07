@@ -31,6 +31,9 @@ export class UserPreferenceBuilder {
 			morningReminderMinute: 0,
 			eveningReminderHour: 18,
 			eveningReminderMinute: 0,
+			currentStreak: 0,
+			longestStreak: 0,
+			lastCompletedDate: null,
 		};
 	}
 

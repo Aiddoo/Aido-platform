@@ -207,6 +207,13 @@ export class UserRepository {
 		});
 	}
 
+	async updateLastActiveAt(id: string): Promise<void> {
+		await this.database.user.update({
+			where: { id },
+			data: { lastActiveAt: now() },
+		});
+	}
+
 	async createProfile(
 		userId: string,
 		data: { name?: string; profileImage?: string },

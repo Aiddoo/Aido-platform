@@ -30,6 +30,7 @@ import {
 } from "../scheduler/reminder";
 import { TodoCategoryService } from "../todo-category/todo-category.service";
 
+import { StreakService } from "../user-settings/services/streak.service";
 import { TodoMapper } from "./todo.mapper";
 import { TodoRepository } from "./todo.repository";
 import type {
@@ -54,6 +55,7 @@ export class TodoService {
 		private readonly notificationQueueService: NotificationQueueService,
 		private readonly database: DatabaseService,
 		private readonly cacheService: CacheService,
+		private readonly streakService: StreakService,
 		@Inject(REMINDER_SCHEDULER)
 		private readonly reminderScheduler: IReminderScheduler,
 	) {}
@@ -358,6 +360,9 @@ export class TodoService {
 			this.reminderScheduler.cancelReminder(id);
 			this.#checkAndEnqueueFriendCompletedEvent(userId, tz);
 		}
+
+		// fire-and-forget 스트릭 갱신
+		this.streakService.onTodoToggled(userId, data.completed, tz);
 
 		this.#logger.log(
 			`Todo completion toggled: ${id} -> ${data.completed} for user: ${userId}`,

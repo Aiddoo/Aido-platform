@@ -4,6 +4,7 @@ import type { Queue } from "bullmq";
 
 import {
 	type ReminderHourChangedJobData,
+	type SocialDigestJobData,
 	TIMEZONE_REMINDER_QUEUE,
 	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
@@ -56,6 +57,30 @@ export class TimezoneReminderQueueService {
 				error instanceof Error ? error.stack : undefined,
 			);
 		});
+	}
+
+	/**
+	 * Social Digest delayed job 등록 (저녁 리마인더 30분 후)
+	 */
+	enqueueSocialDigest(payload: SocialDigestJobData): void {
+		const DELAY_MS = 30 * 60 * 1000; // 30분
+		this.queue
+			.add(TimezoneReminderJobName.SOCIAL_DIGEST, payload, {
+				delay: DELAY_MS,
+				removeOnComplete: true,
+				removeOnFail: 100,
+			})
+			.then(() => {
+				this.#logger.debug(
+					`Social digest job enqueued: tz=${payload.timezone}, delay=30min`,
+				);
+			})
+			.catch((error) => {
+				this.#logger.error(
+					`Failed to enqueue social-digest: tz=${payload.timezone}, ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			});
 	}
 
 	// =========================================================================

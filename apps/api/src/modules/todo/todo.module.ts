@@ -4,6 +4,7 @@ import { FollowModule } from "../follow/follow.module";
 import { NotificationModule } from "../notification/notification.module";
 import { SchedulerModule } from "../scheduler/scheduler.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
+import { UserSettingsModule } from "../user-settings/user-settings.module";
 
 import { TodoController } from "./todo.controller";
 import { TodoRepository } from "./todo.repository";
@@ -20,6 +21,7 @@ import { TodoService } from "./todo.service";
  * - 날짜별 조회
  * - 친구의 PUBLIC 투두 조회
  * - 리마인더 즉시 스케줄링 (생성/수정/삭제 시 타이머 관리)
+ * - 완료 시 스트릭 갱신
  */
 @Module({
 	imports: [
@@ -27,6 +29,7 @@ import { TodoService } from "./todo.service";
 		NotificationModule,
 		TodoCategoryModule,
 		SchedulerModule,
+		UserSettingsModule,
 	],
 	controllers: [TodoController],
 	providers: [TodoRepository, TodoService],
