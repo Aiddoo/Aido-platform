@@ -13,7 +13,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { Checkbox, Skeleton } from 'heroui-native';
@@ -30,18 +30,23 @@ interface FriendTodoListProps {
 }
 
 export function FriendTodoList({ friend, date }: FriendTodoListProps) {
-  const { data } = useSuspenseQuery(useGetFriendTodosQueryOptions(friend.id, formatDate(date)));
+  const { data, isLoading } = useQuery(useGetFriendTodosQueryOptions(friend.id, formatDate(date)));
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   const categoryGroups = useMemo(() => {
+    if (!data) return [];
     const grouped = groupBy(data.todos, (todo) => todo.category.id);
 
     return Object.values(grouped).flatMap((todos) => {
       const first = todos[0];
       return first ? [{ category: first.category, todos }] : [];
     });
-  }, [data.todos]);
+  }, [data]);
+
+  if (isLoading || !data) {
+    return <FriendTodoList.Loading />;
+  }
 
   if (categoryGroups.length === 0) {
     return (
