@@ -102,19 +102,17 @@ export function SuggestionsList() {
         ))}
       </View>
 
-      {categorySheetSuggestionId != null && (
-        <SuggestionCategoryBottomSheet
-          suggestionId={categorySheetSuggestionId}
-          isOpen
-          onOpenChange={(open) => {
-            if (!open) setCategorySheetSuggestionId(null);
-          }}
-          onAccepted={() => {
-            setCategorySheetSuggestionId(null);
-            router.replace('/feed');
-          }}
-        />
-      )}
+      <SuggestionCategoryBottomSheet
+        suggestionId={categorySheetSuggestionId}
+        isOpen={categorySheetSuggestionId != null}
+        onOpenChange={(open) => {
+          if (!open) setCategorySheetSuggestionId(null);
+        }}
+        onAccepted={() => {
+          setCategorySheetSuggestionId(null);
+          router.replace('/feed');
+        }}
+      />
     </ScallopedContainer>
   );
 }

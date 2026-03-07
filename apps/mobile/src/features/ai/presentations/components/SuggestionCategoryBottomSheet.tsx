@@ -15,7 +15,7 @@ const categorySelectSchema = z.object({
 type CategorySelectForm = z.infer<typeof categorySelectSchema>;
 
 interface SuggestionCategoryBottomSheetProps {
-  suggestionId: number;
+  suggestionId: number | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onAccepted: () => void;
@@ -40,6 +40,8 @@ export function SuggestionCategoryBottomSheet({
   });
 
   const onSubmit = handleSubmit((formData) => {
+    if (suggestionId == null) return;
+
     handleSuggestionMutation.mutate(
       {
         suggestionId,
