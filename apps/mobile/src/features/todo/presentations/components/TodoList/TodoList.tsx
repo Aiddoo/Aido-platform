@@ -1,6 +1,6 @@
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -26,7 +26,7 @@ interface TodoListProps {
 
 export function TodoList({ date }: TodoListProps) {
   const formattedDate = formatDate(date);
-  const { data, dataUpdatedAt } = useSuspenseQuery(useGetAllTodosQueryOptions(formattedDate));
+  const { data, dataUpdatedAt, isLoading } = useQuery(useGetAllTodosQueryOptions(formattedDate));
   const { data: categoriesData } = useSuspenseQuery({
     ...useGetTodoCategoriesQueryOptions(),
     select: (data) => ({
@@ -37,13 +37,18 @@ export function TodoList({ date }: TodoListProps) {
   });
 
   const categoryGroups = useMemo(() => {
+    if (!data) return [];
     const grouped = groupBy(data.todos, (todo) => todo.category.id);
 
     return categoriesData.categories.map((category) => ({
       category,
       todos: grouped[category.id] ?? [],
     }));
-  }, [data.todos, categoriesData.categories]);
+  }, [data, categoriesData?.categories]);
+
+  if (isLoading || !data) {
+    return <TodoList.Loading />;
+  }
 
   return (
     <Box gap={16} px={16}>
