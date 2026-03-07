@@ -1,6 +1,7 @@
 import type { UpdateProfileInput } from '@aido/validators';
 import { useUserService } from '@src/bootstrap/providers/di-provider';
 import type { User } from '@src/features/user/models/user.model';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { USER_QUERY_KEYS } from '../constants/user-query-keys.constant';
 
 export const useUpdateProfileMutationOptions = () => {
   const userService = useUserService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -33,7 +35,8 @@ export const useUpdateProfileMutationOptions = () => {
 
       return { previousData };
     },
-    onSuccess: (data) => {
+    onSuccess: (data, input) => {
+      trackEvent('profile_edited', { field: Object.keys(input).join(',') });
       queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
         if (!old) return old;
         return {

@@ -1,3 +1,4 @@
+import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
 import {
@@ -41,6 +42,7 @@ export const TodoFormContent = ({
   onClose,
 }: TodoFormContentProps) => {
   const methods = useFormContext<AddTodoFormInput>();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
   const premiumDialog = usePremiumDialog();
 
@@ -93,6 +95,7 @@ export const TodoFormContent = ({
     }
 
     if (isAiLimitReached) {
+      trackEvent('premium_gate_shown', { feature: 'ai_parse' });
       premiumDialog.open({
         description: '프리미엄 구독으로 매일 무제한 AI 파싱을 사용할 수 있어요',
         onConfirm: onClose,

@@ -1,8 +1,8 @@
 import { ErrorCode } from '@aido/errors';
 import type { CreateTodoInput } from '@aido/validators';
-import { useAnalytics, useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -14,7 +14,7 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export const useCreateTodoMutationOptions = () => {
   const todoService = useTodoService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -27,7 +27,7 @@ export const useCreateTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 추가했어요!');
-      track(analytics, 'todo_created', {
+      trackEvent('todo_created', {
         category_id: variables.categoryId,
         has_due_date: !!variables.startDate,
         source: 'manual',

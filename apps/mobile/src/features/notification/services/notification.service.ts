@@ -1,3 +1,4 @@
+import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ok, type Result } from '@src/shared/errors/result';
 import * as Notifications from 'expo-notifications';
@@ -19,15 +20,18 @@ export class NotificationService {
   readonly #notificationRepository: NotificationRepository;
   readonly #deviceIdService: DeviceIdService;
   readonly #pushTokenService: PushTokenService;
+  readonly #logger: Logger;
 
   constructor(
     notificationRepository: NotificationRepository,
     deviceIdService: DeviceIdService,
     pushTokenService: PushTokenService,
+    logger: Logger,
   ) {
     this.#notificationRepository = notificationRepository;
     this.#deviceIdService = deviceIdService;
     this.#pushTokenService = pushTokenService;
+    this.#logger = logger;
   }
 
   // 푸시 토큰 등록 (로그인 후 호출)
@@ -41,9 +45,7 @@ export class NotificationService {
 
     if (!tokenResult.ok) return tokenResult;
 
-    if (__DEV__) {
-      console.log('[PushToken]', { token: tokenResult.value, deviceId });
-    }
+    this.#logger.debug('[PushToken] Registering', { token: tokenResult.value, deviceId });
 
     return this.#notificationRepository.registerToken(tokenResult.value, deviceId);
   };

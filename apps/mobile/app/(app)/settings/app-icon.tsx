@@ -3,6 +3,7 @@ import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTrack } from '@src/shared/analytics';
 import {
   Avatar,
   Box,
@@ -26,11 +27,13 @@ const AppIconScreen = () => {
   const { currentIcon, isSupported, isChanging, changeIcon } = useAppIcon();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
+  const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
 
   const handleIconPress = (key: AppIconKey) => {
     if (!isPremium && key !== 'default') {
+      trackEvent('premium_gate_shown', { feature: 'app_icon' });
       premiumDialog.open({
         description: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.',
       });

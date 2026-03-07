@@ -6,7 +6,7 @@ import {
   useNotificationService,
   useRevenueCatSdkManager,
 } from '@src/bootstrap/providers/di-provider';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 export const useLogoutMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
   const sdkManager = useRevenueCatSdkManager();
   const queryClient = useQueryClient();
@@ -51,7 +52,7 @@ export const useLogoutMutationOptions = () => {
     },
     // API 성공/실패 관계없이 항상 로그아웃 처리
     onSettled: () => {
-      track(analytics, 'auth_logout');
+      trackEvent('auth_logout');
       analytics.setUserId(null);
       setStatus('unauthenticated');
       queryClient.clear();

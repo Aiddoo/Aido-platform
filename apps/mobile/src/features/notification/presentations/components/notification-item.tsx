@@ -1,5 +1,6 @@
 import { type User, UserPolicy } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
+import { useTrack } from '@src/shared/analytics';
 import { HStack, ListRow, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface NotificationItemProps {
 export function NotificationItem({ notification }: NotificationItemProps) {
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const router = useRouter();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const premiumDialog = usePremiumDialog();
   const isUnread = NotificationPolicy.isUnread(notification);
@@ -39,6 +41,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     if (NotificationPolicy.isAiFeature(notification)) {
       const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
       if (user && !UserPolicy.isPremiumUser(user)) {
+        trackEvent('premium_gate_shown', { feature: 'ai_report' });
         premiumDialog.open({
           description: '구독하면 AI 리포트와 제안을 확인할 수 있어요',
         });

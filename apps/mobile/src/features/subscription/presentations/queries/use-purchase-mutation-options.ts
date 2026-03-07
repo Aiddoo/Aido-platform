@@ -1,4 +1,5 @@
 import { useSubscriptionService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import { isPaymentPendingError, isPurchaseCancelledError } from '../../models/su
 
 export const usePurchaseMutationOptions = () => {
   const subscriptionService = useSubscriptionService();
+  const { trackEvent } = useTrack();
   const { success, error } = useAppToast();
 
   return mutationOptions({
@@ -14,7 +16,8 @@ export const usePurchaseMutationOptions = () => {
       const result = await subscriptionService.purchase(identifier);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: (_data, identifier) => {
+      trackEvent('subscription_started', { product_id: identifier });
       // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       success('구독이 완료되었어요!');

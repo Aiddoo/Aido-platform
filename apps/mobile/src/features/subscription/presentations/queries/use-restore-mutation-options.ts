@@ -1,4 +1,5 @@
 import { useSubscriptionService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
@@ -6,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 
 export const useRestoreMutationOptions = () => {
   const subscriptionService = useSubscriptionService();
+  const { trackEvent } = useTrack();
   const { success, error } = useAppToast();
 
   return mutationOptions({
@@ -17,6 +19,7 @@ export const useRestoreMutationOptions = () => {
     onSuccess: (hasActive) => {
       // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
       if (hasActive) {
+        trackEvent('subscription_restored');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         success('구매가 복원되었어요!');
       } else {

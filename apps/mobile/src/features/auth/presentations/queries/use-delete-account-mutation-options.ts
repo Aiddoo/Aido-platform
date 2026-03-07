@@ -7,7 +7,7 @@ import {
   useLogger,
   useNotificationService,
 } from '@src/bootstrap/providers/di-provider';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -43,7 +44,7 @@ export const useDeleteAccountMutationOptions = () => {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success('계정이 탈퇴 처리되었어요');
-      track(analytics, 'auth_account_deleted');
+      trackEvent('auth_account_deleted');
       analytics.resetData();
     },
     onError: (error) => {

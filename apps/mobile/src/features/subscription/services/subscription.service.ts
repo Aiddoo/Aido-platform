@@ -1,3 +1,4 @@
+import type { Logger } from '@src/core/ports/logger';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
@@ -13,10 +14,12 @@ import { toSubscriptionOfferingWithPackages } from './subscription.mapper';
  */
 export class SubscriptionService {
   readonly #sdkManager: RevenueCatSdkManager;
+  readonly #logger: Logger;
   #packageMap = new Map<string, PurchasesPackage>();
 
-  constructor(sdkManager: RevenueCatSdkManager) {
+  constructor(sdkManager: RevenueCatSdkManager, logger: Logger) {
     this.#sdkManager = sdkManager;
+    this.#logger = logger;
   }
 
   getOfferings = async (): Promise<Result<SubscriptionOffering, SubscriptionError>> => {
@@ -35,7 +38,9 @@ export class SubscriptionService {
       this.#packageMap = result.packageMap;
       return ok(result.offering);
     } catch (error) {
-      if (__DEV__) console.warn('[SubscriptionService] getOfferings failed:', error);
+      this.#logger.warn('[SubscriptionService] GetOfferings failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       const message = error instanceof Error ? error.message : undefined;
       return err(SubscriptionErrors.fetchOfferingsFailed(message));
     }

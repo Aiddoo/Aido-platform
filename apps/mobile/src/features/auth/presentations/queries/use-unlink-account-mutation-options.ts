@@ -1,5 +1,5 @@
-import { useAnalytics, useAuthService } from '@src/bootstrap/providers/di-provider';
-import { track } from '@src/shared/analytics';
+import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -11,7 +11,7 @@ import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useUnlinkAccountMutationOptions = () => {
   const authService = useAuthService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -23,7 +23,7 @@ export const useUnlinkAccountMutationOptions = () => {
     onSuccess: (_data, provider) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
       toast.success(`${OAUTH_PROVIDER_LABELS[provider]} 계정 연결이 해제되었습니다`);
-      track(analytics, 'auth_social_unlinked', {
+      trackEvent('auth_social_unlinked', {
         provider: provider.toLowerCase() as OAuthProviderSlug,
       });
     },

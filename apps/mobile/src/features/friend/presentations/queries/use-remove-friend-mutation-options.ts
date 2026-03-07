@@ -1,5 +1,6 @@
 import { useFriendService } from '@src/bootstrap/providers/di-provider';
 import type { FriendUser } from '@src/features/friend/models/friend.model';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.type';
 import type { InfiniteData } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useRemoveFriendMutationOptions = () => {
   const friendService = useFriendService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const friendsQueryKey = FRIEND_QUERY_KEYS.friends();
 
@@ -49,7 +51,10 @@ export const useRemoveFriendMutationOptions = () => {
         queryClient.setQueryData(friendsQueryKey, context.previousData);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, error) => {
+      if (!error) {
+        trackEvent('friend_removed');
+      }
       queryClient.invalidateQueries({ queryKey: friendsQueryKey });
     },
   });

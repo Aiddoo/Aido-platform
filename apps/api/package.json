@@ -1,6 +1,6 @@
 {
 	"name": "@aido/api",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"private": true,
 	"description": "Aido API Server",
 	"license": "MIT",

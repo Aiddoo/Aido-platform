@@ -71,7 +71,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
 
     if (ENV.IS_PRODUCTION) {
-      initCrashlytics(true);
+      initCrashlytics(true, consoleLogger);
     }
 
     const logger = ENV.IS_PRODUCTION
@@ -80,10 +80,12 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     setGlobalLogger(logger);
 
-    const analytics = ENV.IS_PRODUCTION ? createFirebaseAnalytics() : createConsoleAnalytics();
+    const analytics = ENV.IS_PRODUCTION
+      ? createFirebaseAnalytics(logger)
+      : createConsoleAnalytics();
 
     const errorReporter = ENV.IS_PRODUCTION
-      ? createCrashlyticsErrorReporter()
+      ? createCrashlyticsErrorReporter(logger)
       : createConsoleErrorReporter();
 
     const publicKyInstance = createPublicClient();
@@ -93,7 +95,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const authHttpClient = new KyHttpClient(authKyInstance);
 
     // AI
-    const aiService = new AiService(authHttpClient);
+    const aiService = new AiService(authHttpClient, logger);
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, storage);
@@ -119,6 +121,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       notificationRepository,
       deviceIdService,
       pushTokenService,
+      logger,
     );
 
     // Todo Nudge
@@ -129,8 +132,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const userService = new UserService(authHttpClient);
 
     // Subscription
-    const revenueCatSdkManager = new RevenueCatSdkManager();
-    const subscriptionService = new SubscriptionService(revenueCatSdkManager);
+    const revenueCatSdkManager = new RevenueCatSdkManager(logger);
+    const subscriptionService = new SubscriptionService(revenueCatSdkManager, logger);
 
     return {
       storage,

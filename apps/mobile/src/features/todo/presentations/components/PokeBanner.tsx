@@ -1,6 +1,7 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
+import { useTrack } from '@src/shared/analytics';
 import { HStack, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
@@ -13,9 +14,11 @@ export function PokeBanner() {
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
 
+  const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
   const handlePress = () => {
     if (isLimitReached) {
+      trackEvent('premium_gate_shown', { feature: 'nudge_limit' });
       premiumDialog.open({
         title: '오늘 콕 찌르기를 다 했어요',
         description: '구독하면 무제한으로 찌를 수 있어요',

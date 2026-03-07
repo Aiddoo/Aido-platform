@@ -1,6 +1,6 @@
 # Aido Privacy Policy
 
-**Effective Date: March 5, 2026**
+**Effective Date: March 8, 2026**
 
 ---
 
@@ -47,8 +47,6 @@ The following items are accessed with the user's consent and are **processed onl
 | Camera | Taking profile photos |
 | Photo Library | Selecting profile images |
 | Microphone and Speech Recognition | Voice input for to-do creation (voice data is processed on-device, not transmitted to server) |
-| Calendar | Syncing schedules with device calendar |
-| Biometric Authentication (Face ID/Fingerprint) | App unlock (biometric data is stored only on the device; only authentication success/failure status is processed) |
 
 - Users may change or revoke access permissions at any time through their device settings.
 
@@ -72,10 +70,10 @@ The Company processes collected personal information only for the following purp
 | Purpose | Details |
 |---------|---------|
 | Member Management | Member identification, registration/withdrawal processing, identity verification, prevention of fraudulent use |
-| Service Provision | Core features including task management, calendar (weekly/monthly), friend sharing, Nudge, and weekly achievement badges. Publicly shared to-dos are visible to friends, and Nudge messages are delivered to the recipient. |
+| Service Provision | Core features including task management, calendar (weekly/monthly), friend sharing, Nudge, weekly achievement badges, and streaks. Publicly shared to-dos are visible to mutual followers, and Nudge messages are delivered to the recipient. |
 | AI Feature Provision | AI-powered automatic to-do parsing, weekly & monthly AI report generation (task statistics analysis and achievement summaries), recurring pattern analysis and automatic suggestions |
 | Subscription and Payment Management | Paid subscription processing, payment status management, receipt verification |
-| Notification Delivery | To-do reminders (1 hour and 10 minutes before scheduled time), morning & evening reminders, social notifications, service announcements |
+| Notification Delivery | To-do reminders (1 hour and 10 minutes before scheduled time), morning & evening reminders, streak maintenance reminders, social notifications (friend requests, Nudge, social digest, etc.), Nudge encouragement notifications, Win-back notifications, service announcements |
 | Service Improvement | Usage statistics analysis, error response, service quality enhancement |
 | Customer Support | Inquiry response, complaint handling, notice delivery |
 | Marketing (Optional) | Providing event and promotional information (only to consenting Members) |
@@ -281,5 +279,5 @@ For reports or consultations regarding personal information breaches, you may co
 
 ## Addendum
 
-1. This Privacy Policy takes effect on **March 5, 2026**.
-2. The previous Privacy Policy (effective March 3, 2026) shall cease to have effect upon the implementation of this Policy.
+1. This Privacy Policy takes effect on **March 8, 2026**.
+2. The previous Privacy Policy (effective March 5, 2026) shall cease to have effect upon the implementation of this Policy.
