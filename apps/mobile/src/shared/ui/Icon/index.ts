@@ -11,6 +11,7 @@ export {
   ClockIcon,
   CloseIcon,
   CopyIcon,
+  CrownIcon,
   DeviceIcon,
   DocsIcon,
   DragIcon,
