@@ -9,7 +9,6 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { NUDGE_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
@@ -22,7 +21,7 @@ import {
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
-import { NotificationEvents } from "@/modules/notification/events";
+import { NotificationQueueService } from "@/modules/notification/queue";
 import { NudgeRepository } from "./nudge.repository";
 import { NudgeService } from "./nudge.service";
 
@@ -35,7 +34,7 @@ describe("NudgeService", () => {
 	let nudgeRepository: Mocked<NudgeRepository>;
 	let followService: Mocked<FollowService>;
 	let paginationService: Mocked<PaginationService>;
-	let eventEmitter: Mocked<EventEmitter2>;
+	let notificationQueueService: Mocked<NotificationQueueService>;
 	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
 
@@ -68,7 +67,7 @@ describe("NudgeService", () => {
 		nudgeRepository = unitRef.get(NudgeRepository);
 		followService = unitRef.get(FollowService);
 		paginationService = unitRef.get(PaginationService);
-		eventEmitter = unitRef.get(EventEmitter2);
+		notificationQueueService = unitRef.get(NotificationQueueService);
 		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
 
@@ -237,7 +236,7 @@ describe("NudgeService", () => {
 			expect(result.id).toBe(1);
 		});
 
-		it("Nudge 발송 후 이벤트를 발행한다", async () => {
+		it("Nudge 발송 후 알림 큐에 등록한다", async () => {
 			// Given
 			setupSuccessfulSend();
 
@@ -245,8 +244,7 @@ describe("NudgeService", () => {
 			await service.sendNudge(defaultParams);
 
 			// Then
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				NotificationEvents.NUDGE_SENT,
+			expect(notificationQueueService.enqueueNudgeSent).toHaveBeenCalledWith(
 				expect.objectContaining({
 					nudgeId: 1,
 					senderId: "sender-id",

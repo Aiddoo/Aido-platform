@@ -7,7 +7,6 @@ import {
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import { subtractDays, subtractMinutes } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
@@ -15,10 +14,9 @@ import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
-import {
-	AdminNotificationEvents,
-	type UserRegisteredEventPayload,
-} from "../../admin-notification/events/admin-notification.events";
+import type { UserRegisteredEventPayload } from "@/modules/admin-notification/events/admin-notification.events";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -77,7 +75,7 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly verificationService: VerificationService,
 		private readonly cacheService: CacheService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 	) {}
 
 	async register(input: RegisterInput): Promise<RegisterResult> {
@@ -145,7 +143,15 @@ export class AuthService {
 					},
 				});
 
-				// 기본 카테고리는 user.registered 이벤트를 통해 TodoCategoryModule에서 생성
+				// 기본 카테고리 생성 (온보딩 필수 데이터 — 트랜잭션 내 동기 처리)
+				await tx.todoCategory.createMany({
+					data: DEFAULT_CATEGORIES.map((category) => ({
+						userId: newUser.id,
+						name: category.name,
+						color: category.color,
+						sortOrder: category.sortOrder,
+					})),
+				});
 
 				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 				const verificationResult =
@@ -204,7 +210,7 @@ export class AuthService {
 
 		this.#logger.log(`User registered: ${result.user.id} (${email})`);
 
-		this.eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
+		this.adminNotificationQueueService.enqueueUserRegistered({
 			userId: result.user.id,
 			email: result.user.email,
 			provider: "credential",

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/modules/follow/follow.module";
+import { NotificationModule } from "@/modules/notification/notification.module";
 
 import { NudgeController } from "./nudge.controller";
 import { NudgeRepository } from "./nudge.repository";
@@ -19,12 +20,12 @@ import { NudgeService } from "./nudge.service";
  * - ACTIVE 구독: 무제한
  * - 동일 Todo에 대해 24시간 쿨다운
  *
- * Event-driven:
- * - 콕 찌르기 전송 시 NotificationModule로 이벤트 발행
- * - NotificationModule의 NudgeListener가 푸시 알림 처리
+ * BullMQ 큐 기반 알림:
+ * - 콕 찌르기 전송 시 NotificationQueueService로 알림 잡 등록
+ * - NotificationQueueProcessor가 푸시 알림 처리
  */
 @Module({
-	imports: [FollowModule],
+	imports: [FollowModule, NotificationModule],
 	controllers: [NudgeController],
 	providers: [NudgeRepository, NudgeService],
 	exports: [NudgeService],

@@ -17,18 +17,19 @@
  * ```
  */
 
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { FollowBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowRepository } from "@/modules/follow/follow.repository";
 import { FollowService } from "@/modules/follow/follow.service";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 describe("FollowService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -55,9 +56,10 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		user: mockUserDb,
 	});
 
-	// Mock EventEmitter
-	const mockEventEmitter = {
-		emit: jest.fn(),
+	// Mock NotificationQueueService
+	const mockNotificationQueueService = {
+		enqueueFollowNew: jest.fn(),
+		enqueueFollowMutual: jest.fn(),
 	};
 
 	// Mock CacheService
@@ -66,6 +68,14 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		setMutualFriend: jest.fn(),
 		invalidateMutualFriend: jest.fn(),
 		invalidateFriendRelations: jest.fn(),
+		wrapFriendCount: jest
+			.fn()
+			.mockImplementation((_userId, factory) => factory()),
+		invalidateMutualFriendIds: jest.fn().mockResolvedValue(undefined),
+		invalidateFriendCount: jest.fn().mockResolvedValue(undefined),
+		wrapMutualFriendIds: jest
+			.fn()
+			.mockImplementation((_userId, factory) => factory()),
 	};
 
 	// 테스트 데이터
@@ -105,12 +115,23 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 					},
 				},
 				{
-					provide: EventEmitter2,
-					useValue: mockEventEmitter,
+					provide: NotificationQueueService,
+					useValue: mockNotificationQueueService,
 				},
 				{
 					provide: CacheService,
 					useValue: mockCacheService,
+				},
+				{
+					provide: EntitlementService,
+					useValue: {
+						getResourceLimit: jest.fn().mockResolvedValue({
+							maxCount: null,
+							isAdmin: false,
+							subscriptionStatus: "ACTIVE",
+						}),
+						enforceResourceLimit: jest.fn(),
+					},
 				},
 			],
 		}).compile();

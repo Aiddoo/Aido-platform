@@ -1,6 +1,5 @@
 import { NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { isSameDay } from "@/common/date/utils/compare";
 import { calculateCooldown } from "@/common/date/utils/cooldown";
 import { now } from "@/common/date/utils/core";
@@ -17,10 +16,7 @@ import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pag
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
-import {
-	NotificationEvents,
-	type NudgeSentEventPayload,
-} from "@/modules/notification/events";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 import { NudgeRepository } from "./nudge.repository";
 import type {
@@ -49,7 +45,7 @@ export class NudgeService {
 		private readonly nudgeRepository: NudgeRepository,
 		private readonly followService: FollowService,
 		private readonly paginationService: PaginationService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly notificationQueueService: NotificationQueueService,
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
@@ -106,6 +102,7 @@ export class NudgeService {
 					visibility: true,
 				},
 			});
+
 			if (!todo) {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
@@ -220,9 +217,9 @@ export class NudgeService {
 			return newNudge;
 		});
 
-		// 7. 이벤트 발행 (트랜잭션 성공 후 발행)
+		// 7. 알림 큐 등록 (트랜잭션 성공 후)
 		const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
-		this.eventEmitter.emit(NotificationEvents.NUDGE_SENT, {
+		this.notificationQueueService.enqueueNudgeSent({
 			nudgeId: nudge.id,
 			senderId,
 			receiverId,
@@ -230,7 +227,7 @@ export class NudgeService {
 			todoId,
 			todoTitle: nudge.todo.title,
 			message,
-		} satisfies NudgeSentEventPayload);
+		});
 
 		return nudge;
 	}

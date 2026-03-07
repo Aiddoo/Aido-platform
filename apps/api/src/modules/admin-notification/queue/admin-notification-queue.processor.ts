@@ -5,41 +5,15 @@ import type { Job } from "bullmq";
 import type { DailySignupSummaryJob } from "../jobs/daily-signup-summary.job";
 import {
 	ADMIN_NOTIFIER,
-	type AdminNotification,
 	type AdminNotifier,
 	PAYMENT_NOTIFIER,
 } from "../providers/admin-notifier.interface";
-
-export const ADMIN_NOTIFICATION_QUEUE = "admin-notification";
-
-/** 잡 이름 상수 */
-export const AdminNotificationJobName = {
-	DISPATCH_SUMMARY: "dispatch-signup-summary",
-	SEND: "send-notification",
-} as const;
-
-/** send-notification 잡 데이터 */
-export interface AdminNotificationSendData {
-	channel: "admin" | "payment";
-	notification: AdminNotification;
-}
-
-/** 잡 이름 → 데이터 타입 매핑 */
-export interface AdminNotificationJobMap {
-	[AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
-	[AdminNotificationJobName.SEND]: AdminNotificationSendData;
-}
-
-export type AdminNotificationJobData =
-	AdminNotificationJobMap[keyof AdminNotificationJobMap];
-
-/** 잡 등록 시 공통 옵션 */
-export const ADMIN_NOTIFICATION_JOB_OPTS = {
-	attempts: 3,
-	backoff: { type: "exponential" as const, delay: 5_000 },
-	removeOnComplete: true,
-	removeOnFail: { count: 100, age: 86_400 },
-} as const;
+import {
+	ADMIN_NOTIFICATION_QUEUE,
+	type AdminNotificationJobData,
+	type AdminNotificationJobMap,
+	AdminNotificationJobName,
+} from "./admin-notification-queue.constants";
 
 /**
  * 관리자 알림 BullMQ Processor
@@ -54,7 +28,7 @@ export class AdminNotificationProcessor extends WorkerHost {
 	readonly #logger = new Logger(AdminNotificationProcessor.name);
 
 	/** @see DailySignupSummaryJob — 순환 참조 방지를 위해 setter injection */
-	#dailySummaryJob!: DailySignupSummaryJob;
+	#dailySummaryJob?: DailySignupSummaryJob;
 	setDailySummaryJob(job: DailySignupSummaryJob) {
 		this.#dailySummaryJob = job;
 	}
@@ -88,6 +62,10 @@ export class AdminNotificationProcessor extends WorkerHost {
 
 	async process(job: Job<AdminNotificationJobData>): Promise<void> {
 		if (job.name === AdminNotificationJobName.DISPATCH_SUMMARY) {
+			if (!this.#dailySummaryJob) {
+				throw new Error("DailySignupSummaryJob not initialized");
+			}
+
 			await this.#dailySummaryJob.handleDailySummary();
 			return;
 		}

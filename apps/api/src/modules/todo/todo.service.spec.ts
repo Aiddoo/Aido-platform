@@ -10,7 +10,6 @@
  */
 
 import { TODO_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
@@ -47,7 +46,6 @@ describe("TodoService", () => {
 	let todoCategoryService: Mocked<TodoCategoryService>;
 	let paginationService: Mocked<PaginationService>;
 	let followService: Mocked<FollowService>;
-	let _eventEmitter: Mocked<EventEmitter2>;
 	let database: Mocked<DatabaseService>;
 	let reminderScheduler: Mocked<IReminderScheduler>;
 
@@ -74,7 +72,6 @@ describe("TodoService", () => {
 		todoCategoryService = unitRef.get(TodoCategoryService);
 		paginationService = unitRef.get(PaginationService);
 		followService = unitRef.get(FollowService);
-		_eventEmitter = unitRef.get(EventEmitter2);
 		database = unitRef.get(DatabaseService);
 		reminderScheduler = unitRef.get(REMINDER_SCHEDULER);
 
@@ -743,7 +740,6 @@ describe("TodoService", () => {
 						...data,
 					}) as TodoWithCategory,
 			);
-			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 0 });
 
 			// When: 완료로 변경
 			const result = await service.toggleComplete(
@@ -777,7 +773,6 @@ describe("TodoService", () => {
 						...data,
 					}) as TodoWithCategory,
 			);
-			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 1 });
 
 			// When: 미완료로 변경
 			const result = await service.toggleComplete(
@@ -837,7 +832,6 @@ describe("TodoService", () => {
 						...data,
 					}) as TodoWithCategory,
 			);
-			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 0 });
 
 			// When: 완료로 변경
 			await service.toggleComplete(uncompletedTodo.id, mockUserId, {
@@ -872,37 +866,6 @@ describe("TodoService", () => {
 
 			// Then: 리마인더 취소가 호출되지 않음
 			expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
-		});
-
-		it("완료 시 타임존이 checkAndEmitAllCompletedEvent에 전달된다", async () => {
-			// Given: 미완료 상태의 Todo
-			const uncompletedTodo = TodoBuilder.create(mockUserId)
-				.withId(1)
-				.uncompleted()
-				.build();
-			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
-			todoRepo.update.mockImplementation(
-				async (_id: number, data: Record<string, unknown>) =>
-					({
-						...uncompletedTodo,
-						...data,
-					}) as TodoWithCategory,
-			);
-			todoRepo.getTodayTodoStats.mockResolvedValue({ total: 1, completed: 1 });
-
-			// When: KST 타임존으로 완료 변경
-			await service.toggleComplete(
-				uncompletedTodo.id,
-				mockUserId,
-				{ completed: true },
-				"Asia/Seoul",
-			);
-
-			// Then: getTodayTodoStats가 KST 기준 오늘 날짜로 호출됨
-			expect(todoRepo.getTodayTodoStats).toHaveBeenCalledWith(
-				mockUserId,
-				expect.any(Date),
-			);
 		});
 	});
 

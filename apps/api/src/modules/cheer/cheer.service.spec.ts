@@ -9,7 +9,6 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { CHEER_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { CheerBuilder } from "@test/builders";
@@ -20,7 +19,7 @@ import {
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
-import { NotificationEvents } from "@/modules/notification/events";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 import { CheerRepository } from "./cheer.repository";
 import { CheerService } from "./cheer.service";
@@ -34,7 +33,7 @@ describe("CheerService", () => {
 	let cheerRepo: Mocked<CheerRepository>;
 	let followService: Mocked<FollowService>;
 	let paginationService: Mocked<PaginationService>;
-	let eventEmitter: Mocked<EventEmitter2>;
+	let notificationQueueService: Mocked<NotificationQueueService>;
 	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
 
@@ -60,9 +59,9 @@ describe("CheerService", () => {
 		paginationService = unitRef.get(
 			PaginationService,
 		) as unknown as Mocked<PaginationService>;
-		eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
+		notificationQueueService = unitRef.get(
+			NotificationQueueService,
+		) as unknown as Mocked<NotificationQueueService>;
 		database = unitRef.get(
 			DatabaseService,
 		) as unknown as Mocked<DatabaseService>;
@@ -530,8 +529,7 @@ describe("CheerService", () => {
 				await service.sendCheer(validParams);
 
 				// Then
-				expect(eventEmitter.emit).toHaveBeenCalledWith(
-					NotificationEvents.CHEER_SENT,
+				expect(notificationQueueService.enqueueCheerSent).toHaveBeenCalledWith(
 					expect.objectContaining({
 						cheerId: expectedCheer.id,
 						senderId: validParams.senderId,
@@ -566,8 +564,7 @@ describe("CheerService", () => {
 				await service.sendCheer(validParams);
 
 				// Then
-				expect(eventEmitter.emit).toHaveBeenCalledWith(
-					NotificationEvents.CHEER_SENT,
+				expect(notificationQueueService.enqueueCheerSent).toHaveBeenCalledWith(
 					expect.objectContaining({
 						senderName: "알 수 없음",
 					}),

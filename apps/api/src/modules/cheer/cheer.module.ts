@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "@/modules/follow/follow.module";
+import { NotificationModule } from "@/modules/notification/notification.module";
 
 import { CheerController } from "./cheer.controller";
 import { CheerRepository } from "./cheer.repository";
@@ -23,12 +24,12 @@ import { CheerService } from "./cheer.service";
  * - Nudge: 특정 할 일에 대한 콕 찌르기 (todoId 필요)
  * - Cheer: 친구 자체에 대한 응원 (메시지만)
  *
- * Event-driven:
- * - 응원 전송 시 NotificationModule로 이벤트 발행
- * - NotificationModule의 CheerListener가 푸시 알림 처리
+ * BullMQ 큐 기반 알림:
+ * - 응원 전송 시 NotificationQueueService로 알림 잡 등록
+ * - NotificationQueueProcessor가 푸시 알림 처리
  */
 @Module({
-	imports: [FollowModule],
+	imports: [FollowModule, NotificationModule],
 	controllers: [CheerController],
 	providers: [CheerRepository, CheerService],
 	exports: [CheerService],

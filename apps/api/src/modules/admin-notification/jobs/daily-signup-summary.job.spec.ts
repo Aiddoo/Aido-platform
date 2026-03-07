@@ -5,7 +5,7 @@ import type { Queue } from "bullmq";
 
 import { DatabaseService } from "@/database/database.service";
 
-import { ADMIN_NOTIFICATION_QUEUE } from "../processors/admin-notification.processor";
+import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.constants";
 import { DailySignupSummaryJob } from "./daily-signup-summary.job";
 
 describe("DailySignupSummaryJob", () => {

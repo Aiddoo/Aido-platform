@@ -9,7 +9,6 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { FOLLOW_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { FollowBuilder } from "@test/builders";
@@ -23,6 +22,7 @@ import {
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
@@ -34,7 +34,7 @@ describe("FollowService", () => {
 	let paginationService: Mocked<PaginationService>;
 	let entitlementService: Mocked<EntitlementService>;
 	let database: Mocked<DatabaseService>;
-	let _eventEmitter: Mocked<EventEmitter2>;
+	let _notificationQueueService: Mocked<NotificationQueueService>;
 	let cacheService: Mocked<CacheService>;
 
 	// 재사용 가능한 테스트 데이터
@@ -56,7 +56,7 @@ describe("FollowService", () => {
 		paginationService = unitRef.get(PaginationService);
 		entitlementService = unitRef.get(EntitlementService);
 		database = unitRef.get(DatabaseService);
-		_eventEmitter = unitRef.get(EventEmitter2);
+		_notificationQueueService = unitRef.get(NotificationQueueService);
 		cacheService = unitRef.get(CacheService);
 
 		// DatabaseService.$transaction passthrough 구현 (tx context 전달)

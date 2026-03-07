@@ -21,13 +21,11 @@ import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { DatabaseService } from "@/database";
 import { DailySignupSummaryJob } from "@/modules/admin-notification/jobs/daily-signup-summary.job";
 import {
-	ADMIN_NOTIFICATION_QUEUE,
-	AdminNotificationProcessor,
-} from "@/modules/admin-notification/processors/admin-notification.processor";
-import {
 	ADMIN_NOTIFIER,
 	PAYMENT_NOTIFIER,
 } from "@/modules/admin-notification/providers/admin-notifier.interface";
+import { ADMIN_NOTIFICATION_QUEUE } from "@/modules/admin-notification/queue/admin-notification-queue.constants";
+import { AdminNotificationProcessor } from "@/modules/admin-notification/queue/admin-notification-queue.processor";
 import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
 import { ReportGenerationJob } from "@/modules/ai-report/jobs/report-generation.job";
 import {
@@ -47,11 +45,11 @@ import {
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { EmailService } from "@/modules/email/email.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
+import { NOTIFICATION_QUEUE } from "@/modules/notification/queue/notification-queue.constants";
+import { NotificationQueueProcessor } from "@/modules/notification/queue/notification-queue.processor";
 import { TimezoneAwareReminderJob } from "@/modules/scheduler/jobs/timezone-aware-reminder.job";
-import {
-	TIMEZONE_REMINDER_QUEUE,
-	TimezoneReminderProcessor,
-} from "@/modules/scheduler/processors/timezone-reminder.processor";
+import { TIMEZONE_REMINDER_QUEUE } from "@/modules/scheduler/queue/timezone-reminder-queue.constants";
+import { TimezoneReminderProcessor } from "@/modules/scheduler/queue/timezone-reminder-queue.processor";
 import { TODO_REMINDER_QUEUE } from "@/modules/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
@@ -73,6 +71,7 @@ const BULL_QUEUES = [
 	AI_SUGGESTION_QUEUE,
 	AI_REPORT_QUEUE,
 	ACCOUNT_PURGE_QUEUE,
+	NOTIFICATION_QUEUE,
 ];
 
 const BULL_PROCESSORS = [
@@ -82,6 +81,7 @@ const BULL_PROCESSORS = [
 	SuggestionAnalysisProcessor,
 	ReportGenerationProcessor,
 	AccountPurgeProcessor,
+	NotificationQueueProcessor,
 ];
 
 const BULL_JOBS = [

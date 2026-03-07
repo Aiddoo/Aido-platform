@@ -1,49 +1,11 @@
 /**
- * 구독 이벤트 정의
+ * 구독 이벤트 페이로드 정의
  *
- * RevenueCat 웹훅으로부터 수신되는 구독 관련 이벤트.
- * AdminNotificationEvents 패턴을 따릅니다.
- *
- * @see apps/api/src/modules/admin-notification/events/admin-notification.events.ts
+ * RevenueCat 웹훅으로부터 수신되는 구독 관련 이벤트 페이로드.
+ * SubscriptionService 및 AdminNotificationQueueService에서 사용됩니다.
  */
 
 import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
-
-export const SubscriptionEvents = {
-	PURCHASED: "subscription.purchased",
-	RENEWED: "subscription.renewed",
-	CANCELLED: "subscription.cancelled",
-	EXPIRED: "subscription.expired",
-	BILLING_ISSUE: "subscription.billing_issue",
-	UNCANCELLED: "subscription.uncancelled",
-	PRODUCT_CHANGED: "subscription.product_changed",
-	REFUNDED: "subscription.refunded",
-	EXTENDED: "subscription.extended",
-	TRANSFERRED: "subscription.transferred",
-} as const;
-
-export type SubscriptionEventName =
-	(typeof SubscriptionEvents)[keyof typeof SubscriptionEvents];
-
-/**
- * RevenueCat 이벤트 타입 → 내부 이벤트명 매핑
- *
- * Service의 #getEmitEventName과 Listener의 #resolveEventKey에서 공용 사용
- */
-export const REVENUECAT_EVENT_TO_INTERNAL: Partial<
-	Record<RevenueCatEventType, SubscriptionEventName>
-> = {
-	INITIAL_PURCHASE: SubscriptionEvents.PURCHASED,
-	RENEWAL: SubscriptionEvents.RENEWED,
-	CANCELLATION: SubscriptionEvents.CANCELLED,
-	EXPIRATION: SubscriptionEvents.EXPIRED,
-	BILLING_ISSUE: SubscriptionEvents.BILLING_ISSUE,
-	UNCANCELLATION: SubscriptionEvents.UNCANCELLED,
-	PRODUCT_CHANGE: SubscriptionEvents.PRODUCT_CHANGED,
-	NON_RENEWING_PURCHASE: SubscriptionEvents.PURCHASED,
-	SUBSCRIPTION_EXTENDED: SubscriptionEvents.EXTENDED,
-	TRANSFER: SubscriptionEvents.TRANSFERRED,
-};
 
 /**
  * 구독 이벤트 페이로드

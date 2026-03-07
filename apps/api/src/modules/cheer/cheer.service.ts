@@ -1,6 +1,5 @@
 import { CHEER_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { calculateCooldown } from "@/common/date/utils/cooldown";
 import { now } from "@/common/date/utils/core";
 import { startOfDayInTimezone } from "@/common/date/utils/timezone";
@@ -13,10 +12,7 @@ import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pag
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
-import {
-	type CheerSentEventPayload,
-	NotificationEvents,
-} from "@/modules/notification/events";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 import { CheerRepository } from "./cheer.repository";
 import type {
@@ -45,7 +41,7 @@ export class CheerService {
 		private readonly cheerRepository: CheerRepository,
 		private readonly followService: FollowService,
 		private readonly paginationService: PaginationService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly notificationQueueService: NotificationQueueService,
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
@@ -176,15 +172,15 @@ export class CheerService {
 			`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`,
 		);
 
-		// 6. 이벤트 발행 (트랜잭션 외부)
+		// 6. 알림 큐 등록 (트랜잭션 외부)
 		const senderName = cheer.sender.profile?.name ?? "알 수 없음";
-		this.eventEmitter.emit(NotificationEvents.CHEER_SENT, {
+		this.notificationQueueService.enqueueCheerSent({
 			cheerId: cheer.id,
 			senderId,
 			receiverId,
 			senderName,
 			message,
-		} satisfies CheerSentEventPayload);
+		});
 
 		return cheer;
 	}

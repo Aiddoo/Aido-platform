@@ -595,7 +595,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
 		@Body() dto: ToggleTodoCompleteDto,
-		@Timezone() tz: string,
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
@@ -605,7 +604,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			params.id,
 			user.userId,
 			dto,
-			tz,
 		);
 
 		return {

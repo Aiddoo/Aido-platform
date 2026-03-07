@@ -1,5 +1,4 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import {
 	EntitlementService,
@@ -10,11 +9,7 @@ import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pag
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
-import {
-	type FollowMutualEventPayload,
-	type FollowNewEventPayload,
-	NotificationEvents,
-} from "@/modules/notification/events";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 import { FollowRepository } from "./follow.repository";
 import type {
@@ -37,7 +32,7 @@ export class FollowService {
 		private readonly paginationService: PaginationService,
 		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly notificationQueueService: NotificationQueueService,
 		private readonly cacheService: CacheService,
 	) {}
 
@@ -189,18 +184,18 @@ export class FollowService {
 			]);
 
 			// userId에게 알림 (targetUserId와 친구가 됨)
-			this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+			this.notificationQueueService.enqueueFollowMutual({
 				userId,
 				friendId: targetUserId,
 				friendName: targetUserName ?? "알 수 없음",
-			} satisfies FollowMutualEventPayload);
+			});
 
 			// targetUserId에게 알림 (userId와 친구가 됨)
-			this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+			this.notificationQueueService.enqueueFollowMutual({
 				userId: targetUserId,
 				friendId: userId,
 				friendName: userName ?? "알 수 없음",
-			} satisfies FollowMutualEventPayload);
+			});
 
 			// 캐시 무효화 (친구 관계 변경)
 			await Promise.all([
@@ -234,13 +229,13 @@ export class FollowService {
 
 		this.#logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
 
-		// 새 친구 요청 이벤트 발행
+		// 새 친구 요청 알림 큐 등록
 		const followerName = await this.followRepository.getUserName(userId);
-		this.eventEmitter.emit(NotificationEvents.FOLLOW_NEW, {
+		this.notificationQueueService.enqueueFollowNew({
 			followerId: userId,
 			followingId: targetUserId,
 			followerName: followerName ?? "알 수 없음",
-		} satisfies FollowNewEventPayload);
+		});
 
 		return { follow, autoAccepted: false };
 	}
@@ -340,18 +335,18 @@ export class FollowService {
 		]);
 
 		// userId(수락자)에게 알림 (requesterUserId와 친구가 됨)
-		this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+		this.notificationQueueService.enqueueFollowMutual({
 			userId,
 			friendId: requesterUserId,
 			friendName: requesterName ?? "알 수 없음",
-		} satisfies FollowMutualEventPayload);
+		});
 
 		// requesterUserId(요청자)에게 알림 (userId와 친구가 됨)
-		this.eventEmitter.emit(NotificationEvents.FOLLOW_MUTUAL, {
+		this.notificationQueueService.enqueueFollowMutual({
 			userId: requesterUserId,
 			friendId: userId,
 			friendName: userName ?? "알 수 없음",
-		} satisfies FollowMutualEventPayload);
+		});
 
 		return myFollow;
 	}

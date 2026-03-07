@@ -22,7 +22,6 @@
 
 import { ACCOUNT_DELETION } from "@aido/validators";
 import { ConfigService } from "@nestjs/config";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
@@ -32,6 +31,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { EncryptionService } from "@/common/encryption";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { AccountPurgeJob } from "@/modules/auth/jobs/account-purge.job";
 import { AccountRepository } from "@/modules/auth/repositories/account.repository";
 import { LoginAttemptRepository } from "@/modules/auth/repositories/login-attempt.repository";
@@ -45,7 +45,7 @@ import { PasswordManagementService } from "@/modules/auth/services/password-mana
 import { TokenService } from "@/modules/auth/services/token.service";
 import { VerificationService } from "@/modules/auth/services/verification.service";
 import { EmailService } from "@/modules/email/email.service";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { NotificationQueueService } from "@/modules/notification/queue";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 
@@ -93,7 +93,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				VerificationRepository,
-				TodoCategoryRepository,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
@@ -160,8 +159,21 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: EventEmitter2,
-					useValue: { emit: () => true },
+					provide: AdminNotificationQueueService,
+					useValue: {
+						enqueueUserRegistered: () => {},
+						enqueueSubscriptionEvent: () => {},
+					},
+				},
+				{
+					provide: NotificationQueueService,
+					useValue: {
+						enqueueFollowNew: () => {},
+						enqueueFollowMutual: () => {},
+						enqueueNudgeSent: () => {},
+						enqueueCheerSent: () => {},
+						enqueueBillingIssue: () => {},
+					},
 				},
 			],
 		}).compile();

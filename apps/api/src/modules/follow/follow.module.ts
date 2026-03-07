@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { NotificationModule } from "@/modules/notification/notification.module";
+
 import { FollowController } from "./follow.controller";
 import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
@@ -14,6 +16,7 @@ import { FollowService } from "./follow.service";
  * - 받은/보낸 친구 요청 조회
  */
 @Module({
+	imports: [NotificationModule],
 	controllers: [FollowController],
 	providers: [FollowRepository, FollowService],
 	exports: [FollowService],

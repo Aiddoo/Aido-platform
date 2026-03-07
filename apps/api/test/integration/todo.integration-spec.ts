@@ -18,11 +18,11 @@
  */
 
 import { type DayOfWeek, TODO_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import {
 	BusinessException,
@@ -70,11 +70,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		isMutualFriend: jest.fn(),
 	};
 
-	// Mock EventEmitter
-	const mockEventEmitter = {
-		emit: jest.fn(),
-	};
-
 	// Mock TodoCategoryRepository
 	const mockTodoCategoryRepository = {
 		findByIdAndUserId: jest.fn(),
@@ -120,8 +115,10 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 					useValue: mockFollowService,
 				},
 				{
-					provide: EventEmitter2,
-					useValue: mockEventEmitter,
+					provide: CacheService,
+					useValue: {
+						invalidateTodoCategories: jest.fn().mockResolvedValue(undefined),
+					},
 				},
 				{
 					provide: TypedConfigService,

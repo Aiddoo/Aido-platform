@@ -9,7 +9,6 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
@@ -22,7 +21,7 @@ import {
 } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
 import { Prisma } from "@/generated/prisma/client";
-import { AdminNotificationEvents } from "../../admin-notification/events/admin-notification.events";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import {
 	LOGIN_FAILURE_REASON,
 	SECURITY_EVENT,
@@ -63,7 +62,7 @@ describe("OAuthService", () => {
 	let sessionService: Mocked<SessionService>;
 	let tokenVerifier: Mocked<OAuthTokenVerifierService>;
 	let configService: Mocked<TypedConfigService>;
-	let eventEmitter: Mocked<EventEmitter2>;
+	let adminNotificationQueueService: Mocked<AdminNotificationQueueService>;
 	let cacheService: Mocked<CacheService>;
 
 	// 재사용 가능한 테스트 데이터
@@ -108,9 +107,9 @@ describe("OAuthService", () => {
 		configService = unitRef.get(
 			TypedConfigService,
 		) as unknown as Mocked<TypedConfigService>;
-		eventEmitter = unitRef.get(
-			EventEmitter2,
-		) as unknown as Mocked<EventEmitter2>;
+		adminNotificationQueueService = unitRef.get(
+			AdminNotificationQueueService,
+		) as unknown as Mocked<AdminNotificationQueueService>;
 		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
 
 		// ConfigService 기본 설정
@@ -200,6 +199,9 @@ describe("OAuthService", () => {
 				const mockTx = {
 					userConsent: { create: jest.fn() },
 					userPreference: { create: jest.fn() },
+					todoCategory: {
+						createMany: jest.fn().mockResolvedValue({ count: 2 }),
+					},
 				};
 				return callback(mockTx as never);
 			},
@@ -287,10 +289,9 @@ describe("OAuthService", () => {
 				await service.handleAppleMobileLogin("valid-id-token");
 
 				// Then
-				expect(eventEmitter.emit).not.toHaveBeenCalledWith(
-					AdminNotificationEvents.USER_REGISTERED,
-					expect.anything(),
-				);
+				expect(
+					adminNotificationQueueService.enqueueUserRegistered,
+				).not.toHaveBeenCalled();
 			});
 		});
 
@@ -344,7 +345,7 @@ describe("OAuthService", () => {
 				);
 			});
 
-			it("신규 소셜 회원가입 시 user.registered 이벤트를 발행한다", async () => {
+			it("신규 소셜 회원가입 시 관리자 알림 및 온보딩 큐 잡을 등록한다", async () => {
 				// Given
 				const mockUser = UserBuilder.create()
 					.withId("user-123")
@@ -364,14 +365,16 @@ describe("OAuthService", () => {
 				await service.handleAppleMobileLogin("valid-id-token", "홍길동");
 
 				// Then
-				expect(eventEmitter.emit).toHaveBeenCalledWith(
-					AdminNotificationEvents.USER_REGISTERED,
+				expect(
+					adminNotificationQueueService.enqueueUserRegistered,
+				).toHaveBeenCalledWith(
 					expect.objectContaining({
 						userId: "user-123",
 						email: "test@privaterelay.appleid.com",
 						provider: "apple",
 					}),
 				);
+				// 기본 카테고리는 #createSocialUser() 트랜잭션 내에서 동기 생성됨 (큐 아님)
 			});
 
 			it("이메일 없이 신규 로그인 시 플레이스홀더 이메일로 가입된다", async () => {
