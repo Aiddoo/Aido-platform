@@ -9,13 +9,11 @@ import {
   H3,
   HStack,
   ListRow,
-  LockIcon,
   QueryErrorBoundary,
   Spacing,
   StyledSafeAreaView,
   TextButton,
   useOverlay,
-  usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -58,9 +56,10 @@ const MyPageScreen = () => {
             onPress={() => router.push('/settings/notifications')}
           />
           <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
-          <Suspense fallback={null}>
-            <AppIconMenuItem />
-          </Suspense>
+          <SettingNavigationItem
+            label="앱 아이콘"
+            onPress={() => router.push('/settings/app-icon')}
+          />
         </SettingNavigationSection>
 
         <Spacing size={12} />
@@ -109,21 +108,14 @@ interface SettingNavigationItemProps {
   label: string;
   onPress: () => void;
   right?: ReactNode;
-  locked?: boolean;
 }
 
-const SettingNavigationItem = ({ label, onPress, right, locked }: SettingNavigationItemProps) => (
+const SettingNavigationItem = ({ label, onPress, right }: SettingNavigationItemProps) => (
   <PressableFeedback onPress={onPress} className="rounded-lg">
     <PressableFeedback.Highlight className="rounded-xl" />
     <ListRow
       contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-      right={
-        locked ? (
-          <LockIcon width={20} height={20} colorClassName="text-gray-5" />
-        ) : (
-          (right ?? <ArrowRightIcon colorClassName="text-gray-6" />)
-        )
-      }
+      right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
       horizontalPadding="medium"
     />
   </PressableFeedback>
@@ -231,29 +223,5 @@ function AccountActionButtons() {
         탈퇴하기
       </TextButton>
     </HStack>
-  );
-}
-
-function AppIconMenuItem() {
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const router = useRouter();
-  const premiumDialog = usePremiumDialog();
-
-  const handlePress = () => {
-    if (!UserPolicy.isPremiumUser(user)) {
-      premiumDialog.open({
-        description: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.',
-      });
-      return;
-    }
-    router.push('/settings/app-icon');
-  };
-
-  return (
-    <SettingNavigationItem
-      label="앱 아이콘"
-      locked={!UserPolicy.isPremiumUser(user)}
-      onPress={handlePress}
-    />
   );
 }

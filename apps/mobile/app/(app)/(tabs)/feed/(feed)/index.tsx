@@ -77,7 +77,7 @@ function SuggestionEntryCard() {
   return (
     <PressableFeedback
       onPress={() => router.push('/suggestions')}
-      className="rounded-3xl bg-gray-1 px-4"
+      className="rounded-xl bg-gray-1 px-4"
     >
       <ListRow
         left={<MagicIcon width={24} height={24} />}

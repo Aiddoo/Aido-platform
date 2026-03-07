@@ -1,28 +1,29 @@
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
 import { type Href, useRouter } from 'expo-router';
-import { Card, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { View } from 'react-native';
 import type { AiReport } from '../../models/ai.model';
 
 interface ReportCardProps {
   report: AiReport;
   isSample?: boolean;
+  isLast?: boolean;
 }
 
-export function ReportCard({ report, isSample }: ReportCardProps) {
+export function ReportCard({ report, isSample, isLast = false }: ReportCardProps) {
   const router = useRouter();
   const href = (
     isSample ? `/reports/sample-${report.type.toLowerCase()}` : `/reports/${report.id}`
   ) as Href;
 
   return (
-    <PressableFeedback onPress={() => router.push(href)} className="rounded-2xl">
-      <PressableFeedback.Highlight className="rounded-2xl" />
-      <Card
-        className={cn('border border-gray-3 dark:bg-gray-2', !report.hasActivity && 'opacity-50')}
-      >
-        <VStack gap={12}>
+    <PressableFeedback onPress={() => router.push(href)} className="rounded-xl">
+      <PressableFeedback.Highlight className="rounded-xl" />
+      <View className={cn('py-3', !report.hasActivity && 'opacity-50')}>
+        <VStack gap={10}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
               {isSample && (
@@ -39,13 +40,13 @@ export function ReportCard({ report, isSample }: ReportCardProps) {
               </Chip>
             </HStack>
 
-            <Text size="b4" shade={5}>
+            <Text size="b4" shade={7}>
               {report.periodLabel}
             </Text>
           </HStack>
 
-          <HStack gap={16}>
-            <StatItem label="달성률" value={`${report.stats.completionRate}%`} />
+          <HStack gap={20}>
+            <StatItem label="달성률" value={`${formatPercent(report.stats.completionRate)}%`} />
             <StatItem
               label="완료"
               value={`${report.stats.completedTodos}/${report.stats.totalTodos}`}
@@ -54,12 +55,14 @@ export function ReportCard({ report, isSample }: ReportCardProps) {
           </HStack>
 
           {report.hasActivity && report.aiSummary && (
-            <Text size="b4" shade={6} maxLines={2}>
+            <Text size="b4" shade={7} maxLines={2}>
               {report.aiSummary}
             </Text>
           )}
         </VStack>
-      </Card>
+      </View>
+
+      {!isLast && <View className="border-b border-dashed border-gray-3" />}
     </PressableFeedback>
   );
 }
@@ -81,14 +84,14 @@ ReportCard.Loading = function Loading() {
   return (
     <VStack gap={12}>
       {times(3, (i) => (
-        <Card key={i} className="border border-gray-3 dark:bg-gray-2">
+        <View key={i} className="py-3">
           <SkeletonGroup isLoading>
-            <VStack gap={12}>
+            <VStack gap={10}>
               <HStack justify="between" align="center">
                 <SkeletonGroup.Item className="h-6 w-12 rounded-full" />
                 <SkeletonGroup.Item className="h-4 w-24 rounded-md" />
               </HStack>
-              <HStack gap={16}>
+              <HStack gap={20}>
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
@@ -96,7 +99,8 @@ ReportCard.Loading = function Loading() {
               <SkeletonGroup.Item className="h-4 w-full rounded-md" />
             </VStack>
           </SkeletonGroup>
-        </Card>
+          {i < 2 && <View className="mt-3 border-b border-dashed border-gray-3" />}
+        </View>
       ))}
     </VStack>
   );

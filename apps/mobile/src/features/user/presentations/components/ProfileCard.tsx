@@ -65,9 +65,9 @@ export function ProfileCard() {
 }
 
 const USER_TIER_CONFIG = {
-  ADMIN: { label: '어드민', color: 'warning', className: 'shrink-0' },
-  PREMIUM: { label: '프리미엄', color: 'accent', className: 'shrink-0' },
-  BASIC: { label: '베이직', color: 'default', className: 'shrink-0 bg-gray-3' },
+  ADMIN: { label: '어드민', color: 'warning', className: 'self-center shrink-0' },
+  PREMIUM: { label: '프리미엄', color: 'accent', className: 'self-center shrink-0' },
+  BASIC: { label: '베이직', color: 'default', className: 'self-center shrink-0 bg-gray-3' },
 } as const;
 
 function UserTierChip({ tier }: { tier: 'ADMIN' | 'PREMIUM' | 'BASIC' }) {

@@ -42,8 +42,8 @@ Avatar.Loading = function Loading() {
 
 function SelectedBadge() {
   return (
-    <Box className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-main items-center justify-center z-10">
-      <CheckmarkIcon width={12} height={12} colorClassName="text-white" />
+    <Box className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-main items-center justify-center z-10">
+      <CheckmarkIcon width={14} height={14} colorClassName="text-white dark:text-gray-9" />
     </Box>
   );
 }

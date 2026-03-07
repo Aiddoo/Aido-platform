@@ -6,6 +6,7 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import {
   ArrowRightIcon,
+  CrownIcon,
   HStack,
   KeyboardBottomSheet,
   QueryErrorBoundary,
@@ -251,6 +252,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
           <VStack className="flex-1">
             <HStack gap={8} align="center">
               <Label>{label}</Label>
+              {!isPremium && <CrownIcon width={14} height={14} />}
               <Description className="text-main break-keep">
                 {formatReminderTime(hour, minute)}
               </Description>

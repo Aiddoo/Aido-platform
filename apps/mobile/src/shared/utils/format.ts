@@ -17,6 +17,12 @@ function getLocaleForCurrency(currencyCode: string): string {
   return CURRENCY_LOCALE_MAP[currencyCode] ?? 'en-US';
 }
 
+/** 퍼센트 값을 소수점 첫째 자리까지 반올림하여 포맷한다. 정수면 소수점 생략. */
+export function formatPercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}` : `${rounded.toFixed(1)}`;
+}
+
 export function formatPrice(amount: number, currencyCode: string) {
   return new Intl.NumberFormat(getLocaleForCurrency(currencyCode), {
     style: 'currency',
