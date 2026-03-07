@@ -56,9 +56,10 @@ const MyPageScreen = () => {
             onPress={() => router.push('/settings/notifications')}
           />
           <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
-          <Suspense fallback={null}>
-            <AppIconMenuItem />
-          </Suspense>
+          <SettingNavigationItem
+            label="앱 아이콘"
+            onPress={() => router.push('/settings/app-icon')}
+          />
         </SettingNavigationSection>
 
         <Spacing size={12} />
@@ -222,13 +223,5 @@ function AccountActionButtons() {
         탈퇴하기
       </TextButton>
     </HStack>
-  );
-}
-
-function AppIconMenuItem() {
-  const router = useRouter();
-
-  return (
-    <SettingNavigationItem label="앱 아이콘" onPress={() => router.push('/settings/app-icon')} />
   );
 }
