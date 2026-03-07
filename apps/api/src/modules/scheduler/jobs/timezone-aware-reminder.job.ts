@@ -1,7 +1,5 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
-import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
@@ -9,9 +7,8 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import {
 	type ReminderHourChangedJobData,
-	TIMEZONE_REMINDER_QUEUE,
-	type TimezoneReminderJobData,
 	TimezoneReminderProcessor,
+	TimezoneReminderQueueService,
 } from "../queue";
 
 /**
@@ -30,8 +27,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		@InjectQueue(TIMEZONE_REMINDER_QUEUE)
-		private readonly queue: Queue<TimezoneReminderJobData>,
+		private readonly queueService: TimezoneReminderQueueService,
 		private readonly processor: TimezoneReminderProcessor,
 	) {}
 
@@ -39,13 +35,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setReminderJob(this);
 
-		await this.queue.upsertJobScheduler(
-			"tz-reminder-sweep-scheduler",
-			{ pattern: "* * * * *" },
-			{ name: "sweep-reminders", data: {} },
-		);
-
-		this.#logger.log("Timezone reminder scheduler registered");
+		await this.queueService.registerSweepScheduler();
 	}
 
 	/**

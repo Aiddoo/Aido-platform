@@ -29,6 +29,21 @@ export class TimezoneReminderQueueService {
 	) {}
 
 	/**
+	 * 매분 sweep 스케줄러 등록 (upsert — 멱등)
+	 */
+	async registerSweepScheduler(): Promise<void> {
+		await this.queue.upsertJobScheduler(
+			"tz-reminder-sweep-scheduler",
+			{ pattern: "* * * * *" },
+			{
+				name: TimezoneReminderJobName.SWEEP_REMINDERS,
+				data: {} as TimezoneReminderJobData,
+			},
+		);
+		this.#logger.log("Timezone reminder sweep scheduler registered");
+	}
+
+	/**
 	 * 리마인더 시간 변경 catch-up 잡 등록
 	 */
 	enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void {
