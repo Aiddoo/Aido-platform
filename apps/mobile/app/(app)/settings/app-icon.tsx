@@ -114,15 +114,13 @@ const AppIconScreen = () => {
                   >
                     <VStack align="center" gap={8} p={8} className="overflow-visible">
                       <View>
-                        <View>
-                          <Avatar
-                            isSelected={selected}
-                            alt={icon.label}
-                            className="w-20 h-20 rounded-2xl"
-                          >
-                            <Avatar.Image source={icon.preview} />
-                          </Avatar>
-                        </View>
+                        <Avatar
+                          isSelected={selected}
+                          alt={icon.label}
+                          className="w-20 h-20 rounded-2xl"
+                        >
+                          <Avatar.Image source={icon.preview} />
+                        </Avatar>
                         {locked && (
                           <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-8 dark:bg-gray-2 dark:border-gray-4  border-gray-8 border items-center justify-center z-10">
                             <CrownIcon width={14} height={14} />
