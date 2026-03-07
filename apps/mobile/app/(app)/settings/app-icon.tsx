@@ -1,10 +1,13 @@
 import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
 import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
+import { UserPolicy } from '@src/features/user/models/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import {
   Avatar,
   Box,
   ConfirmDialog,
+  CrownIcon,
   Grid,
   GridItem,
   HStack,
@@ -12,16 +15,28 @@ import {
   StyledSafeAreaView,
   Text,
   useOverlay,
+  usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { Platform, ScrollView } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 
 const AppIconScreen = () => {
   const { currentIcon, isSupported, isChanging, changeIcon } = useAppIcon();
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const isPremium = UserPolicy.isPremiumUser(user);
   const overlay = useOverlay();
+  const premiumDialog = usePremiumDialog();
 
   const handleIconPress = (key: AppIconKey) => {
+    if (!isPremium && key !== 'default') {
+      premiumDialog.open({
+        description: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.',
+      });
+      return;
+    }
+
     const applyIcon = async () => {
       try {
         await changeIcon(key);
@@ -89,6 +104,7 @@ const AppIconScreen = () => {
           <Grid columns={3}>
             {APP_ICONS.map((icon) => {
               const selected = icon.key === currentIcon;
+              const locked = !isPremium && icon.key !== 'default';
               return (
                 <GridItem key={icon.key} p={8} className="items-center">
                   <PressableFeedback
@@ -96,14 +112,23 @@ const AppIconScreen = () => {
                     onPress={() => handleIconPress(icon.key)}
                     className="rounded-2xl overflow-visible"
                   >
-                    <VStack align="center" gap={8} py={8} className="overflow-visible">
-                      <Avatar
-                        isSelected={selected}
-                        alt={icon.label}
-                        className="w-20 h-20 rounded-2xl"
-                      >
-                        <Avatar.Image source={icon.preview} />
-                      </Avatar>
+                    <VStack align="center" gap={8} p={8} className="overflow-visible">
+                      <View>
+                        <View>
+                          <Avatar
+                            isSelected={selected}
+                            alt={icon.label}
+                            className="w-20 h-20 rounded-2xl"
+                          >
+                            <Avatar.Image source={icon.preview} />
+                          </Avatar>
+                        </View>
+                        {locked && (
+                          <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-8 dark:bg-gray-2 dark:border-gray-4  border-gray-8 border items-center justify-center z-10">
+                            <CrownIcon width={14} height={14} />
+                          </View>
+                        )}
+                      </View>
                       <Text
                         size="b4"
                         weight={selected ? 'semibold' : 'normal'}
