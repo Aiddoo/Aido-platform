@@ -45,7 +45,8 @@ model User {
   // 타임스탬프
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
+  lastLoginAt  DateTime?
+  lastActiveAt DateTime? // Win-back/Nudge Suggest용 — 인증된 API 요청 시 갱신 (1시간 throttle)
 
   // Soft Delete
   deletedAt DateTime?
@@ -84,6 +85,7 @@ model User {
   @@index([subscriptionStatus])
   @@index([deletedAt])
   @@index([status, deletedAt, lastLoginAt]) // Admin 7/30일 필터
+  @@index([deletedAt, lastActiveAt]) // Win-back/Nudge Suggest 비활성 유저 스캔
 }
 
 enum UserRole {
@@ -132,6 +134,11 @@ model UserPreference {
   morningReminderMinute Int     @default(0) // 0-59
   eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
   eveningReminderMinute Int     @default(0) // 0-59
+
+  // 스트릭 추적
+  currentStreak     Int       @default(0) // 연속 올클리어 일수
+  longestStreak     Int       @default(0) // 최장 연속 기록
+  lastCompletedDate DateTime? @db.Date    // 마지막 올클리어 날짜 (로컬 타임존 기준)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -665,6 +672,13 @@ enum NotificationType {
   // 관리자 발송
   ADMIN_BROADCAST // 관리자 전체/조건부 알림
   ADMIN_TARGETED // 관리자 특정 사용자 알림
+
+  // 리텐션
+  WINBACK // 비활성 유저 재방문 유도
+
+  // 소셜 요약
+  SOCIAL_DIGEST // 친구 활동 요약 (저녁 리마인더 +30분)
+  NUDGE_SUGGEST // 콕 찌르기 유도 (비활성 친구 감지)
 }
 
 // =============================================================================

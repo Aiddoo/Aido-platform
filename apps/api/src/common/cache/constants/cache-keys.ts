@@ -24,6 +24,8 @@ export const CacheKeys = {
 		USER_PREFERENCE: 10 * 60_000,
 		/** 친구 수 - 5분 (친구 변경 빈도 낮음) */
 		FRIEND_COUNT: 5 * 60_000,
+		/** 읽지 않은 알림 수 - 2분 (실시간성 덜 중요) */
+		UNREAD_COUNT: 2 * 60_000,
 	},
 
 	// === 키 빌더 ===
@@ -82,6 +84,12 @@ export const CacheKeys = {
 	 * @example friends:count:user_123
 	 */
 	friendCount: (userId: string) => `friends:count:${userId}`,
+
+	/**
+	 * 읽지 않은 알림 수 캐시 키
+	 * @example notification:unread:user_123
+	 */
+	unreadCount: (userId: string) => `notification:unread:${userId}`,
 
 	// === 패턴 빌더 (와일드카드) ===
 

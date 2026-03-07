@@ -57,6 +57,7 @@ export const UserFixture = {
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,
 			lastLoginAt: overrides.lastLoginAt ?? null,
+			lastActiveAt: overrides.lastActiveAt ?? null,
 			deletedAt: overrides.deletedAt ?? null,
 		};
 	},
@@ -103,6 +104,9 @@ export const UserFixture = {
 			morningReminderMinute: preferenceOverrides.morningReminderMinute ?? 0,
 			eveningReminderHour: preferenceOverrides.eveningReminderHour ?? 18,
 			eveningReminderMinute: preferenceOverrides.eveningReminderMinute ?? 0,
+			currentStreak: preferenceOverrides.currentStreak ?? 0,
+			longestStreak: preferenceOverrides.longestStreak ?? 0,
+			lastCompletedDate: preferenceOverrides.lastCompletedDate ?? null,
 		};
 
 		return { user, profile, preference };

@@ -4,6 +4,7 @@ import {
 	type Notification as NotificationDto,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
 import { TIME_UNIT } from "@/common/date/constants/date.constant";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -46,6 +47,7 @@ export class NotificationService {
 		private readonly notificationRepository: NotificationRepository,
 		private readonly paginationService: PaginationService,
 		private readonly pushDeliveryService: PushDeliveryService,
+		private readonly cacheService: CacheService,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
@@ -227,6 +229,7 @@ export class NotificationService {
 		}
 
 		this.pushDeliveryService.fireAndForgetPush(data, notification.id);
+		void this.cacheService.invalidateUnreadCount(data.userId);
 
 		return notification;
 	}
@@ -248,6 +251,12 @@ export class NotificationService {
 		);
 
 		this.pushDeliveryService.fireAndForgetBatchPush(dataList);
+
+		// 배치 알림 대상 사용자들의 unread count 캐시 무효화
+		const uniqueUserIds = [...new Set(dataList.map((d) => d.userId))];
+		for (const uid of uniqueUserIds) {
+			void this.cacheService.invalidateUnreadCount(uid);
+		}
 
 		return result;
 	}
@@ -311,10 +320,12 @@ export class NotificationService {
 	}
 
 	/**
-	 * 읽지 않은 알림 수 조회
+	 * 읽지 않은 알림 수 조회 (2분 캐시)
 	 */
 	async getUnreadCount(userId: string): Promise<number> {
-		return this.notificationRepository.countUnread(userId);
+		return this.cacheService.wrapUnreadCount(userId, () =>
+			this.notificationRepository.countUnread(userId),
+		);
 	}
 
 	// =========================================================================
@@ -341,6 +352,7 @@ export class NotificationService {
 		}
 
 		await this.notificationRepository.markAsRead(notificationId);
+		await this.cacheService.invalidateUnreadCount(userId);
 
 		this.#logger.debug(`Notification marked as read: id=${notificationId}`);
 	}
@@ -350,6 +362,7 @@ export class NotificationService {
 	 */
 	async markAllAsRead(userId: string): Promise<{ count: number }> {
 		const result = await this.notificationRepository.markAllAsRead(userId);
+		await this.cacheService.invalidateUnreadCount(userId);
 
 		this.#logger.debug(
 			`All notifications marked as read: userId=${userId}, count=${result.count}`,
@@ -374,6 +387,23 @@ export class NotificationService {
 		tx?: TransactionClient,
 	): Promise<boolean> {
 		return this.notificationRepository.existsNotification(params, tx);
+	}
+
+	/**
+	 * metadata JSON 경로 기반 알림 존재 여부 확인
+	 * - WINBACK 단계별 중복 방지용
+	 */
+	async hasNotificationWithMetadata(
+		userId: string,
+		type: NotificationType,
+		metadataPath: string[],
+		metadataValue: string,
+		tx?: TransactionClient,
+	): Promise<boolean> {
+		return this.notificationRepository.existsNotificationWithMetadata(
+			{ userId, type, metadataPath, metadataValue },
+			tx,
+		);
 	}
 
 	/**

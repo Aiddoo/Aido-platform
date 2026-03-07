@@ -5,6 +5,7 @@ import type { Job } from "bullmq";
 import type { TimezoneAwareReminderJob } from "../jobs/timezone-aware-reminder.job";
 import {
 	type ReminderHourChangedJobData,
+	type SocialDigestJobData,
 	TIMEZONE_REMINDER_QUEUE,
 	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
@@ -61,6 +62,14 @@ export class TimezoneReminderProcessor extends WorkerHost {
 				);
 				await this.#reminderJob.handleReminderHourChanged(
 					job.data as ReminderHourChangedJobData,
+				);
+				break;
+			case TimezoneReminderJobName.SOCIAL_DIGEST:
+				this.#logger.debug(
+					`Processing social digest: tz=${(job.data as SocialDigestJobData).timezone}`,
+				);
+				await this.#reminderJob.handleSocialDigest(
+					job.data as SocialDigestJobData,
 				);
 				break;
 			default:

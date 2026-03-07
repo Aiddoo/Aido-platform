@@ -264,6 +264,33 @@ export class NotificationRepository {
 	}
 
 	/**
+	 * metadata JSON 경로 기반 알림 존재 여부 확인
+	 * - WINBACK 단계별 중복 방지용
+	 */
+	async existsNotificationWithMetadata(
+		params: {
+			userId: string;
+			type: NotificationType;
+			metadataPath: string[];
+			metadataValue: string;
+		},
+		tx?: TransactionClient,
+	): Promise<boolean> {
+		const client = tx ?? this.database;
+		const count = await client.notification.count({
+			where: {
+				userId: params.userId,
+				type: params.type,
+				metadata: {
+					path: params.metadataPath,
+					equals: params.metadataValue,
+				},
+			},
+		});
+		return count > 0;
+	}
+
+	/**
 	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
 	 * - FRIEND_COMPLETED / MORNING_REMINDER / EVENING_REMINDER 중복 방지용
 	 * - N+1 방지를 위해 단일 쿼리로 처리

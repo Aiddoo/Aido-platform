@@ -73,6 +73,45 @@ export const SCHEDULER_TEMPLATES = {
 		title: "할일이 하나도 없다",
 		body: "한가한 거 맞아? 뭐라도 적어봐",
 	},
+	// 스트릭 축하 (전체 완료 + 스트릭 2일+)
+	EVENING_STREAK: {
+		title: "{streak}일 연속 올클리어!",
+		body: "내일도 하면 {next}일째다. 끊지 마",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/",
+	} satisfies NotificationTemplate,
+	EVENING_STREAK_7: {
+		title: "7일 연속! 일주일 내내 해냈어",
+		body: "이거 실화냐",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/",
+	} satisfies NotificationTemplate,
+	EVENING_STREAK_14: {
+		title: "2주 연속이다. 진심이구나",
+		body: "이쯤 되면 습관이야",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/",
+	} satisfies NotificationTemplate,
+	EVENING_STREAK_30: {
+		title: "{streak}일째. 전설이 되고 있어",
+		body: "멈추지 마",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/",
+	} satisfies NotificationTemplate,
+	// 스트릭 위기 (일부 완료 + 스트릭 2일+)
+	EVENING_STREAK_RISK_PARTIAL: {
+		title: "어제까지 {streak}일 연속이었는데...",
+		body: "{remaining}개만 끝내면 이어갈 수 있어",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/todos",
+	} satisfies NotificationTemplate,
+	// 스트릭 위기 (하나도 안 함 + 스트릭 2일+)
+	EVENING_STREAK_RISK_NONE: {
+		title: "{streak}일 연속 기록이 위험해",
+		body: "한 개만 끝내면 살릴 수 있어",
+		type: "EVENING_REMINDER",
+		defaultRoute: "/todos",
+	} satisfies NotificationTemplate,
 } as const;
 
 /**
@@ -123,15 +162,67 @@ export const SOCIAL_TEMPLATES = {
 		type: "FRIEND_COMPLETED",
 		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
+	// 친구 활동 요약 (Social Digest)
+	SOCIAL_DIGEST_MULTI: {
+		title: "친구 {completedFriendCount}명이 오늘 다 끝냈어",
+		body: "너만 남았다",
+		type: "SOCIAL_DIGEST",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	SOCIAL_DIGEST_SINGLE: {
+		title: "{friendName}은 오늘 다 끝냈대",
+		body: "너는 아직이잖아",
+		type: "SOCIAL_DIGEST",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	// 콕 찌르기 유도 (Nudge Suggest)
+	NUDGE_SUGGEST: {
+		title: "{friendName}이(가) {days}일째 조용해",
+		body: "콕 찔러볼래?",
+		type: "NUDGE_SUGGEST",
+		defaultRoute: "/feed/friend/{friendId}",
+	} satisfies NotificationTemplate,
 } as const;
 
 /**
  * 시스템 알림 템플릿
  */
 export const SYSTEM_TEMPLATES = {
+	// Win-back (비활성 유저 재방문 유도)
+	WINBACK_DAY3: {
+		title: "3일째 조용한데",
+		body: "할일 쌓이고 있을걸?",
+		type: "WINBACK",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	WINBACK_DAY7: {
+		title: "일주일이나 안 왔잖아",
+		body: "한 개만. 딱 한 개만 해보자",
+		type: "WINBACK",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	WINBACK_DAY14: {
+		title: "거의 잊혀질 뻔했어",
+		body: "다시 시작해도 괜찮아",
+		type: "WINBACK",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	// 주간 달성 배지
 	WEEKLY_ACHIEVEMENT: {
 		title: "이번 주 {completedCount}개 클리어",
 		body: "다음 주엔 더 할 수 있잖아",
+		type: "WEEKLY_ACHIEVEMENT",
+		defaultRoute: "/stats",
+	} satisfies NotificationTemplate,
+	WEEKLY_ACHIEVEMENT_PERFECT: {
+		title: "이번 주 전부 다 해냈어",
+		body: "완벽한 한 주였다",
+		type: "WEEKLY_ACHIEVEMENT",
+		defaultRoute: "/stats",
+	} satisfies NotificationTemplate,
+	WEEKLY_ACHIEVEMENT_ALMOST: {
+		title: "이번 주 완료율 {rate}%",
+		body: "거의 다 했는데 아쉽다",
 		type: "WEEKLY_ACHIEVEMENT",
 		defaultRoute: "/stats",
 	} satisfies NotificationTemplate,
@@ -325,20 +416,73 @@ export class NotificationMessageBuilder {
 	}
 
 	/**
-	 * 저녁 리마인더 알림 메시지 생성
+	 * 저녁 리마인더 알림 메시지 생성 (스트릭 통합)
+	 *
+	 * @param completed 완료된 투두 수
+	 * @param total 전체 투두 수
+	 * @param streak 현재 스트릭 (0이면 스트릭 없음)
+	 * @param isStreakAtRisk 스트릭 위기 여부 (어제까지 연속 완료 + 오늘 미완료)
 	 */
 	static eveningReminder(
 		completed: number,
 		total: number,
+		streak = 0,
+		isStreakAtRisk = false,
 	): { title: string; body: string } {
+		// A. 전체 완료
 		if (completed === total && total > 0) {
+			if (streak >= 30) {
+				return {
+					title: fillTemplate(SCHEDULER_TEMPLATES.EVENING_STREAK_30.title, {
+						streak,
+					}),
+					body: SCHEDULER_TEMPLATES.EVENING_STREAK_30.body,
+				};
+			}
+			if (streak === 14) {
+				return {
+					title: SCHEDULER_TEMPLATES.EVENING_STREAK_14.title,
+					body: SCHEDULER_TEMPLATES.EVENING_STREAK_14.body,
+				};
+			}
+			if (streak === 7) {
+				return {
+					title: SCHEDULER_TEMPLATES.EVENING_STREAK_7.title,
+					body: SCHEDULER_TEMPLATES.EVENING_STREAK_7.body,
+				};
+			}
+			if (streak >= 2) {
+				return {
+					title: fillTemplate(SCHEDULER_TEMPLATES.EVENING_STREAK.title, {
+						streak,
+					}),
+					body: fillTemplate(SCHEDULER_TEMPLATES.EVENING_STREAK.body, {
+						streak,
+						next: streak + 1,
+					}),
+				};
+			}
 			return {
 				title: SCHEDULER_TEMPLATES.EVENING_COMPLETE.title,
 				body: SCHEDULER_TEMPLATES.EVENING_COMPLETE.body,
 			};
 		}
+
+		// B. 일부 완료
 		if (completed > 0) {
 			const remaining = total - completed;
+			if (isStreakAtRisk && streak >= 2) {
+				return {
+					title: fillTemplate(
+						SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_PARTIAL.title,
+						{ streak },
+					),
+					body: fillTemplate(
+						SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_PARTIAL.body,
+						{ remaining },
+					),
+				};
+			}
 			return {
 				title: fillTemplate(SCHEDULER_TEMPLATES.EVENING_PARTIAL.title, {
 					remaining,
@@ -346,6 +490,17 @@ export class NotificationMessageBuilder {
 				body: fillTemplate(SCHEDULER_TEMPLATES.EVENING_PARTIAL.body, {
 					remaining,
 				}),
+			};
+		}
+
+		// C. 하나도 안 함
+		if (isStreakAtRisk && streak >= 2) {
+			return {
+				title: fillTemplate(
+					SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_NONE.title,
+					{ streak },
+				),
+				body: SCHEDULER_TEMPLATES.EVENING_STREAK_RISK_NONE.body,
 			};
 		}
 		return {
@@ -391,6 +546,98 @@ export class NotificationMessageBuilder {
 		return {
 			title: SYSTEM_TEMPLATES.BILLING_ISSUE.title,
 			body: SYSTEM_TEMPLATES.BILLING_ISSUE.body,
+		};
+	}
+
+	/**
+	 * Win-back 알림 메시지 생성 (비활성 일수에 따라 단계별)
+	 */
+	static winback(inactiveDays: number): { title: string; body: string } {
+		if (inactiveDays >= 14) {
+			return {
+				title: SYSTEM_TEMPLATES.WINBACK_DAY14.title,
+				body: SYSTEM_TEMPLATES.WINBACK_DAY14.body,
+			};
+		}
+		if (inactiveDays >= 7) {
+			return {
+				title: SYSTEM_TEMPLATES.WINBACK_DAY7.title,
+				body: SYSTEM_TEMPLATES.WINBACK_DAY7.body,
+			};
+		}
+		return {
+			title: SYSTEM_TEMPLATES.WINBACK_DAY3.title,
+			body: SYSTEM_TEMPLATES.WINBACK_DAY3.body,
+		};
+	}
+
+	/**
+	 * 주간 달성 배지 알림 메시지 생성 (완료율에 따라 분기)
+	 */
+	static weeklyAchievement(
+		completedCount: number,
+		totalCount: number,
+	): { title: string; body: string } {
+		const rate = Math.round((completedCount / totalCount) * 100);
+
+		if (rate === 100) {
+			return {
+				title: SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_PERFECT.title,
+				body: SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_PERFECT.body,
+			};
+		}
+		if (rate >= 90) {
+			return {
+				title: fillTemplate(SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_ALMOST.title, {
+					rate,
+				}),
+				body: SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT_ALMOST.body,
+			};
+		}
+		return {
+			title: fillTemplate(SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT.title, {
+				completedCount,
+			}),
+			body: SYSTEM_TEMPLATES.WEEKLY_ACHIEVEMENT.body,
+		};
+	}
+
+	/**
+	 * 친구 활동 요약 알림 메시지 생성
+	 */
+	static socialDigest(
+		completedFriendCount: number,
+		friendName?: string,
+	): { title: string; body: string } {
+		if (completedFriendCount === 1 && friendName) {
+			return {
+				title: fillTemplate(SOCIAL_TEMPLATES.SOCIAL_DIGEST_SINGLE.title, {
+					friendName,
+				}),
+				body: SOCIAL_TEMPLATES.SOCIAL_DIGEST_SINGLE.body,
+			};
+		}
+		return {
+			title: fillTemplate(SOCIAL_TEMPLATES.SOCIAL_DIGEST_MULTI.title, {
+				completedFriendCount,
+			}),
+			body: SOCIAL_TEMPLATES.SOCIAL_DIGEST_MULTI.body,
+		};
+	}
+
+	/**
+	 * 콕 찌르기 유도 알림 메시지 생성
+	 */
+	static nudgeSuggest(
+		friendName: string,
+		days: number,
+	): { title: string; body: string } {
+		return {
+			title: fillTemplate(SOCIAL_TEMPLATES.NUDGE_SUGGEST.title, {
+				friendName,
+				days,
+			}),
+			body: SOCIAL_TEMPLATES.NUDGE_SUGGEST.body,
 		};
 	}
 }

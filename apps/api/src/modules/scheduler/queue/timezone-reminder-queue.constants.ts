@@ -15,6 +15,7 @@ export const TIMEZONE_REMINDER_QUEUE = "timezone-reminder";
 export const TimezoneReminderJobName = {
 	SWEEP_REMINDERS: "sweep-reminders",
 	REMINDER_HOUR_CHANGED: "reminder-hour-changed",
+	SOCIAL_DIGEST: "social-digest",
 } as const;
 
 // =============================================================================
@@ -47,7 +48,19 @@ export interface ReminderHourChangedJobData {
  */
 export type SweepRemindersJobData = Record<string, never>;
 
+/**
+ * Social Digest 잡 데이터
+ *
+ * 저녁 리마인더 발송 30분 후 실행.
+ * 본인 미완료 + 친구 완료 시 소셜 압박 알림 발송.
+ */
+export interface SocialDigestJobData {
+	/** 사용자 타임존 (IANA) */
+	timezone: string;
+}
+
 /** 모든 잡 데이터 유니온 타입 */
 export type TimezoneReminderJobData =
 	| ReminderHourChangedJobData
-	| SweepRemindersJobData;
+	| SweepRemindersJobData
+	| SocialDigestJobData;

@@ -1,7 +1,7 @@
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
 import type Redis from "ioredis";
@@ -28,6 +28,7 @@ import { AiReportModule } from "@/modules/ai-report";
 import { AiSuggestionModule } from "@/modules/ai-suggestion";
 import { AuthModule } from "@/modules/auth";
 import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
+import { LastActiveInterceptor } from "@/modules/auth/interceptors/last-active.interceptor";
 import { CheerModule } from "@/modules/cheer";
 import { DailyCompletionModule } from "@/modules/daily-completion";
 import { FollowModule } from "@/modules/follow";
@@ -126,6 +127,12 @@ import { AppService } from "./app.service";
 		{
 			provide: APP_GUARD,
 			useClass: ThrottlerGuard,
+		},
+
+		// Global Interceptors
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: LastActiveInterceptor,
 		},
 	],
 })

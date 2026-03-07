@@ -75,9 +75,6 @@ jobs:
       - name: Run unit tests
         run: pnpm turbo run test --affected
 
-      - name: Build packages for E2E
-        run: pnpm turbo run build --filter='!@aido/mobile'
-
       - name: Run E2E tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aido_test
@@ -89,7 +86,7 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: pnpm turbo run test:e2e
+        run: pnpm turbo run test:e2e --filter=@aido/api
 
   build:
     name: Build

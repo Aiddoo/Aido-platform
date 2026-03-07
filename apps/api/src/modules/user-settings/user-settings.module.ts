@@ -5,6 +5,7 @@ import { TimezoneReminderQueueModule } from "@/modules/scheduler/queue/timezone-
 
 import { UserConsentRepository } from "./repositories/user-consent.repository";
 import { UserPreferenceRepository } from "./repositories/user-preference.repository";
+import { StreakService } from "./services/streak.service";
 import { UserSettingsService } from "./services/user-settings.service";
 import { SettingsController } from "./settings.controller";
 
@@ -15,7 +16,8 @@ import { SettingsController } from "./settings.controller";
 		UserSettingsService,
 		UserPreferenceRepository,
 		UserConsentRepository,
+		StreakService,
 	],
-	exports: [UserPreferenceRepository, UserConsentRepository],
+	exports: [UserPreferenceRepository, UserConsentRepository, StreakService],
 })
 export class UserSettingsModule {}

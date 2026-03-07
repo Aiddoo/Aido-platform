@@ -445,4 +445,21 @@ export class CacheService {
 			CacheKeys.TTL.FRIEND_COUNT,
 		);
 	}
+
+	// === Unread Count Methods ===
+
+	async invalidateUnreadCount(userId: string): Promise<void> {
+		return this.del(CacheKeys.unreadCount(userId));
+	}
+
+	async wrapUnreadCount(
+		userId: string,
+		factory: () => Promise<number>,
+	): Promise<number> {
+		return this.wrap(
+			CacheKeys.unreadCount(userId),
+			factory,
+			CacheKeys.TTL.UNREAD_COUNT,
+		);
+	}
 }

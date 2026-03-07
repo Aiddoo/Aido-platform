@@ -508,5 +508,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			await Promise.allSettled([...this.#pendingPushes]);
 			this.#logger.log("All pending pushes completed");
 		}
+
+		this.rateLimiter.destroy?.();
 	}
 }

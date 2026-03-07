@@ -94,6 +94,6 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		AccountPurgeJob,
 		AccountPurgeProcessor,
 	],
-	exports: [AuthService, JwtAuthGuard, JwtRefreshGuard],
+	exports: [AuthService, JwtAuthGuard, JwtRefreshGuard, UserRepository],
 })
 export class AuthModule {}

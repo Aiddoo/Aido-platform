@@ -19,6 +19,9 @@ export const notificationTypeSchema = z.enum([
   'SYSTEM_NOTICE',
   'ADMIN_BROADCAST',
   'ADMIN_TARGETED',
+  'WINBACK',
+  'SOCIAL_DIGEST',
+  'NUDGE_SUGGEST',
 ]);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
@@ -131,10 +134,11 @@ const getCategoryLabel = (type: NotificationType): string =>
     .with('NUDGE_RECEIVED', () => '콕 찌르기')
     .with('CHEER_RECEIVED', () => '응원')
     .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => '달성')
-    .with('TODO_REMINDER', 'TODO_SHARED', () => '할일')
+    .with('TODO_REMINDER', 'TODO_SHARED', 'WINBACK', () => '할일')
     .with('MORNING_REMINDER', 'EVENING_REMINDER', () => '리마인더')
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'AI')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => '공지')
+    .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => '소셜')
     .exhaustive();
 
 /** 알림 타입 + context → 앱 내부 라우트 */
@@ -160,6 +164,8 @@ const getInternalRoute = (type: NotificationType, context?: NotificationContext)
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', () => '/reports')
     .with('AI_SUGGESTION', () => '/suggestions')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
+    .with('WINBACK', 'SOCIAL_DIGEST', () => '/feed')
+    .with('NUDGE_SUGGEST', () => (context?.friendId ? `/feed/friend/${context.friendId}` : '/feed'))
     .exhaustive();
 
 // ─── Policy (비즈니스 로직의 유일한 거처) ───

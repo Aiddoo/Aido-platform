@@ -70,6 +70,9 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 30,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			currentStreak: 0,
+			longestStreak: 0,
+			lastCompletedDate: null,
 		};
 
 		it("사용자의 푸시 설정을 반환해야 한다", async () => {
@@ -202,6 +205,9 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 18,
 			eveningReminderMinute: 0,
+			currentStreak: 0,
+			longestStreak: 0,
+			lastCompletedDate: null,
 		};
 
 		it("푸시 설정을 업데이트하고 결과를 반환해야 한다", async () => {
@@ -247,6 +253,9 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				currentStreak: 0,
+				longestStreak: 0,
+				lastCompletedDate: null,
 			};
 			(userPreferenceRepo.upsert as jest.Mock).mockResolvedValue(partialUpdate);
 
@@ -291,6 +300,9 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			currentStreak: 0,
+			longestStreak: 0,
+			lastCompletedDate: null,
 		};
 
 		it("Free 유저가 morningReminderHour 변경 시 PREFERENCE_1701 에러", async () => {
@@ -401,6 +413,9 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			currentStreak: 0,
+			longestStreak: 0,
+			lastCompletedDate: null,
 		};
 
 		it("morningReminderHour가 12 이상이면 PREFERENCE_1702 에러", async () => {

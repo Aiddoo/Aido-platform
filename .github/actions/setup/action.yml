@@ -15,6 +15,11 @@ runs:
       run: pnpm install --frozen-lockfile
       shell: bash
 
+    - name: Fetch main branch for turbo --affected
+      if: github.event_name == 'pull_request'
+      run: git fetch origin main:main
+      shell: bash
+
     - name: Generate Prisma Client
       run: pnpm db:generate
       shell: bash

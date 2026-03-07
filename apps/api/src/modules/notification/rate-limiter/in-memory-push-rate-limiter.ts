@@ -1,3 +1,4 @@
+import type { OnModuleDestroy } from "@nestjs/common";
 import type { IPushRateLimiter } from "./push-rate-limiter.interface";
 
 /** 1시간 윈도우 내 최대 푸시 횟수 */
@@ -9,9 +10,20 @@ const RATE_LIMIT_MAX = 15;
  *
  * - 단일 인스턴스 개발/테스트 환경용
  * - Map 기반 슬라이딩 윈도우
+ * - RATE_LIMIT_WINDOW_MS 주기로 zombie 엔트리 자동 정리
  */
-export class InMemoryPushRateLimiter implements IPushRateLimiter {
+export class InMemoryPushRateLimiter
+	implements IPushRateLimiter, OnModuleDestroy
+{
 	private readonly pushTimestamps = new Map<string, number[]>();
+	readonly #cleanupInterval: NodeJS.Timeout;
+
+	constructor() {
+		this.#cleanupInterval = setInterval(
+			() => this.#cleanup(),
+			RATE_LIMIT_WINDOW_MS,
+		);
+	}
 
 	async isRateLimited(userId: string): Promise<boolean> {
 		const now = Date.now();
@@ -35,7 +47,26 @@ export class InMemoryPushRateLimiter implements IPushRateLimiter {
 		return false;
 	}
 
+	onModuleDestroy(): void {
+		this.destroy();
+	}
+
 	destroy(): void {
+		clearInterval(this.#cleanupInterval);
 		this.pushTimestamps.clear();
+	}
+
+	#cleanup(): void {
+		const windowStart = Date.now() - RATE_LIMIT_WINDOW_MS;
+
+		for (const [userId, timestamps] of this.pushTimestamps.entries()) {
+			const filtered = timestamps.filter((t) => t > windowStart);
+
+			if (filtered.length === 0) {
+				this.pushTimestamps.delete(userId);
+			} else {
+				this.pushTimestamps.set(userId, filtered);
+			}
+		}
 	}
 }
