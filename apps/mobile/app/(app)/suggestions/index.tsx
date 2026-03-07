@@ -84,9 +84,9 @@ function SuggestionsPremiumPreview() {
           resizeMode="contain"
         />
         <Spacing size={8} />
-        <H4>AI가 루틴을 제안해드려요</H4>
+        <H4>AI가 투두를 제안해드려요</H4>
         <Text size="b4" shade={6} align="center">
-          {'구독하면 반복 패턴을 분석해서\n맞춤 루틴을 추천받을 수 있어요'}
+          반복 패턴을 분석해서 맞춤 투두를 추천받을 수 있어요
         </Text>
       </View>
 
