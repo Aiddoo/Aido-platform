@@ -90,7 +90,6 @@ function AndroidBottomTabs() {
           borderTopColor: tabBarBorder.borderColor as string,
         },
         headerShown: false,
-        animation: 'shift',
       }}
     >
       <Tabs.Screen
