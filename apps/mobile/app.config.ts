@@ -150,7 +150,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // iOS
     ios: {
-      supportsTablet: true,
+      requireFullScreen: true,
       bundleIdentifier: envConfig.bundleIdentifier,
       usesAppleSignIn: true,
       googleServicesFile: './GoogleService-Info.plist',
