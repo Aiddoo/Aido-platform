@@ -44,7 +44,7 @@ export function TodoList({ date }: TodoListProps) {
       category,
       todos: grouped[category.id] ?? [],
     }));
-  }, [data, categoriesData?.categories]);
+  }, [data, categoriesData.categories]);
 
   if (isLoading || !data) {
     return <TodoList.Loading />;
