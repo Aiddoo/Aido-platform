@@ -222,6 +222,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     // Plugins
     plugins: [
+      './plugins/withJitpackFilter',
       '@react-native-firebase/app',
       '@react-native-firebase/crashlytics',
       [
