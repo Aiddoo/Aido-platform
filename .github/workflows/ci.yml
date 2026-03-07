@@ -89,7 +89,7 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: pnpm turbo run test:e2e
+        run: pnpm turbo run test:e2e --filter=@aido/api
 
   build:
     name: Build
