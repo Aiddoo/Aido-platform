@@ -1,9 +1,9 @@
 import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { getDayOfWeekLabel } from '@src/shared/utils/date';
 import { Card, Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 import type { AiReport } from '../../models/ai.model';
-import { DAY_LABELS } from '../constants/day-labels.constant';
 import { formatHour } from '../utils/format-report';
 
 interface ReportDetailContentProps {
@@ -177,7 +177,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
           {items.map((item) => (
             <VStack key={item.day} align="center" gap={4}>
               <Text size="e2" shade={6}>
-                {DAY_LABELS[item.day] ?? item.day}
+                {getDayOfWeekLabel(item.day)}
               </Text>
               <View
                 className={cn(

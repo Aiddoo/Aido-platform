@@ -84,6 +84,29 @@ export const isSaturday = (date: Date): boolean => {
   return date.getDay() === 6;
 };
 
+// DayOfWeek
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/validators';
+
+const DAY_OF_WEEK_LABELS: Record<DayOfWeek, string> = {
+  MON: '월',
+  TUE: '화',
+  WED: '수',
+  THU: '목',
+  FRI: '금',
+  SAT: '토',
+  SUN: '일',
+};
+
+/** DayOfWeek 배열을 요일 순서로 정렬 후 한글로 변환 (예: "월, 수, 금") */
+export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
+  [...daysOfWeek]
+    .sort((a, b) => DAY_OF_WEEK_MAP[a] - DAY_OF_WEEK_MAP[b])
+    .map((day) => DAY_OF_WEEK_LABELS[day])
+    .join(', ');
+
+/** DayOfWeek → 한글 요일 한 글자 */
+export const getDayOfWeekLabel = (day: DayOfWeek): string => DAY_OF_WEEK_LABELS[day];
+
 // Calendar
 export const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
