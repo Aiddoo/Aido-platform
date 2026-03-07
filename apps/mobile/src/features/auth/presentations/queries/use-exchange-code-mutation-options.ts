@@ -1,11 +1,10 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
-  useAnalytics,
   useAuthService,
   useLogger,
   useNotificationService,
 } from '@src/bootstrap/providers/di-provider';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
@@ -14,7 +13,7 @@ import type { OAuthProviderSlug } from '../../models/oauth.model';
 
 export const useExchangeCodeMutationOptions = () => {
   const authService = useAuthService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
   const logger = useLogger();
   const { setStatus } = useAuth();
@@ -43,7 +42,7 @@ export const useExchangeCodeMutationOptions = () => {
         logger.warn('[PushNotification] Setup error', { error });
       }
 
-      track(analytics, 'auth_login', { method: variables.provider });
+      trackEvent('auth_login', { method: variables.provider });
     },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

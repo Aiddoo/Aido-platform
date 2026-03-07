@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import type { UpdatePreferenceInput } from '@aido/validators';
 import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -12,6 +13,7 @@ import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useUpdatePreferenceMutationOptions = () => {
   const authService = useAuthService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -32,7 +34,13 @@ export const useUpdatePreferenceMutationOptions = () => {
 
       return { previousData };
     },
-    onSuccess: (data) => {
+    onSuccess: (data, input) => {
+      for (const key of Object.keys(input)) {
+        trackEvent('settings_changed', {
+          setting: key,
+          value: String(input[key as keyof typeof input]),
+        });
+      }
       // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
       queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), data);
     },

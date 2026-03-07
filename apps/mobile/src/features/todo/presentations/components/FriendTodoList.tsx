@@ -1,5 +1,6 @@
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
+import { useTrack } from '@src/shared/analytics';
 import {
   Box,
   DocsIcon,
@@ -100,6 +101,7 @@ interface FriendTodoItemProps {
 }
 
 function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
+  const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
   const showDateTime = todo.formattedTime && !todo.isAllDay;
@@ -125,6 +127,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   };
 
   const openLimitDialog = () => {
+    trackEvent('premium_gate_shown', { feature: 'friend_todo_view' });
     premiumDialog.open({
       title: '오늘 콕 찌르기를 다 했어요',
       description: '구독하면 무제한으로 찌를 수 있어요',

@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/errors';
-import { useAnalytics, useTodoService } from '@src/bootstrap/providers/di-provider';
-import { track } from '@src/shared/analytics';
+import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 
 export const useParseTodoMutationOptions = () => {
   const todoService = useTodoService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
   const toast = useAppToast();
 
@@ -20,13 +20,14 @@ export const useParseTodoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      track(analytics, 'ai_parse_used', { success: true });
+      trackEvent('ai_parse_used', { success: true });
     },
     onError: (error) => {
-      track(analytics, 'ai_parse_used', { success: false });
+      trackEvent('ai_parse_used', { success: false });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
+        trackEvent('premium_gate_shown', { feature: 'ai_parse' });
         premiumDialog.open({
           description: '프리미엄 구독으로 매일 무제한 AI 파싱을 사용할 수 있어요',
         });

@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/errors';
 import { useFriendService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -11,6 +12,7 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useSendRequestByTagMutationOptions = () => {
   const friendService = useFriendService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const premiumDialog = usePremiumDialog();
@@ -21,6 +23,7 @@ export const useSendRequestByTagMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
+      trackEvent('friend_request_sent');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
       toast.success('친구 요청을 보냈어요');
     },
@@ -28,6 +31,7 @@ export const useSendRequestByTagMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
+        trackEvent('premium_gate_shown', { feature: 'friend_limit' });
         premiumDialog.open({
           description: '프리미엄 구독으로 무제한 친구를 추가할 수 있어요',
         });

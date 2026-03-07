@@ -1,7 +1,7 @@
 import type { UpdateTodoInput } from '@aido/validators';
-import { useAnalytics, useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -18,7 +18,7 @@ interface UpdateTodoMutationParams {
 
 export const useUpdateTodoMutationOptions = () => {
   const todoService = useTodoService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -32,7 +32,7 @@ export const useUpdateTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 수정했어요');
       const field = Object.keys(variables.input).join(',');
-      track(analytics, 'todo_edited', { todo_id: variables.todoId, field });
+      trackEvent('todo_edited', { todo_id: variables.todoId, field });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

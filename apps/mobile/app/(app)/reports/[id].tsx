@@ -5,6 +5,7 @@ import {
   isSampleReportId,
 } from '@src/features/ai/presentations/constants/sample-reports.constant';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-detail-query-options';
+import { useTrack } from '@src/shared/analytics';
 import {
   Button,
   QueryErrorBoundary,
@@ -16,7 +17,7 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 
 const ReportDetailScreen = () => {
@@ -45,6 +46,11 @@ export default ReportDetailScreen;
 
 function ReportDetailBody({ id }: { id: number }) {
   const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions(id));
+  const { trackEvent } = useTrack();
+
+  useEffect(() => {
+    trackEvent('ai_report_viewed', { report_id: id, report_type: report.type });
+  }, [trackEvent, id, report.type]);
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -55,6 +61,7 @@ function ReportDetailBody({ id }: { id: number }) {
 }
 
 function SampleReportDetail({ report }: { report: AiReport }) {
+  const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
 
   return (
@@ -73,11 +80,12 @@ function SampleReportDetail({ report }: { report: AiReport }) {
         <Spacing size={4} />
         <Button
           size="medium"
-          onPress={() =>
+          onPress={() => {
+            trackEvent('premium_gate_shown', { feature: 'ai_report' });
             premiumDialog.open({
               description: 'AI 리포트는 프리미엄 구독자만 이용할 수 있어요.',
-            })
-          }
+            });
+          }}
         >
           프리미엄 구독하기
         </Button>

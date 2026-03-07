@@ -4,6 +4,7 @@ import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentat
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTrack } from '@src/shared/analytics';
 import {
   ArrowRightIcon,
   CrownIcon,
@@ -199,6 +200,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
   const overlay = useOverlay();
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
@@ -222,6 +224,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
     if (disabled) return;
 
     if (!isPremium) {
+      trackEvent('premium_gate_shown', { feature: 'reminder_time' });
       premiumDialog.open({
         description: '리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.',
       });

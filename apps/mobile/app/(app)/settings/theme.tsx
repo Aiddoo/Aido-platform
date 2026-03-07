@@ -1,3 +1,4 @@
+import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
 import {
@@ -14,13 +15,20 @@ import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-rea
 
 const ThemeSettingsScreen = () => {
   const { mode, setMode } = useTheme();
+  const { trackEvent } = useTrack();
+
+  const handleThemeChange = (value: string) => {
+    const newMode = value as ThemeMode;
+    setMode(newMode);
+    trackEvent('settings_changed', { setting: 'theme', value: newMode });
+  };
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
         <RadioGroup
           value={mode}
-          onValueChange={(value) => setMode(value as ThemeMode)}
+          onValueChange={handleThemeChange}
           className="bg-white rounded-2xl overflow-hidden gap-0"
         >
           <ThemeRadioItem value="light" label="라이트 모드" Icon={SunIcon} />

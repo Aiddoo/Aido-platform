@@ -11,6 +11,7 @@ import {
   suggestionListResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
+import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
@@ -32,9 +33,11 @@ import {
 
 export class AiService {
   readonly #httpClient: HttpClient;
+  readonly #logger: Logger;
 
-  constructor(httpClient: HttpClient) {
+  constructor(httpClient: HttpClient, logger: Logger) {
     this.#httpClient = httpClient;
+    this.#logger = logger;
   }
 
   getReportStatus = async (): Promise<Result<ReportStatus, ApiError>> => {
@@ -46,6 +49,10 @@ export class AiService {
 
     const parsed = reportStatusResponseSchema.safeParse(result.value);
     if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'getReportStatus',
+        zodError: parsed.error.message,
+      });
       throw new ParseError(`[AiService] Invalid getReportStatus response: ${parsed.error.message}`);
     }
 
@@ -63,6 +70,10 @@ export class AiService {
 
     const parsed = aiReportListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'getReports',
+        zodError: parsed.error.message,
+      });
       throw new ParseError(`[AiService] Invalid getReports response: ${parsed.error.message}`);
     }
 
@@ -78,6 +89,10 @@ export class AiService {
 
     const parsed = aiReportResponseSchema.safeParse(result.value);
     if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'getReportById',
+        zodError: parsed.error.message,
+      });
       throw new ParseError(`[AiService] Invalid getReportById response: ${parsed.error.message}`);
     }
 
@@ -93,6 +108,10 @@ export class AiService {
 
     const parsed = suggestionListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'getSuggestions',
+        zodError: parsed.error.message,
+      });
       throw new ParseError(`[AiService] Invalid getSuggestions response: ${parsed.error.message}`);
     }
 
@@ -114,6 +133,10 @@ export class AiService {
 
     const parsed = suggestionActionResponseSchema.safeParse(result.value);
     if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'handleSuggestionAction',
+        zodError: parsed.error.message,
+      });
       throw new ParseError(
         `[AiService] Invalid handleSuggestionAction response: ${parsed.error.message}`,
       );

@@ -2,6 +2,7 @@ import type { NotificationType } from '@aido/validators';
 import { pushNotificationDataSchema } from '@aido/validators';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
+import { useTrack } from '@src/shared/analytics';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
@@ -17,6 +18,7 @@ interface UseNotificationHandlerOptions {
 
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const logger = useLogger();
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -33,7 +35,10 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       }
       const data = parseResult.data;
 
-      // 2. 읽음 처리 + 배지 동기화
+      // 2. Analytics 추적
+      trackEvent('push_notification_opened', { type: data.type });
+
+      // 3. 읽음 처리 + 배지 동기화
       if (isAuthenticated && data.notificationId) {
         try {
           await notificationService.markAsRead(data.notificationId);
@@ -54,7 +59,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
         }
       }
 
-      // 3. Action Type 기반 분기 처리
+      // 4. Action Type 기반 분기 처리
       match(data.action?.type)
         .with('BROWSER', () => {
           if (data.action?.url) {
@@ -79,7 +84,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           }
         });
     },
-    [isAuthenticated, logger, notificationService, queryClient],
+    [trackEvent, isAuthenticated, logger, notificationService, queryClient],
   );
 
   const handleForegroundNotification = useCallback(() => {

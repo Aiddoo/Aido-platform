@@ -1,6 +1,6 @@
-import { useAnalytics, useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
-import { track } from '@src/shared/analytics';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -17,7 +17,7 @@ interface DeleteTodoMutationParams {
 
 export const useDeleteTodoMutationOptions = () => {
   const todoService = useTodoService();
-  const analytics = useAnalytics();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -32,7 +32,7 @@ export const useDeleteTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 삭제했어요');
-      track(analytics, 'todo_deleted', { todo_id: todoId });
+      trackEvent('todo_deleted', { todo_id: todoId });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

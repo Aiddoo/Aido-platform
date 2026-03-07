@@ -1,3 +1,4 @@
+import type { Logger } from '@src/core/ports/logger';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
 /**
@@ -7,13 +8,16 @@ import Purchases, { LOG_LEVEL } from 'react-native-purchases';
  * RevenueCatProvider에서만 사용한다.
  */
 export class RevenueCatSdkManager {
+  readonly #logger: Logger;
   #configured = false;
+
+  constructor(logger: Logger) {
+    this.#logger = logger;
+  }
 
   configure = (apiKey: string): void => {
     if (!apiKey) {
-      if (__DEV__) {
-        console.warn('[RevenueCatSdkManager] API key is empty, skipping configure');
-      }
+      this.#logger.warn('[RevenueCatSdkManager] API key is empty, skipping configure');
       return;
     }
 
@@ -24,11 +28,9 @@ export class RevenueCatSdkManager {
       Purchases.configure({ apiKey });
       this.#configured = true;
     } catch (error) {
-      if (__DEV__)
-        console.warn(
-          '[RevenueCatSdkManager] configure failed (native module not available?):',
-          error,
-        );
+      this.#logger.warn('[RevenueCatSdkManager] Configure failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -40,9 +42,9 @@ export class RevenueCatSdkManager {
     try {
       await Purchases.logIn(userId);
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[RevenueCatSdkManager] logIn failed:', error);
-      }
+      this.#logger.warn('[RevenueCatSdkManager] logIn failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -59,9 +61,9 @@ export class RevenueCatSdkManager {
 
       await Purchases.logOut();
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[RevenueCatSdkManager] logOut failed:', error);
-      }
+      this.#logger.warn('[RevenueCatSdkManager] logOut failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

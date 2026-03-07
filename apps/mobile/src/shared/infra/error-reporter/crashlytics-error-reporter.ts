@@ -1,7 +1,8 @@
 import crashlytics from '@react-native-firebase/crashlytics';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
+import type { Logger } from '@src/core/ports/logger';
 
-export const createCrashlyticsErrorReporter = (): ErrorReporter => {
+export const createCrashlyticsErrorReporter = (logger: Logger): ErrorReporter => {
   const crashlyticsInstance = crashlytics();
 
   const toStringAttributes = (context: ErrorReporterContext): Record<string, string> => {
@@ -20,7 +21,9 @@ export const createCrashlyticsErrorReporter = (): ErrorReporter => {
         }
         crashlyticsInstance.recordError(error);
       } catch (e) {
-        if (__DEV__) console.warn('[CrashlyticsErrorReporter] captureException failed:', e);
+        logger.warn('[CrashlyticsErrorReporter] captureException failed', {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     },
     captureMessage(message: string, context?: ErrorReporterContext): void {
@@ -30,7 +33,9 @@ export const createCrashlyticsErrorReporter = (): ErrorReporter => {
           crashlyticsInstance.setAttributes(toStringAttributes(context));
         }
       } catch (e) {
-        if (__DEV__) console.warn('[CrashlyticsErrorReporter] captureMessage failed:', e);
+        logger.warn('[CrashlyticsErrorReporter] captureMessage failed', {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     },
     async setUserId(userId: string | null): Promise<void> {
