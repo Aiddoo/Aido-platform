@@ -24,6 +24,7 @@ const AppLayout = () => {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="achievements" />
       <Stack.Screen name="reports" />
+      <Stack.Screen name="suggestions" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="webview/[url]" />
     </Stack>

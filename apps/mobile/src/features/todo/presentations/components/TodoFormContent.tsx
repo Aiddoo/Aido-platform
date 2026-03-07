@@ -122,6 +122,8 @@ export const TodoFormContent = ({
             size="medium"
             isInvalid={!!error}
             errorMessage={error?.message}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
           />
         )}
       />

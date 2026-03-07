@@ -79,6 +79,8 @@ export const CategoryCreateBottomSheet = ({
                   onChangeText={onChange}
                   isInvalid={!!errors.name}
                   errorMessage={errors.name?.message}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit(onSubmit)}
                 />
               )}
             />

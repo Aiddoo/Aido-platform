@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const SuggestionsLayout = () => {
-  const headerBg = useResolveClassNames('bg-white');
+  const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
 
   return (

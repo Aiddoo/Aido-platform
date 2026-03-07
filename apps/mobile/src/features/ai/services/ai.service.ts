@@ -5,14 +5,30 @@ import {
   aiReportResponseSchema,
   type ReportStatusResponse,
   reportStatusResponseSchema,
+  type SuggestionActionResponse,
+  type SuggestionListResponse,
+  suggestionActionResponseSchema,
+  suggestionListResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { AiReport, GetAiReportsParams, ReportStatus } from '../models/ai.model';
-import { toAiReport, toReportStatus } from './ai.mapper';
+import type {
+  AiReport,
+  AiSuggestion,
+  AiSuggestionActionInput,
+  AiSuggestionActionResult,
+  GetAiReportsParams,
+  ReportStatus,
+} from '../models/ai.model';
+import {
+  toAiReport,
+  toAiSuggestion,
+  toAiSuggestionActionResult,
+  toReportStatus,
+} from './ai.mapper';
 
 export class AiService {
   readonly #httpClient: HttpClient;
@@ -66,5 +82,43 @@ export class AiService {
     }
 
     return ok(toAiReport(parsed.data.report));
+  };
+
+  getSuggestions = async (): Promise<Result<AiSuggestion[], ApiError>> => {
+    const result = await this.#httpClient.get<SuggestionListResponse>('v1/ai/suggestions');
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = suggestionListResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AiService] Invalid getSuggestions response: ${parsed.error.message}`);
+    }
+
+    return ok(parsed.data.suggestions.map(toAiSuggestion));
+  };
+
+  handleSuggestionAction = async (
+    suggestionId: number,
+    input: AiSuggestionActionInput,
+  ): Promise<Result<AiSuggestionActionResult, ApiError>> => {
+    const result = await this.#httpClient.patch<SuggestionActionResponse>(
+      `v1/ai/suggestions/${suggestionId}`,
+      input,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = suggestionActionResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AiService] Invalid handleSuggestionAction response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toAiSuggestionActionResult(parsed.data));
   };
 }
