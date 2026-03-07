@@ -2,7 +2,7 @@
  * CheerService 통합 테스트
  *
  * @description
- * CheerService가 CheerRepository, FollowService, PaginationService, EventEmitter와 함께 올바르게 작동하는지 검증합니다.
+ * CheerService가 CheerRepository, FollowService, PaginationService, NotificationQueueService와 함께 올바르게 작동하는지 검증합니다.
  * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
  *
  * 통합 테스트의 목적:
@@ -10,7 +10,7 @@
  * - CheerService와 CheerRepository의 통합 검증
  * - FollowService와의 통합 검증
  * - PaginationService와의 통합 검증
- * - EventEmitter와의 통합 검증
+ * - NotificationQueueService와의 통합 검증
  * - BusinessException 에러 처리가 올바르게 작동하는지 검증
  *
  * 실행 명령:
@@ -19,19 +19,20 @@
  * ```
  */
 
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { CheerBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { CheerRepository } from "@/modules/cheer/cheer.repository";
 import { CheerService } from "@/modules/cheer/cheer.service";
 import { FollowService } from "@/modules/follow/follow.service";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
 describe("CheerService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
@@ -64,9 +65,9 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 		isMutualFriend: jest.fn(),
 	};
 
-	// Mock EventEmitter
-	const mockEventEmitter = {
-		emit: jest.fn(),
+	// Mock NotificationQueueService
+	const mockNotificationQueueService = {
+		enqueueCheerSent: jest.fn(),
 	};
 
 	// Mock CacheService
@@ -74,6 +75,14 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 		getSubscription: jest.fn(),
 		setSubscription: jest.fn(),
 		invalidateSubscription: jest.fn(),
+	};
+
+	// Mock EntitlementService
+	const mockEntitlementService = {
+		getFeatureLimit: jest.fn(),
+		getFeatureLimitInTx: jest.fn(),
+		enforceLimit: jest.fn(),
+		calculateRemaining: jest.fn(),
 	};
 
 	// 테스트 데이터
@@ -104,12 +113,16 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 					useValue: mockFollowService,
 				},
 				{
-					provide: EventEmitter2,
-					useValue: mockEventEmitter,
+					provide: NotificationQueueService,
+					useValue: mockNotificationQueueService,
 				},
 				{
 					provide: CacheService,
 					useValue: mockCacheService,
+				},
+				{
+					provide: EntitlementService,
+					useValue: mockEntitlementService,
 				},
 			],
 		}).compile();
@@ -126,6 +139,31 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		CheerBuilder.resetIdCounter();
+
+		// EntitlementService 기본 mock 설정 (FREE 사용자)
+		mockEntitlementService.getFeatureLimit.mockResolvedValue({
+			dailyLimit: 3,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
+		mockEntitlementService.getFeatureLimitInTx.mockResolvedValue({
+			dailyLimit: 3,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
+		mockEntitlementService.enforceLimit.mockImplementation(
+			(entitlement, currentUsage, errorFactory) => {
+				if (entitlement.dailyLimit === null) return;
+				if (currentUsage < entitlement.dailyLimit) return;
+				throw errorFactory(currentUsage, entitlement.dailyLimit);
+			},
+		);
+		mockEntitlementService.calculateRemaining.mockImplementation(
+			(dailyLimit, used) => {
+				if (dailyLimit === null) return null;
+				return Math.max(0, dailyLimit - used);
+			},
+		);
 	});
 
 	describe("DI 통합 테스트", () => {
@@ -213,10 +251,9 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 				mockSenderId,
 				mockReceiverId,
 			);
-			expect(mockEventEmitter.emit).toHaveBeenCalledWith(
-				"cheer.sent",
-				expect.any(Object),
-			);
+			expect(
+				mockNotificationQueueService.enqueueCheerSent,
+			).toHaveBeenCalledWith(expect.any(Object));
 		});
 
 		it("메시지 없이도 응원을 전송해야 함", async () => {
@@ -574,6 +611,12 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 			// Given - ACTIVE 구독 사용자 준비
 			mockUserDb.findUnique.mockReset();
 			mockCheerDb.count.mockReset();
+
+			mockEntitlementService.getFeatureLimit.mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
 
 			const mockUser = UserBuilder.create()
 				.withId(mockSenderId)

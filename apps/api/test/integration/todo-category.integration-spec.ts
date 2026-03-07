@@ -21,6 +21,8 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import { CacheService } from "@/common/cache/cache.service";
+import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
@@ -97,6 +99,26 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: DatabaseService,
 					useValue: mockDatabaseService,
+				},
+				{
+					provide: EntitlementService,
+					useValue: {
+						getResourceLimit: jest.fn().mockResolvedValue({
+							maxCount: null,
+							isAdmin: false,
+							subscriptionStatus: "ACTIVE",
+						}),
+						enforceResourceLimit: jest.fn(),
+					},
+				},
+				{
+					provide: CacheService,
+					useValue: {
+						invalidateTodoCategories: jest.fn().mockResolvedValue(undefined),
+						wrapTodoCategories: jest
+							.fn()
+							.mockImplementation((_userId, factory) => factory()),
+					},
 				},
 			],
 		}).compile();

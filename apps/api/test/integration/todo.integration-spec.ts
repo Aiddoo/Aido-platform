@@ -18,11 +18,11 @@
  */
 
 import { type DayOfWeek, TODO_LIMITS } from "@aido/validators";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import {
 	BusinessException,
@@ -32,6 +32,7 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
 import { FollowService } from "@/modules/follow/follow.service";
+import { NotificationQueueService } from "@/modules/notification/queue/notification-queue.service";
 import { REMINDER_SCHEDULER } from "@/modules/scheduler/reminder";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
@@ -68,11 +69,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 	// Mock FollowService
 	const mockFollowService = {
 		isMutualFriend: jest.fn(),
-	};
-
-	// Mock EventEmitter
-	const mockEventEmitter = {
-		emit: jest.fn(),
 	};
 
 	// Mock TodoCategoryRepository
@@ -120,8 +116,10 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 					useValue: mockFollowService,
 				},
 				{
-					provide: EventEmitter2,
-					useValue: mockEventEmitter,
+					provide: CacheService,
+					useValue: {
+						invalidateTodoCategories: jest.fn().mockResolvedValue(undefined),
+					},
 				},
 				{
 					provide: TypedConfigService,
@@ -143,6 +141,18 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: REMINDER_SCHEDULER,
 					useValue: mockReminderScheduler,
+				},
+				{
+					provide: NotificationQueueService,
+					useValue: {
+						enqueueTodoAllCompleted: jest.fn(),
+						enqueueFriendCompleted: jest.fn(),
+						enqueueFollowNew: jest.fn(),
+						enqueueFollowMutual: jest.fn(),
+						enqueueNudgeSent: jest.fn(),
+						enqueueCheerSent: jest.fn(),
+						enqueueBillingIssue: jest.fn(),
+					},
 				},
 			],
 		}).compile();

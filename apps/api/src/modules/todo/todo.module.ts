@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { FollowModule } from "../follow/follow.module";
+import { NotificationModule } from "../notification/notification.module";
 import { SchedulerModule } from "../scheduler/scheduler.module";
 import { TodoCategoryModule } from "../todo-category/todo-category.module";
 
@@ -21,7 +22,12 @@ import { TodoService } from "./todo.service";
  * - 리마인더 즉시 스케줄링 (생성/수정/삭제 시 타이머 관리)
  */
 @Module({
-	imports: [FollowModule, TodoCategoryModule, SchedulerModule],
+	imports: [
+		FollowModule,
+		NotificationModule,
+		TodoCategoryModule,
+		SchedulerModule,
+	],
 	controllers: [TodoController],
 	providers: [TodoRepository, TodoService],
 	exports: [TodoService],

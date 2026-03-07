@@ -5,18 +5,14 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { UserSettingsModule } from "@/modules/user-settings/user-settings.module";
 
-import {
-	CheerListener,
-	FollowListener,
-	NudgeListener,
-	TodoListener,
-} from "./listeners";
 import { NotificationController } from "./notification.controller";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";
 import { ExpoPushProvider } from "./providers/expo-push.provider";
 import { PUSH_PROVIDER } from "./providers/push-provider.interface";
 import { PushDeliveryService } from "./push-delivery.service";
+import { NotificationQueueModule } from "./queue/notification-queue.module";
+import { NotificationQueueProcessor } from "./queue/notification-queue.processor";
 import {
 	InMemoryPushRateLimiter,
 	type IPushRateLimiter,
@@ -33,16 +29,14 @@ import {
  * - NotificationService: 알림 CRUD, 조회, 중복 방지
  * - PushDeliveryService: 푸시 토큰 관리, 발송, 필터링, Graceful Shutdown
  *
- * Event-driven 아키텍처:
- * - FollowListener: 팔로우 요청/수락 알림
- * - TodoListener: 할일 완료/리마인더 알림
- * - NudgeListener: 콕 찌르기 수신 알림
- * - CheerListener: 응원 수신 알림
+ * BullMQ 큐 기반 알림 처리:
+ * - NotificationQueueService: 각 모듈에서 호출하여 알림 잡 등록
+ * - NotificationQueueProcessor: 큐 잡 처리 (팔로우, 콕 찌르기, 응원, 결제 알림)
  *
  * Provider 추상화를 통해 Expo Push → FCM 마이그레이션 대비
  */
 @Module({
-	imports: [UserSettingsModule],
+	imports: [NotificationQueueModule, UserSettingsModule],
 	controllers: [NotificationController],
 	providers: [
 		// Core
@@ -68,12 +62,9 @@ import {
 			},
 			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
 		},
-		// Event Listeners
-		FollowListener,
-		TodoListener,
-		NudgeListener,
-		CheerListener,
+		// BullMQ Queue Processor
+		NotificationQueueProcessor,
 	],
-	exports: [NotificationService],
+	exports: [NotificationService, NotificationQueueModule],
 })
 export class NotificationModule {}

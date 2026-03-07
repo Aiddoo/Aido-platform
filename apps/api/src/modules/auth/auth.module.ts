@@ -4,6 +4,7 @@ import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { AdminNotificationModule } from "@/modules/admin-notification/admin-notification.module";
 import { EmailModule } from "@/modules/email/email.module";
 import {
 	AccountController,
@@ -56,6 +57,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 			}),
 		}),
 		BullModule.registerQueue({ name: ACCOUNT_PURGE_QUEUE }),
+		AdminNotificationModule,
 		EmailModule,
 	],
 	controllers: [

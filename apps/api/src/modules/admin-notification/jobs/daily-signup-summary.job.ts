@@ -10,7 +10,6 @@ import {
 } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import type { AccountProvider } from "@/generated/prisma/client";
-
 import {
 	ADMIN_NOTIFICATION_JOB_OPTS,
 	ADMIN_NOTIFICATION_QUEUE,
@@ -18,7 +17,7 @@ import {
 	AdminNotificationJobName,
 	AdminNotificationProcessor,
 	type AdminNotificationSendData,
-} from "../processors/admin-notification.processor";
+} from "../queue";
 
 const PROVIDER_LABELS: Record<AccountProvider, string> = {
 	CREDENTIAL: "이메일",

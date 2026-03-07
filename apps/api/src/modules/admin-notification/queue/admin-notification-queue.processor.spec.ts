@@ -16,9 +16,9 @@ import {
 import {
 	type AdminNotificationJobData,
 	AdminNotificationJobName,
-	AdminNotificationProcessor,
 	type AdminNotificationSendData,
-} from "./admin-notification.processor";
+} from "./admin-notification-queue.constants";
+import { AdminNotificationProcessor } from "./admin-notification-queue.processor";
 
 describe("AdminNotificationProcessor", () => {
 	let processor: AdminNotificationProcessor;
@@ -140,6 +140,63 @@ describe("AdminNotificationProcessor", () => {
 			await expect(processor.process(job)).rejects.toThrow(
 				"Discord webhook failed: Webhook 404",
 			);
+		});
+	});
+
+	// =========================================================================
+	// dispatch-signup-summary
+	// =========================================================================
+
+	describe("dispatch-signup-summary", () => {
+		it("DailySignupSummaryJob.handleDailySummary()를 호출해야 한다", async () => {
+			// Given
+			const mockDailySummaryJob = {
+				handleDailySummary: jest.fn().mockResolvedValue(undefined),
+			};
+			processor.setDailySummaryJob(mockDailySummaryJob as any);
+
+			const job = {
+				name: AdminNotificationJobName.DISPATCH_SUMMARY,
+				data: {},
+			} as unknown as Job<AdminNotificationJobData>;
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(mockDailySummaryJob.handleDailySummary).toHaveBeenCalled();
+		});
+
+		it("DailySignupSummaryJob이 초기화되지 않으면 에러를 throw해야 한다", async () => {
+			// Given — setDailySummaryJob 호출하지 않음
+			const job = {
+				name: AdminNotificationJobName.DISPATCH_SUMMARY,
+				data: {},
+			} as unknown as Job<AdminNotificationJobData>;
+
+			// When & Then
+			await expect(processor.process(job)).rejects.toThrow(
+				"DailySignupSummaryJob not initialized",
+			);
+		});
+	});
+
+	// =========================================================================
+	// unknown job
+	// =========================================================================
+
+	describe("unknown job", () => {
+		it("알 수 없는 잡 이름은 경고만 출력한다", async () => {
+			// Given
+			const job = {
+				name: "unknown-job",
+				data: {},
+			} as unknown as Job<AdminNotificationJobData>;
+
+			// When & Then — 에러 없이 처리
+			await expect(processor.process(job)).resolves.not.toThrow();
+			expect(adminNotifier.send).not.toHaveBeenCalled();
+			expect(paymentNotifier.send).not.toHaveBeenCalled();
 		});
 	});
 });

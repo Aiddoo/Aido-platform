@@ -7,14 +7,13 @@ import {
 	USER_PREFERENCE_DEFAULTS,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
-import { NotificationEvents } from "@/modules/notification/events/notification.events";
+import type { ReminderHourChangedJobData } from "@/modules/scheduler/queue/timezone-reminder-queue.constants";
+import { TimezoneReminderQueueService } from "@/modules/scheduler/queue/timezone-reminder-queue.service";
 
 import { UserConsentRepository } from "../repositories/user-consent.repository";
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
@@ -27,7 +26,7 @@ export class UserSettingsService {
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly userConsentRepository: UserConsentRepository,
 		private readonly entitlementService: EntitlementService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly timezoneReminderQueueService: TimezoneReminderQueueService,
 		private readonly cacheService: CacheService,
 	) {}
 
@@ -134,7 +133,7 @@ export class UserSettingsService {
 			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
 		);
 
-		// 리마인더 시간 변경 시 즉시 반영 이벤트 발행
+		// 리마인더 시간 변경 시 즉시 반영 큐 잡 등록
 		// (현재 시간과 동일한 시간으로 변경했을 때 크론이 이미 지나간 경우 보완)
 		if (
 			input.morningReminderHour !== undefined ||
@@ -142,14 +141,14 @@ export class UserSettingsService {
 			input.eveningReminderHour !== undefined ||
 			input.eveningReminderMinute !== undefined
 		) {
-			this.eventEmitter.emit(NotificationEvents.REMINDER_HOUR_CHANGED, {
+			this.timezoneReminderQueueService.enqueueReminderHourChanged({
 				userId,
 				timezone: updated.timezone,
 				morningReminderHour: input.morningReminderHour,
 				morningReminderMinute: input.morningReminderMinute,
 				eveningReminderHour: input.eveningReminderHour,
 				eveningReminderMinute: input.eveningReminderMinute,
-			} satisfies ReminderHourChangedEventPayload);
+			} satisfies ReminderHourChangedJobData);
 		}
 
 		return {

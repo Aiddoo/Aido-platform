@@ -9,7 +9,6 @@
  */
 
 import { ConfigService } from "@nestjs/config";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { CacheService } from "@/common/cache/cache.service";
@@ -17,6 +16,7 @@ import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database/database.service";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { AccountRepository } from "@/modules/auth/repositories/account.repository";
 import { LoginAttemptRepository } from "@/modules/auth/repositories/login-attempt.repository";
 import { SecurityLogRepository } from "@/modules/auth/repositories/security-log.repository";
@@ -28,7 +28,7 @@ import { PasswordService } from "@/modules/auth/services/password.service";
 import { TokenService } from "@/modules/auth/services/token.service";
 import { VerificationService } from "@/modules/auth/services/verification.service";
 import { EmailService } from "@/modules/email/email.service";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { NotificationQueueService } from "@/modules/notification/queue";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 
 export async function createAuthTestModule(
@@ -60,7 +60,6 @@ export async function createAuthTestModule(
 			SecurityLogRepository,
 			LoginAttemptRepository,
 			VerificationRepository,
-			TodoCategoryRepository,
 			{
 				provide: DatabaseService,
 				useValue: databaseService,
@@ -127,8 +126,23 @@ export async function createAuthTestModule(
 				},
 			},
 			{
-				provide: EventEmitter2,
-				useValue: { emit: () => true },
+				provide: AdminNotificationQueueService,
+				useValue: {
+					enqueueUserRegistered: () => {},
+					enqueueSubscriptionEvent: () => {},
+				},
+			},
+			{
+				provide: NotificationQueueService,
+				useValue: {
+					enqueueFollowNew: () => {},
+					enqueueFollowMutual: () => {},
+					enqueueNudgeSent: () => {},
+					enqueueCheerSent: () => {},
+					enqueueBillingIssue: () => {},
+					enqueueTodoAllCompleted: () => {},
+					enqueueFriendCompleted: () => {},
+				},
 			},
 		],
 	}).compile();

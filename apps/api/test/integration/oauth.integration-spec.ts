@@ -21,7 +21,6 @@
  */
 
 import { ConfigService } from "@nestjs/config";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
@@ -31,6 +30,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 import { EncryptionService } from "@/common/encryption";
 import { BusinessException } from "@/common/exception";
 import { DatabaseService } from "@/database/database.service";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { AccountRepository } from "@/modules/auth/repositories/account.repository";
 import { LoginAttemptRepository } from "@/modules/auth/repositories/login-attempt.repository";
 import { OAuthStateRepository } from "@/modules/auth/repositories/oauth-state.repository";
@@ -40,7 +40,7 @@ import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { OAuthService } from "@/modules/auth/services/oauth.service";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
 import { TokenService } from "@/modules/auth/services/token.service";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { NotificationQueueService } from "@/modules/notification/queue";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 
@@ -82,7 +82,6 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				OAuthStateRepository,
-				TodoCategoryRepository,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
@@ -153,9 +152,20 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					},
 				},
 				{
-					provide: EventEmitter2,
+					provide: AdminNotificationQueueService,
 					useValue: {
-						emit: () => true,
+						enqueueUserRegistered: () => {},
+						enqueueSubscriptionEvent: () => {},
+					},
+				},
+				{
+					provide: NotificationQueueService,
+					useValue: {
+						enqueueFollowNew: () => {},
+						enqueueFollowMutual: () => {},
+						enqueueNudgeSent: () => {},
+						enqueueCheerSent: () => {},
+						enqueueBillingIssue: () => {},
 					},
 				},
 				{

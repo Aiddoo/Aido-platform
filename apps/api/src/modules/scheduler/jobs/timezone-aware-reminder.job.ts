@@ -1,20 +1,18 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { OnEvent } from "@nestjs/event-emitter";
 import type { Queue } from "bullmq";
 import dayjs from "dayjs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
-import type { ReminderHourChangedEventPayload } from "@/modules/notification/events/notification.events";
-import { NotificationEvents } from "@/modules/notification/events/notification.events";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import {
+	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
 	type TimezoneReminderJobData,
 	TimezoneReminderProcessor,
-} from "../processors/timezone-reminder.processor";
+} from "../queue";
 
 /**
  * 타임존 인식 리마인더 — Every-Minute Sweep 패턴
@@ -23,7 +21,7 @@ import {
  * 해당 시간에 아침/저녁 리마인더를 원하는 사용자에게 알림을 발송합니다.
  *
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
- * @OnEvent 핸들러는 BullMQ와 무관하게 유지됩니다.
+ * 리마인더 시간 변경 핸들러는 TimezoneReminderProcessor에서 호출됩니다.
  */
 @Injectable()
 export class TimezoneAwareReminderJob implements OnModuleInit {
@@ -99,16 +97,15 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 	}
 
 	/**
-	 * 리마인더 시간 변경 이벤트 핸들러 — Catch-up 패턴
+	 * 리마인더 시간 변경 핸들러 — Catch-up 패턴
 	 *
 	 * 사용자가 리마인더 시간을 변경했을 때, 변경된 시간이 현재 로컬 시간과
 	 * 같으면 즉시 리마인더를 발송합니다. (크론이 이미 실행된 후 변경한 경우 보완)
 	 *
 	 * 중복 방지: `notificationDate` 기반이므로 크론에서 이미 발송했으면 스킵됩니다.
 	 */
-	@OnEvent(NotificationEvents.REMINDER_HOUR_CHANGED)
 	async handleReminderHourChanged(
-		payload: ReminderHourChangedEventPayload,
+		payload: ReminderHourChangedJobData,
 	): Promise<void> {
 		try {
 			const now = dayjs().tz(payload.timezone);

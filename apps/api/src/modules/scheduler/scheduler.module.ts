@@ -7,9 +7,9 @@ import { NotificationModule } from "../notification/notification.module";
 
 import { TimezoneAwareReminderJob } from "./jobs/timezone-aware-reminder.job";
 import {
-	TIMEZONE_REMINDER_QUEUE,
 	TimezoneReminderProcessor,
-} from "./processors/timezone-reminder.processor";
+	TimezoneReminderQueueModule,
+} from "./queue";
 import {
 	BullMQReminderSchedulerAdapter,
 	REMINDER_SCHEDULER,
@@ -26,10 +26,8 @@ import {
  */
 @Module({
 	imports: [
-		BullModule.registerQueue(
-			{ name: TODO_REMINDER_QUEUE },
-			{ name: TIMEZONE_REMINDER_QUEUE },
-		),
+		BullModule.registerQueue({ name: TODO_REMINDER_QUEUE }),
+		TimezoneReminderQueueModule,
 		DatabaseModule,
 		NotificationModule,
 	],

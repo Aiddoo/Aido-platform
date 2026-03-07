@@ -5,12 +5,11 @@
  * - Lock 획득/해제
  * - 이벤트 타입별 DB 트랜잭션 처리
  * - 멱등성 가드
- * - 캐시 무효화 + 이벤트 발행
+ * - 캐시 무효화 + 큐 잡 등록
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
@@ -19,6 +18,8 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { NotificationQueueService } from "@/modules/notification/queue";
 import { SubscriptionRepository } from "./subscription.repository";
 import { SubscriptionService } from "./subscription.service";
 
@@ -27,7 +28,8 @@ describe("SubscriptionService", () => {
 	let subscriptionRepository: Mocked<SubscriptionRepository>;
 	let database: Mocked<DatabaseService>;
 	let cacheService: Mocked<CacheService>;
-	let eventEmitter: Mocked<EventEmitter2>;
+	let adminNotificationQueueService: Mocked<AdminNotificationQueueService>;
+	let notificationQueueService: Mocked<NotificationQueueService>;
 	let lockProvider: Mocked<ILockProvider>;
 
 	const mockRelease = jest.fn();
@@ -57,7 +59,8 @@ describe("SubscriptionService", () => {
 		subscriptionRepository = unitRef.get(SubscriptionRepository);
 		database = unitRef.get(DatabaseService);
 		cacheService = unitRef.get(CacheService);
-		eventEmitter = unitRef.get(EventEmitter2);
+		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
+		notificationQueueService = unitRef.get(NotificationQueueService);
 		lockProvider = unitRef.get(LOCK_PROVIDER);
 
 		// 기본 mock 설정
@@ -197,11 +200,13 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then — DB 미변경, 캐시 미무효화, 이벤트 미발행
+			// Then — DB 미변경, 캐시 미무효화, 큐 잡 미등록
 			expect(subscriptionRepository.create).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 		});
 
 		it("purchased_at_ms가 누락되면 에러를 던진다", async () => {
@@ -248,7 +253,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("subscription.purchased 이벤트를 발행한다", async () => {
+		it("구독 이벤트 큐 잡을 등록한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId("user-123")
@@ -258,8 +263,9 @@ describe("SubscriptionService", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.purchased",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					email: "test@example.com",
@@ -355,11 +361,13 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then — DB 미변경, 캐시 미무효화, 이벤트 미발행
+			// Then — DB 미변경, 캐시 미무효화, 큐 잡 미등록
 			expect(subscriptionRepository.updateStatus).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 		});
 	});
 
@@ -489,7 +497,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("환불 시 subscription.refunded 이벤트를 발행한다", async () => {
+		it("환불 시 구독 이벤트 큐 잡을 등록한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.refundCancellation()
 				.withAppUserId("user-123")
@@ -499,8 +507,9 @@ describe("SubscriptionService", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.refunded",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					eventType: "CANCELLATION",
@@ -538,9 +547,10 @@ describe("SubscriptionService", () => {
 				}),
 				expect.anything(),
 			);
-			// Then — subscription.cancelled 이벤트 (not refunded)
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.cancelled",
+			// Then — 구독 이벤트 큐 잡 등록 (취소)
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					cancelReason: "UNSUBSCRIBE",
@@ -584,7 +594,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("subscription.purchased 이벤트를 발행한다", async () => {
+		it("구독 이벤트 큐 잡을 등록한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.nonRenewingPurchase()
 				.withAppUserId("user-123")
@@ -594,8 +604,9 @@ describe("SubscriptionService", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.purchased",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					eventType: "NON_RENEWING_PURCHASE",
@@ -639,7 +650,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("subscription.extended 이벤트를 발행한다", async () => {
+		it("구독 이벤트 큐 잡을 등록한다", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.subscriptionExtended()
 				.withAppUserId("user-123")
@@ -649,8 +660,9 @@ describe("SubscriptionService", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.extended",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					eventType: "SUBSCRIPTION_EXTENDED",
@@ -734,7 +746,7 @@ describe("SubscriptionService", () => {
 	// =========================================================================
 
 	describe("BILLING_ISSUE", () => {
-		it("DB 변경 없이 이벤트를 발행한다", async () => {
+		it("DB 변경 없이 큐 잡을 등록한다 (Discord 알림 + 푸시 알림)", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.billingIssue()
 				.withAppUserId("user-123")
@@ -746,13 +758,17 @@ describe("SubscriptionService", () => {
 			// Then
 			expect(database.$transaction).not.toHaveBeenCalled();
 			expect(subscriptionRepository.updateStatus).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.billing_issue",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					email: "test@example.com",
 					eventType: "BILLING_ISSUE",
 				}),
+			);
+			expect(notificationQueueService.enqueueBillingIssue).toHaveBeenCalledWith(
+				{ userId: "user-123" },
 			);
 		});
 	});
@@ -823,7 +839,9 @@ describe("SubscriptionService", () => {
 			// Then
 			expect(database.$transaction).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 		});
 
 		it("SUBSCRIBER_ALIAS 이벤트는 로그만 남긴다", async () => {
@@ -838,7 +856,9 @@ describe("SubscriptionService", () => {
 			// Then
 			expect(database.$transaction).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 		});
 
 		it("TRANSFER 이벤트는 updateUserSubscriptionStatus를 호출하여 revenueCatUserId를 갱신한다", async () => {
@@ -888,8 +908,9 @@ describe("SubscriptionService", () => {
 			expect(cacheService.invalidateUserProfile).toHaveBeenCalledWith(
 				"user-123",
 			);
-			expect(eventEmitter.emit).toHaveBeenCalledWith(
-				"subscription.transferred",
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
 					email: "test@example.com",
@@ -947,10 +968,12 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then — DB 변경, 캐시 무효화, 이벤트 발행 모두 없음
+			// Then — DB 변경, 캐시 무효화, 큐 잡 등록 모두 없음
 			expect(database.$transaction).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 		});
 	});
 
@@ -992,10 +1015,12 @@ describe("SubscriptionService", () => {
 			// When
 			await service.handleWebhookEvent(payload);
 
-			// Then — DB 트랜잭션, 캐시 무효화, 이벤트 발행 모두 없음
+			// Then — DB 트랜잭션, 캐시 무효화, 큐 잡 등록 모두 없음
 			expect(database.$transaction).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
-			expect(eventEmitter.emit).not.toHaveBeenCalled();
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).not.toHaveBeenCalled();
 			// Lock은 여전히 해제됨
 			expect(mockRelease).toHaveBeenCalledTimes(1);
 		});

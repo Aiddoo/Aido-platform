@@ -2,7 +2,6 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
-import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
 import type Redis from "ioredis";
@@ -71,15 +70,6 @@ import { AppService } from "./app.service";
 				},
 			}),
 		}),
-		EventEmitterModule.forRoot({
-			// 와일드카드 패턴 지원 (e.g., follow.*)
-			wildcard: true,
-			// 구분자
-			delimiter: ".",
-			// 오류 시 프로세스 종료 방지
-			ignoreErrors: false,
-		}),
-
 		// 4. Global Modules
 		EntitlementModule,
 		LoggerModule.forRootAsync(),

@@ -235,7 +235,7 @@ describe("PushDeliveryService", () => {
 			userPreferenceRepository.findByUserId.mockResolvedValue(null);
 
 			// When
-			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
+			const result = await service.shouldSendPush("user-1", "FOLLOW_NEW");
 
 			// Then
 			expect(result).toBe(false);
@@ -248,7 +248,7 @@ describe("PushDeliveryService", () => {
 			);
 
 			// When
-			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
+			const result = await service.shouldSendPush("user-1", "FOLLOW_NEW");
 
 			// Then
 			expect(result).toBe(false);
@@ -280,23 +280,7 @@ describe("PushDeliveryService", () => {
 			);
 
 			// When
-			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
-
-			// Then
-			expect(result).toBe(true);
-		});
-
-		it("야간이지만 DAILY_COMPLETE는 nightPushEnabled=false여도 발송한다", async () => {
-			// Given
-			userPreferenceRepository.findByUserId.mockResolvedValue(
-				UserPreferenceBuilder.create("user-1")
-					.withTimezone("Asia/Seoul")
-					.build(),
-			);
-			mockedIsNightTime.mockReturnValue(true);
-
-			// When
-			const result = await service.shouldSendPush("user-1", "DAILY_COMPLETE");
+			const result = await service.shouldSendPush("user-1", "FOLLOW_NEW");
 
 			// Then
 			expect(result).toBe(true);
@@ -383,7 +367,7 @@ describe("PushDeliveryService", () => {
 			service.fireAndForgetPush(
 				{
 					userId: "user-1",
-					type: "DAILY_COMPLETE",
+					type: "FOLLOW_NEW",
 					title: "축하",
 					body: "완료!",
 				},
@@ -411,7 +395,7 @@ describe("PushDeliveryService", () => {
 			service.fireAndForgetPush(
 				{
 					userId: "user-1",
-					type: "DAILY_COMPLETE",
+					type: "FOLLOW_NEW",
 					title: "축하",
 					body: "완료!",
 				},
@@ -439,7 +423,7 @@ describe("PushDeliveryService", () => {
 			service.fireAndForgetPush(
 				{
 					userId: "user-1",
-					type: "DAILY_COMPLETE",
+					type: "FOLLOW_NEW",
 					title: "축하",
 					body: "완료!",
 				},
@@ -601,7 +585,7 @@ describe("PushDeliveryService", () => {
 			service.fireAndForgetPush(
 				{
 					userId: "user-1",
-					type: "DAILY_COMPLETE",
+					type: "FOLLOW_NEW",
 					title: "t",
 					body: "b",
 				},

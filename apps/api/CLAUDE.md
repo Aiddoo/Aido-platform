@@ -1,6 +1,6 @@
 # Aido API
 
-NestJS 기반 백엔드 API. 3계층 아키텍처 + Event-Driven 알림.
+NestJS 기반 백엔드 API. 3계층 아키텍처 + BullMQ 큐 기반 알림.
 
 ---
 
@@ -12,7 +12,7 @@ NestJS 기반 백엔드 API. 3계층 아키텍처 + Event-Driven 알림.
 | ORM | Prisma 7 |
 | 데이터베이스 | PostgreSQL |
 | 검증 | Zod 4.3 + nestjs-zod |
-| 이벤트 | EventEmitter2 |
+| 큐 | BullMQ (Redis) |
 | 캐시 | Memory / Redis (Strategy) |
 | 암호화 | AES-256-GCM |
 | 문서화 | Swagger (OpenAPI) |
@@ -25,7 +25,7 @@ NestJS 기반 백엔드 API. 3계층 아키텍처 + Event-Driven 알림.
 ```
 Request → Guard → Controller → Service → Repository → DB
                                    ↓
-                            EventEmitter2 → Listener → PushProvider
+                            QueueService → BullMQ → Processor → PushProvider
 ```
 
 ---
@@ -34,7 +34,7 @@ Request → Guard → Controller → Service → Repository → DB
 
 - **예외**: `BusinessExceptions.xxx()` 팩토리 메서드 사용 (`new HttpException()` 금지)
 - **트랜잭션**: `database.$transaction(tx => ...)`, Repository 메서드는 `tx?` 파라미터 필수
-- **이벤트**: 알림/부수효과는 `eventEmitter.emit()` + `satisfies` 타입 체크
+- **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장
 - **중복 방지**: 크론 작업은 DB 기반 (in-memory Set/Map 금지)
 - **응답 래핑**: 자동 (`ResponseTransformInterceptor` / `GlobalExceptionFilter`)

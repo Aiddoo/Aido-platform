@@ -1,15 +1,9 @@
 /**
- * 관리자 알림 이벤트 정의
+ * 관리자 알림 이벤트 페이로드 정의
  *
- * 관리자/운영용 외부 서비스 알림 이벤트.
- * 사용자 알림(NotificationEvents)과 분리하여 관심사를 명확히 합니다.
- *
- * @see apps/api/src/modules/notification/events/notification.events.ts
+ * 회원가입 등 관리자 알림에 필요한 페이로드 타입을 정의합니다.
+ * BullMQ AdminNotificationQueue에서 사용됩니다.
  */
-
-export const AdminNotificationEvents = {
-	USER_REGISTERED: "user.registered",
-} as const;
 
 /**
  * 회원가입 이벤트 페이로드

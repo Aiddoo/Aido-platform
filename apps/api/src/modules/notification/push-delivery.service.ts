@@ -44,11 +44,9 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
  *
  * 사용자가 직접 트리거한 액션의 결과 알림은 야간에도 발송한다:
- * - DAILY_COMPLETE: 밤늦게 할일 완료 시 즉각적인 축하 피드백
  * - NUDGE_RECEIVED: 긴급성 있는 실시간 소셜 인터랙션
  */
 const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-	"DAILY_COMPLETE",
 	"NUDGE_RECEIVED",
 ]);
 

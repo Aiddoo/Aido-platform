@@ -24,6 +24,7 @@ import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { LOCK_PROVIDER } from "@/common/lock/interfaces/lock.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationRepository } from "@/modules/notification/notification.repository";
@@ -124,6 +125,15 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: PUSH_PROVIDER,
 					useValue: mockPushProvider,
+				},
+				{
+					provide: LOCK_PROVIDER,
+					useValue: {
+						acquire: jest
+							.fn()
+							.mockResolvedValue(jest.fn().mockResolvedValue(undefined)),
+						isLocked: jest.fn().mockResolvedValue(false),
+					},
 				},
 			],
 		}).compile();

@@ -3,7 +3,6 @@ import type {
 	RevenueCatWebhookPayload,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import { CacheService } from "@/common/cache/cache.service";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
@@ -12,13 +11,10 @@ import { toISOString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import { DatabaseService } from "@/database/database.service";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { NotificationQueueService } from "@/modules/notification/queue";
 
-import {
-	REVENUECAT_EVENT_TO_INTERNAL,
-	type SubscriptionEventName,
-	type SubscriptionEventPayload,
-	SubscriptionEvents,
-} from "./events/subscription.events";
+import type { SubscriptionEventPayload } from "./events/subscription.events";
 import { SubscriptionRepository } from "./subscription.repository";
 
 /**
@@ -79,7 +75,8 @@ export class SubscriptionService {
 		private readonly subscriptionRepository: SubscriptionRepository,
 		private readonly database: DatabaseService,
 		private readonly cacheService: CacheService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly adminNotificationQueueService: AdminNotificationQueueService,
+		private readonly notificationQueueService: NotificationQueueService,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
 
@@ -151,25 +148,28 @@ export class SubscriptionService {
 
 			const eventPayload = await handler(user.id, user.email, event);
 
-			// 5. 캐시 무효화 + 이벤트 발행 (DB 변경이 있었을 때만)
+			// 5. 캐시 무효화 + 큐 잡 등록 (DB 변경이 있었을 때만)
 			if (eventPayload) {
 				await Promise.all([
 					this.cacheService.invalidateSubscription(user.id),
 					this.cacheService.invalidateUserProfile(user.id),
 				]);
 
-				const emitEventName =
-					eventType === "CANCELLATION" &&
-					eventPayload.cancelReason === "CUSTOMER_SUPPORT"
-						? SubscriptionEvents.REFUNDED
-						: this.#getEmitEventName(eventType);
+				// Discord 관리자 알림 (모든 구독 이벤트)
+				this.adminNotificationQueueService.enqueueSubscriptionEvent(
+					eventPayload,
+				);
 
-				if (emitEventName) {
-					this.eventEmitter.emit(emitEventName, eventPayload);
-					this.#logger.log(
-						`Event emitted: ${emitEventName} for userId=${user.id}`,
-					);
+				// 결제 문제 시 사용자 푸시 알림
+				if (eventType === "BILLING_ISSUE") {
+					this.notificationQueueService.enqueueBillingIssue({
+						userId: user.id,
+					});
 				}
+
+				this.#logger.log(
+					`Subscription event processed: ${eventType} for userId=${user.id}`,
+				);
 			}
 		} finally {
 			// 6. Lock 해제
@@ -735,14 +735,5 @@ export class SubscriptionService {
 			});
 		}
 		return transactionId;
-	}
-
-	/**
-	 * 이벤트 타입에 대응하는 내부 이벤트명 반환
-	 */
-	#getEmitEventName(
-		eventType: RevenueCatEventType,
-	): SubscriptionEventName | null {
-		return REVENUECAT_EVENT_TO_INTERNAL[eventType] ?? null;
 	}
 }

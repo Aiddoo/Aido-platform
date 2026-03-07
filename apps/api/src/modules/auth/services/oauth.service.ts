@@ -1,6 +1,5 @@
 import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { subtractDays } from "@/common/date/utils/arithmetic";
@@ -17,10 +16,9 @@ import {
 	type OAuthState,
 	Prisma,
 } from "@/generated/prisma/client";
-import {
-	AdminNotificationEvents,
-	type UserRegisteredEventPayload,
-} from "../../admin-notification/events/admin-notification.events";
+import type { UserRegisteredEventPayload } from "@/modules/admin-notification/events/admin-notification.events";
+import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -78,7 +76,7 @@ export class OAuthService {
 		private readonly tokenVerifier: OAuthTokenVerifierService,
 		private readonly configService: TypedConfigService,
 		private readonly encryptionService: EncryptionService,
-		private readonly eventEmitter: EventEmitter2,
+		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 		private readonly cacheService: CacheService,
 	) {
 		this.#providers = new Map<AccountProvider, IOAuthProviderStrategy>([
@@ -737,7 +735,7 @@ export class OAuthService {
 
 			this.#logger.log(`New ${provider} user registered: ${userId}`);
 
-			this.eventEmitter.emit(AdminNotificationEvents.USER_REGISTERED, {
+			this.adminNotificationQueueService.enqueueUserRegistered({
 				userId,
 				email: effectiveEmail,
 				provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
@@ -814,7 +812,15 @@ export class OAuthService {
 				},
 			});
 
-			// 기본 카테고리는 user.registered 이벤트를 통해 TodoCategoryModule에서 생성
+			// 기본 카테고리 생성 (온보딩 필수 데이터 — 트랜잭션 내 동기 처리)
+			await tx.todoCategory.createMany({
+				data: DEFAULT_CATEGORIES.map((category) => ({
+					userId: user.id,
+					name: category.name,
+					color: category.color,
+					sortOrder: category.sortOrder,
+				})),
+			});
 
 			// 보안 로그
 			await this.securityLogRepository.create(
