@@ -256,6 +256,108 @@ describe("StreakService", () => {
 	});
 
 	// ============================================
+	// Static — computeEffectiveStreak 순수 함수
+	// ============================================
+
+	describe("computeEffectiveStreak", () => {
+		it("전체 완료 + 이미 DB 반영(오늘) → currentStreak 유지", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 5,
+				lastCompletedDate: today,
+				todosCompleted: 3,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 5, isAtRisk: false });
+		});
+
+		it("전체 완료 + 어제 마지막 완료(미반영) → currentStreak + 1", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 5,
+				lastCompletedDate: yesterday,
+				todosCompleted: 3,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 6, isAtRisk: false });
+		});
+
+		it("전체 완료 + 연속 끊김(2일 전) → streak 1로 리셋", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 10,
+				lastCompletedDate: new Date("2026-03-05T00:00:00.000Z"),
+				todosCompleted: 3,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 1, isAtRisk: false });
+		});
+
+		it("전체 완료 + lastCompletedDate null → streak 1", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 0,
+				lastCompletedDate: null,
+				todosCompleted: 3,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 1, isAtRisk: false });
+		});
+
+		it("미완료 + 2일 이상 연속 + 어제 완료 → isAtRisk true", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 5,
+				lastCompletedDate: yesterday,
+				todosCompleted: 2,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 5, isAtRisk: true });
+		});
+
+		it("미완료 + streak 1 → isAtRisk false (2일 미만)", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 1,
+				lastCompletedDate: yesterday,
+				todosCompleted: 2,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 1, isAtRisk: false });
+		});
+
+		it("미완료 + lastCompletedDate null → isAtRisk false", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 0,
+				lastCompletedDate: null,
+				todosCompleted: 0,
+				todosTotal: 3,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 0, isAtRisk: false });
+		});
+
+		it("투두 0개 → streak 유지, isAtRisk false", () => {
+			const result = StreakService.computeEffectiveStreak({
+				currentStreak: 3,
+				lastCompletedDate: yesterday,
+				todosCompleted: 0,
+				todosTotal: 0,
+				today,
+			});
+
+			expect(result).toEqual({ streak: 3, isAtRisk: false });
+		});
+	});
+
+	// ============================================
 	// 에러 처리
 	// ============================================
 

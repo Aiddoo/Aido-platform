@@ -8,6 +8,19 @@ import { DatabaseService } from "@/database";
 
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface EffectiveStreakResult {
+	streak: number;
+	isAtRisk: boolean;
+}
+
+// =============================================================================
+// Service
+// =============================================================================
+
 @Injectable()
 export class StreakService {
 	readonly #logger = new Logger(StreakService.name);
@@ -16,6 +29,59 @@ export class StreakService {
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly database: DatabaseService,
 	) {}
+
+	// =========================================================================
+	// Static — 순수 함수 (DB 접근 없음)
+	// =========================================================================
+
+	/**
+	 * 저녁 리마인더 sweep용 — 입력값만으로 effective streak 계산
+	 *
+	 * StreakService.#onAllCompleted()와 동일한 로직을 DB 접근 없이 수행.
+	 * 호출자가 이미 조회한 데이터를 전달하면, 추가 쿼리 없이 정확한 streak 반환.
+	 */
+	static computeEffectiveStreak(params: {
+		currentStreak: number;
+		lastCompletedDate: Date | null;
+		todosCompleted: number;
+		todosTotal: number;
+		today: Date;
+	}): EffectiveStreakResult {
+		const {
+			currentStreak,
+			lastCompletedDate,
+			todosCompleted,
+			todosTotal,
+			today,
+		} = params;
+		const yesterday = subtractDays(1, today);
+
+		// 전체 완료 시: streak 갱신 여부 판별
+		if (todosCompleted === todosTotal && todosTotal > 0) {
+			// StreakService에서 이미 DB 반영된 경우
+			if (lastCompletedDate && isSameDay(lastCompletedDate, today)) {
+				return { streak: currentStreak, isAtRisk: false };
+			}
+			// 아직 미반영: 어제 완료 → 연속, 아니면 새 시작
+			if (lastCompletedDate && isSameDay(lastCompletedDate, yesterday)) {
+				return { streak: currentStreak + 1, isAtRisk: false };
+			}
+			return { streak: 1, isAtRisk: false };
+		}
+
+		// 미완료 시: 스트릭 위기 판별
+		const isAtRisk =
+			todosCompleted < todosTotal &&
+			currentStreak >= 2 &&
+			!!lastCompletedDate &&
+			isSameDay(lastCompletedDate, yesterday);
+
+		return { streak: currentStreak, isAtRisk };
+	}
+
+	// =========================================================================
+	// Instance — DB 접근 메서드
+	// =========================================================================
 
 	/**
 	 * 투두 완료 상태 변경 시 스트릭 갱신

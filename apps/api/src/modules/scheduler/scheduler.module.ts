@@ -4,7 +4,15 @@ import { Module } from "@nestjs/common";
 import { DatabaseModule } from "@/database/database.module";
 
 import { NotificationModule } from "../notification/notification.module";
-
+import {
+	EveningReminderStrategy,
+	MorningReminderStrategy,
+	NudgeSuggestStrategy,
+	SocialDigestStrategy,
+	WeeklyAchievementStrategy,
+	WeeklyReportStrategy,
+	WinbackStrategy,
+} from "./jobs/strategies";
 import { TimezoneAwareReminderJob } from "./jobs/timezone-aware-reminder.job";
 import {
 	TimezoneReminderProcessor,
@@ -35,6 +43,13 @@ import {
 		TimezoneAwareReminderJob,
 		TimezoneReminderProcessor,
 		TodoReminderProcessor,
+		MorningReminderStrategy,
+		EveningReminderStrategy,
+		WeeklyReportStrategy,
+		WeeklyAchievementStrategy,
+		WinbackStrategy,
+		NudgeSuggestStrategy,
+		SocialDigestStrategy,
 		{
 			provide: REMINDER_SCHEDULER,
 			useClass: BullMQReminderSchedulerAdapter,
