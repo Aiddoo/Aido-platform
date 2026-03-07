@@ -17,6 +17,7 @@ import {
 	PushTokenBuilder,
 	UserPreferenceBuilder,
 } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
@@ -32,6 +33,7 @@ describe("NotificationService", () => {
 	let notificationRepo: Mocked<NotificationRepository>;
 	let paginationService: Mocked<PaginationService>;
 	let pushDeliveryService: Mocked<PushDeliveryService>;
+	let cacheService: Mocked<CacheService>;
 	let lockProvider: Mocked<ILockProvider>;
 
 	// 테스트 데이터
@@ -58,10 +60,16 @@ describe("NotificationService", () => {
 		notificationRepo = unitRef.get(NotificationRepository);
 		paginationService = unitRef.get(PaginationService);
 		pushDeliveryService = unitRef.get(PushDeliveryService);
+		cacheService = unitRef.get(CacheService);
 		lockProvider = unitRef.get(LOCK_PROVIDER);
 
 		// 기본: Lock 획득 성공 (release 함수 반환)
 		lockProvider.acquire.mockResolvedValue(jest.fn());
+
+		// CacheService.wrapUnreadCount — factory 실행 패스스루
+		cacheService.wrapUnreadCount.mockImplementation((_userId, factory) =>
+			factory(),
+		);
 
 		// PaginationService 기본 동작 설정
 		paginationService.normalizeCursorPagination.mockReturnValue({
@@ -518,15 +526,18 @@ describe("NotificationService", () => {
 	});
 
 	describe("getUnreadCount", () => {
-		it("읽지 않은 알림 수를 반환해야 한다", async () => {
+		it("캐시를 통해 읽지 않은 알림 수를 반환해야 한다", async () => {
 			// Given - 읽지 않은 알림 5개 존재
 			notificationRepo.countUnread.mockResolvedValue(5);
 
 			// When - 읽지 않은 알림 수 조회
 			const result = await service.getUnreadCount(mockUserId);
 
-			// Then - 개수 반환 확인
-			expect(notificationRepo.countUnread).toHaveBeenCalledWith(mockUserId);
+			// Then - CacheService.wrapUnreadCount를 통해 조회
+			expect(cacheService.wrapUnreadCount).toHaveBeenCalledWith(
+				mockUserId,
+				expect.any(Function),
+			);
 			expect(result).toBe(5);
 		});
 	});

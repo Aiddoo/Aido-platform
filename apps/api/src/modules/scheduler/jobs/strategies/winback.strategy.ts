@@ -52,11 +52,13 @@ export class WinbackStrategy {
 			return { sent: 0 };
 		}
 
-		// 단계별 중복 방지: 모든 WINBACK 이력을 배치 조회
+		// 단계별 중복 방지: 최근 90일 WINBACK 이력을 배치 조회
+		// (stage는 day3/day7/day14 뿐이므로 90일이면 충분)
 		const existingWinbacks = await this.database.notification.findMany({
 			where: {
 				userId: { in: filteredUsers.map((u) => u.id) },
 				type: "WINBACK",
+				createdAt: { gte: dayjs.utc(today).subtract(90, "day").toDate() },
 			},
 			select: { userId: true, metadata: true },
 		});
