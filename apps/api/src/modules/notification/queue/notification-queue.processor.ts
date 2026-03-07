@@ -18,7 +18,6 @@ import {
 	type NotificationJobData,
 	NotificationJobName,
 	type NudgeSentJobData,
-	type TodoAllCompletedJobData,
 } from "./notification-queue.constants";
 
 // =============================================================================
@@ -34,8 +33,9 @@ import {
  * - nudge-sent: 콕 찌르기 수신 알림
  * - cheer-sent: 응원 수신 알림
  * - billing-issue: 결제 문제 알림 (재시도 대상)
+ * - friend-completed: 친구 할일 전체 완료 알림
  *
- * 소셜 알림(follow, nudge, cheer)은 실패 시 로깅만 수행합니다.
+ * 소셜 알림(follow, nudge, cheer, friend-completed)은 실패 시 로깅만 수행합니다.
  * 결제 알림(billing-issue)은 실패 시 re-throw하여 BullMQ 재시도를 활용합니다.
  *
  */
@@ -84,9 +84,6 @@ export class NotificationQueueProcessor extends WorkerHost {
 				break;
 			case NotificationJobName.BILLING_ISSUE:
 				await this.#handleBillingIssue(job.data as BillingIssueJobData);
-				break;
-			case NotificationJobName.TODO_ALL_COMPLETED:
-				await this.#handleTodoAllCompleted(job.data as TodoAllCompletedJobData);
 				break;
 			case NotificationJobName.FRIEND_COMPLETED:
 				await this.#handleFriendCompleted(job.data as FriendCompletedJobData);
@@ -226,64 +223,6 @@ export class NotificationQueueProcessor extends WorkerHost {
 			);
 			// 결제 알림은 재시도 대상 — BullMQ retry 활용
 			throw error;
-		}
-	}
-
-	async #handleTodoAllCompleted(data: TodoAllCompletedJobData): Promise<void> {
-		try {
-			const today = todayInTimezone(data.timezone);
-
-			await this.database.$transaction(async (tx) => {
-				const alreadySent = await this.notificationService.existsNotification(
-					{
-						userId: data.userId,
-						type: "DAILY_COMPLETE",
-						notificationDate: today,
-					},
-					tx,
-				);
-
-				if (alreadySent) {
-					this.#logger.debug(
-						`Daily completion already sent today: userId=${data.userId}`,
-					);
-					return;
-				}
-
-				const message = NotificationMessageBuilder.dailyComplete(
-					data.completedCount,
-				);
-
-				await this.notificationService.createAndSend(
-					{
-						userId: data.userId,
-						type: "DAILY_COMPLETE",
-						title: message.title,
-						body: message.body,
-						notificationDate: today,
-					},
-					tx,
-				);
-
-				this.#logger.log(
-					`Daily completion notification sent to user: ${data.userId}`,
-				);
-			});
-		} catch (error) {
-			if (
-				error instanceof Prisma.PrismaClientKnownRequestError &&
-				error.code === "P2002"
-			) {
-				this.#logger.debug(
-					`Daily completion duplicate prevented by constraint: userId=${data.userId}`,
-				);
-				return;
-			}
-
-			this.#logger.error(
-				`Failed to send daily completion notification: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
 		}
 	}
 

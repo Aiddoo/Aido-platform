@@ -1,14 +1,17 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
-
+import { DatabaseService } from "@/database/database.service";
+import { Prisma } from "@/generated/prisma/client";
 import { NotificationService } from "../notification.service";
 import { NotificationMessageBuilder } from "../templates/notification-templates";
+
 import {
 	type BillingIssueJobData,
 	type CheerSentJobData,
 	type FollowMutualJobData,
 	type FollowNewJobData,
+	type FriendCompletedJobData,
 	type NotificationJobData,
 	NotificationJobName,
 	type NudgeSentJobData,
@@ -33,6 +36,7 @@ function createMockJob<T extends NotificationJobData>(
 describe("NotificationQueueProcessor", () => {
 	let processor: NotificationQueueProcessor;
 	let notificationService: Mocked<NotificationService>;
+	let database: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -41,6 +45,7 @@ describe("NotificationQueueProcessor", () => {
 
 		processor = unit;
 		notificationService = unitRef.get(NotificationService);
+		database = unitRef.get(DatabaseService);
 	});
 
 	// =========================================================================
@@ -324,6 +329,154 @@ describe("NotificationQueueProcessor", () => {
 
 			// When & Then — 에러 전파됨 (재시도 활용)
 			await expect(processor.process(job)).rejects.toThrow("DB error");
+		});
+	});
+
+	// =========================================================================
+	// friend-completed
+	// =========================================================================
+
+	describe("friend-completed", () => {
+		const friendCompletedData: FriendCompletedJobData = {
+			friendId: "friend-1",
+			friendName: "완료 친구",
+			notifyUserIds: ["user-1", "user-2"],
+			timezone: "Asia/Seoul",
+		};
+
+		it("대상 유저들에게 FRIEND_COMPLETED 알림을 배치 생성한다", async () => {
+			// Given
+			const job = createMockJob(
+				NotificationJobName.FRIEND_COMPLETED,
+				friendCompletedData,
+			);
+			database.$transaction.mockImplementation((fn) => fn(database as never));
+			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
+				new Set(),
+			);
+			notificationService.createAndSendBatch.mockResolvedValue({ count: 2 });
+
+			const message = NotificationMessageBuilder.friendCompleted("완료 친구");
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(
+				notificationService.findAlreadyNotifiedUserIds,
+			).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userIds: ["user-1", "user-2"],
+					type: "FRIEND_COMPLETED",
+					friendId: "friend-1",
+				}),
+				database,
+			);
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
+				expect.arrayContaining([
+					expect.objectContaining({
+						userId: "user-1",
+						type: "FRIEND_COMPLETED",
+						title: message.title,
+						body: message.body,
+						friendId: "friend-1",
+					}),
+					expect.objectContaining({
+						userId: "user-2",
+						type: "FRIEND_COMPLETED",
+					}),
+				]),
+				database,
+			);
+		});
+
+		it("이미 알림 받은 유저는 필터링한다", async () => {
+			// Given
+			const job = createMockJob(
+				NotificationJobName.FRIEND_COMPLETED,
+				friendCompletedData,
+			);
+			database.$transaction.mockImplementation((fn) => fn(database as never));
+			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
+				new Set(["user-1"]),
+			);
+			notificationService.createAndSendBatch.mockResolvedValue({ count: 1 });
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith(
+				[
+					expect.objectContaining({
+						userId: "user-2",
+						type: "FRIEND_COMPLETED",
+					}),
+				],
+				database,
+			);
+		});
+
+		it("전원 이미 받은 경우 생성하지 않는다", async () => {
+			// Given
+			const job = createMockJob(
+				NotificationJobName.FRIEND_COMPLETED,
+				friendCompletedData,
+			);
+			database.$transaction.mockImplementation((fn) => fn(database as never));
+			notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
+				new Set(["user-1", "user-2"]),
+			);
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		});
+
+		it("빈 notifyUserIds는 즉시 리턴한다", async () => {
+			// Given
+			const data: FriendCompletedJobData = {
+				...friendCompletedData,
+				notifyUserIds: [],
+			};
+			const job = createMockJob(NotificationJobName.FRIEND_COMPLETED, data);
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+		});
+
+		it("P2002 unique constraint 시 graceful skip한다", async () => {
+			// Given
+			const job = createMockJob(
+				NotificationJobName.FRIEND_COMPLETED,
+				friendCompletedData,
+			);
+			const prismaError = new Prisma.PrismaClientKnownRequestError(
+				"Unique constraint failed",
+				{ code: "P2002", clientVersion: "5.0.0" },
+			);
+			database.$transaction.mockRejectedValue(prismaError);
+
+			// When & Then — 에러 전파 없음
+			await expect(processor.process(job)).resolves.not.toThrow();
+		});
+
+		it("일반 에러 시 throw하지 않는다 (소셜 알림)", async () => {
+			// Given
+			const job = createMockJob(
+				NotificationJobName.FRIEND_COMPLETED,
+				friendCompletedData,
+			);
+			database.$transaction.mockRejectedValue(new Error("DB error"));
+
+			// When & Then — 에러 전파 없음
+			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 	});
 

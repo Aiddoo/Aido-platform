@@ -22,7 +22,6 @@ export const NotificationJobName = {
 	NUDGE_SENT: "nudge-sent",
 	CHEER_SENT: "cheer-sent",
 	BILLING_ISSUE: "billing-issue",
-	TODO_ALL_COMPLETED: "todo-all-completed",
 	FRIEND_COMPLETED: "friend-completed",
 } as const;
 
@@ -99,18 +98,6 @@ export interface BillingIssueJobData {
 }
 
 /**
- * 오늘 할일 전체 완료 잡 데이터
- */
-export interface TodoAllCompletedJobData {
-	/** 사용자 ID */
-	userId: string;
-	/** 완료한 할일 수 */
-	completedCount: number;
-	/** 사용자 타임존 (IANA) */
-	timezone: string;
-}
-
-/**
  * 친구 할일 전체 완료 잡 데이터
  */
 export interface FriendCompletedJobData {
@@ -135,7 +122,6 @@ export interface NotificationJobMap {
 	[NotificationJobName.NUDGE_SENT]: NudgeSentJobData;
 	[NotificationJobName.CHEER_SENT]: CheerSentJobData;
 	[NotificationJobName.BILLING_ISSUE]: BillingIssueJobData;
-	[NotificationJobName.TODO_ALL_COMPLETED]: TodoAllCompletedJobData;
 	[NotificationJobName.FRIEND_COMPLETED]: FriendCompletedJobData;
 }
 

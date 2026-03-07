@@ -356,7 +356,7 @@ export class TodoService {
 
 		if (data.completed) {
 			this.reminderScheduler.cancelReminder(id);
-			this.#checkAndEnqueueAllCompletedEvent(userId, tz);
+			this.#checkAndEnqueueFriendCompletedEvent(userId, tz);
 		}
 
 		this.#logger.log(
@@ -367,10 +367,12 @@ export class TodoService {
 	}
 
 	/**
-	 * 오늘 할일 전체 완료 시 알림 큐에 등록
+	 * 오늘 할일 전체 완료 시 친구들에게 알림 큐에 등록
+	 *
+	 * 본인 축하 알림은 저녁 리마인더(EVENING_COMPLETE)에서 처리합니다.
 	 * @private
 	 */
-	async #checkAndEnqueueAllCompletedEvent(
+	async #checkAndEnqueueFriendCompletedEvent(
 		userId: string,
 		tz: string = "UTC",
 	): Promise<void> {
@@ -378,20 +380,7 @@ export class TodoService {
 			const today = todayInTimezone(tz);
 			const stats = await this.todoRepository.getTodayTodoStats(userId, today);
 
-			// 오늘 할일이 있고, 모두 완료된 경우
 			if (stats.total > 0 && stats.total === stats.completed) {
-				this.#logger.log(
-					`User ${userId} completed all ${stats.completed} todos today!`,
-				);
-
-				// 1. 본인에게 전체 완료 알림
-				this.notificationQueueService.enqueueTodoAllCompleted({
-					userId,
-					completedCount: stats.completed,
-					timezone: tz,
-				});
-
-				// 2. 친구들에게 알림
 				const [friendIds, userName] = await Promise.all([
 					this.followService.getMutualFriendIds(userId),
 					this.followService.getUserName(userId),
@@ -411,9 +400,8 @@ export class TodoService {
 				}
 			}
 		} catch (error) {
-			// 이벤트 발행 실패가 메인 로직에 영향을 주지 않도록 로깅만 수행
 			this.#logger.error(
-				`Failed to check/enqueue all completed event: ${error}`,
+				`Failed to check/enqueue friend completed event: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		}

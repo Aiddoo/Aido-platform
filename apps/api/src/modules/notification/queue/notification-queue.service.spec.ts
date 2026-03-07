@@ -225,6 +225,47 @@ describe("NotificationQueueService", () => {
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
+
+	// =========================================================================
+	// enqueueFriendCompleted
+	// =========================================================================
+
+	describe("enqueueFriendCompleted", () => {
+		it("friend-completed 잡을 큐에 등록한다", async () => {
+			// Given
+			const payload = {
+				friendId: "friend-1",
+				friendName: "완료 친구",
+				notifyUserIds: ["user-1", "user-2"],
+				timezone: "Asia/Seoul",
+			};
+
+			// When
+			service.enqueueFriendCompleted(payload);
+			await flushPromises();
+
+			// Then
+			expect(queue.add).toHaveBeenCalledWith(
+				NotificationJobName.FRIEND_COMPLETED,
+				payload,
+			);
+		});
+
+		it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
+			// Given
+			queue.add.mockRejectedValue(new Error("Redis connection error"));
+			const payload = {
+				friendId: "friend-1",
+				friendName: "완료 친구",
+				notifyUserIds: ["user-1"],
+				timezone: "Asia/Seoul",
+			};
+
+			// When & Then
+			service.enqueueFriendCompleted(payload);
+			await expect(flushPromises()).resolves.not.toThrow();
+		});
+	});
 });
 
 // =============================================================================

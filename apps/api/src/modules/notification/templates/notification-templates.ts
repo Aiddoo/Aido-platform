@@ -303,19 +303,6 @@ export class NotificationMessageBuilder {
 	}
 
 	/**
-	 * 일일 완료 알림 메시지 생성
-	 */
-	static dailyComplete(_completedCount: number): {
-		title: string;
-		body: string;
-	} {
-		return {
-			title: SCHEDULER_TEMPLATES.EVENING_COMPLETE.title,
-			body: SCHEDULER_TEMPLATES.EVENING_COMPLETE.body,
-		};
-	}
-
-	/**
 	 * 아침 할일 없음 알림 메시지 생성
 	 */
 	static morningNoTodo(): { title: string; body: string } {
