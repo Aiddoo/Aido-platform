@@ -6,13 +6,9 @@ import type { TimezoneAwareReminderJob } from "../jobs/timezone-aware-reminder.j
 import {
 	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
+	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants";
-
-/** 모든 timezone-reminder 잡 데이터 유니온 */
-export type TimezoneReminderJobData =
-	| Record<string, never>
-	| ReminderHourChangedJobData;
 
 /**
  * 타임존 리마인더 BullMQ Processor

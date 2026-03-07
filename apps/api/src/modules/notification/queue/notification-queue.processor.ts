@@ -2,6 +2,10 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
+import { todayInTimezone } from "@/common/date/utils/timezone";
+import { DatabaseService } from "@/database/database.service";
+import { Prisma } from "@/generated/prisma/client";
+
 import { NotificationService } from "../notification.service";
 import { NotificationMessageBuilder } from "../templates/notification-templates";
 import {
@@ -9,10 +13,12 @@ import {
 	type CheerSentJobData,
 	type FollowMutualJobData,
 	type FollowNewJobData,
+	type FriendCompletedJobData,
 	NOTIFICATION_QUEUE,
 	type NotificationJobData,
 	NotificationJobName,
 	type NudgeSentJobData,
+	type TodoAllCompletedJobData,
 } from "./notification-queue.constants";
 
 // =============================================================================
@@ -37,7 +43,10 @@ import {
 export class NotificationQueueProcessor extends WorkerHost {
 	readonly #logger = new Logger(NotificationQueueProcessor.name);
 
-	constructor(private readonly notificationService: NotificationService) {
+	constructor(
+		private readonly notificationService: NotificationService,
+		private readonly database: DatabaseService,
+	) {
 		super();
 	}
 
@@ -75,6 +84,12 @@ export class NotificationQueueProcessor extends WorkerHost {
 				break;
 			case NotificationJobName.BILLING_ISSUE:
 				await this.#handleBillingIssue(job.data as BillingIssueJobData);
+				break;
+			case NotificationJobName.TODO_ALL_COMPLETED:
+				await this.#handleTodoAllCompleted(job.data as TodoAllCompletedJobData);
+				break;
+			case NotificationJobName.FRIEND_COMPLETED:
+				await this.#handleFriendCompleted(job.data as FriendCompletedJobData);
 				break;
 			default:
 				this.#logger.warn(`Unknown job name: ${job.name}`);
@@ -211,6 +226,133 @@ export class NotificationQueueProcessor extends WorkerHost {
 			);
 			// 결제 알림은 재시도 대상 — BullMQ retry 활용
 			throw error;
+		}
+	}
+
+	async #handleTodoAllCompleted(data: TodoAllCompletedJobData): Promise<void> {
+		try {
+			const today = todayInTimezone(data.timezone);
+
+			await this.database.$transaction(async (tx) => {
+				const alreadySent = await this.notificationService.existsNotification(
+					{
+						userId: data.userId,
+						type: "DAILY_COMPLETE",
+						notificationDate: today,
+					},
+					tx,
+				);
+
+				if (alreadySent) {
+					this.#logger.debug(
+						`Daily completion already sent today: userId=${data.userId}`,
+					);
+					return;
+				}
+
+				const message = NotificationMessageBuilder.dailyComplete(
+					data.completedCount,
+				);
+
+				await this.notificationService.createAndSend(
+					{
+						userId: data.userId,
+						type: "DAILY_COMPLETE",
+						title: message.title,
+						body: message.body,
+						notificationDate: today,
+					},
+					tx,
+				);
+
+				this.#logger.log(
+					`Daily completion notification sent to user: ${data.userId}`,
+				);
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				this.#logger.debug(
+					`Daily completion duplicate prevented by constraint: userId=${data.userId}`,
+				);
+				return;
+			}
+
+			this.#logger.error(
+				`Failed to send daily completion notification: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+	}
+
+	async #handleFriendCompleted(data: FriendCompletedJobData): Promise<void> {
+		if (data.notifyUserIds.length === 0) {
+			this.#logger.debug("No friends to notify for friend completion");
+			return;
+		}
+
+		try {
+			const today = todayInTimezone(data.timezone);
+
+			await this.database.$transaction(async (tx) => {
+				const alreadyNotified =
+					await this.notificationService.findAlreadyNotifiedUserIds(
+						{
+							userIds: data.notifyUserIds,
+							type: "FRIEND_COMPLETED",
+							notificationDate: today,
+							friendId: data.friendId,
+						},
+						tx,
+					);
+
+				const newUserIds = data.notifyUserIds.filter(
+					(id) => !alreadyNotified.has(id),
+				);
+
+				if (newUserIds.length === 0) {
+					this.#logger.debug(
+						`Friend completion already sent today: friendId=${data.friendId}`,
+					);
+					return;
+				}
+
+				const message = NotificationMessageBuilder.friendCompleted(
+					data.friendName,
+				);
+
+				const notifications = newUserIds.map((userId) => ({
+					userId,
+					type: "FRIEND_COMPLETED" as const,
+					title: message.title,
+					body: message.body,
+					friendId: data.friendId,
+					notificationDate: today,
+				}));
+
+				await this.notificationService.createAndSendBatch(notifications, tx);
+
+				this.#logger.log(
+					`Friend completion notifications sent: friendId=${data.friendId}, count=${newUserIds.length}`,
+				);
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				this.#logger.debug(
+					`Friend completion duplicate prevented by constraint: friendId=${data.friendId}`,
+				);
+				return;
+			}
+
+			this.#logger.error(
+				`Failed to send friend completion notifications: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
 		}
 	}
 }

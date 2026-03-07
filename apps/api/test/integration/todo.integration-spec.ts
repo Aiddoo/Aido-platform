@@ -32,6 +32,7 @@ import { PaginationService } from "@/common/pagination/services/pagination.servi
 import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
 import { FollowService } from "@/modules/follow/follow.service";
+import { NotificationQueueService } from "@/modules/notification/queue/notification-queue.service";
 import { REMINDER_SCHEDULER } from "@/modules/scheduler/reminder";
 import { TodoRepository } from "@/modules/todo/todo.repository";
 import { TodoService } from "@/modules/todo/todo.service";
@@ -140,6 +141,18 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 				{
 					provide: REMINDER_SCHEDULER,
 					useValue: mockReminderScheduler,
+				},
+				{
+					provide: NotificationQueueService,
+					useValue: {
+						enqueueTodoAllCompleted: jest.fn(),
+						enqueueFriendCompleted: jest.fn(),
+						enqueueFollowNew: jest.fn(),
+						enqueueFollowMutual: jest.fn(),
+						enqueueNudgeSent: jest.fn(),
+						enqueueCheerSent: jest.fn(),
+						enqueueBillingIssue: jest.fn(),
+					},
 				},
 			],
 		}).compile();

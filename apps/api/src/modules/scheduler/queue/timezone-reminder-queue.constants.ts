@@ -41,3 +41,13 @@ export interface ReminderHourChangedJobData {
 	/** 변경된 저녁 리마인더 분 (undefined면 변경 안 됨) */
 	eveningReminderMinute?: number;
 }
+
+/**
+ * Sweep reminders 잡 데이터 (크론에서 트리거, 데이터 없음)
+ */
+export type SweepRemindersJobData = Record<string, never>;
+
+/** 모든 잡 데이터 유니온 타입 */
+export type TimezoneReminderJobData =
+	| ReminderHourChangedJobData
+	| SweepRemindersJobData;

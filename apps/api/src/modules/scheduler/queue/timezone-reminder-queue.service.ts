@@ -5,6 +5,7 @@ import type { Queue } from "bullmq";
 import {
 	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
+	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants";
 
@@ -24,7 +25,7 @@ export class TimezoneReminderQueueService {
 
 	constructor(
 		@InjectQueue(TIMEZONE_REMINDER_QUEUE)
-		private readonly queue: Queue<ReminderHourChangedJobData>,
+		private readonly queue: Queue<TimezoneReminderJobData>,
 	) {}
 
 	/**

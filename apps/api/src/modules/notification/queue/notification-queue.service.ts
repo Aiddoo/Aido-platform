@@ -7,10 +7,12 @@ import {
 	type CheerSentJobData,
 	type FollowMutualJobData,
 	type FollowNewJobData,
+	type FriendCompletedJobData,
 	NOTIFICATION_QUEUE,
 	type NotificationJobData,
 	NotificationJobName,
 	type NudgeSentJobData,
+	type TodoAllCompletedJobData,
 } from "./notification-queue.constants";
 
 // =============================================================================
@@ -97,6 +99,34 @@ export class NotificationQueueService {
 			(error) => {
 				this.#logger.error(
 					`Failed to enqueue billing-issue: userId=${payload.userId}, ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			},
+		);
+	}
+
+	/**
+	 * 오늘 할일 전체 완료 알림 잡 등록
+	 */
+	enqueueTodoAllCompleted(payload: TodoAllCompletedJobData): void {
+		this.#enqueueAsync(NotificationJobName.TODO_ALL_COMPLETED, payload).catch(
+			(error) => {
+				this.#logger.error(
+					`Failed to enqueue todo-all-completed: userId=${payload.userId}, ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			},
+		);
+	}
+
+	/**
+	 * 친구 할일 전체 완료 알림 잡 등록
+	 */
+	enqueueFriendCompleted(payload: FriendCompletedJobData): void {
+		this.#enqueueAsync(NotificationJobName.FRIEND_COMPLETED, payload).catch(
+			(error) => {
+				this.#logger.error(
+					`Failed to enqueue friend-completed: friendId=${payload.friendId}, ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);
 			},

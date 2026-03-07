@@ -5,12 +5,10 @@ import type { Job } from "bullmq";
 import type { TimezoneAwareReminderJob } from "../jobs/timezone-aware-reminder.job";
 import {
 	type ReminderHourChangedJobData,
+	type TimezoneReminderJobData,
 	TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants";
-import {
-	type TimezoneReminderJobData,
-	TimezoneReminderProcessor,
-} from "./timezone-reminder-queue.processor";
+import { TimezoneReminderProcessor } from "./timezone-reminder-queue.processor";
 
 // =============================================================================
 // Helpers

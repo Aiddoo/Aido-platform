@@ -13,13 +13,17 @@ import type { TransactionClient } from "@/common/database";
 import { isAfter } from "@/common/date/utils/compare";
 import { now } from "@/common/date/utils/core";
 import { parseDateOnly } from "@/common/date/utils/parse";
-import { parseLocalDateTime } from "@/common/date/utils/timezone";
+import {
+	parseLocalDateTime,
+	todayInTimezone,
+} from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";
+import { NotificationQueueService } from "../notification/queue/notification-queue.service";
 import {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
@@ -47,6 +51,7 @@ export class TodoService {
 		private readonly todoCategoryService: TodoCategoryService,
 		private readonly paginationService: PaginationService,
 		private readonly followService: FollowService,
+		private readonly notificationQueueService: NotificationQueueService,
 		private readonly database: DatabaseService,
 		private readonly cacheService: CacheService,
 		@Inject(REMINDER_SCHEDULER)
@@ -334,6 +339,7 @@ export class TodoService {
 		id: number,
 		userId: string,
 		data: { completed: boolean },
+		tz: string = "UTC",
 	): Promise<Todo> {
 		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
@@ -350,6 +356,7 @@ export class TodoService {
 
 		if (data.completed) {
 			this.reminderScheduler.cancelReminder(id);
+			this.#checkAndEnqueueAllCompletedEvent(userId, tz);
 		}
 
 		this.#logger.log(
@@ -357,6 +364,59 @@ export class TodoService {
 		);
 
 		return TodoMapper.toResponse(updatedTodo);
+	}
+
+	/**
+	 * 오늘 할일 전체 완료 시 알림 큐에 등록
+	 * @private
+	 */
+	async #checkAndEnqueueAllCompletedEvent(
+		userId: string,
+		tz: string = "UTC",
+	): Promise<void> {
+		try {
+			const today = todayInTimezone(tz);
+			const stats = await this.todoRepository.getTodayTodoStats(userId, today);
+
+			// 오늘 할일이 있고, 모두 완료된 경우
+			if (stats.total > 0 && stats.total === stats.completed) {
+				this.#logger.log(
+					`User ${userId} completed all ${stats.completed} todos today!`,
+				);
+
+				// 1. 본인에게 전체 완료 알림
+				this.notificationQueueService.enqueueTodoAllCompleted({
+					userId,
+					completedCount: stats.completed,
+					timezone: tz,
+				});
+
+				// 2. 친구들에게 알림
+				const [friendIds, userName] = await Promise.all([
+					this.followService.getMutualFriendIds(userId),
+					this.followService.getUserName(userId),
+				]);
+
+				if (friendIds.length > 0) {
+					this.notificationQueueService.enqueueFriendCompleted({
+						friendId: userId,
+						friendName: userName ?? "친구",
+						notifyUserIds: friendIds,
+						timezone: tz,
+					});
+
+					this.#logger.log(
+						`Friend completed event enqueued for ${friendIds.length} friends`,
+					);
+				}
+			}
+		} catch (error) {
+			// 이벤트 발행 실패가 메인 로직에 영향을 주지 않도록 로깅만 수행
+			this.#logger.error(
+				`Failed to check/enqueue all completed event: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 
 	/**

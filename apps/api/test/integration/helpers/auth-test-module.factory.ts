@@ -140,6 +140,8 @@ export async function createAuthTestModule(
 					enqueueNudgeSent: () => {},
 					enqueueCheerSent: () => {},
 					enqueueBillingIssue: () => {},
+					enqueueTodoAllCompleted: () => {},
+					enqueueFriendCompleted: () => {},
 				},
 			},
 		],
