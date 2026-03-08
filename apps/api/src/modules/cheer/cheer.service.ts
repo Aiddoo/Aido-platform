@@ -22,17 +22,6 @@ import type {
 	SendCheerParams,
 } from "./types";
 
-// =============================================================================
-// Service
-// =============================================================================
-
-/**
- * Cheer 서비스
- *
- * - 응원 보내기 (친구 확인, 일일 제한, 쿨다운 체크)
- * - 받은/보낸 응원 목록 조회
- * - 제한 및 쿨다운 정보 조회
- */
 @Injectable()
 export class CheerService {
 	readonly #logger = new Logger(CheerService.name);
@@ -45,10 +34,6 @@ export class CheerService {
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
-
-	// =========================================================================
-	// 응원 보내기
-	// =========================================================================
 
 	/**
 	 * 응원 보내기
@@ -82,9 +67,8 @@ export class CheerService {
 			throw BusinessExceptions.cheerNotFriend(receiverId);
 		}
 
-		// 트랜잭션으로 감싸서 check-and-create를 atomic하게 수행
 		const cheer = await this.database.$transaction(async (tx) => {
-			// 3. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
+			// 3. 일일 제한 체크
 			const todayStart = startOfDayInTimezone(now(), tz);
 
 			const entitlement = await this.entitlementService.getFeatureLimitInTx(
@@ -106,7 +90,7 @@ export class CheerService {
 				BusinessExceptions.cheerDailyLimitExceeded(limit),
 			);
 
-			// 4. 쿨다운 체크 (트랜잭션 내에서 실시간 조회)
+			// 4. 쿨다운 체크
 			const lastCheer = await tx.cheer.findFirst({
 				where: {
 					senderId,
@@ -130,7 +114,7 @@ export class CheerService {
 				}
 			}
 
-			// 5. Cheer 생성 (트랜잭션 내)
+			// 5. Cheer 생성
 			const newCheer = await tx.cheer.create({
 				data: {
 					sender: { connect: { id: senderId } },
@@ -172,7 +156,6 @@ export class CheerService {
 			`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`,
 		);
 
-		// 6. 알림 큐 등록 (트랜잭션 외부)
 		const senderName = cheer.sender.profile?.name ?? "알 수 없음";
 		this.notificationQueueService.enqueueCheerSent({
 			cheerId: cheer.id,
@@ -184,10 +167,6 @@ export class CheerService {
 
 		return cheer;
 	}
-
-	// =========================================================================
-	// 목록 조회
-	// =========================================================================
 
 	/**
 	 * 받은 응원 목록 조회
@@ -255,10 +234,6 @@ export class CheerService {
 		});
 	}
 
-	// =========================================================================
-	// 제한 및 쿨다운 정보
-	// =========================================================================
-
 	/**
 	 * 일일 응원 제한 정보 조회
 	 */
@@ -299,10 +274,6 @@ export class CheerService {
 		return this.#calculateCooldownInfo(lastCheer?.createdAt);
 	}
 
-	// =========================================================================
-	// 읽음 처리
-	// =========================================================================
-
 	/**
 	 * 응원 읽음 처리
 	 */
@@ -313,12 +284,10 @@ export class CheerService {
 			throw BusinessExceptions.cheerNotFound(cheerId);
 		}
 
-		// 수신자만 읽음 처리 가능
 		if (cheer.receiverId !== userId) {
 			throw BusinessExceptions.cheerNotFound(cheerId);
 		}
 
-		// 이미 읽은 경우 무시
 		if (cheer.readAt) {
 			return;
 		}
@@ -338,10 +307,6 @@ export class CheerService {
 
 		return count;
 	}
-
-	// =========================================================================
-	// Private Methods
-	// =========================================================================
 
 	/**
 	 * 쿨다운 정보 계산

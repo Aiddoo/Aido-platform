@@ -7,10 +7,6 @@ import { NotificationMessageBuilder } from "../../notification/templates/notific
 import { AiSuggestionService } from "../ai-suggestion.service";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 
-// =============================================================================
-// Constants & Types
-// =============================================================================
-
 export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis";
 
 /** 잡 이름 상수 */
@@ -32,10 +28,6 @@ export interface AiSuggestionJobMap {
 }
 
 export type AiSuggestionJobData = AiSuggestionJobMap[keyof AiSuggestionJobMap];
-
-// =============================================================================
-// Processor
-// =============================================================================
 
 /**
  * AI 반복 제안 분석 BullMQ 프로세서

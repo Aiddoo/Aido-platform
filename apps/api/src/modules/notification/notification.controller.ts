@@ -46,38 +46,6 @@ import {
 import { NotificationService } from "./notification.service";
 import { PushDeliveryService } from "./push-delivery.service";
 
-/**
- * Notification API 컨트롤러
- *
- * ## 🔔 알림 관리 API
- *
- * 푸시 알림 토큰 등록, 알림 목록 조회, 읽음 처리를 위한 API입니다.
- *
- * ### 주요 엔드포인트
- * - POST /notifications/token - 푸시 토큰 등록/갱신
- * - GET /notifications - 알림 목록 조회 (커서 페이지네이션)
- * - PATCH /notifications/:id/read - 단일 알림 읽음 처리
- * - PATCH /notifications/read-all - 모든 알림 읽음 처리
- *
- * ### 할일 마감 리마인더 (TODO_REMINDER)
- * - **60분 전**: "{제목}, 1시간 남음"
- * - **10분 전**: "{제목}, 10분 남음"
- * - **즉시**: 60분/10분 전이 모두 지난 경우 즉시 발송
- * - 동일 투두+단계 조합은 24시간 내 중복 발송하지 않습니다.
- *
- * ### 아침/저녁 리마인더
- * - **아침 (MORNING_REMINDER)**: morningReminderHour(기본 8시)에 오늘 할일 요약 발송
- * - **저녁 (EVENING_REMINDER)**: eveningReminderHour(기본 18시)에 완료 현황 발송
- *
- * ### 푸시 발송 필터링
- * 1. `pushEnabled=false` → 푸시 스킵 (앱 내 알림은 정상 기록)
- * 2. 야간(21:00-08:00, 로컬 시간) + `nightPushEnabled=false` → 스킵
- *    - 예외: DAILY_COMPLETE, NUDGE_RECEIVED는 야간에도 항상 발송
- * 3. 마케팅 알림 → `marketingAgreedAt` 없으면 스킵
- * 4. Rate limit → 시간당 최대 15건 초과 시 푸시만 스킵
- *
- * 💡 **클라이언트 구현 가이드**: [NOTIFICATION_GUIDE.md](../../docs/NOTIFICATION_GUIDE.md) 참조
- */
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
 @Controller("notifications")
@@ -88,10 +56,6 @@ export class NotificationController {
 		private readonly notificationService: NotificationService,
 		private readonly pushDeliveryService: PushDeliveryService,
 	) {}
-
-	// ============================================
-	// 푸시 토큰 관리
-	// ============================================
 
 	@Post("token")
 	@ApiDoc({
@@ -177,10 +141,6 @@ export class NotificationController {
 		};
 	}
 
-	// ============================================
-	// 알림 조회
-	// ============================================
-
 	@Get()
 	@ApiDoc({
 		summary: "알림 목록 조회",
@@ -259,10 +219,6 @@ export class NotificationController {
 
 		return { unreadCount };
 	}
-
-	// ============================================
-	// 읽음 처리
-	// ============================================
 
 	@Patch(":id/read")
 	@HttpCode(HttpStatus.OK)

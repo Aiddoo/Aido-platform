@@ -46,19 +46,6 @@ import { SessionService } from "./session.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
-// Re-export types for backward compatibility
-export type {
-	CurrentUserResult,
-	DeleteAccountResult,
-	LoginResult,
-	RefreshTokensResult,
-	RegisterResult,
-	RequestMetadata,
-	SessionInfo,
-	UpdateProfileResult,
-	VerifyEmailResult,
-};
-
 @Injectable()
 export class AuthService {
 	readonly #logger = new Logger(AuthService.name);

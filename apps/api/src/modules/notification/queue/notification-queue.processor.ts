@@ -20,25 +20,6 @@ import {
 	type NudgeSentJobData,
 } from "./notification-queue.constants";
 
-// =============================================================================
-// Processor
-// =============================================================================
-
-/**
- * Notification BullMQ Processor
- *
- * 큐에 등록된 알림 잡을 처리합니다.
- * - follow-new: 새 팔로우 요청 알림
- * - follow-mutual: 맞팔로우 성립 알림
- * - nudge-sent: 콕 찌르기 수신 알림
- * - cheer-sent: 응원 수신 알림
- * - billing-issue: 결제 문제 알림 (재시도 대상)
- * - friend-completed: 친구 할일 전체 완료 알림
- *
- * 소셜 알림(follow, nudge, cheer, friend-completed)은 실패 시 로깅만 수행합니다.
- * 결제 알림(billing-issue)은 실패 시 re-throw하여 BullMQ 재시도를 활용합니다.
- *
- */
 @Processor(NOTIFICATION_QUEUE)
 export class NotificationQueueProcessor extends WorkerHost {
 	readonly #logger = new Logger(NotificationQueueProcessor.name);
@@ -92,10 +73,6 @@ export class NotificationQueueProcessor extends WorkerHost {
 				this.#logger.warn(`Unknown job name: ${job.name}`);
 		}
 	}
-
-	// =========================================================================
-	// Job Handlers
-	// =========================================================================
 
 	async #handleFollowNew(data: FollowNewJobData): Promise<void> {
 		try {

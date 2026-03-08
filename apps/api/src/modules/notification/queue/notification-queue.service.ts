@@ -14,17 +14,6 @@ import {
 	type NudgeSentJobData,
 } from "./notification-queue.constants";
 
-// =============================================================================
-// Service
-// =============================================================================
-
-/**
- * Notification BullMQ 큐 서비스
- *
- * 각 모듈(Follow, Nudge, Cheer, Subscription)에서 호출하여
- * 알림 잡을 큐에 등록합니다. Fire-and-forget 패턴으로
- * 비동기 잡 등록 실패 시 로깅만 수행합니다.
- */
 @Injectable()
 export class NotificationQueueService {
 	readonly #logger = new Logger(NotificationQueueService.name);
@@ -117,10 +106,6 @@ export class NotificationQueueService {
 			},
 		);
 	}
-
-	// =========================================================================
-	// Private
-	// =========================================================================
 
 	async #enqueueAsync(name: string, data: NotificationJobData): Promise<void> {
 		await this.queue.add(name, data);

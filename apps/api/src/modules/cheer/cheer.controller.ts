@@ -44,28 +44,6 @@ import {
 	SentCheersResponseDto,
 } from "./dtos";
 
-/**
- * Cheer API 컨트롤러
- *
- * ## 🎉 응원하기 API
- *
- * 친구에게 응원 메시지를 보내고 관리하는 API입니다.
- *
- * ### 응원 보내기
- * - POST /cheers - 응원 보내기
- *
- * ### 목록 조회
- * - GET /cheers/received - 받은 응원 목록
- * - GET /cheers/sent - 보낸 응원 목록
- *
- * ### 제한 정보
- * - GET /cheers/limit - 오늘 남은 응원 횟수
- * - GET /cheers/cooldown/:userId - 특정 친구에 대한 쿨다운 상태
- *
- * ### 읽음 처리
- * - PATCH /cheers/:id/read - 응원 읽음 처리
- * - PATCH /cheers/read - 여러 응원 읽음 처리
- */
 @ApiTags(SWAGGER_TAGS.CHEERS)
 @ApiBearerAuth()
 @Controller("cheers")
@@ -73,10 +51,6 @@ export class CheerController {
 	readonly #logger = new Logger(CheerController.name);
 
 	constructor(private readonly cheerService: CheerService) {}
-
-	// ============================================
-	// 응원 보내기
-	// ============================================
 
 	@Post()
 	@ApiHeader({
@@ -131,10 +105,6 @@ export class CheerController {
 			cheer: CheerMapper.toDto(cheer),
 		};
 	}
-
-	// ============================================
-	// 목록 조회
-	// ============================================
 
 	@Get("received")
 	@ApiDoc({
@@ -199,10 +169,6 @@ export class CheerController {
 		};
 	}
 
-	// ============================================
-	// 제한 정보
-	// ============================================
-
 	@Get("limit")
 	@ApiHeader({
 		name: "X-Timezone",
@@ -260,10 +226,6 @@ export class CheerController {
 			cooldownEndsAt: toISOStringOrNull(cooldownInfo.canCheerAt ?? null),
 		};
 	}
-
-	// ============================================
-	// 읽음 처리
-	// ============================================
 
 	@Patch(":id/read")
 	@HttpCode(HttpStatus.OK)

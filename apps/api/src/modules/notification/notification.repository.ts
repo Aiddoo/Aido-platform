@@ -16,19 +16,11 @@ import type {
 	TransactionClient,
 } from "./types/notification.types";
 
-// =============================================================================
-// Repository
-// =============================================================================
-
 @Injectable()
 export class NotificationRepository {
 	readonly #logger = new Logger(NotificationRepository.name);
 
 	constructor(private readonly database: DatabaseService) {}
-
-	// =========================================================================
-	// Notification CRUD
-	// =========================================================================
 
 	/**
 	 * 알림 생성
@@ -317,10 +309,6 @@ export class NotificationRepository {
 		});
 		return new Set(rows.map((r) => r.userId));
 	}
-
-	// =========================================================================
-	// PushToken CRUD
-	// =========================================================================
 
 	/**
 	 * 푸시 토큰 등록 (upsert)

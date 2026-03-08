@@ -55,19 +55,6 @@ import {
 } from "./dtos";
 import { TodoService } from "./todo.service";
 
-/**
- * Todo API 컨트롤러
- *
- * 사용자의 할 일을 생성, 조회, 수정, 삭제하는 CRUD API입니다.
- *
- * ### 주요 기능
- * - 할 일 생성/조회/수정/삭제
- * - 할 일 완료 상태 관리
- * - 할 일 공개 범위 설정
- * - 친구의 공개 할 일 조회
- * - 커서 기반 페이지네이션
- * - 날짜 범위 필터링
- */
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
 @Controller("todos")
@@ -76,13 +63,6 @@ export class TodoController {
 
 	constructor(private readonly todoService: TodoService) {}
 
-	// ============================================
-	// 리소스 제한 정보
-	// ============================================
-
-	/**
-	 * GET /todos/resource-limit - 카테고리당 활성 할 일 리소스 제한 정보
-	 */
 	@Get("resource-limit")
 	@ApiDoc({
 		summary: "카테고리당 활성 할 일 리소스 제한 정보 조회",
@@ -94,6 +74,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`maxPerCategory\`: 카테고리당 최대 활성 할 일 수 (모든 구독 동일, ADMIN은 무제한)
 - \`activeCount\`: 해당 카테고리의 현재 활성 할 일 개수 (categoryId 지정 시)`,
 	})
+	@ApiSuccessResponse({ type: TodoResourceLimitResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
@@ -102,15 +83,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		return this.todoService.getResourceLimitInfo(user.userId, query.categoryId);
 	}
 
-	// ============================================
-	// CREATE - 할 일 생성
-	// ============================================
-
-	/**
-	 * POST /todos - 할 일 생성
-	 *
-	 * 새로운 할 일을 생성합니다.
-	 */
 	@Post()
 	@ApiHeader({
 		name: "X-Timezone",
@@ -136,7 +108,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)`,
 	})
 	@ApiCreatedResponse({ type: CreateTodoResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiForbiddenError(ErrorCode.TODO_0811)
@@ -169,11 +141,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * POST /todos/recurring - 반복 할 일 생성
-	 *
-	 * 날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
-	 */
 	@Post("recurring")
 	@ApiHeader({
 		name: "X-Timezone",
@@ -200,7 +167,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - 활성(미완료) 할 일 한도를 초과하면 전체 요청 거부`,
 	})
 	@ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiBadRequestError(ErrorCode.TODO_0812)
 	@ApiForbiddenError(ErrorCode.TODO_0813)
@@ -241,15 +208,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	// ============================================
-	// READ - 할 일 조회
-	// ============================================
-
-	/**
-	 * GET /todos - 할 일 목록 조회
-	 *
-	 * 사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
-	 */
 	@Get()
 	@ApiDoc({
 		summary: "할 일 목록 조회",
@@ -404,11 +362,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * GET /todos/:id - 할 일 상세 조회
-	 *
-	 * 특정 할 일의 상세 정보를 조회합니다.
-	 */
 	@Get(":id")
 	@ApiDoc({
 		summary: "할 일 상세 조회",
@@ -431,12 +384,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		return todo;
 	}
 
-	/**
-	 * GET /todos/friends/:userId - 친구의 할 일 목록 조회
-	 *
-	 * 친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
-	 * 맞팔 관계여야만 조회 가능합니다.
-	 */
 	@Get("friends/:userId")
 	@ApiDoc({
 		summary: "친구의 할 일 목록 조회",
@@ -502,15 +449,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	// ============================================
-	// UPDATE - 할 일 수정
-	// ============================================
-
-	/**
-	 * PATCH /todos/:id - 할 일 수정
-	 *
-	 * 할 일의 정보를 수정합니다 (부분 수정 가능).
-	 */
 	@Patch(":id")
 	@HttpCode(HttpStatus.OK)
 	@ApiHeader({
@@ -569,9 +507,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/complete - 할 일 완료 상태 토글
-	 */
 	@Patch(":id/complete")
 	@HttpCode(HttpStatus.OK)
 	@ApiHeader({
@@ -616,9 +551,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/visibility - 할 일 공개 범위 변경
-	 */
 	@Patch(":id/visibility")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -653,9 +585,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/color - 할 일 색상 변경
-	 */
 	@Patch(":id/category")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -691,9 +620,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/schedule - 할 일 일정 변경
-	 */
 	@Patch(":id/schedule")
 	@HttpCode(HttpStatus.OK)
 	@ApiHeader({
@@ -741,9 +667,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/content - 할 일 제목/내용 수정
-	 */
 	@Patch(":id/content")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -780,9 +703,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	/**
-	 * PATCH /todos/:id/reorder - 할 일 순서 변경
-	 */
 	@Patch(":id/reorder")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -815,13 +735,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	// ============================================
-	// DELETE - 할 일 삭제
-	// ============================================
-
-	/**
-	 * DELETE /todos/:id - 할 일 삭제
-	 */
 	@Delete(":id")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -846,10 +759,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			message: "할 일이 삭제되었습니다.",
 		};
 	}
-
-	// ============================================
-	// Helper Methods
-	// ============================================
 
 	/**
 	 * HH:mm 형식의 시간을 UTC Date 객체로 변환

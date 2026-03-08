@@ -45,24 +45,7 @@ import { FollowMapper } from "./follow.mapper";
 import { FollowService } from "./follow.service";
 
 /**
- * Follow API 컨트롤러
- *
- * ## 👥 친구 관리 API
- *
- * 친구 요청 및 친구 관계 관리를 위한 API입니다.
- *
- * ### 친구 요청 엔드포인트
- * - POST /follows/:userTag - 친구 요청 보내기 (userTag: 8자리 영숫자)
- * - PATCH /follows/:userId/accept - 친구 요청 수락
- * - PATCH /follows/:userId/reject - 친구 요청 거절
- * - DELETE /follows/:userId - 친구 삭제 / 요청 철회
- *
- * ### 목록 조회 엔드포인트
- * - GET /follows/friends - 내 친구 목록
- * - GET /follows/requests/received - 받은 친구 요청 목록
- * - GET /follows/requests/sent - 보낸 친구 요청 목록
- *
- * ### 🔄 친구 요청 상태 전이 다이어그램
+ * ### 친구 요청 상태 전이 다이어그램
  * ```
  * ┌──────────────────────────────────────────────────────────────────────┐
  * │                        친구 관계 상태 전이                              │
@@ -99,7 +82,7 @@ import { FollowService } from "./follow.service";
  *   내가 그 상대방에게 친구 요청을 보내면 자동으로 친구가 됨
  * ```
  *
- * ### 📊 상태별 설명
+ * ### 상태별 설명
  * | 상태 | 설명 |
  * |------|------|
  * | 없음 | 두 사용자 간 아무 관계 없음 |
@@ -113,10 +96,6 @@ export class FollowController {
 	readonly #logger = new Logger(FollowController.name);
 
 	constructor(private readonly followService: FollowService) {}
-
-	// ============================================
-	// 친구 요청 액션
-	// ============================================
 
 	@Post(":userTag")
 	@ApiParam({
@@ -277,10 +256,6 @@ export class FollowController {
 		};
 	}
 
-	// ============================================
-	// 리소스 제한 정보
-	// ============================================
-
 	@Get("resource-limit")
 	@ApiDoc({
 		summary: "친구 리소스 제한 정보 조회",
@@ -298,10 +273,6 @@ export class FollowController {
 	): Promise<FollowResourceLimitResponseDto> {
 		return this.followService.getResourceLimitInfo(user.userId);
 	}
-
-	// ============================================
-	// 목록 조회
-	// ============================================
 
 	@Get("friends")
 	@ApiDoc({

@@ -33,27 +33,10 @@ import {
 } from "./dtos";
 import { UserSettingsService } from "./services/user-settings.service";
 
-/**
- * Settings API 컨트롤러
- *
- * 사용자 환경설정 및 마케팅 동의 관리 API입니다.
- *
- * ### 푸시 알림 설정
- * - GET /auth/preference - 알림 설정 조회
- * - PATCH /auth/preference - 알림 설정 수정
- *
- * ### 약관 동의
- * - GET /auth/consent - 약관 동의 상태 조회
- * - PATCH /auth/consent/marketing - 마케팅 수신 동의 변경
- */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class SettingsController {
 	constructor(private readonly userSettingsService: UserSettingsService) {}
-
-	// ============================================
-	// 푸시 알림 설정
-	// ============================================
 
 	@Get("preference")
 	@ApiBearerAuth()
@@ -162,10 +145,6 @@ export class SettingsController {
 	) {
 		return this.userSettingsService.updatePreference(user.userId, dto);
 	}
-
-	// ============================================
-	// 약관 동의 상태
-	// ============================================
 
 	@Get("consent")
 	@ApiBearerAuth()

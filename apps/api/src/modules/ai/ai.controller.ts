@@ -31,27 +31,6 @@ import {
 } from "./dtos";
 import { AiUsageGuard } from "./guards/ai-usage.guard";
 
-/**
- * AI 자연어 처리 API 컨트롤러
- *
- * 자연어 텍스트를 분석하여 구조화된 데이터로 변환하는 AI 기반 API입니다.
- *
- * ### 주요 기능
- * - 한국어 자연어 → 투두 데이터 파싱 (Google Gemini 2.5 Flash-Lite)
- * - 스마트 시간 해석 (현재 시간 기반 AM/PM 자동 판단)
- * - 날짜 표현 처리 (내일, 모레, 다음주 월요일 등)
- * - 일일 사용량 추적 및 제한
- *
- * ### 사용량 제한
- * | 유저 타입 | 일일 제한 | 리셋 시간 |
- * |----------|----------|----------|
- * | 무료 | 5회 | KST 자정 |
- * | 프리미엄 | 무제한 | - |
- *
- * ### 사용 모델
- * - Google Gemini 2.5 Flash-Lite (비용 효율적)
- * - Standard 가격 기준: Input $0.10/1M tokens, Output $0.40/1M tokens
- */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
 @Controller("ai")
@@ -60,15 +39,7 @@ export class AiController {
 
 	constructor(private readonly aiService: AiService) {}
 
-	// ============================================
-	// PARSE - 자연어 투두 파싱
-	// ============================================
-
 	/**
-	 * POST /ai/parse-todo - 자연어 텍스트를 투두 데이터로 파싱
-	 *
-	 * 한국어 자연어 입력을 분석하여 구조화된 투두 데이터를 생성합니다.
-	 *
 	 * @example
 	 * ```
 	 * // Request
@@ -197,7 +168,7 @@ if (confirmed) {
 - **오류 복구**: 파싱 실패 시 사용자가 직접 수정 가능`,
 	})
 	@ApiSuccessResponse({ type: ParseTodoResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiUnprocessableError(ErrorCode.AI_1302)
 	@ApiTooManyRequestsError(ErrorCode.AI_1303)
@@ -230,15 +201,7 @@ if (confirmed) {
 		};
 	}
 
-	// ============================================
-	// USAGE - AI 사용량 조회
-	// ============================================
-
 	/**
-	 * GET /ai/usage - 현재 AI 사용량 조회
-	 *
-	 * 현재 사용자의 일일 AI 사용량을 조회합니다.
-	 *
 	 * @example
 	 * ```
 	 * // Request
@@ -295,7 +258,7 @@ if (limit !== null && used >= limit) {
 \`\`\``,
 	})
 	@ApiSuccessResponse({ type: AiUsageResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getUsage(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<AiUsageResponseDto> {

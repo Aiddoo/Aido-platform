@@ -32,10 +32,6 @@ import type {
 } from "./types/notification.types";
 import { isNightTime } from "./utils";
 
-// =============================================================================
-// 마케팅 알림 타입
-// =============================================================================
-
 const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 	// 향후 추가 예정: "MARKETING_PROMOTION", "MARKETING_EVENT" 등
 ]);
@@ -50,18 +46,6 @@ const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 	"NUDGE_RECEIVED",
 ]);
 
-// =============================================================================
-// PushDeliveryService
-// =============================================================================
-
-/**
- * 푸시 발송 서비스
- *
- * - 푸시 토큰 등록/해제
- * - 푸시 발송 및 필터링
- * - 푸시 페이로드 빌드
- * - Graceful Shutdown (pending push 대기)
- */
 @Injectable()
 export class PushDeliveryService implements BeforeApplicationShutdown {
 	readonly #logger = new Logger(PushDeliveryService.name);
@@ -76,10 +60,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		private readonly rateLimiter: IPushRateLimiter,
 		private readonly cacheService: CacheService,
 	) {}
-
-	// =========================================================================
-	// 푸시 토큰 관리
-	// =========================================================================
 
 	async registerPushToken(data: RegisterPushTokenData): Promise<PushToken> {
 		if (!this.pushProvider.validateToken(data.token)) {
@@ -134,10 +114,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		);
 	}
 
-	// =========================================================================
-	// 푸시 발송 (단건)
-	// =========================================================================
-
 	/**
 	 * 단일 사용자에게 푸시 발송 (fire-and-forget)
 	 *
@@ -162,10 +138,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		}) as Promise<void>;
 		this.#trackPush(pushPromise);
 	}
-
-	// =========================================================================
-	// 푸시 발송 (배치)
-	// =========================================================================
 
 	/**
 	 * 여러 사용자에게 푸시 발송 (fire-and-forget)
@@ -224,10 +196,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			})),
 		);
 	}
-
-	// =========================================================================
-	// 푸시 필터링
-	// =========================================================================
 
 	/**
 	 * 푸시 발송 여부 결정
@@ -312,10 +280,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		return true;
 	}
 
-	// =========================================================================
-	// 푸시 페이로드 빌드
-	// =========================================================================
-
 	#buildPushPayloadData(
 		data: CreateNotificationData,
 		notificationId?: number,
@@ -341,10 +305,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			...(Object.keys(context).length > 0 && { context }),
 		};
 	}
-
-	// =========================================================================
-	// 푸시 발송 (Internal)
-	// =========================================================================
 
 	async #sendPushToUser(
 		userId: string,
@@ -490,10 +450,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 
 		return tokensByUser;
 	}
-
-	// =========================================================================
-	// Graceful Shutdown
-	// =========================================================================
 
 	#trackPush(promise: Promise<void>): void {
 		this.#pendingPushes.add(promise);

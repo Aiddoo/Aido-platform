@@ -43,27 +43,6 @@ import {
 import { NudgeMapper } from "./nudge.mapper";
 import { NudgeService } from "./nudge.service";
 
-/**
- * Nudge API 컨트롤러
- *
- * ## 👆 콕 찌르기 API
- *
- * 친구의 할 일을 콕 찌르고 관리하는 API입니다.
- *
- * ### 콕 찌르기
- * - POST /nudges - 콕 찌르기
- *
- * ### 목록 조회
- * - GET /nudges/received - 받은 콕 찌름 목록
- * - GET /nudges/sent - 보낸 콕 찌름 목록
- *
- * ### 제한 정보
- * - GET /nudges/limit - 오늘 남은 콕 찌르기 횟수
- * - GET /nudges/cooldown/:userId - 특정 친구에 대한 쿨다운 상태
- *
- * ### 읽음 처리
- * - PATCH /nudges/:id/read - 콕 찌름 읽음 처리
- */
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
 @Controller("nudges")
@@ -71,10 +50,6 @@ export class NudgeController {
 	readonly #logger = new Logger(NudgeController.name);
 
 	constructor(private readonly nudgeService: NudgeService) {}
-
-	// ============================================
-	// 콕 찌르기
-	// ============================================
 
 	@Post()
 	@ApiHeader({
@@ -134,10 +109,6 @@ export class NudgeController {
 			nudge: NudgeMapper.toDto(nudge),
 		};
 	}
-
-	// ============================================
-	// 목록 조회
-	// ============================================
 
 	@Get("received")
 	@ApiDoc({
@@ -202,10 +173,6 @@ export class NudgeController {
 		};
 	}
 
-	// ============================================
-	// 제한 정보
-	// ============================================
-
 	@Get("limit")
 	@ApiHeader({
 		name: "X-Timezone",
@@ -265,10 +232,6 @@ export class NudgeController {
 					: null,
 		};
 	}
-
-	// ============================================
-	// 읽음 처리
-	// ============================================
 
 	@Patch(":id/read")
 	@HttpCode(HttpStatus.OK)

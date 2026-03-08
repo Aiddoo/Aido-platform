@@ -59,7 +59,6 @@ const ACCOUNT_PROVIDER_TO_EVENT: Record<
 	NAVER: "naver",
 };
 
-// Apple, Google, Kakao, Naver OAuth 소셜 로그인 처리
 @Injectable()
 export class OAuthService {
 	readonly #logger = new Logger(OAuthService.name);
@@ -118,7 +117,6 @@ export class OAuthService {
 		return strategy;
 	}
 
-	// 보안을 위한 화이트리스트 방식 검증 (환경별 분기)
 	get #allowedRedirectPatterns(): RegExp[] {
 		const patterns: RegExp[] = [
 			// 모바일 앱 딥링크 (프로덕션)
@@ -181,10 +179,6 @@ export class OAuthService {
 		const existingState = await this.oauthStateRepository.findByState(state);
 		return existingState?.redirectUri ?? null;
 	}
-
-	// ============================================
-	// Strategy 기반 통합 메서드
-	// ============================================
 
 	/**
 	 * 모바일 로그인 통합 처리
@@ -283,7 +277,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// Linking 모드: 로그인 대신 providerAccountId만 추출하여 저장
 		if (oauthState.mode === "link") {
 			const verifiedProfile = await strategy.verifyToken(exchanged.token);
 			const exchangeCode = await this.#saveLinkingExchangeCode(
@@ -299,7 +292,6 @@ export class OAuthService {
 			};
 		}
 
-		// 기존 로그인 모드
 		const loginResult = await this.#handleMobileLogin(
 			provider,
 			exchanged.token,
@@ -326,10 +318,6 @@ export class OAuthService {
 			profileImage: loginResult.profileImage ?? undefined,
 		};
 	}
-
-	// ============================================
-	// Public delegates — 컨트롤러 인터페이스 유지
-	// ============================================
 
 	async generateKakaoAuthUrlWithState(
 		state: string,
@@ -455,7 +443,6 @@ export class OAuthService {
 		refreshToken?: string,
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
-		// 이미 다른 사용자에 연결되었는지 확인
 		const existingAccount =
 			await this.accountRepository.findByProviderAccountId(
 				provider,
@@ -469,7 +456,6 @@ export class OAuthService {
 			);
 		}
 
-		// 이미 연결된 경우
 		if (existingAccount) {
 			return { message: "이미 연결된 계정입니다." };
 		}
@@ -477,7 +463,6 @@ export class OAuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		// 계정 연결 + 보안 로그 (트랜잭션)
 		try {
 			await this.database.$transaction(async (tx) => {
 				await this.accountRepository.createOAuthAccount(
@@ -538,7 +523,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// Apple/Google은 idToken, Kakao/Naver는 accessToken 사용
 		const token = idToken ?? accessToken;
 		if (!token) {
 			throw BusinessExceptions.invalidCredentials();
@@ -554,7 +538,6 @@ export class OAuthService {
 		provider: AccountProvider,
 		metadata?: RequestMetadata,
 	): Promise<{ message: string }> {
-		// 연결된 계정 조회
 		const account = await this.accountRepository.findByUserIdAndProvider(
 			userId,
 			provider,
@@ -564,7 +547,6 @@ export class OAuthService {
 			throw BusinessExceptions.accountNotFound();
 		}
 
-		// 마지막 로그인 수단인지 확인
 		const allAccounts = await this.accountRepository.findAllByUserId(userId);
 		if (allAccounts.length <= 1) {
 			throw BusinessExceptions.cannotUnlinkLastAccount();
@@ -573,7 +555,6 @@ export class OAuthService {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		// 계정 삭제 + 보안 로그 (트랜잭션)
 		await this.database.$transaction(async (tx) => {
 			await this.accountRepository.deleteAccount(userId, provider, tx);
 
@@ -651,7 +632,6 @@ export class OAuthService {
 		const userAgent =
 			options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		// 기존 OAuth 계정 조회
 		const existingAccount =
 			await this.accountRepository.findByProviderAccountId(
 				provider,
@@ -662,7 +642,6 @@ export class OAuthService {
 		let userEmail: string;
 
 		if (existingAccount) {
-			// 기존 사용자 로그인
 			userId = existingAccount.userId;
 			const user = await this.userRepository.findById(userId);
 
@@ -693,18 +672,13 @@ export class OAuthService {
 
 			this.#logger.debug(`Existing ${provider} user login: ${userId}`);
 		} else {
-			// 신규 사용자
-			// 이메일이 없는 경우 (카카오 등) 플레이스홀더 이메일 생성
 			const effectiveEmail =
 				email ??
 				`${provider.toLowerCase()}_${providerAccountId}@social.aido.kr`;
 
-			// 이메일로 기존 사용자 확인 (실제 이메일인 경우에만)
 			if (email) {
 				const existingUser = await this.userRepository.findByEmail(email);
 				if (existingUser) {
-					// 이메일은 있지만 해당 소셜 계정이 연결되지 않은 경우
-					// Provider별 자동 연동 또는 강제 연동 처리
 					return this.#handleEmailConflict(
 						existingUser,
 						provider,
@@ -719,7 +693,6 @@ export class OAuthService {
 				}
 			}
 
-			// 신규 회원가입
 			const newUser = await this.#createSocialUser({
 				email: effectiveEmail,
 				provider,
@@ -743,7 +716,6 @@ export class OAuthService {
 			} satisfies UserRegisteredEventPayload);
 		}
 
-		// 세션 생성 및 토큰 발급
 		return this.#createSessionAndTokens(userId, userEmail, {
 			ip,
 			userAgent,
@@ -762,9 +734,6 @@ export class OAuthService {
 		profileImage?: string;
 	}) {
 		return this.database.$transaction(async (tx) => {
-			// User 생성 (소셜 로그인은 이메일 인증 상태에 따라 상태 결정)
-			// - Apple/Google: emailVerified=true → ACTIVE
-			// - Kakao/Naver: emailVerified 불확실 → PENDING_VERIFY 가능
 			const user = await this.userRepository.create(
 				{
 					email: data.email,
@@ -774,7 +743,6 @@ export class OAuthService {
 				tx,
 			);
 
-			// OAuth Account 연결
 			await this.accountRepository.createOAuthAccount(
 				{
 					userId: user.id,
@@ -785,14 +753,12 @@ export class OAuthService {
 				tx,
 			);
 
-			// 프로필 생성
 			await this.userRepository.createProfile(
 				user.id,
 				{ name: data.userName, profileImage: data.profileImage },
 				tx,
 			);
 
-			// 기본 약관 동의 (소셜 로그인 시 기본 동의로 처리)
 			const currentTime = now();
 			await tx.userConsent.create({
 				data: {
@@ -803,7 +769,6 @@ export class OAuthService {
 				},
 			});
 
-			// 푸시 알림 설정 초기화 (기본값: 모두 ON)
 			await tx.userPreference.create({
 				data: {
 					userId: user.id,
@@ -812,7 +777,6 @@ export class OAuthService {
 				},
 			});
 
-			// 기본 카테고리 생성 (온보딩 필수 데이터 — 트랜잭션 내 동기 처리)
 			await tx.todoCategory.createMany({
 				data: DEFAULT_CATEGORIES.map((category) => ({
 					userId: user.id,
@@ -822,7 +786,6 @@ export class OAuthService {
 				})),
 			});
 
-			// 보안 로그
 			await this.securityLogRepository.create(
 				{
 					userId: user.id,
@@ -848,7 +811,6 @@ export class OAuthService {
 		user: { id: string; email: string; deletedAt: Date | null },
 		options: { ip: string; userAgent: string; provider: AccountProvider },
 	): Promise<LoginResult> {
-		// 사용자 role 조회 (트랜잭션 밖)
 		const userRecord = await this.database.user.findUnique({
 			where: { id: user.id },
 			select: { role: true },
@@ -859,14 +821,12 @@ export class OAuthService {
 		}
 
 		const result = await this.database.$transaction(async (tx) => {
-			// 1. 계정 복구
 			await this.#restoreDeletedAccount(
 				user,
 				{ ip: options.ip, userAgent: options.userAgent },
 				tx,
 			);
 
-			// 2. 세션 생성 + 보안 로그 + 로그인 시도 기록
 			const { sessionId, tokens } =
 				await this.sessionService.createSessionWithTokens(
 					{
@@ -917,7 +877,6 @@ export class OAuthService {
 			};
 		});
 
-		// 트랜잭션 커밋 후 캐시 무효화
 		await this.cacheService.invalidateUserProfile(user.id);
 		this.#logger.log(`Deleted account restored on social login: ${user.id}`);
 
@@ -933,7 +892,6 @@ export class OAuthService {
 			provider: AccountProvider;
 		},
 	): Promise<LoginResult> {
-		// 사용자 role 조회
 		const user = await this.database.user.findUnique({
 			where: { id: userId },
 			select: { role: true },
@@ -957,7 +915,6 @@ export class OAuthService {
 					tx,
 				);
 
-			// 보안 로그
 			await this.securityLogRepository.create(
 				{
 					userId,
@@ -969,7 +926,6 @@ export class OAuthService {
 				tx,
 			);
 
-			// 로그인 시도 기록 (성공)
 			await this.loginAttemptRepository.create(
 				{
 					email,
@@ -981,7 +937,6 @@ export class OAuthService {
 				tx,
 			);
 
-			// 프로필 조회
 			const userWithProfile = await this.userRepository.findByIdWithProfile(
 				userId,
 				tx,
@@ -1065,12 +1020,10 @@ export class OAuthService {
 				});
 	}
 
-	// Google, Apple은 이메일 검증 보장. Kakao, Naver는 선택적.
 	#isTrustedProvider(provider: AccountProvider): boolean {
 		return TRUSTED_EMAIL_PROVIDERS.includes(provider);
 	}
 
-	// Google/Apple: 자동 연동, Kakao/Naver: 강제 연동 필요 (에러 반환)
 	async #handleEmailConflict(
 		existingUser: {
 			id: string;
@@ -1122,7 +1075,6 @@ export class OAuthService {
 					provider,
 				});
 
-				// 트랜잭션 커밋 후 OAuth Account 연결 (별도 트랜잭션)
 				await this.database.$transaction(async (tx) => {
 					await this.accountRepository.createOAuthAccount(
 						{
@@ -1153,7 +1105,6 @@ export class OAuthService {
 				return { ...loginResult, accountRestored: true };
 			}
 
-			// 기존 유저: 연동만 수행
 			await this.database.$transaction(async (tx) => {
 				await this.accountRepository.createOAuthAccount(
 					{
@@ -1193,7 +1144,6 @@ export class OAuthService {
 			`Manual linking required for ${provider} account to user: ${existingUser.id}`,
 		);
 
-		// 보안 로그: 연동 필요 알림
 		await this.securityLogRepository.create({
 			userId: existingUser.id,
 			event: SECURITY_EVENT.OAUTH_LINK_REQUIRED,
@@ -1277,14 +1227,12 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 교환 완료 처리
 		await this.oauthStateRepository.markAsExchanged(oauthState.id);
 
 		this.#logger.debug(
 			`Linking exchange code redeemed for user ${userId}, provider ${provider}, OAuthState ID: ${oauthState.id}`,
 		);
 
-		// 기존 linkAccount 메서드를 활용하여 계정 연결
 		return this.linkAccount(
 			userId,
 			provider,
@@ -1294,7 +1242,6 @@ export class OAuthService {
 		);
 	}
 
-	// 딥링크 URL에는 교환 코드만 전달하여 토큰 노출 방지
 	async createExchangeCode(
 		oauthStateId: number,
 		tokens: { accessToken: string; refreshToken: string },
@@ -1324,7 +1271,6 @@ export class OAuthService {
 		return exchangeCode;
 	}
 
-	// 일회용 교환 코드 검증 후 토큰 반환, 교환 완료 후 DB에서 삭제
 	async exchangeCodeForTokens(code: string): Promise<{
 		accessToken: string;
 		refreshToken: string;
@@ -1333,7 +1279,6 @@ export class OAuthService {
 		profileImage?: string;
 		accountRestored?: boolean;
 	}> {
-		// 교환 코드로 OAuthState 조회 (미교환 + 미만료만)
 		const oauthState = await this.oauthStateRepository.findByExchangeCode(code);
 
 		if (!oauthState) {
@@ -1343,7 +1288,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 토큰이 저장되어 있는지 확인
 		if (
 			!oauthState.accessToken ||
 			!oauthState.refreshToken ||
@@ -1355,7 +1299,6 @@ export class OAuthService {
 			throw BusinessExceptions.invalidCredentials();
 		}
 
-		// 교환 완료 처리 (토큰 삭제)
 		await this.oauthStateRepository.markAsExchanged(oauthState.id);
 
 		this.#logger.debug(
