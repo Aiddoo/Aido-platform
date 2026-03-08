@@ -12,6 +12,11 @@ import { ReportAggregatorService } from "./report-aggregator.service";
 import { ReportGeneratorService } from "./report-generator.service";
 import type { FindReportsParams } from "./types";
 
+/** 리포트 생성 기준 타임존 (KST 고정) */
+const KST = "Asia/Seoul";
+/** 리포트 크론 실행 시각 (KST) */
+const REPORT_HOUR = 8;
+
 /**
  * AI 리포트 서비스
  *
@@ -32,20 +37,30 @@ export class AiReportService {
 	 * 리포트 상태 조회
 	 *
 	 * 다음 주간/월간 리포트 예정일과 최신 리포트를 반환합니다.
+	 * 리포트 생성은 KST 08:00 고정이므로 KST 기준으로 계산합니다.
 	 */
 	async getReportStatus(
 		userId: string,
-		timezone: string,
+		_timezone: string,
 	): Promise<ReportStatus> {
 		await this.#enforcePremium(userId);
-		const currentTime = now();
-		const localNow = dayjs(currentTime).tz(timezone);
 
-		const nextMonday = localNow.startOf("isoWeek").add(1, "week");
-		const daysUntilWeekly = nextMonday.diff(localNow, "day");
+		const kstNow = dayjs(now()).tz(KST);
 
-		const nextMonth = localNow.add(1, "month").startOf("month");
-		const daysUntilMonthly = nextMonth.diff(localNow, "day");
+		// 다음 주간 리포트: 이번 주 또는 다음 주 월요일 08:00 KST
+		const thisMonday = kstNow.startOf("isoWeek").hour(REPORT_HOUR);
+		const nextWeeklyKst = kstNow.isBefore(thisMonday)
+			? thisMonday
+			: thisMonday.add(1, "week");
+
+		// 다음 월간 리포트: 이번 달 또는 다음 달 1일 08:00 KST
+		const thisFirst = kstNow.startOf("month").hour(REPORT_HOUR);
+		const nextMonthlyKst = kstNow.isBefore(thisFirst)
+			? thisFirst
+			: kstNow.add(1, "month").startOf("month").hour(REPORT_HOUR);
+
+		const daysUntilWeekly = nextWeeklyKst.diff(kstNow, "day");
+		const daysUntilMonthly = nextMonthlyKst.diff(kstNow, "day");
 
 		const [latestWeekly, latestMonthly] = await Promise.all([
 			this.aiReportRepository.findLatest(userId, "WEEKLY"),
@@ -53,8 +68,8 @@ export class AiReportService {
 		]);
 
 		return {
-			nextWeeklyAt: nextMonday.utc().toISOString(),
-			nextMonthlyAt: nextMonth.utc().toISOString(),
+			nextWeeklyAt: nextWeeklyKst.utc().toISOString(),
+			nextMonthlyAt: nextMonthlyKst.utc().toISOString(),
 			daysUntilWeekly,
 			daysUntilMonthly,
 			latestWeekly: latestWeekly

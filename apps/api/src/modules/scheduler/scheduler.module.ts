@@ -10,7 +10,6 @@ import {
 	NudgeSuggestStrategy,
 	SocialDigestStrategy,
 	WeeklyAchievementStrategy,
-	WeeklyReportStrategy,
 	WinbackStrategy,
 } from "./jobs/strategies";
 import { TimezoneAwareReminderJob } from "./jobs/timezone-aware-reminder.job";
@@ -45,7 +44,6 @@ import {
 		TodoReminderProcessor,
 		MorningReminderStrategy,
 		EveningReminderStrategy,
-		WeeklyReportStrategy,
 		WeeklyAchievementStrategy,
 		WinbackStrategy,
 		NudgeSuggestStrategy,

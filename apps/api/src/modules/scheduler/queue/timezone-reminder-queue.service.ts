@@ -25,7 +25,7 @@ export class TimezoneReminderQueueService {
 	async registerSweepScheduler(): Promise<void> {
 		await this.queue.upsertJobScheduler(
 			"tz-reminder-sweep-scheduler",
-			{ pattern: "* * * * *" },
+			{ pattern: "* * * * *", tz: "Asia/Seoul" },
 			{
 				name: TimezoneReminderJobName.SWEEP_REMINDERS,
 				data: {} as TimezoneReminderJobData,

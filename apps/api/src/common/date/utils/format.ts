@@ -45,3 +45,14 @@ export function toIsoWeekId(date: Date = new Date()): string {
 	const d = dayjs.utc(date);
 	return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
 }
+
+/**
+ * ISO 월 식별자 (예: "2026-M03")
+ *
+ * 월간 리포트 BullMQ jobId 중복 방지용으로 사용합니다.
+ * @example toIsoMonthId(new Date("2026-03-08")) // "2026-M03"
+ */
+export function toIsoMonthId(date: Date = new Date()): string {
+	const d = dayjs.utc(date);
+	return `${d.year()}-M${String(d.month() + 1).padStart(2, "0")}`;
+}

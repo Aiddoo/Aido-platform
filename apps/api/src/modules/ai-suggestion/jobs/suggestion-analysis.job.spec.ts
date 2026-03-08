@@ -50,7 +50,7 @@ describe("SuggestionAnalysisJob", () => {
 			// Then
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"weekly-suggestion-scheduler",
-				{ pattern: "0 11 * * 0" },
+				{ pattern: "0 11 * * 0", tz: "Asia/Seoul" },
 				{ name: "dispatch-analysis", data: {} },
 			);
 		});
