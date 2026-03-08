@@ -188,14 +188,8 @@ describe("OAuthService", () => {
 				return callback(mockTx as never);
 			},
 		);
-		// database.user에 접근할 수 있도록 mock 설정
-		Object.defineProperty(database, "user", {
-			value: {
-				findUnique: jest.fn().mockResolvedValue({ role: "USER" }),
-			},
-			configurable: true,
-			writable: true,
-		});
+		// #createSessionAndTokens / #restoreAndCreateSession에서 role 조회용
+		userRepo.findById.mockResolvedValue(mockUser);
 	};
 
 	// ============================================
@@ -482,12 +476,14 @@ describe("OAuthService", () => {
 			});
 
 			it("탈퇴한 사용자는 소셜 로그인할 수 없다", async () => {
-				// Given - Builder로 탈퇴된 사용자 생성
+				// Given - 유예 기간(30일) 초과된 탈퇴 사용자 생성
+				const pastGracePeriod = new Date();
+				pastGracePeriod.setDate(pastGracePeriod.getDate() - 31);
 				const deletedUser = UserBuilder.create()
 					.withId("user-123")
 					.withEmail("test@privaterelay.appleid.com")
 					.verified()
-					.deleted()
+					.deleted(pastGracePeriod)
 					.build();
 
 				const existingAccount = AccountBuilder.create(deletedUser.id)

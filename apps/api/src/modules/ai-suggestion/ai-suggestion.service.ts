@@ -38,10 +38,6 @@ export class AiSuggestionService {
 		private readonly database: DatabaseService,
 	) {}
 
-	// =========================================================================
-	// 조회
-	// =========================================================================
-
 	/**
 	 * 대기 중인 제안 목록 조회
 	 */
@@ -53,10 +49,6 @@ export class AiSuggestionService {
 			await this.aiSuggestionRepository.findPendingByUserId(userId);
 		return AiSuggestionMapper.toManyResponse(suggestions);
 	}
-
-	// =========================================================================
-	// 액션 (수락/거절)
-	// =========================================================================
 
 	/**
 	 * 제안 수락 또는 거절 처리
@@ -173,10 +165,6 @@ export class AiSuggestionService {
 			throw BusinessExceptions.aiSuggestionPremiumRequired();
 		}
 	}
-
-	// =========================================================================
-	// 패턴 분석 및 제안 생성
-	// =========================================================================
 
 	/**
 	 * 사용자의 최근 할 일을 분석하여 반복 제안을 생성합니다.

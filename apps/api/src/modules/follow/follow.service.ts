@@ -19,10 +19,6 @@ import type {
 	SendFollowRequestResult,
 } from "./types/follow.types";
 
-// =============================================================================
-// Service
-// =============================================================================
-
 @Injectable()
 export class FollowService {
 	readonly #logger = new Logger(FollowService.name);
@@ -35,10 +31,6 @@ export class FollowService {
 		private readonly notificationQueueService: NotificationQueueService,
 		private readonly cacheService: CacheService,
 	) {}
-
-	// =========================================================================
-	// 리소스 제한 정보
-	// =========================================================================
 
 	/**
 	 * 친구 리소스 제한 정보 조회
@@ -53,10 +45,6 @@ export class FollowService {
 		return { friendCount, maxCount: entitlement.maxCount };
 	}
 
-	// =========================================================================
-	// 친구 요청 보내기
-	// =========================================================================
-
 	/**
 	 * userTag로 친구 요청 보내기
 	 *
@@ -67,13 +55,11 @@ export class FollowService {
 		userId: string,
 		targetUserTag: string,
 	): Promise<SendFollowRequestResult> {
-		// userTag로 사용자 조회
 		const targetUser = await this.followRepository.findUserByTag(targetUserTag);
 		if (!targetUser) {
 			throw BusinessExceptions.followTargetNotFoundByTag(targetUserTag);
 		}
 
-		// 기존 sendRequest 로직 재사용
 		return this.sendRequest(userId, targetUser.id);
 	}
 
@@ -153,7 +139,6 @@ export class FollowService {
 						tx,
 					);
 
-					// 내 쪽도 ACCEPTED로 생성
 					return this.followRepository.create(
 						{
 							follower: { connect: { id: userId } },
@@ -177,27 +162,23 @@ export class FollowService {
 				`Friend request auto-accepted: ${userId} <-> ${targetUserId}`,
 			);
 
-			// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
 			const [userName, targetUserName] = await Promise.all([
-				this.followRepository.getUserName(userId),
-				this.followRepository.getUserName(targetUserId),
+				this.followRepository.getUserDisplayName(userId),
+				this.followRepository.getUserDisplayName(targetUserId),
 			]);
 
-			// userId에게 알림 (targetUserId와 친구가 됨)
 			this.notificationQueueService.enqueueFollowMutual({
 				userId,
 				friendId: targetUserId,
-				friendName: targetUserName ?? "알 수 없음",
+				friendName: targetUserName,
 			});
 
-			// targetUserId에게 알림 (userId와 친구가 됨)
 			this.notificationQueueService.enqueueFollowMutual({
 				userId: targetUserId,
 				friendId: userId,
-				friendName: userName ?? "알 수 없음",
+				friendName: userName,
 			});
 
-			// 캐시 무효화 (친구 관계 변경)
 			await Promise.all([
 				this.cacheService.invalidateMutualFriend(userId, targetUserId),
 				this.cacheService.invalidateMutualFriendIds(userId),
@@ -209,7 +190,6 @@ export class FollowService {
 			return { follow, autoAccepted: true };
 		}
 
-		// 5. 새 친구 요청 생성
 		let follow: Follow;
 		try {
 			follow = await this.followRepository.create({
@@ -229,20 +209,15 @@ export class FollowService {
 
 		this.#logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
 
-		// 새 친구 요청 알림 큐 등록
-		const followerName = await this.followRepository.getUserName(userId);
+		const followerName = await this.followRepository.getUserDisplayName(userId);
 		this.notificationQueueService.enqueueFollowNew({
 			followerId: userId,
 			followingId: targetUserId,
-			followerName: followerName ?? "알 수 없음",
+			followerName,
 		});
 
 		return { follow, autoAccepted: false };
 	}
-
-	// =========================================================================
-	// 친구 요청 수락
-	// =========================================================================
 
 	/**
 	 * 친구 요청 수락
@@ -267,16 +242,13 @@ export class FollowService {
 			throw BusinessExceptions.followRequestNotFound(requesterUserId);
 		}
 
-		// 2, 3. 트랜잭션으로 양방향 관계 처리
 		const myFollow = await this.database.$transaction(async (tx) => {
-			// 상대방의 요청을 ACCEPTED로 업데이트
 			await this.followRepository.update(
 				request.id,
 				{ status: "ACCEPTED" },
 				tx,
 			);
 
-			// 역방향 Follow 확인 (나 -> 상대방)
 			const existingReverse =
 				await this.followRepository.findByFollowerAndFollowing(
 					userId,
@@ -299,7 +271,6 @@ export class FollowService {
 						tx,
 					);
 
-			// 생성된 Follow에 사용자 정보를 포함하여 반환
 			const followWithUser = await this.followRepository.findByIdWithUser(
 				createdFollow.id,
 				tx,
@@ -319,7 +290,6 @@ export class FollowService {
 			`Friend request accepted: ${requesterUserId} <-> ${userId}`,
 		);
 
-		// 캐시 무효화 (친구 관계 변경)
 		await Promise.all([
 			this.cacheService.invalidateMutualFriend(userId, requesterUserId),
 			this.cacheService.invalidateMutualFriendIds(userId),
@@ -328,32 +298,25 @@ export class FollowService {
 			this.cacheService.invalidateFriendCount(requesterUserId),
 		]);
 
-		// 양방향 친구 성립 이벤트 발행 (양쪽 모두에게 알림)
-		const [userName, requesterName] = await Promise.all([
-			this.followRepository.getUserName(userId),
-			this.followRepository.getUserName(requesterUserId),
-		]);
+		const userName =
+			myFollow.follower.profile?.name ?? myFollow.follower.userTag;
+		const requesterName =
+			myFollow.following.profile?.name ?? myFollow.following.userTag;
 
-		// userId(수락자)에게 알림 (requesterUserId와 친구가 됨)
 		this.notificationQueueService.enqueueFollowMutual({
 			userId,
 			friendId: requesterUserId,
-			friendName: requesterName ?? "알 수 없음",
+			friendName: requesterName,
 		});
 
-		// requesterUserId(요청자)에게 알림 (userId와 친구가 됨)
 		this.notificationQueueService.enqueueFollowMutual({
 			userId: requesterUserId,
 			friendId: userId,
-			friendName: userName ?? "알 수 없음",
+			friendName: userName,
 		});
 
 		return myFollow;
 	}
-
-	// =========================================================================
-	// 친구 요청 거절
-	// =========================================================================
 
 	/**
 	 * 친구 요청 거절 (삭제)
@@ -375,15 +338,10 @@ export class FollowService {
 		);
 	}
 
-	// =========================================================================
-	// 친구 삭제 / 요청 철회
-	// =========================================================================
-
 	/**
 	 * 친구 관계 삭제 또는 보낸 요청 철회
 	 */
 	async remove(userId: string, targetUserId: string): Promise<void> {
-		// 내가 보낸 관계 확인
 		const myFollow = await this.followRepository.findByFollowerAndFollowing(
 			userId,
 			targetUserId,
@@ -393,12 +351,9 @@ export class FollowService {
 			throw BusinessExceptions.notFriends(targetUserId);
 		}
 
-		// 트랜잭션으로 양방향 삭제 처리
 		await this.database.$transaction(async (tx) => {
-			// 내 쪽 삭제
 			await this.followRepository.delete(myFollow.id, tx);
 
-			// 상대방 쪽도 삭제 (친구 관계였다면)
 			const theirFollow =
 				await this.followRepository.findByFollowerAndFollowing(
 					targetUserId,
@@ -411,7 +366,6 @@ export class FollowService {
 			}
 		});
 
-		// 캐시 무효화 (친구 관계 변경)
 		await Promise.all([
 			this.cacheService.invalidateMutualFriend(userId, targetUserId),
 			this.cacheService.invalidateMutualFriendIds(userId),
@@ -422,10 +376,6 @@ export class FollowService {
 
 		this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
 	}
-
-	// =========================================================================
-	// 친구 목록 조회
-	// =========================================================================
 
 	/**
 	 * 내 친구 목록 (맞팔 관계)
@@ -528,15 +478,10 @@ export class FollowService {
 		});
 	}
 
-	// =========================================================================
-	// 유틸리티
-	// =========================================================================
-
 	/**
 	 * 맞팔 여부 확인
 	 */
 	async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-		// 1. 캐시 조회 (양방향 키를 정규화하여 하나의 캐시만 사용)
 		const [smallerId, largerId] =
 			userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
 		const cached = await this.cacheService.getMutualFriend(smallerId, largerId);
@@ -544,13 +489,11 @@ export class FollowService {
 			return cached;
 		}
 
-		// 2. 캐시 미스 - DB 조회
 		const isMutual = await this.followRepository.isMutualFriend(
 			userId,
 			targetUserId,
 		);
 
-		// 3. 캐시 저장 (TTL: 1분)
 		await this.cacheService.setMutualFriend(smallerId, largerId, isMutual);
 
 		return isMutual;
@@ -580,10 +523,10 @@ export class FollowService {
 	}
 
 	/**
-	 * 사용자 이름 조회 (알림용)
+	 * 사용자 표시 이름 조회 (알림용)
 	 */
-	async getUserName(userId: string): Promise<string | null> {
-		return this.followRepository.getUserName(userId);
+	async getUserDisplayName(userId: string): Promise<string> {
+		return this.followRepository.getUserDisplayName(userId);
 	}
 
 	/**

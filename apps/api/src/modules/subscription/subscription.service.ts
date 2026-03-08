@@ -7,6 +7,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
 import { isAfter, isSame } from "@/common/date/utils/compare";
+import { now } from "@/common/date/utils/core";
 import { toISOString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
@@ -106,7 +107,6 @@ export class SubscriptionService {
 		}
 
 		try {
-			// 사용자 조회
 			const user =
 				await this.subscriptionRepository.findUserByAppUserId(appUserId);
 
@@ -155,12 +155,10 @@ export class SubscriptionService {
 					this.cacheService.invalidateUserProfile(user.id),
 				]);
 
-				// Discord 관리자 알림 (모든 구독 이벤트)
 				this.adminNotificationQueueService.enqueueSubscriptionEvent(
 					eventPayload,
 				);
 
-				// 결제 문제 시 사용자 푸시 알림
 				if (eventType === "BILLING_ISSUE") {
 					this.notificationQueueService.enqueueBillingIssue({
 						userId: user.id,
@@ -176,10 +174,6 @@ export class SubscriptionService {
 			await release();
 		}
 	}
-
-	// =========================================================================
-	// 이벤트 타입별 핸들러
-	// =========================================================================
 
 	/**
 	 * INITIAL_PURCHASE: 최초 구매
@@ -391,7 +385,7 @@ export class SubscriptionService {
 				transactionId,
 				{
 					status: isRefund ? "EXPIRED" : "CANCELLED",
-					cancelledAt: new Date(),
+					cancelledAt: now(),
 					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,
@@ -715,10 +709,6 @@ export class SubscriptionService {
 			store: event.store,
 		} satisfies SubscriptionEventPayload;
 	}
-
-	// =========================================================================
-	// 유틸리티
-	// =========================================================================
 
 	/**
 	 * transactionId 추출 (빈 문자열 방지)

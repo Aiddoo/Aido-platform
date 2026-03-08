@@ -1,5 +1,14 @@
 import { ErrorCode } from "@aido/errors";
-import { Body, Controller, Get, Logger, Param, Patch } from "@nestjs/common";
+import {
+	Body,
+	Controller,
+	Get,
+	HttpCode,
+	HttpStatus,
+	Logger,
+	Param,
+	Patch,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Timezone } from "@/common/decorators/timezone.decorator";
 
@@ -178,6 +187,7 @@ export class AiSuggestionController {
 	 * PATCH /ai/suggestions/:id - 제안 수락 또는 거절
 	 */
 	@Patch(":id")
+	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "AI 반복 제안 수락/거절",
 		operationId: "handleAiSuggestion",

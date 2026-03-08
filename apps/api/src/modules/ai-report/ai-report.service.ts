@@ -28,10 +28,6 @@ export class AiReportService {
 		private readonly entitlementService: EntitlementService,
 	) {}
 
-	// =========================================================================
-	// 조회
-	// =========================================================================
-
 	/**
 	 * 리포트 상태 조회
 	 *
@@ -45,15 +41,12 @@ export class AiReportService {
 		const currentTime = now();
 		const localNow = dayjs(currentTime).tz(timezone);
 
-		// 다음 주간 리포트: 다음 월요일
 		const nextMonday = localNow.startOf("isoWeek").add(1, "week");
 		const daysUntilWeekly = nextMonday.diff(localNow, "day");
 
-		// 다음 월간 리포트: 다음 달 1일
 		const nextMonth = localNow.add(1, "month").startOf("month");
 		const daysUntilMonthly = nextMonth.diff(localNow, "day");
 
-		// 최신 리포트 조회
 		const [latestWeekly, latestMonthly] = await Promise.all([
 			this.aiReportRepository.findLatest(userId, "WEEKLY"),
 			this.aiReportRepository.findLatest(userId, "MONTHLY"),
@@ -105,10 +98,6 @@ export class AiReportService {
 		return AiReportMapper.toResponse(report);
 	}
 
-	// =========================================================================
-	// 생성
-	// =========================================================================
-
 	/**
 	 * 주간 리포트 생성
 	 *
@@ -120,13 +109,11 @@ export class AiReportService {
 	): Promise<AiReportDto | null> {
 		const localNow = dayjs(now()).tz(timezone);
 
-		// 지난 주 기간 계산
 		const lastWeekStart = localNow.subtract(1, "week").startOf("isoWeek");
 		const lastWeekEnd = lastWeekStart.add(1, "week");
 		const year = lastWeekStart.isoWeekYear();
 		const period = lastWeekStart.isoWeek();
 
-		// 중복 체크
 		const exists = await this.aiReportRepository.exists(
 			userId,
 			"WEEKLY",
@@ -140,7 +127,6 @@ export class AiReportService {
 			return null;
 		}
 
-		// 이전 주 기간 (비교용)
 		const prevWeekStart = lastWeekStart.subtract(1, "week");
 		const prevWeekEnd = lastWeekStart;
 
@@ -169,14 +155,12 @@ export class AiReportService {
 	): Promise<AiReportDto | null> {
 		const localNow = dayjs(now()).tz(timezone);
 
-		// 지난 달 기간 계산
 		const lastMonth = localNow.subtract(1, "month");
 		const lastMonthStart = lastMonth.startOf("month");
 		const lastMonthEnd = lastMonth.endOf("month").add(1, "day").startOf("day");
 		const year = lastMonthStart.year();
 		const period = lastMonthStart.month() + 1;
 
-		// 중복 체크
 		const exists = await this.aiReportRepository.exists(
 			userId,
 			"MONTHLY",
@@ -190,7 +174,6 @@ export class AiReportService {
 			return null;
 		}
 
-		// 이전 달 기간 (비교용)
 		const prevMonthStart = lastMonthStart.subtract(1, "month");
 		const prevMonthEnd = lastMonthStart;
 

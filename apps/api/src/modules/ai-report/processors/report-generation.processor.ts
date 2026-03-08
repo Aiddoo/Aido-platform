@@ -9,10 +9,6 @@ import { NotificationMessageBuilder } from "../../notification/templates/notific
 import { AiReportService } from "../ai-report.service";
 import type { ReportGenerationJob } from "../jobs/report-generation.job";
 
-// =============================================================================
-// Constants & Types
-// =============================================================================
-
 export const AI_REPORT_QUEUE = "ai-report-generation";
 
 /** 잡 이름 상수 */
@@ -40,10 +36,6 @@ export interface AiReportJobMap {
 }
 
 export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
-
-// =============================================================================
-// Processor
-// =============================================================================
 
 /**
  * AI 리포트 생성 BullMQ 프로세서

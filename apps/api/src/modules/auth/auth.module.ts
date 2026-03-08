@@ -6,6 +6,9 @@ import { PassportModule } from "@nestjs/passport";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { AdminNotificationModule } from "@/modules/admin-notification/admin-notification.module";
 import { EmailModule } from "@/modules/email/email.module";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 import {
 	AccountController,
 	AuthController,
@@ -75,6 +78,9 @@ import { JwtRefreshStrategy, JwtStrategy } from "./strategies";
 		LoginAttemptRepository,
 		SecurityLogRepository,
 		OAuthStateRepository,
+		UserConsentRepository,
+		UserPreferenceRepository,
+		TodoCategoryRepository,
 		// Services
 		PasswordService,
 		SessionService,

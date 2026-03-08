@@ -8,18 +8,10 @@ import { DatabaseService } from "@/database";
 
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 
-// =============================================================================
-// Types
-// =============================================================================
-
 export interface EffectiveStreakResult {
 	streak: number;
 	isAtRisk: boolean;
 }
-
-// =============================================================================
-// Service
-// =============================================================================
 
 @Injectable()
 export class StreakService {
@@ -29,10 +21,6 @@ export class StreakService {
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly database: DatabaseService,
 	) {}
-
-	// =========================================================================
-	// Static — 순수 함수 (DB 접근 없음)
-	// =========================================================================
 
 	/**
 	 * 저녁 리마인더 sweep용 — 입력값만으로 effective streak 계산
@@ -78,10 +66,6 @@ export class StreakService {
 
 		return { streak: currentStreak, isAtRisk };
 	}
-
-	// =========================================================================
-	// Instance — DB 접근 메서드
-	// =========================================================================
 
 	/**
 	 * 투두 완료 상태 변경 시 스트릭 갱신
@@ -146,7 +130,6 @@ export class StreakService {
 
 		const { currentStreak, longestStreak, lastCompletedDate } = pref;
 
-		// 이미 오늘 완료 처리됨
 		if (lastCompletedDate && isSameDay(lastCompletedDate, today)) {
 			return;
 		}
@@ -178,12 +161,10 @@ export class StreakService {
 
 		const { lastCompletedDate } = pref;
 
-		// 오늘 완료 처리된 적 없으면 무시
 		if (!lastCompletedDate || !isSameDay(lastCompletedDate, today)) {
 			return;
 		}
 
-		// 어제 완료 여부로 스트릭 결정
 		const yesterday = subtractDays(1, today);
 		const yesterdayStats = await this.#getTodoStats(userId, yesterday);
 

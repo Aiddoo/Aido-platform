@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -89,7 +90,7 @@ export class UserRepository {
 
 	async findByIdWithProfile(
 		id: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserWithProfile | null> {
 		const client = tx ?? this.database;
 		return client.user.findUnique({
@@ -132,7 +133,7 @@ export class UserRepository {
 		data: Omit<Prisma.UserCreateInput, "userTag"> & {
 			userTag?: string;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<User> {
 		const client = tx ?? this.database;
 
@@ -148,7 +149,7 @@ export class UserRepository {
 	}
 
 	async #generateUniqueUserTag(
-		client: Prisma.TransactionClient | DatabaseService,
+		client: TransactionClient | DatabaseService,
 	): Promise<string> {
 		for (let i = 0; i < UserRepository.MAX_USER_TAG_RETRIES; i++) {
 			const tag = generateUserTag();
@@ -173,7 +174,7 @@ export class UserRepository {
 	async updateStatus(
 		id: string,
 		status: UserStatus,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<User> {
 		const client = tx ?? this.database;
 		return client.user.update({
@@ -182,10 +183,7 @@ export class UserRepository {
 		});
 	}
 
-	async markEmailVerified(
-		id: string,
-		tx?: Prisma.TransactionClient,
-	): Promise<User> {
+	async markEmailVerified(id: string, tx?: TransactionClient): Promise<User> {
 		const client = tx ?? this.database;
 		return client.user.update({
 			where: { id },
@@ -196,10 +194,7 @@ export class UserRepository {
 		});
 	}
 
-	async updateLastLoginAt(
-		id: string,
-		tx?: Prisma.TransactionClient,
-	): Promise<void> {
+	async updateLastLoginAt(id: string, tx?: TransactionClient): Promise<void> {
 		const client = tx ?? this.database;
 		await client.user.update({
 			where: { id },
@@ -217,7 +212,7 @@ export class UserRepository {
 	async createProfile(
 		userId: string,
 		data: { name?: string; profileImage?: string },
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<void> {
 		const client = tx ?? this.database;
 		await client.userProfile.create({
@@ -232,7 +227,7 @@ export class UserRepository {
 	async updateProfile(
 		userId: string,
 		data: { name?: string | null; profileImage?: string | null },
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<{ name: string | null; profileImage: string | null }> {
 		const client = tx ?? this.database;
 
@@ -259,7 +254,7 @@ export class UserRepository {
 		return profile;
 	}
 
-	async softDelete(id: string, tx?: Prisma.TransactionClient): Promise<User> {
+	async softDelete(id: string, tx?: TransactionClient): Promise<User> {
 		const client = tx ?? this.database;
 		return client.user.update({
 			where: { id },
@@ -267,7 +262,7 @@ export class UserRepository {
 		});
 	}
 
-	async restore(id: string, tx?: Prisma.TransactionClient): Promise<User> {
+	async restore(id: string, tx?: TransactionClient): Promise<User> {
 		const client = tx ?? this.database;
 		return client.user.update({
 			where: { id },
@@ -285,7 +280,7 @@ export class UserRepository {
 		}) as Promise<{ id: string; email: string; deletedAt: Date }[]>;
 	}
 
-	async hardDelete(id: string, tx?: Prisma.TransactionClient): Promise<void> {
+	async hardDelete(id: string, tx?: TransactionClient): Promise<void> {
 		const client = tx ?? this.database;
 		await client.user.delete({ where: { id } });
 	}

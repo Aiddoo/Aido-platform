@@ -8,10 +8,6 @@ import {
 } from "../../constants/reminder.constants";
 import type { IReminderScheduler } from "../interfaces/reminder-scheduler.interface";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
 export const TODO_REMINDER_QUEUE = "todo-reminder";
 
 export interface ReminderJobData {
@@ -20,10 +16,6 @@ export interface ReminderJobData {
 	todoTitle: string;
 	stageLabel: string;
 }
-
-// =============================================================================
-// Adapter
-// =============================================================================
 
 /**
  * BullMQ 리마인더 스케줄러 어댑터

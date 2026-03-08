@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { DatabaseService } from "@/database/database.service";
 import { type Follow, type Prisma } from "@/generated/prisma/client";
 
@@ -8,29 +9,9 @@ import type {
 	TransactionClient,
 } from "./types/follow.types";
 
-// =============================================================================
-// Repository
-// =============================================================================
-
 @Injectable()
 export class FollowRepository {
 	constructor(private readonly database: DatabaseService) {}
-
-	// Include 설정 (프로필 정보 포함)
-	readonly #userSelect = {
-		id: true,
-		userTag: true,
-		profile: {
-			select: {
-				name: true,
-				profileImage: true,
-			},
-		},
-	} as const;
-
-	// =========================================================================
-	// 기본 CRUD
-	// =========================================================================
 
 	/**
 	 * 팔로우 관계 생성
@@ -84,10 +65,10 @@ export class FollowRepository {
 			where: { id },
 			include: {
 				follower: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 				following: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 			},
 		});
@@ -158,10 +139,6 @@ export class FollowRepository {
 		});
 	}
 
-	// =========================================================================
-	// 친구 목록 조회 (맞팔 관계)
-	// =========================================================================
-
 	/**
 	 * 맞팔 친구 목록 조회
 	 * 내가 팔로우하고(ACCEPTED), 상대방도 나를 팔로우(ACCEPTED)한 관계
@@ -195,10 +172,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 				following: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 			},
 			take: size + 1,
@@ -234,10 +211,6 @@ export class FollowRepository {
 		return myFollow !== null && theirFollow !== null;
 	}
 
-	// =========================================================================
-	// 친구 요청 목록 조회
-	// =========================================================================
-
 	/**
 	 * 받은 친구 요청 목록 (PENDING 상태)
 	 */
@@ -253,10 +226,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 				following: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 			},
 			take: size + 1,
@@ -281,10 +254,10 @@ export class FollowRepository {
 			},
 			include: {
 				follower: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 				following: {
-					select: this.#userSelect,
+					select: USER_BRIEF_SELECT,
 				},
 			},
 			take: size + 1,
@@ -295,10 +268,6 @@ export class FollowRepository {
 			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		});
 	}
-
-	// =========================================================================
-	// 카운트 조회
-	// =========================================================================
 
 	/**
 	 * 친구 수 (맞팔)
@@ -345,10 +314,6 @@ export class FollowRepository {
 		});
 	}
 
-	// =========================================================================
-	// 사용자 존재 확인 (외부 의존성)
-	// =========================================================================
-
 	/**
 	 * 사용자 존재 확인
 	 */
@@ -361,18 +326,20 @@ export class FollowRepository {
 	}
 
 	/**
-	 * 사용자 이름 조회 (알림용)
+	 * 사용자 표시 이름 조회 (알림용)
+	 * profile.name 우선, 없으면 userTag 폴백
 	 */
-	async getUserName(userId: string): Promise<string | null> {
+	async getUserDisplayName(userId: string): Promise<string> {
 		const user = await this.database.user.findUnique({
 			where: { id: userId },
 			select: {
+				userTag: true,
 				profile: {
 					select: { name: true },
 				},
 			},
 		});
-		return user?.profile?.name ?? null;
+		return user?.profile?.name ?? user?.userTag ?? userId;
 	}
 
 	/**

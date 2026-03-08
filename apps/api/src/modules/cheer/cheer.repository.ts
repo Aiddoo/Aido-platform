@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { addDays } from "@/common/date/utils/arithmetic";
+import { now } from "@/common/date/utils/core";
 import { startOfDay } from "@/common/date/utils/range";
 import { DatabaseService } from "@/database/database.service";
 import type { Cheer } from "@/generated/prisma/client";
@@ -11,38 +13,18 @@ import type {
 	FindCheersParams,
 } from "./types";
 
-// =============================================================================
-// Repository
-// =============================================================================
-
 @Injectable()
 export class CheerRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	// Include 설정 (사용자 정보 포함)
-	readonly #userSelect = {
-		id: true,
-		userTag: true,
-		profile: {
-			select: {
-				name: true,
-				profileImage: true,
-			},
-		},
-	} as const;
-
 	readonly #cheerInclude = {
 		sender: {
-			select: this.#userSelect,
+			select: USER_BRIEF_SELECT,
 		},
 		receiver: {
-			select: this.#userSelect,
+			select: USER_BRIEF_SELECT,
 		},
 	} as const;
-
-	// =========================================================================
-	// 기본 CRUD
-	// =========================================================================
 
 	/**
 	 * ID로 Cheer 조회
@@ -59,7 +41,7 @@ export class CheerRepository {
 	async markAsRead(id: number): Promise<Cheer> {
 		return this.database.cheer.update({
 			where: { id },
-			data: { readAt: new Date() },
+			data: { readAt: now() },
 		});
 	}
 
@@ -73,14 +55,10 @@ export class CheerRepository {
 				receiverId,
 				readAt: null,
 			},
-			data: { readAt: new Date() },
+			data: { readAt: now() },
 		});
 		return result.count;
 	}
-
-	// =========================================================================
-	// 목록 조회
-	// =========================================================================
 
 	/**
 	 * 받은 Cheer 목록 조회
@@ -126,10 +104,6 @@ export class CheerRepository {
 		});
 	}
 
-	// =========================================================================
-	// 제한 및 쿨다운 체크
-	// =========================================================================
-
 	/**
 	 * 오늘 보낸 Cheer 수 조회 (일일 제한 체크용)
 	 */
@@ -164,6 +138,33 @@ export class CheerRepository {
 				receiverId,
 			},
 			orderBy: { createdAt: "desc" },
+		});
+	}
+
+	/**
+	 * 받은 Cheer 총 개수
+	 */
+	async countReceived(userId: string): Promise<number> {
+		return this.database.cheer.count({
+			where: { receiverId: userId },
+		});
+	}
+
+	/**
+	 * 보낸 Cheer 총 개수
+	 */
+	async countSent(userId: string): Promise<number> {
+		return this.database.cheer.count({
+			where: { senderId: userId },
+		});
+	}
+
+	/**
+	 * 읽지 않은 받은 Cheer 개수
+	 */
+	async countUnreadReceived(userId: string): Promise<number> {
+		return this.database.cheer.count({
+			where: { receiverId: userId, readAt: null },
 		});
 	}
 }

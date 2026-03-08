@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
 	ApiBadRequestError,
@@ -10,22 +10,11 @@ import {
 	SWAGGER_TAGS,
 } from "@/common/swagger";
 
-import {
-	CurrentUser,
-	type CurrentUserPayload,
-} from "../auth/decorators/current-user.decorator";
+import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
 import { InquiryService } from "./inquiry.service";
 
-/**
- * Inquiry API 컨트롤러
- *
- * 사용자 문의사항 접수 API입니다.
- *
- * ### 문의
- * - POST /inquiries - 문의 등록
- */
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
 @Controller("inquiries")
@@ -33,7 +22,6 @@ export class InquiryController {
 	constructor(private readonly inquiryService: InquiryService) {}
 
 	@Post()
-	@HttpCode(HttpStatus.CREATED)
 	@ApiDoc({
 		summary: "문의 접수",
 		description: `사용자 문의를 관리자 이메일로 발송합니다.
@@ -50,7 +38,7 @@ export class InquiryController {
 	@ApiCreatedResponse({ type: CreateInquiryResponseDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async createInquiry(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateInquiryDto,

@@ -26,17 +26,6 @@ import type {
 	SendNudgeParams,
 } from "./types";
 
-// =============================================================================
-// Service
-// =============================================================================
-
-/**
- * Nudge 서비스
- *
- * - 콕 찌르기 보내기 (친구 확인, 일일 제한, 쿨다운 체크)
- * - 받은/보낸 콕 찌르기 목록 조회
- * - 제한 및 쿨다운 정보 조회
- */
 @Injectable()
 export class NudgeService {
 	readonly #logger = new Logger(NudgeService.name);
@@ -49,10 +38,6 @@ export class NudgeService {
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
-
-	// =========================================================================
-	// 콕 찌르기 보내기
-	// =========================================================================
 
 	/**
 	 * 콕 찌르기 보내기
@@ -74,22 +59,21 @@ export class NudgeService {
 	): Promise<NudgeWithRelations> {
 		const { senderId, receiverId, todoId, message } = params;
 
-		// 트랜잭션으로 감싸서 check-and-create를 atomic하게 수행
+		// 1. 자기 자신 체크
+		if (senderId === receiverId) {
+			throw BusinessExceptions.cannotNudgeSelf();
+		}
+
+		// 2. 친구 관계 확인
+		const isFriend = await this.followService.isMutualFriend(
+			senderId,
+			receiverId,
+		);
+		if (!isFriend) {
+			throw BusinessExceptions.nudgeNotFriend(receiverId);
+		}
+
 		const nudge = await this.database.$transaction(async (tx) => {
-			// 1. 자기 자신 체크
-			if (senderId === receiverId) {
-				throw BusinessExceptions.cannotNudgeSelf();
-			}
-
-			// 2. 친구 관계 확인
-			const isFriend = await this.followService.isMutualFriend(
-				senderId,
-				receiverId,
-			);
-			if (!isFriend) {
-				throw BusinessExceptions.nudgeNotFriend(receiverId);
-			}
-
 			// 3. Todo 존재 및 소유자 확인
 			const todo = await tx.todo.findUnique({
 				where: { id: todoId },
@@ -107,12 +91,11 @@ export class NudgeService {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
 
-			// Todo가 receiver의 것인지 확인
 			if (todo.userId !== receiverId) {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
 
-			// 3.5. 공개 Todo 및 오늘의 할 일인지 체크
+			// 3.5. 공개 Todo + 오늘의 할 일 체크
 			if (todo.visibility !== "PUBLIC") {
 				throw BusinessExceptions.todoNotFound(todoId);
 			}
@@ -126,7 +109,7 @@ export class NudgeService {
 				throw BusinessExceptions.nudgeTodoNotToday(todoId);
 			}
 
-			// 4. 일일 제한 체크 (트랜잭션 내에서 실시간 조회)
+			// 4. 일일 제한 체크
 			const entitlement = await this.entitlementService.getFeatureLimitInTx(
 				tx,
 				senderId,
@@ -145,7 +128,7 @@ export class NudgeService {
 				BusinessExceptions.nudgeDailyLimitExceeded(limit),
 			);
 
-			// 5. 쿨다운 체크 (트랜잭션 내에서 실시간 조회)
+			// 5. 쿨다운 체크
 			const lastNudge = await tx.nudge.findFirst({
 				where: {
 					senderId,
@@ -217,7 +200,6 @@ export class NudgeService {
 			return newNudge;
 		});
 
-		// 7. 알림 큐 등록 (트랜잭션 성공 후)
 		const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
 		this.notificationQueueService.enqueueNudgeSent({
 			nudgeId: nudge.id,
@@ -231,10 +213,6 @@ export class NudgeService {
 
 		return nudge;
 	}
-
-	// =========================================================================
-	// 목록 조회
-	// =========================================================================
 
 	/**
 	 * 받은 콕 찌르기 목록 조회
@@ -302,10 +280,6 @@ export class NudgeService {
 		});
 	}
 
-	// =========================================================================
-	// 제한 및 쿨다운 정보
-	// =========================================================================
-
 	/**
 	 * 일일 콕 찌르기 제한 정보 조회
 	 */
@@ -361,10 +335,6 @@ export class NudgeService {
 		return this.#calculateCooldownInfo(lastNudge?.createdAt);
 	}
 
-	// =========================================================================
-	// 읽음 처리
-	// =========================================================================
-
 	/**
 	 * 콕 찌르기 읽음 처리
 	 */
@@ -375,12 +345,10 @@ export class NudgeService {
 			throw BusinessExceptions.nudgeNotFound(nudgeId);
 		}
 
-		// 수신자만 읽음 처리 가능
 		if (nudge.receiverId !== userId) {
 			throw BusinessExceptions.nudgeNotFound(nudgeId);
 		}
 
-		// 이미 읽은 경우 무시
 		if (nudge.readAt) {
 			return;
 		}
@@ -390,9 +358,26 @@ export class NudgeService {
 		this.#logger.debug(`Nudge marked as read: id=${nudgeId}`);
 	}
 
-	// =========================================================================
-	// Private Methods
-	// =========================================================================
+	/**
+	 * 받은 Nudge 총 개수
+	 */
+	async countReceivedNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countReceived(userId);
+	}
+
+	/**
+	 * 보낸 Nudge 총 개수
+	 */
+	async countSentNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countSent(userId);
+	}
+
+	/**
+	 * 읽지 않은 받은 Nudge 개수
+	 */
+	async countUnreadReceivedNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countUnreadReceived(userId);
+	}
 
 	/**
 	 * 쿨다운 정보 계산

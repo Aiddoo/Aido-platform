@@ -43,31 +43,6 @@ import { PasswordManagementService } from "../services/password-management.servi
 import type { RefreshTokenPayload } from "../strategies/jwt-refresh.strategy";
 import { extractMetadata } from "./auth-controller.utils";
 
-/**
- * Auth API 컨트롤러
- *
- * 이메일 회원가입, 로그인, 토큰 갱신 등 인증 관련 API입니다.
- *
- * ### 회원가입 및 인증
- * - POST /auth/register - 회원가입
- * - POST /auth/verify-email - 이메일 인증 코드 확인
- * - POST /auth/resend-verification - 인증 코드 재발송
- *
- * ### 로그인 및 로그아웃
- * - POST /auth/login - 이메일 로그인
- * - POST /auth/logout - 로그아웃 (현재 기기)
- * - POST /auth/logout-all - 전체 로그아웃 (모든 기기)
- *
- * ### 토큰 관리
- * - POST /auth/refresh - 토큰 갱신
- *
- * ### 비밀번호 관리
- * - POST /auth/forgot-password - 비밀번호 재설정 코드 요청
- * - POST /auth/reset-password - 비밀번호 재설정
- * - POST /auth/password/setup-code - 비밀번호 최초 설정 코드 요청 (소셜 계정)
- * - POST /auth/password - 비밀번호 최초 설정 (소셜 계정)
- * - PATCH /auth/password - 비밀번호 변경
- */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class AuthController {
@@ -75,10 +50,6 @@ export class AuthController {
 		private readonly authService: AuthService,
 		private readonly passwordManagementService: PasswordManagementService,
 	) {}
-
-	// ============================================
-	// 회원가입 및 인증
-	// ============================================
 
 	@Post("register")
 	@Public()
@@ -184,10 +155,6 @@ export class AuthController {
 		const result = await this.authService.resendVerification(dto.email);
 		return result;
 	}
-
-	// ============================================
-	// 로그인 및 로그아웃
-	// ============================================
 
 	@Post("login")
 	@Public()
@@ -304,10 +271,6 @@ export class AuthController {
 		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
-	// ============================================
-	// 토큰 관리
-	// ============================================
-
 	@Post("refresh")
 	@Public()
 	@Throttle({ default: { ttl: 60000, limit: 20 } })
@@ -343,10 +306,6 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		const result = await this.authService.refreshTokens(payload.refreshToken);
 		return AuthMapper.toRefreshTokensResponse(result);
 	}
-
-	// ============================================
-	// 비밀번호 관리
-	// ============================================
 
 	@Post("forgot-password")
 	@Public()

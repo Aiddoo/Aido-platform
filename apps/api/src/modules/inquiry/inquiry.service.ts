@@ -1,6 +1,7 @@
 import type { InquiryCategory } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { now } from "@/common/date/utils/core";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { EmailService } from "@/modules/email/email.service";
 
@@ -47,7 +48,7 @@ export class InquiryService {
 		const { userId, userEmail, category, content } = params;
 		const supportEmail = this.configService.email.supportEmail;
 		const categoryLabel = CATEGORY_LABELS[category];
-		const submittedAt = formatSubmittedAtKst(new Date());
+		const submittedAt = formatSubmittedAtKst(now());
 
 		const result = await this.emailService.sendInquiry(supportEmail, {
 			userEmail,

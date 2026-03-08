@@ -4,7 +4,7 @@ import { TestBed } from "@suites/unit";
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
 import { UserSettingsService } from "./services/user-settings.service";
-import { SettingsController } from "./settings.controller";
+import { SettingsController } from "./user-settings.controller";
 
 describe("SettingsController", () => {
 	let controller: SettingsController;

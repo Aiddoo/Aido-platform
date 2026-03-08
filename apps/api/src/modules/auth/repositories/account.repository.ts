@@ -1,12 +1,8 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { EncryptionService } from "@/common/encryption";
 import { DatabaseService } from "@/database";
-import type {
-	Account,
-	AccountProvider,
-	Prisma,
-} from "@/generated/prisma/client";
+import type { Account, AccountProvider } from "@/generated/prisma/client";
 
 @Injectable()
 export class AccountRepository {
@@ -40,7 +36,7 @@ export class AccountRepository {
 	async createCredentialAccount(
 		userId: string,
 		hashedPassword: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Account> {
 		const client = tx ?? this.database;
 		return client.account.create({
@@ -56,7 +52,7 @@ export class AccountRepository {
 	async updatePassword(
 		userId: string,
 		hashedPassword: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Account> {
 		const client = tx ?? this.database;
 		return client.account.update({
@@ -77,7 +73,7 @@ export class AccountRepository {
 			accessTokenExpiresAt?: Date;
 			scope?: string;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Account> {
 		const client = tx ?? this.database;
 		return client.account.create({
@@ -105,7 +101,7 @@ export class AccountRepository {
 			refreshToken?: string;
 			accessTokenExpiresAt?: Date;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Account> {
 		const client = tx ?? this.database;
 		return client.account.update({
@@ -127,7 +123,7 @@ export class AccountRepository {
 	async deleteAccount(
 		userId: string,
 		provider: AccountProvider,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Account> {
 		const client = tx ?? this.database;
 		return client.account.delete({

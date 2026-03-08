@@ -26,19 +26,6 @@ import type {
 	TransactionClient,
 } from "./types/notification.types";
 
-// =============================================================================
-// Service
-// =============================================================================
-
-/**
- * 알림 서비스
- *
- * - 알림 생성 (+ 중복 방지)
- * - 알림 목록 조회 (커서 기반 페이지네이션)
- * - 읽음 처리
- * - 중복 체크 위임
- * - 오래된 알림 정리
- */
 @Injectable()
 export class NotificationService {
 	readonly #logger = new Logger(NotificationService.name);
@@ -50,10 +37,6 @@ export class NotificationService {
 		private readonly cacheService: CacheService,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
 	) {}
-
-	// =========================================================================
-	// 알림 생성 및 발송
-	// =========================================================================
 
 	/**
 	 * 알림 타입별 서비스 레이어 중복 방지 전략
@@ -252,7 +235,6 @@ export class NotificationService {
 
 		this.pushDeliveryService.fireAndForgetBatchPush(dataList);
 
-		// 배치 알림 대상 사용자들의 unread count 캐시 무효화
 		const uniqueUserIds = [...new Set(dataList.map((d) => d.userId))];
 		for (const uid of uniqueUserIds) {
 			void this.cacheService.invalidateUnreadCount(uid);
@@ -267,10 +249,6 @@ export class NotificationService {
 	async createOnly(data: CreateNotificationData): Promise<Notification> {
 		return this.notificationRepository.createNotification(data);
 	}
-
-	// =========================================================================
-	// 알림 조회
-	// =========================================================================
 
 	/**
 	 * 알림 목록 조회 (커서 기반 페이지네이션)
@@ -328,10 +306,6 @@ export class NotificationService {
 		);
 	}
 
-	// =========================================================================
-	// 읽음 처리
-	// =========================================================================
-
 	/**
 	 * 단일 알림 읽음 처리
 	 */
@@ -370,10 +344,6 @@ export class NotificationService {
 
 		return result;
 	}
-
-	// =========================================================================
-	// 중복 체크 (계층 위임)
-	// =========================================================================
 
 	/**
 	 * 특정 타입 + notificationDate 조합의 알림 존재 여부 확인
@@ -420,10 +390,6 @@ export class NotificationService {
 	): Promise<Set<string>> {
 		return this.notificationRepository.findAlreadyNotifiedUserIds(params, tx);
 	}
-
-	// =========================================================================
-	// 관리 기능
-	// =========================================================================
 
 	/**
 	 * 오래된 알림 정리 (90일 이상)

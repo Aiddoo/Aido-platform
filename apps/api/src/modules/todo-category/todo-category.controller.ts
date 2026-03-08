@@ -45,16 +45,6 @@ import {
 import { TodoCategoryMapper } from "./todo-category.mapper";
 import { TodoCategoryService } from "./todo-category.service";
 
-/**
- * TodoCategory API 컨트롤러
- *
- * 할 일 카테고리를 생성, 조회, 수정, 삭제하는 API입니다.
- *
- * ### 주요 기능
- * - 카테고리 CRUD
- * - 카테고리 순서 변경 (드래그 앤 드롭)
- * - 카테고리별 할 일 개수 조회
- */
 @ApiTags(SWAGGER_TAGS.TODO_CATEGORIES)
 @ApiBearerAuth()
 @Controller("todo-categories")
@@ -63,13 +53,6 @@ export class TodoCategoryController {
 
 	constructor(private readonly todoCategoryService: TodoCategoryService) {}
 
-	// ============================================
-	// 리소스 제한 정보
-	// ============================================
-
-	/**
-	 * GET /todo-categories/resource-limit - 카테고리 리소스 제한 정보
-	 */
 	@Get("resource-limit")
 	@ApiDoc({
 		summary: "카테고리 리소스 제한 정보 조회",
@@ -81,20 +64,13 @@ export class TodoCategoryController {
 - \`maxCount\`: 최대 한도 (null이면 무제한)`,
 	})
 	@ApiSuccessResponse({ type: TodoCategoryResourceLimitResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<TodoCategoryResourceLimitResponseDto> {
 		return this.todoCategoryService.getResourceLimitInfo(user.userId);
 	}
 
-	// ============================================
-	// CREATE - 카테고리 생성
-	// ============================================
-
-	/**
-	 * POST /todo-categories - 카테고리 생성
-	 */
 	@Post()
 	@ApiDoc({
 		summary: "카테고리 생성",
@@ -112,7 +88,7 @@ export class TodoCategoryController {
 - 같은 이름의 카테고리가 이미 존재하면 \`409 Conflict\` 에러 반환`,
 	})
 	@ApiCreatedResponse({ type: CreateTodoCategoryResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
 	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
@@ -138,13 +114,6 @@ export class TodoCategoryController {
 		};
 	}
 
-	// ============================================
-	// READ - 카테고리 조회
-	// ============================================
-
-	/**
-	 * GET /todo-categories - 카테고리 목록 조회
-	 */
 	@Get()
 	@ApiDoc({
 		summary: "카테고리 목록 조회",
@@ -161,7 +130,7 @@ export class TodoCategoryController {
 - **할 일** (\`#FF6B43\`, 앱 메인 주황색)`,
 	})
 	@ApiSuccessResponse({ type: TodoCategoryListResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async findAll(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<TodoCategoryListResponseDto> {
@@ -174,9 +143,6 @@ export class TodoCategoryController {
 		};
 	}
 
-	/**
-	 * GET /todo-categories/:id - 카테고리 상세 조회
-	 */
 	@Get(":id")
 	@ApiDoc({
 		summary: "카테고리 상세 조회",
@@ -187,7 +153,7 @@ export class TodoCategoryController {
 - \`todoCount\`: 해당 카테고리의 할 일 개수 포함`,
 	})
 	@ApiSuccessResponse({ type: TodoCategoryResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0852)
 	async findOne(
@@ -206,14 +172,8 @@ export class TodoCategoryController {
 		};
 	}
 
-	// ============================================
-	// UPDATE - 카테고리 수정
-	// ============================================
-
-	/**
-	 * PATCH /todo-categories/:id - 카테고리 수정
-	 */
 	@Patch(":id")
+	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "카테고리 수정",
 		operationId: "updateTodoCategory",
@@ -229,7 +189,7 @@ export class TodoCategoryController {
 - 이름 변경 시 동일한 이름의 카테고리가 이미 존재하면 \`409 Conflict\` 에러`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoCategoryResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
 	async update(
@@ -253,10 +213,8 @@ export class TodoCategoryController {
 		};
 	}
 
-	/**
-	 * PATCH /todo-categories/:id/reorder - 카테고리 순서 변경
-	 */
 	@Patch(":id/reorder")
+	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "카테고리 순서 변경",
 		operationId: "reorderTodoCategory",
@@ -290,7 +248,7 @@ export class TodoCategoryController {
 - 자기 자신을 targetCategoryId로 지정하면 무시 (변경 없음)`,
 	})
 	@ApiSuccessResponse({ type: ReorderTodoCategoryResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	async reorder(
 		@CurrentUser() user: CurrentUserPayload,
@@ -316,13 +274,6 @@ export class TodoCategoryController {
 		};
 	}
 
-	// ============================================
-	// DELETE - 카테고리 삭제
-	// ============================================
-
-	/**
-	 * DELETE /todo-categories/:id - 카테고리 삭제
-	 */
 	@Delete(":id")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
@@ -355,7 +306,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 | moveToCategoryId 카테고리 없음 | \`TODO_CATEGORY_0851\` | 카테고리를 찾을 수 없습니다 |`,
 	})
 	@ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
-	@ApiUnauthorizedError()
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0854)
 	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0855)
