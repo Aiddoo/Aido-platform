@@ -1,4 +1,3 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
@@ -19,44 +18,18 @@ export class MonthlyReportStrategy {
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-		const { tz, localHour, localMinute } = ctx;
+		const { tz } = ctx;
 		const today = todayInTimezone(tz);
 		const monthAgo = dayjs.utc(today).subtract(1, "month").toDate();
 
-		// 프리미엄: 커스텀 시간, 무료: 08:00
-		const defaultHour = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR;
-		const defaultMinute = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE;
-		const isFreeTime =
-			localHour === defaultHour && localMinute === defaultMinute;
-
-		const premiumUsers = await this.database.user.findMany({
+		// 오케스트레이터가 매월 1일 10:00에만 호출 → 전체 pushEnabled 유저 대상
+		const users = await this.database.user.findMany({
 			where: {
-				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-				preference: {
-					timezone: tz,
-					pushEnabled: true,
-					morningReminderHour: localHour,
-					morningReminderMinute: localMinute,
-				},
+				preference: { timezone: tz, pushEnabled: true },
 				todos: { some: { startDate: { gte: monthAgo, lt: today } } },
 			},
 			select: { id: true },
 		});
-
-		let freeUsers: typeof premiumUsers = [];
-		if (isFreeTime) {
-			freeUsers = await this.database.user.findMany({
-				where: {
-					subscriptionStatus: { not: "ACTIVE" },
-					role: { not: "ADMIN" },
-					preference: { timezone: tz, pushEnabled: true },
-					todos: { some: { startDate: { gte: monthAgo, lt: today } } },
-				},
-				select: { id: true },
-			});
-		}
-
-		const users = [...premiumUsers, ...freeUsers];
 
 		if (users.length === 0) {
 			return { sent: 0 };

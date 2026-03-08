@@ -20,12 +20,12 @@ describe("MonthlyReportStrategy", () => {
 
 	const TZ = "Asia/Seoul";
 
-	/** KST 2024-02-01 (목요일) 08:00 = UTC 2024-01-31T23:00:00Z */
-	const FAKE_NOW = new Date("2024-01-31T23:00:00Z");
+	/** KST 2024-02-01 (목요일) 10:00 = UTC 2024-02-01T01:00:00Z */
+	const FAKE_NOW = new Date("2024-02-01T01:00:00Z");
 
 	const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 		tz: TZ,
-		localHour: 8,
+		localHour: 10,
 		localMinute: 0,
 		dayOfWeek: 4,
 		today: dayjs.utc("2024-02-01").startOf("day").toDate(),
@@ -58,46 +58,37 @@ describe("MonthlyReportStrategy", () => {
 	});
 
 	// =========================================================================
-	// 프리미엄 사용자
+	// 전체 pushEnabled 유저 대상 발송
 	// =========================================================================
 
-	it("프리미엄 사용자에게 월간 리포트를 발송한다", async () => {
-		const ctx = makeCtx({ localHour: 9, localMinute: 30 });
+	it("해당 타임존의 모든 pushEnabled 유저에게 월간 리포트를 발송한다", async () => {
+		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([
-			{ id: "premium-1" },
-		] as never);
+		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
 
 		const result = await strategy.execute(ctx);
 
 		expect(result).toEqual({ sent: 1 });
+
+		// 단일 쿼리로 premium/free 구분 없이 조회
+		expect(database.user.findMany).toHaveBeenCalledTimes(1);
+		expect(database.user.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: expect.objectContaining({
+					preference: { timezone: TZ, pushEnabled: true },
+				}),
+			}),
+		);
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.monthlyReport();
 		expect(notifications?.[0]).toMatchObject({
-			userId: "premium-1",
+			userId: "user-1",
 			type: "MONTHLY_REPORT",
 			title: expected.title,
 			body: expected.body,
 		});
-	});
-
-	// =========================================================================
-	// 무료 사용자
-	// =========================================================================
-
-	it("무료 사용자에게 08:00에 월간 리포트를 발송한다", async () => {
-		const ctx = makeCtx({ localHour: 8, localMinute: 0 });
-
-		database.user.findMany
-			.mockResolvedValueOnce([] as never) // 프리미엄
-			.mockResolvedValueOnce([{ id: "free-1" }] as never); // 무료
-
-		const result = await strategy.execute(ctx);
-
-		expect(result).toEqual({ sent: 1 });
-		expect(database.user.findMany).toHaveBeenCalledTimes(2);
 	});
 
 	// =========================================================================
@@ -132,9 +123,7 @@ describe("MonthlyReportStrategy", () => {
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
 		const ctx = makeCtx();
 
-		database.user.findMany
-			.mockResolvedValueOnce([] as never)
-			.mockResolvedValueOnce([] as never);
+		database.user.findMany.mockResolvedValueOnce([] as never);
 
 		const result = await strategy.execute(ctx);
 

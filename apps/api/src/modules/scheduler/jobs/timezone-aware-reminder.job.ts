@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 
 import { DatabaseService } from "@/database/database.service";
 
+import { NOTIFICATION_SCHEDULE } from "../constants/reminder.constants";
 import {
 	type ReminderHourChangedJobData,
 	TimezoneReminderProcessor,
@@ -180,29 +181,47 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			this.queueService.enqueueSocialDigest({ timezone: tz });
 		}
 
-		// 월요일 아침: 주간 리포트
-		if (dayOfWeek === 1) {
+		// 월요일 09:00: 주간 리포트 (아침 리마인더와 겹침 방지)
+		if (
+			dayOfWeek === 1 &&
+			localHour === NOTIFICATION_SCHEDULE.WEEKLY_REPORT.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.WEEKLY_REPORT.minute
+		) {
 			await this.weeklyReport.execute(ctx);
 		}
 
-		// 매월 1일: 월간 리포트
+		// 매월 1일 10:00: 월간 리포트 (아침/주간과 겹침 방지)
 		const dayOfMonth = local.date();
-		if (dayOfMonth === 1) {
+		if (
+			dayOfMonth === 1 &&
+			localHour === NOTIFICATION_SCHEDULE.MONTHLY_REPORT.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.MONTHLY_REPORT.minute
+		) {
 			await this.monthlyReport.execute(ctx);
 		}
 
-		// 일요일 저녁: 주간 달성 배지
-		if (dayOfWeek === 0) {
+		// 일요일 20:00: 주간 달성 배지 (저녁 리마인더와 겹침 방지, 완료율 최대 반영)
+		if (
+			dayOfWeek === 0 &&
+			localHour === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute
+		) {
 			await this.weeklyAchievement.execute(ctx);
 		}
 
 		// 로컬 12:00: Win-back
-		if (localHour === 12 && localMinute === 0) {
+		if (
+			localHour === NOTIFICATION_SCHEDULE.WINBACK.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.WINBACK.minute
+		) {
 			await this.winback.execute(ctx);
 		}
 
 		// 로컬 14:00: 콕 찌르기 유도
-		if (localHour === 14 && localMinute === 0) {
+		if (
+			localHour === NOTIFICATION_SCHEDULE.NUDGE_SUGGEST.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.NUDGE_SUGGEST.minute
+		) {
 			await this.nudgeSuggest.execute(ctx);
 		}
 	}

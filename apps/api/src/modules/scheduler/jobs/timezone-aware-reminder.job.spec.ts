@@ -129,10 +129,9 @@ describe("TimezoneAwareReminderJob", () => {
 		});
 
 		describe("조건부 Strategy 호출", () => {
-			it("일요일(dayOfWeek=0)에 주간 달성 배지 Strategy를 호출한다", async () => {
-				// 2024-01-14 = 일요일, KST 18:00 = UTC 2024-01-14T09:00:00Z
-				const sunday = new Date("2024-01-14T09:00:00Z");
-				jest.useFakeTimers();
+			it("일요일 20:00에 주간 달성 배지 Strategy를 호출한다", async () => {
+				// 2024-01-14 = 일요일, KST 20:00 = UTC 2024-01-14T11:00:00Z
+				const sunday = new Date("2024-01-14T11:00:00Z");
 				jest.setSystemTime(sunday);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -142,14 +141,25 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
+			});
 
-				jest.useRealTimers();
+			it("일요일 18:00에는 주간 달성 배지 Strategy를 호출하지 않는다", async () => {
+				// 2024-01-14 = 일요일, KST 18:00 = UTC 2024-01-14T09:00:00Z
+				const sunday = new Date("2024-01-14T09:00:00Z");
+				jest.setSystemTime(sunday);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(weeklyAchievement.execute).not.toHaveBeenCalled();
 			});
 
 			it("로컬 12:00에 Win-back Strategy를 호출한다", async () => {
 				// KST 12:00 = UTC 03:00
 				const noon = new Date("2024-01-16T03:00:00Z"); // 화요일
-				jest.useFakeTimers();
 				jest.setSystemTime(noon);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -159,14 +169,11 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(winback.execute).toHaveBeenCalledTimes(1);
-
-				jest.useRealTimers();
 			});
 
 			it("로컬 12:01에는 Win-back Strategy를 호출하지 않는다", async () => {
 				// KST 12:01 = UTC 03:01
 				const notNoon = new Date("2024-01-16T03:01:00Z");
-				jest.useFakeTimers();
 				jest.setSystemTime(notNoon);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -176,14 +183,11 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(winback.execute).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
 			});
 
 			it("로컬 14:00에 Nudge Suggest Strategy를 호출한다", async () => {
 				// KST 14:00 = UTC 05:00
 				const afternoon = new Date("2024-01-16T05:00:00Z");
-				jest.useFakeTimers();
 				jest.setSystemTime(afternoon);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -193,14 +197,11 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(nudgeSuggest.execute).toHaveBeenCalledTimes(1);
-
-				jest.useRealTimers();
 			});
 
-			it("월요일(dayOfWeek=1)에 주간 리포트 Strategy를 호출한다", async () => {
-				// 2024-01-15 = 월요일, KST 08:00 = UTC 2024-01-14T23:00:00Z
-				const monday = new Date("2024-01-14T23:00:00Z");
-				jest.useFakeTimers();
+			it("월요일 09:00에 주간 리포트 Strategy를 호출한다", async () => {
+				// 2024-01-15 = 월요일, KST 09:00 = UTC 2024-01-15T00:00:00Z
+				const monday = new Date("2024-01-15T00:00:00Z");
 				jest.setSystemTime(monday);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -210,14 +211,25 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(weeklyReport.execute).toHaveBeenCalledTimes(1);
+			});
 
-				jest.useRealTimers();
+			it("월요일 08:00에는 주간 리포트 Strategy를 호출하지 않는다", async () => {
+				// 2024-01-15 = 월요일, KST 08:00 = UTC 2024-01-14T23:00:00Z
+				const monday = new Date("2024-01-14T23:00:00Z");
+				jest.setSystemTime(monday);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(weeklyReport.execute).not.toHaveBeenCalled();
 			});
 
 			it("월요일이 아닌 날에는 주간 리포트 Strategy를 호출하지 않는다", async () => {
-				// 2024-01-16 = 화요일, KST 08:00 = UTC 2024-01-15T23:00:00Z
-				const tuesday = new Date("2024-01-15T23:00:00Z");
-				jest.useFakeTimers();
+				// 2024-01-16 = 화요일, KST 09:00 = UTC 2024-01-16T00:00:00Z
+				const tuesday = new Date("2024-01-16T00:00:00Z");
 				jest.setSystemTime(tuesday);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -227,14 +239,11 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(weeklyReport.execute).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
 			});
 
-			it("매월 1일에 월간 리포트 Strategy를 호출한다", async () => {
-				// 2024-02-01 = 목요일 1일, KST 08:00 = UTC 2024-01-31T23:00:00Z
-				const firstDay = new Date("2024-01-31T23:00:00Z");
-				jest.useFakeTimers();
+			it("매월 1일 10:00에 월간 리포트 Strategy를 호출한다", async () => {
+				// 2024-02-01 = 목요일 1일, KST 10:00 = UTC 2024-02-01T01:00:00Z
+				const firstDay = new Date("2024-02-01T01:00:00Z");
 				jest.setSystemTime(firstDay);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -244,14 +253,25 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(monthlyReport.execute).toHaveBeenCalledTimes(1);
+			});
 
-				jest.useRealTimers();
+			it("매월 1일 08:00에는 월간 리포트 Strategy를 호출하지 않는다", async () => {
+				// 2024-02-01 = 목요일 1일, KST 08:00 = UTC 2024-01-31T23:00:00Z
+				const firstDay = new Date("2024-01-31T23:00:00Z");
+				jest.setSystemTime(firstDay);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(monthlyReport.execute).not.toHaveBeenCalled();
 			});
 
 			it("1일이 아닌 날에는 월간 리포트 Strategy를 호출하지 않는다", async () => {
-				// 2024-01-15 = 월요일 15일, KST 08:00 = UTC 2024-01-14T23:00:00Z
-				const notFirstDay = new Date("2024-01-14T23:00:00Z");
-				jest.useFakeTimers();
+				// 2024-01-15 = 월요일 15일, KST 10:00 = UTC 2024-01-15T01:00:00Z
+				const notFirstDay = new Date("2024-01-15T01:00:00Z");
 				jest.setSystemTime(notFirstDay);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -261,15 +281,12 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(monthlyReport.execute).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
 			});
 		});
 
 		describe("Social Digest delayed job", () => {
 			it("저녁 리마인더 발송 성공 시 Social Digest delayed job 등록", async () => {
 				const fakeNow = new Date("2024-01-16T09:00:00Z"); // KST 18:00
-				jest.useFakeTimers();
 				jest.setSystemTime(fakeNow);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -283,13 +300,10 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(queueService.enqueueSocialDigest).toHaveBeenCalledWith({
 					timezone: "Asia/Seoul",
 				});
-
-				jest.useRealTimers();
 			});
 
 			it("저녁 리마인더 대상 없으면 Social Digest delayed job 미등록", async () => {
 				const fakeNow = new Date("2024-01-16T09:00:00Z");
-				jest.useFakeTimers();
 				jest.setSystemTime(fakeNow);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -301,8 +315,6 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(queueService.enqueueSocialDigest).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
 			});
 		});
 
@@ -317,7 +329,6 @@ describe("TimezoneAwareReminderJob", () => {
 
 			it("한 타임존 Strategy 실패 시 다른 타임존은 정상 처리된다", async () => {
 				const fakeNow = new Date("2024-01-16T23:00:00Z");
-				jest.useFakeTimers();
 				jest.setSystemTime(fakeNow);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
@@ -336,8 +347,6 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(morningReminder.execute).toHaveBeenCalledTimes(2);
 				// 첫 번째 타임존은 morning에서 throw 되어 evening 미도달, 두 번째만 호출
 				expect(eveningReminder.execute).toHaveBeenCalledTimes(1);
-
-				jest.useRealTimers();
 			});
 		});
 	});
