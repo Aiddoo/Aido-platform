@@ -98,7 +98,7 @@ describe("NudgeController", () => {
 	});
 
 	describe("getReceivedNudges", () => {
-		it("받은 콕 찌름 목록 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
+		it("받은 콕 찌름 목록 조회를 서비스에 위임하고 별도 count 쿼리 결과를 반환해야 한다", async () => {
 			// Given -받은 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
@@ -110,51 +110,35 @@ describe("NudgeController", () => {
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
 			mockNudgeService.getReceivedNudges.mockResolvedValue(serviceResult);
+			mockNudgeService.countReceivedNudges.mockResolvedValue(8);
+			mockNudgeService.countUnreadReceivedNudges.mockResolvedValue(4);
 
 			// When - getReceivedNudges를 호출하면
 			const result = await controller.getReceivedNudges(mockUser, query);
 
-			// Then - 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 userId, cursor, size를 전달하고 별도 count 쿼리 결과를 반환해야 한다
 			expect(mockNudgeService.getReceivedNudges).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			});
+			expect(mockNudgeService.countReceivedNudges).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
+			expect(mockNudgeService.countUnreadReceivedNudges).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
 			expect(result).toEqual({
 				nudges: NudgeMapper.toDetailDtoList(items),
-				totalCount: 1,
-				unreadCount: 1,
+				totalCount: 8,
+				unreadCount: 4,
 				hasMore: false,
 			});
-		});
-
-		it("읽은 콕 찌름이 있으면 unreadCount가 줄어야 한다", async () => {
-			// Given -읽은 콕 찌름이 포함된 목록이 있을 때
-			const readNudge: NudgeWithRelations = {
-				...mockNudgeWithRelations,
-				id: 2,
-				readAt: new Date("2026-03-01T12:00:00Z"),
-			};
-			const items = [mockNudgeWithRelations, readNudge];
-			const serviceResult = {
-				items,
-				pagination: { hasNext: false, nextCursor: null, size: 20 },
-			};
-			mockNudgeService.getReceivedNudges.mockResolvedValue(serviceResult);
-
-			// When - getReceivedNudges를 호출하면
-			const result = await controller.getReceivedNudges(mockUser, {
-				limit: 20,
-			} as unknown as GetNudgesQueryDto);
-
-			// Then - totalCount는 2이고 unreadCount는 1이어야 한다
-			expect(result.totalCount).toBe(2);
-			expect(result.unreadCount).toBe(1);
 		});
 	});
 
 	describe("getSentNudges", () => {
-		it("보낸 콕 찌름 목록 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
+		it("보낸 콕 찌름 목록 조회를 서비스에 위임하고 별도 count 쿼리 결과를 반환해야 한다", async () => {
 			// Given -보낸 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
@@ -166,19 +150,23 @@ describe("NudgeController", () => {
 				pagination: { hasNext: true, nextCursor: 1, size: 20 },
 			};
 			mockNudgeService.getSentNudges.mockResolvedValue(serviceResult);
+			mockNudgeService.countSentNudges.mockResolvedValue(15);
 
 			// When - getSentNudges를 호출하면
 			const result = await controller.getSentNudges(mockUser, query);
 
-			// Then - 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 userId, cursor, size를 전달하고 별도 count 쿼리 결과를 반환해야 한다
 			expect(mockNudgeService.getSentNudges).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			});
+			expect(mockNudgeService.countSentNudges).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
 			expect(result).toEqual({
 				nudges: NudgeMapper.toDetailDtoList(items),
-				totalCount: 1,
+				totalCount: 15,
 				hasMore: true,
 			});
 		});

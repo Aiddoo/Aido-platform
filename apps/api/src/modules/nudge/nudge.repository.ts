@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { addDays } from "@/common/date/utils/arithmetic";
+import { now } from "@/common/date/utils/core";
 import { startOfDay } from "@/common/date/utils/range";
 import { DatabaseService } from "@/database/database.service";
 import type { Nudge } from "@/generated/prisma/client";
@@ -15,18 +17,6 @@ import type {
 export class NudgeRepository {
 	constructor(private readonly database: DatabaseService) {}
 
-	// Include 설정 (사용자 및 Todo 정보 포함)
-	readonly #userSelect = {
-		id: true,
-		userTag: true,
-		profile: {
-			select: {
-				name: true,
-				profileImage: true,
-			},
-		},
-	} as const;
-
 	readonly #todoSelect = {
 		id: true,
 		title: true,
@@ -35,10 +25,10 @@ export class NudgeRepository {
 
 	readonly #nudgeInclude = {
 		sender: {
-			select: this.#userSelect,
+			select: USER_BRIEF_SELECT,
 		},
 		receiver: {
-			select: this.#userSelect,
+			select: USER_BRIEF_SELECT,
 		},
 		todo: {
 			select: this.#todoSelect,
@@ -60,7 +50,7 @@ export class NudgeRepository {
 	async markAsRead(id: number): Promise<Nudge> {
 		return this.database.nudge.update({
 			where: { id },
-			data: { readAt: new Date() },
+			data: { readAt: now() },
 		});
 	}
 
@@ -158,6 +148,33 @@ export class NudgeRepository {
 				receiverId,
 			},
 			orderBy: { createdAt: "desc" },
+		});
+	}
+
+	/**
+	 * 받은 Nudge 총 개수
+	 */
+	async countReceived(userId: string): Promise<number> {
+		return this.database.nudge.count({
+			where: { receiverId: userId },
+		});
+	}
+
+	/**
+	 * 보낸 Nudge 총 개수
+	 */
+	async countSent(userId: string): Promise<number> {
+		return this.database.nudge.count({
+			where: { senderId: userId },
+		});
+	}
+
+	/**
+	 * 읽지 않은 받은 Nudge 개수
+	 */
+	async countUnreadReceived(userId: string): Promise<number> {
+		return this.database.nudge.count({
+			where: { receiverId: userId, readAt: null },
 		});
 	}
 }

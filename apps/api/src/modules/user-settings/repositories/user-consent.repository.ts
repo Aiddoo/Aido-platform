@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
+import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database";
-import type { Prisma, UserConsent } from "@/generated/prisma/client";
+import type { UserConsent } from "@/generated/prisma/client";
 
 export interface CreateConsentData {
 	termsAgreedAt?: Date;
@@ -20,7 +21,7 @@ export class UserConsentRepository {
 
 	async findByUserId(
 		userId: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent | null> {
 		const client = tx ?? this.database;
 		return client.userConsent.findUnique({
@@ -31,7 +32,7 @@ export class UserConsentRepository {
 	async create(
 		userId: string,
 		data?: Partial<CreateConsentData>,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent> {
 		const client = tx ?? this.database;
 		return client.userConsent.create({
@@ -48,7 +49,7 @@ export class UserConsentRepository {
 	async upsert(
 		userId: string,
 		data: CreateConsentData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent> {
 		const client = tx ?? this.database;
 		return client.userConsent.upsert({
@@ -81,13 +82,13 @@ export class UserConsentRepository {
 	async updateMarketingConsent(
 		userId: string,
 		data: UpdateMarketingConsentData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent> {
 		const client = tx ?? this.database;
 		return client.userConsent.update({
 			where: { userId },
 			data: {
-				marketingAgreedAt: data.agreed ? new Date() : null,
+				marketingAgreedAt: data.agreed ? now() : null,
 			},
 		});
 	}
@@ -95,18 +96,17 @@ export class UserConsentRepository {
 	async upsertMarketingConsent(
 		userId: string,
 		data: UpdateMarketingConsentData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent> {
 		const client = tx ?? this.database;
-		const now = new Date();
 		return client.userConsent.upsert({
 			where: { userId },
 			create: {
 				userId,
-				marketingAgreedAt: data.agreed ? now : null,
+				marketingAgreedAt: data.agreed ? now() : null,
 			},
 			update: {
-				marketingAgreedAt: data.agreed ? now : null,
+				marketingAgreedAt: data.agreed ? now() : null,
 			},
 		});
 	}
@@ -116,7 +116,7 @@ export class UserConsentRepository {
 	 */
 	async findByUserIds(
 		userIds: string[],
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserConsent[]> {
 		if (userIds.length === 0) return [];
 		const client = tx ?? this.database;

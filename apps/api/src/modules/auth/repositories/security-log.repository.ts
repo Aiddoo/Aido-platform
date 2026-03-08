@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { DatabaseService } from "@/database";
 import type {
@@ -22,7 +22,7 @@ export class SecurityLogRepository {
 
 	async create(
 		data: CreateSecurityLogData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<SecurityLog> {
 		const client = tx ?? this.database;
 		return client.securityLog.create({

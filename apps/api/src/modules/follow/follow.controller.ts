@@ -293,14 +293,15 @@ export class FollowController {
 	): Promise<FriendsListResponseDto> {
 		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
-		const result = await this.followService.getFriends({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-			search: query.search,
-		});
-
-		const totalCount = await this.followService.countFriends(user.userId);
+		const [result, totalCount] = await Promise.all([
+			this.followService.getFriends({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+				search: query.search,
+			}),
+			this.followService.countFriends(user.userId),
+		]);
 
 		return {
 			friends: result.items.map(FollowMapper.toFriendUser),
@@ -327,15 +328,14 @@ export class FollowController {
 	): Promise<ReceivedRequestsResponseDto> {
 		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
-		const result = await this.followService.getReceivedRequests({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
-
-		const totalCount = await this.followService.countReceivedRequests(
-			user.userId,
-		);
+		const [result, totalCount] = await Promise.all([
+			this.followService.getReceivedRequests({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.followService.countReceivedRequests(user.userId),
+		]);
 
 		return {
 			requests: result.items.map(FollowMapper.toReceivedRequest),
@@ -362,13 +362,14 @@ export class FollowController {
 	): Promise<SentRequestsResponseDto> {
 		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 
-		const result = await this.followService.getSentRequests({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
-
-		const totalCount = await this.followService.countSentRequests(user.userId);
+		const [result, totalCount] = await Promise.all([
+			this.followService.getSentRequests({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.followService.countSentRequests(user.userId),
+		]);
 
 		return {
 			requests: result.items.map(FollowMapper.toSentRequest),

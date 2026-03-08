@@ -1,12 +1,8 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database";
-import type {
-	Prisma,
-	Verification,
-	VerificationType,
-} from "@/generated/prisma/client";
+import type { Verification, VerificationType } from "@/generated/prisma/client";
 
 @Injectable()
 export class VerificationRepository {
@@ -19,7 +15,7 @@ export class VerificationRepository {
 			token: string; // SHA-256 해시
 			expiresAt: Date;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Verification> {
 		const client = tx ?? this.database;
 		return client.verification.create({
@@ -57,7 +53,7 @@ export class VerificationRepository {
 	async findValidByUserIdAndType(
 		userId: string,
 		type: VerificationType,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Verification | null> {
 		const client = tx ?? this.database;
 		return client.verification.findFirst({
@@ -71,10 +67,7 @@ export class VerificationRepository {
 		});
 	}
 
-	async markAsUsed(
-		id: number,
-		tx?: Prisma.TransactionClient,
-	): Promise<Verification> {
+	async markAsUsed(id: number, tx?: TransactionClient): Promise<Verification> {
 		const client = tx ?? this.database;
 		return client.verification.update({
 			where: { id },
@@ -84,7 +77,7 @@ export class VerificationRepository {
 
 	async incrementAttempts(
 		id: number,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Verification> {
 		const client = tx ?? this.database;
 		return client.verification.update({
@@ -111,7 +104,7 @@ export class VerificationRepository {
 		userId: string,
 		type: VerificationType,
 		maxAttempts: number,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Verification | null> {
 		const client = tx ?? this.database;
 
@@ -141,7 +134,7 @@ export class VerificationRepository {
 	async invalidateAllByUserIdAndType(
 		userId: string,
 		type: VerificationType,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<number> {
 		const client = tx ?? this.database;
 		// 만료 시간을 현재 시간으로 설정하여 무효화
@@ -161,7 +154,7 @@ export class VerificationRepository {
 		userId: string,
 		type: VerificationType,
 		since: Date,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<number> {
 		const client = tx ?? this.database;
 		return client.verification.count({

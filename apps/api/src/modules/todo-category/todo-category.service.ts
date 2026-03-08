@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import {
 	EntitlementService,
 	Resource,
@@ -348,7 +349,7 @@ export class TodoCategoryService {
 		targetCategoryId: number,
 		position: "before" | "after",
 		userId: string,
-		tx: Parameters<Parameters<DatabaseService["$transaction"]>[0]>[0],
+		tx: TransactionClient,
 	): Promise<number> {
 		const targetCategory = await this.todoCategoryRepository.findByIdAndUserId(
 			targetCategoryId,
@@ -391,7 +392,7 @@ export class TodoCategoryService {
 		currentSortOrder: number,
 		position: "before" | "after",
 		userId: string,
-		tx: Parameters<Parameters<DatabaseService["$transaction"]>[0]>[0],
+		tx: TransactionClient,
 	): Promise<number> {
 		if (position === "before") {
 			await this.todoCategoryRepository.shiftSortOrders(

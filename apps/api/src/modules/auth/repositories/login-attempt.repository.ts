@@ -1,12 +1,8 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { DatabaseService } from "@/database";
-import type {
-	AccountProvider,
-	LoginAttempt,
-	Prisma,
-} from "@/generated/prisma/client";
+import type { AccountProvider, LoginAttempt } from "@/generated/prisma/client";
 
 @Injectable()
 export class LoginAttemptRepository {
@@ -36,7 +32,7 @@ export class LoginAttemptRepository {
 			success: boolean;
 			failureReason?: string;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<LoginAttempt> {
 		const client = tx ?? this.database;
 		return client.loginAttempt.create({

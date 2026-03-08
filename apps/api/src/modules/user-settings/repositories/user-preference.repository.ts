@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { DatabaseService } from "@/database";
-import type { Prisma, UserPreference } from "@/generated/prisma/client";
+import type { UserPreference } from "@/generated/prisma/client";
 
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;
@@ -19,7 +19,7 @@ export class UserPreferenceRepository {
 
 	async findByUserId(
 		userId: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserPreference | null> {
 		const client = tx ?? this.database;
 		return client.userPreference.findUnique({
@@ -30,7 +30,7 @@ export class UserPreferenceRepository {
 	async create(
 		userId: string,
 		data?: Partial<UpdatePreferenceData>,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserPreference> {
 		const client = tx ?? this.database;
 		return client.userPreference.create({
@@ -58,7 +58,7 @@ export class UserPreferenceRepository {
 	async upsert(
 		userId: string,
 		data: UpdatePreferenceData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserPreference> {
 		const client = tx ?? this.database;
 		return client.userPreference.upsert({
@@ -108,7 +108,7 @@ export class UserPreferenceRepository {
 	async update(
 		userId: string,
 		data: UpdatePreferenceData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserPreference> {
 		const client = tx ?? this.database;
 		return client.userPreference.update({
@@ -142,7 +142,7 @@ export class UserPreferenceRepository {
 	 */
 	async findByUserIds(
 		userIds: string[],
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<UserPreference[]> {
 		if (userIds.length === 0) return [];
 		const client = tx ?? this.database;
@@ -161,7 +161,7 @@ export class UserPreferenceRepository {
 			longestStreak: number;
 			lastCompletedDate: Date | null;
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<void> {
 		const client = tx ?? this.database;
 		await client.userPreference.update({
@@ -180,7 +180,7 @@ export class UserPreferenceRepository {
 	async upsertTimezone(
 		userId: string,
 		timezone: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<void> {
 		const client = tx ?? this.database;
 		await client.userPreference.upsert({

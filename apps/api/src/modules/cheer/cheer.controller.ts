@@ -124,16 +124,20 @@ export class CheerController {
 	): Promise<ReceivedCheersResponseDto> {
 		this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
-		const result = await this.cheerService.getReceivedCheers({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
+		const [result, totalCount, unreadCount] = await Promise.all([
+			this.cheerService.getReceivedCheers({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.cheerService.countReceivedCheers(user.userId),
+			this.cheerService.countUnreadReceivedCheers(user.userId),
+		]);
 
 		return {
 			cheers: CheerMapper.toDetailDtoList(result.items),
-			totalCount: result.items.length,
-			unreadCount: result.items.filter((c) => !c.readAt).length,
+			totalCount,
+			unreadCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}
@@ -156,15 +160,18 @@ export class CheerController {
 	): Promise<SentCheersResponseDto> {
 		this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
-		const result = await this.cheerService.getSentCheers({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
+		const [result, totalCount] = await Promise.all([
+			this.cheerService.getSentCheers({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.cheerService.countSentCheers(user.userId),
+		]);
 
 		return {
 			cheers: CheerMapper.toDetailDtoList(result.items),
-			totalCount: result.items.length,
+			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}

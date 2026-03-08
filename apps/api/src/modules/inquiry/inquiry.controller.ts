@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
 	ApiBadRequestError,
@@ -22,7 +22,6 @@ export class InquiryController {
 	constructor(private readonly inquiryService: InquiryService) {}
 
 	@Post()
-	@HttpCode(HttpStatus.CREATED)
 	@ApiDoc({
 		summary: "문의 접수",
 		description: `사용자 문의를 관리자 이메일로 발송합니다.

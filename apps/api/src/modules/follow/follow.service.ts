@@ -163,20 +163,20 @@ export class FollowService {
 			);
 
 			const [userName, targetUserName] = await Promise.all([
-				this.followRepository.getUserName(userId),
-				this.followRepository.getUserName(targetUserId),
+				this.followRepository.getUserDisplayName(userId),
+				this.followRepository.getUserDisplayName(targetUserId),
 			]);
 
 			this.notificationQueueService.enqueueFollowMutual({
 				userId,
 				friendId: targetUserId,
-				friendName: targetUserName ?? "알 수 없음",
+				friendName: targetUserName,
 			});
 
 			this.notificationQueueService.enqueueFollowMutual({
 				userId: targetUserId,
 				friendId: userId,
-				friendName: userName ?? "알 수 없음",
+				friendName: userName,
 			});
 
 			await Promise.all([
@@ -209,11 +209,11 @@ export class FollowService {
 
 		this.#logger.log(`Friend request sent: ${userId} -> ${targetUserId}`);
 
-		const followerName = await this.followRepository.getUserName(userId);
+		const followerName = await this.followRepository.getUserDisplayName(userId);
 		this.notificationQueueService.enqueueFollowNew({
 			followerId: userId,
 			followingId: targetUserId,
-			followerName: followerName ?? "알 수 없음",
+			followerName,
 		});
 
 		return { follow, autoAccepted: false };
@@ -298,21 +298,21 @@ export class FollowService {
 			this.cacheService.invalidateFriendCount(requesterUserId),
 		]);
 
-		const [userName, requesterName] = await Promise.all([
-			this.followRepository.getUserName(userId),
-			this.followRepository.getUserName(requesterUserId),
-		]);
+		const userName =
+			myFollow.follower.profile?.name ?? myFollow.follower.userTag;
+		const requesterName =
+			myFollow.following.profile?.name ?? myFollow.following.userTag;
 
 		this.notificationQueueService.enqueueFollowMutual({
 			userId,
 			friendId: requesterUserId,
-			friendName: requesterName ?? "알 수 없음",
+			friendName: requesterName,
 		});
 
 		this.notificationQueueService.enqueueFollowMutual({
 			userId: requesterUserId,
 			friendId: userId,
-			friendName: userName ?? "알 수 없음",
+			friendName: userName,
 		});
 
 		return myFollow;
@@ -523,10 +523,10 @@ export class FollowService {
 	}
 
 	/**
-	 * 사용자 이름 조회 (알림용)
+	 * 사용자 표시 이름 조회 (알림용)
 	 */
-	async getUserName(userId: string): Promise<string | null> {
-		return this.followRepository.getUserName(userId);
+	async getUserDisplayName(userId: string): Promise<string> {
+		return this.followRepository.getUserDisplayName(userId);
 	}
 
 	/**

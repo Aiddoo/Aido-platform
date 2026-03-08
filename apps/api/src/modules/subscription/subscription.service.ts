@@ -7,6 +7,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
 import { isAfter, isSame } from "@/common/date/utils/compare";
+import { now } from "@/common/date/utils/core";
 import { toISOString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
@@ -384,7 +385,7 @@ export class SubscriptionService {
 				transactionId,
 				{
 					status: isRefund ? "EXPIRED" : "CANCELLED",
-					cancelledAt: new Date(),
+					cancelledAt: now(),
 					...(event.id && { lastProcessedEventId: event.id }),
 				},
 				tx,

@@ -106,46 +106,30 @@ describe("CheerController", () => {
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
 			mockCheerService.getReceivedCheers.mockResolvedValue(serviceResult);
+			mockCheerService.countReceivedCheers.mockResolvedValue(5);
+			mockCheerService.countUnreadReceivedCheers.mockResolvedValue(3);
 
 			// When -getReceivedCheers를 호출하면
 			const result = await controller.getReceivedCheers(mockUser, query);
 
-			// Then -서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, cursor, size를 전달하고 별도 count 쿼리 결과를 반환해야 한다
 			expect(mockCheerService.getReceivedCheers).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			});
+			expect(mockCheerService.countReceivedCheers).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
+			expect(mockCheerService.countUnreadReceivedCheers).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
 			expect(result).toEqual({
 				cheers: CheerMapper.toDetailDtoList(items),
-				totalCount: 1,
-				unreadCount: 1,
+				totalCount: 5,
+				unreadCount: 3,
 				hasMore: false,
 			});
-		});
-
-		it("읽은 응원이 있으면 unreadCount가 줄어야 한다", async () => {
-			// Given -읽은 응원이 포함된 목록이 있을 때
-			const readCheer = {
-				...mockCheerWithRelations,
-				id: 2,
-				readAt: new Date("2026-03-01T12:00:00Z"),
-			};
-			const items = [mockCheerWithRelations, readCheer];
-			const serviceResult = {
-				items,
-				pagination: { hasNext: false, nextCursor: null, size: 20 },
-			};
-			mockCheerService.getReceivedCheers.mockResolvedValue(serviceResult);
-
-			// When -getReceivedCheers를 호출하면
-			const result = await controller.getReceivedCheers(mockUser, {
-				limit: 20,
-			} as unknown as GetCheersQueryDto);
-
-			// Then -totalCount는 2이고 unreadCount는 1이어야 한다
-			expect(result.totalCount).toBe(2);
-			expect(result.unreadCount).toBe(1);
 		});
 	});
 
@@ -162,19 +146,23 @@ describe("CheerController", () => {
 				pagination: { hasNext: true, nextCursor: 1, size: 20 },
 			};
 			mockCheerService.getSentCheers.mockResolvedValue(serviceResult);
+			mockCheerService.countSentCheers.mockResolvedValue(10);
 
 			// When -getSentCheers를 호출하면
 			const result = await controller.getSentCheers(mockUser, query);
 
-			// Then -서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, cursor, size를 전달하고 별도 count 쿼리 결과를 반환해야 한다
 			expect(mockCheerService.getSentCheers).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			});
+			expect(mockCheerService.countSentCheers).toHaveBeenCalledWith(
+				mockUser.userId,
+			);
 			expect(result).toEqual({
 				cheers: CheerMapper.toDetailDtoList(items),
-				totalCount: 1,
+				totalCount: 10,
 				hasMore: true,
 			});
 		});

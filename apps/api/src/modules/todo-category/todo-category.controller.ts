@@ -173,6 +173,7 @@ export class TodoCategoryController {
 	}
 
 	@Patch(":id")
+	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "카테고리 수정",
 		operationId: "updateTodoCategory",
@@ -213,6 +214,7 @@ export class TodoCategoryController {
 	}
 
 	@Patch(":id/reorder")
+	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "카테고리 순서 변경",
 		operationId: "reorderTodoCategory",

@@ -1,6 +1,7 @@
 import { BROADCAST_TARGET_FILTER } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { forEachBatch } from "@/common/database";
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 
@@ -149,17 +150,11 @@ export class AdminService {
 			case BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN:
 				return { ...baseWhere, pushTokens: { some: {} } };
 
-			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS: {
-				const sevenDaysAgo = new Date();
-				sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-				return { ...baseWhere, lastLoginAt: { gte: sevenDaysAgo } };
-			}
+			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS:
+				return { ...baseWhere, lastLoginAt: { gte: subtractDays(7) } };
 
-			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS: {
-				const thirtyDaysAgo = new Date();
-				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-				return { ...baseWhere, lastLoginAt: { gte: thirtyDaysAgo } };
-			}
+			case BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS:
+				return { ...baseWhere, lastLoginAt: { gte: subtractDays(30) } };
 
 			case BROADCAST_TARGET_FILTER.SUBSCRIBERS:
 				return { ...baseWhere, subscriptionStatus: "ACTIVE" };

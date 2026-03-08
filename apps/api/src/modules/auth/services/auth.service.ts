@@ -8,6 +8,7 @@ import {
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { subtractDays, subtractMinutes } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
@@ -16,7 +17,10 @@ import { DatabaseService } from "@/database";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
 import type { UserRegisteredEventPayload } from "@/modules/admin-notification/events/admin-notification.events";
 import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -57,6 +61,9 @@ export class AuthService {
 		private readonly sessionRepository: SessionRepository,
 		private readonly loginAttemptRepository: LoginAttemptRepository,
 		private readonly securityLogRepository: SecurityLogRepository,
+		private readonly userConsentRepository: UserConsentRepository,
+		private readonly userPreferenceRepository: UserPreferenceRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly passwordService: PasswordService,
 		private readonly sessionService: SessionService,
 		private readonly tokenService: TokenService,
@@ -112,33 +119,33 @@ export class AuthService {
 
 				// 약관 동의 기록
 				const currentTime = now();
-				await tx.userConsent.create({
-					data: {
-						userId: newUser.id,
-						termsAgreedAt: termsAgreed ? currentTime : null,
-						privacyAgreedAt: privacyAgreed ? currentTime : null,
-						marketingAgreedAt: marketingAgreed ? currentTime : null,
+				await this.userConsentRepository.create(
+					newUser.id,
+					{
+						termsAgreedAt: termsAgreed ? currentTime : undefined,
+						privacyAgreedAt: privacyAgreed ? currentTime : undefined,
+						marketingAgreedAt: marketingAgreed ? currentTime : undefined,
 					},
-				});
+					tx,
+				);
 
 				// 푸시 알림 설정 초기화 (기본값: 모두 ON)
-				await tx.userPreference.create({
-					data: {
-						userId: newUser.id,
-						pushEnabled: true,
-						nightPushEnabled: true,
-					},
-				});
+				await this.userPreferenceRepository.create(
+					newUser.id,
+					{ pushEnabled: true, nightPushEnabled: true },
+					tx,
+				);
 
 				// 기본 카테고리 생성 (온보딩 필수 데이터 — 트랜잭션 내 동기 처리)
-				await tx.todoCategory.createMany({
-					data: DEFAULT_CATEGORIES.map((category) => ({
+				await this.todoCategoryRepository.createMany(
+					DEFAULT_CATEGORIES.map((category) => ({
 						userId: newUser.id,
 						name: category.name,
 						color: category.color,
 						sortOrder: category.sortOrder,
 					})),
-				});
+					tx,
+				);
 
 				// 이메일 인증 코드 생성 (Verification 레코드만 DB에 저장)
 				const verificationResult =
@@ -962,7 +969,7 @@ export class AuthService {
 	async #restoreDeletedAccount(
 		user: { id: string; deletedAt: Date | null },
 		metadata: { ip: string; userAgent: string },
-		tx: Prisma.TransactionClient,
+		tx: TransactionClient,
 	): Promise<void> {
 		await this.userRepository.restore(user.id, tx);
 

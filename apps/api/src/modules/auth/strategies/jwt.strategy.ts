@@ -7,8 +7,8 @@ import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database";
 import { SessionRepository } from "../repositories/session.repository";
+import { UserRepository } from "../repositories/user.repository";
 import { SessionService } from "../services/session.service";
 import type { JwtPayload } from "../services/token.service";
 
@@ -30,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 		private readonly sessionRepository: SessionRepository,
 		private readonly sessionService: SessionService,
 		private readonly cacheService: CacheService,
-		private readonly database: DatabaseService,
+		private readonly userRepository: UserRepository,
 	) {
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -90,10 +90,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 		this.sessionService.assertSessionValid(session, payload.sessionId);
 
 		// 3. 사용자 상태 조회 (Defense in Depth)
-		const user = await this.database.user.findUnique({
-			where: { id: session.userId },
-			select: { status: true, deletedAt: true },
-		});
+		const user = await this.userRepository.findById(session.userId);
 
 		const userStatus = user?.status;
 		const userDeletedAt = toISOStringOrNull(user?.deletedAt ?? null);

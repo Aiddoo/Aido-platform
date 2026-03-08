@@ -898,36 +898,28 @@ describe("NotificationRepository", () => {
 		it("푸시 토큰을 비활성화해야 한다", async () => {
 			// Given
 			const existingToken = PushTokenBuilder.create("user-1").build();
-			const deactivatedToken = PushTokenBuilder.create("user-1")
-				.asInactive()
-				.build();
-			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(existingToken);
-			(db.pushToken.update as jest.Mock).mockResolvedValue(deactivatedToken);
+			(db.pushToken.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
 			// When
 			const result = await repository.deactivatePushToken(existingToken.token);
 
 			// Then
-			expect(db.pushToken.findFirst).toHaveBeenCalledWith({
+			expect(db.pushToken.updateMany).toHaveBeenCalledWith({
 				where: { token: existingToken.token },
-			});
-			expect(db.pushToken.update).toHaveBeenCalledWith({
-				where: { id: existingToken.id },
 				data: { isActive: false },
 			});
-			expect(result).toEqual(deactivatedToken);
+			expect(result).toBe(1);
 		});
 
-		it("토큰이 없으면 null을 반환해야 한다", async () => {
+		it("토큰이 없으면 0을 반환해야 한다", async () => {
 			// Given
-			(db.pushToken.findFirst as jest.Mock).mockResolvedValue(null);
+			(db.pushToken.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.deactivatePushToken("nonexistent-token");
 
 			// Then
-			expect(result).toBeNull();
-			expect(db.pushToken.update).not.toHaveBeenCalled();
+			expect(result).toBe(0);
 		});
 	});
 

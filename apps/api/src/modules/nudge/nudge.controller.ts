@@ -128,16 +128,20 @@ export class NudgeController {
 	): Promise<ReceivedNudgesResponseDto> {
 		this.#logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
 
-		const result = await this.nudgeService.getReceivedNudges({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
+		const [result, totalCount, unreadCount] = await Promise.all([
+			this.nudgeService.getReceivedNudges({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.nudgeService.countReceivedNudges(user.userId),
+			this.nudgeService.countUnreadReceivedNudges(user.userId),
+		]);
 
 		return {
 			nudges: NudgeMapper.toDetailDtoList(result.items),
-			totalCount: result.items.length,
-			unreadCount: result.items.filter((n) => !n.readAt).length,
+			totalCount,
+			unreadCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}
@@ -160,15 +164,18 @@ export class NudgeController {
 	): Promise<SentNudgesResponseDto> {
 		this.#logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
 
-		const result = await this.nudgeService.getSentNudges({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.limit,
-		});
+		const [result, totalCount] = await Promise.all([
+			this.nudgeService.getSentNudges({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.limit,
+			}),
+			this.nudgeService.countSentNudges(user.userId),
+		]);
 
 		return {
 			nudges: NudgeMapper.toDetailDtoList(result.items),
-			totalCount: result.items.length,
+			totalCount,
 			hasMore: result.pagination.hasNext,
 		};
 	}

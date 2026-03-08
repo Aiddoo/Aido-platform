@@ -151,7 +151,7 @@ describe("FollowService", () => {
 				status: "ACCEPTED",
 			});
 			followRepo.create.mockResolvedValue(autoAcceptedFollow);
-			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -178,7 +178,7 @@ describe("FollowService", () => {
 			followRepo.userExists.mockResolvedValue(true);
 			followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 			followRepo.create.mockResolvedValue(follow);
-			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 		};
 
 		it("새로운 친구 요청을 보내면 PENDING 상태로 생성된다", async () => {
@@ -273,7 +273,7 @@ describe("FollowService", () => {
 				status: "ACCEPTED",
 			});
 			followRepo.create.mockResolvedValue(autoAcceptedFollow);
-			followRepo.getUserName.mockResolvedValue("테스트 유저");
+			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -378,7 +378,7 @@ describe("FollowService", () => {
 				followRepo.userExists.mockResolvedValue(true);
 				followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 				followRepo.create.mockResolvedValue(mockFollow);
-				followRepo.getUserName.mockResolvedValue("테스트 유저");
+				followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 
 				// When
 				const result = await service.sendRequest(mockUserId, mockTargetUserId);
@@ -403,7 +403,7 @@ describe("FollowService", () => {
 				followRepo.userExists.mockResolvedValue(true);
 				followRepo.findByFollowerAndFollowing.mockResolvedValue(null);
 				followRepo.create.mockResolvedValue(mockFollow);
-				followRepo.getUserName.mockResolvedValue("테스트 유저");
+				followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 
 				// When
 				await service.sendRequest(mockUserId, mockTargetUserId);
@@ -444,11 +444,6 @@ describe("FollowService", () => {
 			});
 			followRepo.create.mockResolvedValue(createdFollow);
 			followRepo.findByIdWithUser.mockResolvedValue(createdFollow);
-			followRepo.getUserName.mockImplementation((userId: string) => {
-				if (userId === mockUserId) return Promise.resolve("테스트 유저");
-				if (userId === mockTargetUserId) return Promise.resolve("타겟 유저");
-				return Promise.resolve(null);
-			});
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 		};
 
@@ -537,7 +532,6 @@ describe("FollowService", () => {
 				status: "ACCEPTED",
 			});
 			followRepo.findByIdWithUser.mockResolvedValue(updatedFollow);
-			followRepo.getUserName.mockResolvedValue("테스트 유저");
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When

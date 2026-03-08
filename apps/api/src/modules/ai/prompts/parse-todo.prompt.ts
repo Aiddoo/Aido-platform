@@ -15,7 +15,7 @@ import { sanitizeForPrompt } from "./sanitize";
  *
  * @param text 사용자 입력 텍스트
  * @param timezone 사용자 타임존 (IANA, 기본값: "UTC")
- * @param now 현재 시간 (기본값: new Date())
+ * @param now 현재 시간 (기본값: now())
  * @returns 최적화된 프롬프트 문자열
  */
 export function buildParseTodoPrompt(

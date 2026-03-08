@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database";
-import type { Prisma, Session } from "@/generated/prisma/client";
+import type { Session } from "@/generated/prisma/client";
 
 import { AUTH_DEFAULTS } from "../constants/auth.constants";
 import type { CreateSessionData } from "../types";
@@ -15,7 +15,7 @@ export class SessionRepository {
 	// refreshTokenHash가 없는 경우 unique 제약 조건을 위해 임시 placeholder 해시 사용
 	async create(
 		data: CreateSessionData,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Session> {
 		const client = tx ?? this.database;
 
@@ -43,7 +43,7 @@ export class SessionRepository {
 	async updateRefreshTokenHash(
 		id: string,
 		refreshTokenHash: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Session> {
 		const client = tx ?? this.database;
 		return client.session.update({
@@ -100,7 +100,7 @@ export class SessionRepository {
 			previousTokenHash: string;
 			expectedTokenVersion: number; // 낙관적 잠금용
 		},
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Session | null> {
 		const client = tx ?? this.database;
 
@@ -127,10 +127,7 @@ export class SessionRepository {
 		return client.session.findUnique({ where: { id } });
 	}
 
-	async updateLastUsedAt(
-		id: string,
-		tx?: Prisma.TransactionClient,
-	): Promise<void> {
+	async updateLastUsedAt(id: string, tx?: TransactionClient): Promise<void> {
 		const client = tx ?? this.database;
 		await client.session.update({
 			where: { id },
@@ -141,7 +138,7 @@ export class SessionRepository {
 	async revoke(
 		id: string,
 		reason: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<Session> {
 		const client = tx ?? this.database;
 		return client.session.update({
@@ -157,7 +154,7 @@ export class SessionRepository {
 	async revokeByTokenFamily(
 		tokenFamily: string,
 		reason: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<number> {
 		const client = tx ?? this.database;
 		const result = await client.session.updateMany({
@@ -177,7 +174,7 @@ export class SessionRepository {
 		userId: string,
 		reason: string,
 		excludeSessionId?: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<number> {
 		const client = tx ?? this.database;
 		const result = await client.session.updateMany({

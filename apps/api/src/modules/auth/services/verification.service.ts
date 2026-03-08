@@ -1,9 +1,10 @@
 import { createHash, randomInt } from "node:crypto";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { addMinutes, subtractSeconds } from "@/common/date/utils/arithmetic";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { Prisma, VerificationType } from "@/generated/prisma/client";
+import type { VerificationType } from "@/generated/prisma/client";
 import { EmailService } from "@/modules/email/email.service";
 import { VerificationRepository } from "../repositories/verification.repository";
 
@@ -25,7 +26,7 @@ export class VerificationService {
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
 	async createEmailVerification(
 		userId: string,
-		tx: Prisma.TransactionClient,
+		tx: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "EMAIL_VERIFY", tx);
@@ -66,7 +67,7 @@ export class VerificationService {
 	async createAndSendPasswordReset(
 		userId: string,
 		email: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "PASSWORD_RESET", tx);
@@ -104,7 +105,7 @@ export class VerificationService {
 	async createAndSendPasswordSetup(
 		userId: string,
 		email: string,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 재발송 쿨다운 확인
 		await this.#checkResendCooldown(userId, "PASSWORD_SETUP", tx);
@@ -144,7 +145,7 @@ export class VerificationService {
 		userId: string,
 		code: string,
 		type: VerificationType,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<boolean> {
 		// 해당 사용자의 유효한 인증 코드 조회 (시도 횟수 포함)
 		const verification =
@@ -189,7 +190,7 @@ export class VerificationService {
 	async #checkResendCooldown(
 		userId: string,
 		type: VerificationType,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<void> {
 		const cooldownSince = subtractSeconds(
 			VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
@@ -213,7 +214,7 @@ export class VerificationService {
 	async #createVerificationCode(
 		userId: string,
 		type: VerificationType,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<VerificationCodeResult> {
 		// 6자리 랜덤 숫자 생성
 		const code = this.#generateCode();

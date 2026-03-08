@@ -14,6 +14,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
 import { addDays } from "@/common/date/utils/arithmetic";
 import { isSameDay } from "@/common/date/utils/compare";
+import { now } from "@/common/date/utils/core";
 import { toISOString } from "@/common/date/utils/format";
 import {
 	midnightInTimezone,
@@ -74,7 +75,7 @@ export class AiService {
 	constructor(
 		@Inject(AI_PROVIDER)
 		private readonly aiProvider: AiProvider,
-		private readonly prisma: DatabaseService,
+		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
 
@@ -106,7 +107,7 @@ export class AiService {
 		await this.#checkAndIncrementUsage(userId);
 
 		// 3. 최적화된 프롬프트 생성
-		const prompt = buildParseTodoPrompt(text, timezone, new Date());
+		const prompt = buildParseTodoPrompt(text, timezone, now());
 
 		this.#logger.debug(`Parsing todo: "${text}"`);
 
@@ -167,7 +168,7 @@ export class AiService {
 	 * @returns 사용량 정보
 	 */
 	async getUsage(userId: string): Promise<UsageInfo> {
-		const user = await this.prisma.user.findUnique({
+		const user = await this.database.user.findUnique({
 			where: { id: userId },
 			select: { aiUsageCount: true, aiUsageResetAt: true },
 		});
@@ -187,22 +188,6 @@ export class AiService {
 	}
 
 	/**
-	 * 사용량 제한 체크
-	 *
-	 * @param userId - 사용자 ID
-	 * @returns 사용 가능 여부
-	 */
-	async checkUsageLimit(userId: string): Promise<boolean> {
-		const usage = await this.getUsage(userId);
-
-		if (usage.limit === null) {
-			return true;
-		}
-
-		return usage.used < usage.limit;
-	}
-
-	/**
 	 * 사용량 체크 및 증가 (원자적 처리)
 	 *
 	 * 트랜잭션으로 사용량 확인과 증가를 원자적으로 처리하여
@@ -214,7 +199,7 @@ export class AiService {
 	async #checkAndIncrementUsage(userId: string): Promise<void> {
 		const dailyLimit = await this.#getDailyLimit(userId);
 
-		await this.prisma.$transaction(async (tx) => {
+		await this.database.$transaction(async (tx) => {
 			const user = await tx.user.findUnique({
 				where: { id: userId },
 				select: { aiUsageCount: true, aiUsageResetAt: true },
@@ -238,7 +223,7 @@ export class AiService {
 					where: { id: userId },
 					data: {
 						aiUsageCount: 1,
-						aiUsageResetAt: new Date(),
+						aiUsageResetAt: now(),
 					},
 				});
 			} else {
@@ -259,7 +244,7 @@ export class AiService {
 	 */
 	async #decrementUsage(userId: string): Promise<void> {
 		try {
-			await this.prisma.user.update({
+			await this.database.user.update({
 				where: { id: userId },
 				data: {
 					aiUsageCount: { decrement: 1 },
@@ -290,7 +275,7 @@ export class AiService {
 	 * @returns 새로운 날 여부
 	 */
 	#isNewDay(lastReset: Date): boolean {
-		const kstToday = startOfDayInTimezone(new Date(), "Asia/Seoul");
+		const kstToday = startOfDayInTimezone(now(), "Asia/Seoul");
 		const kstLastDay = startOfDayInTimezone(lastReset, "Asia/Seoul");
 		return !isSameDay(kstToday, kstLastDay);
 	}
@@ -301,7 +286,7 @@ export class AiService {
 	 * @returns ISO 8601 형식의 다음 리셋 시간
 	 */
 	#getNextResetTime(): string {
-		const kstTodayMidnight = midnightInTimezone(new Date(), "Asia/Seoul");
+		const kstTodayMidnight = midnightInTimezone(now(), "Asia/Seoul");
 		const kstTomorrowMidnight = addDays(1, kstTodayMidnight);
 		return toISOString(kstTomorrowMidnight);
 	}

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database/database.service";
 import type {
 	Notification,
@@ -129,7 +130,7 @@ export class NotificationRepository {
 			where: { id },
 			data: {
 				isRead: true,
-				readAt: new Date(),
+				readAt: now(),
 			},
 		});
 	}
@@ -149,7 +150,7 @@ export class NotificationRepository {
 			},
 			data: {
 				isRead: true,
-				readAt: new Date(),
+				readAt: now(),
 			},
 		});
 	}
@@ -188,7 +189,7 @@ export class NotificationRepository {
 		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		const client = tx ?? this.database;
-		const cutoffDate = new Date();
+		const cutoffDate = now();
 		cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
 		return client.notification.deleteMany({
@@ -341,7 +342,7 @@ export class NotificationRepository {
 				token: data.token,
 				platform,
 				isActive: true,
-				updatedAt: new Date(),
+				updatedAt: now(),
 			},
 		});
 	}
@@ -396,25 +397,20 @@ export class NotificationRepository {
 
 	/**
 	 * 푸시 토큰 비활성화
+	 * @returns 비활성화된 토큰 수
 	 */
 	async deactivatePushToken(
 		token: string,
 		tx?: TransactionClient,
-	): Promise<PushToken | null> {
+	): Promise<number> {
 		const client = tx ?? this.database;
 
-		const existing = await client.pushToken.findFirst({
+		const result = await client.pushToken.updateMany({
 			where: { token },
-		});
-
-		if (!existing) {
-			return null;
-		}
-
-		return client.pushToken.update({
-			where: { id: existing.id },
 			data: { isActive: false },
 		});
+
+		return result.count;
 	}
 
 	/**

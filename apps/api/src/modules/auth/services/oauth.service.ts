@@ -2,6 +2,7 @@ import { OAUTH_PROVIDERS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
@@ -811,10 +812,7 @@ export class OAuthService {
 		user: { id: string; email: string; deletedAt: Date | null },
 		options: { ip: string; userAgent: string; provider: AccountProvider },
 	): Promise<LoginResult> {
-		const userRecord = await this.database.user.findUnique({
-			where: { id: user.id },
-			select: { role: true },
-		});
+		const userRecord = await this.userRepository.findById(user.id);
 
 		if (!userRecord) {
 			throw BusinessExceptions.userNotFound(user.id);
@@ -892,10 +890,7 @@ export class OAuthService {
 			provider: AccountProvider;
 		},
 	): Promise<LoginResult> {
-		const user = await this.database.user.findUnique({
-			where: { id: userId },
-			select: { role: true },
-		});
+		const user = await this.userRepository.findById(userId);
 
 		if (!user) {
 			throw BusinessExceptions.userNotFound(userId);
@@ -963,7 +958,7 @@ export class OAuthService {
 	async #restoreDeletedAccount(
 		user: { id: string; deletedAt: Date | null },
 		metadata: { ip: string; userAgent: string },
-		tx: Prisma.TransactionClient,
+		tx: TransactionClient,
 	): Promise<void> {
 		await this.userRepository.restore(user.id, tx);
 

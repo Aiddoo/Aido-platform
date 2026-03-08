@@ -1,10 +1,9 @@
 import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
-
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { addMilliseconds } from "@/common/date/utils/arithmetic";
 import { isExpired } from "@/common/date/utils/compare";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { Prisma } from "@/generated/prisma/client";
 
 import { SessionRepository } from "../repositories/session.repository";
 import type { TokenPair } from "./token.service";
@@ -55,7 +54,7 @@ export class SessionService {
 	 */
 	async createSessionWithTokens(
 		params: CreateSessionParams,
-		tx?: Prisma.TransactionClient,
+		tx?: TransactionClient,
 	): Promise<CreateSessionResult> {
 		const tokenFamily = this.tokenService.generateTokenFamily();
 

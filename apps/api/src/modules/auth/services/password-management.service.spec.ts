@@ -14,13 +14,10 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder, UserBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database";
-import {
-	type Account,
-	Prisma,
-	type SecurityLog,
-} from "@/generated/prisma/client";
+import { type Account, type SecurityLog } from "@/generated/prisma/client";
 import { REVOKE_REASON, SECURITY_EVENT } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
 import { SecurityLogRepository } from "../repositories/security-log.repository";
@@ -152,7 +149,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
@@ -224,7 +221,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
@@ -260,7 +257,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
@@ -306,7 +303,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -365,7 +362,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("new-hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
@@ -399,7 +396,7 @@ describe("PasswordManagementService", () => {
 				passwordService.hash.mockResolvedValue("new-hashed-password");
 				database.$transaction.mockImplementation(
 					async (callback: TransactionCallback) =>
-						callback({} as Prisma.TransactionClient),
+						callback({} as TransactionClient),
 				);
 				accountRepo.updatePassword.mockResolvedValue({} as unknown as Account);
 				sessionRepo.revokeAllByUserId.mockResolvedValue(3);
@@ -542,7 +539,7 @@ describe("PasswordManagementService", () => {
 			passwordService.hash.mockResolvedValue("hashed-password");
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true);
 			accountRepo.createCredentialAccount.mockResolvedValue(

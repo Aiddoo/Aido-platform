@@ -388,13 +388,13 @@ export class TodoService {
 			if (stats.total > 0 && stats.total === stats.completed) {
 				const [friendIds, userName] = await Promise.all([
 					this.followService.getMutualFriendIds(userId),
-					this.followService.getUserName(userId),
+					this.followService.getUserDisplayName(userId),
 				]);
 
 				if (friendIds.length > 0) {
 					this.notificationQueueService.enqueueFriendCompleted({
 						friendId: userId,
-						friendName: userName ?? "친구",
+						friendName: userName,
 						notifyUserIds: friendIds,
 						timezone: tz,
 					});

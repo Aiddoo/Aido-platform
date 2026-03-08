@@ -42,6 +42,7 @@ export class AdminController {
 	@Admin()
 	@ApiDoc({
 		summary: "전체/조건부 알림 발송",
+		operationId: "broadcastNotification",
 		description: `지정된 대상 필터에 따라 여러 사용자에게 알림을 발송합니다.
 
 **대상 필터 옵션**
@@ -67,6 +68,7 @@ export class AdminController {
 	@Admin()
 	@ApiDoc({
 		summary: "특정 사용자 알림 발송",
+		operationId: "sendTargetedNotification",
 		description: `지정된 사용자 ID 목록에 해당하는 사용자들에게 알림을 발송합니다.
 
 존재하지 않는 사용자 ID는 자동으로 필터링됩니다.`,

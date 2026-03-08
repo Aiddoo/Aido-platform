@@ -359,6 +359,27 @@ export class NudgeService {
 	}
 
 	/**
+	 * 받은 Nudge 총 개수
+	 */
+	async countReceivedNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countReceived(userId);
+	}
+
+	/**
+	 * 보낸 Nudge 총 개수
+	 */
+	async countSentNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countSent(userId);
+	}
+
+	/**
+	 * 읽지 않은 받은 Nudge 개수
+	 */
+	async countUnreadReceivedNudges(userId: string): Promise<number> {
+		return this.nudgeRepository.countUnreadReceived(userId);
+	}
+
+	/**
 	 * 쿨다운 정보 계산
 	 */
 	#calculateCooldownInfo(lastNudgeTime?: Date | null): NudgeCooldownInfo {

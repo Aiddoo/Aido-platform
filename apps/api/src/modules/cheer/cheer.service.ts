@@ -156,7 +156,7 @@ export class CheerService {
 			`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`,
 		);
 
-		const senderName = cheer.sender.profile?.name ?? "알 수 없음";
+		const senderName = cheer.sender.profile?.name ?? cheer.sender.userTag;
 		this.notificationQueueService.enqueueCheerSent({
 			cheerId: cheer.id,
 			senderId,
@@ -306,6 +306,27 @@ export class CheerService {
 		this.#logger.debug(`${count} cheers marked as read for user: ${userId}`);
 
 		return count;
+	}
+
+	/**
+	 * 받은 Cheer 총 개수
+	 */
+	async countReceivedCheers(userId: string): Promise<number> {
+		return this.cheerRepository.countReceived(userId);
+	}
+
+	/**
+	 * 보낸 Cheer 총 개수
+	 */
+	async countSentCheers(userId: string): Promise<number> {
+		return this.cheerRepository.countSent(userId);
+	}
+
+	/**
+	 * 읽지 않은 받은 Cheer 개수
+	 */
+	async countUnreadReceivedCheers(userId: string): Promise<number> {
+		return this.cheerRepository.countUnreadReceived(userId);
 	}
 
 	/**

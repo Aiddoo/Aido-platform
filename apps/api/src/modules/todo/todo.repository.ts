@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { TransactionClient } from "@/common/database";
+import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
 import type {
@@ -59,8 +60,8 @@ function buildDateRangeFilter(
 
 	// 단일 날짜만 전달 시 → exact match (오픈 레인지 방지)
 	// 가드 통과 후 둘 중 하나는 반드시 존재
-	const effectiveStart: Date = startDate ?? endDate ?? new Date();
-	const effectiveEnd: Date = endDate ?? startDate ?? new Date();
+	const effectiveStart: Date = startDate ?? endDate ?? now();
+	const effectiveEnd: Date = endDate ?? startDate ?? now();
 
 	// 다일 투두 (endDate가 있는 경우): Overlapping Intervals
 	const multiDayCondition: Prisma.TodoWhereInput = {

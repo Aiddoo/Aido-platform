@@ -14,6 +14,7 @@ import { TestBed } from "@suites/unit";
 import { SessionBuilder, UserBuilder } from "@test/builders";
 import { type TransactionCallback } from "@test/mocks";
 import { CacheService } from "@/common/cache/cache.service";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import {
 	BusinessException,
 	BusinessExceptions,
@@ -114,7 +115,7 @@ describe("AuthService", () => {
 							createMany: jest.fn().mockResolvedValue({ count: 2 }),
 						},
 					};
-					return callback(mockTx as unknown as Prisma.TransactionClient);
+					return callback(mockTx as unknown as TransactionClient);
 				},
 			);
 			userRepo.create.mockResolvedValue(mockUser);
@@ -341,7 +342,7 @@ describe("AuthService", () => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.verifyCode.mockResolvedValue(true as boolean);
 			userRepo.markEmailVerified.mockResolvedValue({} as User);
@@ -501,7 +502,7 @@ describe("AuthService", () => {
 			passwordService.verify.mockResolvedValue(true);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			sessionService.createSessionWithTokens.mockResolvedValue({
 				sessionId: "session-id",
@@ -1075,7 +1076,7 @@ describe("AuthService", () => {
 			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
@@ -1165,7 +1166,7 @@ describe("AuthService", () => {
 			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
@@ -1226,7 +1227,7 @@ describe("AuthService", () => {
 			]);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			userRepo.softDelete.mockResolvedValue({} as User);
 			sessionRepo.revokeAllByUserId.mockResolvedValue(1);
@@ -1297,7 +1298,7 @@ describe("AuthService", () => {
 			loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			sessionService.createSessionWithTokens.mockResolvedValue({
 				sessionId: "session-123",
@@ -1490,7 +1491,7 @@ describe("AuthService", () => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "123456",
@@ -1547,7 +1548,7 @@ describe("AuthService", () => {
 			userRepo.findByEmail.mockResolvedValue(mockUser);
 			database.$transaction.mockImplementation(
 				async (callback: TransactionCallback) =>
-					callback({} as Prisma.TransactionClient),
+					callback({} as TransactionClient),
 			);
 			verificationService.createEmailVerification.mockResolvedValue({
 				code: "654321",

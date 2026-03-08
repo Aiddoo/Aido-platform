@@ -526,7 +526,7 @@ describe("CheerService", () => {
 				);
 			});
 
-			it("발신자 이름을 조회할 수 없으면 기본값을 사용한다", async () => {
+			it("발신자 이름을 조회할 수 없으면 userTag를 폴백으로 사용한다", async () => {
 				// Given
 				const expectedCheer = CheerBuilder.create(senderId, receiverId)
 					.withMessage(validParams.message)
@@ -549,10 +549,10 @@ describe("CheerService", () => {
 				// When
 				await service.sendCheer(validParams);
 
-				// Then
+				// Then — NudgeService 패턴과 동일하게 userTag를 폴백으로 사용
 				expect(notificationQueueService.enqueueCheerSent).toHaveBeenCalledWith(
 					expect.objectContaining({
-						senderName: "알 수 없음",
+						senderName: "SENDER01",
 					}),
 				);
 			});
