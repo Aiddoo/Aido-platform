@@ -282,6 +282,10 @@ export class ReportAggregatorService {
 
 	/**
 	 * 연속 달성일 계산 (endDate부터 역순으로)
+	 *
+	 * 할 일이 0개인 날은 건너뜁니다 (streak을 끊지 않음).
+	 * 예: 주말에 할 일을 안 만들었다면 금-월 연속 달성이 가능합니다.
+	 * 할 일이 있었지만 하나라도 미완료라면 streak이 끊깁니다.
 	 */
 	#computeStreakDays(
 		totalGroups: Array<{ startDate: Date; _count: { id: number } }>,

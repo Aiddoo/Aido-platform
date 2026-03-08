@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Job, Queue } from "bullmq";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
-import { toIsoWeekId } from "@/common/date/utils/format";
+import { toIsoMonthId, toIsoWeekId } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
 import {
 	AI_REPORT_QUEUE,
@@ -19,11 +19,11 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 리포트 생성 스케줄러 (Dispatcher)
  *
- * - 주간 리포트: 매주 일요일 KST 22:00 (컨테이너 TZ=Asia/Seoul)
- * - 월간 리포트: 매월 1일 KST 22:00 (컨테이너 TZ=Asia/Seoul)
+ * - 주간 리포트: 매주 월요일 KST 08:00
+ * - 월간 리포트: 매월 1일 KST 08:00
  *
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
- * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
+ * 서버 재시작 시에도 스케줄이 유지됩니다.
  */
 @Injectable()
 export class ReportGenerationJob implements OnModuleInit {
@@ -42,7 +42,7 @@ export class ReportGenerationJob implements OnModuleInit {
 
 		await this.queue.upsertJobScheduler(
 			"weekly-report-scheduler",
-			{ pattern: "0 22 * * 0" },
+			{ pattern: "0 8 * * 1", tz: "Asia/Seoul" },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "WEEKLY" } satisfies AiReportJobData,
@@ -50,7 +50,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		);
 		await this.queue.upsertJobScheduler(
 			"monthly-report-scheduler",
-			{ pattern: "0 22 1 * *" },
+			{ pattern: "0 8 1 * *", tz: "Asia/Seoul" },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "MONTHLY" } satisfies AiReportJobData,
@@ -69,7 +69,7 @@ export class ReportGenerationJob implements OnModuleInit {
 	): Promise<void> {
 		this.#logger.log(`Starting ${type} report dispatch...`);
 
-		const periodId = this.#getJobDeduplicationId();
+		const periodId = this.#getJobDeduplicationId(type);
 		let totalEnqueued = 0;
 
 		await forEachBatch({
@@ -113,12 +113,13 @@ export class ReportGenerationJob implements OnModuleInit {
 	}
 
 	/**
-	 * jobId 중복 방지용 ISO 주번호 식별자 생성
+	 * jobId 중복 방지용 기간 식별자 생성
 	 *
 	 * 같은 주/월에 동일 사용자에 대해 중복 잡 등록을 방지합니다.
-	 * ISO 주번호 기반: "2026-W10" 형식
+	 * - WEEKLY: ISO 주번호 기반 "2026-W10"
+	 * - MONTHLY: 월 기반 "2026-M03"
 	 */
-	#getJobDeduplicationId(): string {
-		return toIsoWeekId();
+	#getJobDeduplicationId(type: "WEEKLY" | "MONTHLY"): string {
+		return type === "WEEKLY" ? toIsoWeekId() : toIsoMonthId();
 	}
 }

@@ -10,7 +10,6 @@ import {
 	NudgeSuggestStrategy,
 	SocialDigestStrategy,
 	WeeklyAchievementStrategy,
-	WeeklyReportStrategy,
 	WinbackStrategy,
 } from "./strategies";
 import { TimezoneAwareReminderJob } from "./timezone-aware-reminder.job";
@@ -26,7 +25,6 @@ describe("TimezoneAwareReminderJob", () => {
 	let queueService: Mocked<TimezoneReminderQueueService>;
 	let morningReminder: Mocked<MorningReminderStrategy>;
 	let eveningReminder: Mocked<EveningReminderStrategy>;
-	let weeklyReport: Mocked<WeeklyReportStrategy>;
 	let weeklyAchievement: Mocked<WeeklyAchievementStrategy>;
 	let winback: Mocked<WinbackStrategy>;
 	let nudgeSuggest: Mocked<NudgeSuggestStrategy>;
@@ -44,7 +42,6 @@ describe("TimezoneAwareReminderJob", () => {
 		queueService = unitRef.get(TimezoneReminderQueueService);
 		morningReminder = unitRef.get(MorningReminderStrategy);
 		eveningReminder = unitRef.get(EveningReminderStrategy);
-		weeklyReport = unitRef.get(WeeklyReportStrategy);
 		weeklyAchievement = unitRef.get(WeeklyAchievementStrategy);
 		winback = unitRef.get(WinbackStrategy);
 		nudgeSuggest = unitRef.get(NudgeSuggestStrategy);
@@ -53,7 +50,6 @@ describe("TimezoneAwareReminderJob", () => {
 		// 기본: 모든 Strategy는 { sent: 0 } 반환
 		morningReminder.execute.mockResolvedValue({ sent: 0 });
 		eveningReminder.execute.mockResolvedValue({ sent: 0 });
-		weeklyReport.execute.mockResolvedValue({ sent: 0 });
 		weeklyAchievement.execute.mockResolvedValue({ sent: 0 });
 		winback.execute.mockResolvedValue({ sent: 0 });
 		nudgeSuggest.execute.mockResolvedValue({ sent: 0 });
@@ -125,24 +121,6 @@ describe("TimezoneAwareReminderJob", () => {
 		});
 
 		describe("조건부 Strategy 호출", () => {
-			it("월요일(dayOfWeek=1)에 주간 리포트 Strategy를 호출한다", async () => {
-				// 2024-01-15 = 월요일, KST 08:00 = UTC 2024-01-14T23:00:00Z
-				const monday = new Date("2024-01-14T23:00:00Z");
-				jest.useFakeTimers();
-				jest.setSystemTime(monday);
-
-				databaseService.userPreference.findMany.mockResolvedValue([
-					{ timezone: "Asia/Seoul" },
-				] as never);
-
-				await job.handleHourlySweep();
-
-				expect(weeklyReport.execute).toHaveBeenCalledTimes(1);
-				expect(weeklyAchievement.execute).not.toHaveBeenCalled();
-
-				jest.useRealTimers();
-			});
-
 			it("일요일(dayOfWeek=0)에 주간 달성 배지 Strategy를 호출한다", async () => {
 				// 2024-01-14 = 일요일, KST 18:00 = UTC 2024-01-14T09:00:00Z
 				const sunday = new Date("2024-01-14T09:00:00Z");
@@ -156,7 +134,6 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
-				expect(weeklyReport.execute).not.toHaveBeenCalled();
 
 				jest.useRealTimers();
 			});

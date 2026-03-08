@@ -14,7 +14,6 @@ import { MorningReminderStrategy } from "./strategies/morning-reminder.strategy"
 import { NudgeSuggestStrategy } from "./strategies/nudge-suggest.strategy";
 import { SocialDigestStrategy } from "./strategies/social-digest.strategy";
 import { WeeklyAchievementStrategy } from "./strategies/weekly-achievement.strategy";
-import { WeeklyReportStrategy } from "./strategies/weekly-report.strategy";
 import { WinbackStrategy } from "./strategies/winback.strategy";
 
 /**
@@ -35,7 +34,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly processor: TimezoneReminderProcessor,
 		private readonly morningReminder: MorningReminderStrategy,
 		private readonly eveningReminder: EveningReminderStrategy,
-		private readonly weeklyReport: WeeklyReportStrategy,
 		private readonly weeklyAchievement: WeeklyAchievementStrategy,
 		private readonly winback: WinbackStrategy,
 		private readonly nudgeSuggest: NudgeSuggestStrategy,
@@ -176,11 +174,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		// 저녁 리마인더 발송 시 30분 후 Social Digest delayed job 등록
 		if (eveningResult.sent > 0) {
 			this.queueService.enqueueSocialDigest({ timezone: tz });
-		}
-
-		// 월요일 아침: 주간 리포트
-		if (dayOfWeek === 1) {
-			await this.weeklyReport.execute(ctx);
 		}
 
 		// 일요일 저녁: 주간 달성 배지
