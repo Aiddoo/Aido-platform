@@ -22,10 +22,11 @@ export class MonthlyReportStrategy {
 		const today = todayInTimezone(tz);
 		const monthAgo = dayjs.utc(today).subtract(1, "month").toDate();
 
-		// 오케스트레이터가 매월 1일 10:00에만 호출 → 전체 pushEnabled 유저 대상
+		// 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 pushEnabled 유저 대상
 		const users = await this.database.user.findMany({
 			where: {
 				preference: { timezone: tz, pushEnabled: true },
+				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				todos: { some: { startDate: { gte: monthAgo, lt: today } } },
 			},
 			select: { id: true },

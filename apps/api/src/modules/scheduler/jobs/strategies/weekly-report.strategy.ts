@@ -22,10 +22,11 @@ export class WeeklyReportStrategy {
 		const today = todayInTimezone(tz);
 		const weekAgo = dayjs.utc(today).subtract(7, "day").toDate();
 
-		// 오케스트레이터가 월요일 09:00에만 호출 → 전체 pushEnabled 유저 대상
+		// 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 pushEnabled 유저 대상
 		const users = await this.database.user.findMany({
 			where: {
 				preference: { timezone: tz, pushEnabled: true },
+				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				todos: { some: { startDate: { gte: weekAgo, lt: today } } },
 			},
 			select: { id: true },
