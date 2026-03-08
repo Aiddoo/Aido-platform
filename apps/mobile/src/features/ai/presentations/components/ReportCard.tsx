@@ -1,4 +1,4 @@
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
@@ -59,6 +59,12 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
               {report.aiSummary}
             </Text>
           )}
+
+          <View className="items-end">
+            <TextButton size="small" variant="arrow">
+              자세히 보기
+            </TextButton>
+          </View>
         </VStack>
       </View>
 
