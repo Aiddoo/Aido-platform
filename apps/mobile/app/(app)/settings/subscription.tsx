@@ -324,7 +324,7 @@ function OfferingsView() {
   return (
     <View className="flex-1">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-        <Spacing size={24} />
+        <Spacing size={16} />
 
         <ScallopedContainer>
           <View className="px-5 pt-5">
