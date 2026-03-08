@@ -191,7 +191,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			await this.monthlyReport.execute(ctx);
 		}
 
-
 		// 일요일 저녁: 주간 달성 배지
 		if (dayOfWeek === 0) {
 			await this.weeklyAchievement.execute(ctx);
