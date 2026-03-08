@@ -88,7 +88,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 
 ReportCard.Loading = function Loading() {
   return (
-    <VStack gap={12}>
+    <VStack>
       {times(3, (i) => (
         <View key={i} className="py-3">
           <SkeletonGroup isLoading>
@@ -103,6 +103,9 @@ ReportCard.Loading = function Loading() {
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
               </HStack>
               <SkeletonGroup.Item className="h-4 w-full rounded-md" />
+              <View className="items-end">
+                <SkeletonGroup.Item className="h-3 w-16 rounded-md" />
+              </View>
             </VStack>
           </SkeletonGroup>
           {i < 2 && <View className="mt-3 border-b border-dashed border-gray-3" />}
