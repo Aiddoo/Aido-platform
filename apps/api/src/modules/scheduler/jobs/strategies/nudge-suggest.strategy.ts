@@ -128,11 +128,9 @@ export class NudgeSuggestStrategy {
 
 		// 전체 candidate × friend 조합을 한 번에 빌드
 		const allPairs: string[] = [];
-		const pairsByUser = new Map<string, string[]>();
 		for (const user of candidates) {
 			const friends = friendMap.get(user.id) ?? [];
 			const pairs = friends.map((f) => `${user.id}:${f.id}`);
-			pairsByUser.set(user.id, pairs);
 			allPairs.push(...pairs);
 		}
 
