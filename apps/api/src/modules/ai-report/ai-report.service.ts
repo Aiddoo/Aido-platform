@@ -59,8 +59,12 @@ export class AiReportService {
 			? thisFirst
 			: kstNow.add(1, "month").startOf("month").hour(REPORT_HOUR);
 
-		const daysUntilWeekly = nextWeeklyKst.diff(kstNow, "day");
-		const daysUntilMonthly = nextMonthlyKst.diff(kstNow, "day");
+		const daysUntilWeekly = nextWeeklyKst
+			.startOf("day")
+			.diff(kstNow.startOf("day"), "day");
+		const daysUntilMonthly = nextMonthlyKst
+			.startOf("day")
+			.diff(kstNow.startOf("day"), "day");
 
 		const [latestWeekly, latestMonthly] = await Promise.all([
 			this.aiReportRepository.findLatest(userId, "WEEKLY"),

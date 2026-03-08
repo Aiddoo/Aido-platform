@@ -4,6 +4,7 @@
  * Suites + GWT 패턴 적용
  * - BullMQ Job Scheduler 등록 검증
  * - BullMQ 큐에 per-user 잡 등록 검증
+ * - Startup catch-up 검증
  */
 
 import { getQueueToken } from "@nestjs/bullmq";
@@ -27,6 +28,7 @@ describe("ReportGenerationJob", () => {
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
 			.mock(getQueueToken(AI_REPORT_QUEUE))
 			.impl(() => ({
+				add: jest.fn().mockResolvedValue(undefined),
 				addBulk: jest.fn().mockResolvedValue(undefined),
 				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
 			}))
@@ -38,12 +40,19 @@ describe("ReportGenerationJob", () => {
 		mockProcessor = unitRef.get(ReportGenerationProcessor);
 	});
 
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
 	// =========================================================================
 	// onModuleInit 스케줄러 등록
 	// =========================================================================
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 주간/월간 스케줄러를 등록해야 한다", async () => {
+			// Given — 화요일 (catch-up 미발동)
+			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+
 			// When
 			await job.onModuleInit();
 
@@ -51,22 +60,115 @@ describe("ReportGenerationJob", () => {
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledTimes(2);
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"weekly-report-scheduler",
-				{ pattern: "0 8 * * 1", tz: "Asia/Seoul" },
+				{ pattern: "0 1 * * 1", tz: "Asia/Seoul" },
 				{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
 			);
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"monthly-report-scheduler",
-				{ pattern: "0 8 1 * *", tz: "Asia/Seoul" },
+				{ pattern: "0 1 1 * *", tz: "Asia/Seoul" },
 				{ name: "dispatch-reports", data: { reportType: "MONTHLY" } },
 			);
 		});
 
 		it("Processor에 자신을 등록해야 한다", async () => {
+			// Given
+			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+
 			// When
 			await job.onModuleInit();
 
 			// Then
 			expect(mockProcessor.setReportJob).toHaveBeenCalledWith(job);
+		});
+	});
+
+	// =========================================================================
+	// catch-up on startup
+	// =========================================================================
+
+	describe("catch-up on startup", () => {
+		it("월요일 01:00 이후 시작 시 WEEKLY dispatch 잡을 추가해야 한다", async () => {
+			// Given — 월요일 03:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).toHaveBeenCalledWith(
+				"dispatch-reports",
+				{ reportType: "WEEKLY" },
+				{ jobId: expect.stringContaining("dispatch_WEEKLY_") },
+			);
+		});
+
+		it("1일 01:00 이후 시작 시 MONTHLY dispatch 잡을 추가해야 한다", async () => {
+			// Given — 4월 1일 02:00 KST (수요일)
+			jest.useFakeTimers({ now: new Date("2026-04-01T02:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).toHaveBeenCalledWith(
+				"dispatch-reports",
+				{ reportType: "MONTHLY" },
+				{ jobId: expect.stringContaining("dispatch_MONTHLY_") },
+			);
+		});
+
+		it("월요일이면서 1일이면 WEEKLY + MONTHLY 모두 추가해야 한다", async () => {
+			// Given — 2026-06-01은 월요일
+			jest.useFakeTimers({ now: new Date("2026-06-01T03:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).toHaveBeenCalledTimes(2);
+			expect(mockQueue.add).toHaveBeenCalledWith(
+				"dispatch-reports",
+				{ reportType: "WEEKLY" },
+				{ jobId: expect.stringContaining("dispatch_WEEKLY_") },
+			);
+			expect(mockQueue.add).toHaveBeenCalledWith(
+				"dispatch-reports",
+				{ reportType: "MONTHLY" },
+				{ jobId: expect.stringContaining("dispatch_MONTHLY_") },
+			);
+		});
+
+		it("월요일 01:00 이전에 시작 시 catch-up하지 않아야 한다", async () => {
+			// Given — 월요일 00:30 KST
+			jest.useFakeTimers({ now: new Date("2026-03-09T00:30:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).not.toHaveBeenCalled();
+		});
+
+		it("월요일이 아닌 날에는 WEEKLY catch-up하지 않아야 한다", async () => {
+			// Given — 화요일 10:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).not.toHaveBeenCalled();
+		});
+
+		it("1일이 아닌 날에는 MONTHLY catch-up하지 않아야 한다", async () => {
+			// Given — 3월 15일 수요일 10:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-15T10:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).not.toHaveBeenCalled();
 		});
 	});
 

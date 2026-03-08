@@ -2,10 +2,6 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
-import type { NotificationType } from "@/generated/prisma/client";
-
-import { NotificationService } from "../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
 import { AiReportService } from "../ai-report.service";
 import type { ReportGenerationJob } from "../jobs/report-generation.job";
 
@@ -41,9 +37,11 @@ export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
  * AI 리포트 생성 BullMQ 프로세서
  *
  * - dispatch-reports: 스케줄러 트리거 → per-user 잡 등록 (ReportGenerationJob.dispatchReports)
- * - generate-report: 단일 사용자 리포트 생성 + 알림 발송
+ * - generate-report: 단일 사용자 리포트 생성
  * - BullMQ 자동 재시도 (3회, exponential backoff)
  * - concurrency=5로 Gemini API rate limit 대응
+ *
+ * 알림 발송은 Scheduler Strategy (WeeklyReportStrategy / MonthlyReportStrategy)에서 담당합니다.
  */
 @Processor(AI_REPORT_QUEUE, {
 	concurrency: 5,
@@ -59,10 +57,7 @@ export class ReportGenerationProcessor extends WorkerHost {
 		this.#reportJob = job;
 	}
 
-	constructor(
-		private readonly aiReportService: AiReportService,
-		private readonly notificationService: NotificationService,
-	) {
+	constructor(private readonly aiReportService: AiReportService) {
 		super();
 	}
 
@@ -113,21 +108,6 @@ export class ReportGenerationProcessor extends WorkerHost {
 			);
 			return;
 		}
-
-		const notificationType: NotificationType =
-			reportType === "WEEKLY" ? "WEEKLY_REPORT" : "MONTHLY_REPORT";
-
-		const message =
-			reportType === "WEEKLY"
-				? NotificationMessageBuilder.weeklyReport()
-				: NotificationMessageBuilder.monthlyReport();
-
-		await this.notificationService.createAndSend({
-			userId,
-			type: notificationType,
-			title: message.title,
-			body: message.body,
-		});
 
 		this.#logger.log(`${reportType} report generated: userId=${userId}`);
 	}

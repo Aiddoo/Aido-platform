@@ -1,5 +1,25 @@
+import {
+  type AcceptFriendRequestResponse,
+  acceptFriendRequestResponseSchema,
+  type CancelFriendRequestResponse,
+  cancelFriendRequestResponseSchema,
+  type FriendsListResponse,
+  friendsListResponseSchema,
+  type ReceivedRequestsResponse,
+  type RejectFriendRequestResponse,
+  type RemoveFriendResponse,
+  receivedRequestsResponseSchema,
+  rejectFriendRequestResponseSchema,
+  removeFriendResponseSchema,
+  type SendFriendRequestResponse,
+  type SentRequestsResponse,
+  sendFriendRequestResponseSchema,
+  sentRequestsResponseSchema,
+} from '@aido/validators';
+import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
-import { err, type Result } from '@src/shared/errors/result';
+import { ParseError } from '@src/shared/errors/infra-error';
+import { err, ok, type Result } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.type';
 
 import { type FriendError, FriendErrors } from '../models/friend.error';
@@ -7,17 +27,18 @@ import {
   FriendPolicy,
   type FriendRequest,
   type FriendUser,
+  type PaginationParams,
   type SendRequestResult,
 } from '../models/friend.model';
-import type { FriendRepository, PaginationParams } from '../repositories/friend.repository';
+import { toFriendRequestsPage, toFriendsPage, toSendRequestResult } from './friend.mapper';
 
 export type FriendServiceError = ApiError | FriendError;
 
 export class FriendService {
-  readonly #repository: FriendRepository;
+  readonly #httpClient: HttpClient;
 
-  constructor(repository: FriendRepository) {
-    this.#repository = repository;
+  constructor(httpClient: HttpClient) {
+    this.#httpClient = httpClient;
   }
 
   sendRequestByTag = async (
@@ -25,49 +46,163 @@ export class FriendService {
   ): Promise<Result<SendRequestResult, FriendServiceError>> => {
     const trimmed = userTag.trim();
 
-    // 1. 빈 값 검증
     if (!trimmed) {
       return err(FriendErrors.emptyTag());
     }
 
-    // 2. 태그 형식 검증 (8자리 영문 대문자·숫자, validators/API와 동일)
     if (!FriendPolicy.isValidTag(trimmed)) {
       return err(FriendErrors.invalidTag());
     }
 
-    // 3. Repository 호출
-    return this.#repository.sendRequest(trimmed);
+    const result = await this.#httpClient.post<SendFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(trimmed)}`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = sendFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[FriendService] Invalid sendRequest response: ${parsed.error.message}`);
+    }
+
+    return ok(toSendRequestResult(parsed.data));
   };
 
   getReceivedRequests = async (
     params?: PaginationParams,
   ): Promise<Result<Page<FriendRequest>, ApiError>> => {
-    return this.#repository.getReceivedRequests(params);
+    const result = await this.#httpClient.get<ReceivedRequestsResponse>(
+      'v1/follows/requests/received',
+      { params: { cursor: params?.cursor, limit: params?.limit } },
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = receivedRequestsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid getReceivedRequests response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toFriendRequestsPage(parsed.data));
   };
 
   getSentRequests = async (
     params?: PaginationParams,
   ): Promise<Result<Page<FriendRequest>, ApiError>> => {
-    return this.#repository.getSentRequests(params);
+    const result = await this.#httpClient.get<SentRequestsResponse>('v1/follows/requests/sent', {
+      params: { cursor: params?.cursor, limit: params?.limit },
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = sentRequestsResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid getSentRequests response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toFriendRequestsPage(parsed.data));
   };
 
   acceptRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    return this.#repository.acceptRequest(userId);
+    const result = await this.#httpClient.patch<AcceptFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}/accept`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = acceptFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid acceptRequest response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(undefined);
   };
 
   rejectRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    return this.#repository.rejectRequest(userId);
+    const result = await this.#httpClient.patch<RejectFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}/reject`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = rejectFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid rejectRequest response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(undefined);
   };
 
   cancelRequest = async (userId: string): Promise<Result<void, ApiError>> => {
-    return this.#repository.cancelRequest(userId);
+    const result = await this.#httpClient.delete<CancelFriendRequestResponse>(
+      `v1/follows/${encodeURIComponent(userId)}`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = cancelFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid cancelRequest response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(undefined);
   };
 
   getFriends = async (params?: PaginationParams): Promise<Result<Page<FriendUser>, ApiError>> => {
-    return this.#repository.getFriends(params);
+    const result = await this.#httpClient.get<FriendsListResponse>('v1/follows/friends', {
+      params: { cursor: params?.cursor, limit: params?.limit },
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = friendsListResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[FriendService] Invalid getFriends response: ${parsed.error.message}`);
+    }
+
+    return ok(toFriendsPage(parsed.data));
   };
 
   removeFriend = async (userId: string): Promise<Result<void, ApiError>> => {
-    return this.#repository.removeFriend(userId);
+    const result = await this.#httpClient.delete<RemoveFriendResponse>(
+      `v1/follows/${encodeURIComponent(userId)}`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = removeFriendResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid removeFriend response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(undefined);
   };
 }

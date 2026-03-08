@@ -154,6 +154,20 @@ describe("AiReportService", () => {
 	// =========================================================================
 
 	describe("getReportStatus", () => {
+		it("daysUntil은 시간이 아닌 날짜(calendar day) 기준으로 계산해야 한다", async () => {
+			// Given — 일요일 23:00 KST (= 14:00 UTC), 다음 월요일까지 D-1
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date("2026-03-08T14:00:00Z"));
+
+			// When
+			const result = await service.getReportStatus(mockUserId, mockTimezone);
+
+			// Then — 캘린더 기준 1일 (시간 기반이면 0일로 잘못 계산됨)
+			expect(result.daysUntilWeekly).toBe(1);
+
+			jest.useRealTimers();
+		});
+
 		it("리포트 상태와 최신 리포트를 반환해야 한다", async () => {
 			// Given -최신 리포트가 존재하는 상태
 			const weeklyReport = createMockReportEntity({ type: "WEEKLY" });

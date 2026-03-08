@@ -6,10 +6,12 @@ import { DatabaseModule } from "@/database/database.module";
 import { NotificationModule } from "../notification/notification.module";
 import {
 	EveningReminderStrategy,
+	MonthlyReportStrategy,
 	MorningReminderStrategy,
 	NudgeSuggestStrategy,
 	SocialDigestStrategy,
 	WeeklyAchievementStrategy,
+	WeeklyReportStrategy,
 	WinbackStrategy,
 } from "./jobs/strategies";
 import { TimezoneAwareReminderJob } from "./jobs/timezone-aware-reminder.job";
@@ -44,6 +46,8 @@ import {
 		TodoReminderProcessor,
 		MorningReminderStrategy,
 		EveningReminderStrategy,
+		WeeklyReportStrategy,
+		MonthlyReportStrategy,
 		WeeklyAchievementStrategy,
 		WinbackStrategy,
 		NudgeSuggestStrategy,

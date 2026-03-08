@@ -4,17 +4,17 @@ Expo 54 + React Native 0.81 기반 모바일 앱.
 
 ## 아키텍처
 
-Hexagonal (Ports & Adapters) 아키텍처.
+Feature-based Layered Architecture. Service가 HTTP + Zod + Mapper + Policy를 모두 담당.
 자세한 내용: [architecture.md](./architecture.md)
 
 ```
 features/{feature}/
   models/          # 도메인 모델, 에러
-  ports/           # Repository 인터페이스
-  repositories/    # API 구현체
-  services/        # 비즈니스 로직
+  services/        # Service + Mapper (HTTP + Zod + 변환 + 비즈니스 로직)
   presentations/   # hooks, components, screens
 ```
+
+> **예외**: `DeviceIdRepository`만 Repository 패턴 유지 (SecureStore 로컬 스토리지 접근 — HTTP가 아님)
 
 ## 테스트
 

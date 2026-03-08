@@ -3,14 +3,15 @@
  *
  * Suites + GWT 패턴 적용
  * - 서비스 위임 검증
- * - 리포트 생성 여부에 따른 알림 발송 검증
+ * - 리포트 미생성 시 스킵 검증
+ *
+ * 알림 발송은 Scheduler Strategy에서 담당하므로 여기서는 테스트하지 않습니다.
  */
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
 
-import { NotificationService } from "../../notification/notification.service";
 import { AiReportService } from "../ai-report.service";
 import {
 	type AiReportJobData,
@@ -21,7 +22,6 @@ import {
 describe("ReportGenerationProcessor", () => {
 	let processor: ReportGenerationProcessor;
 	let mockAiReportService: Mocked<AiReportService>;
-	let mockNotificationService: Mocked<NotificationService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -30,7 +30,6 @@ describe("ReportGenerationProcessor", () => {
 
 		processor = unit;
 		mockAiReportService = unitRef.get(AiReportService);
-		mockNotificationService = unitRef.get(NotificationService);
 	});
 
 	function createMockJob(data: AiReportJobData): Job<AiReportJobData> {
@@ -95,78 +94,21 @@ describe("ReportGenerationProcessor", () => {
 				"Asia/Seoul",
 			);
 		});
-	});
 
-	// =========================================================================
-	// 알림 발송
-	// =========================================================================
-
-	describe("알림 발송", () => {
-		it("WEEKLY 리포트 생성 시 WEEKLY_REPORT 알림을 발송해야 한다", async () => {
-			// Given
-			mockAiReportService.generateWeeklyReport.mockResolvedValue({} as never);
-			mockNotificationService.createAndSend.mockResolvedValue(
-				undefined as never,
-			);
-
-			// When
-			await processor.process(
-				createMockJob({
-					userId: "user-123",
-					timezone: "Asia/Seoul",
-					reportType: "WEEKLY",
-				}),
-			);
-
-			// Then
-			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: "user-123",
-					type: "WEEKLY_REPORT",
-				}),
-			);
-		});
-
-		it("MONTHLY 리포트 생성 시 MONTHLY_REPORT 알림을 발송해야 한다", async () => {
-			// Given
-			mockAiReportService.generateMonthlyReport.mockResolvedValue({} as never);
-			mockNotificationService.createAndSend.mockResolvedValue(
-				undefined as never,
-			);
-
-			// When
-			await processor.process(
-				createMockJob({
-					userId: "user-123",
-					timezone: "Asia/Seoul",
-					reportType: "MONTHLY",
-				}),
-			);
-
-			// Then
-			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: "user-123",
-					type: "MONTHLY_REPORT",
-				}),
-			);
-		});
-
-		it("리포트 미생성 시 알림을 발송하지 않아야 한다", async () => {
+		it("리포트 미생성 시 정상 종료해야 한다", async () => {
 			// Given - 데이터 부족으로 리포트 미생성
 			mockAiReportService.generateWeeklyReport.mockResolvedValue(null);
 
-			// When
-			await processor.process(
-				createMockJob({
-					userId: "user-123",
-					timezone: "Asia/Seoul",
-					reportType: "WEEKLY",
-				}),
-			);
-
-			// Then
-			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
+			// When & Then - 에러 없이 처리
+			await expect(
+				processor.process(
+					createMockJob({
+						userId: "user-123",
+						timezone: "Asia/Seoul",
+						reportType: "WEEKLY",
+					}),
+				),
+			).resolves.toBeUndefined();
 		});
 	});
 });

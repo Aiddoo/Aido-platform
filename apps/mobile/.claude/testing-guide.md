@@ -16,11 +16,8 @@
 │  UI Component          mock: Service (DI 훅)             │
 │    └─ render + screen 검증                               │
 ├──────────────────────────────────────────────────────────┤
-│  Service               mock: Repository                  │
-│    └─ Policy 검증 + Result 전파                           │
-├──────────────────────────────────────────────────────────┤
-│  Repository            mock: HttpClient                  │
-│    └─ API 호출 + Zod 검증 + Mapper 변환                   │
+│  Service               mock: HttpClient                  │
+│    └─ HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증     │
 ├──────────────────────────────────────────────────────────┤
 │  Mapper                mock 없음 (순수 함수)              │
 │    └─ DTO → Domain 변환                                  │
@@ -38,9 +35,8 @@
 |---------|--------|------|----------|
 | 1 | **Policy** | 비즈니스 로직의 핵심, 순수 함수라 작성 쉬움 | 없음 |
 | 2 | **Mapper** | 서버 변경 감지의 방파제, 순수 함수 | 없음 |
-| 3 | **Service** | Policy 검증 + Repository 위임 검증 | mock Repository |
-| 4 | **Repository** | API 응답 파싱, Zod 검증, Result 반환 | mock HttpClient |
-| 5 | **UI 컴포넌트** | 렌더링 + 사용자 상호작용 | mock Service (DI 훅) |
+| 3 | **Service** | HTTP + Zod + Mapper + Policy 통합 검증 | mock HttpClient |
+| 4 | **UI 컴포넌트** | 렌더링 + 사용자 상호작용 | mock Service (DI 훅) |
 
 ---
 
@@ -51,9 +47,8 @@
 | 테스트 대상 | 파일명 패턴 | 예시 |
 |------------|-----------|------|
 | Policy | `{feature}.model.test.ts` | `todo.model.test.ts` |
-| Mapper | `{feature}.mapper.test.ts` | `todo.mapper.test.ts` |
+| Mapper | `{feature}.mapper.test.ts` (services/ 하위) | `todo.mapper.test.ts` |
 | Service | `{feature}.service.test.ts` | `todo.service.test.ts` |
-| Repository | `{feature}.repository.impl.test.ts` | `todo.repository.impl.test.ts` |
 | UI 컴포넌트 | `{Component}.test.tsx` | `TodoList.test.tsx` |
 
 > **주의**: `.spec.ts`가 아니라 **`.test.ts` / `.test.tsx`** 를 사용한다 (코드베이스 컨벤션).
@@ -89,8 +84,7 @@ it('특정 조건에서 기대하는 결과가 나와야 한다', async () => {
 |--------|-----------|-----------|
 | Policy | `isValid('valid')` → `true` | `isValid('')` → `false` |
 | Mapper | 정상 DTO → Domain 변환 | nullable 필드가 null인 경우 |
-| Repository | ok Response → ok Result | 4xx → err Result, 잘못된 응답 → ParseError |
-| Service | Repository 성공 → ok 전파 | Policy 실패 → err + Repository 미호출 |
+| Service | ok Response → Zod → Mapper → ok Result | 4xx → err Result, Zod 실패 → ParseError |
 | UI 컴포넌트 | 정상 데이터 렌더링 | 에러 상태 UI 렌더링 |
 
 ### 테스트 데이터 팩토리
@@ -141,21 +135,6 @@ const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
 });
 ```
 
-#### Repository mock
-
-인터페이스의 **모든 메서드**를 `jest.fn()`으로 구현한다.
-
-```typescript
-import type { {Feature}Repository } from './{feature}.repository';
-
-const createMock{Feature}Repository = (): jest.Mocked<{Feature}Repository> => ({
-  getById: jest.fn(),
-  getList: jest.fn(),
-  create: jest.fn(),
-  // ...인터페이스에 정의된 나머지 메서드
-});
-```
-
 #### 기타 Port mock (Storage 등)
 
 ```typescript
@@ -188,10 +167,10 @@ if (!result.ok) {
 
 ```typescript
 // 성공 응답
-repository.getList.mockResolvedValue(ok(data));
+httpClient.get.mockResolvedValue(ok(data));
 
 // 에러 응답 (서버 4xx)
-repository.getList.mockResolvedValue(err(new ApiError('CODE', '메시지', 404)));
+httpClient.get.mockResolvedValue(err(new ApiError('CODE', '메시지', 404)));
 
 // throw (InfraError — 5xx/네트워크)
 httpClient.get.mockRejectedValue(new ServerError(500));
@@ -339,7 +318,7 @@ describe('{Feature}Policy', () => {
 Mapper는 서버 변경의 방파제다. **타입 변환** (string → Date 등)과 **nullable 처리**를 집중 검증한다.
 
 ```typescript
-// features/{feature}/repositories/{feature}.mapper.test.ts
+// features/{feature}/services/{feature}.mapper.test.ts
 import { to{Feature}, to{Feature}s } from './{feature}.mapper';
 
 const create{Feature}Dto = (overrides?: Partial<{Feature}Dto>): {Feature}Dto => ({
@@ -420,18 +399,18 @@ describe('{Feature} Mapper', () => {
 });
 ```
 
-### 3. Repository 테스트 (mock HttpClient)
+### 3. Service 테스트 (mock HttpClient)
 
-Repository는 **API 호출 → Zod 검증 → Mapper 변환 → Result 반환** 흐름을 검증한다.
+Service는 **HTTP 호출 → Zod 검증 → Mapper 변환 → Result 반환** 흐름과 **Policy 검증**을 검증한다.
 
 ```typescript
-// features/{feature}/repositories/{feature}.repository.impl.test.ts
+// features/{feature}/services/{feature}.service.test.ts
 import type { HttpClient } from '@src/core/ports/http';
 import { ApiError } from '@src/shared/errors/api-error';
-import { ServerError, ParseError } from '@src/shared/errors/infra-error';
+import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, err } from '@src/shared/errors/result';
 
-import { {Feature}RepositoryImpl } from './{feature}.repository.impl';
+import { {Feature}Service } from './{feature}.service';
 
 const createMockHttpClient = (): jest.Mocked<HttpClient> => ({
   get: jest.fn(),
@@ -448,22 +427,23 @@ const create{Feature}Response = () => ({
   createdAt: '2024-06-01T09:00:00Z',
 });
 
-describe('{Feature}RepositoryImpl', () => {
+describe('{Feature}Service', () => {
   let httpClient: jest.Mocked<HttpClient>;
-  let repository: {Feature}RepositoryImpl;
+  let service: {Feature}Service;
 
   beforeEach(() => {
     httpClient = createMockHttpClient();
-    repository = new {Feature}RepositoryImpl(httpClient);
+    service = new {Feature}Service(httpClient);
   });
 
-  describe('getById', () => {
-    it('API 성공 응답을 Zod로 검증하고 ok Result를 반환해야 한다', async () => {
+  // 패턴 A: HTTP + Zod + Mapper
+  describe('get{Feature}s', () => {
+    it('정상 응답 → Zod 검증 → Domain 모델 반환', async () => {
       // Given
       httpClient.get.mockResolvedValue(ok(create{Feature}Response()));
 
       // When
-      const result = await repository.getById(1);
+      const result = await service.get{Feature}s(params);
 
       // Then
       expect(result.ok).toBe(true);
@@ -476,14 +456,14 @@ describe('{Feature}RepositoryImpl', () => {
       );
     });
 
-    it('4xx API 에러 시 err Result를 그대로 전파해야 한다', async () => {
+    it('4xx API 에러 → err Result 그대로 전파', async () => {
       // Given
       httpClient.get.mockResolvedValue(
         err(new ApiError('{FEATURE}_0801', '리소스를 찾을 수 없어요', 404)),
       );
 
       // When
-      const result = await repository.getById(1);
+      const result = await service.get{Feature}s(params);
 
       // Then
       expect(result.ok).toBe(false);
@@ -492,132 +472,57 @@ describe('{Feature}RepositoryImpl', () => {
       }
     });
 
-    it('Zod 검증 실패 시 ParseError를 throw해야 한다', async () => {
+    it('Zod 검증 실패 → ParseError throw', async () => {
       // Given — 스키마에 맞지 않는 응답
       httpClient.get.mockResolvedValue(ok({ invalid: 'data' }));
 
       // When & Then
-      await expect(repository.getById(1)).rejects.toThrow(ParseError);
+      await expect(service.get{Feature}s(params)).rejects.toThrow(ParseError);
     });
 
-    it('HttpClient가 throw하면 그대로 전파해야 한다', async () => {
+    it('HttpClient가 throw하면 그대로 전파', async () => {
       // Given — 5xx 서버 에러
       httpClient.get.mockRejectedValue(new ServerError(500));
 
       // When & Then
-      await expect(repository.getById(1)).rejects.toThrow(ServerError);
+      await expect(service.get{Feature}s(params)).rejects.toThrow(ServerError);
     });
   });
-});
-```
 
-### 4. Service 테스트
-
-Service 테스트는 두 가지 패턴이 있다.
-
-#### 패턴 A: Passthrough (단순 위임)
-
-대부분의 Service 메서드는 Repository를 그대로 호출한다. **호출 여부**와 **Result 전파**를 검증한다.
-
-```typescript
-// features/{feature}/services/{feature}.service.test.ts
-import type { {Feature}Repository } from '../repositories/{feature}.repository';
-import { ApiError } from '@src/shared/errors/api-error';
-import { ok, err } from '@src/shared/errors/result';
-
-import { {Feature}Service } from './{feature}.service';
-
-const createMock{Feature}Repository = (): jest.Mocked<{Feature}Repository> => ({
-  getById: jest.fn(),
-  getList: jest.fn(),
-  create: jest.fn(),
-  // ...인터페이스에 정의된 나머지 메서드
-});
-
-const create{Feature} = (overrides?: Partial<{Feature}>): {Feature} => ({
-  id: 1,
-  name: '기본 이름',
-  ...overrides,
-});
-
-describe('{Feature}Service', () => {
-  let repository: jest.Mocked<{Feature}Repository>;
-  let service: {Feature}Service;
-
-  beforeEach(() => {
-    repository = createMock{Feature}Repository();
-    service = new {Feature}Service(repository);
-  });
-
-  describe('getList', () => {
-    it('Repository 성공 시 ok Result를 반환해야 한다', async () => {
+  // 패턴 B: Policy + HTTP
+  describe('create{Feature}', () => {
+    it('유효한 입력이면 HTTP 호출 후 Domain 모델 반환', async () => {
       // Given
-      repository.getList.mockResolvedValue(ok([create{Feature}()]));
+      httpClient.post.mockResolvedValue(ok(create{Feature}Response()));
 
       // When
-      const result = await service.getList();
+      const result = await service.create{Feature}({ name: 'valid-input' });
 
       // Then
-      expect(result.ok).toBe(true);
-      expect(repository.getList).toHaveBeenCalled();
-    });
-
-    it('Repository가 에러를 반환하면 그대로 전파해야 한다', async () => {
-      // Given
-      repository.getList.mockResolvedValue(
-        err(new ApiError('{FEATURE}_0801', '리소스를 찾을 수 없어요', 404)),
-      );
-
-      // When
-      const result = await service.getList();
-
-      // Then
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.code).toBe('{FEATURE}_0801');
-      }
-    });
-  });
-});
-```
-
-#### 패턴 B: Policy 검증 (클라이언트에서 먼저 거르기)
-
-Service가 **Policy로 검증** 후 실패하면 `{Feature}Error`를 반환하고, **Repository를 호출하지 않는다**.
-
-```typescript
-  describe('create', () => {
-    it('유효한 입력이면 Repository를 호출해야 한다', async () => {
-      // Given
-      repository.create.mockResolvedValue(ok(create{Feature}()));
-
-      // When
-      const result = await service.create({ value: 'valid-input' });
-
-      // Then
-      expect(repository.create).toHaveBeenCalledWith({ value: 'valid-input' });
+      expect(httpClient.post).toHaveBeenCalled();
       expect(result.ok).toBe(true);
     });
 
-    it('무효한 입력이면 {Feature}Error를 반환하고 Repository를 호출하지 않아야 한다', async () => {
+    it('무효한 입력이면 {Feature}Error 반환 + HTTP 미호출', async () => {
       // Given — 무효한 입력 (빈 문자열)
 
       // When
-      const result = await service.create({ value: '' });
+      const result = await service.create{Feature}({ name: '' });
 
       // Then
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error.code).toBe('{FEATURE}_INVALID_INPUT');
       }
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(httpClient.post).not.toHaveBeenCalled();
     });
   });
+});
 ```
 
-> **핵심 검증 포인트**: Policy 실패 시 `repository.method`가 `not.toHaveBeenCalled()`인지 확인한다.
+> **핵심 검증 포인트**: Policy 실패 시 `httpClient.method`가 `not.toHaveBeenCalled()`인지 확인한다.
 
-### 5. UI 컴포넌트 테스트
+### 4. UI 컴포넌트 테스트
 
 컴포넌트 테스트에는 TanStack Query의 `QueryClient`가 필요하다.
 
@@ -745,16 +650,11 @@ pnpm --filter @aido/mobile test -- --coverage
 
 ### Service
 
-- [ ] Passthrough: Repository 호출 여부 + ok/err Result 전파 검증
-- [ ] Policy 검증: err Result 반환 + Repository 미호출 확인
-- [ ] 여러 의존성 조합 시 각 의존성 호출 순서 검증
-
-### Repository
-
-- [ ] 성공 응답 → Zod 검증 → ok Result 반환
+- [ ] 정상 응답 → Zod 검증 → Mapper → ok Result 반환
 - [ ] 4xx 에러 → err Result 그대로 전파
 - [ ] Zod 검증 실패 → ParseError throw
 - [ ] 5xx/네트워크 → InfraError throw 전파
+- [ ] Policy 검증: err Result 반환 + httpClient 미호출 확인
 
 ### UI 컴포넌트
 
@@ -781,6 +681,6 @@ pnpm --filter @aido/mobile test -- --coverage
 | `src/shared/errors/api-error.ts` | ApiError (서버 4xx) |
 | `src/shared/errors/infra-error.ts` | InfraError (5xx, 네트워크, 파싱) |
 | `src/features/*/models/*.model.ts` | Domain Model + Policy |
-| `src/features/*/repositories/*.repository.ts` | Repository 인터페이스 |
 | `src/features/*/services/*.service.ts` | Service 구현 |
+| `src/features/*/services/*.mapper.ts` | Mapper (DTO → Domain) |
 | `jest.config.js` | Jest 설정 |

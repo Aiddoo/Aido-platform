@@ -50,7 +50,6 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
 
 export const toAiUsage = (dto: AiUsageResponse): AiUsage => dto.data;
 
-// Daily Completion
 export const toDailyCompletionSummary = (
   dto: DailyCompletionSummaryDTO,
 ): DailyCompletionSummary => ({

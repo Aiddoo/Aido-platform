@@ -23,6 +23,11 @@ export interface SendRequestResult {
   autoAccepted: boolean;
 }
 
+export interface PaginationParams {
+  cursor?: string;
+  limit?: number;
+}
+
 /** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/validators userTagParamSchema와 동일) */
 export const FriendPolicy = {
   isValidTag(tag: string): boolean {
