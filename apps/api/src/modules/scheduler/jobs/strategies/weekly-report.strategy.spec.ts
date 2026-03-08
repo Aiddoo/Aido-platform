@@ -20,12 +20,12 @@ describe("WeeklyReportStrategy", () => {
 
 	const TZ = "Asia/Seoul";
 
-	/** KST 2024-01-15 (월요일) 08:00 = UTC 2024-01-14T23:00:00Z */
-	const FAKE_NOW = new Date("2024-01-14T23:00:00Z");
+	/** KST 2024-01-15 (월요일) 09:00 = UTC 2024-01-15T00:00:00Z */
+	const FAKE_NOW = new Date("2024-01-15T00:00:00Z");
 
 	const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 		tz: TZ,
-		localHour: 8,
+		localHour: 9,
 		localMinute: 0,
 		dayOfWeek: 1,
 		today: dayjs.utc("2024-01-15").startOf("day").toDate(),
@@ -57,46 +57,38 @@ describe("WeeklyReportStrategy", () => {
 	});
 
 	// =========================================================================
-	// 프리미엄 사용자
+	// 프리미엄 유저 대상 발송
 	// =========================================================================
 
-	it("프리미엄 사용자에게 주간 리포트를 발송한다", async () => {
-		const ctx = makeCtx({ localHour: 9, localMinute: 30 });
+	it("프리미엄 pushEnabled 유저에게만 주간 리포트를 발송한다", async () => {
+		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([
-			{ id: "premium-1" },
-		] as never);
+		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
 
 		const result = await strategy.execute(ctx);
 
 		expect(result).toEqual({ sent: 1 });
+
+		// AI 리포트는 유료 기능 → 프리미엄 유저만 조회
+		expect(database.user.findMany).toHaveBeenCalledTimes(1);
+		expect(database.user.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: expect.objectContaining({
+					preference: { timezone: TZ, pushEnabled: true },
+					OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+				}),
+			}),
+		);
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.weeklyReport();
 		expect(notifications?.[0]).toMatchObject({
-			userId: "premium-1",
+			userId: "user-1",
 			type: "WEEKLY_REPORT",
 			title: expected.title,
 			body: expected.body,
 		});
-	});
-
-	// =========================================================================
-	// 무료 사용자
-	// =========================================================================
-
-	it("무료 사용자에게 08:00에 주간 리포트를 발송한다", async () => {
-		const ctx = makeCtx({ localHour: 8, localMinute: 0 });
-
-		database.user.findMany
-			.mockResolvedValueOnce([] as never) // 프리미엄
-			.mockResolvedValueOnce([{ id: "free-1" }] as never); // 무료
-
-		const result = await strategy.execute(ctx);
-
-		expect(result).toEqual({ sent: 1 });
-		expect(database.user.findMany).toHaveBeenCalledTimes(2);
 	});
 
 	// =========================================================================
@@ -131,9 +123,7 @@ describe("WeeklyReportStrategy", () => {
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
 		const ctx = makeCtx();
 
-		database.user.findMany
-			.mockResolvedValueOnce([] as never)
-			.mockResolvedValueOnce([] as never);
+		database.user.findMany.mockResolvedValueOnce([] as never);
 
 		const result = await strategy.execute(ctx);
 

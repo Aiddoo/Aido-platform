@@ -20,12 +20,12 @@ describe("WeeklyAchievementStrategy", () => {
 
 	const TZ = "Asia/Seoul";
 
-	/** KST 2024-01-14 (일요일) 18:00 = UTC 2024-01-14T09:00:00Z */
-	const FAKE_NOW = new Date("2024-01-14T09:00:00Z");
+	/** KST 2024-01-14 (일요일) 20:00 = UTC 2024-01-14T11:00:00Z */
+	const FAKE_NOW = new Date("2024-01-14T11:00:00Z");
 
 	const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 		tz: TZ,
-		localHour: 18,
+		localHour: 20,
 		localMinute: 0,
 		dayOfWeek: 0,
 		today: dayjs.utc("2024-01-14").startOf("day").toDate(),
@@ -61,7 +61,7 @@ describe("WeeklyAchievementStrategy", () => {
 	// 주간 달성 배지 발송
 	// =========================================================================
 
-	it("이번 주 투두가 있는 사용자에게 주간 달성 배지를 발송한다", async () => {
+	it("해당 타임존의 모든 pushEnabled 유저에게 주간 달성 배지를 발송한다", async () => {
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -74,6 +74,16 @@ describe("WeeklyAchievementStrategy", () => {
 		const result = await strategy.execute(ctx);
 
 		expect(result).toEqual({ sent: 1 });
+
+		// 단일 쿼리로 premium/free 구분 없이 조회
+		expect(database.user.findMany).toHaveBeenCalledTimes(1);
+		expect(database.user.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: expect.objectContaining({
+					preference: { timezone: TZ, pushEnabled: true },
+				}),
+			}),
+		);
 
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -156,9 +166,7 @@ describe("WeeklyAchievementStrategy", () => {
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
 		const ctx = makeCtx();
 
-		database.user.findMany
-			.mockResolvedValueOnce([] as never)
-			.mockResolvedValueOnce([] as never);
+		database.user.findMany.mockResolvedValueOnce([] as never);
 
 		const result = await strategy.execute(ctx);
 

@@ -1,4 +1,3 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
@@ -19,33 +18,15 @@ export class WeeklyAchievementStrategy {
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-		const { tz, localHour, localMinute } = ctx;
+		const { tz } = ctx;
 		const today = todayInTimezone(tz);
 		const mondayOfWeek = dayjs.utc(today).subtract(6, "day").toDate();
 		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
 
-		const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
-		const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
-		const isFreeTime =
-			localHour === defaultHour && localMinute === defaultMinute;
-
-		const selectClause = {
-			id: true,
-			todos: {
-				where: { startDate: { gte: mondayOfWeek, lt: tomorrow } },
-				select: { completed: true },
-			},
-		} as const;
-
-		const premiumUsers = await this.database.user.findMany({
+		// 오케스트레이터가 일요일 20:00에만 호출 → 전체 pushEnabled 유저 대상
+		const users = await this.database.user.findMany({
 			where: {
-				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-				preference: {
-					timezone: tz,
-					pushEnabled: true,
-					eveningReminderHour: localHour,
-					eveningReminderMinute: localMinute,
-				},
+				preference: { timezone: tz, pushEnabled: true },
 				todos: {
 					some: {
 						startDate: { gte: mondayOfWeek, lt: tomorrow },
@@ -53,28 +34,14 @@ export class WeeklyAchievementStrategy {
 					},
 				},
 			},
-			select: selectClause,
-		});
-
-		let freeUsers: typeof premiumUsers = [];
-		if (isFreeTime) {
-			freeUsers = await this.database.user.findMany({
-				where: {
-					subscriptionStatus: { not: "ACTIVE" },
-					role: { not: "ADMIN" },
-					preference: { timezone: tz, pushEnabled: true },
-					todos: {
-						some: {
-							startDate: { gte: mondayOfWeek, lt: tomorrow },
-							completed: true,
-						},
-					},
+			select: {
+				id: true,
+				todos: {
+					where: { startDate: { gte: mondayOfWeek, lt: tomorrow } },
+					select: { completed: true },
 				},
-				select: selectClause,
-			});
-		}
-
-		const users = [...premiumUsers, ...freeUsers];
+			},
+		});
 
 		if (users.length === 0) {
 			return { sent: 0 };
