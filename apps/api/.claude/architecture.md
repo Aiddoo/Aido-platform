@@ -1,6 +1,6 @@
 # API 아키텍처 가이드
 
-> NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · 이벤트 · 보안 · 공통 모듈
+> NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · BullMQ 큐 · 보안 · 공통 모듈
 
 ## 관련 문서
 
@@ -24,8 +24,9 @@
 | 데이터베이스 | PostgreSQL |
 | 검증 | Zod 4.3 + nestjs-zod |
 | 문서화 | Swagger (OpenAPI) |
-| 이벤트 | EventEmitter2 (wildcard, `.` 구분자) |
+| 비동기 큐 | BullMQ (Redis) — 알림, AI, 스케줄러 등 |
 | 캐시 | Memory / Redis (Strategy Pattern) |
+| 분산 락 | ILockProvider (Redis / InMemory Strategy) |
 | 암호화 | AES-256-GCM (EncryptionService) |
 
 ---
@@ -38,11 +39,11 @@
 HTTP Request
      ↓
 ┌──────────────────────────────────────────────────────────┐
-│  Middleware (ThrottlerGuard, CORS)                        │
+│  Middleware (CORS)                                         │
 └──────────────────────────────────────────────────────────┘
      ↓
 ┌──────────────────────────────────────────────────────────┐
-│  Guard (JwtAuthGuard → AdminGuard → AiUsageGuard)        │
+│  Guard (JwtAuthGuard → ThrottlerGuard → AdminGuard)       │
 │  - @Public() 데코레이터로 인증 스킵                       │
 └──────────────────────────────────────────────────────────┘
      ↓
@@ -54,7 +55,7 @@ HTTP Request
 ┌──────────────────────────────────────────────────────────┐
 │  Service                                                  │
 │  - 비즈니스 로직, BusinessExceptions 예외 발생             │
-│  - EventEmitter2로 이벤트 발행 (알림 등 부수효과)          │
+│  - QueueService.enqueueXxx()로 비동기 위임 (fire-and-forget)│
 │  - 트랜잭션 관리 (database.$transaction)                   │
 └──────────────────────────────────────────────────────────┘
      ↓
@@ -68,9 +69,10 @@ HTTP Request
 │  DatabaseService (Prisma) → PostgreSQL                    │
 └──────────────────────────────────────────────────────────┘
 
-     ── 비동기 ──
+     ── 비동기 (BullMQ) ──
 ┌──────────────────────────────────────────────────────────┐
-│  EventEmitter2 → Listener → NotificationService           │
+│  QueueService → BullMQ Queue → Processor → Provider       │
+│  - 3회 재시도, exponential backoff (1s → 2s → 4s)          │
 │  - PushProvider (Expo) → 푸시 알림 발송                    │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -83,14 +85,14 @@ HTTP Request
 | Service → Repository | ✅ | `TodoService → TodoRepository` |
 | Service → 다른 Service | ✅ | `TodoService → FollowService` |
 | Service → DatabaseService | ✅ (트랜잭션용) | `database.$transaction(...)` |
-| Service → EventEmitter2 | ✅ | `eventEmitter.emit(...)` |
+| Service → QueueService | ✅ | `queueService.enqueueXxx(...)` |
+| Processor → Provider/Repository | ✅ | 큐 작업 처리 |
 | Repository → DatabaseService | ✅ | `database.todo.findUnique(...)` |
 | Repository → EncryptionService | ✅ | `encryptionService.encrypt(...)` |
 | Controller → Repository | ❌ | Service 거쳐야 함 |
 | Controller → DatabaseService | ❌ | |
 | Repository → 다른 Repository | ❌ | |
 | Repository → Service | ❌ | |
-| Listener → Service 직접 호출 | ❌ | NotificationService 통해야 함 |
 
 ### 1.3 디렉토리 구조
 
@@ -109,26 +111,35 @@ apps/api/
 │   │   ├── date/               # 날짜/타임존 유틸리티
 │   │   ├── decorators/         # @Timezone, @CurrentUser 등
 │   │   ├── encryption/         # EncryptionService (AES-256-GCM)
+│   │   ├── entitlement/        # EntitlementService (플랜별 제한)
 │   │   ├── exception/          # BusinessException + GlobalExceptionFilter
+│   │   ├── lock/               # LockModule (Redis/InMemory Strategy)
 │   │   ├── logger/             # LoggerModule (Pino)
 │   │   ├── pagination/         # PaginationService (오프셋 + 커서)
+│   │   ├── redis/              # RedisModule (REDIS_CLIENT)
 │   │   ├── request/            # Request 관련 유틸
 │   │   ├── response/           # ResponseTransformInterceptor
 │   │   └── swagger/            # ApiDoc, ApiSuccessResponse 등
 │   └── modules/                # 도메인 모듈
 │       ├── admin/              # 관리자 기능
+│       ├── admin-notification/ # 관리자 알림 (Discord 등)
 │       ├── ai/                 # AI 자연어 파싱 (Gemini)
+│       ├── ai-report/          # AI 주간/월간 리포트
+│       ├── ai-suggestion/      # AI 반복 제안
 │       ├── auth/               # 인증 (JWT, OAuth 4사)
 │       ├── cheer/              # 응원 메시지
 │       ├── daily-completion/   # 일일 완료 통계
 │       ├── email/              # 이메일 발송
 │       ├── follow/             # 팔로우 관계
 │       ├── health/             # 헬스체크
-│       ├── notification/       # 알림 (이벤트 + 푸시)
+│       ├── inquiry/            # 문의
+│       ├── notification/       # 알림 (BullMQ + 푸시)
 │       ├── nudge/              # 찌르기
-│       ├── scheduler/          # 크론 작업 (리마인더)
+│       ├── scheduler/          # 스케줄러 (리마인더)
+│       ├── subscription/       # 구독/결제
 │       ├── todo/               # 할 일 CRUD
-│       └── todo-category/      # 할 일 카테고리
+│       ├── todo-category/      # 할 일 카테고리
+│       └── user-settings/      # 사용자 설정/프로필
 └── test/
     ├── e2e/                    # E2E 테스트
     ├── integration/            # 통합 테스트
@@ -328,7 +339,7 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 **DO ✅**
 - Service에서 `BusinessExceptions.xxx()` 팩토리 메서드로 예외 발생
 - 새 Unique Constraint 추가 시 constraintMap에 매핑 등록
-- `satisfies` 키워드로 이벤트 페이로드 타입 체크
+- QueueService `enqueueXxx()` 메서드로 비동기 부수효과 위임
 
 **DON'T ❌**
 - Controller에서 try-catch (GlobalExceptionFilter가 담당)
@@ -338,112 +349,160 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 
 ---
 
-## 3. 이벤트 기반 아키텍처
+## 3. BullMQ 큐 아키텍처
 
-### 3.1 EventEmitter2 설정
+### 3.1 큐 목록
+
+| 큐 이름 | 모듈 | 용도 |
+|---------|------|------|
+| `notification` | Notification | 푸시 알림 발송 |
+| `admin-notification` | AdminNotification | Discord 관리자 알림 |
+| `timezone-reminder` | Scheduler | 타임존별 리마인더 스윕 |
+| `todo-reminder` | Scheduler | 개별 할 일 리마인더 |
+| `ai-suggestion` | AiSuggestion | AI 반복 패턴 분석 |
+| `ai-report` | AiReport | AI 주간/월간 리포트 |
+| `account-purge` | Auth | 탈퇴 계정 정리 |
+
+### 3.2 BullMQ 글로벌 설정
+
+**위치**: `src/app.module.ts`
 
 ```typescript
-// app.module.ts
-EventEmitterModule.forRoot({
-  wildcard: true,
-  delimiter: '.',
-  ignoreErrors: false,
-})
+BullModule.forRootAsync({
+  inject: [REDIS_CLIENT],
+  useFactory: (redis: Redis) => ({
+    connection: redis as never,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: "exponential" as const, delay: 1_000 },
+      removeOnComplete: true,
+      removeOnFail: { count: 100, age: 86_400 },
+    },
+  }),
+}),
 ```
 
-### 3.2 이벤트 정의
+| 옵션 | 값 | 설명 |
+|------|-----|------|
+| `attempts` | 3 | 최대 재시도 횟수 |
+| `backoff` | exponential, 1s | 1s → 2s → 4s |
+| `removeOnComplete` | true | 성공 시 job 삭제 |
+| `removeOnFail` | count: 100, age: 1일 | 실패 job 보관 제한 |
 
-**위치**: `src/modules/notification/events/notification.events.ts`
-
-```typescript
-export const NotificationEvents = {
-  FOLLOW_NEW: 'follow.new',
-  FOLLOW_MUTUAL: 'follow.mutual',
-  TODO_ALL_COMPLETED: 'todo.all_completed',
-  TODO_REMINDER: 'todo.reminder',
-  NUDGE_SENT: 'nudge.sent',
-  CHEER_SENT: 'cheer.sent',
-  FRIEND_COMPLETED: 'friend.completed',
-} as const;
-```
-
-**페이로드 인터페이스:**
-
-| 이벤트 | 페이로드 필드 |
-|--------|-------------|
-| `follow.new` | `followerId`, `followingId`, `followerName` |
-| `follow.mutual` | `userId`, `friendId`, `friendName` |
-| `todo.all_completed` | `userId`, `completedCount`, `timezone` |
-| `todo.reminder` | `userId`, `todoId`, `todoTitle`, `minutesUntilDue` |
-| `nudge.sent` | `nudgeId`, `senderId`, `receiverId`, `senderName`, `todoId?`, `todoTitle?` |
-| `cheer.sent` | `cheerId`, `senderId`, `receiverId`, `senderName`, `message?` |
-| `friend.completed` | `friendId`, `friendName`, `notifyUserIds`, `timezone` |
-
-### 3.3 이벤트 발행 (Service)
+### 3.3 QueueService 패턴 (enqueue 담당)
 
 ```typescript
-// TodoService — 모든 할 일 완료 시
-private async checkAndEmitAllCompletedEvent(userId: string, tz: string) {
-  // ... 완료 통계 확인
-  this.eventEmitter.emit(NotificationEvents.TODO_ALL_COMPLETED, {
-    userId,
-    completedCount: stats.completed,
-    timezone: tz,
-  } satisfies TodoAllCompletedEventPayload);
+// src/modules/{name}/queue/{name}-queue.service.ts
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import type { Queue } from "bullmq";
+import { QUEUE_NAME } from "./{name}-queue.constants";
 
-  // 친구에게 알림
-  this.eventEmitter.emit(NotificationEvents.FRIEND_COMPLETED, {
-    friendId: userId,
-    friendName: userName ?? '친구',
-    notifyUserIds: friendIds,
-    timezone: tz,
-  } satisfies FriendCompletedEventPayload);
-}
-```
-
-> `satisfies` 키워드로 페이로드 타입을 컴파일 타임에 검증.
-
-### 3.4 이벤트 수신 (Listener 패턴)
-
-**위치**: `src/modules/notification/listeners/`
-
-| 파일 | 처리 이벤트 |
-|------|-----------|
-| `follow.listener.ts` | `follow.new`, `follow.mutual` |
-| `todo.listener.ts` | `todo.all_completed`, `todo.reminder`, `friend.completed` |
-| `nudge.listener.ts` | `nudge.sent` |
-| `cheer.listener.ts` | `cheer.sent` |
-
-```typescript
 @Injectable()
-export class FollowListener {
-  constructor(private readonly notificationService: NotificationService) {}
+export class [Feature]QueueService {
+  readonly #logger = new Logger([Feature]QueueService.name);
 
-  @OnEvent(NotificationEvents.FOLLOW_NEW)
-  async handleFollowNew(payload: FollowNewEventPayload): Promise<void> {
-    try {
-      const message = NotificationMessageBuilder.followNew(payload.followerName);
-      await this.notificationService.createAndSend({
-        userId: payload.followingId,
-        type: 'FOLLOW_NEW',
-        title: message.title,
-        body: message.body,
-        friendId: payload.followerId,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send follow notification: ${error}`);
-      // 알림 실패가 메인 플로우를 중단하지 않음
-    }
+  constructor(
+    @InjectQueue(QUEUE_NAME) private readonly queue: Queue<[Feature]JobData>,
+  ) {}
+
+  /** fire-and-forget: 에러가 호출자에 전파되지 않음 */
+  enqueueXxx(data: XxxPayload): void {
+    this.#enqueueAsync(JobName.XXX, data).catch((error) => {
+      this.#logger.error(`큐 등록 실패: ${error.message}`);
+    });
+  }
+
+  async #enqueueAsync(name: string, data: unknown): Promise<void> {
+    await this.queue.add(name, data);
   }
 }
 ```
 
-**핵심 규칙:**
-- Listener 내부에서 예외를 catch하여 메인 플로우 보호
-- `NotificationMessageBuilder`로 알림 메시지 생성 (title/body 분리)
-- `notificationService.createAndSend()`로 DB 저장 + 푸시 발송 동시 수행
+### 3.4 Processor 패턴 (job 처리 담당)
 
-### 3.5 PushProvider Strategy Pattern
+```typescript
+// src/modules/{name}/queue/{name}-queue.processor.ts
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import type { Job } from "bullmq";
+import { QUEUE_NAME } from "./{name}-queue.constants";
+
+@Processor(QUEUE_NAME)
+export class [Feature]Processor extends WorkerHost {
+  async process(job: Job<[Feature]JobData>): Promise<void> {
+    switch (job.name) {
+      case JobName.TYPE_A:
+        return this.#handleTypeA(job.data as TypeAData);
+      case JobName.TYPE_B:
+        return this.#handleTypeB(job.data as TypeBData);
+    }
+  }
+
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(`Job 실패: ${job?.id} / ${job?.name}`, error.stack);
+  }
+}
+```
+
+### 3.5 Job 패턴 (스케줄러 등록 담당)
+
+```typescript
+// src/modules/{name}/jobs/{name}.job.ts
+import { Injectable, type OnModuleInit } from "@nestjs/common";
+
+@Injectable()
+export class [Feature]Job implements OnModuleInit {
+  async onModuleInit(): Promise<void> {
+    // cron 스케줄러 등록
+    await this.queue.upsertJobScheduler("scheduler-id", {
+      pattern: "0 * * * *",  // 매시 정각
+    }, { name: JobName.SWEEP, data: {} });
+  }
+
+  async handleSweep(): Promise<void> {
+    // Processor에서 호출됨
+  }
+}
+```
+
+### 3.6 Service에서 큐 사용 패턴
+
+```typescript
+// src/modules/{name}/services/{name}.service.ts
+@Injectable()
+export class [Feature]Service {
+  constructor(
+    private readonly [feature]QueueService: [Feature]QueueService,
+    private readonly database: DatabaseService,
+  ) {}
+
+  async create(input: CreateInput): Promise<Result> {
+    // 1. 비즈니스 로직 (트랜잭션)
+    const result = await this.database.$transaction(async (tx) => {
+      // ... DB 작업
+      return created;
+    });
+
+    // 2. 트랜잭션 커밋 후 비동기 큐 enqueue (fire-and-forget)
+    this.[feature]QueueService.enqueueXxx({ ... });
+
+    return result;
+  }
+}
+```
+
+> **핵심 규칙**: 트랜잭션 커밋 후 enqueue. 트랜잭션 내부에서 enqueue하면 롤백 시 고아 job 발생.
+
+### 3.7 새 큐 추가 체크리스트
+
+1. [ ] `{name}-queue.constants.ts` — 큐 이름 상수, Job 이름 enum
+2. [ ] `{name}-queue.service.ts` — `enqueueXxx()` 메서드 (fire-and-forget)
+3. [ ] `{name}-queue.processor.ts` — `@Processor` + `WorkerHost` + switch/case
+4. [ ] `{name}.module.ts` — `BullModule.registerQueue({ name: QUEUE_NAME })` imports에 추가
+5. [ ] `test/e2e/helpers/e2e-app-factory.ts` — `BULL_QUEUES`, `BULL_PROCESSORS`, `BULL_JOBS`에 등록
+
+### 3.8 PushProvider Strategy Pattern
 
 **위치**: `src/modules/notification/providers/`
 
@@ -488,15 +547,6 @@ export class ExpoPushProvider implements PushProvider {
 }
 ```
 
-### 3.6 새 이벤트 추가 체크리스트
-
-1. [ ] `notification.events.ts`에 이벤트 상수 + 페이로드 인터페이스 추가
-2. [ ] 발행할 Service에서 `eventEmitter.emit()` + `satisfies` 타입 체크
-3. [ ] `listeners/` 하위에 Listener 클래스 생성 (또는 기존 Listener에 핸들러 추가)
-4. [ ] Listener에서 try-catch로 메인 플로우 보호
-5. [ ] `NotificationMessageBuilder`에 메시지 템플릿 추가
-6. [ ] `NotificationModule`의 providers에 Listener 등록
-
 ---
 
 ## 4. 보안/인증 체계
@@ -516,13 +566,11 @@ export class ExpoPushProvider implements PushProvider {
 **Guard 적용 순서** (app.module.ts 글로벌 등록):
 
 ```
-ThrottlerGuard (Rate Limiting, 글로벌)
-     ↓
 JwtAuthGuard (인증, 글로벌 — @Public()으로 스킵)
      ↓
-AdminGuard (관리자 권한, 엔드포인트별)
+ThrottlerGuard (Rate Limiting, 글로벌)
      ↓
-AiUsageGuard (AI 사용량, 엔드포인트별)
+AdminGuard (관리자 권한, 엔드포인트별)
 ```
 
 **위치**: `src/modules/auth/guards/`
@@ -555,7 +603,36 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 }
 ```
 
-### 4.3 OAuth 4사 자동연동 규칙
+### 4.3 LastActiveInterceptor (글로벌)
+
+**위치**: `src/modules/auth/interceptors/last-active.interceptor.ts`
+
+`APP_INTERCEPTOR`로 글로벌 등록. 모든 인증된 요청에서 `User.lastActiveAt`을 업데이트.
+
+```typescript
+// 패턴: in-memory 쓰로틀 + fire-and-forget DB 업데이트
+@Injectable()
+export class LastActiveInterceptor implements NestInterceptor {
+  static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
+  readonly #throttleMap = new Map<string, number>(); // userId → lastUpdatedAt
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const user = context.switchToHttp().getRequest().user;
+    if (user?.userId) {
+      this.#touchLastActive(user.userId); // fire-and-forget
+    }
+    return next.handle();
+  }
+}
+```
+
+| 항목 | 설명 |
+|------|------|
+| 쓰로틀 | 같은 userId에 대해 1시간 내 중복 업데이트 방지 |
+| 비차단 | `.catch()`로 에러 처리, 응답 지연 없음 |
+| 메모리 정리 | 1시간 주기 `setInterval`로 만료 항목 삭제 |
+
+### 4.4 OAuth 4사 자동연동 규칙
 
 **위치**: `src/modules/auth/services/oauth.service.ts`
 
@@ -600,7 +677,7 @@ private async _handleEmailConflict(...) {
 }
 ```
 
-### 4.4 EncryptionService (AES-256-GCM)
+### 4.5 EncryptionService (AES-256-GCM)
 
 **위치**: `src/common/encryption/encryption.service.ts`
 
@@ -650,6 +727,9 @@ this.encryptionService.decryptSafe(account.accessToken)
 | `ExceptionModule` | `common/exception/` | `GlobalExceptionFilter` |
 | `ResponseModule` | `common/response/` | `ResponseTransformInterceptor` |
 | `PaginationModule` | `common/pagination/` | `PaginationService` |
+| `RedisModule` | `common/redis/` | `REDIS_CLIENT` (ioredis) |
+| `LockModule` | `common/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
+| `EntitlementModule` | `common/entitlement/` | `EntitlementService` (플랜별 제한) |
 
 > `@Global()` 모듈은 `imports` 없이 어디서든 DI 가능.
 
@@ -851,44 +931,60 @@ imports: [
   // 1. 설정 (최우선 로드)
   AppConfigModule,
 
-  // 2. 인프라
+  // 2. 모니터링
+  SentryModule.forRoot(),
+
+  // 3. 인프라
   DatabaseModule,
   EncryptionModule,
+  RedisModule.forRoot(),
   CacheModule.forRoot(),
-  EventEmitterModule.forRoot({ wildcard: true, delimiter: '.', ignoreErrors: false }),
+  LockModule.forRoot(),
+  BullModule.forRootAsync({ ... }),
 
-  // 3. 글로벌 모듈
+  // 4. 글로벌 모듈
+  EntitlementModule,
   LoggerModule.forRootAsync(),
   ExceptionModule,
   ResponseModule,
   PaginationModule,
   ThrottlerModule.forRootAsync({ ... }),
 
-  // 4. 도메인 모듈
-  AdminModule, AiModule, AuthModule, CheerModule, DailyCompletionModule,
-  FollowModule, HealthModule, NotificationModule, NudgeModule,
-  SchedulerModule, TodoModule, TodoCategoryModule,
+  // 5. 도메인 모듈
+  AdminModule, AdminNotificationModule, AiModule, AiReportModule,
+  AiSuggestionModule, AuthModule, CheerModule, DailyCompletionModule,
+  FollowModule, HealthModule, InquiryModule, NotificationModule,
+  NudgeModule, SchedulerModule, SubscriptionModule, TodoModule,
+  TodoCategoryModule, UserSettingsModule,
 ],
 providers: [
   AppService,
+  { provide: APP_GUARD, useClass: JwtAuthGuard },
   { provide: APP_GUARD, useClass: ThrottlerGuard },
+  { provide: APP_INTERCEPTOR, useClass: LastActiveInterceptor },
 ],
 ```
 
 | 모듈 | 설명 | 주요 의존성 |
 |------|------|-----------|
 | **Auth** | JWT 인증, OAuth 4사, 회원 관리, 세션 | EncryptionService, EmailModule |
-| **Todo** | 할 일 CRUD, 완료 처리, 정렬 | EventEmitter2, FollowService |
+| **Todo** | 할 일 CRUD, 완료 처리, 정렬 | NotificationQueueService, FollowService |
 | **TodoCategory** | 카테고리 CRUD, 기본 카테고리 | TodoModule (할 일 이동) |
-| **Follow** | 팔로우/언팔로우, 친구 관계 | EventEmitter2 |
-| **Cheer** | 응원 메시지 전송 | FollowService, EventEmitter2 |
-| **Nudge** | 찌르기 알림 전송 | FollowService, EventEmitter2 |
-| **AI** | 자연어 → Todo 파싱 (Gemini) | CacheService |
-| **Notification** | 알림 저장/발송, 토큰 관리 | PushProvider (Expo) |
-| **Scheduler** | 크론 작업 (리마인더) | EventEmitter2, DatabaseService |
+| **Follow** | 팔로우/언팔로우, 친구 관계 | NotificationQueueService |
+| **Cheer** | 응원 메시지 전송 | FollowService, NotificationQueueService |
+| **Nudge** | 찌르기 알림 전송 | FollowService, NotificationQueueService |
+| **AI** | 자연어 → Todo 파싱 (Gemini) | CacheService, EntitlementService |
+| **AiReport** | AI 주간/월간 리포트 생성 | AiProvider, BullMQ |
+| **AiSuggestion** | AI 반복 패턴 분석/제안 | AiProvider, BullMQ |
+| **Notification** | 알림 저장/발송, 토큰 관리 | PushProvider (Expo), BullMQ |
+| **Scheduler** | 스케줄러 (리마인더) | BullMQ, NotificationQueueService |
+| **Subscription** | 구독/결제 관리 | EntitlementService |
+| **AdminNotification** | 관리자 알림 (Discord) | BullMQ |
 | **DailyCompletion** | 일일 완료 통계 집계 | - |
 | **Email** | 이메일 발송 | - |
+| **Inquiry** | 문의 접수 | AdminNotifier |
 | **Admin** | 관리자 기능 | AdminGuard |
+| **UserSettings** | 사용자 설정/프로필/스트릭 | AuthModule |
 | **Health** | 헬스체크 | - |
 
 ### 7.2 핵심 모듈
@@ -898,22 +994,37 @@ providers: [
 ```
 src/modules/auth/
 ├── auth.module.ts
-├── auth.controller.ts
+├── controllers/
+│   ├── auth.controller.ts       # 로그인/회원가입
+│   ├── oauth.controller.ts      # OAuth 4사
+│   ├── session.controller.ts    # 세션 관리
+│   └── account.controller.ts    # 계정 관리 (탈퇴 등)
 ├── services/
 │   ├── auth.service.ts          # 로그인/회원가입/토큰 관리
 │   ├── oauth.service.ts         # OAuth 4사 연동
-│   ├── password.service.ts      # 비밀번호 변경/찾기
-│   └── session.service.ts       # 세션 관리
+│   ├── password.service.ts      # 비밀번호 해싱
+│   ├── password-management.service.ts  # 비밀번호 변경/찾기
+│   ├── session.service.ts       # 세션 관리
+│   ├── token.service.ts         # JWT 토큰 발급/검증
+│   └── verification.service.ts  # 이메일 인증 코드
 ├── repositories/
 │   ├── user.repository.ts
 │   ├── account.repository.ts    # OAuth 계정 (EncryptionService 사용)
 │   ├── session.repository.ts
 │   ├── verification.repository.ts
+│   ├── login-attempt.repository.ts
+│   ├── security-log.repository.ts
 │   └── oauth-state.repository.ts
 ├── guards/
 │   ├── jwt-auth.guard.ts        # @Public() 지원
 │   ├── jwt-refresh.guard.ts
 │   └── admin.guard.ts
+├── interceptors/
+│   └── last-active.interceptor.ts  # 글로벌 (APP_INTERCEPTOR)
+├── processors/
+│   └── account-purge.processor.ts  # 탈퇴 계정 정리
+├── jobs/
+│   └── account-purge.job.ts
 └── strategies/
     ├── jwt.strategy.ts
     └── jwt-refresh.strategy.ts
@@ -926,7 +1037,7 @@ src/modules/todo/
 ├── todo.module.ts
 ├── todo.controller.ts
 ├── services/
-│   └── todo.service.ts          # CRUD + 완료 + 정렬 + 이벤트 발행
+│   └── todo.service.ts          # CRUD + 완료 + 정렬 + 큐 enqueue
 ├── repositories/
 │   └── todo.repository.ts
 ├── types/
@@ -940,24 +1051,24 @@ src/modules/todo/
 **공통 패턴 — 팔로우 관계 확인 후 동작:**
 
 ```typescript
-// Service 내부 — 모든 소셜 기능 공통
-async sendCheer(senderId: string, receiverId: string, ...) {
+// Service 내부 — 모든 소셜 기능 공통 패턴
+async send[Action](senderId: string, receiverId: string, ...) {
   // 1. 팔로우 관계 확인
-  const isFollowing = await this.followRepository.isFollowing(senderId, receiverId);
-  if (!isFollowing) {
+  const isFriend = await this.followService.isMutualFriend(senderId, receiverId);
+  if (!isFriend) {
     throw BusinessExceptions.notFriends(receiverId);
   }
 
-  // 2. 일일 제한 확인
-  const todayCount = await this.cheerRepository.countToday(senderId, timezone);
-  if (todayCount >= CHEER_DAILY_LIMIT) {
-    throw BusinessExceptions.cheerLimitExceeded(todayCount, CHEER_DAILY_LIMIT);
-  }
+  // 2. 일일 제한 확인 (EntitlementService)
+  const entitlement = await this.entitlementService.getFeatureLimitInTx(tx, senderId, Feature.XXX);
+  this.entitlementService.enforceLimit(entitlement, todayCount, () =>
+    BusinessExceptions.xxxLimitExceeded(todayCount, entitlement.dailyLimit),
+  );
 
-  // 3. 생성 + 이벤트 발행
-  const cheer = await this.cheerRepository.create({ ... });
-  this.eventEmitter.emit(NotificationEvents.CHEER_SENT, { ... } satisfies CheerSentEventPayload);
-  return cheer;
+  // 3. 생성 + 비동기 큐 enqueue
+  const result = await this.[feature]Repository.create({ ... });
+  this.notificationQueueService.enqueueXxxSent({ ... });
+  return result;
 }
 ```
 
@@ -1065,11 +1176,12 @@ async handleTodoReminder() {
 - [ ] 새 Unique Constraint가 있으면 constraintMap에 매핑 추가
 - [ ] `@aido/errors`에 ErrorCode 추가
 
-### 4단계: 이벤트/알림 (필요시)
+### 4단계: 큐/알림 (필요시)
 
-- [ ] `notification.events.ts`에 이벤트 상수 + 페이로드 추가
-- [ ] Listener 생성 또는 기존 Listener에 핸들러 추가
-- [ ] `NotificationMessageBuilder`에 메시지 템플릿 추가
+- [ ] QueueService에 `enqueueXxx()` 메서드 추가
+- [ ] Processor에 handler 메서드 추가
+- [ ] Module에 `BullModule.registerQueue()` 등록
+- [ ] `NotificationMessageBuilder`에 메시지 템플릿 추가 (알림인 경우)
 
 ### 5단계: 테스트
 

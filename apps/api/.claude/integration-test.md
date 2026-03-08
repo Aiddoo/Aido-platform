@@ -70,40 +70,39 @@ test/
  * ```
  */
 
-import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { CheerBuilder, UserBuilder } from "@test/builders";
+import { [Feature]Builder } from "@test/builders";
 import { DatabaseService } from "@/database/database.service";
-import { CheerRepository } from "@/modules/cheer/cheer.repository";
-import { CheerService } from "@/modules/cheer/cheer.service";
+import { [Feature]Repository } from "@/modules/{name}/{name}.repository";
+import { [Feature]Service } from "@/modules/{name}/{name}.service";
+import { [Feature]QueueService } from "@/modules/{name}/queue/{name}-queue.service";
 
-describe("CheerService 통합 테스트 (Mock DB)", () => {
+describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
-  let service: CheerService;
+  let service: [Feature]Service;
 
   // Mock DB 팩토리로 생성 — $transaction 자동 설정됨
   const mockDb = createMockDatabaseService({
-    cheer: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn() },
-    user: { findUnique: jest.fn() },
+    [model]: { create: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn() },
   });
 
-  const mockEventEmitter = { emit: jest.fn() };
+  const mockQueueService = { enqueueXxx: jest.fn() };
 
   beforeAll(async () => {
     suppressLogger();
 
     module = await Test.createTestingModule({
       providers: [
-        CheerService,
-        CheerRepository,
+        [Feature]Service,
+        [Feature]Repository,
         { provide: DatabaseService, useValue: mockDb },
-        { provide: EventEmitter2, useValue: mockEventEmitter },
+        { provide: [Feature]QueueService, useValue: mockQueueService },
       ],
     }).compile();
 
-    service = module.get<CheerService>(CheerService);
+    service = module.get<[Feature]Service>([Feature]Service);
   });
 
   afterAll(async () => {
@@ -113,28 +112,30 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    CheerBuilder.resetIdCounter();
+    [Feature]Builder.resetIdCounter();
   });
 
   describe("DI 통합 테스트", () => {
-    it("CheerService가 정상적으로 주입되어야 함", () => {
+    it("[Feature]Service가 정상적으로 주입되어야 함", () => {
       expect(service).toBeDefined();
-      expect(service).toBeInstanceOf(CheerService);
+      expect(service).toBeInstanceOf([Feature]Service);
     });
   });
 
-  describe("응원 전송", () => {
-    it("친구에게 응원을 전송해야 함", async () => {
-      // Given - 친구 관계 사용자 + DB Mock 설정
-      const mockCheer = CheerBuilder.create("sender-1", "receiver-1").buildWithRelations();
-      mockDb.cheer.create.mockResolvedValue(mockCheer);
+  describe("생성", () => {
+    it("정상적으로 생성해야 함", async () => {
+      // Given - DB Mock 설정
+      const mock = [Feature]Builder.create().build();
+      mockDb.[model].create.mockResolvedValue(mock);
 
-      // When - 응원 전송
-      const result = await service.sendCheer({ senderId: "sender-1", receiverId: "receiver-1" });
+      // When
+      const result = await service.create({ ... });
 
-      // Then - 성공 검증
+      // Then - 성공 검증 + 큐 enqueue 호출 확인
       expect(result.id).toBeDefined();
-      expect(mockEventEmitter.emit).toHaveBeenCalledWith("cheer.sent", expect.any(Object));
+      expect(mockQueueService.enqueueXxx).toHaveBeenCalledWith(
+        expect.objectContaining({ [feature]Id: mock.id }),
+      );
     });
   });
 });
@@ -264,7 +265,7 @@ beforeAll(async () => {
       { provide: CacheService, useValue: { invalidateSession: async () => {}, ... } },
       { provide: CACHE_SERVICE, useValue: { get: async () => undefined, set: async () => {}, del: async () => {} } },
       { provide: EncryptionService, useValue: { encrypt: (v) => v, decryptSafe: (v) => v } },
-      { provide: EventEmitter2, useValue: { emit: () => true } },
+      { provide: [Feature]QueueService, useValue: { enqueueXxx: jest.fn() } },
       // ... ConfigService, TypedConfigService mocks
     ],
   }).compile();
@@ -293,15 +294,15 @@ describe("OAuth 통합 테스트 (실제 DB)", () => { ... });
 
 ```typescript
 /**
- * TodoService 통합 테스트 (Mock DB)
+ * [Feature]Service 통합 테스트 (Mock DB)
  *
  * @description
- * TodoService와 TodoRepository의 DI 통합을 검증합니다.
+ * [Feature]Service와 [Feature]Repository의 DI 통합을 검증합니다.
  * DB는 Mock으로 처리합니다.
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo.integration-spec
+ * pnpm --filter @aido/api test {name}.integration-spec
  * ```
  */
 ```

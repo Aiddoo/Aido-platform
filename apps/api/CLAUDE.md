@@ -46,7 +46,7 @@ Request → Guard → Controller → Service → Repository → DB
 
 | 상황 | 읽을 문서 |
 |------|----------|
-| 전체 아키텍처 이해 (에러, 이벤트, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
+| 전체 아키텍처 이해 (에러, BullMQ 큐, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
 | Controller/Service/Repository 코드 작성 | [.claude/api-conventions.md](.claude/api-conventions.md) |
 | Zod 스키마/DTO 추가 | [.claude/validators.md](.claude/validators.md) |
 | Prisma 스키마/마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
@@ -79,7 +79,7 @@ Request → Guard → Controller → Service → Repository → DB
 1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm prisma:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
 3. **Repository** → `tx?` 패턴, EncryptionService (민감 데이터)
-4. **Service** → BusinessExceptions, 트랜잭션, 이벤트 발행
+4. **Service** → BusinessExceptions, 트랜잭션, QueueService enqueue
 5. **Controller** → Swagger 문서화, DTO 검증
 6. **Module** → `app.module.ts`에 등록
 7. **테스트** → Unit → Integration → E2E

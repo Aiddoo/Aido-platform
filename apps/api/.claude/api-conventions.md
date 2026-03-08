@@ -161,34 +161,37 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BusinessExceptions } from '@common/exception';
 import { DatabaseService } from '@common/database';
-import { ExampleRepository } from '../repositories';
-import type { CreateExampleInput } from '@aido/validators';
+import { [Feature]QueueService } from '../queue';
+import { [Feature]Repository } from '../repositories';
 
 @Injectable()
-export class ExampleService {
-  private readonly logger = new Logger(ExampleService.name);
+export class [Feature]Service {
+  readonly #logger = new Logger([Feature]Service.name);
 
   constructor(
-    private readonly exampleRepository: ExampleRepository,
+    private readonly [feature]Repository: [Feature]Repository,
     private readonly database: DatabaseService,  // 트랜잭션용
-    private readonly eventEmitter: EventEmitter2, // 이벤트 발행용 (필요시)
+    private readonly [feature]QueueService: [Feature]QueueService, // 비동기 큐 (필요시)
   ) {}
 
   async findById(id: string) {
-    const example = await this.exampleRepository.findById(id);
-    if (!example) {
-      throw BusinessExceptions.todoNotFound(id);
+    const result = await this.[feature]Repository.findById(id);
+    if (!result) {
+      throw BusinessExceptions.[feature]NotFound(id);
     }
-    return example;
+    return result;
   }
 
-  async create(input: CreateExampleInput) {
-    const example = await this.exampleRepository.create(input);
-    this.logger.log(`Example created: ${example.id}`);
-    return example;
+  async create(input: CreateInput) {
+    const result = await this.[feature]Repository.create(input);
+    this.#logger.log(`[Feature] created: ${result.id}`);
+
+    // 부수효과는 QueueService로 비동기 위임 (fire-and-forget)
+    this.[feature]QueueService.enqueueXxx({ ... });
+
+    return result;
   }
 }
 ```
@@ -196,11 +199,11 @@ export class ExampleService {
 ### 의존성 주입 규칙
 
 ```typescript
-// DO: Repository + DatabaseService(트랜잭션용) + EventEmitter2(이벤트용)
+// DO: Repository + DatabaseService(트랜잭션용) + QueueService(비동기 큐용)
 constructor(
-  private readonly exampleRepository: ExampleRepository,
+  private readonly [feature]Repository: [Feature]Repository,
   private readonly database: DatabaseService,
-  private readonly eventEmitter: EventEmitter2,
+  private readonly [feature]QueueService: [Feature]QueueService,
 ) {}
 
 // DO: 다른 Service 주입 (교차 모듈 로직)
@@ -226,22 +229,21 @@ async createWithProfile(input: CreateUserInput) {
 }
 ```
 
-### 이벤트 발행
+### 비동기 큐 enqueue
 
 ```typescript
-async toggleComplete(id: number, userId: string, data: { completed: boolean }, tz: string) {
-  const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-  if (!todo) throw BusinessExceptions.todoNotFound(id);
+async update(id: string, userId: string, data: UpdateInput) {
+  const existing = await this.[feature]Repository.findByIdAndUserId(id, userId);
+  if (!existing) throw BusinessExceptions.[feature]NotFound(id);
 
-  const updated = await this.todoRepository.update(id, { ... });
+  const updated = await this.[feature]Repository.update(id, { ... });
 
-  // 부수효과는 이벤트로 분리 (알림 등)
-  if (data.completed) {
-    this.eventEmitter.emit(NotificationEvents.TODO_ALL_COMPLETED, {
+  // 부수효과는 QueueService로 비동기 위임 (fire-and-forget)
+  if (shouldNotify) {
+    this.[feature]QueueService.enqueueXxx({
       userId,
-      completedCount: stats.completed,
-      timezone: tz,
-    } satisfies TodoAllCompletedEventPayload);
+      [feature]Id: updated.id,
+    });
   }
 
   return updated;
@@ -278,7 +280,7 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 - `BusinessExceptions.xxx()` 팩토리 메서드로 예외 발생
 - Repository를 통한 데이터 액세스
 - `database.$transaction()`으로 트랜잭션 관리
-- `eventEmitter.emit()` + `satisfies`로 이벤트 발행
+- `[feature]QueueService.enqueueXxx()`로 비동기 부수효과 위임
 - Logger 사용한 중요 작업 로깅
 - 크론 작업에서 DB 기반 중복 방지
 
@@ -298,16 +300,15 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { DatabaseService } from '@common/database';
+import { DatabaseService, type TransactionClient } from '@common/database';
 
 @Injectable()
-export class ExampleRepository {
+export class [Feature]Repository {
   constructor(private readonly database: DatabaseService) {}
 
   async findById(
     id: string,
-    tx?: Prisma.TransactionClient,
+    tx?: TransactionClient,
   ): Promise<Example | null> {
     const client = tx ?? this.database;
     return client.example.findUnique({ where: { id } });
@@ -315,7 +316,7 @@ export class ExampleRepository {
 
   async create(
     data: Prisma.ExampleUncheckedCreateInput,
-    tx?: Prisma.TransactionClient,
+    tx?: TransactionClient,
   ): Promise<Example> {
     const client = tx ?? this.database;
     return client.example.create({ data });
@@ -324,7 +325,7 @@ export class ExampleRepository {
   async update(
     id: string,
     data: Prisma.ExampleUncheckedUpdateInput,
-    tx?: Prisma.TransactionClient,
+    tx?: TransactionClient,
   ): Promise<Example> {
     const client = tx ?? this.database;
     return client.example.update({ where: { id }, data });
@@ -332,7 +333,7 @@ export class ExampleRepository {
 
   async delete(
     id: string,
-    tx?: Prisma.TransactionClient,
+    tx?: TransactionClient,
   ): Promise<void> {
     const client = tx ?? this.database;
     await client.example.delete({ where: { id } });
@@ -347,7 +348,7 @@ export class ExampleRepository {
 ```typescript
 async someMethod(
   param: string,
-  tx?: Prisma.TransactionClient,  // 항상 마지막 파라미터
+  tx?: TransactionClient,  // 항상 마지막 파라미터
 ): Promise<Result> {
   const client = tx ?? this.database;  // 트랜잭션 또는 기본 클라이언트
   return client.model.findUnique({ ... });
