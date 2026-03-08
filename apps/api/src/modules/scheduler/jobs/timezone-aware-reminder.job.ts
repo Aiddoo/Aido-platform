@@ -1,6 +1,8 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
+import { CacheService } from "@/common/cache/cache.service";
+import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 
 import { NOTIFICATION_SCHEDULE } from "../constants/reminder.constants";
@@ -33,6 +35,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 
 	constructor(
 		private readonly database: DatabaseService,
+		private readonly cacheService: CacheService,
 		private readonly queueService: TimezoneReminderQueueService,
 		private readonly processor: TimezoneReminderProcessor,
 		private readonly morningReminder: MorningReminderStrategy,
@@ -65,15 +68,18 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		try {
 			const now = new Date();
 
-			// 1. 고유 타임존 목록 조회 (pushEnabled=true인 사용자만)
-			const timezones = await this.database.userPreference.findMany({
-				where: { pushEnabled: true },
-				select: { timezone: true },
-				distinct: ["timezone"],
+			// 1. 고유 타임존 목록 조회 (pushEnabled=true인 사용자만, 5분 캐시)
+			const tzList = await this.cacheService.wrapActiveTimezones(async () => {
+				const rows = await this.database.userPreference.findMany({
+					where: { pushEnabled: true },
+					select: { timezone: true },
+					distinct: ["timezone"],
+				});
+				return rows.map((r) => r.timezone);
 			});
 
 			// 2. 각 타임존별 Strategy를 병렬 처리
-			const tasks = timezones.map(({ timezone: tz }) => {
+			const tasks = tzList.map((tz) => {
 				const local = dayjs(now).tz(tz);
 				const localHour = local.hour();
 				const localMinute = local.minute();
@@ -83,7 +89,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			const results = await Promise.allSettled(tasks);
 			results.forEach((result, index) => {
 				if (result.status === "rejected") {
-					const tz = timezones[index]?.timezone ?? "unknown";
+					const tz = tzList[index] ?? "unknown";
 					this.#logger.error(
 						`Timezone reminder task failed for tz=${tz}: ${result.reason}`,
 						result.reason instanceof Error ? result.reason.stack : undefined,
@@ -233,13 +239,14 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		userId?: string,
 	): TimezoneContext {
 		const local = dayjs().tz(tz);
+		const today = todayInTimezone(tz);
 		return {
 			tz,
 			localHour,
 			localMinute,
 			dayOfWeek: local.day(),
-			today: new Date(),
-			tomorrow: new Date(),
+			today,
+			tomorrow: dayjs.utc(today).add(1, "day").toDate(),
 			userId,
 		};
 	}

@@ -8,6 +8,7 @@ import type Redis from "ioredis";
 import {
 	AppConfigModule,
 	CacheModule,
+	DedupModule,
 	EncryptionModule,
 	EntitlementModule,
 	ExceptionModule,
@@ -57,6 +58,7 @@ import { AppService } from "./app.service";
 		EncryptionModule,
 		RedisModule.forRoot(),
 		CacheModule.forRoot(),
+		DedupModule.forRoot(),
 		LockModule.forRoot(),
 		BullModule.forRootAsync({
 			inject: [REDIS_CLIENT],

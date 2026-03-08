@@ -385,15 +385,13 @@ export class CacheService {
 
 	async getUserPreference(
 		userId: string,
-	): Promise<CachedUserPreference | null | undefined> {
-		return this.get<CachedUserPreference | null>(
-			CacheKeys.userPreference(userId),
-		);
+	): Promise<CachedUserPreference | undefined> {
+		return this.get<CachedUserPreference>(CacheKeys.userPreference(userId));
 	}
 
 	async setUserPreference(
 		userId: string,
-		preference: CachedUserPreference | null,
+		preference: CachedUserPreference,
 	): Promise<void> {
 		return this.set(
 			CacheKeys.userPreference(userId),
@@ -408,8 +406,8 @@ export class CacheService {
 
 	async wrapUserPreference(
 		userId: string,
-		factory: () => Promise<CachedUserPreference | null>,
-	): Promise<CachedUserPreference | null> {
+		factory: () => Promise<CachedUserPreference>,
+	): Promise<CachedUserPreference> {
 		return this.wrap(
 			CacheKeys.userPreference(userId),
 			factory,
@@ -444,6 +442,22 @@ export class CacheService {
 			factory,
 			CacheKeys.TTL.FRIEND_COUNT,
 		);
+	}
+
+	// === Active Timezones Methods ===
+
+	async wrapActiveTimezones(
+		factory: () => Promise<string[]>,
+	): Promise<string[]> {
+		return this.wrap(
+			CacheKeys.activeTimezones(),
+			factory,
+			CacheKeys.TTL.ACTIVE_TIMEZONES,
+		);
+	}
+
+	async invalidateActiveTimezones(): Promise<void> {
+		return this.del(CacheKeys.activeTimezones());
 	}
 
 	// === Unread Count Methods ===

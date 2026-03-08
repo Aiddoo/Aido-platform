@@ -9,6 +9,8 @@ export * from "./config";
 // Database (향후 확장용)
 export * from "./database";
 // Date (직접 import: @/common/date/utils/core, arithmetic, compare, format, timezone, cooldown, range)
+// Dedup
+export * from "./dedup";
 // Encryption
 export * from "./encryption";
 // Entitlement

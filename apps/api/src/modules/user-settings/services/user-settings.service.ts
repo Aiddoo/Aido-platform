@@ -35,7 +35,19 @@ export class UserSettingsService {
 			userId,
 			async () => {
 				const raw = await this.userPreferenceRepository.findByUserId(userId);
-				if (!raw) return null;
+				if (!raw) {
+					return {
+						pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
+						nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
+						timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
+						morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+						morningReminderMinute:
+							USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+						eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+						eveningReminderMinute:
+							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+					};
+				}
 				return {
 					pushEnabled: raw.pushEnabled,
 					nightPushEnabled: raw.nightPushEnabled,
@@ -47,19 +59,6 @@ export class UserSettingsService {
 				};
 			},
 		);
-
-		// 설정이 없으면 기본값 반환 (기존 사용자 호환성)
-		if (!preference) {
-			return {
-				pushEnabled: false,
-				nightPushEnabled: false,
-				timezone: "UTC",
-				morningReminderHour: 8,
-				morningReminderMinute: 0,
-				eveningReminderHour: 18,
-				eveningReminderMinute: 0,
-			};
-		}
 
 		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
 
@@ -128,6 +127,11 @@ export class UserSettingsService {
 			eveningReminderMinute: input.eveningReminderMinute,
 		});
 		await this.cacheService.invalidateUserPreference(userId);
+
+		// 타임존 또는 pushEnabled 변경 시 활성 타임존 목록 캐시 무효화
+		if (input.timezone !== undefined || input.pushEnabled !== undefined) {
+			await this.cacheService.invalidateActiveTimezones();
+		}
 
 		this.#logger.log(
 			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,

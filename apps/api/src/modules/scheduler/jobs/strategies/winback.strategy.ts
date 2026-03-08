@@ -1,8 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
 import { diffInDays } from "@/common/date/utils/compare";
 import { todayInTimezone } from "@/common/date/utils/timezone";
+import { DedupKeys } from "@/common/dedup/constants/dedup-keys";
+import {
+	DEDUP_PROVIDER,
+	type IDedupProvider,
+} from "@/common/dedup/interfaces/dedup.interface";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
@@ -17,6 +22,8 @@ export class WinbackStrategy {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
+		@Inject(DEDUP_PROVIDER)
+		private readonly dedupProvider: IDedupProvider,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -52,63 +59,63 @@ export class WinbackStrategy {
 			return { sent: 0 };
 		}
 
-		// 단계별 중복 방지: 최근 90일 WINBACK 이력을 배치 조회
-		// (stage는 day3/day7/day14 뿐이므로 90일이면 충분)
-		const existingWinbacks = await this.database.notification.findMany({
-			where: {
-				userId: { in: filteredUsers.map((u) => u.id) },
-				type: "WINBACK",
-				createdAt: { gte: dayjs.utc(today).subtract(90, "day").toDate() },
-			},
-			select: { userId: true, metadata: true },
-		});
+		// 단계별 중복 방지: per-user Redis SISMEMBER 병렬 확인
+		const checks = await Promise.all(
+			filteredUsers.map(async (user) => {
+				if (!user.lastActiveAt) return null;
 
-		const sentStageMap = new Map<string, Set<string>>();
-		for (const n of existingWinbacks) {
-			const stage = (n.metadata as Record<string, unknown> | null)?.stage as
-				| string
-				| undefined;
-			if (!stage) {
-				continue;
-			}
-
-			if (!sentStageMap.has(n.userId)) sentStageMap.set(n.userId, new Set());
-			sentStageMap.get(n.userId)?.add(stage);
-		}
+				const inactiveDays = diffInDays(today, user.lastActiveAt);
+				const stage = this.#getStage(inactiveDays);
+				const alreadySent = await this.dedupProvider.isMember(
+					DedupKeys.winbackStages(user.id),
+					stage,
+				);
+				return { user, stage, inactiveDays, alreadySent };
+			}),
+		);
 
 		const notifications: CreateNotificationData[] = [];
+		for (const check of checks) {
+			if (!check || check.alreadySent) continue;
 
-		for (const user of filteredUsers) {
-			if (!user.lastActiveAt) {
-				continue;
-			}
-
-			const inactiveDays = diffInDays(today, user.lastActiveAt);
-			let stage: string;
-			if (inactiveDays >= 14) stage = "day14";
-			else if (inactiveDays >= 7) stage = "day7";
-			else stage = "day3";
-
-			// 인메모리 필터링
-			if (sentStageMap.get(user.id)?.has(stage)) {
-				continue;
-			}
-
-			const message = NotificationMessageBuilder.winback(inactiveDays);
+			const message = NotificationMessageBuilder.winback(check.inactiveDays);
 			notifications.push({
-				userId: user.id,
+				userId: check.user.id,
 				type: "WINBACK",
 				title: message.title,
 				body: message.body,
 				notificationDate: today,
-				metadata: { stage },
+				metadata: { stage: check.stage },
 			});
 		}
 
+		// DB 성공 후 Redis 기록 (순서 보장)
 		if (notifications.length > 0) {
 			await this.notificationService.createAndSendBatch(notifications);
+
+			void Promise.all(
+				notifications.map((n) => {
+					const stage = (n.metadata as { stage: string }).stage;
+					return this.dedupProvider.addMembers(
+						DedupKeys.winbackStages(n.userId),
+						[stage],
+						DedupKeys.TTL.WINBACK_STAGES,
+					);
+				}),
+			);
+
 			this.#logger.log(`Winback: tz=${tz}, count=${notifications.length}`);
 		}
 		return { sent: notifications.length };
+	}
+
+	#getStage(inactiveDays: number): string {
+		if (inactiveDays >= 14) {
+			return "day14";
+		}
+		if (inactiveDays >= 7) {
+			return "day7";
+		}
+		return "day3";
 	}
 }
