@@ -1,6 +1,7 @@
 // Prisma Mock (jest-mock-extended 기반 - 권장)
 
 // 유틸리티
+export * from "./async-utils";
 export * from "./execution-context.mock";
 // Fake 서비스
 export * from "./fake-ai.provider";

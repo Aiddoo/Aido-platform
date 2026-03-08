@@ -48,15 +48,9 @@ describe("TodoCategoryService", () => {
 			await TestBed.solitary(TodoCategoryService).compile();
 
 		service = unit;
-		todoCategoryRepo = unitRef.get(
-			TodoCategoryRepository,
-		) as unknown as Mocked<TodoCategoryRepository>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
+		todoCategoryRepo = unitRef.get(TodoCategoryRepository);
+		entitlementService = unitRef.get(EntitlementService);
+		database = unitRef.get(DatabaseService);
 
 		// $transaction 기본 mock 설정
 		// Note: 테스트에서는 repository mock을 TransactionClient로 사용
@@ -65,7 +59,7 @@ describe("TodoCategoryService", () => {
 			callback(todoCategoryRepo as unknown as TransactionClient),
 		);
 
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		cacheService = unitRef.get(CacheService);
 
 		// wrapTodoCategories는 factory를 통과시키도록 설정
 		cacheService.wrapTodoCategories.mockImplementation((_userId, factory) =>

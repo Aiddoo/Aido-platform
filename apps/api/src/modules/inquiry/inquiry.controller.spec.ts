@@ -38,17 +38,17 @@ describe("InquiryController", () => {
 
 	describe("createInquiry", () => {
 		it("문의 접수 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
-			// Given: 문의 생성 DTO와 서비스가 준비되었을 때
+			// Given -문의 생성 DTO와 서비스가 준비되었을 때
 			const dto = {
 				category: "BUG_REPORT",
 				content: "앱이 갑자기 종료됩니다.",
 			} as unknown as CreateInquiryDto;
 			mockInquiryService.createInquiry.mockResolvedValue(undefined);
 
-			// When: createInquiry를 호출하면
+			// When -createInquiry를 호출하면
 			const result = await controller.createInquiry(mockUser, dto);
 
-			// Then: 서비스에 userId, userEmail, category, content를 전달하고 메시지를 반환해야 한다
+			// Then -서비스에 userId, userEmail, category, content를 전달하고 메시지를 반환해야 한다
 			expect(mockInquiryService.createInquiry).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				userEmail: mockUser.email,
@@ -61,17 +61,17 @@ describe("InquiryController", () => {
 		});
 
 		it("다른 카테고리의 문의도 동일하게 처리해야 한다", async () => {
-			// Given: FEATURE_REQUEST 카테고리의 문의가 있을 때
+			// Given -FEATURE_REQUEST 카테고리의 문의가 있을 때
 			const dto = {
 				category: "FEATURE_REQUEST",
 				content: "다크 모드를 추가해 주세요.",
 			} as unknown as CreateInquiryDto;
 			mockInquiryService.createInquiry.mockResolvedValue(undefined);
 
-			// When: createInquiry를 호출하면
+			// When -createInquiry를 호출하면
 			const result = await controller.createInquiry(mockUser, dto);
 
-			// Then: 서비스에 올바른 카테고리를 전달해야 한다
+			// Then -서비스에 올바른 카테고리를 전달해야 한다
 			expect(mockInquiryService.createInquiry).toHaveBeenCalledWith(
 				expect.objectContaining({
 					category: "FEATURE_REQUEST",

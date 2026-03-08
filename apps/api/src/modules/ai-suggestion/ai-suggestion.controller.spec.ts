@@ -44,14 +44,14 @@ describe("AiSuggestionController", () => {
 
 	describe("getPendingSuggestions", () => {
 		it("대기 중인 제안 목록 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 빈 제안 목록을 반환하도록 설정
+			// Given -서비스에서 빈 제안 목록을 반환하도록 설정
 			const mockSuggestions: RecurringSuggestion[] = [];
 			mockService.getPendingSuggestions.mockResolvedValue(mockSuggestions);
 
-			// When: getPendingSuggestions를 호출하면
+			// When -getPendingSuggestions를 호출하면
 			const result = await controller.getPendingSuggestions(mockUser);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.getPendingSuggestions).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
@@ -59,7 +59,7 @@ describe("AiSuggestionController", () => {
 		});
 
 		it("여러 제안이 있는 목록을 반환해야 한다", async () => {
-			// Given: 서비스에서 2개의 제안을 반환
+			// Given -서비스에서 2개의 제안을 반환
 			const mockSuggestions: RecurringSuggestion[] = [
 				{
 					id: 1,
@@ -75,10 +75,10 @@ describe("AiSuggestionController", () => {
 			];
 			mockService.getPendingSuggestions.mockResolvedValue(mockSuggestions);
 
-			// When: getPendingSuggestions를 호출하면
+			// When -getPendingSuggestions를 호출하면
 			const result = await controller.getPendingSuggestions(mockUser);
 
-			// Then: 제안 목록을 반환해야 한다
+			// Then -제안 목록을 반환해야 한다
 			expect(result.suggestions).toHaveLength(1);
 		});
 	});
@@ -89,7 +89,7 @@ describe("AiSuggestionController", () => {
 
 	describe("handleSuggestion", () => {
 		it("제안 수락을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 수락 결과를 반환하도록 설정
+			// Given -서비스에서 수락 결과를 반환하도록 설정
 			const params = { id: 1 };
 			const body = { action: "accept" as const, categoryId: 1 };
 			const tz = "Asia/Seoul";
@@ -110,7 +110,7 @@ describe("AiSuggestionController", () => {
 			};
 			mockService.handleAction.mockResolvedValue(mockResult);
 
-			// When: handleSuggestion을 호출하면
+			// When -handleSuggestion을 호출하면
 			const result = await controller.handleSuggestion(
 				mockUser,
 				params as never,
@@ -118,7 +118,7 @@ describe("AiSuggestionController", () => {
 				tz,
 			);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.handleAction).toHaveBeenCalledWith(
 				mockUser.userId,
 				params.id,
@@ -129,7 +129,7 @@ describe("AiSuggestionController", () => {
 		});
 
 		it("제안 거절을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 거절 결과를 반환하도록 설정
+			// Given -서비스에서 거절 결과를 반환하도록 설정
 			const params = { id: 2 };
 			const body = { action: "dismiss" as const };
 			const tz = "Asia/Seoul";
@@ -149,7 +149,7 @@ describe("AiSuggestionController", () => {
 			};
 			mockService.handleAction.mockResolvedValue(mockResult);
 
-			// When: handleSuggestion을 호출하면
+			// When -handleSuggestion을 호출하면
 			const result = await controller.handleSuggestion(
 				mockUser,
 				params as never,
@@ -157,7 +157,7 @@ describe("AiSuggestionController", () => {
 				tz,
 			);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.handleAction).toHaveBeenCalledWith(
 				mockUser.userId,
 				params.id,

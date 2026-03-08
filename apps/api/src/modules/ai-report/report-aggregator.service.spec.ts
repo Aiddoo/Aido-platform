@@ -28,8 +28,6 @@ describe("ReportAggregatorService", () => {
 	};
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(
 			ReportAggregatorService,
 		).compile();
@@ -117,13 +115,13 @@ describe("ReportAggregatorService", () => {
 
 	describe("병렬 쿼리", () => {
 		it("8개의 쿼리가 병렬로 실행되어야 한다 (N+1 방지)", async () => {
-			// Given: 빈 데이터로 쿼리 설정
+			// Given - 빈 데이터로 쿼리 설정
 			setupEmptyQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			await service.aggregate(baseParams);
 
-			// Then: groupBy 4회, count 2회, findMany 2회가 호출되어야 한다
+			// Then - groupBy 4회, count 2회, findMany 2회가 호출되어야 한다
 			expect(db.todo.groupBy).toHaveBeenCalledTimes(4);
 			expect(db.todo.count).toHaveBeenCalledTimes(2);
 			expect(db.todoCategory.findMany).toHaveBeenCalledTimes(1);
@@ -137,13 +135,13 @@ describe("ReportAggregatorService", () => {
 
 	describe("빈 데이터 처리", () => {
 		it("활동이 없으면 hasActivity: false, 모든 통계 0이어야 한다", async () => {
-			// Given: 모든 쿼리가 빈 결과를 반환
+			// Given - 모든 쿼리가 빈 결과를 반환
 			setupEmptyQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: 모든 통계가 0이고 hasActivity가 false여야 한다
+			// Then - 모든 통계가 0이고 hasActivity가 false여야 한다
 			expect(result.hasActivity).toBe(false);
 			expect(result.totalTodos).toBe(0);
 			expect(result.completedTodos).toBe(0);
@@ -156,13 +154,13 @@ describe("ReportAggregatorService", () => {
 		});
 
 		it("빈 데이터에서도 dayPatterns은 7개 요일을 모두 포함해야 한다", async () => {
-			// Given: 빈 데이터
+			// Given - 빈 데이터
 			setupEmptyQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: MON~SUN까지 7개 요일이 모두 포함되어야 한다
+			// Then - MON~SUN까지 7개 요일이 모두 포함되어야 한다
 			const dayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 			expect(result.dayPatterns.map((d) => d.day)).toEqual(dayOrder);
 			for (const day of result.dayPatterns) {
@@ -179,13 +177,13 @@ describe("ReportAggregatorService", () => {
 
 	describe("정상 데이터 집계", () => {
 		it("전체/완료 할 일 수와 달성률을 정확하게 계산해야 한다", async () => {
-			// Given: 정상 데이터
+			// Given - 정상 데이터
 			setupNormalQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: 총 9개 할 일 중 8개 완료, 달성률 89%
+			// Then - 총 9개 할 일 중 8개 완료, 달성률 89%
 			expect(result.totalTodos).toBe(9); // 3 + 2 + 4
 			expect(result.completedTodos).toBe(8); // 3 + 1 + 4
 			expect(result.completionRate).toBe(89); // Math.round(8/9*100)
@@ -193,24 +191,24 @@ describe("ReportAggregatorService", () => {
 		});
 
 		it("이전 기간 달성률을 정확하게 계산해야 한다", async () => {
-			// Given: 이전 기간 7개 중 5개 완료
+			// Given - 이전 기간 7개 중 5개 완료
 			setupNormalQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: 이전 기간 달성률 71%
+			// Then - 이전 기간 달성률 71%
 			expect(result.prevCompletionRate).toBe(71); // Math.round(5/7*100)
 		});
 
 		it("카테고리별 집계를 정확하게 계산해야 한다", async () => {
-			// Given: 정상 데이터
+			// Given - 정상 데이터
 			setupNormalQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: 카테고리별 집계가 total 기준 내림차순이어야 한다
+			// Then - 카테고리별 집계가 total 기준 내림차순이어야 한다
 			expect(result.categoryBreakdown).toHaveLength(2);
 			// total 기준 내림차순 정렬: 업무(5) > 개인(4)
 			expect(result.categoryBreakdown[0]?.name).toBe("업무");
@@ -224,13 +222,13 @@ describe("ReportAggregatorService", () => {
 		});
 
 		it("시간대별 패턴을 정확하게 계산해야 한다", async () => {
-			// Given: 정상 데이터 (completedAt 기반)
+			// Given - 정상 데이터 (completedAt 기반)
 			setupNormalQueries();
 
-			// When: aggregate를 호출하면
+			// When - aggregate를 호출하면
 			const result = await service.aggregate(baseParams);
 
-			// Then: 완료 시간 기반 시간대 패턴이 있어야 한다
+			// Then - 완료 시간 기반 시간대 패턴이 있어야 한다
 			expect(result.timePatterns.length).toBeGreaterThan(0);
 			// count 기준 내림차순 정렬
 			for (let i = 1; i < result.timePatterns.length; i++) {

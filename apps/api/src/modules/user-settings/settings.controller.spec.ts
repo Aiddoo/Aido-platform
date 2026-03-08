@@ -22,13 +22,12 @@ describe("SettingsController", () => {
 			await TestBed.solitary(SettingsController).compile();
 
 		controller = unit;
-		mockUserSettingsService = unitRef.get(
-			UserSettingsService,
-		) as unknown as Mocked<UserSettingsService>;
+		mockUserSettingsService = unitRef.get(UserSettingsService);
 	});
 
 	describe("getPreference", () => {
 		it("사용자의 푸시 설정을 반환해야 한다", async () => {
+			// Given
 			const expectedResult = {
 				pushEnabled: true,
 				nightPushEnabled: false,
@@ -40,8 +39,10 @@ describe("SettingsController", () => {
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
 
+			// When
 			const result = await controller.getPreference(mockUser);
 
+			// Then
 			expect(mockUserSettingsService.getPreference).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
@@ -49,6 +50,7 @@ describe("SettingsController", () => {
 		});
 
 		it("설정이 없으면 기본값을 반환해야 한다", async () => {
+			// Given
 			const defaultResult = {
 				pushEnabled: false,
 				nightPushEnabled: false,
@@ -60,14 +62,17 @@ describe("SettingsController", () => {
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
 
+			// When
 			const result = await controller.getPreference(mockUser);
 
+			// Then
 			expect(result).toEqual(defaultResult);
 		});
 	});
 
 	describe("updatePreference", () => {
 		it("푸시 설정을 업데이트하고 결과를 반환해야 한다", async () => {
+			// Given
 			const dto = { pushEnabled: true, nightPushEnabled: true };
 			const expectedResult = {
 				pushEnabled: true,
@@ -82,8 +87,10 @@ describe("SettingsController", () => {
 				expectedResult,
 			);
 
+			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
+			// Then
 			expect(mockUserSettingsService.updatePreference).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
@@ -92,6 +99,7 @@ describe("SettingsController", () => {
 		});
 
 		it("일부 설정만 업데이트할 수 있어야 한다", async () => {
+			// Given
 			const dto = { pushEnabled: true };
 			const expectedResult = {
 				pushEnabled: true,
@@ -106,8 +114,10 @@ describe("SettingsController", () => {
 				expectedResult,
 			);
 
+			// When
 			const result = await controller.updatePreference(mockUser, dto);
 
+			// Then
 			expect(mockUserSettingsService.updatePreference).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto,
@@ -118,6 +128,7 @@ describe("SettingsController", () => {
 
 	describe("getConsent", () => {
 		it("사용자의 동의 상태를 반환해야 한다", async () => {
+			// Given
 			const expectedResult = {
 				termsAgreedAt: "2024-01-01T00:00:00.000Z",
 				privacyAgreedAt: "2024-01-01T00:00:00.000Z",
@@ -126,8 +137,10 @@ describe("SettingsController", () => {
 			};
 			mockUserSettingsService.getConsent.mockResolvedValue(expectedResult);
 
+			// When
 			const result = await controller.getConsent(mockUser);
 
+			// Then
 			expect(mockUserSettingsService.getConsent).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
@@ -135,6 +148,7 @@ describe("SettingsController", () => {
 		});
 
 		it("동의 기록이 없으면 기본값을 반환해야 한다", async () => {
+			// Given
 			const defaultResult = {
 				termsAgreedAt: null,
 				privacyAgreedAt: null,
@@ -143,14 +157,17 @@ describe("SettingsController", () => {
 			};
 			mockUserSettingsService.getConsent.mockResolvedValue(defaultResult);
 
+			// When
 			const result = await controller.getConsent(mockUser);
 
+			// Then
 			expect(result).toEqual(defaultResult);
 		});
 	});
 
 	describe("updateMarketingConsent", () => {
 		it("마케팅 동의를 활성화하면 동의 시점을 반환해야 한다", async () => {
+			// Given
 			const dto = { agreed: true };
 			const expectedResult = {
 				marketingAgreedAt: "2024-01-15T10:00:00.000Z",
@@ -159,8 +176,10 @@ describe("SettingsController", () => {
 				expectedResult,
 			);
 
+			// When
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
+			// Then
 			expect(
 				mockUserSettingsService.updateMarketingConsent,
 			).toHaveBeenCalledWith(mockUser.userId, true);
@@ -168,14 +187,17 @@ describe("SettingsController", () => {
 		});
 
 		it("마케팅 동의를 철회하면 null을 반환해야 한다", async () => {
+			// Given
 			const dto = { agreed: false };
 			const expectedResult = { marketingAgreedAt: null };
 			mockUserSettingsService.updateMarketingConsent.mockResolvedValue(
 				expectedResult,
 			);
 
+			// When
 			const result = await controller.updateMarketingConsent(mockUser, dto);
 
+			// Then
 			expect(
 				mockUserSettingsService.updateMarketingConsent,
 			).toHaveBeenCalledWith(mockUser.userId, false);

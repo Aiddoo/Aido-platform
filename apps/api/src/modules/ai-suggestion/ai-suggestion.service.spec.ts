@@ -53,8 +53,6 @@ describe("AiSuggestionService", () => {
 	}
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(AiSuggestionService)
 			.mock(AI_PROVIDER)
 			.impl(() => ({
@@ -85,7 +83,7 @@ describe("AiSuggestionService", () => {
 
 	describe("프리미엄 체크", () => {
 		it("비프리미엄 사용자가 getPendingSuggestions를 호출하면 AI_1309 예외를 던져야 한다", async () => {
-			// Given: 비프리미엄 사용자
+			// Given -비프리미엄 사용자
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			// When & Then: 프리미엄 필수 예외가 발생해야 한다
@@ -97,7 +95,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("비프리미엄 사용자가 handleAction을 호출하면 AI_1309 예외를 던져야 한다", async () => {
-			// Given: 비프리미엄 사용자
+			// Given -비프리미엄 사용자
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			// When & Then: 프리미엄 필수 예외가 발생해야 한다
@@ -114,17 +112,17 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("analyzeAndCreateSuggestions는 프리미엄 체크 없이 동작해야 한다", async () => {
-			// Given: 비프리미엄 사용자이지만 크론잡 호출
+			// Given -비프리미엄 사용자이지만 크론잡 호출
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 			mockRepository.findRecentTodos.mockResolvedValue([]);
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
 				mockUserId,
 				"Asia/Seoul",
 			);
 
-			// Then: 프리미엄 체크 없이 정상 동작
+			// Then -프리미엄 체크 없이 정상 동작
 			expect(mockEntitlementService.hasPremiumAccess).not.toHaveBeenCalled();
 			expect(result).toBe(0);
 		});
@@ -136,14 +134,14 @@ describe("AiSuggestionService", () => {
 
 	describe("getPendingSuggestions", () => {
 		it("대기 중인 제안 목록을 DTO로 변환하여 반환해야 한다", async () => {
-			// Given: 대기 중인 제안 목록이 존재
+			// Given -대기 중인 제안 목록이 존재
 			const suggestions = [createMockSuggestionEntity()];
 			mockRepository.findPendingByUserId.mockResolvedValue(suggestions);
 
-			// When: getPendingSuggestions를 호출하면
+			// When -getPendingSuggestions를 호출하면
 			const result = await service.getPendingSuggestions(mockUserId);
 
-			// Then: DTO로 변환된 목록을 반환해야 한다
+			// Then -DTO로 변환된 목록을 반환해야 한다
 			expect(result).toHaveLength(1);
 			expect(result[0]?.id).toBe(1);
 			expect(mockRepository.findPendingByUserId).toHaveBeenCalledWith(
@@ -158,7 +156,7 @@ describe("AiSuggestionService", () => {
 
 	describe("handleAction", () => {
 		it("존재하지 않는 제안에 대해 AI_1305 예외를 던져야 한다", async () => {
-			// Given: 제안이 존재하지 않음
+			// Given -제안이 존재하지 않음
 			mockRepository.findByIdAndUserId.mockResolvedValue(null);
 
 			// When & Then: aiSuggestionNotFound 예외가 발생해야 한다
@@ -178,7 +176,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("이미 처리된 제안에 대해 AI_1306 예외를 던져야 한다", async () => {
-			// Given: 이미 ACCEPTED 상태인 제안
+			// Given -이미 ACCEPTED 상태인 제안
 			const suggestion = createMockSuggestionEntity({
 				status: "ACCEPTED",
 			});
@@ -191,7 +189,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("만료된 제안에 대해 AI_1307 예외를 던져야 한다", async () => {
-			// Given: 만료된 제안
+			// Given -만료된 제안
 			const suggestion = createMockSuggestionEntity({
 				expiresAt: new Date("2020-01-01T00:00:00.000Z"), // 과거 날짜
 			});
@@ -204,7 +202,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("거절 시 상태를 DISMISSED로 업데이트해야 한다", async () => {
-			// Given: PENDING 상태의 제안
+			// Given -PENDING 상태의 제안
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
 			const updatedSuggestion = createMockSuggestionEntity({
@@ -212,7 +210,7 @@ describe("AiSuggestionService", () => {
 			});
 			mockRepository.updateStatus.mockResolvedValue(updatedSuggestion);
 
-			// When: dismiss 액션을 수행하면
+			// When -dismiss 액션을 수행하면
 			const result = await service.handleAction(
 				mockUserId,
 				1,
@@ -220,7 +218,7 @@ describe("AiSuggestionService", () => {
 				"Asia/Seoul",
 			);
 
-			// Then: DISMISSED로 업데이트되어야 한다
+			// Then -DISMISSED로 업데이트되어야 한다
 			expect(mockRepository.updateStatus).toHaveBeenCalledWith(1, "DISMISSED");
 			expect(result.suggestion.status).toBe("DISMISSED");
 			expect(result.message).toContain("거절");
@@ -229,7 +227,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 TodoService.createRecurring을 호출해야 한다", async () => {
-			// Given: PENDING 상태의 제안과 TodoService 응답
+			// Given -PENDING 상태의 제안과 TodoService 응답
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
 
@@ -243,7 +241,7 @@ describe("AiSuggestionService", () => {
 			});
 			mockRepository.updateStatus.mockResolvedValue(updatedSuggestion);
 
-			// When: accept 액션을 수행하면
+			// When -accept 액션을 수행하면
 			const result = await service.handleAction(
 				mockUserId,
 				1,
@@ -251,7 +249,7 @@ describe("AiSuggestionService", () => {
 				"Asia/Seoul",
 			);
 
-			// Then: 상태가 먼저 ACCEPTED로 변경되고, 그 후 투두가 생성되어야 한다
+			// Then -상태가 먼저 ACCEPTED로 변경되고, 그 후 투두가 생성되어야 한다
 			const updateStatusOrder =
 				mockRepository.updateStatus.mock.invocationCallOrder[0];
 			const createRecurringOrder =
@@ -274,7 +272,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("수락 시 투두 생성 실패하면 상태가 PENDING으로 롤백되어야 한다", async () => {
-			// Given: PENDING 상태의 제안, 투두 생성 실패
+			// Given -PENDING 상태의 제안, 투두 생성 실패
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
 
@@ -297,7 +295,7 @@ describe("AiSuggestionService", () => {
 				),
 			).rejects.toThrow("투두 생성 실패");
 
-			// Then: 상태가 ACCEPTED → PENDING으로 롤백되어야 한다
+			// Then -상태가 ACCEPTED → PENDING으로 롤백되어야 한다
 			expect(mockRepository.updateStatus).toHaveBeenCalledTimes(2);
 			expect(mockRepository.updateStatus).toHaveBeenNthCalledWith(
 				1,
@@ -312,7 +310,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("수락 시 투두 생성 실패 후 롤백도 실패하면 원본 에러가 전파되어야 한다", async () => {
-			// Given: PENDING 상태의 제안, 투두 생성 실패 + 롤백 실패
+			// Given -PENDING 상태의 제안, 투두 생성 실패 + 롤백 실패
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
 
@@ -336,7 +334,7 @@ describe("AiSuggestionService", () => {
 				),
 			).rejects.toThrow("투두 생성 실패");
 
-			// Then: 롤백 시도는 되어야 한다
+			// Then -롤백 시도는 되어야 한다
 			expect(mockRepository.updateStatus).toHaveBeenNthCalledWith(
 				2,
 				1,
@@ -351,25 +349,25 @@ describe("AiSuggestionService", () => {
 
 	describe("analyzeAndCreateSuggestions", () => {
 		it("할 일이 최소 횟수 미만이면 AI 호출 없이 0을 반환해야 한다", async () => {
-			// Given: 할 일이 2개뿐 (최소 3개 필요)
+			// Given -할 일이 2개뿐 (최소 3개 필요)
 			mockRepository.findRecentTodos.mockResolvedValue([
 				{ title: "할일1", startDate: "2026-03-01", scheduledTime: null },
 				{ title: "할일2", startDate: "2026-03-02", scheduledTime: null },
 			]);
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
 				mockUserId,
 				"Asia/Seoul",
 			);
 
-			// Then: AI가 호출되지 않고 0을 반환해야 한다
+			// Then -AI가 호출되지 않고 0을 반환해야 한다
 			expect(result).toBe(0);
 			expect(mockAiProvider.generateStructured).not.toHaveBeenCalled();
 		});
 
 		it("패턴 감지 시 기존 PENDING 제안을 삭제하고 새 제안을 생성해야 한다", async () => {
-			// Given: 충분한 할 일과 AI 패턴 감지 결과
+			// Given -충분한 할 일과 AI 패턴 감지 결과
 			const todos = Array.from({ length: 5 }, (_, i) => ({
 				title: "팀 미팅",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
@@ -398,13 +396,13 @@ describe("AiSuggestionService", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 			mockRepository.createMany.mockResolvedValue({ count: 1 });
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
 				mockUserId,
 				"Asia/Seoul",
 			);
 
-			// Then: 기존 PENDING 삭제 후 새 제안이 일괄 생성되어야 한다
+			// Then -기존 PENDING 삭제 후 새 제안이 일괄 생성되어야 한다
 			expect(mockRepository.deletePending.mock.calls[0]?.[0]).toBe(mockUserId);
 			expect(mockRepository.deleteExpired.mock.calls[0]?.[0]).toBe(mockUserId);
 			expect(result).toBe(1);
@@ -412,7 +410,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("deletePending이 deleteExpired보다 먼저 호출되어야 한다", async () => {
-			// Given: 패턴이 감지되는 상황
+			// Given -패턴이 감지되는 상황
 			const todos = Array.from({ length: 5 }, (_, i) => ({
 				title: "운동",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
@@ -441,10 +439,10 @@ describe("AiSuggestionService", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 			mockRepository.createMany.mockResolvedValue({ count: 1 });
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
 
-			// Then: deletePending이 deleteExpired보다 먼저 호출되어야 한다
+			// Then -deletePending이 deleteExpired보다 먼저 호출되어야 한다
 			const deletePendingOrder =
 				mockRepository.deletePending.mock.invocationCallOrder[0];
 			const deleteExpiredOrder =
@@ -453,7 +451,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("제안 교체 로직은 트랜잭션 내에서 실행되어야 한다", async () => {
-			// Given: 패턴이 감지되는 상황
+			// Given -패턴이 감지되는 상황
 			const todos = Array.from({ length: 5 }, (_, i) => ({
 				title: "독서",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
@@ -482,15 +480,15 @@ describe("AiSuggestionService", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 			mockRepository.createMany.mockResolvedValue({ count: 1 });
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
 
-			// Then: $transaction이 호출되어야 한다
+			// Then -$transaction이 호출되어야 한다
 			expect(mockDatabase.$transaction).toHaveBeenCalledTimes(1);
 		});
 
 		it("createMany 에러 발생 시 트랜잭션이 롤백되어야 한다", async () => {
-			// Given: 패턴 감지, createMany에서 에러
+			// Given -패턴 감지, createMany에서 에러
 			const todos = Array.from({ length: 5 }, (_, i) => ({
 				title: "운동",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
@@ -531,7 +529,7 @@ describe("AiSuggestionService", () => {
 		});
 
 		it("최대 5개까지만 생성해야 한다", async () => {
-			// Given: 6개의 패턴이 감지된 상황
+			// Given -6개의 패턴이 감지된 상황
 			const todos = Array.from({ length: 10 }, (_, i) => ({
 				title: `할일${i}`,
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
@@ -558,13 +556,13 @@ describe("AiSuggestionService", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 			mockRepository.createMany.mockResolvedValue({ count: 5 });
 
-			// When: analyzeAndCreateSuggestions를 호출하면
+			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
 				mockUserId,
 				"Asia/Seoul",
 			);
 
-			// Then: 최대 5개만 생성되어야 한다
+			// Then -최대 5개만 생성되어야 한다
 			expect(result).toBe(5);
 			const createManyArg = mockRepository.createMany.mock
 				.calls[0]?.[0] as unknown[];

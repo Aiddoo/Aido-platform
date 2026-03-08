@@ -33,15 +33,9 @@ describe("UserSettingsService", () => {
 			await TestBed.solitary(UserSettingsService).compile();
 
 		service = unit;
-		userPreferenceRepo = unitRef.get(
-			UserPreferenceRepository,
-		) as unknown as Mocked<UserPreferenceRepository>;
-		userConsentRepo = unitRef.get(
-			UserConsentRepository,
-		) as unknown as Mocked<UserConsentRepository>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
+		userPreferenceRepo = unitRef.get(UserPreferenceRepository);
+		userConsentRepo = unitRef.get(UserConsentRepository);
+		entitlementService = unitRef.get(EntitlementService);
 		cacheService = unitRef.get(CacheService);
 
 		// 기본: 프리미엄 접근 허용 (기존 테스트 호환)

@@ -19,11 +19,7 @@ describe("JwtAuthGuard", () => {
 		const { unit, unitRef } = await TestBed.solitary(JwtAuthGuard).compile();
 
 		guard = unit;
-		reflector = unitRef.get(Reflector) as unknown as Mocked<Reflector>;
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
+		reflector = unitRef.get(Reflector);
 	});
 
 	// ==========================================================================

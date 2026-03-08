@@ -27,10 +27,8 @@ describe("VerificationService", () => {
 			await TestBed.solitary(VerificationService).compile();
 
 		service = unit;
-		verificationRepo = unitRef.get(
-			VerificationRepository,
-		) as unknown as Mocked<VerificationRepository>;
-		emailService = unitRef.get(EmailService) as unknown as Mocked<EmailService>;
+		verificationRepo = unitRef.get(VerificationRepository);
+		emailService = unitRef.get(EmailService);
 	});
 
 	describe("createAndSendPasswordReset", () => {
@@ -39,14 +37,10 @@ describe("VerificationService", () => {
 
 		beforeEach(() => {
 			// Given - 기본 성공 시나리오 설정
-			(
-				verificationRepo.countRecentByUserIdAndType as jest.Mock
-			).mockResolvedValue(0);
-			(
-				verificationRepo.invalidateAllByUserIdAndType as jest.Mock
-			).mockResolvedValue({ count: 0 });
-			(verificationRepo.create as jest.Mock).mockResolvedValue({
-				id: "verification-id",
+			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(0);
+			verificationRepo.invalidateAllByUserIdAndType.mockResolvedValue(0);
+			verificationRepo.create.mockResolvedValue({
+				id: 1,
 				userId,
 				type: "PASSWORD_RESET" as VerificationType,
 				token: "hashed-token",
@@ -55,7 +49,7 @@ describe("VerificationService", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			(emailService.sendPasswordResetCode as jest.Mock).mockResolvedValue({
+			emailService.sendPasswordResetCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -119,9 +113,7 @@ describe("VerificationService", () => {
 
 		it("재발송 쿨다운 중이면 VERIFICATION_COOLDOWN 에러를 던진다", async () => {
 			// Given
-			(
-				verificationRepo.countRecentByUserIdAndType as jest.Mock
-			).mockResolvedValue(1);
+			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
 
 			// When & Then
 			await expect(
@@ -136,14 +128,10 @@ describe("VerificationService", () => {
 
 		beforeEach(() => {
 			// Given - 기본 성공 시나리오 설정
-			(
-				verificationRepo.countRecentByUserIdAndType as jest.Mock
-			).mockResolvedValue(0);
-			(
-				verificationRepo.invalidateAllByUserIdAndType as jest.Mock
-			).mockResolvedValue({ count: 0 });
-			(verificationRepo.create as jest.Mock).mockResolvedValue({
-				id: "verification-id",
+			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(0);
+			verificationRepo.invalidateAllByUserIdAndType.mockResolvedValue(0);
+			verificationRepo.create.mockResolvedValue({
+				id: 1,
 				userId,
 				type: "PASSWORD_SETUP" as VerificationType,
 				token: "hashed-token",
@@ -152,7 +140,7 @@ describe("VerificationService", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			(emailService.sendPasswordSetupCode as jest.Mock).mockResolvedValue({
+			emailService.sendPasswordSetupCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -189,9 +177,7 @@ describe("VerificationService", () => {
 
 		it("재발송 쿨다운 중이면 에러를 던진다", async () => {
 			// Given
-			(
-				verificationRepo.countRecentByUserIdAndType as jest.Mock
-			).mockResolvedValue(1);
+			verificationRepo.countRecentByUserIdAndType.mockResolvedValue(1);
 
 			// When & Then
 			await expect(
@@ -253,7 +239,7 @@ describe("VerificationService", () => {
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
 			// Given
-			(emailService.sendPasswordSetupCode as jest.Mock).mockResolvedValue({
+			emailService.sendPasswordSetupCode.mockResolvedValue({
 				success: false,
 				error: "SMTP error",
 			});
@@ -277,7 +263,7 @@ describe("VerificationService", () => {
 			"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
 
 		const mockVerification = {
-			id: "verification-id",
+			id: 1,
 			userId,
 			type,
 			token: hashedCode,
@@ -289,13 +275,11 @@ describe("VerificationService", () => {
 
 		beforeEach(() => {
 			// Given - 기본 성공 시나리오 설정
-			(
-				verificationRepo.findValidByUserIdAndType as jest.Mock
-			).mockResolvedValue(mockVerification);
-			(verificationRepo.markAsUsed as jest.Mock).mockResolvedValue(undefined);
-			(verificationRepo.incrementAttempts as jest.Mock).mockResolvedValue(
-				undefined,
+			verificationRepo.findValidByUserIdAndType.mockResolvedValue(
+				mockVerification,
 			);
+			verificationRepo.markAsUsed.mockResolvedValue(mockVerification);
+			verificationRepo.incrementAttempts.mockResolvedValue(mockVerification);
 		});
 
 		it("올바른 코드로 인증에 성공한다", async () => {
@@ -314,9 +298,7 @@ describe("VerificationService", () => {
 
 		it("유효한 인증 코드가 없으면 VERIFICATION_CODE_NOT_FOUND 에러를 던진다", async () => {
 			// Given
-			(
-				verificationRepo.findValidByUserIdAndType as jest.Mock
-			).mockResolvedValue(null);
+			verificationRepo.findValidByUserIdAndType.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.verifyCode(userId, code, type)).rejects.toThrow(
@@ -326,9 +308,7 @@ describe("VerificationService", () => {
 
 		it("최대 시도 횟수 초과 시 VERIFICATION_MAX_ATTEMPTS 에러를 던진다", async () => {
 			// Given
-			(
-				verificationRepo.findValidByUserIdAndType as jest.Mock
-			).mockResolvedValue({
+			verificationRepo.findValidByUserIdAndType.mockResolvedValue({
 				...mockVerification,
 				attempts: VERIFICATION_CODE.MAX_ATTEMPTS,
 			});
@@ -404,9 +384,7 @@ describe("VerificationService", () => {
 		it("PASSWORD_RESET 타입도 검증한다", async () => {
 			// Given
 			const passwordResetType: VerificationType = "PASSWORD_RESET";
-			(
-				verificationRepo.findValidByUserIdAndType as jest.Mock
-			).mockResolvedValue({
+			verificationRepo.findValidByUserIdAndType.mockResolvedValue({
 				...mockVerification,
 				type: passwordResetType,
 			});

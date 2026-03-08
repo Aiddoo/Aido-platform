@@ -31,13 +31,9 @@ describe("AccountPurgeJob", () => {
 			.compile();
 
 		job = unit;
-		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
-		securityLogRepo = unitRef.get(
-			SecurityLogRepository,
-		) as unknown as Mocked<SecurityLogRepository>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
+		userRepo = unitRef.get(UserRepository);
+		securityLogRepo = unitRef.get(SecurityLogRepository);
+		database = unitRef.get(DatabaseService);
 		mockQueue = unitRef.get(getQueueToken(ACCOUNT_PURGE_QUEUE));
 		mockProcessor = unitRef.get(AccountPurgeProcessor);
 	});

@@ -21,12 +21,8 @@ describe("InquiryService", () => {
 		const { unit, unitRef } = await TestBed.solitary(InquiryService).compile();
 
 		service = unit;
-		emailService = unitRef.get(EmailService) as unknown as Mocked<EmailService>;
-		configService = unitRef.get(
-			TypedConfigService,
-		) as unknown as Mocked<TypedConfigService>;
-
-		jest.clearAllMocks();
+		emailService = unitRef.get(EmailService);
+		configService = unitRef.get(TypedConfigService);
 
 		// config.email.supportEmail 기본 설정
 		Object.defineProperty(configService, "email", {

@@ -49,7 +49,7 @@ describe("AdminNotificationProcessor", () => {
 		paymentNotifier = mockPaymentNotifier;
 	});
 
-	function makeJob(
+	function createMockJob(
 		data: AdminNotificationSendData,
 	): Job<AdminNotificationJobData> {
 		return {
@@ -76,7 +76,7 @@ describe("AdminNotificationProcessor", () => {
 	describe("채널 라우팅", () => {
 		it("admin 채널 → ADMIN_NOTIFIER로 발송해야 한다", async () => {
 			// Given
-			const job = makeJob({
+			const job = createMockJob({
 				channel: "admin",
 				notification: { title: "테스트", body: "내용" },
 			});
@@ -93,7 +93,7 @@ describe("AdminNotificationProcessor", () => {
 
 		it("payment 채널 → PAYMENT_NOTIFIER로 발송해야 한다", async () => {
 			// Given
-			const job = makeJob({
+			const job = createMockJob({
 				channel: "payment",
 				notification: { title: "결제", body: "결제 내용" },
 			});
@@ -116,7 +116,7 @@ describe("AdminNotificationProcessor", () => {
 	describe("성공/실패 처리", () => {
 		it("send 성공 시 정상 완료해야 한다", async () => {
 			// Given
-			const job = makeJob({
+			const job = createMockJob({
 				channel: "admin",
 				notification: { title: "테스트", body: "내용" },
 			});
@@ -131,7 +131,7 @@ describe("AdminNotificationProcessor", () => {
 				success: false,
 				error: "Webhook 404",
 			});
-			const job = makeJob({
+			const job = createMockJob({
 				channel: "admin",
 				notification: { title: "테스트", body: "내용" },
 			});

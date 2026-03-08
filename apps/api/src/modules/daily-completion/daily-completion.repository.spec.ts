@@ -18,10 +18,6 @@ describe("DailyCompletionRepository", () => {
 		db = unitRef.get(DatabaseService);
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe("aggregateTodosByDateRange", () => {
 		const userId = "user-123";
 		const startDate = new Date("2026-01-01");

@@ -1,8 +1,8 @@
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { flushPromises } from "@test/mocks";
 import type { Queue } from "bullmq";
-
 import {
 	type ReminderHourChangedJobData,
 	TIMEZONE_REMINDER_QUEUE,
@@ -75,13 +75,3 @@ describe("TimezoneReminderQueueService", () => {
 		});
 	});
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function flushPromises(): Promise<void> {
-	return new Promise((resolve) => {
-		setTimeout(resolve, 0);
-	});
-}

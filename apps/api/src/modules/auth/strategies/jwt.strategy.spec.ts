@@ -47,13 +47,9 @@ describe("JwtStrategy", () => {
 			.compile();
 
 		strategy = unit;
-		sessionRepo = unitRef.get(
-			SessionRepository,
-		) as unknown as Mocked<SessionRepository>;
-		sessionService = unitRef.get(
-			SessionService,
-		) as unknown as Mocked<SessionService>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		sessionRepo = unitRef.get(SessionRepository);
+		sessionService = unitRef.get(SessionService);
+		cacheService = unitRef.get(CacheService);
 	});
 
 	it("refresh 타입 토큰이면 에러를 던진다", async () => {

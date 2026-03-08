@@ -24,8 +24,6 @@ describe("ReportGenerationProcessor", () => {
 	let mockNotificationService: Mocked<NotificationService>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(
 			ReportGenerationProcessor,
 		).compile();
@@ -35,7 +33,7 @@ describe("ReportGenerationProcessor", () => {
 		mockNotificationService = unitRef.get(NotificationService);
 	});
 
-	function makeJob(data: AiReportJobData): Job<AiReportJobData> {
+	function createMockJob(data: AiReportJobData): Job<AiReportJobData> {
 		return {
 			name: AiReportJobName.GENERATE,
 			data,
@@ -64,7 +62,7 @@ describe("ReportGenerationProcessor", () => {
 
 			// When
 			await processor.process(
-				makeJob({
+				createMockJob({
 					userId: "user-123",
 					timezone: "Asia/Seoul",
 					reportType: "WEEKLY",
@@ -84,7 +82,7 @@ describe("ReportGenerationProcessor", () => {
 
 			// When
 			await processor.process(
-				makeJob({
+				createMockJob({
 					userId: "user-123",
 					timezone: "Asia/Seoul",
 					reportType: "MONTHLY",
@@ -113,7 +111,7 @@ describe("ReportGenerationProcessor", () => {
 
 			// When
 			await processor.process(
-				makeJob({
+				createMockJob({
 					userId: "user-123",
 					timezone: "Asia/Seoul",
 					reportType: "WEEKLY",
@@ -138,7 +136,7 @@ describe("ReportGenerationProcessor", () => {
 
 			// When
 			await processor.process(
-				makeJob({
+				createMockJob({
 					userId: "user-123",
 					timezone: "Asia/Seoul",
 					reportType: "MONTHLY",
@@ -155,12 +153,12 @@ describe("ReportGenerationProcessor", () => {
 		});
 
 		it("리포트 미생성 시 알림을 발송하지 않아야 한다", async () => {
-			// Given: 데이터 부족으로 리포트 미생성
+			// Given - 데이터 부족으로 리포트 미생성
 			mockAiReportService.generateWeeklyReport.mockResolvedValue(null);
 
 			// When
 			await processor.process(
-				makeJob({
+				createMockJob({
 					userId: "user-123",
 					timezone: "Asia/Seoul",
 					reportType: "WEEKLY",

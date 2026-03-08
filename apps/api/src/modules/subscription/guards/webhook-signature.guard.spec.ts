@@ -41,13 +41,7 @@ describe("WebhookSignatureGuard", () => {
 				.compile();
 
 			guard = unit;
-			_mockConfig = unitRef.get(
-				TypedConfigService,
-			) as unknown as Mocked<TypedConfigService>;
-		});
-
-		afterEach(() => {
-			jest.clearAllMocks();
+			_mockConfig = unitRef.get(TypedConfigService);
 		});
 
 		it("올바른 Authorization 헤더 → 통과 (true)", () => {

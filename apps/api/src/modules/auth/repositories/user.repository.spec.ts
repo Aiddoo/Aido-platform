@@ -80,14 +80,10 @@ describe("UserRepository", () => {
 		const { unit, unitRef } = await TestBed.solitary(UserRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
+		db = unitRef.get(DatabaseService);
 
 		// 기본 모킹 설정
 		mockGenerateUserTag.mockReturnValue(TEST_USER_TAG);
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
 	});
 
 	describe("findByEmail", () => {

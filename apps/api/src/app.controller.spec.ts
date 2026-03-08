@@ -11,11 +11,11 @@ describe("AppController", () => {
 		const { unit, unitRef } = await TestBed.solitary(AppController).compile();
 
 		appController = unit;
-		appService = unitRef.get(AppService) as unknown as Mocked<AppService>;
+		appService = unitRef.get(AppService);
 	});
 
 	describe("root", () => {
-		it('should return "Hello World!"', () => {
+		it('"Hello World!"를 반환해야 한다', () => {
 			// Given
 			appService.getHello.mockReturnValue("Hello World!");
 

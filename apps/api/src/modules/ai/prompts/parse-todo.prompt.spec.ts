@@ -8,13 +8,13 @@ import { buildParseTodoPrompt } from "./parse-todo.prompt";
 describe("buildParseTodoPrompt", () => {
 	describe("타임존 변환", () => {
 		it("UTC 시간을 KST(Asia/Seoul)로 변환하여 프롬프트에 표시한다", () => {
-			// Given: 2026-02-25 20:00 UTC = 2026-02-26 05:00 KST
+			// Given - 2026-02-25 20:00 UTC = 2026-02-26 05:00 KST
 			const utcDate = new Date("2026-02-25T20:00:00.000Z");
 
 			// When
 			const prompt = buildParseTodoPrompt("테스트", "Asia/Seoul", utcDate);
 
-			// Then: KST 기준 날짜와 시간이 표시
+			// Then - KST 기준 날짜와 시간이 표시
 			expect(prompt).toContain("2026-02-26 05:00");
 			expect(prompt).not.toContain("2026-02-25 20:00");
 		});
@@ -31,7 +31,7 @@ describe("buildParseTodoPrompt", () => {
 		});
 
 		it("America/New_York 타임존을 올바르게 변환한다", () => {
-			// Given: 2026-02-25 20:00 UTC = 2026-02-25 15:00 EST
+			// Given - 2026-02-25 20:00 UTC = 2026-02-25 15:00 EST
 			const utcDate = new Date("2026-02-25T20:00:00.000Z");
 
 			// When
@@ -46,26 +46,26 @@ describe("buildParseTodoPrompt", () => {
 		});
 
 		it("자정 경계에서 날짜가 올바르게 변환된다", () => {
-			// Given: 2026-02-25 15:00 UTC = 2026-02-26 00:00 KST (자정)
+			// Given - 2026-02-25 15:00 UTC = 2026-02-26 00:00 KST (자정)
 			const utcDate = new Date("2026-02-25T15:00:00.000Z");
 
 			// When
 			const prompt = buildParseTodoPrompt("테스트", "Asia/Seoul", utcDate);
 
-			// Then: KST 자정이므로 다음 날로 표시
+			// Then - KST 자정이므로 다음 날로 표시
 			expect(prompt).toContain("2026-02-26 00:00");
 		});
 	});
 
 	describe("한국어 요일 포맷", () => {
 		it("한국어 요일이 프롬프트에 포함된다", () => {
-			// Given: 2026-02-25 = 수요일(KST 기준)
+			// Given - 2026-02-25 = 수요일(KST 기준)
 			const utcDate = new Date("2026-02-25T00:00:00.000Z");
 
 			// When
 			const prompt = buildParseTodoPrompt("테스트", "Asia/Seoul", utcDate);
 
-			// Then: 한국어 요일 표시 (수요일)
+			// Then - 한국어 요일 표시 (수요일)
 			expect(prompt).toMatch(/\(.\uc694\uc77c\)/);
 		});
 	});
@@ -147,7 +147,7 @@ describe("buildParseTodoPrompt", () => {
 			// When
 			const prompt = buildParseTodoPrompt("테스트", undefined, utcDate);
 
-			// Then: UTC 시간 그대로
+			// Then - UTC 시간 그대로
 			expect(prompt).toContain("2026-02-25 20:00");
 		});
 	});

@@ -27,7 +27,7 @@ describe("AiController", () => {
 
 	describe("parseTodo", () => {
 		it("자연어 텍스트를 서비스에 위임하고 파싱 결과를 반환해야 한다", async () => {
-			// Given: 자연어 텍스트와 서비스 응답이 준비되었을 때
+			// Given -자연어 텍스트와 서비스 응답이 준비되었을 때
 			const dto = { text: "내일 오후 3시에 팀 미팅" };
 			const serviceResult = {
 				data: {
@@ -47,14 +47,14 @@ describe("AiController", () => {
 			};
 			mockAiService.parseTodo.mockResolvedValue(serviceResult);
 
-			// When: parseTodo를 호출하면
+			// When -parseTodo를 호출하면
 			const result = await controller.parseTodo(
 				mockUser,
 				dto as unknown as ParseTodoRequestDto,
 				"Asia/Seoul",
 			);
 
-			// Then: 서비스에 text, userId, timezone, categoryId를 전달하고 성공 응답을 반환해야 한다
+			// Then -서비스에 text, userId, timezone, categoryId를 전달하고 성공 응답을 반환해야 한다
 			expect(mockAiService.parseTodo).toHaveBeenCalledWith(
 				dto.text,
 				mockUser.userId,
@@ -69,7 +69,7 @@ describe("AiController", () => {
 		});
 
 		it("categoryId가 포함된 요청을 서비스에 전달해야 한다", async () => {
-			// Given: categoryId가 포함된 요청
+			// Given -categoryId가 포함된 요청
 			const dto = { text: "내일 오후 3시에 팀 미팅", categoryId: 42 };
 			const serviceResult = {
 				data: {
@@ -90,14 +90,14 @@ describe("AiController", () => {
 			};
 			mockAiService.parseTodo.mockResolvedValue(serviceResult);
 
-			// When: parseTodo를 호출하면
+			// When -parseTodo를 호출하면
 			const result = await controller.parseTodo(
 				mockUser,
 				dto as unknown as ParseTodoRequestDto,
 				"Asia/Seoul",
 			);
 
-			// Then: categoryId가 서비스에 전달되고 응답에 포함되어야 한다
+			// Then -categoryId가 서비스에 전달되고 응답에 포함되어야 한다
 			expect(mockAiService.parseTodo).toHaveBeenCalledWith(
 				dto.text,
 				mockUser.userId,
@@ -110,7 +110,7 @@ describe("AiController", () => {
 
 	describe("getUsage", () => {
 		it("AI 사용량을 서비스에서 조회하고 결과를 반환해야 한다", async () => {
-			// Given: 사용량 조회 서비스 응답이 준비되었을 때
+			// Given -사용량 조회 서비스 응답이 준비되었을 때
 			const usageResult = {
 				used: 3,
 				limit: 5,
@@ -118,10 +118,10 @@ describe("AiController", () => {
 			};
 			mockAiService.getUsage.mockResolvedValue(usageResult);
 
-			// When: getUsage를 호출하면
+			// When -getUsage를 호출하면
 			const result = await controller.getUsage(mockUser);
 
-			// Then: 서비스에 userId를 전달하고 성공 응답을 반환해야 한다
+			// Then -서비스에 userId를 전달하고 성공 응답을 반환해야 한다
 			expect(mockAiService.getUsage).toHaveBeenCalledWith(mockUser.userId);
 			expect(result).toEqual({
 				success: true,
@@ -130,7 +130,7 @@ describe("AiController", () => {
 		});
 
 		it("사용량이 0일 때도 정상적으로 반환해야 한다", async () => {
-			// Given: 사용량이 없을 때
+			// Given -사용량이 없을 때
 			const usageResult = {
 				used: 0,
 				limit: 5,
@@ -138,10 +138,10 @@ describe("AiController", () => {
 			};
 			mockAiService.getUsage.mockResolvedValue(usageResult);
 
-			// When: getUsage를 호출하면
+			// When -getUsage를 호출하면
 			const result = await controller.getUsage(mockUser);
 
-			// Then: used가 0인 결과를 반환해야 한다
+			// Then -used가 0인 결과를 반환해야 한다
 			expect(result).toEqual({
 				success: true,
 				data: usageResult,

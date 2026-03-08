@@ -50,8 +50,6 @@ describe("ReportGeneratorService", () => {
 	};
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(ReportGeneratorService)
 			.mock(AI_PROVIDER)
 			.impl(() => ({
@@ -70,7 +68,7 @@ describe("ReportGeneratorService", () => {
 
 	describe("AI 호출 성공", () => {
 		it("AI가 가용하고 정상 응답하면 생성된 콘텐츠를 반환해야 한다", async () => {
-			// Given: AI Provider가 가용하고 정상 응답
+			// Given -AI Provider가 가용하고 정상 응답
 			mockAiProvider.isAvailable.mockReturnValue(true);
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -81,17 +79,17 @@ describe("ReportGeneratorService", () => {
 				usage: { input: 300, output: 100 },
 			});
 
-			// When: generate를 호출하면
+			// When -generate를 호출하면
 			const result = await service.generate(mockParams);
 
-			// Then: AI가 생성한 콘텐츠를 반환해야 한다
+			// Then -AI가 생성한 콘텐츠를 반환해야 한다
 			expect(result.aiSummary).toBe("이번 주 정말 잘했어!");
 			expect(result.aiTips).toEqual(["아침에 할 일을 정리해봐!"]);
 			expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
 		});
 
 		it("generateStructured에 올바른 파라미터를 전달해야 한다", async () => {
-			// Given: AI Provider가 가용
+			// Given -AI Provider가 가용
 			mockAiProvider.isAvailable.mockReturnValue(true);
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: { summary: "요약", tips: ["팁"] },
@@ -99,10 +97,10 @@ describe("ReportGeneratorService", () => {
 				usage: { input: 300, output: 100 },
 			});
 
-			// When: generate를 호출하면
+			// When -generate를 호출하면
 			await service.generate(mockParams);
 
-			// Then: prompt, schema, maxTokens, temperature가 전달되어야 한다
+			// Then -prompt, schema, maxTokens, temperature가 전달되어야 한다
 			const args = mockAiProvider.generateStructured.mock.calls[0];
 			expect(args).toBeDefined();
 			const callArgs = args?.[0];
@@ -119,13 +117,13 @@ describe("ReportGeneratorService", () => {
 
 	describe("AI 불가용 시 폴백", () => {
 		it("AI가 불가용하면 활동이 있는 경우의 폴백 콘텐츠를 반환해야 한다", async () => {
-			// Given: AI Provider가 불가용
+			// Given -AI Provider가 불가용
 			mockAiProvider.isAvailable.mockReturnValue(false);
 
-			// When: generate를 호출하면
+			// When -generate를 호출하면
 			const result = await service.generate(mockParams);
 
-			// Then: 폴백 콘텐츠를 반환해야 한다
+			// Then -폴백 콘텐츠를 반환해야 한다
 			expect(result.aiSummary).toBeDefined();
 			expect(result.aiSummary.length).toBeGreaterThan(0);
 			expect(result.aiTips).toBeDefined();
@@ -134,17 +132,17 @@ describe("ReportGeneratorService", () => {
 		});
 
 		it("AI가 불가용하고 활동이 없으면 활동 없음 폴백을 반환해야 한다", async () => {
-			// Given: AI Provider가 불가용하고 활동 없음
+			// Given -AI Provider가 불가용하고 활동 없음
 			mockAiProvider.isAvailable.mockReturnValue(false);
 			const noActivityParams: GenerateReportParams = {
 				...mockParams,
 				aggregatedData: { ...mockAggregatedData, hasActivity: false },
 			};
 
-			// When: generate를 호출하면
+			// When -generate를 호출하면
 			const result = await service.generate(noActivityParams);
 
-			// Then: 활동 없음 폴백 콘텐츠를 반환해야 한다
+			// Then -활동 없음 폴백 콘텐츠를 반환해야 한다
 			expect(result.aiSummary).toContain("등록된 할 일이 없었어요");
 			expect(result.aiTips.length).toBeGreaterThan(0);
 		});
@@ -156,16 +154,16 @@ describe("ReportGeneratorService", () => {
 
 	describe("AI 호출 실패 시 폴백", () => {
 		it("AI 호출 중 에러가 발생하면 폴백 콘텐츠를 반환해야 한다", async () => {
-			// Given: AI Provider가 가용하지만 호출 시 에러 발생
+			// Given -AI Provider가 가용하지만 호출 시 에러 발생
 			mockAiProvider.isAvailable.mockReturnValue(true);
 			mockAiProvider.generateStructured.mockRejectedValue(
 				new Error("AI API 호출 실패"),
 			);
 
-			// When: generate를 호출하면
+			// When -generate를 호출하면
 			const result = await service.generate(mockParams);
 
-			// Then: 폴백 콘텐츠를 반환해야 한다 (에러가 전파되지 않음)
+			// Then -폴백 콘텐츠를 반환해야 한다 (에러가 전파되지 않음)
 			expect(result.aiSummary).toBeDefined();
 			expect(result.aiSummary.length).toBeGreaterThan(0);
 			expect(result.aiTips).toBeDefined();

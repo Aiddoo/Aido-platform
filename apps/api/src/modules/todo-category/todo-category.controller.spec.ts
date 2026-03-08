@@ -65,16 +65,16 @@ describe("TodoCategoryController", () => {
 
 	describe("getResourceLimit", () => {
 		it("카테고리 리소스 제한 정보 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 리소스 제한 정보 서비스 응답이 준비되었을 때
+			// Given -리소스 제한 정보 서비스 응답이 준비되었을 때
 			const resourceLimit = { categoryCount: 3, maxCount: 10 };
 			mockTodoCategoryService.getResourceLimitInfo.mockResolvedValue(
 				resourceLimit,
 			);
 
-			// When: getResourceLimit를 호출하면
+			// When -getResourceLimit를 호출하면
 			const result = await controller.getResourceLimit(mockUser);
 
-			// Then: 서비스에 userId를 전달하고 결과를 반환해야 한다
+			// Then -서비스에 userId를 전달하고 결과를 반환해야 한다
 			expect(mockTodoCategoryService.getResourceLimitInfo).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
@@ -84,7 +84,7 @@ describe("TodoCategoryController", () => {
 
 	describe("create", () => {
 		it("카테고리 생성 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 카테고리 생성 DTO와 서비스 응답이 준비되었을 때
+			// Given -카테고리 생성 DTO와 서비스 응답이 준비되었을 때
 			const dto = {
 				name: "공부",
 				color: "#4A90D9",
@@ -98,10 +98,10 @@ describe("TodoCategoryController", () => {
 			};
 			mockTodoCategoryService.create.mockResolvedValue(createdCategory);
 
-			// When: create를 호출하면
+			// When -create를 호출하면
 			const result = await controller.create(mockUser, dto);
 
-			// Then: 서비스에 userId, name, color를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, name, color를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockTodoCategoryService.create).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				name: dto.name,
@@ -116,7 +116,7 @@ describe("TodoCategoryController", () => {
 
 	describe("findAll", () => {
 		it("카테고리 목록 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 카테고리 목록 서비스 응답이 준비되었을 때
+			// Given -카테고리 목록 서비스 응답이 준비되었을 때
 			const categories: TodoCategoryWithCount[] = [
 				mockCategoryWithCount,
 				{
@@ -130,10 +130,10 @@ describe("TodoCategoryController", () => {
 			];
 			mockTodoCategoryService.findMany.mockResolvedValue(categories);
 
-			// When: findAll을 호출하면
+			// When -findAll을 호출하면
 			const result = await controller.findAll(mockUser);
 
-			// Then: 서비스에 userId를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockTodoCategoryService.findMany).toHaveBeenCalledWith(
 				mockUser.userId,
 			);
@@ -145,14 +145,14 @@ describe("TodoCategoryController", () => {
 
 	describe("findOne", () => {
 		it("카테고리 상세 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 조회할 카테고리 ID가 있을 때
+			// Given -조회할 카테고리 ID가 있을 때
 			const params = { id: 1 } as unknown as TodoCategoryIdParamDto;
 			mockTodoCategoryService.findById.mockResolvedValue(mockCategoryWithCount);
 
-			// When: findOne을 호출하면
+			// When -findOne을 호출하면
 			const result = await controller.findOne(mockUser, params);
 
-			// Then: 서비스에 id와 userId를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 id와 userId를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockTodoCategoryService.findById).toHaveBeenCalledWith(
 				params.id,
 				mockUser.userId,
@@ -165,7 +165,7 @@ describe("TodoCategoryController", () => {
 
 	describe("update", () => {
 		it("카테고리 수정 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 카테고리 수정 DTO와 서비스 응답이 준비되었을 때
+			// Given -카테고리 수정 DTO와 서비스 응답이 준비되었을 때
 			const params = { id: 1 } as unknown as TodoCategoryIdParamDto;
 			const dto = {
 				name: "매우 중요한 일",
@@ -179,10 +179,10 @@ describe("TodoCategoryController", () => {
 			};
 			mockTodoCategoryService.update.mockResolvedValue(updatedCategory);
 
-			// When: update를 호출하면
+			// When -update를 호출하면
 			const result = await controller.update(mockUser, params, dto);
 
-			// Then: 서비스에 id, userId, dto를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 id, userId, dto를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockTodoCategoryService.update).toHaveBeenCalledWith(
 				params.id,
 				mockUser.userId,
@@ -197,7 +197,7 @@ describe("TodoCategoryController", () => {
 
 	describe("reorder", () => {
 		it("카테고리 순서 변경 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 카테고리 순서 변경 DTO와 서비스 응답이 준비되었을 때
+			// Given -카테고리 순서 변경 DTO와 서비스 응답이 준비되었을 때
 			const params = { id: 3 } as unknown as TodoCategoryIdParamDto;
 			const dto = {
 				targetCategoryId: 1,
@@ -211,10 +211,10 @@ describe("TodoCategoryController", () => {
 			};
 			mockTodoCategoryService.reorder.mockResolvedValue(reorderedCategory);
 
-			// When: reorder를 호출하면
+			// When -reorder를 호출하면
 			const result = await controller.reorder(mockUser, params, dto);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockTodoCategoryService.reorder).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				categoryId: params.id,
@@ -230,17 +230,17 @@ describe("TodoCategoryController", () => {
 
 	describe("delete", () => {
 		it("카테고리 삭제 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
-			// Given: 삭제할 카테고리 ID가 있을 때
+			// Given -삭제할 카테고리 ID가 있을 때
 			const params = { id: 3 } as unknown as TodoCategoryIdParamDto;
 			const query = {
 				moveToCategoryId: 1,
 			} as unknown as DeleteTodoCategoryQueryDto;
 			mockTodoCategoryService.delete.mockResolvedValue(undefined);
 
-			// When: delete를 호출하면
+			// When -delete를 호출하면
 			const result = await controller.delete(mockUser, params, query);
 
-			// Then: 서비스에 userId, categoryId, moveToCategoryId를 전달하고 메시지를 반환해야 한다
+			// Then -서비스에 userId, categoryId, moveToCategoryId를 전달하고 메시지를 반환해야 한다
 			expect(mockTodoCategoryService.delete).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				categoryId: params.id,
@@ -252,17 +252,17 @@ describe("TodoCategoryController", () => {
 		});
 
 		it("moveToCategoryId 없이도 삭제할 수 있어야 한다", async () => {
-			// Given: 할 일이 없는 카테고리를 삭제할 때
+			// Given -할 일이 없는 카테고리를 삭제할 때
 			const params = { id: 3 } as unknown as TodoCategoryIdParamDto;
 			const query = {
 				moveToCategoryId: undefined,
 			} as unknown as DeleteTodoCategoryQueryDto;
 			mockTodoCategoryService.delete.mockResolvedValue(undefined);
 
-			// When: delete를 호출하면
+			// When -delete를 호출하면
 			const result = await controller.delete(mockUser, params, query);
 
-			// Then: moveToCategoryId가 undefined로 전달되어야 한다
+			// Then -moveToCategoryId가 undefined로 전달되어야 한다
 			expect(mockTodoCategoryService.delete).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				categoryId: params.id,

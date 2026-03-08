@@ -36,7 +36,7 @@ describe("CheerRepository", () => {
 		const { unit, unitRef } = await TestBed.solitary(CheerRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
+		db = unitRef.get(DatabaseService);
 	});
 
 	// ===========================================================================

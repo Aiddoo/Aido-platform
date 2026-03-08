@@ -49,10 +49,6 @@ describe("CacheService", () => {
 		mockCacheAdapter = mockCacheAdapterImpl as unknown as Mocked<ICacheService>;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe("제네릭 메서드", () => {
 		it("get 호출을 어댑터에 위임한다", async () => {
 			// Given

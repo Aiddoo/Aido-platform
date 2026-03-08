@@ -45,11 +45,7 @@ describe("TodoCategoryRepository", () => {
 		).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
+		db = unitRef.get(DatabaseService);
 	});
 
 	// ==========================================================================

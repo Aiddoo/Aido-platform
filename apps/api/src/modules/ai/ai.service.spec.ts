@@ -64,7 +64,6 @@ describe("AiService", () => {
 
 	afterEach(() => {
 		fakeAiProvider.clear();
-		jest.clearAllMocks();
 	});
 
 	// =========================================================================

@@ -40,10 +40,8 @@ describe("AccountRepository", () => {
 			await TestBed.solitary(AccountRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
-		encryptionService = unitRef.get(
-			EncryptionService,
-		) as unknown as Mocked<EncryptionService>;
+		db = unitRef.get(DatabaseService);
+		encryptionService = unitRef.get(EncryptionService);
 
 		// encrypt를 입력값 그대로 반환하도록 설정
 		encryptionService.encrypt.mockImplementation((value: string) => value);

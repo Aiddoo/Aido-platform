@@ -40,7 +40,7 @@ describe("DailyCompletionController", () => {
 
 	describe("getDailyCompletionsRange", () => {
 		it("날짜 범위 내 일일 완료 현황 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 조회 쿼리와 서비스 응답이 준비되었을 때
+			// Given -조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				startDate: "2026-01-01",
 				endDate: "2026-01-31",
@@ -72,10 +72,10 @@ describe("DailyCompletionController", () => {
 				serviceResult,
 			);
 
-			// When: getDailyCompletionsRange를 호출하면
+			// When -getDailyCompletionsRange를 호출하면
 			const result = await controller.getDailyCompletionsRange(mockUser, query);
 
-			// Then: 서비스에 userId, startDate, endDate를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, startDate, endDate를 전달하고 매핑된 결과를 반환해야 한다
 			expect(
 				mockDailyCompletionService.getDailyCompletionsRange,
 			).toHaveBeenCalledWith({
@@ -109,7 +109,7 @@ describe("DailyCompletionController", () => {
 		});
 
 		it("완료 현황이 없을 때 빈 배열을 반환해야 한다", async () => {
-			// Given: 해당 기간에 할 일이 없을 때
+			// Given -해당 기간에 할 일이 없을 때
 			const query = {
 				startDate: "2026-02-01",
 				endDate: "2026-02-28",
@@ -126,10 +126,10 @@ describe("DailyCompletionController", () => {
 				serviceResult,
 			);
 
-			// When: getDailyCompletionsRange를 호출하면
+			// When -getDailyCompletionsRange를 호출하면
 			const result = await controller.getDailyCompletionsRange(mockUser, query);
 
-			// Then: 빈 completions 배열과 totalCompleteDays 0을 반환해야 한다
+			// Then -빈 completions 배열과 totalCompleteDays 0을 반환해야 한다
 			expect(result).toEqual({
 				completions: [],
 				totalCompleteDays: 0,

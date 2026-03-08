@@ -240,10 +240,6 @@ describe("GlobalExceptionFilter", () => {
 	});
 
 	describe("Sentry 캡처", () => {
-		beforeEach(() => {
-			jest.clearAllMocks();
-		});
-
 		it("5xx 서버 에러는 Sentry에 scope 컨텍스트와 함께 캡처해야 한다", () => {
 			// Given
 			const exception = new Error("unexpected server error");

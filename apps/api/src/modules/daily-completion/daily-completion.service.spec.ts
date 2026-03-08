@@ -29,9 +29,7 @@ describe("DailyCompletionService", () => {
 		).compile();
 
 		service = unit;
-		dailyCompletionRepo = unitRef.get(
-			DailyCompletionRepository,
-		) as unknown as Mocked<DailyCompletionRepository>;
+		dailyCompletionRepo = unitRef.get(DailyCompletionRepository);
 	});
 
 	// ============================================

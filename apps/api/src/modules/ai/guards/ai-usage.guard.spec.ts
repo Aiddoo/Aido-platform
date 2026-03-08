@@ -36,11 +36,7 @@ describe("AiUsageGuard", () => {
 		const { unit, unitRef } = await TestBed.solitary(AiUsageGuard).compile();
 
 		guard = unit;
-		aiService = unitRef.get(AiService) as unknown as Mocked<AiService>;
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
+		aiService = unitRef.get(AiService);
 	});
 
 	// ==========================================================================

@@ -19,8 +19,6 @@ describe("OAuthTokenVerifierService", () => {
 	let configService: Mocked<ConfigService>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		// Google Auth Library mock 설정
 		const { OAuth2Client } = jest.requireMock("google-auth-library");
 		mockGoogleVerifyIdToken = jest.fn();
@@ -33,9 +31,7 @@ describe("OAuthTokenVerifierService", () => {
 		).compile();
 
 		service = unit;
-		configService = unitRef.get(
-			ConfigService,
-		) as unknown as Mocked<ConfigService>;
+		configService = unitRef.get(ConfigService);
 
 		// ConfigService mock 설정
 		configService.get.mockImplementation((key: string) => {
@@ -161,10 +157,6 @@ describe("OAuthTokenVerifierService", () => {
 			global.fetch = jest.fn();
 		});
 
-		afterEach(() => {
-			jest.restoreAllMocks();
-		});
-
 		it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
 			// Given
 			(global.fetch as jest.Mock).mockResolvedValue({
@@ -263,10 +255,6 @@ describe("OAuthTokenVerifierService", () => {
 
 		beforeEach(() => {
 			global.fetch = jest.fn();
-		});
-
-		afterEach(() => {
-			jest.restoreAllMocks();
 		});
 
 		it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {

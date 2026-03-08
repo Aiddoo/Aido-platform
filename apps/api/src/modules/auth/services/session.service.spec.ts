@@ -52,8 +52,6 @@ describe("SessionService", () => {
 	};
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		// Suites가 모든 의존성을 자동으로 mock
 		const { unit, unitRef } = await TestBed.solitary(SessionService).compile();
 

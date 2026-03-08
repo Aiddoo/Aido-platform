@@ -101,10 +101,6 @@ describe("NotificationService", () => {
 		pushDeliveryService.shouldSendPush.mockResolvedValue(true);
 	});
 
-	afterEach(() => {
-		jest.restoreAllMocks();
-	});
-
 	// ==========================================================================
 	// 알림 생성 및 발송 테스트
 	// ==========================================================================

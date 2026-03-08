@@ -24,8 +24,6 @@ describe("SuggestionAnalysisJob", () => {
 	let mockProcessor: Mocked<SuggestionAnalysisProcessor>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisJob)
 			.mock(getQueueToken(AI_SUGGESTION_QUEUE))
 			.impl(() => ({

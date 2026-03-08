@@ -37,13 +37,7 @@ describe("SubscriptionController", () => {
 			.compile();
 
 		controller = unit;
-		mockService = unitRef.get(
-			SubscriptionService,
-		) as unknown as Mocked<SubscriptionService>;
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
+		mockService = unitRef.get(SubscriptionService);
 	});
 
 	// =========================================================================

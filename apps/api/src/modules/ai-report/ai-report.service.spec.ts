@@ -79,8 +79,6 @@ describe("AiReportService", () => {
 	}
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(AiReportService).compile();
 
 		service = unit;
@@ -99,7 +97,7 @@ describe("AiReportService", () => {
 
 	describe("프리미엄 체크", () => {
 		it("비프리미엄 사용자가 getReportStatus를 호출하면 AI_1308 예외를 던져야 한다", async () => {
-			// Given: 비프리미엄 사용자
+			// Given -비프리미엄 사용자
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			// When & Then: 프리미엄 필수 예외가 발생해야 한다
@@ -111,7 +109,7 @@ describe("AiReportService", () => {
 		});
 
 		it("비프리미엄 사용자가 getReports를 호출하면 AI_1308 예외를 던져야 한다", async () => {
-			// Given: 비프리미엄 사용자
+			// Given -비프리미엄 사용자
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			// When & Then: 프리미엄 필수 예외가 발생해야 한다
@@ -123,7 +121,7 @@ describe("AiReportService", () => {
 		});
 
 		it("비프리미엄 사용자가 getReportById를 호출하면 AI_1308 예외를 던져야 한다", async () => {
-			// Given: 비프리미엄 사용자
+			// Given -비프리미엄 사용자
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			// When & Then: 프리미엄 필수 예외가 발생해야 한다
@@ -135,17 +133,17 @@ describe("AiReportService", () => {
 		});
 
 		it("generateWeeklyReport는 프리미엄 체크 없이 동작해야 한다", async () => {
-			// Given: 비프리미엄 사용자이지만 크론잡 호출
+			// Given -비프리미엄 사용자이지만 크론잡 호출
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 			mockRepository.exists.mockResolvedValue(true);
 
-			// When: generateWeeklyReport를 호출하면
+			// When -generateWeeklyReport를 호출하면
 			const result = await service.generateWeeklyReport(
 				mockUserId,
 				mockTimezone,
 			);
 
-			// Then: 프리미엄 체크 없이 정상 동작 (이미 존재하므로 null)
+			// Then -프리미엄 체크 없이 정상 동작 (이미 존재하므로 null)
 			expect(mockEntitlementService.hasPremiumAccess).not.toHaveBeenCalled();
 			expect(result).toBeNull();
 		});
@@ -157,7 +155,7 @@ describe("AiReportService", () => {
 
 	describe("getReportStatus", () => {
 		it("리포트 상태와 최신 리포트를 반환해야 한다", async () => {
-			// Given: 최신 리포트가 존재하는 상태
+			// Given -최신 리포트가 존재하는 상태
 			const weeklyReport = createMockReportEntity({ type: "WEEKLY" });
 			mockRepository.findLatest.mockImplementation(
 				async (_userId: string, type: string) => {
@@ -166,10 +164,10 @@ describe("AiReportService", () => {
 				},
 			);
 
-			// When: getReportStatus를 호출하면
+			// When -getReportStatus를 호출하면
 			const result = await service.getReportStatus(mockUserId, mockTimezone);
 
-			// Then: 다음 리포트 예정일과 최신 리포트를 반환해야 한다
+			// Then -다음 리포트 예정일과 최신 리포트를 반환해야 한다
 			expect(result.nextWeeklyAt).toBeDefined();
 			expect(result.nextMonthlyAt).toBeDefined();
 			expect(result.daysUntilWeekly).toBeGreaterThanOrEqual(0);
@@ -186,17 +184,17 @@ describe("AiReportService", () => {
 
 	describe("getReports", () => {
 		it("리포트 목록을 조회하고 DTO로 변환해야 한다", async () => {
-			// Given: 리포트 목록이 존재
+			// Given -리포트 목록이 존재
 			const reports = [createMockReportEntity()];
 			mockRepository.findMany.mockResolvedValue(reports);
 
-			// When: getReports를 호출하면
+			// When -getReports를 호출하면
 			const result = await service.getReports(mockUserId, {
 				type: "WEEKLY",
 				limit: 10,
 			});
 
-			// Then: 변환된 리포트 목록을 반환해야 한다
+			// Then -변환된 리포트 목록을 반환해야 한다
 			expect(result).toHaveLength(1);
 			expect(result[0]?.id).toBe(1);
 			expect(mockRepository.findMany).toHaveBeenCalledWith({
@@ -213,14 +211,14 @@ describe("AiReportService", () => {
 
 	describe("getReportById", () => {
 		it("존재하는 리포트를 조회하면 DTO를 반환해야 한다", async () => {
-			// Given: 리포트가 존재
+			// Given -리포트가 존재
 			const report = createMockReportEntity({ id: 42 });
 			mockRepository.findByIdAndUserId.mockResolvedValue(report);
 
-			// When: getReportById를 호출하면
+			// When -getReportById를 호출하면
 			const result = await service.getReportById(mockUserId, 42);
 
-			// Then: DTO를 반환해야 한다
+			// Then -DTO를 반환해야 한다
 			expect(result.id).toBe(42);
 			expect(mockRepository.findByIdAndUserId).toHaveBeenCalledWith(
 				42,
@@ -229,7 +227,7 @@ describe("AiReportService", () => {
 		});
 
 		it("존재하지 않는 리포트 조회 시 aiReportNotFound 예외를 던져야 한다", async () => {
-			// Given: 리포트가 존재하지 않음
+			// Given -리포트가 존재하지 않음
 			mockRepository.findByIdAndUserId.mockResolvedValue(null);
 
 			// When & Then: aiReportNotFound 예외가 발생해야 한다
@@ -250,16 +248,16 @@ describe("AiReportService", () => {
 
 	describe("generateWeeklyReport", () => {
 		it("이미 존재하는 주간 리포트면 null을 반환해야 한다 (skip)", async () => {
-			// Given: 해당 주차 리포트가 이미 존재
+			// Given -해당 주차 리포트가 이미 존재
 			mockRepository.exists.mockResolvedValue(true);
 
-			// When: generateWeeklyReport를 호출하면
+			// When -generateWeeklyReport를 호출하면
 			const result = await service.generateWeeklyReport(
 				mockUserId,
 				mockTimezone,
 			);
 
-			// Then: null을 반환하고 aggregator/generator가 호출되지 않아야 한다
+			// Then -null을 반환하고 aggregator/generator가 호출되지 않아야 한다
 			expect(result).toBeNull();
 			expect(mockAggregator.aggregate).not.toHaveBeenCalled();
 			expect(mockGenerator.generate).not.toHaveBeenCalled();
@@ -267,7 +265,7 @@ describe("AiReportService", () => {
 		});
 
 		it("aggregator → generator → repository.create 순서로 실행되어야 한다", async () => {
-			// Given: 리포트가 존재하지 않고 각 서비스가 정상 응답
+			// Given -리포트가 존재하지 않고 각 서비스가 정상 응답
 			mockRepository.exists.mockResolvedValue(false);
 
 			const mockAggregatedData = createMockAggregatedData();
@@ -281,13 +279,13 @@ describe("AiReportService", () => {
 			const createdReport = createMockReportEntity();
 			mockRepository.create.mockResolvedValue(createdReport);
 
-			// When: generateWeeklyReport를 호출하면
+			// When -generateWeeklyReport를 호출하면
 			const result = await service.generateWeeklyReport(
 				mockUserId,
 				mockTimezone,
 			);
 
-			// Then: aggregator → generator → repository.create 순서로 호출되어야 한다
+			// Then -aggregator → generator → repository.create 순서로 호출되어야 한다
 			expect(mockAggregator.aggregate).toHaveBeenCalledTimes(1);
 			expect(mockGenerator.generate).toHaveBeenCalledTimes(1);
 			expect(mockRepository.create).toHaveBeenCalledTimes(1);
@@ -318,22 +316,22 @@ describe("AiReportService", () => {
 
 	describe("generateMonthlyReport", () => {
 		it("이미 존재하는 월간 리포트면 null을 반환해야 한다 (skip)", async () => {
-			// Given: 해당 월 리포트가 이미 존재
+			// Given -해당 월 리포트가 이미 존재
 			mockRepository.exists.mockResolvedValue(true);
 
-			// When: generateMonthlyReport를 호출하면
+			// When -generateMonthlyReport를 호출하면
 			const result = await service.generateMonthlyReport(
 				mockUserId,
 				mockTimezone,
 			);
 
-			// Then: null을 반환하고 aggregator가 호출되지 않아야 한다
+			// Then -null을 반환하고 aggregator가 호출되지 않아야 한다
 			expect(result).toBeNull();
 			expect(mockAggregator.aggregate).not.toHaveBeenCalled();
 		});
 
 		it("월간 리포트를 정상적으로 생성해야 한다", async () => {
-			// Given: 리포트가 존재하지 않고 각 서비스가 정상 응답
+			// Given -리포트가 존재하지 않고 각 서비스가 정상 응답
 			mockRepository.exists.mockResolvedValue(false);
 
 			const mockAggregatedData = createMockAggregatedData();
@@ -347,13 +345,13 @@ describe("AiReportService", () => {
 			const createdReport = createMockReportEntity({ type: "MONTHLY" });
 			mockRepository.create.mockResolvedValue(createdReport);
 
-			// When: generateMonthlyReport를 호출하면
+			// When -generateMonthlyReport를 호출하면
 			const result = await service.generateMonthlyReport(
 				mockUserId,
 				mockTimezone,
 			);
 
-			// Then: 생성된 리포트를 반환해야 한다
+			// Then -생성된 리포트를 반환해야 한다
 			expect(result).not.toBeNull();
 			expect(mockRepository.create).toHaveBeenCalledTimes(1);
 		});

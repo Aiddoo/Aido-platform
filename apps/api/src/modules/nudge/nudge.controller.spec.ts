@@ -68,7 +68,7 @@ describe("NudgeController", () => {
 
 	describe("sendNudge", () => {
 		it("콕 찌르기 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 콕 찌르기 DTO와 서비스 응답이 준비되었을 때
+			// Given -콕 찌르기 DTO와 서비스 응답이 준비되었을 때
 			const dto = {
 				receiverId: "user-456",
 				todoId: 10,
@@ -77,10 +77,10 @@ describe("NudgeController", () => {
 			const tz = "Asia/Seoul";
 			mockNudgeService.sendNudge.mockResolvedValue(mockNudgeWithRelations);
 
-			// When: sendNudge를 호출하면
+			// When - sendNudge를 호출하면
 			const result = await controller.sendNudge(mockUser, dto, tz);
 
-			// Then: 서비스에 senderId, receiverId, todoId, message, tz를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 senderId, receiverId, todoId, message, tz를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockNudgeService.sendNudge).toHaveBeenCalledWith(
 				{
 					senderId: mockUser.userId,
@@ -99,7 +99,7 @@ describe("NudgeController", () => {
 
 	describe("getReceivedNudges", () => {
 		it("받은 콕 찌름 목록 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 받은 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
+			// Given -받은 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
 				cursor: undefined,
@@ -111,10 +111,10 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getReceivedNudges.mockResolvedValue(serviceResult);
 
-			// When: getReceivedNudges를 호출하면
+			// When - getReceivedNudges를 호출하면
 			const result = await controller.getReceivedNudges(mockUser, query);
 
-			// Then: 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockNudgeService.getReceivedNudges).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
@@ -129,7 +129,7 @@ describe("NudgeController", () => {
 		});
 
 		it("읽은 콕 찌름이 있으면 unreadCount가 줄어야 한다", async () => {
-			// Given: 읽은 콕 찌름이 포함된 목록이 있을 때
+			// Given -읽은 콕 찌름이 포함된 목록이 있을 때
 			const readNudge: NudgeWithRelations = {
 				...mockNudgeWithRelations,
 				id: 2,
@@ -142,12 +142,12 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getReceivedNudges.mockResolvedValue(serviceResult);
 
-			// When: getReceivedNudges를 호출하면
+			// When - getReceivedNudges를 호출하면
 			const result = await controller.getReceivedNudges(mockUser, {
 				limit: 20,
 			} as unknown as GetNudgesQueryDto);
 
-			// Then: totalCount는 2이고 unreadCount는 1이어야 한다
+			// Then - totalCount는 2이고 unreadCount는 1이어야 한다
 			expect(result.totalCount).toBe(2);
 			expect(result.unreadCount).toBe(1);
 		});
@@ -155,7 +155,7 @@ describe("NudgeController", () => {
 
 	describe("getSentNudges", () => {
 		it("보낸 콕 찌름 목록 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 보낸 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
+			// Given -보낸 콕 찌름 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
 				cursor: undefined,
@@ -167,10 +167,10 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getSentNudges.mockResolvedValue(serviceResult);
 
-			// When: getSentNudges를 호출하면
+			// When - getSentNudges를 호출하면
 			const result = await controller.getSentNudges(mockUser, query);
 
-			// Then: 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockNudgeService.getSentNudges).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
@@ -186,7 +186,7 @@ describe("NudgeController", () => {
 
 	describe("getLimitInfo", () => {
 		it("일일 콕 찌르기 제한 정보 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 제한 정보 서비스 응답이 준비되었을 때
+			// Given -제한 정보 서비스 응답이 준비되었을 때
 			const tz = "Asia/Seoul";
 			const limitInfo: NudgeLimitInfo = {
 				dailyLimit: 3,
@@ -195,10 +195,10 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getLimitInfo.mockResolvedValue(limitInfo);
 
-			// When: getLimitInfo를 호출하면
+			// When - getLimitInfo를 호출하면
 			const result = await controller.getLimitInfo(mockUser, tz);
 
-			// Then: 서비스에 userId와 tz를 전달하고 매핑된 결과를 반환해야 한다
+			// Then - 서비스에 userId와 tz를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockNudgeService.getLimitInfo).toHaveBeenCalledWith(
 				mockUser.userId,
 				tz,
@@ -209,7 +209,7 @@ describe("NudgeController", () => {
 
 	describe("getCooldownInfo", () => {
 		it("특정 친구에 대한 쿨다운 상태를 서비스에서 조회하고 결과를 반환해야 한다", async () => {
-			// Given: 쿨다운이 활성화된 상태일 때
+			// Given -쿨다운이 활성화된 상태일 때
 			const targetUserId = "user-456";
 			const cooldownInfo: NudgeCooldownInfo = {
 				isActive: true,
@@ -218,10 +218,10 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getCooldownInfoForUser.mockResolvedValue(cooldownInfo);
 
-			// When: getCooldownInfo를 호출하면
+			// When - getCooldownInfo를 호출하면
 			const result = await controller.getCooldownInfo(mockUser, targetUserId);
 
-			// Then: 서비스에 userId와 targetUserId를 전달하고 변환된 결과를 반환해야 한다
+			// Then - 서비스에 userId와 targetUserId를 전달하고 변환된 결과를 반환해야 한다
 			expect(mockNudgeService.getCooldownInfoForUser).toHaveBeenCalledWith(
 				mockUser.userId,
 				targetUserId,
@@ -234,7 +234,7 @@ describe("NudgeController", () => {
 		});
 
 		it("쿨다운이 없을 때 콕 찌르기 가능 상태를 반환해야 한다", async () => {
-			// Given: 쿨다운이 없을 때
+			// Given -쿨다운이 없을 때
 			const targetUserId = "user-789";
 			const cooldownInfo: NudgeCooldownInfo = {
 				isActive: false,
@@ -243,10 +243,10 @@ describe("NudgeController", () => {
 			};
 			mockNudgeService.getCooldownInfoForUser.mockResolvedValue(cooldownInfo);
 
-			// When: getCooldownInfo를 호출하면
+			// When - getCooldownInfo를 호출하면
 			const result = await controller.getCooldownInfo(mockUser, targetUserId);
 
-			// Then: canNudge가 true이고 cooldownEndsAt이 null이어야 한다
+			// Then - canNudge가 true이고 cooldownEndsAt이 null이어야 한다
 			expect(result).toEqual({
 				canNudge: true,
 				cooldownEndsAt: null,
@@ -257,14 +257,14 @@ describe("NudgeController", () => {
 
 	describe("markAsRead", () => {
 		it("콕 찌름 읽음 처리 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 읽음 처리할 콕 찌름 ID가 있을 때
+			// Given -읽음 처리할 콕 찌름 ID가 있을 때
 			const nudgeId = 1;
 			mockNudgeService.markAsRead.mockResolvedValue(undefined);
 
-			// When: markAsRead를 호출하면
+			// When - markAsRead를 호출하면
 			const result = await controller.markAsRead(mockUser, nudgeId);
 
-			// Then: 서비스에 userId와 nudgeId를 전달하고 결과를 반환해야 한다
+			// Then - 서비스에 userId와 nudgeId를 전달하고 결과를 반환해야 한다
 			expect(mockNudgeService.markAsRead).toHaveBeenCalledWith(
 				mockUser.userId,
 				nudgeId,

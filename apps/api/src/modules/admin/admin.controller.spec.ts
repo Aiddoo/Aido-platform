@@ -37,7 +37,7 @@ describe("AdminController", () => {
 
 	describe("broadcastNotification", () => {
 		it("전체 알림 발송 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 전체 알림 발송 DTO와 서비스 응답이 준비되었을 때
+			// Given -전체 알림 발송 DTO와 서비스 응답이 준비되었을 때
 			const dto = {
 				title: "공지사항",
 				body: "서비스 점검 안내",
@@ -50,10 +50,10 @@ describe("AdminController", () => {
 			};
 			mockAdminService.broadcastNotification.mockResolvedValue(serviceResult);
 
-			// When: broadcastNotification을 호출하면
+			// When -broadcastNotification을 호출하면
 			const result = await controller.broadcastNotification(mockUser, dto);
 
-			// Then: 서비스에 DTO를 전달하고 결과를 반환해야 한다
+			// Then -서비스에 DTO를 전달하고 결과를 반환해야 한다
 			expect(mockAdminService.broadcastNotification).toHaveBeenCalledWith(dto);
 			expect(result).toEqual(serviceResult);
 		});
@@ -61,7 +61,7 @@ describe("AdminController", () => {
 
 	describe("sendTargetedNotification", () => {
 		it("특정 사용자 알림 발송 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 특정 사용자 알림 발송 DTO와 서비스 응답이 준비되었을 때
+			// Given -특정 사용자 알림 발송 DTO와 서비스 응답이 준비되었을 때
 			const dto = {
 				title: "개별 알림",
 				body: "할 일을 완료해보세요!",
@@ -76,10 +76,10 @@ describe("AdminController", () => {
 				serviceResult,
 			);
 
-			// When: sendTargetedNotification을 호출하면
+			// When -sendTargetedNotification을 호출하면
 			const result = await controller.sendTargetedNotification(mockUser, dto);
 
-			// Then: 서비스에 DTO를 전달하고 결과를 반환해야 한다
+			// Then -서비스에 DTO를 전달하고 결과를 반환해야 한다
 			expect(mockAdminService.sendTargetedNotification).toHaveBeenCalledWith(
 				dto,
 			);

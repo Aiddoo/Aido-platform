@@ -24,8 +24,6 @@ describe("ReportGenerationJob", () => {
 	let mockProcessor: Mocked<ReportGenerationProcessor>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
 			.mock(getQueueToken(AI_REPORT_QUEUE))
 			.impl(() => ({

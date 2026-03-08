@@ -82,35 +82,17 @@ describe("OAuthService", () => {
 		const { unit, unitRef } = await TestBed.solitary(OAuthService).compile();
 
 		service = unit;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
-		accountRepo = unitRef.get(
-			AccountRepository,
-		) as unknown as Mocked<AccountRepository>;
-		securityLogRepo = unitRef.get(
-			SecurityLogRepository,
-		) as unknown as Mocked<SecurityLogRepository>;
-		loginAttemptRepo = unitRef.get(
-			LoginAttemptRepository,
-		) as unknown as Mocked<LoginAttemptRepository>;
-		oauthStateRepo = unitRef.get(
-			OAuthStateRepository,
-		) as unknown as Mocked<OAuthStateRepository>;
-		sessionService = unitRef.get(
-			SessionService,
-		) as unknown as Mocked<SessionService>;
-		tokenVerifier = unitRef.get(
-			OAuthTokenVerifierService,
-		) as unknown as Mocked<OAuthTokenVerifierService>;
-		configService = unitRef.get(
-			TypedConfigService,
-		) as unknown as Mocked<TypedConfigService>;
-		adminNotificationQueueService = unitRef.get(
-			AdminNotificationQueueService,
-		) as unknown as Mocked<AdminNotificationQueueService>;
-		cacheService = unitRef.get(CacheService) as unknown as Mocked<CacheService>;
+		database = unitRef.get(DatabaseService);
+		userRepo = unitRef.get(UserRepository);
+		accountRepo = unitRef.get(AccountRepository);
+		securityLogRepo = unitRef.get(SecurityLogRepository);
+		loginAttemptRepo = unitRef.get(LoginAttemptRepository);
+		oauthStateRepo = unitRef.get(OAuthStateRepository);
+		sessionService = unitRef.get(SessionService);
+		tokenVerifier = unitRef.get(OAuthTokenVerifierService);
+		configService = unitRef.get(TypedConfigService);
+		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
+		cacheService = unitRef.get(CacheService);
 
 		// ConfigService 기본 설정
 		setupDefaultConfigService();

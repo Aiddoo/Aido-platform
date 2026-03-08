@@ -51,19 +51,13 @@ describe("OAuthStateRepository", () => {
 			await TestBed.solitary(OAuthStateRepository).compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService) as unknown as Mocked<DatabaseService>;
-		encryptionService = unitRef.get(
-			EncryptionService,
-		) as unknown as Mocked<EncryptionService>;
+		db = unitRef.get(DatabaseService);
+		encryptionService = unitRef.get(EncryptionService);
 
 		// encrypt를 "encrypted-{value}" 형태로 반환하도록 설정
 		encryptionService.encrypt.mockImplementation(
 			(value: string) => `encrypted-${value}`,
 		);
-	});
-
-	afterEach(() => {
-		jest.clearAllMocks();
 	});
 
 	// ==========================================================================

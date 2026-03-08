@@ -37,10 +37,6 @@ describe("SubscriptionRepository", () => {
 		repository = unit;
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	// =========================================================================
 	// findByRevenueCatId
 	// =========================================================================

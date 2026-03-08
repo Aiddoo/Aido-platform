@@ -88,10 +88,6 @@ describe("PushDeliveryService", () => {
 		mockedIsNightTime.mockReturnValue(false);
 	});
 
-	afterEach(() => {
-		jest.restoreAllMocks();
-	});
-
 	// =========================================================================
 	// registerPushToken
 	// =========================================================================

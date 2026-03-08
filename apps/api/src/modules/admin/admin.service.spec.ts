@@ -39,12 +39,8 @@ describe("AdminService", () => {
 		const { unit, unitRef } = await TestBed.solitary(AdminService).compile();
 
 		service = unit;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		notificationService = unitRef.get(
-			NotificationService,
-		) as unknown as Mocked<NotificationService>;
+		database = unitRef.get(DatabaseService);
+		notificationService = unitRef.get(NotificationService);
 	});
 
 	// ==========================================================================

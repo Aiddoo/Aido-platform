@@ -34,10 +34,8 @@ describe("TokenService", () => {
 		const { unit, unitRef } = await TestBed.solitary(TokenService).compile();
 
 		service = unit;
-		jwtService = unitRef.get(JwtService) as unknown as Mocked<JwtService>;
-		configService = unitRef.get(
-			TypedConfigService,
-		) as unknown as Mocked<TypedConfigService>;
+		jwtService = unitRef.get(JwtService);
+		configService = unitRef.get(TypedConfigService);
 
 		// JwtService 외부 라이브러리 mock 수동 설정
 		jwtService.signAsync.mockImplementation((payload, _options) => {

@@ -436,12 +436,12 @@ describe("TodoRepository", () => {
 				mockTx as never,
 			);
 
-			// Then: createMany가 전체 데이터로 호출됨
+			// Then - createMany가 전체 데이터로 호출됨
 			expect(mockTx.todo.createMany).toHaveBeenCalledWith({
 				data: dataArray,
 			});
 
-			// Then: findMany가 recurrenceGroupId로 조회됨
+			// Then - findMany가 recurrenceGroupId로 조회됨
 			expect(mockTx.todo.findMany).toHaveBeenCalledWith({
 				where: { recurrenceGroupId },
 				include: {

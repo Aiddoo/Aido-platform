@@ -66,7 +66,7 @@ describe("CheerController", () => {
 
 	describe("sendCheer", () => {
 		it("응원 보내기 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 응원 보내기 DTO와 서비스 응답이 준비되었을 때
+			// Given -응원 보내기 DTO와 서비스 응답이 준비되었을 때
 			const dto = {
 				receiverId: "user-456",
 				message: "화이팅!",
@@ -74,10 +74,10 @@ describe("CheerController", () => {
 			const tz = "Asia/Seoul";
 			mockCheerService.sendCheer.mockResolvedValue(mockCheerWithRelations);
 
-			// When: sendCheer를 호출하면
+			// When -sendCheer를 호출하면
 			const result = await controller.sendCheer(mockUser, dto, tz);
 
-			// Then: 서비스에 senderId, receiverId, message, tz를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 senderId, receiverId, message, tz를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockCheerService.sendCheer).toHaveBeenCalledWith(
 				{
 					senderId: mockUser.userId,
@@ -95,7 +95,7 @@ describe("CheerController", () => {
 
 	describe("getReceivedCheers", () => {
 		it("받은 응원 목록 조회 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 받은 응원 목록 조회 쿼리와 서비스 응답이 준비되었을 때
+			// Given -받은 응원 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
 				cursor: undefined,
@@ -107,10 +107,10 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getReceivedCheers.mockResolvedValue(serviceResult);
 
-			// When: getReceivedCheers를 호출하면
+			// When -getReceivedCheers를 호출하면
 			const result = await controller.getReceivedCheers(mockUser, query);
 
-			// Then: 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockCheerService.getReceivedCheers).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
@@ -125,7 +125,7 @@ describe("CheerController", () => {
 		});
 
 		it("읽은 응원이 있으면 unreadCount가 줄어야 한다", async () => {
-			// Given: 읽은 응원이 포함된 목록이 있을 때
+			// Given -읽은 응원이 포함된 목록이 있을 때
 			const readCheer = {
 				...mockCheerWithRelations,
 				id: 2,
@@ -138,12 +138,12 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getReceivedCheers.mockResolvedValue(serviceResult);
 
-			// When: getReceivedCheers를 호출하면
+			// When -getReceivedCheers를 호출하면
 			const result = await controller.getReceivedCheers(mockUser, {
 				limit: 20,
 			} as unknown as GetCheersQueryDto);
 
-			// Then: totalCount는 2이고 unreadCount는 1이어야 한다
+			// Then -totalCount는 2이고 unreadCount는 1이어야 한다
 			expect(result.totalCount).toBe(2);
 			expect(result.unreadCount).toBe(1);
 		});
@@ -151,7 +151,7 @@ describe("CheerController", () => {
 
 	describe("getSentCheers", () => {
 		it("보낸 응원 목록 조회 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 보낸 응원 목록 조회 쿼리와 서비스 응답이 준비되었을 때
+			// Given -보낸 응원 목록 조회 쿼리와 서비스 응답이 준비되었을 때
 			const query = {
 				limit: 20,
 				cursor: undefined,
@@ -163,10 +163,10 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getSentCheers.mockResolvedValue(serviceResult);
 
-			// When: getSentCheers를 호출하면
+			// When -getSentCheers를 호출하면
 			const result = await controller.getSentCheers(mockUser, query);
 
-			// Then: 서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId, cursor, size를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockCheerService.getSentCheers).toHaveBeenCalledWith({
 				userId: mockUser.userId,
 				cursor: query.cursor,
@@ -182,7 +182,7 @@ describe("CheerController", () => {
 
 	describe("getLimitInfo", () => {
 		it("일일 응원 제한 정보 조회를 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-			// Given: 제한 정보 서비스 응답이 준비되었을 때
+			// Given -제한 정보 서비스 응답이 준비되었을 때
 			const tz = "Asia/Seoul";
 			const limitInfo: CheerLimitInfo = {
 				dailyLimit: 3,
@@ -191,10 +191,10 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getLimitInfo.mockResolvedValue(limitInfo);
 
-			// When: getLimitInfo를 호출하면
+			// When -getLimitInfo를 호출하면
 			const result = await controller.getLimitInfo(mockUser, tz);
 
-			// Then: 서비스에 userId와 tz를 전달하고 매핑된 결과를 반환해야 한다
+			// Then -서비스에 userId와 tz를 전달하고 매핑된 결과를 반환해야 한다
 			expect(mockCheerService.getLimitInfo).toHaveBeenCalledWith(
 				mockUser.userId,
 				tz,
@@ -205,7 +205,7 @@ describe("CheerController", () => {
 
 	describe("getCooldownInfo", () => {
 		it("특정 친구에 대한 쿨다운 상태를 서비스에서 조회하고 결과를 반환해야 한다", async () => {
-			// Given: 쿨다운 정보 서비스 응답이 준비되었을 때
+			// Given -쿨다운 정보 서비스 응답이 준비되었을 때
 			const targetUserId = "user-456";
 			const cooldownInfo: CheerCooldownInfo = {
 				isActive: true,
@@ -214,10 +214,10 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getCooldownInfoForUser.mockResolvedValue(cooldownInfo);
 
-			// When: getCooldownInfo를 호출하면
+			// When -getCooldownInfo를 호출하면
 			const result = await controller.getCooldownInfo(mockUser, targetUserId);
 
-			// Then: 서비스에 userId와 targetUserId를 전달하고 변환된 결과를 반환해야 한다
+			// Then -서비스에 userId와 targetUserId를 전달하고 변환된 결과를 반환해야 한다
 			expect(mockCheerService.getCooldownInfoForUser).toHaveBeenCalledWith(
 				mockUser.userId,
 				targetUserId,
@@ -231,7 +231,7 @@ describe("CheerController", () => {
 		});
 
 		it("쿨다운이 없을 때 응원 가능 상태를 반환해야 한다", async () => {
-			// Given: 쿨다운이 없을 때
+			// Given -쿨다운이 없을 때
 			const targetUserId = "user-789";
 			const cooldownInfo: CheerCooldownInfo = {
 				isActive: false,
@@ -240,10 +240,10 @@ describe("CheerController", () => {
 			};
 			mockCheerService.getCooldownInfoForUser.mockResolvedValue(cooldownInfo);
 
-			// When: getCooldownInfo를 호출하면
+			// When -getCooldownInfo를 호출하면
 			const result = await controller.getCooldownInfo(mockUser, targetUserId);
 
-			// Then: canCheer가 true이고 cooldownEndsAt이 null이어야 한다
+			// Then -canCheer가 true이고 cooldownEndsAt이 null이어야 한다
 			expect(result).toEqual({
 				userId: targetUserId,
 				canCheer: true,
@@ -255,14 +255,14 @@ describe("CheerController", () => {
 
 	describe("markAsRead", () => {
 		it("응원 읽음 처리 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 읽음 처리할 응원 ID가 있을 때
+			// Given -읽음 처리할 응원 ID가 있을 때
 			const cheerId = 1;
 			mockCheerService.markAsRead.mockResolvedValue(undefined);
 
-			// When: markAsRead를 호출하면
+			// When -markAsRead를 호출하면
 			const result = await controller.markAsRead(mockUser, cheerId);
 
-			// Then: 서비스에 userId와 cheerId를 전달하고 결과를 반환해야 한다
+			// Then -서비스에 userId와 cheerId를 전달하고 결과를 반환해야 한다
 			expect(mockCheerService.markAsRead).toHaveBeenCalledWith(
 				mockUser.userId,
 				cheerId,
@@ -276,14 +276,14 @@ describe("CheerController", () => {
 
 	describe("markManyAsRead", () => {
 		it("여러 응원 읽음 처리 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 읽음 처리할 응원 ID 배열이 있을 때
+			// Given -읽음 처리할 응원 ID 배열이 있을 때
 			const dto = { cheerIds: [1, 2, 3] } as unknown as MarkCheersReadDto;
 			mockCheerService.markManyAsRead.mockResolvedValue(3);
 
-			// When: markManyAsRead를 호출하면
+			// When -markManyAsRead를 호출하면
 			const result = await controller.markManyAsRead(mockUser, dto);
 
-			// Then: 서비스에 userId와 cheerIds를 전달하고 결과를 반환해야 한다
+			// Then -서비스에 userId와 cheerIds를 전달하고 결과를 반환해야 한다
 			expect(mockCheerService.markManyAsRead).toHaveBeenCalledWith(
 				mockUser.userId,
 				dto.cheerIds,

@@ -24,8 +24,6 @@ describe("SuggestionAnalysisProcessor", () => {
 	let mockNotificationService: Mocked<NotificationService>;
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		const { unit, unitRef } = await TestBed.solitary(
 			SuggestionAnalysisProcessor,
 		).compile();
@@ -35,7 +33,7 @@ describe("SuggestionAnalysisProcessor", () => {
 		mockNotificationService = unitRef.get(NotificationService);
 	});
 
-	function makeJob(data: AiSuggestionJobData): Job<AiSuggestionJobData> {
+	function createMockJob(data: AiSuggestionJobData): Job<AiSuggestionJobData> {
 		return {
 			name: AiSuggestionJobName.ANALYZE,
 			data,
@@ -59,15 +57,15 @@ describe("SuggestionAnalysisProcessor", () => {
 
 	describe("서비스 위임", () => {
 		it("서비스에 userId와 timezone을 전달해야 한다", async () => {
-			// Given: 분석 대상 사용자
+			// Given -분석 대상 사용자
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(0);
 
-			// When: process를 호출하면
+			// When -process를 호출하면
 			await processor.process(
-				makeJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
 			);
 
-			// Then: 서비스에 올바른 파라미터를 전달해야 한다
+			// Then -서비스에 올바른 파라미터를 전달해야 한다
 			expect(
 				mockAiSuggestionService.analyzeAndCreateSuggestions,
 			).toHaveBeenCalledWith("user-123", "Asia/Seoul");
@@ -80,18 +78,18 @@ describe("SuggestionAnalysisProcessor", () => {
 
 	describe("알림 발송", () => {
 		it("패턴 감지 시 알림을 발송해야 한다", async () => {
-			// Given: 제안이 3개 생성된 상황
+			// Given -제안이 3개 생성된 상황
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(3);
 			mockNotificationService.createAndSend.mockResolvedValue(
 				undefined as never,
 			);
 
-			// When: process를 호출하면
+			// When -process를 호출하면
 			await processor.process(
-				makeJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
 			);
 
-			// Then: 알림이 발송되어야 한다
+			// Then -알림이 발송되어야 한다
 			expect(mockNotificationService.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
 					userId: "user-123",
@@ -101,15 +99,15 @@ describe("SuggestionAnalysisProcessor", () => {
 		});
 
 		it("패턴 미감지 시 알림을 발송하지 않아야 한다", async () => {
-			// Given: 제안이 생성되지 않은 상황
+			// Given -제안이 생성되지 않은 상황
 			mockAiSuggestionService.analyzeAndCreateSuggestions.mockResolvedValue(0);
 
-			// When: process를 호출하면
+			// When -process를 호출하면
 			await processor.process(
-				makeJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
 			);
 
-			// Then: 알림이 발송되지 않아야 한다
+			// Then -알림이 발송되지 않아야 한다
 			expect(mockNotificationService.createAndSend).not.toHaveBeenCalled();
 		});
 	});

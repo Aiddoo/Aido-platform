@@ -33,6 +33,8 @@ describe("TimezoneAwareReminderJob", () => {
 	let socialDigest: Mocked<SocialDigestStrategy>;
 
 	beforeEach(async () => {
+		jest.useFakeTimers();
+
 		const { unit, unitRef } = await TestBed.solitary(
 			TimezoneAwareReminderJob,
 		).compile();
@@ -58,6 +60,10 @@ describe("TimezoneAwareReminderJob", () => {
 		socialDigest.execute.mockResolvedValue({ sent: 0 });
 	});
 
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
 	// =========================================================================
 	// handleHourlySweep
 	// =========================================================================
@@ -65,7 +71,6 @@ describe("TimezoneAwareReminderJob", () => {
 	describe("handleHourlySweep", () => {
 		it("pushEnabled=true 타임존 목록을 조회하고 각 타임존별 Strategy를 호출한다", async () => {
 			const fakeNow = new Date("2024-01-16T23:00:00Z"); // KST 08:00 (화요일)
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			databaseService.userPreference.findMany.mockResolvedValue([
@@ -92,13 +97,10 @@ describe("TimezoneAwareReminderJob", () => {
 				localHour: 8,
 				localMinute: 0,
 			});
-
-			jest.useRealTimers();
 		});
 
 		it("다중 타임존을 병렬 처리한다", async () => {
 			const fakeNow = new Date("2024-01-16T23:00:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			databaseService.userPreference.findMany.mockResolvedValue([
@@ -111,8 +113,6 @@ describe("TimezoneAwareReminderJob", () => {
 			// 각 타임존별로 morning/evening 호출
 			expect(morningReminder.execute).toHaveBeenCalledTimes(2);
 			expect(eveningReminder.execute).toHaveBeenCalledTimes(2);
-
-			jest.useRealTimers();
 		});
 
 		it("pushEnabled=false인 타임존만 있으면 조회 결과가 비어 Strategy 미호출", async () => {
@@ -297,7 +297,6 @@ describe("TimezoneAwareReminderJob", () => {
 		it("변경된 아침 리마인더 시간이 현재 시:분과 일치하면 morning Strategy 호출", async () => {
 			// KST 09:30
 			const fakeNow = new Date("2024-01-16T00:30:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			await job.handleReminderHourChanged({
@@ -315,14 +314,11 @@ describe("TimezoneAwareReminderJob", () => {
 				localMinute: 30,
 				userId: "user-1",
 			});
-
-			jest.useRealTimers();
 		});
 
 		it("변경된 저녁 리마인더 시간이 현재 시:분과 일치하면 evening Strategy 호출", async () => {
 			// KST 20:00
 			const fakeNow = new Date("2024-01-16T11:00:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			await job.handleReminderHourChanged({
@@ -333,14 +329,11 @@ describe("TimezoneAwareReminderJob", () => {
 			});
 
 			expect(eveningReminder.execute).toHaveBeenCalledTimes(1);
-
-			jest.useRealTimers();
 		});
 
 		it("변경된 시간이 현재 시와 불일치하면 Strategy 미호출", async () => {
 			// KST 10:00
 			const fakeNow = new Date("2024-01-16T01:00:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			await job.handleReminderHourChanged({
@@ -350,14 +343,11 @@ describe("TimezoneAwareReminderJob", () => {
 			});
 
 			expect(morningReminder.execute).not.toHaveBeenCalled();
-
-			jest.useRealTimers();
 		});
 
 		it("변경된 분이 현재 분과 불일치하면 Strategy 미호출", async () => {
 			// KST 09:15
 			const fakeNow = new Date("2024-01-16T00:15:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			await job.handleReminderHourChanged({
@@ -368,13 +358,10 @@ describe("TimezoneAwareReminderJob", () => {
 			});
 
 			expect(morningReminder.execute).not.toHaveBeenCalled();
-
-			jest.useRealTimers();
 		});
 
 		it("에러 발생 시 throw하지 않고 로깅", async () => {
 			const fakeNow = new Date("2024-01-16T00:00:00Z");
-			jest.useFakeTimers();
 			jest.setSystemTime(fakeNow);
 
 			morningReminder.execute.mockRejectedValue(new Error("fail"));
@@ -387,8 +374,6 @@ describe("TimezoneAwareReminderJob", () => {
 					morningReminderMinute: 0,
 				}),
 			).resolves.toBeUndefined();
-
-			jest.useRealTimers();
 		});
 	});
 
@@ -398,7 +383,6 @@ describe("TimezoneAwareReminderJob", () => {
 
 	describe("handleSocialDigest", () => {
 		it("socialDigest Strategy에 위임한다", async () => {
-			jest.useFakeTimers();
 			jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 
 			await job.handleSocialDigest({ timezone: "Asia/Seoul" });
@@ -406,12 +390,9 @@ describe("TimezoneAwareReminderJob", () => {
 			expect(socialDigest.execute).toHaveBeenCalledTimes(1);
 			const ctx = socialDigest.execute.mock.calls[0]?.[0];
 			expect(ctx).toMatchObject({ tz: "Asia/Seoul" });
-
-			jest.useRealTimers();
 		});
 
 		it("에러 발생 시 throw하지 않고 로깅", async () => {
-			jest.useFakeTimers();
 			jest.setSystemTime(new Date("2024-01-16T09:00:00Z"));
 
 			socialDigest.execute.mockRejectedValue(new Error("fail"));
@@ -419,8 +400,6 @@ describe("TimezoneAwareReminderJob", () => {
 			await expect(
 				job.handleSocialDigest({ timezone: "Asia/Seoul" }),
 			).resolves.toBeUndefined();
-
-			jest.useRealTimers();
 		});
 	});
 });

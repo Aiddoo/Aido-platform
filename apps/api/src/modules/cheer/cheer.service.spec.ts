@@ -42,32 +42,18 @@ describe("CheerService", () => {
 	const receiverId = "receiver-456";
 
 	beforeEach(async () => {
-		jest.clearAllMocks();
-
 		// ID 카운터 리셋
 		CheerBuilder.resetIdCounter();
 
 		const { unit, unitRef } = await TestBed.solitary(CheerService).compile();
 
 		service = unit;
-		cheerRepo = unitRef.get(
-			CheerRepository,
-		) as unknown as Mocked<CheerRepository>;
-		followService = unitRef.get(
-			FollowService,
-		) as unknown as Mocked<FollowService>;
-		paginationService = unitRef.get(
-			PaginationService,
-		) as unknown as Mocked<PaginationService>;
-		notificationQueueService = unitRef.get(
-			NotificationQueueService,
-		) as unknown as Mocked<NotificationQueueService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		entitlementService = unitRef.get(
-			EntitlementService,
-		) as unknown as Mocked<EntitlementService>;
+		cheerRepo = unitRef.get(CheerRepository);
+		followService = unitRef.get(FollowService);
+		paginationService = unitRef.get(PaginationService);
+		notificationQueueService = unitRef.get(NotificationQueueService);
+		database = unitRef.get(DatabaseService);
+		entitlementService = unitRef.get(EntitlementService);
 
 		// DatabaseService.$transaction passthrough mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -139,7 +125,7 @@ describe("CheerService", () => {
 		};
 
 		beforeEach(() => {
-			// Given: 기본 성공 시나리오 설정
+			// Given - 기본 성공 시나리오 설정
 			(followService.isMutualFriend as jest.Mock).mockResolvedValue(true);
 
 			// 트랜잭션 내부 mock 설정

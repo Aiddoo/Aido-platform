@@ -17,7 +17,7 @@ describe("AiSuggestionMapper", () => {
 
 	describe("toResponse", () => {
 		it("Prisma 엔티티를 올바른 DTO 형식으로 변환해야 한다", () => {
-			// Given: Prisma RecurringSuggestion 엔티티
+			// Given -Prisma RecurringSuggestion 엔티티
 			const entity = {
 				id: 1,
 				userId: "user-123",
@@ -33,10 +33,10 @@ describe("AiSuggestionMapper", () => {
 				updatedAt: new Date("2026-03-04T00:00:00.000Z"),
 			} as RecurringSuggestion;
 
-			// When: toResponse를 호출하면
+			// When -toResponse를 호출하면
 			const result = AiSuggestionMapper.toResponse(entity);
 
-			// Then: DTO 형식으로 변환되어야 한다
+			// Then -DTO 형식으로 변환되어야 한다
 			expect(result.id).toBe(1);
 			expect(result.title).toBe("팀 미팅");
 			expect(result.daysOfWeek).toEqual(["MON", "WED", "FRI"]);
@@ -51,7 +51,7 @@ describe("AiSuggestionMapper", () => {
 		});
 
 		it("scheduledTime이 null인 엔티티를 올바르게 변환해야 한다", () => {
-			// Given: scheduledTime이 null인 엔티티
+			// Given -scheduledTime이 null인 엔티티
 			const entity = {
 				id: 2,
 				userId: "user-123",
@@ -67,10 +67,10 @@ describe("AiSuggestionMapper", () => {
 				updatedAt: new Date("2026-03-04T00:00:00.000Z"),
 			} as RecurringSuggestion;
 
-			// When: toResponse를 호출하면
+			// When -toResponse를 호출하면
 			const result = AiSuggestionMapper.toResponse(entity);
 
-			// Then: scheduledTime이 null이어야 한다
+			// Then -scheduledTime이 null이어야 한다
 			expect(result.scheduledTime).toBeNull();
 		});
 	});
@@ -81,7 +81,7 @@ describe("AiSuggestionMapper", () => {
 
 	describe("toManyResponse", () => {
 		it("여러 엔티티를 일괄 변환해야 한다", () => {
-			// Given: 2개의 엔티티
+			// Given -2개의 엔티티
 			const entities = [
 				{
 					id: 1,
@@ -113,22 +113,22 @@ describe("AiSuggestionMapper", () => {
 				},
 			] as RecurringSuggestion[];
 
-			// When: toManyResponse를 호출하면
+			// When -toManyResponse를 호출하면
 			const result = AiSuggestionMapper.toManyResponse(entities);
 
-			// Then: 2개의 DTO를 반환해야 한다
+			// Then -2개의 DTO를 반환해야 한다
 			expect(result).toHaveLength(2);
 			expect(result[0]?.id).toBe(1);
 			expect(result[1]?.id).toBe(2);
 		});
 
 		it("빈 배열이면 빈 배열을 반환해야 한다", () => {
-			// Given: 빈 배열
+			// Given -빈 배열
 
-			// When: toManyResponse를 호출하면
+			// When -toManyResponse를 호출하면
 			const result = AiSuggestionMapper.toManyResponse([]);
 
-			// Then: 빈 배열을 반환해야 한다
+			// Then -빈 배열을 반환해야 한다
 			expect(result).toEqual([]);
 		});
 	});

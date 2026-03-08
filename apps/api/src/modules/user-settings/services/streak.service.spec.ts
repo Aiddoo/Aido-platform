@@ -39,12 +39,19 @@ describe("StreakService", () => {
 	} satisfies UserPreference;
 
 	beforeEach(async () => {
+		// 시스템 시간을 테스트용 날짜로 고정 (todayInTimezone이 today를 반환하도록)
+		jest.useFakeTimers({ now: new Date("2026-03-07T12:00:00.000Z") });
+
 		// Given - Suites가 모든 의존성을 자동으로 mock
 		const { unit, unitRef } = await TestBed.solitary(StreakService).compile();
 
 		service = unit;
 		prefRepo = unitRef.get(UserPreferenceRepository);
 		database = unitRef.get(DatabaseService);
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
 	});
 
 	/** 투두 통계 mock 헬퍼 */

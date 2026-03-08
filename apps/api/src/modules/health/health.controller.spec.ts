@@ -29,7 +29,7 @@ describe("HealthController", () => {
 
 	describe("check", () => {
 		it("헬스 체크 요청을 HealthCheckService에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: HealthCheckService가 정상 결과를 반환할 때
+			// Given -HealthCheckService가 정상 결과를 반환할 때
 			const healthResult: HealthCheckResult = {
 				status: "ok",
 				info: { database: { status: "up" } },
@@ -38,10 +38,10 @@ describe("HealthController", () => {
 			};
 			mockHealthCheckService.check.mockResolvedValue(healthResult);
 
-			// When: check를 호출하면
+			// When -check를 호출하면
 			const result = await controller.check();
 
-			// Then: HealthCheckService.check가 호출되고 결과를 반환해야 한다
+			// Then -HealthCheckService.check가 호출되고 결과를 반환해야 한다
 			expect(mockHealthCheckService.check).toHaveBeenCalledWith(
 				expect.any(Array),
 			);
@@ -51,7 +51,7 @@ describe("HealthController", () => {
 		});
 
 		it("데이터베이스 연결 실패 시에도 결과를 반환해야 한다", async () => {
-			// Given: 데이터베이스 연결이 실패한 상태일 때
+			// Given -데이터베이스 연결이 실패한 상태일 때
 			const healthResult: HealthCheckResult = {
 				status: "error",
 				info: {},
@@ -64,10 +64,10 @@ describe("HealthController", () => {
 			};
 			mockHealthCheckService.check.mockResolvedValue(healthResult);
 
-			// When: check를 호출하면
+			// When -check를 호출하면
 			const result = await controller.check();
 
-			// Then: 에러 상태의 결과를 반환해야 한다
+			// Then -에러 상태의 결과를 반환해야 한다
 			expect(result.status).toBe("error");
 			expect(result.error).toHaveProperty("database");
 		});

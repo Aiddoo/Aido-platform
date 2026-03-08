@@ -46,25 +46,13 @@ describe("PasswordManagementService", () => {
 		).compile();
 
 		service = unit;
-		userRepo = unitRef.get(UserRepository) as unknown as Mocked<UserRepository>;
-		accountRepo = unitRef.get(
-			AccountRepository,
-		) as unknown as Mocked<AccountRepository>;
-		sessionRepo = unitRef.get(
-			SessionRepository,
-		) as unknown as Mocked<SessionRepository>;
-		passwordService = unitRef.get(
-			PasswordService,
-		) as unknown as Mocked<PasswordService>;
-		verificationService = unitRef.get(
-			VerificationService,
-		) as unknown as Mocked<VerificationService>;
-		database = unitRef.get(
-			DatabaseService,
-		) as unknown as Mocked<DatabaseService>;
-		securityLogRepo = unitRef.get(
-			SecurityLogRepository,
-		) as unknown as Mocked<SecurityLogRepository>;
+		userRepo = unitRef.get(UserRepository);
+		accountRepo = unitRef.get(AccountRepository);
+		sessionRepo = unitRef.get(SessionRepository);
+		passwordService = unitRef.get(PasswordService);
+		verificationService = unitRef.get(VerificationService);
+		database = unitRef.get(DatabaseService);
+		securityLogRepo = unitRef.get(SecurityLogRepository);
 	});
 
 	// ============================================

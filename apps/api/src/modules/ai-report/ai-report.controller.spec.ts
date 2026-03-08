@@ -40,7 +40,7 @@ describe("AiReportController", () => {
 
 	describe("getStatus", () => {
 		it("리포트 상태 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 리포트 상태를 반환하도록 설정
+			// Given -서비스에서 리포트 상태를 반환하도록 설정
 			const tz = "Asia/Seoul";
 			const mockStatus: ReportStatus = {
 				nextWeeklyAt: "2026-03-09T00:00:00.000Z",
@@ -52,10 +52,10 @@ describe("AiReportController", () => {
 			};
 			mockService.getReportStatus.mockResolvedValue(mockStatus);
 
-			// When: getStatus를 호출하면
+			// When -getStatus를 호출하면
 			const result = await controller.getStatus(mockUser, tz);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.getReportStatus).toHaveBeenCalledWith(
 				mockUser.userId,
 				tz,
@@ -70,15 +70,15 @@ describe("AiReportController", () => {
 
 	describe("getReports", () => {
 		it("리포트 목록 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 빈 리포트 목록을 반환하도록 설정
+			// Given -서비스에서 빈 리포트 목록을 반환하도록 설정
 			const query = { type: "WEEKLY" as const, limit: 10 };
 			const mockReports: AiReportDto[] = [];
 			mockService.getReports.mockResolvedValue(mockReports);
 
-			// When: getReports를 호출하면
+			// When -getReports를 호출하면
 			const result = await controller.getReports(mockUser, query as never);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.getReports).toHaveBeenCalledWith(mockUser.userId, {
 				type: "WEEKLY",
 				limit: 10,
@@ -87,15 +87,15 @@ describe("AiReportController", () => {
 		});
 
 		it("타입 필터 없이 전체 리포트를 조회할 수 있어야 한다", async () => {
-			// Given: 타입 필터 없는 쿼리
+			// Given -타입 필터 없는 쿼리
 			const query = { limit: 10 };
 			const mockReports: AiReportDto[] = [];
 			mockService.getReports.mockResolvedValue(mockReports);
 
-			// When: getReports를 호출하면
+			// When -getReports를 호출하면
 			const result = await controller.getReports(mockUser, query as never);
 
-			// Then: type이 undefined로 전달되어야 한다
+			// Then -type이 undefined로 전달되어야 한다
 			expect(mockService.getReports).toHaveBeenCalledWith(mockUser.userId, {
 				type: undefined,
 				limit: 10,
@@ -110,7 +110,7 @@ describe("AiReportController", () => {
 
 	describe("getReport", () => {
 		it("리포트 상세 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given: 서비스에서 리포트를 반환하도록 설정
+			// Given -서비스에서 리포트를 반환하도록 설정
 			const reportId = 42;
 			const mockReport: AiReportDto = {
 				id: 42,
@@ -139,10 +139,10 @@ describe("AiReportController", () => {
 			};
 			mockService.getReportById.mockResolvedValue(mockReport);
 
-			// When: getReport를 호출하면
+			// When -getReport를 호출하면
 			const result = await controller.getReport(mockUser, reportId);
 
-			// Then: 서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
+			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.getReportById).toHaveBeenCalledWith(
 				mockUser.userId,
 				reportId,
