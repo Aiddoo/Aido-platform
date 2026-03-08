@@ -13,8 +13,6 @@ import type {
 } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
 
-// -- Auth Tokens --
-
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
   accessToken: 'access-token-jwt',
@@ -27,8 +25,6 @@ export const createAuthTokensDto = (overrides?: Partial<AuthTokensDTO>): AuthTok
   ...generateAuthTokensDto(),
   ...overrides,
 });
-
-// -- Preference --
 
 const generatePreferenceDto = (): PreferenceResponse => ({
   pushEnabled: true,
@@ -47,8 +43,6 @@ export const createPreferenceDto = (
   ...overrides,
 });
 
-// -- Consent --
-
 const generateConsentDto = (): ConsentResponse => ({
   termsAgreedAt: '2026-01-01T00:00:00.000Z',
   privacyAgreedAt: '2026-01-01T00:00:00.000Z',
@@ -61,8 +55,6 @@ export const createConsentDto = (overrides?: Partial<ConsentResponse>): ConsentR
   ...overrides,
 });
 
-// -- Register --
-
 const generateRegisterDto = (): RegisterResponse => ({
   message: '인증 메일이 발송되었습니다.',
   email: 'test@example.com',
@@ -72,8 +64,6 @@ export const createRegisterDto = (overrides?: Partial<RegisterResponse>): Regist
   ...generateRegisterDto(),
   ...overrides,
 });
-
-// -- Resend Verification --
 
 const generateResendVerificationDto = (): ResendVerificationResponse => ({
   message: '인증 메일이 재발송되었습니다.',
@@ -88,8 +78,6 @@ export const createResendVerificationDto = (
   ...overrides,
 });
 
-// -- Update Marketing Consent --
-
 const generateUpdateMarketingConsentDto = (): UpdateMarketingConsentResponse => ({
   marketingAgreedAt: '2026-02-01T00:00:00.000Z',
 });
@@ -101,8 +89,6 @@ export const createUpdateMarketingConsentDto = (
   ...overrides,
 });
 
-// -- Change Password --
-
 const generateChangePasswordDto = (): ChangePasswordResponse => ({
   message: '비밀번호가 성공적으로 변경되었습니다.',
 });
@@ -113,8 +99,6 @@ export const createChangePasswordDto = (
   ...generateChangePasswordDto(),
   ...overrides,
 });
-
-// -- Delete Account --
 
 const generateDeleteAccountDto = (): DeleteAccountResponse => ({
   message: '계정이 탈퇴 처리되었습니다.',
@@ -129,8 +113,6 @@ export const createDeleteAccountDto = (
   ...overrides,
 });
 
-// -- Forgot Password --
-
 const generateForgotPasswordDto = (): ForgotPasswordResponse => ({
   message: '등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.',
 });
@@ -142,8 +124,6 @@ export const createForgotPasswordDto = (
   ...overrides,
 });
 
-// -- Reset Password --
-
 const generateResetPasswordDto = (): ResetPasswordResponse => ({
   message: '비밀번호가 성공적으로 변경되었습니다.',
 });
@@ -154,8 +134,6 @@ export const createResetPasswordDto = (
   ...generateResetPasswordDto(),
   ...overrides,
 });
-
-// -- Linked Accounts --
 
 const generateLinkedAccountsDto = (): LinkedAccountsResponse => ({
   accounts: [
@@ -181,8 +159,6 @@ export const createLinkedAccountsDto = (
   ...generateLinkedAccountsDto(),
   ...overrides,
 });
-
-// -- Common --
 
 export const createAuthApiError = (
   overrides?: Partial<{ code: string; message: string; status: number }>,

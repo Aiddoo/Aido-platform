@@ -19,8 +19,8 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 리포트 생성 스케줄러 (Dispatcher)
  *
- * - 주간 리포트: 매주 월요일 KST 08:00
- * - 월간 리포트: 매월 1일 KST 08:00
+ * - 주간 리포트: 매주 월요일 KST 01:00
+ * - 월간 리포트: 매월 1일 KST 01:00
  *
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  * 서버 재시작 시에도 스케줄이 유지됩니다.
@@ -42,7 +42,7 @@ export class ReportGenerationJob implements OnModuleInit {
 
 		await this.queue.upsertJobScheduler(
 			"weekly-report-scheduler",
-			{ pattern: "0 8 * * 1", tz: "Asia/Seoul" },
+			{ pattern: "0 1 * * 1", tz: "Asia/Seoul" },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "WEEKLY" } satisfies AiReportJobData,
@@ -50,7 +50,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		);
 		await this.queue.upsertJobScheduler(
 			"monthly-report-scheduler",
-			{ pattern: "0 8 1 * *", tz: "Asia/Seoul" },
+			{ pattern: "0 1 1 * *", tz: "Asia/Seoul" },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "MONTHLY" } satisfies AiReportJobData,

@@ -10,10 +10,12 @@ import {
 } from "../queue";
 import type { TimezoneContext } from "./strategies";
 import { EveningReminderStrategy } from "./strategies/evening-reminder.strategy";
+import { MonthlyReportStrategy } from "./strategies/monthly-report.strategy";
 import { MorningReminderStrategy } from "./strategies/morning-reminder.strategy";
 import { NudgeSuggestStrategy } from "./strategies/nudge-suggest.strategy";
 import { SocialDigestStrategy } from "./strategies/social-digest.strategy";
 import { WeeklyAchievementStrategy } from "./strategies/weekly-achievement.strategy";
+import { WeeklyReportStrategy } from "./strategies/weekly-report.strategy";
 import { WinbackStrategy } from "./strategies/winback.strategy";
 
 /**
@@ -34,6 +36,8 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly processor: TimezoneReminderProcessor,
 		private readonly morningReminder: MorningReminderStrategy,
 		private readonly eveningReminder: EveningReminderStrategy,
+		private readonly weeklyReport: WeeklyReportStrategy,
+		private readonly monthlyReport: MonthlyReportStrategy,
 		private readonly weeklyAchievement: WeeklyAchievementStrategy,
 		private readonly winback: WinbackStrategy,
 		private readonly nudgeSuggest: NudgeSuggestStrategy,
@@ -175,6 +179,18 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		if (eveningResult.sent > 0) {
 			this.queueService.enqueueSocialDigest({ timezone: tz });
 		}
+
+		// 월요일 아침: 주간 리포트
+		if (dayOfWeek === 1) {
+			await this.weeklyReport.execute(ctx);
+		}
+
+		// 매월 1일: 월간 리포트
+		const dayOfMonth = local.date();
+		if (dayOfMonth === 1) {
+			await this.monthlyReport.execute(ctx);
+		}
+
 
 		// 일요일 저녁: 주간 달성 배지
 		if (dayOfWeek === 0) {

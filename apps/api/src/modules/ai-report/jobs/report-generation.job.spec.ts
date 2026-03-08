@@ -51,12 +51,12 @@ describe("ReportGenerationJob", () => {
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledTimes(2);
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"weekly-report-scheduler",
-				{ pattern: "0 8 * * 1", tz: "Asia/Seoul" },
+				{ pattern: "0 1 * * 1", tz: "Asia/Seoul" },
 				{ name: "dispatch-reports", data: { reportType: "WEEKLY" } },
 			);
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"monthly-report-scheduler",
-				{ pattern: "0 8 1 * *", tz: "Asia/Seoul" },
+				{ pattern: "0 1 1 * *", tz: "Asia/Seoul" },
 				{ name: "dispatch-reports", data: { reportType: "MONTHLY" } },
 			);
 		});

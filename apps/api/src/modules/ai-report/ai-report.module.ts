@@ -2,7 +2,6 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
-import { NotificationModule } from "../notification/notification.module";
 
 import { AiReportController } from "./ai-report.controller";
 import { AiReportRepository } from "./ai-report.repository";
@@ -27,14 +26,10 @@ import { ReportGeneratorService } from "./report-generator.service";
  *
  * ### 의존성
  * - AiModule: AI Provider (Gemini)를 통한 분석 콘텐츠 생성
- * - NotificationModule: 리포트 생성 완료 알림 발송
+ * - 알림 발송은 SchedulerModule의 Strategy에서 담당
  */
 @Module({
-	imports: [
-		AiModule,
-		NotificationModule,
-		BullModule.registerQueue({ name: AI_REPORT_QUEUE }),
-	],
+	imports: [AiModule, BullModule.registerQueue({ name: AI_REPORT_QUEUE })],
 	controllers: [AiReportController],
 	providers: [
 		AiReportRepository,

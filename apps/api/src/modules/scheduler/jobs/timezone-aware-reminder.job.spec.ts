@@ -6,10 +6,12 @@ import { DatabaseService } from "@/database/database.service";
 import { TimezoneReminderQueueService } from "../queue";
 import {
 	EveningReminderStrategy,
+	MonthlyReportStrategy,
 	MorningReminderStrategy,
 	NudgeSuggestStrategy,
 	SocialDigestStrategy,
 	WeeklyAchievementStrategy,
+	WeeklyReportStrategy,
 	WinbackStrategy,
 } from "./strategies";
 import { TimezoneAwareReminderJob } from "./timezone-aware-reminder.job";
@@ -29,6 +31,8 @@ describe("TimezoneAwareReminderJob", () => {
 	let winback: Mocked<WinbackStrategy>;
 	let nudgeSuggest: Mocked<NudgeSuggestStrategy>;
 	let socialDigest: Mocked<SocialDigestStrategy>;
+	let weeklyReport: Mocked<WeeklyReportStrategy>;
+	let monthlyReport: Mocked<MonthlyReportStrategy>;
 
 	beforeEach(async () => {
 		jest.useFakeTimers();
@@ -46,6 +50,8 @@ describe("TimezoneAwareReminderJob", () => {
 		winback = unitRef.get(WinbackStrategy);
 		nudgeSuggest = unitRef.get(NudgeSuggestStrategy);
 		socialDigest = unitRef.get(SocialDigestStrategy);
+		weeklyReport = unitRef.get(WeeklyReportStrategy);
+		monthlyReport = unitRef.get(MonthlyReportStrategy);
 
 		// 기본: 모든 Strategy는 { sent: 0 } 반환
 		morningReminder.execute.mockResolvedValue({ sent: 0 });
@@ -54,6 +60,8 @@ describe("TimezoneAwareReminderJob", () => {
 		winback.execute.mockResolvedValue({ sent: 0 });
 		nudgeSuggest.execute.mockResolvedValue({ sent: 0 });
 		socialDigest.execute.mockResolvedValue({ sent: 0 });
+		weeklyReport.execute.mockResolvedValue({ sent: 0 });
+		monthlyReport.execute.mockResolvedValue({ sent: 0 });
 	});
 
 	afterEach(() => {
@@ -185,6 +193,74 @@ describe("TimezoneAwareReminderJob", () => {
 				await job.handleHourlySweep();
 
 				expect(nudgeSuggest.execute).toHaveBeenCalledTimes(1);
+
+				jest.useRealTimers();
+			});
+
+			it("월요일(dayOfWeek=1)에 주간 리포트 Strategy를 호출한다", async () => {
+				// 2024-01-15 = 월요일, KST 08:00 = UTC 2024-01-14T23:00:00Z
+				const monday = new Date("2024-01-14T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(monday);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(weeklyReport.execute).toHaveBeenCalledTimes(1);
+
+				jest.useRealTimers();
+			});
+
+			it("월요일이 아닌 날에는 주간 리포트 Strategy를 호출하지 않는다", async () => {
+				// 2024-01-16 = 화요일, KST 08:00 = UTC 2024-01-15T23:00:00Z
+				const tuesday = new Date("2024-01-15T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(tuesday);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(weeklyReport.execute).not.toHaveBeenCalled();
+
+				jest.useRealTimers();
+			});
+
+			it("매월 1일에 월간 리포트 Strategy를 호출한다", async () => {
+				// 2024-02-01 = 목요일 1일, KST 08:00 = UTC 2024-01-31T23:00:00Z
+				const firstDay = new Date("2024-01-31T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(firstDay);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(monthlyReport.execute).toHaveBeenCalledTimes(1);
+
+				jest.useRealTimers();
+			});
+
+			it("1일이 아닌 날에는 월간 리포트 Strategy를 호출하지 않는다", async () => {
+				// 2024-01-15 = 월요일 15일, KST 08:00 = UTC 2024-01-14T23:00:00Z
+				const notFirstDay = new Date("2024-01-14T23:00:00Z");
+				jest.useFakeTimers();
+				jest.setSystemTime(notFirstDay);
+
+				databaseService.userPreference.findMany.mockResolvedValue([
+					{ timezone: "Asia/Seoul" },
+				] as never);
+
+				await job.handleHourlySweep();
+
+				expect(monthlyReport.execute).not.toHaveBeenCalled();
 
 				jest.useRealTimers();
 			});

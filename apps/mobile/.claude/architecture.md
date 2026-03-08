@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-Ports & Adapters (Hexagonal) 아키텍처 기반 React Native/Expo 앱입니다.
+Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
 
 ---
@@ -22,8 +22,8 @@ src/
 │
 ├── features/{feature}/           # 기능별 모듈
 │   ├── models/                   # Domain Model + Policy + Error
-│   ├── repositories/             # Interface + Impl + Mapper
-│   ├── services/                 # 클라이언트 검증 + 오케스트레이션
+│   ├── services/                 # Service + Mapper (HTTP + Zod + 변환 + Policy)
+│   ├── __tests__/                # 테스트 팩토리
 │   └── presentations/            # UI (queries, components, hooks)
 │
 └── shared/
@@ -35,6 +35,9 @@ src/
     └── utils/                    # 유틸리티
 ```
 
+> **예외**: `DeviceIdRepository`는 HTTP가 아닌 SecureStore 로컬 스토리지에 접근하므로 Repository 패턴을 유지한다.
+> `features/notification/repositories/device-id.repository.ts` (인터페이스) / `device-id.repository.impl.ts` (구현체)
+
 ---
 
 ## 의존성 흐름
@@ -43,10 +46,7 @@ src/
 Presentation (components, queries)
   │  use{Feature}Service() 훅으로 서비스 주입
   ▼
-Service (클라이언트 검증 + 비즈니스 오케스트레이션)
-  │  this.#repository.method() 호출
-  ▼
-Repository (API 호출 + 응답 검증 + DTO → Domain 매핑)
+Service (HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증)
   │  this.#httpClient.get/post() 호출
   ▼
 Infrastructure - Port 구현체 (KyHttpClient, SecureStorage)
@@ -190,52 +190,58 @@ export const is{Feature}Error = (error: unknown): error is {Feature}Error =>
   error instanceof {Feature}Error;
 ```
 
-### 2. Repositories — 서버 경계
+### 2. Services — HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증
 
 ```
-features/{feature}/repositories/
-├── {feature}.repository.ts        # 인터페이스
-├── {feature}.repository.impl.ts   # 구현체
-└── {feature}.mapper.ts            # DTO → Domain 변환
+features/{feature}/services/
+├── {feature}.service.ts    # Service 클래스
+└── {feature}.mapper.ts     # DTO → Domain 순수 함수
 ```
 
-**인터페이스**
+**Service**: HttpClient를 직접 주입받아 HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 수행
 
 ```typescript
-export interface {Feature}Repository {
-  get{Feature}s(params: Get{Feature}sQuery): Promise<Result<{Feature}sResult, ApiError>>;
-  create{Feature}(params: Create{Feature}Input): Promise<Result<{Feature}, ApiError>>;
-}
-```
-
-**구현체 5단계 패턴**
-
-```typescript
-export class {Feature}RepositoryImpl implements {Feature}Repository {
+export class {Feature}Service {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
     this.#httpClient = httpClient;
   }
 
-  async get{Feature}s(params: Get{Feature}sQuery): Promise<Result<{Feature}sResult, ApiError>> {
+  // 패턴 A: HTTP + Zod + Mapper
+  get{Feature}s = async (params: Get{Feature}sQuery): Promise<Result<{Feature}sResult, ApiError>> => {
     // 1. API 호출
     const result = await this.#httpClient.get<{Feature}ListResponse>('v1/{feature}s', { params });
 
     // 2. 서버 비즈니스 에러(4xx) 전파
-    if (!result.ok) {
-      return result;
-    }
+    if (!result.ok) return result;
 
     // 3. Zod 응답 검증
     const parsed = {feature}ListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      throw new ParseError();
+      throw new ParseError(`[{Feature}Service] Invalid get{Feature}s response: ${parsed.error.message}`);
     }
 
-    // 4-5. Mapper 변환 + ok() 반환
+    // 4. Mapper 변환 + ok() 반환
     return ok(to{Feature}sResult(parsed.data));
-  }
+  };
+
+  // 패턴 B: Policy + HTTP + Zod + Mapper
+  create{Feature} = async (params: Create{Feature}Input): Promise<Result<{Feature}, {Feature}ServiceError>> => {
+    if (!{Feature}Policy.isValidInput(params.name)) {
+      return err({Feature}Errors.invalidInput());
+    }
+
+    const result = await this.#httpClient.post<{Feature}Response>('v1/{feature}s', params);
+    if (!result.ok) return result;
+
+    const parsed = {feature}ResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[{Feature}Service] Invalid create{Feature} response: ${parsed.error.message}`);
+    }
+
+    return ok(to{Feature}(parsed.data));
+  };
 }
 ```
 
@@ -251,32 +257,7 @@ export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
 export const to{Feature}s = (dtos: {Feature}DTO[]): {Feature}[] => dtos.map(to{Feature});
 ```
 
-### 3. Services — 클라이언트 검증 + 오케스트레이션
-
-```typescript
-export class {Feature}Service {
-  readonly #{feature}Repository: {Feature}Repository;
-
-  constructor({feature}Repository: {Feature}Repository) {
-    this.#{feature}Repository = {feature}Repository;
-  }
-
-  // 패턴 A: 기본 위임
-  get{Feature}s = async (params: Get{Feature}sQuery): Promise<Result<{Feature}sResult, ApiError>> => {
-    return this.#{feature}Repository.get{Feature}s(params);
-  };
-
-  // 패턴 B: Policy 검증
-  create{Feature} = async (params: Create{Feature}Input): Promise<Result<{Feature}, {Feature}ServiceError>> => {
-    if (!{Feature}Policy.isValidInput(params.name)) {
-      return err({Feature}Errors.invalidInput());
-    }
-    return this.#{feature}Repository.create{Feature}(params);
-  };
-}
-```
-
-### 4. Presentations — UI 계층
+### 3. Presentations — UI 계층
 
 ```
 features/{feature}/presentations/
@@ -333,8 +314,6 @@ HTTP 요청
     ├─ 5xx → throw ServerError         ← 예측 불가능
     ├─ 타임아웃 → throw TimeoutError   ← 예측 불가능
     └─ 네트워크 → throw NetworkError   ← 예측 불가능
-    ↓
-[Repository] → Result 그대로 전파
     ↓
 [Service] → Result 그대로 전파 (또는 추가 검증 후 err 반환)
     ↓
@@ -421,7 +400,7 @@ onError: (error) => {
 
 | 레이어 | 에러 처리 방식 |
 |--------|--------------|
-| Repository/Service | `Result<T, E>` 반환 |
+| Service | `Result<T, E>` 반환 |
 | Presentation (queryFn/mutationFn) | `unwrap()` 사용 |
 | InfraError | ErrorBoundary가 처리 |
 
@@ -469,7 +448,7 @@ export function {Feature}List() {
 `bootstrap/providers/di-provider.tsx`에서 모든 인스턴스를 생성합니다.
 
 ```
-Storage → HttpClient → Repository → Service → DIContext → use{Feature}Service() 훅
+Storage → HttpClient → Service → DIContext → use{Feature}Service() 훅
 ```
 
 **새 Feature 등록**
@@ -481,8 +460,7 @@ export interface DIContainer {
 }
 
 // 2. useState 초기화에서 생성
-const {feature}Repository = new {Feature}RepositoryImpl(authHttpClient);
-const {feature}Service = new {Feature}Service({feature}Repository);
+const {feature}Service = new {Feature}Service(authHttpClient);
 
 // 3. return에 추가
 return { {feature}Service };
@@ -499,18 +477,14 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 - [ ] `features/{feature}/models/{feature}.model.ts` — Zod 스키마 + 타입 + Policy
 - [ ] `features/{feature}/models/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
 
-### Step 2: Repositories
-- [ ] `features/{feature}/repositories/{feature}.repository.ts` — 인터페이스
-- [ ] `features/{feature}/repositories/{feature}.mapper.ts` — DTO → Domain 순수 함수
-- [ ] `features/{feature}/repositories/{feature}.repository.impl.ts` — 구현체
+### Step 2: Services + Mapper
+- [ ] `features/{feature}/services/{feature}.mapper.ts` — DTO → Domain 순수 함수
+- [ ] `features/{feature}/services/{feature}.service.ts` — Service 클래스 (HttpClient 주입, HTTP + Zod + Mapper + Policy)
 
-### Step 3: Services
-- [ ] `features/{feature}/services/{feature}.service.ts` — Service 클래스
-
-### Step 4: DI 등록
+### Step 3: DI 등록
 - [ ] `bootstrap/providers/di-provider.tsx` — DIContainer + 인스턴스 + Hook
 
-### Step 5: Presentations
+### Step 4: Presentations
 - [ ] `presentations/constants/{feature}-query-keys.constant.ts`
 - [ ] `presentations/queries/` — Query/Mutation Options
 - [ ] `presentations/components/` — UI 컴포넌트
@@ -527,13 +501,13 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 // private 필드는 # 구문
 readonly #httpClient: HttpClient;
 
-// Service/Repository 메서드는 arrow function
+// Service/Mapper 메서드는 arrow function
 get{Feature}s = async (params): Promise<Result<{Feature}sResult, ApiError>> => { ... };
 
-// Repository에서 Zod safeParse + ParseError throw
+// Service에서 Zod safeParse + ParseError throw
 const parsed = schema.safeParse(result.value);
 if (!parsed.success) {
-  throw new ParseError();
+  throw new ParseError(`[{Feature}Service] Invalid ... response: ${parsed.error.message}`);
 }
 
 // Query options에서 unwrap
@@ -567,10 +541,10 @@ MyComponent.Loading = function Loading() { ... };
 // Domain Model에서 서버 DTO 타입을 직접 사용 금지
 export type {Feature} = ServerDTO;  // ❌ Mapper로 변환 필수
 
-// Service에서 HttpClient 직접 호출 금지
-this.#httpClient.get(...);  // ❌ Repository를 통해서만
+// Presentation에서 HttpClient 직접 사용 금지
+const http = useDI().httpClient;  // ❌ Service를 통해서만
 
-// Presentation에서 Repository 직접 사용 금지
+// Presentation에서 Service 우회 금지
 const repo = useDI().{feature}Repository;  // ❌ Service를 통해서만
 
 // 컴포넌트에서 Result 직접 다루기 금지

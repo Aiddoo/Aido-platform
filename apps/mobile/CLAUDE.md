@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Ports & Adapters 패턴.
+Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ---
 
@@ -27,13 +27,12 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Por
 │  └── presentations/        ← 컴포넌트, React Query 훅         │
 ├─────────────────────────────────────────────────────────────┤
 │  🔧 Application Layer                                        │
-│  └── services/  ← 클라이언트 비즈니스 로직 (Policy 검증, 부수효과 조합) │
+│  └── services/  ← HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증 │
 ├─────────────────────────────────────────────────────────────┤
 │  📦 Domain Layer                                             │
 │  └── models/               ← 도메인 모델 + Zod 스키마 + Policy │
 ├─────────────────────────────────────────────────────────────┤
 │  🔌 Infrastructure Layer                                     │
-│  ├── repositories/         ← Repository 인터페이스 + 구현체    │
 │  ├── shared/infra/         ← HTTP 클라이언트, Storage 구현     │
 │  └── shared/types/         ← 공통 타입 (Page<T> 등)           │
 ├─────────────────────────────────────────────────────────────┤
@@ -45,6 +44,9 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture + Por
 └─────────────────────────────────────────────────────────────┘
 ```
 
+> **예외**: `DeviceIdRepository`는 HTTP가 아닌 SecureStore 로컬 스토리지에 접근하므로 Repository 패턴을 유지한다.
+> `features/notification/repositories/device-id.repository.ts` (인터페이스) / `device-id.repository.impl.ts` (구현체)
+
 ---
 
 ## Feature 구조
@@ -54,12 +56,11 @@ features/{feature}/
 ├── models/
 │   ├── {feature}.model.ts      # Zod 스키마 + 타입 + Policy
 │   └── {feature}.error.ts      # {Feature}Error 클래스 (BusinessError 구현)
-├── repositories/
-│   ├── {feature}.mapper.ts          # DTO → Domain 변환
-│   ├── {feature}.repository.ts      # 인터페이스 (도메인 타입 반환)
-│   └── {feature}.repository.impl.ts # 구현체 (Zod 검증 + mapper 호출)
 ├── services/
-│   └── {feature}.service.ts    # 비즈니스 로직 (Policy 검증)
+│   ├── {feature}.service.ts    # HTTP + Zod + Mapper + Policy
+│   └── {feature}.mapper.ts     # DTO → Domain 변환
+├── __tests__/
+│   └── {feature}.factories.ts  # 테스트 팩토리
 └── presentations/
     ├── constants/
     │   └── {feature}-query-keys.constant.ts
@@ -80,9 +81,7 @@ features/{feature}/
 |--------|------|--------|----------|
 | Model | 도메인 타입 + Policy + Error 정의 | Zod | 다른 모든 레이어 |
 | Mapper | DTO → Domain 변환 | validators DTO, 도메인 타입 | HTTP, Service |
-| Repository (인터페이스) | 데이터 접근 계약 | 도메인 타입 | HTTP, DTO |
-| Repository (구현체) | HTTP 통신 + Zod 검증 + mapper 호출 | DTO, HttpClient, mapper | Service, UI |
-| Service | 클라이언트 비즈니스 로직 | Policy, Repository 인터페이스 | HTTP, DTO, ErrorCode |
+| Service | HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증 | HttpClient, DTO, Policy, Mapper | UI, ErrorCode 분기 |
 | Mutation/Query | 에러별 UI 반응, 캐시 관리 | Service, ErrorCode, {Feature}Error | HTTP, DTO |
 
 ### 1. Model (클라이언트 도메인 모델)
@@ -159,10 +158,65 @@ export const is{Feature}Error = (error: unknown): error is {Feature}Error =>
   error instanceof {Feature}Error;
 ```
 
-### 3. Mapper (DTO → Domain 변환, repositories/ 하위)
+### 3. Mapper (DTO → Domain 변환, services/ 하위)
+
+Mapper는 **서버 DTO**(`@aido/validators`)를 **클라이언트 도메인 모델**(`models/`)로 변환하는 순수 함수다.
+
+#### 왜 Mapper가 필요한가?
+
+서버 DTO와 클라이언트 도메인 모델은 목적이 다르다:
+
+- **서버 DTO**: API 응답의 정확한 형태. JSON 직렬화 제약으로 날짜는 ISO 문자열, 모든 필드를 포함
+- **클라이언트 도메인 모델**: 앱 UI에 최적화된 형태. 날짜는 `Date` 객체, 필요한 필드만 포함
+
+Mapper가 이 차이를 흡수하므로 **서버 응답 구조가 변경되어도 Mapper만 수정**하면 되고, 앱 전체(Service, Presentation)에 영향이 퍼지지 않는다.
+
+#### Mapper가 수행하는 변환
+
+| 변환 유형 | 서버 DTO | 클라이언트 도메인 | 예시 |
+|-----------|---------|-----------------|------|
+| **타입 변환** | ISO 8601 문자열 | `Date` 객체 | `"2024-01-15T10:30:00Z"` → `new Date(...)` |
+| **필드 필터링** | 전체 필드 포함 | UI에 필요한 필드만 | `Todo` DTO 18개 필드 → `TodoItem` 10개 필드 |
+| **구조 변환** | 서버 응답 구조 | 클라이언트 표준 구조 | `{ friends: [...] }` → `Page<FriendUser>` `{ items: [...] }` |
+| **nullable 보존** | `null \| string` | `null \| Date` | `scheduledTime: null` → `null` 유지 |
 
 ```typescript
-// repositories/{feature}.mapper.ts
+// 실제 예시: 서버 Todo (18개 필드) → 클라이언트 TodoItem (10개 필드)
+
+// 서버 DTO (@aido/validators)
+// Todo { id, userId, title, content, sortOrder, completed, completedAt,
+//        startDate, endDate, scheduledTime, isAllDay, visibility,
+//        recurrenceGroupId, category, createdAt, updatedAt }
+
+// 클라이언트 도메인 모델 — UI에 불필요한 필드 제거 + 타입 변환
+export const toTodoItem = (dto: Todo): TodoItem => ({
+  id: dto.id,
+  title: dto.title,
+  startDate: dto.startDate,
+  endDate: dto.endDate,
+  category: dto.category,
+  completed: dto.completed,
+  scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,  // string → Date
+  isAllDay: dto.isAllDay,
+  visibility: dto.visibility,
+  recurrenceGroupId: dto.recurrenceGroupId,
+  // userId, content, sortOrder, completedAt, createdAt, updatedAt — 제외
+});
+```
+
+```typescript
+// 실제 예시: 서버 응답 구조 → 클라이언트 Page<T> 구조
+export const toFriendsPage = (dto: FriendsListResponse): Page<FriendUser> => ({
+  items: dto.friends.map(toFriendUser),   // friends → items (표준화)
+  totalCount: dto.totalCount,
+  hasMore: dto.hasMore,
+});
+```
+
+#### 기본 패턴
+
+```typescript
+// services/{feature}.mapper.ts
 import type { {Feature}DTO } from '@aido/validators';
 import type { {Feature} } from '../models/{feature}.model';
 
@@ -181,93 +235,66 @@ export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
 | `to{Entity}s` | 배열 DTO → Domain[] | `toTodoItems(dtos)` |
 | `to{Entity}Page` | 페이지네이션 응답 → `Page<Domain>` | `toFriendsPage(dto)` |
 
-### 4. Repository (인터페이스 + 구현체)
+### 4. Service (HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증)
+
+Service는 HttpClient를 직접 주입받아 HTTP 호출, Zod 검증, Mapper 변환, Policy 검증을 모두 수행한다.
+
+**규칙**: Service는 서버 에러(ApiError)를 번역하거나 변환하지 않는다. 그대로 pass-through한다.
 
 ```typescript
-// repositories/{feature}.repository.ts — 도메인 타입 반환
-import type { ApiError } from '@src/shared/errors/api-error';
-import type { Result } from '@src/shared/errors/result';
-import type { {Feature} } from '../models/{feature}.model';
-
-export interface {Feature}Repository {
-  getById(id: string): Promise<Result<{Feature}, ApiError>>;
-}
-```
-
-```typescript
-// repositories/{feature}.repository.impl.ts — Zod 검증 + mapper 호출
-import { type {Feature}DTO, {feature}DtoSchema } from '@aido/validators';
+// services/{feature}.service.ts
+import { type {Feature}ListResponse, {feature}ListResponseSchema } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { err, ok, type Result } from '@src/shared/errors/result';
 
-import type { {Feature} } from '../models/{feature}.model';
-import { to{Feature} } from './{feature}.mapper';
-import type { {Feature}Repository } from './{feature}.repository';
+import { type {Feature}Error, {Feature}Errors } from '../models/{feature}.error';
+import { {Feature}Policy, type {Feature} } from '../models/{feature}.model';
+import { to{Feature}sResult } from './{feature}.mapper';
 
-export class {Feature}RepositoryImpl implements {Feature}Repository {
+export type {Feature}ServiceError = ApiError | {Feature}Error;
+
+export class {Feature}Service {
   readonly #httpClient: HttpClient;
 
   constructor(httpClient: HttpClient) {
     this.#httpClient = httpClient;
   }
 
-  async getById(id: string): Promise<Result<{Feature}, ApiError>> {
-    const result = await this.#httpClient.get<{Feature}DTO>(`v1/{feature}s/${id}`);
-    if (!result.ok) {
-      return result;
+  // 패턴 A: HTTP + Zod + Mapper
+  get{Feature}s = async (params): Promise<Result<{Feature}sResult, ApiError>> => {
+    const result = await this.#httpClient.get<{Feature}ListResponse>('v1/{feature}s', { params });
+    if (!result.ok) return result;
+
+    const parsed = {feature}ListResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[{Feature}Service] Invalid get{Feature}s response: ${parsed.error.message}`);
     }
 
-    const parsed = {feature}DtoSchema.safeParse(result.value);
+    return ok(to{Feature}sResult(parsed.data));
+  };
+
+  // 패턴 B: Policy + HTTP + Zod + Mapper
+  create{Feature} = async (input): Promise<Result<{Feature}, {Feature}ServiceError>> => {
+    if (!{Feature}Policy.isValidInput(input.name)) {
+      return err({Feature}Errors.invalidInput());
+    }
+
+    const result = await this.#httpClient.post<{Feature}Response>('v1/{feature}s', input);
+    if (!result.ok) return result;
+
+    const parsed = {feature}ResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      console.error('[{Feature}Repository] Invalid response:', parsed.error);
-      throw new ParseError();
+      throw new ParseError(`[{Feature}Service] Invalid create{Feature} response: ${parsed.error.message}`);
     }
 
     return ok(to{Feature}(parsed.data));
-  }
-}
-```
-
-### 5. Service (클라이언트 비즈니스 로직 — 서버 에러 번역 X, pass-through + Policy 검증)
-
-**규칙**: Service는 서버 에러(ApiError)를 번역하거나 변환하지 않는다. 그대로 pass-through한다.
-
-```typescript
-// services/{feature}.service.ts
-import type { ApiError } from '@src/shared/errors/api-error';
-import { err, type Result } from '@src/shared/errors/result';
-
-import { type {Feature}Error, {Feature}Errors } from '../models/{feature}.error';
-import { {Feature}Policy, type {Feature} } from '../models/{feature}.model';
-import type { {Feature}Repository } from '../repositories/{feature}.repository';
-
-export type {Feature}ServiceError = ApiError | {Feature}Error;
-
-export class {Feature}Service {
-  readonly #repository: {Feature}Repository;
-
-  constructor(repository: {Feature}Repository) {
-    this.#repository = repository;
-  }
-
-  // 단순 조회 → pass-through
-  getById = async (id: string): Promise<Result<{Feature}, ApiError>> => {
-    return this.#repository.getById(id);
-  };
-
-  // 클라이언트 검증이 필요한 경우 → Policy 사용
-  create = async (input: CreateInput): Promise<Result<{Feature}, {Feature}ServiceError>> => {
-    if (!{Feature}Policy.someRule(input.value)) {
-      return err({Feature}Errors.invalidInput());
-    }
-    return this.#repository.create(input);
   };
 }
 ```
 
-### 6. Query Keys
+### 5. Query Keys
 
 ```typescript
 // presentations/constants/{feature}-query-keys.constant.ts
@@ -278,7 +305,7 @@ export const {FEATURE}_QUERY_KEYS = {
 } as const;
 ```
 
-### 7. Query/Mutation Options
+### 6. Query/Mutation Options
 
 ```typescript
 // presentations/queries/use-get-{feature}-query-options.ts
@@ -331,7 +358,7 @@ export const useCreate{Feature}MutationOptions = () => {
         return;
       }
 
-      // 2. 서버 비즈니스 에러 (Repository → ApiError)
+      // 2. 서버 비즈니스 에러 (Service → ApiError)
       if (isApiError(error)) {
         if (error.hasCode(ErrorCode.SOME_SPECIFIC_ERROR)) {
           Toast.show(error.message);
@@ -357,8 +384,8 @@ export const useCreate{Feature}MutationOptions = () => {
 | 타입/함수 | 설명 | 사용처 |
 |----------|------|--------|
 | `Result<T, E>` | 성공 `{ ok: true, value: T }` 또는 실패 `{ ok: false, error: E }` | 모든 레이어 |
-| `ok(value)` | 성공 Result 생성 | Repository, Service |
-| `err(error)` | 실패 Result 생성 | Repository (ApiError), Service ({Feature}Error) |
+| `ok(value)` | 성공 Result 생성 | Service |
+| `err(error)` | 실패 Result 생성 | Service (ApiError, {Feature}Error) |
 | `unwrap(result)` | 성공 → 값 반환, 실패 → `throw error` | Mutation/Query `mutationFn`/`queryFn` |
 | `isOk(result)` | 성공 타입 가드 | 조건부 처리 |
 | `isErr(result)` | 실패 타입 가드 | 조건부 처리 |
@@ -393,7 +420,7 @@ onError: (error) => {
 | 분류 | 타입 | 전달 방식 | 처리 위치 | 예시 |
 |------|------|----------|----------|------|
 | 예기치 못한 에러 | `InfraError` | `throw` | ErrorBoundary (자동) | 5xx, 네트워크, 타임아웃 |
-| 예기치 못한 에러 | `ParseError` | `throw` | ErrorBoundary (자동) | Zod safeParse 실패 (Repository에서) |
+| 예기치 못한 에러 | `ParseError` | `throw` | ErrorBoundary (자동) | Zod safeParse 실패 (Service에서) |
 | 예상된 에러 | `ApiError` | `Result.err` | Mutation `onError` | 4xx 서버 비즈니스 에러 |
 | 예상된 에러 | `{Feature}Error` | `Result.err` | Mutation `onError` | Policy 검증 실패 (서버 호출 전) |
 
@@ -413,13 +440,13 @@ onError: (error) => {
 
 ### Zod 파싱 에러 (ParseError)
 
-Repository 구현체에서 서버 응답을 Zod로 검증할 때 발생. **예기치 못한 에러**로 분류.
+Service에서 서버 응답을 Zod로 검증할 때 발생. **예기치 못한 에러**로 분류.
 
 ```typescript
-// Repository.impl에서 발생
+// Service에서 발생
 const parsed = schema.safeParse(result.value);
 if (!parsed.success) {
-  throw new ParseError(); // → ErrorBoundary로 전파
+  throw new ParseError(`[{Feature}Service] Invalid ... response: ${parsed.error.message}`);
 }
 ```
 
@@ -429,7 +456,7 @@ if (!parsed.success) {
 - **ApiError는 Result** — 서버가 내려준 비즈니스 에러, Service가 번역하지 않고 pass-through
 - **{Feature}Error는 Result** — 클라이언트 Policy 검증 실패, Service에서 생성
 - **{Feature}Error는 서버 호출 전 차단** — Policy 기반 클라이언트 검증, 불필요한 네트워크 요청 방지
-- **ParseError는 Repository에서 throw** — Zod safeParse 실패 시 InfraError로 분류
+- **ParseError는 Service에서 throw** — Zod safeParse 실패 시 InfraError로 분류
 - **Service는 서버 에러를 번역하지 않는다** — ErrorCode 기반 분기는 Mutation에서 담당
 
 ---
@@ -441,9 +468,7 @@ if (!parsed.success) {
 | 모델 | `{feature}.model.ts` | `todo.model.ts` |
 | 에러 | `{feature}.error.ts` | `todo.error.ts` |
 | 서비스 | `{feature}.service.ts` | `todo.service.ts` |
-| 매퍼 | `{feature}.mapper.ts` | `todo.mapper.ts` (repositories/ 하위) |
-| Repository 인터페이스 | `{feature}.repository.ts` | `todo.repository.ts` |
-| Repository 구현 | `{feature}.repository.impl.ts` | `todo.repository.impl.ts` |
+| 매퍼 | `{feature}.mapper.ts` | `todo.mapper.ts` (services/ 하위) |
 | Query Options | `use-{action}-query-options.ts` | `use-get-todos-query-options.ts` |
 | Mutation Options | `use-{action}-mutation-options.ts` | `use-create-todo-mutation-options.ts` |
 | Query Keys | `{feature}-query-keys.constant.ts` | `todo-query-keys.constant.ts` |
@@ -461,35 +486,26 @@ if (!parsed.success) {
   - ErrorReason 타입 정의
   - {Feature}Error 클래스 정의 (BusinessError 구현)
 
-### 2단계: 데이터 레이어
-- [ ] `features/{feature}/repositories/{feature}.mapper.ts` 생성
-  - DTO → Domain 변환 함수 (standalone 함수)
-- [ ] `features/{feature}/repositories/{feature}.repository.ts` 생성
-  - Repository 인터페이스 정의 (도메인 타입 반환)
-- [ ] `features/{feature}/repositories/{feature}.repository.impl.ts` 생성
-  - HttpClient 주입
-  - Zod safeParse로 DTO 검증
-  - mapper 호출하여 도메인 모델 반환
-
-### 3단계: 비즈니스 로직
+### 2단계: Service + Mapper
+- [ ] `features/{feature}/services/{feature}.mapper.ts` 생성
+  - DTO → Domain 변환 함수 (standalone 순수 함수)
 - [ ] `features/{feature}/services/{feature}.service.ts` 생성
-  - Repository 주입
+  - HttpClient 주입
+  - HTTP 호출 + Zod safeParse + Mapper 변환
   - Policy 검증 적용
-  - 단순 조회는 pass-through (mapper 호출 X)
 
-### 4단계: DI 등록
+### 3단계: DI 등록
 - [ ] `bootstrap/providers/di-provider.tsx` 수정
-  - Repository 인스턴스 생성
-  - Service 인스턴스 생성
+  - Service 인스턴스 생성 (httpClient 직접 주입)
   - DIContainer 인터페이스에 추가
   - `use{Feature}Service` 훅 export
 
-### 5단계: Presentation
+### 4단계: Presentation
 - [ ] `features/{feature}/presentations/constants/{feature}-query-keys.constant.ts` 생성
 - [ ] `features/{feature}/presentations/queries/` 에 Query/Mutation Options 생성
 - [ ] `features/{feature}/presentations/components/` 에 컴포넌트 생성
 
-### 6단계: 라우트
+### 5단계: 라우트
 - [ ] `app/` 하위에 화면 추가
 
 ---
@@ -497,19 +513,19 @@ if (!parsed.success) {
 ## 의존성 방향
 
 ```
-           Model (Domain)  ← 핵심, 외부 의존 없음
-          ↑   ↑   ↑   ↑
-    UI  Service  Repo  Repo.impl+Mapper
-     ↓     ↓      ↑        ↓
-     Service    Repo.impl  HttpClient (Port)
-                              ↓
-                        KyHttpClient (Adapter)
+         Model (Domain)  ← 핵심, 외부 의존 없음
+        ↑   ↑   ↑
+  UI  Service  Mapper
+   ↓     ↓
+  Service  HttpClient (Port)
+              ↓
+        KyHttpClient (Adapter)
 ```
 
 **규칙:**
 - 모든 레이어 → Model 의존 (OK)
-- UI → Service → Repository 인터페이스 (OK)
-- Repository.impl → Repository 인터페이스 구현 (OK)
+- UI → Service (OK)
+- Service → HttpClient Port (OK)
 - **역방향 의존 금지** — Model이 다른 레이어를 알면 안 됨
 
 ---

@@ -1,8 +1,6 @@
 import type { CurrentUser, UpdateProfileResponse } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
 
-// -- Current User --
-
 const generateCurrentUserDto = (): CurrentUser => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
   email: 'test@example.com',
@@ -24,8 +22,6 @@ export const createCurrentUserDto = (overrides?: Partial<CurrentUser>): CurrentU
   ...overrides,
 });
 
-// -- Update Profile --
-
 const generateUpdateProfileDto = (): UpdateProfileResponse => ({
   message: '프로필이 수정되었습니다.',
   name: '새이름',
@@ -38,8 +34,6 @@ export const createUpdateProfileDto = (
   ...generateUpdateProfileDto(),
   ...overrides,
 });
-
-// -- Common --
 
 export const createUserApiError = (
   overrides?: Partial<{ code: string; message: string; status: number }>,
