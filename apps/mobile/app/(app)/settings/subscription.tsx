@@ -3,6 +3,7 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-provider';
+import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
 import {
   isActiveSubscription,
   SubscriptionPolicy,
@@ -20,12 +21,14 @@ import {
   BellIcon,
   Button,
   CalendarIcon,
-  CheckmarkIcon,
   DeviceIcon,
   DocsIcon,
   FillCheckIcon,
+  FillTicketIcon,
+  H2,
   HStack,
   ListIcon,
+  ListRow,
   PersonIcon,
   QueryErrorBoundary,
   Result,
@@ -38,7 +41,7 @@ import {
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Card, Separator, Spinner } from 'heroui-native';
+import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { Image, Linking, ScrollView, View } from 'react-native';
 
@@ -152,56 +155,105 @@ function SubscriberView() {
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
       <Spacing size={16} />
 
-      <View className="bg-main/10 rounded-2xl px-5 py-4">
-        <HStack gap={12} className="items-center">
-          <View className="bg-main w-10 h-10 rounded-full items-center justify-center">
-            <CheckmarkIcon width={20} height={20} colorClassName="text-white" />
-          </View>
+      <ScallopedContainer>
+        <View className="px-5 pt-5">
+          <HStack gap={16} className="items-center">
+            <FillTicketIcon width={40} height={40} />
 
-          <VStack gap={2}>
-            <Text size="t3" weight="bold" tone="brand">
-              프리미엄 이용 중
-            </Text>
+            <VStack gap={2}>
+              <Text size="t3" weight="bold" tone="brand">
+                프리미엄 이용 중
+              </Text>
 
-            <Text size="b4" shade={6}>
-              모든 프리미엄 기능을 이용하고 있어요
-            </Text>
-          </VStack>
-        </HStack>
+              <Text size="b4" shade={6}>
+                모든 프리미엄 기능을 이용하고 있어요
+              </Text>
+            </VStack>
+          </HStack>
 
-        {showDetails && (
-          <>
-            <Separator className="bg-main/20 my-4" />
-            <VStack gap={8}>
-              <HStack className="items-center justify-between">
-                <Text size="b4" shade={5}>
-                  {isActive ? '다음 결제일' : '만료일'}
-                </Text>
+          <Spacing size={24} />
 
-                <Text size="b4" weight="semibold" shade={8}>
-                  {user.subscriptionExpiresAt && formatFullDate(user.subscriptionExpiresAt)}
-                </Text>
-              </HStack>
+          {showDetails && (
+            <VStack>
+              <ListRow
+                verticalPadding="small"
+                contents={
+                  <Text size="b4" shade={6}>
+                    {isActive ? '다음 결제일' : '만료일'}
+                  </Text>
+                }
+                right={
+                  <Text size="b4" weight="semibold" shade={8}>
+                    {user.subscriptionExpiresAt && formatFullDate(user.subscriptionExpiresAt)}
+                  </Text>
+                }
+              />
 
               {isActive && (
-                <HStack className="items-center justify-between">
-                  <Text size="b4" shade={5}>
-                    구독 상태
-                  </Text>
-
-                  <Text size="b4" weight="semibold" tone="brand">
-                    자동 갱신
-                  </Text>
-                </HStack>
+                <ListRow
+                  verticalPadding="small"
+                  contents={
+                    <Text size="b4" shade={6}>
+                      구독 상태
+                    </Text>
+                  }
+                  right={
+                    <Text size="b4" weight="semibold" tone="brand">
+                      자동 갱신
+                    </Text>
+                  }
+                />
               )}
             </VStack>
-          </>
-        )}
-      </View>
+          )}
+        </View>
 
-      <Spacing size={16} />
+        <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
 
-      <ActiveBenefitList />
+        <View className="px-5">
+          <Text size="b3" weight="semibold" shade={9} className="mb-3">
+            이용 중인 혜택
+          </Text>
+
+          <VStack gap={2}>
+            {ALL_BENEFIT_TITLES.map((title) => (
+              <ListRow
+                key={title}
+                verticalPadding="small"
+                left={
+                  <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
+                    <FillCheckIcon width={12} height={12} colorClassName="text-white" />
+                  </View>
+                }
+                contents={
+                  <Text size="b3" shade={8}>
+                    {title}
+                  </Text>
+                }
+              />
+            ))}
+            <ListRow
+              verticalPadding="small"
+              left={
+                <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
+                  <FillCheckIcon width={12} height={12} colorClassName="text-white" />
+                </View>
+              }
+              contents={
+                <Text size="b3" shade={8}>
+                  향후 출시되는 모든 프리미엄 기능
+                </Text>
+              }
+            />
+          </VStack>
+        </View>
+
+        <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+
+        <View className="px-5 pb-5 items-center">
+          <ReceiptBarcode />
+        </View>
+      </ScallopedContainer>
 
       <Spacing size={16} />
 
@@ -274,47 +326,47 @@ function OfferingsView() {
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <Spacing size={24} />
 
-        <VStack gap={4} className="items-center">
-          <Text size="t1" weight="bold" shade={9}>
-            프리미엄으로 업그레이드
-          </Text>
+        <ScallopedContainer>
+          <View className="px-5 pt-5">
+            <VStack gap={4} className="items-center">
+              <H2>프리미엄으로 업그레이드</H2>
 
-          <Text size="b4" shade={6}>
-            모든 기능을 제한 없이 사용해보세요
-          </Text>
-        </VStack>
+              <Text size="b3" shade={6}>
+                모든 기능을 제한 없이 사용해보세요
+              </Text>
+            </VStack>
+
+            <View className="my-6 border-b border-dashed border-gray-3" />
+
+            <VStack gap={20}>
+              {HIGHLIGHT_BENEFITS.map((benefit) => (
+                <BenefitCard key={benefit.title} benefit={benefit} />
+              ))}
+            </VStack>
+
+            <Spacing size={20} />
+
+            <ExtraBenefitCard />
+
+            <Spacing size={8} />
+
+            <Text size="e2" shade={5} align="center">
+              향후 출시되는 모든 프리미엄 기능도 포함돼요
+            </Text>
+          </View>
+
+          <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+
+          <View className="px-5 pb-5">
+            <SubscriptionPlanCard
+              plans={offering.plans}
+              selectedPlanId={selectedPlanId}
+              onPlanSelect={setSelectedPlanId}
+            />
+          </View>
+        </ScallopedContainer>
 
         <Spacing size={24} />
-
-        <VStack gap={12}>
-          {HIGHLIGHT_BENEFITS.map((benefit) => (
-            <BenefitCard key={benefit.title} benefit={benefit} />
-          ))}
-        </VStack>
-
-        <Spacing size={12} />
-
-        <ExtraBenefitCard />
-
-        <Spacing size={8} />
-
-        <Text size="e2" shade={5} align="center">
-          향후 출시되는 모든 프리미엄 기능도 포함돼요
-        </Text>
-
-        <Spacing size={24} />
-
-        <SubscriptionPlanCard
-          plans={offering.plans}
-          selectedPlanId={selectedPlanId}
-          onPlanSelect={setSelectedPlanId}
-        />
-
-        <Spacing size={24} />
-
-        <Separator className="bg-gray-2" />
-
-        <Spacing size={16} />
 
         <VStack gap={8} className="items-center">
           <TermsNotice />
@@ -343,103 +395,56 @@ function OfferingsView() {
 }
 
 function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number] }) {
-  const Icon = benefit.icon;
-
   return (
-    <Card className="dark:bg-gray-2">
-      <VStack gap={12}>
-        <HStack gap={12} className="items-center">
-          <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
-            <Icon width={20} height={20} colorClassName="text-main" />
-          </View>
-
-          <VStack gap={2} className="flex-1">
-            <Text size="b3" weight="bold" shade={9}>
-              {benefit.title}
-            </Text>
-
-            <Text size="b4" shade={6}>
-              {benefit.description}
-            </Text>
-          </VStack>
-        </HStack>
-        <View className="w-full aspect-video rounded-xl overflow-hidden">
-          <Image source={benefit.image} className="size-full" resizeMode="cover" />
-        </View>
+    <VStack gap={12}>
+      <VStack className="flex-1">
+        <Text size="b3" weight="semibold" shade={9}>
+          {benefit.title}
+        </Text>
+        <Text size="b4" shade={6}>
+          {benefit.description}
+        </Text>
       </VStack>
-    </Card>
+
+      <View className="w-full aspect-video rounded-xl overflow-hidden">
+        <Image source={benefit.image} className="size-full" resizeMode="cover" />
+      </View>
+    </VStack>
   );
 }
 
 function ExtraBenefitCard() {
   return (
-    <Card className="dark:bg-gray-2">
-      <VStack gap={16}>
-        <Text size="b3" weight="semibold" shade={9}>
-          더 많은 프리미엄 혜택
-        </Text>
+    <VStack gap={16}>
+      <Text size="b3" weight="semibold" shade={9}>
+        더 많은 프리미엄 혜택
+      </Text>
 
-        {EXTRA_BENEFITS.map((benefit, index) => {
-          const Icon = benefit.icon;
+      {EXTRA_BENEFITS.map((benefit, index) => {
+        const Icon = benefit.icon;
 
-          return (
-            <View key={benefit.title}>
-              {index > 0 && <Separator className="bg-gray-2 dark:bg-gray-3 mb-4" />}
-              <HStack gap={12} className="items-center">
-                <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
-                  <Icon width={20} height={20} colorClassName="text-main" />
-                </View>
-
-                <VStack gap={2} className="flex-1">
-                  <Text size="b3" weight="bold" shade={9}>
-                    {benefit.title}
-                  </Text>
-
-                  <Text size="b4" shade={6}>
-                    {benefit.description}
-                  </Text>
-                </VStack>
-              </HStack>
-            </View>
-          );
-        })}
-      </VStack>
-    </Card>
-  );
-}
-
-function ActiveBenefitList() {
-  return (
-    <Card className="dark:bg-gray-2">
-      <VStack gap={14}>
-        <Text size="b3" weight="semibold" shade={9}>
-          이용 중인 혜택
-        </Text>
-
-        <VStack gap={12}>
-          {ALL_BENEFIT_TITLES.map((title) => (
-            <HStack key={title} gap={10} className="items-center">
-              <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
-                <FillCheckIcon width={12} height={12} colorClassName="text-white" />
+        return (
+          <View key={benefit.title}>
+            {index > 0 && <Separator className="bg-gray-2 dark:bg-gray-3 mb-4" />}
+            <HStack gap={12} className="items-center">
+              <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
+                <Icon width={20} height={20} colorClassName="text-main" />
               </View>
 
-              <Text size="b4" shade={8}>
-                {title}
-              </Text>
-            </HStack>
-          ))}
-          <HStack gap={10} className="items-center">
-            <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
-              <FillCheckIcon width={12} height={12} colorClassName="text-white" />
-            </View>
+              <VStack gap={2} className="flex-1">
+                <Text size="b3" weight="bold" shade={9}>
+                  {benefit.title}
+                </Text>
 
-            <Text size="b4" shade={8}>
-              향후 출시되는 모든 프리미엄 기능
-            </Text>
-          </HStack>
-        </VStack>
-      </VStack>
-    </Card>
+                <Text size="b4" shade={6}>
+                  {benefit.description}
+                </Text>
+              </VStack>
+            </HStack>
+          </View>
+        );
+      })}
+    </VStack>
   );
 }
 
@@ -458,5 +463,26 @@ function TermsNotice() {
       </Text>
       에 동의하게 됩니다.
     </Text>
+  );
+}
+
+/** 영수증 하단 바코드 장식 */
+const BARCODE_BARS = [
+  4, 1, 3, 1, 2, 1, 1, 3, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 1, 3, 1, 2, 1, 1, 3, 2, 1, 1, 2, 3, 1, 1,
+  2, 1, 1, 3, 1, 2, 1, 3, 1, 1, 2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3,
+] as const;
+
+function ReceiptBarcode() {
+  return (
+    <View className="flex-row items-end justify-center gap-[1.5px]">
+      {BARCODE_BARS.map((w, i) => (
+        <View
+          // biome-ignore lint/suspicious/noArrayIndexKey: <단순 ui 장식용>
+          key={i}
+          className="bg-gray-7 rounded-[0.5px]"
+          style={{ width: w * 1.8, height: 32 }}
+        />
+      ))}
+    </View>
   );
 }
