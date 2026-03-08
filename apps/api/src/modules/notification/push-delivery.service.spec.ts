@@ -80,6 +80,9 @@ describe("PushDeliveryService", () => {
 		cacheService.wrapPushTokens.mockImplementation((_userId, factory) =>
 			factory(),
 		);
+		cacheService.wrapUserPreference.mockImplementation((_userId, factory) =>
+			factory(),
+		);
 		cacheService.mget.mockImplementation(async (keys: string[]) =>
 			keys.map(() => undefined),
 		);

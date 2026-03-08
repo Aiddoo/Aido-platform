@@ -7,6 +7,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import { TIME_UNIT } from "@/common/date/constants/date.constant";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
+import { DedupKeys } from "@/common/dedup/constants/dedup-keys";
+import {
+	DEDUP_PROVIDER,
+	type IDedupProvider,
+} from "@/common/dedup/interfaces/dedup.interface";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
 import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
@@ -36,6 +41,8 @@ export class NotificationService {
 		private readonly pushDeliveryService: PushDeliveryService,
 		private readonly cacheService: CacheService,
 		@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider,
+		@Inject(DEDUP_PROVIDER)
+		private readonly dedupProvider: IDedupProvider,
 	) {}
 
 	/**
@@ -219,6 +226,9 @@ export class NotificationService {
 
 	/**
 	 * 여러 사용자에게 알림 생성 및 발송
+	 *
+	 * DB 성공 후 Redis에 기록 (순서 보장):
+	 * DB 실패 시 addMembers에 도달하지 않으므로 불일치 방지
 	 */
 	async createAndSendBatch(
 		dataList: CreateNotificationData[],
@@ -228,17 +238,38 @@ export class NotificationService {
 			return { count: 0 };
 		}
 
+		// 1. DB 먼저 (최종 방어선 — unique index)
 		const result = await this.notificationRepository.createManyNotifications(
 			dataList,
 			tx,
 		);
 
+		// 2. 푸시 발송 + unread count 무효화
 		this.pushDeliveryService.fireAndForgetBatchPush(dataList);
 
 		const uniqueUserIds = [...new Set(dataList.map((d) => d.userId))];
-		for (const uid of uniqueUserIds) {
-			void this.cacheService.invalidateUnreadCount(uid);
+		void Promise.all(
+			uniqueUserIds.map((uid) => this.cacheService.invalidateUnreadCount(uid)),
+		);
+
+		// 3. DB 성공 확인 후 Redis에 기록 (fire-and-forget)
+		const groups = new Map<string, string[]>();
+		for (const d of dataList) {
+			if (!d.notificationDate) continue;
+			const key = DedupKeys.notified(d.type, d.notificationDate);
+			const arr = groups.get(key) ?? [];
+			arr.push(d.userId);
+			groups.set(key, arr);
 		}
+		void Promise.all(
+			[...groups.entries()].map(([key, userIds]) =>
+				this.dedupProvider.addMembers(
+					key,
+					[DedupKeys.SENTINEL, ...userIds],
+					DedupKeys.TTL.NOTIFIED,
+				),
+			),
+		);
 
 		return result;
 	}
@@ -346,38 +377,12 @@ export class NotificationService {
 	}
 
 	/**
-	 * 특정 타입 + notificationDate 조합의 알림 존재 여부 확인
-	 */
-	async existsNotification(
-		params: {
-			userId: string;
-			type: NotificationType;
-			notificationDate: Date;
-		},
-		tx?: TransactionClient,
-	): Promise<boolean> {
-		return this.notificationRepository.existsNotification(params, tx);
-	}
-
-	/**
-	 * metadata JSON 경로 기반 알림 존재 여부 확인
-	 * - WINBACK 단계별 중복 방지용
-	 */
-	async hasNotificationWithMetadata(
-		userId: string,
-		type: NotificationType,
-		metadataPath: string[],
-		metadataValue: string,
-		tx?: TransactionClient,
-	): Promise<boolean> {
-		return this.notificationRepository.existsNotificationWithMetadata(
-			{ userId, type, metadataPath, metadataValue },
-			tx,
-		);
-	}
-
-	/**
 	 * 이미 알림을 받은 사용자 ID 목록 조회 (배치)
+	 *
+	 * Sentinel 기반 atomic cold-start 감지:
+	 * - 단일 SMISMEMBER 호출로 sentinel + userIds를 동시에 확인
+	 * - Sentinel 있음 = warm → Redis 결과 신뢰
+	 * - Sentinel 없음 = cold start → DB fallback + warm-up
 	 */
 	async findAlreadyNotifiedUserIds(
 		params: {
@@ -388,7 +393,33 @@ export class NotificationService {
 		},
 		tx?: TransactionClient,
 	): Promise<Set<string>> {
-		return this.notificationRepository.findAlreadyNotifiedUserIds(params, tx);
+		const setKey = DedupKeys.notified(params.type, params.notificationDate);
+
+		// 단일 SMISMEMBER: sentinel + userIds → atomic cold-start 감지
+		const result = await this.dedupProvider.filterMembers(setKey, [
+			DedupKeys.SENTINEL,
+			...params.userIds,
+		]);
+
+		if (result.has(DedupKeys.SENTINEL)) {
+			// Set이 warm 상태 → Redis 결과 신뢰
+			result.delete(DedupKeys.SENTINEL);
+			return result;
+		}
+
+		// Cold start: DB fallback + Redis warm-up
+		const fromDb = await this.notificationRepository.findAlreadyNotifiedUserIds(
+			params,
+			tx,
+		);
+
+		void this.dedupProvider.addMembers(
+			setKey,
+			[DedupKeys.SENTINEL, ...[...fromDb]],
+			DedupKeys.TTL.NOTIFIED,
+		);
+
+		return fromDb;
 	}
 
 	/**

@@ -1,8 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 
 import { diffInDays } from "@/common/date/utils/compare";
 import { todayInTimezone } from "@/common/date/utils/timezone";
+import { DedupKeys } from "@/common/dedup/constants/dedup-keys";
+import {
+	DEDUP_PROVIDER,
+	type IDedupProvider,
+} from "@/common/dedup/interfaces/dedup.interface";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
@@ -17,6 +22,8 @@ export class NudgeSuggestStrategy {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
+		@Inject(DEDUP_PROVIDER)
+		private readonly dedupProvider: IDedupProvider,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -53,6 +60,7 @@ export class NudgeSuggestStrategy {
 		}
 
 		const candidateIds = candidates.map((u) => u.id);
+		const candidateSet = new Set(candidateIds);
 
 		// 배치 1: 모든 candidate의 비활성 맞팔 친구를 한 번에 조회
 		const allFollows = await this.database.follow.findMany({
@@ -101,7 +109,7 @@ export class NudgeSuggestStrategy {
 		>();
 		for (const f of allFollows) {
 			const userIds = [f.followerId, f.followingId].filter((id) =>
-				candidateIds.includes(id),
+				candidateSet.has(id),
 			);
 			for (const uid of userIds) {
 				const friend = f.followerId === uid ? f.following : f.follower;
@@ -114,27 +122,20 @@ export class NudgeSuggestStrategy {
 			}
 		}
 
-		// 배치 2: 이번 주 NUDGE_SUGGEST 발송 이력을 한 번에 조회
-		const thisWeekNotifications = await this.database.notification.findMany({
-			where: {
-				userId: { in: candidateIds },
-				type: "NUDGE_SUGGEST",
-				notificationDate: { gte: weekAgo },
-			},
-			select: { userId: true, metadata: true },
-		});
+		// 배치 2: 이번 주 발송 이력을 compound key로 단일 Redis 조회
+		const weekId = dayjs.utc(today).format("YYYY-[W]WW");
+		const setKey = DedupKeys.nudgeSuggestSent(weekId);
 
-		const sentFriendMap = new Map<string, Set<string>>();
-		for (const n of thisWeekNotifications) {
-			const friendId = (n.metadata as Record<string, unknown> | null)
-				?.friendId as string | undefined;
-			if (!friendId) {
-				continue;
-			}
-
-			if (!sentFriendMap.has(n.userId)) sentFriendMap.set(n.userId, new Set());
-			sentFriendMap.get(n.userId)?.add(friendId);
+		// 전체 candidate × friend 조합을 한 번에 빌드
+		const allPairs: string[] = [];
+		for (const user of candidates) {
+			const friends = friendMap.get(user.id) ?? [];
+			const pairs = friends.map((f) => `${user.id}:${f.id}`);
+			allPairs.push(...pairs);
 		}
+
+		// 단일 SMISMEMBER — O(allPairs.length)
+		const sentPairs = await this.dedupProvider.filterMembers(setKey, allPairs);
 
 		// 인메모리 매칭
 		const notifications: CreateNotificationData[] = [];
@@ -146,10 +147,8 @@ export class NudgeSuggestStrategy {
 				continue;
 			}
 
-			const sentIds = sentFriendMap.get(user.id) ?? new Set<string>();
-
 			const eligibleFriends = friends
-				.filter((f) => !sentIds.has(f.id))
+				.filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
 				.sort((a, b) => {
 					const daysA = a.lastActiveAt ? diffInDays(today, a.lastActiveAt) : 0;
 					const daysB = b.lastActiveAt ? diffInDays(today, b.lastActiveAt) : 0;
@@ -178,8 +177,20 @@ export class NudgeSuggestStrategy {
 			});
 		}
 
+		// DB 성공 후 Redis 기록 (순서 보장)
 		if (notifications.length > 0) {
 			await this.notificationService.createAndSendBatch(notifications);
+
+			const members = notifications.map((n) => {
+				const friendId = (n.metadata as { friendId: string }).friendId;
+				return `${n.userId}:${friendId}`;
+			});
+			void this.dedupProvider.addMembers(
+				setKey,
+				members,
+				DedupKeys.TTL.NUDGE_SUGGEST,
+			);
+
 			this.#logger.log(
 				`Nudge suggest: tz=${tz}, count=${notifications.length}`,
 			);

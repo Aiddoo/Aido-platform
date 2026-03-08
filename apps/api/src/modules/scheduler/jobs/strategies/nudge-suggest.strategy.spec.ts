@@ -2,6 +2,8 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
+import type { IDedupProvider } from "@/common/dedup/interfaces/dedup.interface";
+import { DEDUP_PROVIDER } from "@/common/dedup/interfaces/dedup.interface";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
@@ -17,6 +19,7 @@ describe("NudgeSuggestStrategy", () => {
 	let strategy: NudgeSuggestStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let dedupProvider: Mocked<IDedupProvider>;
 
 	const TZ = "Asia/Seoul";
 
@@ -43,15 +46,17 @@ describe("NudgeSuggestStrategy", () => {
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
+		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
 		// 기본 mock 설정
 		database.user.findMany.mockResolvedValue([] as never);
 		database.follow.findMany.mockResolvedValue([] as never);
-		database.notification.findMany.mockResolvedValue([] as never);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
 		);
+		dedupProvider.filterMembers.mockResolvedValue(new Set());
+		dedupProvider.addMembers.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -86,9 +91,6 @@ describe("NudgeSuggestStrategy", () => {
 				},
 			},
 		] as never);
-
-		// 이번 주 NUDGE_SUGGEST 발송 이력 없음
-		database.notification.findMany.mockResolvedValueOnce([] as never);
 
 		const result = await strategy.execute(ctx);
 
@@ -133,10 +135,10 @@ describe("NudgeSuggestStrategy", () => {
 			},
 		] as never);
 
-		// 이번 주 이미 friend-1에게 발송 이력
-		database.notification.findMany.mockResolvedValueOnce([
-			{ userId: "user-1", metadata: { friendId: "friend-1" } },
-		] as never);
+		// 이번 주 이미 friend-1에게 발송 이력 (Redis)
+		dedupProvider.filterMembers.mockResolvedValueOnce(
+			new Set(["user-1:friend-1"]),
+		);
 
 		const result = await strategy.execute(ctx);
 
@@ -155,7 +157,6 @@ describe("NudgeSuggestStrategy", () => {
 
 		// 비활성 친구 없음
 		database.follow.findMany.mockResolvedValueOnce([] as never);
-		database.notification.findMany.mockResolvedValueOnce([] as never);
 
 		const result = await strategy.execute(ctx);
 

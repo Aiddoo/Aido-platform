@@ -1,6 +1,7 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
+import { CacheService } from "@/common/cache/cache.service";
 import { DatabaseService } from "@/database/database.service";
 
 import { TimezoneReminderQueueService } from "../queue";
@@ -24,6 +25,7 @@ import { TimezoneAwareReminderJob } from "./timezone-aware-reminder.job";
 describe("TimezoneAwareReminderJob", () => {
 	let job: TimezoneAwareReminderJob;
 	let databaseService: Mocked<DatabaseService>;
+	let cacheService: Mocked<CacheService>;
 	let queueService: Mocked<TimezoneReminderQueueService>;
 	let morningReminder: Mocked<MorningReminderStrategy>;
 	let eveningReminder: Mocked<EveningReminderStrategy>;
@@ -43,7 +45,11 @@ describe("TimezoneAwareReminderJob", () => {
 
 		job = unit;
 		databaseService = unitRef.get(DatabaseService);
+		cacheService = unitRef.get(CacheService);
 		queueService = unitRef.get(TimezoneReminderQueueService);
+
+		// 캐시 pass-through: factory를 그대로 실행
+		cacheService.wrapActiveTimezones.mockImplementation((factory) => factory());
 		morningReminder = unitRef.get(MorningReminderStrategy);
 		eveningReminder = unitRef.get(EveningReminderStrategy);
 		weeklyAchievement = unitRef.get(WeeklyAchievementStrategy);

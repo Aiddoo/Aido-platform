@@ -26,6 +26,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 	readonly #cache = new Map<string, CacheEntry<unknown>>();
 	readonly #defaultTtlMs: number;
 	readonly #maxItems: number;
+	readonly #inflight = new Map<string, Promise<unknown>>();
 
 	#stats = { hits: 0, misses: 0 };
 	#cleanupInterval: NodeJS.Timeout;
@@ -142,21 +143,33 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 		factory: () => Promise<T>,
 		ttl?: TtlValue,
 	): Promise<T> {
-		// 1. 캐시 조회
 		const cached = await this.get<T>(key);
 		if (cached !== undefined) {
 			return cached;
 		}
 
-		// 2. Factory 실행
-		const value = await factory();
-
-		// 3. undefined/null이 아니면 캐싱
-		if (value !== undefined && value !== null) {
-			await this.set(key, value, ttl);
+		// Singleflight: 동일 key에 대한 동시 요청은 하나의 factory만 실행.
+		// Note: get()과 inflight 체크 사이에 레이스가 존재할 수 있으나,
+		// factory는 멱등이므로 중복 실행은 성능 낭비일 뿐 정합성 문제 없음.
+		// factory 에러 시 대기 중인 모든 요청에 동일 에러 전파 (의도된 동작).
+		const existing = this.#inflight.get(key);
+		if (existing) {
+			return existing as Promise<T>;
 		}
 
-		return value;
+		const promise = factory()
+			.then(async (value) => {
+				if (value !== undefined && value !== null) {
+					await this.set(key, value, ttl);
+				}
+				return value;
+			})
+			.finally(() => {
+				this.#inflight.delete(key);
+			});
+
+		this.#inflight.set(key, promise);
+		return promise;
 	}
 
 	async mget<T>(keys: string[]): Promise<(T | undefined)[]> {

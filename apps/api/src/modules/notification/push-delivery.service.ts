@@ -1,6 +1,7 @@
 import {
 	NOTIFICATION_ACTION_TYPE,
 	type PushNotificationData,
+	USER_PREFERENCE_DEFAULTS,
 } from "@aido/validators";
 import {
 	type BeforeApplicationShutdown,
@@ -204,21 +205,47 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		userId: string,
 		type: NotificationType,
 	): Promise<boolean> {
-		const preference = await this.userPreferenceRepository.findByUserId(userId);
-
-		if (!preference) {
-			this.#logger.debug(
-				`No preference found for user ${userId}, skipping push`,
-			);
-			return false;
-		}
+		const preference = await this.cacheService.wrapUserPreference(
+			userId,
+			async () => {
+				const raw = await this.userPreferenceRepository.findByUserId(userId);
+				if (!raw) {
+					return {
+						pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
+						nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
+						timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
+						morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+						morningReminderMinute:
+							USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+						eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+						eveningReminderMinute:
+							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+					};
+				}
+				return {
+					pushEnabled: raw.pushEnabled,
+					nightPushEnabled: raw.nightPushEnabled,
+					timezone: raw.timezone,
+					morningReminderHour: raw.morningReminderHour,
+					morningReminderMinute: raw.morningReminderMinute,
+					eveningReminderHour: raw.eveningReminderHour,
+					eveningReminderMinute: raw.eveningReminderMinute,
+				};
+			},
+		);
 
 		if (!preference.pushEnabled) {
 			return false;
 		}
 
+		// Rate limit은 Redis O(1) — 캐시/DB 조회보다 먼저 체크하여 불필요한 연산 방지
+		if (await this.rateLimiter.isRateLimited(userId)) {
+			this.#logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
+			return false;
+		}
+
 		if (
-			isNightTime(preference.timezone ?? "UTC") &&
+			isNightTime(preference.timezone) &&
 			!preference.nightPushEnabled &&
 			!NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type)
 		) {
@@ -232,11 +259,6 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 			}
 		}
 
-		if (await this.rateLimiter.isRateLimited(userId)) {
-			this.#logger.debug(`Push rate limited: userId=${userId}, type=${type}`);
-			return false;
-		}
-
 		return true;
 	}
 
@@ -244,6 +266,13 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 		return MARKETING_NOTIFICATION_TYPES.has(type);
 	}
 
+	/**
+	 * 배치 경로용 푸시 발송 판단 (설정 + 마케팅 동의만 확인)
+	 *
+	 * Rate limit은 의도적으로 생략:
+	 * 스케줄러 배치 알림은 타입별로 1일 1회이므로 rate limit 불필요.
+	 * 개별 rate limit 적용 시 배치 전체 성능이 저하됨.
+	 */
 	#canSendPushWithCachedData(
 		type: NotificationType,
 		preference:

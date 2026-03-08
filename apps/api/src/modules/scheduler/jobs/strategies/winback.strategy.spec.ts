@@ -2,6 +2,8 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
+import type { IDedupProvider } from "@/common/dedup/interfaces/dedup.interface";
+import { DEDUP_PROVIDER } from "@/common/dedup/interfaces/dedup.interface";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
@@ -17,6 +19,7 @@ describe("WinbackStrategy", () => {
 	let strategy: WinbackStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let dedupProvider: Mocked<IDedupProvider>;
 
 	const TZ = "Asia/Seoul";
 
@@ -42,14 +45,16 @@ describe("WinbackStrategy", () => {
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
+		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
 		// 기본 mock 설정
 		database.user.findMany.mockResolvedValue([] as never);
-		database.notification.findMany.mockResolvedValue([] as never);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
 		);
+		dedupProvider.isMember.mockResolvedValue(false);
+		dedupProvider.addMembers.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -140,10 +145,8 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: sevenDaysAgo },
 		] as never);
 
-		// 이미 day7 단계 발송 이력
-		database.notification.findMany.mockResolvedValueOnce([
-			{ userId: "user-1", metadata: { stage: "day7" } },
-		] as never);
+		// 이미 day7 단계 발송 이력 (Redis)
+		dedupProvider.isMember.mockResolvedValueOnce(true);
 
 		const result = await strategy.execute(ctx);
 

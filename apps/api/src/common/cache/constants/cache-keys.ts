@@ -26,6 +26,8 @@ export const CacheKeys = {
 		FRIEND_COUNT: 5 * 60_000,
 		/** 읽지 않은 알림 수 - 2분 (실시간성 덜 중요) */
 		UNREAD_COUNT: 2 * 60_000,
+		/** 활성 타임존 목록 - 5분 (타임존 변경 빈도 매우 낮음) */
+		ACTIVE_TIMEZONES: 5 * 60_000,
 	},
 
 	// === 키 빌더 ===
@@ -90,6 +92,12 @@ export const CacheKeys = {
 	 * @example notification:unread:user_123
 	 */
 	unreadCount: (userId: string) => `notification:unread:${userId}`,
+
+	/**
+	 * 활성 타임존 목록 캐시 키
+	 * @example scheduler:active-tz
+	 */
+	activeTimezones: () => "scheduler:active-tz",
 
 	// === 패턴 빌더 (와일드카드) ===
 
