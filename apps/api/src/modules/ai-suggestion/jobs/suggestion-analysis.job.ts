@@ -20,7 +20,7 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 반복 제안 분석 스케줄러 (Dispatcher)
  *
- * 매주 일요일 UTC 11:00 (KST 일요일 20:00)에 실행됩니다.
+ * 매주 일요일 KST 11:00에 실행됩니다. (컨테이너 TZ=Asia/Seoul)
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
  */

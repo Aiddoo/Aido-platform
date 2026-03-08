@@ -19,8 +19,8 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 리포트 생성 스케줄러 (Dispatcher)
  *
- * - 주간 리포트: 매주 일요일 UTC 22:00 (KST 월요일 07:00)
- * - 월간 리포트: 매월 1일 UTC 22:00 (KST 2일 07:00)
+ * - 주간 리포트: 매주 일요일 KST 22:00 (컨테이너 TZ=Asia/Seoul)
+ * - 월간 리포트: 매월 1일 KST 22:00 (컨테이너 TZ=Asia/Seoul)
  *
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
