@@ -26,6 +26,7 @@ describe("AccountPurgeJob", () => {
 		const { unit, unitRef } = await TestBed.solitary(AccountPurgeJob)
 			.mock(getQueueToken(ACCOUNT_PURGE_QUEUE))
 			.impl(() => ({
+				add: jest.fn().mockResolvedValue(undefined),
 				upsertJobScheduler: jest.fn().mockResolvedValue(undefined),
 			}))
 			.compile();
@@ -38,12 +39,19 @@ describe("AccountPurgeJob", () => {
 		mockProcessor = unitRef.get(AccountPurgeProcessor);
 	});
 
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
 	// =========================================================================
 	// onModuleInit 스케줄러 등록
 	// =========================================================================
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 일일 계정 정리 스케줄러를 등록해야 한다", async () => {
+			// Given — 02:00 KST (catch-up 미발동)
+			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+
 			// When
 			await job.onModuleInit();
 
@@ -56,11 +64,46 @@ describe("AccountPurgeJob", () => {
 		});
 
 		it("Processor에 자신을 등록해야 한다", async () => {
+			// Given
+			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+
 			// When
 			await job.onModuleInit();
 
 			// Then
 			expect(mockProcessor.setPurgeJob).toHaveBeenCalledWith(job);
+		});
+	});
+
+	// =========================================================================
+	// catch-up on startup
+	// =========================================================================
+
+	describe("catch-up on startup", () => {
+		it("03:00 이후 시작 시 purge 잡을 추가해야 한다", async () => {
+			// Given — 05:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-09T05:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).toHaveBeenCalledWith(
+				"purge-accounts",
+				{},
+				{ jobId: "purge_2026-03-09" },
+			);
+		});
+
+		it("03:00 이전에 시작 시 catch-up하지 않아야 한다", async () => {
+			// Given — 02:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
+
+			// When
+			await job.onModuleInit();
+
+			// Then
+			expect(mockQueue.add).not.toHaveBeenCalled();
 		});
 	});
 

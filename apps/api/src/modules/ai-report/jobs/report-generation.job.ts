@@ -1,6 +1,7 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Job, Queue } from "bullmq";
+import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
 import { toIsoMonthId, toIsoWeekId } from "@/common/date/utils/format";
@@ -58,6 +59,8 @@ export class ReportGenerationJob implements OnModuleInit {
 		);
 
 		this.#logger.log("Report generation schedulers registered");
+
+		await this.#catchUpIfNeeded();
 	}
 
 	/**
@@ -110,6 +113,41 @@ export class ReportGenerationJob implements OnModuleInit {
 		});
 
 		this.#logger.log(`${type} report jobs enqueued: total=${totalEnqueued}`);
+	}
+
+	/**
+	 * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
+	 *
+	 * 현재 KST 시각이 크론 트리거 윈도우 내에 있으면 dispatch 잡을 큐에 추가합니다.
+	 * 멱등성이 보장되므로 (BullMQ jobId + DB exists) 중복 실행 위험 없음.
+	 */
+	async #catchUpIfNeeded(): Promise<void> {
+		const kstNow = dayjs().tz("Asia/Seoul");
+		const dayOfWeek = kstNow.day(); // 0=일, 1=월, ...
+		const dayOfMonth = kstNow.date();
+		const hour = kstNow.hour();
+
+		const periodId = toIsoWeekId();
+
+		// 주간: 월요일 01:00 이후
+		if (dayOfWeek === 1 && hour >= 1) {
+			this.#logger.log("Catch-up: WEEKLY report dispatch");
+			await this.queue.add(
+				AiReportJobName.DISPATCH,
+				{ reportType: "WEEKLY" } satisfies AiReportJobData,
+				{ jobId: `dispatch_WEEKLY_${periodId}` },
+			);
+		}
+
+		// 월간: 1일 01:00 이후
+		if (dayOfMonth === 1 && hour >= 1) {
+			this.#logger.log("Catch-up: MONTHLY report dispatch");
+			await this.queue.add(
+				AiReportJobName.DISPATCH,
+				{ reportType: "MONTHLY" } satisfies AiReportJobData,
+				{ jobId: `dispatch_MONTHLY_${periodId}` },
+			);
+		}
 	}
 
 	/**

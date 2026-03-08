@@ -1,6 +1,7 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Queue } from "bullmq";
+import dayjs from "dayjs";
 import { DatabaseService } from "@/database";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
@@ -42,6 +43,32 @@ export class AccountPurgeJob implements OnModuleInit {
 		);
 
 		this.#logger.log("Account purge scheduler registered");
+
+		await this.#catchUpIfNeeded();
+	}
+
+	/**
+	 * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
+	 *
+	 * 매일 03:00 이후에 서버가 시작되면 당일 purge 잡을 큐에 추가합니다.
+	 * jobId로 당일 중복 실행을 방지합니다.
+	 */
+	async #catchUpIfNeeded(): Promise<void> {
+		const kstNow = dayjs().tz("Asia/Seoul");
+		const hour = kstNow.hour();
+
+		// 03:00 이후
+		if (hour >= 3) {
+			const today = kstNow.format("YYYY-MM-DD");
+			this.#logger.log("Catch-up: account purge dispatch");
+			await this.queue.add(
+				"purge-accounts",
+				{},
+				{
+					jobId: `purge_${today}`,
+				},
+			);
+		}
 	}
 
 	async purgeDeletedAccounts(): Promise<void> {

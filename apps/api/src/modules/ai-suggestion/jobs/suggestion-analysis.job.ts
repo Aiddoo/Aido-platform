@@ -1,6 +1,7 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Job, Queue } from "bullmq";
+import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
 import { subtractDays } from "@/common/date/utils/arithmetic";
@@ -46,6 +47,8 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		);
 
 		this.#logger.log("Suggestion analysis scheduler registered");
+
+		await this.#catchUpIfNeeded();
 	}
 
 	/**
@@ -102,6 +105,27 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		this.#logger.log(
 			`Suggestion analysis jobs enqueued: total=${totalEnqueued}`,
 		);
+	}
+
+	/**
+	 * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
+	 */
+	async #catchUpIfNeeded(): Promise<void> {
+		const kstNow = dayjs().tz("Asia/Seoul");
+		const dayOfWeek = kstNow.day(); // 0=일
+		const hour = kstNow.hour();
+
+		// 일요일 11:00 이후
+		if (dayOfWeek === 0 && hour >= 11) {
+			this.#logger.log("Catch-up: suggestion analysis dispatch");
+			await this.queue.add(
+				AiSuggestionJobName.DISPATCH,
+				{},
+				{
+					jobId: `dispatch_suggestion_${toIsoWeekId()}`,
+				},
+			);
+		}
 	}
 
 	/**
