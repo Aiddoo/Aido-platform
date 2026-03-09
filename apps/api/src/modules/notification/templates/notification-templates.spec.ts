@@ -2,7 +2,6 @@ import {
 	fillTemplate,
 	NotificationMessageBuilder,
 	SCHEDULER_TEMPLATES,
-	SOCIAL_TEMPLATES,
 } from "./notification-templates";
 
 // =============================================================================
@@ -74,6 +73,34 @@ describe("notification-templates", () => {
 			// Then
 			expect(result).toBe("오늘의 할일 42개");
 		});
+
+		it("{key:이/가} 구문으로 받침에 맞는 조사를 붙인다", () => {
+			// Given — 받침 있음: 홍길동 → 이
+			expect(fillTemplate("{name:이/가} 했다", { name: "홍길동" })).toBe(
+				"홍길동이 했다",
+			);
+			// Given — 받침 없음: 철수 → 가
+			expect(fillTemplate("{name:이/가} 했다", { name: "철수" })).toBe(
+				"철수가 했다",
+			);
+		});
+
+		it("{key:을/를} 구문도 정상 동작한다", () => {
+			expect(fillTemplate("{item:을/를} 완료", { item: "밥먹기" })).toBe(
+				"밥먹기를 완료",
+			);
+			expect(fillTemplate("{item:을/를} 완료", { item: "운동" })).toBe(
+				"운동을 완료",
+			);
+		});
+
+		it("조사 구문과 일반 구문을 혼합 사용할 수 있다", () => {
+			const result = fillTemplate("{name:이/가} {todo} 완료", {
+				name: "홍길동",
+				todo: "밥먹기",
+			});
+			expect(result).toBe("홍길동이 밥먹기 완료");
+		});
 	});
 
 	// =========================================================================
@@ -132,31 +159,49 @@ describe("notification-templates", () => {
 	// =========================================================================
 
 	describe("NotificationMessageBuilder.nudgeReceived", () => {
-		it("message가 있으면 body에 message가 포함된다", () => {
+		it("title에 이름(조사) + todoTitle이 포함된다 (받침 있음)", () => {
 			// When
 			const result = NotificationMessageBuilder.nudgeReceived(
 				"홍길동",
-				"할일 화이팅!",
+				"밥먹기",
 			);
 
 			// Then
-			expect(result.body).toBe("할일 화이팅!");
+			expect(result.title).toBe("홍길동이 '밥먹기' 콕 찔렀어!");
 		});
 
-		it("message가 없으면 기본 body를 반환한다", () => {
+		it("title에 이름(조사) + todoTitle이 포함된다 (받침 없음)", () => {
 			// When
-			const result = NotificationMessageBuilder.nudgeReceived("홍길동");
+			const result = NotificationMessageBuilder.nudgeReceived(
+				"철수",
+				"운동하기",
+			);
 
 			// Then
-			expect(result.body).toBe(SOCIAL_TEMPLATES.NUDGE_RECEIVED.body);
+			expect(result.title).toBe("철수가 '운동하기' 콕 찔렀어!");
 		});
 
-		it("title에 senderName이 치환된다", () => {
+		it("message가 없으면 body는 고정 문구를 반환한다", () => {
 			// When
-			const result = NotificationMessageBuilder.nudgeReceived("홍길동");
+			const result = NotificationMessageBuilder.nudgeReceived(
+				"홍길동",
+				"밥먹기",
+			);
 
 			// Then
-			expect(result.title).toBe("콕! 홍길동");
+			expect(result.body).toBe("아직도 안 했어?");
+		});
+
+		it("message가 있으면 body에 메시지만 표시한다", () => {
+			// When
+			const result = NotificationMessageBuilder.nudgeReceived(
+				"홍길동",
+				"밥먹기",
+				"같이 먹자",
+			);
+
+			// Then
+			expect(result.body).toBe("'같이 먹자'");
 		});
 	});
 

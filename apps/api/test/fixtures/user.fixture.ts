@@ -104,6 +104,7 @@ export const UserFixture = {
 			morningReminderMinute: preferenceOverrides.morningReminderMinute ?? 0,
 			eveningReminderHour: preferenceOverrides.eveningReminderHour ?? 18,
 			eveningReminderMinute: preferenceOverrides.eveningReminderMinute ?? 0,
+			timeFormat: preferenceOverrides.timeFormat ?? "TWELVE_HOUR",
 			currentStreak: preferenceOverrides.currentStreak ?? 0,
 			longestStreak: preferenceOverrides.longestStreak ?? 0,
 			lastCompletedDate: preferenceOverrides.lastCompletedDate ?? null,

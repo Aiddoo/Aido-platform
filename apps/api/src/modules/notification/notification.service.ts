@@ -50,11 +50,11 @@ export class NotificationService {
 	 *
 	 * - DB partial unique index로 보호되는 타입 (DAILY_COMPLETE 등): 맵에 없음 → createAndSend 직접 사용
 	 * - 중복 허용 타입 (SYSTEM_NOTICE, ADMIN_*): 맵에 없음 → createAndSend 직접 사용
+	 * - NUDGE_RECEIVED: NudgeService에서 쿨다운(24h/Todo) + 일일 제한으로 이미 보호 → 맵에 없음
+	 * - CHEER_RECEIVED: CheerService에서 쿨다운(24h/receiver) + 일일 제한으로 이미 보호 → 맵에 없음
 	 * - 서비스 dedup 필요 타입: windowMs + 체크 키 정의
 	 */
 	private static readonly DEDUP_WINDOW = {
-		NUDGE: TIME_UNIT.MS_PER_HOUR, // 1시간
-		CHEER: 5 * TIME_UNIT.MS_PER_MINUTE, // 5분
 		FOLLOW: 24 * TIME_UNIT.MS_PER_HOUR, // 24시간
 	} as const;
 
@@ -67,14 +67,6 @@ export class NotificationService {
 			}
 		>
 	> = {
-		NUDGE_RECEIVED: {
-			windowMs: NotificationService.DEDUP_WINDOW.NUDGE,
-			keys: ["friendId"],
-		},
-		CHEER_RECEIVED: {
-			windowMs: NotificationService.DEDUP_WINDOW.CHEER,
-			keys: ["friendId"],
-		},
 		FOLLOW_NEW: {
 			windowMs: NotificationService.DEDUP_WINDOW.FOLLOW,
 			keys: ["friendId"],

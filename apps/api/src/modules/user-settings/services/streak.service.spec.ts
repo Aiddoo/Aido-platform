@@ -33,6 +33,7 @@ describe("StreakService", () => {
 		morningReminderMinute: 0,
 		eveningReminderHour: 18,
 		eveningReminderMinute: 0,
+		timeFormat: "TWELVE_HOUR",
 		currentStreak: 0,
 		longestStreak: 0,
 		lastCompletedDate: null,

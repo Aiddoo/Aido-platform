@@ -2569,7 +2569,7 @@ describe("Auth (e2e)", () => {
 				id: `google-setup-${tokenSuffix}`,
 				email,
 				emailVerified: true,
-				name: `Social User ${tokenSuffix}`,
+				name: "소셜유저",
 			});
 
 			const response = await request(ctx.app.getHttpServer())

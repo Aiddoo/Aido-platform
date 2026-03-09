@@ -36,6 +36,7 @@ import {
 import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { UserRepository } from "../repositories/user.repository";
 import type { LoginResult, RequestMetadata } from "../types";
+import { generateRandomName } from "../utils/random-name.util";
 import {
 	AppleOAuthProvider,
 	GoogleOAuthProvider,
@@ -754,9 +755,14 @@ export class OAuthService {
 				tx,
 			);
 
+			const MAX_NAME_LENGTH = 20;
+			const effectiveName = data.userName
+				? data.userName.slice(0, MAX_NAME_LENGTH)
+				: generateRandomName();
+
 			await this.userRepository.createProfile(
 				user.id,
-				{ name: data.userName, profileImage: data.profileImage },
+				{ name: effectiveName, profileImage: data.profileImage },
 				tx,
 			);
 

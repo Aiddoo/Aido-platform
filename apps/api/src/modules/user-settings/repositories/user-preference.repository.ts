@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { TransactionClient } from "@/common/database/prisma.types";
 import { DatabaseService } from "@/database";
 import type { UserPreference } from "@/generated/prisma/client";
+import type { TimeFormat } from "@/generated/prisma/enums";
 
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;
@@ -11,6 +12,7 @@ export interface UpdatePreferenceData {
 	morningReminderMinute?: number;
 	eveningReminderHour?: number;
 	eveningReminderMinute?: number;
+	timeFormat?: TimeFormat;
 }
 
 @Injectable()
@@ -51,6 +53,9 @@ export class UserPreferenceRepository {
 				...(data?.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
 				}),
+				...(data?.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
+				}),
 			},
 		});
 	}
@@ -80,28 +85,11 @@ export class UserPreferenceRepository {
 				...(data.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
 				}),
-			},
-			update: {
-				...(data.pushEnabled !== undefined && {
-					pushEnabled: data.pushEnabled,
-				}),
-				...(data.nightPushEnabled !== undefined && {
-					nightPushEnabled: data.nightPushEnabled,
-				}),
-				...(data.timezone !== undefined && { timezone: data.timezone }),
-				...(data.morningReminderHour !== undefined && {
-					morningReminderHour: data.morningReminderHour,
-				}),
-				...(data.morningReminderMinute !== undefined && {
-					morningReminderMinute: data.morningReminderMinute,
-				}),
-				...(data.eveningReminderHour !== undefined && {
-					eveningReminderHour: data.eveningReminderHour,
-				}),
-				...(data.eveningReminderMinute !== undefined && {
-					eveningReminderMinute: data.eveningReminderMinute,
+				...(data.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
 				}),
 			},
+			update: this.buildUpdatePayload(data),
 		});
 	}
 
@@ -113,28 +101,35 @@ export class UserPreferenceRepository {
 		const client = tx ?? this.database;
 		return client.userPreference.update({
 			where: { userId },
-			data: {
-				...(data.pushEnabled !== undefined && {
-					pushEnabled: data.pushEnabled,
-				}),
-				...(data.nightPushEnabled !== undefined && {
-					nightPushEnabled: data.nightPushEnabled,
-				}),
-				...(data.timezone !== undefined && { timezone: data.timezone }),
-				...(data.morningReminderHour !== undefined && {
-					morningReminderHour: data.morningReminderHour,
-				}),
-				...(data.morningReminderMinute !== undefined && {
-					morningReminderMinute: data.morningReminderMinute,
-				}),
-				...(data.eveningReminderHour !== undefined && {
-					eveningReminderHour: data.eveningReminderHour,
-				}),
-				...(data.eveningReminderMinute !== undefined && {
-					eveningReminderMinute: data.eveningReminderMinute,
-				}),
-			},
+			data: this.buildUpdatePayload(data),
 		});
+	}
+
+	private buildUpdatePayload(data: UpdatePreferenceData) {
+		return {
+			...(data.pushEnabled !== undefined && {
+				pushEnabled: data.pushEnabled,
+			}),
+			...(data.nightPushEnabled !== undefined && {
+				nightPushEnabled: data.nightPushEnabled,
+			}),
+			...(data.timezone !== undefined && { timezone: data.timezone }),
+			...(data.morningReminderHour !== undefined && {
+				morningReminderHour: data.morningReminderHour,
+			}),
+			...(data.morningReminderMinute !== undefined && {
+				morningReminderMinute: data.morningReminderMinute,
+			}),
+			...(data.eveningReminderHour !== undefined && {
+				eveningReminderHour: data.eveningReminderHour,
+			}),
+			...(data.eveningReminderMinute !== undefined && {
+				eveningReminderMinute: data.eveningReminderMinute,
+			}),
+			...(data.timeFormat !== undefined && {
+				timeFormat: data.timeFormat,
+			}),
+		};
 	}
 
 	/**

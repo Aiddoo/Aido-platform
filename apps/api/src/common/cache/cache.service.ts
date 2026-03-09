@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
 	AccountProvider,
 	SubscriptionStatus,
+	type TimeFormat,
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/enums";
@@ -50,6 +51,7 @@ export interface CachedUserPreference {
 	morningReminderMinute: number;
 	eveningReminderHour: number;
 	eveningReminderMinute: number;
+	timeFormat: TimeFormat;
 }
 
 /**

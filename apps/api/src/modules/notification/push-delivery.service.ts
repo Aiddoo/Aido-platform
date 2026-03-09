@@ -220,6 +220,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 						eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
 						eveningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
 					};
 				}
 				return {
@@ -230,6 +231,7 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 					morningReminderMinute: raw.morningReminderMinute,
 					eveningReminderHour: raw.eveningReminderHour,
 					eveningReminderMinute: raw.eveningReminderMinute,
+					timeFormat: raw.timeFormat,
 				};
 			},
 		);

@@ -114,7 +114,7 @@ enum SubscriptionStatus {
 model UserProfile {
   id           String  @id @default(cuid())
   userId       String  @unique
-  name         String? @db.VarChar(100)
+  name         String? @db.VarChar(20)
   profileImage String? @db.VarChar(500)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -135,6 +135,9 @@ model UserPreference {
   eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더
   eveningReminderMinute Int     @default(0) // 0-59
 
+  // 시간 표시 형식
+  timeFormat        TimeFormat @default(TWELVE_HOUR)
+
   // 스트릭 추적
   currentStreak     Int       @default(0) // 연속 올클리어 일수
   longestStreak     Int       @default(0) // 최장 연속 기록
@@ -145,6 +148,11 @@ model UserPreference {
   @@index([pushEnabled, timezone]) // 타임존별 활성 사용자 스캔
   @@index([pushEnabled, timezone, morningReminderHour, morningReminderMinute]) // 아침 리마인더 스윕
   @@index([pushEnabled, timezone, eveningReminderHour, eveningReminderMinute]) // 저녁 리마인더 스윕
+}
+
+enum TimeFormat {
+  TWELVE_HOUR
+  TWENTY_FOUR_HOUR
 }
 
 // =============================================================================
@@ -372,7 +380,7 @@ model OAuthState {
 
   // 사용자 정보 (콜백 성공 후 설정)
   userId       String? @db.VarChar(255)
-  userName     String? @db.VarChar(100)
+  userName     String? @db.VarChar(20)
   profileImage String? @db.VarChar(500)
   accountRestored Boolean? // 계정 복구 여부 (탈퇴 유예 기간 내 재로그인)
 

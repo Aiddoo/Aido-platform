@@ -41,13 +41,13 @@ export class SettingsController {
 
 	@Get("preference")
 	@ApiDoc({
-		summary: "알림 설정 조회",
+		summary: "사용자 설정 조회",
 		operationId: "getPushPreference",
-		description: `푸시 알림 설정을 조회합니다.
+		description: `사용자 설정(알림, 표시)을 조회합니다.
 
 **인증 필요**: \`Authorization: Bearer {accessToken}\`
 
-**알림 설정 필드**
+**설정 필드**
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`pushEnabled\` | boolean | 푸시 알림 전체 on/off |
@@ -57,6 +57,7 @@ export class SettingsController {
 | \`morningReminderMinute\` | number | 아침 리마인더 분 (0-59, 기본 0) |
 | \`eveningReminderHour\` | number | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 18) |
 | \`eveningReminderMinute\` | number | 저녁 리마인더 분 (0-59, 기본 0) |
+| \`timeFormat\` | string | 시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제, 기본 TWELVE_HOUR) |
 
 **타임존**: 앱 실행 시 푸시 토큰 등록과 함께 자동 설정되며, 수동 변경도 가능합니다.
 
@@ -76,9 +77,9 @@ export class SettingsController {
 	@Patch("preference")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "알림 설정 수정",
+		summary: "사용자 설정 수정",
 		operationId: "updatePushPreference",
-		description: `푸시 알림 설정을 수정합니다. 최소 1개 필드 필수.
+		description: `사용자 설정을 수정합니다. 최소 1개 필드 필수.
 
 **요청 Body (최소 1개 필수)**
 | 필드 | 타입 | 설명 |
@@ -90,6 +91,7 @@ export class SettingsController {
 | \`morningReminderMinute\` | number? | 아침 리마인더 분 (0-59, 기본 0) |
 | \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (12-23, 기본 18) |
 | \`eveningReminderMinute\` | number? | 저녁 리마인더 분 (0-59, 기본 0) |
+| \`timeFormat\` | string? | 시간 표시 형식 (TWELVE_HOUR | TWENTY_FOUR_HOUR) |
 
 **프리미엄 전용**: 리마인더 시간 변경은 프리미엄 구독 사용자만 가능. 무료 유저 시도 시 \`403 PREFERENCE_1701\`.
 

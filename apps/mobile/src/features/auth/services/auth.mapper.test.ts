@@ -94,6 +94,7 @@ describe('toPreference', () => {
       morningReminderMinute: 0,
       eveningReminderHour: 21,
       eveningReminderMinute: 0,
+      timeFormat: 'TWELVE_HOUR' as const,
     };
 
     // When
@@ -107,6 +108,7 @@ describe('toPreference', () => {
       morningReminderMinute: 0,
       eveningReminderHour: 21,
       eveningReminderMinute: 0,
+      timeFormat: 'TWELVE_HOUR',
     });
     expect(result).not.toHaveProperty('timezone');
   });

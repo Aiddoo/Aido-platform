@@ -126,6 +126,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 		try {
 			const message = NotificationMessageBuilder.nudgeReceived(
 				data.senderName,
+				data.todoTitle,
 				data.message,
 			);
 

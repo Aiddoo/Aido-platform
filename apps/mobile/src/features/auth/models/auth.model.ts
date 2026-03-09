@@ -18,6 +18,7 @@ export const preferenceSchema = z.object({
   morningReminderMinute: z.number().int(),
   eveningReminderHour: z.number().int(),
   eveningReminderMinute: z.number().int(),
+  timeFormat: z.enum(['TWELVE_HOUR', 'TWENTY_FOUR_HOUR']),
 });
 export type Preference = z.infer<typeof preferenceSchema>;
 
