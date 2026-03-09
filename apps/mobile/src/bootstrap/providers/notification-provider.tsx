@@ -34,6 +34,9 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const receivedListener = useRef<Notifications.EventSubscription | null>(null);
   const lastResponseHandled = useRef<string | null>(null);
+  const pendingColdStartResponse = useRef<Notifications.NotificationResponse | null>(null);
+
+  const isAuthResolved = status !== 'loading';
 
   const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
     isAuthenticated,
@@ -41,22 +44,46 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-  // Cold start 알림 처리
+  // Cold start 알림 처리: auth 해결 전이면 큐잉, 해결 후 즉시 처리
   useEffect(() => {
     if (lastNotificationResponse) {
       const responseId = lastNotificationResponse.notification.request.identifier;
 
       if (lastResponseHandled.current !== responseId) {
+        if (isAuthResolved) {
+          lastResponseHandled.current = responseId;
+          pendingColdStartResponse.current = null;
+          handleNotificationResponse(lastNotificationResponse).catch((e) =>
+            logger.error(
+              '[Notification] Response handling failed',
+              e instanceof Error ? e : undefined,
+            ),
+          );
+        } else {
+          pendingColdStartResponse.current = lastNotificationResponse;
+        }
+      }
+    }
+  }, [lastNotificationResponse, handleNotificationResponse, logger, isAuthResolved]);
+
+  // Deferred: auth 해결 후 대기 중인 cold start 알림 처리
+  useEffect(() => {
+    if (isAuthResolved && pendingColdStartResponse.current) {
+      const pending = pendingColdStartResponse.current;
+      const responseId = pending.notification.request.identifier;
+
+      if (lastResponseHandled.current !== responseId) {
         lastResponseHandled.current = responseId;
-        handleNotificationResponse(lastNotificationResponse).catch((e) =>
+        pendingColdStartResponse.current = null;
+        handleNotificationResponse(pending).catch((e) =>
           logger.error(
-            '[Notification] Response handling failed',
+            '[Notification] Deferred response handling failed',
             e instanceof Error ? e : undefined,
           ),
         );
       }
     }
-  }, [lastNotificationResponse, handleNotificationResponse, logger]);
+  }, [isAuthResolved, handleNotificationResponse, logger]);
 
   // Effect 1: 알림 리스너 등록
   useEffect(() => {

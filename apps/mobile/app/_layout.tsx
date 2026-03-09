@@ -13,20 +13,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useResolveClassNames } from 'uniwind';
 import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
-
-const FullScreenLoader = () => {
-  return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator size="large" />
-    </View>
-  );
-};
 
 const AuthGateLayout = () => {
   const { status } = useAuth();
@@ -34,11 +25,11 @@ const AuthGateLayout = () => {
   useUserIdentity();
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
+  const isLoading = status === 'loading';
 
-  if (status === 'loading') {
-    return <FullScreenLoader />;
-  }
-
+  // Stack을 항상 렌더링하여 expo-router의 navigationRef가 즉시 ready 상태가 되도록 함.
+  // 이를 통해 cold start 시 push notification 탭으로 인한
+  // "Attempted to navigate before mounting the Root Layout" 크래시를 방지.
   return (
     <Stack
       screenOptions={{
@@ -49,15 +40,19 @@ const AuthGateLayout = () => {
         contentStyle: { backgroundColor: backgroundColor as string },
       }}
     >
+      <Stack.Protected guard={isLoading}>
+        <Stack.Screen name="loading" options={{ animation: 'none' }} />
+      </Stack.Protected>
+
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated}>
+      <Stack.Protected guard={!isAuthenticated && !isLoading}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated}>
+      <Stack.Protected guard={!isAuthenticated && !isLoading}>
         <Stack.Screen name="index" />
       </Stack.Protected>
     </Stack>
