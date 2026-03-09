@@ -273,6 +273,7 @@ describe('AuthService', () => {
           morningReminderMinute: dto.morningReminderMinute,
           eveningReminderHour: dto.eveningReminderHour,
           eveningReminderMinute: dto.eveningReminderMinute,
+          timeFormat: dto.timeFormat,
         },
       });
     });
@@ -321,6 +322,7 @@ describe('AuthService', () => {
           morningReminderMinute: dto.morningReminderMinute,
           eveningReminderHour: dto.eveningReminderHour,
           eveningReminderMinute: dto.eveningReminderMinute,
+          timeFormat: dto.timeFormat,
         },
       });
     });
