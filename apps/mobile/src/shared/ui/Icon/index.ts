@@ -19,6 +19,7 @@ export {
   EyeIcon,
   EyeOffIcon,
   FillCheckIcon,
+  FillTicketIcon,
   FishIcon,
   GoogleIcon,
   InfoIcon,

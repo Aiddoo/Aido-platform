@@ -1,6 +1,7 @@
 import { ReportCard } from '@src/features/ai/presentations/components/ReportCard';
 import { ReportStatusBanner } from '@src/features/ai/presentations/components/ReportStatusBanner';
 import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
+import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { getSampleReport } from '@src/features/ai/presentations/constants/sample-reports.constant';
 import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
@@ -17,11 +18,11 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useState } from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Suspense, useCallback, useState } from 'react';
+import { Image, RefreshControl, ScrollView, View } from 'react-native';
 
 type ReportType = 'WEEKLY' | 'MONTHLY';
 
@@ -40,12 +41,23 @@ const ReportsScreen = () => {
 export default ReportsScreen;
 
 function ReportsContent() {
+  const queryClient = useQueryClient();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
   const [activeTab, setActiveTab] = useState<ReportType>('WEEKLY');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.all });
+    setRefreshing(false);
+  }, [queryClient]);
 
   return (
-    <ScrollView className="flex-1 px-4">
+    <ScrollView
+      className="flex-1 px-4"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <Spacing size={16} />
 
       <ScallopedContainer>
@@ -157,7 +169,7 @@ function ReportList({ type }: { type: ReportType }) {
   }
 
   return (
-    <VStack>
+    <VStack gap={4}>
       {reports.map((report, index) => (
         <ReportCard key={report.id} report={report} isLast={index === reports.length - 1} />
       ))}

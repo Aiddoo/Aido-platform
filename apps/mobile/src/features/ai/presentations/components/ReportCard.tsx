@@ -1,4 +1,4 @@
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
@@ -59,6 +59,12 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
               {report.aiSummary}
             </Text>
           )}
+
+          <View className="items-end">
+            <TextButton size="small" variant="arrow">
+              자세히 보기
+            </TextButton>
+          </View>
         </VStack>
       </View>
 
@@ -82,7 +88,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 
 ReportCard.Loading = function Loading() {
   return (
-    <VStack gap={12}>
+    <VStack>
       {times(3, (i) => (
         <View key={i} className="py-3">
           <SkeletonGroup isLoading>
@@ -97,6 +103,9 @@ ReportCard.Loading = function Loading() {
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
               </HStack>
               <SkeletonGroup.Item className="h-4 w-full rounded-md" />
+              <View className="items-end">
+                <SkeletonGroup.Item className="h-3 w-16 rounded-md" />
+              </View>
             </VStack>
           </SkeletonGroup>
           {i < 2 && <View className="mt-3 border-b border-dashed border-gray-3" />}
