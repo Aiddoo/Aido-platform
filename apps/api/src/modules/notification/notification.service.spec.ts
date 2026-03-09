@@ -663,37 +663,9 @@ describe("NotificationService", () => {
 			return { notification };
 		};
 
-		it("NUDGE_RECEIVED: 1시간 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
-			// Given
-			notificationRepo.existsRecentNotification.mockResolvedValue(true);
-
-			// When
-			const result = await service.createAndSendWithDedup({
-				userId: mockUserId,
-				type: "NUDGE_RECEIVED",
-				title: "콕!",
-				body: "친구가 콕 찔렀어요",
-				friendId: "friend-1",
-				nudgeId: 1,
-			});
-
-			// Then
-			expect(result).toBeNull();
-			expect(notificationRepo.existsRecentNotification).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUserId,
-					type: "NUDGE_RECEIVED",
-					friendId: "friend-1",
-				}),
-				undefined,
-			);
-			expect(notificationRepo.createNotification).not.toHaveBeenCalled();
-		});
-
-		it("NUDGE_RECEIVED: 1시간 내 같은 friendId 알림이 없으면 정상 생성한다", async () => {
-			// Given
+		it("NUDGE_RECEIVED: 전략이 없으므로 dedup 체크 없이 바로 생성한다", async () => {
+			// Given — NudgeService에서 쿨다운(24h/Todo) + 일일 제한으로 이미 보호
 			baseSetup();
-			notificationRepo.existsRecentNotification.mockResolvedValue(false);
 
 			// When
 			const result = await service.createAndSendWithDedup({
@@ -707,12 +679,14 @@ describe("NotificationService", () => {
 
 			// Then
 			expect(result).not.toBeNull();
+			expect(lockProvider.acquire).not.toHaveBeenCalled();
+			expect(notificationRepo.existsRecentNotification).not.toHaveBeenCalled();
 			expect(notificationRepo.createNotification).toHaveBeenCalled();
 		});
 
-		it("CHEER_RECEIVED: 5분 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
-			// Given
-			notificationRepo.existsRecentNotification.mockResolvedValue(true);
+		it("CHEER_RECEIVED: 전략이 없으므로 dedup 체크 없이 바로 생성한다", async () => {
+			// Given — CheerService에서 쿨다운(24h/receiver) + 일일 제한으로 이미 보호
+			baseSetup();
 
 			// When
 			const result = await service.createAndSendWithDedup({
@@ -725,7 +699,10 @@ describe("NotificationService", () => {
 			});
 
 			// Then
-			expect(result).toBeNull();
+			expect(result).not.toBeNull();
+			expect(lockProvider.acquire).not.toHaveBeenCalled();
+			expect(notificationRepo.existsRecentNotification).not.toHaveBeenCalled();
+			expect(notificationRepo.createNotification).toHaveBeenCalled();
 		});
 
 		it("FOLLOW_NEW: 24시간 내 같은 friendId 알림이 있으면 null을 반환한다", async () => {
@@ -807,17 +784,17 @@ describe("NotificationService", () => {
 			const before = Date.now();
 			await service.createAndSendWithDedup({
 				userId: mockUserId,
-				type: "NUDGE_RECEIVED",
-				title: "콕!",
-				body: "찔러요",
+				type: "FOLLOW_NEW",
+				title: "팔로우",
+				body: "새 팔로워",
 				friendId: "friend-1",
 			});
 
-			// Then — since가 현재 - 1시간 (NUDGE windowMs = MS_PER_HOUR)
+			// Then — since가 현재 - 24시간 (FOLLOW windowMs = 24 * MS_PER_HOUR)
 			const calledSince = notificationRepo.existsRecentNotification.mock
 				.calls[0]?.[0]?.since as Date;
 			expect(calledSince).toBeInstanceOf(Date);
-			const expectedMs = before - 3_600_000;
+			const expectedMs = before - 24 * 3_600_000;
 			expect(Math.abs(calledSince.getTime() - expectedMs)).toBeLessThan(100);
 		});
 
@@ -835,15 +812,15 @@ describe("NotificationService", () => {
 			// When
 			await service.createAndSendWithDedup({
 				userId: mockUserId,
-				type: "NUDGE_RECEIVED",
-				title: "콕!",
-				body: "찔러요",
+				type: "FOLLOW_NEW",
+				title: "팔로우",
+				body: "새 팔로워",
 				friendId: "friend-1",
 			});
 
 			// Then
 			expect(lockProvider.acquire).toHaveBeenCalledWith(
-				expect.stringContaining("dedup:user-1:NUDGE_RECEIVED"),
+				expect.stringContaining("dedup:user-1:FOLLOW_NEW"),
 				5000,
 			);
 			expect(mockRelease).toHaveBeenCalled();
@@ -856,9 +833,9 @@ describe("NotificationService", () => {
 			// When
 			const result = await service.createAndSendWithDedup({
 				userId: mockUserId,
-				type: "NUDGE_RECEIVED",
-				title: "콕!",
-				body: "찔러요",
+				type: "FOLLOW_NEW",
+				title: "팔로우",
+				body: "새 팔로워",
 				friendId: "friend-1",
 			});
 
@@ -880,9 +857,9 @@ describe("NotificationService", () => {
 			await expect(
 				service.createAndSendWithDedup({
 					userId: mockUserId,
-					type: "NUDGE_RECEIVED",
-					title: "콕!",
-					body: "찔러요",
+					type: "FOLLOW_NEW",
+					title: "팔로우",
+					body: "새 팔로워",
 					friendId: "friend-1",
 				}),
 			).rejects.toThrow("DB error");

@@ -1,10 +1,13 @@
+import { josa } from "es-hangul";
+
 import type { NotificationType } from "@/generated/prisma/client";
 
 /**
  * 알림 메시지 템플릿 (듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박)
  *
- * 듀오링고 스타일: 짧고 강렬하게, 죄책감 + 사회적 압박으로 작성된 알림 템플릿입니다.
- * 플레이스홀더는 {변수명} 형식으로 사용합니다.
+ * 플레이스홀더:
+ * - {변수명}        — 단순 치환
+ * - {변수명:이/가}  — 치환 후 받침에 맞는 조사 자동 부착 (es-hangul)
  */
 
 export interface NotificationTemplate {
@@ -133,14 +136,14 @@ export const SOCIAL_TEMPLATES = {
 		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED: {
-		title: "콕! {senderName}",
-		body: "뭐 하고 있었는지 다 보인다",
+		title: "{senderName:이/가} '{todoTitle}' 콕 찔렀어!",
+		body: "아직도 안 했어?",
 		type: "NUDGE_RECEIVED",
 		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
 	NUDGE_RECEIVED_WITH_MESSAGE: {
-		title: "콕! {senderName}",
-		body: "{message}",
+		title: "{senderName:이/가} '{todoTitle}' 콕 찔렀어!",
+		body: "'{message}'",
 		type: "NUDGE_RECEIVED",
 		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
@@ -177,7 +180,7 @@ export const SOCIAL_TEMPLATES = {
 	} satisfies NotificationTemplate,
 	// 콕 찌르기 유도 (Nudge Suggest)
 	NUDGE_SUGGEST: {
-		title: "{friendName}이(가) {days}일째 조용해",
+		title: "{friendName:이/가} {days}일째 조용해",
 		body: "콕 찔러볼래?",
 		type: "NUDGE_SUGGEST",
 		defaultRoute: "/feed/friend/{friendId}",
@@ -261,17 +264,32 @@ export const SYSTEM_TEMPLATES = {
 /**
  * 템플릿 문자열에서 플레이스홀더를 치환합니다.
  *
+ * - `{key}`       → 단순 치환
+ * - `{key:이/가}` → 치환 후 받침에 맞는 조사 자동 부착
+ *
  * @example
  * fillTemplate("{name}님 안녕하세요!", { name: "홍길동" })
  * // => "홍길동님 안녕하세요!"
+ *
+ * fillTemplate("{name:이/가} 콕 찔렀어!", { name: "홍길동" })
+ * // => "홍길동이 콕 찔렀어!"
  */
 export function fillTemplate(
 	template: string,
 	variables: Record<string, string | number | undefined>,
 ): string {
-	return template.replace(/\{(\w+)\}/g, (match, key) => {
+	return template.replace(/\{(\w+)(?::([^}]+))?\}/g, (match, key, particle) => {
 		const value = variables[key];
-		return value !== undefined ? String(value) : match;
+		if (value === undefined) {
+			return match;
+		}
+
+		const str = String(value);
+
+		if (particle) {
+			return josa(str, particle as Parameters<typeof josa>[1]);
+		}
+		return str;
 	});
 }
 
@@ -306,15 +324,14 @@ export class NotificationMessageBuilder {
 	 */
 	static nudgeReceived(
 		senderName: string,
+		todoTitle?: string,
 		message?: string,
 	): { title: string; body: string } {
 		if (message) {
 			return {
 				title: fillTemplate(
 					SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.title,
-					{
-						senderName,
-					},
+					{ senderName, todoTitle },
 				),
 				body: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED_WITH_MESSAGE.body, {
 					message,
@@ -324,6 +341,7 @@ export class NotificationMessageBuilder {
 		return {
 			title: fillTemplate(SOCIAL_TEMPLATES.NUDGE_RECEIVED.title, {
 				senderName,
+				todoTitle,
 			}),
 			body: SOCIAL_TEMPLATES.NUDGE_RECEIVED.body,
 		};

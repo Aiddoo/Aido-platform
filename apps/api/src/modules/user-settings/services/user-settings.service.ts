@@ -8,10 +8,10 @@ import {
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
-
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import type { TimeFormat } from "@/generated/prisma/enums";
 import type { ReminderHourChangedJobData } from "@/modules/scheduler/queue/timezone-reminder-queue.constants";
 import { TimezoneReminderQueueService } from "@/modules/scheduler/queue/timezone-reminder-queue.service";
 
@@ -46,6 +46,7 @@ export class UserSettingsService {
 						eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
 						eveningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
 					};
 				}
 				return {
@@ -56,6 +57,7 @@ export class UserSettingsService {
 					morningReminderMinute: raw.morningReminderMinute,
 					eveningReminderHour: raw.eveningReminderHour,
 					eveningReminderMinute: raw.eveningReminderMinute,
+					timeFormat: raw.timeFormat,
 				};
 			},
 		);
@@ -71,6 +73,7 @@ export class UserSettingsService {
 				morningReminderMinute: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
 				eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
 				eveningReminderMinute: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+				timeFormat: preference.timeFormat,
 			};
 		}
 
@@ -82,6 +85,7 @@ export class UserSettingsService {
 			morningReminderMinute: preference.morningReminderMinute,
 			eveningReminderHour: preference.eveningReminderHour,
 			eveningReminderMinute: preference.eveningReminderMinute,
+			timeFormat: preference.timeFormat,
 		};
 	}
 
@@ -125,6 +129,7 @@ export class UserSettingsService {
 			morningReminderMinute: input.morningReminderMinute,
 			eveningReminderHour: input.eveningReminderHour,
 			eveningReminderMinute: input.eveningReminderMinute,
+			timeFormat: input.timeFormat as TimeFormat | undefined,
 		});
 		await this.cacheService.invalidateUserPreference(userId);
 
@@ -163,6 +168,7 @@ export class UserSettingsService {
 			morningReminderMinute: updated.morningReminderMinute,
 			eveningReminderHour: updated.eveningReminderHour,
 			eveningReminderMinute: updated.eveningReminderMinute,
+			timeFormat: updated.timeFormat,
 		};
 	}
 

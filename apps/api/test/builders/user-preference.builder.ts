@@ -14,6 +14,7 @@
  * ```
  */
 import type { UserPreference } from "@/generated/prisma/client";
+import type { TimeFormat } from "@/generated/prisma/enums";
 
 export class UserPreferenceBuilder {
 	private data: UserPreference;
@@ -31,6 +32,7 @@ export class UserPreferenceBuilder {
 			morningReminderMinute: 0,
 			eveningReminderHour: 18,
 			eveningReminderMinute: 0,
+			timeFormat: "TWELVE_HOUR",
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -94,6 +96,11 @@ export class UserPreferenceBuilder {
 
 	withEveningReminderMinute(minute: number): UserPreferenceBuilder {
 		this.data.eveningReminderMinute = minute;
+		return this;
+	}
+
+	withTimeFormat(format: TimeFormat): UserPreferenceBuilder {
+		this.data.timeFormat = format;
 		return this;
 	}
 

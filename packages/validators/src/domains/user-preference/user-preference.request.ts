@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   EVENING_REMINDER_HOUR_RANGE,
   MORNING_REMINDER_HOUR_RANGE,
+  TIME_FORMATS,
 } from './user-preference.constants';
 
 export const updatePreferenceSchema = z
@@ -42,6 +43,10 @@ export const updatePreferenceSchema = z
       .max(59)
       .optional()
       .describe('저녁 리마인더 분 (0-59)'),
+    timeFormat: z
+      .enum(TIME_FORMATS)
+      .optional()
+      .describe('시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제)'),
   })
   .refine(
     (data) =>
@@ -51,7 +56,8 @@ export const updatePreferenceSchema = z
       data.morningReminderHour !== undefined ||
       data.morningReminderMinute !== undefined ||
       data.eveningReminderHour !== undefined ||
-      data.eveningReminderMinute !== undefined,
+      data.eveningReminderMinute !== undefined ||
+      data.timeFormat !== undefined,
     { message: '최소 하나의 설정 값이 필요합니다' },
   );
 

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { TransactionClient } from "@/common/database/prisma.types";
 import { DatabaseService } from "@/database";
 import type { UserPreference } from "@/generated/prisma/client";
+import type { TimeFormat } from "@/generated/prisma/enums";
 
 export interface UpdatePreferenceData {
 	pushEnabled?: boolean;
@@ -11,6 +12,7 @@ export interface UpdatePreferenceData {
 	morningReminderMinute?: number;
 	eveningReminderHour?: number;
 	eveningReminderMinute?: number;
+	timeFormat?: TimeFormat;
 }
 
 @Injectable()
@@ -51,6 +53,9 @@ export class UserPreferenceRepository {
 				...(data?.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
 				}),
+				...(data?.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
+				}),
 			},
 		});
 	}
@@ -80,6 +85,9 @@ export class UserPreferenceRepository {
 				...(data.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
 				}),
+				...(data.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
+				}),
 			},
 			update: {
 				...(data.pushEnabled !== undefined && {
@@ -100,6 +108,9 @@ export class UserPreferenceRepository {
 				}),
 				...(data.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
+				}),
+				...(data.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
 				}),
 			},
 		});
@@ -132,6 +143,9 @@ export class UserPreferenceRepository {
 				}),
 				...(data.eveningReminderMinute !== undefined && {
 					eveningReminderMinute: data.eveningReminderMinute,
+				}),
+				...(data.timeFormat !== undefined && {
+					timeFormat: data.timeFormat,
 				}),
 			},
 		});

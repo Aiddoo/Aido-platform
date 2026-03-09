@@ -36,6 +36,7 @@ describe("SettingsController", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR" as const,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
 
@@ -59,6 +60,7 @@ describe("SettingsController", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR" as const,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
 
@@ -82,6 +84,7 @@ describe("SettingsController", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR" as const,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,
@@ -109,6 +112,7 @@ describe("SettingsController", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR" as const,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,

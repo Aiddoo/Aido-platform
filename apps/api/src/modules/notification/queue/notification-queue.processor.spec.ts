@@ -151,10 +151,12 @@ describe("NotificationQueueProcessor", () => {
 				receiverId: "user-2",
 				senderName: "보낸 유저",
 				todoId: 10,
+				todoTitle: "밥먹기",
 			};
 			const job = createMockJob(NotificationJobName.NUDGE_SENT, data);
 			const message = NotificationMessageBuilder.nudgeReceived(
 				"보낸 유저",
+				"밥먹기",
 				undefined,
 			);
 
@@ -181,6 +183,7 @@ describe("NotificationQueueProcessor", () => {
 				senderId: "user-1",
 				receiverId: "user-2",
 				senderName: "보낸 유저",
+				todoTitle: "운동하기",
 				message: "빨리 해!",
 			};
 			const job = createMockJob(NotificationJobName.NUDGE_SENT, data);

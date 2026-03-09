@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TIME_FORMATS } from './user-preference.constants';
 
 export const userPreferenceSchema = z
   .object({
@@ -9,6 +10,9 @@ export const userPreferenceSchema = z
     morningReminderMinute: z.number().int().describe('아침 리마인더 분 (0-59)'),
     eveningReminderHour: z.number().int().describe('저녁 리마인더 시간 (12-23)'),
     eveningReminderMinute: z.number().int().describe('저녁 리마인더 분 (0-59)'),
+    timeFormat: z
+      .enum(TIME_FORMATS)
+      .describe('시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제)'),
   })
   .meta({
     example: {
@@ -19,6 +23,7 @@ export const userPreferenceSchema = z
       morningReminderMinute: 0,
       eveningReminderHour: 18,
       eveningReminderMinute: 0,
+      timeFormat: 'TWELVE_HOUR',
     },
   });
 
@@ -33,6 +38,7 @@ export const preferenceResponseSchema = userPreferenceSchema.meta({
     morningReminderMinute: 0,
     eveningReminderHour: 18,
     eveningReminderMinute: 0,
+    timeFormat: 'TWELVE_HOUR',
   },
 });
 
@@ -47,6 +53,7 @@ export const updatePreferenceResponseSchema = userPreferenceSchema.meta({
     morningReminderMinute: 0,
     eveningReminderHour: 18,
     eveningReminderMinute: 0,
+    timeFormat: 'TWELVE_HOUR',
   },
 });
 

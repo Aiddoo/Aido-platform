@@ -64,6 +64,7 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 30,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			timeFormat: "TWELVE_HOUR",
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -87,6 +88,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 30,
 				eveningReminderHour: 20,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 			expect(userPreferenceRepo.findByUserId).toHaveBeenCalledWith(userId);
 		});
@@ -107,6 +109,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 		});
 
@@ -129,6 +132,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 		});
 
@@ -150,6 +154,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 30,
 				eveningReminderHour: 20,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 		});
 
@@ -178,6 +183,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 		});
 	});
@@ -199,6 +205,7 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 18,
 			eveningReminderMinute: 0,
+			timeFormat: "TWELVE_HOUR",
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -225,10 +232,12 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: true,
 				nightPushEnabled: true,
+				timeFormat: undefined,
 			});
 			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
 				userId,
@@ -247,6 +256,7 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 				currentStreak: 0,
 				longestStreak: 0,
 				lastCompletedDate: null,
@@ -267,12 +277,14 @@ describe("UserSettingsService", () => {
 				morningReminderMinute: 0,
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: false,
 				nightPushEnabled: undefined,
 				morningReminderMinute: undefined,
 				eveningReminderMinute: undefined,
+				timeFormat: undefined,
 			});
 		});
 	});
@@ -294,6 +306,7 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			timeFormat: "TWELVE_HOUR",
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -407,6 +420,7 @@ describe("UserSettingsService", () => {
 			morningReminderMinute: 0,
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
+			timeFormat: "TWELVE_HOUR",
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
