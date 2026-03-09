@@ -287,7 +287,11 @@ export function fillTemplate(
 		const str = String(value);
 
 		if (particle) {
-			return josa(str, particle as Parameters<typeof josa>[1]);
+			try {
+				return josa(str, particle as Parameters<typeof josa>[1]);
+			} catch {
+				return str;
+			}
 		}
 		return str;
 	});

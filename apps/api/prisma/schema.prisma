@@ -380,7 +380,7 @@ model OAuthState {
 
   // 사용자 정보 (콜백 성공 후 설정)
   userId       String? @db.VarChar(255)
-  userName     String? @db.VarChar(100)
+  userName     String? @db.VarChar(20)
   profileImage String? @db.VarChar(500)
   accountRestored Boolean? // 계정 복구 여부 (탈퇴 유예 기간 내 재로그인)
 
