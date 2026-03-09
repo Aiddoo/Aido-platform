@@ -93,7 +93,7 @@ export class AccountController {
 \`Authorization: Bearer {accessToken}\`
 
 ### 📝 요청 Body (최소 1개 필수)
-- \`name\`: 이름 (100자 이내, null=삭제)
+- \`name\`: 이름 (1~20자, null=삭제)
 - \`profileImage\`: 아이콘 키 또는 이미지 URL (500자 이내, null=삭제)
 		`,
 	})
