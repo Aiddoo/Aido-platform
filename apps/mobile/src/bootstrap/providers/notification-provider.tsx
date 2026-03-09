@@ -44,46 +44,33 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-  // Cold start 알림 처리: auth 해결 전이면 큐잉, 해결 후 즉시 처리
+  // Cold start 및 일반 알림 통합 처리
   useEffect(() => {
-    if (lastNotificationResponse) {
-      const responseId = lastNotificationResponse.notification.request.identifier;
+    const responseToProcess = pendingColdStartResponse.current ?? lastNotificationResponse;
+    if (!responseToProcess) return;
 
-      if (lastResponseHandled.current !== responseId) {
-        if (isAuthResolved) {
-          lastResponseHandled.current = responseId;
-          pendingColdStartResponse.current = null;
-          handleNotificationResponse(lastNotificationResponse).catch((e) =>
-            logger.error(
-              '[Notification] Response handling failed',
-              e instanceof Error ? e : undefined,
-            ),
-          );
-        } else {
-          pendingColdStartResponse.current = lastNotificationResponse;
-        }
-      }
-    }
-  }, [lastNotificationResponse, handleNotificationResponse, logger, isAuthResolved]);
+    const responseId = responseToProcess.notification.request.identifier;
 
-  // Deferred: auth 해결 후 대기 중인 cold start 알림 처리
-  useEffect(() => {
-    if (isAuthResolved && pendingColdStartResponse.current) {
-      const pending = pendingColdStartResponse.current;
-      const responseId = pending.notification.request.identifier;
-
+    if (isAuthResolved) {
+      // 인증 완료: 즉시 처리
       if (lastResponseHandled.current !== responseId) {
         lastResponseHandled.current = responseId;
         pendingColdStartResponse.current = null;
-        handleNotificationResponse(pending).catch((e) =>
+        handleNotificationResponse(responseToProcess).catch((e) =>
           logger.error(
-            '[Notification] Deferred response handling failed',
+            '[Notification] Response handling failed',
             e instanceof Error ? e : undefined,
           ),
         );
       }
+    } else if (
+      lastNotificationResponse &&
+      lastResponseHandled.current !== lastNotificationResponse.notification.request.identifier
+    ) {
+      // 인증 미완료: 최신 응답을 큐잉
+      pendingColdStartResponse.current = lastNotificationResponse;
     }
-  }, [isAuthResolved, handleNotificationResponse, logger]);
+  }, [lastNotificationResponse, isAuthResolved, handleNotificationResponse, logger]);
 
   // Effect 1: 알림 리스너 등록
   useEffect(() => {
