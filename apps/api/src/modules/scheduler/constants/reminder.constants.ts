@@ -23,12 +23,13 @@ export const REMINDER_LEAD_TIME_MS = REMINDER_MAX_LEAD_TIME_MS;
  * 고정 시간 알림 스케줄 (유저 로컬 타임존 기준)
  *
  * 아침/저녁 리마인더(08:00/18:00)와 겹치지 않도록 분리된 시간대.
+ * 주간 달성 배지는 월요일 07:00 (리포트 생성 01:00과 6시간 간격, 아침 리마인더 08:00과 1시간 간격).
  * Win-back, Nudge Suggest는 기존 인라인 값과 동일 (문서화 목적).
  */
 export const NOTIFICATION_SCHEDULE = {
 	WEEKLY_REPORT: { hour: 9, minute: 0 },
 	MONTHLY_REPORT: { hour: 10, minute: 0 },
-	WEEKLY_ACHIEVEMENT: { hour: 20, minute: 0 },
+	WEEKLY_ACHIEVEMENT: { hour: 7, minute: 0 },
 	WINBACK: { hour: 12, minute: 0 },
 	NUDGE_SUGGEST: { hour: 14, minute: 0 },
 } as const;

@@ -1,6 +1,6 @@
 # Aido Privacy Policy
 
-**Effective Date: March 8, 2026**
+**Effective Date: March 10, 2026**
 
 ---
 
@@ -20,7 +20,7 @@ This Privacy Policy is intended to inform users about the processing of personal
 
 | Category | Items Collected | Required/Optional |
 |----------|----------------|-------------------|
-| Email Registration | Email address, password | Required |
+| Email Registration | Email address, password, User Tag (UserTag) | Required |
 | Profile Settings | Name (nickname), profile image | Optional |
 | Customer Inquiries | Inquiry content, contact information for response | Required |
 | Marketing Consent | Marketing consent status, consent timestamp | Optional |
@@ -37,6 +37,10 @@ This Privacy Policy is intended to inform users about the processing of personal
 | Push Token (Expo Push Token) | Notification delivery |
 | Error and Crash Information (Crashlytics) | App stability improvement |
 | Timezone Information (IANA format) | Notification and reminder timezone settings |
+| Last Login Timestamp | Fraudulent use detection, account management |
+| Last Active Timestamp | Inactive user detection, service improvement |
+| Device Fingerprint (User-Agent + IP hash) | Session security, unauthorized access detection |
+| Daily AI Usage Count | Usage limit management per subscription plan |
 
 ### 2-3. Device Permission Access (On-Device Processing)
 
@@ -70,10 +74,10 @@ The Company processes collected personal information only for the following purp
 | Purpose | Details |
 |---------|---------|
 | Member Management | Member identification, registration/withdrawal processing, identity verification, prevention of fraudulent use |
-| Service Provision | Core features including task management, calendar (weekly/monthly), friend sharing, Nudge, weekly achievement badges, and streaks. Publicly shared to-dos are visible to mutual followers, and Nudge messages are delivered to the recipient. |
+| Service Provision | Core features including task management, calendar (weekly/monthly), friend sharing, Nudge, Cheer, Social Digest (weekly summary of friends' activities), weekly achievement badges, and streaks. Publicly shared to-dos are visible to mutual followers, and Nudge and Cheer messages are delivered to the recipient. |
 | AI Feature Provision | AI-powered automatic to-do parsing, weekly & monthly AI report generation (task statistics analysis and achievement summaries), recurring pattern analysis and automatic suggestions |
 | Subscription and Payment Management | Paid subscription processing, payment status management, receipt verification |
-| Notification Delivery | To-do reminders (1 hour and 10 minutes before scheduled time), morning & evening reminders, streak maintenance reminders, social notifications (friend requests, Nudge, social digest, etc.), Nudge encouragement notifications, Win-back notifications, service announcements |
+| Notification Delivery | To-do reminders (1 hour and 10 minutes before scheduled time), morning & evening reminders, streak maintenance reminders, social notifications (friend requests, Nudge, Cheer, social digest, etc.), Nudge encouragement notifications, Win-back notifications, service announcements |
 | Service Improvement | Usage statistics analysis, error response, service quality enhancement |
 | Customer Support | Inquiry response, complaint handling, notice delivery |
 | Marketing (Optional) | Providing event and promotional information (only to consenting Members) |
@@ -92,6 +96,18 @@ The Company destroys personal information without delay once the purpose of coll
 | Records related to advertising and display | **6 months** | Act on Consumer Protection in Electronic Commerce, Article 6 |
 | Service access records (login records, access logs) | **3 months** | Protection of Communications Secrets Act, Article 15-2 |
 | Records related to identity verification | **6 months** | Act on Promotion of ICT Network Utilization, Article 44-5 |
+
+### Service Operational Data Retention Periods
+
+| Data Item | Retention Period | Basis |
+|-----------|-----------------|-------|
+| Security Logs (SecurityLog) | **90 days** | Fraud prevention and security auditing |
+| Login Attempt Records (LoginAttempt) | **30 days** | Abnormal login detection and prevention |
+| Notification Data (Notification) | **90 days** | Notification history and service provision |
+| Session Information (Session) | **Until session expiry or revocation** | Authentication and access management |
+| Daily Completion Records (DailyCompletion) | **Until Member withdrawal** | Core service provision (streaks, statistics) |
+| Weekly Achievement Records (WeeklyAchievement) | **Until Member withdrawal** | Weekly achievement badges and statistics |
+| AI Reports (AiReport) | **Until Member withdrawal** | AI report viewing service provision |
 
 - Upon Member withdrawal, the Company applies a **30-day grace period** before destroying personal information. If the Member logs in again within the grace period, the account is restored. After the grace period, personal information is permanently deleted except for information that must be retained under the legally mandated retention periods above.
 
@@ -112,7 +128,7 @@ The Company entrusts personal information processing to the following parties fo
 
 | Entrusted Party | Entrusted Tasks | Items Processed |
 |----------------|-----------------|-----------------|
-| **RevenueCat, Inc.** | Subscription payment management, receipt verification | Subscription status, product ID, purchase history |
+| **RevenueCat, Inc.** | Subscription payment management, receipt verification | Subscription status, product ID, purchase history, user identifier mapping (revenueCatUserId) |
 | **Apple Inc.** | In-app payment processing, social login | Payment information, authentication information |
 | **Google LLC** | In-app payment processing, social login, AI features (Gemini API), Firebase services | Payment information, authentication information, to-do text (AI), analytics data |
 | **Kakao Corp.** | Social login | Authentication information |
@@ -134,7 +150,7 @@ The Company transfers personal information overseas for service provision as fol
 | **Google LLC** (Firebase Analytics) | United States | App usage records, device information | Service usage statistical analysis | Until Member withdrawal or purpose fulfillment |
 | **Google LLC** (Firebase Crashlytics) | United States | Error information, device information | App stability improvement | 180 days |
 | **Google LLC** (Gemini API) | United States | To-do text | AI feature provision (to-do parsing) | Deleted immediately upon API processing completion (per Google's policy) |
-| **RevenueCat, Inc.** | United States | Subscription status, purchase history, user ID | Subscription payment management | Service use period + legally mandated retention period |
+| **RevenueCat, Inc.** | United States | Subscription status, purchase history, user identifier mapping (revenueCatUserId) | Subscription payment management | Service use period + legally mandated retention period |
 | **Apple Inc.** | United States | Authentication information, payment information | Social login, in-app payment | Per each service's policy |
 | **Functional Software, Inc. (Sentry)** | United States | Error logs, request information, IP address | Server error tracking, stability monitoring | 90 days |
 | **650 Industries, Inc. (Expo)** | United States | Push tokens, device information | Push notification delivery | Duration of service use |
@@ -149,8 +165,8 @@ The Company transfers personal information overseas for service provision as fol
 
 1. The Service transmits Members' data to an external AI service (Google Gemini API) to provide the following AI features:
    - **Automatic To-Do Parsing**: Transmits to-do text to automatically extract title, date, category, and other details
-   - **Weekly & Monthly AI Reports**: Transmits task statistics (completion rates, category-based analysis, day-of-week and time-of-day patterns, and other aggregated data) to generate achievement summaries and personalized tips
-   - **Recurring Pattern Analysis**: Transmits task titles and time data to detect recurring patterns and generate suggestions
+   - **Weekly & Monthly AI Reports**: Transmits task statistics (total completions, per-category completions, day-of-week and time-of-day completion distributions, streak status, week-over-week/month-over-month changes, and other aggregated data) to generate achievement summaries and personalized tips
+   - **Recurring Pattern Analysis**: Transmits task titles, scheduled times, and category information to detect recurring patterns and generate suggestions
 2. Only the data items specified above are transmitted; personally identifiable information such as email addresses and names is not transmitted.
 3. Transmitted data is processed solely for the purpose of generating AI responses. The Company does not use this data for advertising or marketing purposes without separate consent.
 4. Details regarding data processing by the external AI service are subject to the privacy policy of the respective provider (Google).
@@ -279,5 +295,5 @@ For reports or consultations regarding personal information breaches, you may co
 
 ## Addendum
 
-1. This Privacy Policy takes effect on **March 8, 2026**.
-2. The previous Privacy Policy (effective March 5, 2026) shall cease to have effect upon the implementation of this Policy.
+1. This Privacy Policy takes effect on **March 10, 2026**.
+2. The previous Privacy Policy (effective March 8, 2026) shall cease to have effect upon the implementation of this Policy.

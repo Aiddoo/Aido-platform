@@ -1,0 +1,24 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"build": {
+			"inputs": [
+				"src/**",
+				"prisma/**",
+				"package.json",
+				"tsconfig.json",
+				"nest-cli.json"
+			]
+		},
+		"test": {
+			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
+		},
+		"test:e2e": {
+			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
+		},
+		"typecheck": {
+			"inputs": ["src/**", "prisma/**", "tsconfig.json"]
+		}
+	}
+}

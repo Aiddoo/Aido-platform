@@ -23,17 +23,18 @@ export class WeeklyAchievementStrategy {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
 
-		const mondayOfWeek = dayjs.utc(today).isoWeekday(1).startOf("day").toDate();
-		const nextMonday = dayjs
+		// 월요일 실행 → 이전 주(월~일) 집계
+		const prevWeek = dayjs.utc(today).subtract(7, "day");
+		const mondayOfPrevWeek = prevWeek.isoWeekday(1).startOf("day").toDate();
+		const mondayOfThisWeek = dayjs
 			.utc(today)
 			.isoWeekday(1)
-			.add(7, "day")
 			.startOf("day")
 			.toDate();
 
-		const isoYear = dayjs.utc(today).isoWeekYear();
-		const isoWeek = dayjs.utc(today).isoWeek();
-		const weekRange = { gte: mondayOfWeek, lt: nextMonday };
+		const isoYear = prevWeek.isoWeekYear();
+		const isoWeek = prevWeek.isoWeek();
+		const weekRange = { gte: mondayOfPrevWeek, lt: mondayOfThisWeek };
 
 		// ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
 		const [totalByUser, completedByUser] = await Promise.all([

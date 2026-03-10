@@ -206,9 +206,9 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			await this.monthlyReport.execute(ctx);
 		}
 
-		// 일요일 20:00: 주간 달성 배지 (저녁 리마인더와 겹침 방지, 완료율 최대 반영)
+		// 월요일 07:00: 주간 달성 배지 (이전 주 전체 집계, 아침 리마인더 전 발송)
 		if (
-			dayOfWeek === 0 &&
+			dayOfWeek === 1 &&
 			localHour === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
 			localMinute === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute
 		) {
