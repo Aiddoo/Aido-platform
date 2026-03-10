@@ -705,4 +705,11 @@ export class BusinessExceptions {
 	static reminderHourOutOfRange() {
 		return new BusinessException(ErrorCode.PREFERENCE_1702);
 	}
+
+	// =========================================================================
+	// 주간 달성 (Weekly Achievement)
+	// =========================================================================
+	static weeklyAchievementNotFound(year: number, week: number) {
+		return new BusinessException(ErrorCode.ACHIEVEMENT_1801, { year, week });
+	}
 }

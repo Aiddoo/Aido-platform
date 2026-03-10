@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
 
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy";
@@ -17,6 +18,7 @@ describe("WeeklyAchievementStrategy", () => {
 	let strategy: WeeklyAchievementStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let weeklyAchievementService: Mocked<WeeklyAchievementService>;
 
 	const TZ = "Asia/Seoul";
 
@@ -44,6 +46,7 @@ describe("WeeklyAchievementStrategy", () => {
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
+		weeklyAchievementService = unitRef.get(WeeklyAchievementService);
 
 		// 기본 mock 설정
 		database.user.findMany.mockResolvedValue([] as never);
@@ -51,6 +54,7 @@ describe("WeeklyAchievementStrategy", () => {
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
 		);
+		weeklyAchievementService.upsertMany.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -172,5 +176,43 @@ describe("WeeklyAchievementStrategy", () => {
 
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
+	});
+
+	// =========================================================================
+	// 주간 달성 기록 배치 upsert
+	// =========================================================================
+
+	it("알림 발송 시 WeeklyAchievement를 배치 upsertMany로 저장한다", async () => {
+		const ctx = makeCtx();
+
+		database.user.findMany.mockResolvedValueOnce([
+			{
+				id: "user-1",
+				todos: [{ completed: true }, { completed: true }, { completed: false }],
+			},
+		] as never);
+
+		await strategy.execute(ctx);
+
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
+			{
+				userId: "user-1",
+				year: expect.any(Number),
+				week: expect.any(Number),
+				totalTodos: 3,
+				completedTodos: 2,
+				achievedAt: expect.any(Date),
+			},
+		]);
+	});
+
+	it("대상이 없으면 upsertMany를 호출하지 않는다", async () => {
+		const ctx = makeCtx();
+
+		database.user.findMany.mockResolvedValueOnce([] as never);
+
+		await strategy.execute(ctx);
+
+		expect(weeklyAchievementService.upsertMany).not.toHaveBeenCalled();
 	});
 });
