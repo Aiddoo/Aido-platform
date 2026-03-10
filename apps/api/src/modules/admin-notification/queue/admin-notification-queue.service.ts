@@ -109,6 +109,11 @@ export class AdminNotificationQueueService {
 		const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
 
 		fields.push({ name: "이메일", value: payload.email, inline: true });
+
+		if (payload.name) {
+			fields.push({ name: "이름", value: payload.name, inline: true });
+		}
+
 		fields.push({ name: "상품", value: payload.productId, inline: true });
 
 		if (payload.store) {
@@ -121,10 +126,19 @@ export class AdminNotificationQueueService {
 			fields.push({ name: "기기", value: deviceLabel, inline: true });
 		}
 
-		if (payload.price != null) {
+		if (payload.priceInPurchasedCurrency != null && payload.purchasedCurrency) {
 			fields.push({
 				name: "금액",
-				value: formatPrice(payload.price, payload.currency),
+				value: formatPrice(
+					payload.priceInPurchasedCurrency,
+					payload.purchasedCurrency,
+				),
+				inline: true,
+			});
+		} else if (payload.priceUsd != null) {
+			fields.push({
+				name: "금액",
+				value: formatPrice(payload.priceUsd, "USD"),
 				inline: true,
 			});
 		}
@@ -157,7 +171,7 @@ export class AdminNotificationQueueService {
 				channel: "payment",
 				notification: {
 					title: `${meta.emoji} ${meta.title}`,
-					body: `**${payload.email}** 님의 구독 이벤트 (${payload.eventType})`,
+					body: `**${payload.name ?? payload.email}** 님의 구독 이벤트 (${payload.eventType})`,
 					color: meta.color,
 					fields,
 				},

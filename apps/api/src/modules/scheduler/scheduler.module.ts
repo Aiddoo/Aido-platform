@@ -4,6 +4,7 @@ import { Module } from "@nestjs/common";
 import { DatabaseModule } from "@/database/database.module";
 
 import { NotificationModule } from "../notification/notification.module";
+import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievement.module";
 import {
 	EveningReminderStrategy,
 	MonthlyReportStrategy,
@@ -39,6 +40,7 @@ import {
 		TimezoneReminderQueueModule,
 		DatabaseModule,
 		NotificationModule,
+		WeeklyAchievementModule,
 	],
 	providers: [
 		TimezoneAwareReminderJob,

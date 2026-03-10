@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { datetimeSchema, nullableDatetimeSchema } from '../../common/datetime';
+import { numberCursorPaginationInfoSchema } from '../../common/pagination';
 import { todoCategorySummarySchema } from '../todo-category/todo-category.response';
 import { todoVisibilitySchema } from './todo.common';
 
@@ -58,11 +59,7 @@ export const todoSchema = z
 
 export type Todo = z.infer<typeof todoSchema>;
 
-export const numberCursorPaginationInfoSchema = z.object({
-  nextCursor: z.number().int().nullable(),
-  hasNext: z.boolean(),
-  size: z.number(),
-});
+export { numberCursorPaginationInfoSchema };
 
 export const todoListResponseSchema = z
   .object({

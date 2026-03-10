@@ -25,6 +25,8 @@ import type { ErrorDefinition } from './types';
  * - ADMIN   (1400-1499): 관리자
  * - INQUIRY (1500-1599): 문의
  * - SUBSCRIPTION (1600-1699): 구독
+ * - PREFERENCE (1700-1799): 설정
+ * - ACHIEVEMENT (1800-1899): 주간 달성
  */
 export const ErrorCode = {
   // =========================================================================
@@ -251,6 +253,11 @@ export const ErrorCode = {
   // =========================================================================
   PREFERENCE_1701: 'PREFERENCE_1701',
   PREFERENCE_1702: 'PREFERENCE_1702',
+
+  // =========================================================================
+  // 주간 달성 (ACHIEVEMENT_1800-1899)
+  // =========================================================================
+  ACHIEVEMENT_1801: 'ACHIEVEMENT_1801',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1155,5 +1162,15 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       '오전 리마인더는 0:00-11:30, 오후 리마인더는 12:00-23:30만 설정할 수 있습니다. 분은 0 또는 30만 허용됩니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+
+  // =========================================================================
+  // 주간 달성 (ACHIEVEMENT_1800-1899)
+  // =========================================================================
+  [ErrorCode.ACHIEVEMENT_1801]: {
+    code: 'ACHIEVEMENT_1801',
+    message: '해당 주차의 달성 기록을 찾을 수 없습니다.',
+    description: '요청한 연도/주차에 해당하는 주간 달성 기록이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 };

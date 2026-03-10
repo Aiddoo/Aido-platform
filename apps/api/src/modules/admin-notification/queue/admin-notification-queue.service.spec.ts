@@ -118,5 +118,104 @@ describe("AdminNotificationQueueService", () => {
 			service.enqueueSubscriptionEvent(payload);
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
+
+		it("구매 통화 기준으로 금액을 표시한다 (KRW ₩3,900)", async () => {
+			// Given
+			const payload: SubscriptionEventPayload = {
+				userId: "user-1",
+				email: "test@example.com",
+				eventType: "INITIAL_PURCHASE",
+				productId: "aido_premium_monthly",
+				priceUsd: 2.99,
+				priceInPurchasedCurrency: 3900,
+				purchasedCurrency: "KRW",
+			};
+
+			// When
+			service.enqueueSubscriptionEvent(payload);
+			await flushPromises();
+
+			// Then
+			expect(queue.add).toHaveBeenCalledWith(
+				AdminNotificationJobName.SEND,
+				expect.objectContaining({
+					channel: "payment",
+					notification: expect.objectContaining({
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								name: "금액",
+								value: "₩3,900",
+							}),
+						]),
+					}),
+				}),
+				expect.any(Object),
+			);
+		});
+
+		it("구매 통화 금액이 없으면 USD fallback으로 금액을 표시한다", async () => {
+			// Given
+			const payload: SubscriptionEventPayload = {
+				userId: "user-1",
+				email: "test@example.com",
+				eventType: "INITIAL_PURCHASE",
+				productId: "aido_premium_monthly",
+				priceUsd: 2.99,
+			};
+
+			// When
+			service.enqueueSubscriptionEvent(payload);
+			await flushPromises();
+
+			// Then — Intl.NumberFormat 로케일에 따라 "$2.99" 또는 "US$2.99"
+			expect(queue.add).toHaveBeenCalledWith(
+				AdminNotificationJobName.SEND,
+				expect.objectContaining({
+					channel: "payment",
+					notification: expect.objectContaining({
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								name: "금액",
+								value: expect.stringContaining("2.99"),
+							}),
+						]),
+					}),
+				}),
+				expect.any(Object),
+			);
+		});
+
+		it("이름이 있으면 body에 이름을 표시한다", async () => {
+			// Given
+			const payload: SubscriptionEventPayload = {
+				userId: "user-1",
+				email: "test@example.com",
+				name: "매튜",
+				eventType: "INITIAL_PURCHASE",
+				productId: "aido_premium_monthly",
+			};
+
+			// When
+			service.enqueueSubscriptionEvent(payload);
+			await flushPromises();
+
+			// Then
+			expect(queue.add).toHaveBeenCalledWith(
+				AdminNotificationJobName.SEND,
+				expect.objectContaining({
+					channel: "payment",
+					notification: expect.objectContaining({
+						body: expect.stringContaining("매튜"),
+						fields: expect.arrayContaining([
+							expect.objectContaining({
+								name: "이름",
+								value: "매튜",
+							}),
+						]),
+					}),
+				}),
+				expect.any(Object),
+			);
+		});
 	});
 });
