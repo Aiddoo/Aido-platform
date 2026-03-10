@@ -17,7 +17,7 @@ import times from 'es-toolkit/compat/times';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 
 const LinkedAccountsScreen = () => {
   return (
@@ -40,6 +40,9 @@ const LinkedAccountsScreen = () => {
 };
 
 export default LinkedAccountsScreen;
+
+const visibleConfigs =
+  Platform.OS === 'ios' ? PROVIDER_CONFIGS : PROVIDER_CONFIGS.filter((c) => c.provider !== 'APPLE');
 
 function LinkedAccountsList() {
   const { canUnlink, getProviderState, link, unlink } = useLinkedAccounts();
@@ -70,7 +73,7 @@ function LinkedAccountsList() {
   return (
     <>
       <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
-        {PROVIDER_CONFIGS.map((config, index) => {
+        {visibleConfigs.map((config, index) => {
           const { isLinked, isPending } = getProviderState(config.provider, config.slug);
 
           return (
@@ -124,10 +127,10 @@ LinkedAccountsList.Loading = function Loading() {
   return (
     <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
       <SkeletonGroup isLoading isSkeletonOnly>
-        {times(4, (index) => (
+        {times(visibleConfigs.length, (index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
-            {index < 3 && <Separator className="mx-4 bg-gray-2" />}
+            {index < visibleConfigs.length - 1 && <Separator className="mx-4 bg-gray-2" />}
           </Fragment>
         ))}
       </SkeletonGroup>

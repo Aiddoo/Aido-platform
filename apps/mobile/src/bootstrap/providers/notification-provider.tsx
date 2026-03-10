@@ -78,7 +78,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
       logger.info('[Notification] Received in foreground', {
         title: notification.request.content.title,
       });
-      handleForegroundNotification();
+      handleForegroundNotification(notification);
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {

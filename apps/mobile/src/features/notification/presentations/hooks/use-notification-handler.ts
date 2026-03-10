@@ -1,6 +1,7 @@
 import type { NotificationType } from '@aido/validators';
 import { pushNotificationDataSchema } from '@aido/validators';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { useQueryClient } from '@tanstack/react-query';
@@ -93,22 +94,32 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
     [trackEvent, logger, notificationService, queryClient],
   );
 
-  const handleForegroundNotification = useCallback(() => {
-    if (!isAuthenticated) return;
+  const handleForegroundNotification = useCallback(
+    (notification?: Notifications.Notification) => {
+      if (!isAuthenticated) return;
 
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
 
-    debounceTimerRef.current = setTimeout(() => {
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
-        notificationService.syncBadgeCount(),
-      ]).catch((e) =>
-        logger.error('[Notification] Handler failed', e instanceof Error ? e : undefined),
-      );
-    }, 1000);
-  }, [isAuthenticated, logger, notificationService, queryClient]);
+      debounceTimerRef.current = setTimeout(() => {
+        const invalidations: Promise<void>[] = [
+          queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+          notificationService.syncBadgeCount(),
+        ];
+
+        const notificationType = notification?.request.content.data?.type as string | undefined;
+        if (notificationType === 'FOLLOW_NEW' || notificationType === 'FOLLOW_ACCEPTED') {
+          invalidations.push(queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all }));
+        }
+
+        Promise.all(invalidations).catch((e) =>
+          logger.error('[Notification] Handler failed', e instanceof Error ? e : undefined),
+        );
+      }, 1000);
+    },
+    [isAuthenticated, logger, notificationService, queryClient],
+  );
 
   useEffect(() => {
     return () => {
