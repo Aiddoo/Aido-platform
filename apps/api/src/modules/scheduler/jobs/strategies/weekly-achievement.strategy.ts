@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { previousIsoWeekRange } from "@/common/date/utils/range";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
@@ -24,17 +24,8 @@ export class WeeklyAchievementStrategy {
 		const today = todayInTimezone(tz);
 
 		// 월요일 실행 → 이전 주(월~일) 집계
-		const prevWeek = dayjs.utc(today).subtract(7, "day");
-		const mondayOfPrevWeek = prevWeek.isoWeekday(1).startOf("day").toDate();
-		const mondayOfThisWeek = dayjs
-			.utc(today)
-			.isoWeekday(1)
-			.startOf("day")
-			.toDate();
-
-		const isoYear = prevWeek.isoWeekYear();
-		const isoWeek = prevWeek.isoWeek();
-		const weekRange = { gte: mondayOfPrevWeek, lt: mondayOfThisWeek };
+		const { start, end, isoYear, isoWeek } = previousIsoWeekRange(today);
+		const weekRange = { gte: start, lt: end };
 
 		// ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
 		const [totalByUser, completedByUser] = await Promise.all([

@@ -7,10 +7,12 @@ import { NotificationModule } from "../notification/notification.module";
 import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievement.module";
 import {
 	EveningReminderStrategy,
+	LunchNudgeStrategy,
 	MonthlyReportStrategy,
 	MorningReminderStrategy,
 	NudgeSuggestStrategy,
 	SocialDigestStrategy,
+	StreakAtRiskStrategy,
 	WeeklyAchievementStrategy,
 	WeeklyReportStrategy,
 	WinbackStrategy,
@@ -54,6 +56,8 @@ import {
 		WinbackStrategy,
 		NudgeSuggestStrategy,
 		SocialDigestStrategy,
+		LunchNudgeStrategy,
+		StreakAtRiskStrategy,
 		{
 			provide: REMINDER_SCHEDULER,
 			useClass: BullMQReminderSchedulerAdapter,

@@ -2,6 +2,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 
+import { previousIsoWeekRange } from "@/common/date/utils/range";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
@@ -76,11 +77,9 @@ describe("WeeklyAchievementStrategy", () => {
 		// When
 		await strategy.execute(ctx);
 
-		// Then — weekRange: 2024-01-08 <= startDate < 2024-01-15
-		const expectedRange = {
-			gte: dayjs.utc("2024-01-08").startOf("day").toDate(),
-			lt: dayjs.utc("2024-01-15").startOf("day").toDate(),
-		};
+		// Then
+		const { start, end } = previousIsoWeekRange(ctx.today);
+		const expectedRange = { gte: start, lt: end };
 
 		expect(database.todo.groupBy).toHaveBeenNthCalledWith(
 			1,
@@ -104,10 +103,11 @@ describe("WeeklyAchievementStrategy", () => {
 		await strategy.execute(ctx);
 
 		// Then
+		const { isoYear, isoWeek } = previousIsoWeekRange(ctx.today);
 		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
 			expect.objectContaining({
-				year: 2024,
-				week: 2,
+				year: isoYear,
+				week: isoWeek,
 			}),
 		]);
 	});

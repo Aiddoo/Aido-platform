@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { diffInDays } from "@/common/date/utils/compare";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DedupKeys } from "@/common/dedup/constants/dedup-keys";
@@ -29,8 +29,8 @@ export class WinbackStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const cutoffStart = dayjs.utc(today).subtract(15, "day").toDate();
-		const cutoffEnd = dayjs.utc(today).subtract(3, "day").toDate();
+		const cutoffStart = subtractDays(15, today);
+		const cutoffEnd = subtractDays(3, today);
 
 		// 3~15일 미접속 + pushEnabled 유저
 		const users = await this.database.user.findMany({
