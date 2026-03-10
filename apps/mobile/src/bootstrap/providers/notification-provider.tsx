@@ -34,6 +34,9 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const receivedListener = useRef<Notifications.EventSubscription | null>(null);
   const lastResponseHandled = useRef<string | null>(null);
+  const pendingColdStartResponse = useRef<Notifications.NotificationResponse | null>(null);
+
+  const isAuthResolved = status !== 'loading';
 
   const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
     isAuthenticated,
@@ -41,22 +44,33 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-  // Cold start 알림 처리
+  // Cold start 및 일반 알림 통합 처리
   useEffect(() => {
-    if (lastNotificationResponse) {
-      const responseId = lastNotificationResponse.notification.request.identifier;
+    const responseToProcess = pendingColdStartResponse.current ?? lastNotificationResponse;
+    if (!responseToProcess) return;
 
+    const responseId = responseToProcess.notification.request.identifier;
+
+    if (isAuthResolved) {
+      // 인증 완료: 즉시 처리
       if (lastResponseHandled.current !== responseId) {
         lastResponseHandled.current = responseId;
-        handleNotificationResponse(lastNotificationResponse).catch((e) =>
+        pendingColdStartResponse.current = null;
+        handleNotificationResponse(responseToProcess).catch((e) =>
           logger.error(
             '[Notification] Response handling failed',
             e instanceof Error ? e : undefined,
           ),
         );
       }
+    } else if (
+      lastNotificationResponse &&
+      lastResponseHandled.current !== lastNotificationResponse.notification.request.identifier
+    ) {
+      // 인증 미완료: 최신 응답을 큐잉
+      pendingColdStartResponse.current = lastNotificationResponse;
     }
-  }, [lastNotificationResponse, handleNotificationResponse, logger]);
+  }, [lastNotificationResponse, isAuthResolved, handleNotificationResponse, logger]);
 
   // Effect 1: 알림 리스너 등록
   useEffect(() => {

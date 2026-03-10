@@ -23,6 +23,12 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
   const logger = useLogger();
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // ref로 최신 auth 상태를 추적하여 deferred 실행 시 stale closure 방지
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
   const handleNotificationResponse = useCallback(
     async (response: Notifications.NotificationResponse): Promise<void> => {
       const rawData = response.notification.request.content.data;
@@ -38,8 +44,8 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       // 2. Analytics 추적
       trackEvent('push_notification_opened', { type: data.type });
 
-      // 3. 읽음 처리 + 배지 동기화
-      if (isAuthenticated && data.notificationId) {
+      // 3. 읽음 처리 + 배지 동기화 (ref로 최신 auth 상태 참조)
+      if (isAuthenticatedRef.current && data.notificationId) {
         try {
           await notificationService.markAsRead(data.notificationId);
           // Optimistic: 즉시 1 감소
@@ -84,7 +90,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
           }
         });
     },
-    [trackEvent, isAuthenticated, logger, notificationService, queryClient],
+    [trackEvent, logger, notificationService, queryClient],
   );
 
   const handleForegroundNotification = useCallback(() => {
