@@ -146,10 +146,8 @@ const getCategoryLabel = (type: NotificationType): string =>
 /** 알림 타입 + context → 앱 내부 라우트 */
 const getInternalRoute = (type: NotificationType, context?: NotificationContext): string | null =>
   match(type)
-    .with('FOLLOW_NEW', () => '/friends')
-    .with('FOLLOW_ACCEPTED', () =>
-      context?.friendId ? `/feed/friend/${context.friendId}` : '/feed',
-    )
+    .with('FOLLOW_NEW', () => '/friends?view=receiver')
+    .with('FOLLOW_ACCEPTED', () => '/friends?view=receiver')
     .with('CHEER_RECEIVED', 'FRIEND_COMPLETED', () =>
       context?.friendId ? `/feed/friend/${context.friendId}` : null,
     )

@@ -3,16 +3,14 @@ import { ReportStatusBanner } from '@src/features/ai/presentations/components/Re
 import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { getSampleReport } from '@src/features/ai/presentations/constants/sample-reports.constant';
+import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import {
-  Box,
   Button,
-  DocsIcon,
   H4,
   QueryErrorBoundary,
-  Result,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -157,15 +155,7 @@ function ReportList({ type }: { type: ReportType }) {
   const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type }));
 
   if (reports.length === 0) {
-    return (
-      <Box my={32}>
-        <Result
-          icon={<DocsIcon width={48} height={48} />}
-          title="아직 리포트가 없어요"
-          description="할 일을 완료하면 AI가 리포트를 생성해줘요"
-        />
-      </Box>
-    );
+    return <PremiumPendingPreview type={type} />;
   }
 
   return (
@@ -173,6 +163,28 @@ function ReportList({ type }: { type: ReportType }) {
       {reports.map((report, index) => (
         <ReportCard key={report.id} report={report} isLast={index === reports.length - 1} />
       ))}
+    </VStack>
+  );
+}
+
+function PremiumPendingPreview({ type }: { type: ReportType }) {
+  const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
+  const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
+
+  const daysUntil = type === 'WEEKLY' ? status.daysUntilWeekly : status.daysUntilMonthly;
+  const reportLabel = type === 'WEEKLY' ? '주간' : '월간';
+
+  return (
+    <VStack gap={12}>
+      <View className="opacity-60">
+        <ReportCard report={sampleReport} isSample isLast />
+      </View>
+
+      <Text size="b3" shade={7} align="center">
+        {daysUntil === 0
+          ? `오늘 첫 번째 ${reportLabel} 리포트가 도착해요!`
+          : `${daysUntil}일 후에 첫 번째 ${reportLabel} 리포트가 도착해요`}
+      </Text>
     </VStack>
   );
 }
