@@ -1,6 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["package.json", "pnpm-workspace.yaml", "tsconfig.json", ".env.example"],
+  "globalDependencies": [
+    "package.json",
+    "pnpm-workspace.yaml",
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+    ".env.example"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -21,6 +27,7 @@
       "outputs": ["coverage/**"],
       "passThroughEnv": [
         "DATABASE_URL",
+        "REDIS_URL",
         "JWT_SECRET",
         "JWT_REFRESH_SECRET",
         "JWT_EXPIRES_IN",

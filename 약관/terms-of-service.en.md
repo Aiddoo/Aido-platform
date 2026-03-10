@@ -1,6 +1,6 @@
 # Aido Terms of Service
 
-**Effective Date: March 8, 2026**
+**Effective Date: March 10, 2026**
 
 ---
 
@@ -16,7 +16,7 @@ The definitions of terms used in these Terms are as follows:
 
 1. **"Service"**: Refers to the Aido application and all associated features provided by the Company.
 2. **"Member"**: Refers to a person who has agreed to these Terms, completed registration, and uses the Service.
-3. **"Content"**: Refers to all information created by Members within the Service, including to-dos, memos, and nudge messages.
+3. **"Content"**: Refers to all information created by Members within the Service, including to-dos, memos, nudge messages, and Cheer messages.
 4. **"Paid Service"**: Refers to features offered by the Company on a paid basis, such as the Pro subscription.
 5. **"Social Login"**: Refers to registration and login through third-party authentication services such as Google, Kakao, Naver, and Apple.
 6. **"Subscription"**: Refers to a paid service agreement that auto-renews on a periodic basis.
@@ -32,7 +32,8 @@ The definitions of terms used in these Terms are as follows:
 4. **For changes unfavorable to Members**, the Company shall provide at least **30 days' prior notice** before the effective date and individually notify Members via email or push notification.
 5. Other changes to the Terms shall be announced at least **7 days** before the effective date.
 6. Members who do not agree to the revised Terms may express their objection before the effective date and may terminate their service agreement.
-7. If a Member does not explicitly express objection by the announced effective date, the Member shall be deemed to have agreed to the revised Terms.
+7. **For changes that are not unfavorable to Members**, if a Member does not explicitly express objection by the announced effective date, the Member shall be deemed to have agreed to the revised Terms.
+8. **For changes unfavorable to Members**, if a Member does not explicitly express consent by the effective date of the change, the Member shall be deemed to have not agreed. In such cases, either the Company or the Member may terminate the service agreement.
 
 ---
 
@@ -66,10 +67,10 @@ The main features provided by the Company are as follows:
 1. **Task Management**: Creating, editing, deleting, completing to-dos, setting recurring tasks, and category organization
 2. **Calendar and Schedule Management**: Schedule management through weekly/monthly calendar views
 3. **AI Features**: AI-powered automatic to-do parsing, weekly and monthly AI reports (achievement analysis and personalized tips), recurring pattern detection and automatic suggestions, voice input for to-do creation
-4. **Social Features**: Adding friends (mutual follow-based), sharing to-dos, Nudge, and weekly achievement badges
+4. **Social Features**: Adding friends (mutual follow-based), sharing to-dos, Nudge, Cheer, Social Digest (weekly summary of friends' activities), and weekly achievement badges
 5. **Streaks**: Tracking consecutive task completion records and displaying achievement status
 6. **Subscription Service**: Premium features through the Pro plan
-7. **Notification Service**: Automatic to-do reminders (1 hour and 10 minutes before scheduled time), morning and evening reminders, streak maintenance reminders, social notifications (friend requests, Nudge, social digest, etc.), Nudge encouragement notifications, Win-back notifications
+7. **Notification Service**: Automatic to-do reminders (1 hour and 10 minutes before scheduled time), morning and evening reminders, streak maintenance reminders, social notifications (friend requests, Nudge, Cheer, social digest, etc.), Nudge encouragement notifications (prompting users to send Nudges to inactive friends), Win-back notifications (encouraging inactive users to return to the Service)
 8. **Personalization Settings**: App icon customization (premium), dark mode, light mode, and system theme selection
 9. Other features developed or provided through partnerships by the Company
 
@@ -95,8 +96,8 @@ The main features provided by the Company are as follows:
 
    | Plan | Price | Key Benefits |
    |------|-------|-------------|
-   | Free | Free | AI parsing 5 times/day, Nudge 3 times/day, up to 5 friends, up to 3 categories |
-   | Pro Monthly | KRW 3,900/month | Unlimited AI parsing & Nudge, unlimited friends, up to 30 categories, weekly & monthly AI reports, AI recurring pattern suggestions, custom reminder times, premium app icons |
+   | Free | Free | AI parsing 5 times/day, Nudge 3 times/day, Cheer 3 times/day, up to 5 friends, up to 3 categories |
+   | Pro Monthly | KRW 3,900/month | Unlimited AI parsing, Nudge & Cheer, unlimited friends, up to 30 categories, weekly & monthly AI reports, AI recurring pattern suggestions, custom reminder times, premium app icons |
    | Pro Annual | KRW 29,900/year | Same benefits as Pro Monthly |
 
 2. The above prices include VAT. Actual charges may vary due to exchange rates, taxes, or fees depending on the country and store policies.
@@ -155,11 +156,12 @@ The main features provided by the Company are as follows:
 
 ## Article 13 (Social Feature Rules)
 
-1. Members may use social features including adding friends, sharing to-dos, and Nudge.
-2. Social features (sharing to-dos, Nudge, etc.) are available only between **mutual followers**.
+1. Members may use social features including adding friends, sharing to-dos, Nudge, and Cheer.
+2. Social features (sharing to-dos, Nudge, Cheer, etc.) are available only between **mutual followers**.
 3. Visibility scope is determined by in-app settings, and Members are responsible for managing their own visibility settings.
 4. To maintain a safe community, the Company may delete content or restrict service use for Members who violate operational policies.
 5. Members must not engage in behavior that causes discomfort or harassment to other Members through social features.
+6. Nudge and Cheer are subject to a **24-hour cooldown** per recipient, and daily limits may apply based on the subscription plan (see Article 8).
 
 ---
 
@@ -251,5 +253,5 @@ Inquiries regarding these Terms, subscriptions, and complaints may be submitted 
 
 ## Addendum
 
-1. These Terms of Service take effect on **March 8, 2026**.
-2. The previous Terms of Service (effective March 5, 2026) shall cease to have effect upon the implementation of these Terms.
+1. These Terms of Service take effect on **March 10, 2026**.
+2. The previous Terms of Service (effective March 8, 2026) shall cease to have effect upon the implementation of these Terms.

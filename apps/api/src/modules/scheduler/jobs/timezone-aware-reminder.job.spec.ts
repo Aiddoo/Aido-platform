@@ -135,10 +135,10 @@ describe("TimezoneAwareReminderJob", () => {
 		});
 
 		describe("조건부 Strategy 호출", () => {
-			it("일요일 20:00에 주간 달성 배지 Strategy를 호출한다", async () => {
-				// 2024-01-14 = 일요일, KST 20:00 = UTC 2024-01-14T11:00:00Z
-				const sunday = new Date("2024-01-14T11:00:00Z");
-				jest.setSystemTime(sunday);
+			it("월요일 07:00에 주간 달성 배지 Strategy를 호출한다", async () => {
+				// 2024-01-15 = 월요일, KST 07:00 = UTC 2024-01-14T22:00:00Z
+				const monday = new Date("2024-01-14T22:00:00Z");
+				jest.setSystemTime(monday);
 
 				databaseService.userPreference.findMany.mockResolvedValue([
 					{ timezone: "Asia/Seoul" },
@@ -149,9 +149,9 @@ describe("TimezoneAwareReminderJob", () => {
 				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
 			});
 
-			it("일요일 18:00에는 주간 달성 배지 Strategy를 호출하지 않는다", async () => {
-				// 2024-01-14 = 일요일, KST 18:00 = UTC 2024-01-14T09:00:00Z
-				const sunday = new Date("2024-01-14T09:00:00Z");
+			it("일요일 07:00에는 주간 달성 배지 Strategy를 호출하지 않는다", async () => {
+				// 2024-01-14 = 일요일, KST 07:00 = UTC 2024-01-13T22:00:00Z
+				const sunday = new Date("2024-01-13T22:00:00Z");
 				jest.setSystemTime(sunday);
 
 				databaseService.userPreference.findMany.mockResolvedValue([

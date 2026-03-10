@@ -21,16 +21,16 @@ describe("WeeklyAchievementStrategy", () => {
 
 	const TZ = "Asia/Seoul";
 
-	/** KST 2024-01-14 (일요일) 20:00 = UTC 2024-01-14T11:00:00Z */
-	const FAKE_NOW = new Date("2024-01-14T11:00:00Z");
+	/** KST 2024-01-15 (월요일) 07:00 = UTC 2024-01-14T22:00:00Z */
+	const FAKE_NOW = new Date("2024-01-14T22:00:00Z");
 
 	const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 		tz: TZ,
-		localHour: 20,
+		localHour: 7,
 		localMinute: 0,
-		dayOfWeek: 0,
-		today: dayjs.utc("2024-01-14").startOf("day").toDate(),
-		tomorrow: dayjs.utc("2024-01-15").startOf("day").toDate(),
+		dayOfWeek: 1,
+		today: dayjs.utc("2024-01-15").startOf("day").toDate(),
+		tomorrow: dayjs.utc("2024-01-16").startOf("day").toDate(),
 		...overrides,
 	});
 
@@ -59,6 +59,57 @@ describe("WeeklyAchievementStrategy", () => {
 
 	afterEach(() => {
 		jest.useRealTimers();
+	});
+
+	// =========================================================================
+	// 이전 주 날짜 범위 집계
+	// =========================================================================
+
+	it("이전 주 월~일 범위로 todo를 집계한다", async () => {
+		// Given — 2024-01-15(월) 실행 → 이전 주: 01-08(월)~01-14(일)
+		const ctx = makeCtx();
+
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 3 } }])
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 2 } }]);
+
+		// When
+		await strategy.execute(ctx);
+
+		// Then — weekRange: 2024-01-08 <= startDate < 2024-01-15
+		const expectedRange = {
+			gte: dayjs.utc("2024-01-08").startOf("day").toDate(),
+			lt: dayjs.utc("2024-01-15").startOf("day").toDate(),
+		};
+
+		expect(database.todo.groupBy).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				where: expect.objectContaining({
+					startDate: expectedRange,
+				}),
+			}),
+		);
+	});
+
+	it("이전 주의 isoYear/isoWeek으로 기록을 저장한다", async () => {
+		// Given — 2024-01-15(월) 실행 → 이전 주: ISO 2024-W02
+		const ctx = makeCtx();
+
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 3 } }])
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 2 } }]);
+
+		// When
+		await strategy.execute(ctx);
+
+		// Then
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
+			expect.objectContaining({
+				year: 2024,
+				week: 2,
+			}),
+		]);
 	});
 
 	// =========================================================================
