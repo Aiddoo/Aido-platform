@@ -99,4 +99,4 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Build
-        run: pnpm turbo run build --filter='!@aido/mobile' ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        run: pnpm turbo run build --filter='!@aido/mobile'
