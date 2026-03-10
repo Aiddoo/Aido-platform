@@ -36,25 +36,25 @@ describe("WeeklyAchievementRepository", () => {
 			// Then
 			expect(db.weeklyAchievement.findMany).toHaveBeenCalledWith({
 				where: { userId, year: 2026 },
-				orderBy: { id: "desc" },
+				orderBy: { week: "desc" },
 				take: 21,
 			});
 		});
 
-		it("커서가 있으면 skip+cursor 옵션을 포함한다", async () => {
+		it("커서가 있으면 복합 unique 커서를 포함한다", async () => {
 			// Given
 			db.weeklyAchievement.findMany.mockResolvedValue([] as never);
 
 			// When
-			await repository.findByYear(userId, 2026, 42, 21);
+			await repository.findByYear(userId, 2026, 10, 21);
 
 			// Then
 			expect(db.weeklyAchievement.findMany).toHaveBeenCalledWith({
 				where: { userId, year: 2026 },
-				orderBy: { id: "desc" },
+				orderBy: { week: "desc" },
 				take: 21,
 				skip: 1,
-				cursor: { id: 42 },
+				cursor: { userId_year_week: { userId, year: 2026, week: 10 } },
 			});
 		});
 	});

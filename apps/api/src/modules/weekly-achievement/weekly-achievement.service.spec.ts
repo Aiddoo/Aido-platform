@@ -2,10 +2,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type {
-	CursorPaginatedResponse,
-	NormalizedCursorPagination,
-} from "@/common/pagination";
+import type { NormalizedCursorPagination } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
 import type { WeeklyAchievement } from "@/generated/prisma/client";
 
@@ -57,10 +54,6 @@ describe("WeeklyAchievementService", () => {
 		beforeEach(() => {
 			repository.findByYear.mockResolvedValue(mockItems);
 			repository.findAllByYear.mockResolvedValue(mockItems);
-			paginationService.createCursorPaginatedResponse.mockReturnValue({
-				items: mockItems,
-				pagination: { nextCursor: null, hasNext: false, size: 20 },
-			} as CursorPaginatedResponse<WeeklyAchievement, number>);
 		});
 
 		it("페이지네이션 목록과 summary를 반환한다", async () => {

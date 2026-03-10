@@ -86,7 +86,6 @@ export abstract class WeeklyAchievementMapper {
 			return { currentStreak: 0, bestStreak: 0 };
 		}
 
-		let currentStreak = 1;
 		let bestStreak = 1;
 		let streak = 1;
 
@@ -104,19 +103,7 @@ export abstract class WeeklyAchievementMapper {
 			}
 		}
 
-		// currentStreak: 마지막 레코드부터 역순으로 연속인 수
-		currentStreak = 1;
-		for (let i = records.length - 1; i > 0; i--) {
-			const prev = records[i - 1];
-			const curr = records[i];
-			if (prev && curr && this.isConsecutiveWeek(prev, curr)) {
-				currentStreak++;
-			} else {
-				break;
-			}
-		}
-
-		return { currentStreak, bestStreak };
+		return { currentStreak: streak, bestStreak };
 	}
 
 	/**

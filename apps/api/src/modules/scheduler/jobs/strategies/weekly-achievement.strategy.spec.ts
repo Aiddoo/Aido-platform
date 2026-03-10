@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
-import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
 
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
@@ -49,7 +48,8 @@ describe("WeeklyAchievementStrategy", () => {
 		weeklyAchievementService = unitRef.get(WeeklyAchievementService);
 
 		// 기본 mock 설정
-		database.user.findMany.mockResolvedValue([] as never);
+		(database.todo.groupBy as jest.Mock).mockResolvedValue([]);
+		database.user.findMany.mockResolvedValue([]);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
@@ -62,100 +62,176 @@ describe("WeeklyAchievementStrategy", () => {
 	});
 
 	// =========================================================================
-	// 주간 달성 배지 발송
+	// DB groupBy 집계
 	// =========================================================================
 
-	it("해당 타임존의 모든 pushEnabled 유저에게 주간 달성 배지를 발송한다", async () => {
+	it("DB groupBy로 주간 todo를 집계한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([
-			{
-				id: "user-1",
-				todos: [{ completed: true }, { completed: true }, { completed: false }],
-			},
-		] as never);
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 3 } }])
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 2 } }]);
 
-		const result = await strategy.execute(ctx);
-
-		expect(result).toEqual({ sent: 1 });
-
-		// 단일 쿼리로 premium/free 구분 없이 조회
-		expect(database.user.findMany).toHaveBeenCalledTimes(1);
-		expect(database.user.findMany).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: expect.objectContaining({
-					preference: { timezone: TZ, pushEnabled: true },
-				}),
-			}),
-		);
-
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		const expected = NotificationMessageBuilder.weeklyAchievement(2, 3);
-		expect(notifications?.[0]).toMatchObject({
-			userId: "user-1",
-			type: "WEEKLY_ACHIEVEMENT",
-			title: expected.title,
-			body: expected.body,
-		});
-	});
-
-	// =========================================================================
-	// 인메모리 집계
-	// =========================================================================
-
-	it("인메모리 집계로 todos 배열에서 completed 카운트를 계산한다", async () => {
-		const ctx = makeCtx();
-
-		database.user.findMany.mockResolvedValueOnce([
-			{
-				id: "user-1",
-				todos: [
-					{ completed: true },
-					{ completed: true },
-					{ completed: true },
-					{ completed: true },
-					{ completed: true },
-				],
-			},
-		] as never);
-
+		// When
 		await strategy.execute(ctx);
 
-		const notifications =
-			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		// 5/5 = 100% → perfect 메시지
-		const expected = NotificationMessageBuilder.weeklyAchievement(5, 5);
-		expect(notifications?.[0]).toMatchObject({
-			title: expected.title,
-			body: expected.body,
-		});
+		// Then
+		expect(database.todo.groupBy).toHaveBeenCalledTimes(2);
+		expect(database.todo.groupBy).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				by: ["userId"],
+				_count: { id: true },
+			}),
+		);
+		expect(database.todo.groupBy).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({
+				by: ["userId"],
+				where: expect.objectContaining({ completed: true }),
+				_count: { id: true },
+			}),
+		);
 	});
 
 	// =========================================================================
-	// 중복 방지
+	// 기록 저장 — pushEnabled 무관
 	// =========================================================================
 
-	it("이미 알림 받은 사용자를 제외한다", async () => {
+	it("모든 유저의 기록을 저장한다 (pushEnabled 무관)", async () => {
+		// Given
 		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([
-			{
-				id: "user-1",
-				todos: [{ completed: true }],
-			},
-			{
-				id: "user-2",
-				todos: [{ completed: true }],
-			},
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([
+				{ userId: "user-push-on", _count: { id: 5 } },
+				{ userId: "user-push-off", _count: { id: 3 } },
+			])
+			.mockResolvedValueOnce([
+				{ userId: "user-push-on", _count: { id: 4 } },
+				{ userId: "user-push-off", _count: { id: 2 } },
+			]);
+
+		// pushEnabled=true인 유저만 알림 대상
+		database.user.findMany.mockResolvedValue([{ id: "user-push-on" }] as never);
+
+		// When
+		await strategy.execute(ctx);
+
+		// Then — upsertMany에 두 유저 모두 포함
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				expect.objectContaining({
+					userId: "user-push-on",
+					totalTodos: 5,
+					completedTodos: 4,
+				}),
+				expect.objectContaining({
+					userId: "user-push-off",
+					totalTodos: 3,
+					completedTodos: 2,
+				}),
+			]),
+		);
+	});
+
+	// =========================================================================
+	// pushEnabled=false → 알림 미발송
+	// =========================================================================
+
+	it("pushEnabled=false 유저는 알림을 발송하지 않는다", async () => {
+		// Given
+		const ctx = makeCtx();
+
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([
+				{ userId: "user-push-on", _count: { id: 5 } },
+				{ userId: "user-push-off", _count: { id: 3 } },
+			])
+			.mockResolvedValueOnce([
+				{ userId: "user-push-on", _count: { id: 4 } },
+				{ userId: "user-push-off", _count: { id: 2 } },
+			]);
+
+		database.user.findMany.mockResolvedValue([{ id: "user-push-on" }] as never);
+
+		// When
+		const result = await strategy.execute(ctx);
+
+		// Then — 알림은 pushEnabled=true인 유저만
+		expect(result).toEqual({ sent: 1 });
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		expect(notifications).toHaveLength(1);
+		expect(notifications?.[0]?.userId).toBe("user-push-on");
+	});
+
+	// =========================================================================
+	// 0% 완료 주차 기록
+	// =========================================================================
+
+	it("0% 완료 주차도 기록을 저장한다", async () => {
+		// Given
+		const ctx = makeCtx();
+
+		// totalByUser에는 있지만 completedByUser에는 없음 → completedTodos=0
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 5 } }])
+			.mockResolvedValueOnce([]); // completed 없음
+
+		// When
+		await strategy.execute(ctx);
+
+		// Then
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
+			expect.objectContaining({
+				userId: "user-1",
+				totalTodos: 5,
+				completedTodos: 0,
+			}),
+		]);
+	});
+
+	// =========================================================================
+	// dedup → 알림만 필터, 기록 독립
+	// =========================================================================
+
+	it("dedup은 알림만 필터하고 기록 저장은 독립적이다", async () => {
+		// Given
+		const ctx = makeCtx();
+
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([
+				{ userId: "user-1", _count: { id: 3 } },
+				{ userId: "user-2", _count: { id: 4 } },
+			])
+			.mockResolvedValueOnce([
+				{ userId: "user-1", _count: { id: 2 } },
+				{ userId: "user-2", _count: { id: 3 } },
+			]);
+
+		database.user.findMany.mockResolvedValue([
+			{ id: "user-1" },
+			{ id: "user-2" },
 		] as never);
 
+		// user-1은 이미 알림 받음
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then — 기록은 두 유저 모두 저장
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				expect.objectContaining({ userId: "user-1" }),
+				expect.objectContaining({ userId: "user-2" }),
+			]),
+		);
+		// 알림은 user-2만
 		expect(result).toEqual({ sent: 1 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -167,52 +243,40 @@ describe("WeeklyAchievementStrategy", () => {
 	// 대상 없음
 	// =========================================================================
 
-	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+	it("대상이 없으면 groupBy 이후 아무것도 호출하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([] as never);
+		(database.todo.groupBy as jest.Mock).mockResolvedValue([]);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
+		expect(weeklyAchievementService.upsertMany).not.toHaveBeenCalled();
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
 	// =========================================================================
-	// 주간 달성 기록 배치 upsert
+	// 알림 대상 없어도 기록은 저장
 	// =========================================================================
 
-	it("알림 발송 시 WeeklyAchievement를 배치 upsertMany로 저장한다", async () => {
+	it("알림 대상이 없어도 기록은 저장한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
-		database.user.findMany.mockResolvedValueOnce([
-			{
-				id: "user-1",
-				todos: [{ completed: true }, { completed: true }, { completed: false }],
-			},
-		] as never);
+		// completed > 0인 유저 없음 → 알림 대상 없음
+		(database.todo.groupBy as jest.Mock)
+			.mockResolvedValueOnce([{ userId: "user-1", _count: { id: 5 } }])
+			.mockResolvedValueOnce([]); // completed 없음
 
-		await strategy.execute(ctx);
+		// When
+		const result = await strategy.execute(ctx);
 
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
-			{
-				userId: "user-1",
-				year: expect.any(Number),
-				week: expect.any(Number),
-				totalTodos: 3,
-				completedTodos: 2,
-				achievedAt: expect.any(Date),
-			},
-		]);
-	});
-
-	it("대상이 없으면 upsertMany를 호출하지 않는다", async () => {
-		const ctx = makeCtx();
-
-		database.user.findMany.mockResolvedValueOnce([] as never);
-
-		await strategy.execute(ctx);
-
-		expect(weeklyAchievementService.upsertMany).not.toHaveBeenCalled();
+		// Then — 기록 저장됨 + 알림 미발송
+		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledTimes(1);
+		expect(result).toEqual({ sent: 0 });
+		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 });

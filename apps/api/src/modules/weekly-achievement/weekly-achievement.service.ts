@@ -3,7 +3,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginationInfo } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import type { WeeklyAchievement } from "@/generated/prisma/client";
 import type {
 	GetWeeklyAchievementParams,
 	GetWeeklyAchievementsParams,
@@ -57,11 +56,15 @@ export class WeeklyAchievementService {
 			this.weeklyAchievementRepository.findAllByYear(userId, year),
 		]);
 
-		const { items: paginatedItems, pagination } =
-			this.paginationService.createCursorPaginatedResponse<
-				WeeklyAchievement,
-				number
-			>({ items, size });
+		const hasNext = items.length > size;
+		const paginatedItems = hasNext ? items.slice(0, size) : items;
+		const lastItem = paginatedItems[paginatedItems.length - 1];
+
+		const pagination: CursorPaginationInfo<number> = {
+			nextCursor: hasNext && lastItem ? lastItem.week : null,
+			hasNext,
+			size,
+		};
 
 		const summary = WeeklyAchievementMapper.computeSummary(yearRecords);
 

@@ -20,11 +20,11 @@ export class WeeklyAchievementRepository {
 	): Promise<WeeklyAchievement[]> {
 		return this.database.weeklyAchievement.findMany({
 			where: { userId, year },
-			orderBy: { id: "desc" },
+			orderBy: { week: "desc" },
 			take,
 			...(cursor != null && {
 				skip: 1,
-				cursor: { id: cursor },
+				cursor: { userId_year_week: { userId, year, week: cursor } },
 			}),
 		});
 	}

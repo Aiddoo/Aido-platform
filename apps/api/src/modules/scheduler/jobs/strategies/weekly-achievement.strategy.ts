@@ -23,7 +23,6 @@ export class WeeklyAchievementStrategy {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
 
-		// 요일 무관하게 항상 정확한 월~일 범위
 		const mondayOfWeek = dayjs.utc(today).isoWeekday(1).startOf("day").toDate();
 		const nextMonday = dayjs
 			.utc(today)
@@ -32,86 +31,105 @@ export class WeeklyAchievementStrategy {
 			.startOf("day")
 			.toDate();
 
-		// 오케스트레이터가 일요일 20:00에만 호출 → 전체 pushEnabled 유저 대상
-		const users = await this.database.user.findMany({
-			where: {
-				preference: { timezone: tz, pushEnabled: true },
-				todos: {
-					some: {
-						startDate: { gte: mondayOfWeek, lt: nextMonday },
-						completed: true,
-					},
-				},
-			},
-			select: {
-				id: true,
-				todos: {
-					where: { startDate: { gte: mondayOfWeek, lt: nextMonday } },
-					select: { completed: true },
-				},
-			},
-		});
-
-		if (users.length === 0) {
-			return { sent: 0 };
-		}
-
-		const alreadyNotified =
-			await this.notificationService.findAlreadyNotifiedUserIds({
-				userIds: users.map((u) => u.id),
-				type: "WEEKLY_ACHIEVEMENT",
-				notificationDate: today,
-			});
-
-		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
-
-		if (filteredUsers.length === 0) {
-			return { sent: 0 };
-		}
-
-		// ISO 주차 계산
 		const isoYear = dayjs.utc(today).isoWeekYear();
 		const isoWeek = dayjs.utc(today).isoWeek();
+		const weekRange = { gte: mondayOfWeek, lt: nextMonday };
 
-		// 인메모리 집계 + DB 적재
-		const notifications = filteredUsers.map((user) => {
-			const totalCount = user.todos.length;
-			const completedCount = user.todos.filter((t) => t.completed).length;
+		// ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
+		const [totalByUser, completedByUser] = await Promise.all([
+			this.database.todo.groupBy({
+				by: ["userId"],
+				where: {
+					startDate: weekRange,
+					user: { preference: { timezone: tz } },
+				},
+				_count: { id: true },
+			}),
+			this.database.todo.groupBy({
+				by: ["userId"],
+				where: {
+					startDate: weekRange,
+					completed: true,
+					user: { preference: { timezone: tz } },
+				},
+				_count: { id: true },
+			}),
+		]);
 
+		if (totalByUser.length === 0) {
+			return { sent: 0 };
+		}
+
+		const completedMap = new Map(
+			completedByUser.map((g) => [g.userId, g._count.id]),
+		);
+
+		const records = totalByUser.map((g) => ({
+			userId: g.userId,
+			year: isoYear,
+			week: isoWeek,
+			totalTodos: g._count.id,
+			completedTodos: completedMap.get(g.userId) ?? 0,
+			achievedAt: today,
+		}));
+
+		// ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
+		await this.weeklyAchievementService.upsertMany(records);
+
+		// ─── C. 알림 발송 (pushEnabled + completed > 0 + dedup) ────
+		const notifiableUserIds = records
+			.filter((r) => r.completedTodos > 0)
+			.map((r) => r.userId);
+
+		if (notifiableUserIds.length === 0) {
+			return { sent: 0 };
+		}
+
+		const [pushEnabledUsers, alreadyNotified] = await Promise.all([
+			this.database.user.findMany({
+				where: {
+					id: { in: notifiableUserIds },
+					preference: { pushEnabled: true },
+				},
+				select: { id: true },
+			}),
+			this.notificationService.findAlreadyNotifiedUserIds({
+				userIds: notifiableUserIds,
+				type: "WEEKLY_ACHIEVEMENT",
+				notificationDate: today,
+			}),
+		]);
+
+		const pushEnabledSet = new Set(pushEnabledUsers.map((u) => u.id));
+		const finalRecords = records.filter(
+			(r) =>
+				r.completedTodos > 0 &&
+				pushEnabledSet.has(r.userId) &&
+				!alreadyNotified.has(r.userId),
+		);
+
+		if (finalRecords.length === 0) {
+			return { sent: 0 };
+		}
+
+		const notifications = finalRecords.map((r) => {
 			const message = NotificationMessageBuilder.weeklyAchievement(
-				completedCount,
-				totalCount,
+				r.completedTodos,
+				r.totalTodos,
 			);
-
 			return {
-				userId: user.id,
+				userId: r.userId,
 				type: "WEEKLY_ACHIEVEMENT" as const,
 				title: message.title,
 				body: message.body,
 				notificationDate: today,
-				totalCount,
-				completedCount,
 			};
 		});
 
-		// 주간 달성 기록 배치 upsert (알림 발송과 병렬)
-		await Promise.all([
-			this.notificationService.createAndSendBatch(
-				notifications.map(({ totalCount, completedCount, ...n }) => n),
-			),
-			this.weeklyAchievementService.upsertMany(
-				notifications.map((n) => ({
-					userId: n.userId,
-					year: isoYear,
-					week: isoWeek,
-					totalTodos: n.totalCount,
-					completedTodos: n.completedCount,
-					achievedAt: today,
-				})),
-			),
-		]);
+		await this.notificationService.createAndSendBatch(notifications);
+
 		this.#logger.log(
-			`Weekly achievement: tz=${tz}, count=${notifications.length}`,
+			`Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,
 		);
 		return { sent: notifications.length };
 	}
