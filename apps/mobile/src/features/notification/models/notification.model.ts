@@ -22,6 +22,8 @@ export const notificationTypeSchema = z.enum([
   'WINBACK',
   'SOCIAL_DIGEST',
   'NUDGE_SUGGEST',
+  'LUNCH_NUDGE',
+  'STREAK_AT_RISK',
 ]);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
@@ -135,7 +137,7 @@ const getCategoryLabel = (type: NotificationType): string =>
     .with('CHEER_RECEIVED', () => '응원')
     .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => '달성')
     .with('TODO_REMINDER', 'TODO_SHARED', 'WINBACK', () => '할일')
-    .with('MORNING_REMINDER', 'EVENING_REMINDER', () => '리마인더')
+    .with('MORNING_REMINDER', 'EVENING_REMINDER', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => '리마인더')
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'AI')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => '공지')
     .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => '소셜')
@@ -164,7 +166,7 @@ const getInternalRoute = (type: NotificationType, context?: NotificationContext)
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', () => '/reports')
     .with('AI_SUGGESTION', () => '/suggestions')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => null)
-    .with('WINBACK', 'SOCIAL_DIGEST', () => '/feed')
+    .with('WINBACK', 'SOCIAL_DIGEST', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => '/feed')
     .with('NUDGE_SUGGEST', () => (context?.friendId ? `/feed/friend/${context.friendId}` : '/feed'))
     .exhaustive();
 

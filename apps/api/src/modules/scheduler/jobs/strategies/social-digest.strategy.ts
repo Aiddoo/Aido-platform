@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
@@ -21,7 +21,7 @@ export class SocialDigestStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
+		const tomorrow = addDays(1, today);
 
 		// pushEnabled + 해당 타임존 + 오늘 투두 미완료인 유저 조회
 		const users = await this.database.user.findMany({

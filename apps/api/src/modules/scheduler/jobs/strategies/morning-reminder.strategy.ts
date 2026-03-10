@@ -1,7 +1,7 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
@@ -21,7 +21,7 @@ export class MorningReminderStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz, localHour, localMinute, userId } = ctx;
 		const today = todayInTimezone(tz);
-		const tomorrow = dayjs.utc(today).add(1, "day").toDate();
+		const tomorrow = addDays(1, today);
 
 		const selectClause = {
 			id: true,

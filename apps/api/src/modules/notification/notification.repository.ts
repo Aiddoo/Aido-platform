@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database/database.service";
 import type {
@@ -189,8 +190,7 @@ export class NotificationRepository {
 		tx?: TransactionClient,
 	): Promise<{ count: number }> {
 		const client = tx ?? this.database;
-		const cutoffDate = now();
-		cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+		const cutoffDate = subtractDays(daysOld);
 
 		return client.notification.deleteMany({
 			where: {

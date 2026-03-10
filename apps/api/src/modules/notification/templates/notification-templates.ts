@@ -115,6 +115,20 @@ export const SCHEDULER_TEMPLATES = {
 		type: "EVENING_REMINDER",
 		defaultRoute: "/todos",
 	} satisfies NotificationTemplate,
+	// 점심 넛지 (12:30, 오늘 완료 0개)
+	LUNCH_NUDGE: {
+		title: "아직 0개야",
+		body: "점심 먹고 하나만 해볼래?",
+		type: "LUNCH_NUDGE",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	// 스트릭 위기 전용 알림 (21:00, 스트릭 3일+ & 미완료)
+	STREAK_AT_RISK: {
+		title: "{streak}일 연속인데 오늘 끊을 거야?",
+		body: "딱 하나만 끝내면 이어갈 수 있어",
+		type: "STREAK_AT_RISK",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
 } as const;
 
 /**
@@ -644,6 +658,28 @@ export class NotificationMessageBuilder {
 				completedFriendCount,
 			}),
 			body: SOCIAL_TEMPLATES.SOCIAL_DIGEST_MULTI.body,
+		};
+	}
+
+	/**
+	 * 점심 넛지 알림 메시지 생성
+	 */
+	static lunchNudge(): { title: string; body: string } {
+		return {
+			title: SCHEDULER_TEMPLATES.LUNCH_NUDGE.title,
+			body: SCHEDULER_TEMPLATES.LUNCH_NUDGE.body,
+		};
+	}
+
+	/**
+	 * 스트릭 위기 알림 메시지 생성
+	 */
+	static streakAtRisk(streak: number): { title: string; body: string } {
+		return {
+			title: fillTemplate(SCHEDULER_TEMPLATES.STREAK_AT_RISK.title, {
+				streak,
+			}),
+			body: SCHEDULER_TEMPLATES.STREAK_AT_RISK.body,
 		};
 	}
 

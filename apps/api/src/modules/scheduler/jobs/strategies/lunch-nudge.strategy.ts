@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { subtractDays } from "@/common/date/utils/arithmetic";
+import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
@@ -8,9 +8,15 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
+/**
+ * 점심 넛지 Strategy (12:30)
+ *
+ * 오늘 할일이 있지만 완료가 0개인 유저에게 점심 넛지를 발송합니다.
+ * 고정 시간(12:30) 전용 — 프리미엄 커스텀 시간 미지원.
+ */
 @Injectable()
-export class WeeklyReportStrategy {
-	readonly #logger = new Logger(WeeklyReportStrategy.name);
+export class LunchNudgeStrategy {
+	readonly #logger = new Logger(LunchNudgeStrategy.name);
 
 	constructor(
 		private readonly database: DatabaseService,
@@ -20,14 +26,19 @@ export class WeeklyReportStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const weekAgo = subtractDays(7, today);
+		const tomorrow = addDays(1, today);
 
-		// 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 pushEnabled 유저 대상
+		// 오늘 할일이 있지만 완료가 0개인 유저 조회
 		const users = await this.database.user.findMany({
 			where: {
 				preference: { timezone: tz, pushEnabled: true },
-				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-				todos: { some: { startDate: { gte: weekAgo, lt: today } } },
+				todos: {
+					some: { startDate: { gte: today, lt: tomorrow } },
+					none: {
+						startDate: { gte: today, lt: tomorrow },
+						completed: true,
+					},
+				},
 			},
 			select: { id: true },
 		});
@@ -36,10 +47,11 @@ export class WeeklyReportStrategy {
 			return { sent: 0 };
 		}
 
+		// 중복 방지
 		const alreadyNotified =
 			await this.notificationService.findAlreadyNotifiedUserIds({
 				userIds: users.map((u) => u.id),
-				type: "WEEKLY_REPORT",
+				type: "LUNCH_NUDGE",
 				notificationDate: today,
 			});
 
@@ -49,17 +61,17 @@ export class WeeklyReportStrategy {
 			return { sent: 0 };
 		}
 
-		const message = NotificationMessageBuilder.weeklyReport();
+		const message = NotificationMessageBuilder.lunchNudge();
 		const notifications = filteredUsers.map((user) => ({
 			userId: user.id,
-			type: "WEEKLY_REPORT" as const,
+			type: "LUNCH_NUDGE" as const,
 			title: message.title,
 			body: message.body,
 			notificationDate: today,
 		}));
 
 		await this.notificationService.createAndSendBatch(notifications);
-		this.#logger.log(`Weekly report: tz=${tz}, count=${notifications.length}`);
+		this.#logger.log(`Lunch nudge: tz=${tz}, count=${notifications.length}`);
 		return { sent: notifications.length };
 	}
 }

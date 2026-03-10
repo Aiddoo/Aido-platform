@@ -2,6 +2,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
 import { CacheService } from "@/common/cache/cache.service";
+import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 
@@ -13,10 +14,12 @@ import {
 } from "../queue";
 import type { TimezoneContext } from "./strategies";
 import { EveningReminderStrategy } from "./strategies/evening-reminder.strategy";
+import { LunchNudgeStrategy } from "./strategies/lunch-nudge.strategy";
 import { MonthlyReportStrategy } from "./strategies/monthly-report.strategy";
 import { MorningReminderStrategy } from "./strategies/morning-reminder.strategy";
 import { NudgeSuggestStrategy } from "./strategies/nudge-suggest.strategy";
 import { SocialDigestStrategy } from "./strategies/social-digest.strategy";
+import { StreakAtRiskStrategy } from "./strategies/streak-at-risk.strategy";
 import { WeeklyAchievementStrategy } from "./strategies/weekly-achievement.strategy";
 import { WeeklyReportStrategy } from "./strategies/weekly-report.strategy";
 import { WinbackStrategy } from "./strategies/winback.strategy";
@@ -46,6 +49,8 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly winback: WinbackStrategy,
 		private readonly nudgeSuggest: NudgeSuggestStrategy,
 		private readonly socialDigest: SocialDigestStrategy,
+		private readonly lunchNudge: LunchNudgeStrategy,
+		private readonly streakAtRisk: StreakAtRiskStrategy,
 	) {}
 
 	async onModuleInit(): Promise<void> {
@@ -230,6 +235,22 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		) {
 			await this.nudgeSuggest.execute(ctx);
 		}
+
+		// 로컬 12:30: 점심 넛지
+		if (
+			localHour === NOTIFICATION_SCHEDULE.LUNCH_NUDGE.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.LUNCH_NUDGE.minute
+		) {
+			await this.lunchNudge.execute(ctx);
+		}
+
+		// 로컬 21:00: 스트릭 위기
+		if (
+			localHour === NOTIFICATION_SCHEDULE.STREAK_AT_RISK.hour &&
+			localMinute === NOTIFICATION_SCHEDULE.STREAK_AT_RISK.minute
+		) {
+			await this.streakAtRisk.execute(ctx);
+		}
 	}
 
 	#buildContext(
@@ -246,7 +267,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			localMinute,
 			dayOfWeek: local.day(),
 			today,
-			tomorrow: dayjs.utc(today).add(1, "day").toDate(),
+			tomorrow: addDays(1, today),
 			userId,
 		};
 	}

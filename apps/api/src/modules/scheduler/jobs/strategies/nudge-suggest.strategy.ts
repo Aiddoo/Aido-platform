@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { diffInDays } from "@/common/date/utils/compare";
+import { toIsoWeekId } from "@/common/date/utils/format";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DedupKeys } from "@/common/dedup/constants/dedup-keys";
 import {
@@ -29,8 +30,8 @@ export class NudgeSuggestStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const weekAgo = dayjs.utc(today).subtract(7, "day").toDate();
-		const twoDaysAgo = dayjs.utc(today).subtract(2, "day").toDate();
+		const weekAgo = subtractDays(7, today);
+		const twoDaysAgo = subtractDays(2, today);
 
 		// 이 타임존에서 pushEnabled인 유저 목록
 		const activeUsers = await this.database.user.findMany({
@@ -123,7 +124,7 @@ export class NudgeSuggestStrategy {
 		}
 
 		// 배치 2: 이번 주 발송 이력을 compound key로 단일 Redis 조회
-		const weekId = dayjs.utc(today).format("YYYY-[W]WW");
+		const weekId = toIsoWeekId(today);
 		const setKey = DedupKeys.nudgeSuggestSent(weekId);
 
 		// 전체 candidate × friend 조합을 한 번에 빌드
