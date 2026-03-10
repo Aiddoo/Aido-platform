@@ -15,6 +15,7 @@ const USER_SELECT = {
 	subscriptionStatus: true,
 	subscriptionExpiresAt: true,
 	revenueCatUserId: true,
+	profile: { select: { name: true } },
 } as const;
 
 export type SubscriptionUser = {
@@ -23,6 +24,7 @@ export type SubscriptionUser = {
 	subscriptionStatus: SubscriptionStatus;
 	subscriptionExpiresAt: Date | null;
 	revenueCatUserId: string | null;
+	profile: { name: string | null } | null;
 };
 
 /**

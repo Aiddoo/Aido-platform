@@ -29,8 +29,12 @@ export interface SubscriptionEventPayload {
 	expiresAt?: string;
 	/** 취소 사유 */
 	cancelReason?: string;
-	/** 가격 */
-	price?: number;
-	/** 통화 코드 (KRW, USD 등) */
-	currency?: string;
+	/** 사용자 이름 (UserProfile.name) */
+	name?: string;
+	/** USD 기준 가격 (RevenueCat event.price — 항상 USD) */
+	priceUsd?: number;
+	/** 구매 통화 기준 가격 (RevenueCat event.price_in_purchased_currency) */
+	priceInPurchasedCurrency?: number;
+	/** 구매 통화 코드 (RevenueCat event.currency, e.g. KRW) */
+	purchasedCurrency?: string;
 }

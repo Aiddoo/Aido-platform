@@ -16,7 +16,10 @@ import { AdminNotificationQueueService } from "@/modules/admin-notification/queu
 import { NotificationQueueService } from "@/modules/notification/queue";
 
 import type { SubscriptionEventPayload } from "./events/subscription.events";
-import { SubscriptionRepository } from "./subscription.repository";
+import {
+	SubscriptionRepository,
+	type SubscriptionUser,
+} from "./subscription.repository";
 
 /**
  * 구독 서비스
@@ -46,30 +49,26 @@ export class SubscriptionService {
 	readonly #eventHandlers = new Map<
 		RevenueCatEventType,
 		(
-			userId: string,
-			email: string,
+			user: SubscriptionUser,
 			event: RevenueCatEvent,
 		) => Promise<SubscriptionEventPayload | null>
 	>([
-		["INITIAL_PURCHASE", (u, e, ev) => this.#handleInitialPurchase(u, e, ev)],
-		["RENEWAL", (u, e, ev) => this.#handleRenewal(u, e, ev)],
-		["CANCELLATION", (u, e, ev) => this.#handleCancellation(u, e, ev)],
-		["UNCANCELLATION", (u, e, ev) => this.#handleUncancellation(u, e, ev)],
-		["EXPIRATION", (u, e, ev) => this.#handleExpiration(u, e, ev)],
+		["INITIAL_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
+		["RENEWAL", (u, ev) => this.#handleRenewal(u, ev)],
+		["CANCELLATION", (u, ev) => this.#handleCancellation(u, ev)],
+		["UNCANCELLATION", (u, ev) => this.#handleUncancellation(u, ev)],
+		["EXPIRATION", (u, ev) => this.#handleExpiration(u, ev)],
 		[
 			"BILLING_ISSUE",
-			(u, e, ev) => Promise.resolve(this.#handleBillingIssue(u, e, ev)),
+			(u, ev) => Promise.resolve(this.#handleBillingIssue(u, ev)),
 		],
-		[
-			"NON_RENEWING_PURCHASE",
-			(u, e, ev) => this.#handleInitialPurchase(u, e, ev),
-		],
-		["PRODUCT_CHANGE", (u, e, ev) => this.#handleProductChange(u, e, ev)],
+		["NON_RENEWING_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
+		["PRODUCT_CHANGE", (u, ev) => this.#handleProductChange(u, ev)],
 		[
 			"SUBSCRIPTION_EXTENDED",
-			(u, e, ev) => this.#handleSubscriptionExtended(u, e, ev),
+			(u, ev) => this.#handleSubscriptionExtended(u, ev),
 		],
-		["TRANSFER", (u, e, ev) => this.#handleTransfer(u, e, ev)],
+		["TRANSFER", (u, ev) => this.#handleTransfer(u, ev)],
 	]);
 
 	constructor(
@@ -146,7 +145,7 @@ export class SubscriptionService {
 				return;
 			}
 
-			const eventPayload = await handler(user.id, user.email, event);
+			const eventPayload = await handler(user, event);
 
 			// 5. 캐시 무효화 + 큐 잡 등록 (DB 변경이 있었을 때만)
 			if (eventPayload) {
@@ -182,8 +181,7 @@ export class SubscriptionService {
 	 * 멱등성: 동일 transactionId 구독이 이미 있으면 skip → null 반환 (이벤트 미발행)
 	 */
 	async #handleInitialPurchase(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -219,7 +217,7 @@ export class SubscriptionService {
 
 			await this.subscriptionRepository.create(
 				{
-					userId,
+					userId: user.id,
 					revenueCatId: transactionId,
 					productId: event.product_id,
 					status: "ACTIVE",
@@ -231,7 +229,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "ACTIVE",
 					subscriptionExpiresAt: expiresAt,
@@ -246,20 +244,22 @@ export class SubscriptionService {
 		}
 
 		this.#logger.log(
-			`Initial purchase processed: userId=${userId}, productId=${event.product_id}, transactionId=${transactionId}`,
+			`Initial purchase processed: userId=${user.id}, productId=${event.product_id}, transactionId=${transactionId}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
 			purchasedAt: toISOString(startedAt),
 			expiresAt: toISOString(expiresAt),
-			price: event.price,
-			currency: event.currency,
+			priceUsd: event.price,
+			priceInPurchasedCurrency: event.price_in_purchased_currency,
+			purchasedCurrency: event.currency,
 		} satisfies SubscriptionEventPayload;
 	}
 
@@ -270,8 +270,7 @@ export class SubscriptionService {
 	 * 멱등성: 동일 expiresAt으로 이미 갱신되었으면 skip → null 반환 (이벤트 미발행)
 	 */
 	async #handleRenewal(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload | null> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -319,7 +318,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "ACTIVE",
 					subscriptionExpiresAt: expiresAt,
@@ -334,19 +333,21 @@ export class SubscriptionService {
 		}
 
 		this.#logger.log(
-			`Renewal processed: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${toISOString(expiresAt)}`,
+			`Renewal processed: userId=${user.id}, transactionId=${transactionId}, newExpiresAt=${toISOString(expiresAt)}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
 			transactionId,
 			expiresAt: toISOString(expiresAt),
-			price: event.price,
-			currency: event.currency,
+			priceUsd: event.price,
+			priceInPurchasedCurrency: event.price_in_purchased_currency,
+			purchasedCurrency: event.currency,
 		} satisfies SubscriptionEventPayload;
 	}
 
@@ -359,8 +360,7 @@ export class SubscriptionService {
 	 * RevenueCat은 환불을 별도 이벤트로 보내지 않고 CANCELLATION + cancel_reason으로 구분합니다.
 	 */
 	async #handleCancellation(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -394,7 +394,7 @@ export class SubscriptionService {
 			if (isRefund) {
 				// 환불: 즉시 접근 권한 회수
 				await this.subscriptionRepository.updateUserSubscriptionStatus(
-					userId,
+					user.id,
 					{
 						subscriptionStatus: "FREE",
 						subscriptionExpiresAt: null,
@@ -411,7 +411,7 @@ export class SubscriptionService {
 						: "CANCELLED";
 
 				await this.subscriptionRepository.updateUserSubscriptionStatus(
-					userId,
+					user.id,
 					{
 						subscriptionStatus: userStatus,
 						...(expiresAt && { subscriptionExpiresAt: expiresAt }),
@@ -422,12 +422,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Cancellation processed: userId=${userId}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt ? toISOString(webhookExpiresAt) : "N/A"}`,
+			`Cancellation processed: userId=${user.id}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt ? toISOString(webhookExpiresAt) : "N/A"}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -443,8 +444,7 @@ export class SubscriptionService {
 	 * Subscription ACTIVE + cancelledAt null
 	 */
 	async #handleUncancellation(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -465,7 +465,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "ACTIVE",
 					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
@@ -475,12 +475,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Uncancellation processed: userId=${userId}, transactionId=${transactionId}`,
+			`Uncancellation processed: userId=${user.id}, transactionId=${transactionId}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -496,8 +497,7 @@ export class SubscriptionService {
 	 * subscriptionExpiresAt도 null로 초기화
 	 */
 	async #handleExpiration(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -513,7 +513,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "FREE",
 					subscriptionExpiresAt: null,
@@ -523,12 +523,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Expiration processed: userId=${userId}, transactionId=${transactionId}`,
+			`Expiration processed: userId=${user.id}, transactionId=${transactionId}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -542,18 +543,18 @@ export class SubscriptionService {
 	 * 로그만 남기고 구독은 유지합니다.
 	 */
 	#handleBillingIssue(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): SubscriptionEventPayload {
 		const transactionId = this.#resolveTransactionId(event);
 		this.#logger.log(
-			`Billing issue detected: userId=${userId}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
+			`Billing issue detected: userId=${user.id}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -567,8 +568,7 @@ export class SubscriptionService {
 	 * Subscription productId 업데이트
 	 */
 	async #handleProductChange(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -588,7 +588,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "ACTIVE",
 					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
@@ -598,12 +598,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Product change processed: userId=${userId}, newProductId=${event.product_id}, transactionId=${transactionId}`,
+			`Product change processed: userId=${user.id}, newProductId=${event.product_id}, transactionId=${transactionId}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -619,8 +620,7 @@ export class SubscriptionService {
 	 * expiresAt 갱신 + ACTIVE 유지
 	 */
 	async #handleSubscriptionExtended(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
@@ -640,7 +640,7 @@ export class SubscriptionService {
 			);
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: "ACTIVE",
 					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
@@ -650,12 +650,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Subscription extended: userId=${userId}, transactionId=${transactionId}, newExpiresAt=${expiresAt ? toISOString(expiresAt) : "N/A"}`,
+			`Subscription extended: userId=${user.id}, transactionId=${transactionId}, newExpiresAt=${expiresAt ? toISOString(expiresAt) : "N/A"}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,
@@ -672,8 +673,7 @@ export class SubscriptionService {
 	 * subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
 	 */
 	async #handleTransfer(
-		userId: string,
-		email: string,
+		user: SubscriptionUser,
 		event: RevenueCatEvent,
 	): Promise<SubscriptionEventPayload> {
 		const newAppUserId = event.app_user_id;
@@ -685,10 +685,10 @@ export class SubscriptionService {
 				await this.subscriptionRepository.findUserByAppUserId(newAppUserId, tx);
 
 			// 이미 올바른 매핑이면 skip (idempotency)
-			if (existingUser?.id === userId) return;
+			if (existingUser?.id === user.id) return;
 
 			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				userId,
+				user.id,
 				{
 					subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
 					revenueCatUserId: newAppUserId,
@@ -698,12 +698,13 @@ export class SubscriptionService {
 		});
 
 		this.#logger.log(
-			`Transfer: userId=${userId}, revenueCatUserId → ${newAppUserId}`,
+			`Transfer: userId=${user.id}, revenueCatUserId → ${newAppUserId}`,
 		);
 
 		return {
-			userId,
-			email,
+			userId: user.id,
+			email: user.email,
+			name: user.profile?.name ?? undefined,
 			eventType: event.type,
 			productId: event.product_id,
 			store: event.store,

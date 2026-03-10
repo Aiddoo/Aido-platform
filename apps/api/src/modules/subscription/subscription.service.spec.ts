@@ -40,6 +40,7 @@ describe("SubscriptionService", () => {
 		subscriptionStatus: "FREE" as const,
 		subscriptionExpiresAt: null,
 		revenueCatUserId: null,
+		profile: { name: "테스트유저" },
 	};
 
 	beforeEach(async () => {
@@ -253,7 +254,7 @@ describe("SubscriptionService", () => {
 			);
 		});
 
-		it("구독 이벤트 큐 잡을 등록한다", async () => {
+		it("구독 이벤트 큐 잡을 등록한다 (이름 포함)", async () => {
 			// Given
 			const payload = SubscriptionEventBuilder.initialPurchase()
 				.withAppUserId("user-123")
@@ -269,7 +270,30 @@ describe("SubscriptionService", () => {
 				expect.objectContaining({
 					userId: "user-123",
 					email: "test@example.com",
+					name: "테스트유저",
 					eventType: "INITIAL_PURCHASE",
+				}),
+			);
+		});
+
+		it("구매 통화 금액 필드를 포함하여 큐 잡을 등록한다", async () => {
+			// Given
+			const payload = SubscriptionEventBuilder.initialPurchase()
+				.withAppUserId("user-123")
+				.withPrice(2.99, "KRW", 3900)
+				.build();
+
+			// When
+			await service.handleWebhookEvent(payload);
+
+			// Then
+			expect(
+				adminNotificationQueueService.enqueueSubscriptionEvent,
+			).toHaveBeenCalledWith(
+				expect.objectContaining({
+					priceUsd: 2.99,
+					priceInPurchasedCurrency: 3900,
+					purchasedCurrency: "KRW",
 				}),
 			);
 		});

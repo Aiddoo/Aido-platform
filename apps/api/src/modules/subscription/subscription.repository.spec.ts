@@ -257,6 +257,7 @@ describe("SubscriptionRepository", () => {
 					subscriptionStatus: true,
 					subscriptionExpiresAt: true,
 					revenueCatUserId: true,
+					profile: { select: { name: true } },
 				},
 			});
 			expect(result).toEqual(user);
