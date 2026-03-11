@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 
-const CURRENT_YEAR = 2026;
+const CURRENT_YEAR = new Date().getFullYear();
 
 const AchievementsScreen = () => {
   return (
