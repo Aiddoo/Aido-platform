@@ -59,7 +59,7 @@ export function ReportDetailContent({ report }: ReportDetailContentProps) {
 
 function ReportHeader({ report }: { report: AiReport }) {
   return (
-    <HStack align="center" gap={8}>
+    <HStack align="center" gap={8} className="flex-wrap">
       <Chip
         size="sm"
         variant="soft"
