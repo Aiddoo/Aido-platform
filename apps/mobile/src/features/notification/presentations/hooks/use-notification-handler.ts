@@ -44,6 +44,9 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
 
       // 2. Analytics 추적
       trackEvent('push_notification_opened', { type: data.type });
+      if (data.type === 'WEEKLY_ACHIEVEMENT') {
+        trackEvent('badge_opened_from_notification');
+      }
 
       // 3. 읽음 처리 + 배지 동기화 (ref로 최신 auth 상태 참조)
       if (isAuthenticatedRef.current && data.notificationId) {

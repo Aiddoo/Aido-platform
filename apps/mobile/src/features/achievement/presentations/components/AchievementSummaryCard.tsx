@@ -1,7 +1,8 @@
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTrack } from '@src/shared/analytics';
 import { H3, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { type LayoutChangeEvent, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
@@ -26,7 +27,16 @@ interface AchievementSummaryCardProps {
 
 export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCardProps) {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { trackEvent } = useTrack();
   const badgeName = BADGE_NAME[latest.badgeType];
+
+  useEffect(() => {
+    trackEvent('badge_summary_viewed', {
+      badge_type: latest.badgeType,
+      completion_rate: latest.completionRate,
+      week_label: latest.weekLabel,
+    });
+  }, [trackEvent, latest.badgeType, latest.completionRate, latest.weekLabel]);
 
   return (
     <View className="bg-white rounded-sm overflow-hidden p-3">

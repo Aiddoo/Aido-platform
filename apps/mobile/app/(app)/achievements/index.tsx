@@ -4,6 +4,7 @@ import { BadgeIcon } from '@src/features/achievement/presentations/components/Ba
 import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/constants/achievement-query-keys.constant';
 import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/use-get-weekly-achievements-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
+import { useTrack } from '@src/shared/analytics';
 import {
   Flex,
   HStack,
@@ -17,7 +18,7 @@ import {
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Suspense, useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, View } from 'react-native';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -48,6 +49,7 @@ interface AchievementsContentProps {
 function AchievementsContent({ year }: AchievementsContentProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
   const queryOptions = useGetWeeklyAchievementsQueryOptions(year);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(queryOptions);
@@ -90,14 +92,21 @@ function AchievementsContent({ year }: AchievementsContentProps) {
           </>
         ) : null
       }
-      renderItem={({ item }) => <WeeklyBadgeListItem achievement={item} />}
+      renderItem={({ item }) => <WeeklyBadgeListItem achievement={item} onPress={trackEvent} />}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
           <Result
             title="아직 획득한 배지가 없어요"
             description={'할 일을 완료하고\n첫 배지를 모아보세요'}
             button={
-              <Result.Button onPress={() => router.push('/feed')}>지금 시작하기</Result.Button>
+              <Result.Button
+                onPress={() => {
+                  trackEvent('badge_empty_cta_tapped');
+                  router.push('/feed');
+                }}
+              >
+                지금 시작하기
+              </Result.Button>
             }
           />
         </Flex>
@@ -116,27 +125,50 @@ function AchievementsContent({ year }: AchievementsContentProps) {
   );
 }
 
-function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementViewModel }) {
+function WeeklyBadgeListItem({
+  achievement,
+  onPress,
+}: {
+  achievement: WeeklyAchievementViewModel;
+  onPress: ReturnType<typeof useTrack>['trackEvent'];
+}) {
+  const handlePress = useCallback(() => {
+    onPress('badge_item_tapped', {
+      badge_type: achievement.badgeType,
+      completion_rate: achievement.completionRate,
+      year: achievement.year,
+      week: achievement.week,
+    });
+  }, [
+    onPress,
+    achievement.badgeType,
+    achievement.completionRate,
+    achievement.year,
+    achievement.week,
+  ]);
+
   return (
-    <HStack gap={12} className="py-2.5">
-      <View className="w-10 items-center justify-center">
-        <BadgeIcon type={achievement.badgeType} size="small" />
-      </View>
+    <Pressable onPress={handlePress}>
+      <HStack gap={12} className="py-2.5">
+        <View className="w-10 items-center justify-center">
+          <BadgeIcon type={achievement.badgeType} size="small" />
+        </View>
 
-      <VStack gap={2} className="flex-1">
-        <HStack justify="between" align="center">
-          <Text size="b3" shade={8} weight="semibold">
-            {achievement.weekLabel}
-          </Text>
-          <Text size="b3" className="text-main" weight="semibold">
-            {achievement.completionRate}%
-          </Text>
-        </HStack>
+        <VStack gap={2} className="flex-1">
+          <HStack justify="between" align="center">
+            <Text size="b3" shade={8} weight="semibold">
+              {achievement.weekLabel}
+            </Text>
+            <Text size="b3" className="text-main" weight="semibold">
+              {achievement.completionRate}%
+            </Text>
+          </HStack>
 
-        <Text size="e1" shade={5}>
-          {achievement.completedTodos}/{achievement.totalTodos} 완료
-        </Text>
-      </VStack>
-    </HStack>
+          <Text size="e1" shade={5}>
+            {achievement.completedTodos}/{achievement.totalTodos} 완료
+          </Text>
+        </VStack>
+      </HStack>
+    </Pressable>
   );
 }
