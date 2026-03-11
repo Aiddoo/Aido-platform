@@ -98,6 +98,8 @@
   /* Social Login Brand Colors */
   --color-kakao: #fee500;
   --color-naver: #03c75a;
+  --color-apple-button: #000000;
+  --color-apple-button-dark: #ffffff;
 }
 
 @theme {
