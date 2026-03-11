@@ -64,6 +64,8 @@ features/{feature}/
 └── presentations/
     ├── constants/
     │   └── {feature}-query-keys.constant.ts
+    ├── view-models/                          # Domain → UI 데이터 변환 (필요 시)
+    │   └── {feature}.view-model.ts
     ├── queries/
     │   ├── use-{action}-query-options.ts
     │   └── use-{action}-mutation-options.ts

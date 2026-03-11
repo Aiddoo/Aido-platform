@@ -262,6 +262,8 @@ export const to{Feature}s = (dtos: {Feature}DTO[]): {Feature}[] => dtos.map(to{F
 ```
 features/{feature}/presentations/
 ├── constants/{feature}-query-keys.constant.ts
+├── view-models/
+│   └── {feature}.view-model.ts   # Domain → UI 데이터 변환
 ├── queries/
 │   ├── get-{feature}s-query-options.ts
 │   └── create-{feature}-mutation-options.ts
@@ -269,6 +271,80 @@ features/{feature}/presentations/
 │   └── {Feature}List.tsx
 ├── schemas/              # 폼 스키마 (필요 시)
 └── hooks/                # 커스텀 훅 (필요 시)
+```
+
+#### ViewModel — Domain → UI 데이터 변환
+
+ViewModel은 도메인 모델을 UI에 필요한 형태로 변환하는 순수 함수입니다.
+Query Options의 `select`에서 호출하여 컴포넌트가 받는 데이터를 미리 가공합니다.
+
+**ViewModel vs Policy vs Component 상수 구분**
+
+| 구분 | 역할 | 위치 | 예시 |
+|------|------|------|------|
+| **Policy** | 서버 호출 전 검증, 도메인 규칙 | `models/{feature}.model.ts` | `FriendPolicy.isValidTag()` |
+| **ViewModel** | Domain → UI 데이터 변환 | `presentations/view-models/` | `getBadgeType(completionRate)` → `'perfect'` |
+| **Component 상수** | UI 표시 문구, 색상 등 | 컴포넌트 파일 내부 | `BADGE_LABEL: Record<BadgeType, string>` |
+
+**Policy가 아닌 것**: `completionRate → badgeType` 같은 UI 표현용 데이터 변환은 Policy가 아니라 ViewModel입니다.
+Policy는 `isValidTag()`, `canEdit()` 같이 **서버 호출 전 검증**이나 **도메인 비즈니스 규칙**만 담당합니다.
+
+**ViewModel 패턴**
+
+```typescript
+// presentations/view-models/{feature}.view-model.ts
+import type { {Feature} } from '../../models/{feature}.model';
+
+export type DerivedType = 'typeA' | 'typeB' | 'typeC';
+
+// 도메인 값 → UI에서 사용할 파생 타입으로 변환
+export function getDerivedType(value: number): DerivedType {
+  if (value === 100) return 'typeA';
+  if (value >= 90) return 'typeB';
+  return 'typeC';
+}
+
+export interface {Feature}ViewModel extends {Feature} {
+  derivedType: DerivedType;
+}
+
+export function to{Feature}ViewModel(item: {Feature}): {Feature}ViewModel {
+  return {
+    ...item,
+    derivedType: getDerivedType(item.value),
+  };
+}
+```
+
+**Query Options에서 select로 ViewModel 적용**
+
+```typescript
+// presentations/queries/use-get-{feature}s-query-options.ts
+import { to{Feature}ViewModel } from '../view-models/{feature}.view-model';
+
+export const useGet{Feature}sQueryOptions = () => {
+  const service = use{Feature}Service();
+
+  return queryOptions({
+    queryKey: {FEATURE}_QUERY_KEYS.lists(),
+    queryFn: async () => unwrap(await service.get{Feature}s()),
+    select: (data) => data.map(to{Feature}ViewModel),  // ← ViewModel 변환
+  });
+};
+```
+
+**Component에서 UI 표시 문구 관리**
+
+```typescript
+// presentations/components/{Feature}Card.tsx
+import type { DerivedType } from '../view-models/{feature}.view-model';
+
+// UI 표시 문구는 컴포넌트 내부 상수로 관리
+const DERIVED_LABEL: Record<DerivedType, string> = {
+  typeA: '최고 등급입니다',
+  typeB: '거의 달성했어요',
+  typeC: '한 걸음 전진했어요',
+};
 ```
 
 **Query Keys**
@@ -486,7 +562,8 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 
 ### Step 4: Presentations
 - [ ] `presentations/constants/{feature}-query-keys.constant.ts`
-- [ ] `presentations/queries/` — Query/Mutation Options
+- [ ] (필요 시) `presentations/view-models/{feature}.view-model.ts` — Domain → UI 데이터 변환
+- [ ] `presentations/queries/` — Query/Mutation Options (ViewModel이 있으면 `select`에서 적용)
 - [ ] `presentations/components/` — UI 컴포넌트
 - [ ] (필요 시) `presentations/schemas/` — 폼 스키마
 - [ ] (필요 시) `presentations/hooks/` — 커스텀 훅
