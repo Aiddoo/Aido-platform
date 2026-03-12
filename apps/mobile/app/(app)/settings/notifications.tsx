@@ -126,7 +126,7 @@ function PushSettingsSection() {
       >
         <View className="flex-1">
           <Label>푸시 알림</Label>
-          <Description>모든 푸시 알림을 받습니다</Description>
+          <Description>모든 푸시 알림을 받아요</Description>
         </View>
         <ControlField.Indicator />
       </ControlField>
@@ -147,7 +147,7 @@ function PushSettingsSection() {
           <Label>야간 푸시 알림</Label>
           <Description>
             {preference.pushEnabled
-              ? '21:00 - 08:00 시간대에도 알림을 받습니다'
+              ? '21:00 - 08:00 시간대에도 알림을 받아요'
               : '푸시 알림을 먼저 활성화해주세요'}
           </Description>
         </View>
