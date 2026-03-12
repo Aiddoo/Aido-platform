@@ -16,6 +16,7 @@ type CategorySelectForm = z.infer<typeof categorySelectSchema>;
 
 interface SuggestionCategoryBottomSheetProps {
   suggestionId: number | null;
+  suggestedCategoryId?: number | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onAccepted: () => void;
@@ -23,6 +24,7 @@ interface SuggestionCategoryBottomSheetProps {
 
 export function SuggestionCategoryBottomSheet({
   suggestionId,
+  suggestedCategoryId,
   isOpen,
   onOpenChange,
   onAccepted,
@@ -31,11 +33,16 @@ export function SuggestionCategoryBottomSheet({
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
 
+  const defaultCategoryId =
+    suggestedCategoryId != null && data.categories.some((c) => c.id === suggestedCategoryId)
+      ? suggestedCategoryId
+      : // biome-ignore lint/style/noNonNullAssertion: 서버 원칙상 카테고리는 항상 1개 이상 존재
+        data.categories[0]!.id;
+
   const { control, handleSubmit } = useForm<CategorySelectForm>({
     resolver: zodResolver(categorySelectSchema),
     defaultValues: {
-      // biome-ignore lint/style/noNonNullAssertion: 서버 원칙상 카테고리는 항상 1개 이상 존재
-      categoryId: data.categories[0]!.id,
+      categoryId: defaultCategoryId,
     },
   });
 

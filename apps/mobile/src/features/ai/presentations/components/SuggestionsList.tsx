@@ -107,10 +107,16 @@ export function SuggestionsList() {
       </View>
 
       <SuggestionCategoryBottomSheet
+        key={categorySheetSuggestionId}
         suggestionId={categorySheetSuggestionId}
+        suggestedCategoryId={
+          suggestions.find((s) => s.id === categorySheetSuggestionId)?.suggestedCategoryId
+        }
         isOpen={categorySheetSuggestionId != null}
         onOpenChange={(open) => {
-          if (!open) setCategorySheetSuggestionId(null);
+          if (!open) {
+            setCategorySheetSuggestionId(null);
+          }
         }}
         onAccepted={() => {
           setCategorySheetSuggestionId(null);
