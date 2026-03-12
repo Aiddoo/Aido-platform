@@ -262,7 +262,7 @@ const DatePickerDateCell = ({
   const isEnd = endDate !== null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;
   const dayStyle = getDatePickerDayStyle({ date, isSelected });
-  const highlightToday = isTodayHighlighted({ date, isSelected });
+  const highlightToday = !isRange && isTodayHighlighted({ date, isSelected });
 
   const hasDistinctRange = isRange && endDate !== null && !isSameDay(startDate, endDate);
 
@@ -308,29 +308,30 @@ interface RepeatToggleProps {
 
 const RepeatToggle = ({ isRange, startDate, endDate, onToggle }: RepeatToggleProps) => {
   return (
-    <ListRow
-      contents={
-        <ListRow.Texts
-          type="1RowTypeA"
-          top={
-            <HStack gap={8} align="center">
-              <Text size="b2" weight="medium" shade={8}>
-                반복 설정
-              </Text>
-              {isRange && endDate && !isSameDay(startDate, endDate) && (
-                <Text size="b3" tone="brand">
-                  {formatMonthDay(startDate)} - {formatMonthDay(endDate)}
+    <VStack className="border-t border-gray-2">
+      <ListRow
+        contents={
+          <ListRow.Texts
+            type="1RowTypeA"
+            top={
+              <HStack gap={8} align="center" className="flex-wrap">
+                <Text size="b2" weight="medium" shade={8}>
+                  반복 기간 설정
                 </Text>
-              )}
-            </HStack>
-          }
-        />
-      }
-      right={<Switch isSelected={isRange} onSelectedChange={onToggle} />}
-      horizontalPadding="medium"
-      verticalPadding="medium"
-      className="border-t border-gray-2"
-    />
+                {isRange && endDate && !isSameDay(startDate, endDate) && (
+                  <Text size="b3" tone="brand">
+                    {formatMonthDay(startDate)} - {formatMonthDay(endDate)}
+                  </Text>
+                )}
+              </HStack>
+            }
+          />
+        }
+        right={<Switch isSelected={isRange} onSelectedChange={onToggle} />}
+        horizontalPadding="medium"
+        verticalPadding="medium"
+      />
+    </VStack>
   );
 };
 
@@ -351,6 +352,12 @@ interface DayOfWeekSelectorProps {
   isAllSelected: boolean;
 }
 
+const formatSelectedDays = (days: DayOfWeek[]): string => {
+  const dayOrder: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const sorted = dayOrder.filter((d) => days.includes(d));
+  return sorted.map((d) => DAY_LABELS.find((l) => l.key === d)?.label ?? '').join(', ');
+};
+
 const DayOfWeekSelector = ({
   selectedDays,
   onToggleDay,
@@ -359,9 +366,6 @@ const DayOfWeekSelector = ({
 }: DayOfWeekSelectorProps) => {
   return (
     <VStack gap={12} px={16}>
-      <Text size="b3" weight="medium" shade={7}>
-        반복 요일
-      </Text>
       <HStack gap={6} align="center" justify="between">
         {DAY_LABELS.map(({ key, label }) => {
           const isSelected = selectedDays.includes(key);
@@ -402,6 +406,11 @@ const DayOfWeekSelector = ({
           </Text>
         </PressableFeedback>
       </HStack>
+      {selectedDays.length > 0 && (
+        <Text size="b3" tone="brand" align="right">
+          * {isAllSelected ? '매일 반복' : `매주 ${formatSelectedDays(selectedDays)} 반복`}
+        </Text>
+      )}
     </VStack>
   );
 };
