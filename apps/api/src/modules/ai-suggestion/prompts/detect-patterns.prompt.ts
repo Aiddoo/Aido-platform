@@ -44,7 +44,7 @@ export function buildDetectPatternsPrompt(
 		.join("\n");
 
 	return `너는 사용자의 할 일 패턴을 분석하는 AI야.
-아래는 최근 4주간의 할 일 기록이야. 같은 할 일이 ${minOccurrences}회 이상 비슷한 스케줄로 반복된 패턴을 찾아줘.
+아래는 최근 2주간의 할 일 기록이야. 같은 할 일이 ${minOccurrences}회 이상 비슷한 스케줄로 반복된 패턴을 찾아줘.
 
 ## 할 일 기록
 ${todoLines}

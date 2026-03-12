@@ -45,6 +45,7 @@ describe("AiSuggestionService", () => {
 			reason: "매주 반복되는 패턴",
 			matchedTodos: ["팀 미팅", "팀 회의"],
 			status: "PENDING",
+			suggestedCategoryId: 3,
 			expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14일 후
 			createdAt: new Date("2026-03-04T00:00:00.000Z"),
 			updatedAt: new Date("2026-03-04T00:00:00.000Z"),
@@ -351,8 +352,18 @@ describe("AiSuggestionService", () => {
 		it("할 일이 최소 횟수 미만이면 AI 호출 없이 0을 반환해야 한다", async () => {
 			// Given -할 일이 2개뿐 (최소 3개 필요)
 			mockRepository.findRecentTodos.mockResolvedValue([
-				{ title: "할일1", startDate: "2026-03-01", scheduledTime: null },
-				{ title: "할일2", startDate: "2026-03-02", scheduledTime: null },
+				{
+					title: "할일1",
+					startDate: "2026-03-01",
+					scheduledTime: null,
+					categoryId: 1,
+				},
+				{
+					title: "할일2",
+					startDate: "2026-03-02",
+					scheduledTime: null,
+					categoryId: 1,
+				},
 			]);
 
 			// When -analyzeAndCreateSuggestions를 호출하면
@@ -372,6 +383,7 @@ describe("AiSuggestionService", () => {
 				title: "팀 미팅",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: "10:00",
+				categoryId: 3,
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -415,6 +427,7 @@ describe("AiSuggestionService", () => {
 				title: "운동",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
+				categoryId: 5,
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -456,6 +469,7 @@ describe("AiSuggestionService", () => {
 				title: "독서",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
+				categoryId: 2,
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -493,6 +507,7 @@ describe("AiSuggestionService", () => {
 				title: "운동",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
+				categoryId: 5,
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -534,6 +549,7 @@ describe("AiSuggestionService", () => {
 				title: `할일${i}`,
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
+				categoryId: 1,
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -567,6 +583,112 @@ describe("AiSuggestionService", () => {
 			const createManyArg = mockRepository.createMany.mock
 				.calls[0]?.[0] as unknown[];
 			expect(createManyArg).toHaveLength(5);
+		});
+
+		it("매칭된 투두의 최빈 카테고리를 suggestedCategoryId로 설정해야 한다", async () => {
+			// Given -같은 제목의 투두가 다른 카테고리에 분포 (categoryId 3이 3개, 5가 2개)
+			const todos = [
+				{
+					title: "팀 미팅",
+					startDate: "2026-02-10",
+					scheduledTime: "10:00",
+					categoryId: 3,
+				},
+				{
+					title: "팀 미팅",
+					startDate: "2026-02-12",
+					scheduledTime: "10:00",
+					categoryId: 3,
+				},
+				{
+					title: "팀 미팅",
+					startDate: "2026-02-14",
+					scheduledTime: "10:00",
+					categoryId: 5,
+				},
+				{
+					title: "팀 미팅",
+					startDate: "2026-02-17",
+					scheduledTime: "10:00",
+					categoryId: 3,
+				},
+				{
+					title: "팀 미팅",
+					startDate: "2026-02-19",
+					scheduledTime: "10:00",
+					categoryId: 5,
+				},
+			];
+			mockRepository.findRecentTodos.mockResolvedValue(todos);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "팀 미팅",
+							daysOfWeek: ["MON", "WED", "FRI"],
+							scheduledTime: "10:00",
+							confidence: 0.85,
+							reason: "반복 패턴",
+							matchedTitles: ["팀 미팅"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When -analyzeAndCreateSuggestions를 호출하면
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then -최빈 카테고리(3)가 suggestedCategoryId로 설정되어야 한다
+			const createManyArg = mockRepository.createMany.mock
+				.calls[0]?.[0] as Record<string, unknown>[];
+			expect(createManyArg?.[0]?.suggestedCategoryId).toBe(3);
+		});
+
+		it("매칭되는 투두가 없으면 suggestedCategoryId가 null이어야 한다", async () => {
+			// Given -투두 제목과 패턴 matchedTitles가 일치하지 않는 상황
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "운동",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 5,
+			}));
+			mockRepository.findRecentTodos.mockResolvedValue(todos);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "운동",
+							daysOfWeek: ["MON"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "이유",
+							matchedTitles: ["존재하지않는제목"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When -analyzeAndCreateSuggestions를 호출하면
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then -suggestedCategoryId가 null이어야 한다
+			const createManyArg = mockRepository.createMany.mock
+				.calls[0]?.[0] as Record<string, unknown>[];
+			expect(createManyArg?.[0]?.suggestedCategoryId).toBeNull();
 		});
 	});
 });

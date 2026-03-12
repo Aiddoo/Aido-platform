@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
 import { subtractDays } from "@/common/date/utils/arithmetic";
-import { toIsoWeekId } from "@/common/date/utils/format";
+import { toDateString } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
 import {
 	AI_SUGGESTION_QUEUE,
@@ -21,7 +21,7 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 반복 제안 분석 스케줄러 (Dispatcher)
  *
- * 매주 일요일 KST 11:00에 실행됩니다.
+ * 매일 KST 11:00에 실행됩니다.
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
  */
@@ -40,9 +40,12 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setSuggestionJob(this);
 
+		// 구 weekly 스케줄러 제거 (마이그레이션)
+		await this.queue.removeJobScheduler("weekly-suggestion-scheduler");
+
 		await this.queue.upsertJobScheduler(
-			"weekly-suggestion-scheduler",
-			{ pattern: "0 11 * * 0", tz: "Asia/Seoul" },
+			"daily-suggestion-scheduler",
+			{ pattern: "0 11 * * *", tz: "Asia/Seoul" },
 			{ name: AiSuggestionJobName.DISPATCH, data: {} },
 		);
 
@@ -57,7 +60,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	async dispatchAnalysis(dispatchJob?: Job): Promise<void> {
 		this.#logger.log("Starting suggestion analysis dispatch...");
 
-		const fourWeeksAgo = subtractDays(28);
+		const twoWeeksAgo = subtractDays(14);
 
 		const periodId = this.#getJobDeduplicationId();
 		let totalEnqueued = 0;
@@ -71,7 +74,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 						OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 						todos: {
 							some: {
-								startDate: { gte: fourWeeksAgo },
+								startDate: { gte: twoWeeksAgo },
 								recurrenceGroupId: null,
 							},
 						},
@@ -112,26 +115,25 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	 */
 	async #catchUpIfNeeded(): Promise<void> {
 		const kstNow = dayjs().tz("Asia/Seoul");
-		const dayOfWeek = kstNow.day(); // 0=일
 		const hour = kstNow.hour();
 
-		// 일요일 11:00 이후
-		if (dayOfWeek === 0 && hour >= 11) {
+		// 매일 11:00 이후
+		if (hour >= 11) {
 			this.#logger.log("Catch-up: suggestion analysis dispatch");
 			await this.queue.add(
 				AiSuggestionJobName.DISPATCH,
 				{},
 				{
-					jobId: `dispatch_suggestion_${toIsoWeekId()}`,
+					jobId: `dispatch_suggestion_${toDateString(new Date())}`,
 				},
 			);
 		}
 	}
 
 	/**
-	 * jobId 중복 방지용 ISO 주번호 식별자 생성
+	 * jobId 중복 방지용 날짜 식별자 생성
 	 */
 	#getJobDeduplicationId(): string {
-		return toIsoWeekId();
+		return toDateString(new Date());
 	}
 }

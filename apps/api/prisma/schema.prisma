@@ -827,6 +827,9 @@ model RecurringSuggestion {
   // 매칭된 기존 할 일
   matchedTodos Json // 참고한 Todo 정보
 
+  // 카테고리 추천 (FK 없음 — 카테고리 삭제 시 제안 cascade 방지)
+  suggestedCategoryId Int?
+
   // 상태
   status    SuggestionStatus @default(PENDING)
   expiresAt DateTime
@@ -839,4 +842,5 @@ model RecurringSuggestion {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([userId, expiresAt])
 }
