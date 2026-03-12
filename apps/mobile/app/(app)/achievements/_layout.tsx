@@ -30,6 +30,7 @@ const AchievementsLayout = () => {
       }}
     >
       <Stack.Screen name="index" options={{ title: '달성 배지' }} />
+      <Stack.Screen name="[year]/[week]" options={{ title: '주간 배지' }} />
     </Stack>
   );
 };

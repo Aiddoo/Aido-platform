@@ -6,14 +6,15 @@ import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
 import {
+  ArrowRightIcon,
   Flex,
   HStack,
+  ListRow,
   QueryErrorBoundary,
   Result,
   Spacing,
   StyledSafeAreaView,
   Text,
-  VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -92,7 +93,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
           </>
         ) : null
       }
-      renderItem={({ item }) => <WeeklyBadgeListItem achievement={item} onPress={trackEvent} />}
+      renderItem={({ item }) => <WeeklyBadgeListItem achievement={item} />}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
           <Result
@@ -125,50 +126,45 @@ function AchievementsContent({ year }: AchievementsContentProps) {
   );
 }
 
-function WeeklyBadgeListItem({
-  achievement,
-  onPress,
-}: {
-  achievement: WeeklyAchievementViewModel;
-  onPress: ReturnType<typeof useTrack>['trackEvent'];
-}) {
-  const handlePress = useCallback(() => {
-    onPress('badge_item_tapped', {
+function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementViewModel }) {
+  const router = useRouter();
+  const { trackEvent } = useTrack();
+
+  const handlePress = () => {
+    trackEvent('badge_item_tapped', {
       badge_type: achievement.badgeType,
       completion_rate: achievement.completionRate,
       year: achievement.year,
       week: achievement.week,
     });
-  }, [
-    onPress,
-    achievement.badgeType,
-    achievement.completionRate,
-    achievement.year,
-    achievement.week,
-  ]);
+    router.push({
+      pathname: '/achievements/[year]/[week]',
+      params: { year: String(achievement.year), week: String(achievement.week) },
+    });
+  };
 
   return (
     <Pressable onPress={handlePress}>
-      <HStack gap={12} className="py-2.5">
-        <View className="w-10 items-center justify-center">
-          <BadgeIcon type={achievement.badgeType} size="small" />
-        </View>
-
-        <VStack gap={2} className="flex-1">
-          <HStack justify="between" align="center">
-            <Text size="b3" shade={8} weight="semibold">
-              {achievement.weekLabel}
-            </Text>
+      <ListRow
+        left={<BadgeIcon type={achievement.badgeType} size="small" />}
+        contents={
+          <ListRow.Texts
+            type="2RowTypeA"
+            top={achievement.weekLabel}
+            topProps={{ weight: 'semibold', shade: 8 }}
+            bottom={`${achievement.completedTodos}/${achievement.totalTodos} 완료`}
+          />
+        }
+        right={
+          <HStack align="center" gap={4}>
             <Text size="b3" className="text-main" weight="semibold">
               {achievement.completionRate}%
             </Text>
+            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-6" />
           </HStack>
-
-          <Text size="e1" shade={5}>
-            {achievement.completedTodos}/{achievement.totalTodos} 완료
-          </Text>
-        </VStack>
-      </HStack>
+        }
+        verticalPadding="medium"
+      />
     </Pressable>
   );
 }

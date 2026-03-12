@@ -1,5 +1,7 @@
 import {
+  type WeeklyAchievementDetailResponse,
   type WeeklyAchievementListResponse,
+  weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
@@ -9,9 +11,10 @@ import { ok, type Result } from '@src/shared/errors/result';
 
 import type {
   AchievementPaginationParams,
+  WeeklyAchievement,
   WeeklyAchievementsResult,
 } from '../models/achievement.model';
-import { toWeeklyAchievementsResult } from './achievement.mapper';
+import { toWeeklyAchievement, toWeeklyAchievementsResult } from './achievement.mapper';
 
 export class AchievementService {
   readonly #httpClient: HttpClient;
@@ -44,5 +47,25 @@ export class AchievementService {
     }
 
     return ok(toWeeklyAchievementsResult(parsed.data));
+  };
+
+  getWeeklyAchievement = async (
+    year: number,
+    week: number,
+  ): Promise<Result<WeeklyAchievement, ApiError>> => {
+    const result = await this.#httpClient.get<WeeklyAchievementDetailResponse>(
+      `v1/weekly-achievements/${year}/${week}`,
+    );
+
+    if (!result.ok) return result;
+
+    const parsed = weeklyAchievementDetailResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AchievementService] Invalid getWeeklyAchievement response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toWeeklyAchievement(parsed.data));
   };
 }
