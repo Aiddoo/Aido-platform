@@ -10,6 +10,11 @@ export interface BadgeEventMap {
     year: number;
     week: number;
   };
+  badge_share_attempted: {
+    badge_type: 'perfect' | 'almost' | 'completed';
+    year: number;
+    week: number;
+  };
   badge_empty_cta_tapped: undefined;
   badge_opened_from_notification: undefined;
 }

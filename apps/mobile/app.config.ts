@@ -286,6 +286,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
 
       'expo-secure-store',
+      'expo-sharing',
       'expo-system-ui',
       'expo-web-browser',
 
