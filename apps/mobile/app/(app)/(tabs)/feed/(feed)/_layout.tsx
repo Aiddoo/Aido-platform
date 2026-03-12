@@ -122,7 +122,13 @@ const UserAvatarItem = ({ name, profileImage, isSelected, onPress }: UserAvatarI
         <Avatar size="sm" alt={`${name} 프로필`}>
           <Avatar.Image source={getProfileIconSource(profileImage)} />
         </Avatar>
-        <Text size="e1" shade={isSelected ? 9 : 6} weight={isSelected ? 'semibold' : 'normal'}>
+        <Text
+          size="e1"
+          shade={isSelected ? 9 : 6}
+          weight={isSelected ? 'semibold' : 'normal'}
+          numberOfLines={1}
+          className="max-w-[48px]"
+        >
           {name}
         </Text>
       </VStack>
