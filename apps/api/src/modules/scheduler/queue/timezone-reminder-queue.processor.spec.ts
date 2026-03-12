@@ -31,7 +31,7 @@ describe("TimezoneReminderProcessor", () => {
 
 	beforeEach(async () => {
 		const mockReminderJob = {
-			handleHourlySweep: jest.fn().mockResolvedValue(undefined),
+			handleMinuteSweep: jest.fn().mockResolvedValue(undefined),
 			handleReminderHourChanged: jest.fn().mockResolvedValue(undefined),
 		};
 
@@ -63,7 +63,7 @@ describe("TimezoneReminderProcessor", () => {
 			await processor.process(job);
 
 			// Then
-			expect(reminderJob.handleHourlySweep).toHaveBeenCalled();
+			expect(reminderJob.handleMinuteSweep).toHaveBeenCalled();
 		});
 	});
 
@@ -104,7 +104,7 @@ describe("TimezoneReminderProcessor", () => {
 
 			// When & Then — 에러 없이 처리
 			await expect(processor.process(job)).resolves.not.toThrow();
-			expect(reminderJob.handleHourlySweep).not.toHaveBeenCalled();
+			expect(reminderJob.handleMinuteSweep).not.toHaveBeenCalled();
 			expect(reminderJob.handleReminderHourChanged).not.toHaveBeenCalled();
 		});
 	});

@@ -94,10 +94,16 @@ export const CacheKeys = {
 	unreadCount: (userId: string) => `notification:unread:${userId}`,
 
 	/**
-	 * 활성 타임존 목록 캐시 키
+	 * 활성 타임존 목록 캐시 키 (pushEnabled=true 유저만)
 	 * @example scheduler:active-tz
 	 */
 	activeTimezones: () => "scheduler:active-tz",
+
+	/**
+	 * 전체 유저 타임존 목록 캐시 키 (pushEnabled 무관)
+	 * @example scheduler:all-tz
+	 */
+	allTimezones: () => "scheduler:all-tz",
 
 	// === 패턴 빌더 (와일드카드) ===
 

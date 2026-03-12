@@ -6,10 +6,13 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 @Injectable()
-export class WeeklyReportStrategy {
+export class WeeklyReportStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(WeeklyReportStrategy.name);
 
 	constructor(

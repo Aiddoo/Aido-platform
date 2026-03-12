@@ -50,6 +50,7 @@ describe("TimezoneAwareReminderJob", () => {
 
 		// 캐시 pass-through: factory를 그대로 실행
 		cacheService.wrapActiveTimezones.mockImplementation((factory) => factory());
+		cacheService.wrapAllTimezones.mockImplementation((factory) => factory());
 		morningReminder = unitRef.get(MorningReminderStrategy);
 		eveningReminder = unitRef.get(EveningReminderStrategy);
 		weeklyAchievement = unitRef.get(WeeklyAchievementStrategy);
@@ -75,10 +76,10 @@ describe("TimezoneAwareReminderJob", () => {
 	});
 
 	// =========================================================================
-	// handleHourlySweep
+	// handleMinuteSweep
 	// =========================================================================
 
-	describe("handleHourlySweep", () => {
+	describe("handleMinuteSweep", () => {
 		it("pushEnabled=true 타임존 목록을 조회하고 각 타임존별 Strategy를 호출한다", async () => {
 			const fakeNow = new Date("2024-01-16T23:00:00Z"); // KST 08:00 (화요일)
 			jest.setSystemTime(fakeNow);
@@ -87,7 +88,7 @@ describe("TimezoneAwareReminderJob", () => {
 				{ timezone: "Asia/Seoul" },
 			] as never);
 
-			await job.handleHourlySweep();
+			await job.handleMinuteSweep();
 
 			// 타임존 조회
 			expect(databaseService.userPreference.findMany).toHaveBeenCalledWith({
@@ -118,7 +119,7 @@ describe("TimezoneAwareReminderJob", () => {
 				{ timezone: "America/New_York" },
 			] as never);
 
-			await job.handleHourlySweep();
+			await job.handleMinuteSweep();
 
 			// 각 타임존별로 morning/evening 호출
 			expect(morningReminder.execute).toHaveBeenCalledTimes(2);
@@ -128,7 +129,7 @@ describe("TimezoneAwareReminderJob", () => {
 		it("pushEnabled=false인 타임존만 있으면 조회 결과가 비어 Strategy 미호출", async () => {
 			databaseService.userPreference.findMany.mockResolvedValue([] as never);
 
-			await job.handleHourlySweep();
+			await job.handleMinuteSweep();
 
 			expect(morningReminder.execute).not.toHaveBeenCalled();
 			expect(eveningReminder.execute).not.toHaveBeenCalled();
@@ -144,7 +145,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
 			});
@@ -158,7 +159,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(weeklyAchievement.execute).not.toHaveBeenCalled();
 			});
@@ -172,7 +173,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(winback.execute).toHaveBeenCalledTimes(1);
 			});
@@ -186,7 +187,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(winback.execute).not.toHaveBeenCalled();
 			});
@@ -200,7 +201,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(nudgeSuggest.execute).toHaveBeenCalledTimes(1);
 			});
@@ -214,7 +215,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(weeklyReport.execute).toHaveBeenCalledTimes(1);
 			});
@@ -228,7 +229,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(weeklyReport.execute).not.toHaveBeenCalled();
 			});
@@ -242,7 +243,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(weeklyReport.execute).not.toHaveBeenCalled();
 			});
@@ -256,7 +257,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(monthlyReport.execute).toHaveBeenCalledTimes(1);
 			});
@@ -270,7 +271,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(monthlyReport.execute).not.toHaveBeenCalled();
 			});
@@ -284,7 +285,7 @@ describe("TimezoneAwareReminderJob", () => {
 					{ timezone: "Asia/Seoul" },
 				] as never);
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(monthlyReport.execute).not.toHaveBeenCalled();
 			});
@@ -301,7 +302,7 @@ describe("TimezoneAwareReminderJob", () => {
 
 				eveningReminder.execute.mockResolvedValue({ sent: 3 });
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(queueService.enqueueSocialDigest).toHaveBeenCalledWith({
 					timezone: "Asia/Seoul",
@@ -318,9 +319,97 @@ describe("TimezoneAwareReminderJob", () => {
 
 				eveningReminder.execute.mockResolvedValue({ sent: 0 });
 
-				await job.handleHourlySweep();
+				await job.handleMinuteSweep();
 
 				expect(queueService.enqueueSocialDigest).not.toHaveBeenCalled();
+			});
+		});
+
+		describe("WeeklyAchievement catch-up (pushEnabled 유저 없는 TZ)", () => {
+			it("pushEnabled 유저가 없는 TZ에서도 월요일 07:00에 주간 배지를 집계한다", async () => {
+				// 2024-01-15 = 월요일, KST 07:00 = UTC 2024-01-14T22:00:00Z
+				const monday = new Date("2024-01-14T22:00:00Z");
+				jest.setSystemTime(monday);
+
+				// 1차 호출(pushEnabled TZ): Asia/Seoul만
+				// 2차 호출(allTz): Asia/Seoul + Pacific/Honolulu
+				databaseService.userPreference.findMany
+					.mockResolvedValueOnce([{ timezone: "Asia/Seoul" }] as never)
+					.mockResolvedValueOnce([
+						{ timezone: "Asia/Seoul" },
+						{ timezone: "Pacific/Honolulu" },
+					] as never);
+
+				await job.handleMinuteSweep();
+
+				// Asia/Seoul은 정상 스윕에서 호출 (1회) + catch-up에서는 이미 처리됨으로 스킵
+				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
+			});
+
+			it("pushEnabled TZ에 없는 TZ가 월요일 07:00이면 catch-up으로 배지를 집계한다", async () => {
+				// America/Anchorage: UTC-9, 월요일 07:00 = UTC 2024-01-15T16:00:00Z
+				const monday = new Date("2024-01-15T16:00:00Z");
+				jest.setSystemTime(monday);
+
+				// 1차(pushEnabled TZ): Asia/Seoul만
+				databaseService.userPreference.findMany
+					.mockResolvedValueOnce([{ timezone: "Asia/Seoul" }] as never)
+					// 2차(allTz): Asia/Seoul + America/Anchorage
+					.mockResolvedValueOnce([
+						{ timezone: "Asia/Seoul" },
+						{ timezone: "America/Anchorage" },
+					] as never);
+
+				await job.handleMinuteSweep();
+
+				// Asia/Seoul(정상 스윕) + America/Anchorage(catch-up)
+				// America/Anchorage는 이 시간에 월요일 07:00
+				const catchUpCalls = weeklyAchievement.execute.mock.calls.filter(
+					(call) => call[0]?.tz === "America/Anchorage",
+				);
+				expect(catchUpCalls).toHaveLength(1);
+			});
+
+			it("pushEnabled TZ가 비어있어도 catch-up으로 모든 TZ의 배지를 집계한다", async () => {
+				// America/Anchorage: UTC-9, 월요일 07:00 = UTC 2024-01-15T16:00:00Z
+				const monday = new Date("2024-01-15T16:00:00Z");
+				jest.setSystemTime(monday);
+
+				// 1차(pushEnabled TZ): 빈 배열
+				databaseService.userPreference.findMany
+					.mockResolvedValueOnce([] as never)
+					// 2차(allTz): America/Anchorage만 존재
+					.mockResolvedValueOnce([{ timezone: "America/Anchorage" }] as never);
+
+				await job.handleMinuteSweep();
+
+				// 정상 스윕 미호출 + catch-up에서 America/Anchorage 처리
+				expect(morningReminder.execute).not.toHaveBeenCalled();
+				expect(weeklyAchievement.execute).toHaveBeenCalledTimes(1);
+				expect(weeklyAchievement.execute).toHaveBeenCalledWith(
+					expect.objectContaining({ tz: "America/Anchorage" }),
+				);
+			});
+
+			it("missing TZ가 월요일 07:00이 아니면 catch-up을 건너뛴다", async () => {
+				// 2024-01-16 = 화요일, KST 08:00 = UTC 2024-01-16T23:00:00Z
+				const tuesday = new Date("2024-01-16T23:00:00Z");
+				jest.setSystemTime(tuesday);
+
+				databaseService.userPreference.findMany
+					.mockResolvedValueOnce([{ timezone: "Asia/Seoul" }] as never)
+					.mockResolvedValueOnce([
+						{ timezone: "Asia/Seoul" },
+						{ timezone: "America/Anchorage" },
+					] as never);
+
+				await job.handleMinuteSweep();
+
+				// 화요일이므로 catch-up 미발생
+				const catchUpCalls = weeklyAchievement.execute.mock.calls.filter(
+					(call) => call[0]?.tz === "America/Anchorage",
+				);
+				expect(catchUpCalls).toHaveLength(0);
 			});
 		});
 
@@ -330,7 +419,7 @@ describe("TimezoneAwareReminderJob", () => {
 					new Error("DB Error"),
 				);
 
-				await expect(job.handleHourlySweep()).resolves.toBeUndefined();
+				await expect(job.handleMinuteSweep()).resolves.toBeUndefined();
 			});
 
 			it("한 타임존 Strategy 실패 시 다른 타임존은 정상 처리된다", async () => {
@@ -347,7 +436,7 @@ describe("TimezoneAwareReminderJob", () => {
 					.mockRejectedValueOnce(new Error("Strategy Error"))
 					.mockResolvedValueOnce({ sent: 1 });
 
-				await expect(job.handleHourlySweep()).resolves.toBeUndefined();
+				await expect(job.handleMinuteSweep()).resolves.toBeUndefined();
 
 				// 두 번째 타임존의 morning/evening은 정상 호출
 				expect(morningReminder.execute).toHaveBeenCalledTimes(2);
