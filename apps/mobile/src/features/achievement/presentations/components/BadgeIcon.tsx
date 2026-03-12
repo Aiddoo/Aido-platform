@@ -3,9 +3,9 @@ import { Image } from 'react-native';
 import type { BadgeType } from '../view-models/weekly-achievement.view-model';
 
 const BADGE_IMAGE: Record<BadgeType, number> = {
-  perfect: require('@assets/images/badge_perfect.png'),
-  almost: require('@assets/images/badge_almost.png'),
-  completed: require('@assets/images/badge_completed.png'),
+  perfect: require('@assets/images/badge_perfect.webp'),
+  almost: require('@assets/images/badge_almost.webp'),
+  completed: require('@assets/images/badge_completed.webp'),
 };
 
 interface BadgeIconProps {
