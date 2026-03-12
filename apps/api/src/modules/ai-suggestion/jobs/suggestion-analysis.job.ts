@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { forEachBatch } from "@/common/database";
 import { subtractDays } from "@/common/date/utils/arithmetic";
-import { toDateString } from "@/common/date/utils/format";
+
 import { DatabaseService } from "@/database/database.service";
 import {
 	AI_SUGGESTION_QUEUE,
@@ -124,7 +124,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 				AiSuggestionJobName.DISPATCH,
 				{},
 				{
-					jobId: `dispatch_suggestion_${toDateString(new Date())}`,
+					jobId: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
 				},
 			);
 		}
@@ -134,6 +134,6 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 	 * jobId 중복 방지용 날짜 식별자 생성
 	 */
 	#getJobDeduplicationId(): string {
-		return toDateString(new Date());
+		return dayjs().tz("Asia/Seoul").format("YYYY-MM-DD");
 	}
 }
