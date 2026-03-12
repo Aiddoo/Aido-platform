@@ -108,10 +108,6 @@ export const TodoFormContent = ({
     start();
   };
 
-  const scaledButtonSize = fontScaledSize(32);
-  const scaledIconSize = fontScaledSize(18);
-  const scaledMicIconSize = fontScaledSize(20);
-
   const title = methods.watch('title');
   const isSubmitDisabled = !title?.trim() || isSubmitting || parseMutation.isPending;
 
@@ -146,13 +142,13 @@ export const TodoFormContent = ({
             isRecognizing={isRecognizing}
             onPress={handleMicPress}
             isDisabled={parseMutation.isPending}
-            size={scaledButtonSize}
-            iconSize={scaledMicIconSize}
+            size={fontScaledSize(32)}
+            iconSize={fontScaledSize(20)}
           />
           <PressableFeedback
             isDisabled={isSubmitDisabled}
             onPress={onSubmit}
-            style={{ width: scaledButtonSize, height: scaledButtonSize }}
+            style={{ width: fontScaledSize(32), height: fontScaledSize(32) }}
             className={cn(
               'items-center justify-center rounded-4xl',
               isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
@@ -162,8 +158,8 @@ export const TodoFormContent = ({
               <Spinner size="sm" color="white" />
             ) : (
               <ArrowUpIcon
-                width={scaledIconSize}
-                height={scaledIconSize}
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
                 colorClassName="text-white"
               />
             )}
