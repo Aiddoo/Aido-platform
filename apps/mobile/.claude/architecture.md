@@ -289,6 +289,26 @@ Query Options의 `select`에서 호출하여 컴포넌트가 받는 데이터를
 **Policy가 아닌 것**: `completionRate → badgeType` 같은 UI 표현용 데이터 변환은 Policy가 아니라 ViewModel입니다.
 Policy는 `isValidTag()`, `canEdit()` 같이 **서버 호출 전 검증**이나 **도메인 비즈니스 규칙**만 담당합니다.
 
+**예외 — ViewModel 없이 `select`에서 직접 처리**: ViewModel 변환이 단순한 경우 (예: 필드 하나 추가, 단순 포맷팅) 별도 view-model 파일 없이 Query Options의 `select`에서 인라인으로 처리해도 됩니다.
+
+```typescript
+// 단순한 경우: view-model 파일 없이 select에서 직접 처리
+export const useGetItemsQueryOptions = () => {
+  const service = useItemService();
+
+  return queryOptions({
+    queryKey: ITEM_QUERY_KEYS.list(),
+    queryFn: async () => unwrap(await service.getItems()),
+    select: (items) => items.map((item) => ({
+      ...item,
+      isNew: Date.now() - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
+    })),
+  });
+};
+```
+
+변환 로직이 복잡하거나 (조건 분기가 2개 이상, 여러 필드를 조합) 재사용이 필요하면 view-model 파일로 분리하세요.
+
 **ViewModel 패턴**
 
 ```typescript
