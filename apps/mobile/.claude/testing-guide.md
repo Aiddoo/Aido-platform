@@ -59,10 +59,10 @@
 
 ### Given-When-Then 구조
 
-모든 테스트는 **반드시** `// Given`, `// When`, `// Then` 주석으로 구분한다. `describe`/`it`은 한국어로 작성한다.
+테스트 본문은 `// Given`, `// When`, `// Then` 주석으로 구분한다. `describe`/`it` 설명은 한국어로 **간결하게** 작성한다 — Given/When/Then을 설명에 넣지 않는다.
 
 ```typescript
-it('특정 조건에서 기대하는 결과가 나와야 한다', async () => {
+it('활성 상태이면 true를 반환한다', async () => {
   // Given — 테스트 데이터 및 mock 설정
   const item = create{Feature}({ status: 'active' });
 
@@ -668,6 +668,50 @@ pnpm --filter @aido/mobile test -- --coverage
 - [ ] Given-When-Then 구조 준수
 - [ ] 팩토리 함수로 테스트 데이터 생성
 - [ ] 에러 케이스 포함
+
+---
+
+## 유틸 함수 테스트
+
+### 테스트 대상 기준
+
+**자체 로직이 있는 함수만 테스트한다.** 라이브러리 함수를 그대로 호출만 하는 wrapper는 테스트하지 않는다 — 라이브러리 테스트는 라이브러리에 위임한다.
+
+| 구분 | 예시 | 테스트 여부 |
+|------|------|-----------|
+| 자체 로직 있음 | `fontScaledSize` (산술 연산 + 반올림) | O |
+| 자체 로직 있음 | `formatTodoDateLabel` (조건 분기 + 포맷팅) | O |
+| 라이브러리 래핑 | `cn(...args)` → `twMerge(args)` 그대로 위임 | X |
+
+### 패턴
+
+```typescript
+// src/shared/utils/{util}.test.ts
+import { myUtil } from './{util}';
+
+describe('myUtil', () => {
+  it('32를 변환하면 기대 결과를 반환한다', () => {
+    // Given
+    const input = 32;
+
+    // When
+    const result = myUtil(input);
+
+    // Then
+    expect(result).toBe(expectedValue);
+  });
+});
+```
+
+### 외부 의존성 mock
+
+React Native 모듈 등 외부 의존성은 `jest.mock`으로 격리한다.
+
+```typescript
+jest.mock('react-native', () => ({
+  PixelRatio: { getFontScale: jest.fn() },
+}));
+```
 
 ---
 
