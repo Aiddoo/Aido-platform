@@ -35,10 +35,7 @@ export const formatReminderTime = (
   }).format(dayjs().hour(hour).minute(minute).second(0).toDate());
 
 /** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시용으로 변환 */
-export const formatTimeDisplay = (
-  time: string,
-  timeFormat: TimeFormat = 'TWENTY_FOUR_HOUR',
-): string => {
+export const formatTimeDisplay = (time: string, timeFormat: TimeFormat = 'TWELVE_HOUR'): string => {
   if (timeFormat === 'TWENTY_FOUR_HOUR') return time;
   const parsed = dayjs(time, 'HH:mm', true);
   if (!parsed.isValid()) return time;

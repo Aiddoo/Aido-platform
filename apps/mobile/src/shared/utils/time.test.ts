@@ -148,8 +148,10 @@ describe('time utils', () => {
       expect(formatTimeDisplay('invalid', 'TWELVE_HOUR')).toBe('invalid');
     });
 
-    it('기본값은 24시간제여야 한다', () => {
-      expect(formatTimeDisplay('14:30')).toBe('14:30');
+    it('기본값은 12시간제여야 한다', () => {
+      const result = formatTimeDisplay('14:30');
+      expect(result).toMatch(/2/);
+      expect(result).toMatch(/30/);
     });
   });
 });
