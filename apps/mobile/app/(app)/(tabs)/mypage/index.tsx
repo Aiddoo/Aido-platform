@@ -44,6 +44,7 @@ const MyPageScreen = () => {
         {/* 핵심 기능 */}
         <SettingNavigationSection>
           <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
+          <SettingNavigationItem label="달성 배지" onPress={() => router.push('/achievements')} />
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
         </SettingNavigationSection>
 

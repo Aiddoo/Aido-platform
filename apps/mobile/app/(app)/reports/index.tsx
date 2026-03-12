@@ -66,7 +66,9 @@ function ReportsContent() {
             resizeMode="contain"
           />
           <Spacing size={8} />
-          <H4>{isPremium ? 'AI 리포트' : 'AI가 분석한 나만의 리포트'}</H4>
+          <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+            {isPremium ? 'AI 리포트' : 'AI가 분석한 나만의 리포트'}
+          </H4>
           <Text size="b4" shade={6} align="center">
             {isPremium
               ? '할 일 데이터를 분석해서 리포트를 만들어드려요'

@@ -29,8 +29,10 @@ export function SuggestionsList() {
             resizeMode="contain"
           />
           <Spacing size={8} />
-          <H4>제안이 아직 도착하지 않았어요</H4>
-          <Text size="b4" shade={6}>
+          <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+            제안이 아직 도착하지 않았어요
+          </H4>
+          <Text size="b4" shade={6} align="center">
             할 일 기록이 쌓이면 AI가 반복 패턴을 분석해 추천해드려요
           </Text>
         </View>
@@ -80,8 +82,10 @@ export function SuggestionsList() {
           resizeMode="contain"
         />
         <Spacing size={8} />
-        <H4>{suggestions.length}개의 제안이 도착했어요</H4>
-        <Text size="b4" shade={6}>
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {suggestions.length}개의 제안이 도착했어요
+        </H4>
+        <Text size="b4" shade={6} align="center">
           반복되는 패턴을 분석해서 추천해드려요
         </Text>
       </View>
