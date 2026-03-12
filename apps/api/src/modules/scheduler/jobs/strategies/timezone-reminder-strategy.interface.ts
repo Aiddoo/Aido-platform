@@ -15,3 +15,8 @@ export interface TimezoneContext {
 	/** catch-up 발송 시 특정 유저만 대상 */
 	userId?: string;
 }
+
+/** 모든 타임존 기반 Strategy가 구현하는 공통 인터페이스 */
+export interface ITimezoneStrategy {
+	execute(ctx: TimezoneContext): Promise<{ sent: number }>;
+}

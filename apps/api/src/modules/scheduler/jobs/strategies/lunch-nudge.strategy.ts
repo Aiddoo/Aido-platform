@@ -6,7 +6,10 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 /**
  * 점심 넛지 Strategy (12:30)
@@ -15,7 +18,7 @@ import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
  * 고정 시간(12:30) 전용 — 프리미엄 커스텀 시간 미지원.
  */
 @Injectable()
-export class LunchNudgeStrategy {
+export class LunchNudgeStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(LunchNudgeStrategy.name);
 
 	constructor(

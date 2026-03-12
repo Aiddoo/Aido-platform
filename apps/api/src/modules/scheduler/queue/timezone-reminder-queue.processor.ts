@@ -15,7 +15,7 @@ import {
  * 타임존 리마인더 BullMQ Processor
  *
  * BullMQ Job Scheduler가 매분 생성하는 잡을 처리합니다.
- * - sweep-reminders: TimezoneAwareReminderJob.handleHourlySweep()
+ * - sweep-reminders: TimezoneAwareReminderJob.handleMinuteSweep()
  * - reminder-hour-changed: TimezoneAwareReminderJob.handleReminderHourChanged()
  */
 @Processor(TIMEZONE_REMINDER_QUEUE)
@@ -54,7 +54,7 @@ export class TimezoneReminderProcessor extends WorkerHost {
 		switch (job.name) {
 			case TimezoneReminderJobName.SWEEP_REMINDERS:
 				this.#logger.debug("Processing timezone reminder sweep...");
-				await this.#reminderJob.handleHourlySweep();
+				await this.#reminderJob.handleMinuteSweep();
 				break;
 			case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
 				this.#logger.debug(

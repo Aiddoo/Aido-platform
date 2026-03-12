@@ -7,10 +7,13 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 @Injectable()
-export class SocialDigestStrategy {
+export class SocialDigestStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(SocialDigestStrategy.name);
 
 	constructor(

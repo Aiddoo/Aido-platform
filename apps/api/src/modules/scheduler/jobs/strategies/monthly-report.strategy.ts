@@ -1,15 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
-import dayjs from "dayjs";
 
+import { subtractMonths } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 @Injectable()
-export class MonthlyReportStrategy {
+export class MonthlyReportStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(MonthlyReportStrategy.name);
 
 	constructor(
@@ -20,7 +23,7 @@ export class MonthlyReportStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const monthAgo = dayjs.utc(today).subtract(1, "month").toDate();
+		const monthAgo = subtractMonths(1, today);
 
 		// 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 pushEnabled 유저 대상
 		const users = await this.database.user.findMany({

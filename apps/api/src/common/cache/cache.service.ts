@@ -462,6 +462,14 @@ export class CacheService {
 		return this.del(CacheKeys.activeTimezones());
 	}
 
+	async wrapAllTimezones(factory: () => Promise<string[]>): Promise<string[]> {
+		return this.wrap(
+			CacheKeys.allTimezones(),
+			factory,
+			CacheKeys.TTL.ACTIVE_TIMEZONES,
+		);
+	}
+
 	// === Unread Count Methods ===
 
 	async invalidateUnreadCount(userId: string): Promise<void> {

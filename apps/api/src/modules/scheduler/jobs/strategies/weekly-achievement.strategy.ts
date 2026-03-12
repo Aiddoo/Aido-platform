@@ -7,10 +7,13 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 @Injectable()
-export class WeeklyAchievementStrategy {
+export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(WeeklyAchievementStrategy.name);
 
 	constructor(
