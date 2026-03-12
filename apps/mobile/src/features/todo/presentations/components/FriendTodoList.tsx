@@ -1,3 +1,4 @@
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
@@ -31,7 +32,10 @@ interface FriendTodoListProps {
 }
 
 export function FriendTodoList({ friend, date }: FriendTodoListProps) {
-  const { data, isLoading } = useQuery(useGetFriendTodosQueryOptions(friend.id, formatDate(date)));
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { data, isLoading } = useQuery(
+    useGetFriendTodosQueryOptions(friend.id, formatDate(date), preference.timeFormat),
+  );
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 

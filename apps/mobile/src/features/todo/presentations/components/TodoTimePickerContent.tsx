@@ -1,6 +1,8 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
-import { getDateWithTime, toHHmm } from '@src/shared/utils/time';
+import { formatTimeDisplay, getDateWithTime, toHHmm } from '@src/shared/utils/time';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
 import { Platform } from 'react-native';
@@ -24,6 +26,7 @@ export const TodoTimePickerContent = ({
   onConfirm,
   onCancel,
 }: TodoTimePickerContentProps) => {
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TIME);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
@@ -74,7 +77,7 @@ export const TodoTimePickerContent = ({
                 value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
                 mode="time"
                 display="compact"
-                locale="ko"
+                locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
                 onChange={(_event, date) => {
                   if (date) {
                     setLocalTime(toHHmm(date));
@@ -88,7 +91,7 @@ export const TodoTimePickerContent = ({
                   className="h-[34px] justify-center"
                 >
                   <Text size="b1" tone="brand" weight="medium">
-                    {localTime}
+                    {formatTimeDisplay(localTime, preference.timeFormat)}
                   </Text>
                 </PressableFeedback>
                 {showAndroidPicker && (
@@ -96,6 +99,7 @@ export const TodoTimePickerContent = ({
                     value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
                     mode="time"
                     display="spinner"
+                    is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
                     onChange={(_event, date) => {
                       setShowAndroidPicker(false);
                       if (date) {

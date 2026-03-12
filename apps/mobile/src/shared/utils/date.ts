@@ -16,9 +16,13 @@ export const formatDate = (date: Date | string | number): string => {
   return d.isValid() ? d.format('YYYY-MM-DD') : '';
 };
 
-export const formatTime = (date: Date | string | number): string => {
+export const formatTime = (
+  date: Date | string | number,
+  timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR' = 'TWELVE_HOUR',
+): string => {
   const d = dayjs(date);
-  return d.isValid() ? d.format('A h:mm') : '';
+  if (!d.isValid()) return '';
+  return timeFormat === 'TWENTY_FOUR_HOUR' ? d.format('HH:mm') : d.format('A h:mm');
 };
 
 export const formatFullDate = (date: Date | string | number): string => {

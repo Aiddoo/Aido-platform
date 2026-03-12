@@ -1,5 +1,8 @@
-/** 24시간 정수(0-23) → 한국어 12시간 표기 ("오전 12시", "오후 2시") */
-export const formatHour = (hour: number): string => {
+import type { TimeFormat } from '@src/shared/utils/time';
+
+/** 24시간 정수(0-23) → 시간 표기 (12시간: "오전 12시", 24시간: "14시") */
+export const formatHour = (hour: number, timeFormat: TimeFormat = 'TWELVE_HOUR'): string => {
+  if (timeFormat === 'TWENTY_FOUR_HOUR') return `${hour}시`;
   if (hour === 0) return '오전 12시';
   if (hour < 12) return `오전 ${hour}시`;
   if (hour === 12) return '오후 12시';
