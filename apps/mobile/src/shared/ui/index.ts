@@ -55,6 +55,7 @@ export {
   PlusIcon,
   SearchIcon,
   SendIcon,
+  ShareIcon,
   type StyledIconType,
   SunIcon,
   ToastErrorIcon,
