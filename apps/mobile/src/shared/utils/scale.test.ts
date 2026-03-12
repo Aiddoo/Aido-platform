@@ -11,7 +11,7 @@ const mockGetFontScale = PixelRatio.getFontScale as jest.Mock;
 
 describe('fontScaledSize', () => {
   describe('기본 ratio (0.5)', () => {
-    it('Given 시스템 글꼴이 기본(1x)일 때 When 32px을 스케일링하면 Then 원래 크기를 반환한다', () => {
+    it('시스템 글꼴 1x이면 원래 크기를 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(1);
 
@@ -22,7 +22,7 @@ describe('fontScaledSize', () => {
       expect(result).toBe(32);
     });
 
-    it('Given 시스템 글꼴이 1.5x일 때 When 32px을 스케일링하면 Then 50% 반영된 40px을 반환한다', () => {
+    it('시스템 글꼴 1.5x이면 50% 반영된 40px을 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(1.5);
 
@@ -34,7 +34,7 @@ describe('fontScaledSize', () => {
       expect(result).toBe(40);
     });
 
-    it('Given 시스템 글꼴이 2x일 때 When 20px을 스케일링하면 Then 50% 반영된 30px을 반환한다', () => {
+    it('시스템 글꼴 2x이면 50% 반영된 30px을 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(2);
 
@@ -48,7 +48,7 @@ describe('fontScaledSize', () => {
   });
 
   describe('커스텀 ratio', () => {
-    it('Given ratio가 0.5일 때 When 글꼴 1.5x에서 32px을 스케일링하면 Then 50% 반영된 40px을 반환한다', () => {
+    it('ratio 0.5이면 50% 반영된 40px을 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(1.5);
 
@@ -60,7 +60,7 @@ describe('fontScaledSize', () => {
       expect(result).toBe(40);
     });
 
-    it('Given ratio가 0일 때 When 글꼴 2x에서 32px을 스케일링하면 Then 원래 크기를 반환한다', () => {
+    it('ratio 0이면 원래 크기를 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(2);
 
@@ -71,7 +71,7 @@ describe('fontScaledSize', () => {
       expect(result).toBe(32);
     });
 
-    it('Given ratio가 1일 때 When 글꼴 1.5x에서 32px을 스케일링하면 Then 100% 반영된 48px을 반환한다', () => {
+    it('ratio 1이면 100% 반영된 48px을 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(1.5);
 
@@ -85,7 +85,7 @@ describe('fontScaledSize', () => {
   });
 
   describe('반올림', () => {
-    it('Given 소수점 결과가 나올 때 When 스케일링하면 Then 반올림된 정수를 반환한다', () => {
+    it('소수점 결과는 반올림된 정수를 반환한다', () => {
       // Given
       mockGetFontScale.mockReturnValue(1.3);
 

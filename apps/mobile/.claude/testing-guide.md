@@ -59,10 +59,10 @@
 
 ### Given-When-Then 구조
 
-모든 테스트는 **반드시** `// Given`, `// When`, `// Then` 주석으로 구분한다. `describe`/`it`은 한국어로 작성한다.
+테스트 본문은 `// Given`, `// When`, `// Then` 주석으로 구분한다. `describe`/`it` 설명은 한국어로 **간결하게** 작성한다 — Given/When/Then을 설명에 넣지 않는다.
 
 ```typescript
-it('특정 조건에서 기대하는 결과가 나와야 한다', async () => {
+it('활성 상태이면 true를 반환한다', async () => {
   // Given — 테스트 데이터 및 mock 설정
   const item = create{Feature}({ status: 'active' });
 
@@ -690,7 +690,7 @@ pnpm --filter @aido/mobile test -- --coverage
 import { myUtil } from './{util}';
 
 describe('myUtil', () => {
-  it('Given 특정 입력일 때 When 변환하면 Then 기대 결과를 반환한다', () => {
+  it('32를 변환하면 기대 결과를 반환한다', () => {
     // Given
     const input = 32;
 
