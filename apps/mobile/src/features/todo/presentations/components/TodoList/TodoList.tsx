@@ -1,5 +1,6 @@
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
+import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
@@ -95,7 +96,11 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       <Text size="b4" weight="semibold" style={{ color: category.color }}>
         {category.name}
       </Text>
-      <PlusIcon width={14} height={14} colorClassName="text-gray-6" />
+      <PlusIcon
+        width={fontScaledSize(14)}
+        height={fontScaledSize(14)}
+        colorClassName="text-gray-6"
+      />
     </PressableFeedback>
   );
 }

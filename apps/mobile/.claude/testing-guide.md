@@ -671,6 +671,50 @@ pnpm --filter @aido/mobile test -- --coverage
 
 ---
 
+## 유틸 함수 테스트
+
+### 테스트 대상 기준
+
+**자체 로직이 있는 함수만 테스트한다.** 라이브러리 함수를 그대로 호출만 하는 wrapper는 테스트하지 않는다 — 라이브러리 테스트는 라이브러리에 위임한다.
+
+| 구분 | 예시 | 테스트 여부 |
+|------|------|-----------|
+| 자체 로직 있음 | `fontScaledSize` (산술 연산 + 반올림) | O |
+| 자체 로직 있음 | `formatTodoDateLabel` (조건 분기 + 포맷팅) | O |
+| 라이브러리 래핑 | `cn(...args)` → `twMerge(args)` 그대로 위임 | X |
+
+### 패턴
+
+```typescript
+// src/shared/utils/{util}.test.ts
+import { myUtil } from './{util}';
+
+describe('myUtil', () => {
+  it('Given 특정 입력일 때 When 변환하면 Then 기대 결과를 반환한다', () => {
+    // Given
+    const input = 32;
+
+    // When
+    const result = myUtil(input);
+
+    // Then
+    expect(result).toBe(expectedValue);
+  });
+});
+```
+
+### 외부 의존성 mock
+
+React Native 모듈 등 외부 의존성은 `jest.mock`으로 격리한다.
+
+```typescript
+jest.mock('react-native', () => ({
+  PixelRatio: { getFontScale: jest.fn() },
+}));
+```
+
+---
+
 ## 참고 파일
 
 | 파일 | 설명 |

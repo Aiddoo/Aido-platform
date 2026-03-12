@@ -1,5 +1,8 @@
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
+import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
+
+const HEADER_ICON_SIZE = fontScaledSize(20);
 
 interface PickerHeaderProps {
   title: string;
@@ -12,7 +15,11 @@ export const PickerHeader = ({ title, onCancel, onConfirm }: PickerHeaderProps) 
     <HStack className="items-center" px={16}>
       <Box className="flex-1 items-start">
         <PressableFeedback onPress={onCancel}>
-          <CloseIcon width={20} height={20} colorClassName="text-gray-8" />
+          <CloseIcon
+            width={HEADER_ICON_SIZE}
+            height={HEADER_ICON_SIZE}
+            colorClassName="text-gray-8"
+          />
         </PressableFeedback>
       </Box>
       <Text size="b2" weight="semibold" tone="neutral" shade={8}>
