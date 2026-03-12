@@ -1,6 +1,6 @@
 # Aido Privacy Policy
 
-**Effective Date: March 10, 2026**
+**Effective Date: March 13, 2026**
 
 ---
 
@@ -264,7 +264,7 @@ The Company designates the following Personal Information Protection Officer to 
 | Item | Details |
 |------|---------|
 | Name | Kim Yongmin |
-| Position | Representative |
+| Position | Representative (concurrent) |
 | Phone | 010-5877-8951 |
 | Email | dydals3440@gmail.com |
 
@@ -295,5 +295,5 @@ For reports or consultations regarding personal information breaches, you may co
 
 ## Addendum
 
-1. This Privacy Policy takes effect on **March 10, 2026**.
-2. The previous Privacy Policy (effective March 8, 2026) shall cease to have effect upon the implementation of this Policy.
+1. This Privacy Policy takes effect on **March 13, 2026**.
+2. The previous Privacy Policy (effective March 10, 2026) shall cease to have effect upon the implementation of this Policy.
