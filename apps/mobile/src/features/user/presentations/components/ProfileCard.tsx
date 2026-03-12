@@ -2,6 +2,7 @@ import { getProfileIconSource } from '@src/features/user/presentations/utils/pro
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
+import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
@@ -52,7 +53,11 @@ export function ProfileCard() {
               }}
               className="p-1"
             >
-              <CopyIcon width={12} height={12} colorClassName="text-gray-5" />
+              <CopyIcon
+                width={fontScaledSize(12)}
+                height={fontScaledSize(12)}
+                colorClassName="text-gray-5"
+              />
             </Pressable>
           </HStack>
         </VStack>
