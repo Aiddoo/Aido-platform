@@ -11,6 +11,8 @@ import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
+import { Suspense } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { match } from 'ts-pattern';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
@@ -96,24 +98,26 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
         }}
       >
         {isOpen && (
-          <TodoTimePickerContent
-            draftDate={todo.startDateObj}
-            scheduledTime={todo.scheduledTime24}
-            isAllDay={todo.isAllDay}
-            onCancel={close}
-            onConfirm={(scheduledTime, isAllDay) => {
-              updateScheduleMutation.mutate({
-                todoId: todo.id,
-                input: {
-                  startDate: formatDate(todo.startDateObj),
-                  endDate: todo.endDateObj ? formatDate(todo.endDateObj) : null,
-                  scheduledTime: isAllDay ? null : (scheduledTime ?? null),
-                  isAllDay,
-                },
-              });
-              close();
-            }}
-          />
+          <Suspense fallback={<ActivityIndicator />}>
+            <TodoTimePickerContent
+              draftDate={todo.startDateObj}
+              scheduledTime={todo.scheduledTime24}
+              isAllDay={todo.isAllDay}
+              onCancel={close}
+              onConfirm={(scheduledTime, isAllDay) => {
+                updateScheduleMutation.mutate({
+                  todoId: todo.id,
+                  input: {
+                    startDate: formatDate(todo.startDateObj),
+                    endDate: todo.endDateObj ? formatDate(todo.endDateObj) : null,
+                    scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+                    isAllDay,
+                  },
+                });
+                close();
+              }}
+            />
+          </Suspense>
         )}
       </KeyboardBottomSheet>
     ));

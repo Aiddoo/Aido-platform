@@ -2,9 +2,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardBottomSheet } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { Keyboard } from 'react-native';
+import { ActivityIndicator, Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
@@ -200,13 +200,15 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             />
           ))
           .with('time', () => (
-            <TodoTimePickerContent
-              draftDate={methods.getValues('startDate')}
-              scheduledTime={methods.getValues('scheduledTime') ?? undefined}
-              isAllDay={methods.getValues('isAllDay') ?? true}
-              onConfirm={handleTimeConfirm}
-              onCancel={returnToForm}
-            />
+            <Suspense fallback={<ActivityIndicator />}>
+              <TodoTimePickerContent
+                draftDate={methods.getValues('startDate')}
+                scheduledTime={methods.getValues('scheduledTime') ?? undefined}
+                isAllDay={methods.getValues('isAllDay') ?? true}
+                onConfirm={handleTimeConfirm}
+                onCancel={returnToForm}
+              />
+            </Suspense>
           ))
           .with('form', () => (
             <TodoFormContent
