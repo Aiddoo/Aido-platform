@@ -36,12 +36,12 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
   const badgeName = BADGE_NAME[latest.badgeType];
 
   const handleShare = async () => {
-    await shareCapture();
     trackEvent('badge_share_attempted', {
       badge_type: latest.badgeType,
       year: latest.year,
       week: latest.week,
     });
+    await shareCapture();
   };
 
   useEffect(() => {

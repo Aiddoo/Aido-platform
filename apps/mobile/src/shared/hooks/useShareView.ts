@@ -11,12 +11,15 @@ export function useShareView(viewShotRef: React.RefObject<ViewShot | null>) {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      const uri = await viewShotRef.current?.capture?.();
-      if (!uri) return;
-
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
         warning('이 기기에서는 공유할 수 없어요');
+        return;
+      }
+
+      const uri = await viewShotRef.current?.capture?.();
+      if (!uri) {
+        error('공유 이미지를 준비하지 못했어요');
         return;
       }
 

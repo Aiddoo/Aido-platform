@@ -71,8 +71,8 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
   const badgeName = BADGE_NAME[badgeType];
 
   const handleShare = async () => {
-    await shareCapture();
     trackEvent('badge_share_attempted', { badge_type: badgeType, year, week });
+    await shareCapture();
   };
 
   return (
