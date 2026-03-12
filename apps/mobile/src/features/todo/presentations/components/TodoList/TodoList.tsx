@@ -1,3 +1,4 @@
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
@@ -27,7 +28,10 @@ interface TodoListProps {
 
 export function TodoList({ date }: TodoListProps) {
   const formattedDate = formatDate(date);
-  const { data, dataUpdatedAt, isLoading } = useQuery(useGetAllTodosQueryOptions(formattedDate));
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { data, dataUpdatedAt, isLoading } = useQuery(
+    useGetAllTodosQueryOptions(formattedDate, preference.timeFormat),
+  );
   const { data: categoriesData } = useSuspenseQuery({
     ...useGetTodoCategoriesQueryOptions(),
     select: (data) => ({

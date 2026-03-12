@@ -18,7 +18,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatReminderTime, timeToDate } from '@src/shared/utils/time';
+import { formatReminderTime, type TimeFormat, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import {
   ControlField,
@@ -53,6 +53,8 @@ export default NotificationSettingsScreen;
 function NotificationSettingsForm() {
   return (
     <VStack gap={24}>
+      <TimeFormatSection />
+
       <PushSettingsSection />
 
       <ReminderSection />
@@ -157,6 +159,32 @@ function PushSettingsSection() {
   );
 }
 
+function TimeFormatSection() {
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+
+  const is24Hour = preference.timeFormat === 'TWENTY_FOUR_HOUR';
+
+  return (
+    <VStack p={16} className="bg-white rounded-2xl">
+      <ControlField
+        isSelected={is24Hour}
+        onSelectedChange={(enabled) =>
+          updateMutation.mutate({
+            timeFormat: enabled ? 'TWENTY_FOUR_HOUR' : 'TWELVE_HOUR',
+          })
+        }
+        isDisabled={updateMutation.isPending}
+      >
+        <View className="flex-1">
+          <Label>24시간제</Label>
+        </View>
+        <ControlField.Indicator />
+      </ControlField>
+    </VStack>
+  );
+}
+
 function ReminderSection() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
 
@@ -242,6 +270,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
       hour,
       minute,
       overlay,
+      timeFormat: preference.timeFormat,
       onConfirm: handleTimeChange,
     });
   };
@@ -257,7 +286,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
               <Label>{label}</Label>
               {!isPremium && <CrownIcon width={14} height={14} />}
               <Description className="text-main break-keep">
-                {formatReminderTime(hour, minute)}
+                {formatReminderTime(hour, minute, preference.timeFormat)}
               </Description>
             </HStack>
             <Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
@@ -284,6 +313,7 @@ function ReminderTimeRow({ label, description, field }: ReminderTimeRowProps) {
           mode="time"
           display="spinner"
           minuteInterval={1}
+          is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
         />
       )}
     </VStack>
@@ -296,6 +326,7 @@ function openTimePickerBottomSheet({
   hour,
   minute,
   overlay,
+  timeFormat,
   onConfirm,
 }: {
   label: string;
@@ -303,6 +334,7 @@ function openTimePickerBottomSheet({
   hour: number;
   minute: number;
   overlay: ReturnType<typeof useOverlay>;
+  timeFormat: TimeFormat;
   onConfirm: (hour: number, minute: number) => void;
 }) {
   let tempDate = timeToDate(hour, minute);
@@ -330,7 +362,7 @@ function openTimePickerBottomSheet({
             exit();
           }}
         />
-        <View style={{ height: 216 }}>
+        <View style={{ height: 216, alignItems: 'center' }}>
           <DateTimePicker
             value={tempDate}
             minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
@@ -343,7 +375,8 @@ function openTimePickerBottomSheet({
             mode="time"
             display="spinner"
             minuteInterval={1}
-            locale={Intl.DateTimeFormat().resolvedOptions().locale}
+            is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}
+            locale={timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
             style={{ height: 216 }}
           />
         </View>
