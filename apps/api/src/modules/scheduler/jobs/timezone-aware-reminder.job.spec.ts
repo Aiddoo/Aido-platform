@@ -337,7 +337,7 @@ describe("TimezoneAwareReminderJob", () => {
 					.mockResolvedValueOnce([{ timezone: "Asia/Seoul" }] as never)
 					.mockResolvedValueOnce([
 						{ timezone: "Asia/Seoul" },
-						{ timezone: "Asia/Seoul" },
+						{ timezone: "Pacific/Honolulu" },
 					] as never);
 
 				await job.handleMinuteSweep();

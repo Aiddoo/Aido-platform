@@ -280,19 +280,18 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		const missingTzList = allTzList.filter((tz) => !pushEnabledSet.has(tz));
 		if (missingTzList.length === 0) return;
 
-		const eligibleTzList = missingTzList.filter((tz) => {
-			const local = dayjs(now).tz(tz);
-			return (
-				local.day() === 1 &&
-				local.hour() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
-				local.minute() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute
+		const eligibleTzData = missingTzList
+			.map((tz) => ({ tz, local: dayjs(now).tz(tz) }))
+			.filter(
+				({ local }) =>
+					local.day() === 1 &&
+					local.hour() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
+					local.minute() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute,
 			);
-		});
 
-		if (eligibleTzList.length === 0) return;
+		if (eligibleTzData.length === 0) return;
 
-		const tasks = eligibleTzList.map((tz) => {
-			const local = dayjs(now).tz(tz);
+		const tasks = eligibleTzData.map(({ tz, local }) => {
 			const ctx = this.#buildContext(tz, local.hour(), local.minute());
 			return this.weeklyAchievement.execute(ctx);
 		});
@@ -300,7 +299,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		const results = await Promise.allSettled(tasks);
 		results.forEach((result, index) => {
 			if (result.status === "rejected") {
-				const tz = eligibleTzList[index] ?? "unknown";
+				const tz = eligibleTzData[index]?.tz ?? "unknown";
 				this.#logger.error(
 					`WeeklyAchievement catch-up failed for tz=${tz}: ${result.reason}`,
 					result.reason instanceof Error ? result.reason.stack : undefined,
