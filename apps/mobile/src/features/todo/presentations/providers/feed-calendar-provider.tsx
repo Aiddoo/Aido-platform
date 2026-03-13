@@ -4,14 +4,11 @@ import { mmkvStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 const VIEW_MODE_STORAGE_KEY = 'aido_calendar_view_mode';
-const VALID_VIEW_MODES: CalendarViewMode[] = ['week', 'month'];
 
 function readSavedViewMode(): CalendarViewMode {
   const saved = mmkvStorage.getString(VIEW_MODE_STORAGE_KEY);
 
-  if (saved && VALID_VIEW_MODES.includes(saved as CalendarViewMode)) {
-    return saved as CalendarViewMode;
-  }
+  if (saved === 'week' || saved === 'month') return saved;
   return 'week';
 }
 
