@@ -26,11 +26,11 @@ const FeedCalendarContext = createContext<FeedCalendarContextValue | null>(null)
 
 export function FeedCalendarProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [viewMode, setViewModeState] = useState<CalendarViewMode>(readSavedViewMode);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(readSavedViewMode);
   const today = useToday();
 
-  const setViewMode = useCallback((mode: CalendarViewMode) => {
-    setViewModeState(mode);
+  const persistViewMode = useCallback((mode: CalendarViewMode) => {
+    setViewMode(mode);
     mmkvStorage.set(VIEW_MODE_STORAGE_KEY, mode);
   }, []);
 
@@ -39,7 +39,9 @@ export function FeedCalendarProvider({ children }: { children: React.ReactNode }
   }, [today]);
 
   return (
-    <FeedCalendarContext.Provider value={{ selectedDate, setSelectedDate, viewMode, setViewMode }}>
+    <FeedCalendarContext.Provider
+      value={{ selectedDate, setSelectedDate, viewMode, setViewMode: persistViewMode }}
+    >
       {children}
     </FeedCalendarContext.Provider>
   );

@@ -34,7 +34,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export const ThemeProvider = ({ children }: PropsWithChildren) => {
   const systemColorScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>(readSavedMode);
+  const [mode, setMode] = useState<ThemeMode>(readSavedMode);
 
   const resolvedTheme: ResolvedTheme =
     mode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : mode;
@@ -43,13 +43,13 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
     Uniwind.setTheme(mode);
   }, [mode]);
 
-  const setMode = useCallback((newMode: ThemeMode) => {
-    setModeState(newMode);
+  const persistMode = useCallback((newMode: ThemeMode) => {
+    setMode(newMode);
     mmkvStorage.set(THEME_STORAGE_KEY, newMode);
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode }}>
+    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode: persistMode }}>
       {children}
     </ThemeContext.Provider>
   );
