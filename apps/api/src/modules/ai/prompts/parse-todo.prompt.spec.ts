@@ -123,6 +123,12 @@ describe("buildParseTodoPrompt", () => {
 			expect(prompt).toContain("자정→00:00");
 			expect(prompt).toContain("N시반→N:30");
 		});
+
+		it("상대 시간 표현이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain("N시간후→now+Nh");
+			expect(prompt).toContain("N분후→now+Nm");
+		});
 	});
 
 	describe("PastTime 규칙", () => {
@@ -149,6 +155,7 @@ describe("buildParseTodoPrompt", () => {
 			expect(prompt).toContain("N주후→+Nw");
 			expect(prompt).toContain("N달후→+Nmo");
 			expect(prompt).toContain("다음달→+1mo");
+			expect(prompt).toContain("재다음달→+2mo");
 			expect(prompt).toContain("내년→next year");
 		});
 	});
@@ -161,11 +168,27 @@ describe("buildParseTodoPrompt", () => {
 			expect(prompt).toContain("다음주X요일→next week");
 		});
 
-		it("주 단위 단독 사용 규칙이 포함된다", () => {
+		it("주 단위 단독 사용은 WeekSpan에서 처리된다", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
-			expect(prompt).toContain("이번주→this week");
-			expect(prompt).toContain("다음주→+7d");
-			expect(prompt).toContain("다다음주→+14d");
+			// Week 섹션에는 요일 지정 규칙만 남음
+			expect(prompt).not.toMatch(/Week:.*이번주→this week/);
+			expect(prompt).not.toMatch(/Week:.*다음주→\+7d/);
+		});
+	});
+
+	describe("DayAbbr 규칙", () => {
+		it("요일 약어 매핑이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain(
+				"월=MON,화=TUE,수=WED,목=THU,금=FRI,토=SAT,일=SUN",
+			);
+		});
+
+		it("요일 약어 조합 패턴이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain("월수금→MON+WED+FRI");
+			expect(prompt).toContain("화목→TUE+THU");
+			expect(prompt).toContain("월화수목금→MON~FRI");
 		});
 	});
 
@@ -186,19 +209,91 @@ describe("buildParseTodoPrompt", () => {
 		});
 	});
 
+	describe("WeekSpan 규칙", () => {
+		it("반드시 isRecurring:true 규칙이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain("★MUST isRecurring:true");
+			expect(prompt).toContain("반드시 isRecurring:true+daysOfWeek 사용");
+		});
+
+		it("이번주/다음주/다다음주/주말/주중 규칙이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain("이번주→daysOfWeek:today요일~SUN");
+			expect(prompt).toContain("다음주→MON~SUN,start=다음주MON");
+			expect(prompt).toContain("다다음주→MON~SUN,start=다다음주MON");
+			expect(prompt).toContain("이번/다음주말→SAT+SUN");
+			expect(prompt).toContain("주중→이번주평일MON~FRI,endDate=이번주FRI");
+		});
+
+		it("단발성 이벤트 예외 규칙이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain(
+				"단발성(출장/여행/시험/행사)→isRecurring:false+startDate~endDate",
+			);
+		});
+
+		it("요일 범위 표현이 daysOfWeek로 처리된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain("X요일부터Y요일까지→daysOfWeek:X~Y");
+		});
+
+		it("이번주 동적 few-shot 예시가 포함된다", () => {
+			// Given - 2026-03-13 금요일, 이번주 일요일 = 2026-03-15
+			const now = new Date("2026-03-13T06:00:00.000Z");
+			const prompt = buildParseTodoPrompt("테스트", "UTC", now);
+
+			expect(prompt).toContain("WeekSpanEx1");
+			expect(prompt).toContain('"isAllDay":true');
+			expect(prompt).toContain('"isRecurring":true');
+			expect(prompt).toContain('"startDate":"2026-03-13"');
+			expect(prompt).toContain('"endDate":"2026-03-15"');
+		});
+
+		it("다음주 동적 few-shot 예시가 포함된다", () => {
+			// Given - 2026-03-13 금요일, 다음주 월=2026-03-16, 일=2026-03-22
+			const now = new Date("2026-03-13T06:00:00.000Z");
+			const prompt = buildParseTodoPrompt("테스트", "UTC", now);
+
+			expect(prompt).toContain("WeekSpanEx2");
+			expect(prompt).toContain('"startDate":"2026-03-16"');
+			expect(prompt).toContain(
+				'"daysOfWeek":["MON","TUE","WED","THU","FRI","SAT","SUN"]',
+			);
+			expect(prompt).toContain('"endDate":"2026-03-22"');
+		});
+
+		it("다음주말 동적 few-shot 예시가 포함된다", () => {
+			// Given - 2026-03-13 금요일, 다음주 토=2026-03-21, 일=2026-03-22
+			const now = new Date("2026-03-13T06:00:00.000Z");
+			const prompt = buildParseTodoPrompt("테스트", "UTC", now);
+
+			expect(prompt).toContain("WeekSpanEx3");
+			expect(prompt).toContain('"startDate":"2026-03-21"');
+			expect(prompt).toContain('"daysOfWeek":["SAT","SUN"]');
+			expect(prompt).toContain('"endDate":"2026-03-22"');
+		});
+
+		it("다다음주 동적 few-shot 예시가 포함된다", () => {
+			// Given - 2026-03-13 금요일, 다다음주 월=2026-03-23, 일=2026-03-29
+			const now = new Date("2026-03-13T06:00:00.000Z");
+			const prompt = buildParseTodoPrompt("테스트", "UTC", now);
+
+			expect(prompt).toContain("WeekSpanEx4");
+			expect(prompt).toContain('"startDate":"2026-03-23"');
+			expect(prompt).toContain('"endDate":"2026-03-29"');
+		});
+	});
+
 	describe("Range 규칙", () => {
 		it("범위 표현이 포함된다", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
 			expect(prompt).toContain("~까지→endDate(startDate=today)");
-			expect(prompt).toContain("~부터~까지→startDate+endDate");
 			expect(prompt).toContain("N일/주동안→endDate=start+N");
 		});
-	});
 
-	describe("NonRepeat 규칙", () => {
-		it("주말 비반복 규칙이 포함된다", () => {
+		it("날짜 전용이며 요일은 WeekSpan으로 위임된다", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
-			expect(prompt).toContain("이번/다음주말→토요일(isRecurring:false)");
+			expect(prompt).toContain("Range(날짜전용,요일은WeekSpan)");
 		});
 	});
 
@@ -213,7 +308,12 @@ describe("buildParseTodoPrompt", () => {
 
 		it("시스템 미지원 반복은 isRecurring:false로 처리된다", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
-			expect(prompt).toContain("격주/격일/매달→isRecurring:false");
+			expect(prompt).toContain(
+				"격주/격일→isRecurring:false,startDate=today,isAllDay:true(시스템미지원)",
+			);
+			expect(prompt).toContain(
+				"매달/매월N일→isRecurring:false,startDate=당월N일(지났으면다음달),isAllDay:true(시스템미지원)",
+			);
 		});
 	});
 
@@ -221,6 +321,13 @@ describe("buildParseTodoPrompt", () => {
 		it("반복+기간 복합 규칙이 포함된다", () => {
 			const prompt = buildParseTodoPrompt("테스트", "UTC");
 			expect(prompt).toContain("반복+기간→recurrence.endDate=시작+기간");
+		});
+
+		it("N월+요일약어 복합 규칙이 포함된다", () => {
+			const prompt = buildParseTodoPrompt("테스트", "UTC");
+			expect(prompt).toContain(
+				"N월+요일약어→isRecurring:true,daysOfWeek=해당요일들,startDate=N월1일(지났으면내년),recurrence.endDate=N월말일",
+			);
 		});
 	});
 

@@ -71,6 +71,7 @@ describe("AiSuggestionController", () => {
 					status: "PENDING",
 					expiresAt: "2026-03-18T00:00:00.000Z",
 					createdAt: "2026-03-04T00:00:00.000Z",
+					suggestedCategoryId: 3,
 				},
 			];
 			mockService.getPendingSuggestions.mockResolvedValue(mockSuggestions);
@@ -105,6 +106,7 @@ describe("AiSuggestionController", () => {
 					status: "ACCEPTED",
 					expiresAt: "2026-03-18T00:00:00.000Z",
 					createdAt: "2026-03-04T00:00:00.000Z",
+					suggestedCategoryId: 3,
 				},
 				createdTodosCount: 4,
 			};
@@ -145,6 +147,7 @@ describe("AiSuggestionController", () => {
 					status: "DISMISSED",
 					expiresAt: "2026-03-18T00:00:00.000Z",
 					createdAt: "2026-03-04T00:00:00.000Z",
+					suggestedCategoryId: null,
 				},
 			};
 			mockService.handleAction.mockResolvedValue(mockResult);

@@ -124,6 +124,7 @@ describe("AiSuggestionController (Integration)", () => {
 					status: "ACCEPTED" as const,
 					expiresAt: "2026-03-18T00:00:00.000Z",
 					createdAt: "2026-03-04T00:00:00.000Z",
+					suggestedCategoryId: 3,
 				},
 				createdTodosCount: 12,
 			};
@@ -167,6 +168,7 @@ describe("AiSuggestionController (Integration)", () => {
 					status: "DISMISSED" as const,
 					expiresAt: "2026-03-18T00:00:00.000Z",
 					createdAt: "2026-03-04T00:00:00.000Z",
+					suggestedCategoryId: null,
 				},
 			};
 			aiSuggestionService.handleAction.mockResolvedValue(mockResult);

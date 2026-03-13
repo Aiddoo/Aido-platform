@@ -19,6 +19,7 @@ export const recurringSuggestionSchema = z.object({
   status: suggestionStatusSchema,
   expiresAt: datetimeSchema,
   createdAt: datetimeSchema,
+  suggestedCategoryId: z.number().int().positive().nullable(),
 });
 
 export type RecurringSuggestion = z.infer<typeof recurringSuggestionSchema>;

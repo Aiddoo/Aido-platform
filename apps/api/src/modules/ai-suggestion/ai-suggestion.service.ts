@@ -20,6 +20,7 @@ import {
 	buildDetectPatternsPrompt,
 	detectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
+import type { TodoSummaryForAnalysis } from "./types";
 
 /**
  * AI 반복 제안 서비스
@@ -241,6 +242,10 @@ export class AiSuggestionService {
 					matchedTodos:
 						pattern.matchedTitles as unknown as Prisma.InputJsonValue,
 					expiresAt,
+					suggestedCategoryId: this.#findSuggestedCategoryId(
+						pattern.matchedTitles,
+						todos,
+					),
 				})),
 				tx,
 			);
@@ -252,5 +257,28 @@ export class AiSuggestionService {
 		);
 
 		return createdCount;
+	}
+
+	/**
+	 * 매칭된 투두의 최빈 카테고리 ID를 반환
+	 */
+	#findSuggestedCategoryId(
+		matchedTitles: string[],
+		todos: TodoSummaryForAnalysis[],
+	): number | null {
+		const matched = todos.filter((t) =>
+			matchedTitles.some((mt) => t.title === mt),
+		);
+
+		if (matched.length === 0) {
+			return null;
+		}
+
+		const freq = new Map<number, number>();
+		for (const t of matched) {
+			freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
+		}
+
+		return [...freq.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 	}
 }
