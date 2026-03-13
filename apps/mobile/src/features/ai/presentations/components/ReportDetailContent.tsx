@@ -1,7 +1,10 @@
+import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { getDayOfWeekLabel } from '@src/shared/utils/date';
 import { formatPercent } from '@src/shared/utils/format';
+import type { TimeFormat } from '@src/shared/utils/time';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 import type { AiReport } from '../../models/ai.model';
@@ -13,6 +16,7 @@ interface ReportDetailContentProps {
 }
 
 export function ReportDetailContent({ report }: ReportDetailContentProps) {
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const sections: React.ReactNode[] = [];
 
   sections.push(<StatsOverview key="stats" report={report} />);
@@ -26,7 +30,13 @@ export function ReportDetailContent({ report }: ReportDetailContentProps) {
   }
 
   if (report.timePatterns.length > 0) {
-    sections.push(<TimePatternSummary key="time" items={report.timePatterns} />);
+    sections.push(
+      <TimePatternSummary
+        key="time"
+        items={report.timePatterns}
+        timeFormat={preference.timeFormat}
+      />,
+    );
   }
 
   if (report.aiSummary) {
@@ -59,7 +69,7 @@ export function ReportDetailContent({ report }: ReportDetailContentProps) {
 
 function ReportHeader({ report }: { report: AiReport }) {
   return (
-    <HStack align="center" gap={8}>
+    <HStack align="center" gap={8} className="flex-wrap">
       <Chip
         size="sm"
         variant="soft"
@@ -194,7 +204,13 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
   );
 }
 
-function TimePatternSummary({ items }: { items: AiReport['timePatterns'] }) {
+function TimePatternSummary({
+  items,
+  timeFormat,
+}: {
+  items: AiReport['timePatterns'];
+  timeFormat: TimeFormat;
+}) {
   const sorted = [...items].sort((a, b) => b.count - a.count);
   const top3 = sorted.slice(0, 3);
 
@@ -212,7 +228,7 @@ function TimePatternSummary({ items }: { items: AiReport['timePatterns'] }) {
           <Separator orientation="vertical" className="h-3 bg-gray-3" />
 
           <Text size="b4" shade={8}>
-            {formatHour(item.hour)}
+            {formatHour(item.hour, timeFormat)}
           </Text>
 
           <Text size="b4" shade={6}>

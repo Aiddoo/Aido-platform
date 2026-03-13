@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const AchievementsLayout = () => {
-  const headerBg = useResolveClassNames('bg-white');
+  const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
 
   return (
@@ -13,6 +13,7 @@ const AchievementsLayout = () => {
         headerShown: true,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: headerBg.backgroundColor as string },
+        contentStyle: { backgroundColor: headerBg.backgroundColor as string },
         headerTitleStyle: {
           fontSize: 16,
           fontWeight: '600',
@@ -29,6 +30,7 @@ const AchievementsLayout = () => {
       }}
     >
       <Stack.Screen name="index" options={{ title: '달성 배지' }} />
+      <Stack.Screen name="[year]/[week]" options={{ title: '주간 배지' }} />
     </Stack>
   );
 };

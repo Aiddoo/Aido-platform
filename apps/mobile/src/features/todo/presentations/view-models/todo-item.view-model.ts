@@ -10,9 +10,12 @@ export interface TodoItemViewModel extends TodoItem {
   isRecurring: boolean;
 }
 
-export const toTodoItemViewModel = (todo: TodoItem): TodoItemViewModel => ({
+export const toTodoItemViewModel = (
+  todo: TodoItem,
+  timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR' = 'TWELVE_HOUR',
+): TodoItemViewModel => ({
   ...todo,
-  formattedTime: todo.scheduledTime ? formatTime(todo.scheduledTime) : null,
+  formattedTime: todo.scheduledTime ? formatTime(todo.scheduledTime, timeFormat) : null,
   color: todo.category.color,
   startDateObj: toDate(todo.startDate),
   endDateObj: toNullableDate(todo.endDate),

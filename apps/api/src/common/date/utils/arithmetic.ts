@@ -35,3 +35,8 @@ export function subtractDays(days: number, from: Date = now()): Date {
 export function subtractMilliseconds(ms: number, from: Date = now()): Date {
 	return dayjs.utc(from).subtract(ms, "millisecond").toDate();
 }
+
+/** 지정 개월 전의 시각 반환 */
+export function subtractMonths(months: number, from: Date = now()): Date {
+	return dayjs.utc(from).subtract(months, "month").toDate();
+}

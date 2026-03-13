@@ -31,6 +31,7 @@ export abstract class AiSuggestionMapper {
 			status: entity.status as "PENDING" | "ACCEPTED" | "DISMISSED",
 			expiresAt: entity.expiresAt.toISOString(),
 			createdAt: entity.createdAt.toISOString(),
+			suggestedCategoryId: entity.suggestedCategoryId ?? null,
 		};
 	}
 

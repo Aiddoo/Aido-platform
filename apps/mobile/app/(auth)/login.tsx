@@ -4,7 +4,7 @@ import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentatio
 import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
 import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
 import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
-
+import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   AppleIcon,
   Button,
@@ -19,7 +19,6 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Avatar, Separator } from 'heroui-native';
@@ -70,8 +69,11 @@ const LoginScreen = () => {
     appleLoginMutation.mutate(undefined);
   };
 
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView className="flex-1 bg-white mb-2">
       <VStack flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
           <Avatar alt="Aido logo" size="lg" className="rounded-xl">
@@ -85,54 +87,50 @@ const LoginScreen = () => {
           </VStack>
         </VStack>
 
-        <VStack gap={24}>
-          <VStack gap={12}>
+        <VStack gap={8}>
+          {Platform.OS === 'ios' && (
             <SocialLoginButton
-              icon={<KakaoIcon width={20} height={20} />}
-              label="카카오로 계속하기"
-              onPress={handleKakaoLogin}
-              isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-kakao"
-              labelClassName="dark:text-gray-1"
+              icon={
+                <AppleIcon
+                  width={20}
+                  height={20}
+                  colorClassName={isDark ? 'text-black' : 'text-white'}
+                />
+              }
+              label="Apple로 계속하기"
+              onPress={handleAppleLogin}
+              isLoading={appleLoginMutation.isPending}
+              className="bg-apple-button dark:bg-apple-button-dark"
+              labelClassName="text-white dark:text-black"
             />
-
-            <SocialLoginButton
-              icon={<GoogleIcon width={20} height={20} />}
-              label="Google로 계속하기"
-              onPress={handleGoogleLogin}
-              isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-white border border-gray-2 dark:border-gray-2 dark:bg-gray-2"
-              labelClassName="dark:text-gray-9"
-            />
-          </VStack>
-
-          <HStack align="center" gap={12}>
-            <Separator className="flex-1" />
-            <Text tone="neutral" shade={5} size="e1">
-              또는
-            </Text>
-            <Separator className="flex-1" />
-          </HStack>
-
-          <HStack justify="center" gap={16}>
-            {Platform.OS === 'ios' && (
-              <SocialLoginIconButton
-                icon={<AppleIcon width={20} height={20} />}
-                onPress={handleAppleLogin}
-                isLoading={appleLoginMutation.isPending}
-                className="bg-black dark:border dark:border-gray-2"
-              />
-            )}
-            <SocialLoginIconButton
-              icon={<NaverIcon width={16} height={16} />}
-              onPress={handleNaverLogin}
-              isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
-              className="bg-naver"
-            />
-          </HStack>
+          )}
+          <SocialLoginButton
+            icon={<KakaoIcon width={20} height={20} />}
+            label="카카오로 계속하기"
+            onPress={handleKakaoLogin}
+            isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
+            className="bg-kakao"
+            labelClassName="dark:text-gray-1"
+          />
+          <SocialLoginButton
+            icon={<GoogleIcon width={20} height={20} />}
+            label="Google로 계속하기"
+            onPress={handleGoogleLogin}
+            isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
+            className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
+            labelClassName="dark:text-gray-9"
+          />
+          <SocialLoginButton
+            icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
+            label="네이버로 계속하기"
+            onPress={handleNaverLogin}
+            isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
+            className="bg-naver"
+            labelClassName="text-white dark:text-gray-9"
+          />
         </VStack>
 
-        <Spacing size={32} />
+        <Spacing size={24} />
 
         <HStack justify="center" align="center" gap={8} pb={40}>
           <TextButton size="medium" onPress={() => router.push('/sign-up')}>
@@ -175,18 +173,6 @@ const SocialLoginButton = ({
           {label}
         </Text>
       </HStack>
-    </Button>
-  );
-};
-
-interface SocialLoginIconButtonProps extends Omit<ButtonProps, 'children'> {
-  icon: ReactNode;
-}
-
-const SocialLoginIconButton = ({ icon, className, ...props }: SocialLoginIconButtonProps) => {
-  return (
-    <Button display="inline" radius="full" {...props} className={cn('size-14', className)}>
-      {icon}
     </Button>
   );
 };

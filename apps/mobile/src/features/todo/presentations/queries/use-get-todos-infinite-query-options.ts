@@ -1,11 +1,16 @@
 import { useTodoService } from '@src/bootstrap/providers/di-provider';
 import { unwrap } from '@src/shared/errors/result';
+import type { TimeFormat } from '@src/shared/utils/time';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 import { toTodoItemViewModel } from '../view-models/todo-item.view-model';
 
-export const useGetTodosInfiniteQueryOptions = (date: string, categoryId?: number) => {
+export const useGetTodosInfiniteQueryOptions = (
+  date: string,
+  categoryId?: number,
+  timeFormat: TimeFormat = 'TWELVE_HOUR',
+) => {
   const todoService = useTodoService();
 
   return infiniteQueryOptions({
@@ -26,7 +31,9 @@ export const useGetTodosInfiniteQueryOptions = (date: string, categoryId?: numbe
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     select: (data) => ({
-      todos: data.pages.flatMap((page) => page.todos.map(toTodoItemViewModel)),
+      todos: data.pages.flatMap((page) =>
+        page.todos.map((todo) => toTodoItemViewModel(todo, timeFormat)),
+      ),
       hasNextPage: data.pages.at(-1)?.hasNext ?? false,
     }),
   });

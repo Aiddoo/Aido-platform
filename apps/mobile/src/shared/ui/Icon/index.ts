@@ -38,6 +38,7 @@ export {
   PlusIcon,
   SearchIcon,
   SendIcon,
+  ShareIcon,
   SunIcon,
   ToastErrorIcon,
   ToastSuccessIcon,

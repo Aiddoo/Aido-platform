@@ -1,6 +1,6 @@
 # Aido Terms of Service
 
-**Effective Date: March 10, 2026**
+**Effective Date: March 13, 2026**
 
 ---
 
@@ -253,5 +253,5 @@ Inquiries regarding these Terms, subscriptions, and complaints may be submitted 
 
 ## Addendum
 
-1. These Terms of Service take effect on **March 10, 2026**.
-2. The previous Terms of Service (effective March 8, 2026) shall cease to have effect upon the implementation of these Terms.
+1. These Terms of Service take effect on **March 13, 2026**.
+2. The previous Terms of Service (effective March 10, 2026) shall cease to have effect upon the implementation of these Terms.

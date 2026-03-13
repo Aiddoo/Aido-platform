@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -151,6 +151,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // iOS
     ios: {
       requireFullScreen: true,
+      supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
       usesAppleSignIn: true,
       googleServicesFile: './GoogleService-Info.plist',
@@ -285,6 +286,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
 
       'expo-secure-store',
+      'expo-sharing',
       'expo-system-ui',
       'expo-web-browser',
 

@@ -16,6 +16,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
@@ -131,31 +132,36 @@ export const TodoFormContent = ({
         )}
       />
 
-      <HStack align="center" justify="between" className="w-full">
-        <HStack gap={4} align="center" className="flex-1 flex-wrap">
-          <DateLabelButton onPress={onDatePress} />
-          <TimeLabelButton onPress={onTimePress} />
-          <VisibilityChip />
-        </HStack>
+      <HStack gap={4} align="center" className="w-full flex-wrap gap-y-4">
+        <DateLabelButton onPress={onDatePress} />
+        <TimeLabelButton onPress={onTimePress} />
+        <VisibilityChip />
 
-        <HStack gap={8} align="center">
+        <HStack gap={8} align="center" className="ml-auto h-8">
           <MicButton
             isRecognizing={isRecognizing}
             onPress={handleMicPress}
             isDisabled={parseMutation.isPending}
+            size={fontScaledSize(32)}
+            iconSize={fontScaledSize(20)}
           />
           <PressableFeedback
             isDisabled={isSubmitDisabled}
             onPress={onSubmit}
+            style={{ width: fontScaledSize(32), height: fontScaledSize(32) }}
             className={cn(
-              'size-8 items-center justify-center rounded-4xl',
+              'items-center justify-center rounded-4xl',
               isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
             )}
           >
             {parseMutation.isPending ? (
               <Spinner size="sm" color="white" />
             ) : (
-              <ArrowUpIcon width={18} height={18} colorClassName="text-white" />
+              <ArrowUpIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-white"
+              />
             )}
           </PressableFeedback>
         </HStack>
@@ -163,6 +169,8 @@ export const TodoFormContent = ({
     </VStack>
   );
 };
+
+const CHIP_ICON_SIZE = fontScaledSize(16, 0.3);
 
 const DateLabelButton = ({ onPress }: { onPress: () => void }) => {
   const { control } = useFormContext<AddTodoFormInput>();
@@ -185,7 +193,7 @@ const DateLabelButton = ({ onPress }: { onPress: () => void }) => {
       onPress={onPress}
       className="h-8 flex-row items-center gap-1.5 rounded-full bg-main/10 px-3"
     >
-      <CalendarIcon width={16} height={16} colorClassName="text-main" />
+      <CalendarIcon width={CHIP_ICON_SIZE} height={CHIP_ICON_SIZE} colorClassName="text-main" />
       <Text size="e1" tone="brand" weight="medium">
         {dateLabel}
       </Text>
@@ -212,7 +220,11 @@ const TimeLabelButton = ({ onPress }: { onPress: () => void }) => {
         hasTime ? 'bg-main/10' : 'bg-gray-2',
       )}
     >
-      <ClockIcon width={16} height={16} colorClassName={hasTime ? 'text-main' : 'text-gray-5'} />
+      <ClockIcon
+        width={CHIP_ICON_SIZE}
+        height={CHIP_ICON_SIZE}
+        colorClassName={hasTime ? 'text-main' : 'text-gray-5'}
+      />
       <Text size="e1" weight="medium" {...(hasTime ? { tone: 'brand' } : { shade: 6 })}>
         {timeLabel}
       </Text>
@@ -224,19 +236,28 @@ interface MicButtonProps {
   isRecognizing: boolean;
   onPress: () => void;
   isDisabled?: boolean;
+  size: number;
+  iconSize: number;
 }
 
-const MicButton = ({ isRecognizing, onPress, isDisabled = false }: MicButtonProps) => {
+const MicButton = ({
+  isRecognizing,
+  onPress,
+  isDisabled = false,
+  size,
+  iconSize,
+}: MicButtonProps) => {
   return (
     <PressableFeedback
       onPress={onPress}
       isDisabled={isDisabled}
-      className="size-8 items-center justify-center"
+      style={{ width: size, height: size }}
+      className="items-center justify-center"
     >
       {isRecognizing ? (
-        <PauseIcon width={20} height={20} colorClassName="text-error" />
+        <PauseIcon width={iconSize} height={iconSize} colorClassName="text-error" />
       ) : (
-        <MicIcon width={20} height={20} colorClassName="text-main" />
+        <MicIcon width={iconSize} height={iconSize} colorClassName="text-main" />
       )}
     </PressableFeedback>
   );
@@ -258,9 +279,17 @@ const VisibilityChip = () => {
             className="h-8 flex-row items-center gap-1.5 rounded-full bg-gray-2 px-3"
           >
             {isPrivate ? (
-              <EyeOffIcon width={16} height={16} colorClassName="text-gray-6" />
+              <EyeOffIcon
+                width={CHIP_ICON_SIZE}
+                height={CHIP_ICON_SIZE}
+                colorClassName="text-gray-6"
+              />
             ) : (
-              <EyeIcon width={16} height={16} colorClassName="text-gray-5" />
+              <EyeIcon
+                width={CHIP_ICON_SIZE}
+                height={CHIP_ICON_SIZE}
+                colorClassName="text-gray-5"
+              />
             )}
             <Text size="e1" weight="medium" shade={6}>
               {isPrivate ? '비공개' : '공개'}

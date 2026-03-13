@@ -8,10 +8,13 @@ import { NotificationService } from "@/modules/notification/notification.service
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import { StreakService } from "@/modules/user-settings/services/streak.service";
 
-import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
+import type {
+	ITimezoneStrategy,
+	TimezoneContext,
+} from "./timezone-reminder-strategy.interface";
 
 @Injectable()
-export class EveningReminderStrategy {
+export class EveningReminderStrategy implements ITimezoneStrategy {
 	readonly #logger = new Logger(EveningReminderStrategy.name);
 
 	constructor(

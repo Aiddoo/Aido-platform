@@ -28,6 +28,7 @@ describe("AiSuggestionMapper", () => {
 				reason: "매주 월/수/금에 반복되는 패턴이 감지되었습니다.",
 				matchedTodos: ["팀 미팅", "팀 회의"],
 				status: "PENDING",
+				suggestedCategoryId: 3,
 				expiresAt: new Date("2026-03-18T00:00:00.000Z"),
 				createdAt: new Date("2026-03-04T00:00:00.000Z"),
 				updatedAt: new Date("2026-03-04T00:00:00.000Z"),
@@ -48,6 +49,32 @@ describe("AiSuggestionMapper", () => {
 			expect(result.status).toBe("PENDING");
 			expect(result.expiresAt).toBe("2026-03-18T00:00:00.000Z");
 			expect(result.createdAt).toBe("2026-03-04T00:00:00.000Z");
+			expect(result.suggestedCategoryId).toBe(3);
+		});
+
+		it("suggestedCategoryId가 null인 엔티티를 올바르게 변환해야 한다", () => {
+			// Given -suggestedCategoryId가 null인 엔티티
+			const entity = {
+				id: 3,
+				userId: "user-123",
+				title: "독서",
+				daysOfWeek: ["SAT"],
+				scheduledTime: null,
+				confidence: 0.7,
+				reason: "토요일에 독서 패턴이 감지되었습니다.",
+				matchedTodos: ["독서"],
+				status: "PENDING",
+				suggestedCategoryId: null,
+				expiresAt: new Date("2026-03-18T00:00:00.000Z"),
+				createdAt: new Date("2026-03-04T00:00:00.000Z"),
+				updatedAt: new Date("2026-03-04T00:00:00.000Z"),
+			} as RecurringSuggestion;
+
+			// When -toResponse를 호출하면
+			const result = AiSuggestionMapper.toResponse(entity);
+
+			// Then -suggestedCategoryId가 null이어야 한다
+			expect(result.suggestedCategoryId).toBeNull();
 		});
 
 		it("scheduledTime이 null인 엔티티를 올바르게 변환해야 한다", () => {
@@ -93,6 +120,7 @@ describe("AiSuggestionMapper", () => {
 					reason: "이유1",
 					matchedTodos: [],
 					status: "PENDING",
+					suggestedCategoryId: 3,
 					expiresAt: new Date("2026-03-18T00:00:00.000Z"),
 					createdAt: new Date("2026-03-04T00:00:00.000Z"),
 					updatedAt: new Date("2026-03-04T00:00:00.000Z"),
@@ -107,6 +135,7 @@ describe("AiSuggestionMapper", () => {
 					reason: "이유2",
 					matchedTodos: [],
 					status: "PENDING",
+					suggestedCategoryId: null,
 					expiresAt: new Date("2026-03-18T00:00:00.000Z"),
 					createdAt: new Date("2026-03-04T00:00:00.000Z"),
 					updatedAt: new Date("2026-03-04T00:00:00.000Z"),
