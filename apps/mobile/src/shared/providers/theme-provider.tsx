@@ -1,4 +1,10 @@
-import { mmkvStorage } from '@src/shared/infra/storage/mmkv-storage';
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import {
+  readThemeMode,
+  type ThemeMode,
+  writeThemeMode,
+} from '@src/shared/preferences/theme-mode.preference';
 import {
   createContext,
   type PropsWithChildren,
@@ -10,18 +16,11 @@ import {
 import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type { ThemeMode };
 export type ResolvedTheme = 'light' | 'dark';
 
-const THEME_STORAGE_KEY = 'aido_theme_mode';
-const VALID_MODES: ThemeMode[] = ['light', 'dark', 'system'];
-
-function readSavedMode(): ThemeMode {
-  const saved = mmkvStorage.getString(THEME_STORAGE_KEY);
-  if (saved && VALID_MODES.includes(saved as ThemeMode)) {
-    return saved as ThemeMode;
-  }
-  return 'system';
+interface ThemeProviderProps extends PropsWithChildren {
+  syncStorage?: SyncStorage;
 }
 
 interface ThemeContextValue {
@@ -32,9 +31,9 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export const ThemeProvider = ({ children }: PropsWithChildren) => {
+export const ThemeProvider = ({ children, syncStorage = mmkvSyncStorage }: ThemeProviderProps) => {
   const systemColorScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>(readSavedMode);
+  const [mode, setMode] = useState<ThemeMode>(() => readThemeMode(syncStorage));
 
   const resolvedTheme: ResolvedTheme =
     mode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : mode;
@@ -43,10 +42,13 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
     Uniwind.setTheme(mode);
   }, [mode]);
 
-  const persistMode = useCallback((newMode: ThemeMode) => {
-    setMode(newMode);
-    mmkvStorage.set(THEME_STORAGE_KEY, newMode);
-  }, []);
+  const persistMode = useCallback(
+    (newMode: ThemeMode) => {
+      setMode(newMode);
+      writeThemeMode(syncStorage, newMode);
+    },
+    [syncStorage],
+  );
 
   return (
     <ThemeContext.Provider value={{ mode, resolvedTheme, setMode: persistMode }}>

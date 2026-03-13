@@ -1,16 +1,12 @@
-import type { CalendarViewMode } from '@src/features/todo/presentations/components/Calendar/calendar.types';
+import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { useToday } from '@src/shared/hooks/useToday';
-import { mmkvStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import {
+  type CalendarViewMode,
+  readCalendarViewMode,
+  writeCalendarViewMode,
+} from '@src/shared/preferences/calendar-view-mode.preference';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-
-const VIEW_MODE_STORAGE_KEY = 'aido_calendar_view_mode';
-
-function readSavedViewMode(): CalendarViewMode {
-  const saved = mmkvStorage.getString(VIEW_MODE_STORAGE_KEY);
-
-  if (saved === 'week' || saved === 'month') return saved;
-  return 'week';
-}
 
 type FeedCalendarContextValue = {
   selectedDate: Date;
@@ -21,15 +17,28 @@ type FeedCalendarContextValue = {
 
 const FeedCalendarContext = createContext<FeedCalendarContextValue | null>(null);
 
-export function FeedCalendarProvider({ children }: { children: React.ReactNode }) {
+interface FeedCalendarProviderProps {
+  children: React.ReactNode;
+  syncStorage?: SyncStorage;
+}
+
+export function FeedCalendarProvider({
+  children,
+  syncStorage = mmkvSyncStorage,
+}: FeedCalendarProviderProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(readSavedViewMode);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(() =>
+    readCalendarViewMode(syncStorage),
+  );
   const today = useToday();
 
-  const persistViewMode = useCallback((mode: CalendarViewMode) => {
-    setViewMode(mode);
-    mmkvStorage.set(VIEW_MODE_STORAGE_KEY, mode);
-  }, []);
+  const persistViewMode = useCallback(
+    (mode: CalendarViewMode) => {
+      setViewMode(mode);
+      writeCalendarViewMode(syncStorage, mode);
+    },
+    [syncStorage],
+  );
 
   useEffect(() => {
     setSelectedDate(today);
