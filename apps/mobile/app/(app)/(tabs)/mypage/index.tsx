@@ -86,6 +86,10 @@ const MyPageScreen = () => {
         {/* 정보 */}
         <SettingNavigationSection>
           <SettingNavigationItem
+            label="문의하기"
+            onPress={() => router.push('/settings/inquiry')}
+          />
+          <SettingNavigationItem
             label="약관 및 정책"
             onPress={() => router.push('/settings/terms')}
           />
