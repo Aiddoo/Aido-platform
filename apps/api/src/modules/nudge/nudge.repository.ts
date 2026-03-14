@@ -263,8 +263,12 @@ export class NudgeRepository {
 		return client.todo.count({
 			where: {
 				userId,
-				startDate: { lte: today },
-				OR: [{ endDate: null, startDate: today }, { endDate: { gte: today } }],
+				OR: [
+					// 오늘을 포함하는 기간 할일
+					{ startDate: { lte: today }, endDate: { gte: today } },
+					// 오늘 당일 할일
+					{ startDate: today, endDate: null },
+				],
 			},
 		});
 	}
