@@ -1,13 +1,6 @@
-import { useTheme } from '@src/shared/providers/theme-provider';
 import { AppleIcon, GoogleIcon, KakaoIcon, NaverIcon } from '@src/shared/ui';
 import type { ReactNode } from 'react';
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
-
-function ThemedAppleIcon() {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-  return <AppleIcon width={18} height={18} colorClassName={isDark ? 'text-black' : 'text-white'} />;
-}
 
 interface ProviderConfig {
   provider: OAuthProvider;
@@ -36,8 +29,8 @@ export const PROVIDER_CONFIGS = [
     provider: 'APPLE',
     slug: 'apple',
     label: 'Apple',
-    icon: <ThemedAppleIcon />,
-    iconClassName: 'bg-gray-9 dark:bg-white',
+    icon: <AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />,
+    iconClassName: 'bg-apple-button dark:bg-apple-button-dark',
   },
   {
     provider: 'NAVER',
