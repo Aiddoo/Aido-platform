@@ -6,6 +6,7 @@ import { AchievementService } from '@src/features/achievement/services/achieveme
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
+import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
 import { DeviceIdRepositoryImpl } from '@src/features/notification/repositories/device-id.repository.impl';
 import { DeviceIdService } from '@src/features/notification/services/device-id.service';
 import { NotificationService } from '@src/features/notification/services/notification.service';
@@ -49,6 +50,7 @@ export interface DIContainer {
   aiService: AiService;
   authService: AuthService;
   friendService: FriendService;
+  inquiryService: InquiryService;
   todoService: TodoService;
   todoCategoryService: TodoCategoryService;
   notificationService: NotificationService;
@@ -103,6 +105,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // Friend
     const friendService = new FriendService(authHttpClient);
 
+    // Inquiry
+    const inquiryService = new InquiryService(authHttpClient);
+
     // Todo
     const todoService = new TodoService(authHttpClient);
 
@@ -139,6 +144,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       aiService,
       authService,
       friendService,
+      inquiryService,
       todoService,
       todoCategoryService,
       notificationService,
@@ -173,6 +179,7 @@ export const useAchievementService = () => useDI().achievementService;
 export const useAiService = () => useDI().aiService;
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
+export const useInquiryService = () => useDI().inquiryService;
 export const useTodoService = () => useDI().todoService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
