@@ -3,6 +3,7 @@ import { useLogoutMutationOptions } from '@src/features/auth/presentations/queri
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { LAYOUT } from '@src/shared/constants/layout.constant';
 import {
   ArrowRightIcon,
   ConfirmDialog,
@@ -28,7 +29,10 @@ const MyPageScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
+      <ScrollView
+        className="px-4 flex-1"
+        contentContainerStyle={{ paddingBottom: LAYOUT.tabBarOverlayPadding }}
+      >
         <H3>내 정보</H3>
 
         <Spacing size={20} />
