@@ -6,8 +6,7 @@ import {
   ArrowRightIcon,
   HStack,
   QueryErrorBoundary,
-  SettingNavigationItem,
-  SettingNavigationSection,
+  SettingNavigation,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -49,8 +48,8 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
       <Spacing size={12} />
 
       {/* 정보 변경 */}
-      <SettingNavigationSection>
-        <SettingNavigationItem
+      <SettingNavigation>
+        <SettingNavigation.Item
           label="이름 변경"
           onPress={() => router.push('/settings/edit-name')}
           right={
@@ -64,22 +63,22 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
         />
 
         {hasCredential && (
-          <SettingNavigationItem
+          <SettingNavigation.Item
             label="비밀번호 변경"
             onPress={() => router.push('/settings/change-password')}
           />
         )}
-      </SettingNavigationSection>
+      </SettingNavigation>
 
       <Spacing size={12} />
 
       {/* 계정 */}
-      <SettingNavigationSection>
-        <SettingNavigationItem
+      <SettingNavigation>
+        <SettingNavigation.Item
           label="연결된 계정"
           onPress={() => router.push('/settings/linked-accounts')}
         />
-      </SettingNavigationSection>
+      </SettingNavigation>
     </ScrollView>
   );
 }

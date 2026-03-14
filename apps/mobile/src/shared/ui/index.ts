@@ -87,7 +87,7 @@ export {
 export { QueryErrorBoundary } from './QueryErrorBoundary';
 export { Result } from './Result';
 export { StyledSafeAreaView } from './SafeAreaView';
-export { SettingNavigationItem, SettingNavigationSection } from './SettingNavigation';
+export { SettingNavigation } from './SettingNavigation';
 export { Spacing, type SpacingProps } from './Spacing';
 export {
   H1,

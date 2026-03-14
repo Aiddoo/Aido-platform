@@ -1,22 +1,22 @@
 # SettingNavigation
 
-설정 화면에서 사용하는 섹션 그룹 + 네비게이션 아이템 조합 컴포넌트.
+설정 화면에서 사용하는 섹션 그룹 + 네비게이션 아이템 Compound Component.
 
 ## 사용법
 
 ```tsx
-import { SettingNavigationSection, SettingNavigationItem } from '@src/shared/ui';
+import { SettingNavigation } from '@src/shared/ui';
 
-<SettingNavigationSection>
-  <SettingNavigationItem label="알림 설정" onPress={() => router.push('/settings/notifications')} />
-  <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
-</SettingNavigationSection>
+<SettingNavigation>
+  <SettingNavigation.Item label="알림 설정" onPress={() => router.push('/settings/notifications')} />
+  <SettingNavigation.Item label="화면 테마" onPress={() => router.push('/settings/theme')} />
+</SettingNavigation>
 ```
 
 ### 커스텀 right 영역
 
 ```tsx
-<SettingNavigationItem
+<SettingNavigation.Item
   label="이름 변경"
   onPress={() => router.push('/settings/edit-name')}
   right={
@@ -30,13 +30,13 @@ import { SettingNavigationSection, SettingNavigationItem } from '@src/shared/ui'
 
 ## Props
 
-### SettingNavigationSection
+### SettingNavigation
 
 | Prop | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `children` | `ReactNode` | - | 내부 `SettingNavigationItem` 목록 |
+| `children` | `ReactNode` | - | 내부 `SettingNavigation.Item` 목록 |
 
-### SettingNavigationItem
+### SettingNavigation.Item
 
 | Prop | 타입 | 기본값 | 설명 |
 |------|------|--------|------|

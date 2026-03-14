@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { SettingNavigationItem, SettingNavigationSection } from './SettingNavigation';
+import { SettingNavigation } from './SettingNavigation';
 
 jest.mock('heroui-native', () => {
   const { Pressable } = require('react-native');
@@ -28,15 +28,15 @@ jest.mock('../Icon', () => ({
   },
 }));
 
-describe('SettingNavigationSection', () => {
+describe('SettingNavigation', () => {
   it('children을 렌더링해야 한다', () => {
     // Given: Section에 자식 요소가 주어졌을 때
-    // When: SettingNavigationSection을 렌더링하면
+    // When: SettingNavigation을 렌더링하면
     render(
-      <SettingNavigationSection>
+      <SettingNavigation>
         <View testID="child-1" />
         <View testID="child-2" />
-      </SettingNavigationSection>,
+      </SettingNavigation>,
     );
 
     // Then: 모든 자식 요소가 화면에 표시된다
@@ -45,7 +45,7 @@ describe('SettingNavigationSection', () => {
   });
 });
 
-describe('SettingNavigationItem', () => {
+describe('SettingNavigation.Item', () => {
   const mockOnPress = jest.fn();
 
   beforeEach(() => {
@@ -54,8 +54,8 @@ describe('SettingNavigationItem', () => {
 
   it('label 텍스트를 렌더링해야 한다', () => {
     // Given: label이 주어졌을 때
-    // When: SettingNavigationItem을 렌더링하면
-    render(<SettingNavigationItem label="알림 설정" onPress={mockOnPress} />);
+    // When: SettingNavigation.Item을 렌더링하면
+    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // Then: label이 화면에 표시된다
     expect(screen.getByText('알림 설정')).toBeTruthy();
@@ -63,7 +63,7 @@ describe('SettingNavigationItem', () => {
 
   it('클릭 시 onPress를 호출해야 한다', () => {
     // Given: onPress 핸들러가 주어졌을 때
-    render(<SettingNavigationItem label="알림 설정" onPress={mockOnPress} />);
+    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // When: 아이템을 클릭하면
     fireEvent.press(screen.getByText('알림 설정'));
@@ -74,8 +74,8 @@ describe('SettingNavigationItem', () => {
 
   it('right를 생략하면 기본 ArrowRightIcon을 렌더링해야 한다', () => {
     // Given: right prop이 없을 때
-    // When: SettingNavigationItem을 렌더링하면
-    render(<SettingNavigationItem label="알림 설정" onPress={mockOnPress} />);
+    // When: SettingNavigation.Item을 렌더링하면
+    render(<SettingNavigation.Item label="알림 설정" onPress={mockOnPress} />);
 
     // Then: 기본 ArrowRightIcon이 표시된다
     expect(screen.getByTestId('arrow-right-icon')).toBeTruthy();
@@ -83,9 +83,9 @@ describe('SettingNavigationItem', () => {
 
   it('커스텀 right를 렌더링해야 한다', () => {
     // Given: 커스텀 right가 주어졌을 때
-    // When: SettingNavigationItem을 렌더링하면
+    // When: SettingNavigation.Item을 렌더링하면
     render(
-      <SettingNavigationItem
+      <SettingNavigation.Item
         label="이름 변경"
         onPress={mockOnPress}
         right={<View testID="custom-right" />}

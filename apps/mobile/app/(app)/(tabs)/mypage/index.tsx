@@ -9,8 +9,7 @@ import {
   H3,
   HStack,
   QueryErrorBoundary,
-  SettingNavigationItem,
-  SettingNavigationSection,
+  SettingNavigation,
   Spacing,
   StyledSafeAreaView,
   TextButton,
@@ -44,50 +43,53 @@ const MyPageScreen = () => {
         <Spacing size={12} />
 
         {/* 소셜 */}
-        <SettingNavigationSection>
-          <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
-          <SettingNavigationItem label="달성 배지" onPress={() => router.push('/achievements')} />
-        </SettingNavigationSection>
+        <SettingNavigation>
+          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
+          <SettingNavigation.Item label="달성 배지" onPress={() => router.push('/achievements')} />
+        </SettingNavigation>
 
         <Spacing size={12} />
 
         {/* Pro 기능 */}
-        <SettingNavigationSection>
-          <SettingNavigationItem
+        <SettingNavigation>
+          <SettingNavigation.Item
             label="구독 관리"
             onPress={() => router.push('/settings/subscription')}
           />
-          <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
-          <SettingNavigationItem
+          <SettingNavigation.Item label="AI 리포트" onPress={() => router.push('/reports')} />
+          <SettingNavigation.Item
             label="앱 아이콘"
             onPress={() => router.push('/settings/app-icon')}
           />
-        </SettingNavigationSection>
+        </SettingNavigation>
 
         <Spacing size={12} />
 
         {/* 개인화 */}
-        <SettingNavigationSection>
-          <SettingNavigationItem
+        <SettingNavigation>
+          <SettingNavigation.Item
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
           />
-          <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
-        </SettingNavigationSection>
+          <SettingNavigation.Item
+            label="화면 테마"
+            onPress={() => router.push('/settings/theme')}
+          />
+        </SettingNavigation>
 
         <Spacing size={12} />
 
         {/* 지원 */}
-        <SettingNavigationSection>
-          <SettingNavigationItem
+        <SettingNavigation>
+          <SettingNavigation.Item
             label="문의하기"
             onPress={() => router.push('/settings/inquiry')}
           />
-          <SettingNavigationItem
+          <SettingNavigation.Item
             label="약관 및 정책"
             onPress={() => router.push('/settings/terms')}
           />
-        </SettingNavigationSection>
+        </SettingNavigation>
 
         <Spacing size={32} />
 

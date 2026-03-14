@@ -1,1 +1,1 @@
-export { SettingNavigationItem, SettingNavigationSection } from './SettingNavigation';
+export { SettingNavigation } from './SettingNavigation';
