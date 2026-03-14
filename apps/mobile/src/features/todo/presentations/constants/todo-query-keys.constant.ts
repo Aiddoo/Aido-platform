@@ -25,6 +25,8 @@ export const TODO_QUERY_KEYS = {
   nudges: () => [...TODO_QUERY_KEYS.all, 'nudge'] as const,
   nudgeLimit: () => [...TODO_QUERY_KEYS.nudges(), 'limit'] as const,
   nudgeCooldown: (userId: string) => [...TODO_QUERY_KEYS.nudges(), 'cooldown', userId] as const,
+  remindNudgeCooldown: (userId: string) =>
+    [...TODO_QUERY_KEYS.nudges(), 'remind-cooldown', userId] as const,
 
   // AI 사용량
   aiUsage: () => [...TODO_QUERY_KEYS.all, 'ai-usage'] as const,

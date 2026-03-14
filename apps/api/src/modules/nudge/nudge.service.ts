@@ -1,4 +1,4 @@
-import { NUDGE_LIMITS } from "@aido/validators";
+import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import { isSameDay } from "@/common/date/utils/compare";
 import { calculateCooldown } from "@/common/date/utils/cooldown";
@@ -23,7 +23,9 @@ import type {
 	NudgeCooldownInfo,
 	NudgeLimitInfo,
 	NudgeWithRelations,
+	ReminderNudgeWithRelations,
 	SendNudgeParams,
+	SendRemindNudgeParams,
 } from "./types";
 
 @Injectable()
@@ -38,6 +40,33 @@ export class NudgeService {
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 	) {}
+
+	// =========================================================================
+	// 공통 검증 (private)
+	// =========================================================================
+
+	#validateNotSelf(senderId: string, receiverId: string): void {
+		if (senderId === receiverId) {
+			throw BusinessExceptions.cannotNudgeSelf();
+		}
+	}
+
+	async #validateFriendship(
+		senderId: string,
+		receiverId: string,
+	): Promise<void> {
+		const isFriend = await this.followService.isMutualFriend(
+			senderId,
+			receiverId,
+		);
+		if (!isFriend) {
+			throw BusinessExceptions.nudgeNotFriend(receiverId);
+		}
+	}
+
+	// =========================================================================
+	// 콕 찌르기 (기존)
+	// =========================================================================
 
 	/**
 	 * 콕 찌르기 보내기
@@ -59,33 +88,12 @@ export class NudgeService {
 	): Promise<NudgeWithRelations> {
 		const { senderId, receiverId, todoId, message } = params;
 
-		// 1. 자기 자신 체크
-		if (senderId === receiverId) {
-			throw BusinessExceptions.cannotNudgeSelf();
-		}
-
-		// 2. 친구 관계 확인
-		const isFriend = await this.followService.isMutualFriend(
-			senderId,
-			receiverId,
-		);
-		if (!isFriend) {
-			throw BusinessExceptions.nudgeNotFriend(receiverId);
-		}
+		this.#validateNotSelf(senderId, receiverId);
+		await this.#validateFriendship(senderId, receiverId);
 
 		const nudge = await this.database.$transaction(async (tx) => {
 			// 3. Todo 존재 및 소유자 확인
-			const todo = await tx.todo.findUnique({
-				where: { id: todoId },
-				select: {
-					id: true,
-					userId: true,
-					title: true,
-					startDate: true,
-					endDate: true,
-					visibility: true,
-				},
-			});
+			const todo = await this.nudgeRepository.findTodoForNudge(todoId, tx);
 
 			if (!todo) {
 				throw BusinessExceptions.todoNotFound(todoId);
@@ -117,25 +125,20 @@ export class NudgeService {
 			);
 
 			const todayStart = startOfDayInTimezone(now(), tz);
-			const used = await tx.nudge.count({
-				where: {
-					senderId,
-					createdAt: { gte: todayStart },
-				},
-			});
+			const used = await this.nudgeRepository.countTodayNudges(
+				{ senderId, date: todayStart },
+				tx,
+			);
 
 			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
 				BusinessExceptions.nudgeDailyLimitExceeded(limit),
 			);
 
 			// 5. 쿨다운 체크
-			const lastNudge = await tx.nudge.findFirst({
-				where: {
-					senderId,
-					todoId,
-				},
-				orderBy: { createdAt: "desc" },
-			});
+			const lastNudge = await this.nudgeRepository.findLastNudgeForTodo(
+				{ senderId, todoId },
+				tx,
+			);
 
 			if (lastNudge) {
 				const cooldown = calculateCooldown(
@@ -151,54 +154,15 @@ export class NudgeService {
 			}
 
 			// 6. Nudge 생성
-			const newNudge = await tx.nudge.create({
-				data: {
-					sender: { connect: { id: senderId } },
-					receiver: { connect: { id: receiverId } },
-					todo: { connect: { id: todoId } },
-					message,
-				},
-				include: {
-					sender: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-					receiver: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-					todo: {
-						select: {
-							id: true,
-							title: true,
-							completed: true,
-						},
-					},
-				},
-			});
-
-			this.#logger.log(
-				`Nudge sent: senderId=${senderId}, receiverId=${receiverId}, todoId=${todoId}`,
+			return this.nudgeRepository.createNudge(
+				{ senderId, receiverId, todoId, message },
+				tx,
 			);
-
-			return newNudge;
 		});
+
+		this.#logger.log(
+			`Nudge sent: senderId=${senderId}, receiverId=${receiverId}, todoId=${todoId}`,
+		);
 
 		const senderName = nudge.sender.profile?.name ?? nudge.sender.userTag;
 		this.notificationQueueService.enqueueNudgeSent({
@@ -213,6 +177,111 @@ export class NudgeService {
 
 		return nudge;
 	}
+
+	// =========================================================================
+	// 리마인드 콕 찌르기 (할일 만들기 독촉)
+	// =========================================================================
+
+	/**
+	 * 리마인드 콕 찌르기 보내기
+	 *
+	 * 친구가 오늘 할일을 만들지 않았을 때 독촉하는 기능.
+	 * - 일일 제한 없음 (쿨다운만 적용)
+	 * - 같은 친구에게 1시간 쿨다운
+	 *
+	 * @note 트랜잭션 사용: 쿨다운 TOCTOU 동시성 문제 방지
+	 */
+	async sendRemindNudge(
+		params: SendRemindNudgeParams,
+		tz: string = "UTC",
+	): Promise<ReminderNudgeWithRelations> {
+		const { senderId, receiverId, message } = params;
+
+		// 1. 자기 자신 체크
+		this.#validateNotSelf(senderId, receiverId);
+
+		// 2. 친구 관계 확인
+		await this.#validateFriendship(senderId, receiverId);
+
+		const remindNudge = await this.database.$transaction(async (tx) => {
+			// 3. 친구의 오늘 할일 존재 여부 체크
+			const today = todayInTimezone(tz);
+			const todayTodoCount = await this.nudgeRepository.countTodayTodos(
+				receiverId,
+				today,
+				tx,
+			);
+
+			if (todayTodoCount > 0) {
+				throw BusinessExceptions.remindNudgeFriendHasTodos(receiverId);
+			}
+
+			// 4. 쿨다운 체크 (같은 친구에게 1시간)
+			const lastRemind = await this.nudgeRepository.findLastRemindNudge(
+				senderId,
+				receiverId,
+				tx,
+			);
+
+			if (lastRemind) {
+				const cooldown = calculateCooldown(
+					lastRemind.createdAt,
+					REMIND_NUDGE_LIMITS.COOLDOWN_HOURS,
+				);
+				if (cooldown.isActive) {
+					throw BusinessExceptions.remindNudgeCooldownActive(
+						receiverId,
+						cooldown.remainingSeconds,
+					);
+				}
+			}
+
+			// 5. ReminderNudge 생성
+			return this.nudgeRepository.createRemindNudge(
+				{ senderId, receiverId, message },
+				tx,
+			);
+		});
+
+		this.#logger.log(
+			`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`,
+		);
+
+		// 6. 알림 발송 (트랜잭션 커밋 후, todoId/todoTitle 없이)
+		const senderName =
+			remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
+		this.notificationQueueService.enqueueNudgeSent({
+			nudgeId: remindNudge.id,
+			senderId,
+			receiverId,
+			senderName,
+			message,
+		});
+
+		return remindNudge;
+	}
+
+	/**
+	 * 리마인드 콕 찌르기 쿨다운 정보 조회
+	 */
+	async getRemindCooldownInfo(
+		senderId: string,
+		receiverId: string,
+	): Promise<NudgeCooldownInfo> {
+		const lastRemind = await this.nudgeRepository.findLastRemindNudge(
+			senderId,
+			receiverId,
+		);
+
+		return this.#calculateCooldownInfo(
+			lastRemind?.createdAt,
+			REMIND_NUDGE_LIMITS.COOLDOWN_HOURS,
+		);
+	}
+
+	// =========================================================================
+	// 기존 조회/관리 메서드
+	// =========================================================================
 
 	/**
 	 * 받은 콕 찌르기 목록 조회
@@ -379,13 +448,20 @@ export class NudgeService {
 		return this.nudgeRepository.countUnreadReceived(userId);
 	}
 
+	// =========================================================================
+	// Private helpers
+	// =========================================================================
+
 	/**
 	 * 쿨다운 정보 계산
 	 */
-	#calculateCooldownInfo(lastNudgeTime?: Date | null): NudgeCooldownInfo {
+	#calculateCooldownInfo(
+		lastNudgeTime?: Date | null,
+		cooldownHours: number = NUDGE_LIMITS.COOLDOWN_HOURS,
+	): NudgeCooldownInfo {
 		const { isActive, remainingSeconds, endsAt } = calculateCooldown(
 			lastNudgeTime ?? null,
-			NUDGE_LIMITS.COOLDOWN_HOURS,
+			cooldownHours,
 		);
 		return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
 	}

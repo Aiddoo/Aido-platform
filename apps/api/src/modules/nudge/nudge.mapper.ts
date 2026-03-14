@@ -4,10 +4,16 @@
  * Prisma 엔티티를 DTO 형식으로 변환
  */
 
-import type { Nudge, NudgeDetail, NudgeLimitInfo } from "@aido/validators";
+import type {
+	Nudge,
+	NudgeDetail,
+	NudgeLimitInfo,
+	RemindNudge,
+} from "@aido/validators";
 import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import type {
 	NudgeWithRelations,
+	ReminderNudgeWithRelations,
 	NudgeLimitInfo as ServiceLimitInfo,
 } from "./types";
 
@@ -58,6 +64,19 @@ export abstract class NudgeMapper {
 	 */
 	static toDetailDtoList(nudges: NudgeWithRelations[]): NudgeDetail[] {
 		return nudges.map((nudge) => this.toDetailDto(nudge));
+	}
+
+	/**
+	 * ReminderNudgeWithRelations → RemindNudge DTO 형식
+	 */
+	static toRemindNudgeDto(nudge: ReminderNudgeWithRelations): RemindNudge {
+		return {
+			id: nudge.id,
+			senderId: nudge.senderId,
+			receiverId: nudge.receiverId,
+			message: nudge.message,
+			createdAt: toISOString(nudge.createdAt),
+		};
 	}
 
 	/**

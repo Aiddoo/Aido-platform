@@ -253,3 +253,43 @@ export const nudgeCooldownInfoSchema = z
   });
 
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
+
+export const remindNudgeSchema = z
+  .object({
+    id: z.number().int().positive().describe('리마인드 찌르기 ID (양의 정수)'),
+    senderId: z.cuid().describe('보낸 사용자 ID (CUID 25자)'),
+    receiverId: z.cuid().describe('받은 사용자 ID (CUID 25자)'),
+    message: z.string().max(200).nullable().describe('독촉 메시지 (최대 200자, 미설정 시 null)'),
+    createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC)'),
+  })
+  .meta({
+    example: {
+      id: 1,
+      senderId: 'clz7x5p8k0005qz0z8z8z8z8z',
+      receiverId: 'clz7x5p8k0001qz0z8z8z8z8z',
+      message: '할일 좀 만들어!',
+      createdAt: '2026-01-17T10:00:00.000Z',
+    },
+  });
+
+export type RemindNudge = z.infer<typeof remindNudgeSchema>;
+
+export const createRemindNudgeResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+    remindNudge: remindNudgeSchema.describe('생성된 리마인드 찌르기 정보'),
+  })
+  .meta({
+    example: {
+      message: '할일 좀 만들어! 콕 찔렀습니다 👆',
+      remindNudge: {
+        id: 1,
+        senderId: 'clz7x5p8k0001qz0z8z8z8z8z',
+        receiverId: 'clz7x5p8k0005qz0z8z8z8z8z',
+        message: null,
+        createdAt: '2026-01-17T15:30:00.000Z',
+      },
+    },
+  });
+
+export type CreateRemindNudgeResponse = z.infer<typeof createRemindNudgeResponseSchema>;
