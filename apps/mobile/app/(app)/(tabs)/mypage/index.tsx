@@ -28,7 +28,7 @@ const MyPageScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
+      <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
         <H3>내 정보</H3>
 
         <Spacing size={20} />
