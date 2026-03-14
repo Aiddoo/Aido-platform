@@ -59,6 +59,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       isRecurring: false,
       repeatEndDate: null,
       daysOfWeek: [],
+      source: 'manual' as const,
     }))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -71,6 +72,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       isRecurring: false,
       repeatEndDate: null,
       daysOfWeek: [],
+      source: 'manual' as const,
     }))
     .exhaustive();
 
@@ -115,26 +117,32 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         if (data.isRecurring) {
           createRecurringMutation.mutate(
             {
-              title: data.title,
-              startDate: formatDate(data.startDate),
-              endDate: formatDate(data.repeatEndDate ?? data.startDate),
-              daysOfWeek: data.daysOfWeek,
-              scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-              isAllDay: data.isAllDay,
-              visibility: data.visibility,
-              categoryId: data.categoryId,
+              input: {
+                title: data.title,
+                startDate: formatDate(data.startDate),
+                endDate: formatDate(data.repeatEndDate ?? data.startDate),
+                daysOfWeek: data.daysOfWeek,
+                scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+                isAllDay: data.isAllDay,
+                visibility: data.visibility,
+                categoryId: data.categoryId,
+              },
+              source: data.source,
             },
             { onSuccess: onMutationSuccess },
           );
         } else {
           createMutation.mutate(
             {
-              title: data.title,
-              startDate: formatDate(data.startDate),
-              scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-              isAllDay: data.isAllDay,
-              visibility: data.visibility,
-              categoryId: data.categoryId,
+              input: {
+                title: data.title,
+                startDate: formatDate(data.startDate),
+                scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
+                isAllDay: data.isAllDay,
+                visibility: data.visibility,
+                categoryId: data.categoryId,
+              },
+              source: data.source,
             },
             { onSuccess: onMutationSuccess },
           );

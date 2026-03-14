@@ -5,6 +5,8 @@ import { todoVisibilitySchema } from '../../models/todo.model';
 
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
+const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
+
 export const addTodoFormSchema = z
   .object({
     title: z.string().min(1, '제목을 입력해 주세요').max(200, '제목은 200자까지 입력할 수 있어요'),
@@ -17,6 +19,7 @@ export const addTodoFormSchema = z
     isRecurring: z.boolean().default(false),
     repeatEndDate: z.date().nullable().default(null),
     daysOfWeek: z.array(dayOfWeekSchema).default([]),
+    source: todoSourceSchema,
   })
   .refine((data) => !data.isRecurring || data.repeatEndDate !== null, {
     message: '반복 종료일을 선택해 주세요',

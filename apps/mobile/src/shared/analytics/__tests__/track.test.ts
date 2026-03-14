@@ -31,7 +31,13 @@ describe('track', () => {
 
   test('복합 파라미터를 가진 이벤트를 올바르게 전달한다', () => {
     // Given
-    const params = { category_id: 1, has_due_date: true, source: 'manual' as const };
+    const params = {
+      source: 'manual' as const,
+      is_recurring: false,
+      has_scheduled_time: false,
+      is_all_day: true,
+      visibility: 'PUBLIC' as const,
+    };
 
     // When
     track(analytics, 'todo_created', params);
