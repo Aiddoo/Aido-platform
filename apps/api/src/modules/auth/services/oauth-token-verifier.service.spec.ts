@@ -175,8 +175,9 @@ describe("OAuthTokenVerifierService", () => {
 				name: "카카오유저",
 				picture: "https://k.kakaocdn.net/dn/profile.jpg",
 			});
+
 			expect(global.fetch).toHaveBeenCalledWith(
-				"https://kapi.kakao.com/v2/user/me",
+				"https://kapi.kakao.com/v2/user/me?secure_resource=true",
 				expect.objectContaining({
 					headers: {
 						Authorization: "Bearer valid-kakao-token",

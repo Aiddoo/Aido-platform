@@ -161,6 +161,18 @@ export const SOCIAL_TEMPLATES = {
 		type: "NUDGE_RECEIVED",
 		defaultRoute: "/feed/friend/{friendId}",
 	} satisfies NotificationTemplate,
+	REMIND_NUDGE_RECEIVED: {
+		title: "{senderName:이/가} 콕 찔렀어!",
+		body: "할일 좀 만들어!",
+		type: "NUDGE_RECEIVED",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
+	REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
+		title: "{senderName:이/가} 콕 찔렀어!",
+		body: "'{message}'",
+		type: "NUDGE_RECEIVED",
+		defaultRoute: "/feed",
+	} satisfies NotificationTemplate,
 	CHEER_RECEIVED: {
 		title: "{senderName}의 한마디",
 		body: "{message}",
@@ -362,6 +374,33 @@ export class NotificationMessageBuilder {
 				todoTitle,
 			}),
 			body: SOCIAL_TEMPLATES.NUDGE_RECEIVED.body,
+		};
+	}
+
+	/**
+	 * 리마인드 Nudge 수신 알림 메시지 생성 (할일 만들기 독촉)
+	 */
+	static remindNudgeReceived(
+		senderName: string,
+		message?: string,
+	): { title: string; body: string } {
+		if (message) {
+			return {
+				title: fillTemplate(
+					SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.title,
+					{ senderName },
+				),
+				body: fillTemplate(
+					SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED_WITH_MESSAGE.body,
+					{ message },
+				),
+			};
+		}
+		return {
+			title: fillTemplate(SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED.title, {
+				senderName,
+			}),
+			body: SOCIAL_TEMPLATES.REMIND_NUDGE_RECEIVED.body,
 		};
 	}
 

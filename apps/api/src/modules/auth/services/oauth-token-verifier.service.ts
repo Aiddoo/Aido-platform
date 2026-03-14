@@ -64,7 +64,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 	// Kakao API URL
 	private static readonly KAKAO_USER_INFO_URL =
-		"https://kapi.kakao.com/v2/user/me";
+		"https://kapi.kakao.com/v2/user/me?secure_resource=true";
 
 	// Naver API URL
 	private static readonly NAVER_USER_INFO_URL =

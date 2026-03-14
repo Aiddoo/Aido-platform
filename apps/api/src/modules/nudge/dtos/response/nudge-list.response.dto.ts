@@ -1,4 +1,5 @@
 import {
+	createRemindNudgeResponseSchema,
 	nudgeDetailSchema,
 	receivedNudgesResponseSchema,
 	sentNudgesResponseSchema,
@@ -13,4 +14,8 @@ export class ReceivedNudgesResponseDto extends createZodDto(
 
 export class SentNudgesResponseDto extends createZodDto(
 	sentNudgesResponseSchema,
+) {}
+
+export class CreateRemindNudgeResponseDto extends createZodDto(
+	createRemindNudgeResponseSchema,
 ) {}

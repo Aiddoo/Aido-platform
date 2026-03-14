@@ -21,6 +21,7 @@ export const useSendTodoNudgeMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeLimit() });
       queryClient.invalidateQueries({
         queryKey: TODO_QUERY_KEYS.nudgeCooldown(variables.receiverId),

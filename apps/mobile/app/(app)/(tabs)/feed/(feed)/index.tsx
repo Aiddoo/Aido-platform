@@ -6,6 +6,7 @@ import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo
 import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { LAYOUT } from '@src/shared/constants/layout.constant';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
@@ -31,7 +32,7 @@ const MyFeedScreen = () => {
   return (
     <NestableScrollContainer
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: LAYOUT.tabBarOverlayPadding }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Calendar />

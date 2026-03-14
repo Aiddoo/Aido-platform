@@ -76,6 +76,7 @@ export const TodoFormContent = ({
             }),
             { keepDirtyValues: true },
           );
+          methods.setValue('source', 'ai');
         },
       },
     );

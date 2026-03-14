@@ -1,5 +1,6 @@
 import type {
   CreateNudgeResponse,
+  CreateRemindNudgeResponse,
   NudgeCooldownInfo as NudgeCooldownInfoDTO,
   NudgeLimitInfo as NudgeLimitInfoDTO,
 } from '@aido/validators';
@@ -23,5 +24,9 @@ export const toNudgeCooldownInfo = (dto: NudgeCooldownInfoDTO): NudgeCooldownInf
 });
 
 export const toSendNudgeResult = (dto: CreateNudgeResponse): SendTodoNudgeResult => ({
+  message: dto.message,
+});
+
+export const toSendRemindNudgeResult = (dto: CreateRemindNudgeResponse): SendTodoNudgeResult => ({
   message: dto.message,
 });

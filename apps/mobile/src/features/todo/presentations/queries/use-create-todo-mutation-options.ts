@@ -12,6 +12,11 @@ import * as Haptics from 'expo-haptics';
 import { isTodoError } from '../../models/todo.error';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
+export interface CreateTodoParams {
+  input: CreateTodoInput;
+  source: 'manual' | 'ai';
+}
+
 export const useCreateTodoMutationOptions = () => {
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
@@ -19,18 +24,20 @@ export const useCreateTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (params: CreateTodoInput) => {
-      const result = await todoService.createTodo(params);
+    mutationFn: async ({ input }: CreateTodoParams) => {
+      const result = await todoService.createTodo(input);
       return unwrap(result);
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (_data, { input, source }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 추가했어요!');
       trackEvent('todo_created', {
-        category_id: variables.categoryId,
-        has_due_date: !!variables.startDate,
-        source: 'manual',
+        source,
+        is_recurring: false,
+        has_scheduled_time: !!input.scheduledTime,
+        is_all_day: input.isAllDay,
+        visibility: input.visibility ?? 'PUBLIC',
       });
     },
     onError: (error) => {

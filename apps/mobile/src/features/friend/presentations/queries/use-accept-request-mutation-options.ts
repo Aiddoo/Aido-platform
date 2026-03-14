@@ -1,4 +1,5 @@
 import { useFriendService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
 
 export const useAcceptRequestMutationOptions = () => {
   const friendService = useFriendService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -22,6 +24,7 @@ export const useAcceptRequestMutationOptions = () => {
         queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() }),
       ]);
       toast.success('친구 요청을 수락했어요');
+      trackEvent('friend_request_accepted');
     },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
