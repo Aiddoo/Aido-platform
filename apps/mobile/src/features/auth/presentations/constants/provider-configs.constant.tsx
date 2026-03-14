@@ -37,7 +37,7 @@ export const PROVIDER_CONFIGS = [
     slug: 'apple',
     label: 'Apple',
     icon: <ThemedAppleIcon />,
-    iconClassName: 'bg-gray-9 dark:bg-white',
+    iconClassName: 'bg-apple-button dark:bg-apple-button-dark',
   },
   {
     provider: 'NAVER',
