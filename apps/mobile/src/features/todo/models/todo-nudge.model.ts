@@ -16,15 +16,23 @@ export const nudgeCooldownInfoSchema = z.object({
 });
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
-export interface SendTodoNudgeInput {
-  receiverId: string;
-  todoId: number;
-  message?: string;
-}
+export const sendTodoNudgeInputSchema = z.object({
+  receiverId: z.string(),
+  todoId: z.number(),
+  message: z.string().optional(),
+});
+export type SendTodoNudgeInput = z.infer<typeof sendTodoNudgeInputSchema>;
 
-export interface SendTodoNudgeResult {
-  message: string;
-}
+export const sendRemindNudgeInputSchema = z.object({
+  receiverId: z.string(),
+  message: z.string().optional(),
+});
+export type SendRemindNudgeInput = z.infer<typeof sendRemindNudgeInputSchema>;
+
+export const sendTodoNudgeResultSchema = z.object({
+  message: z.string(),
+});
+export type SendTodoNudgeResult = z.infer<typeof sendTodoNudgeResultSchema>;
 
 export type NudgeBannerState =
   | { type: 'limitReached' }

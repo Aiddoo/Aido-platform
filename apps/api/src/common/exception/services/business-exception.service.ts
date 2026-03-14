@@ -514,6 +514,20 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.NUDGE_1106, { todoId });
 	}
 
+	static remindNudgeFriendHasTodos(receiverId: string) {
+		return new BusinessException(ErrorCode.NUDGE_1107, { receiverId });
+	}
+
+	static remindNudgeCooldownActive(
+		targetUserId: string,
+		remainingSeconds: number,
+	) {
+		return new BusinessException(ErrorCode.NUDGE_1108, {
+			targetUserId,
+			remainingSeconds,
+		});
+	}
+
 	// =========================================================================
 	// 응원 (Cheer)
 	// =========================================================================

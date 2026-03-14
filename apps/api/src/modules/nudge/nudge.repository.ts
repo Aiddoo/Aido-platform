@@ -1,16 +1,20 @@
 import { Injectable } from "@nestjs/common";
+import type { TransactionClient } from "@/common/database";
 import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { addDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { startOfDay } from "@/common/date/utils/range";
 import { DatabaseService } from "@/database/database.service";
-import type { Nudge } from "@/generated/prisma/client";
+import type { Nudge, ReminderNudge } from "@/generated/prisma/client";
 
 import type {
 	CheckCooldownParams,
 	CheckDailyLimitParams,
+	CreateNudgeData,
 	FindNudgesParams,
 	NudgeWithRelations,
+	ReminderNudgeWithRelations,
+	TodoForNudgeValidation,
 } from "./types";
 
 @Injectable()
@@ -99,15 +103,40 @@ export class NudgeRepository {
 	}
 
 	/**
+	 * Nudge 검증용 Todo 조회
+	 */
+	async findTodoForNudge(
+		todoId: number,
+		tx?: TransactionClient,
+	): Promise<TodoForNudgeValidation | null> {
+		const client = tx ?? this.database;
+		return client.todo.findUnique({
+			where: { id: todoId },
+			select: {
+				id: true,
+				userId: true,
+				title: true,
+				startDate: true,
+				endDate: true,
+				visibility: true,
+			},
+		});
+	}
+
+	/**
 	 * 오늘 보낸 Nudge 수 조회 (일일 제한 체크용)
 	 */
-	async countTodayNudges(params: CheckDailyLimitParams): Promise<number> {
+	async countTodayNudges(
+		params: CheckDailyLimitParams,
+		tx?: TransactionClient,
+	): Promise<number> {
 		const { senderId, date } = params;
 
 		const dayStart = startOfDay(date);
 		const dayEnd = addDays(1, dayStart);
 
-		return this.database.nudge.count({
+		const client = tx ?? this.database;
+		return client.nudge.count({
 			where: {
 				senderId,
 				createdAt: {
@@ -123,15 +152,36 @@ export class NudgeRepository {
 	 */
 	async findLastNudgeForTodo(
 		params: CheckCooldownParams,
+		tx?: TransactionClient,
 	): Promise<Nudge | null> {
 		const { senderId, todoId } = params;
 
-		return this.database.nudge.findFirst({
+		const client = tx ?? this.database;
+		return client.nudge.findFirst({
 			where: {
 				senderId,
 				todoId,
 			},
 			orderBy: { createdAt: "desc" },
+		});
+	}
+
+	/**
+	 * Nudge 생성 (관계 포함)
+	 */
+	async createNudge(
+		data: CreateNudgeData,
+		tx?: TransactionClient,
+	): Promise<NudgeWithRelations> {
+		const client = tx ?? this.database;
+		return client.nudge.create({
+			data: {
+				sender: { connect: { id: data.senderId } },
+				receiver: { connect: { id: data.receiverId } },
+				todo: { connect: { id: data.todoId } },
+				message: data.message,
+			},
+			include: this.#nudgeInclude,
 		});
 	}
 
@@ -175,6 +225,65 @@ export class NudgeRepository {
 	async countUnreadReceived(userId: string): Promise<number> {
 		return this.database.nudge.count({
 			where: { receiverId: userId, readAt: null },
+		});
+	}
+
+	// =========================================================================
+	// ReminderNudge (리마인드 콕 찌르기)
+	// =========================================================================
+
+	readonly #reminderNudgeInclude = {
+		sender: { select: USER_BRIEF_SELECT },
+	} as const;
+
+	/**
+	 * 특정 사용자에게 보낸 마지막 ReminderNudge 조회
+	 */
+	async findLastRemindNudge(
+		senderId: string,
+		receiverId: string,
+		tx?: TransactionClient,
+	): Promise<ReminderNudge | null> {
+		const client = tx ?? this.database;
+		return client.reminderNudge.findFirst({
+			where: { senderId, receiverId },
+			orderBy: { createdAt: "desc" },
+		});
+	}
+
+	/**
+	 * 사용자의 오늘 할일 수 조회
+	 */
+	async countTodayTodos(
+		userId: string,
+		today: Date,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		return client.todo.count({
+			where: {
+				userId,
+				startDate: { lte: today },
+				OR: [{ endDate: null, startDate: today }, { endDate: { gte: today } }],
+			},
+		});
+	}
+
+	/**
+	 * ReminderNudge 생성
+	 */
+	async createRemindNudge(
+		data: { senderId: string; receiverId: string; message?: string },
+		tx?: TransactionClient,
+	): Promise<ReminderNudgeWithRelations> {
+		const client = tx ?? this.database;
+		return client.reminderNudge.create({
+			data: {
+				sender: { connect: { id: data.senderId } },
+				receiver: { connect: { id: data.receiverId } },
+				message: data.message,
+			},
+			include: this.#reminderNudgeInclude,
 		});
 	}
 }

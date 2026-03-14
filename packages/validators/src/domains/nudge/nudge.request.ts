@@ -55,3 +55,14 @@ export const getNudgesQuerySchema = z.object({
 });
 
 export type GetNudgesQuery = z.infer<typeof getNudgesQuerySchema>;
+
+export const createRemindNudgeSchema = z.object({
+  receiverId: z.cuid('유효하지 않은 사용자 ID입니다').describe('받을 사용자 ID (CUID 25자)'),
+  message: z
+    .string()
+    .max(200, '메시지는 200자 이내여야 합니다')
+    .optional()
+    .describe('독촉 메시지 (선택, 최대 200자)'),
+});
+
+export type CreateRemindNudgeInput = z.infer<typeof createRemindNudgeSchema>;

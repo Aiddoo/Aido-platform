@@ -8,7 +8,7 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import { NUDGE_LIMITS } from "@aido/validators";
+import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { NudgeBuilder } from "@test/builders";
@@ -140,7 +140,7 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -148,8 +148,8 @@ describe("NudgeService", () => {
 				endDate: null,
 				visibility: "PUBLIC",
 			});
-			mockTx.nudge.count.mockResolvedValue(0);
-			mockTx.nudge.findFirst.mockResolvedValue(null);
+			nudgeRepository.countTodayNudges.mockResolvedValue(0);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(null);
 
 			const nudgeWithRelations = NudgeBuilder.create(
 				"sender-id",
@@ -170,7 +170,7 @@ describe("NudgeService", () => {
 				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
 				.buildWithRelations();
 
-			mockTx.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.createNudge.mockResolvedValue(nudgeWithRelations);
 		};
 
 		it("Nudge를 성공적으로 발송한다", async () => {
@@ -185,41 +185,15 @@ describe("NudgeService", () => {
 				"sender-id",
 				"receiver-id",
 			);
-			expect(mockTx.nudge.create).toHaveBeenCalledWith({
-				data: {
-					sender: { connect: { id: "sender-id" } },
-					receiver: { connect: { id: "receiver-id" } },
-					todo: { connect: { id: 100 } },
+			expect(nudgeRepository.createNudge).toHaveBeenCalledWith(
+				{
+					senderId: "sender-id",
+					receiverId: "receiver-id",
+					todoId: 100,
 					message: "할일 화이팅!",
 				},
-				include: {
-					sender: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-					receiver: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-					todo: { select: { id: true, title: true, completed: true } },
-				},
-			});
+				expect.anything(),
+			);
 			expect(result).toBeDefined();
 			expect(result.id).toBe(1);
 		});
@@ -264,7 +238,7 @@ describe("NudgeService", () => {
 		it("존재하지 않는 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue(null);
+			nudgeRepository.findTodoForNudge.mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
@@ -273,7 +247,7 @@ describe("NudgeService", () => {
 		it("다른 사용자의 Todo에 Nudge를 보내면 에러를 발생시킨다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "other-user-id",
 				title: "다른 사람 할일",
@@ -289,7 +263,7 @@ describe("NudgeService", () => {
 		it("일일 제한을 초과하면 에러를 발생시킨다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -304,7 +278,9 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.nudge.count.mockResolvedValue(NUDGE_LIMITS.FREE_DAILY_LIMIT);
+			nudgeRepository.countTodayNudges.mockResolvedValue(
+				NUDGE_LIMITS.FREE_DAILY_LIMIT,
+			);
 
 			// When & Then
 			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
@@ -313,7 +289,7 @@ describe("NudgeService", () => {
 		it("PRIVATE Todo에는 Nudge를 보낼 수 없다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "비공개 할일",
@@ -329,7 +305,7 @@ describe("NudgeService", () => {
 		it("ACTIVE 구독자는 무제한 Nudge를 보낼 수 있다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -344,8 +320,8 @@ describe("NudgeService", () => {
 				subscriptionStatus: "ACTIVE",
 			});
 
-			mockTx.nudge.count.mockResolvedValue(100);
-			mockTx.nudge.findFirst.mockResolvedValue(null);
+			nudgeRepository.countTodayNudges.mockResolvedValue(100);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(null);
 
 			const nudgeWithRelations = NudgeBuilder.create(
 				"sender-id",
@@ -360,7 +336,7 @@ describe("NudgeService", () => {
 				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
 				.buildWithRelations();
 
-			mockTx.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.createNudge.mockResolvedValue(nudgeWithRelations);
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -372,7 +348,7 @@ describe("NudgeService", () => {
 		it("ADMIN은 구독 상태와 무관하게 무제한 Nudge를 보낼 수 있다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -387,8 +363,8 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.nudge.count.mockResolvedValue(100);
-			mockTx.nudge.findFirst.mockResolvedValue(null);
+			nudgeRepository.countTodayNudges.mockResolvedValue(100);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(null);
 
 			const nudgeWithRelations = NudgeBuilder.create(
 				"sender-id",
@@ -403,7 +379,7 @@ describe("NudgeService", () => {
 				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
 				.buildWithRelations();
 
-			mockTx.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.createNudge.mockResolvedValue(nudgeWithRelations);
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -415,7 +391,7 @@ describe("NudgeService", () => {
 		it("쿨다운 기간에는 같은 Todo에 Nudge를 보낼 수 없다", async () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -430,12 +406,12 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.nudge.count.mockResolvedValue(0);
+			nudgeRepository.countTodayNudges.mockResolvedValue(0);
 
 			const recentNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
 				.withCreatedAt(new Date()) // 방금 보낸 Nudge
 				.build();
-			mockTx.nudge.findFirst.mockResolvedValue(recentNudge);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(recentNudge);
 
 			// When & Then
 			await expect(service.sendNudge(defaultParams)).rejects.toThrow();
@@ -445,7 +421,7 @@ describe("NudgeService", () => {
 			// Given
 			const yesterday = subtractDays(1, todayMidnight);
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "어제 할일",
@@ -462,7 +438,7 @@ describe("NudgeService", () => {
 			// Given
 			const tomorrow = addDays(1, todayMidnight);
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "내일 할일",
@@ -487,7 +463,7 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "기간 할일",
@@ -495,8 +471,8 @@ describe("NudgeService", () => {
 				endDate: tomorrow,
 				visibility: "PUBLIC",
 			});
-			mockTx.nudge.count.mockResolvedValue(0);
-			mockTx.nudge.findFirst.mockResolvedValue(null);
+			nudgeRepository.countTodayNudges.mockResolvedValue(0);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(null);
 
 			const nudgeWithRelations = NudgeBuilder.create(
 				"sender-id",
@@ -510,7 +486,7 @@ describe("NudgeService", () => {
 				})
 				.withTodoInfo({ id: 100, title: "기간 할일", completed: false })
 				.buildWithRelations();
-			mockTx.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.createNudge.mockResolvedValue(nudgeWithRelations);
 
 			// When
 			const result = await service.sendNudge(defaultParams);
@@ -524,7 +500,7 @@ describe("NudgeService", () => {
 			const fiveDaysAgo = subtractDays(5, todayMidnight);
 			const twoDaysAgo = subtractDays(2, todayMidnight);
 			followService.isMutualFriend.mockResolvedValue(true);
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "지난 기간 할일",
@@ -541,7 +517,7 @@ describe("NudgeService", () => {
 			// Given
 			followService.isMutualFriend.mockResolvedValue(true);
 
-			mockTx.todo.findUnique.mockResolvedValue({
+			nudgeRepository.findTodoForNudge.mockResolvedValue({
 				id: 100,
 				userId: "receiver-id",
 				title: "테스트 할일",
@@ -556,7 +532,7 @@ describe("NudgeService", () => {
 				subscriptionStatus: "FREE",
 			});
 
-			mockTx.nudge.count.mockResolvedValue(0);
+			nudgeRepository.countTodayNudges.mockResolvedValue(0);
 
 			const oldNudge = NudgeBuilder.create("sender-id", "receiver-id", 100)
 				.withCreatedAt(
@@ -565,7 +541,7 @@ describe("NudgeService", () => {
 					),
 				)
 				.build();
-			mockTx.nudge.findFirst.mockResolvedValue(oldNudge);
+			nudgeRepository.findLastNudgeForTodo.mockResolvedValue(oldNudge);
 
 			const nudgeWithRelations = NudgeBuilder.create(
 				"sender-id",
@@ -579,13 +555,232 @@ describe("NudgeService", () => {
 				})
 				.withTodoInfo({ id: 100, title: "테스트 할일", completed: false })
 				.buildWithRelations();
-			mockTx.nudge.create.mockResolvedValue(nudgeWithRelations);
+			nudgeRepository.createNudge.mockResolvedValue(nudgeWithRelations);
 
 			// When
 			const result = await service.sendNudge(defaultParams);
 
 			// Then
 			expect(result).toBeDefined();
+		});
+	});
+
+	// =========================================================================
+	// sendRemindNudge
+	// =========================================================================
+
+	describe("sendRemindNudge", () => {
+		const defaultParams = {
+			senderId: "sender-id",
+			receiverId: "receiver-id",
+			message: "할일 좀 만들어!",
+		};
+
+		const mockRemindNudgeResult = {
+			id: 1,
+			senderId: "sender-id",
+			receiverId: "receiver-id",
+			message: "할일 좀 만들어!",
+			createdAt: new Date(),
+			sender: {
+				id: "sender-id",
+				userTag: "SENDER01",
+				profile: { name: "보내는 사람", profileImage: null },
+			},
+		};
+
+		const setupSuccessfulRemindSend = () => {
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.countTodayTodos.mockResolvedValue(0);
+			nudgeRepository.findLastRemindNudge.mockResolvedValue(null);
+			nudgeRepository.createRemindNudge.mockResolvedValue(
+				mockRemindNudgeResult,
+			);
+		};
+
+		it("리마인드 Nudge를 성공적으로 발송한다", async () => {
+			// Given
+			setupSuccessfulRemindSend();
+
+			// When
+			const result = await service.sendRemindNudge(defaultParams);
+
+			// Then
+			expect(result).toBeDefined();
+			expect(result.id).toBe(1);
+			expect(result.sender.profile?.name).toBe("보내는 사람");
+		});
+
+		it("발송 후 알림 큐에 등록한다 (todoId/todoTitle 없이)", async () => {
+			// Given
+			setupSuccessfulRemindSend();
+
+			// When
+			await service.sendRemindNudge(defaultParams);
+
+			// Then
+			expect(notificationQueueService.enqueueNudgeSent).toHaveBeenCalledWith({
+				nudgeId: 1,
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				senderName: "보내는 사람",
+				message: "할일 좀 만들어!",
+			});
+		});
+
+		it("자기 자신에게 보내면 에러를 발생시킨다", async () => {
+			// Given
+			const params = { ...defaultParams, receiverId: "sender-id" };
+
+			// When & Then
+			await expect(service.sendRemindNudge(params)).rejects.toThrow();
+		});
+
+		it("친구가 아닌 사용자에게 보내면 에러를 발생시킨다", async () => {
+			// Given
+			followService.isMutualFriend.mockResolvedValue(false);
+
+			// When & Then
+			await expect(service.sendRemindNudge(defaultParams)).rejects.toThrow();
+		});
+
+		it("친구가 오늘 할일이 있으면 에러를 발생시킨다", async () => {
+			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.countTodayTodos.mockResolvedValue(1);
+
+			// When & Then
+			await expect(service.sendRemindNudge(defaultParams)).rejects.toThrow();
+		});
+
+		it("같은 친구에게 1시간 쿨다운 내 재전송 시 에러를 발생시킨다", async () => {
+			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.countTodayTodos.mockResolvedValue(0);
+			nudgeRepository.findLastRemindNudge.mockResolvedValue({
+				id: 1,
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				message: null,
+				createdAt: new Date(), // 방금 보냄
+			});
+
+			// When & Then
+			await expect(service.sendRemindNudge(defaultParams)).rejects.toThrow();
+		});
+
+		it("쿨다운이 지나면 같은 친구에게 다시 보낼 수 있다", async () => {
+			// Given
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.countTodayTodos.mockResolvedValue(0);
+			nudgeRepository.findLastRemindNudge.mockResolvedValue({
+				id: 1,
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				message: null,
+				createdAt: new Date(
+					Date.now() -
+						(REMIND_NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
+				),
+			});
+			nudgeRepository.createRemindNudge.mockResolvedValue(
+				mockRemindNudgeResult,
+			);
+
+			// When
+			const result = await service.sendRemindNudge(defaultParams);
+
+			// Then
+			expect(result).toBeDefined();
+		});
+
+		it("메시지 없이도 보낼 수 있다", async () => {
+			// Given
+			const paramsNoMessage = {
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+			};
+			followService.isMutualFriend.mockResolvedValue(true);
+			nudgeRepository.countTodayTodos.mockResolvedValue(0);
+			nudgeRepository.findLastRemindNudge.mockResolvedValue(null);
+			nudgeRepository.createRemindNudge.mockResolvedValue({
+				...mockRemindNudgeResult,
+				message: null,
+			});
+
+			// When
+			const result = await service.sendRemindNudge(paramsNoMessage);
+
+			// Then
+			expect(result).toBeDefined();
+		});
+	});
+
+	// =========================================================================
+	// getRemindCooldownInfo
+	// =========================================================================
+
+	describe("getRemindCooldownInfo", () => {
+		it("기록이 없으면 쿨다운 비활성 상태를 반환한다", async () => {
+			// Given
+			nudgeRepository.findLastRemindNudge.mockResolvedValue(null);
+
+			// When
+			const result = await service.getRemindCooldownInfo(
+				"sender-id",
+				"receiver-id",
+			);
+
+			// Then
+			expect(result.isActive).toBe(false);
+			expect(result.remainingSeconds).toBe(0);
+			expect(result.cooldownEndsAt).toBeNull();
+		});
+
+		it("쿨다운 기간 내이면 활성 상태를 반환한다", async () => {
+			// Given
+			nudgeRepository.findLastRemindNudge.mockResolvedValue({
+				id: 1,
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				message: null,
+				createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30분 전
+			});
+
+			// When
+			const result = await service.getRemindCooldownInfo(
+				"sender-id",
+				"receiver-id",
+			);
+
+			// Then
+			expect(result.isActive).toBe(true);
+			expect(result.remainingSeconds).toBeGreaterThan(0);
+			expect(result.cooldownEndsAt).not.toBeNull();
+		});
+
+		it("쿨다운 기간이 지나면 비활성 상태를 반환한다", async () => {
+			// Given
+			nudgeRepository.findLastRemindNudge.mockResolvedValue({
+				id: 1,
+				senderId: "sender-id",
+				receiverId: "receiver-id",
+				message: null,
+				createdAt: new Date(
+					Date.now() -
+						(REMIND_NUDGE_LIMITS.COOLDOWN_HOURS + 1) * 60 * 60 * 1000,
+				),
+			});
+
+			// When
+			const result = await service.getRemindCooldownInfo(
+				"sender-id",
+				"receiver-id",
+			);
+
+			// Then
+			expect(result.isActive).toBe(false);
+			expect(result.remainingSeconds).toBe(0);
 		});
 	});
 

@@ -124,11 +124,16 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleNudgeSent(data: NudgeSentJobData): Promise<void> {
 		try {
-			const message = NotificationMessageBuilder.nudgeReceived(
-				data.senderName,
-				data.todoTitle,
-				data.message,
-			);
+			const message = data.todoId
+				? NotificationMessageBuilder.nudgeReceived(
+						data.senderName,
+						data.todoTitle,
+						data.message,
+					)
+				: NotificationMessageBuilder.remindNudgeReceived(
+						data.senderName,
+						data.message,
+					);
 
 			await this.notificationService.createAndSendWithDedup({
 				userId: data.receiverId,

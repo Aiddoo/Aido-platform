@@ -4,7 +4,12 @@
  * 콕 찌르기 기능 관련 인터페이스와 타입들
  */
 
-import type { Nudge, Todo, User } from "@/generated/prisma/client";
+import type {
+	Nudge,
+	ReminderNudge,
+	Todo,
+	User,
+} from "@/generated/prisma/client";
 
 // 공통 타입 재내보내기
 export type { TransactionClient } from "@/common/database";
@@ -47,6 +52,15 @@ export interface NudgeWithRelations extends Nudge {
 	todo: Pick<Todo, "id" | "title" | "completed">;
 }
 
+/**
+ * 사용자 정보가 포함된 ReminderNudge 엔티티
+ */
+export interface ReminderNudgeWithRelations extends ReminderNudge {
+	sender: Pick<User, "id" | "userTag"> & {
+		profile: { name: string | null; profileImage: string | null } | null;
+	};
+}
+
 // =============================================================================
 // 서비스 레이어 타입
 // =============================================================================
@@ -67,6 +81,15 @@ export interface SendNudgeParams {
 export interface SendNudgeResult {
 	nudge: NudgeWithRelations;
 	notificationSent: boolean;
+}
+
+/**
+ * 리마인드 Nudge 발송 파라미터
+ */
+export interface SendRemindNudgeParams {
+	senderId: string;
+	receiverId: string;
+	message?: string;
 }
 
 /**
@@ -123,4 +146,22 @@ export interface CheckDailyLimitParams {
 export interface CheckCooldownParams {
 	senderId: string;
 	todoId: number;
+}
+
+/**
+ * Nudge 검증용 Todo 정보
+ */
+export type TodoForNudgeValidation = Pick<
+	Todo,
+	"id" | "userId" | "title" | "startDate" | "endDate" | "visibility"
+>;
+
+/**
+ * Nudge 생성 데이터
+ */
+export interface CreateNudgeData {
+	senderId: string;
+	receiverId: string;
+	todoId: number;
+	message?: string;
 }

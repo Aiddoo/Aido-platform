@@ -14,7 +14,7 @@ import {
   usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
@@ -22,9 +22,11 @@ import { Checkbox, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { Pressable } from 'react-native';
 import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
+import { useGetRemindNudgeCooldownQueryOptions } from '../queries/use-get-remind-nudge-cooldown-query-options';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeBottomSheet } from './NudgeBottomSheet';
+import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
 
 interface FriendTodoListProps {
   friend: FriendUserViewModel;
@@ -54,10 +56,14 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
   }
 
   if (categoryGroups.length === 0) {
+    const isToday = isSameDay(date, new Date());
     return (
-      <Flex flex={1} justify="center" align="center">
-        <Result icon={<DocsIcon width={72} height={72} />} title="등록된 할 일이 없어요" />
-      </Flex>
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title="친구의 등록된 할 일이 없어요"
+        description={isToday ? '친구에게 할 일을 만들라고 찔러보세요' : undefined}
+        button={isToday ? <RemindNudgeButton friend={friend} /> : undefined}
+      />
     );
   }
 
@@ -180,6 +186,47 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
         )}
       </HStack>
     </Box>
+  );
+}
+
+interface RemindNudgeButtonProps {
+  friend: FriendUserViewModel;
+}
+
+function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
+  const overlay = useOverlay();
+  const { data: cooldownInfo } = useQuery(useGetRemindNudgeCooldownQueryOptions(friend.id));
+  const canNudge = cooldownInfo?.canNudge ?? true;
+
+  const openRemindNudgeSheet = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <RemindNudgeBottomSheet
+        friend={friend}
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+      />
+    ));
+  };
+
+  return (
+    <Result.Button
+      color="primary"
+      variant="weak"
+      onPress={openRemindNudgeSheet}
+      isDisabled={!canNudge}
+    >
+      <HStack gap={6} align="center">
+        <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
+          {canNudge ? '콕 찌르기' : '이미 콕 찔렀어요'}
+        </Text>
+        <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
+      </HStack>
+    </Result.Button>
   );
 }
 

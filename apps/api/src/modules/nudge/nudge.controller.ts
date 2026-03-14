@@ -32,12 +32,14 @@ import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
 import {
 	CreateNudgeResponseDto,
+	CreateRemindNudgeResponseDto,
 	GetNudgesQueryDto,
 	MarkNudgeReadResponseDto,
 	NudgeCooldownResponseDto,
 	NudgeLimitInfoDto,
 	ReceivedNudgesResponseDto,
 	SendNudgeDto,
+	SendRemindNudgeDto,
 	SentNudgesResponseDto,
 } from "./dtos";
 import { NudgeMapper } from "./nudge.mapper";
@@ -226,6 +228,96 @@ export class NudgeController {
 		@Param("userId") targetUserId: string,
 	): Promise<NudgeCooldownResponseDto> {
 		const cooldownInfo = await this.nudgeService.getCooldownInfoForUser(
+			user.userId,
+			targetUserId,
+		);
+
+		return {
+			canNudge: !cooldownInfo.isActive,
+			cooldownEndsAt: toISOStringOrNull(cooldownInfo.cooldownEndsAt ?? null),
+			remainingSeconds:
+				cooldownInfo.remainingSeconds > 0
+					? cooldownInfo.remainingSeconds
+					: null,
+		};
+	}
+
+	@Post("remind")
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
+	@ApiDoc({
+		summary: "리마인드 콕 찌르기",
+		operationId: "sendRemindNudge",
+		description: `친구가 오늘 할일을 만들지 않았을 때 독촉 콕 찌르기를 보냅니다.
+
+**요청 필드**
+- \`receiverId\` (필수): 콕 찌를 친구 ID
+- \`message\` (선택): 독촉 메시지 (최대 200자)
+
+**제한**
+- 친구가 오늘 할일이 있으면 전송 불가
+- 같은 친구에게 1시간 쿨다운
+- 일일 제한 없음`,
+	})
+	@ApiCreatedResponse({ type: CreateRemindNudgeResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiBadRequestError(ErrorCode.NUDGE_1104)
+	@ApiBadRequestError(ErrorCode.NUDGE_1107)
+	@ApiForbiddenError(ErrorCode.NUDGE_1103)
+	@ApiTooManyRequestsError(ErrorCode.NUDGE_1108)
+	async sendRemindNudge(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: SendRemindNudgeDto,
+		@Timezone() tz: string,
+	): Promise<CreateRemindNudgeResponseDto> {
+		this.#logger.debug(
+			`리마인드 콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
+		);
+
+		const remindNudge = await this.nudgeService.sendRemindNudge(
+			{
+				senderId: user.userId,
+				receiverId: dto.receiverId,
+				message: dto.message,
+			},
+			tz,
+		);
+
+		this.#logger.log(
+			`리마인드 콕 찌르기 완료: id=${remindNudge.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
+		);
+
+		return {
+			message: "할일 좀 만들어! 콕 찔렀습니다 👆",
+			remindNudge: NudgeMapper.toRemindNudgeDto(remindNudge),
+		};
+	}
+
+	@Get("remind/cooldown/:userId")
+	@ApiParam({
+		name: "userId",
+		description:
+			"쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+		example: "clz7x5p8k0005qz0z8z8z8z8z",
+	})
+	@ApiDoc({
+		summary: "리마인드 콕 찌르기 쿨다운 상태 조회",
+		operationId: "getRemindNudgeCooldownInfo",
+		description: `특정 친구에게 리마인드 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
+
+**쿨다운 정책**: 동일 친구에게 1시간 내 재전송 불가`,
+	})
+	@ApiSuccessResponse({ type: NudgeCooldownResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	async getRemindCooldownInfo(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param("userId") targetUserId: string,
+	): Promise<NudgeCooldownResponseDto> {
+		const cooldownInfo = await this.nudgeService.getRemindCooldownInfo(
 			user.userId,
 			targetUserId,
 		);

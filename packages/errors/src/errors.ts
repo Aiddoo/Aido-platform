@@ -200,6 +200,8 @@ export const ErrorCode = {
   NUDGE_1104: 'NUDGE_1104',
   NUDGE_1105: 'NUDGE_1105',
   NUDGE_1106: 'NUDGE_1106',
+  NUDGE_1107: 'NUDGE_1107',
+  NUDGE_1108: 'NUDGE_1108',
 
   // =========================================================================
   // 응원 (CHEER_1200-1299)
@@ -981,6 +983,18 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '오늘의 할 일에만 콕 찌를 수 있습니다.',
     description: '콕 찌르기는 오늘 날짜에 해당하는 할 일에만 가능합니다.',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NUDGE_1107]: {
+    code: 'NUDGE_1107',
+    message: '친구가 이미 오늘 할일을 만들었습니다.',
+    description: '리마인드 콕 찌르기는 친구에게 오늘 할일이 없을 때만 가능합니다.',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NUDGE_1108]: {
+    code: 'NUDGE_1108',
+    message: '리마인드 쿨다운 기간입니다. 1시간 후 다시 시도해주세요.',
+    description: '같은 친구에게 1시간 이내 리마인드 콕 찌르기를 다시 보낼 수 없습니다.',
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
 
   // =========================================================================

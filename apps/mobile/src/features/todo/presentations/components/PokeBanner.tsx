@@ -2,7 +2,7 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
-import { HStack, Text, usePremiumDialog, VStack } from '@src/shared/ui';
+import { HStack, PawIcon, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
@@ -38,16 +38,34 @@ export function PokeBanner() {
 
   const bannerText = match(bannerState)
     .with({ type: 'limitReached' }, () => ({
-      title: '오늘 콕 찌르기를 다 썼어요',
-      description: '구독하면 무제한으로 찌를 수 있어요',
+      title: '오늘 콕 찌르기를 다 썼어요' as React.ReactNode,
+      description: (
+        <Text size="e1" shade={6}>
+          구독하면 무제한으로 찌를 수 있어요
+        </Text>
+      ),
     }))
     .with({ type: 'available' }, () => ({
       title: defaultTitle,
-      description: '잊고 있는 것 같다면 🐾 을 눌러 알림을 보내보세요!',
+      description: (
+        <HStack gap={2} align="center" className="flex-wrap">
+          <Text size="e1" shade={6}>
+            잊고 있는 것 같다면
+          </Text>
+          <PawIcon width={12} height={12} colorClassName="text-gray-6" />
+          <Text size="e1" shade={6}>
+            을 눌러 알림을 보내보세요!
+          </Text>
+        </HStack>
+      ),
     }))
     .with({ type: 'remaining' }, ({ remainingToday }) => ({
       title: defaultTitle,
-      description: `오늘 ${remainingToday}회 남았어요 (구독하면 무제한)`,
+      description: (
+        <Text size="e1" shade={6}>
+          {`오늘 ${remainingToday}회 남았어요 (구독하면 무제한)`}
+        </Text>
+      ),
     }))
     .exhaustive();
 
@@ -63,9 +81,7 @@ export function PokeBanner() {
           <Text size="b3" weight="medium">
             {bannerText.title}
           </Text>
-          <Text size="e1" shade={6}>
-            {bannerText.description}
-          </Text>
+          {bannerText.description}
         </VStack>
       </HStack>
     </Pressable>
