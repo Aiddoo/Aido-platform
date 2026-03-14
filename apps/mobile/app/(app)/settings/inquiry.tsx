@@ -22,13 +22,14 @@ import { Radio, RadioGroup } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 
-const CONTENT_PLACEHOLDER =
-  '문의 내용을 자세히 작성해주세요.\n\n' +
-  '예시:\n' +
-  '- 사용 기기: iPhone 16 Pro, Galaxy S25\n' +
-  '- 발생 상황: 할 일 추가 시 앱이 종료됨\n' +
-  '- 발생 시점: 2026년 3월 14일 오후 3시경\n\n' +
-  '상세하게 작성할수록 빠르게 도움을 드릴 수 있어요.';
+const CONTENT_PLACEHOLDER = `문의 내용을 자세히 작성해주세요.
+
+예시:
+- 사용 기기: iPhone 16 Pro, Galaxy S25
+- 발생 상황: 할 일 추가 시 앱이 종료됨
+- 발생 시점: 2026년 3월 14일 오후 3시경
+
+상세하게 작성할수록 빠르게 도움을 드릴 수 있어요.`;
 
 const InquiryScreen = () => {
   const createInquiryMutation = useMutation(useCreateInquiryMutationOptions());
