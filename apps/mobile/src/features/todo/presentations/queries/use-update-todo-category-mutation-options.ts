@@ -26,11 +26,11 @@ export const useUpdateTodoCategoryMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      toast.success('카테고리를 수정했어요');
       trackEvent('category_updated', {
         field: variables.input.color ? 'color' : 'name',
       });
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      toast.success('카테고리를 수정했어요');
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

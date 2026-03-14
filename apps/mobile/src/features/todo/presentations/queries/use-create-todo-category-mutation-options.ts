@@ -23,10 +23,10 @@ export const useCreateTodoCategoryMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {
-      trackEvent('category_created', { color: variables.color });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       toast.success('카테고리를 추가했어요');
+      trackEvent('category_created', { color: variables.color });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
