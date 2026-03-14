@@ -176,12 +176,8 @@ describe("OAuthTokenVerifierService", () => {
 				picture: "https://k.kakaocdn.net/dn/profile.jpg",
 			});
 
-			const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0] as URL;
-			expect(calledUrl.origin + calledUrl.pathname).toBe(
-				"https://kapi.kakao.com/v2/user/me",
-			);
-			expect(calledUrl.searchParams.get("secure_resource")).toBe("true");
-			expect((global.fetch as jest.Mock).mock.calls[0][1]).toEqual(
+			expect(global.fetch).toHaveBeenCalledWith(
+				"https://kapi.kakao.com/v2/user/me?secure_resource=true",
 				expect.objectContaining({
 					headers: {
 						Authorization: "Bearer valid-kakao-token",

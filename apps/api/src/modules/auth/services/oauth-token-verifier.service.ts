@@ -64,7 +64,7 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 
 	// Kakao API URL
 	private static readonly KAKAO_USER_INFO_URL =
-		"https://kapi.kakao.com/v2/user/me";
+		"https://kapi.kakao.com/v2/user/me?secure_resource=true";
 
 	// Naver API URL
 	private static readonly NAVER_USER_INFO_URL =
@@ -242,15 +242,15 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
 	async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
-			const url = new URL(OAuthTokenVerifierService.KAKAO_USER_INFO_URL);
-			url.searchParams.set("secure_resource", "true");
-
-			const response = await fetch(url, {
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+			const response = await fetch(
+				OAuthTokenVerifierService.KAKAO_USER_INFO_URL,
+				{
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+					},
 				},
-			});
+			);
 
 			if (!response.ok) {
 				if (response.status === 401) {
