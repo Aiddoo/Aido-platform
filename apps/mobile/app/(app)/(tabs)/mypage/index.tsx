@@ -5,22 +5,20 @@ import { ProfileCard } from '@src/features/user/presentations/components/Profile
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { LAYOUT } from '@src/shared/constants/layout.constant';
 import {
-  ArrowRightIcon,
   ConfirmDialog,
   H3,
   HStack,
-  ListRow,
   QueryErrorBoundary,
+  SettingNavigationItem,
+  SettingNavigationSection,
   Spacing,
   StyledSafeAreaView,
   TextButton,
   useOverlay,
-  VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { PressableFeedback, Separator } from 'heroui-native';
-import type { PropsWithChildren, ReactNode } from 'react';
+import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -45,22 +43,21 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 핵심 기능 */}
+        {/* 소셜 */}
         <SettingNavigationSection>
-          <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
-          <SettingNavigationItem label="달성 배지" onPress={() => router.push('/achievements')} />
           <SettingNavigationItem label="친구 관리" onPress={() => router.push('/friends')} />
+          <SettingNavigationItem label="달성 배지" onPress={() => router.push('/achievements')} />
         </SettingNavigationSection>
 
         <Spacing size={12} />
 
-        {/* 환경설정 */}
+        {/* Pro 기능 */}
         <SettingNavigationSection>
           <SettingNavigationItem
-            label="알림 설정"
-            onPress={() => router.push('/settings/notifications')}
+            label="구독 관리"
+            onPress={() => router.push('/settings/subscription')}
           />
-          <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
+          <SettingNavigationItem label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigationItem
             label="앱 아이콘"
             onPress={() => router.push('/settings/app-icon')}
@@ -69,21 +66,18 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 계정 관리 */}
+        {/* 개인화 */}
         <SettingNavigationSection>
           <SettingNavigationItem
-            label="구독 관리"
-            onPress={() => router.push('/settings/subscription')}
+            label="알림 설정"
+            onPress={() => router.push('/settings/notifications')}
           />
-          <SettingNavigationItem
-            label="연결된 계정"
-            onPress={() => router.push('/settings/linked-accounts')}
-          />
+          <SettingNavigationItem label="화면 테마" onPress={() => router.push('/settings/theme')} />
         </SettingNavigationSection>
 
         <Spacing size={12} />
 
-        {/* 정보 */}
+        {/* 지원 */}
         <SettingNavigationSection>
           <SettingNavigationItem
             label="문의하기"
@@ -106,29 +100,6 @@ const MyPageScreen = () => {
 };
 
 export default MyPageScreen;
-
-const SettingNavigationSection = ({ children }: PropsWithChildren) => (
-  <VStack p={8} gap={8} className="bg-white rounded-2xl">
-    {children}
-  </VStack>
-);
-
-interface SettingNavigationItemProps {
-  label: string;
-  onPress: () => void;
-  right?: ReactNode;
-}
-
-const SettingNavigationItem = ({ label, onPress, right }: SettingNavigationItemProps) => (
-  <PressableFeedback onPress={onPress} className="rounded-lg">
-    <PressableFeedback.Highlight className="rounded-xl" />
-    <ListRow
-      contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-      right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
-      horizontalPadding="medium"
-    />
-  </PressableFeedback>
-);
 
 function AccountActionButtons() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
