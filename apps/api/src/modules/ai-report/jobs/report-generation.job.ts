@@ -17,6 +17,9 @@ import {
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
+/** 크론 스케줄 + jobId 계산에 사용하는 기준 타임존 */
+const CRON_TZ = "Asia/Seoul";
+
 /**
  * AI 리포트 생성 스케줄러 (Dispatcher)
  *
@@ -43,7 +46,7 @@ export class ReportGenerationJob implements OnModuleInit {
 
 		await this.queue.upsertJobScheduler(
 			"weekly-report-scheduler",
-			{ pattern: "0 1 * * 1", tz: "Asia/Seoul" },
+			{ pattern: "0 1 * * 1", tz: CRON_TZ },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "WEEKLY" } satisfies AiReportJobData,
@@ -51,7 +54,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		);
 		await this.queue.upsertJobScheduler(
 			"monthly-report-scheduler",
-			{ pattern: "0 1 1 * *", tz: "Asia/Seoul" },
+			{ pattern: "0 1 1 * *", tz: CRON_TZ },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "MONTHLY" } satisfies AiReportJobData,
@@ -122,42 +125,44 @@ export class ReportGenerationJob implements OnModuleInit {
 	 * 멱등성이 보장되므로 (BullMQ jobId + DB exists) 중복 실행 위험 없음.
 	 */
 	async #catchUpIfNeeded(): Promise<void> {
-		const kstNow = dayjs().tz("Asia/Seoul");
+		const kstNow = dayjs().tz(CRON_TZ);
 		const dayOfWeek = kstNow.day(); // 0=일, 1=월, ...
 		const dayOfMonth = kstNow.date();
 		const hour = kstNow.hour();
-
-		const periodId = toIsoWeekId();
+		const now = new Date();
 
 		// 주간: 월요일 01:00 이후
 		if (dayOfWeek === 1 && hour >= 1) {
+			const weekId = toIsoWeekId(now, CRON_TZ);
 			this.#logger.log("Catch-up: WEEKLY report dispatch");
 			await this.queue.add(
 				AiReportJobName.DISPATCH,
 				{ reportType: "WEEKLY" } satisfies AiReportJobData,
-				{ jobId: `dispatch_WEEKLY_${periodId}` },
+				{ jobId: `dispatch_WEEKLY_${weekId}` },
 			);
 		}
 
 		// 월간: 1일 01:00 이후
 		if (dayOfMonth === 1 && hour >= 1) {
+			const monthId = toIsoMonthId(now, CRON_TZ);
 			this.#logger.log("Catch-up: MONTHLY report dispatch");
 			await this.queue.add(
 				AiReportJobName.DISPATCH,
 				{ reportType: "MONTHLY" } satisfies AiReportJobData,
-				{ jobId: `dispatch_MONTHLY_${periodId}` },
+				{ jobId: `dispatch_MONTHLY_${monthId}` },
 			);
 		}
 	}
 
 	/**
-	 * jobId 중복 방지용 기간 식별자 생성
+	 * jobId 중복 방지용 기간 식별자 생성 (KST 기준)
 	 *
-	 * 같은 주/월에 동일 사용자에 대해 중복 잡 등록을 방지합니다.
-	 * - WEEKLY: ISO 주번호 기반 "2026-W10"
-	 * - MONTHLY: 월 기반 "2026-M03"
+	 * 크론 스케줄과 동일한 타임존으로 주차/월을 계산하여
+	 * UTC ↔ KST 날짜 경계 불일치로 인한 jobId 충돌을 방지합니다.
 	 */
 	#getJobDeduplicationId(type: "WEEKLY" | "MONTHLY"): string {
-		return type === "WEEKLY" ? toIsoWeekId() : toIsoMonthId();
+		return type === "WEEKLY"
+			? toIsoWeekId(new Date(), CRON_TZ)
+			: toIsoMonthId(new Date(), CRON_TZ);
 	}
 }
