@@ -1,4 +1,5 @@
 import {
+  type ChangeTodoCategoryInput,
   type CreateTodoCategoryInput,
   type CreateTodoCategoryResponse,
   createTodoCategoryResponseSchema,
@@ -13,13 +14,15 @@ import {
   type UpdateTodoCategoryInput,
   type UpdateTodoCategoryResponse,
   updateTodoCategoryResponseSchema,
+  updateTodoResponseSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
-
+import type { TodoItem } from '../models/todo.model';
 import type { TodoCategoriesResult, TodoCategory } from '../models/todo-category.model';
+import { toTodoItem } from './todo.mapper';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
 
 export class TodoCategoryService {
@@ -116,6 +119,26 @@ export class TodoCategoryService {
     }
 
     return ok(undefined);
+  };
+
+  changeTodoCategory = async (
+    todoId: number,
+    input: ChangeTodoCategoryInput,
+  ): Promise<Result<TodoItem, ApiError>> => {
+    const result = await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoCategoryService] Invalid changeTodoCategory response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodoItem(parsed.data.todo));
   };
 
   reorderCategory = async (
