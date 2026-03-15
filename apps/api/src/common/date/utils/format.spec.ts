@@ -3,6 +3,7 @@ import {
 	toDateStringOrNull,
 	toISOString,
 	toISOStringOrNull,
+	toIsoMonthId,
 	toIsoWeekId,
 } from "./format";
 
@@ -76,6 +77,31 @@ describe("format", () => {
 			// 2026-01-05(월) = ISO 2026-W02
 			const week2 = new Date("2026-01-05T00:00:00.000Z");
 			expect(toIsoWeekId(week2)).toBe("2026-W02");
+		});
+
+		it("tz 전달 시 해당 타임존 기준으로 주차를 계산한다", () => {
+			// UTC 일요일 16:00 = KST 월요일 01:00 → 주차가 달라야 함
+			const utcSunday = new Date("2026-03-15T16:00:00.000Z");
+			expect(toIsoWeekId(utcSunday)).toBe("2026-W11"); // UTC 일요일 = W11
+			expect(toIsoWeekId(utcSunday, "Asia/Seoul")).toBe("2026-W12"); // KST 월요일 = W12
+		});
+
+		it("tz 없이 호출하면 기존처럼 UTC 기준이다", () => {
+			const utcSunday = new Date("2026-03-15T16:00:00.000Z");
+			expect(toIsoWeekId(utcSunday)).toBe("2026-W11");
+		});
+	});
+
+	describe("toIsoMonthId", () => {
+		it("ISO 월 식별자를 반환한다", () => {
+			expect(toIsoMonthId(FROZEN_TIME)).toBe("2026-M03");
+		});
+
+		it("tz 전달 시 해당 타임존 기준으로 월을 계산한다", () => {
+			// UTC 3/31 16:00 = KST 4/1 01:00 → 월이 달라야 함
+			const utcMar31 = new Date("2026-03-31T16:00:00.000Z");
+			expect(toIsoMonthId(utcMar31)).toBe("2026-M03"); // UTC 3월
+			expect(toIsoMonthId(utcMar31, "Asia/Seoul")).toBe("2026-M04"); // KST 4월
 		});
 	});
 });

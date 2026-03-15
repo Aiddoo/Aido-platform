@@ -39,10 +39,13 @@ export function toDateStringOrNull(date: Date | null): string | null {
  * ISO 주번호 식별자 (예: "2026-W10")
  *
  * BullMQ jobId 중복 방지용으로 사용합니다.
- * @example toIsoWeekId(new Date("2026-03-04")) // "2026-W10"
+ * tz를 전달하면 해당 타임존 기준으로 주차를 계산합니다.
+ *
+ * @example toIsoWeekId(new Date("2026-03-04"))                    // "2026-W10" (UTC)
+ * @example toIsoWeekId(new Date("2026-03-15T16:00:00Z"), "Asia/Seoul") // "2026-W12" (KST 3/16 월)
  */
-export function toIsoWeekId(date: Date = new Date()): string {
-	const d = dayjs.utc(date);
+export function toIsoWeekId(date: Date = new Date(), tz?: string): string {
+	const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
 	return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
 }
 
@@ -50,9 +53,12 @@ export function toIsoWeekId(date: Date = new Date()): string {
  * ISO 월 식별자 (예: "2026-M03")
  *
  * 월간 리포트 BullMQ jobId 중복 방지용으로 사용합니다.
- * @example toIsoMonthId(new Date("2026-03-08")) // "2026-M03"
+ * tz를 전달하면 해당 타임존 기준으로 월을 계산합니다.
+ *
+ * @example toIsoMonthId(new Date("2026-03-08"))                    // "2026-M03" (UTC)
+ * @example toIsoMonthId(new Date("2026-03-31T16:00:00Z"), "Asia/Seoul") // "2026-M04" (KST 4/1)
  */
-export function toIsoMonthId(date: Date = new Date()): string {
-	const d = dayjs.utc(date);
+export function toIsoMonthId(date: Date = new Date(), tz?: string): string {
+	const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
 	return `${d.year()}-M${String(d.month() + 1).padStart(2, "0")}`;
 }
