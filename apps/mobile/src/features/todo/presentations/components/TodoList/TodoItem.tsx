@@ -11,13 +11,15 @@ import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { Checkbox, PressableFeedback } from 'heroui-native';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { match } from 'ts-pattern';
+import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import type { TodoItemViewModel } from '../../view-models/todo-item.view-model';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
+import { CategorySelectBottomSheet } from '../CategorySelectBottomSheet';
 import { TodoDatePickerContent } from '../TodoDatePickerContent';
 import { TodoTimePickerContent } from '../TodoTimePickerContent';
 import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
@@ -34,6 +36,8 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   const overlay = useOverlay();
   const toggleMutation = useMutation(useToggleTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
+  const changeCategoryMutation = useMutation(useChangeTodoCategoryMutationOptions());
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
 
   const openEditBottomSheet = () => {
@@ -123,6 +127,10 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
     ));
   };
 
+  const openCategoryBottomSheet = () => {
+    setIsCategoryOpen(true);
+  };
+
   const openActionsBottomSheet = () => {
     let afterClose: (() => void) | null = null;
 
@@ -143,6 +151,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
             .with('edit', () => openEditBottomSheet)
             .with('date', () => openDatePickerBottomSheet)
             .with('time', () => openTimePickerBottomSheet)
+            .with('category', () => openCategoryBottomSheet)
             .exhaustive();
         }}
       />
@@ -150,47 +159,66 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   };
 
   return (
-    <PressableFeedback
-      onPress={() => onPress?.(todo.id)}
-      onLongPress={isDragDisabled ? undefined : drag}
-      isDisabled={isActive}
-      className={cn('py-2 rounded-xl', isActive && 'bg-gray-1')}
-    >
-      <HStack gap={12} align="center">
-        <Checkbox
-          className="shadow-none border border-main size-5 rounded-md"
-          isSelected={todo.completed}
-          onSelectedChange={() =>
-            toggleMutation.mutate({ todoId: todo.id, body: { completed: !todo.completed } })
-          }
-          isDisabled={toggleMutation.isPending}
-        />
+    <>
+      <PressableFeedback
+        onPress={() => onPress?.(todo.id)}
+        onLongPress={isDragDisabled ? undefined : drag}
+        isDisabled={isActive}
+        className={cn('py-2 rounded-xl', isActive && 'bg-gray-1')}
+      >
+        <HStack gap={12} align="center">
+          <Checkbox
+            className="shadow-none border border-main size-5 rounded-md"
+            isSelected={todo.completed}
+            onSelectedChange={() =>
+              toggleMutation.mutate({ todoId: todo.id, body: { completed: !todo.completed } })
+            }
+            isDisabled={toggleMutation.isPending}
+          />
 
-        <VStack flex={1} gap={2}>
-          <HStack gap={4} align="center">
-            <Text
-              size="b3"
-              weight="medium"
-              strikethrough={todo.completed}
-              shade={todo.completed ? 5 : undefined}
-            >
-              {todo.title}
-            </Text>
-            {todo.visibility === 'PRIVATE' && (
-              <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+          <VStack flex={1} gap={2}>
+            <HStack gap={4} align="center">
+              <Text
+                size="b3"
+                weight="medium"
+                strikethrough={todo.completed}
+                shade={todo.completed ? 5 : undefined}
+              >
+                {todo.title}
+              </Text>
+              {todo.visibility === 'PRIVATE' && (
+                <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+              )}
+            </HStack>
+            {showDateTime && (
+              <Text size="e1" shade={6}>
+                {todo.formattedTime}
+              </Text>
             )}
-          </HStack>
-          {showDateTime && (
-            <Text size="e1" shade={6}>
-              {todo.formattedTime}
-            </Text>
-          )}
-        </VStack>
+          </VStack>
 
-        <PressableFeedback onPress={openActionsBottomSheet} hitSlop={8}>
-          <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
-        </PressableFeedback>
-      </HStack>
-    </PressableFeedback>
+          <PressableFeedback onPress={openActionsBottomSheet} hitSlop={8}>
+            <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
+          </PressableFeedback>
+        </HStack>
+      </PressableFeedback>
+
+      <CategorySelectBottomSheet
+        backgroundClassName="rounded-t-[24px]"
+        isOpen={isCategoryOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsCategoryOpen(false);
+        }}
+        selectedCategoryId={todo.category.id}
+        onSelect={(categoryId) => {
+          changeCategoryMutation.mutate(
+            { todoId: todo.id, input: { categoryId } },
+            { onSuccess: () => setIsCategoryOpen(false) },
+          );
+        }}
+        submitLabel="변경하기"
+        isLoading={changeCategoryMutation.isPending}
+      />
+    </>
   );
 };
