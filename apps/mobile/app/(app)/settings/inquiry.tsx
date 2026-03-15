@@ -21,6 +21,8 @@ import { useMutation } from '@tanstack/react-query';
 import { Radio, RadioGroup } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
+import { useKeyboardHandler } from 'react-native-keyboard-controller';
+import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 
 const CONTENT_PLACEHOLDER = `문의 내용을 자세히 작성해주세요.
 
@@ -31,8 +33,27 @@ const CONTENT_PLACEHOLDER = `문의 내용을 자세히 작성해주세요.
 
 상세하게 작성할수록 빠르게 도움을 드릴 수 있어요.`;
 
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+
 const InquiryScreen = () => {
+  const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+  const hasScrolled = useSharedValue(false);
+
   const createInquiryMutation = useMutation(useCreateInquiryMutationOptions());
+
+  useKeyboardHandler({
+    onStart: () => {
+      'worklet';
+      hasScrolled.value = false;
+    },
+    onMove: (e) => {
+      'worklet';
+      if (e.height > 0 && !hasScrolled.value) {
+        hasScrolled.value = true;
+        scrollTo(scrollViewRef, 0, 9999, true);
+      }
+    },
+  });
 
   const {
     control,
@@ -50,11 +71,12 @@ const InquiryScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-1">
-      <ScrollView
-        className="flex-1"
+      <AnimatedScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
       >
         <VStack gap={16}>
           <H3>문의 유형을 선택해주세요</H3>
@@ -121,7 +143,7 @@ const InquiryScreen = () => {
             </VStack>
           )}
         />
-      </ScrollView>
+      </AnimatedScrollView>
 
       <KeyboardAdaptiveButton
         onPress={handleSubmit(onSubmit)}
