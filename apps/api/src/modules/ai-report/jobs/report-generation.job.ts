@@ -129,7 +129,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		const dayOfWeek = kstNow.day(); // 0=일, 1=월, ...
 		const dayOfMonth = kstNow.date();
 		const hour = kstNow.hour();
-		const now = new Date();
+		const now = kstNow.toDate();
 
 		// 주간: 월요일 01:00 이후
 		if (dayOfWeek === 1 && hour >= 1) {
@@ -161,8 +161,9 @@ export class ReportGenerationJob implements OnModuleInit {
 	 * UTC ↔ KST 날짜 경계 불일치로 인한 jobId 충돌을 방지합니다.
 	 */
 	#getJobDeduplicationId(type: "WEEKLY" | "MONTHLY"): string {
+		const now = new Date();
 		return type === "WEEKLY"
-			? toIsoWeekId(new Date(), CRON_TZ)
-			: toIsoMonthId(new Date(), CRON_TZ);
+			? toIsoWeekId(now, CRON_TZ)
+			: toIsoMonthId(now, CRON_TZ);
 	}
 }
