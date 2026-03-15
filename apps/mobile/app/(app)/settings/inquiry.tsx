@@ -37,6 +37,7 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 const InquiryScreen = () => {
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+  const contentHeight = useSharedValue(0);
   const hasScrolled = useSharedValue(false);
 
   const createInquiryMutation = useMutation(useCreateInquiryMutationOptions());
@@ -50,7 +51,7 @@ const InquiryScreen = () => {
       'worklet';
       if (e.height > 0 && !hasScrolled.value) {
         hasScrolled.value = true;
-        scrollTo(scrollViewRef, 0, 9999, true);
+        scrollTo(scrollViewRef, 0, contentHeight.value, true);
       }
     },
   });
@@ -73,6 +74,9 @@ const InquiryScreen = () => {
     <View className="flex-1 bg-gray-1">
       <AnimatedScrollView
         ref={scrollViewRef}
+        onContentSizeChange={(_w, h) => {
+          contentHeight.value = h;
+        }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
