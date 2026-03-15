@@ -349,3 +349,24 @@ export const removeFollowerResponseSchema = z
   });
 
 export type RemoveFollowerResponse = z.infer<typeof removeFollowerResponseSchema>;
+
+export const reorderFriendResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+    friend: friendUserSchema.describe('순서가 변경된 친구 정보'),
+  })
+  .meta({
+    example: {
+      message: '친구 순서가 변경되었습니다.',
+      friend: {
+        followId: 'clz7x5p8k0010qz0z8z8z8z8z',
+        id: 'clz7x5p8k0005qz0z8z8z8z8z',
+        userTag: 'JOHN2026',
+        name: '존',
+        profileImage: 'https://example.com/profiles/john.jpg',
+        friendsSince: '2026-01-15T10:35:00.000Z',
+      },
+    },
+  });
+
+export type ReorderFriendResponse = z.infer<typeof reorderFriendResponseSchema>;

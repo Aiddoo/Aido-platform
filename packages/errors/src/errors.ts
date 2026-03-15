@@ -181,6 +181,7 @@ export const ErrorCode = {
   FOLLOW_0907: 'FOLLOW_0907',
   FOLLOW_0908: 'FOLLOW_0908',
   FOLLOW_0909: 'FOLLOW_0909',
+  FOLLOW_0910: 'FOLLOW_0910',
 
   // =========================================================================
   // 알림/푸시 (NOTIFICATION_1000-1099)
@@ -909,6 +910,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       '무료 사용자의 친구 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.',
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.FOLLOW_0910]: {
+    code: 'FOLLOW_0910',
+    message: '이동할 위치의 친구를 찾을 수 없습니다.',
+    description: '순서 변경 시 기준이 되는 팔로우 관계가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 
   // =========================================================================

@@ -8,9 +8,12 @@ import {
   type ReceivedRequestsResponse,
   type RejectFriendRequestResponse,
   type RemoveFriendResponse,
+  type ReorderFriendInput,
+  type ReorderFriendResponse,
   receivedRequestsResponseSchema,
   rejectFriendRequestResponseSchema,
   removeFriendResponseSchema,
+  reorderFriendResponseSchema,
   type SendFriendRequestResponse,
   type SentRequestsResponse,
   sendFriendRequestResponseSchema,
@@ -30,7 +33,12 @@ import {
   type PaginationParams,
   type SendRequestResult,
 } from '../models/friend.model';
-import { toFriendRequestsPage, toFriendsPage, toSendRequestResult } from './friend.mapper';
+import {
+  toFriendRequestsPage,
+  toFriendsPage,
+  toFriendUser,
+  toSendRequestResult,
+} from './friend.mapper';
 
 export type FriendServiceError = ApiError | FriendError;
 
@@ -185,6 +193,29 @@ export class FriendService {
     }
 
     return ok(toFriendsPage(parsed.data));
+  };
+
+  reorderFriend = async (
+    followId: string,
+    input: ReorderFriendInput,
+  ): Promise<Result<FriendUser, ApiError>> => {
+    const result = await this.#httpClient.patch<ReorderFriendResponse>(
+      `v1/follows/friends/${encodeURIComponent(followId)}/reorder`,
+      input,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = reorderFriendResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid reorderFriend response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toFriendUser(parsed.data.friend));
   };
 
   removeFriend = async (userId: string): Promise<Result<void, ApiError>> => {

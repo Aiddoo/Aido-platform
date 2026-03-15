@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { reorderPositionSchema } from '../todo-category/todo-category.common';
+
 export const userIdParamSchema = z.object({
   userId: z
     .cuid('유효하지 않은 사용자 ID입니다')
@@ -74,3 +76,13 @@ export type GetFriendsQuery = z.infer<typeof getFriendsQuerySchema>;
 export const getFriendTodosParamSchema = userIdParamSchema;
 
 export type GetFriendTodosParam = z.infer<typeof getFriendTodosParamSchema>;
+
+export const reorderFriendSchema = z.object({
+  targetFollowId: z
+    .cuid('유효하지 않은 Follow ID입니다')
+    .optional()
+    .describe('기준 팔로우 ID (선택, 생략 시 맨 앞/뒤로 이동)'),
+  position: reorderPositionSchema.describe('이동 위치 (before: 기준 앞으로, after: 기준 뒤로)'),
+});
+
+export type ReorderFriendInput = z.infer<typeof reorderFriendSchema>;

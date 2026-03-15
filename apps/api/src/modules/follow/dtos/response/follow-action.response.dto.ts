@@ -2,6 +2,7 @@ import {
 	acceptFriendRequestResponseSchema,
 	rejectFriendRequestResponseSchema,
 	removeFriendResponseSchema,
+	reorderFriendResponseSchema,
 	sendFriendRequestResponseSchema,
 } from "@aido/validators";
 import { createZodDto } from "nestjs-zod";
@@ -17,4 +18,7 @@ export class RejectFriendRequestResponseDto extends createZodDto(
 ) {}
 export class RemoveFriendResponseDto extends createZodDto(
 	removeFriendResponseSchema,
+) {}
+export class ReorderFriendResponseDto extends createZodDto(
+	reorderFriendResponseSchema,
 ) {}

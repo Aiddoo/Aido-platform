@@ -183,8 +183,81 @@ export class FollowRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+			orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
 		});
+	}
+
+	/**
+	 * Follow ID + followerId 소유권 확인 (ACCEPTED 상태)
+	 */
+	async findAcceptedByIdAndFollowerId(
+		id: string,
+		followerId: string,
+		tx?: TransactionClient,
+	): Promise<Follow | null> {
+		const client = tx ?? this.database;
+		return client.follow.findFirst({
+			where: { id, followerId, status: "ACCEPTED" },
+		});
+	}
+
+	/**
+	 * 사용자의 ACCEPTED 팔로우 중 최대 sortOrder
+	 */
+	async getMaxSortOrderForFriends(
+		followerId: string,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		const result = await client.follow.aggregate({
+			where: { followerId, status: "ACCEPTED" },
+			_max: { sortOrder: true },
+		});
+		return result._max.sortOrder ?? -1;
+	}
+
+	/**
+	 * 범위 내 sortOrder 일괄 조정 (atomic updateMany)
+	 */
+	async shiftFriendSortOrders(
+		followerId: string,
+		fromSortOrder: number,
+		toSortOrder: number | null,
+		delta: number,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		const result = await client.follow.updateMany({
+			where: {
+				followerId,
+				status: "ACCEPTED",
+				sortOrder: {
+					gte: fromSortOrder,
+					...(toSortOrder !== null && { lte: toSortOrder }),
+				},
+			},
+			data: { sortOrder: { increment: delta } },
+		});
+		return result.count;
+	}
+
+	/**
+	 * 단일 Follow sortOrder 업데이트 (User include)
+	 */
+	async updateFollowSortOrder(
+		id: string,
+		sortOrder: number,
+		tx?: TransactionClient,
+	): Promise<FollowWithUser> {
+		const client = tx ?? this.database;
+		return client.follow.update({
+			where: { id },
+			data: { sortOrder },
+			include: {
+				follower: { select: USER_BRIEF_SELECT },
+				following: { select: USER_BRIEF_SELECT },
+			},
+		}) as Promise<FollowWithUser>;
 	}
 
 	/**

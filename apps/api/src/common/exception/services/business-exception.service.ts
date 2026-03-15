@@ -457,6 +457,10 @@ export class BusinessExceptions {
 		return new BusinessException(ErrorCode.FOLLOW_0909, { current, limit });
 	}
 
+	static friendReorderTargetNotFound(targetFollowId: string) {
+		return new BusinessException(ErrorCode.FOLLOW_0910, { targetFollowId });
+	}
+
 	// =========================================================================
 	// 알림/푸시 (Notification)
 	// =========================================================================

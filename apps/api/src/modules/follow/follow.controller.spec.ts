@@ -43,6 +43,7 @@ describe("FollowController", () => {
 		followerId: "user-123",
 		followingId: "user-456",
 		status: "ACCEPTED",
+		sortOrder: 0,
 		createdAt: new Date("2026-03-01T10:00:00Z"),
 		updatedAt: new Date("2026-03-01T10:00:00Z"),
 		follower: {
@@ -75,6 +76,7 @@ describe("FollowController", () => {
 					followerId: "user-123",
 					followingId: "user-456",
 					status: "PENDING",
+					sortOrder: 0,
 					createdAt: new Date("2026-03-01T10:00:00Z"),
 					updatedAt: new Date("2026-03-01T10:00:00Z"),
 				},
@@ -106,6 +108,7 @@ describe("FollowController", () => {
 					followerId: "user-123",
 					followingId: "user-456",
 					status: "ACCEPTED",
+					sortOrder: 0,
 					createdAt: new Date("2026-03-01T10:00:00Z"),
 					updatedAt: new Date("2026-03-01T10:00:00Z"),
 				},
@@ -311,6 +314,28 @@ describe("FollowController", () => {
 				requests: items.map(FollowMapper.toSentRequest),
 				totalCount: 25,
 				hasMore: true,
+			});
+		});
+	});
+
+	describe("reorderFriend", () => {
+		it("친구 순서 변경을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
+			// Given - 순서 변경 파라미터와 서비스 응답이 준비되었을 때
+			const dto = { targetFollowId: "follow-2", position: "after" as const };
+			mockFollowService.reorder.mockResolvedValue(mockFollowWithUser);
+
+			// When - reorderFriend를 호출하면
+			const result = await controller.reorderFriend(mockUser, "follow-1", dto);
+
+			// Then - 서비스에 올바른 파라미터를 전달하고 매핑된 결과를 반환해야 한다
+			expect(mockFollowService.reorder).toHaveBeenCalledWith(
+				"follow-1",
+				mockUser.userId,
+				dto,
+			);
+			expect(result).toEqual({
+				message: "친구 순서가 변경되었습니다.",
+				friend: FollowMapper.toFriendUser(mockFollowWithUser),
 			});
 		});
 	});
