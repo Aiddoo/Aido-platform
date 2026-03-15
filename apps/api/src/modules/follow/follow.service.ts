@@ -571,7 +571,7 @@ export class FollowService {
 			);
 
 			if (!follow) {
-				throw BusinessExceptions.followRequestNotFound(followId);
+				throw BusinessExceptions.friendReorderTargetNotFound(followId);
 			}
 
 			if (targetFollowId === followId) {

@@ -162,6 +162,7 @@ export function FriendList() {
           colors={['#FF6B43']}
         />
       }
+      containerStyle={{ flex: 1 }}
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );
