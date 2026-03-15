@@ -1,4 +1,3 @@
-import { FlashList } from '@shopify/flash-list';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import {
@@ -13,24 +12,41 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Avatar, Skeleton } from 'heroui-native';
+import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useGetFriendsQueryOptions } from '../queries/use-get-friends-query-options';
 import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
+import { useReorderFriendMutationOptions } from '../queries/use-reorder-friend-mutation-options';
 import type { FriendUserViewModel } from '../view-models/friend-user.view-model';
 import { FriendDeleteConfirmDialog } from './FriendDeleteConfirmDialog';
 
 export function FriendList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, dataUpdatedAt } =
     useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
+  const reorderMutation = useMutation(useReorderFriendMutationOptions());
   const overlay = useOverlay();
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   const allFriends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
+
+  const { items: draggableFriends, onDragEnd } = useDraggableFriendReorderList({
+    items: allFriends,
+    updatedAt: dataUpdatedAt,
+    isPending: reorderMutation.isPending,
+    onReorder: ({ movedFollowId, targetFollowId, position }) => {
+      reorderMutation.mutate({
+        followId: movedFollowId,
+        input: { targetFollowId, position },
+      });
+    },
+  });
 
   const openDeleteConfirmDialog = (id: string) => {
     overlay.open(({ isOpen, close, exit }) => {
@@ -58,7 +74,10 @@ export function FriendList() {
   };
 
   return (
-    <FlashList
+    <DraggableFlatList
+      data={draggableFriends}
+      keyExtractor={(item) => item.followId}
+      activationDistance={10}
       ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>
@@ -66,35 +85,53 @@ export function FriendList() {
           </Text>
         </Box>
       }
-      data={allFriends}
-      renderItem={({ item }: { item: FriendUserViewModel }) => {
+      renderItem={({
+        item,
+        drag,
+        isActive,
+      }: {
+        item: FriendUserViewModel;
+        drag: () => void;
+        isActive: boolean;
+      }) => {
         const isProcessing = removeMutation.isPending && removeMutation.variables === item.id;
         const displayName = item.displayName;
 
         return (
-          <ListRow
-            horizontalPadding="none"
-            left={
-              <Avatar alt={displayName} className="size-10">
-                <Avatar.Image source={getProfileIconSource(item.profileImage)} />
-              </Avatar>
-            }
-            contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
-            right={
-              <Button
-                variant="weak"
-                color="danger"
-                size="small"
-                display="inline"
-                onPress={() => openDeleteConfirmDialog(item.id)}
-                disabled={isProcessing}
-              >
-                삭제
-              </Button>
-            }
-          />
+          <ScaleDecorator activeScale={1.015}>
+            <PressableFeedback
+              onLongPress={reorderMutation.isPending ? undefined : drag}
+              isDisabled={isActive}
+              className={cn(isActive && 'bg-gray-1 rounded-xl')}
+            >
+              <ListRow
+                horizontalPadding="none"
+                left={
+                  <Avatar alt={displayName} className="size-10">
+                    <Avatar.Image source={getProfileIconSource(item.profileImage)} />
+                  </Avatar>
+                }
+                contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
+                right={
+                  !isActive && (
+                    <Button
+                      variant="weak"
+                      color="danger"
+                      size="small"
+                      display="inline"
+                      onPress={() => openDeleteConfirmDialog(item.id)}
+                      disabled={isProcessing}
+                    >
+                      삭제
+                    </Button>
+                  )
+                }
+              />
+            </PressableFeedback>
+          </ScaleDecorator>
         );
       }}
+      onDragEnd={onDragEnd}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
           <Result
@@ -111,7 +148,6 @@ export function FriendList() {
           </Flex>
         ) : null
       }
-      keyExtractor={(item) => item.followId}
       onEndReached={() => {
         if (hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
@@ -126,6 +162,7 @@ export function FriendList() {
           colors={['#FF6B43']}
         />
       }
+      containerStyle={{ flex: 1 }}
       contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}
     />
   );

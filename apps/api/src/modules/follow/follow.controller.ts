@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import {
+	Body,
 	Controller,
 	Delete,
 	Get,
@@ -36,6 +37,8 @@ import {
 	ReceivedRequestsResponseDto,
 	RejectFriendRequestResponseDto,
 	RemoveFriendResponseDto,
+	ReorderFriendDto,
+	ReorderFriendResponseDto,
 	SendFriendRequestResponseDto,
 	SentRequestsResponseDto,
 	UserIdParamDto,
@@ -253,6 +256,45 @@ export class FollowController {
 
 		return {
 			message: "친구를 삭제했습니다.",
+		};
+	}
+
+	@Patch("friends/:followId/reorder")
+	@HttpCode(HttpStatus.OK)
+	@ApiParam({
+		name: "followId",
+		description:
+			"순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
+		example: "clz7x5p8k0010qz0z8z8z8z8z",
+	})
+	@ApiDoc({
+		summary: "친구 순서 변경",
+		operationId: "reorderFriend",
+		description: `친구 목록에서 특정 친구의 순서를 변경합니다.
+
+**요청 필드**
+- \`targetFollowId\` (선택): 기준이 되는 Follow ID. 생략 시 맨 앞/뒤로 이동
+- \`position\` (필수): 기준의 앞(\`before\`) 또는 뒤(\`after\`)`,
+	})
+	@ApiSuccessResponse({ type: ReorderFriendResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.FOLLOW_0910)
+	async reorderFriend(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param("followId") followId: string,
+		@Body() dto: ReorderFriendDto,
+	): Promise<ReorderFriendResponseDto> {
+		this.#logger.debug(
+			`친구 순서 변경: user=${user.userId}, followId=${followId}`,
+		);
+
+		const result = await this.followService.reorder(followId, user.userId, dto);
+
+		this.#logger.log(`친구 순서 변경 완료: followId=${followId}`);
+
+		return {
+			message: "친구 순서가 변경되었습니다.",
+			friend: FollowMapper.toFriendUser(result),
 		};
 	}
 

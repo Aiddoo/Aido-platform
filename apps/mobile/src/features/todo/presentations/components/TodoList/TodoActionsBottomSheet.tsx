@@ -5,6 +5,7 @@ import {
   ClockIcon,
   EditIcon,
   KeyboardBottomSheet,
+  ListIcon,
   ListRow,
   SunIcon,
   TrashIcon,
@@ -23,7 +24,7 @@ interface TodoActionsBottomSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
   todo: TodoItemViewModel;
-  onNavigate: (action: 'edit' | 'date' | 'time') => void;
+  onNavigate: (action: 'edit' | 'date' | 'time' | 'category') => void;
 }
 
 export const TodoActionsBottomSheet = ({
@@ -115,6 +116,28 @@ export const TodoActionsBottomSheet = ({
               </Box>
             }
             contents={<ListRow.Texts type="1RowTypeA" top="시간 변경" topProps={{ size: 'b2' }} />}
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback
+          onPress={() => {
+            onNavigate('category');
+            onClose();
+          }}
+          isDisabled={deleteMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <ListIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts type="1RowTypeA" top="카테고리 변경" topProps={{ size: 'b2' }} />
+            }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>

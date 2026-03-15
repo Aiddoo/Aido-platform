@@ -1,4 +1,5 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
+import { createTodoDto, INVALID_DTO as INVALID_TODO_DTO } from '../__tests__/todo.factories';
 import {
   createTodoCategoryApiError,
   createTodoCategoryDto,
@@ -176,6 +177,56 @@ describe('TodoCategoryService', () => {
 
       // When & Then
       await expect(service.deleteCategory(3)).rejects.toThrow('Invalid deleteCategory response');
+    });
+  });
+
+  // ── changeTodoCategory ──────────────────────
+
+  describe('changeTodoCategory', () => {
+    test('정상 응답 → TodoItem 반환 (카테고리 변경됨)', async () => {
+      // Given
+      const todo = createTodoDto({
+        category: { id: 2, name: '업무', color: '#EF4444', sortOrder: 1 },
+      });
+      httpClient.patch.mockResolvedValue({
+        ok: true,
+        value: { message: '카테고리가 변경되었습니다.', todo },
+      });
+
+      // When
+      const result = await service.changeTodoCategory(1, { categoryId: 2 });
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/category', { categoryId: 2 });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.category.id).toBe(2);
+      }
+    });
+
+    test('HTTP 에러 → Result.err 반환', async () => {
+      // Given
+      const apiError = createTodoCategoryApiError();
+      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.changeTodoCategory(1, { categoryId: 2 });
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue({
+        ok: true,
+        value: { message: '카테고리가 변경되었습니다.', todo: INVALID_TODO_DTO },
+      });
+
+      // When & Then
+      await expect(service.changeTodoCategory(1, { categoryId: 2 })).rejects.toThrow(
+        'Invalid changeTodoCategory response',
+      );
     });
   });
 

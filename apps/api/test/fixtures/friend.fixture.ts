@@ -40,6 +40,7 @@ export const FollowFixture = {
 			followerId: overrides.followerId ?? `follower-${id}`,
 			followingId: overrides.followingId ?? `following-${id}`,
 			status: overrides.status ?? "PENDING",
+			sortOrder: overrides.sortOrder ?? 0,
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,
 		};

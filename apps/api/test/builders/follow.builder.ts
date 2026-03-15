@@ -65,6 +65,7 @@ export class FollowBuilder {
 			followerId,
 			followingId,
 			status: "PENDING" as FollowStatus,
+			sortOrder: 0,
 			createdAt: now,
 			updatedAt: now,
 		};

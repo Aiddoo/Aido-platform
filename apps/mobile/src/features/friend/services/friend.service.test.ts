@@ -4,6 +4,7 @@ import {
   createFriendApiError,
   createFriendsListDto,
   createReceivedRequestsDto,
+  createReorderFriendDto,
   createSendFriendRequestDto,
   createSentRequestsDto,
   INVALID_DTO,
@@ -306,6 +307,55 @@ describe('FriendService', () => {
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
+    });
+  });
+
+  // ── reorderFriend ──────────────────────────
+
+  describe('reorderFriend', () => {
+    test('정상 응답 → FriendUser 반환', async () => {
+      // Given
+      const dto = createReorderFriendDto();
+      httpClient.patch.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.reorderFriend('follow-1', {
+        targetFollowId: 'follow-2',
+        position: 'after',
+      });
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/follows/friends/follow-1/reorder', {
+        targetFollowId: 'follow-2',
+        position: 'after',
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.followId).toBe(dto.friend.followId);
+        expect(result.value.friendsSince).toBeInstanceOf(Date);
+      }
+    });
+
+    test('HTTP 에러 → Result.err 반환', async () => {
+      // Given
+      const apiError = createFriendApiError({ code: 'FOLLOW_0910', status: 404 });
+      httpClient.patch.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.reorderFriend('follow-1', { position: 'before' });
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('Zod 검증 실패 → ParseError throw', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.reorderFriend('follow-1', { position: 'before' })).rejects.toThrow(
+        'Invalid reorderFriend response',
+      );
     });
   });
 });
