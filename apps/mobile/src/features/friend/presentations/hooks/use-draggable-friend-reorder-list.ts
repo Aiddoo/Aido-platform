@@ -22,15 +22,21 @@ export const useDraggableFriendReorderList = <TItem extends { followId: string }
   const lastUpdatedAtRef = useRef(updatedAt);
 
   useEffect(() => {
-    if (lastUpdatedAtRef.current === updatedAt) return;
+    if (lastUpdatedAtRef.current === updatedAt) {
+      return;
+    }
     lastUpdatedAtRef.current = updatedAt;
     setLocalItems(items);
   }, [updatedAt, items]);
 
   const onDragEnd = ({ data, from, to }: DragEndParams<TItem>) => {
-    if (isPending) return;
+    if (isPending) {
+      return;
+    }
     const instruction = getFriendReorderInstruction(data, from, to);
-    if (!instruction) return;
+    if (!instruction) {
+      return;
+    }
 
     setLocalItems(data);
     onReorder(instruction);

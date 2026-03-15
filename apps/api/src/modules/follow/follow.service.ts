@@ -599,7 +599,7 @@ export class FollowService {
 			);
 
 			this.#logger.log(
-				`Friend reordered: ${followId} to sortOrder ${newSortOrder} for user: ${userId}`,
+				`친구 순서 변경 완료: followId=${followId}, sortOrder=${newSortOrder}, userId=${userId}`,
 			);
 
 			return updated;

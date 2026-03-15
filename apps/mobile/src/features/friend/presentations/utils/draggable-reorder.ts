@@ -15,14 +15,20 @@ export const getFriendReorderInstruction = <TItem extends ItemWithFollowId>(
   from: number,
   to: number,
 ): FriendReorderInstruction | null => {
-  if (from === to) return null;
+  if (from === to) {
+    return null;
+  }
 
   const movedItem = reorderedData[to];
-  if (!movedItem) return null;
+  if (!movedItem) {
+    return null;
+  }
 
   if (to === 0) {
     const target = reorderedData[1];
-    if (!target) return null;
+    if (!target) {
+      return null;
+    }
 
     return {
       movedFollowId: movedItem.followId,
@@ -32,7 +38,9 @@ export const getFriendReorderInstruction = <TItem extends ItemWithFollowId>(
   }
 
   const target = reorderedData[to - 1];
-  if (!target) return null;
+  if (!target) {
+    return null;
+  }
 
   return {
     movedFollowId: movedItem.followId,

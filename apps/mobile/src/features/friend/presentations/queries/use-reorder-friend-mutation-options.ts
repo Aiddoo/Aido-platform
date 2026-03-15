@@ -1,5 +1,6 @@
 import type { ReorderFriendInput } from '@aido/validators';
 import { useFriendService } from '@src/bootstrap/providers/di-provider';
+import { useTrack } from '@src/shared/analytics/use-track';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +13,7 @@ interface ReorderFriendParams {
 
 export const useReorderFriendMutationOptions = () => {
   const friendService = useFriendService();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
   return mutationOptions({
@@ -20,6 +22,7 @@ export const useReorderFriendMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
+      trackEvent('friend_reordered');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
     onError: () => {
