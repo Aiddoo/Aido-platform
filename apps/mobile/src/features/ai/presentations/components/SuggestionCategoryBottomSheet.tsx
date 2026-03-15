@@ -24,11 +24,15 @@ export function SuggestionCategoryBottomSheet({
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
 
-  const firstCategoryId = data.categories[0]?.id ?? 0;
+  const firstCategoryId = data.categories[0]?.id;
   const defaultCategoryId =
     suggestedCategoryId != null && data.categories.some((c) => c.id === suggestedCategoryId)
       ? suggestedCategoryId
       : firstCategoryId;
+
+  if (defaultCategoryId == null) {
+    return null;
+  }
 
   return (
     <CategorySelectBottomSheet
@@ -40,7 +44,10 @@ export function SuggestionCategoryBottomSheet({
       onOpenChange={onOpenChange}
       selectedCategoryId={defaultCategoryId}
       onSelect={(categoryId) => {
-        if (suggestionId == null) return;
+        if (suggestionId == null) {
+          return;
+        }
+
         handleSuggestionMutation.mutate(
           { suggestionId, input: { action: 'accept', categoryId } },
           {
