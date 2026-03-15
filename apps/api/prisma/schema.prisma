@@ -493,6 +493,7 @@ model Follow {
   followerId  String // 요청 보낸 사람
   followingId String // 요청 받은 사람
   status      FollowStatus @default(PENDING)
+  sortOrder   Int          @default(0) // 친구 목록 정렬 순서 (ACCEPTED 상태에서만 의미)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -502,6 +503,7 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followerId, status])
   @@index([followingId, status])
+  @@index([followerId, sortOrder])
 }
 
 // =============================================================================

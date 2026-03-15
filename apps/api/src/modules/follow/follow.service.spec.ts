@@ -274,6 +274,7 @@ describe("FollowService", () => {
 			});
 			followRepo.create.mockResolvedValue(autoAcceptedFollow);
 			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
+			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -285,12 +286,13 @@ describe("FollowService", () => {
 			expect(followRepo.updateByFollowerAndFollowing).toHaveBeenCalledWith(
 				mockTargetUserId,
 				mockUserId,
-				{ status: "ACCEPTED" },
+				expect.objectContaining({ status: "ACCEPTED" }),
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					status: "ACCEPTED",
+					sortOrder: expect.any(Number),
 				}),
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
@@ -444,6 +446,7 @@ describe("FollowService", () => {
 			});
 			followRepo.create.mockResolvedValue(createdFollow);
 			followRepo.findByIdWithUser.mockResolvedValue(createdFollow);
+			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 		};
 
@@ -459,6 +462,7 @@ describe("FollowService", () => {
 				followerId: mockUserId,
 				followingId: mockTargetUserId,
 				status: "ACCEPTED",
+				sortOrder: 1,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				follower: {
@@ -481,7 +485,10 @@ describe("FollowService", () => {
 			// Then
 			expect(followRepo.update).toHaveBeenCalledWith(
 				pendingRequest.id,
-				{ status: "ACCEPTED" },
+				expect.objectContaining({
+					status: "ACCEPTED",
+					sortOrder: expect.any(Number),
+				}),
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).toHaveBeenCalledWith(
@@ -489,6 +496,7 @@ describe("FollowService", () => {
 					follower: { connect: { id: mockUserId } },
 					following: { connect: { id: mockTargetUserId } },
 					status: "ACCEPTED",
+					sortOrder: expect.any(Number),
 				}),
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
@@ -532,6 +540,7 @@ describe("FollowService", () => {
 				status: "ACCEPTED",
 			});
 			followRepo.findByIdWithUser.mockResolvedValue(updatedFollow);
+			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -542,7 +551,10 @@ describe("FollowService", () => {
 			expect(followRepo.update).toHaveBeenNthCalledWith(
 				2,
 				existingReverseFollow.id,
-				{ status: "ACCEPTED" },
+				expect.objectContaining({
+					status: "ACCEPTED",
+					sortOrder: expect.any(Number),
+				}),
 				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).not.toHaveBeenCalled();
@@ -1046,6 +1058,188 @@ describe("FollowService", () => {
 			// Then
 			expect(result).toBe(2);
 			expect(followRepo.countSentRequests).toHaveBeenCalledWith(mockUserId);
+		});
+	});
+
+	// ============================================
+	// reorder
+	// ============================================
+
+	describe("reorder", () => {
+		const createMockFollowWithUser = (
+			id: string,
+			followerId: string,
+			followingId: string,
+			sortOrder: number,
+		): FollowWithUser => ({
+			id,
+			followerId,
+			followingId,
+			status: "ACCEPTED",
+			sortOrder,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			follower: {
+				id: followerId,
+				userTag: "USER1234",
+				profile: { name: "유저", profileImage: null },
+			},
+			following: {
+				id: followingId,
+				userTag: "FRND5678",
+				profile: { name: "친구", profileImage: null },
+			},
+		});
+
+		it("상대 위치 기준으로 친구 순서를 변경해야 한다", async () => {
+			// Given - 팔로우 관계 및 타겟 준비
+			const follow: Follow = {
+				id: "follow-1",
+				followerId: mockUserId,
+				followingId: mockTargetUserId,
+				sortOrder: 0,
+				status: "ACCEPTED",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			const target: Follow = {
+				id: "follow-2",
+				followerId: mockUserId,
+				followingId: "user-789",
+				sortOrder: 2,
+				status: "ACCEPTED",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			const updatedFollow = createMockFollowWithUser(
+				"follow-1",
+				mockUserId,
+				mockTargetUserId,
+				3,
+			);
+
+			followRepo.findAcceptedByIdAndFollowerId
+				.mockResolvedValueOnce(follow)
+				.mockResolvedValueOnce(target);
+			followRepo.shiftFriendSortOrders.mockResolvedValue(1);
+			followRepo.updateFollowSortOrder.mockResolvedValue(updatedFollow);
+
+			// When - 순서 변경 요청
+			const result = await service.reorder("follow-1", mockUserId, {
+				targetFollowId: "follow-2",
+				position: "after",
+			});
+
+			// Then - sortOrder 업데이트 확인
+			expect(followRepo.updateFollowSortOrder).toHaveBeenCalled();
+			expect(result).toEqual(updatedFollow);
+		});
+
+		it("존재하지 않는 팔로우면 BusinessException을 던져야 한다", async () => {
+			// Given - 존재하지 않는 팔로우
+			followRepo.findAcceptedByIdAndFollowerId.mockResolvedValue(null);
+
+			// When & Then - 예외 발생
+			await expect(
+				service.reorder("invalid-id", mockUserId, { position: "before" }),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("맨 앞으로 이동해야 한다", async () => {
+			// Given - targetFollowId 없이 position: "before"
+			const follow: Follow = {
+				id: "follow-1",
+				followerId: mockUserId,
+				followingId: mockTargetUserId,
+				sortOrder: 3,
+				status: "ACCEPTED",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			const updatedFollow = createMockFollowWithUser(
+				"follow-1",
+				mockUserId,
+				mockTargetUserId,
+				0,
+			);
+
+			followRepo.findAcceptedByIdAndFollowerId.mockResolvedValue(follow);
+			followRepo.shiftFriendSortOrders.mockResolvedValue(3);
+			followRepo.updateFollowSortOrder.mockResolvedValue(updatedFollow);
+
+			// When
+			const result = await service.reorder("follow-1", mockUserId, {
+				position: "before",
+			});
+
+			// Then
+			expect(followRepo.shiftFriendSortOrders).toHaveBeenCalled();
+			expect(followRepo.updateFollowSortOrder).toHaveBeenCalledWith(
+				"follow-1",
+				0,
+				expect.anything(),
+			);
+			expect(result).toEqual(updatedFollow);
+		});
+
+		it("맨 뒤로 이동해야 한다", async () => {
+			// Given - targetFollowId 없이 position: "after"
+			const follow: Follow = {
+				id: "follow-1",
+				followerId: mockUserId,
+				followingId: mockTargetUserId,
+				sortOrder: 0,
+				status: "ACCEPTED",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			const updatedFollow = createMockFollowWithUser(
+				"follow-1",
+				mockUserId,
+				mockTargetUserId,
+				5,
+			);
+
+			followRepo.findAcceptedByIdAndFollowerId.mockResolvedValue(follow);
+			followRepo.getMaxSortOrderForFriends.mockResolvedValue(4);
+			followRepo.updateFollowSortOrder.mockResolvedValue(updatedFollow);
+
+			// When
+			const result = await service.reorder("follow-1", mockUserId, {
+				position: "after",
+			});
+
+			// Then
+			expect(followRepo.getMaxSortOrderForFriends).toHaveBeenCalledWith(
+				mockUserId,
+				expect.anything(),
+			);
+			expect(result).toEqual(updatedFollow);
+		});
+
+		it("타겟 팔로우가 존재하지 않으면 예외를 던져야 한다", async () => {
+			// Given - 소스는 존재, 타겟은 미존재
+			const follow: Follow = {
+				id: "follow-1",
+				followerId: mockUserId,
+				followingId: mockTargetUserId,
+				sortOrder: 0,
+				status: "ACCEPTED",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			followRepo.findAcceptedByIdAndFollowerId
+				.mockResolvedValueOnce(follow)
+				.mockResolvedValueOnce(null);
+
+			// When & Then
+			await expect(
+				service.reorder("follow-1", mockUserId, {
+					targetFollowId: "non-existent",
+					position: "after",
+				}),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 });

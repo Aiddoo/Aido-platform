@@ -2,6 +2,7 @@ import type {
   AcceptFriendRequestResponse,
   FriendsListResponse,
   ReceivedRequestsResponse,
+  ReorderFriendResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
 } from '@aido/validators';
@@ -115,6 +116,25 @@ export const createSentRequestsDto = (
   overrides?: Partial<SentRequestsResponse>,
 ): SentRequestsResponse => ({
   ...generateSentRequestsDto(),
+  ...overrides,
+});
+
+const generateReorderFriendDto = (): ReorderFriendResponse => ({
+  message: '친구 순서가 변경되었습니다.',
+  friend: {
+    followId: 'clz7x5p8k0010qz0z8z8z8z8z',
+    id: 'clz7x5p8k0005qz0z8z8z8z8z',
+    userTag: 'JOHN2026',
+    name: '존',
+    profileImage: 'https://example.com/profiles/john.jpg',
+    friendsSince: '2026-01-15T10:35:00.000Z',
+  },
+});
+
+export const createReorderFriendDto = (
+  overrides?: Partial<ReorderFriendResponse>,
+): ReorderFriendResponse => ({
+  ...generateReorderFriendDto(),
   ...overrides,
 });
 

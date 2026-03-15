@@ -56,7 +56,7 @@ describe("FollowRepository", () => {
 			expect(db.follow.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					take: 11,
-					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+					orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
 				}),
 			);
 			expect(result).toEqual(follows);
@@ -80,7 +80,7 @@ describe("FollowRepository", () => {
 					take: 11,
 					skip: 1,
 					cursor: { id: "follow-abc" },
-					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+					orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
 				}),
 			);
 		});
@@ -109,8 +109,8 @@ describe("FollowRepository", () => {
 			);
 		});
 
-		it("동일한 createdAt인 Follow가 id 기준으로 정렬된다", async () => {
-			// Given - orderBy가 복합키 [createdAt desc, id desc]로 설정되어야 함
+		it("sortOrder asc, id asc 기준으로 정렬된다", async () => {
+			// Given - orderBy가 복합키 [sortOrder asc, id asc]로 설정되어야 함
 			const params: FindFollowsParams = {
 				userId: "user-1",
 				size: 10,
@@ -122,10 +122,7 @@ describe("FollowRepository", () => {
 
 			// Then - orderBy가 복합키 배열인지 검증
 			const callArgs = (db.follow.findMany as jest.Mock).mock.calls[0]?.[0];
-			expect(callArgs?.orderBy).toEqual([
-				{ createdAt: "desc" },
-				{ id: "desc" },
-			]);
+			expect(callArgs?.orderBy).toEqual([{ sortOrder: "asc" }, { id: "asc" }]);
 		});
 	});
 
