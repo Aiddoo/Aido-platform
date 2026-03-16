@@ -12,6 +12,7 @@ import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
+import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
 import { AiService } from "./ai.service";
 import { AI_PROVIDER } from "./providers/ai.provider";
@@ -21,6 +22,7 @@ describe("AiService", () => {
 	let fakeAiProvider: FakeAiProvider;
 	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
+	let userRepository: Mocked<UserRepository>;
 
 	const mockUser = {
 		id: "user-1",
@@ -39,6 +41,7 @@ describe("AiService", () => {
 		service = unit;
 		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
+		userRepository = unitRef.get(UserRepository);
 
 		// $transaction passthrough
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -79,8 +82,10 @@ describe("AiService", () => {
 				scheduledTime: "15:00",
 				isAllDay: false,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo(
@@ -110,8 +115,10 @@ describe("AiService", () => {
 				scheduledTime: null,
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo(
@@ -133,20 +140,22 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 3,
 			});
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
-			expect(database.user.update).toHaveBeenCalledWith({
-				where: { id: "user-1" },
-				data: { aiUsageCount: { increment: 1 } },
-			});
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(
+				(userRepository.incrementAiUsage as jest.Mock).mock.calls[0][0],
+			).toBe("user-1");
 		});
 
 		it("날짜가 바뀌면 사용량을 리셋한다", async () => {
@@ -160,24 +169,23 @@ describe("AiService", () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 5,
 				aiUsageResetAt: yesterday,
 			});
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
 
 			// Then
-			expect(database.user.update).toHaveBeenCalledWith({
-				where: { id: "user-1" },
-				data: {
-					aiUsageCount: 1,
-					aiUsageResetAt: expect.any(Date),
-				},
-			});
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
+			expect(
+				(userRepository.resetAndIncrementAiUsage as jest.Mock).mock.calls[0][0],
+			).toBe("user-1");
 		});
 
 		it("AI Provider가 불가용하면 AI_1301 에러를 던진다", async () => {
@@ -198,7 +206,13 @@ describe("AiService", () => {
 		it("AI 파싱 실패시 AI_1302 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setInvalidResponse(new Error("Parse error"));
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+			(userRepository.decrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When & Then
 			await expect(
@@ -218,8 +232,10 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			await service.parseTodo("내일 회의", "user-1", "Asia/Seoul");
@@ -239,8 +255,10 @@ describe("AiService", () => {
 				scheduledTime: "15:00",
 				isAllDay: false,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo(
@@ -262,8 +280,10 @@ describe("AiService", () => {
 				scheduledTime: "15:00",
 				isAllDay: false,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo(
@@ -282,8 +302,10 @@ describe("AiService", () => {
 				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
 				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
 			]);
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When - 서로 다른 타임존으로 호출
 			await service.parseTodo("회의", "user-1", "Asia/Seoul");
@@ -305,7 +327,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(null);
 
 			// When & Then
 			await expect(
@@ -320,7 +342,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: new Date(),
 			});
@@ -343,7 +365,7 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: new Date(),
 			});
@@ -367,11 +389,13 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 100,
 			});
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
@@ -392,11 +416,13 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 100,
 			});
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
@@ -517,8 +543,10 @@ describe("AiService", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
@@ -543,8 +571,10 @@ describe("AiService", () => {
 				{ title: "두번째", startDate: "2025-01-27", isAllDay: true },
 				{ title: "세번째", startDate: "2025-01-28", isAllDay: true },
 			]);
-			(database.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-			(database.user.update as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
 
 			// When
 			const result1 = await service.parseTodo("첫번째", "user-1", "Asia/Seoul");

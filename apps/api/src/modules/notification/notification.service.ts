@@ -14,8 +14,8 @@ import {
 } from "@/common/dedup/interfaces/dedup.interface";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
-import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import type { CursorPaginatedResponse } from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import {
 	type Notification,
 	type NotificationType,

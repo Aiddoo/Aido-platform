@@ -24,6 +24,7 @@ export class InquiryController {
 	@Post()
 	@ApiDoc({
 		summary: "문의 접수",
+		operationId: "createInquiry",
 		description: `사용자 문의를 관리자 이메일로 발송합니다.
 
 **요청 필드**

@@ -50,3 +50,13 @@ export const getCheersQuerySchema = z.object({
 });
 
 export type GetCheersQuery = z.infer<typeof getCheersQuerySchema>;
+
+export const cheerIdParamSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 응원 ID입니다')
+    .describe('응원 고유 ID (양의 정수, 예: 1)'),
+});
+
+export type CheerIdParam = z.infer<typeof cheerIdParamSchema>;

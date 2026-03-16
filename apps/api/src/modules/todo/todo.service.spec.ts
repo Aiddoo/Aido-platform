@@ -20,8 +20,8 @@ import {
 import type {
 	CursorPaginatedResponse,
 	NormalizedCursorPagination,
-} from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+} from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 

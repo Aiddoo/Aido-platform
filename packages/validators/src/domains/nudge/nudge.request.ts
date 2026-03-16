@@ -66,3 +66,13 @@ export const createRemindNudgeSchema = z.object({
 });
 
 export type CreateRemindNudgeInput = z.infer<typeof createRemindNudgeSchema>;
+
+export const nudgeIdParamSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 콕 찌름 ID입니다')
+    .describe('콕 찌름 고유 ID (양의 정수, 예: 1)'),
+});
+
+export type NudgeIdParam = z.infer<typeof nudgeIdParamSchema>;

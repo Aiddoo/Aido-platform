@@ -7,7 +7,6 @@ import {
 	HttpStatus,
 	Logger,
 	Param,
-	ParseIntPipe,
 	Patch,
 	Post,
 	Query,
@@ -34,6 +33,7 @@ import { CheerMapper } from "./cheer.mapper";
 import { CheerService } from "./cheer.service";
 import {
 	CheerCooldownResponseDto,
+	CheerIdParamDto,
 	CheerLimitInfoDto,
 	CreateCheerResponseDto,
 	GetCheersQueryDto,
@@ -246,11 +246,13 @@ export class CheerController {
 	@ApiNotFoundError(ErrorCode.CHEER_1205)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param("id", ParseIntPipe) id: number,
+		@Param() params: CheerIdParamDto,
 	): Promise<MarkCheerReadResponseDto> {
-		this.#logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(
+			`응원 읽음 처리: userId=${user.userId}, id=${params.id}`,
+		);
 
-		await this.cheerService.markAsRead(user.userId, id);
+		await this.cheerService.markAsRead(user.userId, params.id);
 
 		return {
 			message: "확인했습니다.",

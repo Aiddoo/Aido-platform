@@ -18,8 +18,8 @@ import {
 	todayInTimezone,
 } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import type { CursorPaginatedResponse } from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";

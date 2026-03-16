@@ -4,10 +4,10 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
 	ApiBadRequestError,
+	ApiCreatedResponse,
 	ApiDoc,
 	ApiForbiddenError,
 	ApiNotFoundError,
-	ApiSuccessResponse,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
 
@@ -52,7 +52,7 @@ export class AdminController {
 - \`ACTIVE_LAST_30_DAYS\`: 최근 30일 내 활동한 사용자
 - \`SUBSCRIBERS\`: 유료 구독 사용자`,
 	})
-	@ApiSuccessResponse({ type: BroadcastResultDto })
+	@ApiCreatedResponse({ type: BroadcastResultDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiBadRequestError(ErrorCode.ADMIN_1403)
 	@ApiForbiddenError(ErrorCode.ADMIN_1401)
@@ -73,7 +73,7 @@ export class AdminController {
 
 존재하지 않는 사용자 ID는 자동으로 필터링됩니다.`,
 	})
-	@ApiSuccessResponse({ type: BroadcastResultDto })
+	@ApiCreatedResponse({ type: BroadcastResultDto })
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	@ApiForbiddenError(ErrorCode.ADMIN_1401)
 	@ApiNotFoundError(ErrorCode.ADMIN_1402)

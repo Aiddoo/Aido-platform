@@ -26,6 +26,7 @@ import {
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
+import { UserRepository } from "@/modules/auth/repositories/user.repository";
 
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
 import {
@@ -77,6 +78,7 @@ export class AiService {
 		private readonly aiProvider: AiProvider,
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
+		private readonly userRepository: UserRepository,
 	) {}
 
 	/**
@@ -200,10 +202,7 @@ export class AiService {
 		const dailyLimit = await this.#getDailyLimit(userId);
 
 		await this.database.$transaction(async (tx) => {
-			const user = await tx.user.findUnique({
-				where: { id: userId },
-				select: { aiUsageCount: true, aiUsageResetAt: true },
-			});
+			const user = await this.userRepository.findAiUsage(userId, tx);
 
 			if (!user) {
 				throw BusinessExceptions.userNotFound(userId);
@@ -219,20 +218,9 @@ export class AiService {
 			);
 
 			if (isNewDay) {
-				await tx.user.update({
-					where: { id: userId },
-					data: {
-						aiUsageCount: 1,
-						aiUsageResetAt: now(),
-					},
-				});
+				await this.userRepository.resetAndIncrementAiUsage(userId, tx);
 			} else {
-				await tx.user.update({
-					where: { id: userId },
-					data: {
-						aiUsageCount: { increment: 1 },
-					},
-				});
+				await this.userRepository.incrementAiUsage(userId, tx);
 			}
 		});
 	}
@@ -244,12 +232,7 @@ export class AiService {
 	 */
 	async #decrementUsage(userId: string): Promise<void> {
 		try {
-			await this.database.user.update({
-				where: { id: userId },
-				data: {
-					aiUsageCount: { decrement: 1 },
-				},
-			});
+			await this.userRepository.decrementAiUsage(userId);
 			this.#logger.debug(`AI usage decremented for user: ${userId}`);
 		} catch (rollbackError) {
 			this.#logger.error(
@@ -274,7 +257,8 @@ export class AiService {
 	 * @param lastReset - 마지막 리셋 시간
 	 * @returns 새로운 날 여부
 	 */
-	#isNewDay(lastReset: Date): boolean {
+	#isNewDay(lastReset: Date | null): boolean {
+		if (!lastReset) return true;
 		const kstToday = startOfDayInTimezone(now(), "Asia/Seoul");
 		const kstLastDay = startOfDayInTimezone(lastReset, "Asia/Seoul");
 		return !isSameDay(kstToday, kstLastDay);

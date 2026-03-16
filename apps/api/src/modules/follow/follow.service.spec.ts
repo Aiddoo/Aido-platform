@@ -19,7 +19,7 @@ import {
 	BusinessException,
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/modules/notification/queue";
