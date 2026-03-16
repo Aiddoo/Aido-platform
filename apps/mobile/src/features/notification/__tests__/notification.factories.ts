@@ -1,10 +1,10 @@
-import { ApiError } from '@src/shared/errors/api-error';
 import type {
-  MarkReadResult,
+  MarkReadResponse,
   NotificationListResponse,
-  RegisterTokenResult,
-  UnreadCountResult,
-} from '../models/notification.model';
+  RegisterTokenResponse,
+  UnreadCountResponse,
+} from '@aido/validators';
+import { ApiError } from '@src/shared/errors/api-error';
 
 const generateNotificationListResponseDto = (): NotificationListResponse => ({
   notifications: [
@@ -45,36 +45,38 @@ export const createNotificationListResponseDto = (
   ...overrides,
 });
 
-const generateRegisterTokenResultDto = (): RegisterTokenResult => ({
+const generateRegisterTokenResponseDto = (): RegisterTokenResponse => ({
   message: '푸시 토큰이 등록되었습니다.',
   registered: true,
 });
 
-export const createRegisterTokenResultDto = (
-  overrides?: Partial<RegisterTokenResult>,
-): RegisterTokenResult => ({
-  ...generateRegisterTokenResultDto(),
+export const createRegisterTokenResponseDto = (
+  overrides?: Partial<RegisterTokenResponse>,
+): RegisterTokenResponse => ({
+  ...generateRegisterTokenResponseDto(),
   ...overrides,
 });
 
-const generateUnreadCountResultDto = (): UnreadCountResult => ({
+const generateUnreadCountResponseDto = (): UnreadCountResponse => ({
   unreadCount: 3,
 });
 
-export const createUnreadCountResultDto = (
-  overrides?: Partial<UnreadCountResult>,
-): UnreadCountResult => ({
-  ...generateUnreadCountResultDto(),
+export const createUnreadCountResponseDto = (
+  overrides?: Partial<UnreadCountResponse>,
+): UnreadCountResponse => ({
+  ...generateUnreadCountResponseDto(),
   ...overrides,
 });
 
-const generateMarkReadResultDto = (): MarkReadResult => ({
+const generateMarkReadResponseDto = (): MarkReadResponse => ({
   message: '읽음 처리되었습니다.',
   readCount: 1,
 });
 
-export const createMarkReadResultDto = (overrides?: Partial<MarkReadResult>): MarkReadResult => ({
-  ...generateMarkReadResultDto(),
+export const createMarkReadResponseDto = (
+  overrides?: Partial<MarkReadResponse>,
+): MarkReadResponse => ({
+  ...generateMarkReadResponseDto(),
   ...overrides,
 });
 

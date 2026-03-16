@@ -1,3 +1,11 @@
+import {
+  type MarkReadResponse,
+  markReadResponseSchema,
+  notificationListResponseSchema,
+  type RegisterTokenResponse,
+  registerTokenResponseSchema,
+  unreadCountResponseSchema,
+} from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -6,18 +14,7 @@ import { ok, type Result } from '@src/shared/errors/result';
 import * as Notifications from 'expo-notifications';
 
 import type { NotificationError } from '../models/notification.error';
-import type {
-  GetNotificationsQuery,
-  MarkReadResult,
-  NotificationListResult,
-  RegisterTokenResult,
-} from '../models/notification.model';
-import {
-  markReadResultSchema,
-  notificationListResponseSchema,
-  registerTokenResultSchema,
-  unreadCountResultSchema,
-} from '../models/notification.model';
+import type { GetNotificationsQuery, NotificationListResult } from '../models/notification.model';
 import type { DeviceIdService } from './device-id.service';
 import { toNotificationListResult } from './notification.mapper';
 import type { PushTokenService } from './push-token.service';
@@ -43,7 +40,7 @@ export class NotificationService {
   }
 
   setupPushNotifications = async (): Promise<
-    Result<RegisterTokenResult, NotificationServiceError>
+    Result<RegisterTokenResponse, NotificationServiceError>
   > => {
     const [tokenResult, deviceId] = await Promise.all([
       this.#pushTokenService.getExpoPushToken(),
@@ -65,7 +62,7 @@ export class NotificationService {
       return result;
     }
 
-    const parsed = registerTokenResultSchema.safeParse(result.value);
+    const parsed = registerTokenResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[NotificationService] Invalid registerToken response: ${parsed.error.message}`,
@@ -124,7 +121,7 @@ export class NotificationService {
       return result;
     }
 
-    const parsed = unreadCountResultSchema.safeParse(result.value);
+    const parsed = unreadCountResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[NotificationService] Invalid getUnreadCount response: ${parsed.error.message}`,
@@ -134,14 +131,14 @@ export class NotificationService {
     return ok(parsed.data.unreadCount);
   };
 
-  markAsRead = async (notificationId: number): Promise<Result<MarkReadResult, ApiError>> => {
+  markAsRead = async (notificationId: number): Promise<Result<MarkReadResponse, ApiError>> => {
     const result = await this.#httpClient.patch<unknown>(`v1/notifications/${notificationId}/read`);
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = markReadResultSchema.safeParse(result.value);
+    const parsed = markReadResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[NotificationService] Invalid markAsRead response: ${parsed.error.message}`,
@@ -151,14 +148,14 @@ export class NotificationService {
     return ok(parsed.data);
   };
 
-  markAllAsRead = async (): Promise<Result<MarkReadResult, ApiError>> => {
+  markAllAsRead = async (): Promise<Result<MarkReadResponse, ApiError>> => {
     const result = await this.#httpClient.patch<unknown>('v1/notifications/read-all');
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = markReadResultSchema.safeParse(result.value);
+    const parsed = markReadResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[NotificationService] Invalid markAllAsRead response: ${parsed.error.message}`,

@@ -8,8 +8,7 @@ import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import type { Notification } from '../../models/notification.model';
-import { NotificationPolicy } from '../../models/notification.model';
+import { type Notification, NotificationPolicy } from '../../models/notification.model';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 
 interface NotificationItemProps {
@@ -22,7 +21,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const premiumDialog = usePremiumDialog();
-  const isUnread = NotificationPolicy.isUnread(notification);
+  const isUnread = !notification.isRead;
   const categoryLabel = NotificationPolicy.categoryLabel(notification);
   const relativeTime = formatRelativeTime(notification.createdAt);
 
@@ -31,9 +30,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     if (isUnread) markAsRead(notification.id);
 
     // 2. 외부 URL 처리
-    const externalUrl = NotificationPolicy.getExternalUrl(notification);
-    if (externalUrl) {
-      Linking.openURL(externalUrl);
+    if (typeof notification.metadata?.externalUrl === 'string') {
+      Linking.openURL(notification.metadata.externalUrl);
       return;
     }
 

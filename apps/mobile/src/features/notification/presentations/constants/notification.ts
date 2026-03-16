@@ -1,7 +1,4 @@
-import {
-  NOTIFICATION_CATEGORY,
-  type NotificationCategory,
-} from '@src/features/notification/models/notification.model';
+import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validators';
 
 export const CATEGORY_TABS: readonly { value: NotificationCategory; label: string }[] = [
   { value: NOTIFICATION_CATEGORY.ALL, label: '전체' },
