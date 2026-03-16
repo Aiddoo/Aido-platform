@@ -12,8 +12,8 @@ import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
-import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
+import { UserRepository } from "../auth/repositories/user.repository";
 import { AiService } from "./ai.service";
 import { AI_PROVIDER } from "./providers/ai.provider";
 

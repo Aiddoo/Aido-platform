@@ -26,7 +26,7 @@ import {
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
-import { UserRepository } from "@/modules/auth/repositories/user.repository";
+import { UserRepository } from "../auth/repositories/user.repository";
 
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
 import {

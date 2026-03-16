@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AuthModule } from "@/modules/auth/auth.module";
+import { AuthModule } from "../auth/auth.module";
 import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import { AiUsageGuard } from "./guards/ai-usage.guard";
