@@ -19,7 +19,10 @@ import {
 } from "@/generated/prisma/client";
 import type { UserRegisteredEventPayload } from "@/modules/admin-notification/events/admin-notification.events";
 import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { DEFAULT_CATEGORIES } from "@/modules/todo-category/types/todo-category.types";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 import {
 	ACCOUNT_DELETION,
 	AUTH_DEFAULTS,
@@ -79,6 +82,9 @@ export class OAuthService {
 		private readonly encryptionService: EncryptionService,
 		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 		private readonly cacheService: CacheService,
+		private readonly userConsentRepository: UserConsentRepository,
+		private readonly userPreferenceRepository: UserPreferenceRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 	) {
 		this.#providers = new Map<AccountProvider, IOAuthProviderStrategy>([
 			["APPLE", new AppleOAuthProvider(this.tokenVerifier)],
@@ -767,31 +773,34 @@ export class OAuthService {
 			);
 
 			const currentTime = now();
-			await tx.userConsent.create({
-				data: {
-					userId: user.id,
+			await this.userConsentRepository.create(
+				user.id,
+				{
 					termsAgreedAt: currentTime,
 					privacyAgreedAt: currentTime,
 					marketingAgreedAt: currentTime,
 				},
-			});
+				tx,
+			);
 
-			await tx.userPreference.create({
-				data: {
-					userId: user.id,
+			await this.userPreferenceRepository.create(
+				user.id,
+				{
 					pushEnabled: true,
 					nightPushEnabled: true,
 				},
-			});
+				tx,
+			);
 
-			await tx.todoCategory.createMany({
-				data: DEFAULT_CATEGORIES.map((category) => ({
+			await this.todoCategoryRepository.createMany(
+				DEFAULT_CATEGORIES.map((category) => ({
 					userId: user.id,
 					name: category.name,
 					color: category.color,
 					sortOrder: category.sortOrder,
 				})),
-			});
+				tx,
+			);
 
 			await this.securityLogRepository.create(
 				{

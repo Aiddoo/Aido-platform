@@ -98,7 +98,9 @@ describe("NotificationController", () => {
 			mockNotificationService.markAsRead.mockResolvedValue(undefined);
 
 			// When -markAsRead를 호출하면
-			const result = await controller.markAsRead(mockUser, notificationId);
+			const result = await controller.markAsRead(mockUser, {
+				id: notificationId,
+			});
 
 			// Then -서비스에 userId와 id를 전달하고 성공 응답을 반환해야 한다
 			expect(mockNotificationService.markAsRead).toHaveBeenCalledWith(

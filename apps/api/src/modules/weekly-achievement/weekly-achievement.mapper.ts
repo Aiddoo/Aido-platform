@@ -92,7 +92,7 @@ export abstract class WeeklyAchievementMapper {
 		for (let i = 1; i < records.length; i++) {
 			const prev = records[i - 1];
 			const curr = records[i];
-			if (prev && curr && this.isConsecutiveWeek(prev, curr)) {
+			if (prev && curr && this.#isConsecutiveWeek(prev, curr)) {
 				streak++;
 			} else {
 				streak = 1;
@@ -175,7 +175,7 @@ export abstract class WeeklyAchievementMapper {
 	/**
 	 * 두 주차가 연속인지 판별합니다 (연말→연초 경계 포함).
 	 */
-	private static isConsecutiveWeek(
+	static #isConsecutiveWeek(
 		prev: WeeklyAchievementRecord,
 		curr: WeeklyAchievementRecord,
 	): boolean {

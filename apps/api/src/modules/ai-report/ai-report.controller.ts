@@ -1,14 +1,7 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Controller,
-	Get,
-	Logger,
-	Param,
-	ParseIntPipe,
-	Query,
-} from "@nestjs/common";
+import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators/timezone.decorator";
+import { Timezone } from "@/common/decorators";
 
 import {
 	ApiDoc,
@@ -22,6 +15,7 @@ import {
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { AiReportService } from "./ai-report.service";
 import {
+	AiReportIdParamDto,
 	AiReportListResponseDto,
 	AiReportResponseDto,
 	GetAiReportsQueryDto,
@@ -223,11 +217,16 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 	@ApiNotFoundError(ErrorCode.AI_1304)
 	async getReport(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param("id", ParseIntPipe) id: number,
+		@Param() params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
-		this.#logger.debug(`리포트 상세 조회: id=${id}, userId=${user.userId}`);
+		this.#logger.debug(
+			`리포트 상세 조회: id=${params.id}, userId=${user.userId}`,
+		);
 
-		const report = await this.aiReportService.getReportById(user.userId, id);
+		const report = await this.aiReportService.getReportById(
+			user.userId,
+			params.id,
+		);
 
 		return { report };
 	}

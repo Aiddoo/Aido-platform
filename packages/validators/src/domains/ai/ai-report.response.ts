@@ -114,3 +114,13 @@ export const getAiReportsQuerySchema = z.object({
 });
 
 export type GetAiReportsQuery = z.infer<typeof getAiReportsQuerySchema>;
+
+export const aiReportIdParamSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 리포트 ID입니다')
+    .describe('AI 리포트 고유 ID (양의 정수, 예: 1)'),
+});
+
+export type AiReportIdParam = z.infer<typeof aiReportIdParamSchema>;

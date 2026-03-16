@@ -72,9 +72,13 @@ apps/api/
     │   ├── todo.builder.ts
     │   └── ...
     ├── mocks/
+    │   ├── fake-admin-notifier.ts             # FakeAdminNotifier
+    │   ├── fake-ai.provider.ts               # FakeAiProvider
+    │   ├── fake-bull-queue.ts                # FakeBullQueue
     │   ├── fake-email.service.ts             # FakeEmailService
-    │   ├── fake-oauth-token-verifier.service.ts
-    │   ├── fake-logger.service.ts
+    │   ├── fake-logger.service.ts            # FakeLoggerService
+    │   ├── fake-oauth-token-verifier.service.ts # FakeOAuthTokenVerifierService
+    │   ├── fake-push.provider.ts             # FakePushProvider
     │   └── mock-database.factory.ts          # createMockDatabaseService
     └── setup/
         ├── suites.setup.ts                   # Suites 유틸리티
@@ -359,6 +363,9 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"   # 특정 테스트
 | `test/builders/` | 15+ Builder 클래스 | Unit + Integration 테스트 |
 | `test/mocks/fake-email.service.ts` | `FakeEmailService` | E2E + Integration 테스트 |
 | `test/mocks/fake-oauth-token-verifier.service.ts` | `FakeOAuthTokenVerifierService` | E2E + OAuth Integration 테스트 |
+| `test/mocks/fake-admin-notifier.ts` | `FakeAdminNotifier` | E2E 테스트 (Discord 알림) |
+| `test/mocks/fake-ai.provider.ts` | `FakeAiProvider` | E2E 테스트 (Gemini AI) |
+| `test/mocks/fake-push.provider.ts` | `FakePushProvider` | E2E 테스트 (푸시 알림) |
 | `test/setup/test-database.ts` | `TestDatabase` (Testcontainers) | 실제 DB Integration + E2E 테스트 |
 
 ### 5.2 Builder vs Fixture 사용 기준
@@ -456,7 +463,7 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"   # 특정 테스트
 | Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
 | E2E | `test/e2e/todo.e2e-spec.ts` |
 | Builder | `test/builders/user.builder.ts` |
-| FakeService | `test/mocks/fake-email.service.ts` |
+| FakeService | `test/mocks/fake-*.ts` (7개) |
 | DB Mock 팩토리 | `test/mocks/mock-database.factory.ts` |
 | E2E 앱 팩토리 | `test/e2e/helpers/e2e-app-factory.ts` |
 

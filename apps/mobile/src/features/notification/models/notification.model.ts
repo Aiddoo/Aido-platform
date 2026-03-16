@@ -1,30 +1,10 @@
+import { NOTIFICATION_TYPE, type NotificationCategory } from '@aido/validators';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const notificationTypeSchema = z.enum([
-  'FOLLOW_NEW',
-  'FOLLOW_ACCEPTED',
-  'NUDGE_RECEIVED',
-  'CHEER_RECEIVED',
-  'DAILY_COMPLETE',
-  'FRIEND_COMPLETED',
-  'TODO_REMINDER',
-  'TODO_SHARED',
-  'MORNING_REMINDER',
-  'EVENING_REMINDER',
-  'WEEKLY_ACHIEVEMENT',
-  'WEEKLY_REPORT',
-  'MONTHLY_REPORT',
-  'AI_SUGGESTION',
-  'SYSTEM_NOTICE',
-  'ADMIN_BROADCAST',
-  'ADMIN_TARGETED',
-  'WINBACK',
-  'SOCIAL_DIGEST',
-  'NUDGE_SUGGEST',
-  'LUNCH_NUDGE',
-  'STREAK_AT_RISK',
-]);
+// ─── Schema & Type ───
+
+export const notificationTypeSchema = z.enum(NOTIFICATION_TYPE);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 
 export const notificationSchema = z.object({
@@ -48,36 +28,6 @@ export const notificationSchema = z.object({
 });
 export type Notification = z.infer<typeof notificationSchema>;
 
-// 서버 응답용 스키마 (날짜가 string으로 옴)
-export const serverNotificationSchema = z.object({
-  id: z.number(),
-  userId: z.string(),
-  type: notificationTypeSchema,
-  title: z.string(),
-  body: z.string(),
-  isRead: z.boolean(),
-  metadata: z.record(z.string(), z.unknown()).nullable(),
-  context: z
-    .object({
-      todoId: z.number().optional(),
-      friendId: z.string().optional(),
-      nudgeId: z.number().optional(),
-      cheerId: z.number().optional(),
-    })
-    .optional(),
-  createdAt: z.string(),
-  readAt: z.string().nullable(),
-});
-export type ServerNotification = z.infer<typeof serverNotificationSchema>;
-
-export const notificationListResponseSchema = z.object({
-  notifications: z.array(serverNotificationSchema),
-  unreadCount: z.number(),
-  hasMore: z.boolean(),
-  nextCursor: z.number().nullable(),
-});
-export type NotificationListResponse = z.infer<typeof notificationListResponseSchema>;
-
 export const notificationListResultSchema = z.object({
   notifications: z.array(notificationSchema),
   unreadCount: z.number(),
@@ -86,33 +36,6 @@ export const notificationListResultSchema = z.object({
 });
 export type NotificationListResult = z.infer<typeof notificationListResultSchema>;
 
-export const registerTokenResultSchema = z.object({
-  message: z.string(),
-  registered: z.boolean(),
-});
-export type RegisterTokenResult = z.infer<typeof registerTokenResultSchema>;
-
-export const unreadCountResultSchema = z.object({
-  unreadCount: z.number(),
-});
-export type UnreadCountResult = z.infer<typeof unreadCountResultSchema>;
-
-export const markReadResultSchema = z.object({
-  message: z.string(),
-  readCount: z.number(),
-});
-export type MarkReadResult = z.infer<typeof markReadResultSchema>;
-
-export const NOTIFICATION_CATEGORY = {
-  ALL: 'ALL',
-  NOTICE: 'NOTICE',
-  TODO: 'TODO',
-  SOCIAL: 'SOCIAL',
-} as const;
-
-export type NotificationCategory =
-  (typeof NOTIFICATION_CATEGORY)[keyof typeof NOTIFICATION_CATEGORY];
-
 export interface GetNotificationsQuery {
   limit?: number;
   cursor?: number;
@@ -120,17 +43,10 @@ export interface GetNotificationsQuery {
   unreadOnly?: boolean;
 }
 
-// ─── 순수 함수 (primitive 입력 → primitive 출력) ───
-
-export type NotificationContext = {
-  todoId?: number;
-  friendId?: string;
-  nudgeId?: number;
-  cheerId?: number;
-};
+// ─── 순수 함수 (독립 테스트 가능) ───
 
 /** 알림 타입 → 카테고리 라벨 */
-const getCategoryLabel = (type: NotificationType): string =>
+export const getCategoryLabel = (type: NotificationType): string =>
   match(type)
     .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => '친구')
     .with('NUDGE_RECEIVED', () => '콕 찌르기')
@@ -144,7 +60,10 @@ const getCategoryLabel = (type: NotificationType): string =>
     .exhaustive();
 
 /** 알림 타입 + context → 앱 내부 라우트 */
-const getInternalRoute = (type: NotificationType, context?: NotificationContext): string | null =>
+export const getInternalRoute = (
+  type: NotificationType,
+  context?: Notification['context'],
+): string | null =>
   match(type)
     .with('FOLLOW_NEW', () => '/friends?view=receiver')
     .with('FOLLOW_ACCEPTED', () =>
@@ -170,7 +89,7 @@ const getInternalRoute = (type: NotificationType, context?: NotificationContext)
     .with('NUDGE_SUGGEST', () => (context?.friendId ? `/feed/friend/${context.friendId}` : '/feed'))
     .exhaustive();
 
-// ─── Policy (비즈니스 로직의 유일한 거처) ───
+// ─── Policy ───
 
 const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
   'WEEKLY_REPORT',
@@ -179,24 +98,18 @@ const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
 ]);
 
 export const NotificationPolicy = {
-  isUnread: (notification: { isRead: boolean }): boolean => !notification.isRead,
+  /** 타입 → 카테고리 라벨 (기획 정의) */
+  categoryLabel(notification: Notification) {
+    return getCategoryLabel(notification.type);
+  },
 
-  isAiFeature: (notification: { type: NotificationType }): boolean =>
-    AI_FEATURE_TYPES.has(notification.type),
+  /** 타입+context → 내부 라우트 (기획 정의) */
+  internalRoute(notification: Notification) {
+    return getInternalRoute(notification.type, notification.context);
+  },
 
-  hasExternalUrl: (notification: { metadata: Record<string, unknown> | null }): boolean =>
-    typeof notification.metadata?.externalUrl === 'string',
-
-  getExternalUrl: (notification: { metadata: Record<string, unknown> | null }): string | null =>
-    typeof notification.metadata?.externalUrl === 'string'
-      ? notification.metadata.externalUrl
-      : null,
-
-  categoryLabel: (notification: { type: NotificationType }): string =>
-    getCategoryLabel(notification.type),
-
-  internalRoute: (notification: {
-    type: NotificationType;
-    context?: NotificationContext;
-  }): string | null => getInternalRoute(notification.type, notification.context),
-} as const;
+  /** AI 기능 알림인지 (기능 분류 규칙) */
+  isAiFeature(notification: Notification) {
+    return AI_FEATURE_TYPES.has(notification.type);
+  },
+};

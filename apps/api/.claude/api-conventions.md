@@ -60,10 +60,13 @@ src/modules/{name}/
 ```typescript
 import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@common/swagger';
-import { ExampleDto, ExampleResponseDto } from '@aido/validators/nestjs';
+import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@/common/swagger';
+
+import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
+import { ExampleResponseDto } from './dtos';
 
 @ApiTags('examples')
+@ApiBearerAuth()
 @Controller('examples')
 export class ExampleController {
   constructor(private readonly exampleService: ExampleService) {}
@@ -71,6 +74,7 @@ export class ExampleController {
   @Get()
   @ApiDoc({
     summary: '목록 조회',
+    operationId: 'findAllExamples',
     description: `
 ## 📋 예시 목록 조회
 
@@ -161,8 +165,8 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { BusinessExceptions } from '@common/exception';
-import { DatabaseService } from '@common/database';
+import { BusinessExceptions } from '@/common/exception';
+import { DatabaseService } from '@/common/database';
 import { [Feature]QueueService } from '../queue';
 import { [Feature]Repository } from '../repositories';
 
@@ -300,7 +304,7 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, type TransactionClient } from '@common/database';
+import { DatabaseService, type TransactionClient } from '@/common/database';
 
 @Injectable()
 export class [Feature]Repository {
@@ -482,19 +486,21 @@ export class AuthModule {}
 ## 6. Import 별칭
 
 ```typescript
-// @common/* — 공통 모듈 (tsconfig paths)
-import { DatabaseService } from '@common/database';
-import { ApiDoc, ApiSuccessResponse } from '@common/swagger';
-import { BusinessExceptions } from '@common/exception';
-import { PaginationService } from '@common/pagination';
-import { EncryptionService } from '@common/encryption';
-import { TypedConfigService } from '@common/config';
-import { getUserToday, toScheduledTime } from '@common/date';
-import { Timezone, CurrentUser } from '@common/decorators';
+// @/common/* — 공통 모듈 (tsconfig paths: "@/*" → "src/*")
+import { DatabaseService } from '@/common/database';
+import { ApiDoc, ApiSuccessResponse } from '@/common/swagger';
+import { BusinessExceptions } from '@/common/exception';
+import { PaginationService } from '@/common/pagination';
+import { EncryptionService } from '@/common/encryption';
+import { TypedConfigService } from '@/common/config';
+import { getUserToday, toScheduledTime } from '@/common/date';
+import { Timezone } from '@/common/decorators';
+
+// Auth 데코레이터 — auth 모듈에서 import
+import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
 
 // @aido/validators — 공유 스키마 패키지
 import { LoginInput, LoginResponse } from '@aido/validators';
-import { LoginDto, LoginResponseDto } from '@aido/validators/nestjs';
 
 // 모듈 내부 — 상대 경로
 import { UserRepository } from '../repositories';

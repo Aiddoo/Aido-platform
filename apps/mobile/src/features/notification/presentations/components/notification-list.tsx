@@ -1,3 +1,4 @@
+import type { NotificationCategory } from '@aido/validators';
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { Box, Flex, HStack, NotiIcon, Result, Text, VStack } from '@src/shared/ui';
@@ -6,7 +7,6 @@ import times from 'es-toolkit/compat/times';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
-import type { NotificationCategory } from '../../models/notification.model';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/use-get-notifications-infinite-query-options';
 import { NotificationItem } from './notification-item';
 

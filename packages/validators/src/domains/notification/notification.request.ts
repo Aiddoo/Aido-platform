@@ -73,3 +73,13 @@ export const getNotificationsQuerySchema = z.object({
 });
 
 export type GetNotificationsQuery = z.infer<typeof getNotificationsQuerySchema>;
+
+export const notificationIdParamSchema = z.object({
+  id: z.coerce
+    .number()
+    .int()
+    .positive('유효하지 않은 알림 ID입니다')
+    .describe('알림 고유 ID (양의 정수, 예: 1)'),
+});
+
+export type NotificationIdParam = z.infer<typeof notificationIdParamSchema>;

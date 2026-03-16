@@ -1,11 +1,11 @@
 import type { Logger } from '@src/core/ports/logger';
 import { createMockHttpClient } from '@src/shared/__tests__';
 import {
-  createMarkReadResultDto,
+  createMarkReadResponseDto,
   createNotificationApiError,
   createNotificationListResponseDto,
-  createRegisterTokenResultDto,
-  createUnreadCountResultDto,
+  createRegisterTokenResponseDto,
+  createUnreadCountResponseDto,
   INVALID_DTO,
 } from '../__tests__/notification.factories';
 import type { DeviceIdService } from './device-id.service';
@@ -58,7 +58,7 @@ describe('NotificationService', () => {
   describe('setupPushNotifications', () => {
     test('정상 -> registerToken 호출 + 결과 반환', async () => {
       // Given
-      const dto = createRegisterTokenResultDto();
+      const dto = createRegisterTokenResponseDto();
       httpClient.post.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -162,7 +162,7 @@ describe('NotificationService', () => {
   describe('getUnreadCount', () => {
     test('정상 응답 -> unreadCount 숫자 반환', async () => {
       // Given
-      const dto = createUnreadCountResultDto({ unreadCount: 5 });
+      const dto = createUnreadCountResponseDto({ unreadCount: 5 });
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -191,7 +191,7 @@ describe('NotificationService', () => {
   describe('markAsRead', () => {
     test('정상 응답 -> MarkReadResult 반환', async () => {
       // Given
-      const dto = createMarkReadResultDto();
+      const dto = createMarkReadResponseDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When
@@ -220,7 +220,7 @@ describe('NotificationService', () => {
   describe('markAllAsRead', () => {
     test('정상 응답 -> MarkReadResult 반환', async () => {
       // Given
-      const dto = createMarkReadResultDto({ readCount: 5 });
+      const dto = createMarkReadResponseDto({ readCount: 5 });
       httpClient.patch.mockResolvedValue({ ok: true, value: dto });
 
       // When

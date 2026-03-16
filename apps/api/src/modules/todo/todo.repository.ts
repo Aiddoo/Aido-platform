@@ -351,11 +351,7 @@ export class TodoRepository {
 		return client.todo.update({
 			where: { id },
 			data: { sortOrder },
-			include: {
-				category: {
-					select: { id: true, name: true, color: true, sortOrder: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory>;
 	}
 

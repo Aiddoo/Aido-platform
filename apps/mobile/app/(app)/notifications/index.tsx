@@ -1,8 +1,5 @@
+import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validators';
 import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
-import {
-  NOTIFICATION_CATEGORY,
-  type NotificationCategory,
-} from '@src/features/notification/models/notification.model';
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';

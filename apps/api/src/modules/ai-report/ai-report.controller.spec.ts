@@ -140,7 +140,7 @@ describe("AiReportController", () => {
 			mockService.getReportById.mockResolvedValue(mockReport);
 
 			// When -getReport를 호출하면
-			const result = await controller.getReport(mockUser, reportId);
+			const result = await controller.getReport(mockUser, { id: reportId });
 
 			// Then -서비스에 올바른 파라미터를 전달하고 응답을 반환해야 한다
 			expect(mockService.getReportById).toHaveBeenCalledWith(

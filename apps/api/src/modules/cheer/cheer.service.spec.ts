@@ -16,7 +16,7 @@ import {
 	EntitlementService,
 	Feature,
 } from "@/common/entitlement/entitlement.service";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
@@ -57,17 +57,13 @@ describe("CheerService", () => {
 
 		// DatabaseService.$transaction passthrough mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
-			(callback: (tx: unknown) => Promise<unknown>) => {
-				const txProxy = {
-					cheer: {
-						count: jest.fn().mockResolvedValue(0),
-						findFirst: jest.fn().mockResolvedValue(null),
-						create: jest.fn(),
-					},
-				};
-				return callback(txProxy);
-			},
+			(callback: (tx: unknown) => Promise<unknown>) => callback({}),
 		);
+
+		// Repository 트랜잭션 메서드 기본 mock 설정
+		(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(0);
+		(cheerRepo.findLastCheerToUser as jest.Mock).mockResolvedValue(null);
+		(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(undefined);
 
 		// EntitlementService 기본 mock 설정 (FREE 사용자)
 		(entitlementService.getFeatureLimitInTx as jest.Mock).mockResolvedValue({
@@ -128,23 +124,16 @@ describe("CheerService", () => {
 			// Given - 기본 성공 시나리오 설정
 			(followService.isMutualFriend as jest.Mock).mockResolvedValue(true);
 
-			// 트랜잭션 내부 mock 설정
-			(database.$transaction as jest.Mock).mockImplementation(
-				async (callback: (tx: unknown) => Promise<unknown>) => {
-					const expectedCheer = CheerBuilder.create(senderId, receiverId)
-						.withMessage(validParams.message)
-						.withSenderProfile({ name: "테스트유저", profileImage: null })
-						.buildWithRelations();
+			// Repository 트랜잭션 메서드 mock 설정
+			const expectedCheer = CheerBuilder.create(senderId, receiverId)
+				.withMessage(validParams.message)
+				.withSenderProfile({ name: "테스트유저", profileImage: null })
+				.buildWithRelations();
 
-					const txProxy = {
-						cheer: {
-							count: jest.fn().mockResolvedValue(0),
-							findFirst: jest.fn().mockResolvedValue(null),
-							create: jest.fn().mockResolvedValue(expectedCheer),
-						},
-					};
-					return callback(txProxy);
-				},
+			(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(0);
+			(cheerRepo.findLastCheerToUser as jest.Mock).mockResolvedValue(null);
+			(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+				expectedCheer,
 			);
 		});
 
@@ -171,25 +160,6 @@ describe("CheerService", () => {
 			});
 
 			it("친구 관계를 올바르게 확인한다", async () => {
-				// Given
-				const expectedCheer = CheerBuilder.create(senderId, receiverId)
-					.withMessage(validParams.message)
-					.withSenderProfile({ name: "테스트유저", profileImage: null })
-					.buildWithRelations();
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
-				);
-
 				// When
 				await service.sendCheer(validParams);
 
@@ -211,20 +181,8 @@ describe("CheerService", () => {
 						subscriptionStatus: "FREE",
 					},
 				);
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest
-									.fn()
-									.mockResolvedValue(CHEER_LIMITS.FREE_DAILY_LIMIT),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn(),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(
+					CHEER_LIMITS.FREE_DAILY_LIMIT,
 				);
 
 				// When & Then
@@ -245,18 +203,9 @@ describe("CheerService", () => {
 						subscriptionStatus: "ACTIVE",
 					},
 				);
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(100),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(100);
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -280,18 +229,9 @@ describe("CheerService", () => {
 						subscriptionStatus: "FREE",
 					},
 				);
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(100),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(100);
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -310,20 +250,8 @@ describe("CheerService", () => {
 						subscriptionStatus: "EXPIRED",
 					},
 				);
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest
-									.fn()
-									.mockResolvedValue(CHEER_LIMITS.FREE_DAILY_LIMIT),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn(),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(
+					CHEER_LIMITS.FREE_DAILY_LIMIT,
 				);
 
 				// When & Then
@@ -338,17 +266,8 @@ describe("CheerService", () => {
 					.withCreatedAt(new Date()) // 방금 생성된 Cheer
 					.build();
 
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(recentCheer),
-								create: jest.fn(),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.findLastCheerToUser as jest.Mock).mockResolvedValue(
+					recentCheer,
 				);
 
 				// When & Then
@@ -370,17 +289,11 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: "테스트유저", profileImage: null })
 					.buildWithRelations();
 
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(oldCheer),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.findLastCheerToUser as jest.Mock).mockResolvedValue(
+					oldCheer,
+				);
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -399,22 +312,8 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: "테스트유저", profileImage: null })
 					.buildWithRelations();
 
-				let capturedCreateArgs: unknown = null;
-
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockImplementation((args) => {
-									capturedCreateArgs = args;
-									return expectedCheer;
-								}),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -422,39 +321,14 @@ describe("CheerService", () => {
 
 				// Then
 				expect(result).toEqual(expectedCheer);
-				expect(capturedCreateArgs).toEqual({
-					data: {
-						sender: { connect: { id: validParams.senderId } },
-						receiver: { connect: { id: validParams.receiverId } },
+				expect(cheerRepo.createWithRelations).toHaveBeenCalledWith(
+					{
+						senderId: validParams.senderId,
+						receiverId: validParams.receiverId,
 						message: validParams.message,
 					},
-					include: {
-						sender: {
-							select: {
-								id: true,
-								userTag: true,
-								profile: {
-									select: {
-										name: true,
-										profileImage: true,
-									},
-								},
-							},
-						},
-						receiver: {
-							select: {
-								id: true,
-								userTag: true,
-								profile: {
-									select: {
-										name: true,
-										profileImage: true,
-									},
-								},
-							},
-						},
-					},
-				});
+					expect.anything(),
+				);
 			});
 
 			it("메시지 없이도 Cheer를 생성할 수 있다", async () => {
@@ -468,17 +342,8 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: "테스트유저", profileImage: null })
 					.buildWithRelations();
 
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -498,17 +363,8 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: senderName, profileImage: null })
 					.buildWithRelations();
 
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When
@@ -533,17 +389,8 @@ describe("CheerService", () => {
 					.withSenderProfile({ name: null, profileImage: null })
 					.buildWithRelations();
 
-				(database.$transaction as jest.Mock).mockImplementation(
-					async (callback: (tx: unknown) => Promise<unknown>) => {
-						const txProxy = {
-							cheer: {
-								count: jest.fn().mockResolvedValue(0),
-								findFirst: jest.fn().mockResolvedValue(null),
-								create: jest.fn().mockResolvedValue(expectedCheer),
-							},
-						};
-						return callback(txProxy);
-					},
+				(cheerRepo.createWithRelations as jest.Mock).mockResolvedValue(
+					expectedCheer,
 				);
 
 				// When

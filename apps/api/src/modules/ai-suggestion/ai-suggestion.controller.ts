@@ -10,7 +10,7 @@ import {
 	Patch,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators/timezone.decorator";
+import { Timezone } from "@/common/decorators";
 
 import {
 	ApiDoc,
