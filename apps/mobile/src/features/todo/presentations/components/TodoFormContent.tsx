@@ -75,6 +75,7 @@ export const TodoFormContent = ({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
         contentContainerClassName="gap-2"
       >
         <DateLabelButton onPress={onDatePress} />
