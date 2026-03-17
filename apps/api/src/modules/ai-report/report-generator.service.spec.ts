@@ -152,6 +152,96 @@ describe("ReportGeneratorService", () => {
 	// AI 호출 실패 시 폴백
 	// =========================================================================
 
+	// =========================================================================
+	// 주간/월간 프롬프트 분기
+	// =========================================================================
+
+	describe("주간/월간 프롬프트 분기", () => {
+		beforeEach(() => {
+			mockAiProvider.isAvailable.mockReturnValue(true);
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: { summary: "요약", tips: ["팁"] },
+				model: "google:gemini-2.0-flash",
+				usage: { input: 300, output: 100 },
+			});
+		});
+
+		it("WEEKLY type이면 주간 키워드가 프롬프트에 포함되어야 한다", async () => {
+			// When -WEEKLY 파라미터로 generate를 호출하면
+			await service.generate(mockParams);
+
+			// Then -주간 전용 키워드가 프롬프트에 포함되어야 한다
+			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
+			expect(callArgs?.prompt).toContain("코칭해줘");
+			expect(callArgs?.prompt).toContain("행동 유형 진단");
+			expect(callArgs?.prompt).toContain("주중");
+		});
+
+		it("MONTHLY type이면 월간 키워드가 프롬프트에 포함되어야 한다", async () => {
+			// Given -월간 파라미터
+			const monthlyParams: GenerateReportParams = {
+				...mockParams,
+				type: "MONTHLY",
+				periodLabel: "2026년 3월",
+			};
+
+			// When -MONTHLY 파라미터로 generate를 호출하면
+			await service.generate(monthlyParams);
+
+			// Then -월간 전용 키워드가 프롬프트에 포함되어야 한다
+			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
+			expect(callArgs?.prompt).toContain("월간 코칭");
+			expect(callArgs?.prompt).toContain("한 달");
+			expect(callArgs?.prompt).toContain("습관 정착");
+		});
+
+		it("지난 기간 대비 변화량이 프롬프트에 포함되어야 한다", async () => {
+			// When -prevCompletionRate이 있는 데이터로 호출하면
+			await service.generate(mockParams);
+
+			// Then -변화량이 프롬프트에 포함되어야 한다
+			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
+			expect(callArgs?.prompt).toContain("+10%p");
+		});
+
+		it("활동 없음 + WEEKLY이면 주간 활동없음 프롬프트를 생성해야 한다", async () => {
+			// Given -활동 없음 + 주간
+			const params: GenerateReportParams = {
+				...mockParams,
+				aggregatedData: { ...mockAggregatedData, hasActivity: false },
+			};
+
+			// When
+			await service.generate(params);
+
+			// Then -주차 정보가 포함되고 월간 키워드는 없어야 한다
+			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
+			expect(callArgs?.prompt).toContain("10주차");
+			expect(callArgs?.prompt).not.toContain("한 달");
+		});
+
+		it("활동 없음 + MONTHLY이면 월간 활동없음 프롬프트를 생성해야 한다", async () => {
+			// Given -활동 없음 + 월간
+			const params: GenerateReportParams = {
+				...mockParams,
+				type: "MONTHLY",
+				periodLabel: "2026년 3월",
+				aggregatedData: { ...mockAggregatedData, hasActivity: false },
+			};
+
+			// When
+			await service.generate(params);
+
+			// Then
+			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
+			expect(callArgs?.prompt).toContain("한 달");
+		});
+	});
+
+	// =========================================================================
+	// AI 호출 실패 시 폴백
+	// =========================================================================
+
 	describe("AI 호출 실패 시 폴백", () => {
 		it("AI 호출 중 에러가 발생하면 폴백 콘텐츠를 반환해야 한다", async () => {
 			// Given -AI Provider가 가용하지만 호출 시 에러 발생

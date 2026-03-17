@@ -6,7 +6,7 @@ import {
 import {
 	buildReportPrompt,
 	reportAiResponseSchema,
-} from "./prompts/weekly-report.prompt";
+} from "./prompts/report.prompt";
 import type { GeneratedReportContent, GenerateReportParams } from "./types";
 
 /** AI 리포트 생성 기본 설정 */
@@ -36,7 +36,7 @@ export class ReportGeneratorService {
 	async generate(
 		params: GenerateReportParams,
 	): Promise<GeneratedReportContent> {
-		const { aggregatedData, periodLabel } = params;
+		const { aggregatedData, periodLabel, type } = params;
 
 		if (!this.aiProvider.isAvailable()) {
 			this.#logger.warn("AI Provider 불가용 — 폴백 콘텐츠 사용");
@@ -44,7 +44,7 @@ export class ReportGeneratorService {
 		}
 
 		try {
-			const prompt = buildReportPrompt(aggregatedData, periodLabel);
+			const prompt = buildReportPrompt(aggregatedData, periodLabel, type);
 
 			const result = await this.aiProvider.generateStructured({
 				prompt,
