@@ -47,6 +47,9 @@ describe("WinbackStrategy", () => {
 		notificationService = unitRef.get(NotificationService);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 
+		// pickVariant 결정론적으로 고정 (첫 번째 variant 선택)
+		jest.spyOn(Math, "random").mockReturnValue(0);
+
 		// 기본 mock 설정
 		database.user.findMany.mockResolvedValue([] as never);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
@@ -108,6 +111,54 @@ describe("WinbackStrategy", () => {
 			metadata: { stage: "day14" },
 			title: expected.title,
 			body: expected.body,
+		});
+	});
+
+	it("21일 미접속 유저에게 day21 Win-back을 발송한다", async () => {
+		const ctx = makeCtx();
+		const twentyOneDaysAgo = dayjs.utc("2023-12-26").startOf("day").toDate();
+
+		database.user.findMany.mockResolvedValueOnce([
+			{ id: "user-1", lastActiveAt: twentyOneDaysAgo },
+		] as never);
+
+		const result = await strategy.execute(ctx);
+
+		expect(result).toEqual({ sent: 1 });
+
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.winback(21);
+		expect(notifications?.[0]).toMatchObject({
+			userId: "user-1",
+			type: "WINBACK",
+			title: expected.title,
+			body: expected.body,
+			metadata: { stage: "day21" },
+		});
+	});
+
+	it("30일 미접속 유저에게 day30 Win-back을 발송한다", async () => {
+		const ctx = makeCtx();
+		const thirtyDaysAgo = dayjs.utc("2023-12-17").startOf("day").toDate();
+
+		database.user.findMany.mockResolvedValueOnce([
+			{ id: "user-1", lastActiveAt: thirtyDaysAgo },
+		] as never);
+
+		const result = await strategy.execute(ctx);
+
+		expect(result).toEqual({ sent: 1 });
+
+		const notifications =
+			notificationService.createAndSendBatch.mock.calls[0]?.[0];
+		const expected = NotificationMessageBuilder.winback(30);
+		expect(notifications?.[0]).toMatchObject({
+			userId: "user-1",
+			type: "WINBACK",
+			title: expected.title,
+			body: expected.body,
+			metadata: { stage: "day30" },
 		});
 	});
 

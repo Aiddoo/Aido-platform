@@ -26,6 +26,7 @@ import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 
 import { FollowService } from "../follow/follow.service";
+import { NotificationQueueService } from "../notification/queue/notification-queue.service";
 import {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
@@ -48,6 +49,7 @@ describe("TodoService", () => {
 	let followService: Mocked<FollowService>;
 	let database: Mocked<DatabaseService>;
 	let reminderScheduler: Mocked<IReminderScheduler>;
+	let notificationQueueService: Mocked<NotificationQueueService>;
 
 	// 테스트 데이터
 	const mockUserId = "user-123";
@@ -72,6 +74,7 @@ describe("TodoService", () => {
 		followService = unitRef.get(FollowService);
 		database = unitRef.get(DatabaseService);
 		reminderScheduler = unitRef.get(REMINDER_SCHEDULER);
+		notificationQueueService = unitRef.get(NotificationQueueService);
 
 		// Given - 기본 transaction mock 설정
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -864,6 +867,96 @@ describe("TodoService", () => {
 
 			// Then - 리마인더 취소가 호출되지 않음
 			expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
+		});
+
+		it("완료 시 누적 카운트가 마일스톤이면 enqueueMilestoneReached를 호출한다", async () => {
+			// Given - 미완료 상태의 Todo + 누적 완료 10개 (마일스톤)
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...uncompletedTodo,
+						...data,
+					}) as TodoWithCategory,
+			);
+			todoRepo.countCompletedByUser.mockResolvedValue(10);
+
+			// When - 완료로 변경
+			await service.toggleComplete(uncompletedTodo.id, mockUserId, {
+				completed: true,
+			});
+
+			// Then - fire-and-forget 비동기 처리 대기
+			await new Promise((resolve) => setImmediate(resolve));
+
+			// Then - enqueueMilestoneReached가 호출됨
+			expect(
+				notificationQueueService.enqueueMilestoneReached,
+			).toHaveBeenCalledWith({
+				userId: mockUserId,
+				milestone: "COUNT_10",
+			});
+		});
+
+		it("누적 카운트가 마일스톤이 아니면 enqueueMilestoneReached를 호출하지 않는다", async () => {
+			// Given - 미완료 상태의 Todo + 누적 완료 7개 (마일스톤 아님)
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...uncompletedTodo,
+						...data,
+					}) as TodoWithCategory,
+			);
+			todoRepo.countCompletedByUser.mockResolvedValue(7);
+
+			// When - 완료로 변경
+			await service.toggleComplete(uncompletedTodo.id, mockUserId, {
+				completed: true,
+			});
+
+			// Then - fire-and-forget 비동기 처리 대기
+			await new Promise((resolve) => setImmediate(resolve));
+
+			// Then - enqueueMilestoneReached가 호출되지 않음
+			expect(
+				notificationQueueService.enqueueMilestoneReached,
+			).not.toHaveBeenCalled();
+		});
+
+		it("마일스톤 체크 실패해도 toggleComplete는 정상 완료한다", async () => {
+			// Given - 미완료 상태의 Todo + DB 에러
+			const uncompletedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.uncompleted()
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(uncompletedTodo);
+			todoRepo.update.mockImplementation(
+				async (_id: number, data: Record<string, unknown>) =>
+					({
+						...uncompletedTodo,
+						...data,
+					}) as TodoWithCategory,
+			);
+			todoRepo.countCompletedByUser.mockRejectedValue(new Error("DB error"));
+
+			// When - 완료로 변경
+			const result = await service.toggleComplete(
+				uncompletedTodo.id,
+				mockUserId,
+				{ completed: true },
+			);
+
+			// Then - fire-and-forget이므로 toggleComplete는 정상 완료
+			expect(result.completed).toBe(true);
 		});
 	});
 

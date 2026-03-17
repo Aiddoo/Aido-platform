@@ -187,6 +187,9 @@ export class FollowService {
 				friendName: userName,
 			});
 
+			this.#checkAndEnqueueFirstFriendMilestone(userId);
+			this.#checkAndEnqueueFirstFriendMilestone(targetUserId);
+
 			await Promise.all([
 				this.cacheService.invalidateMutualFriend(userId, targetUserId),
 				this.cacheService.invalidateMutualFriendIds(userId),
@@ -329,6 +332,9 @@ export class FollowService {
 			friendId: userId,
 			friendName: userName,
 		});
+
+		this.#checkAndEnqueueFirstFriendMilestone(userId);
+		this.#checkAndEnqueueFirstFriendMilestone(requesterUserId);
 
 		return myFollow;
 	}
@@ -677,5 +683,22 @@ export class FollowService {
 			tx,
 		);
 		return maxSortOrder;
+	}
+
+	async #checkAndEnqueueFirstFriendMilestone(userId: string): Promise<void> {
+		try {
+			const count = await this.followRepository.countMutualFriends(userId);
+			if (count === 1) {
+				this.notificationQueueService.enqueueMilestoneReached({
+					userId,
+					milestone: "FIRST_FRIEND",
+				});
+			}
+		} catch (error) {
+			this.#logger.error(
+				`Failed to check first friend milestone: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 }

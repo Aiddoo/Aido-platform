@@ -23,6 +23,7 @@ export const NotificationJobName = {
 	CHEER_SENT: "cheer-sent",
 	BILLING_ISSUE: "billing-issue",
 	FRIEND_COMPLETED: "friend-completed",
+	MILESTONE_REACHED: "milestone-reached",
 } as const;
 
 // =============================================================================
@@ -111,6 +112,22 @@ export interface FriendCompletedJobData {
 	timezone: string;
 }
 
+/**
+ * 마일스톤 달성 잡 데이터
+ */
+export interface MilestoneReachedJobData {
+	/** 사용자 ID */
+	userId: string;
+	/** 달성한 마일스톤 유형 */
+	milestone:
+		| "FIRST_COMPLETE"
+		| "COUNT_10"
+		| "COUNT_50"
+		| "COUNT_100"
+		| "STREAK_3"
+		| "FIRST_FRIEND";
+}
+
 // =============================================================================
 // Job Data Union & Map
 // =============================================================================
@@ -123,6 +140,7 @@ export interface NotificationJobMap {
 	[NotificationJobName.CHEER_SENT]: CheerSentJobData;
 	[NotificationJobName.BILLING_ISSUE]: BillingIssueJobData;
 	[NotificationJobName.FRIEND_COMPLETED]: FriendCompletedJobData;
+	[NotificationJobName.MILESTONE_REACHED]: MilestoneReachedJobData;
 }
 
 /** 모든 잡 데이터 유니온 타입 */

@@ -18,6 +18,7 @@ import { LunchNudgeStrategy } from "./strategies/lunch-nudge.strategy";
 import { MonthlyReportStrategy } from "./strategies/monthly-report.strategy";
 import { MorningReminderStrategy } from "./strategies/morning-reminder.strategy";
 import { NudgeSuggestStrategy } from "./strategies/nudge-suggest.strategy";
+import { OnboardingStrategy } from "./strategies/onboarding.strategy";
 import { SocialDigestStrategy } from "./strategies/social-digest.strategy";
 import { StreakAtRiskStrategy } from "./strategies/streak-at-risk.strategy";
 import { WeeklyAchievementStrategy } from "./strategies/weekly-achievement.strategy";
@@ -51,6 +52,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly socialDigest: SocialDigestStrategy,
 		private readonly lunchNudge: LunchNudgeStrategy,
 		private readonly streakAtRisk: StreakAtRiskStrategy,
+		private readonly onboarding: OnboardingStrategy,
 	) {}
 
 	async onModuleInit(): Promise<void> {
@@ -188,6 +190,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		const ctx = this.#buildContext(tz, localHour, localMinute);
 
 		await this.morningReminder.execute(ctx);
+		await this.onboarding.execute(ctx);
 		const eveningResult = await this.eveningReminder.execute(ctx);
 
 		// 저녁 리마인더 발송 시 30분 후 Social Digest delayed job 등록

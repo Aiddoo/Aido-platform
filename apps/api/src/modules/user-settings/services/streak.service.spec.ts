@@ -9,6 +9,7 @@ import { TestBed } from "@suites/unit";
 
 import { DatabaseService } from "@/database";
 import type { UserPreference } from "@/generated/prisma/client";
+import { NotificationQueueService } from "@/modules/notification/queue/notification-queue.service";
 
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 import { StreakService } from "./streak.service";
@@ -17,6 +18,7 @@ describe("StreakService", () => {
 	let service: StreakService;
 	let prefRepo: Mocked<UserPreferenceRepository>;
 	let database: Mocked<DatabaseService>;
+	let notificationQueueService: Mocked<NotificationQueueService>;
 
 	const userId = "user-1";
 	// 2026-03-07 UTC 자정 (테스트용 고정 날짜)
@@ -49,6 +51,7 @@ describe("StreakService", () => {
 		service = unit;
 		prefRepo = unitRef.get(UserPreferenceRepository);
 		database = unitRef.get(DatabaseService);
+		notificationQueueService = unitRef.get(NotificationQueueService);
 	});
 
 	afterEach(() => {
@@ -185,6 +188,57 @@ describe("StreakService", () => {
 				longestStreak: 15,
 				lastCompletedDate: expect.any(Date),
 			});
+		});
+
+		it("스트릭 3일 도달 시 STREAK_3 마일스톤 알림을 enqueue한다", async () => {
+			// Given - 어제까지 2일 연속 (오늘 완료 시 3일)
+			mockTodoStats(3, 3);
+			prefRepo.findByUserId.mockResolvedValue({
+				...basePref,
+				currentStreak: 2,
+				longestStreak: 2,
+				lastCompletedDate: yesterday,
+			});
+
+			// When
+			await service.onTodoToggled(userId, true, "UTC");
+
+			// Then
+			expect(prefRepo.updateStreak).toHaveBeenCalledWith(userId, {
+				currentStreak: 3,
+				longestStreak: 3,
+				lastCompletedDate: expect.any(Date),
+			});
+			expect(
+				notificationQueueService.enqueueMilestoneReached,
+			).toHaveBeenCalledWith({
+				userId,
+				milestone: "STREAK_3",
+			});
+		});
+
+		it("스트릭 3일이 아닌 경우 마일스톤 알림을 enqueue하지 않는다", async () => {
+			// Given - 어제까지 5일 연속 (오늘 완료 시 6일)
+			mockTodoStats(3, 3);
+			prefRepo.findByUserId.mockResolvedValue({
+				...basePref,
+				currentStreak: 5,
+				longestStreak: 5,
+				lastCompletedDate: yesterday,
+			});
+
+			// When
+			await service.onTodoToggled(userId, true, "UTC");
+
+			// Then
+			expect(prefRepo.updateStreak).toHaveBeenCalledWith(userId, {
+				currentStreak: 6,
+				longestStreak: 6,
+				lastCompletedDate: expect.any(Date),
+			});
+			expect(
+				notificationQueueService.enqueueMilestoneReached,
+			).not.toHaveBeenCalled();
 		});
 	});
 

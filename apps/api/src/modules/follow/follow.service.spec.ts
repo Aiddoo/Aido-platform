@@ -152,6 +152,7 @@ describe("FollowService", () => {
 			});
 			followRepo.create.mockResolvedValue(autoAcceptedFollow);
 			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
+			followRepo.countMutualFriends.mockResolvedValue(1);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -275,6 +276,7 @@ describe("FollowService", () => {
 			followRepo.create.mockResolvedValue(autoAcceptedFollow);
 			followRepo.getUserDisplayName.mockResolvedValue("테스트 유저");
 			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
+			followRepo.countMutualFriends.mockResolvedValue(1);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
@@ -447,6 +449,7 @@ describe("FollowService", () => {
 			followRepo.create.mockResolvedValue(createdFollow);
 			followRepo.findByIdWithUser.mockResolvedValue(createdFollow);
 			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
+			followRepo.countMutualFriends.mockResolvedValue(1);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 		};
 
@@ -541,6 +544,7 @@ describe("FollowService", () => {
 			});
 			followRepo.findByIdWithUser.mockResolvedValue(updatedFollow);
 			followRepo.getMaxSortOrderForFriends.mockResolvedValue(0);
+			followRepo.countMutualFriends.mockResolvedValue(1);
 			cacheService.invalidateMutualFriend.mockResolvedValue(undefined);
 
 			// When
