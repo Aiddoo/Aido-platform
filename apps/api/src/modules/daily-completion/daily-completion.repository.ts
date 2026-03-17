@@ -66,12 +66,9 @@ export class DailyCompletionRepository {
 		const colorMap = new Map<string, Set<string>>();
 		for (const item of categoryColorResults) {
 			const key = toDateString(item.startDate);
-			const existing = colorMap.get(key);
-			if (existing) {
-				existing.add(item.category.color);
-			} else {
-				colorMap.set(key, new Set([item.category.color]));
-			}
+			const colors = colorMap.get(key) ?? new Set<string>();
+			colors.add(item.category.color);
+			colorMap.set(key, colors);
 		}
 
 		return aggregations.map((item) => {
