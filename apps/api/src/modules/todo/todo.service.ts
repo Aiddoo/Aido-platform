@@ -24,6 +24,18 @@ import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";
 import type { MilestoneReachedJobData } from "../notification/queue/notification-queue.constants";
+
+/** 누적 완료 카운트 → 마일스톤 매핑 */
+const COMPLETION_MILESTONES: ReadonlyMap<
+	number,
+	MilestoneReachedJobData["milestone"]
+> = new Map([
+	[1, "FIRST_COMPLETE"],
+	[10, "COUNT_10"],
+	[50, "COUNT_50"],
+	[100, "COUNT_100"],
+]);
+
 import { NotificationQueueService } from "../notification/queue/notification-queue.service";
 import {
 	type IReminderScheduler,
@@ -429,13 +441,7 @@ export class TodoService {
 
 	async #checkMilestoneAsync(userId: string): Promise<void> {
 		const count = await this.todoRepository.countCompletedByUser(userId);
-		const MILESTONES: Record<number, MilestoneReachedJobData["milestone"]> = {
-			1: "FIRST_COMPLETE",
-			10: "COUNT_10",
-			50: "COUNT_50",
-			100: "COUNT_100",
-		};
-		const milestone = MILESTONES[count];
+		const milestone = COMPLETION_MILESTONES.get(count);
 		if (!milestone) return;
 		this.notificationQueueService.enqueueMilestoneReached({
 			userId,

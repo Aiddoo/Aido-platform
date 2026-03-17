@@ -12,6 +12,7 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
+import { WINBACK_STAGES } from "../../constants/reminder.constants";
 
 import type {
 	ITimezoneStrategy,
@@ -113,18 +114,7 @@ export class WinbackStrategy implements ITimezoneStrategy {
 	}
 
 	#getStage(inactiveDays: number): string {
-		if (inactiveDays >= 30) {
-			return "day30";
-		}
-		if (inactiveDays >= 21) {
-			return "day21";
-		}
-		if (inactiveDays >= 14) {
-			return "day14";
-		}
-		if (inactiveDays >= 7) {
-			return "day7";
-		}
-		return "day3";
+		const matched = WINBACK_STAGES.find((s) => inactiveDays >= s.threshold);
+		return matched?.stage ?? "day3";
 	}
 }

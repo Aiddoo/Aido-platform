@@ -32,6 +32,15 @@ export const ONBOARDING_DAYS = [0, 1, 2, 3, 5, 7] as const;
 /** 온보딩 최대 경과일 (DB 조회 범위 제한용) */
 export const ONBOARDING_MAX_DAY = 7;
 
+/** Win-back 단계 정의 (threshold 내림차순, .find()로 첫 매칭 사용) */
+export const WINBACK_STAGES = [
+	{ threshold: 30, stage: "day30" },
+	{ threshold: 21, stage: "day21" },
+	{ threshold: 14, stage: "day14" },
+	{ threshold: 7, stage: "day7" },
+	{ threshold: 0, stage: "day3" },
+] as const;
+
 export const NOTIFICATION_SCHEDULE = {
 	WEEKLY_REPORT: { hour: 9, minute: 0 },
 	MONTHLY_REPORT: { hour: 10, minute: 0 },

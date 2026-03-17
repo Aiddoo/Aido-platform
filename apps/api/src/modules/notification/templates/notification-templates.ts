@@ -637,8 +637,12 @@ export function pickVariant(
 	if (!pool?.length) {
 		return { title: template.title, body: template.body };
 	}
-	const picked = pool[Math.floor(Math.random() * pool.length)];
-	return picked ?? { title: template.title, body: template.body };
+	const index = Math.floor(Math.random() * pool.length);
+	const picked = pool[index];
+	if (!picked) {
+		return { title: template.title, body: template.body };
+	}
+	return { title: picked.title, body: picked.body };
 }
 
 /**

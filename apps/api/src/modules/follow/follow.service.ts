@@ -685,22 +685,20 @@ export class FollowService {
 		return maxSortOrder;
 	}
 
-	#checkAndEnqueueFirstFriendMilestone(userId: string): void {
-		this.followRepository
-			.countMutualFriends(userId)
-			.then((count) => {
-				if (count === 1) {
-					this.notificationQueueService.enqueueMilestoneReached({
-						userId,
-						milestone: "FIRST_FRIEND",
-					});
-				}
-			})
-			.catch((error) => {
-				this.#logger.error(
-					`Failed to check first friend milestone: ${error}`,
-					error instanceof Error ? error.stack : undefined,
-				);
-			});
+	async #checkAndEnqueueFirstFriendMilestone(userId: string): Promise<void> {
+		try {
+			const count = await this.followRepository.countMutualFriends(userId);
+			if (count === 1) {
+				this.notificationQueueService.enqueueMilestoneReached({
+					userId,
+					milestone: "FIRST_FRIEND",
+				});
+			}
+		} catch (error) {
+			this.#logger.error(
+				`Failed to check first friend milestone: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 }
