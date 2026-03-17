@@ -13,7 +13,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useDatePicker } from '../hooks/useDatePicker';
 import { useRepeatSetting } from '../hooks/useRepeatSetting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
-import { getDayOfWeekFromDate } from '../utils/day-of-week';
+import { getDayOfWeekFromDate, hasSelectedDayInRange } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
 import { PickerHeader } from './PickerHeader';
 import { DayOfWeekSelector } from './TodoDatePickerContent';
@@ -36,11 +36,8 @@ const getInitialSelectedDays = (startDate: Date, daysOfWeek: DayOfWeek[]): DayOf
   return dayOfWeek ? [dayOfWeek] : [];
 };
 
-const getDefaultEndDate = (startDate: Date, repeatEndDate: Date | null): Date => {
-  if (repeatEndDate) return repeatEndDate;
-  const defaultEnd = new Date(startDate);
-  defaultEnd.setDate(defaultEnd.getDate() + 7);
-  return defaultEnd;
+const getDefaultEndDate = (repeatEndDate: Date | null): Date | null => {
+  return repeatEndDate;
 };
 
 export const TodoRepeatPickerContent = ({
@@ -53,10 +50,16 @@ export const TodoRepeatPickerContent = ({
   const repeatSetting = useRepeatSetting({
     isEnabled: true,
     selectedDays: getInitialSelectedDays(startDate, repeat.daysOfWeek),
-    endDate: getDefaultEndDate(startDate, repeat.repeatEndDate),
+    endDate: getDefaultEndDate(repeat.repeatEndDate),
   });
 
+  const isConfirmDisabled =
+    repeatSetting.selectedDays.length === 0 ||
+    repeatSetting.endDate === null ||
+    !hasSelectedDayInRange(startDate, repeatSetting.endDate, repeatSetting.selectedDays);
+
   const handleConfirm = () => {
+    if (isConfirmDisabled) return;
     onConfirm({
       daysOfWeek: repeatSetting.selectedDays,
       repeatEndDate: repeatSetting.endDate,
@@ -75,7 +78,12 @@ export const TodoRepeatPickerContent = ({
 
   return (
     <VStack gap={20}>
-      <PickerHeader title="반복" onCancel={onCancel} onConfirm={handleConfirm} />
+      <PickerHeader
+        title="반복"
+        onCancel={onCancel}
+        onConfirm={handleConfirm}
+        isConfirmDisabled={isConfirmDisabled}
+      />
 
       <DayOfWeekSelector
         selectedDays={repeatSetting.selectedDays}
