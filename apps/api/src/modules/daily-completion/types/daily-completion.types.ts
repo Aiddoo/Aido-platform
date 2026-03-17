@@ -26,6 +26,7 @@ export interface DailyCompletionSummary {
 	completedTodos: number;
 	isComplete: boolean;
 	completionRate: number;
+	categoryColors: string[];
 }
 
 /**
@@ -54,10 +55,17 @@ export interface FindTodosByDateRangeParams {
 }
 
 /**
- * 날짜별 투두 집계 결과
+ * 날짜별 투두 개수 집계 (count 기반)
  */
-export interface TodoAggregateByDate {
+export interface TodoCountByDate {
 	date: Date;
 	total: number;
 	completed: number;
+}
+
+/**
+ * 날짜별 투두 집계 + 카테고리 색상 (캘린더용)
+ */
+export interface TodoAggregateByDate extends TodoCountByDate {
+	categoryColors: string[];
 }

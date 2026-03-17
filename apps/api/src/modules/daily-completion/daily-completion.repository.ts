@@ -7,6 +7,7 @@ import { DatabaseService } from "@/database/database.service";
 import type {
 	FindTodosByDateRangeParams,
 	TodoAggregateByDate,
+	TodoCountByDate,
 } from "./types/daily-completion.types";
 
 @Injectable()
@@ -30,19 +31,28 @@ export class DailyCompletionRepository {
 			startDate: { gte: startDate, lt: endDate },
 		};
 
-		// 병렬로 전체 Todo와 완료 Todo 집계 실행
-		const [aggregations, completedAggregations] = await Promise.all([
-			this.database.todo.groupBy({
-				by: ["startDate"],
-				where: whereClause,
-				_count: { id: true },
-			}),
-			this.database.todo.groupBy({
-				by: ["startDate"],
-				where: { ...whereClause, completed: true },
-				_count: { id: true },
-			}),
-		]);
+		// 병렬로 전체 Todo, 완료 Todo, 카테고리 색상 집계 실행
+		const [aggregations, completedAggregations, categoryColorResults] =
+			await Promise.all([
+				this.database.todo.groupBy({
+					by: ["startDate"],
+					where: whereClause,
+					_count: { id: true },
+				}),
+				this.database.todo.groupBy({
+					by: ["startDate"],
+					where: { ...whereClause, completed: true },
+					_count: { id: true },
+				}),
+				this.database.todo.findMany({
+					where: whereClause,
+					select: {
+						startDate: true,
+						category: { select: { color: true } },
+					},
+					distinct: ["startDate", "categoryId"],
+				}),
+			]);
 
 		// 완료 수를 Map으로 변환하여 O(1) 조회
 		const completedMap = new Map(
@@ -52,11 +62,27 @@ export class DailyCompletionRepository {
 			]),
 		);
 
-		return aggregations.map((item) => ({
-			date: item.startDate,
-			total: item._count.id,
-			completed: completedMap.get(toDateString(item.startDate)) ?? 0,
-		}));
+		// 카테고리 색상을 날짜별로 그룹화 (Set으로 동일 색상 중복 제거)
+		const colorMap = new Map<string, Set<string>>();
+		for (const item of categoryColorResults) {
+			const key = toDateString(item.startDate);
+			const existing = colorMap.get(key);
+			if (existing) {
+				existing.add(item.category.color);
+			} else {
+				colorMap.set(key, new Set([item.category.color]));
+			}
+		}
+
+		return aggregations.map((item) => {
+			const dateKey = toDateString(item.startDate);
+			return {
+				date: item.startDate,
+				total: item._count.id,
+				completed: completedMap.get(dateKey) ?? 0,
+				categoryColors: [...(colorMap.get(dateKey) ?? [])],
+			};
+		});
 	}
 
 	/**
@@ -69,7 +95,7 @@ export class DailyCompletionRepository {
 	async findByDate(
 		userId: string,
 		date: Date,
-	): Promise<TodoAggregateByDate | null> {
+	): Promise<TodoCountByDate | null> {
 		const dayStart = startOfDay(date);
 		const dayEnd = addDays(1, dayStart);
 
