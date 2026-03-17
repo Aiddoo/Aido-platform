@@ -1,4 +1,4 @@
-import { Box, FishIcon, Text } from '@src/shared/ui';
+import { Box, FishIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { isSameDay } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
@@ -25,6 +25,7 @@ export const CalendarDateCell = ({
 
   const hasTodos = !!completion?.totalTodos;
   const isAllComplete = !!completion?.isComplete;
+  const colors = completion?.categoryColors ?? [];
 
   return (
     <PressableFeedback
@@ -42,13 +43,33 @@ export const CalendarDateCell = ({
           {dayOfMonth}
         </Text>
       </Box>
-      {isAllComplete ? (
-        <FishIcon width={16} height={12} colorClassName="text-fish" />
-      ) : hasTodos ? (
-        <Box className="size-1.5 rounded-2xl bg-gray-4" />
-      ) : (
-        <Box className="size-1.5" />
-      )}
+      <Box className="h-3 items-center justify-center">
+        {isAllComplete ? (
+          <FishIcon width={16} height={12} colorClassName="text-fish" />
+        ) : hasTodos ? (
+          <CategoryIndicator colors={colors} />
+        ) : null}
+      </Box>
     </PressableFeedback>
+  );
+};
+
+interface CategoryIndicatorProps {
+  colors: string[];
+}
+
+const CategoryIndicator = ({ colors }: CategoryIndicatorProps) => {
+  if (colors.length <= 1) {
+    return (
+      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-5xl" />
+    );
+  }
+
+  return (
+    <HStack className="h-1.5 w-4 overflow-hidden rounded-5xl">
+      {colors.slice(0, 3).map((color) => (
+        <Box key={color} style={{ backgroundColor: color }} className="flex-1" />
+      ))}
+    </HStack>
   );
 };

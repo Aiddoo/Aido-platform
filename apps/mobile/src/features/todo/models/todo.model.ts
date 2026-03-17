@@ -89,6 +89,7 @@ export const dailyCompletionSummaryClientSchema = z.object({
   completedTodos: z.number(),
   isComplete: z.boolean(),
   completionRate: z.number(),
+  categoryColors: z.array(z.string()),
 });
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummaryClientSchema>;
 
