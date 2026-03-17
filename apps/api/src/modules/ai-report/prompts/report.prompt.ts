@@ -327,12 +327,12 @@ export function buildReportPrompt(
 	periodLabel: string,
 	type: ReportType,
 ): string {
-	if (!data.hasActivity) {
-		return type === "WEEKLY"
-			? buildWeeklyNoActivityPrompt(periodLabel)
-			: buildMonthlyNoActivityPrompt(periodLabel);
+	if (type === "WEEKLY") {
+		return data.hasActivity
+			? buildWeeklyActivityPrompt(data, periodLabel)
+			: buildWeeklyNoActivityPrompt(periodLabel);
 	}
-	return type === "WEEKLY"
-		? buildWeeklyActivityPrompt(data, periodLabel)
-		: buildMonthlyActivityPrompt(data, periodLabel);
+	return data.hasActivity
+		? buildMonthlyActivityPrompt(data, periodLabel)
+		: buildMonthlyNoActivityPrompt(periodLabel);
 }
