@@ -9,7 +9,6 @@ import {
 	HttpStatus,
 	Logger,
 	Param,
-	ParseIntPipe,
 	Patch,
 	Post,
 	Query,
@@ -38,6 +37,7 @@ import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import {
 	GetNotificationsQueryDto,
 	MarkReadResponseDto,
+	NotificationIdParamDto,
 	NotificationListResponseDto,
 	RegisterPushTokenDto,
 	RegisterTokenResponseDto,
@@ -239,11 +239,13 @@ export class NotificationController {
 	@ApiForbiddenError(ErrorCode.NOTIFICATION_1005)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param("id", ParseIntPipe) id: number,
+		@Param() params: NotificationIdParamDto,
 	): Promise<MarkReadResponseDto> {
-		this.#logger.debug(`알림 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(
+			`알림 읽음 처리: userId=${user.userId}, id=${params.id}`,
+		);
 
-		await this.notificationService.markAsRead(user.userId, id);
+		await this.notificationService.markAsRead(user.userId, params.id);
 
 		return {
 			message: "알림을 읽음 처리했습니다.",

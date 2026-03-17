@@ -147,6 +147,8 @@ export class AiSuggestionRepository {
 				startDate: true,
 				scheduledTime: true,
 				categoryId: true,
+				completed: true,
+				category: { select: { name: true } },
 			},
 			orderBy: { startDate: "asc" },
 		});
@@ -158,6 +160,8 @@ export class AiSuggestionRepository {
 				? dayjs(t.scheduledTime).tz(timezone).format("HH:mm")
 				: null,
 			categoryId: t.categoryId,
+			completed: t.completed,
+			categoryName: t.category.name,
 		}));
 	}
 }

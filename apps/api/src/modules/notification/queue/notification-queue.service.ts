@@ -8,6 +8,7 @@ import {
 	type FollowMutualJobData,
 	type FollowNewJobData,
 	type FriendCompletedJobData,
+	type MilestoneReachedJobData,
 	NOTIFICATION_QUEUE,
 	type NotificationJobData,
 	NotificationJobName,
@@ -101,6 +102,20 @@ export class NotificationQueueService {
 			(error) => {
 				this.#logger.error(
 					`Failed to enqueue friend-completed: friendId=${payload.friendId}, ${error}`,
+					error instanceof Error ? error.stack : undefined,
+				);
+			},
+		);
+	}
+
+	/**
+	 * 마일스톤 달성 알림 잡 등록
+	 */
+	enqueueMilestoneReached(payload: MilestoneReachedJobData): void {
+		this.#enqueueAsync(NotificationJobName.MILESTONE_REACHED, payload).catch(
+			(error) => {
+				this.#logger.error(
+					`Failed to enqueue milestone-reached: userId=${payload.userId}, milestone=${payload.milestone}, ${error}`,
 					error instanceof Error ? error.stack : undefined,
 				);
 			},

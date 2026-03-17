@@ -15,7 +15,7 @@ import {
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
-import { Timezone } from "@/common/decorators/timezone.decorator";
+import { Timezone } from "@/common/decorators";
 
 import {
 	ApiBadRequestError,

@@ -239,6 +239,19 @@ export class TodoRepository {
 	}
 
 	/**
+	 * 사용자의 완료된 Todo 누적 개수 조회
+	 */
+	async countCompletedByUser(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		return client.todo.count({
+			where: { userId, completed: true },
+		});
+	}
+
+	/**
 	 * 사용자의 활성(미완료) Todo 개수 조회
 	 */
 	async countActive(userId: string, tx?: TransactionClient): Promise<number> {
@@ -351,11 +364,7 @@ export class TodoRepository {
 		return client.todo.update({
 			where: { id },
 			data: { sortOrder },
-			include: {
-				category: {
-					select: { id: true, name: true, color: true, sortOrder: true },
-				},
-			},
+			include: TODO_CATEGORY_INCLUDE,
 		}) as Promise<TodoWithCategory>;
 	}
 

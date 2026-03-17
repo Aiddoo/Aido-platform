@@ -10,7 +10,7 @@ import {
 	Patch,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators/timezone.decorator";
+import { Timezone } from "@/common/decorators";
 
 import {
 	ApiDoc,
@@ -31,14 +31,19 @@ import {
 } from "./dtos";
 
 /**
- * AI 반복 제안 API 컨트롤러
+ * AI 제안 API 컨트롤러
  *
- * AI가 분석한 반복 패턴 제안을 조회하고 수락/거절하는 API입니다.
+ * AI가 분석한 패턴 제안을 조회하고 수락/거절하는 API입니다.
  * 프리미엄 유저만 이용 가능합니다.
  *
  * ### 주요 기능
  * - 대기 중인 제안 목록 조회
  * - 제안 수락 (반복 할 일 생성) 또는 거절
+ *
+ * ### 패턴 유형 (3가지)
+ * - **반복**: 동일/유사 제목 3회+ 반복 → 반복 할 일 제안
+ * - **순차**: 번호/단계 진행 (1주차→2주차) → 다음 단계 예측 (2회부터 감지)
+ * - **발전**: 수치/목표 증가 (3km→5km) → 다음 목표 예측 (2회부터 감지)
  *
  * ### 분석 스케줄
  * - 매일 KST 11:00에 자동 분석
@@ -63,16 +68,16 @@ export class AiSuggestionController {
 	 */
 	@Get()
 	@ApiDoc({
-		summary: "AI 반복 제안 목록 조회",
+		summary: "AI 제안 목록 조회",
 		operationId: "getAiSuggestions",
-		description: `대기 중인(PENDING) AI 반복 제안 목록을 조회합니다.
+		description: `대기 중인(PENDING) AI 제안 목록을 조회합니다.
 만료되지 않은 PENDING 상태의 제안만 반환됩니다.
 
 ## 📊 제안 필드
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`id\` | number | 제안 ID |
-| \`title\` | string | 제안된 반복 할 일 제목 |
+| \`title\` | string | 예측된 다음 할 일 제목 |
 | \`daysOfWeek\` | string[] | 반복 요일 (\`MON\`~\`SUN\`) |
 | \`scheduledTime\` | string \\| null | 추천 시간 (HH:mm, null이면 종일) |
 | \`confidence\` | number | AI 확신도 (0.0~1.0) |
@@ -82,14 +87,24 @@ export class AiSuggestionController {
 | \`createdAt\` | string | 제안 생성 시각 (ISO 8601) |
 | \`suggestedCategoryId\` | number \\| null | 추천 카테고리 ID (매칭된 투두의 최빈 카테고리, 없으면 null) |
 
+## 🧠 AI 패턴 분석 유형
+
+AI는 최근 2주간의 할 일에서 **3가지 패턴**을 감지합니다:
+
+| 유형 | 설명 | 최소 횟수 | confidence 범위 | 예시 |
+|------|------|----------|----------------|------|
+| **반복** | 같은/유사 제목 반복 | 3회 | 0.7~0.95 | "팀 미팅" × 5 → "팀 미팅" 반복 제안 |
+| **순차** | 번호/단계 진행 | 2회 | 0.5~0.9 | "1주차 워크북", "2주차 워크북" → **"3주차 워크북"** 예측 |
+| **발전** | 수치/목표 증가 | 2회 | 0.5~0.9 | "달리기 3km", "달리기 5km" → **"달리기 7km"** 예측 |
+
 ## ⏰ 제안 생성 스케줄 및 조건
 
 **분석 크론**: **매일 KST 11:00**
 
 **생성 조건** (모두 충족해야 제안이 생김):
 1. \`subscriptionStatus = ACTIVE\` 또는 \`role = ADMIN\`
-2. 최근 2주 내 비반복(\`recurrenceGroupId = null\`) 할 일이 존재
-3. AI가 동일 패턴을 **3회 이상** 감지
+2. 최근 2주 내 비반복(\`recurrenceGroupId = null\`) 할 일이 **3개 이상** 존재
+3. AI가 위 3가지 패턴 중 하나 이상을 감지
 
 **제안 수량**: 매 분석 시 기존 PENDING 제안을 **교체**하여 최대 **5개** 유지 (누적되지 않음)
 
@@ -106,9 +121,9 @@ export class AiSuggestionController {
 \`\`\`
 
 ### 예시 데이터 (최근 2주 비반복 할 일)
-- **팀 미팅** 10:00 → 02-23, 02-25, 02-27, 03-02, 03-04 (5회, 월/수/금 패턴)
-- **헬스장 가기** 19:30 → 02-17, 02-19, 02-24, 02-26 (4회, 화/목 패턴)
-- **영어공부** → 03-01, 03-03 (2회뿐 → **최소 3회 미달, 제안 안 됨**)
+- **팀 미팅** 10:00 → 02-23, 02-25, 02-27, 03-02, 03-04 (5회, 월/수/금 패턴) → **반복 패턴**
+- **1주차 워크북**, **2주차 워크북**, **3주차 워크북** → 매주 월요일 → **순차 패턴 (4주차 예측)**
+- **달리기 3km** 07:00, **달리기 5km** 07:00 → 매주 수요일 → **발전 패턴 (7km 예측)**
 
 ### 예시 응답
 \`\`\`json
@@ -128,11 +143,23 @@ export class AiSuggestionController {
     },
     {
       "id": 102,
-      "title": "헬스장 가기",
-      "daysOfWeek": ["TUE", "THU"],
-      "scheduledTime": "19:30",
-      "confidence": 0.81,
-      "reason": "최근 2주간 화/목 저녁 시간대에 반복 수행 패턴이 있습니다.",
+      "title": "4주차 워크북",
+      "daysOfWeek": ["MON"],
+      "scheduledTime": null,
+      "confidence": 0.85,
+      "reason": "매주 월요일 워크북이 순차 진행중 (1→2→3주차)",
+      "status": "PENDING",
+      "expiresAt": "2026-03-18T02:00:00.000Z",
+      "createdAt": "2026-03-04T02:00:00.000Z",
+      "suggestedCategoryId": 2
+    },
+    {
+      "id": 103,
+      "title": "달리기 7km",
+      "daysOfWeek": ["WED"],
+      "scheduledTime": "07:00",
+      "confidence": 0.6,
+      "reason": "수요일 아침 달리기 거리가 2km씩 증가하는 발전 패턴",
       "status": "PENDING",
       "expiresAt": "2026-03-18T02:00:00.000Z",
       "createdAt": "2026-03-04T02:00:00.000Z",
@@ -141,7 +168,6 @@ export class AiSuggestionController {
   ]
 }
 \`\`\`
-> "영어공부"는 2회뿐이라 최소 3회 조건 미달 → 제안 생성 안 됨
 
 ## 🔒 안전성 보장
 
@@ -189,9 +215,9 @@ export class AiSuggestionController {
 	@Patch(":id")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "AI 반복 제안 수락/거절",
+		summary: "AI 제안 수락/거절",
 		operationId: "handleAiSuggestion",
-		description: `AI 반복 제안을 수락하거나 거절합니다.
+		description: `AI 제안을 수락하거나 거절합니다.
 
 ## 📝 요청 본문
 | 필드 | 타입 | 필수 | 기본값 | 설명 |

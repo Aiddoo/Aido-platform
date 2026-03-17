@@ -21,7 +21,7 @@ import { CacheService } from "@/common/cache/cache.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { PaginationService } from "@/common/pagination";
 import { Prisma } from "@/generated/prisma/client";
 import { NotificationRepository } from "./notification.repository";
 import { NotificationService } from "./notification.service";

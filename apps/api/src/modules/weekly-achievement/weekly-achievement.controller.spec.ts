@@ -121,7 +121,7 @@ describe("WeeklyAchievementController", () => {
 			});
 
 			// When
-			await controller.getWeeklyAchievement(mockUser, 2026, 10);
+			await controller.getWeeklyAchievement(mockUser, { year: 2026, week: 10 });
 
 			// Then
 			expect(service.getWeeklyAchievement).toHaveBeenCalledWith({

@@ -250,7 +250,7 @@ describe("NudgeController", () => {
 			mockNudgeService.markAsRead.mockResolvedValue(undefined);
 
 			// When - markAsRead를 호출하면
-			const result = await controller.markAsRead(mockUser, nudgeId);
+			const result = await controller.markAsRead(mockUser, { id: nudgeId });
 
 			// Then - 서비스에 userId와 nudgeId를 전달하고 결과를 반환해야 한다
 			expect(mockNudgeService.markAsRead).toHaveBeenCalledWith(

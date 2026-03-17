@@ -284,4 +284,59 @@ export class UserRepository {
 		const client = tx ?? this.database;
 		await client.user.delete({ where: { id } });
 	}
+
+	/**
+	 * AI 사용량 정보 조회
+	 */
+	async findAiUsage(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<{ aiUsageCount: number; aiUsageResetAt: Date | null } | null> {
+		const client = tx ?? this.database;
+		return client.user.findUnique({
+			where: { id: userId },
+			select: { aiUsageCount: true, aiUsageResetAt: true },
+		});
+	}
+
+	/**
+	 * AI 사용량 증가
+	 */
+	async incrementAiUsage(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.user.update({
+			where: { id: userId },
+			data: { aiUsageCount: { increment: 1 } },
+		});
+	}
+
+	/**
+	 * AI 사용량 리셋 후 1로 설정 (새로운 날)
+	 */
+	async resetAndIncrementAiUsage(
+		userId: string,
+		tx?: TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.user.update({
+			where: { id: userId },
+			data: {
+				aiUsageCount: 1,
+				aiUsageResetAt: now(),
+			},
+		});
+	}
+
+	/**
+	 * AI 사용량 롤백 (1 감소)
+	 */
+	async decrementAiUsage(userId: string): Promise<void> {
+		await this.database.user.update({
+			where: { id: userId },
+			data: { aiUsageCount: { decrement: 1 } },
+		});
+	}
 }

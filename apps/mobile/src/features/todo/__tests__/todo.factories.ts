@@ -97,6 +97,7 @@ const generateDailyCompletionsDto = (): DailyCompletionsRangeResponse => ({
       completedTodos: 3,
       isComplete: false,
       completionRate: 60,
+      categoryColors: ['#FF6B43'],
     },
   ],
   totalCompleteDays: 1,

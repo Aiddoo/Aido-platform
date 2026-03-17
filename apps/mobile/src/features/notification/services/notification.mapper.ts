@@ -1,9 +1,8 @@
 import type {
-  Notification,
   NotificationListResponse,
-  NotificationListResult,
-  ServerNotification,
-} from '../models/notification.model';
+  Notification as ServerNotification,
+} from '@aido/validators';
+import type { Notification, NotificationListResult } from '../models/notification.model';
 
 export const toNotification = (server: ServerNotification): Notification => ({
   id: server.id,

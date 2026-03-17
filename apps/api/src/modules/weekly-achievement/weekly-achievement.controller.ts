@@ -1,12 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import {
-	Controller,
-	Get,
-	Logger,
-	Param,
-	ParseIntPipe,
-	Query,
-} from "@nestjs/common";
+import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -22,6 +15,7 @@ import {
 	GetWeeklyAchievementsQueryDto,
 	WeeklyAchievementDetailResponseDto,
 	WeeklyAchievementListResponseDto,
+	WeeklyAchievementParamDto,
 } from "./dtos";
 import { WeeklyAchievementService } from "./weekly-achievement.service";
 
@@ -135,17 +129,16 @@ GET /weekly-achievements/2026/10
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	async getWeeklyAchievement(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param("year", ParseIntPipe) year: number,
-		@Param("week", ParseIntPipe) week: number,
+		@Param() params: WeeklyAchievementParamDto,
 	): Promise<WeeklyAchievementDetailResponseDto> {
 		this.#logger.debug(
-			`주간 달성 상세 조회: user=${user.userId}, year=${year}, week=${week}`,
+			`주간 달성 상세 조회: user=${user.userId}, year=${params.year}, week=${params.week}`,
 		);
 
 		return this.weeklyAchievementService.getWeeklyAchievement({
 			userId: user.userId,
-			year,
-			week,
+			year: params.year,
+			week: params.week,
 		});
 	}
 }

@@ -109,7 +109,8 @@ apps/api/
 │   │   ├── config/             # AppConfigModule + TypedConfigService
 │   │   ├── database/           # DatabaseService (Prisma 래퍼)
 │   │   ├── date/               # 날짜/타임존 유틸리티
-│   │   ├── decorators/         # @Timezone, @CurrentUser 등
+│   │   ├── dedup/              # DedupModule (알림 중복 방지)
+│   │   ├── decorators/         # @Timezone 등
 │   │   ├── encryption/         # EncryptionService (AES-256-GCM)
 │   │   ├── entitlement/        # EntitlementService (플랜별 제한)
 │   │   ├── exception/          # BusinessException + GlobalExceptionFilter
@@ -117,9 +118,9 @@ apps/api/
 │   │   ├── logger/             # LoggerModule (Pino)
 │   │   ├── pagination/         # PaginationService (오프셋 + 커서)
 │   │   ├── redis/              # RedisModule (REDIS_CLIENT)
-│   │   ├── request/            # Request 관련 유틸
 │   │   ├── response/           # ResponseTransformInterceptor
-│   │   └── swagger/            # ApiDoc, ApiSuccessResponse 등
+│   │   ├── swagger/            # ApiDoc, ApiSuccessResponse 등
+│   │   └── throttle/           # RedisThrottlerStorage
 │   └── modules/                # 도메인 모듈
 │       ├── admin/              # 관리자 기능
 │       ├── admin-notification/ # 관리자 알림 (Discord 등)
@@ -139,7 +140,8 @@ apps/api/
 │       ├── subscription/       # 구독/결제
 │       ├── todo/               # 할 일 CRUD
 │       ├── todo-category/      # 할 일 카테고리
-│       └── user-settings/      # 사용자 설정/프로필
+│       ├── user-settings/      # 사용자 설정/프로필
+│       └── weekly-achievement/ # 주간 달성 통계
 └── test/
     ├── e2e/                    # E2E 테스트
     ├── integration/            # 통합 테스트
@@ -223,6 +225,7 @@ throw BusinessExceptions.socialAccountNotLinked(provider, providerAccountId, ema
 | AI | `aiServiceUnavailable()`, `aiParseFailed()`, `aiUsageLimitExceeded()` |
 | TodoCategory | `todoCategoryNotFound()`, `todoCategoryNameDuplicate()`, `todoCategoryMinimumRequired()` |
 | Admin | `adminRequired()`, `adminNotificationTargetNotFound()` |
+| Achievement | `weeklyAchievementAlreadyExists()` |
 
 ### 2.3 GlobalExceptionFilter 3단계 처리
 
@@ -267,6 +270,8 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 | `Follow_followerId_followingId_key` / `followerId_followingId` | `followRequestAlreadySent()` |
 | `Account_provider_providerAccountId_key` / `provider_providerAccountId` | `accountAlreadyExists()` |
 | `Account_userId_provider_key` / `userId_provider` | `accountAlreadyExists()` |
+| `Notification_daily_dedup` / `userId_type_notificationDate` | `concurrentModification()` |
+| `Notification_friend_dedup` / `userId_type_friendId_notificationDate` | `concurrentModification()` |
 | (매핑 없음) | `concurrentModification()` (기본값) |
 
 > 각 constraint에 대해 Prisma naming(`Table_col_key`)과 축약형(`col`) 양쪽 모두 등록.
@@ -359,8 +364,8 @@ Prisma Unique Constraint 위반 시 비즈니스 예외로 자동 매핑:
 | `admin-notification` | AdminNotification | Discord 관리자 알림 |
 | `timezone-reminder` | Scheduler | 타임존별 리마인더 스윕 |
 | `todo-reminder` | Scheduler | 개별 할 일 리마인더 |
-| `ai-suggestion` | AiSuggestion | AI 반복 패턴 분석 |
-| `ai-report` | AiReport | AI 주간/월간 리포트 |
+| `ai-suggestion-analysis` | AiSuggestion | AI 반복 패턴 분석 |
+| `ai-report-generation` | AiReport | AI 주간/월간 리포트 |
 | `account-purge` | Auth | 탈퇴 계정 정리 |
 
 ### 3.2 BullMQ 글로벌 설정
@@ -730,6 +735,7 @@ this.encryptionService.decryptSafe(account.accessToken)
 | `RedisModule` | `common/redis/` | `REDIS_CLIENT` (ioredis) |
 | `LockModule` | `common/lock/` | `ILockProvider` (Redis/InMemory Strategy) |
 | `EntitlementModule` | `common/entitlement/` | `EntitlementService` (플랜별 제한) |
+| `DedupModule` | `common/dedup/` | 알림 중복 방지 |
 
 > `@Global()` 모듈은 `imports` 없이 어디서든 DI 가능.
 
@@ -876,7 +882,7 @@ return paginationService.createCursorPaginatedResponse<TodoItem, string>({
 ### 6.2 @Timezone() 데코레이터 + X-Timezone 헤더
 
 ```typescript
-import { Timezone } from '@common/decorators';
+import { Timezone } from '@/common/decorators';
 import { ApiHeader } from '@nestjs/swagger';
 
 @ApiHeader({
@@ -907,7 +913,7 @@ async create(
 **위치**: `src/common/date/`
 
 ```typescript
-import { getUserToday, toScheduledTime, startOfDayInTimezone } from '@common/date';
+import { getUserToday, toScheduledTime, startOfDayInTimezone } from '@/common/date';
 
 // 사용자의 "오늘" 시작 시각 (UTC)
 const today = getUserToday(timezone);
@@ -955,7 +961,7 @@ imports: [
   AiSuggestionModule, AuthModule, CheerModule, DailyCompletionModule,
   FollowModule, HealthModule, InquiryModule, NotificationModule,
   NudgeModule, SchedulerModule, SubscriptionModule, TodoModule,
-  TodoCategoryModule, UserSettingsModule,
+  TodoCategoryModule, UserSettingsModule, WeeklyAchievementModule,
 ],
 providers: [
   AppService,
@@ -985,6 +991,7 @@ providers: [
 | **Inquiry** | 문의 접수 | AdminNotifier |
 | **Admin** | 관리자 기능 | AdminGuard |
 | **UserSettings** | 사용자 설정/프로필/스트릭 | AuthModule |
+| **WeeklyAchievement** | 주간 달성 통계 | DailyCompletionModule |
 | **Health** | 헬스체크 | - |
 
 ### 7.2 핵심 모듈

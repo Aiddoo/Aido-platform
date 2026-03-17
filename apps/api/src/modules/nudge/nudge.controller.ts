@@ -7,7 +7,6 @@ import {
 	HttpStatus,
 	Logger,
 	Param,
-	ParseIntPipe,
 	Patch,
 	Post,
 	Query,
@@ -36,6 +35,7 @@ import {
 	GetNudgesQueryDto,
 	MarkNudgeReadResponseDto,
 	NudgeCooldownResponseDto,
+	NudgeIdParamDto,
 	NudgeLimitInfoDto,
 	ReceivedNudgesResponseDto,
 	SendNudgeDto,
@@ -344,11 +344,13 @@ export class NudgeController {
 	@ApiNotFoundError(ErrorCode.NUDGE_1105)
 	async markAsRead(
 		@CurrentUser() user: CurrentUserPayload,
-		@Param("id", ParseIntPipe) id: number,
+		@Param() params: NudgeIdParamDto,
 	): Promise<MarkNudgeReadResponseDto> {
-		this.#logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${id}`);
+		this.#logger.debug(
+			`콕 찌름 읽음 처리: userId=${user.userId}, id=${params.id}`,
+		);
 
-		await this.nudgeService.markAsRead(user.userId, id);
+		await this.nudgeService.markAsRead(user.userId, params.id);
 
 		return {
 			message: "확인했습니다.",

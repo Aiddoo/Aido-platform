@@ -40,6 +40,7 @@ import { OAuthService } from "../services/oauth.service";
 import { extractMetadata } from "./auth-controller.utils";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
+@ApiBearerAuth()
 @Controller("auth")
 export class AccountController {
 	constructor(
@@ -48,7 +49,6 @@ export class AccountController {
 	) {}
 
 	@Get("me")
-	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "내 정보 조회",
 		operationId: "getCurrentUser",
@@ -80,7 +80,6 @@ export class AccountController {
 	}
 
 	@Patch("profile")
-	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "프로필 수정",
@@ -108,7 +107,6 @@ export class AccountController {
 	}
 
 	@Get("linked-accounts")
-	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "소셜 계정 연결 상태 조회",
 		operationId: "getLinkedAccounts",
@@ -151,7 +149,6 @@ export class AccountController {
 	}
 
 	@Delete("linked-accounts/:provider")
-	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "소셜 계정 연결 해제",
@@ -197,7 +194,6 @@ export class AccountController {
 	}
 
 	@Delete("account")
-	@ApiBearerAuth()
 	@Throttle({ default: { ttl: 3600000, limit: 3 } })
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({

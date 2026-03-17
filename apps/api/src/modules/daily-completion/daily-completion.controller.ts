@@ -73,14 +73,16 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
       "totalTodos": 3,
       "completedTodos": 3,
       "isComplete": true,
-      "completionRate": 100
+      "completionRate": 100,
+      "categoryColors": ["#FF6B43", "#4A90D9"]
     },
     {
       "date": "2026-01-16",
       "totalTodos": 4,
       "completedTodos": 2,
       "isComplete": false,
-      "completionRate": 50
+      "completionRate": 50,
+      "categoryColors": ["#FF6B43"]
     }
   ],
   "totalCompleteDays": 1,
@@ -99,11 +101,13 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 | \`completions[].completedTodos\` | number | 완료한 할 일 수 |
 | \`completions[].isComplete\` | boolean | 100% 완료 여부 (물고기 표시) |
 | \`completions[].completionRate\` | number | 완료율 (0-100) |
+| \`completions[].categoryColors\` | string[] | 해당 날짜 투두의 카테고리 색상 (HEX, 중복 제거) |
 | \`totalCompleteDays\` | number | 100% 완료한 날 수 (물고기 개수) |
 
 ### 캘린더 UI 매핑
 - \`isComplete: true\` → 물고기 아이콘 표시
 - \`totalTodos - completedTodos > 0\` → 미완료 개수 표시 (+N)
+- \`categoryColors\` → 날짜 아래 색상 점(dot) 표시
 - \`totalTodos === 0\` → 응답에 해당 날짜 미포함
 
 ### 성능 최적화
@@ -144,6 +148,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 				completedTodos: c.completedTodos,
 				isComplete: c.isComplete,
 				completionRate: c.completionRate,
+				categoryColors: c.categoryColors,
 			})),
 			totalCompleteDays: result.totalCompleteDays,
 			dateRange: {

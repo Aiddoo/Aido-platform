@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "@/modules/auth/auth.module";
+import { NotificationQueueModule } from "@/modules/notification/queue/notification-queue.module";
 import { TimezoneReminderQueueModule } from "@/modules/scheduler/queue/timezone-reminder-queue.module";
 
 import { UserConsentRepository } from "./repositories/user-consent.repository";
@@ -10,7 +11,7 @@ import { UserSettingsService } from "./services/user-settings.service";
 import { SettingsController } from "./user-settings.controller";
 
 @Module({
-	imports: [AuthModule, TimezoneReminderQueueModule],
+	imports: [AuthModule, NotificationQueueModule, TimezoneReminderQueueModule],
 	controllers: [SettingsController],
 	providers: [
 		UserSettingsService,

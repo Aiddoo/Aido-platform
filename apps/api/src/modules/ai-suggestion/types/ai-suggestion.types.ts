@@ -20,4 +20,6 @@ export interface TodoSummaryForAnalysis {
 	startDate: string;
 	scheduledTime: string | null;
 	categoryId: number;
+	completed: boolean;
+	categoryName: string;
 }

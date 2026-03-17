@@ -34,12 +34,12 @@ import { extractMetadata } from "./auth-controller.utils";
  * - DELETE /auth/sessions/:sessionId - 특정 세션 종료
  */
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
+@ApiBearerAuth()
 @Controller("auth")
 export class SessionController {
 	constructor(private readonly authService: AuthService) {}
 
 	@Get("sessions")
-	@ApiBearerAuth()
 	@ApiDoc({
 		summary: "활성 세션 목록 조회",
 		operationId: "getActiveSessions",
@@ -81,7 +81,6 @@ export class SessionController {
 	}
 
 	@Delete("sessions/:sessionId")
-	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
 		summary: "특정 세션 종료",

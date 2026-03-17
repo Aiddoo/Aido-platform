@@ -8,8 +8,8 @@ import {
 	Feature,
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import type { CursorPaginatedResponse } from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
@@ -77,29 +77,21 @@ export class CheerService {
 				Feature.CHEER,
 			);
 
-			const used = await tx.cheer.count({
-				where: {
-					senderId,
-					createdAt: {
-						gte: todayStart,
-					},
-				},
-			});
+			const used = await this.cheerRepository.countSentSince(
+				senderId,
+				todayStart,
+				tx,
+			);
 
 			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
 				BusinessExceptions.cheerDailyLimitExceeded(limit),
 			);
 
 			// 4. 쿨다운 체크
-			const lastCheer = await tx.cheer.findFirst({
-				where: {
-					senderId,
-					receiverId,
-				},
-				orderBy: {
-					createdAt: "desc",
-				},
-			});
+			const lastCheer = await this.cheerRepository.findLastCheerToUser(
+				{ senderId, receiverId },
+				tx,
+			);
 
 			if (lastCheer) {
 				const cooldown = calculateCooldown(
@@ -115,41 +107,10 @@ export class CheerService {
 			}
 
 			// 5. Cheer 생성
-			const newCheer = await tx.cheer.create({
-				data: {
-					sender: { connect: { id: senderId } },
-					receiver: { connect: { id: receiverId } },
-					message,
-				},
-				include: {
-					sender: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-					receiver: {
-						select: {
-							id: true,
-							userTag: true,
-							profile: {
-								select: {
-									name: true,
-									profileImage: true,
-								},
-							},
-						},
-					},
-				},
-			});
-
-			return newCheer;
+			return this.cheerRepository.createWithRelations(
+				{ senderId, receiverId, message },
+				tx,
+			);
 		});
 
 		this.#logger.log(

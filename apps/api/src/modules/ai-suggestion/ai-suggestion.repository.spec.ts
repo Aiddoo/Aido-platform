@@ -301,12 +301,16 @@ describe("AiSuggestionRepository", () => {
 					startDate: new Date("2026-02-10T00:00:00.000Z"),
 					scheduledTime: new Date("2026-02-10T01:00:00.000Z"), // UTC 01:00 → KST 10:00
 					categoryId: 3,
+					completed: true,
+					category: { name: "업무" },
 				},
 				{
 					title: "운동",
 					startDate: new Date("2026-02-11T00:00:00.000Z"),
 					scheduledTime: null,
 					categoryId: 5,
+					completed: false,
+					category: { name: "운동" },
 				},
 			];
 			(db.todo.findMany as jest.Mock).mockResolvedValue(mockTodos);
@@ -331,6 +335,8 @@ describe("AiSuggestionRepository", () => {
 					startDate: true,
 					scheduledTime: true,
 					categoryId: true,
+					completed: true,
+					category: { select: { name: true } },
 				},
 				orderBy: { startDate: "asc" },
 			});
@@ -338,8 +344,12 @@ describe("AiSuggestionRepository", () => {
 			expect(result[0]?.title).toBe("팀 미팅");
 			expect(result[0]?.scheduledTime).toBe("10:00");
 			expect(result[0]?.categoryId).toBe(3);
+			expect(result[0]?.completed).toBe(true);
+			expect(result[0]?.categoryName).toBe("업무");
 			expect(result[1]?.scheduledTime).toBeNull();
 			expect(result[1]?.categoryId).toBe(5);
+			expect(result[1]?.completed).toBe(false);
+			expect(result[1]?.categoryName).toBe("운동");
 		});
 	});
 });

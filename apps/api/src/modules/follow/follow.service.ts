@@ -5,8 +5,8 @@ import {
 	Resource,
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import type { CursorPaginatedResponse } from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/modules/notification/queue";
@@ -187,6 +187,9 @@ export class FollowService {
 				friendName: userName,
 			});
 
+			this.#checkAndEnqueueFirstFriendMilestone(userId);
+			this.#checkAndEnqueueFirstFriendMilestone(targetUserId);
+
 			await Promise.all([
 				this.cacheService.invalidateMutualFriend(userId, targetUserId),
 				this.cacheService.invalidateMutualFriendIds(userId),
@@ -329,6 +332,9 @@ export class FollowService {
 			friendId: userId,
 			friendName: userName,
 		});
+
+		this.#checkAndEnqueueFirstFriendMilestone(userId);
+		this.#checkAndEnqueueFirstFriendMilestone(requesterUserId);
 
 		return myFollow;
 	}
@@ -677,5 +683,22 @@ export class FollowService {
 			tx,
 		);
 		return maxSortOrder;
+	}
+
+	async #checkAndEnqueueFirstFriendMilestone(userId: string): Promise<void> {
+		try {
+			const count = await this.followRepository.countMutualFriends(userId);
+			if (count === 1) {
+				this.notificationQueueService.enqueueMilestoneReached({
+					userId,
+					milestone: "FIRST_FRIEND",
+				});
+			}
+		} catch (error) {
+			this.#logger.error(
+				`Failed to check first friend milestone: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
 	}
 }

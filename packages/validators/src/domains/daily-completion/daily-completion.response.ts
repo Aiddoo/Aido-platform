@@ -40,6 +40,9 @@ export const dailyCompletionSummarySchema = z
     completedTodos: z.number().int().min(0).describe('완료한 할 일 개수 (0 이상)'),
     isComplete: z.boolean().describe('100% 달성 여부 (completedTodos === totalTodos)'),
     completionRate: z.number().min(0).max(100).describe('완료율 (0-100%, 소수점 포함 가능)'),
+    categoryColors: z
+      .array(z.string())
+      .describe('해당 날짜 투두의 카테고리 색상 배열 (HEX, 중복 제거)'),
   })
   .meta({
     example: {
@@ -48,6 +51,7 @@ export const dailyCompletionSummarySchema = z
       completedTodos: 5,
       isComplete: true,
       completionRate: 100,
+      categoryColors: ['#FF6B43', '#4A90D9'],
     },
   });
 
@@ -73,6 +77,7 @@ export const dailyCompletionsRangeResponseSchema = z
           completedTodos: 3,
           isComplete: true,
           completionRate: 100,
+          categoryColors: ['#FF6B43'],
         },
         {
           date: '2026-01-16',
@@ -80,6 +85,7 @@ export const dailyCompletionsRangeResponseSchema = z
           completedTodos: 2,
           isComplete: false,
           completionRate: 50,
+          categoryColors: ['#FF6B43', '#4A90D9'],
         },
         {
           date: '2026-01-17',
@@ -87,6 +93,7 @@ export const dailyCompletionsRangeResponseSchema = z
           completedTodos: 5,
           isComplete: true,
           completionRate: 100,
+          categoryColors: ['#4A90D9'],
         },
       ],
       totalCompleteDays: 2,

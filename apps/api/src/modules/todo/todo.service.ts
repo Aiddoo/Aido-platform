@@ -18,11 +18,24 @@ import {
 	todayInTimezone,
 } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import type { CursorPaginatedResponse } from "@/common/pagination/interfaces/pagination.interface";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import type { CursorPaginatedResponse } from "@/common/pagination";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { FollowService } from "../follow/follow.service";
+import type { MilestoneReachedJobData } from "../notification/queue/notification-queue.constants";
+
+/** 누적 완료 카운트 → 마일스톤 매핑 */
+const COMPLETION_MILESTONES: ReadonlyMap<
+	number,
+	MilestoneReachedJobData["milestone"]
+> = new Map([
+	[1, "FIRST_COMPLETE"],
+	[10, "COUNT_10"],
+	[50, "COUNT_50"],
+	[100, "COUNT_100"],
+]);
+
 import { NotificationQueueService } from "../notification/queue/notification-queue.service";
 import {
 	type IReminderScheduler,
@@ -359,6 +372,7 @@ export class TodoService {
 		if (data.completed) {
 			this.reminderScheduler.cancelReminder(id);
 			this.#checkAndEnqueueFriendCompletedEvent(userId, tz);
+			this.#checkAndEnqueueMilestoneEvent(userId);
 		}
 
 		// fire-and-forget 스트릭 갱신
@@ -410,6 +424,29 @@ export class TodoService {
 				error instanceof Error ? error.stack : undefined,
 			);
 		}
+	}
+
+	/**
+	 * 마일스톤 달성 여부 체크 및 알림 큐 등록 (fire-and-forget)
+	 * @private
+	 */
+	#checkAndEnqueueMilestoneEvent(userId: string): void {
+		this.#checkMilestoneAsync(userId).catch((error) => {
+			this.#logger.error(
+				`Failed to check milestone event: userId=${userId}, ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		});
+	}
+
+	async #checkMilestoneAsync(userId: string): Promise<void> {
+		const count = await this.todoRepository.countCompletedByUser(userId);
+		const milestone = COMPLETION_MILESTONES.get(count);
+		if (!milestone) return;
+		this.notificationQueueService.enqueueMilestoneReached({
+			userId,
+			milestone,
+		});
 	}
 
 	/**

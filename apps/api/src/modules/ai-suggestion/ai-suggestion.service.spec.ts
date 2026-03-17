@@ -357,12 +357,16 @@ describe("AiSuggestionService", () => {
 					startDate: "2026-03-01",
 					scheduledTime: null,
 					categoryId: 1,
+					completed: false,
+					categoryName: "기본",
 				},
 				{
 					title: "할일2",
 					startDate: "2026-03-02",
 					scheduledTime: null,
 					categoryId: 1,
+					completed: false,
+					categoryName: "기본",
 				},
 			]);
 
@@ -384,6 +388,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: "10:00",
 				categoryId: 3,
+				completed: true,
+				categoryName: "업무",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -396,7 +402,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: "10:00",
 							confidence: 0.85,
 							reason: "반복 패턴",
-							matchedTitles: ["팀 미팅"],
+							matchedTitles: ["팀 미팅", "팀 미팅", "팀 미팅"],
 						},
 					],
 				},
@@ -428,6 +434,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -440,7 +448,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: null,
 							confidence: 0.8,
 							reason: "이유",
-							matchedTitles: ["운동"],
+							matchedTitles: ["운동", "운동", "운동"],
 						},
 					],
 				},
@@ -470,6 +478,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 2,
+				completed: true,
+				categoryName: "자기계발",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -482,7 +492,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: null,
 							confidence: 0.8,
 							reason: "이유",
-							matchedTitles: ["독서"],
+							matchedTitles: ["독서", "독서", "독서"],
 						},
 					],
 				},
@@ -508,6 +518,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -520,7 +532,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: null,
 							confidence: 0.8,
 							reason: "이유",
-							matchedTitles: ["운동"],
+							matchedTitles: ["운동", "운동", "운동"],
 						},
 					],
 				},
@@ -550,6 +562,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 1,
+				completed: false,
+				categoryName: "기본",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -559,7 +573,7 @@ describe("AiSuggestionService", () => {
 				scheduledTime: null,
 				confidence: 0.8,
 				reason: "이유",
-				matchedTitles: [`할일${i}`],
+				matchedTitles: [`할일${i}a`, `할일${i}b`],
 			}));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
@@ -593,30 +607,40 @@ describe("AiSuggestionService", () => {
 					startDate: "2026-02-10",
 					scheduledTime: "10:00",
 					categoryId: 3,
+					completed: true,
+					categoryName: "업무",
 				},
 				{
 					title: "팀 미팅",
 					startDate: "2026-02-12",
 					scheduledTime: "10:00",
 					categoryId: 3,
+					completed: true,
+					categoryName: "업무",
 				},
 				{
 					title: "팀 미팅",
 					startDate: "2026-02-14",
 					scheduledTime: "10:00",
 					categoryId: 5,
+					completed: true,
+					categoryName: "일반",
 				},
 				{
 					title: "팀 미팅",
 					startDate: "2026-02-17",
 					scheduledTime: "10:00",
 					categoryId: 3,
+					completed: true,
+					categoryName: "업무",
 				},
 				{
 					title: "팀 미팅",
 					startDate: "2026-02-19",
 					scheduledTime: "10:00",
 					categoryId: 5,
+					completed: false,
+					categoryName: "일반",
 				},
 			];
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
@@ -630,7 +654,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: "10:00",
 							confidence: 0.85,
 							reason: "반복 패턴",
-							matchedTitles: ["팀 미팅"],
+							matchedTitles: ["팀 미팅", "팀 미팅", "팀 미팅"],
 						},
 					],
 				},
@@ -658,6 +682,8 @@ describe("AiSuggestionService", () => {
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
 			}));
 			mockRepository.findRecentTodos.mockResolvedValue(todos);
 
@@ -670,7 +696,7 @@ describe("AiSuggestionService", () => {
 							scheduledTime: null,
 							confidence: 0.8,
 							reason: "이유",
-							matchedTitles: ["존재하지않는제목"],
+							matchedTitles: ["존재하지않는제목1", "존재하지않는제목2"],
 						},
 					],
 				},

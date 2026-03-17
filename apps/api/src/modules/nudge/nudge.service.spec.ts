@@ -23,7 +23,7 @@ import {
 	EntitlementService,
 	Feature,
 } from "@/common/entitlement/entitlement.service";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
+import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";

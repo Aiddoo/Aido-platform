@@ -11,7 +11,7 @@ import type { Href } from 'expo-router';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { match } from 'ts-pattern';
-import { NotificationPolicy } from '../../models/notification.model';
+import { getInternalRoute } from '../../models/notification.model';
 
 interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
@@ -83,11 +83,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
         })
         .otherwise(() => {
           const route =
-            data.action?.url ??
-            NotificationPolicy.internalRoute({
-              type: data.type as NotificationType,
-              context: data.context,
-            });
+            data.action?.url ?? getInternalRoute(data.type as NotificationType, data.context);
 
           if (route) {
             router.push(route as Href);

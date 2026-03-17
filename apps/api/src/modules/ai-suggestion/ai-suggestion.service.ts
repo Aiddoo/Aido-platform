@@ -18,6 +18,7 @@ import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
 import {
 	buildDetectPatternsPrompt,
+	type DetectedPatternsResponse,
 	detectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
 import type { TodoSummaryForAnalysis } from "./types";
@@ -210,7 +211,7 @@ export class AiSuggestionService {
 			temperature: 0.3,
 		});
 
-		const { patterns } = aiResult.output;
+		const patterns = this.#filterWeakPatterns(aiResult.output.patterns);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -257,6 +258,26 @@ export class AiSuggestionService {
 		);
 
 		return createdCount;
+	}
+
+	/**
+	 * AI가 반환한 패턴 중 약한 패턴을 필터링
+	 *
+	 * - 반복 패턴(같은 제목 반복): matchedTitles가 minOccurrences 미만이면 제거
+	 * - 순차/발전 패턴(서로 다른 제목): 2개 이상이면 허용
+	 */
+	#filterWeakPatterns(
+		patterns: DetectedPatternsResponse["patterns"],
+	): DetectedPatternsResponse["patterns"] {
+		return patterns.filter((p) => {
+			const uniqueTitles = new Set(p.matchedTitles);
+			const isRepetition = uniqueTitles.size === 1;
+
+			if (isRepetition) {
+				return p.matchedTitles.length >= AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
+			}
+			return p.matchedTitles.length >= 2;
+		});
 	}
 
 	/**
