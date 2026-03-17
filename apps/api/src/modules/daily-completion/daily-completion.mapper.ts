@@ -20,12 +20,13 @@ export abstract class DailyCompletionMapper {
 		aggregates: TodoAggregateByDate[],
 	): DailyCompletionSummary[] {
 		return aggregates
-			.map(({ date, total, completed }) => ({
+			.map(({ date, total, completed, categoryColors }) => ({
 				date: toDateString(date),
 				totalTodos: total,
 				completedTodos: completed,
 				isComplete: total > 0 && total === completed,
 				completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+				categoryColors,
 			}))
 			.sort((a, b) => a.date.localeCompare(b.date));
 	}

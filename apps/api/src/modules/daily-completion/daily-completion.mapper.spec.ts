@@ -12,6 +12,7 @@ describe("DailyCompletionMapper", () => {
 		date: new Date("2024-01-15T00:00:00.000Z"),
 		total: 5,
 		completed: 3,
+		categoryColors: ["#FF6B43"],
 		...overrides,
 	});
 
@@ -31,6 +32,7 @@ describe("DailyCompletionMapper", () => {
 				completedTodos: 3,
 				isComplete: false,
 				completionRate: 60,
+				categoryColors: ["#FF6B43"],
 			});
 		});
 
@@ -41,16 +43,19 @@ describe("DailyCompletionMapper", () => {
 					date: new Date("2024-01-17T00:00:00.000Z"),
 					total: 2,
 					completed: 1,
+					categoryColors: ["#4A90D9"],
 				}),
 				createAggregate({
 					date: new Date("2024-01-15T00:00:00.000Z"),
 					total: 3,
 					completed: 3,
+					categoryColors: ["#FF6B43"],
 				}),
 				createAggregate({
 					date: new Date("2024-01-16T00:00:00.000Z"),
 					total: 4,
 					completed: 2,
+					categoryColors: ["#FF6B43", "#4A90D9"],
 				}),
 			];
 
@@ -171,6 +176,18 @@ describe("DailyCompletionMapper", () => {
 
 			// Then - UTC 날짜가 올바르게 변환되었는지 검증
 			expect(result[0]?.date).toBe("2024-01-01");
+		});
+
+		it("categoryColors를 그대로 전달한다", () => {
+			// Given - 여러 색상을 가진 집계 데이터 준비
+			const colors = ["#FF6B43", "#4A90D9", "#7ED321"];
+			const aggregates = [createAggregate({ categoryColors: colors })];
+
+			// When - Mapper 호출
+			const result = DailyCompletionMapper.toCompletionSummaries(aggregates);
+
+			// Then - categoryColors가 그대로 전달되었는지 검증
+			expect(result[0]?.categoryColors).toEqual(colors);
 		});
 	});
 });
