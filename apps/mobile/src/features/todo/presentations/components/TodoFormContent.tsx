@@ -11,6 +11,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   HStack,
+  InfoIcon,
   MicIcon,
   PauseIcon,
   RepeatIcon,
@@ -21,7 +22,8 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { PressableFeedback, Spinner } from 'heroui-native';
+import { Popover, PressableFeedback, Spinner } from 'heroui-native';
+import { useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Keyboard, ScrollView } from 'react-native';
 import { AiUsagePolicy } from '../../models/todo.model';
@@ -87,6 +89,7 @@ export const TodoFormContent = ({
       <Box className="h-px bg-gray-2" />
 
       <HStack gap={8} align="center" justify="end">
+        <AiFeatureTooltip />
         <AiParseButton onClose={onClose} />
         <PressableFeedback
           isDisabled={isSubmitDisabled}
@@ -113,6 +116,59 @@ export const TodoFormContent = ({
 };
 
 const CHIP_ICON_SIZE = fontScaledSize(16, 0.3);
+
+const AiFeatureTooltip = () => {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  return (
+    <Popover isOpen={tooltipOpen} onOpenChange={setTooltipOpen}>
+      <Popover.Trigger asChild>
+        <PressableFeedback
+          onPress={() => setTooltipOpen(true)}
+          className="items-center justify-center"
+        >
+          <HStack gap={4} align="center">
+            <Text size="e2" weight="medium" shade={6}>
+              AI 기능
+            </Text>
+            <InfoIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-gray-6"
+            />
+          </HStack>
+        </PressableFeedback>
+      </Popover.Trigger>
+      <Popover.Portal disableFullWindowOverlay={false}>
+        <Popover.Overlay />
+        <Popover.Content
+          presentation="popover"
+          placement="top"
+          align="end"
+          avoidCollisions={false}
+          className="rounded-2xl border border-border px-4 py-3"
+        >
+          <Popover.Arrow />
+          <VStack gap={4}>
+            <HStack gap={4} align="center">
+              <MicIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-main"
+              />
+              <Text size="b3" weight="semibold" maxFontSizeMultiplier={2}>
+                말로 할일을 추가해요
+              </Text>
+            </HStack>
+            <Text size="b3" shade={6} maxFontSizeMultiplier={2}>
+              "이번 주 금요일 저녁 7시 약속"처럼{'\n'}말하면 날짜·시간을 채워줘요
+            </Text>
+          </VStack>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover>
+  );
+};
 
 interface AiParseButtonProps {
   onClose: () => void;
@@ -187,31 +243,26 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
   };
 
   return (
-    <>
-      <Text size="e2" weight="medium" tone="brand" onPress={handlePress}>
-        AI 기능
-      </Text>
-      <PressableFeedback
-        onPress={handlePress}
-        isDisabled={parseMutation.isPending}
-        style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-        className="items-center justify-center rounded-full bg-main/10"
-      >
-        {isRecognizing ? (
-          <PauseIcon
-            width={fontScaledSize(20)}
-            height={fontScaledSize(20)}
-            colorClassName="text-error"
-          />
-        ) : (
-          <MicIcon
-            width={fontScaledSize(20)}
-            height={fontScaledSize(20)}
-            colorClassName="text-main"
-          />
-        )}
-      </PressableFeedback>
-    </>
+    <PressableFeedback
+      onPress={handlePress}
+      isDisabled={parseMutation.isPending}
+      style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+      className="items-center justify-center rounded-full bg-main/10"
+    >
+      {isRecognizing ? (
+        <PauseIcon
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
+          colorClassName="text-error"
+        />
+      ) : (
+        <MicIcon
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
+          colorClassName="text-main"
+        />
+      )}
+    </PressableFeedback>
   );
 };
 
