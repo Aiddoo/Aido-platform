@@ -32,10 +32,10 @@ export class WinbackStrategy implements ITimezoneStrategy {
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
 		const { tz } = ctx;
 		const today = todayInTimezone(tz);
-		const cutoffStart = subtractDays(15, today);
+		const cutoffStart = subtractDays(30, today);
 		const cutoffEnd = subtractDays(3, today);
 
-		// 3~15일 미접속 + pushEnabled 유저
+		// 3~30일 미접속 + pushEnabled 유저
 		const users = await this.database.user.findMany({
 			where: {
 				preference: { timezone: tz, pushEnabled: true },
@@ -113,6 +113,12 @@ export class WinbackStrategy implements ITimezoneStrategy {
 	}
 
 	#getStage(inactiveDays: number): string {
+		if (inactiveDays >= 30) {
+			return "day30";
+		}
+		if (inactiveDays >= 21) {
+			return "day21";
+		}
 		if (inactiveDays >= 14) {
 			return "day14";
 		}

@@ -12,6 +12,7 @@ import {
 	type FollowMutualJobData,
 	type FollowNewJobData,
 	type FriendCompletedJobData,
+	type MilestoneReachedJobData,
 	type NotificationJobData,
 	NotificationJobName,
 	type NudgeSentJobData,
@@ -39,6 +40,8 @@ describe("NotificationQueueProcessor", () => {
 	let database: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
+		jest.spyOn(Math, "random").mockReturnValue(0);
+
 		const { unit, unitRef } = await TestBed.solitary(
 			NotificationQueueProcessor,
 		).compile();
@@ -46,6 +49,10 @@ describe("NotificationQueueProcessor", () => {
 		processor = unit;
 		notificationService = unitRef.get(NotificationService);
 		database = unitRef.get(DatabaseService);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
 	});
 
 	// =========================================================================
@@ -479,6 +486,75 @@ describe("NotificationQueueProcessor", () => {
 			database.$transaction.mockRejectedValue(new Error("DB error"));
 
 			// When & Then — 에러 전파 없음
+			await expect(processor.process(job)).resolves.not.toThrow();
+		});
+	});
+
+	// =========================================================================
+	// milestone-reached
+	// =========================================================================
+
+	describe("milestone-reached", () => {
+		const milestoneData: MilestoneReachedJobData = {
+			userId: "user-milestone",
+			milestone: "COUNT_10",
+		};
+
+		it("마일스톤 알림을 발송한다", async () => {
+			// Given - 기존 마일스톤 알림 없음
+			(database.notification.findFirst as jest.Mock).mockResolvedValue(null);
+			notificationService.createAndSend.mockResolvedValue(null);
+
+			const job = createMockJob(
+				NotificationJobName.MILESTONE_REACHED,
+				milestoneData,
+			);
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "user-milestone",
+					type: "WEEKLY_ACHIEVEMENT",
+					metadata: { milestone: "COUNT_10" },
+				}),
+			);
+		});
+
+		it("이미 달성한 마일스톤은 스킵한다", async () => {
+			// Given - 기존 마일스톤 알림 존재
+			(database.notification.findFirst as jest.Mock).mockResolvedValue({
+				id: 1,
+				userId: "user-milestone",
+			});
+
+			const job = createMockJob(
+				NotificationJobName.MILESTONE_REACHED,
+				milestoneData,
+			);
+
+			// When
+			await processor.process(job);
+
+			// Then
+			expect(notificationService.createAndSend).not.toHaveBeenCalled();
+		});
+
+		it("에러 발생 시 로깅만 하고 throw하지 않는다", async () => {
+			// Given
+			(database.notification.findFirst as jest.Mock).mockResolvedValue(null);
+			notificationService.createAndSend.mockRejectedValue(
+				new Error("DB error"),
+			);
+
+			const job = createMockJob(
+				NotificationJobName.MILESTONE_REACHED,
+				milestoneData,
+			);
+
+			// When & Then — 에러 throw 없음
 			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 	});

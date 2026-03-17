@@ -5,6 +5,7 @@ import { isSameDay } from "@/common/date/utils/compare";
 import { startOfDay } from "@/common/date/utils/range";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database";
+import { NotificationQueueService } from "@/modules/notification/queue/notification-queue.service";
 
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 
@@ -20,6 +21,7 @@ export class StreakService {
 	constructor(
 		private readonly userPreferenceRepository: UserPreferenceRepository,
 		private readonly database: DatabaseService,
+		private readonly notificationQueueService: NotificationQueueService,
 	) {}
 
 	/**
@@ -146,6 +148,13 @@ export class StreakService {
 			longestStreak: newLongest,
 			lastCompletedDate: today,
 		});
+
+		if (newStreak === 3) {
+			this.notificationQueueService.enqueueMilestoneReached({
+				userId,
+				milestone: "STREAK_3",
+			});
+		}
 
 		this.#logger.log(
 			`Streak updated: userId=${userId}, streak=${newStreak}, longest=${newLongest}`,

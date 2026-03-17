@@ -14,6 +14,7 @@ import {
 	type FollowMutualJobData,
 	type FollowNewJobData,
 	type FriendCompletedJobData,
+	type MilestoneReachedJobData,
 	NOTIFICATION_QUEUE,
 	type NotificationJobData,
 	NotificationJobName,
@@ -68,6 +69,9 @@ export class NotificationQueueProcessor extends WorkerHost {
 				break;
 			case NotificationJobName.FRIEND_COMPLETED:
 				await this.#handleFriendCompleted(job.data as FriendCompletedJobData);
+				break;
+			case NotificationJobName.MILESTONE_REACHED:
+				await this.#handleMilestoneReached(job.data as MilestoneReachedJobData);
 				break;
 			default:
 				this.#logger.warn(`Unknown job name: ${job.name}`);
@@ -273,6 +277,43 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 			this.#logger.error(
 				`Failed to send friend completion notifications: ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		}
+	}
+
+	async #handleMilestoneReached(data: MilestoneReachedJobData): Promise<void> {
+		try {
+			// 평생 1회 Dedup: 동일 milestone metadata 존재 시 스킵
+			const existing = await this.database.notification.findFirst({
+				where: {
+					userId: data.userId,
+					metadata: { path: ["milestone"], equals: data.milestone },
+				},
+			});
+			if (existing) {
+				this.#logger.debug(
+					`Milestone already achieved: userId=${data.userId}, milestone=${data.milestone}`,
+				);
+				return;
+			}
+
+			const message = NotificationMessageBuilder.milestone(data.milestone);
+
+			await this.notificationService.createAndSend({
+				userId: data.userId,
+				type: "WEEKLY_ACHIEVEMENT",
+				title: message.title,
+				body: message.body,
+				metadata: { milestone: data.milestone },
+			});
+
+			this.#logger.log(
+				`Milestone notification sent: userId=${data.userId}, milestone=${data.milestone}`,
+			);
+		} catch (error) {
+			this.#logger.error(
+				`Failed to handle milestone-reached: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
 		}

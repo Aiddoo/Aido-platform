@@ -26,6 +26,12 @@ export const REMINDER_LEAD_TIME_MS = REMINDER_MAX_LEAD_TIME_MS;
  * 주간 달성 배지는 월요일 07:00 (리포트 생성 01:00과 6시간 간격, 아침 리마인더 08:00과 1시간 간격).
  * Win-back, Nudge Suggest는 기존 인라인 값과 동일 (문서화 목적).
  */
+/** 온보딩 알림 발송 대상 day (가입 후 경과일) */
+export const ONBOARDING_DAYS = [0, 1, 2, 3, 5, 7] as const;
+
+/** 온보딩 최대 경과일 (DB 조회 범위 제한용) */
+export const ONBOARDING_MAX_DAY = 7;
+
 export const NOTIFICATION_SCHEDULE = {
 	WEEKLY_REPORT: { hour: 9, minute: 0 },
 	MONTHLY_REPORT: { hour: 10, minute: 0 },

@@ -36,6 +36,7 @@ describe("LunchNudgeStrategy", () => {
 	beforeEach(async () => {
 		jest.useFakeTimers();
 		jest.setSystemTime(FAKE_NOW);
+		jest.spyOn(Math, "random").mockReturnValue(0);
 
 		const { unit, unitRef } =
 			await TestBed.solitary(LunchNudgeStrategy).compile();

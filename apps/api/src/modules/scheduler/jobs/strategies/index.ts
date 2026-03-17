@@ -3,6 +3,7 @@ export { LunchNudgeStrategy } from "./lunch-nudge.strategy";
 export { MonthlyReportStrategy } from "./monthly-report.strategy";
 export { MorningReminderStrategy } from "./morning-reminder.strategy";
 export { NudgeSuggestStrategy } from "./nudge-suggest.strategy";
+export { OnboardingStrategy } from "./onboarding.strategy";
 export { SocialDigestStrategy } from "./social-digest.strategy";
 export { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
 export type {
