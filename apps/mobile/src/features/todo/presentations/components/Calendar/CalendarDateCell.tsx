@@ -23,30 +23,31 @@ export const CalendarDateCell = ({
   const dayStyle = getMonthViewDayStyle({ date, isSelected });
   const highlightToday = isTodayHighlighted({ date, isSelected });
 
+  const hasTodos = !!completion?.totalTodos;
   const isAllComplete = !!completion?.isComplete;
-  const showCompletedCount = !!completion?.completedTodos;
 
   return (
-    <PressableFeedback onPress={() => onPress(date)} className="h-[56px] flex-1 items-center py-1">
+    <PressableFeedback
+      onPress={() => onPress(date)}
+      className="h-[56px] flex-1 items-center justify-between py-1"
+    >
       <Box
         className={cn(
-          'size-8 items-center justify-center overflow-hidden rounded-2xl',
+          'size-7.5 items-center justify-center overflow-hidden rounded-2xl',
           isSelected && 'bg-main',
           highlightToday && 'bg-main/10 dark:bg-main/20',
         )}
       >
-        {isAllComplete ? (
-          <FishIcon width={20} height={13} colorClassName="text-fish" />
-        ) : (
-          <Text size="b3" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
-            {dayOfMonth}
-          </Text>
-        )}
-      </Box>
-      {showCompletedCount && (
-        <Text size="e1" weight="medium" className="mt-0.5 text-main/80">
-          +{completion.completedTodos}
+        <Text size="b4" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
+          {dayOfMonth}
         </Text>
+      </Box>
+      {isAllComplete ? (
+        <FishIcon width={16} height={12} colorClassName="text-fish" />
+      ) : hasTodos ? (
+        <Box className="size-1.5 rounded-2xl bg-gray-4" />
+      ) : (
+        <Box className="size-1.5" />
       )}
     </PressableFeedback>
   );

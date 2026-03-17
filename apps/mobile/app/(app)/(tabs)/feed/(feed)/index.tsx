@@ -37,7 +37,7 @@ const MyFeedScreen = () => {
     >
       <Calendar />
 
-      <Spacing size={8} />
+      <Spacing size={10} />
 
       <QueryErrorBoundary>
         <Suspense fallback={<TodoList.Loading />}>
