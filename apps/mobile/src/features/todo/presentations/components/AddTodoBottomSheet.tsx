@@ -1,3 +1,4 @@
+import type { DayOfWeek } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardBottomSheet } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
@@ -14,6 +15,7 @@ import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-fo
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { TodoDatePickerContent } from './TodoDatePickerContent';
 import { TodoFormContent } from './TodoFormContent';
+import { TodoRepeatPickerContent } from './TodoRepeatPickerContent';
 import { TodoTimePickerContent } from './TodoTimePickerContent';
 
 interface AddTodoBottomSheetBaseProps {
@@ -42,7 +44,7 @@ interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
 
 type AddTodoBottomSheetProps = AddTodoBottomSheetCreateProps | AddTodoBottomSheetEditProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
-type PickerView = 'form' | 'date' | 'time';
+type PickerView = 'form' | 'date' | 'time' | 'repeat';
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const { isOpen, onOpenChange, onClose } = props;
@@ -151,26 +153,21 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       .exhaustive();
   });
 
-  const handleDateConfirm = (
-    start: Date,
-    repeatResult: {
-      isRecurring: boolean;
-      daysOfWeek: import('@aido/validators').DayOfWeek[];
-      repeatEndDate: Date | null;
-    } | null,
-  ) => {
+  const handleDateConfirm = (start: Date) => {
     methods.setValue('startDate', start);
-    if (repeatResult) {
-      methods.setValue('isRecurring', repeatResult.isRecurring);
-      methods.setValue('daysOfWeek', repeatResult.daysOfWeek);
-      methods.setValue('repeatEndDate', repeatResult.repeatEndDate);
-    }
     setActiveView('form');
   };
 
   const handleTimeConfirm = (time: string | undefined, allDay: boolean) => {
     methods.setValue('scheduledTime', time);
     methods.setValue('isAllDay', allDay);
+    setActiveView('form');
+  };
+
+  const handleRepeatConfirm = (repeat: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null }) => {
+    methods.setValue('isRecurring', true);
+    methods.setValue('daysOfWeek', repeat.daysOfWeek);
+    methods.setValue('repeatEndDate', repeat.repeatEndDate);
     setActiveView('form');
   };
 
@@ -184,6 +181,11 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     setActiveView('time');
   };
 
+  const handleRepeatPress = () => {
+    Keyboard.dismiss();
+    setActiveView('repeat');
+  };
+
   const returnToForm = () => setActiveView('form');
 
   return (
@@ -193,16 +195,6 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           .with('date', () => (
             <TodoDatePickerContent
               startDate={methods.getValues('startDate')}
-              repeat={
-                props.mode === 'create'
-                  ? {
-                      isRecurring: methods.getValues('isRecurring') ?? false,
-                      daysOfWeek: methods.getValues('daysOfWeek') ?? [],
-                      repeatEndDate: methods.getValues('repeatEndDate') ?? null,
-                    }
-                  : undefined
-              }
-              showRepeat={props.mode === 'create'}
               onConfirm={handleDateConfirm}
               onCancel={returnToForm}
             />
@@ -218,10 +210,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               />
             </Suspense>
           ))
+          .with('repeat', () => (
+            <TodoRepeatPickerContent
+              startDate={methods.getValues('startDate')}
+              repeat={{
+                daysOfWeek: methods.getValues('daysOfWeek') ?? [],
+                repeatEndDate: methods.getValues('repeatEndDate') ?? null,
+              }}
+              onConfirm={handleRepeatConfirm}
+              onCancel={returnToForm}
+            />
+          ))
           .with('form', () => (
             <TodoFormContent
               onDatePress={handleDatePress}
               onTimePress={handleTimePress}
+              onRepeatPress={handleRepeatPress}
               onSubmit={onSubmit}
               isSubmitting={isSubmitting}
               onClose={onClose}

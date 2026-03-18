@@ -1,129 +1,43 @@
 import type { DayOfWeek } from '@aido/validators';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import {
-  formatMonthDay,
-  getMonthHeaderText,
-  isAfterDay,
-  isBeforeDay,
-  isSameDay,
-  isSameMonth,
-  WEEKDAY_LABELS,
-} from '@src/shared/utils/date';
+import { getMonthHeaderText, isSameDay, isSameMonth, WEEKDAY_LABELS } from '@src/shared/utils/date';
 import dayjs from 'dayjs';
-import { PressableFeedback, Switch } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { useMemo } from 'react';
 import { type DatePicker, useDatePicker } from '../hooks/useDatePicker';
-import { useRepeatSetting } from '../hooks/useRepeatSetting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
-import { getDayOfWeekFromDate } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
 import { PickerHeader } from './PickerHeader';
 
-interface RepeatState {
-  isRecurring: boolean;
-  daysOfWeek: DayOfWeek[];
-  repeatEndDate: Date | null;
-}
-
 interface TodoDatePickerContentProps {
   startDate: Date;
-  repeat?: RepeatState;
-  showRepeat?: boolean;
-  onConfirm: (startDate: Date, repeat: RepeatState | null) => void;
+  onConfirm: (startDate: Date) => void;
   onCancel: () => void;
 }
 
-const getInitialSelectedDays = (startDate: Date, repeat?: RepeatState): DayOfWeek[] => {
-  if (repeat?.daysOfWeek && repeat.daysOfWeek.length > 0) return repeat.daysOfWeek;
-
-  const dayOfWeek = getDayOfWeekFromDate(startDate);
-  return dayOfWeek ? [dayOfWeek] : [];
-};
-
 export const TodoDatePickerContent = ({
   startDate,
-  repeat,
-  showRepeat = false,
   onConfirm,
   onCancel,
 }: TodoDatePickerContentProps) => {
   const picker = useDatePicker({ startDate });
-  const repeatSetting = useRepeatSetting({
-    isEnabled: repeat?.isRecurring ?? false,
-    selectedDays: getInitialSelectedDays(startDate, repeat),
-    endDate: repeat?.repeatEndDate ?? null,
-  });
 
   const handleConfirm = () => {
-    if (repeatSetting.isEnabled) {
-      onConfirm(picker.date, {
-        isRecurring: true,
-        daysOfWeek: repeatSetting.selectedDays,
-        repeatEndDate: repeatSetting.endDate,
-      });
-    } else {
-      onConfirm(
-        picker.date,
-        showRepeat ? { isRecurring: false, daysOfWeek: [], repeatEndDate: null } : null,
-      );
-    }
+    onConfirm(picker.date);
   };
 
   const handleQuickSelect = (date: Date) => {
-    onConfirm(
-      date,
-      showRepeat ? { isRecurring: false, daysOfWeek: [], repeatEndDate: null } : null,
-    );
-  };
-
-  const handleCalendarPress = (date: Date) => {
-    const isSettingEndDate =
-      repeatSetting.isEnabled && repeatSetting.endDate === null && !isBeforeDay(date, picker.date);
-
-    if (isSettingEndDate) {
-      repeatSetting.setEndDate(date);
-      return;
-    }
-
-    picker.selectDate(date);
-    if (repeatSetting.endDate !== null) repeatSetting.clearEndDate();
+    onConfirm(date);
   };
 
   return (
     <VStack gap={20}>
       <PickerHeader title="날짜" onCancel={onCancel} onConfirm={handleConfirm} />
 
-      {!repeatSetting.isEnabled && (
-        <QuickDateOptions picker={picker} onSelect={handleQuickSelect} />
-      )}
+      <QuickDateOptions picker={picker} onSelect={handleQuickSelect} />
 
-      {repeatSetting.isEnabled && (
-        <DayOfWeekSelector
-          selectedDays={repeatSetting.selectedDays}
-          onToggleDay={repeatSetting.toggleDay}
-          onToggleAll={repeatSetting.toggleAllDays}
-          isAllSelected={repeatSetting.isAllDaysSelected}
-        />
-      )}
-
-      <DatePickerCalendar
-        picker={picker}
-        endDate={repeatSetting.endDate}
-        isRange={repeatSetting.isEnabled}
-        onDatePress={handleCalendarPress}
-      />
-
-      {showRepeat && (
-        <RepeatToggle
-          isRange={repeatSetting.isEnabled}
-          startDate={picker.date}
-          endDate={repeatSetting.endDate}
-          onToggle={(enabled) => {
-            repeatSetting.toggle(enabled, picker.date);
-          }}
-        />
-      )}
+      <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
     </VStack>
   );
 };
@@ -193,12 +107,10 @@ const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
 
 interface DatePickerCalendarProps {
   picker: DatePicker;
-  endDate: Date | null;
-  isRange: boolean;
   onDatePress: (date: Date) => void;
 }
 
-const DatePickerCalendar = ({ picker, endDate, isRange, onDatePress }: DatePickerCalendarProps) => {
+const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) => {
   const { displayMonth, weeks, date: startDate, goToPrevMonth, goToNextMonth } = picker;
 
   return (
@@ -227,8 +139,6 @@ const DatePickerCalendar = ({ picker, endDate, isRange, onDatePress }: DatePicke
                   key={date.toISOString()}
                   date={date}
                   startDate={startDate}
-                  endDate={endDate}
-                  isRange={isRange}
                   onPress={onDatePress}
                 />
               ) : (
@@ -245,40 +155,20 @@ const DatePickerCalendar = ({ picker, endDate, isRange, onDatePress }: DatePicke
 interface DatePickerDateCellProps {
   date: Date;
   startDate: Date;
-  endDate: Date | null;
-  isRange: boolean;
   onPress: (date: Date) => void;
 }
 
-const DatePickerDateCell = ({
-  date,
-  startDate,
-  endDate,
-  isRange,
-  onPress,
-}: DatePickerDateCellProps) => {
+const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProps) => {
   const dayOfMonth = date.getDate();
-  const isStart = isSameDay(date, startDate);
-  const isEnd = endDate !== null && isSameDay(date, endDate);
-  const isSelected = isStart || isEnd;
+  const isSelected = isSameDay(date, startDate);
   const dayStyle = getDatePickerDayStyle({ date, isSelected });
-  const highlightToday = !isRange && isTodayHighlighted({ date, isSelected });
-
-  const hasDistinctRange = isRange && endDate !== null && !isSameDay(startDate, endDate);
-
-  const isInRange = hasDistinctRange && isAfterDay(date, startDate) && isBeforeDay(date, endDate);
-
-  const isRangeStart = hasDistinctRange && isStart;
-  const isRangeEnd = hasDistinctRange && isEnd;
+  const highlightToday = isTodayHighlighted({ date, isSelected });
 
   return (
     <PressableFeedback
       onPress={() => onPress(date)}
       className="relative h-[48px] flex-1 items-center justify-center"
     >
-      {isRangeStart && <Box className="absolute right-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
-      {isRangeEnd && <Box className="absolute left-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
-      {isInRange && <Box className="absolute inset-x-0 top-[8px] h-[32px] bg-main/8" />}
       <Box
         className={cn(
           'z-10 size-8 items-center justify-center rounded-[16px]',
@@ -296,42 +186,6 @@ const DatePickerDateCell = ({
         </Text>
       </Box>
     </PressableFeedback>
-  );
-};
-
-interface RepeatToggleProps {
-  isRange: boolean;
-  startDate: Date;
-  endDate: Date | null;
-  onToggle: (enabled: boolean) => void;
-}
-
-const RepeatToggle = ({ isRange, startDate, endDate, onToggle }: RepeatToggleProps) => {
-  return (
-    <VStack className="border-t border-gray-2">
-      <ListRow
-        contents={
-          <ListRow.Texts
-            type="1RowTypeA"
-            top={
-              <HStack gap={8} align="center" className="flex-wrap">
-                <Text size="b2" weight="medium" shade={8}>
-                  반복 기간 설정
-                </Text>
-                {isRange && endDate && !isSameDay(startDate, endDate) && (
-                  <Text size="b3" tone="brand">
-                    {formatMonthDay(startDate)} - {formatMonthDay(endDate)}
-                  </Text>
-                )}
-              </HStack>
-            }
-          />
-        }
-        right={<Switch isSelected={isRange} onSelectedChange={onToggle} />}
-        horizontalPadding="medium"
-        verticalPadding="medium"
-      />
-    </VStack>
   );
 };
 
@@ -358,7 +212,7 @@ const formatSelectedDays = (days: DayOfWeek[]): string => {
   return sorted.map((d) => DAY_LABELS.find((l) => l.key === d)?.label ?? '').join(', ');
 };
 
-const DayOfWeekSelector = ({
+export const DayOfWeekSelector = ({
   selectedDays,
   onToggleDay,
   onToggleAll,

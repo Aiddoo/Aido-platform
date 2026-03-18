@@ -6,9 +6,15 @@ interface PickerHeaderProps {
   title: string;
   onCancel: () => void;
   onConfirm: () => void;
+  isConfirmDisabled?: boolean;
 }
 
-export const PickerHeader = ({ title, onCancel, onConfirm }: PickerHeaderProps) => {
+export const PickerHeader = ({
+  title,
+  onCancel,
+  onConfirm,
+  isConfirmDisabled = false,
+}: PickerHeaderProps) => {
   return (
     <HStack className="items-center" px={16}>
       <Box className="flex-1 items-start">
@@ -24,8 +30,13 @@ export const PickerHeader = ({ title, onCancel, onConfirm }: PickerHeaderProps) 
         {title}
       </Text>
       <Box className="flex-1 items-end">
-        <PressableFeedback onPress={onConfirm}>
-          <Text size="b2" weight="medium" tone="brand">
+        <PressableFeedback onPress={onConfirm} isDisabled={isConfirmDisabled}>
+          <Text
+            size="b2"
+            weight="medium"
+            tone={isConfirmDisabled ? 'neutral' : 'brand'}
+            shade={isConfirmDisabled ? 4 : undefined}
+          >
             확인
           </Text>
         </PressableFeedback>

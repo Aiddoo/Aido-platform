@@ -53,6 +53,7 @@ export {
   PawIcon,
   PersonIcon,
   PlusIcon,
+  RepeatIcon,
   SearchIcon,
   SendIcon,
   ShareIcon,
