@@ -17,7 +17,6 @@ import {
 // =============================================================================
 
 const USER_ID = "user-1";
-const TODO_TITLE = "Test Todo";
 const SIXTY_MIN_MS = 60 * 60 * 1000;
 
 // =============================================================================
@@ -55,7 +54,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 각 단계별 잡 등록
@@ -67,7 +66,6 @@ describe("BullMQReminderSchedulerAdapter", () => {
 				expect.objectContaining({
 					todoId: 1,
 					userId: USER_ID,
-					todoTitle: TODO_TITLE,
 					stageLabel: "60min",
 				}),
 				expect.objectContaining({
@@ -89,7 +87,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(Date.now() + 30 * 60 * 1000);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 10분 단계만 등록 (getJob 호출 제외)
@@ -106,7 +104,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(Date.now() + 5 * 60 * 1000);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 즉시 발송 잡
@@ -129,7 +127,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(Date.now() - 60 * 1000);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 잡 등록 없음 (getJob은 기존 잡 제거 시도로 호출될 수 있음)
@@ -144,7 +142,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(Date.now() + 2 * SIXTY_MIN_MS);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 기존 잡 제거 호출됨
@@ -159,7 +157,7 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			const scheduledTime = new Date(now + 2 * SIXTY_MIN_MS);
 
 			// When
-			adapter.scheduleReminder(1, scheduledTime, USER_ID, TODO_TITLE);
+			adapter.scheduleReminder(1, scheduledTime, USER_ID);
 			await flushPromises();
 
 			// Then — 60분 단계의 delay 확인

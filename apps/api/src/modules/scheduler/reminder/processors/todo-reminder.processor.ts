@@ -49,7 +49,7 @@ export class TodoReminderProcessor extends WorkerHost {
 	}
 
 	async process(job: Job<ReminderJobData>): Promise<void> {
-		const { todoId, userId, todoTitle, stageLabel } = job.data;
+		const { todoId, userId, stageLabel } = job.data;
 
 		this.#logger.debug(
 			`Processing reminder: todoId=${todoId}, stage=${stageLabel}`,
@@ -58,7 +58,7 @@ export class TodoReminderProcessor extends WorkerHost {
 		// 1. 투두가 아직 유효한지 확인 (완료/삭제 여부)
 		const todo = await this.database.todo.findFirst({
 			where: { id: todoId, completed: false },
-			select: { id: true },
+			select: { id: true, title: true },
 		});
 
 		if (!todo) {
@@ -90,9 +90,9 @@ export class TodoReminderProcessor extends WorkerHost {
 			return;
 		}
 
-		// 3. 알림 발송
+		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
 		const message = NotificationMessageBuilder.todoReminder(
-			todoTitle,
+			todo.title,
 			stageLabel,
 		);
 
