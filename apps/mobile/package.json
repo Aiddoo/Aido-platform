@@ -45,6 +45,7 @@
     "@react-native-firebase/analytics": "^23.8.6",
     "@react-native-firebase/app": "^23.8.6",
     "@react-native-firebase/crashlytics": "^23.8.6",
+    "@react-navigation/bottom-tabs": "7.10.1",
     "@react-navigation/native": "^7.1.28",
     "@shopify/flash-list": "^2.0.2",
     "@tanstack/react-query": "^5.90.21",
