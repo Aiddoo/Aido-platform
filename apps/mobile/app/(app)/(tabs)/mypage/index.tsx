@@ -42,20 +42,23 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 소셜 */}
-        <SettingNavigation>
-          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
+        <SettingNavigation label="할 일">
+          <SettingNavigation.Item
+            label="카테고리 관리"
+            onPress={() => router.push('/settings/category-settings')}
+          />
           <SettingNavigation.Item label="달성 배지" onPress={() => router.push('/achievements')} />
         </SettingNavigation>
 
         <Spacing size={12} />
 
-        {/* Pro 기능 */}
-        <SettingNavigation>
-          <SettingNavigation.Item
-            label="구독 관리"
-            onPress={() => router.push('/settings/subscription')}
-          />
+        <SettingNavigation label="친구">
+          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
+        </SettingNavigation>
+
+        <Spacing size={12} />
+
+        <SettingNavigation label="구독 기능">
           <SettingNavigation.Item label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigation.Item
             label="앱 아이콘"
@@ -65,8 +68,11 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 개인화 */}
-        <SettingNavigation>
+        <SettingNavigation label="앱 설정">
+          <SettingNavigation.Item
+            label="구독 관리"
+            onPress={() => router.push('/settings/subscription')}
+          />
           <SettingNavigation.Item
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
@@ -79,7 +85,6 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 지원 */}
         <SettingNavigation>
           <SettingNavigation.Item
             label="문의하기"
