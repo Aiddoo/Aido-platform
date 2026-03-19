@@ -1,9 +1,9 @@
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import {
   ConfirmDialog,
   H3,
@@ -22,7 +22,7 @@ import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = useTabBarHeight();
   const router = useRouter();
 
   return (
