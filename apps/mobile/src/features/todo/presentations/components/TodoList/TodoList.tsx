@@ -103,7 +103,7 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       <PlusIcon
         width={fontScaledSize(14)}
         height={fontScaledSize(14)}
-        colorClassName="text-gray-6"
+        colorClassName="text-gray-8"
       />
     </PressableFeedback>
   );
