@@ -3,7 +3,7 @@ import { useLogoutMutationOptions } from '@src/features/auth/presentations/queri
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { LAYOUT } from '@src/shared/constants/layout.constant';
+import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import {
   ConfirmDialog,
   H3,
@@ -22,14 +22,12 @@ import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
+  const tabBarHeight = useTabBarHeight();
   const router = useRouter();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView
-        className="px-4 flex-1"
-        contentContainerStyle={{ paddingBottom: LAYOUT.tabBarOverlayPadding }}
-      >
+      <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: tabBarHeight }}>
         <H3>내 정보</H3>
 
         <Spacing size={20} />
@@ -42,31 +40,32 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 소셜 */}
-        <SettingNavigation>
+        <SettingNavigation label="활동">
           <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
+          <SettingNavigation.Item
+            label="카테고리 관리"
+            onPress={() => router.push('/settings/category-settings')}
+          />
           <SettingNavigation.Item label="달성 배지" onPress={() => router.push('/achievements')} />
         </SettingNavigation>
 
         <Spacing size={12} />
 
-        {/* Pro 기능 */}
-        <SettingNavigation>
-          <SettingNavigation.Item
-            label="구독 관리"
-            onPress={() => router.push('/settings/subscription')}
-          />
+        <SettingNavigation label="구독">
           <SettingNavigation.Item label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigation.Item
             label="앱 아이콘"
             onPress={() => router.push('/settings/app-icon')}
           />
+          <SettingNavigation.Item
+            label="구독 관리"
+            onPress={() => router.push('/settings/subscription')}
+          />
         </SettingNavigation>
 
         <Spacing size={12} />
 
-        {/* 개인화 */}
-        <SettingNavigation>
+        <SettingNavigation label="설정">
           <SettingNavigation.Item
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
@@ -79,7 +78,6 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        {/* 지원 */}
         <SettingNavigation>
           <SettingNavigation.Item
             label="문의하기"

@@ -58,6 +58,7 @@ export const toDailyCompletionSummary = (
   completedTodos: dto.completedTodos,
   isComplete: dto.isComplete,
   completionRate: dto.completionRate,
+  categoryColors: dto.categoryColors,
 });
 
 export const toDailyCompletionsResult = (

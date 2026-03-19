@@ -1,4 +1,4 @@
-import { Box, FishIcon, Text } from '@src/shared/ui';
+import { Box, FishIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { isSameDay } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
@@ -23,31 +23,53 @@ export const CalendarDateCell = ({
   const dayStyle = getMonthViewDayStyle({ date, isSelected });
   const highlightToday = isTodayHighlighted({ date, isSelected });
 
+  const hasTodos = !!completion?.totalTodos;
   const isAllComplete = !!completion?.isComplete;
-  const showCompletedCount = !!completion?.completedTodos;
+  const colors = completion?.categoryColors ?? [];
 
   return (
-    <PressableFeedback onPress={() => onPress(date)} className="h-[56px] flex-1 items-center py-1">
+    <PressableFeedback
+      onPress={() => onPress(date)}
+      className="h-[56px] flex-1 items-center justify-between py-1"
+    >
       <Box
         className={cn(
-          'size-8 items-center justify-center overflow-hidden rounded-2xl',
+          'size-7.5 items-center justify-center overflow-hidden rounded-2xl',
           isSelected && 'bg-main',
           highlightToday && 'bg-main/10 dark:bg-main/20',
         )}
       >
-        {isAllComplete ? (
-          <FishIcon width={20} height={13} colorClassName="text-fish" />
-        ) : (
-          <Text size="b3" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
-            {dayOfMonth}
-          </Text>
-        )}
-      </Box>
-      {showCompletedCount && (
-        <Text size="e1" weight="medium" className="mt-0.5 text-main/80">
-          +{completion.completedTodos}
+        <Text size="b4" weight="medium" tone={DAY_TYPE_TONE[dayStyle]} shade={7}>
+          {dayOfMonth}
         </Text>
-      )}
+      </Box>
+      <Box className="h-3 items-center justify-center">
+        {isAllComplete ? (
+          <FishIcon width={16} height={12} colorClassName="text-fish" />
+        ) : hasTodos ? (
+          <CategoryIndicator colors={colors} />
+        ) : null}
+      </Box>
     </PressableFeedback>
+  );
+};
+
+interface CategoryIndicatorProps {
+  colors: string[];
+}
+
+const CategoryIndicator = ({ colors }: CategoryIndicatorProps) => {
+  if (colors.length <= 1) {
+    return (
+      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-2xl" />
+    );
+  }
+
+  return (
+    <HStack className="h-1.5 w-4 overflow-hidden rounded-2xl">
+      {colors.slice(0, 3).map((color) => (
+        <Box key={color} style={{ backgroundColor: color }} className="flex-1" />
+      ))}
+    </HStack>
   );
 };

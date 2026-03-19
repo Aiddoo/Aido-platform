@@ -4,8 +4,8 @@ import { FriendTodoList } from '@src/features/todo/presentations/components/Frie
 import { PokeBanner } from '@src/features/todo/presentations/components/PokeBanner';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
-import { LAYOUT } from '@src/shared/constants/layout.constant';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -13,6 +13,7 @@ import { Suspense, useCallback, useMemo } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 
 const FriendFeedScreen = () => {
+  const tabBarHeight = useTabBarHeight();
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
@@ -38,7 +39,7 @@ const FriendFeedScreen = () => {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: LAYOUT.tabBarOverlayPadding }}
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: tabBarHeight }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Calendar showCompletions={false} />
