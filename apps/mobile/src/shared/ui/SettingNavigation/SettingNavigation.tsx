@@ -33,7 +33,7 @@ SettingNavigation.Item = function Item({ label, onPress, right }: SettingNavigat
     <PressableFeedback onPress={onPress} className="rounded-lg">
       <PressableFeedback.Highlight className="rounded-xl" />
       <ListRow
-        contents={<ListRow.Texts type="1RowTypeA" top={label} topProps={{ shade: 9 }} />}
+        contents={<ListRow.Texts type="1RowTypeA" top={label} topProps={{ shade: 8 }} />}
         right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
         horizontalPadding="medium"
       />

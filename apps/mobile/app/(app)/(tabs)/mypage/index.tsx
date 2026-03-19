@@ -42,7 +42,8 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        <SettingNavigation label="할 일">
+        <SettingNavigation label="활동">
+          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
           <SettingNavigation.Item
             label="카테고리 관리"
             onPress={() => router.push('/settings/category-settings')}
@@ -52,27 +53,21 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        <SettingNavigation label="친구">
-          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
-        </SettingNavigation>
-
-        <Spacing size={12} />
-
-        <SettingNavigation label="구독 기능">
+        <SettingNavigation label="구독">
           <SettingNavigation.Item label="AI 리포트" onPress={() => router.push('/reports')} />
           <SettingNavigation.Item
             label="앱 아이콘"
             onPress={() => router.push('/settings/app-icon')}
           />
-        </SettingNavigation>
-
-        <Spacing size={12} />
-
-        <SettingNavigation label="앱 설정">
           <SettingNavigation.Item
             label="구독 관리"
             onPress={() => router.push('/settings/subscription')}
           />
+        </SettingNavigation>
+
+        <Spacing size={12} />
+
+        <SettingNavigation label="설정">
           <SettingNavigation.Item
             label="알림 설정"
             onPress={() => router.push('/settings/notifications')}
