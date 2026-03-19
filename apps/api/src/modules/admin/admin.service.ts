@@ -35,6 +35,7 @@ export class AdminService {
 	): Promise<BroadcastResult> {
 		const { title, body, targetFilter, action } = dto;
 		const whereClause = this.#buildTargetWhere(targetFilter);
+		const metadata = action?.url ? { externalUrl: action.url } : undefined;
 
 		let totalTargets = 0;
 		let successCount = 0;
@@ -60,6 +61,7 @@ export class AdminService {
 					title,
 					body,
 					action,
+					metadata,
 				}));
 
 				const result =
@@ -90,6 +92,7 @@ export class AdminService {
 		dto: TargetedNotificationDto,
 	): Promise<BroadcastResult> {
 		const { title, body, userIds, action } = dto;
+		const metadata = action?.url ? { externalUrl: action.url } : undefined;
 
 		// 존재하는 사용자만 필터링
 		const existingUsers = await this.database.user.findMany({
@@ -117,6 +120,7 @@ export class AdminService {
 			title,
 			body,
 			action,
+			metadata,
 		}));
 
 		// 배치로 알림 생성 및 발송

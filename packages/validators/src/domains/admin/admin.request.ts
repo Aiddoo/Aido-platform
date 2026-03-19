@@ -27,7 +27,7 @@ export const broadcastNotificationSchema = z
     action: notificationActionSchema
       .optional()
       .describe(
-        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅)',
+        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅, NONE: 액션 없음)',
       ),
   })
   .describe('전체/조건부 알림 브로드캐스트 요청')
@@ -64,7 +64,7 @@ export const targetedNotificationSchema = z
     action: notificationActionSchema
       .optional()
       .describe(
-        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅)',
+        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅, NONE: 액션 없음)',
       ),
   })
   .describe('특정 사용자 대상 알림 요청')
