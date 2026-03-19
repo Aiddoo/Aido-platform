@@ -26,7 +26,6 @@ function createMockJob(
 		data: {
 			todoId: data.todoId ?? 1,
 			userId: data.userId ?? USER_ID,
-			todoTitle: data.todoTitle ?? TODO_TITLE,
 			stageLabel: data.stageLabel ?? "60min",
 		},
 	} as Job<ReminderJobData>;
@@ -166,20 +165,18 @@ describe("TodoReminderProcessor", () => {
 		});
 
 		it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
-			// Given — DB에는 변경된 제목, job.data에는 옛 제목
+			// Given — DB에는 변경된 제목
 			const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0);
 
-			const updatedTitle = "밥먹고 약먹기";
 			setupMocks({
 				todoExists: true,
 				notificationExists: false,
-				todoTitle: updatedTitle,
+				todoTitle: "밥먹고 약먹기",
 			});
 			notificationService.createAndSend.mockResolvedValue({} as never);
 
 			const job = createMockJob({
 				todoId: 1,
-				todoTitle: "밥 먹기",
 				stageLabel: "60min",
 			});
 

@@ -212,7 +212,6 @@ describe("TodoService", () => {
 				mockTodo.id,
 				scheduledTime,
 				mockUserId,
-				mockTodo.title,
 			);
 		});
 
@@ -1293,7 +1292,6 @@ describe("TodoService", () => {
 				mockTodo.id,
 				scheduledTime,
 				mockUserId,
-				mockTodo.title,
 			);
 		});
 

@@ -147,7 +147,6 @@ export class TodoService {
 					todo.id,
 					todo.scheduledTime,
 					data.userId,
-					todo.title,
 				);
 			} catch (error) {
 				this.#logger.error(
@@ -556,7 +555,6 @@ export class TodoService {
 					id,
 					updatedTodo.scheduledTime,
 					userId,
-					updatedTodo.title,
 				);
 			} else {
 				this.reminderScheduler.cancelReminder(id);
@@ -828,7 +826,6 @@ export class TodoService {
 						todo.id,
 						todo.scheduledTime,
 						data.userId,
-						todo.title,
 					);
 				} catch (error) {
 					this.#logger.error(
