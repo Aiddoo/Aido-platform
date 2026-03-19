@@ -85,10 +85,12 @@ function AndroidBottomTabs() {
         tabBarActiveTintColor: activeStyle.color as string,
         tabBarInactiveTintColor: inactiveStyle.color as string,
         tabBarStyle: {
+          position: 'absolute',
           backgroundColor: tabBarBg.backgroundColor as string,
           borderTopWidth: 0.5,
           borderTopColor: tabBarBorder.borderColor as string,
         },
+        sceneStyle: { backgroundColor: tabBarBg.backgroundColor as string },
         headerShown: false,
       }}
     >

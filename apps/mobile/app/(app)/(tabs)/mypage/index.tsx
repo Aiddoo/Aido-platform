@@ -1,9 +1,9 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
-import { LAYOUT } from '@src/shared/constants/layout.constant';
 import {
   ConfirmDialog,
   H3,
@@ -22,14 +22,12 @@ import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 const MyPageScreen = () => {
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView
-        className="px-4 flex-1"
-        contentContainerStyle={{ paddingBottom: LAYOUT.tabBarOverlayPadding }}
-      >
+      <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: tabBarHeight }}>
         <H3>내 정보</H3>
 
         <Spacing size={20} />
