@@ -55,13 +55,23 @@ describe("TodoReminderProcessor", () => {
 	 * DB mock 설정 헬퍼
 	 */
 	const setupMocks = (
-		options: { todoExists?: boolean; notificationExists?: boolean } = {},
+		options: {
+			todoExists?: boolean;
+			notificationExists?: boolean;
+			todoTitle?: string;
+		} = {},
 	) => {
-		const { todoExists = true, notificationExists = false } = options;
+		const {
+			todoExists = true,
+			notificationExists = false,
+			todoTitle = TODO_TITLE,
+		} = options;
 
 		Object.defineProperty(databaseService, "todo", {
 			value: {
-				findFirst: jest.fn().mockResolvedValue(todoExists ? { id: 1 } : null),
+				findFirst: jest
+					.fn()
+					.mockResolvedValue(todoExists ? { id: 1, title: todoTitle } : null),
 			},
 			configurable: true,
 			writable: true,
@@ -153,6 +163,31 @@ describe("TodoReminderProcessor", () => {
 					metadata: { stage: "immediate" },
 				}),
 			);
+		});
+
+		it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
+			// Given — DB에는 변경된 제목, job.data에는 옛 제목
+			const updatedTitle = "밥먹고 약먹기";
+			setupMocks({
+				todoExists: true,
+				notificationExists: false,
+				todoTitle: updatedTitle,
+			});
+			notificationService.createAndSend.mockResolvedValue({} as never);
+
+			const job = createMockJob({
+				todoId: 1,
+				todoTitle: "밥 먹기",
+				stageLabel: "60min",
+			});
+
+			// When
+			await processor.process(job);
+
+			// Then — DB의 최신 제목이 알림에 사용됨
+			const callArg = notificationService.createAndSend.mock.calls[0]?.[0];
+			expect(callArg?.title).toContain(updatedTitle);
+			expect(callArg?.title).not.toContain("밥 먹기");
 		});
 	});
 
