@@ -8,7 +8,10 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import { BROADCAST_TARGET_FILTER } from "@aido/validators";
+import {
+	BROADCAST_TARGET_FILTER,
+	NOTIFICATION_ACTION_TYPE,
+} from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
@@ -199,6 +202,88 @@ describe("AdminService", () => {
 			);
 		});
 
+		it("action에 URL이 있으면 metadata.externalUrl을 포함해야 한다", async () => {
+			// Given
+			const dto = {
+				title: "v1.0.4 업데이트",
+				body: "새로운 기능이 추가되었어요!",
+				targetFilter: BROADCAST_TARGET_FILTER.ALL,
+				action: {
+					type: NOTIFICATION_ACTION_TYPE.BROWSER,
+					url: "https://www.aido.kr/ko/patch-notes",
+				},
+			};
+
+			const userIds: UserIdOnly[] = [{ id: "user-1" }, { id: "user-2" }];
+			database.user.findMany.mockResolvedValue(userIds as never);
+			notificationService.createAndSendBatch.mockResolvedValue({
+				count: 2,
+			});
+
+			// When
+			await service.broadcastNotification(dto);
+
+			// Then
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
+				{
+					userId: "user-1",
+					type: "ADMIN_BROADCAST",
+					title: "v1.0.4 업데이트",
+					body: "새로운 기능이 추가되었어요!",
+					action: {
+						type: NOTIFICATION_ACTION_TYPE.BROWSER,
+						url: "https://www.aido.kr/ko/patch-notes",
+					},
+					metadata: { externalUrl: "https://www.aido.kr/ko/patch-notes" },
+				},
+				{
+					userId: "user-2",
+					type: "ADMIN_BROADCAST",
+					title: "v1.0.4 업데이트",
+					body: "새로운 기능이 추가되었어요!",
+					action: {
+						type: NOTIFICATION_ACTION_TYPE.BROWSER,
+						url: "https://www.aido.kr/ko/patch-notes",
+					},
+					metadata: { externalUrl: "https://www.aido.kr/ko/patch-notes" },
+				},
+			]);
+		});
+
+		it("action에 URL이 없으면 metadata를 포함하지 않아야 한다", async () => {
+			// Given
+			const dto = {
+				title: "공지사항",
+				body: "안내 메시지",
+				targetFilter: BROADCAST_TARGET_FILTER.ALL,
+				action: {
+					type: NOTIFICATION_ACTION_TYPE.NONE,
+				},
+			};
+
+			const userIds: UserIdOnly[] = [{ id: "user-1" }];
+			database.user.findMany.mockResolvedValue(userIds as never);
+			notificationService.createAndSendBatch.mockResolvedValue({
+				count: 1,
+			});
+
+			// When
+			await service.broadcastNotification(dto);
+
+			// Then
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
+				{
+					userId: "user-1",
+					type: "ADMIN_BROADCAST",
+					title: "공지사항",
+					body: "안내 메시지",
+					action: {
+						type: NOTIFICATION_ACTION_TYPE.NONE,
+					},
+				},
+			]);
+		});
+
 		it("구독자에게만 알림을 발송해야 한다", async () => {
 			// Given
 			const dto = {
@@ -325,6 +410,43 @@ describe("AdminService", () => {
 					type: "ADMIN_TARGETED",
 					title: "알림",
 					body: "메시지",
+				},
+			]);
+		});
+
+		it("action에 URL이 있으면 metadata.externalUrl을 포함해야 한다", async () => {
+			// Given
+			const dto = {
+				title: "개인 알림",
+				body: "확인해주세요",
+				userIds: ["user-1"],
+				action: {
+					type: NOTIFICATION_ACTION_TYPE.BROWSER,
+					url: "https://www.aido.kr/ko/patch-notes",
+				},
+			};
+
+			const userIds: UserIdOnly[] = [{ id: "user-1" }];
+			database.user.findMany.mockResolvedValue(userIds as never);
+			notificationService.createAndSendBatch.mockResolvedValue({
+				count: 1,
+			});
+
+			// When
+			await service.sendTargetedNotification(dto);
+
+			// Then
+			expect(notificationService.createAndSendBatch).toHaveBeenCalledWith([
+				{
+					userId: "user-1",
+					type: "ADMIN_TARGETED",
+					title: "개인 알림",
+					body: "확인해주세요",
+					action: {
+						type: NOTIFICATION_ACTION_TYPE.BROWSER,
+						url: "https://www.aido.kr/ko/patch-notes",
+					},
+					metadata: { externalUrl: "https://www.aido.kr/ko/patch-notes" },
 				},
 			]);
 		});
