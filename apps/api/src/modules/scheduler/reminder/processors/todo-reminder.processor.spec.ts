@@ -167,6 +167,8 @@ describe("TodoReminderProcessor", () => {
 
 		it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
 			// Given — DB에는 변경된 제목, job.data에는 옛 제목
+			const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0);
+
 			const updatedTitle = "밥먹고 약먹기";
 			setupMocks({
 				todoExists: true,
@@ -185,9 +187,14 @@ describe("TodoReminderProcessor", () => {
 			await processor.process(job);
 
 			// Then — DB의 최신 제목이 알림에 사용됨
-			const callArg = notificationService.createAndSend.mock.calls[0]?.[0];
-			expect(callArg?.title).toContain(updatedTitle);
-			expect(callArg?.title).not.toContain("밥 먹기");
+			expect(notificationService.createAndSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: "밥먹고 약먹기, 1시간 남았어",
+					body: "미리 시작하면 여유롭게 끝나",
+				}),
+			);
+
+			randomSpy.mockRestore();
 		});
 	});
 
