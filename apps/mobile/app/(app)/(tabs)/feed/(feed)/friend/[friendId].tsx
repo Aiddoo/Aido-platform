@@ -1,4 +1,3 @@
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { FriendTodoList } from '@src/features/todo/presentations/components/FriendTodoList';
@@ -6,6 +5,7 @@ import { PokeBanner } from '@src/features/todo/presentations/components/PokeBann
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -13,7 +13,7 @@ import { Suspense, useCallback, useMemo } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 
 const FriendFeedScreen = () => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = useTabBarHeight();
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();

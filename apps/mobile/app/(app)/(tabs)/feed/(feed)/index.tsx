@@ -1,5 +1,4 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/queries/use-get-suggestions-query-options';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
@@ -8,6 +7,7 @@ import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -17,7 +17,7 @@ import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 
 const MyFeedScreen = () => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = useTabBarHeight();
   const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
   const invalidateTodos = useCallback(
