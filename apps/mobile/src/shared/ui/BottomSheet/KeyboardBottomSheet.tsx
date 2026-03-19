@@ -37,6 +37,7 @@ export const KeyboardBottomSheet = ({
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
+  const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -108,6 +109,10 @@ export const KeyboardBottomSheet = ({
 
   const handleSheetChange = (index: number) => {
     if (index === SHEET_INDEX.CLOSED) {
+      if (closeRetryTimerRef.current) {
+        clearTimeout(closeRetryTimerRef.current);
+        closeRetryTimerRef.current = null;
+      }
       if (!hasNotifiedCloseRef.current) {
         hasNotifiedCloseRef.current = true;
         onOpenChange(false);
@@ -127,6 +132,22 @@ export const KeyboardBottomSheet = ({
         disappearsOnIndex={SHEET_INDEX.CLOSED}
         appearsOnIndex={SHEET_INDEX.OPEN}
         opacity={0.5}
+        pressBehavior={'override' as 'none'}
+        onPress={() => {
+          isClosingRef.current = true;
+          Keyboard.dismiss();
+          sheetRef.current?.forceClose();
+          // 열기 애니메이션과 충돌 시 재시도
+          if (closeRetryTimerRef.current) {
+            clearTimeout(closeRetryTimerRef.current);
+          }
+          closeRetryTimerRef.current = setTimeout(() => {
+            closeRetryTimerRef.current = null;
+            if (isClosingRef.current) {
+              sheetRef.current?.forceClose();
+            }
+          }, 500);
+        }}
       />
     ),
     [],
