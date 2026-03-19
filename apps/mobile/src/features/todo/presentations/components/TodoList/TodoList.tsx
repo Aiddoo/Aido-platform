@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
-import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
+import { Box, Flex, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -100,11 +100,13 @@ function CategoryHeader({ date, category }: CategoryHeaderProps) {
       <Text size="b4" weight="semibold" style={{ color: category.color }}>
         {category.name}
       </Text>
-      <PlusIcon
-        width={fontScaledSize(14)}
-        height={fontScaledSize(14)}
-        colorClassName="text-gray-6"
-      />
+      <Flex>
+        <PlusIcon
+          width={fontScaledSize(14)}
+          height={fontScaledSize(14)}
+          colorClassName="text-gray-8"
+        />
+      </Flex>
     </PressableFeedback>
   );
 }
