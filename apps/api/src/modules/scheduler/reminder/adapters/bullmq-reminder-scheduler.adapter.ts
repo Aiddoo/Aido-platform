@@ -13,7 +13,6 @@ export const TODO_REMINDER_QUEUE = "todo-reminder";
 export interface ReminderJobData {
 	todoId: number;
 	userId: string;
-	todoTitle: string;
 	stageLabel: string;
 }
 
@@ -41,21 +40,14 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 	 * 모든 단계가 이미 지났지만 scheduledTime이 미래인 경우 즉시 발송 잡을 등록합니다.
 	 * 같은 todoId로 재호출 시 기존 잡을 제거하고 새로 등록합니다.
 	 */
-	scheduleReminder(
-		todoId: number,
-		scheduledTime: Date,
-		userId: string,
-		todoTitle: string,
-	): void {
+	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void {
 		// 비동기 작업을 fire-and-forget으로 실행
-		this.#scheduleAsync(todoId, scheduledTime, userId, todoTitle).catch(
-			(error) => {
-				this.#logger.error(
-					`Failed to schedule reminder: todoId=${todoId}, ${error}`,
-					error instanceof Error ? error.stack : undefined,
-				);
-			},
-		);
+		this.#scheduleAsync(todoId, scheduledTime, userId).catch((error) => {
+			this.#logger.error(
+				`Failed to schedule reminder: todoId=${todoId}, ${error}`,
+				error instanceof Error ? error.stack : undefined,
+			);
+		});
 	}
 
 	/**
@@ -74,7 +66,6 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 		todoId: number,
 		scheduledTime: Date,
 		userId: string,
-		todoTitle: string,
 	): Promise<void> {
 		// 기존 잡 제거 (재스케줄링 지원)
 		await this.#cancelAsync(todoId);
@@ -100,7 +91,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 				hasScheduledJob = true;
 				await this.queue.add(
 					"send-reminder",
-					{ todoId, userId, todoTitle, stageLabel: stage.label },
+					{ todoId, userId, stageLabel: stage.label },
 					{
 						jobId: `reminder_${todoId}_${stage.label}`,
 						delay,
@@ -122,7 +113,6 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
 				{
 					todoId,
 					userId,
-					todoTitle,
 					stageLabel: REMINDER_IMMEDIATE_LABEL,
 				},
 				{

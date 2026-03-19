@@ -16,14 +16,8 @@ export interface IReminderScheduler {
 	 * @param todoId 대상 투두 ID
 	 * @param scheduledTime 투두 마감 시각
 	 * @param userId 사용자 ID
-	 * @param todoTitle 투두 제목 (알림 메시지용)
 	 */
-	scheduleReminder(
-		todoId: number,
-		scheduledTime: Date,
-		userId: string,
-		todoTitle: string,
-	): void;
+	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): void;
 
 	/**
 	 * 리마인더 타이머 취소
