@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { notificationActionSchema } from '../notification/notification.payload';
 import { BROADCAST_TARGET_FILTER, BROADCAST_TARGET_FILTERS } from './admin.constants';
 
 /**
@@ -22,6 +23,11 @@ export const broadcastNotificationSchema = z
       .default(BROADCAST_TARGET_FILTER.ALL)
       .describe(
         '알림 대상 필터 (ALL: 전체, WITH_PUSH_TOKEN: 푸시 토큰 보유, ACTIVE_LAST_7_DAYS: 7일 내 활동, ACTIVE_LAST_30_DAYS: 30일 내 활동, SUBSCRIBERS: 유료 구독)',
+      ),
+    action: notificationActionSchema
+      .optional()
+      .describe(
+        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅)',
       ),
   })
   .describe('전체/조건부 알림 브로드캐스트 요청')
@@ -55,6 +61,11 @@ export const targetedNotificationSchema = z
       .min(1, '최소 1명의 사용자를 선택해주세요')
       .max(1000, '최대 1000명까지 선택할 수 있습니다')
       .describe('알림 대상 사용자 ID 목록'),
+    action: notificationActionSchema
+      .optional()
+      .describe(
+        '알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅)',
+      ),
   })
   .describe('특정 사용자 대상 알림 요청')
   .meta({

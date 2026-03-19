@@ -33,7 +33,7 @@ export class AdminService {
 	async broadcastNotification(
 		dto: BroadcastNotificationDto,
 	): Promise<BroadcastResult> {
-		const { title, body, targetFilter } = dto;
+		const { title, body, targetFilter, action } = dto;
 		const whereClause = this.#buildTargetWhere(targetFilter);
 
 		let totalTargets = 0;
@@ -59,6 +59,7 @@ export class AdminService {
 					type: "ADMIN_BROADCAST" as const,
 					title,
 					body,
+					action,
 				}));
 
 				const result =
@@ -88,7 +89,7 @@ export class AdminService {
 	async sendTargetedNotification(
 		dto: TargetedNotificationDto,
 	): Promise<BroadcastResult> {
-		const { title, body, userIds } = dto;
+		const { title, body, userIds, action } = dto;
 
 		// 존재하는 사용자만 필터링
 		const existingUsers = await this.database.user.findMany({
@@ -115,6 +116,7 @@ export class AdminService {
 			type: "ADMIN_TARGETED" as const,
 			title,
 			body,
+			action,
 		}));
 
 		// 배치로 알림 생성 및 발송
