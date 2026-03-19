@@ -61,12 +61,12 @@ interface CategoryIndicatorProps {
 const CategoryIndicator = ({ colors }: CategoryIndicatorProps) => {
   if (colors.length <= 1) {
     return (
-      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-5xl" />
+      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-2xl" />
     );
   }
 
   return (
-    <HStack className="h-1.5 w-4 overflow-hidden rounded-5xl">
+    <HStack className="h-1.5 w-4 overflow-hidden rounded-2xl">
       {colors.slice(0, 3).map((color) => (
         <Box key={color} style={{ backgroundColor: color }} className="flex-1" />
       ))}
