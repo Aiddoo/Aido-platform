@@ -1,7 +1,7 @@
 import { calculateTodaySchedule } from './calculate-today-schedule';
 
-const TODAY = new Date(2025, 5, 10);
-const TODAY_START = new Date(2025, 5, 10);
+const TODAY = new Date(2025, 5, 10, 15, 30);
+const TODAY_MIDNIGHT = new Date(2025, 5, 10);
 
 describe('calculateTodaySchedule', () => {
   describe('startDate 계산', () => {
@@ -10,7 +10,7 @@ describe('calculateTodaySchedule', () => {
       const result = calculateTodaySchedule(null, TODAY);
 
       // Then
-      expect(result.startDate).toEqual(TODAY_START);
+      expect(result.startDate).toEqual(TODAY_MIDNIGHT);
     });
   });
 
