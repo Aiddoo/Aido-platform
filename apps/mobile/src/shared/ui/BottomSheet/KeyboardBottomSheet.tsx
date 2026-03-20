@@ -4,7 +4,13 @@ import GorhomBottomSheet, {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import { Keyboard, type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
+import {
+  Keyboard,
+  type LayoutChangeEvent,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
@@ -20,6 +26,8 @@ const TOP_MARGIN = 24;
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  /** 시트 닫기 애니메이션 시작 시 호출 (backdrop 탭, 스와이프 등) */
+  onCloseStart?: () => void;
   children: ReactNode;
 }
 
@@ -29,6 +37,7 @@ interface KeyboardBottomSheetProps {
 export const KeyboardBottomSheet = ({
   isOpen,
   onOpenChange,
+  onCloseStart,
   children,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
@@ -37,6 +46,7 @@ export const KeyboardBottomSheet = ({
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
+  const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -52,7 +62,8 @@ export const KeyboardBottomSheet = ({
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
       if (!isOpen || isClosingRef.current) {
         return;
       }
@@ -103,11 +114,16 @@ export const KeyboardBottomSheet = ({
     if (toIndex === SHEET_INDEX.CLOSED) {
       isClosingRef.current = true;
       Keyboard.dismiss();
+      onCloseStart?.();
     }
   };
 
   const handleSheetChange = (index: number) => {
     if (index === SHEET_INDEX.CLOSED) {
+      if (closeRetryTimerRef.current) {
+        clearTimeout(closeRetryTimerRef.current);
+        closeRetryTimerRef.current = null;
+      }
       if (!hasNotifiedCloseRef.current) {
         hasNotifiedCloseRef.current = true;
         onOpenChange(false);
@@ -127,6 +143,22 @@ export const KeyboardBottomSheet = ({
         disappearsOnIndex={SHEET_INDEX.CLOSED}
         appearsOnIndex={SHEET_INDEX.OPEN}
         opacity={0.5}
+        pressBehavior={'override' as 'none'}
+        onPress={() => {
+          isClosingRef.current = true;
+          Keyboard.dismiss();
+          sheetRef.current?.forceClose();
+          // 열기 애니메이션과 충돌 시 재시도
+          if (closeRetryTimerRef.current) {
+            clearTimeout(closeRetryTimerRef.current);
+          }
+          closeRetryTimerRef.current = setTimeout(() => {
+            closeRetryTimerRef.current = null;
+            if (isClosingRef.current) {
+              sheetRef.current?.forceClose();
+            }
+          }, 500);
+        }}
       />
     ),
     [],
