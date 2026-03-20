@@ -94,67 +94,79 @@ export function CategoryList({ mode }: CategoryListProps) {
         drag,
         isActive,
       }: {
-        item: TodoCategoryWithCount;
+        item: TodoCategoryWithCount & { optimistic?: true };
         drag: () => void;
         isActive: boolean;
-      }) => (
-        <ScaleDecorator activeScale={mode === 'reorder' ? 1.02 : 1}>
-          <PressableFeedback
-            onLongPress={mode === 'reorder' ? handleDrag(drag) : undefined}
-            isDisabled={isActive}
-            className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
-          >
-            <ListRow
-              left={<Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />}
-              contents={
-                <Text size="b3" weight="medium">
-                  {item.name}
-                </Text>
-              }
-              right={
-                <Animated.View
-                  key={mode}
-                  entering={FadeIn.duration(250)}
-                  className="h-9 justify-center"
-                >
-                  {match(mode)
-                    .with('edit', () => (
-                      <HStack align="center" gap={4}>
-                        <Button
-                          variant="weak"
-                          color="dark"
-                          size="small"
-                          display="inline"
-                          onPress={() => openEditSheet(item)}
-                        >
-                          수정
-                        </Button>
-                        <Button
-                          variant="weak"
-                          color="danger"
-                          size="small"
-                          display="inline"
-                          onPress={() => openDeleteDialog(item)}
-                        >
-                          삭제
-                        </Button>
-                      </HStack>
-                    ))
-                    .with('reorder', () => (
-                      <MenuIcon
-                        width={fontScaledSize(18)}
-                        height={fontScaledSize(18)}
-                        colorClassName="text-gray-5"
-                      />
-                    ))
-                    .exhaustive()}
-                </Animated.View>
-              }
-              horizontalPadding="medium"
-            />
-          </PressableFeedback>
-        </ScaleDecorator>
-      )}
+      }) => {
+        const isOptimistic = item.optimistic;
+
+        return (
+          <ScaleDecorator activeScale={mode === 'reorder' ? 1.02 : 1}>
+            <PressableFeedback
+              onLongPress={mode === 'reorder' && !isOptimistic ? handleDrag(drag) : undefined}
+              isDisabled={isActive || isOptimistic}
+              className={cn(
+                'rounded-xl',
+                isActive && 'bg-white shadow-md shadow-black/10',
+                isOptimistic && 'opacity-50',
+              )}
+            >
+              <ListRow
+                left={
+                  <Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
+                }
+                contents={
+                  <Text size="b3" weight="medium">
+                    {item.name}
+                  </Text>
+                }
+                right={
+                  <Animated.View
+                    key={mode}
+                    entering={FadeIn.duration(250)}
+                    className="h-9 justify-center"
+                  >
+                    {match(mode)
+                      .with('edit', () => (
+                        <HStack align="center" gap={4}>
+                          <Button
+                            variant="weak"
+                            color="dark"
+                            size="small"
+                            display="inline"
+                            isDisabled={isOptimistic}
+                            onPress={() => openEditSheet(item)}
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            variant="weak"
+                            color="danger"
+                            size="small"
+                            display="inline"
+                            isDisabled={isOptimistic}
+                            onPress={() => openDeleteDialog(item)}
+                          >
+                            삭제
+                          </Button>
+                        </HStack>
+                      ))
+                      .with('reorder', () => (
+                        <MenuIcon
+                          width={fontScaledSize(18)}
+                          height={fontScaledSize(18)}
+                          colorClassName="text-gray-5"
+                        />
+                      ))
+                      .exhaustive()}
+                  </Animated.View>
+                }
+                horizontalPadding="medium"
+              />
+            </PressableFeedback>
+          </ScaleDecorator>
+        );
+      }}
       onDragEnd={onDragEnd}
       containerStyle={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
     />
