@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardBottomSheet } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { Suspense, useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ActivityIndicator, Keyboard, type TextInput } from 'react-native';
 import { match } from 'ts-pattern';
@@ -88,12 +88,20 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openPickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cancelFocusTimer = useCallback(() => {
+  const cancelAllTimers = useCallback(() => {
     if (focusTimerRef.current) {
       clearTimeout(focusTimerRef.current);
       focusTimerRef.current = null;
     }
+    if (openPickerTimerRef.current) {
+      clearTimeout(openPickerTimerRef.current);
+      openPickerTimerRef.current = null;
+    }
   }, []);
+
+  useEffect(() => {
+    return cancelAllTimers;
+  }, [cancelAllTimers]);
 
   const createMutation = useMutation(useCreateTodoMutationOptions());
   const updateMutation = useMutation(useUpdateTodoMutationOptions());
@@ -182,6 +190,11 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   };
 
   const openPicker = (view: PickerView) => {
+    if (openPickerTimerRef.current) {
+      clearTimeout(openPickerTimerRef.current);
+      openPickerTimerRef.current = null;
+    }
+
     if (Keyboard.isVisible()) {
       Keyboard.dismiss();
       openPickerTimerRef.current = setTimeout(() => {
@@ -207,7 +220,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       <KeyboardBottomSheet
         isOpen={isOpen}
         onOpenChange={onOpenChange}
-        onCloseStart={cancelFocusTimer}
+        onCloseStart={cancelAllTimers}
       >
         {match(activeView)
           .with('date', () => (
