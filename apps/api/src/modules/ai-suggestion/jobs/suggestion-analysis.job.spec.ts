@@ -52,7 +52,7 @@ describe("SuggestionAnalysisJob", () => {
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 매일 분석 스케줄러를 등록해야 한다", async () => {
 			// Given — 오전 (catch-up 미발동)
-			jest.useFakeTimers({ now: new Date("2026-03-09T10:00:00+09:00") });
+			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();
@@ -60,14 +60,14 @@ describe("SuggestionAnalysisJob", () => {
 			// Then
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"daily-suggestion-scheduler",
-				{ pattern: "0 11 * * *", tz: "Asia/Seoul" },
+				{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
 				{ name: "dispatch-analysis", data: {} },
 			);
 		});
 
 		it("구 weekly 스케줄러를 제거해야 한다", async () => {
 			// Given
-			jest.useFakeTimers({ now: new Date("2026-03-09T10:00:00+09:00") });
+			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();
@@ -80,7 +80,7 @@ describe("SuggestionAnalysisJob", () => {
 
 		it("구 스케줄러 제거가 새 스케줄러 등록보다 먼저 호출되어야 한다", async () => {
 			// Given
-			jest.useFakeTimers({ now: new Date("2026-03-09T10:00:00+09:00") });
+			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();
@@ -95,7 +95,7 @@ describe("SuggestionAnalysisJob", () => {
 
 		it("Processor에 자신을 등록해야 한다", async () => {
 			// Given
-			jest.useFakeTimers({ now: new Date("2026-03-09T10:00:00+09:00") });
+			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();
@@ -110,9 +110,9 @@ describe("SuggestionAnalysisJob", () => {
 	// =========================================================================
 
 	describe("catch-up on startup", () => {
-		it("11:00 이후 시작 시 dispatch 잡을 추가해야 한다", async () => {
-			// Given — 월요일 13:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T13:00:00+09:00") });
+		it("07:30 이후 시작 시 dispatch 잡을 추가해야 한다", async () => {
+			// Given — 월요일 08:00 KST
+			jest.useFakeTimers({ now: new Date("2026-03-09T08:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();
@@ -125,9 +125,9 @@ describe("SuggestionAnalysisJob", () => {
 			);
 		});
 
-		it("11:00 이전에 시작 시 catch-up하지 않아야 한다", async () => {
-			// Given — 월요일 10:00 KST
-			jest.useFakeTimers({ now: new Date("2026-03-09T10:00:00+09:00") });
+		it("07:30 이전에 시작 시 catch-up하지 않아야 한다", async () => {
+			// Given — 월요일 07:00 KST (07:30 이전)
+			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
 			await job.onModuleInit();

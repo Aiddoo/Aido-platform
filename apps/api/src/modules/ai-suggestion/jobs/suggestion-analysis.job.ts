@@ -21,7 +21,7 @@ const ENQUEUE_BATCH_SIZE = 50;
 /**
  * AI 반복 제안 분석 스케줄러 (Dispatcher)
  *
- * 매일 KST 11:00에 실행됩니다.
+ * 매일 KST 07:30에 실행됩니다.
  * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
  * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
  */
@@ -45,7 +45,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 
 		await this.queue.upsertJobScheduler(
 			"daily-suggestion-scheduler",
-			{ pattern: "0 11 * * *", tz: "Asia/Seoul" },
+			{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
 			{ name: AiSuggestionJobName.DISPATCH, data: {} },
 		);
 
@@ -117,8 +117,8 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		const kstNow = dayjs().tz("Asia/Seoul");
 		const hour = kstNow.hour();
 
-		// 매일 11:00 이후
-		if (hour >= 11) {
+		// 매일 07:30 이후
+		if (hour > 7 || (hour === 7 && kstNow.minute() >= 30)) {
 			this.#logger.log("Catch-up: suggestion analysis dispatch");
 			await this.queue.add(
 				AiSuggestionJobName.DISPATCH,
