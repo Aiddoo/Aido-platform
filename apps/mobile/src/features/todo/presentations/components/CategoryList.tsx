@@ -151,7 +151,6 @@ export function CategoryList({ mode }: CategoryListProps) {
                 </Animated.View>
               }
               horizontalPadding="medium"
-              verticalPadding="medium"
             />
           </PressableFeedback>
         </ScaleDecorator>
@@ -168,13 +167,8 @@ CategoryList.Loading = function Loading() {
       {times(2).map((i) => (
         <ListRow
           key={`category-loading-${i}`}
-          left={
-            <HStack align="center" gap={8}>
-              <Skeleton className="size-2 rounded-full" />
-              <Skeleton className="h-4 w-20 rounded" />
-            </HStack>
-          }
-          contents={null}
+          left={<Skeleton className="size-2 rounded-full" />}
+          contents={<Skeleton className="h-4 w-20 rounded" />}
           right={<Skeleton className="size-5 rounded" />}
           horizontalPadding="medium"
         />
