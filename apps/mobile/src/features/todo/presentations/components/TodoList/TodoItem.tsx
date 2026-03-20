@@ -14,7 +14,6 @@ import { Checkbox, PressableFeedback } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { match } from 'ts-pattern';
-import type { OptimisticTodoItem } from '../../../models/todo.model';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
@@ -40,7 +39,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   const changeCategoryMutation = useMutation(useChangeTodoCategoryMutationOptions());
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
-  const isOptimistic = (todo as OptimisticTodoItem).optimistic;
+  const isOptimistic = todo.optimistic;
 
   const openEditBottomSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (

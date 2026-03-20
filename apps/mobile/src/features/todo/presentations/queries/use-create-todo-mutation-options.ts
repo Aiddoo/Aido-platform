@@ -87,7 +87,9 @@ export const useCreateTodoMutationOptions = () => {
       return { previousData, startDate };
     },
     onSuccess: (_data, { input, source }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 추가했어요!');
       trackEvent('todo_created', {
