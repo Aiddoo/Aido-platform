@@ -2,6 +2,10 @@ import { ErrorCode } from '@aido/errors';
 import type { CreateTodoCategoryInput } from '@aido/validators';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
+import type {
+  OptimisticTodoCategoryWithCount,
+  TodoCategoriesResult,
+} from '@src/features/todo/models/todo-category.model';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -22,14 +26,45 @@ export const useCreateTodoCategoryMutationOptions = () => {
       const result = await todoCategoryService.createCategory(input);
       return unwrap(result);
     },
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+
+      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+      );
+
+      const lastSortOrder = previousData?.categories.at(-1)?.sortOrder ?? 0;
+
+      const optimisticCategory: OptimisticTodoCategoryWithCount = {
+        id: Math.random(),
+        name: input.name,
+        color: input.color,
+        sortOrder: lastSortOrder + 1,
+        todoCount: 0,
+        optimistic: true,
+      };
+
+      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
+        if (!old) {
+          return old;
+        }
+        return { ...old, categories: [...old.categories, optimisticCategory] };
+      });
+
+      return { previousData };
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       toast.success('카테고리를 추가했어요');
       trackEvent('category_created', { color: variables.color });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      if (context?.previousData !== undefined) {
+        queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+      }
 
       // 프리미엄 제한 에러는 컴포넌트에서 PremiumDialog로 처리
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {

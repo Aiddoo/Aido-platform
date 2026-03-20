@@ -20,3 +20,8 @@ export const todoCategoriesResultSchema = z.object({
   categories: z.array(todoCategoryWithCountSchema),
 });
 export type TodoCategoriesResult = z.infer<typeof todoCategoriesResultSchema>;
+
+// Optimistic Update용 타입
+export type OptimisticTodoCategoryWithCount = TodoCategoryWithCount & {
+  readonly optimistic: true;
+};
