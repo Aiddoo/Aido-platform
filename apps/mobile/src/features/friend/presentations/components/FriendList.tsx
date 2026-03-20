@@ -7,6 +7,7 @@ import {
   DocsIcon,
   Flex,
   HStack,
+  InfoIcon,
   ListRow,
   MenuIcon,
   Result,
@@ -18,7 +19,8 @@ import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
+import { Avatar, Popover, PressableFeedback, Skeleton } from 'heroui-native';
+import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Animated, {
@@ -95,11 +97,12 @@ export function FriendList() {
       keyExtractor={(item) => item.followId}
       activationDistance={10}
       ListHeaderComponent={
-        <Box py={12}>
+        <HStack py={12} align="center" justify="between">
           <Text size="b4" shade={6}>
             총 {totalCount}명
           </Text>
-        </Box>
+          <EditModeGuideTooltip />
+        </HStack>
       }
       renderItem={({
         item,
@@ -228,3 +231,36 @@ FriendList.Loading = function Loading() {
     </ScrollView>
   );
 };
+
+function EditModeGuideTooltip() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Popover.Trigger asChild>
+        <PressableFeedback onPress={() => setIsOpen(true)} className="items-center justify-center">
+          <InfoIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-5"
+          />
+        </PressableFeedback>
+      </Popover.Trigger>
+      <Popover.Portal disableFullWindowOverlay={false}>
+        <Popover.Overlay />
+        <Popover.Content
+          presentation="popover"
+          placement="bottom"
+          align="end"
+          avoidCollisions={false}
+          className="rounded-2xl border border-border px-4 py-3"
+        >
+          <Popover.Arrow />
+          <Text size="b4" shade={6} maxFontSizeMultiplier={2}>
+            편집을 눌러 피드에 보이는{'\n'}친구 순서를 변경하거나 삭제할 수 있어요
+          </Text>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover>
+  );
+}
