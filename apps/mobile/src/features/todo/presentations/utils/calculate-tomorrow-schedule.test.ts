@@ -1,7 +1,7 @@
 import { calculateTomorrowSchedule } from './calculate-tomorrow-schedule';
 
-const TODAY = new Date('2025-06-10');
-const TOMORROW = new Date('2025-06-11');
+const TODAY = new Date(2025, 5, 10);
+const TOMORROW = new Date(2025, 5, 11);
 
 describe('calculateTomorrowSchedule', () => {
   describe('startDate 계산', () => {
@@ -25,7 +25,7 @@ describe('calculateTomorrowSchedule', () => {
 
     it('endDate가 내일보다 이후이면 기존 endDate를 유지한다', () => {
       // Given
-      const endDate = new Date('2025-06-15');
+      const endDate = new Date(2025, 5, 15);
 
       // When
       const result = calculateTomorrowSchedule(endDate, TODAY);
@@ -36,7 +36,7 @@ describe('calculateTomorrowSchedule', () => {
 
     it('endDate가 내일보다 이전이면 null로 초기화한다', () => {
       // Given
-      const endDate = new Date('2025-06-09');
+      const endDate = new Date(2025, 5, 9);
 
       // When
       const result = calculateTomorrowSchedule(endDate, TODAY);
