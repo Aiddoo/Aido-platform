@@ -24,6 +24,7 @@ export const todoItemSchema = z.object({
   recurrenceGroupId: z.string().nullable(),
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
+export type OptimisticTodoItem = TodoItem & { readonly optimistic: true };
 
 export const todosByDateSchema = z.object({
   date: z.string(),

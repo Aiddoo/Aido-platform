@@ -8,6 +8,7 @@ export interface TodoItemViewModel extends TodoItem {
   endDateObj: Date | null;
   scheduledTime24: string | undefined;
   isRecurring: boolean;
+  optimistic?: true;
 }
 
 export const toTodoItemViewModel = (

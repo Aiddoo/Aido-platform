@@ -8,13 +8,23 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-
 import { isTodoError } from '../../models/todo.error';
+import type { OptimisticTodoItem, TodosResult } from '../../models/todo.model';
+import type { TodoCategoriesResult } from '../../models/todo-category.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 export interface CreateTodoParams {
   input: CreateTodoInput;
   source: 'manual' | 'ai';
+}
+
+function parseScheduledTime(time: string, dateStr: string): Date {
+  const parts = time.split(':');
+  const hours = Number(parts[0]);
+  const minutes = Number(parts[1]);
+  const date = new Date(dateStr);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
 }
 
 export const useCreateTodoMutationOptions = () => {
@@ -28,8 +38,58 @@ export const useCreateTodoMutationOptions = () => {
       const result = await todoService.createTodo(input);
       return unwrap(result);
     },
+    onMutate: async ({ input }) => {
+      const startDate = input.startDate;
+
+      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+
+      const previousData = queryClient.getQueryData<TodosResult>(
+        TODO_QUERY_KEYS.listByDate(startDate),
+      );
+
+      // 카테고리 캐시에서 카테고리 정보 조회
+      const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+      );
+      const category = categoriesData?.categories.find((c) => c.id === input.categoryId);
+
+      // 카테고리를 찾지 못하면 optimistic 삽입 건너뜀 (서버 응답 후 invalidate로 처리)
+      if (!category) {
+        return { previousData, startDate };
+      }
+
+      const optimisticTodo: OptimisticTodoItem = {
+        id: Math.random(),
+        title: input.title,
+        startDate: input.startDate,
+        endDate: null,
+        category: { id: category.id, name: category.name, color: category.color },
+        completed: false,
+        scheduledTime: input.scheduledTime
+          ? parseScheduledTime(input.scheduledTime, input.startDate)
+          : null,
+        isAllDay: input.isAllDay,
+        visibility: input.visibility ?? 'PUBLIC',
+        recurrenceGroupId: null,
+        optimistic: true,
+      };
+
+      queryClient.setQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
+        if (!old) {
+          return old;
+        }
+        return {
+          ...old,
+          todos: [...old.todos, optimisticTodo],
+        };
+      });
+
+      return { previousData, startDate };
+    },
     onSuccess: (_data, { input, source }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success('할 일을 추가했어요!');
       trackEvent('todo_created', {
@@ -40,8 +100,15 @@ export const useCreateTodoMutationOptions = () => {
         visibility: input.visibility ?? 'PUBLIC',
       });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      if (context?.previousData !== undefined) {
+        queryClient.setQueryData(
+          TODO_QUERY_KEYS.listByDate(context.startDate),
+          context.previousData,
+        );
+      }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
         toast.error(
