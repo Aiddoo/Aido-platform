@@ -23,9 +23,9 @@ import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
-import { useState } from 'react';
+import { type RefObject, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { Keyboard, ScrollView } from 'react-native';
+import { Keyboard, ScrollView, type TextInput } from 'react-native';
 import { AiUsagePolicy } from '../../models/todo.model';
 import { useGetAiUsageQueryOptions } from '../queries/use-get-ai-usage-query-options';
 import { useParseTodoMutationOptions } from '../queries/use-parse-todo-mutation-options';
@@ -33,6 +33,7 @@ import type { AddTodoFormInput } from '../schemas/add-todo-form.schema';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 
 interface TodoFormContentProps {
+  titleInputRef?: RefObject<TextInput | null>;
   onDatePress: () => void;
   onTimePress: () => void;
   onRepeatPress: () => void;
@@ -42,6 +43,7 @@ interface TodoFormContentProps {
 }
 
 export const TodoFormContent = ({
+  titleInputRef,
   onDatePress,
   onTimePress,
   onRepeatPress,
@@ -61,6 +63,7 @@ export const TodoFormContent = ({
         name="title"
         render={({ field: { onChange, value } }) => (
           <BottomSheetInput
+            ref={titleInputRef}
             autoFocus
             placeholder="무엇을 하고 싶으신가요?"
             value={value}

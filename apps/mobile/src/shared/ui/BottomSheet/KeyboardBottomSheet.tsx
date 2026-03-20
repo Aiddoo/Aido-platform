@@ -4,7 +4,13 @@ import GorhomBottomSheet, {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import { Keyboard, type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-native';
+import {
+  Keyboard,
+  type LayoutChangeEvent,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
@@ -20,6 +26,8 @@ const TOP_MARGIN = 24;
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  /** 시트 닫기 애니메이션 시작 시 호출 (backdrop 탭, 스와이프 등) */
+  onCloseStart?: () => void;
   children: ReactNode;
 }
 
@@ -29,6 +37,7 @@ interface KeyboardBottomSheetProps {
 export const KeyboardBottomSheet = ({
   isOpen,
   onOpenChange,
+  onCloseStart,
   children,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
@@ -53,7 +62,8 @@ export const KeyboardBottomSheet = ({
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
       if (!isOpen || isClosingRef.current) {
         return;
       }
@@ -104,6 +114,7 @@ export const KeyboardBottomSheet = ({
     if (toIndex === SHEET_INDEX.CLOSED) {
       isClosingRef.current = true;
       Keyboard.dismiss();
+      onCloseStart?.();
     }
   };
 
