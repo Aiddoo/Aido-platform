@@ -39,6 +39,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   const changeCategoryMutation = useMutation(useChangeTodoCategoryMutationOptions());
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
+  const isOptimistic = todo.optimistic;
 
   const openEditBottomSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
@@ -161,19 +162,23 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   return (
     <>
       <PressableFeedback
-        onPress={() => onPress?.(todo.id)}
-        onLongPress={isDragDisabled ? undefined : drag}
-        isDisabled={isActive}
-        className={cn('py-2 rounded-xl', isActive && 'bg-gray-1')}
+        onPress={isOptimistic ? undefined : () => onPress?.(todo.id)}
+        onLongPress={isOptimistic || isDragDisabled ? undefined : drag}
+        isDisabled={isActive || isOptimistic}
+        className={cn('py-2 rounded-xl', isActive && 'bg-gray-1', isOptimistic && 'opacity-50')}
       >
         <HStack gap={12} align="center">
           <Checkbox
             className="shadow-none border border-main size-5 rounded-md"
             isSelected={todo.completed}
             onSelectedChange={() =>
-              toggleMutation.mutate({ todoId: todo.id, body: { completed: !todo.completed } })
+              toggleMutation.mutate({
+                todoId: todo.id,
+                body: { completed: !todo.completed },
+                startDate: todo.startDate,
+              })
             }
-            isDisabled={toggleMutation.isPending}
+            isDisabled={toggleMutation.isPending || isOptimistic}
           />
 
           <VStack flex={1} gap={2}>
@@ -197,7 +202,10 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
             )}
           </VStack>
 
-          <PressableFeedback onPress={openActionsBottomSheet} hitSlop={8}>
+          <PressableFeedback
+            onPress={isOptimistic ? undefined : openActionsBottomSheet}
+            hitSlop={8}
+          >
             <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
           </PressableFeedback>
         </HStack>

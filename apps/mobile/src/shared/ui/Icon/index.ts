@@ -30,6 +30,7 @@ export {
   MicIcon,
   MoonIcon,
   MoreIcon,
+  MoveRightIcon,
   NaverIcon,
   NotiIcon,
   PauseIcon,

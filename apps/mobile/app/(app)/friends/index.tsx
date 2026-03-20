@@ -2,11 +2,12 @@ import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation
 import { FriendList } from '@src/features/friend/presentations/components/FriendList';
 import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
 import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
-import { useNavigation } from 'expo-router';
+import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
+import { HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
+import { router, useNavigation } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
-import { View } from 'react-native';
+import { Suspense, useCallback, useLayoutEffect } from 'react';
+import { Pressable, View } from 'react-native';
 import { match } from 'ts-pattern';
 
 const TabView = {
@@ -25,9 +26,7 @@ type FriendsRouteParams = {
   friends: RouteParams;
 };
 
-type UseViewReturn<T> = readonly [T, (newValue: T) => void];
-
-const useView = (): UseViewReturn<TabValue> => {
+const useView = () => {
   const route = useRoute<RouteProp<FriendsRouteParams, 'friends'>>();
   const navigation = useNavigation<NavigationProp<FriendsRouteParams>>();
 
@@ -40,20 +39,46 @@ const useView = (): UseViewReturn<TabValue> => {
     [navigation],
   );
 
-  return [view, setView];
+  return [view, setView] as const;
 };
 
 export default function FriendsScreen() {
   const [view, setView] = useView();
+  const [isEditMode, setIsEditMode] = useFriendListEditMode();
+  const navigation = useNavigation();
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      setView(value as TabValue);
+      if (value !== TabView.friends) {
+        setIsEditMode(false);
+      }
+    },
+    [setView, setIsEditMode],
+  );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <HStack align="center" gap={4}>
+          <Pressable onPress={() => router.push('/friends/add')} hitSlop={8} className="p-2">
+            <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
+          </Pressable>
+          {view === TabView.friends && (
+            <Pressable onPress={() => setIsEditMode(!isEditMode)} hitSlop={8} className="p-2">
+              <Text size="b3" weight="medium" shade={9}>
+                {isEditMode ? '완료' : '편집'}
+              </Text>
+            </Pressable>
+          )}
+        </HStack>
+      ),
+    });
+  }, [navigation, view, isEditMode, setIsEditMode]);
 
   return (
     <View className="flex-1 bg-white">
-      <Tabs
-        value={view}
-        onValueChange={(value) => setView(value as TabValue)}
-        variant="secondary"
-        className="flex-1"
-      >
+      <Tabs value={view} onValueChange={handleTabChange} variant="secondary" className="flex-1">
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 

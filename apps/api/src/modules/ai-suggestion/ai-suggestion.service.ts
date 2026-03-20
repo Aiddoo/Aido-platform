@@ -207,7 +207,7 @@ export class AiSuggestionService {
 		const aiResult = await this.aiProvider.generateStructured({
 			prompt,
 			schema: detectedPatternsSchema,
-			maxTokens: 1000,
+			maxTokens: 1200,
 			temperature: 0.3,
 		});
 

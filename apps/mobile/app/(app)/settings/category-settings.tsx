@@ -3,20 +3,28 @@ import { CategoryList } from '@src/features/todo/presentations/components/Catego
 import {
   type ButtonProps,
   Flex,
+  H3,
   HStack,
-  InfoIcon,
   PlusIcon,
   QueryErrorBoundary,
-  Spacing,
   StyledSafeAreaView,
   Text,
   useOverlay,
 } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
-import { Suspense } from 'react';
+import { fontScaledSize } from '@src/shared/utils/scale';
+import { PressableFeedback, Tabs } from 'heroui-native';
+import { Suspense, useState } from 'react';
+
+const TAB = {
+  edit: 'edit',
+  reorder: 'reorder',
+} as const;
+
+type TabValue = (typeof TAB)[keyof typeof TAB];
 
 const TodoCategorySettingsScreen = () => {
   const createOverlay = useOverlay();
+  const [tab, setTab] = useState<TabValue>(TAB.edit);
 
   const handleCreateCategory = () => {
     createOverlay.open(({ isOpen, close, exit }) => (
@@ -37,10 +45,50 @@ const TodoCategorySettingsScreen = () => {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <Flex direction="column" gap={8} flex={1} className="px-4">
-        <HStack justify="end" className="mb-3">
+        <Flex direction="column" gap={4} className="my-4">
+          <H3>카테고리를 편집하거나{'\n'}순서를 바꿀 수 있어요</H3>
+        </Flex>
+
+        <HStack justify="between" align="center" className="mb-3">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} variant="primary">
+            <Tabs.List>
+              <Tabs.Indicator />
+              <Tabs.Trigger value={TAB.edit}>
+                {({ isSelected }) => (
+                  <Tabs.Label>
+                    <Text
+                      size="b4"
+                      weight={isSelected ? 'bold' : 'medium'}
+                      shade={isSelected ? 8 : 6}
+                    >
+                      카테고리 편집
+                    </Text>
+                  </Tabs.Label>
+                )}
+              </Tabs.Trigger>
+              <Tabs.Trigger value={TAB.reorder}>
+                {({ isSelected }) => (
+                  <Tabs.Label>
+                    <Text
+                      size="b4"
+                      weight={isSelected ? 'bold' : 'medium'}
+                      shade={isSelected ? 8 : 6}
+                    >
+                      순서 바꾸기
+                    </Text>
+                  </Tabs.Label>
+                )}
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs>
+
           <CreateCategoryButton onPress={handleCreateCategory}>
-            <PlusIcon width={14} height={14} colorClassName="text-main" />
-            <Text size="b3" tone="brand">
+            <PlusIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-main"
+            />
+            <Text size="b3" tone="brand" weight="medium">
               카테고리 추가
             </Text>
           </CreateCategoryButton>
@@ -48,18 +96,9 @@ const TodoCategorySettingsScreen = () => {
 
         <QueryErrorBoundary>
           <Suspense fallback={<CategoryList.Loading />}>
-            <CategoryList />
+            <CategoryList mode={tab} />
           </Suspense>
         </QueryErrorBoundary>
-
-        <Spacing size={8} />
-
-        <HStack gap={4} justify="center" align="center">
-          <InfoIcon width={14} height={14} colorClassName="text-gray-6" />
-          <Text size="b4" shade={6}>
-            꾹 누르면 순서를 바꿀 수 있어요
-          </Text>
-        </HStack>
       </Flex>
     </StyledSafeAreaView>
   );
