@@ -1,6 +1,7 @@
 export * from "./request/change-category.dto";
 export * from "./request/create-recurring-todo.dto";
 export * from "./request/create-todo.dto";
+export * from "./request/get-friend-todos-query.dto";
 export * from "./request/get-todos-query.dto";
 export * from "./request/reorder-todo.dto";
 export * from "./request/todo-id-param.dto";

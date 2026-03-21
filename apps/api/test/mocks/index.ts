@@ -8,5 +8,6 @@ export * from "./fake-ai.provider";
 export * from "./fake-bull-queue";
 export * from "./fake-email.service";
 export * from "./jose.mock";
+export * from "./mock-database.factory";
 export * from "./prisma.mock";
 export * from "./transaction.mock";

@@ -83,6 +83,7 @@ export class AiController {
 | 필드 | 타입 | 제약 | 설명 |
 |------|------|------|------|
 | \`text\` | string | 1-500자 | 파싱할 자연어 텍스트 |
+| \`categoryId\` | number | 선택 | 카테고리 ID (선택한 카테고리를 응답에 pass-through) |
 
 ## 🎯 출력 데이터 (\`data\`)
 | 필드 | 타입 | 필수 | 설명 |

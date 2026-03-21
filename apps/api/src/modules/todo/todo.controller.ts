@@ -38,6 +38,7 @@ import {
 	CreateTodoDto,
 	CreateTodoResponseDto,
 	DeleteTodoResponseDto,
+	GetFriendTodosQueryDto,
 	GetTodosQueryDto,
 	ReorderTodoDto,
 	ReorderTodoResponseDto,
@@ -427,7 +428,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	async findFriendTodos(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
-		@Query() query: GetTodosQueryDto,
+		@Query() query: GetFriendTodosQueryDto,
 	): Promise<TodoListResponseDto> {
 		this.#logger.debug(
 			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
@@ -642,7 +643,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateSchedule(
 		@CurrentUser() user: CurrentUserPayload,
