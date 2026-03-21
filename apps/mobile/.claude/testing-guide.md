@@ -44,12 +44,12 @@
 
 테스트 파일은 **대상 파일과 같은 디렉토리**에 배치한다.
 
-| 테스트 대상 | 파일명 패턴 | 예시 |
-|------------|-----------|------|
-| Policy | `{feature}.model.test.ts` | `todo.model.test.ts` |
-| Mapper | `{feature}.mapper.test.ts` (services/ 하위) | `todo.mapper.test.ts` |
-| Service | `{feature}.service.test.ts` | `todo.service.test.ts` |
-| UI 컴포넌트 | `{Component}.test.tsx` | `TodoList.test.tsx` |
+| 테스트 대상 | 파일명 패턴 |
+|------------|-----------|
+| Policy | `{feature}.model.test.ts` |
+| Mapper | `{feature}.mapper.test.ts` (services/ 하위) |
+| Service | `{feature}.service.test.ts` |
+| UI 컴포넌트 | `{Component}.test.tsx` |
 
 > **주의**: `.spec.ts`가 아니라 **`.test.ts` / `.test.tsx`** 를 사용한다 (코드베이스 컨벤션).
 
@@ -89,7 +89,10 @@ it('활성 상태이면 true를 반환한다', async () => {
 
 ### 테스트 데이터 팩토리
 
-팩토리 함수를 사용하면 **테스트마다 달라지는 값만 명시**할 수 있어 의도가 명확해진다.
+기본값이 있는 팩토리 함수로 테스트 데이터를 생성한다.
+모델 필드가 추가/변경되어도 **팩토리의 기본값만 수정**하면 모든 테스트가 일괄 대응된다.
+각 테스트에서는 해당 테스트의 **의도에 관련된 필드만 오버라이드**하므로, 무엇을 검증하는지 명확해진다.
+
 팩토리는 **테스트 파일 상단**이나 **같은 디렉토리의 별도 파일**에 정의한다.
 
 ```typescript
@@ -399,9 +402,12 @@ describe('{Feature} Mapper', () => {
 });
 ```
 
-### 3. Service 테스트 (mock HttpClient)
+### 3. Service 테스트 (DI 기반 스텁 교체)
 
-Service는 **HTTP 호출 → Zod 검증 → Mapper 변환 → Result 반환** 흐름과 **Policy 검증**을 검증한다.
+Service는 생성자에서 `HttpClient` 인터페이스(Port)를 주입받으므로, 테스트에서는 실제 네트워크 구현체 대신 `jest.fn()` 스텁을 주입한다.
+`jest.mock()`으로 모듈을 가로채는 것이 아니라, **생성자 인자를 바꿔치기**하는 방식이므로 테스트가 구현 세부사항에 결합되지 않는다.
+
+검증 대상: **HTTP 호출 → Zod 검증 → Mapper 변환 → Result 반환** 흐름과 **Policy 검증**.
 
 ```typescript
 // features/{feature}/services/{feature}.service.test.ts
@@ -604,6 +610,104 @@ describe('{Feature}Card', () => {
 
 > **QueryErrorBoundary 테스트**: `ThrowError` 컴포넌트 + `QueryClientProvider` 래핑으로 InfraError → fallback UI 렌더링을 검증할 수 있다. 필요 시 `shared/ui/QueryErrorBoundary/` 하위에 작성한다.
 
+### 5. 화면(Screen) 통합 테스트 — 언제, 왜 필요한가
+
+Screen은 여러 훅(Service, Router, Auth, Toast 등)을 조합하는 최상위 계층이다.
+mock 대상이 많아 ROI가 낮으므로 **1~3번(Policy, Mapper, Service) 테스트 대비 우선순위는 높지 않다.**
+핵심 비즈니스 로직이 하위 레이어에서 충분히 검증되었다면, 에러 코드별 분기나 화면 이동 조건 등 **Mutation `onError` 흐름이 복잡한 Screen** 위주로 선택적으로 작성한다.
+
+#### mock 헬퍼 패턴
+
+Screen은 의존하는 훅이 많으므로, mock 설정을 헬퍼로 추출하여 테스트 파일을 깔끔하게 유지한다.
+
+```typescript
+// 스텁 (DI 교체)
+const stubs = {
+  service: { emailLogin: jest.fn() },
+  setStatus: jest.fn(),
+  toast: { success: jest.fn(), error: jest.fn() },
+  routerPush: jest.fn(),
+};
+
+jest.mock('@src/bootstrap/providers/di-provider', () => ({
+  useAuthService: () => stubs.service,
+}));
+jest.mock('@src/bootstrap/providers/auth-provider', () => ({
+  useAuth: () => ({ setStatus: stubs.setStatus }),
+}));
+// ... 나머지 훅도 동일 패턴
+```
+
+#### 반복 동작을 유틸로 추출
+
+```typescript
+function renderScreen() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Screen />
+    </QueryClientProvider>,
+  );
+}
+
+async function fillAndSubmit(email: string, password: string) {
+  const user = userEvent.setup();
+  await user.type(screen.getByPlaceholderText('이메일'), email);
+  await user.type(screen.getByPlaceholderText('비밀번호'), password);
+  await user.press(screen.getByText('로그인'));
+}
+```
+
+#### 테스트는 사용자 플로우 중심
+
+```typescript
+describe('이메일 로그인 화면', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('유효한 자격 증명으로 로그인하면 인증 상태가 전환된다', async () => {
+    // Given
+    stubs.service.emailLogin.mockResolvedValue(ok({ accountRestored: false }));
+    renderScreen();
+
+    // When
+    await fillAndSubmit('test@example.com', 'Test1234!');
+
+    // Then
+    await waitFor(() => {
+      expect(stubs.setStatus).toHaveBeenCalledWith('authenticated');
+    });
+  });
+
+  test('이메일 미인증 에러 시 인증 화면으로 이동한다', async () => {
+    // Given
+    stubs.service.emailLogin.mockResolvedValue(
+      err(new ApiError(ErrorCode.EMAIL_0503, '이메일 인증이 필요합니다', 403)),
+    );
+    renderScreen();
+
+    // When
+    await fillAndSubmit('unverified@example.com', 'Test1234!');
+
+    // Then
+    await waitFor(() => {
+      expect(stubs.routerPush).toHaveBeenCalledWith(
+        expect.objectContaining({ pathname: '/(auth)/verify-email' }),
+      );
+    });
+  });
+});
+```
+
+> **판단 기준**: Screen mock이 5개 이상 필요하면, 해당 Screen의 통합 테스트보다 E2E 테스트가 가성비가 더 좋다.
+
 ---
 
 ## 테스트 실행
@@ -679,9 +783,9 @@ pnpm --filter @aido/mobile test -- --coverage
 
 | 구분 | 예시 | 테스트 여부 |
 |------|------|-----------|
-| 자체 로직 있음 | `fontScaledSize` (산술 연산 + 반올림) | O |
-| 자체 로직 있음 | `formatTodoDateLabel` (조건 분기 + 포맷팅) | O |
-| 라이브러리 래핑 | `cn(...args)` → `twMerge(args)` 그대로 위임 | X |
+| 자체 로직 있음 | 산술 연산 + 반올림 등 자체 계산 | O |
+| 자체 로직 있음 | 조건 분기 + 포맷팅 등 비즈니스 변환 | O |
+| 라이브러리 래핑 | 라이브러리 함수를 그대로 위임하는 wrapper | X |
 
 ### 패턴
 
