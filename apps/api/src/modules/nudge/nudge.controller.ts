@@ -217,9 +217,10 @@ export class NudgeController {
 	@ApiDoc({
 		summary: "특정 친구에 대한 쿨다운 상태 조회",
 		operationId: "getNudgeCooldownInfo",
-		description: `특정 친구에게 콕 찌르기 가능 여부와 남은 쿨다운 시간을 확인합니다.
+		description: `특정 친구에게 가장 최근 보낸 콕 찌르기 기준 쿨다운 상태를 확인합니다.
+실제 콕 찌르기는 동일 Todo 단위로 24시간 쿨다운이 적용됩니다.
 
-**쿨다운 정책**: 동일 친구에게 24시간 내 재콕 찌르기 불가`,
+**쿨다운 정책**: 동일 Todo에 24시간 내 다시 콕 찌르기 불가`,
 	})
 	@ApiSuccessResponse({ type: NudgeCooldownResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
