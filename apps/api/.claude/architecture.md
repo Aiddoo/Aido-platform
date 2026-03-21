@@ -81,13 +81,13 @@ HTTP Request
 
 | 방향 | 허용 여부 | 예시 |
 |------|----------|------|
-| Controller → Service | ✅ | `TodoController → TodoService` |
-| Service → Repository | ✅ | `TodoService → TodoRepository` |
-| Service → 다른 Service | ✅ | `TodoService → FollowService` |
+| Controller → Service | ✅ | `{Feature}Controller → {Feature}Service` |
+| Service → Repository | ✅ | `{Feature}Service → {Feature}Repository` |
+| Service → 다른 Service | ✅ | `{Feature}Service → {Other}Service` |
 | Service → DatabaseService | ✅ (트랜잭션용) | `database.$transaction(...)` |
 | Service → QueueService | ✅ | `queueService.enqueueXxx(...)` |
 | Processor → Provider/Repository | ✅ | 큐 작업 처리 |
-| Repository → DatabaseService | ✅ | `database.todo.findUnique(...)` |
+| Repository → DatabaseService | ✅ | `database.{feature}.findUnique(...)` |
 | Repository → EncryptionService | ✅ | `encryptionService.encrypt(...)` |
 | Controller → Repository | ❌ | Service 거쳐야 함 |
 | Controller → DatabaseService | ❌ | |
@@ -176,6 +176,8 @@ apps/api/
 ```
 
 ### 2.2 BusinessException + BusinessExceptions 팩토리
+
+> **Why**: 에러 생성의 유일한 팩토리. 에러 코드/메시지 변경 시 한 곳만 수정하면 일괄 반영.
 
 `BusinessException`은 `HttpException`을 확장한 도메인 예외 클래스. `BusinessExceptions`는 도메인별 팩토리 메서드를 제공하는 정적 클래스.
 
@@ -595,7 +597,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
+    if (isPublic) {
+      return true;
+    }
     return super.canActivate(context);
   }
 
@@ -707,7 +711,7 @@ export class EncryptionService {
 }
 ```
 
-**사용 위치**: `AccountRepository`에서 OAuth 토큰 암호화/복호화
+**사용 위치**: `{Feature}Repository`에서 민감 데이터 암호화/복호화
 
 ```typescript
 // Repository에서 저장 시
@@ -913,16 +917,19 @@ async create(
 **위치**: `src/common/date/`
 
 ```typescript
-import { getUserToday, toScheduledTime, startOfDayInTimezone } from '@/common/date';
+import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/common/date';
 
-// 사용자의 "오늘" 시작 시각 (UTC)
-const today = getUserToday(timezone);
+// 사용자의 "오늘" 날짜를 UTC midnight Date로 반환
+const today = todayInTimezone(timezone);
 
-// 사용자의 로컬 시간 → UTC 변환
-const scheduledAt = toScheduledTime('2026-02-06', '14:00', timezone);
+// 사용자의 로컬 날짜+시간 → UTC 변환
+const scheduledAt = parseLocalDateTime('2026-02-06', '14:00', timezone);
 
-// 특정 시점의 타임존 기준 자정 (UTC)
+// 특정 시점의 타임존 기준 날짜를 UTC midnight로 반환 (DATE 컬럼 비교용)
 const dayStart = startOfDayInTimezone(date, timezone);
+
+// 타임존 자정의 실제 UTC timestamp (TIMESTAMPTZ 범위 쿼리용)
+const midnight = midnightInTimezone(date, timezone);
 ```
 
 ---
@@ -1201,3 +1208,8 @@ async handleTodoReminder() {
 - [ ] `pnpm test` — 단위 테스트 통과
 - [ ] `pnpm typecheck` — 타입 체크 통과
 - [ ] `pnpm lint` — 린트 통과
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

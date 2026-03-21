@@ -33,22 +33,22 @@ import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(UserService.name);
+  readonly #logger = new Logger(UserService.name);
 
   async createUser(data: CreateUserDto) {
-    this.logger.log(`사용자 생성 시작: ${this.maskEmail(data.email)}`);
-    
+    this.#logger.log(`사용자 생성 시작: ${this.#maskEmail(data.email)}`);
+
     try {
       const user = await this.userRepository.create(data);
-      this.logger.log(`사용자 생성 완료: ${user.id}`);
+      this.#logger.log(`사용자 생성 완료: ${user.id}`);
       return user;
     } catch (error) {
-      this.logger.error(`사용자 생성 실패: ${error.message}`, error.stack);
+      this.#logger.error(`사용자 생성 실패: ${error.message}`, error.stack);
       throw error;
     }
   }
-  
-  private maskEmail(email: string): string {
+
+  #maskEmail(email: string): string {
     const [local, domain] = email.split('@');
     return `${local[0]}***@${domain}`;
   }
@@ -64,7 +64,7 @@ Repository는 데이터 접근 계층이므로 **일반적으로 로깅 불필�
 ```typescript
 // 필요한 경우에만
 async findByEmail(email: string): Promise<User | null> {
-  this.logger.debug(`이메일로 사용자 조회: ${email}`);
+  this.#logger.debug(`이메일로 사용자 조회: ${email}`);
   return this.prisma.user.findUnique({ where: { email } });
 }
 ```
@@ -80,8 +80,8 @@ Controller는 **로깅 불필요**합니다.
 보안 관련 이벤트는 **warn 레벨로 로깅**합니다.
 
 ```typescript
-this.logger.warn(`인증 실패: 유효하지 않은 토큰 - IP: ${ip}`);
-this.logger.warn(`권한 부족: userId=${userId}, resource=${resource}`);
+this.#logger.warn(`인증 실패: 유효하지 않은 토큰 - IP: ${ip}`);
+this.#logger.warn(`권한 부족: userId=${userId}, resource=${resource}`);
 ```
 
 ## 민감 정보 처리
@@ -130,14 +130,14 @@ export function maskPhone(phone: string): string {
 
 ```typescript
 // 좋은 예
-this.logger.log(`사용자 생성 완료: userId=${user.id}`);
-this.logger.warn(`인증 실패: 잘못된 비밀번호 - email=${maskEmail(email)}`);
-this.logger.error(`외부 API 호출 실패: provider=kakao, status=${status}`);
+this.#logger.log(`사용자 생성 완료: userId=${user.id}`);
+this.#logger.warn(`인증 실패: 잘못된 비밀번호 - email=${maskEmail(email)}`);
+this.#logger.error(`외부 API 호출 실패: provider=kakao, status=${status}`);
 
 // 나쁜 예
-this.logger.log(`user created`);  // 한국어 사용, 상세 정보 부족
-this.logger.log(`사용자가 생성되었습니다.`);  // ID 정보 누락
-this.logger.error(error);  // 메시지 없이 에러 객체만
+this.#logger.log(`user created`);  // 한국어 사용, 상세 정보 부족
+this.#logger.log(`사용자가 생성되었습니다.`);  // ID 정보 누락
+this.#logger.error(error);  // 메시지 없이 에러 객체만
 ```
 
 ## 에러 로깅 패턴
@@ -149,7 +149,7 @@ try {
   await this.externalApi.call(params);
 } catch (error) {
   // 컨텍스트 포함하여 로깅
-  this.logger.error(
+  this.#logger.error(
     `외부 API 호출 실패: provider=${provider}, params=${JSON.stringify(safeParams)}`,
     error.stack,
   );
@@ -163,7 +163,7 @@ BusinessException은 이미 예상된 비즈니스 오류이므로 **warn 레벨
 
 ```typescript
 if (!user) {
-  this.logger.warn(`사용자 조회 실패: userId=${userId} 존재하지 않음`);
+  this.#logger.warn(`사용자 조회 실패: userId=${userId} 존재하지 않음`);
   throw new BusinessException(ERROR_CODE.USER_NOT_FOUND);
 }
 ```
@@ -192,11 +192,11 @@ if (!user) {
 
 ```typescript
 // 나쁜 예: 매번 JSON.stringify 실행
-this.logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
+this.#logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
 
 // 좋은 예: debug 레벨인 경우만 실행
-if (this.logger.isLevelEnabled('debug')) {
-  this.logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
+if (this.#logger.isLevelEnabled('debug')) {
+  this.#logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
 }
 ```
 
@@ -205,16 +205,16 @@ if (this.logger.isLevelEnabled('debug')) {
 ```typescript
 // 나쁜 예: 1000번 로깅
 for (const item of items) {
-  this.logger.log(`처리 중: ${item.id}`);
+  this.#logger.log(`처리 중: ${item.id}`);
   await this.process(item);
 }
 
 // 좋은 예: 시작/종료만 로깅
-this.logger.log(`일괄 처리 시작: count=${items.length}`);
+this.#logger.log(`일괄 처리 시작: count=${items.length}`);
 for (const item of items) {
   await this.process(item);
 }
-this.logger.log(`일괄 처리 완료: count=${items.length}`);
+this.#logger.log(`일괄 처리 완료: count=${items.length}`);
 ```
 
 ## 체크리스트
@@ -225,3 +225,8 @@ this.logger.log(`일괄 처리 완료: count=${items.length}`);
 - [ ] 한국어 메시지 사용
 - [ ] 적절한 로깅 레벨 선택
 - [ ] Repository/Controller에서 불필요한 로깅 제거
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

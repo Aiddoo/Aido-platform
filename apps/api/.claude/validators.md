@@ -1,6 +1,8 @@
 # @aido/validators 패키지 규칙
 
 > Zod 스키마 중앙 관리 및 클라이언트-서버 타입 공유
+>
+> 서버-클라이언트 간 계약(Contract). Zod 스키마 한 곳에서 정의하여 양쪽 타입 동기화.
 
 ## 관련 문서
 
@@ -109,24 +111,24 @@ export type TodoResponse = z.infer<typeof todoResponseSchema>;
 
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateTodoDto, TodoResponseDto } from '@aido/validators/nestjs';
-import { TodoService } from './todo.service';
+import { Create{Feature}Dto, {Feature}ResponseDto } from '@aido/validators/nestjs';
+import { {Feature}Service } from './{name}.service';
 
-@ApiTags('todos')
-@Controller('todos')
-export class TodoController {
-  constructor(private readonly todoService: TodoService) {}
+@ApiTags('{name}')
+@Controller('{name}')
+export class {Feature}Controller {
+  constructor(private readonly service: {Feature}Service) {}
 
   @Post()
-  async create(@Body() dto: CreateTodoDto): Promise<TodoResponseDto> {
+  async create(@Body() dto: Create{Feature}Dto): Promise<{Feature}ResponseDto> {
     // dto는 Zod 스키마로 자동 검증됨
     // 잘못된 데이터 → 400 Bad Request 자동 반환
-    return this.todoService.create(dto);
+    return this.service.create(dto);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<TodoResponseDto> {
-    return this.todoService.findById(id);
+  async findOne(@Param('id') id: string): Promise<{Feature}ResponseDto> {
+    return this.service.findById(id);
   }
 }
 ```
@@ -135,25 +137,25 @@ export class TodoController {
 // apps/api/src/modules/todo/todo.service.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTodoInput, TodoResponse } from '@aido/validators';
-import { TodoRepository } from './todo.repository';
+import { Create{Feature}Input, {Feature}Response } from '@aido/validators';
+import { {Feature}Repository } from './{name}.repository';
 
 @Injectable()
-export class TodoService {
-  constructor(private readonly todoRepository: TodoRepository) {}
+export class {Feature}Service {
+  constructor(private readonly repository: {Feature}Repository) {}
 
-  async create(input: CreateTodoInput): Promise<TodoResponse> {
-    // CreateTodoInput 타입으로 안전하게 사용
-    const todo = await this.todoRepository.create(input);
-    return todo;
+  async create(input: Create{Feature}Input): Promise<{Feature}Response> {
+    // Create{Feature}Input 타입으로 안전하게 사용
+    const entity = await this.repository.create(input);
+    return entity;
   }
 
-  async findById(id: string): Promise<TodoResponse> {
-    const todo = await this.todoRepository.findById(id);
-    if (!todo) {
-      throw new NotFoundException('Todo를 찾을 수 없습니다');
+  async findById(id: string): Promise<{Feature}Response> {
+    const entity = await this.repository.findById(id);
+    if (!entity) {
+      throw new NotFoundException('{Feature}를 찾을 수 없습니다');
     }
-    return todo;
+    return entity;
   }
 }
 ```
@@ -631,3 +633,8 @@ describe('createTodoSchema', () => {
   });
 });
 ```
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

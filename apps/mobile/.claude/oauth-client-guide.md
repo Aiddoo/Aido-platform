@@ -376,3 +376,8 @@ async function saveTokens(accessToken: string, refreshToken: string) {
 2. 클라이언트 → `POST /auth/exchange` → `{ exchangeCode }` → `{ accessToken, refreshToken }`
 
 교환 코드는 30초 유효, 1회용입니다. 웹 브라우저 기반 OAuth 플로우에서 사용됩니다.
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

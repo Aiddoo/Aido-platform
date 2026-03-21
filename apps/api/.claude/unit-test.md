@@ -1,6 +1,8 @@
 # 단위 테스트 가이드
 
 > `@suites/unit` + Builder 패턴으로 개별 클래스/메서드를 격리 테스트
+>
+> DI 기반 스텁 교체 — `TestBed.solitary()`가 모든 의존성을 자동 mock하므로 구현 세부사항에 결합되지 않는 테스트 작성 가능.
 
 ---
 
@@ -44,22 +46,22 @@
 ```typescript
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "@suites/doubles.jest";
-import { AuthService } from "@/modules/auth/services/auth.service";
-import { UserRepository } from "@/modules/auth/repositories/user.repository";
+import { {Feature}Service } from "@/modules/{name}/{name}.service";
+import { {Feature}Repository } from "@/modules/{name}/{name}.repository";
 
-describe("AuthService", () => {
-  let service: AuthService;
-  let userRepo: Mocked<UserRepository>;
+describe("{Feature}Service", () => {
+  let service: {Feature}Service;
+  let repo: Mocked<{Feature}Repository>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
+    const { unit, unitRef } = await TestBed.solitary({Feature}Service).compile();
     service = unit;
-    userRepo = unitRef.get(UserRepository);
+    repo = unitRef.get({Feature}Repository);
   });
 
   it("사용자를 조회해야 한다", async () => {
     // Given
-    userRepo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
+    repo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
 
     // When
     const result = await service.findById("1");
@@ -82,7 +84,7 @@ beforeEach(async () => {
     sendBatch: jest.fn().mockResolvedValue({ total: 1, successCount: 1 }),
   };
 
-  const { unit, unitRef } = await TestBed.solitary(NotificationService)
+  const { unit, unitRef } = await TestBed.solitary({Feature}Service)
     .mock(PUSH_PROVIDER)
     .impl(() => mockPushProvider)
     .compile();
@@ -276,5 +278,5 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 
 ---
 
-**문서 버전**: 2.0.0
-**최종 수정일**: 2026-02-14
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

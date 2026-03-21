@@ -58,10 +58,10 @@ test/
 
 ```typescript
 /**
- * CheerService 통합 테스트 (Mock DB)
+ * {Feature}Service 통합 테스트 (Mock DB)
  *
  * @description
- * CheerService와 CheerRepository의 DI 통합을 검증합니다.
+ * {Feature}Service와 {Feature}Repository의 DI 통합을 검증합니다.
  * DB는 Mock으로 처리하며, 실제 DB 연동은 E2E에서 담당합니다.
  *
  * 실행 명령:
@@ -210,14 +210,14 @@ const mockDb = createMockDatabaseService({
 
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { DatabaseService } from "@/database/database.service";
-import { AuthService } from "@/modules/auth/services/auth.service";
+import { {Feature}Service } from "@/modules/{feature}/services/{feature}.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";
 
-describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
+describe("{Feature} 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let authService: AuthService;
+  let service: {Feature}Service;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
   const fakeEmailService = new FakeEmailService();
@@ -227,7 +227,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
     testDb = new TestDatabase();
     databaseService = (await testDb.start()) as DatabaseService;
     module = await createAuthTestModule(databaseService, fakeEmailService);
-    authService = module.get<AuthService>(AuthService);
+    service = module.get<{Feature}Service>({Feature}Service);
   }, 60000);
 
   beforeEach(async () => {
@@ -258,8 +258,8 @@ beforeAll(async () => {
   module = await Test.createTestingModule({
     imports: [JwtModule.register({ secret: "...", signOptions: { expiresIn: "15m" } })],
     providers: [
-      OAuthService, TokenService,
-      AccountRepository, UserRepository, SessionRepository,
+      {Feature}Service, TokenService,
+      {Feature}Repository, {Related}Repository,
       // ... 필요한 Repository들
       { provide: DatabaseService, useValue: databaseService },
       { provide: CacheService, useValue: { invalidateSession: async () => {}, ... } },
@@ -280,12 +280,10 @@ beforeAll(async () => {
 
 ```typescript
 // Mock DB 통합 테스트
-describe("CheerService 통합 테스트 (Mock DB)", () => { ... });
-describe("TodoService 통합 테스트 (Mock DB)", () => { ... });
+describe("{Feature}Service 통합 테스트 (Mock DB)", () => { ... });
 
 // 실제 DB 통합 테스트
-describe("비밀번호 설정 통합 테스트 (실제 DB)", () => { ... });
-describe("OAuth 통합 테스트 (실제 DB)", () => { ... });
+describe("{Feature} 통합 테스트 (실제 DB)", () => { ... });
 ```
 
 ### JSDoc 헤더
@@ -350,5 +348,5 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 
 ---
 
-**문서 버전**: 2.0.0
-**최종 수정일**: 2026-02-14
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22
