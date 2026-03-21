@@ -71,18 +71,20 @@ const prisma = new PrismaClient({ adapter });
 
 ### 기본 구조
 
+> `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여, 같은 Repository 메서드를 트랜잭션 안팎 모두에서 재사용 가능.
+
 ```typescript
 @Injectable()
-export class TodoRepository {
+export class {Feature}Repository {
   constructor(private readonly db: DatabaseService) {}
 
   async findById(id: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.db;
-    return client.todo.findUnique({ where: { id } });
+    return client.{model}.findUnique({ where: { id } });
   }
 
   async findByUserId(userId: string) {
-    return this.db.todo.findMany({
+    return this.db.{model}.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
@@ -292,3 +294,8 @@ export class TestDatabase {
 - [Prisma 7 릴리즈 공지](https://www.prisma.io/blog/announcing-prisma-orm-7-0-0)
 - [Prisma 7 업그레이드 가이드](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
 - [Prisma 7.2.0 변경사항](https://www.prisma.io/blog/announcing-prisma-orm-7-2-0)
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22
