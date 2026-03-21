@@ -49,6 +49,10 @@ describe("Admin (e2e)", () => {
 				data: { role: "ADMIN" },
 			});
 
+			// role 변경 후 재로그인하여 ADMIN role이 포함된 토큰 발급
+			const loginResult = await ctx.helpers.loginUser(adminEmail, password);
+			adminUser = { ...adminUser, accessToken: loginResult.accessToken };
+
 			// 일반 사용자 생성
 			regularUser = await ctx.helpers.createVerifiedUser(
 				regularEmail,
