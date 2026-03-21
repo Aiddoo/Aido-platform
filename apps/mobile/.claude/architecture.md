@@ -140,7 +140,8 @@ features/{feature}/models/
 └── {feature}.error.ts    # ErrorCode + Error + Factory + Guard
 ```
 
-**Domain Model**: Zod 스키마로 정의, 서버 DTO와 독립적
+**Domain Model**: Zod 스키마로 정의, 서버 DTO와 독립적.
+서버 응답 구조가 변경되어도 Mapper만 수정하면 되고, 앱 전체(Service, Presentation)에 영향이 퍼지지 않는다.
 
 ```typescript
 // {feature}.model.ts
@@ -152,7 +153,10 @@ export const {feature}Schema = z.object({
 export type {Feature} = z.infer<typeof {feature}Schema>;
 ```
 
-**Policy**: 비즈니스 로직의 유일한 거처 (순수 함수, 객체 리터럴)
+**Policy**: 비즈니스 규칙의 유일한 거처 (순수 함수, 객체 리터럴)
+
+비즈니스 규칙(제한 수량, 유효성 조건, 상태 판단 등)의 변경 지점을 Policy 한 곳으로 응집시킨다.
+요구사항이 변경되거나 추가될 때 Policy만 수정하면 Service, Presentation 어디에서 사용하든 일괄 반영된다.
 
 ```typescript
 export const {Feature}Policy = {
@@ -167,7 +171,15 @@ export const {Feature}Policy = {
 } as const;
 ```
 
-**Domain Error**: 클라이언트 검증 에러
+**Domain Error**: 클라이언트 비즈니스 에러 (서버 에러 `ApiError`와 완전히 별개)
+
+폼 필드 유효성 검증(길이, 형식 등)은 Zod + react-hook-form에 위임한다.
+Domain Error는 그 너머의 **비즈니스 규칙 위반** — Policy 검증 실패 시 Service가 서버 호출 전에 생성하여 불필요한 네트워크 요청을 차단한다.
+
+예시:
+- 자기 자신에게 친구 요청 시도 → 서버까지 갈 필요 없이 차단
+- 일일 사용 한도 초과 상태에서 요청 시도 → 클라이언트에서 즉시 차단
+- 빈 값이 아닌데 도메인 규칙에 맞지 않는 입력 (태그 형식 불일치 등) → 차단
 
 ```typescript
 // {feature}.error.ts
@@ -214,7 +226,9 @@ export class {Feature}Service {
     const result = await this.#httpClient.get<{Feature}ListResponse>('v1/{feature}s', { params });
 
     // 2. 서버 비즈니스 에러(4xx) 전파
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     // 3. Zod 응답 검증
     const parsed = {feature}ListResponseSchema.safeParse(result.value);
@@ -233,7 +247,9 @@ export class {Feature}Service {
     }
 
     const result = await this.#httpClient.post<{Feature}Response>('v1/{feature}s', params);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = {feature}ResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -246,6 +262,9 @@ export class {Feature}Service {
 ```
 
 **Mapper**: 순수 함수, DTO → Domain 변환
+
+서버 DTO를 클라이언트 Domain Model로 변환하는 유일한 지점.
+서버 응답 구조가 바뀌어도 Mapper만 수정하면 Service, Presentation 전체에 영향이 퍼지지 않는다.
 
 ```typescript
 export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
@@ -275,39 +294,15 @@ features/{feature}/presentations/
 
 #### ViewModel — Domain → UI 데이터 변환
 
-ViewModel은 도메인 모델을 UI에 필요한 형태로 변환하는 순수 함수입니다.
-Query Options의 `select`에서 호출하여 컴포넌트가 받는 데이터를 미리 가공합니다.
+Domain 모델을 UI 표시용 데이터로 변환하는 순수 함수. Query Options의 `select`에서 호출한다.
 
-**ViewModel vs Policy vs Component 상수 구분**
+| 구분 | 역할 | 위치 |
+|------|------|------|
+| **Policy** | 비즈니스 규칙 (서버 호출 전 검증) | `models/` |
+| **ViewModel** | Domain → UI 데이터 변환 | `presentations/view-models/` |
+| **Component 상수** | UI 문구, 색상 등 | 컴포넌트 내부 |
 
-| 구분 | 역할 | 위치 | 예시 |
-|------|------|------|------|
-| **Policy** | 서버 호출 전 검증, 도메인 규칙 | `models/{feature}.model.ts` | `FriendPolicy.isValidTag()` |
-| **ViewModel** | Domain → UI 데이터 변환 | `presentations/view-models/` | `getBadgeType(completionRate)` → `'perfect'` |
-| **Component 상수** | UI 표시 문구, 색상 등 | 컴포넌트 파일 내부 | `BADGE_LABEL: Record<BadgeType, string>` |
-
-**Policy가 아닌 것**: `completionRate → badgeType` 같은 UI 표현용 데이터 변환은 Policy가 아니라 ViewModel입니다.
-Policy는 `isValidTag()`, `canEdit()` 같이 **서버 호출 전 검증**이나 **도메인 비즈니스 규칙**만 담당합니다.
-
-**예외 — ViewModel 없이 `select`에서 직접 처리**: ViewModel 변환이 단순한 경우 (예: 필드 하나 추가, 단순 포맷팅) 별도 view-model 파일 없이 Query Options의 `select`에서 인라인으로 처리해도 됩니다.
-
-```typescript
-// 단순한 경우: view-model 파일 없이 select에서 직접 처리
-export const useGetItemsQueryOptions = () => {
-  const service = useItemService();
-
-  return queryOptions({
-    queryKey: ITEM_QUERY_KEYS.list(),
-    queryFn: async () => unwrap(await service.getItems()),
-    select: (items) => items.map((item) => ({
-      ...item,
-      isNew: Date.now() - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
-    })),
-  });
-};
-```
-
-변환 로직이 복잡하거나 (조건 분기가 2개 이상, 여러 필드를 조합) 재사용이 필요하면 view-model 파일로 분리하세요.
+단순 변환(필드 하나 추가, 포맷팅)은 `select` 인라인으로 처리하고, 복잡하거나(조건 분기 2개+) 재사용이 필요하면 view-model 파일로 분리한다.
 
 **ViewModel 패턴**
 
@@ -319,8 +314,12 @@ export type DerivedType = 'typeA' | 'typeB' | 'typeC';
 
 // 도메인 값 → UI에서 사용할 파생 타입으로 변환
 export function getDerivedType(value: number): DerivedType {
-  if (value === 100) return 'typeA';
-  if (value >= 90) return 'typeB';
+  if (value === 100) {
+    return 'typeA';
+  }
+  if (value >= 90) {
+    return 'typeB';
+  }
   return 'typeC';
 }
 

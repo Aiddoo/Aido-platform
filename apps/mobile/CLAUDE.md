@@ -112,23 +112,10 @@ export const {Feature}Policy = {
 } as const;
 ```
 
-```typescript
-// 실제 예시: FriendPolicy — 서버 호출 전 태그 형식 검증
-export const FriendPolicy = {
-  isValidTag(tag: string): boolean {
-    return /^#\d{4}$/.test(tag);
-  },
-} as const;
-```
-
 ### 2. Error (클라이언트 비즈니스 에러)
 
 **서버 에러(ApiError)와 다르다.** Policy 검증 실패 시 Service가 생성하는 **클라이언트 전용 에러**다.
 서버에 요청을 보내기 전에 사전에 잘못된 입력을 차단하는 역할.
-
-예시:
-- `FriendError.EMPTY_TAG` — 빈 태그로 친구 요청 시도 → 서버 호출 전 차단
-- `FriendError.INVALID_TAG` — 형식이 틀린 태그 → 서버 호출 전 차단
 
 ```typescript
 // models/{feature}.error.ts
@@ -178,42 +165,9 @@ Mapper가 이 차이를 흡수하므로 **서버 응답 구조가 변경되어�
 | 변환 유형 | 서버 DTO | 클라이언트 도메인 | 예시 |
 |-----------|---------|-----------------|------|
 | **타입 변환** | ISO 8601 문자열 | `Date` 객체 | `"2024-01-15T10:30:00Z"` → `new Date(...)` |
-| **필드 필터링** | 전체 필드 포함 | UI에 필요한 필드만 | `Todo` DTO 18개 필드 → `TodoItem` 10개 필드 |
-| **구조 변환** | 서버 응답 구조 | 클라이언트 표준 구조 | `{ friends: [...] }` → `Page<FriendUser>` `{ items: [...] }` |
+| **필드 필터링** | 전체 필드 포함 | UI에 필요한 필드만 | DTO 전체 필드 → 필요한 필드만 선별 |
+| **구조 변환** | 서버 응답 구조 | 클라이언트 표준 구조 | 서버 고유 구조 → `Page<T>` 표준 구조 |
 | **nullable 보존** | `null \| string` | `null \| Date` | `scheduledTime: null` → `null` 유지 |
-
-```typescript
-// 실제 예시: 서버 Todo (18개 필드) → 클라이언트 TodoItem (10개 필드)
-
-// 서버 DTO (@aido/validators)
-// Todo { id, userId, title, content, sortOrder, completed, completedAt,
-//        startDate, endDate, scheduledTime, isAllDay, visibility,
-//        recurrenceGroupId, category, createdAt, updatedAt }
-
-// 클라이언트 도메인 모델 — UI에 불필요한 필드 제거 + 타입 변환
-export const toTodoItem = (dto: Todo): TodoItem => ({
-  id: dto.id,
-  title: dto.title,
-  startDate: dto.startDate,
-  endDate: dto.endDate,
-  category: dto.category,
-  completed: dto.completed,
-  scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,  // string → Date
-  isAllDay: dto.isAllDay,
-  visibility: dto.visibility,
-  recurrenceGroupId: dto.recurrenceGroupId,
-  // userId, content, sortOrder, completedAt, createdAt, updatedAt — 제외
-});
-```
-
-```typescript
-// 실제 예시: 서버 응답 구조 → 클라이언트 Page<T> 구조
-export const toFriendsPage = (dto: FriendsListResponse): Page<FriendUser> => ({
-  items: dto.friends.map(toFriendUser),   // friends → items (표준화)
-  totalCount: dto.totalCount,
-  hasMore: dto.hasMore,
-});
-```
 
 #### 기본 패턴
 
@@ -233,9 +187,9 @@ export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
 
 | 함수명 | 용도 | 예시 |
 |--------|------|------|
-| `to{Entity}` | 단일 DTO → Domain | `toTodoItem(dto)` |
-| `to{Entity}s` | 배열 DTO → Domain[] | `toTodoItems(dtos)` |
-| `to{Entity}Page` | 페이지네이션 응답 → `Page<Domain>` | `toFriendsPage(dto)` |
+| `to{Entity}` | 단일 DTO → Domain | `to[Entity](dto)` |
+| `to{Entity}s` | 배열 DTO → Domain[] | `to[Entity]s(dtos)` |
+| `to{Entity}Page` | 페이지네이션 응답 → `Page<Domain>` | `to[Entity]Page(dto)` |
 
 ### 4. Service (HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증)
 
@@ -267,7 +221,9 @@ export class {Feature}Service {
   // 패턴 A: HTTP + Zod + Mapper
   get{Feature}s = async (params): Promise<Result<{Feature}sResult, ApiError>> => {
     const result = await this.#httpClient.get<{Feature}ListResponse>('v1/{feature}s', { params });
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = {feature}ListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -284,7 +240,9 @@ export class {Feature}Service {
     }
 
     const result = await this.#httpClient.post<{Feature}Response>('v1/{feature}s', input);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = {feature}ResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -377,89 +335,13 @@ export const useCreate{Feature}MutationOptions = () => {
 
 ---
 
-## Result 시스템
+## Result 시스템 & 에러 처리
 
-`Result<T, E>`는 **예상된 에러**를 타입 안전하게 전달하는 패턴이다.
+상세: [architecture.md — 에러 시스템](.claude/architecture.md#에러-시스템)
 
-### 타입
-
-| 타입/함수 | 설명 | 사용처 |
-|----------|------|--------|
-| `Result<T, E>` | 성공 `{ ok: true, value: T }` 또는 실패 `{ ok: false, error: E }` | 모든 레이어 |
-| `ok(value)` | 성공 Result 생성 | Service |
-| `err(error)` | 실패 Result 생성 | Service (ApiError, {Feature}Error) |
-| `unwrap(result)` | 성공 → 값 반환, 실패 → `throw error` | Mutation/Query `mutationFn`/`queryFn` |
-| `isOk(result)` | 성공 타입 가드 | 조건부 처리 |
-| `isErr(result)` | 실패 타입 가드 | 조건부 처리 |
-
-### 핵심 규칙
-
-- **예상된 에러**만 `Result`로 전달 (ApiError, {Feature}Error)
-- **예기치 못한 에러**는 `throw` (InfraError) → ErrorBoundary가 자동 처리
-- Mutation에서 `unwrap`으로 Result → throw 변환하면, React Query `onError`에서 처리 가능
-
-### unwrap 패턴
-
-```typescript
-// mutationFn에서 unwrap → 실패 시 throw → onError에서 catch
-mutationFn: async (input) => {
-  const result = await service.create(input);
-  return unwrap(result); // 실패 시 error가 throw됨
-},
-onError: (error) => {
-  // unwrap이 throw한 error가 여기로 옴
-  if (is{Feature}Error(error)) { ... }
-  if (isApiError(error)) { ... }
-},
-```
-
----
-
-## 에러 처리 흐름
-
-에러는 **예상/예기치 못한** 2가지로 분류된다:
-
-| 분류 | 타입 | 전달 방식 | 처리 위치 | 예시 |
-|------|------|----------|----------|------|
-| 예기치 못한 에러 | `InfraError` | `throw` | ErrorBoundary (자동) | 5xx, 네트워크, 타임아웃 |
-| 예기치 못한 에러 | `ParseError` | `throw` | ErrorBoundary (자동) | Zod safeParse 실패 (Service에서) |
-| 예상된 에러 | `ApiError` | `Result.err` | Mutation `onError` | 4xx 서버 비즈니스 에러 |
-| 예상된 에러 | `{Feature}Error` | `Result.err` | Mutation `onError` | Policy 검증 실패 (서버 호출 전) |
-
-### 흐름도
-
-```
-서버 응답
-  ├── 5xx/네트워크/타임아웃/파싱 → throw InfraError → ErrorBoundary (자동)
-  └── 4xx → Result.err(ApiError) → Service (pass-through) → Mutation onError
-                                                               ├── error.hasCode(ErrorCode.XXX) → Toast/UI 처리
-                                                               └── 기타 → 일반 에러 메시지
-
-클라이언트 검증
-  └── Policy 실패 → Result.err({Feature}Error) → Mutation onError
-                                                   └── is{Feature}Error(error) → Toast/UI 처리
-```
-
-### Zod 파싱 에러 (ParseError)
-
-Service에서 서버 응답을 Zod로 검증할 때 발생. **예기치 못한 에러**로 분류.
-
-```typescript
-// Service에서 발생
-const parsed = schema.safeParse(result.value);
-if (!parsed.success) {
-  throw new ParseError(`[{Feature}Service] Invalid ... response: ${parsed.error.message}`);
-}
-```
-
-### 핵심 규칙
-
-- **InfraError는 throw** — 복구 불가능한 에러이므로 ErrorBoundary가 자동 처리
-- **ApiError는 Result** — 서버가 내려준 비즈니스 에러, Service가 번역하지 않고 pass-through
-- **{Feature}Error는 Result** — 클라이언트 Policy 검증 실패, Service에서 생성
-- **{Feature}Error는 서버 호출 전 차단** — Policy 기반 클라이언트 검증, 불필요한 네트워크 요청 방지
-- **ParseError는 Service에서 throw** — Zod safeParse 실패 시 InfraError로 분류
-- **Service는 서버 에러를 번역하지 않는다** — ErrorCode 기반 분기는 Mutation에서 담당
+- **예상된 에러** (4xx, Policy 실패) → `Result.err()` → Mutation `onError`에서 처리
+- **예기치 못한 에러** (5xx, 네트워크, Zod 파싱 실패) → `throw` → ErrorBoundary 자동 처리
+- Service는 서버 에러를 번역하지 않는다 — ErrorCode 기반 분기는 Mutation에서 담당
 
 ---
 
@@ -467,48 +349,25 @@ if (!parsed.success) {
 
 | 파일 유형 | 패턴 | 예시 |
 |----------|------|------|
-| 모델 | `{feature}.model.ts` | `todo.model.ts` |
-| 에러 | `{feature}.error.ts` | `todo.error.ts` |
-| 서비스 | `{feature}.service.ts` | `todo.service.ts` |
-| 매퍼 | `{feature}.mapper.ts` | `todo.mapper.ts` (services/ 하위) |
-| Query Options | `use-{action}-query-options.ts` | `use-get-todos-query-options.ts` |
-| Mutation Options | `use-{action}-mutation-options.ts` | `use-create-todo-mutation-options.ts` |
-| Query Keys | `{feature}-query-keys.constant.ts` | `todo-query-keys.constant.ts` |
+| 모델 | `{feature}.model.ts` |
+| 에러 | `{feature}.error.ts` |
+| 서비스 | `{feature}.service.ts` |
+| 매퍼 | `{feature}.mapper.ts` (services/ 하위) |
+| Query Options | `use-{action}-query-options.ts` |
+| Mutation Options | `use-{action}-mutation-options.ts` |
+| Query Keys | `{feature}-query-keys.constant.ts` |
 
 ---
 
 ## 새 Feature 추가 체크리스트
 
-### 1단계: 도메인 정의
-- [ ] `features/{feature}/models/{feature}.model.ts` 생성
-  - Zod 스키마 정의
-  - 타입 export
-  - Policy 정의 (비즈니스 규칙)
-- [ ] `features/{feature}/models/{feature}.error.ts` 생성
-  - ErrorReason 타입 정의
-  - {Feature}Error 클래스 정의 (BusinessError 구현)
+상세: [architecture.md — 새 Feature 추가 체크리스트](.claude/architecture.md#새-feature-추가-체크리스트)
 
-### 2단계: Service + Mapper
-- [ ] `features/{feature}/services/{feature}.mapper.ts` 생성
-  - DTO → Domain 변환 함수 (standalone 순수 함수)
-- [ ] `features/{feature}/services/{feature}.service.ts` 생성
-  - HttpClient 주입
-  - HTTP 호출 + Zod safeParse + Mapper 변환
-  - Policy 검증 적용
-
-### 3단계: DI 등록
-- [ ] `bootstrap/providers/di-provider.tsx` 수정
-  - Service 인스턴스 생성 (httpClient 직접 주입)
-  - DIContainer 인터페이스에 추가
-  - `use{Feature}Service` 훅 export
-
-### 4단계: Presentation
-- [ ] `features/{feature}/presentations/constants/{feature}-query-keys.constant.ts` 생성
-- [ ] `features/{feature}/presentations/queries/` 에 Query/Mutation Options 생성
-- [ ] `features/{feature}/presentations/components/` 에 컴포넌트 생성
-
-### 5단계: 라우트
-- [ ] `app/` 하위에 화면 추가
+1. **Models** — Zod 스키마 + 타입 + Policy + Error 정의
+2. **Services + Mapper** — HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증
+3. **DI 등록** — `di-provider.tsx`에 Service 인스턴스 + `use{Feature}Service` 훅
+4. **Presentations** — Query Keys, Query/Mutation Options, 컴포넌트
+5. **라우트** — `app/` 하위에 화면 추가
 
 ---
 
