@@ -170,7 +170,7 @@ beforeEach(() => {
 
 ### 사용 가능한 Builder 목록
 
-`test/builders/index.ts`에서 전체 목록 확인. 주요 Builder:
+`test/builders/index.ts`에서 전체 목록 확인:
 
 | Builder | 주요 체이닝 메서드 |
 |---------|-------------------|
@@ -182,7 +182,14 @@ beforeEach(() => {
 | `SecurityLogBuilder` | `.withEvent()`, `.withMetadata()`, `.withIp()` |
 | `UserConsentBuilder` | `.withType()`, `.asAgreed()` |
 | `TodoBuilder` | `.withTitle()`, `.completed()`, `.withCategory()` |
+| `TodoCategoryBuilder` | `.withName()`, `.withColor()`, `.withSortOrder()`, `.withTodoCount()` |
 | `NotificationBuilder` | `.asFollowNew()`, `.asCheerReceived()`, `.asUnread()` |
+| `CheerBuilder` | `.withMessage()`, `.asRead()`, `.withSenderProfile()`, `.buildWithRelations()` |
+| `NudgeBuilder` | `.withMessage()`, `.withTodoId()`, `.asRead()`, `.buildWithRelations()` |
+| `FollowBuilder` | `.pending()`, `.accepted()`, `.withFollowerUser()`, `.withFollowingUser()` |
+| `PushTokenBuilder` | `.withToken()`, `.asIos()`, `.asAndroid()`, `.asActive()`, `.asInactive()` |
+| `UserPreferenceBuilder` | `.withPushEnabled()`, `.withTimezone()`, `.withMorningReminderHour()` |
+| `SubscriptionEventBuilder` | `.withProductId()`, `.withStore()`, `.withPrice()`, `.withExpirationAtMs()` |
 
 ---
 
