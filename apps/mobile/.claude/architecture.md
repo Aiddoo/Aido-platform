@@ -263,8 +263,8 @@ export class {Feature}Service {
 
 **Mapper**: 순수 함수, DTO → Domain 변환
 
-서버 DTO를 클라이언트 Domain Model로 변환하는 유일한 지점.
-서버 응답 구조가 바뀌어도 Mapper만 수정하면 Service, Presentation 전체에 영향이 퍼지지 않는다.
+서버 DTO를 클라이언트 Domain Model로 변환하는 유일한 지점이다.
+Domain Model이 서버 DTO와 독립적일 수 있는 이유가 바로 이 Mapper 덕분이며, 서버 응답 구조가 변경되더라도 Mapper만 수정하면 Service와 Presentation 계층은 영향을 받지 않는다.
 
 ```typescript
 export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
@@ -303,6 +303,20 @@ Domain 모델을 UI 표시용 데이터로 변환하는 순수 함수. Query Opt
 | **Component 상수** | UI 문구, 색상 등 | 컴포넌트 내부 |
 
 단순 변환(필드 하나 추가, 포맷팅)은 `select` 인라인으로 처리하고, 복잡하거나(조건 분기 2개+) 재사용이 필요하면 view-model 파일로 분리한다.
+
+```typescript
+// 단순한 경우: view-model 파일 없이 select에서 직접 처리
+export const useGet{Feature}sQueryOptions = () => {
+  // ...
+  return queryOptions({
+    // ...
+    select: (items) => items.map((item) => ({
+      ...item,
+      isNew: Date.now() - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
+    })),
+  });
+};
+```
 
 **ViewModel 패턴**
 
