@@ -168,28 +168,74 @@ beforeEach(() => {
 });
 ```
 
-### 사용 가능한 Builder 목록
+### 새 Builder 작성 기준
 
-`test/builders/index.ts`에서 전체 목록 확인:
+**생성 시점**: Prisma 모델이 추가되면 대응하는 Builder도 함께 생성합니다.
 
-| Builder | 주요 체이닝 메서드 |
-|---------|-------------------|
-| `UserBuilder` | `.withEmail()`, `.verified()`, `.asAdmin()`, `.withTag()` |
-| `AccountBuilder` | `.withProvider()`, `.withUserId()` |
-| `SessionBuilder` | `.withUserId()`, `.revoked()`, `.expired()` |
-| `VerificationBuilder` | `.expired()`, `.used()`, `.withAttempts()`, `.withToken()` |
-| `LoginAttemptBuilder` | `.asSuccess()`, `.asFailed()`, `.withIp()` |
-| `SecurityLogBuilder` | `.withEvent()`, `.withMetadata()`, `.withIp()` |
-| `UserConsentBuilder` | `.withType()`, `.asAgreed()` |
-| `TodoBuilder` | `.withTitle()`, `.completed()`, `.withCategory()` |
-| `TodoCategoryBuilder` | `.withName()`, `.withColor()`, `.withSortOrder()`, `.withTodoCount()` |
-| `NotificationBuilder` | `.asFollowNew()`, `.asCheerReceived()`, `.asUnread()` |
-| `CheerBuilder` | `.withMessage()`, `.asRead()`, `.withSenderProfile()`, `.buildWithRelations()` |
-| `NudgeBuilder` | `.withMessage()`, `.withTodoId()`, `.asRead()`, `.buildWithRelations()` |
-| `FollowBuilder` | `.pending()`, `.accepted()`, `.withFollowerUser()`, `.withFollowingUser()` |
-| `PushTokenBuilder` | `.withToken()`, `.asIos()`, `.asAndroid()`, `.asActive()`, `.asInactive()` |
-| `UserPreferenceBuilder` | `.withPushEnabled()`, `.withTimezone()`, `.withMorningReminderHour()` |
-| `SubscriptionEventBuilder` | `.withProductId()`, `.withStore()`, `.withPrice()`, `.withExpirationAtMs()` |
+**파일 위치**: `test/builders/{model}.builder.ts` → `test/builders/index.ts`에서 re-export
+
+**구조 규칙**:
+
+```typescript
+import type { {Model} } from "@/generated/prisma/client";
+
+export class {Model}Builder {
+  private data: {Model};
+  private static idCounter = 0;  // auto-increment ID 모델만
+
+  // 1. private constructor — 모든 필드에 합리적 기본값 설정
+  private constructor(/* 필수 외래키만 파라미터 */) {
+    this.data = { id: ..., /* 기본값 */ };
+  }
+
+  // 2. static create() — 필수 외래키를 파라미터로 받음
+  static create(userId: string): {Model}Builder { ... }
+
+  // 3. static resetIdCounter() — auto-increment ID 모델만
+  static resetIdCounter(): void { ... }
+
+  // 4. 체이닝 메서드 — 카테고리별 그룹핑 (=== 주석 구분)
+  //    - with{Field}(): 단일 필드 설정 (범용)
+  //    - as{State}(): 도메인 상태 전환 (여러 필드를 한 번에 변경)
+  withTitle(title: string): {Model}Builder { ... }   // 단일 필드
+  completed(completedAt?: Date): {Model}Builder { ... } // 상태 전환 (completed + completedAt)
+
+  // 5. build() — 스프레드로 복사본 반환
+  build(): {Model} { return { ...this.data }; }
+
+  // 6. buildWithRelations() — join/include 결과 모킹 시 (필요한 모델만)
+  buildWithRelations(): {Model}WithRelations { ... }
+
+  // 7. static createMany() — 배열 mock 반환값용
+  static createMany(count: number): {Model}[] { ... }
+}
+```
+
+**체이닝 메서드 네이밍**:
+
+| 패턴 | 용도 | 예시 |
+|------|------|------|
+| `with{Field}()` | 단일 필드 설정 | `.withEmail("a@b.com")`, `.withMessage("화이팅")` |
+| `as{State}()` / `{state}()` | 도메인 상태 전환 | `.verified()`, `.asAdmin()`, `.completed()`, `.expired()` |
+| `buildWithRelations()` | 관계 데이터 포함 빌드 | `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder` |
+
+**`create()` 파라미터 기준**: 외래키(FK)만 파라미터로 받고, 나머지는 기본값 → 체이닝으로 override.
+
+```typescript
+// FK가 없는 모델 → 파라미터 없음
+UserBuilder.create()
+
+// FK 1개 → userId
+TodoBuilder.create(userId)
+
+// FK 2개 → senderId, receiverId
+CheerBuilder.create(senderId, receiverId)
+
+// 복합 키 → 필수 식별 필드
+VerificationBuilder.create(userId, type)
+```
+
+> 전체 Builder 목록: `test/builders/index.ts` 참조
 
 ---
 
