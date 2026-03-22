@@ -78,6 +78,37 @@ export class FriendService {
     return ok(toSendRequestResult(parsed.data));
   };
 
+  acceptInviteByTag = async (
+    userTag: string,
+  ): Promise<Result<SendRequestResult, FriendServiceError>> => {
+    const trimmed = userTag.trim();
+
+    if (!trimmed) {
+      return err(FriendErrors.emptyTag());
+    }
+
+    if (!FriendPolicy.isValidTag(trimmed)) {
+      return err(FriendErrors.invalidTag());
+    }
+
+    const result = await this.#httpClient.post<SendFriendRequestResponse>(
+      `v1/follows/invite/${encodeURIComponent(trimmed)}`,
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = sendFriendRequestResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[FriendService] Invalid acceptInvite response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toSendRequestResult(parsed.data));
+  };
+
   getReceivedRequests = async (
     params?: PaginationParams,
   ): Promise<Result<Page<FriendRequest>, ApiError>> => {

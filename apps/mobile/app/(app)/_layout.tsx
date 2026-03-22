@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { usePendingInvite } from '@src/features/friend/presentations/hooks/use-pending-invite';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 const AppLayout = () => {
+  usePendingInvite();
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (

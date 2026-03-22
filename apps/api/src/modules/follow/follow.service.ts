@@ -65,6 +65,171 @@ export class FollowService {
 	}
 
 	/**
+	 * 초대 링크로 즉시 친구 맺기
+	 *
+	 * 일반 친구 요청(PENDING)과 달리, 초대 링크를 통한 경우
+	 * 양방향 ACCEPTED 관계를 즉시 생성한다.
+	 *
+	 * @param userId 초대를 수락하는 사용자 ID (링크를 클릭한 사람)
+	 * @param inviterUserTag 초대한 사용자 태그 (링크를 공유한 사람)
+	 */
+	async acceptInviteByTag(
+		userId: string,
+		inviterUserTag: string,
+	): Promise<SendFollowRequestResult> {
+		const inviter = await this.followRepository.findUserByTag(inviterUserTag);
+		if (!inviter) {
+			throw BusinessExceptions.followTargetNotFoundByTag(inviterUserTag);
+		}
+
+		const inviterId = inviter.id;
+
+		// 1. 자기 자신 체크
+		if (userId === inviterId) {
+			throw BusinessExceptions.cannotFollowSelf();
+		}
+
+		// 2. 이미 친구인지 체크
+		const existingFollow =
+			await this.followRepository.findByFollowerAndFollowing(userId, inviterId);
+
+		if (existingFollow?.status === "ACCEPTED") {
+			// 이미 친구면 에러 대신 성공 반환
+			return { follow: existingFollow, autoAccepted: true };
+		}
+
+		// 3. 양쪽 리소스 제한 체크
+		const [
+			userEntitlement,
+			userFriendCount,
+			inviterEntitlement,
+			inviterFriendCount,
+		] = await Promise.all([
+			this.entitlementService.getResourceLimit(userId, Resource.FRIEND),
+			this.countFriends(userId),
+			this.entitlementService.getResourceLimit(inviterId, Resource.FRIEND),
+			this.countFriends(inviterId),
+		]);
+
+		this.entitlementService.enforceResourceLimit(
+			userFriendCount,
+			userEntitlement.maxCount,
+			BusinessExceptions.friendLimitExceeded,
+		);
+
+		this.entitlementService.enforceResourceLimit(
+			inviterFriendCount,
+			inviterEntitlement.maxCount,
+			BusinessExceptions.friendLimitExceeded,
+		);
+
+		// 4. 트랜잭션으로 양방향 ACCEPTED 관계 생성
+		let follow: Follow;
+		try {
+			follow = await this.database.$transaction(async (tx) => {
+				const [maxSortUser, maxSortInviter] = await Promise.all([
+					this.followRepository.getMaxSortOrderForFriends(userId, tx),
+					this.followRepository.getMaxSortOrderForFriends(inviterId, tx),
+				]);
+
+				// 기존 PENDING 요청이 있으면 ACCEPTED로 업데이트, 없으면 새로 생성
+				const existingUserToInviter =
+					await this.followRepository.findByFollowerAndFollowing(
+						userId,
+						inviterId,
+						tx,
+					);
+
+				const userFollow = existingUserToInviter
+					? await this.followRepository.update(
+							existingUserToInviter.id,
+							{ status: "ACCEPTED", sortOrder: maxSortUser + 1 },
+							tx,
+						)
+					: await this.followRepository.create(
+							{
+								follower: { connect: { id: userId } },
+								following: { connect: { id: inviterId } },
+								status: "ACCEPTED",
+								sortOrder: maxSortUser + 1,
+							},
+							tx,
+						);
+
+				const existingInviterToUser =
+					await this.followRepository.findByFollowerAndFollowing(
+						inviterId,
+						userId,
+						tx,
+					);
+
+				if (existingInviterToUser) {
+					await this.followRepository.update(
+						existingInviterToUser.id,
+						{ status: "ACCEPTED", sortOrder: maxSortInviter + 1 },
+						tx,
+					);
+				} else {
+					await this.followRepository.create(
+						{
+							follower: { connect: { id: inviterId } },
+							following: { connect: { id: userId } },
+							status: "ACCEPTED",
+							sortOrder: maxSortInviter + 1,
+						},
+						tx,
+					);
+				}
+
+				return userFollow;
+			});
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2002"
+			) {
+				throw BusinessExceptions.alreadyFriends(inviterId);
+			}
+			throw error;
+		}
+
+		this.#logger.log(
+			`Invite accepted: ${userId} <-> ${inviterId} (tag=${inviterUserTag})`,
+		);
+
+		// 5. 알림 + 마일스톤 + 캐시
+		const [userName, inviterName] = await Promise.all([
+			this.followRepository.getUserDisplayName(userId),
+			this.followRepository.getUserDisplayName(inviterId),
+		]);
+
+		this.notificationQueueService.enqueueFollowMutual({
+			userId,
+			friendId: inviterId,
+			friendName: inviterName,
+		});
+
+		this.notificationQueueService.enqueueFollowMutual({
+			userId: inviterId,
+			friendId: userId,
+			friendName: userName,
+		});
+
+		this.#checkAndEnqueueFirstFriendMilestone(userId);
+		this.#checkAndEnqueueFirstFriendMilestone(inviterId);
+
+		await Promise.all([
+			this.cacheService.invalidateMutualFriend(userId, inviterId),
+			this.cacheService.invalidateMutualFriendIds(userId),
+			this.cacheService.invalidateMutualFriendIds(inviterId),
+			this.cacheService.invalidateFriendCount(userId),
+			this.cacheService.invalidateFriendCount(inviterId),
+		]);
+
+		return { follow, autoAccepted: true };
+	}
+
+	/**
 	 * 친구 요청 보내기 (userId 기반)
 	 *
 	 * 1. 자기 자신 체크
@@ -585,7 +750,15 @@ export class FollowService {
 					followId,
 					tx,
 				);
-				return withUser!;
+
+				if (!withUser) {
+					throw BusinessExceptions.internalServerError({
+						detail: "Failed to retrieve follow with user info",
+						context: { followId, userId },
+					});
+				}
+
+				return withUser;
 			}
 
 			const newSortOrder = targetFollowId

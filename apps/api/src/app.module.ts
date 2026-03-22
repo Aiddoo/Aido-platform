@@ -1,7 +1,9 @@
+import { join } from "node:path";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { ServeStaticModule } from "@nestjs/serve-static";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { SentryModule } from "@sentry/nestjs/setup";
 import type Redis from "ioredis";
@@ -35,6 +37,7 @@ import { DailyCompletionModule } from "@/modules/daily-completion";
 import { FollowModule } from "@/modules/follow";
 import { HealthModule } from "@/modules/health";
 import { InquiryModule } from "@/modules/inquiry";
+import { InviteModule } from "@/modules/invite/invite.module";
 import { NotificationModule } from "@/modules/notification";
 import { NudgeModule } from "@/modules/nudge";
 import { SchedulerModule } from "@/modules/scheduler";
@@ -55,6 +58,11 @@ import { AppService } from "./app.service";
 		SentryModule.forRoot(),
 
 		// 3. Infrastructure
+		ServeStaticModule.forRoot({
+			rootPath: join(__dirname, "..", "public"),
+			serveRoot: "/assets",
+			serveStaticOptions: { index: false },
+		}),
 		DatabaseModule,
 		EncryptionModule,
 		RedisModule.forRoot(),
@@ -107,6 +115,7 @@ import { AppService } from "./app.service";
 		FollowModule,
 		HealthModule,
 		InquiryModule,
+		InviteModule,
 		NotificationModule,
 		NudgeModule,
 		SchedulerModule,

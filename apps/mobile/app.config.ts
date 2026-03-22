@@ -199,6 +199,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/kakao' },
             { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/naver' },
             { scheme: envConfig.scheme, host: 'auth', pathPrefix: '/google' },
+            { scheme: envConfig.scheme, host: 'invite' },
           ],
           category: ['BROWSABLE', 'DEFAULT'],
         },

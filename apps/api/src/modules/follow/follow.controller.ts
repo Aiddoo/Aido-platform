@@ -100,6 +100,45 @@ export class FollowController {
 
 	constructor(private readonly followService: FollowService) {}
 
+	@Post("invite/:userTag")
+	@ApiParam({
+		name: "userTag",
+		description: "초대한 사용자의 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+		example: "JOHN2026",
+		schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
+	})
+	@ApiDoc({
+		summary: "초대 링크로 친구 맺기",
+		operationId: "acceptInvite",
+		description: `초대 링크를 통해 즉시 양방향 친구 관계를 맺습니다.
+
+일반 친구 요청과 달리 PENDING 없이 즉시 ACCEPTED 상태가 됩니다.
+이미 친구인 경우 에러 없이 성공을 반환합니다.`,
+	})
+	@ApiCreatedResponse({ type: SendFriendRequestResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.FOLLOW_0905)
+	@ApiForbiddenError(ErrorCode.FOLLOW_0909)
+	async acceptInvite(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: UserTagParamDto,
+	): Promise<SendFriendRequestResponseDto> {
+		this.#logger.debug(`초대 수락: ${user.userId} <- ${params.userTag}`);
+
+		const result = await this.followService.acceptInviteByTag(
+			user.userId,
+			params.userTag,
+		);
+
+		this.#logger.log(`초대 수락 완료: ${user.userId} <-> ${params.userTag}`);
+
+		return {
+			message: "친구가 되었습니다.",
+			follow: FollowMapper.toResponse(result.follow),
+			autoAccepted: true,
+		};
+	}
+
 	@Post(":userTag")
 	@ApiParam({
 		name: "userTag",

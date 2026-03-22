@@ -21,8 +21,10 @@ SplashScreen.preventAutoHideAsync();
 
 const AuthGateLayout = () => {
   const { status } = useAuth();
+
   useScreenTracking();
   useUserIdentity();
+
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
   const isLoading = status === 'loading';
@@ -55,6 +57,8 @@ const AuthGateLayout = () => {
       <Stack.Protected guard={!isAuthenticated && !isLoading}>
         <Stack.Screen name="index" />
       </Stack.Protected>
+
+      <Stack.Screen name="invite/[userTag]" options={{ animation: 'none' }} />
     </Stack>
   );
 };

@@ -49,7 +49,7 @@ async function bootstrap() {
 	// API 버전 프리픽스 설정 (/v1)
 	// health 엔드포인트는 프리픽스 제외
 	app.setGlobalPrefix("v1", {
-		exclude: ["health"],
+		exclude: ["health", "invite/:userTag"],
 	});
 
 	if (nodeEnv === "development") {
