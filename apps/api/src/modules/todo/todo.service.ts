@@ -147,11 +147,15 @@ export class TodoService {
 					})),
 				});
 				// items 포함하여 재조회
-				return (await this.todoRepository.findByIdAndUserId(
+				const refetched = await this.todoRepository.findByIdAndUserId(
 					created.id,
 					data.userId,
 					tx,
-				))!;
+				);
+				if (!refetched) {
+					throw BusinessExceptions.todoNotFound(created.id);
+				}
+				return refetched;
 			}
 
 			return created;
@@ -929,7 +933,15 @@ export class TodoService {
 				tx,
 			);
 
-			return (await this.todoRepository.findByIdAndUserId(todoId, userId, tx))!;
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return updatedTodo;
 		});
 
 		return TodoMapper.toResponse(updatedTodo);
@@ -937,6 +949,8 @@ export class TodoService {
 
 	/**
 	 * 하위 항목 수정 (제목/완료 토글)
+	 *
+	 * 소유권 확인 + 수정 + 재조회를 TX 내에서 원자적으로 수행
 	 */
 	async updateItem(
 		todoId: number,
@@ -944,50 +958,72 @@ export class TodoService {
 		userId: string,
 		data: { title?: string; completed?: boolean },
 	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(todoId);
-		}
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
 
-		const item = todo.items.find((i) => i.id === itemId);
-		if (!item) {
-			throw BusinessExceptions.todoItemNotFound(itemId);
-		}
+			const item = todo.items.find((i) => i.id === itemId);
+			if (!item) {
+				throw BusinessExceptions.todoItemNotFound(itemId);
+			}
 
-		await this.todoRepository.updateItem(itemId, data);
+			await this.todoRepository.updateItem(itemId, data, tx);
 
-		const updatedTodo = (await this.todoRepository.findByIdAndUserId(
-			todoId,
-			userId,
-		))!;
-		return TodoMapper.toResponse(updatedTodo);
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return TodoMapper.toResponse(updatedTodo);
+		});
 	}
 
 	/**
 	 * 하위 항목 삭제
+	 *
+	 * 소유권 확인 + 삭제 + 재조회를 TX 내에서 원자적으로 수행
 	 */
 	async deleteItem(
 		todoId: number,
 		itemId: number,
 		userId: string,
 	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(todoId);
-		}
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
 
-		const item = todo.items.find((i) => i.id === itemId);
-		if (!item) {
-			throw BusinessExceptions.todoItemNotFound(itemId);
-		}
+			const item = todo.items.find((i) => i.id === itemId);
+			if (!item) {
+				throw BusinessExceptions.todoItemNotFound(itemId);
+			}
 
-		await this.todoRepository.deleteItem(itemId);
+			await this.todoRepository.deleteItem(itemId, tx);
 
-		const updatedTodo = (await this.todoRepository.findByIdAndUserId(
-			todoId,
-			userId,
-		))!;
-		return TodoMapper.toResponse(updatedTodo);
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return TodoMapper.toResponse(updatedTodo);
+		});
 	}
 
 	/**
@@ -1027,11 +1063,14 @@ export class TodoService {
 
 			await this.todoRepository.reorderItems(data.itemIds, tx);
 
-			const updatedTodo = (await this.todoRepository.findByIdAndUserId(
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
 				todoId,
 				userId,
 				tx,
-			))!;
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
 			return TodoMapper.toResponse(updatedTodo);
 		});
 	}
