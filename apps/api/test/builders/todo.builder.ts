@@ -45,6 +45,7 @@ export class TodoBuilder {
 				color: "#FFB3B3",
 				sortOrder: 0,
 			},
+			items: [],
 		};
 	}
 
@@ -183,7 +184,11 @@ export class TodoBuilder {
 	// === 빌드 ===
 
 	build(): TodoWithCategory {
-		return { ...this.data, category: { ...this.data.category } };
+		return {
+			...this.data,
+			category: { ...this.data.category },
+			items: [...this.data.items],
+		};
 	}
 
 	/** 여러 개 생성 */

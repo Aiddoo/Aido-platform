@@ -6,3 +6,8 @@ export const RECURRING_TODO_LIMITS = {
   MAX_INSTANCES: 100,
   MAX_DAYS_RANGE: 366,
 } as const;
+
+export const TODO_ITEM_LIMITS = {
+  /** 투두당 최대 하위 항목 수 */
+  MAX_PER_TODO: 20,
+} as const;

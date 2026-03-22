@@ -78,6 +78,8 @@ describe("TodoMapper", () => {
 					color: "#FFB3B3",
 					sortOrder: 0,
 				},
+				items: [],
+				itemStats: { total: 0, completed: 0 },
 				createdAt: "2024-01-01T00:00:00.000Z",
 				updatedAt: "2024-01-02T00:00:00.000Z",
 			});

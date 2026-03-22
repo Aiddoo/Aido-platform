@@ -71,6 +71,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -104,6 +115,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -135,6 +157,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 			});
@@ -269,6 +302,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -304,6 +348,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 		});
@@ -337,6 +392,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 			});
@@ -447,6 +513,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 				orderBy: { sortOrder: "asc" },
