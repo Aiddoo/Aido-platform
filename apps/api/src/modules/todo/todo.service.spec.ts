@@ -9,7 +9,7 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import { TODO_LIMITS } from "@aido/validators";
+import { TODO_ITEM_LIMITS, TODO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder, TodoCategoryBuilder } from "@test/builders";
@@ -38,6 +38,7 @@ import { TodoService } from "./todo.service";
 import type {
 	CreateRecurringTodoData,
 	CreateTodoData,
+	TodoItemData,
 	TodoWithCategory,
 } from "./types/todo.types";
 
@@ -1934,6 +1935,395 @@ describe("TodoService", () => {
 			// Then - 생성 결과는 정상 반환 (리마인더 실패는 무시)
 			expect(result.count).toBe(2);
 			expect(result.todos).toHaveLength(2);
+		});
+	});
+
+	// ============================================
+	// addItem
+	// ============================================
+
+	describe("addItem", () => {
+		const mockTodoWithItems = TodoBuilder.create(mockUserId)
+			.withId(1)
+			.withItems([])
+			.build();
+
+		it("하위 항목을 추가하고 부모 Todo를 반환한다", async () => {
+			// Given - 존재하는 Todo와 항목 생성 mock 설정
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodoWithItems);
+			todoRepo.countItemsByTodoId.mockResolvedValue(0);
+			todoRepo.getMaxItemSortOrder.mockResolvedValue(-1);
+			todoRepo.createItem.mockResolvedValue({
+				id: 1,
+				title: "새 항목",
+				completed: false,
+				sortOrder: 0,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			} as TodoItemData);
+
+			const todoWithNewItem = {
+				...mockTodoWithItems,
+				items: [
+					{
+						id: 1,
+						title: "새 항목",
+						completed: false,
+						sortOrder: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					},
+				],
+			};
+			// 두 번째 findByIdAndUserId 호출 (TX 내 재조회)
+			todoRepo.findByIdAndUserId
+				.mockResolvedValueOnce(mockTodoWithItems)
+				.mockResolvedValueOnce(todoWithNewItem);
+
+			// When - 하위 항목 추가
+			const result = await service.addItem(1, mockUserId, { title: "새 항목" });
+
+			// Then - createItem이 호출되고 items가 포함된 Todo 반환
+			expect(todoRepo.createItem).toHaveBeenCalled();
+			expect(result.items).toHaveLength(1);
+		});
+
+		it("존재하지 않는 Todo에 추가 시 예외 발생", async () => {
+			// Given - Todo가 존재하지 않음
+			todoRepo.findByIdAndUserId.mockResolvedValue(null);
+
+			// When & Then: BusinessException 발생
+			try {
+				await service.addItem(999, mockUserId, { title: "새 항목" });
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+
+		it("하위 항목 한도(20개) 초과 시 예외 발생", async () => {
+			// Given - 이미 항목이 한도에 도달한 Todo
+			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodoWithItems);
+			todoRepo.countItemsByTodoId.mockResolvedValue(
+				TODO_ITEM_LIMITS.MAX_PER_TODO,
+			);
+
+			// When & Then: BusinessException 발생
+			try {
+				await service.addItem(1, mockUserId, { title: "새 항목" });
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+	});
+
+	// ============================================
+	// updateItem
+	// ============================================
+
+	describe("updateItem", () => {
+		const mockItem: TodoItemData = {
+			id: 10,
+			title: "기존 항목",
+			completed: false,
+			sortOrder: 0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		it("하위 항목의 completed를 토글한다", async () => {
+			// Given - 항목이 포함된 Todo
+			const todoWithItem = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([mockItem])
+				.build();
+			const updatedTodoWithItem = {
+				...todoWithItem,
+				items: [{ ...mockItem, completed: true }],
+			};
+			todoRepo.findByIdAndUserId
+				.mockResolvedValueOnce(todoWithItem)
+				.mockResolvedValueOnce(updatedTodoWithItem);
+
+			// When - 하위 항목 완료 토글
+			const result = await service.updateItem(1, 10, mockUserId, {
+				completed: true,
+			});
+
+			// Then - updateItem이 올바른 인자로 호출됨
+			expect(todoRepo.updateItem).toHaveBeenCalledWith(
+				10,
+				{ completed: true },
+				todoRepo, // TX mock이 todoRepo를 tx로 전달
+			);
+			expect(result).toBeDefined();
+		});
+
+		it("존재하지 않는 Todo에 수정 시 예외 발생", async () => {
+			// Given - Todo가 존재하지 않음
+			todoRepo.findByIdAndUserId.mockResolvedValue(null);
+
+			// When & Then: BusinessException 발생
+			try {
+				await service.updateItem(999, 10, mockUserId, { completed: true });
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+
+		it("해당 Todo에 속하지 않는 itemId 시 예외 발생", async () => {
+			// Given - 다른 항목 ID로 수정 시도
+			const todoWithItem = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([mockItem])
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(todoWithItem);
+
+			// When & Then: BusinessException 발생 (itemId 999는 해당 Todo에 없음)
+			try {
+				await service.updateItem(1, 999, mockUserId, { completed: true });
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+	});
+
+	// ============================================
+	// deleteItem
+	// ============================================
+
+	describe("deleteItem", () => {
+		const mockItem: TodoItemData = {
+			id: 10,
+			title: "삭제할 항목",
+			completed: false,
+			sortOrder: 0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		it("하위 항목을 삭제하고 부모 Todo를 반환한다", async () => {
+			// Given - 항목이 포함된 Todo
+			const todoWithItem = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([mockItem])
+				.build();
+			const todoAfterDelete = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([])
+				.build();
+			todoRepo.findByIdAndUserId
+				.mockResolvedValueOnce(todoWithItem)
+				.mockResolvedValueOnce(todoAfterDelete);
+
+			// When - 하위 항목 삭제
+			const result = await service.deleteItem(1, 10, mockUserId);
+
+			// Then - deleteItem이 호출되고 빈 items로 반환
+			expect(todoRepo.deleteItem).toHaveBeenCalledWith(10, todoRepo);
+			expect(result.items).toHaveLength(0);
+		});
+
+		it("존재하지 않는 항목 삭제 시 예외 발생", async () => {
+			// Given - 해당 항목이 없는 Todo
+			const todoWithItem = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([mockItem])
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(todoWithItem);
+
+			// When & Then: BusinessException 발생 (itemId 999는 해당 Todo에 없음)
+			try {
+				await service.deleteItem(1, 999, mockUserId);
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+	});
+
+	// ============================================
+	// reorderItems
+	// ============================================
+
+	describe("reorderItems", () => {
+		const mockItems: TodoItemData[] = [
+			{
+				id: 1,
+				title: "항목1",
+				completed: false,
+				sortOrder: 0,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
+			{
+				id: 2,
+				title: "항목2",
+				completed: false,
+				sortOrder: 1,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
+			{
+				id: 3,
+				title: "항목3",
+				completed: false,
+				sortOrder: 2,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			},
+		];
+
+		it("하위 항목 순서를 변경한다", async () => {
+			// Given - 3개 항목이 있는 Todo
+			const todoWithItems = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems(mockItems)
+				.build();
+			const reorderedTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems([
+					{ ...mockItems[2]!, sortOrder: 0 },
+					{ ...mockItems[0]!, sortOrder: 1 },
+					{ ...mockItems[1]!, sortOrder: 2 },
+				])
+				.build();
+			todoRepo.findByIdAndUserId
+				.mockResolvedValueOnce(todoWithItems)
+				.mockResolvedValueOnce(reorderedTodo);
+
+			// When - 항목 순서 변경
+			const result = await service.reorderItems(1, mockUserId, {
+				itemIds: [3, 1, 2],
+			});
+
+			// Then - reorderItems가 올바른 순서로 호출됨
+			expect(todoRepo.reorderItems).toHaveBeenCalled();
+			const reorderArgs = todoRepo.reorderItems.mock.calls[0];
+			expect(reorderArgs?.[0]).toEqual([3, 1, 2]);
+			expect(result).toBeDefined();
+		});
+
+		it("부분 ID 전달 시 예외 발생 (개수 불일치)", async () => {
+			// Given - 3개 항목이 있는 Todo에 2개만 전달
+			const todoWithItems = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems(mockItems)
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(todoWithItems);
+
+			// When & Then: BusinessException 발생
+			try {
+				await service.reorderItems(1, mockUserId, {
+					itemIds: [1, 2],
+				});
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+
+		it("해당 Todo에 속하지 않는 ID 포함 시 예외 발생", async () => {
+			// Given - 3개 항목이 있는 Todo에 존재하지 않는 ID 포함
+			const todoWithItems = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withItems(mockItems)
+				.build();
+			todoRepo.findByIdAndUserId.mockResolvedValue(todoWithItems);
+
+			// When & Then: BusinessException 발생
+			try {
+				await service.reorderItems(1, mockUserId, {
+					itemIds: [1, 2, 999],
+				});
+				fail("Expected BusinessException");
+			} catch (error) {
+				// Then - BusinessException이 발생
+				expect(error).toBeInstanceOf(BusinessException);
+			}
+		});
+	});
+
+	// ============================================
+	// create with inline items
+	// ============================================
+
+	describe("create with inline items", () => {
+		it("items 배열과 함께 Todo를 생성하면 재조회한다", async () => {
+			// Given - items가 포함된 생성 입력
+			const createInputWithItems: CreateTodoData = {
+				userId: mockUserId,
+				title: "항목 포함 할 일",
+				categoryId: 1,
+				startDate: new Date("2024-01-15"),
+				items: [{ title: "항목1" }, { title: "항목2" }],
+			};
+
+			const baseTodo = TodoBuilder.create(mockUserId)
+				.withId(1)
+				.withTitle("항목 포함 할 일")
+				.withCategoryId(1)
+				.build();
+
+			const todoWithItems = {
+				...baseTodo,
+				items: [
+					{
+						id: 1,
+						title: "항목1",
+						completed: false,
+						sortOrder: 0,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					},
+					{
+						id: 2,
+						title: "항목2",
+						completed: false,
+						sortOrder: 1,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					},
+				],
+			};
+
+			todoCategoryService.validateOwnership.mockResolvedValue(
+				TodoCategoryBuilder.create(mockUserId).withId(1).build(),
+			);
+			todoRepo.countActiveByCategory.mockResolvedValue(0);
+			todoRepo.getMaxSortOrder.mockResolvedValue(0);
+			todoRepo.create.mockResolvedValue(baseTodo);
+			todoRepo.findByIdAndUserId.mockResolvedValue(todoWithItems);
+
+			// Given - $transaction mock에 todoItem.createMany 추가
+			const mockTx = {
+				...todoRepo,
+				todoItem: { createMany: jest.fn() },
+			};
+			(database.$transaction as jest.Mock).mockImplementation(
+				(callback: (tx: unknown) => Promise<unknown>) => callback(mockTx),
+			);
+
+			// When - items와 함께 Todo 생성
+			const result = await service.create(createInputWithItems);
+
+			// Then - todoItem.createMany가 호출되고 재조회된 Todo 반환
+			expect(mockTx.todoItem.createMany).toHaveBeenCalledWith({
+				data: expect.arrayContaining([
+					expect.objectContaining({ title: "항목1", sortOrder: 0 }),
+					expect.objectContaining({ title: "항목2", sortOrder: 1 }),
+				]),
+			});
+			expect(result.items).toHaveLength(2);
 		});
 	});
 });

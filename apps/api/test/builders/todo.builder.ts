@@ -13,7 +13,10 @@
  * const privateTodo = TodoBuilder.create('user-123').asPrivate().build();
  * ```
  */
-import type { TodoWithCategory } from "@/modules/todo/types/todo.types";
+import type {
+	TodoItemData,
+	TodoWithCategory,
+} from "@/modules/todo/types/todo.types";
 
 export class TodoBuilder {
 	private data: TodoWithCategory;
@@ -166,6 +169,13 @@ export class TodoBuilder {
 	uncompleted(): TodoBuilder {
 		this.data.completed = false;
 		this.data.completedAt = null;
+		return this;
+	}
+
+	// === 하위 항목 관련 ===
+
+	withItems(items: TodoItemData[]): TodoBuilder {
+		this.data.items = items;
 		return this;
 	}
 

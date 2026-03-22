@@ -1,4 +1,5 @@
 import { TodoBuilder } from "@test/builders";
+import type { TodoItemData } from "@/modules/todo/types/todo.types";
 import { TodoMapper } from "./todo.mapper";
 
 describe("TodoMapper", () => {
@@ -170,6 +171,140 @@ describe("TodoMapper", () => {
 
 			// Then - sortOrder가 올바르게 변환되었는지 검증
 			expect(result.sortOrder).toBe(5);
+		});
+
+		describe("toResponse - 하위 항목", () => {
+			it("items가 빈 배열이면 items=[], itemStats={total:0, completed:0}", () => {
+				// Given - 하위 항목이 빈 배열인 Todo 준비
+				const todo = TodoBuilder.create("user-123").withItems([]).build();
+
+				// When - Mapper 호출
+				const result = TodoMapper.toResponse(todo);
+
+				// Then - items가 빈 배열이고 itemStats가 0인지 검증
+				expect(result.items).toEqual([]);
+				expect(result.itemStats).toEqual({ total: 0, completed: 0 });
+			});
+
+			it("items가 있으면 올바르게 매핑하고 itemStats를 계산한다", () => {
+				// Given - 하위 항목이 포함된 Todo 준비
+				const items: TodoItemData[] = [
+					{
+						id: 1,
+						title: "하위 항목 1",
+						completed: false,
+						sortOrder: 0,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+					{
+						id: 2,
+						title: "하위 항목 2",
+						completed: true,
+						sortOrder: 1,
+						createdAt: new Date("2024-01-02T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-02T00:00:00.000Z"),
+					},
+				];
+				const todo = TodoBuilder.create("user-123").withItems(items).build();
+
+				// When - Mapper 호출
+				const result = TodoMapper.toResponse(todo);
+
+				// Then - items가 올바르게 매핑되고 itemStats가 정확한지 검증
+				expect(result.items).toHaveLength(2);
+				expect(result.items[0]).toEqual({
+					id: 1,
+					title: "하위 항목 1",
+					completed: false,
+					sortOrder: 0,
+					createdAt: "2024-01-01T00:00:00.000Z",
+					updatedAt: "2024-01-01T00:00:00.000Z",
+				});
+				expect(result.items[1]).toEqual({
+					id: 2,
+					title: "하위 항목 2",
+					completed: true,
+					sortOrder: 1,
+					createdAt: "2024-01-02T00:00:00.000Z",
+					updatedAt: "2024-01-02T00:00:00.000Z",
+				});
+				expect(result.itemStats).toEqual({ total: 2, completed: 1 });
+			});
+
+			it("일부 완료된 items의 itemStats.completed가 정확하다", () => {
+				// Given - 3개 중 1개만 완료된 하위 항목 준비
+				const items: TodoItemData[] = [
+					{
+						id: 1,
+						title: "항목 1",
+						completed: false,
+						sortOrder: 0,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+					{
+						id: 2,
+						title: "항목 2",
+						completed: true,
+						sortOrder: 1,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+					{
+						id: 3,
+						title: "항목 3",
+						completed: false,
+						sortOrder: 2,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+				];
+				const todo = TodoBuilder.create("user-123").withItems(items).build();
+
+				// When - Mapper 호출
+				const result = TodoMapper.toResponse(todo);
+
+				// Then - itemStats가 정확한지 검증
+				expect(result.itemStats).toEqual({ total: 3, completed: 1 });
+			});
+
+			it("전부 완료된 items의 itemStats가 정확하다", () => {
+				// Given - 모든 하위 항목이 완료된 Todo 준비
+				const items: TodoItemData[] = [
+					{
+						id: 1,
+						title: "항목 1",
+						completed: true,
+						sortOrder: 0,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+					{
+						id: 2,
+						title: "항목 2",
+						completed: true,
+						sortOrder: 1,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+					{
+						id: 3,
+						title: "항목 3",
+						completed: true,
+						sortOrder: 2,
+						createdAt: new Date("2024-01-01T00:00:00.000Z"),
+						updatedAt: new Date("2024-01-01T00:00:00.000Z"),
+					},
+				];
+				const todo = TodoBuilder.create("user-123").withItems(items).build();
+
+				// When - Mapper 호출
+				const result = TodoMapper.toResponse(todo);
+
+				// Then - itemStats가 전부 완료로 정확한지 검증
+				expect(result.itemStats).toEqual({ total: 3, completed: 3 });
+			});
 		});
 	});
 
