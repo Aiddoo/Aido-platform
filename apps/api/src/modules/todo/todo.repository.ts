@@ -6,6 +6,7 @@ import type { Prisma, Todo } from "@/generated/prisma/client";
 import type {
 	FindFriendTodosParams,
 	FindTodosParams,
+	TodoItemData,
 	TodoWithCategory,
 } from "./types/todo.types.ts";
 
@@ -19,6 +20,17 @@ import type {
 const TODO_CATEGORY_INCLUDE = {
 	category: {
 		select: { id: true, name: true, color: true, sortOrder: true },
+	},
+	items: {
+		select: {
+			id: true,
+			title: true,
+			completed: true,
+			sortOrder: true,
+			createdAt: true,
+			updatedAt: true,
+		},
+		orderBy: { sortOrder: "asc" as const },
 	},
 } as const;
 
@@ -389,5 +401,72 @@ export class TodoRepository {
 			include: TODO_CATEGORY_INCLUDE,
 			orderBy: { sortOrder: "asc" },
 		}) as Promise<TodoWithCategory[]>;
+	}
+
+	// ===== TodoItem CRUD =====
+
+	async createItem(
+		todoId: number,
+		data: { title: string; sortOrder: number },
+		tx?: TransactionClient,
+	): Promise<TodoItemData> {
+		const client = tx ?? this.database;
+		return client.todoItem.create({
+			data: { todoId, ...data },
+			select: {
+				id: true,
+				title: true,
+				completed: true,
+				sortOrder: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
+	}
+
+	async updateItem(
+		itemId: number,
+		data: { title?: string; completed?: boolean },
+		tx?: TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.todoItem.update({ where: { id: itemId }, data });
+	}
+
+	async deleteItem(itemId: number, tx?: TransactionClient): Promise<void> {
+		const client = tx ?? this.database;
+		await client.todoItem.delete({ where: { id: itemId } });
+	}
+
+	async countItemsByTodoId(
+		todoId: number,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		return client.todoItem.count({ where: { todoId } });
+	}
+
+	async getMaxItemSortOrder(
+		todoId: number,
+		tx?: TransactionClient,
+	): Promise<number> {
+		const client = tx ?? this.database;
+		const result = await client.todoItem.aggregate({
+			where: { todoId },
+			_max: { sortOrder: true },
+		});
+		return result._max.sortOrder ?? -1;
+	}
+
+	async reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void> {
+		const client = tx ?? this.database;
+		await Promise.all(
+			itemIds.map((id, index) =>
+				client.todoItem.update({
+					where: { id },
+					data: { sortOrder: index },
+				}),
+			),
+		);
 	}
 }

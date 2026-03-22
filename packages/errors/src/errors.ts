@@ -157,6 +157,8 @@ export const ErrorCode = {
   TODO_0811: 'TODO_0811',
   TODO_0812: 'TODO_0812',
   TODO_0813: 'TODO_0813',
+  TODO_0821: 'TODO_0821',
+  TODO_0822: 'TODO_0822',
 
   // =========================================================================
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
@@ -804,6 +806,18 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       '반복 할 일 생성 시 카테고리의 활성(미완료) 할 일 수가 최대 한도를 초과합니다. 할 일을 완료하거나 다른 카테고리로 이동해주세요.',
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0821]: {
+    code: 'TODO_0821',
+    message: '하위 항목이 최대 한도에 도달했습니다.',
+    description: '투두당 하위 항목은 최대 20개까지 추가할 수 있습니다.',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0822]: {
+    code: 'TODO_0822',
+    message: '하위 항목을 찾을 수 없습니다.',
+    description: '해당 ID의 하위 항목이 존재하지 않거나 해당 투두에 속하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 
   // =========================================================================

@@ -1712,4 +1712,346 @@ describe("Todo (e2e)", () => {
 			expect(firstCat3Index).toBeLessThan(firstCat1Index);
 		});
 	});
+
+	describe("하위 항목 (체크리스트) 플로우", () => {
+		const itemTestEmail = "todo-item-test@example.com";
+		const itemTestPassword = "Test1234!";
+		let itemAccessToken: string;
+		let itemCategoryId: number;
+		let parentTodoId: number;
+
+		beforeAll(async () => {
+			await ctx.testDatabase.cleanup();
+			const user = await ctx.helpers.createVerifiedUser(
+				itemTestEmail,
+				itemTestPassword,
+			);
+			itemAccessToken = user.accessToken;
+			itemCategoryId = await ctx.helpers.getDefaultCategoryId(itemAccessToken);
+
+			// 부모 Todo 생성
+			const res = await request(ctx.app.getHttpServer())
+				.post("/todos")
+				.set("Authorization", `Bearer ${itemAccessToken}`)
+				.send({
+					title: "부모 할 일",
+					categoryId: itemCategoryId,
+					startDate: "2024-06-01",
+				})
+				.expect(201);
+			parentTodoId = res.body.data.todo.id;
+		});
+
+		describe("POST /todos - 인라인 체크리스트 생성", () => {
+			it("items 배열과 함께 할 일 생성 시 items/itemStats 포함", async () => {
+				// Given - 인증된 사용자와 카테고리
+
+				// When - items 배열을 포함하여 할 일 생성
+				const response = await request(ctx.app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({
+						title: "배포 준비",
+						categoryId: itemCategoryId,
+						startDate: "2024-06-15",
+						items: [
+							{ title: "체인지로그" },
+							{ title: "빌드" },
+							{ title: "심사" },
+						],
+					})
+					.expect(201);
+
+				// Then - items와 itemStats가 올바르게 포함
+				expect(response.body.data.todo.items).toHaveLength(3);
+				expect(response.body.data.todo.itemStats).toEqual({
+					total: 3,
+					completed: 0,
+				});
+			});
+
+			it("items 없이 생성 시 items=[], itemStats={total:0,completed:0}", async () => {
+				// Given - 인증된 사용자와 카테고리
+
+				// When - items 없이 할 일 생성
+				const response = await request(ctx.app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({
+						title: "items 없는 할 일",
+						categoryId: itemCategoryId,
+						startDate: "2024-06-16",
+					})
+					.expect(201);
+
+				// Then - 빈 items 배열과 초기 itemStats
+				expect(response.body.data.todo.items).toEqual([]);
+				expect(response.body.data.todo.itemStats).toEqual({
+					total: 0,
+					completed: 0,
+				});
+			});
+		});
+
+		describe("POST /todos/:id/items - 하위 항목 추가", () => {
+			it("하위 항목 추가 성공", async () => {
+				// Given - 부모 할 일이 존재
+
+				// When - 하위 항목 추가 API 호출
+				const response = await request(ctx.app.getHttpServer())
+					.post(`/todos/${parentTodoId}/items`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ title: "새 하위 항목" })
+					.expect(201);
+
+				// Then - 하위 항목이 추가되고 completed=false
+				expect(response.body.data.todo.items.length).toBeGreaterThanOrEqual(1);
+				const addedItem = response.body.data.todo.items.find(
+					(i: { title: string }) => i.title === "새 하위 항목",
+				);
+				expect(addedItem).toBeDefined();
+				expect(addedItem.completed).toBe(false);
+			});
+
+			it("존재하지 않는 Todo에 추가 시 404", async () => {
+				// Given - 존재하지 않는 Todo ID
+
+				// When - 존재하지 않는 Todo에 하위 항목 추가 시도
+				await request(ctx.app.getHttpServer())
+					.post("/todos/999999/items")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ title: "테스트 항목" })
+					.expect(404);
+
+				// Then - 404 Not Found (expect에서 검증)
+			});
+
+			it("빈 제목 시 400", async () => {
+				// Given - 부모 할 일이 존재
+
+				// When - 빈 제목으로 하위 항목 추가 시도
+				await request(ctx.app.getHttpServer())
+					.post(`/todos/${parentTodoId}/items`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ title: "" })
+					.expect(400);
+
+				// Then - 400 Bad Request (expect에서 검증)
+			});
+
+			it("인증 없이 시도 시 401", async () => {
+				// Given - 인증 토큰 없음
+
+				// When - 인증 없이 하위 항목 추가 시도
+				await request(ctx.app.getHttpServer())
+					.post(`/todos/${parentTodoId}/items`)
+					.send({ title: "테스트 항목" })
+					.expect(401);
+
+				// Then - 401 Unauthorized (expect에서 검증)
+			});
+		});
+
+		describe("PATCH /todos/:id/items/:itemId - 수정", () => {
+			it("완료 토글", async () => {
+				// Given - 하위 항목이 있는 Todo
+				const addRes = await request(ctx.app.getHttpServer())
+					.post(`/todos/${parentTodoId}/items`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ title: "토글 테스트" })
+					.expect(201);
+				const itemId = addRes.body.data.todo.items.find(
+					(i: { title: string }) => i.title === "토글 테스트",
+				).id;
+
+				// When - 하위 항목 완료 토글
+				const response = await request(ctx.app.getHttpServer())
+					.patch(`/todos/${parentTodoId}/items/${itemId}`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ completed: true })
+					.expect(200);
+
+				// Then - 완료 상태 변경 및 itemStats 반영
+				const updatedItem = response.body.data.todo.items.find(
+					(i: { id: number }) => i.id === itemId,
+				);
+				expect(updatedItem.completed).toBe(true);
+				expect(
+					response.body.data.todo.itemStats.completed,
+				).toBeGreaterThanOrEqual(1);
+			});
+
+			it("존재하지 않는 itemId 시 404", async () => {
+				// Given - 존재하지 않는 itemId
+
+				// When - 존재하지 않는 하위 항목 수정 시도
+				await request(ctx.app.getHttpServer())
+					.patch(`/todos/${parentTodoId}/items/999999`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ completed: true })
+					.expect(404);
+
+				// Then - 404 Not Found (expect에서 검증)
+			});
+		});
+
+		describe("DELETE /todos/:id/items/:itemId - 삭제", () => {
+			it("삭제 성공, itemStats 재계산", async () => {
+				// Given - 하위 항목이 있는 Todo
+				const addRes = await request(ctx.app.getHttpServer())
+					.post(`/todos/${parentTodoId}/items`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ title: "삭제할 항목" })
+					.expect(201);
+				const itemsBefore = addRes.body.data.todo.items;
+				const itemId = itemsBefore.find(
+					(i: { title: string }) => i.title === "삭제할 항목",
+				).id;
+				const countBefore = itemsBefore.length;
+
+				// When - 하위 항목 삭제
+				const response = await request(ctx.app.getHttpServer())
+					.delete(`/todos/${parentTodoId}/items/${itemId}`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.expect(200);
+
+				// Then - 항목이 제거되고 itemStats 재계산
+				expect(response.body.data.todo.items).toHaveLength(countBefore - 1);
+				const deletedItem = response.body.data.todo.items.find(
+					(i: { id: number }) => i.id === itemId,
+				);
+				expect(deletedItem).toBeUndefined();
+				expect(response.body.data.todo.itemStats.total).toBe(countBefore - 1);
+			});
+		});
+
+		describe("PATCH /todos/:id/items/reorder - 순서 변경", () => {
+			it("전체 ID 배열로 순서 변경 성공", async () => {
+				// Given - 인라인 items가 있는 Todo 생성
+				const createRes = await request(ctx.app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({
+						title: "순서 테스트",
+						categoryId: itemCategoryId,
+						startDate: "2024-06-20",
+						items: [
+							{ title: "첫 번째" },
+							{ title: "두 번째" },
+							{ title: "세 번째" },
+						],
+					})
+					.expect(201);
+				const todoId = createRes.body.data.todo.id;
+				const itemIds = createRes.body.data.todo.items.map(
+					(i: { id: number }) => i.id,
+				);
+
+				// When - 역순으로 재정렬
+				const reversedIds = [...itemIds].reverse();
+				const response = await request(ctx.app.getHttpServer())
+					.patch(`/todos/${todoId}/items/reorder`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ itemIds: reversedIds })
+					.expect(200);
+
+				// Then - 순서가 변경됨
+				const reorderedIds = response.body.data.todo.items.map(
+					(i: { id: number }) => i.id,
+				);
+				expect(reorderedIds).toEqual(reversedIds);
+			});
+
+			it("부분 ID 전달 시 400", async () => {
+				// Given - 인라인 items가 있는 Todo 생성
+				const createRes = await request(ctx.app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({
+						title: "부분 순서 테스트",
+						categoryId: itemCategoryId,
+						startDate: "2024-06-21",
+						items: [{ title: "A" }, { title: "B" }, { title: "C" }],
+					})
+					.expect(201);
+				const todoId = createRes.body.data.todo.id;
+				const itemIds = createRes.body.data.todo.items.map(
+					(i: { id: number }) => i.id,
+				);
+
+				// When - 일부 ID만 전달
+				await request(ctx.app.getHttpServer())
+					.patch(`/todos/${todoId}/items/reorder`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ itemIds: [itemIds[0]] })
+					.expect(400);
+
+				// Then - 400 Bad Request (expect에서 검증)
+			});
+		});
+
+		describe("GET /todos - 목록에 items/itemStats 포함", () => {
+			it("목록 조회 시 각 투두에 items, itemStats 필드 존재", async () => {
+				// Given - 하위 항목이 있는 할 일들이 존재
+
+				// When - 할 일 목록 조회
+				const response = await request(ctx.app.getHttpServer())
+					.get("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.expect(200);
+
+				// Then - 각 투두에 items와 itemStats 필드 포함
+				for (const todo of response.body.data.items) {
+					expect(todo.items).toBeDefined();
+					expect(Array.isArray(todo.items)).toBe(true);
+					expect(todo.itemStats).toBeDefined();
+					expect(todo.itemStats.total).toBeDefined();
+					expect(todo.itemStats.completed).toBeDefined();
+				}
+			});
+		});
+
+		describe("PATCH /todos/:id/complete - 부모 완료와 하위 항목 독립성", () => {
+			it("부모 완료해도 하위 항목 completed 변경 없음", async () => {
+				// Given - 하위 항목이 있는 Todo (일부 완료, 일부 미완료)
+				const createRes = await request(ctx.app.getHttpServer())
+					.post("/todos")
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({
+						title: "완료 독립성 테스트",
+						categoryId: itemCategoryId,
+						startDate: "2024-06-25",
+						items: [{ title: "완료할 항목" }, { title: "미완료 항목" }],
+					})
+					.expect(201);
+				const todoId = createRes.body.data.todo.id;
+				const firstItemId = createRes.body.data.todo.items[0].id;
+
+				// 첫 번째 항목만 완료 처리
+				await request(ctx.app.getHttpServer())
+					.patch(`/todos/${todoId}/items/${firstItemId}`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ completed: true })
+					.expect(200);
+
+				// When - 부모 Todo 완료 처리
+				const completeRes = await request(ctx.app.getHttpServer())
+					.patch(`/todos/${todoId}/complete`)
+					.set("Authorization", `Bearer ${itemAccessToken}`)
+					.send({ completed: true })
+					.expect(200);
+
+				// Then - 부모는 완료되었지만 하위 항목 상태는 변경 없음
+				const items = completeRes.body.data.todo.items;
+				const completedItem = items.find(
+					(i: { id: number }) => i.id === firstItemId,
+				);
+				const incompletedItem = items.find(
+					(i: { id: number }) => i.id !== firstItemId,
+				);
+				expect(completedItem.completed).toBe(true);
+				expect(incompletedItem.completed).toBe(false);
+			});
+		});
+	});
 });

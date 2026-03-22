@@ -460,8 +460,9 @@ model Todo {
   updatedAt DateTime @updatedAt
 
   // 관계
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   nudges Nudge[]
+  items  TodoItem[]
 
   @@index([userId, startDate, endDate])
   @@index([userId, completed, startDate])
@@ -469,6 +470,21 @@ model Todo {
   @@index([userId, sortOrder])
   @@index([completed, scheduledTime]) // 리마인더 대상 조회
   @@index([recurrenceGroupId])
+}
+
+/// 투두 하위 항목 (체크리스트)
+model TodoItem {
+  id        Int      @id @default(autoincrement())
+  todoId    Int
+  title     String   @db.VarChar(200)
+  completed Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  todo Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  @@index([todoId, sortOrder])
 }
 
 enum TodoVisibility {

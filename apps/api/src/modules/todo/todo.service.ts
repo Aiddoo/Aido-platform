@@ -3,6 +3,7 @@ import {
 	DAY_OF_WEEK_MAP,
 	type DayOfWeek,
 	RECURRING_TODO_LIMITS,
+	TODO_ITEM_LIMITS,
 	TODO_LIMITS,
 	type Todo,
 } from "@aido/validators";
@@ -120,7 +121,7 @@ export class TodoService {
 				tx,
 			);
 
-			return this.todoRepository.create(
+			const created = await this.todoRepository.create(
 				{
 					user: { connect: { id: data.userId } },
 					category: { connect: { id: data.categoryId } },
@@ -135,6 +136,29 @@ export class TodoService {
 				},
 				tx,
 			);
+
+			// 인라인 하위 항목 생성 (createMany로 1회 쿼리)
+			if (data.items?.length) {
+				await tx.todoItem.createMany({
+					data: data.items.map((item, i) => ({
+						todoId: created.id,
+						title: item.title,
+						sortOrder: i,
+					})),
+				});
+				// items 포함하여 재조회
+				const refetched = await this.todoRepository.findByIdAndUserId(
+					created.id,
+					data.userId,
+					tx,
+				);
+				if (!refetched) {
+					throw BusinessExceptions.todoNotFound(created.id);
+				}
+				return refetched;
+			}
+
+			return created;
 		});
 
 		this.#logger.log(`Todo created: ${todo.id} for user: ${data.userId}`);
@@ -863,5 +887,191 @@ export class TodoService {
 		}
 
 		return dates;
+	}
+
+	// ===== 하위 항목 (체크리스트) 관리 =====
+
+	/**
+	 * 하위 항목 추가
+	 *
+	 * 제한 체크 + 생성을 $transaction 내에서 수행 (race condition 방지)
+	 */
+	async addItem(
+		todoId: number,
+		userId: string,
+		data: { title: string },
+	): Promise<Todo> {
+		// 소유권 확인 (읽기 전용, TX 외부)
+		const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
+		if (!todo) {
+			throw BusinessExceptions.todoNotFound(todoId);
+		}
+
+		// TX 내에서 제한 체크 + sortOrder 결정 + 생성 (race condition 방지)
+		const updatedTodo = await this.database.$transaction(async (tx) => {
+			const itemCount = await this.todoRepository.countItemsByTodoId(
+				todoId,
+				tx,
+			);
+			if (itemCount >= TODO_ITEM_LIMITS.MAX_PER_TODO) {
+				throw BusinessExceptions.todoItemLimitExceeded(
+					itemCount,
+					TODO_ITEM_LIMITS.MAX_PER_TODO,
+				);
+			}
+
+			const maxSortOrder = await this.todoRepository.getMaxItemSortOrder(
+				todoId,
+				tx,
+			);
+			await this.todoRepository.createItem(
+				todoId,
+				{
+					title: data.title,
+					sortOrder: maxSortOrder + 1,
+				},
+				tx,
+			);
+
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return updatedTodo;
+		});
+
+		return TodoMapper.toResponse(updatedTodo);
+	}
+
+	/**
+	 * 하위 항목 수정 (제목/완료 토글)
+	 *
+	 * 소유권 확인 + 수정 + 재조회를 TX 내에서 원자적으로 수행
+	 */
+	async updateItem(
+		todoId: number,
+		itemId: number,
+		userId: string,
+		data: { title?: string; completed?: boolean },
+	): Promise<Todo> {
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+
+			const item = todo.items.find((i) => i.id === itemId);
+			if (!item) {
+				throw BusinessExceptions.todoItemNotFound(itemId);
+			}
+
+			await this.todoRepository.updateItem(itemId, data, tx);
+
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return TodoMapper.toResponse(updatedTodo);
+		});
+	}
+
+	/**
+	 * 하위 항목 삭제
+	 *
+	 * 소유권 확인 + 삭제 + 재조회를 TX 내에서 원자적으로 수행
+	 */
+	async deleteItem(
+		todoId: number,
+		itemId: number,
+		userId: string,
+	): Promise<Todo> {
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+
+			const item = todo.items.find((i) => i.id === itemId);
+			if (!item) {
+				throw BusinessExceptions.todoItemNotFound(itemId);
+			}
+
+			await this.todoRepository.deleteItem(itemId, tx);
+
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return TodoMapper.toResponse(updatedTodo);
+		});
+	}
+
+	/**
+	 * 하위 항목 순서 변경
+	 *
+	 * 기존 Todo reorder 패턴과 동일: 소유권 확인 + 검증 + 다중 쓰기를 TX 내부에서 수행
+	 */
+	async reorderItems(
+		todoId: number,
+		userId: string,
+		data: { itemIds: number[] },
+	): Promise<Todo> {
+		return this.database.$transaction(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!todo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+
+			// 전체 항목 ID 필수 검증 (부분 전달 시 sortOrder 충돌 방지)
+			const todoItemIds = new Set(todo.items.map((i) => i.id));
+			if (data.itemIds.length !== todoItemIds.size) {
+				throw BusinessExceptions.invalidParameter({
+					message: "모든 하위 항목 ID를 전달해야 합니다",
+					expected: todoItemIds.size,
+					received: data.itemIds.length,
+				});
+			}
+			for (const id of data.itemIds) {
+				if (!todoItemIds.has(id)) {
+					throw BusinessExceptions.todoItemNotFound(id);
+				}
+			}
+
+			await this.todoRepository.reorderItems(data.itemIds, tx);
+
+			const updatedTodo = await this.todoRepository.findByIdAndUserId(
+				todoId,
+				userId,
+				tx,
+			);
+			if (!updatedTodo) {
+				throw BusinessExceptions.todoNotFound(todoId);
+			}
+			return TodoMapper.toResponse(updatedTodo);
+		});
 	}
 }

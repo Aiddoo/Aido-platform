@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { reorderPositionSchema } from '../todo-category/todo-category.common';
 import { dayOfWeekSchema, todoVisibilitySchema } from './todo.common';
-import { RECURRING_TODO_LIMITS } from './todo.constants';
+import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from './todo.constants';
 
 export { todoVisibilitySchema } from './todo.common';
 
@@ -41,6 +41,22 @@ export const createTodoSchema = z
     visibility: todoVisibilitySchema
       .default('PUBLIC')
       .describe('공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개, 기본값: PUBLIC)'),
+    items: z
+      .array(
+        z.object({
+          title: z
+            .string()
+            .min(1, '제목을 입력해주세요')
+            .max(200, '제목은 200자 이하로 입력해주세요')
+            .describe('하위 항목 제목'),
+        }),
+      )
+      .max(
+        TODO_ITEM_LIMITS.MAX_PER_TODO,
+        `하위 항목은 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가할 수 있습니다`,
+      )
+      .optional()
+      .describe('투두 생성 시 함께 만들 체크리스트 (선택, 최대 20개)'),
   })
   .refine(
     (data) => {
@@ -319,3 +335,47 @@ export const todoResourceLimitQuerySchema = z.object({
 });
 
 export type TodoResourceLimitQuery = z.infer<typeof todoResourceLimitQuerySchema>;
+
+// ===== 하위 항목 (체크리스트) =====
+
+export const createTodoItemSchema = z.object({
+  title: z
+    .string()
+    .min(1, '제목을 입력해주세요')
+    .max(200, '제목은 200자 이하로 입력해주세요')
+    .describe('하위 항목 제목 (1-200자)'),
+});
+
+export type CreateTodoItemInput = z.infer<typeof createTodoItemSchema>;
+
+export const updateTodoItemSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, '제목을 입력해주세요')
+      .max(200, '제목은 200자 이하로 입력해주세요')
+      .optional()
+      .describe('하위 항목 제목 (선택)'),
+    completed: z.boolean().optional().describe('완료 상태 (선택)'),
+  })
+  .refine((data) => data.title !== undefined || data.completed !== undefined, {
+    message: '제목 또는 완료 상태 중 하나는 입력해야 합니다',
+  });
+
+export type UpdateTodoItemInput = z.infer<typeof updateTodoItemSchema>;
+
+export const reorderTodoItemsSchema = z.object({
+  itemIds: z
+    .array(z.number().int().positive())
+    .min(1, '아이템 ID를 하나 이상 입력해주세요')
+    .describe('새로운 순서대로 정렬된 하위 항목 ID 배열'),
+});
+
+export type ReorderTodoItemsInput = z.infer<typeof reorderTodoItemsSchema>;
+
+export const todoItemIdParamSchema = z.object({
+  id: z.coerce.number().int().positive('유효하지 않은 Todo ID입니다').describe('부모 할 일 ID'),
+  itemId: z.coerce.number().int().positive('유효하지 않은 Item ID입니다').describe('하위 항목 ID'),
+});
+
+export type TodoItemIdParam = z.infer<typeof todoItemIdParamSchema>;
