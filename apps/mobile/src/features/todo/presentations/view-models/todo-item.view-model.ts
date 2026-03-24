@@ -8,6 +8,7 @@ export interface TodoItemViewModel extends TodoItem {
   endDateObj: Date | null;
   scheduledTime24: string | undefined;
   isRecurring: boolean;
+  hasSubTodos: boolean;
   optimistic?: true;
 }
 
@@ -22,4 +23,5 @@ export const toTodoItemViewModel = (
   endDateObj: toNullableDate(todo.endDate),
   scheduledTime24: todo.scheduledTime ? formatTime24(todo.scheduledTime) : undefined,
   isRecurring: todo.recurrenceGroupId !== null,
+  hasSubTodos: todo.subTodoStats.total > 0,
 });

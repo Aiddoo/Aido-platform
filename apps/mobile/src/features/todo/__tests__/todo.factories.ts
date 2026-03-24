@@ -3,6 +3,7 @@ import type {
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
   Todo,
+  TodoItemResponse,
   TodoListResponse,
 } from '@aido/validators';
 import { ApiError } from '@src/shared/errors/api-error';
@@ -113,6 +114,22 @@ export const createDailyCompletionsDto = (
   overrides?: Partial<DailyCompletionsRangeResponse>,
 ): DailyCompletionsRangeResponse => ({
   ...generateDailyCompletionsDto(),
+  ...overrides,
+});
+
+const generateTodoItemResponseDto = (): TodoItemResponse => ({
+  id: 1,
+  title: '테스트 항목',
+  completed: false,
+  sortOrder: 0,
+  createdAt: '2026-03-08T00:00:00.000Z',
+  updatedAt: '2026-03-08T00:00:00.000Z',
+});
+
+export const createTodoItemResponseDto = (
+  overrides?: Partial<TodoItemResponse>,
+): TodoItemResponse => ({
+  ...generateTodoItemResponseDto(),
   ...overrides,
 });
 
