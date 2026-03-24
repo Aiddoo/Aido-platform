@@ -37,9 +37,12 @@ interface TodoFormContentProps {
   onDatePress: () => void;
   onTimePress: () => void;
   onRepeatPress: () => void;
+  onCategoryPress: () => void;
   onSubmit: () => void;
   isSubmitting: boolean;
   onClose: () => void;
+  categoryName?: string;
+  categoryColor?: string;
 }
 
 export const TodoFormContent = ({
@@ -47,9 +50,12 @@ export const TodoFormContent = ({
   onDatePress,
   onTimePress,
   onRepeatPress,
+  onCategoryPress,
   onSubmit,
   isSubmitting,
   onClose,
+  categoryName,
+  categoryColor,
 }: TodoFormContentProps) => {
   const methods = useFormContext<AddTodoFormInput>();
 
@@ -87,6 +93,11 @@ export const TodoFormContent = ({
         <TimeLabelButton onPress={onTimePress} />
         <RepeatChip onPress={onRepeatPress} />
         <VisibilityChip />
+        <CategoryChip
+          onPress={onCategoryPress}
+          categoryName={categoryName}
+          categoryColor={categoryColor}
+        />
       </ScrollView>
 
       <Box className="h-px bg-gray-2" />
@@ -365,6 +376,28 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
       />
       <Text size="e1" weight="medium" {...(isActive ? { tone: 'brand' } : { shade: 6 })}>
         {label}
+      </Text>
+    </PressableFeedback>
+  );
+};
+
+const CategoryChip = ({
+  onPress,
+  categoryName,
+  categoryColor,
+}: {
+  onPress: () => void;
+  categoryName?: string;
+  categoryColor?: string;
+}) => {
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      className="h-8 flex-row items-center gap-1.5 rounded-full border border-gray-3 px-3"
+    >
+      <Box className="size-2 rounded-full" style={{ backgroundColor: categoryColor ?? '#999' }} />
+      <Text size="e1" weight="medium" shade={6}>
+        {categoryName ?? '카테고리'}
       </Text>
     </PressableFeedback>
   );

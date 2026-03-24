@@ -2,17 +2,19 @@ import type { DayOfWeek } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardBottomSheet, StackedBottomSheetModal, useBottomSheetModal } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
-import { useMutation } from '@tanstack/react-query';
-import { Suspense, useEffect, useRef } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { ActivityIndicator, type TextInput } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
+import { useGetTodoCategoriesQueryOptions } from '../queries/use-get-todo-categories-query-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { type AddTodoFormInput, addTodoFormSchema } from '../schemas/add-todo-form.schema';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
+import { CategorySelectContent } from './CategorySelectBottomSheet';
 import { TodoDatePickerContent } from './TodoDatePickerContent';
 import { TodoFormContent } from './TodoFormContent';
 import { TodoRepeatPickerContent } from './TodoRepeatPickerContent';
@@ -87,6 +89,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const dateModal = useBottomSheetModal();
   const timeModal = useBottomSheetModal();
   const repeatModal = useBottomSheetModal();
+  const categoryModal = useBottomSheetModal();
 
   const isClosingRef = useRef(false);
 
@@ -178,6 +181,11 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     timeModal.close();
   };
 
+  const handleCategoryConfirm = (categoryId: number) => {
+    methods.setValue('categoryId', categoryId);
+    categoryModal.close();
+  };
+
   const handleRepeatConfirm = (repeat: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null }) => {
     methods.setValue('isRecurring', true);
     methods.setValue('daysOfWeek', repeat.daysOfWeek);
@@ -194,15 +202,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           isClosingRef.current = true;
         }}
       >
-        <TodoFormContent
-          todoInputRef={todoInputRef}
-          onDatePress={() => dateModal.open()}
-          onTimePress={() => timeModal.open()}
-          onRepeatPress={() => repeatModal.open()}
-          onSubmit={onSubmit}
-          isSubmitting={isSubmitting}
-          onClose={onClose}
-        />
+        <CategoryInfoProvider>
+          {({ categoryName, categoryColor }) => (
+            <TodoFormContent
+              todoInputRef={todoInputRef}
+              onDatePress={() => dateModal.open()}
+              onTimePress={() => timeModal.open()}
+              onRepeatPress={() => repeatModal.open()}
+              onCategoryPress={() => categoryModal.open()}
+              onSubmit={onSubmit}
+              isSubmitting={isSubmitting}
+              onClose={onClose}
+              categoryName={categoryName}
+              categoryColor={categoryColor}
+            />
+          )}
+        </CategoryInfoProvider>
       </KeyboardBottomSheet>
 
       <StackedBottomSheetModal modalRef={dateModal.ref} onDismiss={focusTodoInput}>
@@ -225,6 +240,15 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         </Suspense>
       </StackedBottomSheetModal>
 
+      <StackedBottomSheetModal modalRef={categoryModal.ref} onDismiss={focusTodoInput}>
+        <Suspense fallback={<ActivityIndicator />}>
+          <CategorySelectModalContent
+            selectedCategoryId={methods.getValues('categoryId')}
+            onSelect={handleCategoryConfirm}
+          />
+        </Suspense>
+      </StackedBottomSheetModal>
+
       <StackedBottomSheetModal modalRef={repeatModal.ref} onDismiss={focusTodoInput}>
         <TodoRepeatPickerContent
           startDate={methods.getValues('startDate')}
@@ -239,3 +263,46 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     </FormProvider>
   );
 };
+
+function CategoryInfoProvider({
+  children,
+}: {
+  children: (info: { categoryName: string; categoryColor: string }) => React.ReactNode;
+}) {
+  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const categoryId = useWatch<AddTodoFormValues, 'categoryId'>({ name: 'categoryId' });
+
+  const category = useMemo(
+    () => data.categories.find((c) => c.id === categoryId),
+    [data.categories, categoryId],
+  );
+
+  return (
+    <>
+      {children({
+        categoryName: category?.name ?? '카테고리',
+        categoryColor: category?.color ?? '#999',
+      })}
+    </>
+  );
+}
+
+function CategorySelectModalContent({
+  selectedCategoryId,
+  onSelect,
+}: {
+  selectedCategoryId: number;
+  onSelect: (categoryId: number) => void;
+}) {
+  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+
+  return (
+    <CategorySelectContent
+      categories={data.categories}
+      selectedCategoryId={selectedCategoryId}
+      onSelect={onSelect}
+      submitLabel="선택하기"
+      isLoading={false}
+    />
+  );
+}

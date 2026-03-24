@@ -47,7 +47,7 @@ interface CategorySelectContentProps {
   isLoading: boolean;
 }
 
-function CategorySelectContent({
+export function CategorySelectContent({
   categories,
   selectedCategoryId,
   onSelect,
