@@ -60,17 +60,13 @@ export const useDeleteSubTodoMutationOptions = () => {
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       toast.error(undefined, { fallback: '항목 삭제에 실패했어요' });
-
       if (context) {
         queryClient.setQueryData(
           TODO_QUERY_KEYS.listByDate(context.startDate),
           context.previousData,
         );
       }
-    },
-    onSettled: (_data, _error, { startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
   });
 };

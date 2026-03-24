@@ -60,7 +60,10 @@ export const SubTodoPolicy = {
 
   statsAfterDelete(parentTodo: TodoItem, subTodoId: number): SubTodoStats {
     const deleted = parentTodo.subTodos.find((subTodo) => subTodo.id === subTodoId);
-    return statsAfterDelete(parentTodo.subTodoStats, deleted?.completed ?? false);
+    if (!deleted) {
+      return parentTodo.subTodoStats;
+    }
+    return statsAfterDelete(parentTodo.subTodoStats, deleted.completed);
   },
 
   completionProgress(parentTodo: TodoItem): number {

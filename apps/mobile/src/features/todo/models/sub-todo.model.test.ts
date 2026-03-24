@@ -109,7 +109,7 @@ describe('SubTodoPolicy', () => {
       expect(result).toEqual({ total: 1, completed: 1 });
     });
 
-    test('존재하지 않는 id를 삭제하면 미완료로 취급하여 total만 1 감소한다', () => {
+    test('존재하지 않는 id를 삭제하면 stats를 변경하지 않는다', () => {
       // Given
       const parentTodo = createParentTodo({
         subTodos: [{ id: 1, title: '항목', completed: true, sortOrder: 0 }],
@@ -120,7 +120,7 @@ describe('SubTodoPolicy', () => {
       const result = SubTodoPolicy.statsAfterDelete(parentTodo, 999);
 
       // Then
-      expect(result).toEqual({ total: 0, completed: 1 });
+      expect(result).toEqual({ total: 1, completed: 1 });
     });
   });
 

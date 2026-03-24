@@ -64,17 +64,13 @@ export const useToggleSubTodoMutationOptions = () => {
     },
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
       if (context) {
         queryClient.setQueryData(
           TODO_QUERY_KEYS.listByDate(context.startDate),
           context.previousData,
         );
       }
-    },
-    onSettled: (_data, _error, { startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
   });
 };

@@ -83,7 +83,6 @@ export const useAddSubTodoMutationOptions = () => {
     },
     onSettled: (_data, _error, { startDate }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
     },
   });
 };

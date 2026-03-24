@@ -23,8 +23,8 @@ export const useReorderSubTodosMutationOptions = () => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },
-    onMutate: async ({ todoId, subTodoIds, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+    onMutate: ({ todoId, subTodoIds, startDate }) => {
+      queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
 
       const previous = queryClient.getQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate));
 
@@ -36,7 +36,7 @@ export const useReorderSubTodosMutationOptions = () => {
             if (todo.id !== todoId) return todo;
             const reordered = subTodoIds
               .map((id) => todo.subTodos.find((st) => st.id === id))
-              .filter((st): st is NonNullable<typeof st> => st != null);
+              .filter((st) => st != null);
             return { ...todo, subTodos: reordered };
           }),
         };
@@ -52,7 +52,9 @@ export const useReorderSubTodosMutationOptions = () => {
       if (context?.previous) {
         queryClient.setQueryData(TODO_QUERY_KEYS.listByDate(context.startDate), context.previous);
       }
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+      if (context) {
+        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(context.startDate) });
+      }
     },
   });
 };
