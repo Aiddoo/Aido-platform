@@ -62,6 +62,10 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Avatar` | 선택 가능 아바타 아이콘 | `src/shared/ui/Avatar/Avatar.md` |
 | `ConfirmDialog` | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화) | `src/shared/ui/ConfirmDialog/ConfirmDialog.md` |
 | `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component) | `src/shared/ui/SettingNavigation/SettingNavigation.md` |
+| `KeyboardBottomSheet` | 키보드 연동 바텀시트 (폼용) | `src/shared/ui/BottomSheet/BottomSheet.md` |
+| `BottomSheet` | 키보드 불필요 바텀시트 (피커, 액션시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
+| `StackedBottomSheetModal` | 스택형 모달 피커 (시트 위에 시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
+| `useBottomSheetModal` | 모달 present/dismiss + 키보드 타이밍 훅 | `src/shared/ui/BottomSheet/BottomSheet.md` |
 
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.

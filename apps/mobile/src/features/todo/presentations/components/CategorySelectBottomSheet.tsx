@@ -1,15 +1,11 @@
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
-import { Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
+import { BottomSheet, Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { BottomSheet, PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
-type ContentProps = ComponentProps<typeof BottomSheet.Content>;
-
-interface CategorySelectBottomSheetProps
-  extends Omit<ContentProps, 'children' | 'enableDynamicSizing'> {
+interface CategorySelectBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   selectedCategoryId: number;
@@ -25,26 +21,20 @@ export function CategorySelectBottomSheet({
   onSelect,
   submitLabel,
   isLoading = false,
-  ...contentProps
 }: CategorySelectBottomSheetProps) {
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <BottomSheet.Portal>
-        <BottomSheet.Overlay />
-        <BottomSheet.Content enableDynamicSizing {...contentProps}>
-          {isOpen && (
-            <CategorySelectContent
-              categories={data.categories}
-              selectedCategoryId={selectedCategoryId}
-              onSelect={onSelect}
-              submitLabel={submitLabel}
-              isLoading={isLoading}
-            />
-          )}
-        </BottomSheet.Content>
-      </BottomSheet.Portal>
+      {isOpen && (
+        <CategorySelectContent
+          categories={data.categories}
+          selectedCategoryId={selectedCategoryId}
+          onSelect={onSelect}
+          submitLabel={submitLabel}
+          isLoading={isLoading}
+        />
+      )}
     </BottomSheet>
   );
 }
@@ -68,11 +58,9 @@ function CategorySelectContent({
 
   return (
     <VStack gap={20}>
-      <BottomSheet.Title>
-        <Text size="b3" weight="semibold">
-          카테고리 선택
-        </Text>
-      </BottomSheet.Title>
+      <Text size="b3" weight="semibold">
+        카테고리 선택
+      </Text>
 
       <VStack gap={8}>
         {categories.map((category) => {

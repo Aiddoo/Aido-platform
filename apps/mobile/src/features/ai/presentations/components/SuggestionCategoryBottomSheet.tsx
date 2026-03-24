@@ -1,7 +1,6 @@
 import { CategorySelectBottomSheet } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
 
@@ -20,7 +19,6 @@ export function SuggestionCategoryBottomSheet({
   onOpenChange,
   onAccepted,
 }: SuggestionCategoryBottomSheetProps) {
-  const insets = useSafeAreaInsets();
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
 
@@ -36,10 +34,6 @@ export function SuggestionCategoryBottomSheet({
 
   return (
     <CategorySelectBottomSheet
-      detached
-      bottomInset={insets.bottom || 16}
-      className="mx-4"
-      backgroundClassName="rounded-[24px]"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       selectedCategoryId={defaultCategoryId}

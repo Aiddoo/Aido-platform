@@ -1,10 +1,10 @@
 import {
   ArrowRightIcon,
+  BottomSheet,
   Box,
   CalendarIcon,
   ClockIcon,
   EditIcon,
-  KeyboardBottomSheet,
   ListIcon,
   ListRow,
   MoveRightIcon,
@@ -65,7 +65,7 @@ export const TodoActionsBottomSheet = ({
   };
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
         <PressableFeedback
           onPress={() => {
@@ -191,6 +191,6 @@ export const TodoActionsBottomSheet = ({
           />
         </PressableFeedback>
       </VStack>
-    </KeyboardBottomSheet>
+    </BottomSheet>
   );
 };

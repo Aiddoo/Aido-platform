@@ -1,5 +1,10 @@
 export { Avatar } from './Avatar';
-export { KeyboardBottomSheet } from './BottomSheet';
+export {
+  BottomSheet,
+  KeyboardBottomSheet,
+  StackedBottomSheetModal,
+  useBottomSheetModal,
+} from './BottomSheet';
 export { Box } from './Box';
 export {
   Button,

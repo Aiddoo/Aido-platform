@@ -33,7 +33,7 @@ import type { AddTodoFormInput } from '../schemas/add-todo-form.schema';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 
 interface TodoFormContentProps {
-  titleInputRef?: RefObject<TextInput | null>;
+  todoInputRef?: RefObject<TextInput | null>;
   onDatePress: () => void;
   onTimePress: () => void;
   onRepeatPress: () => void;
@@ -43,7 +43,7 @@ interface TodoFormContentProps {
 }
 
 export const TodoFormContent = ({
-  titleInputRef,
+  todoInputRef,
   onDatePress,
   onTimePress,
   onRepeatPress,
@@ -63,7 +63,7 @@ export const TodoFormContent = ({
         name="title"
         render={({ field: { onChange, value } }) => (
           <BottomSheetInput
-            ref={titleInputRef}
+            ref={todoInputRef}
             autoFocus
             placeholder="무엇을 하고 싶으신가요?"
             value={value}
