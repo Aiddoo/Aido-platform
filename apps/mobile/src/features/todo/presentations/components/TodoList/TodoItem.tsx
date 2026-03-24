@@ -39,6 +39,7 @@ interface TodoItemProps {
 
 export const TodoItem = ({ todo, drag, isActive, isDragDisabled }: TodoItemProps) => {
   const actionsOverlay = useOverlay();
+  const subTodoActionsOverlay = useOverlay();
   const overlay = useOverlay();
   const toggleMutation = useMutation(useToggleTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
@@ -254,9 +255,7 @@ export const TodoItem = ({ todo, drag, isActive, isDragDisabled }: TodoItemProps
   };
 
   const openSubTodoActionsSheet = (subTodoId: number, currentValue: string) => {
-    let afterClose: (() => void) | null = null;
-
-    overlay.open(({ isOpen, close, exit }) => (
+    subTodoActionsOverlay.open(({ isOpen, close, exit }) => (
       <SubTodoActionsBottomSheet
         isOpen={isOpen}
         onClose={close}
@@ -264,11 +263,10 @@ export const TodoItem = ({ todo, drag, isActive, isDragDisabled }: TodoItemProps
           if (!open) {
             close();
             exit();
-            afterClose?.();
           }
         }}
         onEdit={() => {
-          afterClose = () => openEditSubTodoBottomSheet(subTodoId, currentValue);
+          openEditSubTodoBottomSheet(subTodoId, currentValue);
         }}
         onDelete={() => {
           deleteSubTodoMutation.mutate(

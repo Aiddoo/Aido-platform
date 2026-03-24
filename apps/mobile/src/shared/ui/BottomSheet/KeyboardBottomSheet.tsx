@@ -3,7 +3,14 @@ import GorhomBottomSheet, {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
+import {
+  type ComponentRef,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 import {
   Keyboard,
   type LayoutChangeEvent,
@@ -56,7 +63,7 @@ export const KeyboardBottomSheet = ({
     windowHeight - insets.top - TOP_MARGIN,
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setEnabled(!isOpen);
     return () => setEnabled(true);
   }, [isOpen, setEnabled]);
