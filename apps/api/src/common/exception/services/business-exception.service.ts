@@ -668,6 +668,17 @@ export class BusinessExceptions {
 		});
 	}
 
+	static todoItemLimitExceeded(currentCount: number, maxPerTodo: number) {
+		return new BusinessException(ErrorCode.TODO_0821, {
+			currentCount,
+			maxPerTodo,
+		});
+	}
+
+	static todoItemNotFound(itemId: number) {
+		return new BusinessException(ErrorCode.TODO_0822, { itemId });
+	}
+
 	// =========================================================================
 	// 관리자 (Admin)
 	// =========================================================================

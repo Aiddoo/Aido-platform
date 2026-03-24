@@ -5,6 +5,24 @@ import { numberCursorPaginationInfoSchema } from '../../common/pagination';
 import { todoCategorySummarySchema } from '../todo-category/todo-category.response';
 import { todoVisibilitySchema } from './todo.common';
 
+export const todoItemResponseSchema = z.object({
+  id: z.number().int().describe('하위 항목 고유 ID'),
+  title: z.string().describe('하위 항목 제목'),
+  completed: z.boolean().describe('완료 상태'),
+  sortOrder: z.number().int().describe('정렬 순서 (작을수록 위)'),
+  createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC)'),
+  updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC)'),
+});
+
+export type TodoItemResponse = z.infer<typeof todoItemResponseSchema>;
+
+export const todoItemStatsSchema = z.object({
+  total: z.number().int().describe('전체 하위 항목 수'),
+  completed: z.number().int().describe('완료된 하위 항목 수'),
+});
+
+export type TodoItemStats = z.infer<typeof todoItemStatsSchema>;
+
 export const todoSchema = z
   .object({
     id: z.number().int().describe('할 일 고유 ID (양의 정수)'),
@@ -28,6 +46,10 @@ export const todoSchema = z
     visibility: todoVisibilitySchema.describe('공개 범위 (PUBLIC | FRIENDS | PRIVATE)'),
     recurrenceGroupId: z.string().nullable().describe('반복 생성 그룹 ID (null이면 단일 생성)'),
     category: todoCategorySummarySchema.describe('카테고리 정보'),
+    items: z
+      .array(todoItemResponseSchema)
+      .describe('하위 항목 목록 (체크리스트, sortOrder 오름차순)'),
+    itemStats: todoItemStatsSchema.describe('하위 항목 진행 통계 (카운터 뱃지/진행률 바용)'),
     createdAt: datetimeSchema.describe('생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)'),
     updatedAt: datetimeSchema.describe('수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)'),
   })
@@ -52,6 +74,8 @@ export const todoSchema = z
         color: '#FFB3B3',
         sortOrder: 0,
       },
+      items: [],
+      itemStats: { total: 0, completed: 0 },
       createdAt: '2024-01-10T12:00:00.000Z',
       updatedAt: '2024-01-10T12:00:00.000Z',
     },

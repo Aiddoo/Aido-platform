@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+import { TODO_ITEM_LIMITS } from "@aido/validators";
 import {
 	Body,
 	Controller,
@@ -36,12 +37,16 @@ import {
 	CreateRecurringTodoDto,
 	CreateRecurringTodoResponseDto,
 	CreateTodoDto,
+	CreateTodoItemDto,
 	CreateTodoResponseDto,
 	DeleteTodoResponseDto,
+	GetFriendTodosQueryDto,
 	GetTodosQueryDto,
 	ReorderTodoDto,
+	ReorderTodoItemsDto,
 	ReorderTodoResponseDto,
 	TodoIdParamDto,
+	TodoItemIdParamDto,
 	TodoListResponseDto,
 	TodoResourceLimitQueryDto,
 	TodoResourceLimitResponseDto,
@@ -49,6 +54,7 @@ import {
 	ToggleTodoCompleteDto,
 	UpdateTodoContentDto,
 	UpdateTodoDto,
+	UpdateTodoItemDto,
 	UpdateTodoResponseDto,
 	UpdateTodoScheduleDto,
 	UpdateTodoVisibilityDto,
@@ -105,7 +111,35 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
 - \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
-- \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)`,
+- \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)
+- \`items\`: 하위 항목 배열 (선택, 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개). 투두와 함께 체크리스트를 일괄 생성합니다.
+
+---
+
+### 하위 항목 (체크리스트)
+
+\`items\` 배열을 전달하면 투두 생성과 동시에 체크리스트가 생성됩니다.
+각 항목은 \`{ title: string }\` 형태이며, 배열 순서가 \`sortOrder\`로 지정됩니다.
+
+### 제한사항
+
+| 항목 | 제한 |
+|------|------|
+| 카테고리당 활성(미완료) 할 일 | 최대 300개 |
+| 투두당 하위 항목 | 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개 |
+| 하위 항목 제목 | 1-200자 |
+
+### 응답의 items / itemStats 필드
+
+모든 할 일 응답에 다음 필드가 포함됩니다:
+- \`items\`: 하위 항목 배열 (\`sortOrder\` 오름차순, 없으면 빈 배열 \`[]\`)
+- \`itemStats.total\`: 전체 하위 항목 수
+- \`itemStats.completed\`: 완료된 하위 항목 수
+
+클라이언트 활용:
+- **카운터 뱃지**: \`itemStats.completed\` / \`itemStats.total\` (예: 1/3)
+- **진행률 바**: \`itemStats.completed / itemStats.total * 100\` (예: 33%)
+- **펼침/접힘 토글**: \`itemStats.total > 0\`이면 토글 버튼 표시`,
 	})
 	@ApiCreatedResponse({ type: CreateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -131,6 +165,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 				: undefined,
 			isAllDay: dto.isAllDay,
 			visibility: dto.visibility,
+			items: dto.items,
 		});
 
 		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
@@ -427,7 +462,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	async findFriendTodos(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: UserIdParamDto,
-		@Query() query: GetTodosQueryDto,
+		@Query() query: GetFriendTodosQueryDto,
 	): Promise<TodoListResponseDto> {
 		this.#logger.debug(
 			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
@@ -520,7 +555,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		operationId: "toggleTodoComplete",
 		description: `할 일의 완료 상태를 변경합니다.
 
-**요청 필드**: \`completed\` (boolean, 필수)`,
+**요청 필드**: \`completed\` (boolean, 필수)
+
+**하위 항목과의 관계**
+- 부모 할 일의 완료/미완료는 하위 항목의 완료 상태에 **영향을 주지 않습니다**
+- 하위 항목이 전부 완료(3/3)되어도 부모 할 일은 **자동 완료되지 않습니다**
+- 부모 할 일의 완료 여부만 스트릭/마일스톤/일일 완료 알림에 반영됩니다
+- 하위 항목의 완료 토글은 \`PATCH /todos/:id/items/:itemId\` API를 사용하세요`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -642,7 +683,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
 	async updateSchedule(
 		@CurrentUser() user: CurrentUserPayload,
@@ -740,7 +780,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	@ApiDoc({
 		summary: "할 일 삭제",
 		operationId: "deleteTodo",
-		description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.`,
+		description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
+
+할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).`,
 	})
 	@ApiSuccessResponse({ type: DeleteTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -757,6 +799,218 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 		return {
 			message: "할 일이 삭제되었습니다.",
+		};
+	}
+
+	// ===== 하위 항목 (체크리스트) 관리 =====
+	// 선언 순서: POST → reorder(정적) → PATCH :itemId(동적) → DELETE :itemId
+
+	@Post(":id/items")
+	@ApiDoc({
+		summary: "하위 항목 추가",
+		operationId: "addTodoItem",
+		description: `할 일에 하위 항목(체크리스트)을 추가합니다.
+
+**요청 필드**
+- \`title\` (필수): 하위 항목 제목 (1-200자)
+
+**동작**
+- 새 항목은 기존 항목 맨 뒤에 추가됩니다 (\`sortOrder\` 자동 증가)
+- 투두당 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가 가능
+
+**응답**
+- 부모 할 일 전체 객체를 반환합니다 (\`items\`, \`itemStats\` 포함)
+- 클라이언트는 응답의 \`todo\` 객체로 로컬 상태를 교체하면 됩니다
+
+**참고**
+- 하위 항목은 카테고리당 활성 할 일 한도(300개)에 포함되지 않습니다
+- 하위 항목은 스트릭/마일스톤/일일 완료 알림에 영향을 주지 않습니다
+
+**에러**
+
+| 상황 | 코드 | HTTP |
+|------|------|------|
+| 인증 실패 | AUTH_0107 | 401 |
+| 할 일 없음 | TODO_0801 | 404 |
+| 하위 항목 한도 초과 (${TODO_ITEM_LIMITS.MAX_PER_TODO}개) | TODO_0821 | 403 |
+| 유효성 검증 실패 | SYS_0002 | 400 |`,
+	})
+	@ApiCreatedResponse({ type: UpdateTodoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiForbiddenError(ErrorCode.TODO_0821)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	async addItem(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: TodoIdParamDto,
+		@Body() dto: CreateTodoItemDto,
+	): Promise<UpdateTodoResponseDto> {
+		this.#logger.debug(
+			`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`,
+		);
+
+		const todo = await this.todoService.addItem(params.id, user.userId, dto);
+
+		return {
+			message: "하위 항목이 추가되었습니다.",
+			todo,
+		};
+	}
+
+	@Patch(":id/items/reorder")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "하위 항목 순서 변경",
+		operationId: "reorderTodoItems",
+		description: `하위 항목의 순서를 일괄 변경합니다. 드래그 앤 드롭 UI에 적합합니다.
+
+**요청 필드**
+- \`itemIds\` (필수): 새로운 순서대로 정렬된 하위 항목 ID 배열
+
+**사용법**
+배열의 인덱스가 새로운 \`sortOrder\`가 됩니다.
+
+\`\`\`json
+// 기존: [항목A(id:1), 항목B(id:2), 항목C(id:3)]
+// 항목C를 맨 위로 이동:
+{ "itemIds": [3, 1, 2] }
+// 결과: [항목C(sortOrder:0), 항목A(sortOrder:1), 항목B(sortOrder:2)]
+\`\`\`
+
+**주의사항**
+- \`itemIds\`에는 해당 투두의 **전체** 하위 항목 ID를 새로운 순서대로 포함해야 합니다
+- 일부 ID만 전달하면 sortOrder 충돌이 발생하므로 \`400 Bad Request\` 에러 반환
+- 존재하지 않거나 다른 투두의 ID가 포함되면 TODO_0822 에러 반환`,
+	})
+	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_0822)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	async reorderItems(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: TodoIdParamDto,
+		@Body() dto: ReorderTodoItemsDto,
+	): Promise<UpdateTodoResponseDto> {
+		this.#logger.debug(
+			`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`,
+		);
+
+		const todo = await this.todoService.reorderItems(
+			params.id,
+			user.userId,
+			dto,
+		);
+
+		return {
+			message: "하위 항목 순서가 변경되었습니다.",
+			todo,
+		};
+	}
+
+	@Patch(":id/items/:itemId")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "하위 항목 수정",
+		operationId: "updateTodoItem",
+		description: `하위 항목의 제목 또는 완료 상태를 수정합니다.
+
+**요청 필드** (최소 1개 필수)
+- \`title\` (선택): 변경할 제목 (1-200자)
+- \`completed\` (선택): 완료 상태 (true/false)
+
+**완료 토글 사용법**
+\`\`\`json
+{ "completed": true }   // 체크
+{ "completed": false }  // 체크 해제
+\`\`\`
+
+**부모 할 일과의 관계**
+- 하위 항목의 완료/미완료는 부모 할 일의 \`completed\` 상태에 **영향을 주지 않습니다**
+- 모든 하위 항목이 완료(예: 3/3)되어도 부모는 **자동 완료되지 않습니다**
+- 부모 할 일의 완료는 \`PATCH /todos/:id/complete\` API를 별도로 호출해야 합니다
+- 하위 항목 완료는 스트릭/마일스톤/일일 완료 알림에 **영향을 주지 않습니다** (부모만 카운트)
+
+**에러**
+
+| 상황 | 코드 | HTTP |
+|------|------|------|
+| 인증 실패 | AUTH_0107 | 401 |
+| 할 일 없음 | TODO_0801 | 404 |
+| 하위 항목 없음 | TODO_0822 | 404 |
+| 유효성 검증 실패 | SYS_0002 | 400 |`,
+	})
+	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_0822)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	async updateItem(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: TodoItemIdParamDto,
+		@Body() dto: UpdateTodoItemDto,
+	): Promise<UpdateTodoResponseDto> {
+		this.#logger.debug(
+			`Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
+		);
+
+		const todo = await this.todoService.updateItem(
+			params.id,
+			params.itemId,
+			user.userId,
+			dto,
+		);
+
+		return {
+			message: "하위 항목이 수정되었습니다.",
+			todo,
+		};
+	}
+
+	@Delete(":id/items/:itemId")
+	@HttpCode(HttpStatus.OK)
+	@ApiDoc({
+		summary: "하위 항목 삭제",
+		operationId: "deleteTodoItem",
+		description: `하위 항목을 삭제합니다. 삭제 후 복구할 수 없습니다.
+
+**응답**
+- 부모 할 일 전체 객체를 반환합니다 (삭제된 항목이 제외된 상태)
+- \`itemStats\`가 자동으로 재계산됩니다
+
+**참고**
+- 부모 할 일 자체를 삭제하면(\`DELETE /todos/:id\`) 모든 하위 항목이 함께 삭제됩니다 (Cascade)
+- 개별 하위 항목 삭제는 이 API를 사용하세요
+
+**에러**
+
+| 상황 | 코드 | HTTP |
+|------|------|------|
+| 인증 실패 | AUTH_0107 | 401 |
+| 할 일 없음 | TODO_0801 | 404 |
+| 하위 항목 없음 | TODO_0822 | 404 |`,
+	})
+	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.TODO_0801)
+	@ApiNotFoundError(ErrorCode.TODO_0822)
+	async deleteItem(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: TodoItemIdParamDto,
+	): Promise<UpdateTodoResponseDto> {
+		this.#logger.debug(
+			`Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
+		);
+
+		const todo = await this.todoService.deleteItem(
+			params.id,
+			params.itemId,
+			user.userId,
+		);
+
+		return {
+			message: "하위 항목이 삭제되었습니다.",
+			todo,
 		};
 	}
 

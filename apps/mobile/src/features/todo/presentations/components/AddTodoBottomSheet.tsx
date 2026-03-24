@@ -1,11 +1,11 @@
 import type { DayOfWeek } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyboardBottomSheet } from '@src/shared/ui';
+import { KeyboardBottomSheet, StackedBottomSheetModal, useBottomSheetModal } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { ActivityIndicator, Keyboard, type TextInput } from 'react-native';
+import { ActivityIndicator, type TextInput } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
@@ -44,7 +44,6 @@ interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
 
 type AddTodoBottomSheetProps = AddTodoBottomSheetCreateProps | AddTodoBottomSheetEditProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
-type PickerView = 'form' | 'date' | 'time' | 'repeat';
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const { isOpen, onOpenChange, onClose } = props;
@@ -83,25 +82,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     defaultValues,
   });
 
-  const [activeView, setActiveView] = useState<PickerView>('form');
-  const titleInputRef = useRef<TextInput>(null);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const openPickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const todoInputRef = useRef<TextInput>(null);
 
-  const cancelAllTimers = useCallback(() => {
-    if (focusTimerRef.current) {
-      clearTimeout(focusTimerRef.current);
-      focusTimerRef.current = null;
-    }
-    if (openPickerTimerRef.current) {
-      clearTimeout(openPickerTimerRef.current);
-      openPickerTimerRef.current = null;
-    }
-  }, []);
+  const dateModal = useBottomSheetModal();
+  const timeModal = useBottomSheetModal();
+  const repeatModal = useBottomSheetModal();
+
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
-    return cancelAllTimers;
-  }, [cancelAllTimers]);
+    if (isOpen) isClosingRef.current = false;
+  }, [isOpen]);
+
+  const focusTodoInput = () => {
+    if (!isOpen || isClosingRef.current) return;
+    todoInputRef.current?.focus();
+  };
 
   const createMutation = useMutation(useCreateTodoMutationOptions());
   const updateMutation = useMutation(useUpdateTodoMutationOptions());
@@ -173,46 +169,20 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const handleDateConfirm = (start: Date) => {
     methods.setValue('startDate', start);
-    returnToForm();
+    dateModal.close();
   };
 
   const handleTimeConfirm = (time: string | undefined, allDay: boolean) => {
     methods.setValue('scheduledTime', time);
     methods.setValue('isAllDay', allDay);
-    returnToForm();
+    timeModal.close();
   };
 
   const handleRepeatConfirm = (repeat: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null }) => {
     methods.setValue('isRecurring', true);
     methods.setValue('daysOfWeek', repeat.daysOfWeek);
     methods.setValue('repeatEndDate', repeat.repeatEndDate);
-    returnToForm();
-  };
-
-  const openPicker = (view: PickerView) => {
-    if (openPickerTimerRef.current) {
-      clearTimeout(openPickerTimerRef.current);
-      openPickerTimerRef.current = null;
-    }
-
-    if (Keyboard.isVisible()) {
-      Keyboard.dismiss();
-      openPickerTimerRef.current = setTimeout(() => {
-        openPickerTimerRef.current = null;
-        setActiveView(view);
-      }, 100);
-    } else {
-      setActiveView(view);
-    }
-  };
-
-  const returnToForm = () => {
-    if (focusTimerRef.current) return;
-    setActiveView('form');
-    focusTimerRef.current = setTimeout(() => {
-      focusTimerRef.current = null;
-      titleInputRef.current?.focus();
-    }, 200);
+    repeatModal.close();
   };
 
   return (
@@ -220,51 +190,52 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       <KeyboardBottomSheet
         isOpen={isOpen}
         onOpenChange={onOpenChange}
-        onCloseStart={cancelAllTimers}
+        onCloseStart={() => {
+          isClosingRef.current = true;
+        }}
       >
-        {match(activeView)
-          .with('date', () => (
-            <TodoDatePickerContent
-              startDate={methods.getValues('startDate')}
-              onConfirm={handleDateConfirm}
-              onCancel={returnToForm}
-            />
-          ))
-          .with('time', () => (
-            <Suspense fallback={<ActivityIndicator />}>
-              <TodoTimePickerContent
-                draftDate={methods.getValues('startDate')}
-                scheduledTime={methods.getValues('scheduledTime') ?? undefined}
-                isAllDay={methods.getValues('isAllDay') ?? true}
-                onConfirm={handleTimeConfirm}
-                onCancel={returnToForm}
-              />
-            </Suspense>
-          ))
-          .with('repeat', () => (
-            <TodoRepeatPickerContent
-              startDate={methods.getValues('startDate')}
-              repeat={{
-                daysOfWeek: methods.getValues('daysOfWeek') ?? [],
-                repeatEndDate: methods.getValues('repeatEndDate') ?? null,
-              }}
-              onConfirm={handleRepeatConfirm}
-              onCancel={returnToForm}
-            />
-          ))
-          .with('form', () => (
-            <TodoFormContent
-              titleInputRef={titleInputRef}
-              onDatePress={() => openPicker('date')}
-              onTimePress={() => openPicker('time')}
-              onRepeatPress={() => openPicker('repeat')}
-              onSubmit={onSubmit}
-              isSubmitting={isSubmitting}
-              onClose={onClose}
-            />
-          ))
-          .exhaustive()}
+        <TodoFormContent
+          todoInputRef={todoInputRef}
+          onDatePress={() => dateModal.open()}
+          onTimePress={() => timeModal.open()}
+          onRepeatPress={() => repeatModal.open()}
+          onSubmit={onSubmit}
+          isSubmitting={isSubmitting}
+          onClose={onClose}
+        />
       </KeyboardBottomSheet>
+
+      <StackedBottomSheetModal modalRef={dateModal.ref} onDismiss={focusTodoInput}>
+        <TodoDatePickerContent
+          startDate={methods.getValues('startDate')}
+          onConfirm={handleDateConfirm}
+          onCancel={() => dateModal.close()}
+        />
+      </StackedBottomSheetModal>
+
+      <StackedBottomSheetModal modalRef={timeModal.ref} onDismiss={focusTodoInput}>
+        <Suspense fallback={<ActivityIndicator />}>
+          <TodoTimePickerContent
+            draftDate={methods.getValues('startDate')}
+            scheduledTime={methods.getValues('scheduledTime') ?? undefined}
+            isAllDay={methods.getValues('isAllDay') ?? true}
+            onConfirm={handleTimeConfirm}
+            onCancel={() => timeModal.close()}
+          />
+        </Suspense>
+      </StackedBottomSheetModal>
+
+      <StackedBottomSheetModal modalRef={repeatModal.ref} onDismiss={focusTodoInput}>
+        <TodoRepeatPickerContent
+          startDate={methods.getValues('startDate')}
+          repeat={{
+            daysOfWeek: methods.getValues('daysOfWeek') ?? [],
+            repeatEndDate: methods.getValues('repeatEndDate') ?? null,
+          }}
+          onConfirm={handleRepeatConfirm}
+          onCancel={() => repeatModal.close()}
+        />
+      </StackedBottomSheetModal>
     </FormProvider>
   );
 };

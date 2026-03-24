@@ -53,6 +53,15 @@ export abstract class TodoMapper {
 	 * ```
 	 */
 	static toResponse(entity: TodoWithCategory): Todo {
+		const items = (entity.items ?? []).map((item) => ({
+			id: item.id,
+			title: item.title,
+			completed: item.completed,
+			sortOrder: item.sortOrder,
+			createdAt: toISOString(item.createdAt),
+			updatedAt: toISOString(item.updatedAt),
+		}));
+
 		return {
 			id: entity.id,
 			userId: entity.userId,
@@ -72,6 +81,11 @@ export abstract class TodoMapper {
 				name: entity.category.name,
 				color: entity.category.color,
 				sortOrder: entity.category.sortOrder,
+			},
+			items,
+			itemStats: {
+				total: items.length,
+				completed: items.filter((i) => i.completed).length,
 			},
 			createdAt: toISOString(entity.createdAt),
 			updatedAt: toISOString(entity.updatedAt),

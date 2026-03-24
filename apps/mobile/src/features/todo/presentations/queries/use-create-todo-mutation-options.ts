@@ -71,6 +71,8 @@ export const useCreateTodoMutationOptions = () => {
         isAllDay: input.isAllDay,
         visibility: input.visibility ?? 'PUBLIC',
         recurrenceGroupId: null,
+        subTodos: [],
+        subTodoStats: { total: 0, completed: 0 },
         optimistic: true,
       };
 

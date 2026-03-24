@@ -55,6 +55,8 @@ src/modules/{name}/
 
 ## 2. Controller 규칙
 
+> **Why**: 얇은 진입점. 비즈니스 로직 없이 DTO 검증 + Service 위임만 담당하여 변경 지점 최소화.
+
 ### 기본 구조
 
 ```typescript
@@ -161,6 +163,8 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ## 3. Service 규칙
 
+> **Why**: 비즈니스 로직의 유일한 거처. 트랜잭션 경계를 관리하고, 큐 enqueue는 커밋 후 실행하여 데이터 정합성 보장.
+
 ### 기본 구조
 
 ```typescript
@@ -212,7 +216,7 @@ constructor(
 
 // DO: 다른 Service 주입 (교차 모듈 로직)
 constructor(
-  private readonly followService: FollowService,
+  private readonly {other}Service: {Other}Service,
 ) {}
 
 // DON'T: DatabaseService를 직접 쿼리에 사용 (Repository 통해야 함)
@@ -223,12 +227,11 @@ constructor(
 다중 테이블 작업 시 반드시 트랜잭션 사용:
 
 ```typescript
-async createWithProfile(input: CreateUserInput) {
+async createWithRelated(input: CreateInput) {
   return this.database.$transaction(async (tx) => {
-    const user = await this.userRepository.create(input, tx);
-    await this.profileRepository.create({ userId: user.id }, tx);
-    await this.accountRepository.createCredentialAccount(user.id, hashedPassword, tx);
-    return user;
+    const entity = await this.{feature}Repository.create(input, tx);
+    await this.{related}Repository.create({ {feature}Id: entity.id }, tx);
+    return entity;
   });
 }
 ```
@@ -238,7 +241,9 @@ async createWithProfile(input: CreateUserInput) {
 ```typescript
 async update(id: string, userId: string, data: UpdateInput) {
   const existing = await this.[feature]Repository.findByIdAndUserId(id, userId);
-  if (!existing) throw BusinessExceptions.[feature]NotFound(id);
+  if (!existing) {
+    throw BusinessExceptions.[feature]NotFound(id);
+  }
 
   const updated = await this.[feature]Repository.update(id, { ... });
 
@@ -258,12 +263,9 @@ async update(id: string, userId: string, data: UpdateInput) {
 
 ```typescript
 // types/{name}.types.ts
-export interface LoginResult {
-  userId: string;
-  tokens: TokenPair;
-  sessionId: string;
-  name: string | null;
-  profileImage: string | null;
+export interface {Feature}Result {
+  id: string;
+  // ... 도메인별 필드
 }
 ```
 
@@ -299,6 +301,8 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 ---
 
 ## 4. Repository 규칙
+
+> **Why**: DB 접근의 유일한 지점. `tx?` 파라미터로 트랜잭션 참여를 선택적으로 허용하여 Service가 트랜잭션을 제어.
 
 ### 기본 구조
 
@@ -383,12 +387,12 @@ async findAllWithPagination(params: {
 ### 관계 포함 조회
 
 ```typescript
-async findByIdWithProfile(id: string): Promise<UserWithProfile | null> {
-  return this.database.user.findUnique({
+async findByIdWithRelations(id: string): Promise<{Feature}WithRelations | null> {
+  return this.database.{feature}.findUnique({
     where: { id },
     include: {
-      profile: true,
-      accounts: { select: { provider: true } },
+      relatedEntity: true,
+      otherEntity: { select: { field: true } },
     },
   });
 }
@@ -400,7 +404,7 @@ OAuth 토큰 등 민감 데이터를 DB에 저장할 때 EncryptionService 사�
 
 ```typescript
 @Injectable()
-export class AccountRepository {
+export class {Feature}Repository {
   constructor(
     private readonly database: DatabaseService,
     private readonly encryptionService: EncryptionService,
@@ -430,7 +434,7 @@ const token = this.encryptionService.decryptSafe(account.accessToken);
 
 - DatabaseService 주입하여 Prisma 사용
 - 타입이 명확한 반환값 정의
-- 단일 엔티티 책임 (User → UserRepository)
+- 단일 엔티티 책임 (단일 엔티티 → {Feature}Repository)
 - 모든 메서드에 `tx?: Prisma.TransactionClient` 지원
 - 민감 데이터는 EncryptionService로 암호화하여 저장
 
@@ -469,14 +473,14 @@ export class ExampleModule {}
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { EmailModule } from '../email';
+import { {Other}Module } from '../{other}';
 
 @Module({
-  imports: [EmailModule], // EmailService 사용 가능
-  controllers: [AuthController],
-  providers: [AuthService, UserRepository],
+  imports: [{Other}Module], // {Other}Service 사용 가능
+  controllers: [{Feature}Controller],
+  providers: [{Feature}Service, {Feature}Repository],
 })
-export class AuthModule {}
+export class {Feature}Module {}
 ```
 
 > `@Global()` 모듈 (DatabaseModule, EncryptionModule, CacheModule 등)은 `imports` 없이 바로 주입 가능.
@@ -503,8 +507,8 @@ import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
 import { LoginInput, LoginResponse } from '@aido/validators';
 
 // 모듈 내부 — 상대 경로
-import { UserRepository } from '../repositories';
-import { AuthService } from './auth.service';
+import { {Feature}Repository } from '../repositories';
+import { {Feature}Service } from './{feature}.service';
 ```
 
 ---
@@ -600,3 +604,8 @@ pnpm docker:down
 3. [ ] `.env.development` 파일 존재 확인
 4. [ ] `pnpm prisma:migrate`로 DB 마이그레이션 적용
 5. [ ] `pnpm dev`로 개발 서버 시작
+
+---
+
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

@@ -71,6 +71,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -104,6 +115,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -135,6 +157,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 			});
@@ -269,6 +302,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 			expect(result).toEqual(todos);
@@ -304,6 +348,17 @@ describe("TodoRepository", () => {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
 					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
+					},
 				},
 			});
 		});
@@ -337,6 +392,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 			});
@@ -387,6 +453,175 @@ describe("TodoRepository", () => {
 				{ sortOrder: "asc" },
 				{ id: "asc" },
 			]);
+		});
+	});
+
+	// ==========================================================================
+	// createItem
+	// ==========================================================================
+
+	describe("createItem", () => {
+		it("todoItem.create를 올바른 파라미터로 호출한다", async () => {
+			// Given
+			const todoId = 1;
+			const data = { title: "세부 항목", sortOrder: 0 };
+			const expected = {
+				id: 10,
+				title: "세부 항목",
+				completed: false,
+				sortOrder: 0,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			(db.todoItem.create as jest.Mock).mockResolvedValue(expected);
+
+			// When
+			const result = await repository.createItem(todoId, data);
+
+			// Then
+			expect(db.todoItem.create).toHaveBeenCalledWith({
+				data: { todoId, title: "세부 항목", sortOrder: 0 },
+				select: {
+					id: true,
+					title: true,
+					completed: true,
+					sortOrder: true,
+					createdAt: true,
+					updatedAt: true,
+				},
+			});
+			expect(result).toEqual(expected);
+		});
+	});
+
+	// ==========================================================================
+	// updateItem
+	// ==========================================================================
+
+	describe("updateItem", () => {
+		it("todoItem.update를 올바른 파라미터로 호출한다", async () => {
+			// Given
+			const itemId = 10;
+			const data = { title: "수정된 항목", completed: true };
+			(db.todoItem.update as jest.Mock).mockResolvedValue({});
+
+			// When
+			await repository.updateItem(itemId, data);
+
+			// Then
+			expect(db.todoItem.update).toHaveBeenCalledWith({
+				where: { id: itemId },
+				data: { title: "수정된 항목", completed: true },
+			});
+		});
+	});
+
+	// ==========================================================================
+	// deleteItem
+	// ==========================================================================
+
+	describe("deleteItem", () => {
+		it("todoItem.delete를 올바른 파라미터로 호출한다", async () => {
+			// Given
+			const itemId = 10;
+			(db.todoItem.delete as jest.Mock).mockResolvedValue({});
+
+			// When
+			await repository.deleteItem(itemId);
+
+			// Then
+			expect(db.todoItem.delete).toHaveBeenCalledWith({
+				where: { id: itemId },
+			});
+		});
+	});
+
+	// ==========================================================================
+	// countItemsByTodoId
+	// ==========================================================================
+
+	describe("countItemsByTodoId", () => {
+		it("todoItem.count를 올바른 where로 호출한다", async () => {
+			// Given
+			const todoId = 1;
+			(db.todoItem.count as jest.Mock).mockResolvedValue(3);
+
+			// When
+			const result = await repository.countItemsByTodoId(todoId);
+
+			// Then
+			expect(db.todoItem.count).toHaveBeenCalledWith({
+				where: { todoId },
+			});
+			expect(result).toBe(3);
+		});
+	});
+
+	// ==========================================================================
+	// getMaxItemSortOrder
+	// ==========================================================================
+
+	describe("getMaxItemSortOrder", () => {
+		it("todoItem.aggregate를 올바르게 호출한다", async () => {
+			// Given
+			const todoId = 1;
+			(db.todoItem.aggregate as jest.Mock).mockResolvedValue({
+				_max: { sortOrder: 5 },
+			});
+
+			// When
+			const result = await repository.getMaxItemSortOrder(todoId);
+
+			// Then
+			expect(db.todoItem.aggregate).toHaveBeenCalledWith({
+				where: { todoId },
+				_max: { sortOrder: true },
+			});
+			expect(result).toBe(5);
+		});
+
+		it("결과가 null이면 -1을 반환한다", async () => {
+			// Given
+			const todoId = 1;
+			(db.todoItem.aggregate as jest.Mock).mockResolvedValue({
+				_max: { sortOrder: null },
+			});
+
+			// When
+			const result = await repository.getMaxItemSortOrder(todoId);
+
+			// Then
+			expect(result).toBe(-1);
+		});
+	});
+
+	// ==========================================================================
+	// reorderItems
+	// ==========================================================================
+
+	describe("reorderItems", () => {
+		it("각 itemId에 대해 update를 호출한다", async () => {
+			// Given
+			const itemIds = [30, 10, 20];
+			(db.todoItem.update as jest.Mock).mockResolvedValue({});
+
+			// When
+			await repository.reorderItems(itemIds);
+
+			// Then
+			expect(db.todoItem.update).toHaveBeenCalledTimes(3);
+			expect(db.todoItem.update).toHaveBeenCalledWith({
+				where: { id: 30 },
+				data: { sortOrder: 0 },
+			});
+			expect(db.todoItem.update).toHaveBeenCalledWith({
+				where: { id: 10 },
+				data: { sortOrder: 1 },
+			});
+			expect(db.todoItem.update).toHaveBeenCalledWith({
+				where: { id: 20 },
+				data: { sortOrder: 2 },
+			});
 		});
 	});
 
@@ -447,6 +682,17 @@ describe("TodoRepository", () => {
 				include: {
 					category: {
 						select: { id: true, name: true, color: true, sortOrder: true },
+					},
+					items: {
+						select: {
+							id: true,
+							title: true,
+							completed: true,
+							sortOrder: true,
+							createdAt: true,
+							updatedAt: true,
+						},
+						orderBy: { sortOrder: "asc" },
 					},
 				},
 				orderBy: { sortOrder: "asc" },

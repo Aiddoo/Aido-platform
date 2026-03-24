@@ -121,7 +121,7 @@ export const TodoTimePickerContent = ({
 
       <Flex px={4} justify="center" align="center">
         <Text size="b3" shade={5} maxFontSizeMultiplier={1.3}>
-          ⓘ 설정한 시간 10분 전에 알림을 보내드려요
+          ⓘ 1시간 전, 10분 전에 알림을 보내드려요
         </Text>
       </Flex>
     </VStack>

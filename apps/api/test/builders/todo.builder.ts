@@ -13,7 +13,10 @@
  * const privateTodo = TodoBuilder.create('user-123').asPrivate().build();
  * ```
  */
-import type { TodoWithCategory } from "@/modules/todo/types/todo.types";
+import type {
+	TodoItemData,
+	TodoWithCategory,
+} from "@/modules/todo/types/todo.types";
 
 export class TodoBuilder {
 	private data: TodoWithCategory;
@@ -45,6 +48,7 @@ export class TodoBuilder {
 				color: "#FFB3B3",
 				sortOrder: 0,
 			},
+			items: [],
 		};
 	}
 
@@ -168,6 +172,13 @@ export class TodoBuilder {
 		return this;
 	}
 
+	// === 하위 항목 관련 ===
+
+	withItems(items: TodoItemData[]): TodoBuilder {
+		this.data.items = items;
+		return this;
+	}
+
 	// === 타임스탬프 관련 ===
 
 	withCreatedAt(date: Date): TodoBuilder {
@@ -183,7 +194,11 @@ export class TodoBuilder {
 	// === 빌드 ===
 
 	build(): TodoWithCategory {
-		return { ...this.data, category: { ...this.data.category } };
+		return {
+			...this.data,
+			category: { ...this.data.category },
+			items: [...this.data.items],
+		};
 	}
 
 	/** 여러 개 생성 */

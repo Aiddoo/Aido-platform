@@ -1,6 +1,8 @@
 # 단위 테스트 가이드
 
 > `@suites/unit` + Builder 패턴으로 개별 클래스/메서드를 격리 테스트
+>
+> DI 기반 스텁 교체 — `TestBed.solitary()`가 모든 의존성을 자동 mock하므로 구현 세부사항에 결합되지 않는 테스트 작성 가능.
 
 ---
 
@@ -44,22 +46,22 @@
 ```typescript
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "@suites/doubles.jest";
-import { AuthService } from "@/modules/auth/services/auth.service";
-import { UserRepository } from "@/modules/auth/repositories/user.repository";
+import { {Feature}Service } from "@/modules/{name}/{name}.service";
+import { {Feature}Repository } from "@/modules/{name}/{name}.repository";
 
-describe("AuthService", () => {
-  let service: AuthService;
-  let userRepo: Mocked<UserRepository>;
+describe("{Feature}Service", () => {
+  let service: {Feature}Service;
+  let repo: Mocked<{Feature}Repository>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AuthService).compile();
+    const { unit, unitRef } = await TestBed.solitary({Feature}Service).compile();
     service = unit;
-    userRepo = unitRef.get(UserRepository);
+    repo = unitRef.get({Feature}Repository);
   });
 
   it("사용자를 조회해야 한다", async () => {
     // Given
-    userRepo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
+    repo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
 
     // When
     const result = await service.findById("1");
@@ -82,7 +84,7 @@ beforeEach(async () => {
     sendBatch: jest.fn().mockResolvedValue({ total: 1, successCount: 1 }),
   };
 
-  const { unit, unitRef } = await TestBed.solitary(NotificationService)
+  const { unit, unitRef } = await TestBed.solitary({Feature}Service)
     .mock(PUSH_PROVIDER)
     .impl(() => mockPushProvider)
     .compile();
@@ -166,21 +168,74 @@ beforeEach(() => {
 });
 ```
 
-### 사용 가능한 Builder 목록
+### 새 Builder 작성 기준
 
-`test/builders/index.ts`에서 전체 목록 확인. 주요 Builder:
+**생성 시점**: Prisma 모델이 추가되면 대응하는 Builder도 함께 생성합니다.
 
-| Builder | 주요 체이닝 메서드 |
-|---------|-------------------|
-| `UserBuilder` | `.withEmail()`, `.verified()`, `.asAdmin()`, `.withTag()` |
-| `AccountBuilder` | `.withProvider()`, `.withUserId()` |
-| `SessionBuilder` | `.withUserId()`, `.revoked()`, `.expired()` |
-| `VerificationBuilder` | `.expired()`, `.used()`, `.withAttempts()`, `.withToken()` |
-| `LoginAttemptBuilder` | `.asSuccess()`, `.asFailed()`, `.withIp()` |
-| `SecurityLogBuilder` | `.withEvent()`, `.withMetadata()`, `.withIp()` |
-| `UserConsentBuilder` | `.withType()`, `.asAgreed()` |
-| `TodoBuilder` | `.withTitle()`, `.completed()`, `.withCategory()` |
-| `NotificationBuilder` | `.asFollowNew()`, `.asCheerReceived()`, `.asUnread()` |
+**파일 위치**: `test/builders/{model}.builder.ts` → `test/builders/index.ts`에서 re-export
+
+**구조 규칙**:
+
+```typescript
+import type { {Model} } from "@/generated/prisma/client";
+
+export class {Model}Builder {
+  private data: {Model};
+  private static idCounter = 0;  // auto-increment ID 모델만
+
+  // 1. private constructor — 모든 필드에 합리적 기본값 설정
+  private constructor(/* 필수 외래키만 파라미터 */) {
+    this.data = { id: ..., /* 기본값 */ };
+  }
+
+  // 2. static create() — 필수 외래키를 파라미터로 받음
+  static create(userId: string): {Model}Builder { ... }
+
+  // 3. static resetIdCounter() — auto-increment ID 모델만
+  static resetIdCounter(): void { ... }
+
+  // 4. 체이닝 메서드 — 카테고리별 그룹핑 (=== 주석 구분)
+  //    - with{Field}(): 단일 필드 설정 (범용)
+  //    - as{State}(): 도메인 상태 전환 (여러 필드를 한 번에 변경)
+  withTitle(title: string): {Model}Builder { ... }   // 단일 필드
+  completed(completedAt?: Date): {Model}Builder { ... } // 상태 전환 (completed + completedAt)
+
+  // 5. build() — 스프레드로 복사본 반환
+  build(): {Model} { return { ...this.data }; }
+
+  // 6. buildWithRelations() — join/include 결과 모킹 시 (필요한 모델만)
+  buildWithRelations(): {Model}WithRelations { ... }
+
+  // 7. static createMany() — 배열 mock 반환값용
+  static createMany(count: number): {Model}[] { ... }
+}
+```
+
+**체이닝 메서드 네이밍**:
+
+| 패턴 | 용도 | 예시 |
+|------|------|------|
+| `with{Field}()` | 단일 필드 설정 | `.withEmail("a@b.com")`, `.withMessage("화이팅")` |
+| `as{State}()` / `{state}()` | 도메인 상태 전환 | `.verified()`, `.asAdmin()`, `.completed()`, `.expired()` |
+| `buildWithRelations()` | 관계 데이터 포함 빌드 | `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder` |
+
+**`create()` 파라미터 기준**: 외래키(FK)만 파라미터로 받고, 나머지는 기본값 → 체이닝으로 override.
+
+```typescript
+// FK가 없는 모델 → 파라미터 없음
+UserBuilder.create()
+
+// FK 1개 → userId
+TodoBuilder.create(userId)
+
+// FK 2개 → senderId, receiverId
+CheerBuilder.create(senderId, receiverId)
+
+// 복합 키 → 필수 식별 필드
+VerificationBuilder.create(userId, type)
+```
+
+> 전체 Builder 목록: `test/builders/index.ts` 참조
 
 ---
 
@@ -276,5 +331,5 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 
 ---
 
-**문서 버전**: 2.0.0
-**최종 수정일**: 2026-02-14
+**문서 버전**: 3.0.0
+**최종 수정일**: 2026-03-22

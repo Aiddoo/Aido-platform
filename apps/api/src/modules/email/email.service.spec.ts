@@ -7,8 +7,8 @@
  * - jest.mock("resend"): 생성자 내부 new Resend() 인스턴스화 때문에 모듈 레벨 mock 필수
  * - GWT: Given/When/Then 주석
  */
-import { Logger } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
+import { suppressLogger } from "@test/setup/suppress-logger";
 import { Resend } from "resend";
 import { TypedConfigService } from "../../common/config/services/config.service";
 import { EMAIL_CONSTANTS } from "./constants/email.constants";
@@ -70,10 +70,7 @@ describe("EmailService", () => {
 			.compile();
 
 		// Logger 출력 비활성화
-		jest.spyOn(Logger.prototype, "log").mockImplementation();
-		jest.spyOn(Logger.prototype, "warn").mockImplementation();
-		jest.spyOn(Logger.prototype, "error").mockImplementation();
-		jest.spyOn(Logger.prototype, "debug").mockImplementation();
+		suppressLogger();
 
 		service = unit;
 

@@ -7,6 +7,20 @@ import type { DayOfWeek } from "@aido/validators";
 // 공통 타입 재내보내기
 export type { TransactionClient } from "@/common/database";
 
+// ===== 공통 타입 =====
+
+/**
+ * 하위 항목 데이터
+ */
+export interface TodoItemData {
+	id: number;
+	title: string;
+	completed: boolean;
+	sortOrder: number;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
 // ===== Service Layer Types =====
 
 /**
@@ -22,6 +36,7 @@ export interface CreateTodoData {
 	scheduledTime?: Date | null;
 	isAllDay?: boolean;
 	visibility?: "PUBLIC" | "PRIVATE";
+	items?: { title: string }[];
 }
 
 /**
@@ -132,6 +147,7 @@ export interface TodoWithCategory {
 		color: string;
 		sortOrder: number;
 	};
+	items: TodoItemData[];
 }
 
 /**
