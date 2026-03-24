@@ -373,7 +373,6 @@ export const TodoItem = ({ todo, drag, isActive, isDragDisabled }: TodoItemProps
               </ScaleDecorator>
             )}
             onDragEnd={handleSubTodoDragEnd}
-            activationDistance={10}
           />
         </SubTodoList>
       )}

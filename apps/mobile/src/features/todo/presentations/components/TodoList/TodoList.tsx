@@ -133,7 +133,6 @@ function CategoryTodoDraggableList({ todos, updatedAt }: CategoryTodoDraggableLi
     <NestableDraggableFlatList
       data={draggableTodos}
       keyExtractor={(item) => String(item.id)}
-      activationDistance={10}
       renderItem={({ item, drag, isActive }) => (
         <ScaleDecorator activeScale={1.015}>
           <TodoItem
