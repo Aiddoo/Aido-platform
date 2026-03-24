@@ -339,6 +339,10 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   );
 };
 
+// --- constants ---
+
+const DEFAULT_CATEGORY_COLOR = '#999';
+
 // --- helpers ---
 
 const ALL_DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -473,7 +477,7 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
       icon={
         <Box
           className="size-2 rounded-full"
-          style={{ backgroundColor: category?.color ?? '#999' }}
+          style={{ backgroundColor: category?.color ?? DEFAULT_CATEGORY_COLOR }}
         />
       }
       label={category?.name ?? '카테고리'}
@@ -591,10 +595,10 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
               isRecurring: data.isRecurring,
               daysOfWeek: data.recurrence?.daysOfWeek ?? [],
               repeatEndDate: data.recurrence?.endDate ?? null,
+              source: 'ai',
             }),
             { keepDirtyValues: true },
           );
-          methods.setValue('source', 'ai');
         },
       },
     );
