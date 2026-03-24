@@ -1,5 +1,8 @@
 import { dayOfWeekSchema } from '@aido/validators';
 import { z } from 'zod';
+import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
+
+export { type SubTodo, SubTodoPolicy, type SubTodoStats } from './sub-todo.model';
 
 export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
@@ -22,6 +25,8 @@ export const todoItemSchema = z.object({
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
   recurrenceGroupId: z.string().nullable(),
+  subTodos: z.array(subTodoSchema),
+  subTodoStats: subTodoStatsSchema,
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
 export type OptimisticTodoItem = TodoItem & { readonly optimistic: true };

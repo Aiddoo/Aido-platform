@@ -3,6 +3,7 @@ import {
   createDailyCompletionsDto,
   createParseTodoResponseDto,
   createTodoDto,
+  createTodoItemResponseDto,
 } from '../__tests__/todo.factories';
 import {
   toAiUsage,
@@ -51,6 +52,40 @@ describe('toTodoItem', () => {
     expect(result.isAllDay).toBe(true);
     expect(result.completed).toBe(true);
     expect(result.visibility).toBe('PRIVATE');
+  });
+});
+
+describe('toTodoItem — subTodos/subTodoStats', () => {
+  test('subTodos 배열 매핑', () => {
+    // Given
+    const dto = createTodoDto({
+      items: [
+        createTodoItemResponseDto({ id: 1, title: '항목 1' }),
+        createTodoItemResponseDto({ id: 2, title: '항목 2', completed: true }),
+      ],
+      itemStats: { total: 2, completed: 1 },
+    });
+
+    // When
+    const result = toTodoItem(dto);
+
+    // Then
+    expect(result.subTodos).toHaveLength(2);
+    expect(result.subTodos[0]?.title).toBe('항목 1');
+    expect(result.subTodos[1]?.completed).toBe(true);
+    expect(result.subTodoStats).toEqual({ total: 2, completed: 1 });
+  });
+
+  test('빈 subTodos → 빈 배열 + zero stats', () => {
+    // Given
+    const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
+
+    // When
+    const result = toTodoItem(dto);
+
+    // Then
+    expect(result.subTodos).toEqual([]);
+    expect(result.subTodoStats).toEqual({ total: 0, completed: 0 });
   });
 });
 

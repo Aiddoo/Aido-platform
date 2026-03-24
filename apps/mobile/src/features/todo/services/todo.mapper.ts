@@ -13,6 +13,7 @@ import type {
   ParsedTodoResult,
   TodoItem,
 } from '../models/todo.model';
+import { toSubTodo } from './sub-todo.mapper';
 
 export const toTodoItem = (dto: Todo): TodoItem => ({
   id: dto.id,
@@ -25,6 +26,8 @@ export const toTodoItem = (dto: Todo): TodoItem => ({
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
   recurrenceGroupId: dto.recurrenceGroupId,
+  subTodos: dto.items.map(toSubTodo),
+  subTodoStats: dto.itemStats,
 });
 
 export const toTodoItems = (dtos: Todo[]): TodoItem[] => dtos.map(toTodoItem);
