@@ -1,12 +1,4 @@
-import {
-  HStack,
-  KeyboardBottomSheet,
-  LockIcon,
-  MoreIcon,
-  Text,
-  useOverlay,
-  VStack,
-} from '@src/shared/ui';
+import { BottomSheet, HStack, LockIcon, MoreIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
@@ -33,6 +25,7 @@ interface TodoItemProps {
 }
 
 export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: TodoItemProps) => {
+  const actionsOverlay = useOverlay();
   const overlay = useOverlay();
   const toggleMutation = useMutation(useToggleTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
@@ -60,7 +53,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
 
   const openDatePickerBottomSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
-      <KeyboardBottomSheet
+      <BottomSheet
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -87,13 +80,13 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
             }}
           />
         )}
-      </KeyboardBottomSheet>
+      </BottomSheet>
     ));
   };
 
   const openTimePickerBottomSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
-      <KeyboardBottomSheet
+      <BottomSheet
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -124,7 +117,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
             />
           </Suspense>
         )}
-      </KeyboardBottomSheet>
+      </BottomSheet>
     ));
   };
 
@@ -133,9 +126,7 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
   };
 
   const openActionsBottomSheet = () => {
-    let afterClose: (() => void) | null = null;
-
-    overlay.open(({ isOpen, close, exit }) => (
+    actionsOverlay.open(({ isOpen, close, exit }) => (
       <TodoActionsBottomSheet
         isOpen={isOpen}
         todo={todo}
@@ -144,15 +135,14 @@ export const TodoItem = ({ todo, onPress, drag, isActive, isDragDisabled }: Todo
           if (!open) {
             close();
             exit();
-            afterClose?.();
           }
         }}
         onNavigate={(action) => {
-          afterClose = match(action)
-            .with('edit', () => openEditBottomSheet)
-            .with('date', () => openDatePickerBottomSheet)
-            .with('time', () => openTimePickerBottomSheet)
-            .with('category', () => openCategoryBottomSheet)
+          match(action)
+            .with('edit', () => openEditBottomSheet())
+            .with('date', () => openDatePickerBottomSheet())
+            .with('time', () => openTimePickerBottomSheet())
+            .with('category', () => openCategoryBottomSheet())
             .exhaustive();
         }}
       />
