@@ -1,3 +1,4 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AuthProvider, useAuth } from '@src/bootstrap/providers/auth-provider';
 import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
@@ -85,9 +86,11 @@ const AppBootstrapLayout = () => {
                 <AuthProvider>
                   <RevenueCatProvider>
                     <NotificationProvider>
-                      <OverlayProvider>
-                        <AuthGateLayout />
-                      </OverlayProvider>
+                      <BottomSheetModalProvider>
+                        <OverlayProvider>
+                          <AuthGateLayout />
+                        </OverlayProvider>
+                      </BottomSheetModalProvider>
                     </NotificationProvider>
                   </RevenueCatProvider>
                 </AuthProvider>
