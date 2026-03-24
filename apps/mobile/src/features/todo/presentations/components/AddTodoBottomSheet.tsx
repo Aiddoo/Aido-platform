@@ -82,7 +82,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     defaultValues,
   });
 
-  const titleInputRef = useRef<TextInput>(null);
+  const todoInputRef = useRef<TextInput>(null);
 
   const dateModal = useBottomSheetModal();
   const timeModal = useBottomSheetModal();
@@ -94,9 +94,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     if (isOpen) isClosingRef.current = false;
   }, [isOpen]);
 
-  const focusTitle = () => {
+  const focusTodoInput = () => {
     if (!isOpen || isClosingRef.current) return;
-    titleInputRef.current?.focus();
+    todoInputRef.current?.focus();
   };
 
   const createMutation = useMutation(useCreateTodoMutationOptions());
@@ -195,7 +195,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         }}
       >
         <TodoFormContent
-          titleInputRef={titleInputRef}
+          todoInputRef={todoInputRef}
           onDatePress={() => dateModal.open()}
           onTimePress={() => timeModal.open()}
           onRepeatPress={() => repeatModal.open()}
@@ -205,7 +205,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         />
       </KeyboardBottomSheet>
 
-      <StackedBottomSheetModal modalRef={dateModal.ref} onDismiss={focusTitle}>
+      <StackedBottomSheetModal modalRef={dateModal.ref} onDismiss={focusTodoInput}>
         <TodoDatePickerContent
           startDate={methods.getValues('startDate')}
           onConfirm={handleDateConfirm}
@@ -213,7 +213,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         />
       </StackedBottomSheetModal>
 
-      <StackedBottomSheetModal modalRef={timeModal.ref} onDismiss={focusTitle}>
+      <StackedBottomSheetModal modalRef={timeModal.ref} onDismiss={focusTodoInput}>
         <Suspense fallback={<ActivityIndicator />}>
           <TodoTimePickerContent
             draftDate={methods.getValues('startDate')}
@@ -225,7 +225,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         </Suspense>
       </StackedBottomSheetModal>
 
-      <StackedBottomSheetModal modalRef={repeatModal.ref} onDismiss={focusTitle}>
+      <StackedBottomSheetModal modalRef={repeatModal.ref} onDismiss={focusTodoInput}>
         <TodoRepeatPickerContent
           startDate={methods.getValues('startDate')}
           repeat={{
