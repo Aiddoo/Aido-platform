@@ -1,10 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useRef } from 'react';
 import { Keyboard } from 'react-native';
-import { Easing } from 'react-native-reanimated';
-
-/** 닫기 전용 빠른 애니메이션. 열기는 기본 속도 유지. */
-const FAST_DISMISS = { duration: 250, easing: Easing.out(Easing.quad) };
+import { FAST_DISMISS } from './constants';
 
 interface UseBottomSheetModalReturn {
   ref: React.RefObject<BottomSheetModal | null>;

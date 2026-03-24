@@ -1,4 +1,8 @@
 import { StyleSheet } from 'react-native';
+import { Easing } from 'react-native-reanimated';
+
+/** 닫기 전용 빠른 애니메이션. 열기는 기본 속도 유지. */
+export const FAST_DISMISS = { duration: 250, easing: Easing.out(Easing.quad) };
 
 export const SHEET_INDEX = {
   CLOSED: -1,

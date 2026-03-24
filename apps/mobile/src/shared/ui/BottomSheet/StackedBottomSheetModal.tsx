@@ -8,7 +8,7 @@ import { type ReactNode, type RefObject, useCallback } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
-import { MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
+import { FAST_DISMISS, MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
 
 interface StackedBottomSheetModalProps {
   modalRef: RefObject<BottomSheetModal | null>;
@@ -42,10 +42,11 @@ export const StackedBottomSheetModal = ({
         disappearsOnIndex={-1}
         appearsOnIndex={0}
         opacity={0.5}
-        pressBehavior="close"
+        pressBehavior={'override' as 'none'}
+        onPress={() => modalRef.current?.dismiss(FAST_DISMISS)}
       />
     ),
-    [],
+    [modalRef],
   );
 
   return (
