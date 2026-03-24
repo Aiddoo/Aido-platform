@@ -9,6 +9,7 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 interface UpdateTodoCategoryParams {
   id: number;
@@ -47,6 +48,9 @@ export const useUpdateTodoCategoryMutationOptions = () => {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       toast.success('카테고리를 수정했어요');
       trackEvent('category_updated', {
         field: variables.input.color ? 'color' : 'name',
