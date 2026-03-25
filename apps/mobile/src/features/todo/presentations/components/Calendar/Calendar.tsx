@@ -1,4 +1,5 @@
-import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
+import { useCalendarViewMode } from '@src/features/todo/presentations/hooks/use-calendar-view-mode';
+import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { Box, HStack, Text, VStack } from '@src/shared/ui';
 import {
   getCalendarRange,
@@ -26,7 +27,8 @@ interface CalendarProps {
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 
 export function Calendar({ showCompletions = true }: CalendarProps) {
-  const { selectedDate, setSelectedDate, viewMode, setViewMode } = useFeedCalendar();
+  const [selectedDate, setSelectedDate] = useFeedDate();
+  const [viewMode, setViewMode] = useCalendarViewMode();
 
   const { rangeStart, rangeEnd } = useMemo(
     () =>

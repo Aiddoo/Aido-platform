@@ -27,11 +27,10 @@ export function CategoryList({ mode }: CategoryListProps) {
   const editOverlay = useOverlay();
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
-  const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const { items: draggableCategories, onDragEnd } = useDraggableReorderList({
     items: data.categories,
-    updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
     onReorder: ({ movedItemId, targetId, position }) => {
       reorderMutation.mutate({

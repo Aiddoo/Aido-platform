@@ -4,6 +4,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 
 interface ReorderTodoCategoryParams {
   id: number;
@@ -21,10 +22,12 @@ export const useReorderTodoCategoryMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
   });
 };
