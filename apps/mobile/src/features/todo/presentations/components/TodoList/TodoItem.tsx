@@ -12,7 +12,7 @@ import { AddSubTodoBottomSheet } from '../AddSubTodoBottomSheet';
 import { AddTodoBottomSheet } from '../AddTodoBottomSheet';
 import { CategorySelectBottomSheet } from '../CategorySelectBottomSheet';
 import { SubTodoActionsBottomSheet } from '../SubTodoList/SubTodoActionsBottomSheet';
-import { SubTodoList, SubTodoProgressIndicator } from '../SubTodoList/SubTodoList';
+import { SubTodoList } from '../SubTodoList/SubTodoList';
 import { TodoDatePickerContent } from '../TodoDatePickerContent';
 import { TodoTimePickerContent } from '../TodoTimePickerContent';
 import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
@@ -245,10 +245,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
       }
       bottom={
         todo.hasSubTodos ? (
-          <SubTodoProgressIndicator
-            value={todo.subTodoStats.completed}
-            total={todo.subTodoStats.total}
-          />
+          <TodoList.Progress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
         ) : undefined
       }
       right={

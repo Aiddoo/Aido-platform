@@ -1,4 +1,4 @@
-import { Box, HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
+import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { TodoList } from '../TodoList/TodoList';
@@ -61,24 +61,3 @@ SubTodoList.Item = function Item({
     />
   );
 };
-
-interface ProgressIndicatorProps {
-  value: number;
-  total: number;
-}
-
-export function SubTodoProgressIndicator({ value, total }: ProgressIndicatorProps) {
-  return (
-    <HStack gap={6} align="center">
-      <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
-        <Box
-          className="h-full rounded-full bg-main"
-          style={{ width: `${(value / total) * 100}%` }}
-        />
-      </Box>
-      <Text size="e1" shade={6}>
-        {value}/{total}
-      </Text>
-    </HStack>
-  );
-}

@@ -157,6 +157,22 @@ TodoList.Label = function TodoLabel({ isChecked, children, ...props }: TodoListL
   );
 };
 
+TodoList.Progress = function Progress({ value, total }: { value: number; total: number }) {
+  return (
+    <HStack gap={6} align="center">
+      <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
+        <Box
+          className="h-full rounded-full bg-main"
+          style={{ width: `${(value / total) * 100}%` }}
+        />
+      </Box>
+      <Text size="e1" shade={6}>
+        {value}/{total}
+      </Text>
+    </HStack>
+  );
+};
+
 TodoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
   return (
     <Box px={16} py={24} gap={8} className="items-center">

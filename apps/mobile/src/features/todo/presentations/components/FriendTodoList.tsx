@@ -18,6 +18,7 @@ import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { Skeleton } from 'heroui-native';
+import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
@@ -113,6 +114,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
+  const [isExpanded, setIsExpanded] = useState(false);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
@@ -162,6 +164,11 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
           </Text>
         ) : undefined
       }
+      bottom={
+        todo.hasSubTodos ? (
+          <TodoList.Progress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+        ) : undefined
+      }
       right={
         canNudgeTodo ? (
           <Pressable onPress={handleNudgePress} hitSlop={8}>
@@ -169,7 +176,20 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
           </Pressable>
         ) : undefined
       }
-    />
+      onPress={todo.hasSubTodos ? () => setIsExpanded((prev) => !prev) : undefined}
+    >
+      {isExpanded && (
+        <VStack className="ml-8 pl-4 border-l border-gray-2">
+          {todo.subTodos.map((subTodo) => (
+            <TodoList.Item
+              key={subTodo.id}
+              left={<TodoList.Checkbox isChecked={subTodo.completed} />}
+              top={<TodoList.Label isChecked={subTodo.completed}>{subTodo.title}</TodoList.Label>}
+            />
+          ))}
+        </VStack>
+      )}
+    </TodoList.Item>
   );
 }
 
