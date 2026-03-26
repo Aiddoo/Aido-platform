@@ -17,11 +17,11 @@ import {
   InfoIcon,
   KeyboardBottomSheet,
   MicIcon,
+  ModalBottomSheet,
   PauseIcon,
   RepeatIcon,
-  StackedBottomSheetModal,
   Text,
-  useBottomSheetModal,
+  useOverlay,
   usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
@@ -116,19 +116,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const todoInputRef = useRef<TextInput>(null);
   const isClosingRef = useRef(false);
+  const pendingFocusRef = useRef<number | null>(null);
 
-  const dateModal = useBottomSheetModal();
-  const timeModal = useBottomSheetModal();
-  const repeatModal = useBottomSheetModal();
-  const categoryModal = useBottomSheetModal();
+  const overlay = useOverlay();
 
   useEffect(() => {
     if (isOpen) isClosingRef.current = false;
+    return () => {
+      if (pendingFocusRef.current != null) cancelAnimationFrame(pendingFocusRef.current);
+    };
   }, [isOpen]);
 
   const focusTodoInput = () => {
     if (!isOpen || isClosingRef.current) return;
-    todoInputRef.current?.focus();
+    pendingFocusRef.current = requestAnimationFrame(() => {
+      todoInputRef.current?.focus();
+    });
   };
 
   const createMutation = useMutation(useCreateTodoMutationOptions());
@@ -202,27 +205,124 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const title = methods.watch('title');
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
-  const handleDateConfirm = (start: Date) => {
-    methods.setValue('startDate', start);
-    dateModal.close();
+  const openDatePicker = () => {
+    Keyboard.dismiss();
+    let pickerResult: Date | null = null;
+    overlay.open<Date | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet
+        isOpen={isOpen}
+        onClose={() => close(null)}
+        onExit={() => {
+          exit();
+          if (pickerResult) methods.setValue('startDate', pickerResult);
+          focusTodoInput();
+        }}
+      >
+        <TodoDatePickerContent
+          startDate={methods.getValues('startDate')}
+          onConfirm={(date) => {
+            pickerResult = date;
+            close(date);
+          }}
+          onCancel={() => close(null)}
+        />
+      </ModalBottomSheet>
+    ));
   };
 
-  const handleTimeConfirm = (time: string | undefined, allDay: boolean) => {
-    methods.setValue('scheduledTime', time);
-    methods.setValue('isAllDay', allDay);
-    timeModal.close();
+  const openTimePicker = () => {
+    Keyboard.dismiss();
+    let pickerResult: { time: string | undefined; isAllDay: boolean } | null = null;
+    overlay.open<{ time: string | undefined; isAllDay: boolean } | null>(
+      ({ isOpen, close, exit }) => (
+        <ModalBottomSheet
+          isOpen={isOpen}
+          onClose={() => close(null)}
+          onExit={() => {
+            exit();
+            if (pickerResult) {
+              methods.setValue('scheduledTime', pickerResult.time);
+              methods.setValue('isAllDay', pickerResult.isAllDay);
+            }
+            focusTodoInput();
+          }}
+        >
+          <Suspense fallback={<ActivityIndicator />}>
+            <TodoTimePickerContent
+              draftDate={methods.getValues('startDate')}
+              scheduledTime={methods.getValues('scheduledTime') ?? undefined}
+              isAllDay={methods.getValues('isAllDay') ?? true}
+              onConfirm={(time, isAllDay) => {
+                pickerResult = { time, isAllDay };
+                close(pickerResult);
+              }}
+              onCancel={() => close(null)}
+            />
+          </Suspense>
+        </ModalBottomSheet>
+      ),
+    );
   };
 
-  const handleCategoryConfirm = (id: number) => {
-    methods.setValue('categoryId', id);
-    categoryModal.close();
+  const openRepeatPicker = () => {
+    Keyboard.dismiss();
+    let pickerResult: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null } | null = null;
+    overlay.open<{ daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null } | null>(
+      ({ isOpen, close, exit }) => (
+        <ModalBottomSheet
+          isOpen={isOpen}
+          onClose={() => close(null)}
+          onExit={() => {
+            exit();
+            if (pickerResult) {
+              methods.setValue('isRecurring', true);
+              methods.setValue('daysOfWeek', pickerResult.daysOfWeek);
+              methods.setValue('repeatEndDate', pickerResult.repeatEndDate);
+            }
+            focusTodoInput();
+          }}
+        >
+          <TodoRepeatPickerContent
+            startDate={methods.getValues('startDate')}
+            repeat={{
+              daysOfWeek: methods.getValues('daysOfWeek') ?? [],
+              repeatEndDate: methods.getValues('repeatEndDate') ?? null,
+            }}
+            onConfirm={(repeat) => {
+              pickerResult = repeat;
+              close(repeat);
+            }}
+            onCancel={() => close(null)}
+          />
+        </ModalBottomSheet>
+      ),
+    );
   };
 
-  const handleRepeatConfirm = (repeat: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null }) => {
-    methods.setValue('isRecurring', true);
-    methods.setValue('daysOfWeek', repeat.daysOfWeek);
-    methods.setValue('repeatEndDate', repeat.repeatEndDate);
-    repeatModal.close();
+  const openCategoryPicker = () => {
+    Keyboard.dismiss();
+    let pickerResult: number | null = null;
+    overlay.open<number | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet
+        isOpen={isOpen}
+        onClose={() => close(null)}
+        onExit={() => {
+          exit();
+          if (pickerResult != null) methods.setValue('categoryId', pickerResult);
+          focusTodoInput();
+        }}
+      >
+        <Suspense fallback={<ActivityIndicator />}>
+          <CategorySelectModalContent
+            selectedCategoryId={methods.getValues('categoryId')}
+            onSelect={(id) => {
+              pickerResult = id;
+              close(id);
+            }}
+          />
+        </Suspense>
+      </ModalBottomSheet>
+    ));
   };
 
   return (
@@ -260,11 +360,11 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             keyboardShouldPersistTaps="always"
             contentContainerClassName="gap-2"
           >
-            <DateChip onPress={() => dateModal.open()} />
-            <TimeChip onPress={() => timeModal.open()} />
-            <RepeatChip onPress={() => repeatModal.open()} />
+            <DateChip onPress={openDatePicker} />
+            <TimeChip onPress={openTimePicker} />
+            <RepeatChip onPress={openRepeatPicker} />
             <VisibilityChip />
-            <CategoryChip onPress={() => categoryModal.open()} />
+            <CategoryChip onPress={openCategoryPicker} />
           </ScrollView>
 
           <Box className="h-px bg-gray-2" />
@@ -294,47 +394,6 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           </HStack>
         </VStack>
       </KeyboardBottomSheet>
-
-      <StackedBottomSheetModal modalRef={dateModal.ref} onDismiss={focusTodoInput}>
-        <TodoDatePickerContent
-          startDate={methods.getValues('startDate')}
-          onConfirm={handleDateConfirm}
-          onCancel={() => dateModal.close()}
-        />
-      </StackedBottomSheetModal>
-
-      <StackedBottomSheetModal modalRef={timeModal.ref} onDismiss={focusTodoInput}>
-        <Suspense fallback={<ActivityIndicator />}>
-          <TodoTimePickerContent
-            draftDate={methods.getValues('startDate')}
-            scheduledTime={methods.getValues('scheduledTime') ?? undefined}
-            isAllDay={methods.getValues('isAllDay') ?? true}
-            onConfirm={handleTimeConfirm}
-            onCancel={() => timeModal.close()}
-          />
-        </Suspense>
-      </StackedBottomSheetModal>
-
-      <StackedBottomSheetModal modalRef={categoryModal.ref} onDismiss={focusTodoInput}>
-        <Suspense fallback={<ActivityIndicator />}>
-          <CategorySelectModalContent
-            selectedCategoryId={methods.getValues('categoryId')}
-            onSelect={handleCategoryConfirm}
-          />
-        </Suspense>
-      </StackedBottomSheetModal>
-
-      <StackedBottomSheetModal modalRef={repeatModal.ref} onDismiss={focusTodoInput}>
-        <TodoRepeatPickerContent
-          startDate={methods.getValues('startDate')}
-          repeat={{
-            daysOfWeek: methods.getValues('daysOfWeek') ?? [],
-            repeatEndDate: methods.getValues('repeatEndDate') ?? null,
-          }}
-          onConfirm={handleRepeatConfirm}
-          onCancel={() => repeatModal.close()}
-        />
-      </StackedBottomSheetModal>
     </FormProvider>
   );
 };

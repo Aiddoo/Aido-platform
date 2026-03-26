@@ -3,8 +3,7 @@ export { Avatar } from './Avatar';
 export {
   BottomSheet,
   KeyboardBottomSheet,
-  StackedBottomSheetModal,
-  useBottomSheetModal,
+  ModalBottomSheet,
 } from './BottomSheet';
 export { Box } from './Box';
 export {

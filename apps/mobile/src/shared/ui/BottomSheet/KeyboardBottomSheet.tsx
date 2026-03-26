@@ -201,7 +201,7 @@ export const KeyboardBottomSheet = ({
       enableBlurKeyboardOnGesture
       android_keyboardInputMode="adjustPan"
       topInset={insets.top}
-      backgroundStyle={backgroundStyle}
+      backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
       handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}

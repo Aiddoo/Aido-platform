@@ -99,21 +99,25 @@ export const TodoRepeatPickerContent = ({
         onDatePress={handleCalendarPress}
       />
 
-      {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) && (
-        <VStack className="border-t border-gray-2 px-4 pt-3">
-          <HStack gap={8} align="center">
-            <Text size="b3" tone="neutral" shade={7}>
-              반복 기간
-            </Text>
-            <Text size="b3" tone="neutral" shade={6}>
-              •
-            </Text>
+      <VStack className="border-t border-gray-2 px-4 pt-3">
+        <HStack gap={8} align="center">
+          <Text size="b3" tone="neutral" shade={7}>
+            반복 기간
+          </Text>
+          <Text size="b3" tone="neutral" shade={6}>
+            •
+          </Text>
+          {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
             <Text size="b3" tone="brand">
               {formatMonthDay(startDate)} - {formatMonthDay(repeatSetting.endDate)}
             </Text>
-          </HStack>
-        </VStack>
-      )}
+          ) : (
+            <Text size="b3" tone="neutral" shade={5}>
+              기간을 선택해주세요
+            </Text>
+          )}
+        </HStack>
+      </VStack>
     </VStack>
   );
 };
@@ -177,11 +181,12 @@ interface RepeatDateCellProps {
 
 const RepeatDateCell = ({ date, startDate, endDate, onPress }: RepeatDateCellProps) => {
   const dayOfMonth = date.getDate();
+  const isDisabled = isBeforeDay(date, startDate);
   const isStart = isSameDay(date, startDate);
   const isEnd = endDate !== null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;
   const dayStyle = getDatePickerDayStyle({ date, isSelected });
-  const highlightToday = isTodayHighlighted({ date, isSelected });
+  const highlightToday = !isDisabled && isTodayHighlighted({ date, isSelected });
 
   const hasDistinctRange = endDate !== null && !isSameDay(startDate, endDate);
   const isInRange = hasDistinctRange && isAfterDay(date, startDate) && isBeforeDay(date, endDate);
@@ -191,7 +196,11 @@ const RepeatDateCell = ({ date, startDate, endDate, onPress }: RepeatDateCellPro
   return (
     <PressableFeedback
       onPress={() => onPress(date)}
-      className="relative h-[48px] flex-1 items-center justify-center"
+      isDisabled={isDisabled}
+      className={cn(
+        'relative h-[48px] flex-1 items-center justify-center',
+        isDisabled && 'opacity-30',
+      )}
     >
       {isRangeStart && <Box className="absolute right-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
       {isRangeEnd && <Box className="absolute left-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
@@ -206,7 +215,7 @@ const RepeatDateCell = ({ date, startDate, endDate, onPress }: RepeatDateCellPro
         <Text
           size="b3"
           weight="medium"
-          tone={DAY_TYPE_TONE[dayStyle]}
+          tone={isDisabled ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
           shade={isSelected ? undefined : 7}
         >
           {dayOfMonth}
