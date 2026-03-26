@@ -1,5 +1,5 @@
 import type { AiSuggestion } from '@src/features/ai/models/ai.model';
-import { Button, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { Button, H4, HStack, Spacing, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -17,7 +17,6 @@ export function SuggestionsList() {
   const router = useRouter();
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
   const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
-  const [categorySheetSuggestionId, setCategorySheetSuggestionId] = useState<number | null>(null);
 
   if (suggestions.length === 0)
     return (
@@ -69,10 +68,6 @@ export function SuggestionsList() {
     );
   };
 
-  const openCategorySheet = (suggestionId: number) => {
-    setCategorySheetSuggestionId(suggestionId);
-  };
-
   return (
     <ScallopedContainer>
       <View className="items-center px-5 pt-4">
@@ -97,7 +92,7 @@ export function SuggestionsList() {
           <SuggestionCard
             key={suggestion.id}
             suggestion={suggestion}
-            onAccept={() => openCategorySheet(suggestion.id)}
+            onAccepted={() => router.replace('/feed')}
             onDismiss={() => handleDismiss(suggestion.id)}
             isPending={dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id}
             pendingAction={dismissSuggestionMutation.isPending ? 'dismiss' : null}
@@ -105,24 +100,6 @@ export function SuggestionsList() {
           />
         ))}
       </View>
-
-      <SuggestionCategoryBottomSheet
-        key={categorySheetSuggestionId}
-        suggestionId={categorySheetSuggestionId}
-        suggestedCategoryId={
-          suggestions.find((s) => s.id === categorySheetSuggestionId)?.suggestedCategoryId
-        }
-        isOpen={categorySheetSuggestionId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCategorySheetSuggestionId(null);
-          }
-        }}
-        onAccepted={() => {
-          setCategorySheetSuggestionId(null);
-          router.replace('/feed');
-        }}
-      />
     </ScallopedContainer>
   );
 }
@@ -145,7 +122,7 @@ const formatSchedule = (suggestion: AiSuggestion): string => {
 
 interface SuggestionCardProps {
   suggestion: AiSuggestion;
-  onAccept: () => void;
+  onAccepted: () => void;
   onDismiss: () => void;
   pendingAction?: 'accept' | 'dismiss' | null;
   isPending?: boolean;
@@ -154,13 +131,38 @@ interface SuggestionCardProps {
 
 function SuggestionCard({
   suggestion,
-  onAccept,
+  onAccepted,
   onDismiss,
   pendingAction = null,
   isPending = false,
   isLast = false,
 }: SuggestionCardProps) {
+  const overlay = useOverlay();
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
+
+  const openCategorySheet = () => {
+    overlay.open(({ isOpen, close, exit }) => {
+      const closeSheet = () => {
+        close();
+        exit();
+      };
+
+      return (
+        <SuggestionCategoryBottomSheet
+          suggestionId={suggestion.id}
+          suggestedCategoryId={suggestion.suggestedCategoryId}
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) closeSheet();
+          }}
+          onAccepted={() => {
+            closeSheet();
+            onAccepted();
+          }}
+        />
+      );
+    });
+  };
 
   return (
     <View className="py-2">
@@ -203,7 +205,7 @@ function SuggestionCard({
             <Button
               size="small"
               display="inline"
-              onPress={onAccept}
+              onPress={openCategorySheet}
               isDisabled={isPending}
               isLoading={isPending && pendingAction === 'accept'}
             >
