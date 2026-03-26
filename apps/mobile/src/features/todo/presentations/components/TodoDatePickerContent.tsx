@@ -5,6 +5,7 @@ import { getMonthHeaderText, isSameDay, isSameMonth, WEEKDAY_LABELS } from '@src
 import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo } from 'react';
+import { ScrollView } from 'react-native';
 import { type DatePicker, useDatePicker } from '../hooks/useDatePicker';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
@@ -219,8 +220,12 @@ export const DayOfWeekSelector = ({
   isAllSelected,
 }: DayOfWeekSelectorProps) => {
   return (
-    <VStack gap={12} px={16}>
-      <HStack gap={6} align="center" justify="between">
+    <VStack gap={12}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-1.5 px-4"
+      >
         {DAY_LABELS.map(({ key, label }) => {
           const isSelected = selectedDays.includes(key);
           return (
@@ -259,10 +264,14 @@ export const DayOfWeekSelector = ({
             매일
           </Text>
         </PressableFeedback>
-      </HStack>
-      {selectedDays.length > 0 && (
-        <Text size="b3" tone="brand" align="right">
+      </ScrollView>
+      {selectedDays.length > 0 ? (
+        <Text size="b3" tone="brand" align="right" className="px-4">
           * {isAllSelected ? '매일 반복' : `매주 ${formatSelectedDays(selectedDays)} 반복`}
+        </Text>
+      ) : (
+        <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
+          * 요일을 선택해주세요
         </Text>
       )}
     </VStack>
