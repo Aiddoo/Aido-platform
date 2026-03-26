@@ -1,7 +1,7 @@
-import { Box, HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { Checkbox, PressableFeedback } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
+import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
+import { PressableFeedback } from 'heroui-native';
+import type { ReactNode } from 'react';
+import { TodoList } from '../TodoList/TodoList';
 
 interface SubTodoListProps {
   children: ReactNode;
@@ -28,11 +28,7 @@ export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoList
   );
 }
 
-interface SubTodoListItemProps
-  extends Omit<
-    ComponentProps<typeof Checkbox>,
-    'isSelected' | 'onSelectedChange' | 'className' | 'children'
-  > {
+interface SubTodoListItemProps {
   label: string;
   isChecked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -50,51 +46,18 @@ SubTodoList.Item = function Item({
   drag: itemDrag,
   isActive: itemIsActive,
   isDragDisabled,
-  ...checkboxProps
 }: SubTodoListItemProps) {
   return (
-    <PressableFeedback
-      onLongPress={isDragDisabled ? undefined : itemDrag}
-      isDisabled={itemIsActive}
-      className={cn('py-1.5 rounded-lg', itemIsActive && 'bg-gray-1')}
-    >
-      <HStack gap={8} align="center">
-        <Checkbox
-          className="shadow-none border border-main size-4 rounded-md"
-          isSelected={isChecked}
-          onSelectedChange={() => onCheckedChange(!isChecked)}
-          {...checkboxProps}
-        />
-
-        <Text size="e1" className="flex-1" strikethrough={isChecked} shade={isChecked ? 5 : 7}>
-          {label}
-        </Text>
-
+    <TodoList.Item
+      left={<TodoList.Checkbox isChecked={isChecked} onCheckedChange={onCheckedChange} />}
+      top={<TodoList.Label isChecked={isChecked}>{label}</TodoList.Label>}
+      right={
         <PressableFeedback onPress={onMorePress} hitSlop={8}>
-          <MoreIcon width={16} height={16} colorClassName="text-gray-5" />
+          <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
-      </HStack>
-    </PressableFeedback>
+      }
+      onLongPress={isDragDisabled ? undefined : itemDrag}
+      isActive={itemIsActive}
+    />
   );
 };
-
-interface ProgressIndicatorProps {
-  value: number;
-  total: number;
-}
-
-export function SubTodoProgressIndicator({ value, total }: ProgressIndicatorProps) {
-  return (
-    <HStack gap={6} align="center">
-      <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
-        <Box
-          className="h-full rounded-full bg-main"
-          style={{ width: `${(value / total) * 100}%` }}
-        />
-      </Box>
-      <Text size="e1" shade={6}>
-        {value}/{total}
-      </Text>
-    </HStack>
-  );
-}

@@ -16,47 +16,35 @@ import {
 } from '@src/shared/ui';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy } from 'es-toolkit';
 import times from 'es-toolkit/compat/times';
-import { Checkbox, Skeleton } from 'heroui-native';
-import { useMemo } from 'react';
+import { Skeleton } from 'heroui-native';
+import { useState } from 'react';
 import { Pressable } from 'react-native';
+import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/use-get-friend-todos-query-options';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/use-get-remind-nudge-cooldown-query-options';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeBottomSheet } from './NudgeBottomSheet';
 import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
+import { TodoList } from './TodoList/TodoList';
 
 interface FriendTodoListProps {
   friend: FriendUserViewModel;
-  date: Date;
 }
 
-export function FriendTodoList({ friend, date }: FriendTodoListProps) {
+export function FriendTodoList({ friend }: FriendTodoListProps) {
+  const [date] = useFeedDate();
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const { data, isLoading } = useQuery(
+  const { data: categoryGroups } = useSuspenseQuery(
     useGetFriendTodosQueryOptions(friend.id, formatDate(date), preference.timeFormat),
   );
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
-  const categoryGroups = useMemo(() => {
-    if (!data) return [];
-    const grouped = groupBy(data.todos, (todo) => todo.category.id);
-
-    return Object.values(grouped).flatMap((todos) => {
-      const first = todos[0];
-      return first ? [{ category: first.category, todos }] : [];
-    });
-  }, [data]);
-
-  if (isLoading || !data) {
-    return <FriendTodoList.Loading />;
-  }
-
   if (categoryGroups.length === 0) {
     const isToday = isSameDay(date, new Date());
+
     return (
       <Result
         icon={<DocsIcon width={72} height={72} />}
@@ -71,7 +59,7 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
     <Box gap={16} px={16}>
       {categoryGroups.map((group) => (
         <VStack key={group.category.id} gap={8}>
-          <CategoryHeader category={group.category} />
+          <CategoryHeader label={group.category.name} color={group.category.color} />
           <Box>
             {group.todos.map((todo) => (
               <FriendTodoItem
@@ -89,15 +77,27 @@ export function FriendTodoList({ friend, date }: FriendTodoListProps) {
   );
 }
 
-interface CategoryHeaderProps {
-  category: TodoItemViewModel['category'];
-}
+FriendTodoList.Loading = function Loading() {
+  return (
+    <VStack px={16} gap={12}>
+      {times(3, (i) => (
+        <HStack key={`friend-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
+          <Skeleton className="size-5 rounded" />
+          <VStack flex={1} gap={2}>
+            <Skeleton className="h-5 w-3/4 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+          </VStack>
+        </HStack>
+      ))}
+    </VStack>
+  );
+};
 
-function CategoryHeader({ category }: CategoryHeaderProps) {
+function CategoryHeader({ label, color }: { label: string; color: string }) {
   return (
     <Flex className="self-start flex-row items-center rounded-lg bg-gray-2 px-2.5 py-1">
-      <Text size="b4" weight="semibold" style={{ color: category.color }}>
-        {category.name}
+      <Text size="b4" weight="semibold" style={{ color }}>
+        {label}
       </Text>
     </Flex>
   );
@@ -114,6 +114,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
+  const [isExpanded, setIsExpanded] = useState(false);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
@@ -149,43 +150,46 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
       openLimitDialog();
       return;
     }
-
     openNudgeDialog();
   };
 
   return (
-    <Box py={8}>
-      <HStack gap={12} align="center">
-        <Checkbox
-          className="shadow-none border border-main size-5 rounded-md"
-          isSelected={todo.completed}
-          isDisabled
-        />
-
-        <VStack flex={1} gap={2}>
-          <HStack gap={4} align="center">
-            <Text
-              size="b3"
-              weight="medium"
-              strikethrough={todo.completed}
-              shade={todo.completed ? 5 : undefined}
-            >
-              {todo.title}
-            </Text>
-          </HStack>
-          {showDateTime && (
-            <Text size="e1" shade={6}>
-              {todo.formattedTime}
-            </Text>
-          )}
-        </VStack>
-        {canNudgeTodo && (
+    <TodoList.Item
+      left={<TodoList.Checkbox isChecked={todo.completed} />}
+      top={<TodoList.Label isChecked={todo.completed}>{todo.title}</TodoList.Label>}
+      middle={
+        showDateTime ? (
+          <Text size="e1" shade={6}>
+            {todo.formattedTime}
+          </Text>
+        ) : undefined
+      }
+      bottom={
+        todo.hasSubTodos ? (
+          <TodoList.Progress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+        ) : undefined
+      }
+      right={
+        canNudgeTodo ? (
           <Pressable onPress={handleNudgePress} hitSlop={8}>
             <PawIcon width={18} height={18} colorClassName="text-gray-6" />
           </Pressable>
-        )}
-      </HStack>
-    </Box>
+        ) : undefined
+      }
+      onPress={todo.hasSubTodos ? () => setIsExpanded((prev) => !prev) : undefined}
+    >
+      {isExpanded && (
+        <VStack className="ml-8 pl-4 border-l border-gray-2">
+          {todo.subTodos.map((subTodo) => (
+            <TodoList.Item
+              key={subTodo.id}
+              left={<TodoList.Checkbox isChecked={subTodo.completed} />}
+              top={<TodoList.Label isChecked={subTodo.completed}>{subTodo.title}</TodoList.Label>}
+            />
+          ))}
+        </VStack>
+      )}
+    </TodoList.Item>
   );
 }
 
@@ -229,19 +233,3 @@ function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
     </Result.Button>
   );
 }
-
-FriendTodoList.Loading = function Loading() {
-  return (
-    <VStack px={16} gap={12}>
-      {times(3, (i) => (
-        <HStack key={`friend-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
-          <Skeleton className="size-5 rounded" />
-          <VStack flex={1} gap={2}>
-            <Skeleton className="h-5 w-3/4 rounded" />
-            <Skeleton className="h-4 w-16 rounded" />
-          </VStack>
-        </HStack>
-      ))}
-    </VStack>
-  );
-};

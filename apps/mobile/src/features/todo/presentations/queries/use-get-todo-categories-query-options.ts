@@ -11,6 +11,7 @@ export const useGetTodoCategoriesQueryOptions = () => {
     queryKey: TODO_CATEGORY_QUERY_KEYS.list(),
     queryFn: async () => {
       const result = await todoCategoryService.getCategories();
+
       return unwrap(result);
     },
   });

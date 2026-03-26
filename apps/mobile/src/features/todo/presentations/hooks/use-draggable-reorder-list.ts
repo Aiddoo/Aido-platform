@@ -4,25 +4,23 @@ import { getReorderInstruction, type ReorderInstruction } from '../utils/draggab
 
 interface UseDraggableReorderListParams<TItem extends { id: number }> {
   items: TItem[];
-  updatedAt: number;
   isPending: boolean;
   onReorder: (instruction: ReorderInstruction) => void;
 }
 
 export const useDraggableReorderList = <TItem extends { id: number }>({
   items,
-  updatedAt,
   isPending,
   onReorder,
 }: UseDraggableReorderListParams<TItem>) => {
   const [localItems, setLocalItems] = useState(items);
-  const lastUpdatedAtRef = useRef(updatedAt);
+  const prevItemsRef = useRef(items);
 
   useEffect(() => {
-    if (lastUpdatedAtRef.current === updatedAt) return;
-    lastUpdatedAtRef.current = updatedAt;
+    if (prevItemsRef.current === items) return;
+    prevItemsRef.current = items;
     setLocalItems(items);
-  }, [updatedAt, items]);
+  }, [items]);
 
   const onDragEnd = ({ data, from, to }: DragEndParams<TItem>) => {
     if (isPending) return;
