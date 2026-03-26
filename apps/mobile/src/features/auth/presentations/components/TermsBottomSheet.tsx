@@ -72,7 +72,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
           detached
           bottomInset={insets.bottom || 16}
           className="mx-4"
-          backgroundClassName="rounded-[24px]"
+          backgroundClassName="rounded-[32px]"
         >
           <VStack gap={32}>
             <VStack gap={16}>
