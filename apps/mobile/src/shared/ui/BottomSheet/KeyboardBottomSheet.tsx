@@ -3,8 +3,17 @@ import GorhomBottomSheet, {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
 import {
+  type ComponentRef,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react';
+import {
+  AppState,
+  type AppStateStatus,
   Keyboard,
   type LayoutChangeEvent,
   Platform,
@@ -56,25 +65,35 @@ export const KeyboardBottomSheet = ({
     windowHeight - insets.top - TOP_MARGIN,
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setEnabled(!isOpen);
     return () => setEnabled(true);
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
-      if (!isOpen || isClosingRef.current) {
-        return;
-      }
+      if (isClosingRef.current) return;
 
       requestAnimationFrame(() => {
         sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
       });
     });
 
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextState: AppStateStatus) => {
+        if (nextState === 'background' && !isClosingRef.current) {
+          Keyboard.dismiss();
+        }
+      },
+    );
+
     return () => {
       hideSubscription.remove();
+      appStateSubscription.remove();
     };
   }, [isOpen]);
 
@@ -194,7 +213,7 @@ export const KeyboardBottomSheet = ({
       enableBlurKeyboardOnGesture
       android_keyboardInputMode="adjustPan"
       topInset={insets.top}
-      backgroundStyle={backgroundStyle}
+      backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
       handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}

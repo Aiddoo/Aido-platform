@@ -1,8 +1,8 @@
 import {
   ArrowRightIcon,
+  BottomSheet,
   Box,
   EditIcon,
-  KeyboardBottomSheet,
   ListRow,
   TrashIcon,
   VStack,
@@ -27,7 +27,7 @@ export const SubTodoActionsBottomSheet = ({
   isDeleting,
 }: SubTodoActionsBottomSheetProps) => {
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
         <PressableFeedback
           onPress={() => {
@@ -68,6 +68,6 @@ export const SubTodoActionsBottomSheet = ({
           />
         </PressableFeedback>
       </VStack>
-    </KeyboardBottomSheet>
+    </BottomSheet>
   );
 };

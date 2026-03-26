@@ -3,32 +3,27 @@ import { useGetSuggestionsQueryOptions } from '@src/features/ai/presentations/qu
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { TodoList } from '@src/features/todo/presentations/components/TodoList/TodoList';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
-import { useFeedCalendar } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
-import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback } from 'react';
+import { type ComponentProps, Suspense } from 'react';
 import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 
-const MyFeedScreen = () => {
+export default function MyFeedScreen() {
   const tabBarHeight = useTabBarHeight();
-  const { selectedDate } = useFeedCalendar();
   const queryClient = useQueryClient();
-  const invalidateTodos = useCallback(
-    () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
-        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
-      ]),
-    [queryClient],
+  const [refreshing, onRefresh] = useRefresh(() =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
+    ]),
   );
-  const [refreshing, onRefresh] = useRefresh(invalidateTodos);
 
   return (
     <NestableScrollContainer
@@ -40,47 +35,66 @@ const MyFeedScreen = () => {
 
       <Spacing size={10} />
 
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={(props) => <TodoList.Error {...props} />}>
         <Suspense fallback={<TodoList.Loading />}>
-          <TodoList date={selectedDate} />
+          <TodoList />
         </Suspense>
       </QueryErrorBoundary>
 
       <Spacing size={20} />
 
       <Box px={16}>
-        <SuggestionEntryCard />
+        <QueryErrorBoundary>
+          <Suspense fallback={<InfoCard label="불러오는 중..." />}>
+            <SuggestionEntry />
+          </Suspense>
+        </QueryErrorBoundary>
       </Box>
     </NestableScrollContainer>
   );
-};
-
-export default MyFeedScreen;
-
-function getEntryLabel(isPremium: boolean, name: string, count: number) {
-  if (!isPremium) return '딱 맞는 루틴을 제안해드려요 !';
-  if (count > 0) return `${name}님, ${count}개의 맞춤 제안이 도착했어요 !`;
-  return '이번 주 제안을 준비 중이에요';
 }
 
-function SuggestionEntryCard() {
+function SuggestionEntry() {
   const router = useRouter();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
 
-  const { data: suggestions } = useQuery({
-    ...useGetSuggestionsQueryOptions(),
-    enabled: isPremium,
-  });
-  const suggestionCount = suggestions?.length ?? 0;
-
-  const label = getEntryLabel(isPremium, user.name, suggestionCount);
+  if (!isPremium) {
+    return (
+      <InfoCard label="딱 맞는 루틴을 제안해드려요 !" onPress={() => router.push('/suggestions')} />
+    );
+  }
 
   return (
-    <PressableFeedback
-      onPress={() => router.push('/suggestions')}
-      className="rounded-xl bg-gray-1 px-4"
-    >
+    <Suspense fallback={<InfoCard label="제안을 불러오는 중..." />}>
+      <PremiumSuggestionEntry name={user.name} />
+    </Suspense>
+  );
+}
+
+interface PremiumSuggestionEntryProps {
+  name: string;
+}
+
+function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+  const router = useRouter();
+  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
+
+  const label =
+    suggestions.length > 0
+      ? `${name}님, ${suggestions.length}개의 맞춤 제안이 도착했어요 !`
+      : '이번 주 제안을 준비 중이에요';
+
+  return <InfoCard label={label} onPress={() => router.push('/suggestions')} />;
+}
+
+interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+  label: string;
+}
+
+function InfoCard({ label, ...props }: InfoCardProps) {
+  return (
+    <PressableFeedback className="rounded-xl bg-gray-1 px-4" {...props}>
       <ListRow
         left={<MagicIcon width={24} height={24} />}
         contents={

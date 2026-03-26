@@ -44,7 +44,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
           detached
           bottomInset={insets.bottom || 16}
           className="mx-4"
-          backgroundClassName="rounded-[24px]"
+          backgroundClassName="rounded-[32px]"
         >
           <VStack gap={20}>
             <BottomSheet.Title>

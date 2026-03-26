@@ -17,7 +17,7 @@ export const sharedSheetStyles = StyleSheet.create({
     marginHorizontal: 16,
   },
   detachedBackground: {
-    borderRadius: 24,
+    borderRadius: 32,
   },
   handleIndicator: {
     width: 36,

@@ -1,5 +1,4 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
-import { FeedCalendarProvider } from '@src/features/todo/presentations/providers/feed-calendar-provider';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import {
@@ -19,23 +18,21 @@ import { ScrollView, View } from 'react-native';
 
 export default function FeedGroupLayout() {
   return (
-    <FeedCalendarProvider>
-      <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-        <VStack>
-          <QueryErrorBoundary>
-            <Suspense fallback={<UserAvatarListLoading />}>
-              <UserAvatarList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </VStack>
-        <Slot />
-      </StyledSafeAreaView>
-    </FeedCalendarProvider>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+      <VStack>
+        <QueryErrorBoundary>
+          <Suspense fallback={<AvatarList.Loading />}>
+            <AvatarList />
+          </Suspense>
+        </QueryErrorBoundary>
+      </VStack>
+      <Slot />
+    </StyledSafeAreaView>
   );
 }
 
-function UserAvatarList() {
-  const { friendId } = useGlobalSearchParams<{ friendId?: string }>();
+function AvatarList() {
+  const { friendId, date } = useGlobalSearchParams<{ friendId?: string; date?: string }>();
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
@@ -63,29 +60,34 @@ function UserAvatarList() {
       contentContainerStyle={{ paddingHorizontal: 16, gap: 12, alignItems: 'flex-start' }}
       onMomentumScrollEnd={handleScrollEnd}
     >
-      <UserAvatarItem
+      <AvatarList.Item
         name="나"
-        profileImage={user.profileImage}
+        image={user.profileImage}
         isSelected={selectedFriendId === null}
-        onPress={() => router.replace('/feed')}
+        onPress={() => router.replace({ pathname: '/feed', params: date ? { date } : undefined })}
       />
 
       {friends.map((friend) => (
-        <UserAvatarItem
+        <AvatarList.Item
           key={friend.followId}
           name={friend.displayName}
-          profileImage={friend.profileImage}
+          image={friend.profileImage}
           isSelected={selectedFriendId === friend.id}
-          onPress={() => router.replace(`/feed/friend/${friend.id}`)}
+          onPress={() =>
+            router.replace({
+              pathname: '/feed/friend/[friendId]',
+              params: { friendId: friend.id, ...(date ? { date } : {}) },
+            })
+          }
         />
       ))}
 
-      <AddFriendButton />
+      <AvatarList.AddButton onPress={() => router.push('/friends/add')} />
     </ScrollView>
   );
 }
 
-function UserAvatarListLoading() {
+AvatarList.Loading = function Loading() {
   return (
     <HStack px={16} gap={12}>
       {times(3).map((i) => (
@@ -96,31 +98,21 @@ function UserAvatarListLoading() {
       ))}
     </HStack>
   );
-}
+};
 
-const AddFriendButton = () => (
-  <PressableFeedback onPress={() => router.push('/friends/add')}>
-    <VStack align="center" gap={4}>
-      <View className="size-10 items-center justify-center rounded-full bg-gray-2">
-        <PlusIcon width={16} height={16} colorClassName="text-gray-5" />
-      </View>
-    </VStack>
-  </PressableFeedback>
-);
-
-interface UserAvatarItemProps {
+interface AvatarListItemProps {
   name: string;
-  profileImage: string | null;
+  image: string | null;
   isSelected?: boolean;
   onPress?: () => void;
 }
 
-const UserAvatarItem = ({ name, profileImage, isSelected, onPress }: UserAvatarItemProps) => {
+AvatarList.Item = function Item({ name, image, isSelected, onPress }: AvatarListItemProps) {
   return (
     <PressableFeedback onPress={onPress}>
       <VStack align="center" gap={4}>
         <Avatar size="sm" alt={`${name} 프로필`}>
-          <Avatar.Image source={getProfileIconSource(profileImage)} />
+          <Avatar.Image source={getProfileIconSource(image)} />
         </Avatar>
         <Text
           size="e1"
@@ -131,6 +123,18 @@ const UserAvatarItem = ({ name, profileImage, isSelected, onPress }: UserAvatarI
         >
           {name}
         </Text>
+      </VStack>
+    </PressableFeedback>
+  );
+};
+
+AvatarList.AddButton = function AddButton({ onPress }: { onPress: () => void }) {
+  return (
+    <PressableFeedback onPress={onPress}>
+      <VStack align="center" gap={4}>
+        <View className="size-10 items-center justify-center rounded-full bg-gray-2">
+          <PlusIcon width={16} height={16} colorClassName="text-gray-5" />
+        </View>
       </VStack>
     </PressableFeedback>
   );

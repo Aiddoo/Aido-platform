@@ -4,49 +4,35 @@ import type { TimeFormat } from '@src/shared/utils/time';
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { groupBy } from 'es-toolkit';
 
+import type { TodoCategoryWithCount } from '../../models/todo-category.model';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys.constant';
 import { type TodoItemViewModel, toTodoItemViewModel } from '../view-models/todo-item.view-model';
 
-export interface FriendCategoryGroup {
+export interface CategoryGroup {
   category: { id: number; name: string; color: string };
   todos: TodoItemViewModel[];
 }
 
-export const useGetFriendTodosQueryOptions = (
-  friendUserId: string,
+export const useGetTodosByCategoryQueryOptions = (
   date: string,
-  timeFormat: TimeFormat = 'TWELVE_HOUR',
+  timeFormat: TimeFormat,
+  categories: TodoCategoryWithCount[],
 ) => {
   const todoService = useTodoService();
 
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.friendListByDate(friendUserId, date),
+    queryKey: TODO_QUERY_KEYS.listByDate(date),
     queryFn: async () => {
-      const result = await todoService.getFriendTodos(friendUserId, {
-        startDate: date,
-        endDate: date,
-        size: 200,
-      });
+      const result = await todoService.getTodos({ startDate: date, endDate: date, size: 200 });
       return unwrap(result);
     },
-    select: (data): FriendCategoryGroup[] => {
+    select: (data): CategoryGroup[] => {
       const viewModels = data.todos.map((todo) => toTodoItemViewModel(todo, timeFormat));
       const grouped = groupBy(viewModels, (todo) => todo.category.id);
-      return Object.values(grouped).flatMap((todos) => {
-        const first = todos[0];
-        return first
-          ? [
-              {
-                category: {
-                  id: first.category.id,
-                  name: first.category.name,
-                  color: first.category.color,
-                },
-                todos,
-              },
-            ]
-          : [];
-      });
+      return categories.map((c) => ({
+        category: { id: c.id, name: c.name, color: c.color },
+        todos: grouped[c.id] ?? [],
+      }));
     },
     placeholderData: keepPreviousData,
   });

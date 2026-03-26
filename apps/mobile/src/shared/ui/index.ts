@@ -1,9 +1,9 @@
+export { ACTION_CHIP_ICON_SIZE, ActionChip, type ActionChipProps } from './ActionChip';
 export { Avatar } from './Avatar';
 export {
   BottomSheet,
   KeyboardBottomSheet,
-  StackedBottomSheetModal,
-  useBottomSheetModal,
+  ModalBottomSheet,
 } from './BottomSheet';
 export { Box } from './Box';
 export {
