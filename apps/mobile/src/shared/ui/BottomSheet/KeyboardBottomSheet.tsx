@@ -12,6 +12,8 @@ import {
   useRef,
 } from 'react';
 import {
+  AppState,
+  type AppStateStatus,
   Keyboard,
   type LayoutChangeEvent,
   Platform,
@@ -69,19 +71,29 @@ export const KeyboardBottomSheet = ({
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
-      if (!isOpen || isClosingRef.current) {
-        return;
-      }
+      if (isClosingRef.current) return;
 
       requestAnimationFrame(() => {
         sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
       });
     });
 
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextState: AppStateStatus) => {
+        if (nextState === 'background' && !isClosingRef.current) {
+          Keyboard.dismiss();
+        }
+      },
+    );
+
     return () => {
       hideSubscription.remove();
+      appStateSubscription.remove();
     };
   }, [isOpen]);
 
