@@ -116,16 +116,22 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const todoInputRef = useRef<TextInput>(null);
   const isClosingRef = useRef(false);
+  const pendingFocusRef = useRef<number | null>(null);
 
   const overlay = useOverlay();
 
   useEffect(() => {
     if (isOpen) isClosingRef.current = false;
+    return () => {
+      if (pendingFocusRef.current != null) cancelAnimationFrame(pendingFocusRef.current);
+    };
   }, [isOpen]);
 
   const focusTodoInput = () => {
     if (!isOpen || isClosingRef.current) return;
-    todoInputRef.current?.focus();
+    pendingFocusRef.current = requestAnimationFrame(() => {
+      todoInputRef.current?.focus();
+    });
   };
 
   const createMutation = useMutation(useCreateTodoMutationOptions());
@@ -209,7 +215,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         onExit={() => {
           exit();
           if (pickerResult) methods.setValue('startDate', pickerResult);
-          setTimeout(focusTodoInput, 100);
+          focusTodoInput();
         }}
       >
         <TodoDatePickerContent
@@ -238,7 +244,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               methods.setValue('scheduledTime', pickerResult.time);
               methods.setValue('isAllDay', pickerResult.isAllDay);
             }
-            setTimeout(focusTodoInput, 100);
+            focusTodoInput();
           }}
         >
           <Suspense fallback={<ActivityIndicator />}>
@@ -273,7 +279,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               methods.setValue('daysOfWeek', pickerResult.daysOfWeek);
               methods.setValue('repeatEndDate', pickerResult.repeatEndDate);
             }
-            setTimeout(focusTodoInput, 100);
+            focusTodoInput();
           }}
         >
           <TodoRepeatPickerContent
@@ -303,7 +309,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         onExit={() => {
           exit();
           if (pickerResult != null) methods.setValue('categoryId', pickerResult);
-          setTimeout(focusTodoInput, 100);
+          focusTodoInput();
         }}
       >
         <Suspense fallback={<ActivityIndicator />}>
