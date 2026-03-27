@@ -31,6 +31,7 @@ export function Text({
       )}
       numberOfLines={maxLines}
       {...props}
+      allowFontScaling={false}
     >
       {children}
     </RNText>

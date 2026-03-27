@@ -118,7 +118,6 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
                     align="center"
                     lineBreakStrategyIOS="hangul-word"
                     textBreakStrategy="highQuality"
-                    maxFontSizeMultiplier={1.3}
                   >
                     {user.name}
                   </H4>

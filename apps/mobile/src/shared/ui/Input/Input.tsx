@@ -47,6 +47,7 @@ export const Input = forwardRef<TextInput, InputInternalProps>(
           {leftContent && <View className="mr-3">{leftContent}</View>}
           <InputComp
             ref={ref}
+            allowFontScaling={false}
             placeholder={placeholder}
             editable={!isDisabled}
             className={inputTextVariants({ size, hasLeftContent: !!leftContent })}

@@ -120,7 +120,7 @@ export const TodoTimePickerContent = ({
       <Spacing size={8} />
 
       <Flex px={4} justify="center" align="center">
-        <Text size="b3" shade={5} maxFontSizeMultiplier={1.3}>
+        <Text size="b3" shade={5}>
           ⓘ 1시간 전, 10분 전에 알림을 보내드려요
         </Text>
       </Flex>
