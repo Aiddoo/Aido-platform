@@ -11,31 +11,55 @@ import { createContext, type PropsWithChildren, use, useCallback, useState } fro
 export type { FontScale };
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
-// 모든 점프가 0~3px 범위로 균일하게 유지
-const SCALE_UP: Record<TextSize, TextSize> = {
-  e2: 'e1',
-  e1: 'b4',
-  b4: 'b3',
-  b3: 'b2',
-  b2: 'b1',
-  b1: 't3',
-  t3: 't2',
-  t2: 't2',
-  t1: 'h1',
-  h1: 'h1',
-};
-
-const SCALE_DOWN: Record<TextSize, TextSize> = {
-  h1: 't1',
-  t1: 't1',
-  t2: 't3',
-  t3: 'b1',
-  b1: 'b2',
-  b2: 'b3',
-  b3: 'b3',
-  b4: 'b4',
-  e1: 'e1',
-  e2: 'e2',
+const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>> = {
+  xsmall: {
+    h1: 't1',
+    t1: 't1',
+    t2: 't3',
+    t3: 'b1',
+    b1: 'b3',
+    b2: 'b4',
+    b3: 'b4',
+    b4: 'e1',
+    e1: 'e2',
+    e2: 'e2',
+  },
+  small: {
+    h1: 't1',
+    t1: 't1',
+    t2: 't3',
+    t3: 'b1',
+    b1: 'b2',
+    b2: 'b3',
+    b3: 'b3',
+    b4: 'b4',
+    e1: 'e1',
+    e2: 'e2',
+  },
+  large: {
+    h1: 'h1',
+    t1: 'h1',
+    t2: 't2',
+    t3: 't2',
+    b1: 't3',
+    b2: 'b1',
+    b3: 'b2',
+    b4: 'b3',
+    e1: 'b4',
+    e2: 'e1',
+  },
+  xlarge: {
+    h1: 'h1',
+    t1: 'h1',
+    t2: 't2',
+    t3: 't2',
+    b1: 't3',
+    b2: 't3',
+    b3: 'b1',
+    b4: 'b2',
+    e1: 'b3',
+    e2: 'b4',
+  },
 };
 
 interface FontScaleContextValue {
@@ -66,9 +90,8 @@ export const FontScaleProvider = ({
 
   const resolveSize = useCallback(
     (size: TextSize): TextSize => {
-      if (fontScale === 'normal') return size;
-      if (fontScale === 'large') return SCALE_UP[size];
-      return SCALE_DOWN[size];
+      if (fontScale === 'medium') return size;
+      return SCALE_MAP[fontScale][size];
     },
     [fontScale],
   );
@@ -84,11 +107,7 @@ export const useFontScale = (): FontScaleContextValue => {
   const context = use(FontScaleContext);
 
   if (!context) {
-    return {
-      fontScale: 'normal',
-      setFontScale: () => {},
-      resolveSize: (size: TextSize) => size,
-    };
+    throw new Error('useFontScale must be used within FontScaleProvider');
   }
 
   return context;

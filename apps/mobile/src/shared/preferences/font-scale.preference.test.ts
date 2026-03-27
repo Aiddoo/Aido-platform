@@ -1,8 +1,31 @@
 import { createMockSyncStorage } from '@src/shared/__tests__';
-import { readFontScale, writeFontScale } from './font-scale.preference';
+import { isFontScale, readFontScale, writeFontScale } from './font-scale.preference';
+
+describe('isFontScale', () => {
+  it.each([
+    'xsmall',
+    'small',
+    'medium',
+    'large',
+    'xlarge',
+  ] as const)('%s는 유효한 FontScale이다', (value) => {
+    expect(isFontScale(value)).toBe(true);
+  });
+
+  it.each([
+    undefined,
+    null,
+    '',
+    'invalid',
+    123,
+    true,
+  ])('%s는 유효한 FontScale이 아니다', (value) => {
+    expect(isFontScale(value)).toBe(false);
+  });
+});
 
 describe('readFontScale', () => {
-  it('저장된 값이 없으면 normal을 반환한다', () => {
+  it('저장된 값이 없으면 medium을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue(undefined);
@@ -11,46 +34,28 @@ describe('readFontScale', () => {
     const result = readFontScale(storage);
 
     // Then
-    expect(result).toBe('normal');
+    expect(result).toBe('medium');
   });
 
-  it('small이 저장되어 있으면 small을 반환한다', () => {
+  it.each([
+    'xsmall',
+    'small',
+    'medium',
+    'large',
+    'xlarge',
+  ] as const)('%s가 저장되어 있으면 %s를 반환한다', (value) => {
     // Given
     const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('small');
+    storage.getString.mockReturnValue(value);
 
     // When
     const result = readFontScale(storage);
 
     // Then
-    expect(result).toBe('small');
+    expect(result).toBe(value);
   });
 
-  it('normal이 저장되어 있으면 normal을 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('normal');
-
-    // When
-    const result = readFontScale(storage);
-
-    // Then
-    expect(result).toBe('normal');
-  });
-
-  it('large가 저장되어 있으면 large를 반환한다', () => {
-    // Given
-    const storage = createMockSyncStorage();
-    storage.getString.mockReturnValue('large');
-
-    // When
-    const result = readFontScale(storage);
-
-    // Then
-    expect(result).toBe('large');
-  });
-
-  it('유효하지 않은 값이 저장되어 있으면 normal을 반환한다', () => {
+  it('유효하지 않은 값이 저장되어 있으면 medium을 반환한다', () => {
     // Given
     const storage = createMockSyncStorage();
     storage.getString.mockReturnValue('invalid');
@@ -59,7 +64,7 @@ describe('readFontScale', () => {
     const result = readFontScale(storage);
 
     // Then
-    expect(result).toBe('normal');
+    expect(result).toBe('medium');
   });
 });
 
@@ -69,9 +74,9 @@ describe('writeFontScale', () => {
     const storage = createMockSyncStorage();
 
     // When
-    writeFontScale(storage, 'large');
+    writeFontScale(storage, 'xlarge');
 
     // Then
-    expect(storage.set).toHaveBeenCalledWith('aido_font_scale', 'large');
+    expect(storage.set).toHaveBeenCalledWith('aido_font_scale', 'xlarge');
   });
 });
