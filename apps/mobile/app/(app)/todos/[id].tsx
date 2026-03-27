@@ -1,17 +1,21 @@
+import { StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
 const TodoDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <View className="flex-1 justify-center items-center">
-        <Text className="text-gray-9 text-lg">할 일 상세 화면</Text>
-        <Text className="text-gray-5 mt-2">ID: {id}</Text>
+        <Text size="b1" shade={9}>
+          할 일 상세 화면
+        </Text>
+        <Text size="b3" shade={5} className="mt-2">
+          ID: {id}
+        </Text>
       </View>
-    </SafeAreaView>
+    </StyledSafeAreaView>
   );
 };
 
