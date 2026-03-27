@@ -162,12 +162,12 @@ function SpeechTooltip() {
                 colorClassName="text-main"
               />
 
-              <Text size="b3" weight="semibold" maxFontSizeMultiplier={2}>
+              <Text size="b3" weight="semibold">
                 음성으로 입력해요
               </Text>
             </HStack>
 
-            <Text size="b3" shade={6} maxFontSizeMultiplier={2}>
+            <Text size="b3" shade={6}>
               마이크 버튼을 누르고 말하면{'\n'}음성이 텍스트로 입력돼요
             </Text>
           </VStack>

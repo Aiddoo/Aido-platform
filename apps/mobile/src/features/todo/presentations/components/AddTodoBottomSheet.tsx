@@ -604,11 +604,11 @@ const AiFeatureTooltip = () => {
                 height={fontScaledSize(18)}
                 colorClassName="text-main"
               />
-              <Text size="b3" weight="semibold" maxFontSizeMultiplier={2}>
+              <Text size="b3" weight="semibold">
                 말로 할일을 추가해요
               </Text>
             </HStack>
-            <Text size="b3" shade={6} maxFontSizeMultiplier={2}>
+            <Text size="b3" shade={6}>
               "이번 주 금요일 저녁 7시 약속"처럼{'\n'}말하면 날짜·시간을 채워줘요
             </Text>
           </VStack>

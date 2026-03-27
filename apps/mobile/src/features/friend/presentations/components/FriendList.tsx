@@ -256,7 +256,7 @@ function EditModeGuideTooltip() {
           className="rounded-2xl border border-border px-4 py-3"
         >
           <Popover.Arrow />
-          <Text size="b4" shade={6} maxFontSizeMultiplier={2}>
+          <Text size="b4" shade={6}>
             편집을 눌러 피드에 보이는{'\n'}친구 순서를 변경하거나 삭제할 수 있어요
           </Text>
         </Popover.Content>

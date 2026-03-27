@@ -8,6 +8,7 @@ import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useUserIdentity } from '@src/shared/hooks/use-user-identity';
+import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { useFonts } from 'expo-font';
@@ -81,21 +82,23 @@ const AppBootstrapLayout = () => {
       <KeyboardProvider>
         <HeroUIProvider>
           <ThemeProvider>
-            <QueryProvider>
-              <DIProvider>
-                <AuthProvider>
-                  <RevenueCatProvider>
-                    <NotificationProvider>
-                      <BottomSheetModalProvider>
-                        <OverlayProvider>
-                          <AuthGateLayout />
-                        </OverlayProvider>
-                      </BottomSheetModalProvider>
-                    </NotificationProvider>
-                  </RevenueCatProvider>
-                </AuthProvider>
-              </DIProvider>
-            </QueryProvider>
+            <FontScaleProvider>
+              <QueryProvider>
+                <DIProvider>
+                  <AuthProvider>
+                    <RevenueCatProvider>
+                      <NotificationProvider>
+                        <BottomSheetModalProvider>
+                          <OverlayProvider>
+                            <AuthGateLayout />
+                          </OverlayProvider>
+                        </BottomSheetModalProvider>
+                      </NotificationProvider>
+                    </RevenueCatProvider>
+                  </AuthProvider>
+                </DIProvider>
+              </QueryProvider>
+            </FontScaleProvider>
           </ThemeProvider>
         </HeroUIProvider>
       </KeyboardProvider>

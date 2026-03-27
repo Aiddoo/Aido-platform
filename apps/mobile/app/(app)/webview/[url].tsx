@@ -1,5 +1,6 @@
+import { Text } from '@src/shared/ui';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 const WebViewScreen = () => {
@@ -8,7 +9,7 @@ const WebViewScreen = () => {
   if (!url || typeof url !== 'string') {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text>유효하지 않은 URL입니다</Text>
+        <Text size="b3">유효하지 않은 URL입니다</Text>
       </View>
     );
   }

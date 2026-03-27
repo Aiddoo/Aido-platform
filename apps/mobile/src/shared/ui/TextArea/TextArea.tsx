@@ -53,6 +53,7 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
           >
             <InputComponent
               ref={ref}
+              allowFontScaling={false}
               placeholder={placeholder}
               editable={!isDisabled}
               multiline
