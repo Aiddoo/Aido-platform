@@ -155,10 +155,7 @@ function SuggestionCard({
           onOpenChange={(open) => {
             if (!open) closeSheet();
           }}
-          onAccepted={() => {
-            closeSheet();
-            onAccepted();
-          }}
+          onAccepted={onAccepted}
         />
       );
     });
