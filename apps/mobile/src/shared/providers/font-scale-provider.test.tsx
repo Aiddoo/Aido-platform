@@ -10,12 +10,11 @@ const createWrapper =
   );
 
 describe('useFontScale', () => {
-  it('FontScaleProvider 없이 사용하면 에러를 던진다', () => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+  it('FontScaleProvider 없이 사용하면 기본값을 반환한다', () => {
+    const { result } = renderHook(() => useFontScale());
 
-    expect(() => renderHook(() => useFontScale())).toThrow(
-      'useFontScale must be used within FontScaleProvider',
-    );
+    expect(result.current.fontScale).toBe('medium');
+    expect(result.current.resolveSize('b3')).toBe('b3');
   });
 
   it('저장된 값이 없으면 medium으로 초기화된다', () => {

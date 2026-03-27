@@ -8,8 +8,6 @@ import {
 import type { TextSize } from '@src/shared/ui/Text/Text.types';
 import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
 
-export type { FontScale };
-
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
 const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>> = {
   xsmall: {
@@ -103,12 +101,15 @@ export const FontScaleProvider = ({
   );
 };
 
+// Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함
+// (useTheme과 다르게 — useTheme은 Text 내부에서 호출되지 않음)
+const DEFAULT_CONTEXT: FontScaleContextValue = {
+  fontScale: 'medium',
+  setFontScale: () => {},
+  resolveSize: (size: TextSize) => size,
+};
+
 export const useFontScale = (): FontScaleContextValue => {
   const context = use(FontScaleContext);
-
-  if (!context) {
-    throw new Error('useFontScale must be used within FontScaleProvider');
-  }
-
-  return context;
+  return context ?? DEFAULT_CONTEXT;
 };
