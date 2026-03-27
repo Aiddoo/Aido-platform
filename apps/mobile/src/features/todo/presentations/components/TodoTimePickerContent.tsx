@@ -5,7 +5,7 @@ import { formatTimeDisplay, getDateWithTime, toHHmm } from '@src/shared/utils/ti
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { DEFAULT_TIME } from '../constants/todo.constant';
 import { PickerHeader } from './PickerHeader';
 
@@ -41,7 +41,7 @@ export const TodoTimePickerContent = ({
 
       <Spacing size={24} />
 
-      <VStack className="rounded-xl bg-gray-1" px={4} py={8} gap={8}>
+      <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
         <ListRow
           contents={
             <ListRow.Texts
@@ -73,17 +73,9 @@ export const TodoTimePickerContent = ({
                 </Text>
               </PressableFeedback>
             ) : isIOS ? (
-              <DateTimePicker
-                value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
-                mode="time"
-                display="compact"
-                locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
-                onChange={(_event, date) => {
-                  if (date) {
-                    setLocalTime(toHHmm(date));
-                  }
-                }}
-              />
+              <Text size="b1" tone="brand" weight="medium">
+                {formatTimeDisplay(localTime, preference.timeFormat)}
+              </Text>
             ) : (
               <>
                 <PressableFeedback
@@ -115,12 +107,28 @@ export const TodoTimePickerContent = ({
           verticalPadding="medium"
           disabled={localIsAllDay}
         />
+        {!localIsAllDay && isIOS && (
+          <View className="items-center">
+            <DateTimePicker
+              value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
+              mode="time"
+              display="spinner"
+              locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
+              onChange={(_event, date) => {
+                if (date) {
+                  setLocalTime(toHHmm(date));
+                }
+              }}
+              style={{ height: 216 }}
+            />
+          </View>
+        )}
       </VStack>
 
       <Spacing size={8} />
 
       <Flex px={4} justify="center" align="center">
-        <Text size="b3" shade={5} maxFontSizeMultiplier={1.3}>
+        <Text size="b3" shade={5}>
           ⓘ 1시간 전, 10분 전에 알림을 보내드려요
         </Text>
       </Flex>

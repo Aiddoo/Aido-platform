@@ -86,7 +86,6 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
                     align="center"
                     lineBreakStrategyIOS="hangul-word"
                     textBreakStrategy="highQuality"
-                    maxFontSizeMultiplier={1.3}
                   >
                     {user.name}
                   </H4>
@@ -153,10 +152,10 @@ interface StatItemProps {
 function StatItem({ label, value }: StatItemProps) {
   return (
     <VStack align="center" gap={1} className="flex-1">
-      <Text size="e1" shade={5} maxFontSizeMultiplier={1.4}>
+      <Text size="e1" shade={5}>
         {label}
       </Text>
-      <Text size="b2" shade={9} weight="bold" maxFontSizeMultiplier={1.4}>
+      <Text size="b2" shade={9} weight="bold">
         {value}
       </Text>
     </VStack>

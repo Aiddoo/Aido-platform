@@ -74,6 +74,10 @@ const MyPageScreen = () => {
             label="화면 테마"
             onPress={() => router.push('/settings/theme')}
           />
+          <SettingNavigation.Item
+            label="글꼴 크기"
+            onPress={() => router.push('/settings/font-size')}
+          />
         </SettingNavigation>
 
         <Spacing size={12} />
