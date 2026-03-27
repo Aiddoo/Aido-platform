@@ -108,7 +108,7 @@ export const TodoTimePickerContent = ({
           disabled={localIsAllDay}
         />
         {!localIsAllDay && isIOS && (
-          <View className="h-[216px] items-center">
+          <View className="items-center">
             <DateTimePicker
               value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
               mode="time"
