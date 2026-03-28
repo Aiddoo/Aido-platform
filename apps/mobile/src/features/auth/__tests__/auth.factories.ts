@@ -35,6 +35,12 @@ const generatePreferenceDto = (): PreferenceResponse => ({
   eveningReminderHour: 21,
   eveningReminderMinute: 0,
   timeFormat: 'TWELVE_HOUR',
+  weatherMorningEnabled: false,
+  weatherMorningHour: 7,
+  weatherMorningMinute: 0,
+  weatherEveningEnabled: false,
+  weatherEveningHour: 18,
+  weatherEveningMinute: 0,
 });
 
 export const createPreferenceDto = (

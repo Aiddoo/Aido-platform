@@ -6,6 +6,15 @@ import type { CurrentUserPayload } from "@/modules/auth/decorators";
 import { UserSettingsService } from "./services/user-settings.service";
 import { SettingsController } from "./user-settings.controller";
 
+const WEATHER_DEFAULTS = {
+	weatherMorningEnabled: false,
+	weatherMorningHour: 7,
+	weatherMorningMinute: 0,
+	weatherEveningEnabled: false,
+	weatherEveningHour: 18,
+	weatherEveningMinute: 0,
+} as const;
+
 describe("SettingsController", () => {
 	let controller: SettingsController;
 	let mockUserSettingsService: Mocked<UserSettingsService>;
@@ -37,6 +46,7 @@ describe("SettingsController", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR" as const,
+				...WEATHER_DEFAULTS,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(expectedResult);
 
@@ -61,6 +71,7 @@ describe("SettingsController", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR" as const,
+				...WEATHER_DEFAULTS,
 			};
 			mockUserSettingsService.getPreference.mockResolvedValue(defaultResult);
 
@@ -85,6 +96,7 @@ describe("SettingsController", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR" as const,
+				...WEATHER_DEFAULTS,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,
@@ -113,6 +125,7 @@ describe("SettingsController", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR" as const,
+				...WEATHER_DEFAULTS,
 			};
 			mockUserSettingsService.updatePreference.mockResolvedValue(
 				expectedResult,

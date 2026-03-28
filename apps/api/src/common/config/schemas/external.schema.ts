@@ -40,6 +40,9 @@ export const externalSchema = z.object({
 
 	// AI 일일 사용 제한 (기본값: 5)
 	AI_DAILY_LIMIT: z.coerce.number().int().positive().default(5),
+
+	// 기상청 공공데이터포털 API (선택)
+	KMA_API_KEY: z.string().optional(),
 });
 
 export type ExternalConfig = z.infer<typeof externalSchema>;

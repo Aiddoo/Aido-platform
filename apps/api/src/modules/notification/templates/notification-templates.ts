@@ -1,6 +1,7 @@
 import { josa } from "es-hangul";
 
 import type { NotificationType } from "@/generated/prisma/client";
+import type { WeatherForecast } from "@/modules/weather/providers/weather-provider.interface";
 
 /**
  * 알림 메시지 템플릿 (듀오링고 스타일: 짧고 위트있게, 살짝 찔리지만 웃기게)
@@ -253,6 +254,83 @@ export const SCHEDULER_TEMPLATES = {
 				body: "지금 하나 끝내면 세이브 완료",
 			},
 		],
+	} satisfies NotificationTemplate,
+} as const;
+
+// =============================================================================
+// Weather Templates
+// =============================================================================
+
+export const WEATHER_TEMPLATES = {
+	MORNING_CLEAR: {
+		title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
+		body: "좋은 하루 보내세요!",
+		type: "WEATHER_MORNING" as NotificationType,
+		variants: [
+			{
+				title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
+				body: "좋은 하루 보내세요!",
+			},
+			{
+				title: "{tempMin}~{tempMax}°C, 오늘 {skyLabel}",
+				body: "오늘도 힘내볼까요?",
+			},
+		],
+	} satisfies NotificationTemplate,
+	MORNING_RAIN: {
+		title: "오늘 비 올 확률 {precipProb}%",
+		body: "우산 챙기세요! {tempMin}~{tempMax}°C",
+		type: "WEATHER_MORNING" as NotificationType,
+		variants: [
+			{
+				title: "오늘 비 올 확률 {precipProb}%",
+				body: "우산 챙기세요! {tempMin}~{tempMax}°C",
+			},
+			{
+				title: "☂ 강수확률 {precipProb}%",
+				body: "우산 필수! {tempMin}~{tempMax}°C",
+			},
+		],
+	} satisfies NotificationTemplate,
+	MORNING_SNOW: {
+		title: "오늘 눈 올 확률 {precipProb}%",
+		body: "따뜻하게 입으세요! {tempMin}~{tempMax}°C",
+		type: "WEATHER_MORNING" as NotificationType,
+	} satisfies NotificationTemplate,
+	EVENING_CLEAR: {
+		title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
+		body: "내일도 좋은 하루 되세요!",
+		type: "WEATHER_EVENING" as NotificationType,
+		variants: [
+			{
+				title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
+				body: "내일도 좋은 하루 되세요!",
+			},
+			{
+				title: "내일 날씨: {skyLabel} {tempMin}~{tempMax}°C",
+				body: "미리 준비해두세요!",
+			},
+		],
+	} satisfies NotificationTemplate,
+	EVENING_RAIN: {
+		title: "내일 비 올 확률 {precipProb}%",
+		body: "우산 미리 챙겨두세요! {tempMin}~{tempMax}°C",
+		type: "WEATHER_EVENING" as NotificationType,
+		variants: [
+			{
+				title: "내일 비 올 확률 {precipProb}%",
+				body: "우산 미리 챙겨두세요! {tempMin}~{tempMax}°C",
+			},
+			{
+				title: "☂ 내일 강수확률 {precipProb}%",
+				body: "우산 준비! {tempMin}~{tempMax}°C",
+			},
+		],
+	} satisfies NotificationTemplate,
+	EVENING_SNOW: {
+		title: "내일 눈 올 확률 {precipProb}%",
+		body: "따뜻하게 준비하세요! {tempMin}~{tempMax}°C",
+		type: "WEATHER_EVENING" as NotificationType,
 	} satisfies NotificationTemplate,
 } as const;
 
@@ -1115,4 +1193,66 @@ export class NotificationMessageBuilder {
 		const template = templateMap[type];
 		return { title: template.title, body: template.body };
 	}
+
+	// =============================================
+	// Weather
+	// =============================================
+
+	static weatherMorning(forecast: WeatherForecast): {
+		title: string;
+		body: string;
+	} {
+		const skyLabel = SKY_LABEL_MAP[forecast.skyCondition] ?? "맑음";
+		const vars = {
+			skyLabel,
+			tempMin: Math.round(forecast.temperatureMin),
+			tempMax: Math.round(forecast.temperatureMax),
+			precipProb: forecast.precipitationProbability,
+		};
+
+		const template =
+			forecast.precipitationType === "SNOW"
+				? WEATHER_TEMPLATES.MORNING_SNOW
+				: forecast.precipitationProbability >= 40
+					? WEATHER_TEMPLATES.MORNING_RAIN
+					: WEATHER_TEMPLATES.MORNING_CLEAR;
+
+		const { title, body } = pickVariant(template);
+		return {
+			title: fillTemplate(title, vars),
+			body: fillTemplate(body, vars),
+		};
+	}
+
+	static weatherEvening(tomorrowForecast: WeatherForecast): {
+		title: string;
+		body: string;
+	} {
+		const skyLabel = SKY_LABEL_MAP[tomorrowForecast.skyCondition] ?? "맑음";
+		const vars = {
+			skyLabel,
+			tempMin: Math.round(tomorrowForecast.temperatureMin),
+			tempMax: Math.round(tomorrowForecast.temperatureMax),
+			precipProb: tomorrowForecast.precipitationProbability,
+		};
+
+		const template =
+			tomorrowForecast.precipitationType === "SNOW"
+				? WEATHER_TEMPLATES.EVENING_SNOW
+				: tomorrowForecast.precipitationProbability >= 40
+					? WEATHER_TEMPLATES.EVENING_RAIN
+					: WEATHER_TEMPLATES.EVENING_CLEAR;
+
+		const { title, body } = pickVariant(template);
+		return {
+			title: fillTemplate(title, vars),
+			body: fillTemplate(body, vars),
+		};
+	}
 }
+
+const SKY_LABEL_MAP: Record<string, string> = {
+	CLEAR: "맑음",
+	PARTLY_CLOUDY: "구름많음",
+	CLOUDY: "흐림",
+};

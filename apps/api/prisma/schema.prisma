@@ -83,6 +83,9 @@ model User {
   aiReports            AiReport[]
   recurringSuggestions RecurringSuggestion[]
 
+  // 관계: 위치
+  location UserLocation?
+
   @@index([status])
   @@index([subscriptionStatus])
   @@index([deletedAt])
@@ -140,6 +143,16 @@ model UserPreference {
   // 시간 표시 형식
   timeFormat        TimeFormat @default(TWELVE_HOUR)
 
+  // 날씨 오전 리마인더
+  weatherMorningEnabled  Boolean @default(false)
+  weatherMorningHour     Int     @default(7)  // 0-23
+  weatherMorningMinute   Int     @default(0)  // 0-59
+
+  // 날씨 오후 리마인더
+  weatherEveningEnabled  Boolean @default(false)
+  weatherEveningHour     Int     @default(18) // 0-23
+  weatherEveningMinute   Int     @default(0)  // 0-59
+
   // 스트릭 추적
   currentStreak     Int       @default(0) // 연속 올클리어 일수
   longestStreak     Int       @default(0) // 최장 연속 기록
@@ -150,6 +163,8 @@ model UserPreference {
   @@index([pushEnabled, timezone]) // 타임존별 활성 사용자 스캔
   @@index([pushEnabled, timezone, morningReminderHour, morningReminderMinute]) // 아침 리마인더 스윕
   @@index([pushEnabled, timezone, eveningReminderHour, eveningReminderMinute]) // 저녁 리마인더 스윕
+  @@index([pushEnabled, weatherMorningEnabled, timezone, weatherMorningHour, weatherMorningMinute]) // 오전 날씨 스윕
+  @@index([pushEnabled, weatherEveningEnabled, timezone, weatherEveningHour, weatherEveningMinute]) // 오후 날씨 스윕
 }
 
 enum TimeFormat {
@@ -168,6 +183,22 @@ model UserConsent {
   privacyAgreedAt    DateTime? // 개인정보처리방침 동의 시점
   agreedTermsVersion String?   @db.VarChar(20) // 동의한 약관 버전 (예: "1.0.0")
   marketingAgreedAt  DateTime? // 마케팅 수신 동의 시점 (null = 미동의/철회)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// 사용자 - 위치 (날씨 알림용)
+// =============================================================================
+
+model UserLocation {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  latitude  Float    // GPS 위도 (WGS84)
+  longitude Float    // GPS 경도 (WGS84)
+  gridX     Int      // 기상청 격자 X (Lambert 변환)
+  gridY     Int      // 기상청 격자 Y (Lambert 변환)
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -728,6 +759,10 @@ enum NotificationType {
   // 활성 유저 재방문 유도
   LUNCH_NUDGE    // 점심 넛지 (12:30, 오늘 완료 0개)
   STREAK_AT_RISK // 스트릭 위기 (21:00, 스트릭 3일+ & 미완료)
+
+  // 날씨
+  WEATHER_MORNING // 오전 날씨 알림
+  WEATHER_EVENING // 오후 날씨 알림
 }
 
 // =============================================================================

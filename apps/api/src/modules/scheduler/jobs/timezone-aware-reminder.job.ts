@@ -21,6 +21,8 @@ import { NudgeSuggestStrategy } from "./strategies/nudge-suggest.strategy";
 import { OnboardingStrategy } from "./strategies/onboarding.strategy";
 import { SocialDigestStrategy } from "./strategies/social-digest.strategy";
 import { StreakAtRiskStrategy } from "./strategies/streak-at-risk.strategy";
+import { WeatherEveningStrategy } from "./strategies/weather-evening.strategy";
+import { WeatherMorningStrategy } from "./strategies/weather-morning.strategy";
 import { WeeklyAchievementStrategy } from "./strategies/weekly-achievement.strategy";
 import { WeeklyReportStrategy } from "./strategies/weekly-report.strategy";
 import { WinbackStrategy } from "./strategies/winback.strategy";
@@ -53,6 +55,8 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly lunchNudge: LunchNudgeStrategy,
 		private readonly streakAtRisk: StreakAtRiskStrategy,
 		private readonly onboarding: OnboardingStrategy,
+		private readonly weatherMorning: WeatherMorningStrategy,
+		private readonly weatherEvening: WeatherEveningStrategy,
 	) {}
 
 	async onModuleInit(): Promise<void> {
@@ -257,6 +261,10 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		) {
 			await this.streakAtRisk.execute(ctx);
 		}
+
+		// 날씨 알림: 유저별 커스텀 시간 (내부에서 시:분 매칭)
+		await this.weatherMorning.execute(ctx);
+		await this.weatherEvening.execute(ctx);
 	}
 
 	/**

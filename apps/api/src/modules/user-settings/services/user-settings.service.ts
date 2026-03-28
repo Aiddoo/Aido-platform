@@ -47,6 +47,16 @@ export class UserSettingsService {
 						eveningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
 						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+						weatherMorningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
+						weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
+						weatherMorningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
+						weatherEveningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
+						weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
+						weatherEveningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
 					};
 				}
 				return {
@@ -58,6 +68,12 @@ export class UserSettingsService {
 					eveningReminderHour: raw.eveningReminderHour,
 					eveningReminderMinute: raw.eveningReminderMinute,
 					timeFormat: raw.timeFormat,
+					weatherMorningEnabled: raw.weatherMorningEnabled,
+					weatherMorningHour: raw.weatherMorningHour,
+					weatherMorningMinute: raw.weatherMorningMinute,
+					weatherEveningEnabled: raw.weatherEveningEnabled,
+					weatherEveningHour: raw.weatherEveningHour,
+					weatherEveningMinute: raw.weatherEveningMinute,
 				};
 			},
 		);
@@ -74,6 +90,12 @@ export class UserSettingsService {
 				eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
 				eveningReminderMinute: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
 				timeFormat: preference.timeFormat,
+				weatherMorningEnabled: preference.weatherMorningEnabled,
+				weatherMorningHour: preference.weatherMorningHour,
+				weatherMorningMinute: preference.weatherMorningMinute,
+				weatherEveningEnabled: preference.weatherEveningEnabled,
+				weatherEveningHour: preference.weatherEveningHour,
+				weatherEveningMinute: preference.weatherEveningMinute,
 			};
 		}
 
@@ -86,6 +108,12 @@ export class UserSettingsService {
 			eveningReminderHour: preference.eveningReminderHour,
 			eveningReminderMinute: preference.eveningReminderMinute,
 			timeFormat: preference.timeFormat,
+			weatherMorningEnabled: preference.weatherMorningEnabled,
+			weatherMorningHour: preference.weatherMorningHour,
+			weatherMorningMinute: preference.weatherMorningMinute,
+			weatherEveningEnabled: preference.weatherEveningEnabled,
+			weatherEveningHour: preference.weatherEveningHour,
+			weatherEveningMinute: preference.weatherEveningMinute,
 		};
 	}
 
@@ -130,6 +158,12 @@ export class UserSettingsService {
 			eveningReminderHour: input.eveningReminderHour,
 			eveningReminderMinute: input.eveningReminderMinute,
 			timeFormat: input.timeFormat as TimeFormat | undefined,
+			weatherMorningEnabled: input.weatherMorningEnabled,
+			weatherMorningHour: input.weatherMorningHour,
+			weatherMorningMinute: input.weatherMorningMinute,
+			weatherEveningEnabled: input.weatherEveningEnabled,
+			weatherEveningHour: input.weatherEveningHour,
+			weatherEveningMinute: input.weatherEveningMinute,
 		});
 		await this.cacheService.invalidateUserPreference(userId);
 
@@ -169,6 +203,12 @@ export class UserSettingsService {
 			eveningReminderHour: updated.eveningReminderHour,
 			eveningReminderMinute: updated.eveningReminderMinute,
 			timeFormat: updated.timeFormat,
+			weatherMorningEnabled: updated.weatherMorningEnabled,
+			weatherMorningHour: updated.weatherMorningHour,
+			weatherMorningMinute: updated.weatherMorningMinute,
+			weatherEveningEnabled: updated.weatherEveningEnabled,
+			weatherEveningHour: updated.weatherEveningHour,
+			weatherEveningMinute: updated.weatherEveningMinute,
 		};
 	}
 
