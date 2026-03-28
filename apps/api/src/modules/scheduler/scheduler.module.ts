@@ -4,6 +4,7 @@ import { Module } from "@nestjs/common";
 import { DatabaseModule } from "@/database/database.module";
 
 import { NotificationModule } from "../notification/notification.module";
+import { WeatherModule } from "../weather/weather.module";
 import { WeeklyAchievementModule } from "../weekly-achievement/weekly-achievement.module";
 import {
 	EveningReminderStrategy,
@@ -14,6 +15,8 @@ import {
 	OnboardingStrategy,
 	SocialDigestStrategy,
 	StreakAtRiskStrategy,
+	WeatherEveningStrategy,
+	WeatherMorningStrategy,
 	WeeklyAchievementStrategy,
 	WeeklyReportStrategy,
 	WinbackStrategy,
@@ -43,6 +46,7 @@ import {
 		TimezoneReminderQueueModule,
 		DatabaseModule,
 		NotificationModule,
+		WeatherModule,
 		WeeklyAchievementModule,
 	],
 	providers: [
@@ -60,6 +64,8 @@ import {
 		SocialDigestStrategy,
 		LunchNudgeStrategy,
 		StreakAtRiskStrategy,
+		WeatherMorningStrategy,
+		WeatherEveningStrategy,
 		{
 			provide: REMINDER_SCHEDULER,
 			useClass: BullMQReminderSchedulerAdapter,

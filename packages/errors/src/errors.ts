@@ -263,6 +263,12 @@ export const ErrorCode = {
   // 주간 달성 (ACHIEVEMENT_1800-1899)
   // =========================================================================
   ACHIEVEMENT_1801: 'ACHIEVEMENT_1801',
+
+  // =========================================================================
+  // 날씨 (WEATHER_1900-1999)
+  // =========================================================================
+  WEATHER_1901: 'WEATHER_1901',
+  WEATHER_1902: 'WEATHER_1902',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1206,6 +1212,22 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: 'ACHIEVEMENT_1801',
     message: '해당 주차의 달성 기록을 찾을 수 없습니다.',
     description: '요청한 연도/주차에 해당하는 주간 달성 기록이 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // 날씨 (WEATHER_1900-1999)
+  // =========================================================================
+  [ErrorCode.WEATHER_1901]: {
+    code: 'WEATHER_1901',
+    message: '날씨 정보를 가져올 수 없습니다.',
+    description: '기상청 API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
+  },
+  [ErrorCode.WEATHER_1902]: {
+    code: 'WEATHER_1902',
+    message: '위치 정보가 등록되지 않았습니다.',
+    description: '날씨 알림을 받으려면 먼저 위치를 등록해주세요.',
     httpStatus: HttpStatus.NOT_FOUND,
   },
 };

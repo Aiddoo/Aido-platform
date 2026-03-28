@@ -221,6 +221,16 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 						eveningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
 						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+						weatherMorningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
+						weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
+						weatherMorningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
+						weatherEveningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
+						weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
+						weatherEveningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
 					};
 				}
 				return {
@@ -232,6 +242,12 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 					eveningReminderHour: raw.eveningReminderHour,
 					eveningReminderMinute: raw.eveningReminderMinute,
 					timeFormat: raw.timeFormat,
+					weatherMorningEnabled: raw.weatherMorningEnabled,
+					weatherMorningHour: raw.weatherMorningHour,
+					weatherMorningMinute: raw.weatherMorningMinute,
+					weatherEveningEnabled: raw.weatherEveningEnabled,
+					weatherEveningHour: raw.weatherEveningHour,
+					weatherEveningMinute: raw.weatherEveningMinute,
 				};
 			},
 		);
