@@ -2,7 +2,12 @@ import type {
 	HourlyForecast,
 	WeatherForecast,
 } from "../weather-provider.interface";
-import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants";
+import {
+	formatKmaDate,
+	KMA_CATEGORY,
+	PTY_CODE_MAP,
+	SKY_CODE_MAP,
+} from "./kma.constants";
 
 export interface KmaResponseItem {
 	category: string;
@@ -35,7 +40,10 @@ export function parseKmaResponse(
 	data: KmaApiResponse,
 	targetDate: Date,
 ): WeatherForecast {
-	const items = data.response.body?.items?.item ?? [];
+	const targetDateStr = formatKmaDate(targetDate);
+	const items = (data.response.body?.items?.item ?? []).filter(
+		(item) => item.fcstDate === targetDateStr,
+	);
 
 	// 시간별 데이터 수집
 	const hourlyMap = new Map<

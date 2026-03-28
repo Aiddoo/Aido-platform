@@ -15,3 +15,9 @@ export const updateLocationSchema = z.object({
 });
 
 export type UpdateLocationInput = z.infer<typeof updateLocationSchema>;
+
+export const getForecastQuerySchema = z.object({
+  date: z.iso.date().optional().describe('예보 날짜 (YYYY-MM-DD, 기본: 오늘)'),
+});
+
+export type GetForecastQuery = z.infer<typeof getForecastQuerySchema>;

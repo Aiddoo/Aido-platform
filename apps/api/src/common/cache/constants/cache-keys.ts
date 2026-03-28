@@ -111,8 +111,12 @@ export const CacheKeys = {
 	 * 날씨 예보 캐시 키 (격자 + 발표시간 기준)
 	 * @example weather:forecast:60:127:0800
 	 */
-	weatherForecast: (gridX: number, gridY: number, baseTime: string) =>
-		`weather:forecast:${gridX}:${gridY}:${baseTime}`,
+	weatherForecast: (
+		gridX: number,
+		gridY: number,
+		baseDate: string,
+		baseTime: string,
+	) => `weather:forecast:${gridX}:${gridY}:${baseDate}:${baseTime}`,
 
 	// === 패턴 빌더 (와일드카드) ===
 

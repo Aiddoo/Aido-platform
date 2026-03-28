@@ -8,8 +8,7 @@ import type {
 	WeatherProvider,
 } from "../weather-provider.interface";
 import {
-	formatKmaDate,
-	getKmaBaseTime,
+	getKmaBaseDateTime,
 	KMA_BASE_URL,
 	KMA_ENDPOINTS,
 } from "./kma.constants";
@@ -30,8 +29,7 @@ export class KmaWeatherProvider implements WeatherProvider {
 		date: Date,
 	): Promise<WeatherForecast> {
 		const { nx, ny } = convertToGrid(lat, lon);
-		const baseDate = formatKmaDate(date);
-		const baseTime = getKmaBaseTime(date);
+		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 
 		const url = new URL(`${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`);
 		url.searchParams.set("serviceKey", this.configService.kmaApiKey ?? "");
@@ -77,14 +75,6 @@ export class KmaWeatherProvider implements WeatherProvider {
 		}
 
 		return parseKmaResponse(data, date);
-	}
-
-	async getForecasts(
-		lat: number,
-		lon: number,
-		dates: Date[],
-	): Promise<WeatherForecast[]> {
-		return Promise.all(dates.map((d) => this.getForecast(lat, lon, d)));
 	}
 
 	isConfigured(): boolean {

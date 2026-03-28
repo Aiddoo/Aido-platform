@@ -5,13 +5,16 @@ import {
 	HttpCode,
 	HttpStatus,
 	Put,
+	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators";
+import { now } from "@/common/date/utils/core";
+import { parseDateOnly } from "@/common/date/utils/parse";
 import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
+import { GetForecastQueryDto } from "./dtos/get-forecast-query.dto";
 import { UpdateLocationDto } from "./dtos/update-location.dto";
 import {
 	LocationResponseDto,
@@ -61,13 +64,16 @@ GPS 좌표 (위도/경도)를 서버에 저장합니다.
 
 	@Get("forecast")
 	@ApiDoc({
-		summary: "오늘 날씨 예보 조회",
+		summary: "날씨 예보 조회",
 		operationId: "getWeatherForecast",
 		description: `
 ## 날씨 예보 조회
 
-등록된 위치 기반으로 오늘의 날씨 예보를 조회합니다.
+등록된 위치 기반으로 날씨 예보를 조회합니다.
 기상청 단기예보 데이터를 사용하며, 3시간 단위로 캐시됩니다.
+
+### 쿼리 파라미터
+- \`date\`: 예보 날짜 (YYYY-MM-DD, 생략 시 오늘)
 
 ### 사전 조건
 - 위치가 등록되어 있어야 합니다 (PUT /weather/location)
@@ -76,9 +82,9 @@ GPS 좌표 (위도/경도)를 서버에 저장합니다.
 	@ApiSuccessResponse({ type: WeatherForecastResponseDto })
 	async getForecast(
 		@CurrentUser() user: CurrentUserPayload,
-		@Timezone() _timezone: string,
+		@Query() query: GetForecastQueryDto,
 	) {
-		const now = new Date();
-		return this.weatherService.getForecastForUser(user.userId, now);
+		const date = query.date ? parseDateOnly(query.date) : now();
+		return this.weatherService.getForecastForUser(user.userId, date);
 	}
 }

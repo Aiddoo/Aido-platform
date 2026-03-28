@@ -5,7 +5,7 @@ import { CacheKeys } from "@/common/cache/constants/cache-keys";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 
 import type { UserLocation } from "@/generated/prisma/client";
-import { getKmaBaseTime } from "../providers/kma/kma.constants";
+import { getKmaBaseDateTime } from "../providers/kma/kma.constants";
 import { convertToGrid } from "../providers/kma/lambert-projection";
 import {
 	WEATHER_PROVIDER,
@@ -40,14 +40,14 @@ export class WeatherService {
 		grids: GridInput[],
 		date: Date,
 	): Promise<Map<string, WeatherForecast>> {
-		const baseTime = getKmaBaseTime(date);
+		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 		const result = new Map<string, WeatherForecast>();
 
 		if (grids.length === 0) return result;
 
 		// 1. Redis mget — 1회 RTT
 		const cacheKeys = grids.map((g) =>
-			CacheKeys.weatherForecast(g.gridX, g.gridY, baseTime),
+			CacheKeys.weatherForecast(g.gridX, g.gridY, baseDate, baseTime),
 		);
 		const cached = await this.cacheService.mget<WeatherForecast>(cacheKeys);
 
@@ -79,7 +79,12 @@ export class WeatherService {
 				const forecast = fetched[i];
 				if (!forecast) continue;
 				entries.push({
-					key: CacheKeys.weatherForecast(miss.gridX, miss.gridY, baseTime),
+					key: CacheKeys.weatherForecast(
+						miss.gridX,
+						miss.gridY,
+						baseDate,
+						baseTime,
+					),
 					value: forecast,
 					ttl: CacheKeys.TTL.WEATHER_FORECAST,
 				});
@@ -108,9 +113,14 @@ export class WeatherService {
 			throw BusinessExceptions.weatherLocationNotFound();
 		}
 
-		const baseTime = getKmaBaseTime(date);
+		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 		return this.cacheService.wrap(
-			CacheKeys.weatherForecast(location.gridX, location.gridY, baseTime),
+			CacheKeys.weatherForecast(
+				location.gridX,
+				location.gridY,
+				baseDate,
+				baseTime,
+			),
 			() =>
 				this.weatherProvider.getForecast(
 					location.latitude,

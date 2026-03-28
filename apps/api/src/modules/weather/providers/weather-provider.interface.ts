@@ -22,10 +22,5 @@ export interface WeatherForecast {
 export interface WeatherProvider {
 	readonly name: string;
 	getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast>;
-	getForecasts(
-		lat: number,
-		lon: number,
-		dates: Date[],
-	): Promise<WeatherForecast[]>;
 	isConfigured(): boolean;
 }
