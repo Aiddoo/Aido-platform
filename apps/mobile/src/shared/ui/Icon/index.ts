@@ -37,6 +37,7 @@ export {
   PawIcon,
   PersonIcon,
   PlusIcon,
+  RefreshIcon,
   RepeatIcon,
   SearchIcon,
   SendIcon,
@@ -46,4 +47,10 @@ export {
   ToastSuccessIcon,
   ToastWarningIcon,
   TrashIcon,
+  WeatherClearIcon,
+  WeatherCloudyIcon,
+  WeatherPartlyCloudyIcon,
+  WeatherRainIcon,
+  WeatherShowerIcon,
+  WeatherSnowIcon,
 } from './icons';

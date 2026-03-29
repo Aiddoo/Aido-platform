@@ -3,37 +3,34 @@ import { ArrowLeftIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
 import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
 
-const TodosLayout = () => {
-  const headerBg = useResolveClassNames('bg-white');
-  const titleColor = useResolveClassNames('text-gray-9');
+const WeatherLayout = () => {
   const { fontScale } = useFontScale();
-
   return (
     <Stack
       screenOptions={{
         headerShown: true,
+        headerTransparent: true,
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
+        contentStyle: { backgroundColor: 'transparent' },
         headerTitleStyle: {
           fontSize: getScaledFontSize(fontScale),
           fontWeight: '600',
-          color: titleColor.color as string,
+          color: '#FFFFFF',
         },
         headerTitleAlign: 'center',
         headerLeft: () => (
           <View className="justify-center items-center">
             <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
+              <ArrowLeftIcon width={20} height={20} color="#FFFFFF" />
             </Pressable>
           </View>
         ),
       }}
     >
-      <Stack.Screen name="[id]" options={{ title: '할 일' }} />
+      <Stack.Screen name="index" options={{ title: '날씨' }} />
     </Stack>
   );
 };
 
-export default TodosLayout;
+export default WeatherLayout;

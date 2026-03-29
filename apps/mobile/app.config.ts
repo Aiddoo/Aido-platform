@@ -285,6 +285,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
+      [
+        'expo-location',
+        {
+          locationWhenInUsePermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 현재 위치 기반 날씨 정보를 제공하기 위해 위치에 접근하려고 합니다.',
+          locationAlwaysAndWhenInUsePermission: false,
+          locationAlwaysPermission: false,
+          isIosBackgroundLocationEnabled: false,
+          isAndroidBackgroundLocationEnabled: false,
+        },
+      ],
+
       'expo-secure-store',
       'expo-sharing',
       'expo-system-ui',

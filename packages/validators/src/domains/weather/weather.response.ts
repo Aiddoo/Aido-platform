@@ -1,14 +1,11 @@
 import { z } from 'zod';
 import { datetimeSchema } from '../../common/datetime';
-import { PRECIPITATION_TYPE, SKY_CONDITION } from './weather.constants';
-
-const skyConditionValues = Object.values(SKY_CONDITION) as [string, ...string[]];
-const precipitationTypeValues = Object.values(PRECIPITATION_TYPE) as [string, ...string[]];
+import { PRECIPITATION_TYPES, SKY_CONDITIONS } from './weather.constants';
 
 export const hourlyForecastSchema = z.object({
   hour: z.number().int().min(0).max(23).describe('시간 (0-23)'),
   temperature: z.number().describe('기온 (°C)'),
-  skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
+  skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
   precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
 });
 
@@ -39,8 +36,8 @@ export type WeatherConditions = z.infer<typeof weatherConditionsSchema>;
 export const weatherForecastSchema = z
   .object({
     date: datetimeSchema.describe('예보 날짜'),
-    skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
-    precipitationType: z.enum(precipitationTypeValues).describe('강수 형태'),
+    skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
+    precipitationType: z.enum(PRECIPITATION_TYPES).describe('강수 형태'),
     precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
     temperatureMin: z.number().describe('최저 기온 (°C)'),
     temperatureMax: z.number().describe('최고 기온 (°C)'),
