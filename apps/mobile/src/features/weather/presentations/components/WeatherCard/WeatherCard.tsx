@@ -5,7 +5,7 @@ import { Box, HStack, QueryErrorBoundary, Text, VStack } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { WeatherPolicy } from '../../../models/weather.model';
 import { WEATHER_QUERY_KEYS } from '../../constants/weather-query-keys.constant';
 import { useGetForecastQueryOptions } from '../../queries/use-get-forecast-query-options';
@@ -51,8 +51,12 @@ function WeatherCardContent({ date }: WeatherCardProps) {
           isRefreshing={isFetching}
         />
 
-        {canExpand && (
-          <Animated.View style={expandStyle}>
+        {canExpand && expanded && (
+          <Animated.View
+            style={expandStyle}
+            entering={FadeIn.duration(ANIMATION.duration.normal)}
+            exiting={FadeOut.duration(ANIMATION.duration.normal)}
+          >
             <WeatherHourlyStrip hourlyForecasts={forecast.hourlyForecasts} />
           </Animated.View>
         )}
