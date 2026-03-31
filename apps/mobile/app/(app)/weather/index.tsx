@@ -2,12 +2,16 @@ import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import type { HourlyForecast, WeatherForecast } from '@src/features/weather/models/weather.model';
+import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
-import { SKY_CONDITION_LABEL } from '@src/features/weather/presentations/constants/weather-labels.constant';
+import {
+  PRECIPITATION_TYPE_LABEL,
+  SKY_CONDITION_LABEL,
+} from '@src/features/weather/presentations/constants/weather-labels.constant';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { Box, HStack, Result, Text, VStack } from '@src/shared/ui';
@@ -111,6 +115,15 @@ function ForecastHero({ forecast }: { forecast: WeatherForecast }) {
           {SKY_CONDITION_LABEL[forecast.skyCondition]}
         </Text>
       </HStack>
+
+      {WeatherPolicy.shouldShowPrecipitation(forecast) && (
+        <Box px={14} py={5} style={[styles.badge, { backgroundColor: palette.badge }]}>
+          <Text size="b4" weight="medium" style={{ color: palette.text }}>
+            {PRECIPITATION_TYPE_LABEL[forecast.precipitationType]}{' '}
+            {forecast.precipitationProbability}%
+          </Text>
+        </Box>
+      )}
     </VStack>
   );
 }
@@ -293,6 +306,7 @@ const PALETTES = {
     glass: 'rgba(20,0,50,0.20)',
     glassStrong: 'rgba(245,245,245,0.10)',
     glassBorder: 'rgba(248,248,248,0.20)',
+    badge: 'rgba(20,0,50,0.25)',
     accent: '#F5B078',
   },
   day: {
@@ -304,6 +318,7 @@ const PALETTES = {
     glass: 'rgba(0,20,60,0.18)',
     glassStrong: 'rgba(245,245,245,0.10)',
     glassBorder: 'rgba(248,248,248,0.20)',
+    badge: 'rgba(0,20,60,0.22)',
     accent: '#FFFFFF',
   },
   dusk: {
@@ -315,6 +330,7 @@ const PALETTES = {
     glass: 'rgba(15,5,30,0.22)',
     glassStrong: 'rgba(245,245,245,0.10)',
     glassBorder: 'rgba(248,248,248,0.20)',
+    badge: 'rgba(15,5,30,0.25)',
     accent: '#FFB088',
   },
   night: {
@@ -326,6 +342,7 @@ const PALETTES = {
     glass: 'rgba(140,170,220,0.10)',
     glassStrong: 'rgba(245,245,245,0.10)',
     glassBorder: 'rgba(248,248,248,0.20)',
+    badge: 'rgba(140,170,220,0.20)',
     accent: '#7DB4F5',
   },
 } as const;
@@ -347,6 +364,10 @@ const styles = StyleSheet.create({
     width: 1,
     height: 48,
     opacity: 0.3,
+  },
+  badge: {
+    borderRadius: 999,
+    marginTop: 4,
   },
   catAnchor: {
     position: 'absolute',
