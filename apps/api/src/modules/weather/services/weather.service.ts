@@ -263,7 +263,11 @@ export class WeatherService {
 
 		try {
 			const forecast = await this.getForecastForUser(userId, date);
-			currentTemp = forecast.temperatureMax;
+			const currentHour = date.getHours();
+			const hourly = forecast.hourlyForecasts.find(
+				(h) => h.hour === currentHour,
+			);
+			currentTemp = hourly?.temperature ?? forecast.temperatureMax;
 			windSpeed = forecast.windSpeed;
 		} catch {
 			this.#logger.warn(

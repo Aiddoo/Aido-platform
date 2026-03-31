@@ -7,6 +7,7 @@ import type {
 	LifestyleIndex,
 	LifestyleIndexProvider,
 } from "./lifestyle-index.types";
+import { getRegionCode } from "./region-code";
 
 interface UvIndexResponse {
 	response?: {
@@ -30,38 +31,40 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 	constructor(private readonly configService: TypedConfigService) {}
 
 	async getIndex(
-		_lat: number,
-		_lon: number,
+		lat: number,
+		lon: number,
 		date: Date,
 		currentTemp: number,
 		windSpeed: number,
-	): Promise<LifestyleIndex | null> {
+	): Promise<LifestyleIndex> {
+		const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(
+			currentTemp,
+			windSpeed,
+		);
+
+		const apiKey = this.configService.dataGoKrApiKey;
+		if (!apiKey) {
+			this.#logger.warn("KMA_API_KEY is not configured");
+			return { feelsLikeTemperature, uvIndex: null };
+		}
+
 		try {
-			const apiKey = this.configService.dataGoKrApiKey;
-			if (!apiKey) {
-				this.#logger.warn("KMA_API_KEY is not configured");
-				return null;
-			}
-
-			const uvIndex = await this.#fetchUvIndex(apiKey, date);
-			const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(
-				currentTemp,
-				windSpeed,
-			);
-
-			return {
-				feelsLikeTemperature,
-				uvIndex: uvIndex ?? 0,
-			};
+			const uvIndex = await this.#fetchUvIndex(apiKey, lat, lon, date);
+			return { feelsLikeTemperature, uvIndex };
 		} catch (error) {
 			this.#logger.warn(
-				`Failed to get lifestyle index: ${error instanceof Error ? error.message : String(error)}`,
+				`Failed to get UV index: ${error instanceof Error ? error.message : String(error)}`,
 			);
-			return null;
+			return { feelsLikeTemperature, uvIndex: null };
 		}
 	}
 
-	async #fetchUvIndex(apiKey: string, date: Date): Promise<number | null> {
+	async #fetchUvIndex(
+		apiKey: string,
+		lat: number,
+		lon: number,
+		date: Date,
+	): Promise<number | null> {
 		const time = toCompactDateHourString(date);
 
 		const url = new URL(
@@ -70,7 +73,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 		url.searchParams.set("serviceKey", apiKey);
 		url.searchParams.set("numOfRows", "10");
 		url.searchParams.set("dataType", "JSON");
-		url.searchParams.set("areaNo", "1100000000");
+		url.searchParams.set("areaNo", getRegionCode(lat, lon));
 		url.searchParams.set("time", time);
 
 		const response = await fetch(url.toString(), {
@@ -117,10 +120,11 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 		return parsed;
 	}
 
-	#calculateFeelsLikeTemperature(temp: number, windSpeed: number): number {
-		// Wind Chill formula applies when temp <= 10°C and windSpeed >= 1.3 km/h
-		if (temp <= 10 && windSpeed >= 1.3) {
-			const v016 = windSpeed ** 0.16;
+	#calculateFeelsLikeTemperature(temp: number, windSpeedMs: number): number {
+		// Wind Chill formula requires km/h; system windSpeed is m/s
+		const windSpeedKmh = windSpeedMs * 3.6;
+		if (temp <= 10 && windSpeedKmh >= 1.3) {
+			const v016 = windSpeedKmh ** 0.16;
 			return 13.12 + 0.6215 * temp - 11.37 * v016 + 0.3965 * temp * v016;
 		}
 

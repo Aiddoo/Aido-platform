@@ -2,7 +2,7 @@ export const LIFESTYLE_INDEX_PROVIDER = Symbol("LIFESTYLE_INDEX_PROVIDER");
 
 export interface LifestyleIndex {
 	feelsLikeTemperature: number;
-	uvIndex: number;
+	uvIndex: number | null;
 }
 
 export interface LifestyleIndexProvider {
@@ -12,5 +12,5 @@ export interface LifestyleIndexProvider {
 		date: Date,
 		currentTemp: number,
 		windSpeed: number,
-	): Promise<LifestyleIndex | null>;
+	): Promise<LifestyleIndex>;
 }
