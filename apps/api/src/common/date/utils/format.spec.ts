@@ -1,4 +1,6 @@
 import {
+	toCompactDateHourString,
+	toCompactDateString,
 	toDateString,
 	toDateStringOrNull,
 	toISOString,
@@ -48,6 +50,30 @@ describe("format", () => {
 
 		it("null이면 null을 반환한다", () => {
 			expect(toDateStringOrNull(null)).toBeNull();
+		});
+	});
+
+	describe("toCompactDateString", () => {
+		it("Date를 YYYYMMDD 문자열로 변환한다", () => {
+			expect(toCompactDateString(new Date(2026, 2, 18))).toBe("20260318");
+		});
+
+		it("한 자리 월/일을 0으로 패딩한다", () => {
+			expect(toCompactDateString(new Date(2026, 0, 5))).toBe("20260105");
+		});
+	});
+
+	describe("toCompactDateHourString", () => {
+		it("Date를 YYYYMMDDHH 문자열로 변환한다", () => {
+			expect(toCompactDateHourString(new Date(2026, 6, 15, 14, 30))).toBe(
+				"2026071514",
+			);
+		});
+
+		it("자정을 00으로 패딩한다", () => {
+			expect(toCompactDateHourString(new Date(2026, 0, 1, 0, 0))).toBe(
+				"2026010100",
+			);
 		});
 	});
 

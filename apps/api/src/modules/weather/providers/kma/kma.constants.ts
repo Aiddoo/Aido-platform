@@ -1,3 +1,5 @@
+import { toCompactDateString } from "@/common/date/utils/format";
+
 /** 기상청 단기예보 API Base URL */
 export const KMA_BASE_URL =
 	"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0";
@@ -105,23 +107,13 @@ export function getKmaBaseDateTime(date: Date): KmaBaseDateTime {
 		const yesterday = new Date(date);
 		yesterday.setDate(yesterday.getDate() - 1);
 		return {
-			baseDate: formatKmaDate(yesterday),
+			baseDate: toCompactDateString(yesterday),
 			baseTime: "2300",
 		};
 	}
 
 	return {
-		baseDate: formatKmaDate(date),
+		baseDate: toCompactDateString(date),
 		baseTime: availableTimes.at(-1) ?? "2300",
 	};
-}
-
-/**
- * 날짜를 기상청 API 형식 (YYYYMMDD)으로 변환
- */
-export function formatKmaDate(date: Date): string {
-	const y = date.getFullYear();
-	const m = String(date.getMonth() + 1).padStart(2, "0");
-	const d = String(date.getDate()).padStart(2, "0");
-	return `${y}${m}${d}`;
 }

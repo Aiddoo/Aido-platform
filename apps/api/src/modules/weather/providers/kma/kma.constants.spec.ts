@@ -11,7 +11,8 @@
  * ```
  */
 
-import { formatKmaDate, getKmaBaseDateTime } from "./kma.constants";
+import { toCompactDateString } from "@/common/date/utils/format";
+import { getKmaBaseDateTime } from "./kma.constants";
 
 describe("getKmaBaseDateTime", () => {
 	beforeEach(() => {
@@ -135,12 +136,12 @@ describe("getKmaBaseDateTime", () => {
 	});
 });
 
-describe("formatKmaDate", () => {
+describe("toCompactDateString", () => {
 	it("날짜를 YYYYMMDD 형식으로 변환해야 한다", () => {
-		expect(formatKmaDate(new Date(2026, 2, 18))).toBe("20260318");
+		expect(toCompactDateString(new Date(2026, 2, 18))).toBe("20260318");
 	});
 
 	it("한 자리 월/일을 0으로 패딩해야 한다", () => {
-		expect(formatKmaDate(new Date(2026, 0, 5))).toBe("20260105");
+		expect(toCompactDateString(new Date(2026, 0, 5))).toBe("20260105");
 	});
 });

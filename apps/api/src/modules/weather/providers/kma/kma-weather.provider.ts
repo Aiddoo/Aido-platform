@@ -32,7 +32,7 @@ export class KmaWeatherProvider implements WeatherProvider {
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 
 		const url = new URL(`${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`);
-		url.searchParams.set("serviceKey", this.configService.kmaApiKey ?? "");
+		url.searchParams.set("serviceKey", this.configService.dataGoKrApiKey ?? "");
 		url.searchParams.set("pageNo", "1");
 		url.searchParams.set("numOfRows", "1000");
 		url.searchParams.set("dataType", "JSON");
@@ -78,6 +78,6 @@ export class KmaWeatherProvider implements WeatherProvider {
 	}
 
 	isConfigured(): boolean {
-		return !!this.configService.kmaApiKey;
+		return !!this.configService.dataGoKrApiKey;
 	}
 }

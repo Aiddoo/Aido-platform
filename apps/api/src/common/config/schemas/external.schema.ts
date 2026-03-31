@@ -41,7 +41,7 @@ export const externalSchema = z.object({
 	// AI 일일 사용 제한 (기본값: 5)
 	AI_DAILY_LIMIT: z.coerce.number().int().positive().default(5),
 
-	// 기상청 공공데이터포털 API (선택)
+	// 공공데이터포털 서비스키 (기상청 단기예보, 생활기상지수, 천문연구원 출몰시각, 에어코리아 공용)
 	KMA_API_KEY: z.string().optional(),
 });
 

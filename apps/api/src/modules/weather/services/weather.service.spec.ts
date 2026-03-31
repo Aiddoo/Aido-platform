@@ -36,6 +36,7 @@ const makeForecast = (
 	humidity: 45,
 	windSpeed: 2.5,
 	hourlyForecasts: [],
+	dailyForecasts: [],
 	...overrides,
 });
 
@@ -146,7 +147,7 @@ describe("WeatherService", () => {
 			).rejects.toThrow();
 		});
 
-		it("위치가 있으면 캐시 wrap으로 조회해야 한다", async () => {
+		it("캐시 히트 시 Provider를 호출하지 않고 캐시 데이터를 반환해야 한다", async () => {
 			// Given
 			const location = {
 				id: "loc-1",
@@ -159,7 +160,7 @@ describe("WeatherService", () => {
 			};
 			const forecast = makeForecast();
 			weatherRepository.findByUserId.mockResolvedValue(location);
-			cacheService.wrap.mockResolvedValue(forecast as never);
+			cacheService.get.mockResolvedValue(forecast as never);
 
 			// When
 			const result = await service.getForecastForUser(
@@ -169,7 +170,86 @@ describe("WeatherService", () => {
 
 			// Then
 			expect(result).toEqual(forecast);
-			expect(cacheService.wrap).toHaveBeenCalledTimes(1);
+			expect(weatherProvider.getForecast).not.toHaveBeenCalled();
+		});
+
+		it("캐시 미스 시 KMA 호출 후 정규 캐시 + latest 캐시를 저장해야 한다", async () => {
+			// Given
+			const location = {
+				id: "loc-1",
+				userId: "user-1",
+				latitude: 37.5,
+				longitude: 126.9,
+				gridX: 60,
+				gridY: 127,
+				updatedAt: new Date(),
+			};
+			const forecast = makeForecast();
+			weatherRepository.findByUserId.mockResolvedValue(location);
+			cacheService.get.mockResolvedValue(undefined as never);
+			weatherProvider.getForecast.mockResolvedValue(forecast);
+
+			// When
+			const result = await service.getForecastForUser(
+				"user-1",
+				new Date("2024-01-16"),
+			);
+
+			// Then
+			expect(result).toEqual(forecast);
+			expect(weatherProvider.getForecast).toHaveBeenCalledTimes(1);
+			// 정규 캐시 + latest 캐시 = set 2회
+			expect(cacheService.set).toHaveBeenCalledTimes(2);
+		});
+
+		it("KMA 실패 시 latest 캐시 fallback을 반환해야 한다", async () => {
+			// Given
+			const location = {
+				id: "loc-1",
+				userId: "user-1",
+				latitude: 37.5,
+				longitude: 126.9,
+				gridX: 60,
+				gridY: 127,
+				updatedAt: new Date(),
+			};
+			const fallbackForecast = makeForecast({ temperatureMin: 3 });
+			weatherRepository.findByUserId.mockResolvedValue(location);
+			// 정규 캐시 미스 → KMA 실패 → latest 캐시 히트
+			cacheService.get
+				.mockResolvedValueOnce(undefined as never)
+				.mockResolvedValueOnce(fallbackForecast as never);
+			weatherProvider.getForecast.mockRejectedValue(new Error("KMA NO_DATA"));
+
+			// When
+			const result = await service.getForecastForUser(
+				"user-1",
+				new Date("2024-01-16"),
+			);
+
+			// Then
+			expect(result).toEqual(fallbackForecast);
+		});
+
+		it("KMA 실패 + latest 캐시도 없으면 예외를 던져야 한다", async () => {
+			// Given
+			const location = {
+				id: "loc-1",
+				userId: "user-1",
+				latitude: 37.5,
+				longitude: 126.9,
+				gridX: 60,
+				gridY: 127,
+				updatedAt: new Date(),
+			};
+			weatherRepository.findByUserId.mockResolvedValue(location);
+			cacheService.get.mockResolvedValue(undefined as never);
+			weatherProvider.getForecast.mockRejectedValue(new Error("KMA NO_DATA"));
+
+			// When & Then
+			await expect(
+				service.getForecastForUser("user-1", new Date("2024-01-16")),
+			).rejects.toThrow();
 		});
 	});
 
@@ -185,6 +265,7 @@ describe("WeatherService", () => {
 				gridY: 127,
 				updatedAt: new Date(),
 			};
+			weatherRepository.findByUserId.mockResolvedValue(null);
 			weatherRepository.upsert.mockResolvedValue(expected);
 
 			// When
@@ -198,6 +279,70 @@ describe("WeatherService", () => {
 				gridX: 60,
 				gridY: 127,
 			});
+		});
+
+		it("격자가 변경되면 구 격자의 캐시를 무효화해야 한다", async () => {
+			// Given - 기존 위치 (60, 127) → 새 위치 (98, 76)
+			const oldLocation = {
+				id: "loc-1",
+				userId: "user-1",
+				latitude: 37.5665,
+				longitude: 126.978,
+				gridX: 60,
+				gridY: 127,
+				updatedAt: new Date(),
+			};
+			const newLocation = {
+				...oldLocation,
+				latitude: 35.1796,
+				longitude: 129.0756,
+				gridX: 98,
+				gridY: 76,
+			};
+			weatherRepository.findByUserId.mockResolvedValue(oldLocation);
+			weatherRepository.upsert.mockResolvedValue(newLocation);
+			cacheService.delByPattern.mockResolvedValue(0 as never);
+			cacheService.del.mockResolvedValue(undefined as never);
+
+			// When
+			await service.upsertLocation("user-1", 35.1796, 129.0756);
+
+			// Then - 구 격자 캐시 삭제
+			expect(cacheService.delByPattern).toHaveBeenCalledWith(
+				expect.stringContaining("weather:forecast:60:127:"),
+			);
+			expect(cacheService.del).toHaveBeenCalledWith(
+				expect.stringContaining("weather:forecast:latest:60:127"),
+			);
+			expect(cacheService.del).toHaveBeenCalledWith(
+				expect.stringContaining("weather:conditions:60:127"),
+			);
+		});
+
+		it("격자가 동일하면 캐시를 무효화하지 않아야 한다", async () => {
+			// Given - 같은 격자 내 미세 좌표 변경
+			const oldLocation = {
+				id: "loc-1",
+				userId: "user-1",
+				latitude: 37.5665,
+				longitude: 126.978,
+				gridX: 60,
+				gridY: 127,
+				updatedAt: new Date(),
+			};
+			weatherRepository.findByUserId.mockResolvedValue(oldLocation);
+			weatherRepository.upsert.mockResolvedValue({
+				...oldLocation,
+				latitude: 37.57,
+				longitude: 126.98,
+			});
+
+			// When
+			await service.upsertLocation("user-1", 37.57, 126.98);
+
+			// Then - 격자 동일하므로 캐시 삭제 안 함
+			expect(cacheService.delByPattern).not.toHaveBeenCalled();
+			expect(cacheService.del).not.toHaveBeenCalled();
 		});
 	});
 });
