@@ -18,6 +18,8 @@ import { AI_PROVIDER } from "../ai/providers/ai.provider";
 import { TodoService } from "../todo/todo.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { AiSuggestionService } from "./ai-suggestion.service";
+import { SuggestionContextBuilder } from "./suggestion-context.builder";
+import type { SuggestionContext } from "./types";
 
 describe("AiSuggestionService", () => {
 	let service: AiSuggestionService;
@@ -26,6 +28,7 @@ describe("AiSuggestionService", () => {
 	let mockAiProvider: Mocked<AiProvider>;
 	let mockEntitlementService: Mocked<EntitlementService>;
 	let mockDatabase: Mocked<DatabaseService>;
+	let mockContextBuilder: Mocked<SuggestionContextBuilder>;
 
 	const mockUserId = "user-123";
 
@@ -53,6 +56,25 @@ describe("AiSuggestionService", () => {
 		} as RecurringSuggestion;
 	}
 
+	/**
+	 * 테스트용 SuggestionContext 생성 헬퍼
+	 */
+	function createMockContext(
+		overrides?: Partial<SuggestionContext>,
+	): SuggestionContext {
+		return {
+			todos: [],
+			dayCompletionRates: "월:80%|화:70%",
+			timeCompletionRates: "오전(~12시):75%|오후(12시~):65%",
+			categoryRates: "업무:80%|운동:60%",
+			streak: "현재 5일 연속, 최장 10일",
+			missingRoutines: [],
+			weather: null,
+			currentDate: "2026-03-31 (화요일, 3월 말)",
+			...overrides,
+		};
+	}
+
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AiSuggestionService)
 			.mock(AI_PROVIDER)
@@ -68,6 +90,7 @@ describe("AiSuggestionService", () => {
 		mockAiProvider = unitRef.get(AI_PROVIDER);
 		mockEntitlementService = unitRef.get(EntitlementService);
 		mockDatabase = unitRef.get(DatabaseService);
+		mockContextBuilder = unitRef.get(SuggestionContextBuilder);
 
 		// 기본: 프리미엄 사용자
 		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
@@ -115,7 +138,7 @@ describe("AiSuggestionService", () => {
 		it("analyzeAndCreateSuggestions는 프리미엄 체크 없이 동작해야 한다", async () => {
 			// Given -비프리미엄 사용자이지만 크론잡 호출
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
-			mockRepository.findRecentTodos.mockResolvedValue([]);
+			mockContextBuilder.build.mockResolvedValue(createMockContext());
 
 			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
@@ -351,24 +374,28 @@ describe("AiSuggestionService", () => {
 	describe("analyzeAndCreateSuggestions", () => {
 		it("할 일이 최소 횟수 미만이면 AI 호출 없이 0을 반환해야 한다", async () => {
 			// Given -할 일이 2개뿐 (최소 3개 필요)
-			mockRepository.findRecentTodos.mockResolvedValue([
-				{
-					title: "할일1",
-					startDate: "2026-03-01",
-					scheduledTime: null,
-					categoryId: 1,
-					completed: false,
-					categoryName: "기본",
-				},
-				{
-					title: "할일2",
-					startDate: "2026-03-02",
-					scheduledTime: null,
-					categoryId: 1,
-					completed: false,
-					categoryName: "기본",
-				},
-			]);
+			mockContextBuilder.build.mockResolvedValue(
+				createMockContext({
+					todos: [
+						{
+							title: "할일1",
+							startDate: "2026-03-01",
+							scheduledTime: null,
+							categoryId: 1,
+							completed: false,
+							categoryName: "기본",
+						},
+						{
+							title: "할일2",
+							startDate: "2026-03-02",
+							scheduledTime: null,
+							categoryId: 1,
+							completed: false,
+							categoryName: "기본",
+						},
+					],
+				}),
+			);
 
 			// When -analyzeAndCreateSuggestions를 호출하면
 			const result = await service.analyzeAndCreateSuggestions(
@@ -391,7 +418,7 @@ describe("AiSuggestionService", () => {
 				completed: true,
 				categoryName: "업무",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -437,7 +464,7 @@ describe("AiSuggestionService", () => {
 				completed: true,
 				categoryName: "운동",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -481,7 +508,7 @@ describe("AiSuggestionService", () => {
 				completed: true,
 				categoryName: "자기계발",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -521,7 +548,7 @@ describe("AiSuggestionService", () => {
 				completed: true,
 				categoryName: "운동",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -565,7 +592,7 @@ describe("AiSuggestionService", () => {
 				completed: false,
 				categoryName: "기본",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			const patterns = Array.from({ length: 6 }, (_, i) => ({
 				title: `패턴${i}`,
@@ -643,7 +670,7 @@ describe("AiSuggestionService", () => {
 					categoryName: "일반",
 				},
 			];
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -685,7 +712,7 @@ describe("AiSuggestionService", () => {
 				completed: true,
 				categoryName: "운동",
 			}));
-			mockRepository.findRecentTodos.mockResolvedValue(todos);
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
 			mockAiProvider.generateStructured.mockResolvedValue({
 				output: {
@@ -715,6 +742,141 @@ describe("AiSuggestionService", () => {
 			const createManyArg = mockRepository.createMany.mock
 				.calls[0]?.[0] as Record<string, unknown>[];
 			expect(createManyArg?.[0]?.suggestedCategoryId).toBeNull();
+		});
+
+		it("시즌 추천(빈 matchedTitles)은 필터를 통과해야 한다", async () => {
+			// Given -충분한 할 일과 빈 matchedTitles를 가진 시즌 추천 패턴
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "운동",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
+			}));
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "봄맞이 산책",
+							daysOfWeek: ["SAT", "SUN"],
+							scheduledTime: "10:00",
+							confidence: 0.7,
+							reason: "봄철에 야외 활동을 추천합니다",
+							matchedTitles: [],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When -analyzeAndCreateSuggestions를 호출하면
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
+
+			// Then -시즌 추천이 필터를 통과하여 생성되어야 한다
+			expect(result).toBe(1);
+			expect(mockRepository.createMany).toHaveBeenCalledTimes(1);
+		});
+
+		it("날씨 컨텍스트 없을 때 날씨 관련 제안은 필터링되어야 한다", async () => {
+			// Given -날씨 컨텍스트가 없고 날씨 관련 키워드가 포함된 패턴
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "운동",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
+			}));
+			mockContextBuilder.build.mockResolvedValue(
+				createMockContext({ todos, weather: null }),
+			);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "실내 운동",
+							daysOfWeek: ["MON", "WED", "FRI"],
+							scheduledTime: "18:00",
+							confidence: 0.75,
+							reason: "비 오는 날씨에 대비해 실내 운동을 추천합니다",
+							matchedTitles: ["운동", "운동", "운동"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			// When -analyzeAndCreateSuggestions를 호출하면
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
+
+			// Then -날씨 관련 제안이 필터링되어 0을 반환해야 한다
+			expect(result).toBe(0);
+			expect(mockRepository.createMany).not.toHaveBeenCalled();
+		});
+
+		it("날씨 컨텍스트 있을 때 날씨 관련 제안은 유지되어야 한다", async () => {
+			// Given -날씨 컨텍스트가 있고 날씨 관련 키워드가 포함된 패턴
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: "운동",
+				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 5,
+				completed: true,
+				categoryName: "운동",
+			}));
+			mockContextBuilder.build.mockResolvedValue(
+				createMockContext({
+					todos,
+					weather: "비(강수확률 80%), 10~15°C",
+				}),
+			);
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "실내 운동",
+							daysOfWeek: ["MON", "WED", "FRI"],
+							scheduledTime: "18:00",
+							confidence: 0.75,
+							reason: "비 오는 날씨에 대비해 실내 운동을 추천합니다",
+							matchedTitles: ["운동", "운동", "운동"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When -analyzeAndCreateSuggestions를 호출하면
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
+
+			// Then -날씨 관련 제안이 유지되어 생성되어야 한다
+			expect(result).toBe(1);
+			expect(mockRepository.createMany).toHaveBeenCalledTimes(1);
 		});
 	});
 });

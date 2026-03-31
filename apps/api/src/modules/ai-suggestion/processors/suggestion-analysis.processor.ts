@@ -19,6 +19,13 @@ export const AiSuggestionJobName = {
 export interface AiSuggestionAnalyzeData {
 	userId: string;
 	timezone: string;
+	/** 날씨 조회용 KMA 격자 좌표 (위치 미설정 시 null) */
+	weatherGrid: {
+		gridX: number;
+		gridY: number;
+		lat: number;
+		lon: number;
+	} | null;
 }
 
 /** 잡 이름 → 데이터 타입 매핑 */
@@ -87,7 +94,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 			return;
 		}
 
-		const { userId, timezone } =
+		const { userId, timezone, weatherGrid } =
 			job.data as AiSuggestionJobMap[typeof AiSuggestionJobName.ANALYZE];
 
 		this.#logger.debug(`Processing suggestion analysis: userId=${userId}`);
@@ -96,6 +103,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 			await this.aiSuggestionService.analyzeAndCreateSuggestions(
 				userId,
 				timezone,
+				weatherGrid,
 			);
 
 		if (createdCount === 0) {

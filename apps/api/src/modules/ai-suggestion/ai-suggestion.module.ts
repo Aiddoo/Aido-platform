@@ -4,6 +4,7 @@ import { Module } from "@nestjs/common";
 import { AiModule } from "../ai/ai.module";
 import { NotificationModule } from "../notification/notification.module";
 import { TodoModule } from "../todo/todo.module";
+import { WeatherModule } from "../weather/weather.module";
 
 import { AiSuggestionController } from "./ai-suggestion.controller";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
@@ -13,6 +14,7 @@ import {
 	AI_SUGGESTION_QUEUE,
 	SuggestionAnalysisProcessor,
 } from "./processors/suggestion-analysis.processor";
+import { SuggestionContextBuilder } from "./suggestion-context.builder";
 
 /**
  * AI 반복 제안 모듈
@@ -25,21 +27,24 @@ import {
  * - 크론 작업을 통한 주간 패턴 분석
  *
  * ### 의존성
- * - AiModule: AI Provider (Gemini)를 통한 패턴 감지
+ * - AiModule: AI Provider (Gemini)를 통한 제안 생성
  * - NotificationModule: 새 제안 생성 알림 발송
  * - TodoModule: 제안 수락 시 반복 할 일 생성
+ * - WeatherModule: 날씨 기반 제안을 위한 날씨 조회
  */
 @Module({
 	imports: [
 		AiModule,
 		NotificationModule,
 		TodoModule,
+		WeatherModule,
 		BullModule.registerQueue({ name: AI_SUGGESTION_QUEUE }),
 	],
 	controllers: [AiSuggestionController],
 	providers: [
 		AiSuggestionRepository,
 		AiSuggestionService,
+		SuggestionContextBuilder,
 		SuggestionAnalysisJob,
 		SuggestionAnalysisProcessor,
 	],
