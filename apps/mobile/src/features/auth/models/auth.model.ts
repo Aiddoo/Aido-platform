@@ -19,8 +19,38 @@ export const preferenceSchema = z.object({
   eveningReminderHour: z.number().int(),
   eveningReminderMinute: z.number().int(),
   timeFormat: z.enum(['TWELVE_HOUR', 'TWENTY_FOUR_HOUR']),
+  weatherMorningEnabled: z.boolean(),
+  weatherMorningHour: z.number().int(),
+  weatherMorningMinute: z.number().int(),
+  weatherEveningEnabled: z.boolean(),
+  weatherEveningHour: z.number().int(),
+  weatherEveningMinute: z.number().int(),
 });
 export type Preference = z.infer<typeof preferenceSchema>;
+
+export function isWeatherEnabled(preference: Preference) {
+  return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
+}
+
+export const PreferencePolicy = {
+  isPushDisabled(preference: Preference) {
+    return !preference.pushEnabled;
+  },
+
+  isWeatherDisabled(preference: Preference) {
+    return !preference.pushEnabled || !isWeatherEnabled(preference);
+  },
+
+  pushDisabledMessage(preference: Preference) {
+    return !preference.pushEnabled ? '푸시 알림을 먼저 활성화해주세요' : undefined;
+  },
+
+  weatherDisabledMessage(preference: Preference) {
+    if (!preference.pushEnabled) return '푸시 알림을 먼저 활성화해주세요';
+    if (!isWeatherEnabled(preference)) return '날씨 알림을 먼저 활성화해주세요';
+    return undefined;
+  },
+} as const;
 
 export const consentSchema = z.object({
   termsAgreedAt: z.coerce.date().nullable(),
