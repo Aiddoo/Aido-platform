@@ -168,10 +168,10 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 3개 외부 API를 병렬 호출하며, **개별 API 실패 시 해당 필드만 \`null\`**로 반환됩니다.
 나머지 정상 데이터는 그대로 제공되므로, 클라이언트는 **각 필드를 개별적으로 null 체크**해야 합니다.
 
-| 필드 | 데이터 소스 | null 가능 상황 |
-|------|-----------|---------------|
-| feelsLikeTemperature | 기상청 생활기상지수 + forecast 기온/풍속 | 기상청 API 장애 |
-| uvIndex | 기상청 생활기상지수 API (V4) | 기상청 API 장애 |
+| 필드 | 데이터 소스 | null 가능성 |
+|------|-----------|------------|
+| feelsLikeTemperature | 로컬 계산 (forecast 기온 + Wind Chill 공식) | 거의 없음 (forecast 자체가 실패한 극단적 경우만) |
+| uvIndex | 기상청 생활기상지수 API (V4) | 기상청 API 장애, API 키 미설정 |
 | sunrise, sunset | 한국천문연구원 KASI API | KASI API 장애 |
 | pm10, pm25 | 에어코리아 실시간 측정 API | 에어코리아 API 장애, 측정소 점검 |
 
