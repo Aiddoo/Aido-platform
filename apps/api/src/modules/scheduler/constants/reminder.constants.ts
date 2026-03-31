@@ -48,5 +48,5 @@ export const NOTIFICATION_SCHEDULE = {
 	WINBACK: { hour: 12, minute: 0 },
 	NUDGE_SUGGEST: { hour: 14, minute: 0 },
 	LUNCH_NUDGE: { hour: 12, minute: 30 },
-	STREAK_AT_RISK: { hour: 21, minute: 0 },
+	STREAK_AT_RISK: { hour: 20, minute: 0 },
 } as const;

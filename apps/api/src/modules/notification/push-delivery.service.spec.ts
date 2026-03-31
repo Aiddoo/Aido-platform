@@ -285,8 +285,8 @@ describe("PushDeliveryService", () => {
 			expect(result).toBe(true);
 		});
 
-		it("야간이지만 NUDGE_RECEIVED는 nightPushEnabled=false여도 발송한다", async () => {
-			// Given
+		it("야간이지만 WEATHER_MORNING은 nightPushEnabled=false여도 발송한다", async () => {
+			// Given — 사용자가 직접 선택한 아침 시간이므로 야간 면제 필수
 			userPreferenceRepository.findByUserId.mockResolvedValue(
 				UserPreferenceBuilder.create("user-1")
 					.withTimezone("Asia/Seoul")
@@ -295,7 +295,7 @@ describe("PushDeliveryService", () => {
 			mockedIsNightTime.mockReturnValue(true);
 
 			// When
-			const result = await service.shouldSendPush("user-1", "NUDGE_RECEIVED");
+			const result = await service.shouldSendPush("user-1", "WEATHER_MORNING");
 
 			// Then
 			expect(result).toBe(true);

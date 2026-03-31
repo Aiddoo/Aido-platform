@@ -79,10 +79,9 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		try {
 			const now = new Date();
 
-			// 1. 고유 타임존 목록 조회 (pushEnabled=true인 사용자만, 5분 캐시)
+			// 1. 고유 타임존 목록 조회 (모든 사용자 대상, 5분 캐시)
 			const tzList = await this.cacheService.wrapActiveTimezones(async () => {
 				const rows = await this.database.userPreference.findMany({
-					where: { pushEnabled: true },
 					select: { timezone: true },
 					distinct: ["timezone"],
 				});
@@ -108,8 +107,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 				}
 			});
 
-			// 3. WeeklyAchievement: pushEnabled 유저 없는 TZ도 뱃지 기록 생성
-			await this.#processWeeklyAchievementCatchUp(now, tzList);
+			// 3. 모든 TZ를 스윕하므로 WeeklyAchievement 보정 불필요
 
 			this.#logger.log("Every-minute sweep reminder job completed");
 		} catch (error) {
@@ -265,58 +263,6 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		// 날씨 알림: 유저별 커스텀 시간 (내부에서 시:분 매칭)
 		await this.weatherMorning.execute(ctx);
 		await this.weatherEvening.execute(ctx);
-	}
-
-	/**
-	 * WeeklyAchievement 보정 — pushEnabled 유저가 없는 타임존에서도 뱃지 기록 생성
-	 *
-	 * 오케스트레이터가 pushEnabled=true 유저의 TZ만 스윕하므로,
-	 * pushEnabled 유저가 0명인 TZ의 유저들은 주간 뱃지 집계에서 누락됨.
-	 * 이 메서드는 누락된 TZ 중 월요일 07:00인 TZ에 대해 WeeklyAchievement만 실행.
-	 */
-	async #processWeeklyAchievementCatchUp(
-		now: Date,
-		pushEnabledTzList: string[],
-	): Promise<void> {
-		const pushEnabledSet = new Set(pushEnabledTzList);
-
-		const allTzList = await this.cacheService.wrapAllTimezones(async () => {
-			const rows = await this.database.userPreference.findMany({
-				select: { timezone: true },
-				distinct: ["timezone"],
-			});
-			return rows.map((r) => r.timezone);
-		});
-
-		const missingTzList = allTzList.filter((tz) => !pushEnabledSet.has(tz));
-		if (missingTzList.length === 0) return;
-
-		const eligibleTzData = missingTzList
-			.map((tz) => ({ tz, local: dayjs(now).tz(tz) }))
-			.filter(
-				({ local }) =>
-					local.day() === 1 &&
-					local.hour() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
-					local.minute() === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute,
-			);
-
-		if (eligibleTzData.length === 0) return;
-
-		const tasks = eligibleTzData.map(({ tz, local }) => {
-			const ctx = this.#buildContext(tz, local.hour(), local.minute());
-			return this.weeklyAchievement.execute(ctx);
-		});
-
-		const results = await Promise.allSettled(tasks);
-		results.forEach((result, index) => {
-			if (result.status === "rejected") {
-				const tz = eligibleTzData[index]?.tz ?? "unknown";
-				this.#logger.error(
-					`WeeklyAchievement catch-up failed for tz=${tz}: ${result.reason}`,
-					result.reason instanceof Error ? result.reason.stack : undefined,
-				);
-			}
-		});
 	}
 
 	#buildContext(

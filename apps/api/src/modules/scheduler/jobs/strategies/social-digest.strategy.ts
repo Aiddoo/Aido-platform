@@ -26,10 +26,10 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 		const today = todayInTimezone(tz);
 		const tomorrow = addDays(1, today);
 
-		// pushEnabled + 해당 타임존 + 오늘 투두 미완료인 유저 조회
+		// 해당 타임존 + 오늘 투두 미완료인 유저 조회
 		const users = await this.database.user.findMany({
 			where: {
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 				todos: {
 					some: {
 						startDate: { gte: today, lt: tomorrow },

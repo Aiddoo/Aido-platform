@@ -36,11 +36,11 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		const weekAgo = subtractDays(7, today);
 		const twoDaysAgo = subtractDays(2, today);
 
-		// 이 타임존에서 pushEnabled인 유저 목록
+		// 이 타임존의 활성 유저 목록
 		const activeUsers = await this.database.user.findMany({
 			where: {
 				deletedAt: null,
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 			},
 			select: { id: true },
 		});

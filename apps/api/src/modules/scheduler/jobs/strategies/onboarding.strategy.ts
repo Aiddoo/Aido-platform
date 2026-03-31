@@ -33,11 +33,11 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		const today = todayInTimezone(tz);
 		const cutoffDate = subtractDays(ONBOARDING_MAX_DAY, today);
 
-		// 가입 0~7일 + pushEnabled + 해당 timezone 유저 조회
+		// 가입 0~7일 + 해당 timezone 유저 조회
 		const users = await this.database.user.findMany({
 			where: {
 				createdAt: { gte: cutoffDate },
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 			},
 			select: { id: true, createdAt: true },
 		});
