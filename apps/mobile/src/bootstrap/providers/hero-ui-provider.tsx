@@ -5,6 +5,7 @@ export const HeroUIProvider = ({ children }: PropsWithChildren) => {
   return (
     <HeroUINativeProvider
       config={{
+        textProps: { allowFontScaling: false },
         toast: {
           defaultProps: {
             placement: 'top',
