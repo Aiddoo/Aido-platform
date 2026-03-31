@@ -50,7 +50,6 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 				status: "ACTIVE",
 				deletedAt: null,
 				preference: {
-					pushEnabled: true,
 					weatherEveningEnabled: true,
 					timezone: tz,
 					weatherEveningHour: localHour,

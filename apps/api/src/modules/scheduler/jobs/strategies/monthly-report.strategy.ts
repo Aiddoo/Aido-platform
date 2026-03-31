@@ -25,10 +25,10 @@ export class MonthlyReportStrategy implements ITimezoneStrategy {
 		const today = todayInTimezone(tz);
 		const monthAgo = subtractMonths(1, today);
 
-		// 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 pushEnabled 유저 대상
+		// 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 유저 대상
 		const users = await this.database.user.findMany({
 			where: {
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				todos: { some: { startDate: { gte: monthAgo, lt: today } } },
 			},

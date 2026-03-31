@@ -21,15 +21,15 @@ describe("StreakAtRiskStrategy", () => {
 
 	const TZ = "Asia/Seoul";
 
-	/** KST 2024-01-16 21:00 = UTC 2024-01-16T12:00:00Z */
-	const FAKE_NOW = new Date("2024-01-16T12:00:00Z");
+	/** KST 2024-01-16 20:00 = UTC 2024-01-16T11:00:00Z */
+	const FAKE_NOW = new Date("2024-01-16T11:00:00Z");
 
 	const TODAY = dayjs.utc("2024-01-16").startOf("day").toDate();
 	const YESTERDAY = dayjs.utc("2024-01-15").startOf("day").toDate();
 
 	const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
 		tz: TZ,
-		localHour: 21,
+		localHour: 20,
 		localMinute: 0,
 		dayOfWeek: 2,
 		today: TODAY,

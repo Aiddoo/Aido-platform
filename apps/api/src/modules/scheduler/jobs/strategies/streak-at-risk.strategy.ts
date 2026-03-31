@@ -13,11 +13,11 @@ import type {
 } from "./timezone-reminder-strategy.interface";
 
 /**
- * 스트릭 위기 Strategy (21:00)
+ * 스트릭 위기 Strategy (20:00)
  *
  * 스트릭 3일 이상인 유저 중 오늘 할일을 아직 다 완료하지 못한 유저에게
  * 스트릭 위기 알림을 발송합니다.
- * 고정 시간(21:00) 전용 — 프리미엄 커스텀 시간 미지원.
+ * 고정 시간(20:00) 전용 — 야간(21:00) 시작 전 마지막 넛지.
  */
 @Injectable()
 export class StreakAtRiskStrategy implements ITimezoneStrategy {
@@ -38,7 +38,6 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 			where: {
 				preference: {
 					timezone: tz,
-					pushEnabled: true,
 					currentStreak: { gte: 3 },
 				},
 				todos: {

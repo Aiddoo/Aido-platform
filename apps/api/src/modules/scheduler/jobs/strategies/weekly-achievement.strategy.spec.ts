@@ -50,7 +50,6 @@ describe("WeeklyAchievementStrategy", () => {
 
 		// 기본 mock 설정
 		(database.todo.groupBy as jest.Mock).mockResolvedValue([]);
-		database.user.findMany.mockResolvedValue([]);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
@@ -164,9 +163,6 @@ describe("WeeklyAchievementStrategy", () => {
 				{ userId: "user-push-off", _count: { id: 2 } },
 			]);
 
-		// pushEnabled=true인 유저만 알림 대상
-		database.user.findMany.mockResolvedValue([{ id: "user-push-on" }] as never);
-
 		// When
 		await strategy.execute(ctx);
 
@@ -188,34 +184,34 @@ describe("WeeklyAchievementStrategy", () => {
 	});
 
 	// =========================================================================
-	// pushEnabled=false → 알림 미발송
+	// completedTodos > 0인 모든 유저에게 알림 발송
 	// =========================================================================
 
-	it("pushEnabled=false 유저는 알림을 발송하지 않는다", async () => {
+	it("completedTodos > 0인 모든 유저에게 알림을 발송한다", async () => {
 		// Given
 		const ctx = makeCtx();
 
 		(database.todo.groupBy as jest.Mock)
 			.mockResolvedValueOnce([
-				{ userId: "user-push-on", _count: { id: 5 } },
-				{ userId: "user-push-off", _count: { id: 3 } },
+				{ userId: "user-1", _count: { id: 5 } },
+				{ userId: "user-2", _count: { id: 3 } },
 			])
 			.mockResolvedValueOnce([
-				{ userId: "user-push-on", _count: { id: 4 } },
-				{ userId: "user-push-off", _count: { id: 2 } },
+				{ userId: "user-1", _count: { id: 4 } },
+				{ userId: "user-2", _count: { id: 2 } },
 			]);
-
-		database.user.findMany.mockResolvedValue([{ id: "user-push-on" }] as never);
 
 		// When
 		const result = await strategy.execute(ctx);
 
-		// Then — 알림은 pushEnabled=true인 유저만
-		expect(result).toEqual({ sent: 1 });
+		// Then — completedTodos > 0인 두 유저 모두 알림 발송
+		expect(result).toEqual({ sent: 2 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
-		expect(notifications).toHaveLength(1);
-		expect(notifications?.[0]?.userId).toBe("user-push-on");
+		expect(notifications).toHaveLength(2);
+		expect(notifications?.map((n: { userId: string }) => n.userId)).toEqual(
+			expect.arrayContaining(["user-1", "user-2"]),
+		);
 	});
 
 	// =========================================================================
@@ -261,11 +257,6 @@ describe("WeeklyAchievementStrategy", () => {
 				{ userId: "user-1", _count: { id: 2 } },
 				{ userId: "user-2", _count: { id: 3 } },
 			]);
-
-		database.user.findMany.mockResolvedValue([
-			{ id: "user-1" },
-			{ id: "user-2" },
-		] as never);
 
 		// user-1은 이미 알림 받음
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(

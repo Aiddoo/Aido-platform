@@ -40,11 +40,10 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 /**
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
  *
- * 사용자가 직접 트리거한 액션의 결과 알림은 야간에도 발송한다:
- * - NUDGE_RECEIVED: 긴급성 있는 실시간 소셜 인터랙션
+ * - WEATHER_MORNING: 사용자가 직접 선택한 아침 시간, 못 받으면 무의미
  */
 const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-	"NUDGE_RECEIVED",
+	"WEATHER_MORNING",
 ]);
 
 @Injectable()
