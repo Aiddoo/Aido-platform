@@ -41,6 +41,7 @@ export {
   RepeatIcon,
   SearchIcon,
   SendIcon,
+  SettingIcon,
   ShareIcon,
   SunIcon,
   ToastErrorIcon,
