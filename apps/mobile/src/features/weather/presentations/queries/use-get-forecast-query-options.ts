@@ -16,7 +16,9 @@ export const useGetForecastQueryOptions = (date: string) => {
     },
     staleTime: 30 * 60 * 1000,
     retry: (failureCount, error) => {
-      if (isApiError(error)) return false;
+      if (isApiError(error)) {
+        return false;
+      }
       return failureCount < 2;
     },
   });

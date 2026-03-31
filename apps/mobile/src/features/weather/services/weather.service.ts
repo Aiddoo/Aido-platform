@@ -25,7 +25,9 @@ export class WeatherService {
       params: { date },
     });
 
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = weatherForecastSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -40,7 +42,9 @@ export class WeatherService {
   updateLocation = async (input: UpdateLocationInput): Promise<Result<Location, ApiError>> => {
     const result = await this.#httpClient.put<LocationResponse>('v1/weather/location', input);
 
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = locationResponseSchema.safeParse(result.value);
     if (!parsed.success) {

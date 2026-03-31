@@ -6,6 +6,8 @@ export const HourlyForecastSchema = z.object({
   temperature: z.number(),
   skyCondition: z.enum(SKY_CONDITIONS),
   precipitationProbability: z.number().int().min(0).max(100),
+  precipitationAmount: z.number().min(0),
+  snowAmount: z.number().min(0),
 });
 
 export type HourlyForecast = z.infer<typeof HourlyForecastSchema>;

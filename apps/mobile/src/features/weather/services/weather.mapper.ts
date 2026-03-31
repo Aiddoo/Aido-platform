@@ -9,6 +9,8 @@ export const toHourlyForecast = (
   temperature: dto.temperature,
   skyCondition: dto.skyCondition,
   precipitationProbability: dto.precipitationProbability,
+  precipitationAmount: dto.precipitationAmount,
+  snowAmount: dto.snowAmount,
 });
 
 export const toWeatherForecast = (dto: WeatherForecastResponse): WeatherForecast => ({

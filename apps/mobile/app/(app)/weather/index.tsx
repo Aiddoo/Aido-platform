@@ -173,29 +173,40 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
   return (
     <VStack
       py={10}
-      gap={6}
+      px={8}
+      gap={5}
+      className="rounded-xl"
       style={{
-        width: 58,
+        width: 74,
         alignItems: 'center',
         backgroundColor: palette.glassStrong,
-        borderRadius: 12,
       }}
     >
       <Text size="e2" align="center" style={{ color: palette.textSub }}>
         {item.hour}시
       </Text>
 
-      <Box style={{ alignSelf: 'center' }}>
-        <SkyIcon width={22} height={22} color={palette.icon} />
-      </Box>
+      <SkyIcon width={22} height={22} color={palette.icon} />
 
       <Text size="b4" weight="semibold" align="center" style={{ color: palette.text }}>
         {Math.round(item.temperature)}°
       </Text>
 
-      {WeatherPolicy.shouldShowHourlyPrecipitation(item) && (
+      {item.precipitationProbability > 0 && (
         <Text size="e2" align="center" style={{ color: palette.accent }}>
           {item.precipitationProbability}%
+        </Text>
+      )}
+
+      {item.precipitationAmount > 0 && (
+        <Text size="e2" align="center" style={{ color: palette.accent }}>
+          {item.precipitationAmount}mm
+        </Text>
+      )}
+
+      {item.snowAmount > 0 && (
+        <Text size="e2" align="center" style={{ color: palette.accent }}>
+          {item.snowAmount}cm
         </Text>
       )}
     </VStack>
@@ -205,14 +216,14 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 function ForecastSkeleton({ palette, insetTop }: { palette: Palette; insetTop: number }) {
   return (
     <VStack p={16} gap={16} style={{ paddingTop: insetTop + 64 }}>
+      <Skeleton className="h-60 w-full rounded-2xl" style={{ backgroundColor: palette.glass }} />
       <Skeleton
-        style={{ height: 240, width: '100%', borderRadius: 16, backgroundColor: palette.glass }}
+        className="h-[72px] w-full rounded-2xl"
+        style={{ backgroundColor: palette.glass }}
       />
       <Skeleton
-        style={{ height: 72, width: '100%', borderRadius: 16, backgroundColor: palette.glass }}
-      />
-      <Skeleton
-        style={{ height: 120, width: '100%', borderRadius: 16, backgroundColor: palette.glass }}
+        className="h-[120px] w-full rounded-2xl"
+        style={{ backgroundColor: palette.glass }}
       />
     </VStack>
   );
@@ -270,43 +281,43 @@ const PALETTES = {
     bg: '#1B1464',
     gradient: ['#1B1464', '#7B5EA7', '#E8A87C'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.70)',
+    textSub: 'rgba(255,255,255,0.80)',
     icon: '#FFFFFF',
-    glass: 'rgba(255,220,180,0.12)',
-    glassStrong: 'rgba(255,220,180,0.18)',
-    glassBorder: 'rgba(255,220,180,0.16)',
-    badge: 'rgba(255,220,180,0.22)',
+    glass: 'rgba(20,0,50,0.20)',
+    glassStrong: 'rgba(20,0,50,0.28)',
+    glassBorder: 'rgba(255,255,255,0.12)',
+    badge: 'rgba(20,0,50,0.25)',
     accent: '#F5B078',
   },
   day: {
     bg: '#1976D2',
     gradient: ['#1976D2', '#42A5F5', '#90CAF9'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.75)',
+    textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    glass: 'rgba(255,255,255,0.20)',
-    glassStrong: 'rgba(255,255,255,0.28)',
-    glassBorder: 'rgba(255,255,255,0.25)',
-    badge: 'rgba(255,255,255,0.30)',
+    glass: 'rgba(0,20,60,0.18)',
+    glassStrong: 'rgba(0,20,60,0.26)',
+    glassBorder: 'rgba(255,255,255,0.18)',
+    badge: 'rgba(0,20,60,0.22)',
     accent: '#FFFFFF',
   },
   dusk: {
     bg: '#1A1033',
     gradient: ['#1A1033', '#6B3A7D', '#E87461'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.68)',
+    textSub: 'rgba(255,255,255,0.78)',
     icon: '#FFFFFF',
-    glass: 'rgba(255,180,160,0.12)',
-    glassStrong: 'rgba(255,180,160,0.18)',
-    glassBorder: 'rgba(255,180,160,0.15)',
-    badge: 'rgba(255,180,160,0.22)',
+    glass: 'rgba(15,5,30,0.22)',
+    glassStrong: 'rgba(15,5,30,0.30)',
+    glassBorder: 'rgba(255,255,255,0.10)',
+    badge: 'rgba(15,5,30,0.25)',
     accent: '#FFB088',
   },
   night: {
     bg: '#080C1A',
     gradient: ['#080C1A', '#101D3A', '#1A3355'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.65)',
+    textSub: 'rgba(255,255,255,0.75)',
     icon: '#FFFFFF',
     glass: 'rgba(140,170,220,0.10)',
     glassStrong: 'rgba(140,170,220,0.16)',
