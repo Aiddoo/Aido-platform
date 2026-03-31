@@ -126,10 +126,22 @@ function ReportTypeTabs({
       <Tabs.List>
         <Tabs.Indicator />
         <Tabs.Trigger value="WEEKLY">
-          <Tabs.Label className="text-b4">주간</Tabs.Label>
+          {({ isSelected }) => (
+            <Tabs.Label>
+              <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+                주간
+              </Text>
+            </Tabs.Label>
+          )}
         </Tabs.Trigger>
         <Tabs.Trigger value="MONTHLY">
-          <Tabs.Label className="text-b4">월간</Tabs.Label>
+          {({ isSelected }) => (
+            <Tabs.Label>
+              <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+                월간
+              </Text>
+            </Tabs.Label>
+          )}
         </Tabs.Trigger>
       </Tabs.List>
     </Tabs>
