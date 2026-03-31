@@ -189,9 +189,19 @@ export class AiSuggestionService {
 	async analyzeAndCreateSuggestions(
 		userId: string,
 		timezone: string,
+		weatherGrid?: {
+			gridX: number;
+			gridY: number;
+			lat: number;
+			lon: number;
+		} | null,
 	): Promise<number> {
 		// 1. 컨텍스트 수집 (통계 분석 + 투두 조회 + 날씨)
-		const context = await this.contextBuilder.build(userId, timezone);
+		const context = await this.contextBuilder.build(
+			userId,
+			timezone,
+			weatherGrid ?? null,
+		);
 
 		if (context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES) {
 			this.#logger.debug(
@@ -335,6 +345,14 @@ export class AiSuggestionService {
 			freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
 		}
 
-		return [...freq.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+		let maxId: number | null = null;
+		let maxCount = 0;
+		for (const [categoryId, count] of freq) {
+			if (count > maxCount) {
+				maxId = categoryId;
+				maxCount = count;
+			}
+		}
+		return maxId;
 	}
 }

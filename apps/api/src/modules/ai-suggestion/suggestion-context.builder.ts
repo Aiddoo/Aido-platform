@@ -7,6 +7,7 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { now } from "@/common/date/utils/core";
+import type { GridInput } from "../weather/services/weather.service";
 import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
@@ -34,8 +35,14 @@ export class SuggestionContextBuilder {
 
 	/**
 	 * 사용자의 컨텍스트 데이터를 병렬 수집하여 포맷된 SuggestionContext를 반환합니다.
+	 *
+	 * @param weatherGrid dispatcher가 사전 조회한 KMA 격자 좌표 (위치 미설정 시 null)
 	 */
-	async build(userId: string, timezone: string): Promise<SuggestionContext> {
+	async build(
+		userId: string,
+		timezone: string,
+		weatherGrid: GridInput | null,
+	): Promise<SuggestionContext> {
 		const currentDate = dayjs.utc(now());
 		const analysisFrom = currentDate
 			.subtract(AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS, "week")
@@ -62,7 +69,7 @@ export class SuggestionContextBuilder {
 				),
 				this.repository.findCategoryCompletionRates(userId, contextFrom, to),
 				this.repository.findUserStreakInfo(userId),
-				this.#fetchWeatherSafely(userId, to),
+				this.#fetchWeatherByGrid(weatherGrid, to),
 			]);
 
 		const missingRoutines = this.detectMissingRoutines(todos, timezone);
@@ -129,15 +136,25 @@ export class SuggestionContextBuilder {
 		return missing;
 	}
 
-	async #fetchWeatherSafely(
-		userId: string,
+	/**
+	 * KMA 격자 좌표로 날씨를 조회합니다.
+	 *
+	 * dispatcher가 사전 조회한 grid를 사용하므로 per-user UserLocation DB 조회가 불필요합니다.
+	 * Redis batch API(mget/mset)를 활용하여 캐시 효율을 높입니다.
+	 */
+	async #fetchWeatherByGrid(
+		grid: GridInput | null,
 		date: Date,
 	): Promise<string | null> {
+		if (!grid) return null;
+
 		try {
-			const forecast = await this.weatherService.getForecastForUser(
-				userId,
+			const forecasts = await this.weatherService.getForecastsByGridBatch(
+				[grid],
 				date,
 			);
+			const forecast = forecasts.get(`${grid.gridX}:${grid.gridY}`);
+			if (!forecast) return null;
 
 			if (forecast.precipitationType === "NONE") {
 				return `맑음, ${forecast.temperatureMin}~${forecast.temperatureMax}°C`;
@@ -148,7 +165,7 @@ export class SuggestionContextBuilder {
 				forecast.precipitationType;
 			return `${precipKo}(강수확률 ${forecast.precipitationProbability}%), ${forecast.temperatureMin}~${forecast.temperatureMax}°C`;
 		} catch {
-			this.#logger.debug(`날씨 조회 실패 (위치 미설정 등): userId=${userId}`);
+			this.#logger.debug(`날씨 조회 실패: grid=${grid.gridX}:${grid.gridY}`);
 			return null;
 		}
 	}

@@ -93,25 +93,34 @@ describe("SuggestionContextBuilder", () => {
 				defaultCategoryRates,
 			);
 			mockRepository.findUserStreakInfo.mockResolvedValue(defaultStreakInfo);
-			mockWeatherService.getForecastForUser.mockResolvedValue({
-				date: FIXED_NOW,
-				skyCondition: "CLEAR",
-				precipitationType: "NONE",
-				precipitationProbability: 0,
-				temperatureMin: 5,
-				temperatureMax: 15,
-				humidity: 50,
-				windSpeed: 3,
-				hourlyForecasts: [],
-			});
+			mockWeatherService.getForecastsByGridBatch.mockResolvedValue(
+				new Map([
+					[
+						"60:127",
+						{
+							date: FIXED_NOW,
+							skyCondition: "CLEAR",
+							precipitationType: "NONE",
+							precipitationProbability: 0,
+							temperatureMin: 5,
+							temperatureMax: 15,
+							humidity: 50,
+							windSpeed: 3,
+							hourlyForecasts: [],
+						},
+					],
+				]),
+			);
 		}
+
+		const mockGrid = { gridX: 60, gridY: 127, lat: 37.5, lon: 127.0 };
 
 		it("병렬 데이터 수집 후 SuggestionContext를 반환해야 한다", async () => {
 			// Given - 모든 repository 메서드와 weather 서비스 mock 설정
 			setupDefaultMocks();
 
-			// When - build 호출
-			const result = await builder.build(mockUserId, mockTimezone);
+			// When - build 호출 (grid 전달 시 날씨 조회)
+			const result = await builder.build(mockUserId, mockTimezone, mockGrid);
 
 			// Then - SuggestionContext 형태 검증
 			expect(result.todos).toEqual(defaultTodos);
@@ -130,12 +139,12 @@ describe("SuggestionContextBuilder", () => {
 		it("WeatherService 실패 시 weather=null로 graceful degradation", async () => {
 			// Given - weather 서비스가 에러를 던지도록 설정
 			setupDefaultMocks();
-			mockWeatherService.getForecastForUser.mockRejectedValue(
-				new Error("위치 미설정"),
+			mockWeatherService.getForecastsByGridBatch.mockRejectedValue(
+				new Error("Redis 연결 실패"),
 			);
 
-			// When - build 호출
-			const result = await builder.build(mockUserId, mockTimezone);
+			// When - build 호출 (grid 전달했지만 서비스 에러)
+			const result = await builder.build(mockUserId, mockTimezone, mockGrid);
 
 			// Then - weather만 null이고 나머지는 정상
 			expect(result.weather).toBeNull();
@@ -149,7 +158,7 @@ describe("SuggestionContextBuilder", () => {
 			mockRepository.findUserStreakInfo.mockResolvedValue(null);
 
 			// When - build 호출
-			const result = await builder.build(mockUserId, mockTimezone);
+			const result = await builder.build(mockUserId, mockTimezone, null);
 
 			// Then - streak이 '정보 없음'
 			expect(result.streak).toBe("정보 없음");
