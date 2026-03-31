@@ -1,16 +1,13 @@
 import { ErrorCode } from '@aido/errors';
+import catImage from '@assets/images/cat_weather_anchor.png';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import type { HourlyForecast, WeatherForecast } from '@src/features/weather/models/weather.model';
-import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
-import {
-  PRECIPITATION_TYPE_LABEL,
-  SKY_CONDITION_LABEL,
-} from '@src/features/weather/presentations/constants/weather-labels.constant';
+import { SKY_CONDITION_LABEL } from '@src/features/weather/presentations/constants/weather-labels.constant';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { Box, HStack, Result, Text, VStack } from '@src/shared/ui';
@@ -18,7 +15,7 @@ import { formatDate } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
-import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -66,15 +63,17 @@ export default function WeatherDetailScreen() {
       <GradientBackground palette={palette} />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + 64,
-          paddingBottom: insets.bottom + 40,
-          gap: 20,
+          paddingTop: insets.top + 80,
+          paddingBottom: insets.bottom + 24,
+          flexGrow: 1,
         }}
       >
         <ForecastHero forecast={forecast} />
         <ForecastStats forecast={forecast} />
+        <View style={{ flex: 1 }} />
         <HourlyForecastStrip items={forecast.hourlyForecasts} />
       </ScrollView>
+      <CatAnchor />
     </View>
   );
 }
@@ -87,52 +86,60 @@ function ForecastHero({ forecast }: { forecast: WeatherForecast }) {
   const avgTemp = Math.round((forecast.temperatureMin + forecast.temperatureMax) / 2);
 
   return (
-    <VStack align="center" gap={8} px={16}>
-      <ForecastIcon width={100} height={100} color={palette.icon} />
+    <VStack align="center" gap={8} style={{ marginBottom: 40 }}>
+      <Text style={[styles.heroTemp, { color: palette.text }]}>{avgTemp}</Text>
 
-      <Text style={[styles.heroTemp, { color: palette.text }]}>{avgTemp}°</Text>
+      <HStack gap={4} align="center">
+        <Text size="e1" style={{ color: palette.textSub }}>
+          최저
+        </Text>
+        <Text size="e1" weight="medium" style={{ color: '#319CFC' }}>
+          {Math.round(forecast.temperatureMin)}°
+        </Text>
+        <Text size="e1" style={{ color: palette.textSub }}>
+          {' '}
+          / 최고
+        </Text>
+        <Text size="e1" weight="medium" style={{ color: '#F0503D' }}>
+          {Math.round(forecast.temperatureMax)}°
+        </Text>
+      </HStack>
 
-      <Text size="b2" style={{ color: palette.textSub }}>
-        최저 {Math.round(forecast.temperatureMin)}° / 최고 {Math.round(forecast.temperatureMax)}°
-      </Text>
-
-      <Text size="t3" weight="medium" style={{ color: palette.text }}>
-        {SKY_CONDITION_LABEL[forecast.skyCondition]}
-      </Text>
-
-      {WeatherPolicy.shouldShowPrecipitation(forecast) && (
-        <Box px={14} py={5} style={[styles.badge, { backgroundColor: palette.badge }]}>
-          <Text size="b4" weight="medium" style={{ color: palette.text }}>
-            {PRECIPITATION_TYPE_LABEL[forecast.precipitationType]}{' '}
-            {forecast.precipitationProbability}%
-          </Text>
-        </Box>
-      )}
+      <HStack gap={8} align="center" style={{ marginTop: 8 }}>
+        <ForecastIcon width={18} height={18} color={palette.text} />
+        <Text size="b3" weight="semibold" style={{ color: palette.text }}>
+          {SKY_CONDITION_LABEL[forecast.skyCondition]}
+        </Text>
+      </HStack>
     </VStack>
   );
 }
 
 function ForecastStats({ forecast }: { forecast: WeatherForecast }) {
+  const palette = usePalette();
+
   return (
-    <HStack mx={16} gap={10}>
-      <StatCard label="바람" value={`${forecast.windSpeed}m/s`} />
-      <StatCard label="습도" value={`${forecast.humidity}%`} />
-      <StatCard label="강수확률" value={`${forecast.precipitationProbability}%`} />
+    <HStack align="center" style={{ justifyContent: 'center', gap: 20, marginBottom: 20 }}>
+      <StatItem label="바람" value={`${forecast.windSpeed} m/s`} palette={palette} />
+      <View style={[styles.statDivider, { backgroundColor: palette.textSub }]} />
+      <StatItem label="습도" value={`${forecast.humidity}%`} palette={palette} />
+      <View style={[styles.statDivider, { backgroundColor: palette.textSub }]} />
+      <StatItem
+        label="강수확률"
+        value={`${forecast.precipitationProbability}%`}
+        palette={palette}
+      />
     </HStack>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  const palette = usePalette();
-  const cardStyle = useGlassStyle(palette);
-
+function StatItem({ label, value, palette }: { label: string; value: string; palette: Palette }) {
   return (
-    <VStack flex={1} py={14} align="center" gap={6} style={cardStyle}>
-      <Text size="e1" style={{ color: palette.textSub }}>
+    <VStack align="center" gap={4} style={{ width: 56 }}>
+      <Text size="b4" style={{ color: palette.textSub }}>
         {label}
       </Text>
-
-      <Text size="b2" weight="bold" style={{ color: palette.text }}>
+      <Text size="b1" weight="semibold" style={{ color: palette.text }}>
         {value}
       </Text>
     </VStack>
@@ -140,23 +147,18 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 function HourlyForecastStrip({ items }: { items: HourlyForecast[] }) {
-  const palette = usePalette();
-  const cardStyle = useGlassStyle(palette);
+  const cardStyle = useGlassStyle();
 
   if (items.length === 0) {
     return null;
   }
 
   return (
-    <VStack mx={16} py={16} gap={12} style={cardStyle}>
-      <Text size="b3" weight="semibold" style={{ color: palette.text, paddingHorizontal: 16 }}>
-        시간별 예보
-      </Text>
-
+    <VStack mx={20} py={16} gap={12} mb={64} style={cardStyle}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 8, gap: 8 }}
       >
         {items.map((item) => (
           <HourlyCard key={item.hour} item={item} />
@@ -172,28 +174,28 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 
   return (
     <VStack
-      py={10}
-      px={8}
-      gap={5}
-      className="rounded-xl"
+      py={16}
+      px={20}
+      gap={8}
       style={{
-        width: 74,
         alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: palette.glassStrong,
+        borderRadius: 8,
       }}
     >
       <Text size="e2" align="center" style={{ color: palette.textSub }}>
         {item.hour}시
       </Text>
 
-      <SkyIcon width={22} height={22} color={palette.icon} />
+      <SkyIcon width={24} height={24} color={palette.icon} />
 
-      <Text size="b4" weight="semibold" align="center" style={{ color: palette.text }}>
+      <Text size="b4" align="center" style={{ color: palette.textSub }}>
         {Math.round(item.temperature)}°
       </Text>
 
       {item.precipitationProbability > 0 && (
-        <Text size="e2" align="center" style={{ color: palette.accent }}>
+        <Text size="b4" align="center" style={{ color: palette.textSub }}>
           {item.precipitationProbability}%
         </Text>
       )}
@@ -227,6 +229,10 @@ function ForecastSkeleton({ palette, insetTop }: { palette: Palette; insetTop: n
       />
     </VStack>
   );
+}
+
+function CatAnchor() {
+  return <Image source={catImage} style={styles.catAnchor} resizeMode="contain" />;
 }
 
 function GradientBackground({ palette }: { palette: Palette }) {
@@ -264,15 +270,16 @@ function getTimeOfDay(): TimeOfDay {
   return 'night';
 }
 
-function useGlassStyle(palette: Palette) {
+function useGlassStyle() {
   return useMemo(
     () => ({
-      backgroundColor: palette.glass,
-      borderRadius: 16,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: palette.glassBorder,
+      backgroundColor: 'rgba(255,255,255,0.06)',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(248,248,248,0.2)',
+      overflow: 'hidden' as const,
     }),
-    [palette],
+    [],
   );
 }
 
@@ -281,12 +288,11 @@ const PALETTES = {
     bg: '#1B1464',
     gradient: ['#1B1464', '#7B5EA7', '#E8A87C'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.80)',
+    textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
     glass: 'rgba(20,0,50,0.20)',
-    glassStrong: 'rgba(20,0,50,0.28)',
-    glassBorder: 'rgba(255,255,255,0.12)',
-    badge: 'rgba(20,0,50,0.25)',
+    glassStrong: 'rgba(245,245,245,0.10)',
+    glassBorder: 'rgba(248,248,248,0.20)',
     accent: '#F5B078',
   },
   day: {
@@ -296,21 +302,19 @@ const PALETTES = {
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
     glass: 'rgba(0,20,60,0.18)',
-    glassStrong: 'rgba(0,20,60,0.26)',
-    glassBorder: 'rgba(255,255,255,0.18)',
-    badge: 'rgba(0,20,60,0.22)',
+    glassStrong: 'rgba(245,245,245,0.10)',
+    glassBorder: 'rgba(248,248,248,0.20)',
     accent: '#FFFFFF',
   },
   dusk: {
-    bg: '#1A1033',
-    gradient: ['#1A1033', '#6B3A7D', '#E87461'] as const,
+    bg: '#281740',
+    gradient: ['#281740', '#8B4A6B', '#CA6668'] as const,
     text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.78)',
+    textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
     glass: 'rgba(15,5,30,0.22)',
-    glassStrong: 'rgba(15,5,30,0.30)',
-    glassBorder: 'rgba(255,255,255,0.10)',
-    badge: 'rgba(15,5,30,0.25)',
+    glassStrong: 'rgba(245,245,245,0.10)',
+    glassBorder: 'rgba(248,248,248,0.20)',
     accent: '#FFB088',
   },
   night: {
@@ -320,9 +324,8 @@ const PALETTES = {
     textSub: 'rgba(255,255,255,0.75)',
     icon: '#FFFFFF',
     glass: 'rgba(140,170,220,0.10)',
-    glassStrong: 'rgba(140,170,220,0.16)',
-    glassBorder: 'rgba(140,170,220,0.14)',
-    badge: 'rgba(140,170,220,0.20)',
+    glassStrong: 'rgba(245,245,245,0.10)',
+    glassBorder: 'rgba(248,248,248,0.20)',
     accent: '#7DB4F5',
   },
 } as const;
@@ -335,12 +338,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroTemp: {
-    fontSize: 72,
-    lineHeight: 80,
+    fontSize: 80,
+    lineHeight: 88,
     fontWeight: 'bold',
+    letterSpacing: -2.4,
   },
-  badge: {
-    borderRadius: 999,
-    marginTop: 4,
+  statDivider: {
+    width: 1,
+    height: 48,
+    opacity: 0.3,
+  },
+  catAnchor: {
+    position: 'absolute',
+    right: 20,
+    bottom: -4,
+    width: 207,
+    height: 151,
   },
 });
