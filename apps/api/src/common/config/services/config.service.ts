@@ -215,7 +215,7 @@ export class TypedConfigService {
 		return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
 	}
 
-	get kmaApiKey(): string | undefined {
+	get dataGoKrApiKey(): string | undefined {
 		return this.get("KMA_API_KEY");
 	}
 

@@ -8,6 +8,10 @@ export const DATE_FORMAT = {
 	DATE_TIME: "YYYY-MM-DD HH:mm:ss",
 	/** YYYY-MM (예: 2026-01) */
 	YEAR_MONTH: "YYYY-MM",
+	/** YYYYMMDD (예: 20260117) — 공공데이터포털 API용 */
+	DATE_COMPACT: "YYYYMMDD",
+	/** YYYYMMDDHH (예: 2026011714) — 공공데이터포털 API용 */
+	DATE_HOUR_COMPACT: "YYYYMMDDHH",
 } as const;
 
 export type DateFormatType = (typeof DATE_FORMAT)[keyof typeof DATE_FORMAT];

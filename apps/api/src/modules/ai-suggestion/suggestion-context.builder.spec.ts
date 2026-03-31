@@ -107,6 +107,7 @@ describe("SuggestionContextBuilder", () => {
 							humidity: 50,
 							windSpeed: 3,
 							hourlyForecasts: [],
+							dailyForecasts: [],
 						},
 					],
 				]),

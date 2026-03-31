@@ -7,6 +7,15 @@ export interface HourlyForecast {
 	precipitationProbability: number;
 }
 
+export interface DailyForecast {
+	date: string; // "YYYY-MM-DD"
+	skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
+	precipitationType: "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER";
+	precipitationProbability: number;
+	temperatureMin: number;
+	temperatureMax: number;
+}
+
 export interface WeatherForecast {
 	date: Date;
 	skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
@@ -17,6 +26,16 @@ export interface WeatherForecast {
 	humidity: number;
 	windSpeed: number;
 	hourlyForecasts: HourlyForecast[];
+	dailyForecasts: DailyForecast[];
+}
+
+export interface WeatherConditions {
+	feelsLikeTemperature: number | null;
+	uvIndex: number | null;
+	sunrise: string | null;
+	sunset: string | null;
+	pm10: number | null;
+	pm25: number | null;
 }
 
 export interface WeatherProvider {

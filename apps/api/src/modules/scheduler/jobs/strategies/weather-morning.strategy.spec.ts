@@ -43,6 +43,7 @@ const makeForecast = (): WeatherForecast => ({
 	humidity: 45,
 	windSpeed: 2.5,
 	hourlyForecasts: [],
+	dailyForecasts: [],
 });
 
 describe("WeatherMorningStrategy", () => {

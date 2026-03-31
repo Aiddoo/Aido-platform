@@ -1,13 +1,10 @@
+import { toCompactDateString } from "@/common/date/utils/format";
 import type {
+	DailyForecast,
 	HourlyForecast,
 	WeatherForecast,
 } from "../weather-provider.interface";
-import {
-	formatKmaDate,
-	KMA_CATEGORY,
-	PTY_CODE_MAP,
-	SKY_CODE_MAP,
-} from "./kma.constants";
+import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants";
 
 export interface KmaResponseItem {
 	category: string;
@@ -34,18 +31,103 @@ export interface KmaApiResponse {
 }
 
 /**
+ * YYYYMMDD 형식을 YYYY-MM-DD로 변환
+ */
+function formatDateString(yyyymmdd: string): string {
+	return `${yyyymmdd.substring(0, 4)}-${yyyymmdd.substring(4, 6)}-${yyyymmdd.substring(6, 8)}`;
+}
+
+/**
+ * 특정 날짜의 아이템들로부터 DailyForecast를 생성
+ */
+function buildDailyForecast(
+	dateStr: string,
+	dateItems: KmaResponseItem[],
+): DailyForecast {
+	let tempMin = Number.POSITIVE_INFINITY;
+	let tempMax = Number.NEGATIVE_INFINITY;
+	let maxPrecipProb = 0;
+	const skyCounts = new Map<string, number>();
+	let hasNonNonePty = false;
+	let dominantPty = "0";
+
+	for (const item of dateItems) {
+		const value = item.fcstValue;
+
+		switch (item.category) {
+			case KMA_CATEGORY.TMP: {
+				const temp = Number.parseFloat(value);
+				if (!Number.isNaN(temp)) {
+					tempMin = Math.min(tempMin, temp);
+					tempMax = Math.max(tempMax, temp);
+				}
+				break;
+			}
+			case KMA_CATEGORY.TMN: {
+				const v = Number.parseFloat(value);
+				if (!Number.isNaN(v)) tempMin = Math.min(tempMin, v);
+				break;
+			}
+			case KMA_CATEGORY.TMX: {
+				const v = Number.parseFloat(value);
+				if (!Number.isNaN(v)) tempMax = Math.max(tempMax, v);
+				break;
+			}
+			case KMA_CATEGORY.POP: {
+				const prob = Number.parseInt(value, 10);
+				if (!Number.isNaN(prob)) {
+					maxPrecipProb = Math.max(maxPrecipProb, prob);
+				}
+				break;
+			}
+			case KMA_CATEGORY.SKY: {
+				skyCounts.set(value, (skyCounts.get(value) ?? 0) + 1);
+				break;
+			}
+			case KMA_CATEGORY.PTY: {
+				if (value !== "0") {
+					hasNonNonePty = true;
+					dominantPty = value;
+				}
+				break;
+			}
+		}
+	}
+
+	// 가장 빈도 높은 SKY 코드
+	let mostCommonSky = "1";
+	let maxSkyCount = 0;
+	for (const [code, count] of skyCounts) {
+		if (count > maxSkyCount) {
+			maxSkyCount = count;
+			mostCommonSky = code;
+		}
+	}
+
+	return {
+		date: formatDateString(dateStr),
+		skyCondition: SKY_CODE_MAP[mostCommonSky] ?? "CLEAR",
+		precipitationType: hasNonNonePty
+			? (PTY_CODE_MAP[dominantPty] ?? "NONE")
+			: "NONE",
+		precipitationProbability: maxPrecipProb,
+		temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
+		temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
+	};
+}
+
+/**
  * 기상청 단기예보 응답을 WeatherForecast로 변환
  */
 export function parseKmaResponse(
 	data: KmaApiResponse,
 	targetDate: Date,
 ): WeatherForecast {
-	const targetDateStr = formatKmaDate(targetDate);
-	const items = (data.response.body?.items?.item ?? []).filter(
-		(item) => item.fcstDate === targetDateStr,
-	);
+	const allItems = data.response.body?.items?.item ?? [];
+	const targetDateStr = toCompactDateString(targetDate);
+	const items = allItems.filter((item) => item.fcstDate === targetDateStr);
 
-	// 시간별 데이터 수집
+	// 시간별 데이터 수집 (대상 날짜)
 	const hourlyMap = new Map<
 		number,
 		{
@@ -164,6 +246,22 @@ export function parseKmaResponse(
 			precipitationProbability: data.precipitationProbability,
 		}));
 
+	// 일별 예보 생성 (모든 날짜 대상)
+	const dateItemsMap = new Map<string, KmaResponseItem[]>();
+	for (const item of allItems) {
+		const existing = dateItemsMap.get(item.fcstDate) ?? [];
+		existing.push(item);
+		dateItemsMap.set(item.fcstDate, existing);
+	}
+
+	const dailyForecasts: DailyForecast[] = [...dateItemsMap.keys()]
+		.sort()
+		.map((dateStr) => {
+			const items = dateItemsMap.get(dateStr);
+			if (!items) return buildDailyForecast(dateStr, []);
+			return buildDailyForecast(dateStr, items);
+		});
+
 	return {
 		date: targetDate,
 		skyCondition: SKY_CODE_MAP[dominantSky] ?? "CLEAR",
@@ -175,5 +273,6 @@ export function parseKmaResponse(
 		windSpeed:
 			windCount > 0 ? Math.round((avgWindSpeed / windCount) * 10) / 10 : 0,
 		hourlyForecasts,
+		dailyForecasts,
 	};
 }

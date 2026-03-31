@@ -45,6 +45,7 @@ const makeForecast = (
 	humidity: 70,
 	windSpeed: 3.5,
 	hourlyForecasts: [],
+	dailyForecasts: [],
 	...overrides,
 });
 
