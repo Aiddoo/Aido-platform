@@ -1,5 +1,13 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/models/auth.model';
+import type { UpdatePreferenceInput } from '@aido/validators';
+import DateTimePicker, {
+  type AndroidNativeProps,
+  type IOSNativeProps,
+} from '@react-native-community/datetimepicker';
+import {
+  isWeatherEnabled,
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/auth/models/auth.model';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
@@ -89,11 +97,7 @@ function NotificationSettingsForm() {
             '21:00 - 08:00 시간대에도 알림을 받아요'
           }
           isSelected={preference.nightPushEnabled}
-          onSelectedChange={(enabled) => {
-            if (preference.pushEnabled) {
-              updateMutation.mutate({ nightPushEnabled: enabled });
-            }
-          }}
+          onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
           isDisabled={pushDisabled}
         />
       </Card>
@@ -110,15 +114,13 @@ function NotificationSettingsForm() {
           label="날씨 알림"
           description={PreferencePolicy.pushDisabledMessage(preference) ?? '날씨 알림을 받아요'}
           isSelected={isWeatherEnabled(preference)}
-          onSelectedChange={(enabled) => {
-            if (preference.pushEnabled) {
-              updateMutation.mutate({
-                weatherMorningEnabled: enabled,
-                weatherEveningEnabled: enabled,
-                trackAs: 'weatherEnabled',
-              });
-            }
-          }}
+          onSelectedChange={(enabled) =>
+            updateMutation.mutate({
+              weatherMorningEnabled: enabled,
+              weatherEveningEnabled: enabled,
+              trackAs: 'weatherEnabled',
+            })
+          }
           isDisabled={pushDisabled}
         />
         <Separator className="bg-gray-2" />
@@ -172,61 +174,125 @@ NotificationSettingsForm.Loading = function Loading() {
   );
 };
 
-interface ReminderTimePickerProps {
+type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
+
+function TimePicker({ style, ...props }: TimePickerProps) {
+  return (
+    <DateTimePicker
+      {...props}
+      mode="time"
+      display="spinner"
+      minuteInterval={1}
+      style={[{ height: 216 }, style]}
+    />
+  );
+}
+
+interface AndroidTimePickerProps
+  extends Omit<AndroidNativeProps, 'mode' | 'display' | 'minuteInterval' | 'onChange'> {
+  onConfirm: (date: Date) => void;
+  onDismiss: () => void;
+}
+
+function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePickerProps) {
+  return (
+    <DateTimePicker
+      {...props}
+      mode="time"
+      display="spinner"
+      minuteInterval={1}
+      onChange={(event, date) => {
+        onDismiss();
+        if (event.type === 'set' && date) onConfirm(date);
+      }}
+    />
+  );
+}
+
+interface SettingsTimePickerProps {
   label: string;
   description: string;
   field: 'morning' | 'evening';
+  getHour: (preference: Preference) => number;
+  getMinute: (preference: Preference) => number;
+  buildMutationInput: (hour: number, minute: number) => UpdatePreferenceInput;
+  isDisabled: (preference: Preference) => boolean;
+  onBeforeOpen?: () => boolean;
+  accessory?: React.ReactNode;
 }
 
-function ReminderTimePicker({ label, description, field }: ReminderTimePickerProps) {
+function SettingsTimePicker({
+  label,
+  description,
+  field,
+  getHour,
+  getMinute,
+  buildMutationInput,
+  isDisabled: checkDisabled,
+  onBeforeOpen,
+  accessory,
+}: SettingsTimePickerProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
   const overlay = useOverlay();
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
 
-  const disabled = PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending;
-
-  const hour =
-    field === 'morning' ? preference.morningReminderHour : preference.eveningReminderHour;
-  const minute =
-    field === 'morning' ? preference.morningReminderMinute : preference.eveningReminderMinute;
+  const disabled = checkDisabled(preference) || updateMutation.isPending;
+  const hour = getHour(preference);
+  const minute = getMinute(preference);
 
   const handleTimeChange = (h: number, m: number) => {
-    updateMutation.mutate(
-      field === 'morning'
-        ? { morningReminderHour: h, morningReminderMinute: m }
-        : { eveningReminderHour: h, eveningReminderMinute: m },
-    );
+    updateMutation.mutate(buildMutationInput(h, m));
   };
 
   const handlePress = () => {
     if (disabled) return;
-
-    if (!UserPolicy.isPremiumUser(user)) {
-      trackEvent('premium_gate_shown', { feature: 'reminder_time' });
-      premiumDialog.open({
-        description: '리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.',
-      });
-      return;
-    }
+    if (onBeforeOpen && !onBeforeOpen()) return;
 
     if (Platform.OS === 'android') {
       setAndroidPickerOpen(true);
       return;
     }
 
-    openTimePickerBottomSheet({
-      label,
-      field,
-      hour,
-      minute,
-      overlay,
-      timeFormat: preference.timeFormat,
-      onConfirm: handleTimeChange,
-    });
+    let tempDate = timeToDate(hour, minute);
+
+    overlay.open(({ isOpen, close, exit }) => (
+      <KeyboardBottomSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+      >
+        <VStack gap={24}>
+          <PickerHeader
+            title={label}
+            onCancel={() => {
+              close();
+              exit();
+            }}
+            onConfirm={() => {
+              handleTimeChange(tempDate.getHours(), tempDate.getMinutes());
+              close();
+              exit();
+            }}
+          />
+          <View style={{ height: 216, alignItems: 'center' }}>
+            <TimePicker
+              value={tempDate}
+              minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
+              maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
+              onChange={(_event, date) => {
+                if (date) tempDate = date;
+              }}
+              locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
+            />
+          </View>
+        </VStack>
+      </KeyboardBottomSheet>
+    ));
   };
 
   return (
@@ -238,108 +304,87 @@ function ReminderTimePicker({ label, description, field }: ReminderTimePickerPro
         minute={minute}
         timeFormat={preference.timeFormat}
         isDisabled={disabled}
-        accessory={
-          !UserPolicy.isPremiumUser(user) ? <CrownIcon width={14} height={14} /> : undefined
-        }
+        accessory={accessory}
         onPress={handlePress}
       />
-
       {androidPickerOpen && (
-        <DateTimePicker
+        <AndroidTimePicker
           value={timeToDate(hour, minute)}
           minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
           maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
-          onChange={(event, date) => {
-            setAndroidPickerOpen(false);
-            if (event.type === 'set' && date) {
-              handleTimeChange(date.getHours(), date.getMinutes());
-            }
-          }}
-          mode="time"
-          display="spinner"
-          minuteInterval={1}
           is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
+          onConfirm={(date) => handleTimeChange(date.getHours(), date.getMinutes())}
+          onDismiss={() => setAndroidPickerOpen(false)}
         />
       )}
     </VStack>
   );
 }
 
-interface WeatherTimePickerProps {
+function ReminderTimePicker({
+  label,
+  description,
+  field,
+}: {
   label: string;
   description: string;
   field: 'morning' | 'evening';
-}
-
-function WeatherTimePicker({ label, description, field }: WeatherTimePickerProps) {
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const overlay = useOverlay();
-  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
-
-  const disabled = PreferencePolicy.isWeatherDisabled(preference) || updateMutation.isPending;
-
-  const hour = field === 'morning' ? preference.weatherMorningHour : preference.weatherEveningHour;
-  const minute =
-    field === 'morning' ? preference.weatherMorningMinute : preference.weatherEveningMinute;
-
-  const handleTimeChange = (h: number, m: number) => {
-    updateMutation.mutate(
-      field === 'morning'
-        ? { weatherMorningHour: h, weatherMorningMinute: m }
-        : { weatherEveningHour: h, weatherEveningMinute: m },
-    );
-  };
-
-  const handlePress = () => {
-    if (disabled) return;
-
-    if (Platform.OS === 'android') {
-      setAndroidPickerOpen(true);
-      return;
-    }
-
-    openTimePickerBottomSheet({
-      label,
-      field,
-      hour,
-      minute,
-      overlay,
-      timeFormat: preference.timeFormat,
-      onConfirm: handleTimeChange,
-    });
-  };
+}) {
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { trackEvent } = useTrack();
+  const premiumDialog = usePremiumDialog();
 
   return (
-    <VStack>
-      <TimeRow
-        label={label}
-        description={description}
-        hour={hour}
-        minute={minute}
-        timeFormat={preference.timeFormat}
-        isDisabled={disabled}
-        onPress={handlePress}
-      />
+    <SettingsTimePicker
+      label={label}
+      description={description}
+      field={field}
+      getHour={(p) => (field === 'morning' ? p.morningReminderHour : p.eveningReminderHour)}
+      getMinute={(p) => (field === 'morning' ? p.morningReminderMinute : p.eveningReminderMinute)}
+      buildMutationInput={(h, m) =>
+        field === 'morning'
+          ? { morningReminderHour: h, morningReminderMinute: m }
+          : { eveningReminderHour: h, eveningReminderMinute: m }
+      }
+      isDisabled={PreferencePolicy.isPushDisabled}
+      onBeforeOpen={() => {
+        if (!UserPolicy.isPremiumUser(user)) {
+          trackEvent('premium_gate_shown', { feature: 'reminder_time' });
+          premiumDialog.open({
+            description: '리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.',
+          });
+          return false;
+        }
+        return true;
+      }}
+      accessory={!UserPolicy.isPremiumUser(user) ? <CrownIcon width={14} height={14} /> : undefined}
+    />
+  );
+}
 
-      {androidPickerOpen && (
-        <DateTimePicker
-          value={timeToDate(hour, minute)}
-          minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
-          maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
-          onChange={(event, date) => {
-            setAndroidPickerOpen(false);
-            if (event.type === 'set' && date) {
-              handleTimeChange(date.getHours(), date.getMinutes());
-            }
-          }}
-          mode="time"
-          display="spinner"
-          minuteInterval={1}
-          is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-        />
-      )}
-    </VStack>
+function WeatherTimePicker({
+  label,
+  description,
+  field,
+}: {
+  label: string;
+  description: string;
+  field: 'morning' | 'evening';
+}) {
+  return (
+    <SettingsTimePicker
+      label={label}
+      description={description}
+      field={field}
+      getHour={(p) => (field === 'morning' ? p.weatherMorningHour : p.weatherEveningHour)}
+      getMinute={(p) => (field === 'morning' ? p.weatherMorningMinute : p.weatherEveningMinute)}
+      buildMutationInput={(h, m) =>
+        field === 'morning'
+          ? { weatherMorningHour: h, weatherMorningMinute: m }
+          : { weatherEveningHour: h, weatherEveningMinute: m }
+      }
+      isDisabled={PreferencePolicy.isWeatherDisabled}
+    />
   );
 }
 
@@ -474,69 +519,4 @@ function GroupSkeleton({ rows }: { rows: number }) {
       </Card>
     </VStack>
   );
-}
-
-function openTimePickerBottomSheet({
-  label,
-  field,
-  hour,
-  minute,
-  overlay,
-  timeFormat,
-  onConfirm,
-}: {
-  label: string;
-  field: 'morning' | 'evening';
-  hour: number;
-  minute: number;
-  overlay: ReturnType<typeof useOverlay>;
-  timeFormat: TimeFormat;
-  onConfirm: (hour: number, minute: number) => void;
-}) {
-  let tempDate = timeToDate(hour, minute);
-
-  overlay.open(({ isOpen, close, exit }) => (
-    <KeyboardBottomSheet
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          close();
-          exit();
-        }
-      }}
-    >
-      <VStack gap={24}>
-        <PickerHeader
-          title={label}
-          onCancel={() => {
-            close();
-            exit();
-          }}
-          onConfirm={() => {
-            onConfirm(tempDate.getHours(), tempDate.getMinutes());
-            close();
-            exit();
-          }}
-        />
-        <View style={{ height: 216, alignItems: 'center' }}>
-          <DateTimePicker
-            value={tempDate}
-            minimumDate={timeToDate(field === 'evening' ? 12 : 0, 0)}
-            maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
-            onChange={(_event, date) => {
-              if (date) {
-                tempDate = date;
-              }
-            }}
-            mode="time"
-            display="spinner"
-            minuteInterval={1}
-            is24Hour={timeFormat === 'TWENTY_FOUR_HOUR'}
-            locale={timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
-            style={{ height: 216 }}
-          />
-        </View>
-      </VStack>
-    </KeyboardBottomSheet>
-  ));
 }
