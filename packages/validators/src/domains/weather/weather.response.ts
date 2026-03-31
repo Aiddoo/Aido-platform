@@ -7,6 +7,8 @@ export const hourlyForecastSchema = z.object({
   temperature: z.number().describe('기온 (°C)'),
   skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
   precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
+  precipitationAmount: z.number().min(0).describe('1시간 강수량 (mm)'),
+  snowAmount: z.number().min(0).describe('1시간 신적설 (cm)'),
 });
 
 export type HourlyForecast = z.infer<typeof hourlyForecastSchema>;
@@ -57,8 +59,22 @@ export const weatherForecastSchema = z
       humidity: 45,
       windSpeed: 2.5,
       hourlyForecasts: [
-        { hour: 9, temperature: 12, skyCondition: 'CLEAR', precipitationProbability: 0 },
-        { hour: 15, temperature: 18, skyCondition: 'PARTLY_CLOUDY', precipitationProbability: 10 },
+        {
+          hour: 9,
+          temperature: 12,
+          skyCondition: 'CLEAR',
+          precipitationProbability: 0,
+          precipitationAmount: 0,
+          snowAmount: 0,
+        },
+        {
+          hour: 15,
+          temperature: 18,
+          skyCondition: 'PARTLY_CLOUDY',
+          precipitationProbability: 10,
+          precipitationAmount: 0.5,
+          snowAmount: 0,
+        },
       ],
       dailyForecasts: [
         {

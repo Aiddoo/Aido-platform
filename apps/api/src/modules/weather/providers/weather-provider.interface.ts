@@ -5,6 +5,8 @@ export interface HourlyForecast {
 	temperature: number;
 	skyCondition: string;
 	precipitationProbability: number;
+	precipitationAmount: number;
+	snowAmount: number;
 }
 
 export interface DailyForecast {

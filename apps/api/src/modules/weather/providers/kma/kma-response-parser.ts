@@ -134,6 +134,8 @@ export function parseKmaResponse(
 			temperature: number;
 			skyCondition: string;
 			precipitationProbability: number;
+			precipitationAmount: number;
+			snowAmount: number;
 		}
 	>();
 
@@ -159,6 +161,8 @@ export function parseKmaResponse(
 						temperature: 0,
 						skyCondition: "CLEAR",
 						precipitationProbability: 0,
+						precipitationAmount: 0,
+						snowAmount: 0,
 					};
 					entry.temperature = temp;
 					hourlyMap.set(hour, entry);
@@ -183,6 +187,8 @@ export function parseKmaResponse(
 						temperature: 0,
 						skyCondition: "CLEAR",
 						precipitationProbability: 0,
+						precipitationAmount: 0,
+						snowAmount: 0,
 					};
 					entry.precipitationProbability = prob;
 					hourlyMap.set(hour, entry);
@@ -195,6 +201,8 @@ export function parseKmaResponse(
 					temperature: 0,
 					skyCondition: "CLEAR",
 					precipitationProbability: 0,
+					precipitationAmount: 0,
+					snowAmount: 0,
 				};
 				entry.skyCondition = SKY_CODE_MAP[value] ?? "CLEAR";
 				hourlyMap.set(hour, entry);
@@ -217,6 +225,36 @@ export function parseKmaResponse(
 				if (!Number.isNaN(v)) {
 					avgWindSpeed += v;
 					windCount++;
+				}
+				break;
+			}
+			case KMA_CATEGORY.PCP: {
+				const amount = Number.parseFloat(value);
+				if (!Number.isNaN(amount)) {
+					const entry = hourlyMap.get(hour) ?? {
+						temperature: 0,
+						skyCondition: "CLEAR",
+						precipitationProbability: 0,
+						precipitationAmount: 0,
+						snowAmount: 0,
+					};
+					entry.precipitationAmount = amount;
+					hourlyMap.set(hour, entry);
+				}
+				break;
+			}
+			case KMA_CATEGORY.SNO: {
+				const amount = Number.parseFloat(value);
+				if (!Number.isNaN(amount)) {
+					const entry = hourlyMap.get(hour) ?? {
+						temperature: 0,
+						skyCondition: "CLEAR",
+						precipitationProbability: 0,
+						precipitationAmount: 0,
+						snowAmount: 0,
+					};
+					entry.snowAmount = amount;
+					hourlyMap.set(hour, entry);
 				}
 				break;
 			}
@@ -244,6 +282,8 @@ export function parseKmaResponse(
 			temperature: data.temperature,
 			skyCondition: data.skyCondition,
 			precipitationProbability: data.precipitationProbability,
+			precipitationAmount: data.precipitationAmount,
+			snowAmount: data.snowAmount,
 		}));
 
 	// 일별 예보 생성 (모든 날짜 대상)
