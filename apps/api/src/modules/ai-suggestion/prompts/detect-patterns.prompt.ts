@@ -1,3 +1,4 @@
+import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import type { SuggestionContext } from "../types";
@@ -10,7 +11,7 @@ export const detectedPatternsSchema = z.object({
 		z.object({
 			title: z.string().describe("반복 할 일의 제목"),
 			daysOfWeek: z
-				.array(z.enum(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]))
+				.array(dayOfWeekSchema)
 				.describe("반복 요일 (예: ['MON', 'WED', 'FRI'])"),
 			scheduledTime: z
 				.string()
@@ -116,7 +117,7 @@ reason은 "[관찰] + [제안]" 2파트로 구성:
 - 격려하는 친근한 톤, 딱딱한 보고서 톤 금지
 
 ## 규칙
-- 최대 5개, 없으면 빈배열
+- ★★★ 반드시 정확히 5개를 제안해. 5개 미만은 절대 안 됨. 6가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
 - ★ 다양한 유형을 골고루 섞어서 제안 (같은 유형 2개 이상 금지, 단 유형5 반복패턴은 2개까지 허용)
 - ★ 빠뜨린 루틴이 있으면 반드시 1개 이상 포함
 - ★ 시즌 추천은 최대 1개, matchedTitles는 반드시 빈 배열

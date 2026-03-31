@@ -16,7 +16,7 @@ import utc from "dayjs/plugin/utc";
 import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
-import type { TodoSummaryForAnalysis } from "./types";
+import type { DayCompletionRate, TodoSummaryForAnalysis } from "./types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -61,7 +61,7 @@ describe("SuggestionContextBuilder", () => {
 			},
 		];
 
-		const defaultDayRates = [
+		const defaultDayRates: DayCompletionRate[] = [
 			{ day: "MON", total: 10, completed: 8 },
 			{ day: "TUE", total: 5, completed: 3 },
 			{ day: "WED", total: 7, completed: 5 },

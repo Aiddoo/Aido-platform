@@ -1,22 +1,15 @@
-import { AI_SUGGESTION_LIMITS } from "@aido/validators";
+import {
+	AI_SUGGESTION_LIMITS,
+	DAY_OF_WEEK_KO,
+	type DayOfWeek,
+	dayIndexToDayOfWeek,
+} from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { now } from "@/common/date/utils/core";
 import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
-
-const DAYS_KO: Record<string, string> = {
-	MON: "월",
-	TUE: "화",
-	WED: "수",
-	THU: "목",
-	FRI: "금",
-	SAT: "토",
-	SUN: "일",
-};
-
-const DAY_ORDER = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 const PRECIPITATION_KO: Record<string, string> = {
 	RAIN: "비",
@@ -99,14 +92,12 @@ export class SuggestionContextBuilder {
 		const weekStart = currentDate.startOf("week").add(1, "day"); // Monday
 
 		// 제목+요일별 등장 횟수 집계 (이번 주 제외)
-		const titleDayCount = new Map<string, Map<string, number>>();
+		const titleDayCount = new Map<string, Map<DayOfWeek, number>>();
 		const thisWeekTitles = new Set<string>();
 
 		for (const todo of todos) {
 			const todoDate = dayjs(todo.startDate).tz(timezone);
-			const dayIndex = todoDate.day();
-			const dayName = DAY_ORDER[(dayIndex + 6) % 7];
-			if (!dayName) continue;
+			const dayName = dayIndexToDayOfWeek(todoDate.day());
 
 			if (!todoDate.isBefore(weekStart, "day")) {
 				thisWeekTitles.add(todo.title);
@@ -128,7 +119,7 @@ export class SuggestionContextBuilder {
 
 			for (const [day, count] of dayMap) {
 				if (count >= 2) {
-					const dayKo = DAYS_KO[day] ?? day;
+					const dayKo = DAY_OF_WEEK_KO[day] ?? day;
 					missing.push(`${title}(매주 ${dayKo}요일에 했는데 이번 주 없음)`);
 					break; // 같은 제목은 1번만
 				}
@@ -163,13 +154,13 @@ export class SuggestionContextBuilder {
 	}
 
 	#formatDayRates(
-		rates: { day: string; total: number; completed: number }[],
+		rates: { day: DayOfWeek; total: number; completed: number }[],
 	): string {
 		return rates
 			.map((r) => {
 				const rate =
 					r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0;
-				return `${DAYS_KO[r.day] ?? r.day}:${rate}%`;
+				return `${DAY_OF_WEEK_KO[r.day]}:${rate}%`;
 			})
 			.join("|");
 	}
@@ -197,8 +188,8 @@ export class SuggestionContextBuilder {
 
 	#formatCurrentDate(date: dayjs.Dayjs, timezone: string): string {
 		const local = date.tz(timezone);
-		const dayKey = DAY_ORDER[(local.day() + 6) % 7] ?? "MON";
-		const dayKo = DAYS_KO[dayKey] ?? dayKey;
+		const dayKey = dayIndexToDayOfWeek(local.day());
+		const dayKo = DAY_OF_WEEK_KO[dayKey];
 		const month = local.month() + 1;
 		const monthPart =
 			local.date() <= 10

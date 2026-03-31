@@ -28,7 +28,7 @@ export interface TodoSummaryForAnalysis {
  * 요일별 완료율
  */
 export interface DayCompletionRate {
-	day: string;
+	day: DayOfWeek;
 	total: number;
 	completed: number;
 }

@@ -1,3 +1,4 @@
+import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import type { TransactionClient } from "@/common/database";
@@ -148,22 +149,19 @@ export class AiSuggestionRepository {
 		});
 
 		const dayMap = new Map<string, { total: number; completed: number }>();
-		const dayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-		for (const d of dayOrder) {
+		for (const d of DAY_OF_WEEK_ORDER) {
 			dayMap.set(d, { total: 0, completed: 0 });
 		}
 
 		for (const c of completions) {
-			const dayIndex = dayjs(c.date).tz(timezone).day();
-			const dayName = dayOrder[(dayIndex + 6) % 7]; // 0=SUN → index 6
-			if (!dayName) continue;
+			const dayName = dayIndexToDayOfWeek(dayjs(c.date).tz(timezone).day());
 			const entry = dayMap.get(dayName);
 			if (!entry) continue;
 			entry.total += c.totalTodos;
 			entry.completed += c.completedTodos;
 		}
 
-		return dayOrder.map((day) => {
+		return DAY_OF_WEEK_ORDER.map((day) => {
 			const entry = dayMap.get(day) ?? { total: 0, completed: 0 };
 			return {
 				day,
