@@ -172,7 +172,13 @@ export class WeatherService {
 		if (!location) {
 			throw BusinessExceptions.weatherLocationNotFound();
 		}
+		return this.#getForecastForLocation(location, date);
+	}
 
+	async #getForecastForLocation(
+		location: UserLocation,
+		date: Date,
+	): Promise<WeatherForecast> {
 		const { baseDate, baseTime } = getKmaBaseDateTime(date);
 		const cacheKey = CacheKeys.weatherForecast(
 			location.gridX,
@@ -224,7 +230,7 @@ export class WeatherService {
 		const latest = await this.cacheService.get<WeatherForecast>(latestCacheKey);
 		if (latest) {
 			this.#logger.warn(
-				`Using latest fallback for user ${userId} grid ${location.gridX}:${location.gridY}`,
+				`Using latest fallback for grid ${location.gridX}:${location.gridY}`,
 			);
 			return latest;
 		}
@@ -257,12 +263,12 @@ export class WeatherService {
 			return cached;
 		}
 
-		// 2. 현재 기온/풍속 가져오기 (lifestyle 계산용)
+		// 2. 현재 기온/풍속 가져오기 (lifestyle 계산용, 같은 location 재사용)
 		let currentTemp = 0;
 		let windSpeed = 0;
 
 		try {
-			const forecast = await this.getForecastForUser(userId, date);
+			const forecast = await this.#getForecastForLocation(location, date);
 			const currentHour = date.getHours();
 			const hourly = forecast.hourlyForecasts.find(
 				(h) => h.hour === currentHour,
@@ -330,12 +336,35 @@ export class WeatherService {
 		lon: number,
 	): Promise<UserLocation> {
 		const { nx, ny } = convertToGrid(lat, lon);
-		return this.weatherRepository.upsert(userId, {
+
+		const oldLocation = await this.weatherRepository.findByUserId(userId);
+
+		const result = await this.weatherRepository.upsert(userId, {
 			latitude: lat,
 			longitude: lon,
 			gridX: nx,
 			gridY: ny,
 		});
+
+		// 격자가 변경되면 구 격자의 캐시 무효화
+		if (oldLocation && (oldLocation.gridX !== nx || oldLocation.gridY !== ny)) {
+			await Promise.all([
+				this.cacheService.delByPattern(
+					CacheKeys.weatherForecastPattern(
+						oldLocation.gridX,
+						oldLocation.gridY,
+					),
+				),
+				this.cacheService.del(
+					CacheKeys.weatherForecastLatest(oldLocation.gridX, oldLocation.gridY),
+				),
+				this.cacheService.del(
+					CacheKeys.weatherConditions(oldLocation.gridX, oldLocation.gridY),
+				),
+			]);
+		}
+
+		return result;
 	}
 
 	async getLocation(userId: string): Promise<UserLocation | null> {

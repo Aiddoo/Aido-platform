@@ -139,6 +139,13 @@ export const CacheKeys = {
 	// === 패턴 빌더 (와일드카드) ===
 
 	/**
+	 * 특정 격자의 모든 날씨 예보 캐시 패턴
+	 * @example weather:forecast:60:127:*
+	 */
+	weatherForecastPattern: (gridX: number, gridY: number) =>
+		`weather:forecast:${gridX}:${gridY}:*`,
+
+	/**
 	 * 특정 사용자의 모든 친구 관계 캐시 패턴
 	 * @example friends:mutual:user_1:*
 	 */
