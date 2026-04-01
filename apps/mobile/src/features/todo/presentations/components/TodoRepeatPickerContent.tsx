@@ -82,7 +82,7 @@ export const TodoRepeatPickerContent = ({
     });
   };
 
-  const today = new Date();
+  const [today] = useState(() => new Date());
 
   const handleCalendarPress = (date: Date) => {
     if (isBeforeDay(date, today)) return;
