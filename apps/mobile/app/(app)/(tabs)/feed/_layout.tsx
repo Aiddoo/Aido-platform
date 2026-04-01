@@ -8,6 +8,7 @@ import {
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { HStack, QueryErrorBoundary, Text } from '@src/shared/ui';
+import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
@@ -85,8 +86,9 @@ WeatherForecastBadge.Error = function ErrorFallback({ error }: { error: unknown 
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
         <HStack align="center" gap={4}>
+          <WeatherClearIcon width={14} height={14} colorClassName="text-gray-6" />
           <Text size="e2" shade={6}>
-            📍 날씨 설정
+            날씨 설정
           </Text>
         </HStack>
       </Pressable>

@@ -2,7 +2,9 @@ import {
   type LocationResponse,
   locationResponseSchema,
   type UpdateLocationInput,
+  type WeatherConditions as WeatherConditionsDTO,
   type WeatherForecastResponse,
+  weatherConditionsSchema,
   weatherForecastSchema,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
@@ -10,8 +12,8 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { Location, WeatherForecast } from '../models/weather.model';
-import { toLocation, toWeatherForecast } from './weather.mapper';
+import type { Location, WeatherConditions, WeatherForecast } from '../models/weather.model';
+import { toLocation, toWeatherConditions, toWeatherForecast } from './weather.mapper';
 
 export class WeatherService {
   readonly #httpClient: HttpClient;
@@ -37,6 +39,23 @@ export class WeatherService {
     }
 
     return ok(toWeatherForecast(parsed.data));
+  };
+
+  getConditions = async (): Promise<Result<WeatherConditions, ApiError>> => {
+    const result = await this.#httpClient.get<WeatherConditionsDTO>('v1/weather/conditions');
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = weatherConditionsSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[WeatherService] Invalid getConditions response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toWeatherConditions(parsed.data));
   };
 
   updateLocation = async (input: UpdateLocationInput): Promise<Result<Location, ApiError>> => {

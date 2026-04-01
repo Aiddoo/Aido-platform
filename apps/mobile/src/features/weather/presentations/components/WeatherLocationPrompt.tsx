@@ -1,6 +1,7 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
 import { HStack, Text } from '@src/shared/ui';
+import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { useMutation } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { PressableFeedback } from 'heroui-native';
@@ -44,7 +45,7 @@ export function WeatherLocationPrompt() {
       className="rounded-xl bg-gray-1 px-4 py-3"
     >
       <HStack align="center" gap={8}>
-        <Text size="b3">📍</Text>
+        <WeatherClearIcon width={16} height={16} colorClassName="text-gray-7" />
         <Text size="b3" weight="medium" shade={7} className="flex-1">
           위치를 등록하면 날씨를 볼 수 있어요
         </Text>

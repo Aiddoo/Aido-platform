@@ -15,8 +15,8 @@ export type HourlyForecast = z.infer<typeof hourlyForecastSchema>;
 
 export const dailyForecastSchema = z.object({
   date: z.string().describe('예보 날짜 (YYYY-MM-DD)'),
-  skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
-  precipitationType: z.enum(precipitationTypeValues).describe('강수 형태'),
+  skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
+  precipitationType: z.enum(PRECIPITATION_TYPES).describe('강수 형태'),
   precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
   temperatureMin: z.number().describe('최저 기온 (°C)'),
   temperatureMax: z.number().describe('최고 기온 (°C)'),

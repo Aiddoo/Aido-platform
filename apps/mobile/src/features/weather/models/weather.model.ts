@@ -12,6 +12,27 @@ export const HourlyForecastSchema = z.object({
 
 export type HourlyForecast = z.infer<typeof HourlyForecastSchema>;
 
+export const DailyForecastSchema = z.object({
+  date: z.string(),
+  skyCondition: z.enum(SKY_CONDITIONS),
+  precipitationType: z.enum(PRECIPITATION_TYPES),
+  precipitationProbability: z.number().int().min(0).max(100),
+  temperatureMin: z.number(),
+  temperatureMax: z.number(),
+});
+
+export type DailyForecast = z.infer<typeof DailyForecastSchema>;
+
+export const WeatherConditionsSchema = z.object({
+  feelsLikeTemperature: z.number().nullable(),
+  sunrise: z.string().nullable(),
+  sunset: z.string().nullable(),
+  pm10: z.number().nullable(),
+  pm25: z.number().nullable(),
+});
+
+export type WeatherConditions = z.infer<typeof WeatherConditionsSchema>;
+
 export const WeatherForecastSchema = z.object({
   date: z.date(),
   skyCondition: z.enum(SKY_CONDITIONS),
@@ -22,6 +43,7 @@ export const WeatherForecastSchema = z.object({
   humidity: z.number().int().min(0).max(100),
   windSpeed: z.number(),
   hourlyForecasts: z.array(HourlyForecastSchema),
+  dailyForecasts: z.array(DailyForecastSchema).optional().default([]),
 });
 
 export type WeatherForecast = z.infer<typeof WeatherForecastSchema>;
