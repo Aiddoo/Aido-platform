@@ -76,7 +76,16 @@ function WeatherForecastBadge() {
       );
     }
 
-    return null;
+    return (
+      <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+        <HStack align="center" gap={4}>
+          <WeatherClearIcon width={18} height={18} colorClassName="text-gray-6" />
+          <Text size="b4" shade={6}>
+            날씨
+          </Text>
+        </HStack>
+      </Pressable>
+    );
   }
 
   if (!forecast) return null;
