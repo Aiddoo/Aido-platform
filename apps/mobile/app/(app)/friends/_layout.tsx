@@ -46,7 +46,6 @@ const FriendsLayout = () => {
         }}
       />
       <Stack.Screen name="add" options={{ title: '' }} />
-      <Stack.Screen name="[id]" options={{ title: '친구 프로필' }} />
     </Stack>
   );
 };

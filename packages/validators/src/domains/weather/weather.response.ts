@@ -1,23 +1,22 @@
 import { z } from 'zod';
 import { datetimeSchema } from '../../common/datetime';
-import { PRECIPITATION_TYPE, SKY_CONDITION } from './weather.constants';
-
-const skyConditionValues = Object.values(SKY_CONDITION) as [string, ...string[]];
-const precipitationTypeValues = Object.values(PRECIPITATION_TYPE) as [string, ...string[]];
+import { PRECIPITATION_TYPES, SKY_CONDITIONS } from './weather.constants';
 
 export const hourlyForecastSchema = z.object({
   hour: z.number().int().min(0).max(23).describe('시간 (0-23)'),
   temperature: z.number().describe('기온 (°C)'),
-  skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
+  skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
   precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
+  precipitationAmount: z.number().min(0).describe('1시간 강수량 (mm)'),
+  snowAmount: z.number().min(0).describe('1시간 신적설 (cm)'),
 });
 
 export type HourlyForecast = z.infer<typeof hourlyForecastSchema>;
 
 export const dailyForecastSchema = z.object({
   date: z.string().describe('예보 날짜 (YYYY-MM-DD)'),
-  skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
-  precipitationType: z.enum(precipitationTypeValues).describe('강수 형태'),
+  skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
+  precipitationType: z.enum(PRECIPITATION_TYPES).describe('강수 형태'),
   precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
   temperatureMin: z.number().describe('최저 기온 (°C)'),
   temperatureMax: z.number().describe('최고 기온 (°C)'),
@@ -39,8 +38,8 @@ export type WeatherConditions = z.infer<typeof weatherConditionsSchema>;
 export const weatherForecastSchema = z
   .object({
     date: datetimeSchema.describe('예보 날짜'),
-    skyCondition: z.enum(skyConditionValues).describe('하늘 상태'),
-    precipitationType: z.enum(precipitationTypeValues).describe('강수 형태'),
+    skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
+    precipitationType: z.enum(PRECIPITATION_TYPES).describe('강수 형태'),
     precipitationProbability: z.number().int().min(0).max(100).describe('강수 확률 (%)'),
     temperatureMin: z.number().describe('최저 기온 (°C)'),
     temperatureMax: z.number().describe('최고 기온 (°C)'),
@@ -60,8 +59,22 @@ export const weatherForecastSchema = z
       humidity: 45,
       windSpeed: 2.5,
       hourlyForecasts: [
-        { hour: 9, temperature: 12, skyCondition: 'CLEAR', precipitationProbability: 0 },
-        { hour: 15, temperature: 18, skyCondition: 'PARTLY_CLOUDY', precipitationProbability: 10 },
+        {
+          hour: 9,
+          temperature: 12,
+          skyCondition: 'CLEAR',
+          precipitationProbability: 0,
+          precipitationAmount: 0,
+          snowAmount: 0,
+        },
+        {
+          hour: 15,
+          temperature: 18,
+          skyCondition: 'PARTLY_CLOUDY',
+          precipitationProbability: 10,
+          precipitationAmount: 0.5,
+          snowAmount: 0,
+        },
       ],
       dailyForecasts: [
         {

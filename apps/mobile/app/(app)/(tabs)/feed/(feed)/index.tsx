@@ -5,6 +5,7 @@ import { TodoList } from '@src/features/todo/presentations/components/TodoList/T
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
@@ -22,6 +23,7 @@ export default function MyFeedScreen() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
+      queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_KEYS.all }),
     ]),
   );
 
