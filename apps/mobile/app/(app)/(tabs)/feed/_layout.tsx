@@ -65,9 +65,9 @@ function WeatherForecastBadge() {
   return (
     <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
       <HStack align="center" gap={6} px={4}>
-        <ForecastIcon width={16} height={16} colorClassName="text-gray-7" />
+        <ForecastIcon width={18} height={18} colorClassName="text-gray-7" />
 
-        <Text size="e1" weight="semibold" shade={8}>
+        <Text size="b4" weight="semibold" shade={8}>
           {Math.round(forecast.temperatureMin)}°/{Math.round(forecast.temperatureMax)}°
         </Text>
       </HStack>
@@ -86,8 +86,8 @@ WeatherForecastBadge.Error = function ErrorFallback({ error }: { error: unknown 
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
         <HStack align="center" gap={4}>
-          <WeatherClearIcon width={14} height={14} colorClassName="text-gray-6" />
-          <Text size="e2" shade={6}>
+          <WeatherClearIcon width={18} height={18} colorClassName="text-gray-6" />
+          <Text size="b4" shade={6}>
             날씨 설정
           </Text>
         </HStack>

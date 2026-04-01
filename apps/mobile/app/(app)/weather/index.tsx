@@ -121,9 +121,7 @@ export default function WeatherDetailScreen() {
         <TimePaletteContext.Provider value={palette}>
           <View className="flex-1" style={{ backgroundColor: palette.bg }}>
             <GradientBackground />
-            <Box p={16} style={{ marginTop: insets.top + 40 }}>
-              <WeatherLocationPrompt />
-            </Box>
+            <WeatherLocationPrompt />
           </View>
         </TimePaletteContext.Provider>
       );

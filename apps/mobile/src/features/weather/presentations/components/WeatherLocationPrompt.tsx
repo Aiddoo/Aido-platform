@@ -1,12 +1,9 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
-import { HStack, Text } from '@src/shared/ui';
-import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
+import { Result } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import * as Location from 'expo-location';
-import { PressableFeedback } from 'heroui-native';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
 import { useUpdateLocationMutationOptions } from '../queries/use-update-location-mutation-options';
 
 export function WeatherLocationPrompt() {
@@ -39,18 +36,14 @@ export function WeatherLocationPrompt() {
   }, [requestPermissionAndExecute, toast, updateLocation]);
 
   return (
-    <PressableFeedback
-      onPress={handlePress}
-      isDisabled={isRequesting}
-      className="rounded-xl bg-gray-1 px-4 py-3"
-    >
-      <HStack align="center" gap={8}>
-        <WeatherClearIcon width={16} height={16} colorClassName="text-gray-7" />
-        <Text size="b3" weight="medium" shade={7} className="flex-1">
-          위치를 등록하면 날씨를 볼 수 있어요
-        </Text>
-        {isRequesting && <ActivityIndicator size="small" />}
-      </HStack>
-    </PressableFeedback>
+    <Result
+      title="위치를 등록하면 날씨를 볼 수 있어요"
+      description="현재 위치로 날씨를 알려드려요"
+      button={
+        <Result.Button onPress={handlePress} isDisabled={isRequesting} isLoading={isRequesting}>
+          위치 등록하기
+        </Result.Button>
+      }
+    />
   );
 }
