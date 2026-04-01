@@ -7,12 +7,11 @@ import {
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
-import { HStack, QueryErrorBoundary, Text } from '@src/shared/ui';
+import { HStack, Text } from '@src/shared/ui';
 import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { formatDate } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
-import { Suspense } from 'react';
 import { Pressable } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
@@ -30,11 +29,7 @@ export default function FeedLayout() {
         contentStyle: { backgroundColor: stackBg.backgroundColor as string },
         headerLeft: () => (
           <HStack align="center" pl={4}>
-            <QueryErrorBoundary fallback={WeatherForecastBadge.Error}>
-              <Suspense fallback={<WeatherForecastBadge.Loading />}>
-                <WeatherForecastBadge />
-              </Suspense>
-            </QueryErrorBoundary>
+            <WeatherForecastBadge />
           </HStack>
         ),
         headerRight: () => (
@@ -56,7 +51,35 @@ function WeatherForecastBadge() {
   const router = useRouter();
   const [selectedDate] = useFeedDate();
   const date = formatDate(selectedDate);
-  const { data: forecast } = useSuspenseQuery(useGetForecastQueryOptions(date));
+  const {
+    data: forecast,
+    error,
+    isPending,
+  } = useQuery({
+    ...useGetForecastQueryOptions(date),
+    placeholderData: keepPreviousData,
+  });
+
+  if (isPending && !forecast) return null;
+
+  if (error) {
+    if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902)) {
+      return (
+        <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+          <HStack align="center" gap={4}>
+            <WeatherClearIcon width={18} height={18} colorClassName="text-gray-6" />
+            <Text size="b4" shade={6}>
+              날씨 설정
+            </Text>
+          </HStack>
+        </Pressable>
+      );
+    }
+
+    return null;
+  }
+
+  if (!forecast) return null;
 
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
@@ -74,26 +97,3 @@ function WeatherForecastBadge() {
     </Pressable>
   );
 }
-
-WeatherForecastBadge.Loading = function Loading() {
-  return null;
-};
-
-WeatherForecastBadge.Error = function ErrorFallback({ error }: { error: unknown }) {
-  const router = useRouter();
-
-  if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902)) {
-    return (
-      <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
-        <HStack align="center" gap={4}>
-          <WeatherClearIcon width={18} height={18} colorClassName="text-gray-6" />
-          <Text size="b4" shade={6}>
-            날씨 설정
-          </Text>
-        </HStack>
-      </Pressable>
-    );
-  }
-
-  return null;
-};
