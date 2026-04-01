@@ -1,6 +1,7 @@
 import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { now } from "@/common/date/utils/core";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -262,7 +263,11 @@ export class AiReportService {
 			this.aiReportRepository.findLatest(userId, type),
 		]);
 
-		const prevTips = prevReport ? (prevReport.aiTips as string[] | null) : null;
+		const prevTipsResult = z
+			.array(z.string())
+			.nullable()
+			.safeParse(prevReport?.aiTips ?? null);
+		const prevTips = prevTipsResult.success ? prevTipsResult.data : null;
 
 		// 2. AI 콘텐츠 생성
 		const aiContent = await this.reportGeneratorService.generate({
