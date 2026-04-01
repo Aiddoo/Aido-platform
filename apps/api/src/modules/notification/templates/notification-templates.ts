@@ -1,6 +1,7 @@
 import { josa } from "es-hangul";
 
 import type { NotificationType } from "@/generated/prisma/client";
+import type { WeatherForecast } from "@/modules/weather/providers/weather-provider.interface";
 
 /**
  * 알림 메시지 템플릿 (듀오링고 스타일: 짧고 위트있게, 살짝 찔리지만 웃기게)
@@ -253,6 +254,83 @@ export const SCHEDULER_TEMPLATES = {
 				body: "지금 하나 끝내면 세이브 완료",
 			},
 		],
+	} satisfies NotificationTemplate,
+} as const;
+
+// =============================================================================
+// Weather Templates
+// =============================================================================
+
+export const WEATHER_TEMPLATES = {
+	MORNING_CLEAR: {
+		title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
+		body: "할 일 해치우기 딱 좋은 날씨야",
+		type: "WEATHER_MORNING" as NotificationType,
+		variants: [
+			{
+				title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
+				body: "할 일 해치우기 딱 좋은 날씨야",
+			},
+			{
+				title: "{tempMin}~{tempMax}°C, 오늘 {skyLabel}",
+				body: "밖에서 할 일 있으면 오늘이 찬스!",
+			},
+		],
+	} satisfies NotificationTemplate,
+	MORNING_RAIN: {
+		title: "☂ 오늘 비 올 확률 {precipProb}%",
+		body: "우산 챙기고 할 일 하러 가자! {tempMin}~{tempMax}°C",
+		type: "WEATHER_MORNING" as NotificationType,
+		variants: [
+			{
+				title: "☂ 오늘 비 올 확률 {precipProb}%",
+				body: "우산 챙기고 할 일 하러 가자! {tempMin}~{tempMax}°C",
+			},
+			{
+				title: "오늘 비 소식이야 ({precipProb}%)",
+				body: "실내 할 일부터 먼저 해치우는 건 어때? {tempMin}~{tempMax}°C",
+			},
+		],
+	} satisfies NotificationTemplate,
+	MORNING_SNOW: {
+		title: "❄ 오늘 눈 올 확률 {precipProb}%",
+		body: "따뜻하게 입고 할 일 시작하자! {tempMin}~{tempMax}°C",
+		type: "WEATHER_MORNING" as NotificationType,
+	} satisfies NotificationTemplate,
+	EVENING_CLEAR: {
+		title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
+		body: "내일 할 일 미리 정해두면 아침이 편해",
+		type: "WEATHER_EVENING" as NotificationType,
+		variants: [
+			{
+				title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
+				body: "내일 할 일 미리 정해두면 아침이 편해",
+			},
+			{
+				title: "내일 날씨: {skyLabel} {tempMin}~{tempMax}°C",
+				body: "내일도 해치울 거 많지? 날씨는 도와줄게",
+			},
+		],
+	} satisfies NotificationTemplate,
+	EVENING_RAIN: {
+		title: "☂ 내일 비 올 확률 {precipProb}%",
+		body: "우산 미리 챙겨두고, 내일 할 일도 정리해둬! {tempMin}~{tempMax}°C",
+		type: "WEATHER_EVENING" as NotificationType,
+		variants: [
+			{
+				title: "☂ 내일 비 올 확률 {precipProb}%",
+				body: "우산 미리 챙겨두고, 내일 할 일도 정리해둬! {tempMin}~{tempMax}°C",
+			},
+			{
+				title: "내일 비 소식이야 ({precipProb}%)",
+				body: "비 오면 실내 할 일 몰아서 하기 좋아! {tempMin}~{tempMax}°C",
+			},
+		],
+	} satisfies NotificationTemplate,
+	EVENING_SNOW: {
+		title: "❄ 내일 눈 올 확률 {precipProb}%",
+		body: "내일 추우니까 실내 할 일 위주로 계획 세워봐! {tempMin}~{tempMax}°C",
+		type: "WEATHER_EVENING" as NotificationType,
 	} satisfies NotificationTemplate,
 } as const;
 
@@ -1115,4 +1193,86 @@ export class NotificationMessageBuilder {
 		const template = templateMap[type];
 		return { title: template.title, body: template.body };
 	}
+
+	// =============================================
+	// Weather
+	// =============================================
+
+	static weatherMorning(forecast: WeatherForecast): {
+		title: string;
+		body: string;
+	} {
+		const skyLabel = SKY_LABEL_MAP[forecast.skyCondition] ?? "맑음";
+		const vars = {
+			skyLabel,
+			tempMin: Math.round(forecast.temperatureMin),
+			tempMax: Math.round(forecast.temperatureMax),
+			precipProb: forecast.precipitationProbability,
+		};
+
+		const template =
+			forecast.precipitationType === "SNOW"
+				? WEATHER_TEMPLATES.MORNING_SNOW
+				: forecast.precipitationProbability >= 40
+					? WEATHER_TEMPLATES.MORNING_RAIN
+					: WEATHER_TEMPLATES.MORNING_CLEAR;
+
+		const { title, body } = pickVariant(template);
+		return {
+			title: fillTemplate(title, vars),
+			body: fillTemplate(body, vars),
+		};
+	}
+
+	static weatherEvening(tomorrowForecast: WeatherForecast): {
+		title: string;
+		body: string;
+	} {
+		const skyLabel = SKY_LABEL_MAP[tomorrowForecast.skyCondition] ?? "맑음";
+		const vars = {
+			skyLabel,
+			tempMin: Math.round(tomorrowForecast.temperatureMin),
+			tempMax: Math.round(tomorrowForecast.temperatureMax),
+			precipProb: tomorrowForecast.precipitationProbability,
+		};
+
+		const template =
+			tomorrowForecast.precipitationType === "SNOW"
+				? WEATHER_TEMPLATES.EVENING_SNOW
+				: tomorrowForecast.precipitationProbability >= 40
+					? WEATHER_TEMPLATES.EVENING_RAIN
+					: WEATHER_TEMPLATES.EVENING_CLEAR;
+
+		const { title, body } = pickVariant(template);
+		return {
+			title: fillTemplate(title, vars),
+			body: fillTemplate(body, vars),
+		};
+	}
+
+	/**
+	 * 위치 미설정 유저용 아침 날씨 폴백 메시지
+	 */
+	static weatherMorningFallback(): { title: string; body: string } {
+		return {
+			title: "오늘 날씨 어떨까?",
+			body: "위치 설정하면 날씨에 맞는 할 일 팁도 알려줄게",
+		};
+	}
+
+	/**
+	 * 위치 미설정 유저용 저녁 날씨 폴백 메시지
+	 */
+	static weatherEveningFallback(): { title: string; body: string } {
+		return {
+			title: "내일 날씨 궁금하지 않아?",
+			body: "위치 설정하면 내일 계획 세울 때 날씨도 같이 알려줄게",
+		};
+	}
 }
+
+const SKY_LABEL_MAP: Record<string, string> = {
+	CLEAR: "맑음",
+	PARTLY_CLOUDY: "구름많음",
+	CLOUDY: "흐림",
+};

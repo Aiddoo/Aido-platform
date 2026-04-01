@@ -13,6 +13,12 @@ export interface UpdatePreferenceData {
 	eveningReminderHour?: number;
 	eveningReminderMinute?: number;
 	timeFormat?: TimeFormat;
+	weatherMorningEnabled?: boolean;
+	weatherMorningHour?: number;
+	weatherMorningMinute?: number;
+	weatherEveningEnabled?: boolean;
+	weatherEveningHour?: number;
+	weatherEveningMinute?: number;
 }
 
 @Injectable()
@@ -128,6 +134,24 @@ export class UserPreferenceRepository {
 			}),
 			...(data.timeFormat !== undefined && {
 				timeFormat: data.timeFormat,
+			}),
+			...(data.weatherMorningEnabled !== undefined && {
+				weatherMorningEnabled: data.weatherMorningEnabled,
+			}),
+			...(data.weatherMorningHour !== undefined && {
+				weatherMorningHour: data.weatherMorningHour,
+			}),
+			...(data.weatherMorningMinute !== undefined && {
+				weatherMorningMinute: data.weatherMorningMinute,
+			}),
+			...(data.weatherEveningEnabled !== undefined && {
+				weatherEveningEnabled: data.weatherEveningEnabled,
+			}),
+			...(data.weatherEveningHour !== undefined && {
+				weatherEveningHour: data.weatherEveningHour,
+			}),
+			...(data.weatherEveningMinute !== undefined && {
+				weatherEveningMinute: data.weatherEveningMinute,
 			}),
 		};
 	}

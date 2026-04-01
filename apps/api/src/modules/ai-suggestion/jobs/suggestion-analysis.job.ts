@@ -82,6 +82,14 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 					select: {
 						id: true,
 						preference: { select: { timezone: true } },
+						location: {
+							select: {
+								gridX: true,
+								gridY: true,
+								latitude: true,
+								longitude: true,
+							},
+						},
 					},
 					orderBy: { id: "asc" },
 					take,
@@ -92,6 +100,14 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 					data: {
 						userId: user.id,
 						timezone: user.preference?.timezone ?? "Asia/Seoul",
+						weatherGrid: user.location
+							? {
+									gridX: user.location.gridX,
+									gridY: user.location.gridY,
+									lat: user.location.latitude,
+									lon: user.location.longitude,
+								}
+							: null,
 					} satisfies AiSuggestionAnalyzeData,
 					opts: {
 						...AI_PER_USER_JOB_OPTS,

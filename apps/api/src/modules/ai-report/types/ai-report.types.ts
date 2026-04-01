@@ -48,6 +48,7 @@ export interface GenerateReportParams {
 	aggregatedData: AggregatedReportData;
 	type: ReportType;
 	periodLabel: string;
+	prevTips: string[] | null;
 }
 
 /**

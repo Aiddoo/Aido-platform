@@ -3,6 +3,7 @@ import {
   EVENING_REMINDER_HOUR_RANGE,
   MORNING_REMINDER_HOUR_RANGE,
   TIME_FORMATS,
+  WEATHER_HOUR_RANGE,
 } from './user-preference.constants';
 
 export const updatePreferenceSchema = z
@@ -47,6 +48,36 @@ export const updatePreferenceSchema = z
       .enum(TIME_FORMATS)
       .optional()
       .describe('시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제)'),
+    weatherMorningEnabled: z.boolean().optional().describe('오전 날씨 알림 활성화 여부'),
+    weatherMorningHour: z
+      .number()
+      .int()
+      .min(WEATHER_HOUR_RANGE.MIN)
+      .max(WEATHER_HOUR_RANGE.MAX)
+      .optional()
+      .describe('오전 날씨 알림 시간 (0-23)'),
+    weatherMorningMinute: z
+      .number()
+      .int()
+      .min(0)
+      .max(59)
+      .optional()
+      .describe('오전 날씨 알림 분 (0-59)'),
+    weatherEveningEnabled: z.boolean().optional().describe('오후 날씨 알림 활성화 여부'),
+    weatherEveningHour: z
+      .number()
+      .int()
+      .min(WEATHER_HOUR_RANGE.MIN)
+      .max(WEATHER_HOUR_RANGE.MAX)
+      .optional()
+      .describe('오후 날씨 알림 시간 (0-23)'),
+    weatherEveningMinute: z
+      .number()
+      .int()
+      .min(0)
+      .max(59)
+      .optional()
+      .describe('오후 날씨 알림 분 (0-59)'),
   })
   .refine(
     (data) =>
@@ -57,7 +88,13 @@ export const updatePreferenceSchema = z
       data.morningReminderMinute !== undefined ||
       data.eveningReminderHour !== undefined ||
       data.eveningReminderMinute !== undefined ||
-      data.timeFormat !== undefined,
+      data.timeFormat !== undefined ||
+      data.weatherMorningEnabled !== undefined ||
+      data.weatherMorningHour !== undefined ||
+      data.weatherMorningMinute !== undefined ||
+      data.weatherEveningEnabled !== undefined ||
+      data.weatherEveningHour !== undefined ||
+      data.weatherEveningMinute !== undefined,
     { message: '최소 하나의 설정 값이 필요합니다' },
   );
 

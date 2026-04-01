@@ -11,6 +11,10 @@ import * as Haptics from 'expo-haptics';
 import type { Preference } from '../../models/auth.model';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
+type UpdatePreferenceArgs = UpdatePreferenceInput & {
+  trackAs?: string;
+};
+
 export const useUpdatePreferenceMutationOptions = () => {
   const authService = useAuthService();
   const { trackEvent } = useTrack();
@@ -18,11 +22,11 @@ export const useUpdatePreferenceMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async (input: UpdatePreferenceInput) => {
+    mutationFn: async ({ trackAs: _, ...input }: UpdatePreferenceArgs) => {
       const result = await authService.updatePreference(input);
       return unwrap(result);
     },
-    onMutate: async (input) => {
+    onMutate: async ({ trackAs: _, ...input }) => {
       await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.preference() });
 
       const previousData = queryClient.getQueryData<Preference>(AUTH_QUERY_KEYS.preference());
@@ -34,12 +38,16 @@ export const useUpdatePreferenceMutationOptions = () => {
 
       return { previousData };
     },
-    onSuccess: (data, input) => {
-      for (const key of Object.keys(input)) {
+    onSuccess: (data, { trackAs, ...input }) => {
+      if (trackAs) {
         trackEvent('settings_changed', {
-          setting: key,
-          value: String(input[key as keyof typeof input]),
+          setting: trackAs,
+          value: String(Object.values(input)[0]),
         });
+      } else {
+        for (const [setting, value] of Object.entries(input)) {
+          trackEvent('settings_changed', { setting, value: String(value) });
+        }
       }
       // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
       queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), data);

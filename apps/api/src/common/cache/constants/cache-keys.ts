@@ -28,6 +28,12 @@ export const CacheKeys = {
 		UNREAD_COUNT: 2 * 60_000,
 		/** 활성 타임존 목록 - 5분 (타임존 변경 빈도 매우 낮음) */
 		ACTIVE_TIMEZONES: 5 * 60_000,
+		/** 날씨 예보 - 3시간 (기상청 갱신 주기) */
+		WEATHER_FORECAST: 3 * 60 * 60_000,
+		/** 날씨 예보 최신 fallback - 24시간 (KMA 장애 대비) */
+		WEATHER_FORECAST_LATEST: 24 * 60 * 60_000,
+		/** 날씨 부가 정보 - 1시간 (미세먼지 실시간성 기준) */
+		WEATHER_CONDITIONS: 60 * 60_000,
 	},
 
 	// === 키 빌더 ===
@@ -105,7 +111,39 @@ export const CacheKeys = {
 	 */
 	allTimezones: () => "scheduler:all-tz",
 
+	/**
+	 * 날씨 예보 캐시 키 (격자 + 발표시간 기준)
+	 * @example weather:forecast:60:127:20260401:0800
+	 */
+	weatherForecast: (
+		gridX: number,
+		gridY: number,
+		baseDate: string,
+		baseTime: string,
+	) => `weather:forecast:${gridX}:${gridY}:${baseDate}:${baseTime}`,
+
+	/**
+	 * 날씨 예보 최신 fallback 캐시 키 (격자 기준, 발표시간 무관)
+	 * @example weather:forecast:latest:60:127
+	 */
+	weatherForecastLatest: (gridX: number, gridY: number) =>
+		`weather:forecast:latest:${gridX}:${gridY}`,
+
+	/**
+	 * 날씨 부가 정보 캐시 키 (격자 기준)
+	 * @example weather:conditions:60:127
+	 */
+	weatherConditions: (gridX: number, gridY: number) =>
+		`weather:conditions:${gridX}:${gridY}`,
+
 	// === 패턴 빌더 (와일드카드) ===
+
+	/**
+	 * 특정 격자의 모든 날씨 예보 캐시 패턴
+	 * @example weather:forecast:60:127:*
+	 */
+	weatherForecastPattern: (gridX: number, gridY: number) =>
+		`weather:forecast:${gridX}:${gridY}:*`,
 
 	/**
 	 * 특정 사용자의 모든 친구 관계 캐시 패턴

@@ -43,6 +43,12 @@ export const toPreference = (dto: PreferenceResponse): Preference => ({
   eveningReminderHour: dto.eveningReminderHour,
   eveningReminderMinute: dto.eveningReminderMinute,
   timeFormat: dto.timeFormat,
+  weatherMorningEnabled: dto.weatherMorningEnabled,
+  weatherMorningHour: dto.weatherMorningHour,
+  weatherMorningMinute: dto.weatherMorningMinute,
+  weatherEveningEnabled: dto.weatherEveningEnabled,
+  weatherEveningHour: dto.weatherEveningHour,
+  weatherEveningMinute: dto.weatherEveningMinute,
 });
 
 export const toConsent = (dto: ConsentResponse): Consent => ({

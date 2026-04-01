@@ -62,6 +62,7 @@ export {
   RepeatIcon,
   SearchIcon,
   SendIcon,
+  SettingIcon,
   ShareIcon,
   type StyledIconType,
   SunIcon,

@@ -36,6 +36,30 @@ export function toDateStringOrNull(date: Date | null): string | null {
 }
 
 /**
+ * Date → 공공데이터포털 API 날짜 (YYYYMMDD)
+ *
+ * 로컬 타임존(서버 TZ=Asia/Seoul) 기준으로 변환합니다.
+ * 기상청, 천문연구원, 에어코리아 등 공공 API 호출용.
+ *
+ * @example toCompactDateString(new Date(2026, 2, 18)) // "20260318"
+ */
+export function toCompactDateString(date: Date): string {
+	return dayjs(date).format(DATE_FORMAT.DATE_COMPACT);
+}
+
+/**
+ * Date → 공공데이터포털 API 날짜+시간 (YYYYMMDDHH)
+ *
+ * 로컬 타임존(서버 TZ=Asia/Seoul) 기준으로 변환합니다.
+ * 기상청 생활기상지수 API 등 시간 단위 API 호출용.
+ *
+ * @example toCompactDateHourString(new Date(2026, 2, 18, 14, 30)) // "2026031814"
+ */
+export function toCompactDateHourString(date: Date): string {
+	return dayjs(date).format(DATE_FORMAT.DATE_HOUR_COMPACT);
+}
+
+/**
  * ISO 주번호 식별자 (예: "2026-W10")
  *
  * BullMQ jobId 중복 방지용으로 사용합니다.

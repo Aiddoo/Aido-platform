@@ -18,6 +18,7 @@ import { TodoService } from '@src/features/todo/services/todo.service';
 import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import { UserService } from '@src/features/user/services/user.service';
+import { WeatherService } from '@src/features/weather/services/weather.service';
 
 import { ENV } from '@src/shared/config/env';
 import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
@@ -60,6 +61,7 @@ export interface DIContainer {
   userService: UserService;
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
+  weatherService: WeatherService;
 }
 
 const DIContext = createContext<DIContainer | null>(null);
@@ -138,6 +140,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const revenueCatSdkManager = new RevenueCatSdkManager(logger);
     const subscriptionService = new SubscriptionService(revenueCatSdkManager, logger);
 
+    // Weather
+    const weatherService = new WeatherService(authHttpClient);
+
     return {
       storage,
       logger,
@@ -156,6 +161,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       userService,
       revenueCatSdkManager,
       subscriptionService,
+      weatherService,
     };
   });
 
@@ -192,3 +198,4 @@ export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
+export const useWeatherService = () => useDI().weatherService;

@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -282,6 +282,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           faceIDPermission:
             // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
             '${PRODUCT_NAME}이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
+        },
+      ],
+
+      [
+        'expo-location',
+        {
+          locationWhenInUsePermission:
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: iOS/Android 빌드 시스템 플레이스홀더
+            '${PRODUCT_NAME}이(가) 현재 위치 기반 날씨 정보를 제공하기 위해 위치에 접근하려고 합니다.',
+          locationAlwaysAndWhenInUsePermission: false,
+          locationAlwaysPermission: false,
+          isIosBackgroundLocationEnabled: false,
+          isAndroidBackgroundLocationEnabled: false,
         },
       ],
 

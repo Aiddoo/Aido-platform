@@ -44,7 +44,6 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 				OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				preference: {
 					timezone: tz,
-					pushEnabled: true,
 					morningReminderHour: localHour,
 					morningReminderMinute: localMinute,
 				},
@@ -64,7 +63,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 				where: {
 					subscriptionStatus: { not: "ACTIVE" },
 					role: { not: "ADMIN" },
-					preference: { timezone: tz, pushEnabled: true },
+					preference: { timezone: tz },
 				},
 				select: selectClause,
 			});

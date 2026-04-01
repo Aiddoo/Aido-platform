@@ -71,7 +71,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		// ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
 		await this.weeklyAchievementService.upsertMany(records);
 
-		// ─── C. 알림 발송 (pushEnabled + completed > 0 + dedup) ────
+		// ─── C. 알림 발송 (completed > 0 + dedup) ────
 		const notifiableUserIds = records
 			.filter((r) => r.completedTodos > 0)
 			.map((r) => r.userId);
@@ -80,27 +80,15 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const [pushEnabledUsers, alreadyNotified] = await Promise.all([
-			this.database.user.findMany({
-				where: {
-					id: { in: notifiableUserIds },
-					preference: { pushEnabled: true },
-				},
-				select: { id: true },
-			}),
-			this.notificationService.findAlreadyNotifiedUserIds({
+		const alreadyNotified =
+			await this.notificationService.findAlreadyNotifiedUserIds({
 				userIds: notifiableUserIds,
 				type: "WEEKLY_ACHIEVEMENT",
 				notificationDate: today,
-			}),
-		]);
+			});
 
-		const pushEnabledSet = new Set(pushEnabledUsers.map((u) => u.id));
 		const finalRecords = records.filter(
-			(r) =>
-				r.completedTodos > 0 &&
-				pushEnabledSet.has(r.userId) &&
-				!alreadyNotified.has(r.userId),
+			(r) => r.completedTodos > 0 && !alreadyNotified.has(r.userId),
 		);
 
 		if (finalRecords.length === 0) {

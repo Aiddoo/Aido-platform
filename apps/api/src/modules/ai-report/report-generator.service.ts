@@ -10,7 +10,7 @@ import {
 import type { GeneratedReportContent, GenerateReportParams } from "./types";
 
 /** AI 리포트 생성 기본 설정 */
-const REPORT_AI_MAX_TOKENS = 500;
+const REPORT_AI_MAX_TOKENS = 800;
 const REPORT_AI_TEMPERATURE = 0.7;
 
 /**
@@ -44,7 +44,9 @@ export class ReportGeneratorService {
 		}
 
 		try {
-			const prompt = buildReportPrompt(aggregatedData, periodLabel, type);
+			const prompt = buildReportPrompt(aggregatedData, periodLabel, type, {
+				prevTips: params.prevTips,
+			});
 
 			const result = await this.aiProvider.generateStructured({
 				prompt,

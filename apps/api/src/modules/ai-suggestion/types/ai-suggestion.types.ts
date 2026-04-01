@@ -23,3 +23,62 @@ export interface TodoSummaryForAnalysis {
 	completed: boolean;
 	categoryName: string;
 }
+
+/**
+ * 요일별 완료율
+ */
+export interface DayCompletionRate {
+	day: DayOfWeek;
+	total: number;
+	completed: number;
+}
+
+/**
+ * 시간대별 완료율
+ */
+export interface TimeCompletionRate {
+	morning: { count: number; rate: number };
+	afternoon: { count: number; rate: number };
+}
+
+/**
+ * 카테고리별 완료율
+ */
+export interface CategoryCompletionRate {
+	name: string;
+	total: number;
+	completed: number;
+	rate: number;
+}
+
+/**
+ * 사용자 스트릭 정보
+ */
+export interface UserStreakInfo {
+	currentStreak: number;
+	longestStreak: number;
+}
+
+/**
+ * 제안 수락/거절 이력 항목
+ */
+export interface SuggestionHistoryItem {
+	title: string;
+	status: "ACCEPTED" | "DISMISSED";
+}
+
+/**
+ * AI 제안 생성을 위한 사전 계산된 컨텍스트
+ */
+export interface SuggestionContext {
+	todos: TodoSummaryForAnalysis[];
+	dayCompletionRates: string;
+	timeCompletionRates: string;
+	categoryRates: string;
+	streak: string;
+	missingRoutines: string[];
+	weather: string | null;
+	currentDate: string;
+	weeklyReportInsight: string | null;
+	suggestionHistory: SuggestionHistoryItem[];
+}

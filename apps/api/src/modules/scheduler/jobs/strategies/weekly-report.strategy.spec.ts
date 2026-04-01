@@ -60,7 +60,7 @@ describe("WeeklyReportStrategy", () => {
 	// 프리미엄 유저 대상 발송
 	// =========================================================================
 
-	it("프리미엄 pushEnabled 유저에게만 주간 리포트를 발송한다", async () => {
+	it("프리미엄 유저 전체에게 주간 리포트를 발송한다", async () => {
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
@@ -69,12 +69,12 @@ describe("WeeklyReportStrategy", () => {
 
 		expect(result).toEqual({ sent: 1 });
 
-		// AI 리포트는 유료 기능 → 프리미엄 유저만 조회
+		// AI 리포트는 유료 기능 → 프리미엄 유저만 조회 (pushEnabled 필터 없음, 푸시 전송은 PushDeliveryService가 담당)
 		expect(database.user.findMany).toHaveBeenCalledTimes(1);
 		expect(database.user.findMany).toHaveBeenCalledWith(
 			expect.objectContaining({
 				where: expect.objectContaining({
-					preference: { timezone: TZ, pushEnabled: true },
+					preference: { timezone: TZ },
 					OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
 				}),
 			}),

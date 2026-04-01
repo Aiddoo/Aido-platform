@@ -215,6 +215,10 @@ export class TypedConfigService {
 		return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
 	}
 
+	get dataGoKrApiKey(): string | undefined {
+		return this.get("KMA_API_KEY");
+	}
+
 	// ============================================
 	// Cache Config Helpers
 	// ============================================

@@ -19,4 +19,5 @@ export * from './domains/todo';
 export * from './domains/todo-category';
 export * from './domains/user-consent';
 export * from './domains/user-preference';
+export * from './domains/weather';
 export * from './domains/weekly-achievement';

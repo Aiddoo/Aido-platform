@@ -10,6 +10,8 @@ export type {
 	ITimezoneStrategy,
 	TimezoneContext,
 } from "./timezone-reminder-strategy.interface";
+export { WeatherEveningStrategy } from "./weather-evening.strategy";
+export { WeatherMorningStrategy } from "./weather-morning.strategy";
 export { WeeklyAchievementStrategy } from "./weekly-achievement.strategy";
 export { WeeklyReportStrategy } from "./weekly-report.strategy";
 export { WinbackStrategy } from "./winback.strategy";

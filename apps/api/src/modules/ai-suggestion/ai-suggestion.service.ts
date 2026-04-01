@@ -1,10 +1,12 @@
 import {
 	AI_SUGGESTION_LIMITS,
+	dayOfWeekSchema,
 	type RecurringSuggestion as RecurringSuggestionDto,
 	type SuggestionActionResponse,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
@@ -17,11 +19,12 @@ import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
 import {
-	buildDetectPatternsPrompt,
+	buildSuggestionPrompt,
 	type DetectedPatternsResponse,
 	detectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
-import type { TodoSummaryForAnalysis } from "./types";
+import { SuggestionContextBuilder } from "./suggestion-context.builder";
+import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
 
 /**
  * AI 반복 제안 서비스
@@ -38,6 +41,7 @@ export class AiSuggestionService {
 		@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
 		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
+		private readonly contextBuilder: SuggestionContextBuilder,
 	) {}
 
 	/**
@@ -107,7 +111,16 @@ export class AiSuggestionService {
 			});
 		}
 
-		const daysOfWeek = suggestion.daysOfWeek as unknown as string[];
+		const daysOfWeekResult = z
+			.array(dayOfWeekSchema)
+			.safeParse(suggestion.daysOfWeek);
+		if (!daysOfWeekResult.success) {
+			throw BusinessExceptions.invalidParameter({
+				field: "daysOfWeek",
+				reason: "제안의 요일 데이터가 유효하지 않습니다",
+			});
+		}
+		const daysOfWeek = daysOfWeekResult.data;
 		const currentDate = dayjs.utc(now());
 		const startDate = dto.startDate ?? toDateString(currentDate.toDate());
 		const endDate =
@@ -132,7 +145,7 @@ export class AiSuggestionService {
 					categoryId: dto.categoryId,
 					startDate,
 					endDate,
-					daysOfWeek: daysOfWeek as never,
+					daysOfWeek,
 					scheduledTime: suggestion.scheduledTime,
 				},
 				timezone,
@@ -176,42 +189,44 @@ export class AiSuggestionService {
 	async analyzeAndCreateSuggestions(
 		userId: string,
 		timezone: string,
+		weatherGrid?: {
+			gridX: number;
+			gridY: number;
+			lat: number;
+			lon: number;
+		} | null,
 	): Promise<number> {
-		const currentDate = dayjs.utc(now());
-		const from = currentDate
-			.subtract(AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS, "week")
-			.toDate();
-		const to = currentDate.toDate();
-
-		// 1. 최근 할 일 조회
-		const todos = await this.aiSuggestionRepository.findRecentTodos(
+		// 1. 컨텍스트 수집 (통계 분석 + 투두 조회 + 날씨)
+		const context = await this.contextBuilder.build(
 			userId,
-			from,
-			to,
 			timezone,
+			weatherGrid ?? null,
 		);
 
-		if (todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES) {
+		if (context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES) {
 			this.#logger.debug(
-				`제안 분석 스킵: userId=${userId}, todoCount=${todos.length} (최소 ${AI_SUGGESTION_LIMITS.MIN_OCCURRENCES}개 필요)`,
+				`제안 분석 스킵: userId=${userId}, todoCount=${context.todos.length} (최소 ${AI_SUGGESTION_LIMITS.MIN_OCCURRENCES}개 필요)`,
 			);
 			return 0;
 		}
 
-		// 2. AI 패턴 감지
-		const prompt = buildDetectPatternsPrompt(
-			todos,
+		// 2. AI 제안 생성
+		const prompt = buildSuggestionPrompt(
+			context,
 			AI_SUGGESTION_LIMITS.MIN_OCCURRENCES,
 		);
 
 		const aiResult = await this.aiProvider.generateStructured({
 			prompt,
 			schema: detectedPatternsSchema,
-			maxTokens: 1200,
+			maxTokens: 1500,
 			temperature: 0.3,
 		});
 
-		const patterns = this.#filterWeakPatterns(aiResult.output.patterns);
+		const patterns = this.#filterWeakPatterns(
+			aiResult.output.patterns,
+			context,
+		);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -219,6 +234,7 @@ export class AiSuggestionService {
 		}
 
 		// 3. 기존 PENDING 교체 + 만료 정리 + 새 제안 저장 (트랜잭션)
+		const currentDate = dayjs.utc(now());
 		const expiresAt = currentDate
 			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
 			.toDate();
@@ -245,7 +261,7 @@ export class AiSuggestionService {
 					expiresAt,
 					suggestedCategoryId: this.#findSuggestedCategoryId(
 						pattern.matchedTitles,
-						todos,
+						context.todos,
 					),
 				})),
 				tx,
@@ -265,11 +281,24 @@ export class AiSuggestionService {
 	 *
 	 * - 반복 패턴(같은 제목 반복): matchedTitles가 minOccurrences 미만이면 제거
 	 * - 순차/발전 패턴(서로 다른 제목): 2개 이상이면 허용
+	 * - 시즌 추천(matchedTitles 빈 배열): 허용
+	 * - 날씨 컨텍스트 없는데 날씨 관련 제안: 제거
 	 */
 	#filterWeakPatterns(
 		patterns: DetectedPatternsResponse["patterns"],
+		context: SuggestionContext,
 	): DetectedPatternsResponse["patterns"] {
 		return patterns.filter((p) => {
+			// 시즌 추천: matchedTitles가 빈 배열이면 허용
+			if (p.matchedTitles.length === 0) {
+				return true;
+			}
+
+			// 날씨 컨텍스트 없는데 날씨 관련 제안 필터링
+			if (!context.weather && this.#isWeatherRelated(p.reason)) {
+				return false;
+			}
+
 			const uniqueTitles = new Set(p.matchedTitles);
 			const isRepetition = uniqueTitles.size === 1;
 
@@ -278,6 +307,22 @@ export class AiSuggestionService {
 			}
 			return p.matchedTitles.length >= 2;
 		});
+	}
+
+	/**
+	 * reason 텍스트에서 날씨 관련 키워드 감지
+	 */
+	#isWeatherRelated(reason: string): boolean {
+		const weatherKeywords = [
+			"날씨",
+			"비",
+			"눈",
+			"소나기",
+			"우천",
+			"실내",
+			"악천후",
+		];
+		return weatherKeywords.some((keyword) => reason.includes(keyword));
 	}
 
 	/**
@@ -300,6 +345,14 @@ export class AiSuggestionService {
 			freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
 		}
 
-		return [...freq.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+		let maxId: number | null = null;
+		let maxCount = 0;
+		for (const [categoryId, count] of freq) {
+			if (count > maxCount) {
+				maxId = categoryId;
+				maxCount = count;
+			}
+		}
+		return maxId;
 	}
 }

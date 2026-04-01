@@ -1,5 +1,5 @@
 import type { DayOfWeek } from '@aido/validators';
-import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, Text, VStack } from '@src/shared/ui';
+import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   formatMonthDay,
@@ -10,6 +10,7 @@ import {
   isSameMonth,
 } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
+import { useState } from 'react';
 import { useDatePicker } from '../hooks/useDatePicker';
 import { useRepeatSetting } from '../hooks/useRepeatSetting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
@@ -18,16 +19,24 @@ import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
 import { PickerHeader } from './PickerHeader';
 import { DayOfWeekSelector } from './TodoDatePickerContent';
 
-interface RepeatResult {
+interface RepeatInput {
   daysOfWeek: DayOfWeek[];
   repeatEndDate: Date | null;
 }
 
+interface RepeatConfirmResult extends RepeatInput {
+  startDate: Date;
+}
+
+export type RepeatPickerCloseResult =
+  | { type: 'confirm'; value: RepeatConfirmResult }
+  | { type: 'reset' }
+  | { type: 'cancel' };
+
 interface TodoRepeatPickerContentProps {
   startDate: Date;
-  repeat: RepeatResult;
-  onConfirm: (repeat: RepeatResult) => void;
-  onCancel: () => void;
+  repeat: RepeatInput;
+  onClose: (result: RepeatPickerCloseResult) => void;
 }
 
 const getInitialSelectedDays = (startDate: Date, daysOfWeek: DayOfWeek[]): DayOfWeek[] => {
@@ -41,17 +50,20 @@ const getDefaultEndDate = (repeatEndDate: Date | null): Date | null => {
 };
 
 export const TodoRepeatPickerContent = ({
-  startDate,
+  startDate: initialStartDate,
   repeat,
-  onConfirm,
-  onCancel,
+  onClose,
 }: TodoRepeatPickerContentProps) => {
+  const [startDate, setStartDate] = useState(initialStartDate);
   const picker = useDatePicker({ startDate });
   const repeatSetting = useRepeatSetting({
     isEnabled: true,
-    selectedDays: getInitialSelectedDays(startDate, repeat.daysOfWeek),
+    selectedDays: getInitialSelectedDays(initialStartDate, repeat.daysOfWeek),
     endDate: getDefaultEndDate(repeat.repeatEndDate),
   });
+
+  const hasExistingRepeat = repeat.daysOfWeek.length > 0;
+  const hasCompleteRange = repeatSetting.endDate !== null;
 
   const isConfirmDisabled =
     repeatSetting.selectedDays.length === 0 ||
@@ -60,27 +72,39 @@ export const TodoRepeatPickerContent = ({
 
   const handleConfirm = () => {
     if (isConfirmDisabled) return;
-    onConfirm({
-      daysOfWeek: repeatSetting.selectedDays,
-      repeatEndDate: repeatSetting.endDate,
+    onClose({
+      type: 'confirm',
+      value: {
+        daysOfWeek: repeatSetting.selectedDays,
+        repeatEndDate: repeatSetting.endDate,
+        startDate,
+      },
     });
   };
 
-  const handleCalendarPress = (date: Date) => {
-    if (isBeforeDay(date, startDate)) return;
+  const [today] = useState(() => new Date());
 
-    if (repeatSetting.endDate === null || !isSameDay(date, repeatSetting.endDate)) {
-      repeatSetting.setEndDate(date);
-    } else {
-      repeatSetting.clearEndDate();
+  const handleCalendarPress = (date: Date) => {
+    if (isBeforeDay(date, today)) return;
+
+    if (!hasCompleteRange) {
+      if (isAfterDay(date, startDate)) {
+        repeatSetting.setEndDate(date);
+      } else if (isBeforeDay(date, startDate)) {
+        setStartDate(date);
+      }
+      return;
     }
+
+    setStartDate(date);
+    repeatSetting.clearEndDate();
   };
 
   return (
     <VStack gap={20}>
       <PickerHeader
         title="반복"
-        onCancel={onCancel}
+        onCancel={() => onClose({ type: 'cancel' })}
         onConfirm={handleConfirm}
         isConfirmDisabled={isConfirmDisabled}
       />
@@ -94,27 +118,41 @@ export const TodoRepeatPickerContent = ({
 
       <RepeatCalendar
         picker={picker}
+        today={today}
         startDate={startDate}
         endDate={repeatSetting.endDate}
         onDatePress={handleCalendarPress}
       />
 
       <VStack className="border-t border-gray-2 px-4 pt-3">
-        <HStack gap={8} align="center">
-          <Text size="b3" tone="neutral" shade={7}>
-            반복 기간
-          </Text>
-          <Text size="b3" tone="neutral" shade={6}>
-            •
-          </Text>
-          {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
-            <Text size="b3" tone="brand">
-              {formatMonthDay(startDate)} - {formatMonthDay(repeatSetting.endDate)}
+        <HStack align="center" justify="between" gap={8}>
+          <HStack gap={4} align="center" className="shrink">
+            <Text size="b3" tone="neutral" shade={7}>
+              반복 기간
             </Text>
-          ) : (
-            <Text size="b3" tone="neutral" shade={5}>
-              기간을 선택해주세요
+            <Text size="b3" tone="neutral" shade={6}>
+              •
             </Text>
+            {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
+              <Text size="b3" tone="brand">
+                {formatMonthDay(startDate)} - {formatMonthDay(repeatSetting.endDate)}
+              </Text>
+            ) : (
+              <Text size="b3" tone="neutral" shade={5}>
+                기간을 선택해주세요
+              </Text>
+            )}
+          </HStack>
+          {hasExistingRepeat && (
+            <Button
+              size="small"
+              variant="weak"
+              color="danger"
+              display="inline"
+              onPress={() => onClose({ type: 'reset' })}
+            >
+              삭제
+            </Button>
           )}
         </HStack>
       </VStack>
@@ -124,12 +162,19 @@ export const TodoRepeatPickerContent = ({
 
 interface RepeatCalendarProps {
   picker: ReturnType<typeof useDatePicker>;
+  today: Date;
   startDate: Date;
   endDate: Date | null;
   onDatePress: (date: Date) => void;
 }
 
-const RepeatCalendar = ({ picker, startDate, endDate, onDatePress }: RepeatCalendarProps) => {
+const RepeatCalendar = ({
+  picker,
+  today,
+  startDate,
+  endDate,
+  onDatePress,
+}: RepeatCalendarProps) => {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
 
   return (
@@ -157,6 +202,7 @@ const RepeatCalendar = ({ picker, startDate, endDate, onDatePress }: RepeatCalen
                 <RepeatDateCell
                   key={date.toISOString()}
                   date={date}
+                  today={today}
                   startDate={startDate}
                   endDate={endDate}
                   onPress={onDatePress}
@@ -174,14 +220,15 @@ const RepeatCalendar = ({ picker, startDate, endDate, onDatePress }: RepeatCalen
 
 interface RepeatDateCellProps {
   date: Date;
+  today: Date;
   startDate: Date;
   endDate: Date | null;
   onPress: (date: Date) => void;
 }
 
-const RepeatDateCell = ({ date, startDate, endDate, onPress }: RepeatDateCellProps) => {
+const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDateCellProps) => {
   const dayOfMonth = date.getDate();
-  const isDisabled = isBeforeDay(date, startDate);
+  const isDisabled = isBeforeDay(date, today);
   const isStart = isSameDay(date, startDate);
   const isEnd = endDate !== null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;

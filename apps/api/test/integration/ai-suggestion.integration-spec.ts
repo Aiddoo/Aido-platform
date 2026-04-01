@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test ai-suggestion.integration-spec
+ * pnpm --filter @aido/api test:integration -- ai-suggestion.integration-spec
  * ```
  */
 
@@ -20,9 +20,9 @@ import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
+import { ResponseTransformInterceptor } from "@/common/response/interceptors/response-transform.interceptor";
 import { AiSuggestionController } from "@/modules/ai-suggestion/ai-suggestion.controller";
 import { AiSuggestionService } from "@/modules/ai-suggestion/ai-suggestion.service";
-import { JwtAuthGuard } from "@/modules/auth/guards";
 
 describe("AiSuggestionController (Integration)", () => {
 	let app: INestApplication;
@@ -41,6 +41,18 @@ describe("AiSuggestionController (Integration)", () => {
 			handleAction: jest.fn(),
 		};
 
+		const mockGuard = {
+			canActivate: (context: {
+				switchToHttp: () => {
+					getRequest: () => { user: typeof mockUser };
+				};
+			}) => {
+				const req = context.switchToHttp().getRequest();
+				req.user = mockUser;
+				return true;
+			},
+		};
+
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			controllers: [AiSuggestionController],
 			providers: [
@@ -49,23 +61,12 @@ describe("AiSuggestionController (Integration)", () => {
 					useValue: mockAiSuggestionService,
 				},
 			],
-		})
-			.overrideGuard(JwtAuthGuard)
-			.useValue({
-				canActivate: (context: {
-					switchToHttp: () => {
-						getRequest: () => { user: typeof mockUser };
-					};
-				}) => {
-					const req = context.switchToHttp().getRequest();
-					req.user = mockUser;
-					return true;
-				},
-			})
-			.compile();
+		}).compile();
 
 		app = moduleFixture.createNestApplication();
 		app.useGlobalPipes(new ZodValidationPipe());
+		app.useGlobalGuards(mockGuard as any);
+		app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
 		await app.init();
 
@@ -98,6 +99,7 @@ describe("AiSuggestionController (Integration)", () => {
 			expect(response.body).toEqual({
 				success: true,
 				data: { suggestions: [] },
+				timestamp: expect.any(Number),
 			});
 			expect(aiSuggestionService.getPendingSuggestions).toHaveBeenCalledWith(
 				mockUser.userId,

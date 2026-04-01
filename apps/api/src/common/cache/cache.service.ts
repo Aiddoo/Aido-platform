@@ -52,6 +52,12 @@ export interface CachedUserPreference {
 	eveningReminderHour: number;
 	eveningReminderMinute: number;
 	timeFormat: TimeFormat;
+	weatherMorningEnabled: boolean;
+	weatherMorningHour: number;
+	weatherMorningMinute: number;
+	weatherEveningEnabled: boolean;
+	weatherEveningHour: number;
+	weatherEveningMinute: number;
 }
 
 /**

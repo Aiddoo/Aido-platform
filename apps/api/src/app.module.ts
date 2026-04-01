@@ -42,6 +42,7 @@ import { SubscriptionModule } from "@/modules/subscription";
 import { TodoModule } from "@/modules/todo";
 import { TodoCategoryModule } from "@/modules/todo-category";
 import { UserSettingsModule } from "@/modules/user-settings";
+import { WeatherModule } from "@/modules/weather/weather.module";
 import { WeeklyAchievementModule } from "@/modules/weekly-achievement";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -114,6 +115,7 @@ import { AppService } from "./app.service";
 		TodoModule,
 		TodoCategoryModule,
 		UserSettingsModule,
+		WeatherModule,
 		WeeklyAchievementModule,
 	],
 	// Controllers

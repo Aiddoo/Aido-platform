@@ -40,11 +40,14 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 /**
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
  *
- * 사용자가 직접 트리거한 액션의 결과 알림은 야간에도 발송한다:
- * - NUDGE_RECEIVED: 긴급성 있는 실시간 소셜 인터랙션
+ * - WEATHER_MORNING: 사용자가 직접 선택한 아침 시간, 못 받으면 무의미
+ * - WEATHER_EVENING: 사용자가 직접 선택한 저녁 시간
+ * - STREAK_AT_RISK: 스트릭 위기는 즉시성이 중요 (서버 지연 시 21:00 넘김 대비)
  */
 const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
-	"NUDGE_RECEIVED",
+	"WEATHER_MORNING",
+	"WEATHER_EVENING",
+	"STREAK_AT_RISK",
 ]);
 
 @Injectable()
@@ -221,6 +224,16 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 						eveningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
 						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+						weatherMorningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
+						weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
+						weatherMorningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
+						weatherEveningEnabled:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
+						weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
+						weatherEveningMinute:
+							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
 					};
 				}
 				return {
@@ -232,6 +245,12 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 					eveningReminderHour: raw.eveningReminderHour,
 					eveningReminderMinute: raw.eveningReminderMinute,
 					timeFormat: raw.timeFormat,
+					weatherMorningEnabled: raw.weatherMorningEnabled,
+					weatherMorningHour: raw.weatherMorningHour,
+					weatherMorningMinute: raw.weatherMorningMinute,
+					weatherEveningEnabled: raw.weatherEveningEnabled,
+					weatherEveningHour: raw.weatherEveningHour,
+					weatherEveningMinute: raw.weatherEveningMinute,
 				};
 			},
 		);

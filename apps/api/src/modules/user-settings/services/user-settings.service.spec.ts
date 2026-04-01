@@ -65,6 +65,12 @@ describe("UserSettingsService", () => {
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
 			timeFormat: "TWELVE_HOUR",
+			weatherMorningEnabled: true,
+			weatherMorningHour: 7,
+			weatherMorningMinute: 0,
+			weatherEveningEnabled: true,
+			weatherEveningHour: 17,
+			weatherEveningMinute: 30,
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -89,6 +95,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 20,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 			expect(userPreferenceRepo.findByUserId).toHaveBeenCalledWith(userId);
 		});
@@ -110,6 +122,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 		});
 
@@ -133,6 +151,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 		});
 
@@ -155,6 +179,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 20,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 		});
 
@@ -184,6 +214,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 		});
 	});
@@ -206,6 +242,12 @@ describe("UserSettingsService", () => {
 			eveningReminderHour: 18,
 			eveningReminderMinute: 0,
 			timeFormat: "TWELVE_HOUR",
+			weatherMorningEnabled: true,
+			weatherMorningHour: 7,
+			weatherMorningMinute: 0,
+			weatherEveningEnabled: true,
+			weatherEveningHour: 17,
+			weatherEveningMinute: 30,
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -233,6 +275,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: true,
@@ -257,6 +305,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 				currentStreak: 0,
 				longestStreak: 0,
 				lastCompletedDate: null,
@@ -278,6 +332,12 @@ describe("UserSettingsService", () => {
 				eveningReminderHour: 18,
 				eveningReminderMinute: 0,
 				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
 			});
 			expect(userPreferenceRepo.upsert).toHaveBeenCalledWith(userId, {
 				pushEnabled: false,
@@ -307,6 +367,12 @@ describe("UserSettingsService", () => {
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
 			timeFormat: "TWELVE_HOUR",
+			weatherMorningEnabled: true,
+			weatherMorningHour: 7,
+			weatherMorningMinute: 0,
+			weatherEveningEnabled: true,
+			weatherEveningHour: 17,
+			weatherEveningMinute: 30,
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,
@@ -421,6 +487,12 @@ describe("UserSettingsService", () => {
 			eveningReminderHour: 20,
 			eveningReminderMinute: 0,
 			timeFormat: "TWELVE_HOUR",
+			weatherMorningEnabled: true,
+			weatherMorningHour: 7,
+			weatherMorningMinute: 0,
+			weatherEveningEnabled: true,
+			weatherEveningHour: 17,
+			weatherEveningMinute: 30,
 			currentStreak: 0,
 			longestStreak: 0,
 			lastCompletedDate: null,

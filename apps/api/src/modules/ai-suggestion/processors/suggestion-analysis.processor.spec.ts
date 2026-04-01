@@ -62,13 +62,17 @@ describe("SuggestionAnalysisProcessor", () => {
 
 			// When -process를 호출하면
 			await processor.process(
-				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({
+					userId: "user-123",
+					timezone: "Asia/Seoul",
+					weatherGrid: null,
+				}),
 			);
 
 			// Then -서비스에 올바른 파라미터를 전달해야 한다
 			expect(
 				mockAiSuggestionService.analyzeAndCreateSuggestions,
-			).toHaveBeenCalledWith("user-123", "Asia/Seoul");
+			).toHaveBeenCalledWith("user-123", "Asia/Seoul", null);
 		});
 	});
 
@@ -86,7 +90,11 @@ describe("SuggestionAnalysisProcessor", () => {
 
 			// When -process를 호출하면
 			await processor.process(
-				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({
+					userId: "user-123",
+					timezone: "Asia/Seoul",
+					weatherGrid: null,
+				}),
 			);
 
 			// Then -알림이 발송되어야 한다
@@ -104,7 +112,11 @@ describe("SuggestionAnalysisProcessor", () => {
 
 			// When -process를 호출하면
 			await processor.process(
-				createMockJob({ userId: "user-123", timezone: "Asia/Seoul" }),
+				createMockJob({
+					userId: "user-123",
+					timezone: "Asia/Seoul",
+					weatherGrid: null,
+				}),
 			);
 
 			// Then -알림이 발송되지 않아야 한다

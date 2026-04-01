@@ -741,4 +741,15 @@ export class BusinessExceptions {
 	static weeklyAchievementNotFound(year: number, week: number) {
 		return new BusinessException(ErrorCode.ACHIEVEMENT_1801, { year, week });
 	}
+
+	// =========================================================================
+	// 날씨 (Weather)
+	// =========================================================================
+	static weatherServiceUnavailable(details?: unknown) {
+		return new BusinessException(ErrorCode.WEATHER_1901, details);
+	}
+
+	static weatherLocationNotFound() {
+		return new BusinessException(ErrorCode.WEATHER_1902);
+	}
 }

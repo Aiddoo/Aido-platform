@@ -36,10 +36,10 @@ export class WinbackStrategy implements ITimezoneStrategy {
 		const cutoffStart = subtractDays(30, today);
 		const cutoffEnd = subtractDays(3, today);
 
-		// 3~30일 미접속 + pushEnabled 유저
+		// 3~30일 미접속 유저
 		const users = await this.database.user.findMany({
 			where: {
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 				lastActiveAt: { gte: cutoffStart, lte: cutoffEnd },
 			},
 			select: { id: true, lastActiveAt: true },

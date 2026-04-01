@@ -274,6 +274,12 @@ describe('AuthService', () => {
           eveningReminderHour: dto.eveningReminderHour,
           eveningReminderMinute: dto.eveningReminderMinute,
           timeFormat: dto.timeFormat,
+          weatherMorningEnabled: dto.weatherMorningEnabled,
+          weatherMorningHour: dto.weatherMorningHour,
+          weatherMorningMinute: dto.weatherMorningMinute,
+          weatherEveningEnabled: dto.weatherEveningEnabled,
+          weatherEveningHour: dto.weatherEveningHour,
+          weatherEveningMinute: dto.weatherEveningMinute,
         },
       });
     });
@@ -323,6 +329,12 @@ describe('AuthService', () => {
           eveningReminderHour: dto.eveningReminderHour,
           eveningReminderMinute: dto.eveningReminderMinute,
           timeFormat: dto.timeFormat,
+          weatherMorningEnabled: dto.weatherMorningEnabled,
+          weatherMorningHour: dto.weatherMorningHour,
+          weatherMorningMinute: dto.weatherMorningMinute,
+          weatherEveningEnabled: dto.weatherEveningEnabled,
+          weatherEveningHour: dto.weatherEveningHour,
+          weatherEveningMinute: dto.weatherEveningMinute,
         },
       });
     });

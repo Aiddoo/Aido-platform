@@ -34,7 +34,7 @@ export class LunchNudgeStrategy implements ITimezoneStrategy {
 		// 오늘 할일이 있지만 완료가 0개인 유저 조회
 		const users = await this.database.user.findMany({
 			where: {
-				preference: { timezone: tz, pushEnabled: true },
+				preference: { timezone: tz },
 				todos: {
 					some: { startDate: { gte: today, lt: tomorrow } },
 					none: {
