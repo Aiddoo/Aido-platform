@@ -87,13 +87,15 @@ describe("WeatherEveningStrategy", () => {
 	});
 
 	it("내일 날씨를 기반으로 알림을 발송해야 한다", async () => {
-		// Given
-		database.user.findMany.mockResolvedValue([
-			{
-				id: "user-1",
-				location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
-			},
-		] as never);
+		// Given — 1단계: 위치 있는 유저, 2단계: 위치 없는 유저 (없음)
+		database.user.findMany
+			.mockResolvedValueOnce([
+				{
+					id: "user-1",
+					location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
+				},
+			] as never)
+			.mockResolvedValueOnce([] as never);
 
 		const forecastMap = new Map<string, WeatherForecast>();
 		forecastMap.set("60:127", makeForecast());

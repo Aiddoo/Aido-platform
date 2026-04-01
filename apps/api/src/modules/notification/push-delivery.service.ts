@@ -41,9 +41,15 @@ const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
  * 야간 시간(21:00-08:00)에도 푸시를 발송하는 알림 타입
  *
  * - WEATHER_MORNING: 사용자가 직접 선택한 아침 시간, 못 받으면 무의미
+ * - WEATHER_EVENING: 사용자가 직접 선택한 저녁 시간
+ * - STREAK_AT_RISK: 스트릭 위기는 즉시성이 중요 (서버 지연 시 21:00 넘김 대비)
+ * - WINBACK: 비활성 유저 재방문 유도는 시간 무관
  */
 const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 	"WEATHER_MORNING",
+	"WEATHER_EVENING",
+	"STREAK_AT_RISK",
+	"WINBACK",
 ]);
 
 @Injectable()

@@ -2,6 +2,7 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
 import { AiModule } from "../ai/ai.module";
+import { AiReportModule } from "../ai-report/ai-report.module";
 import { NotificationModule } from "../notification/notification.module";
 import { TodoModule } from "../todo/todo.module";
 import { WeatherModule } from "../weather/weather.module";
@@ -35,6 +36,7 @@ import { SuggestionContextBuilder } from "./suggestion-context.builder";
 @Module({
 	imports: [
 		AiModule,
+		AiReportModule,
 		NotificationModule,
 		TodoModule,
 		WeatherModule,

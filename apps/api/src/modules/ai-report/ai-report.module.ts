@@ -39,6 +39,6 @@ import { ReportGeneratorService } from "./report-generator.service";
 		ReportGenerationJob,
 		ReportGenerationProcessor,
 	],
-	exports: [AiReportService],
+	exports: [AiReportService, AiReportRepository],
 })
 export class AiReportModule {}

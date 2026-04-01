@@ -60,6 +60,14 @@ export interface UserStreakInfo {
 }
 
 /**
+ * 제안 수락/거절 이력 항목
+ */
+export interface SuggestionHistoryItem {
+	title: string;
+	status: "ACCEPTED" | "DISMISSED";
+}
+
+/**
  * AI 제안 생성을 위한 사전 계산된 컨텍스트
  */
 export interface SuggestionContext {
@@ -71,4 +79,6 @@ export interface SuggestionContext {
 	missingRoutines: string[];
 	weather: string | null;
 	currentDate: string;
+	weeklyReportInsight: string | null;
+	suggestionHistory: SuggestionHistoryItem[];
 }

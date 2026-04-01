@@ -47,6 +47,7 @@ describe("ReportGeneratorService", () => {
 		aggregatedData: mockAggregatedData,
 		type: "WEEKLY",
 		periodLabel: "2026년 10주차",
+		prevTips: null,
 	};
 
 	beforeEach(async () => {
@@ -106,7 +107,7 @@ describe("ReportGeneratorService", () => {
 			const callArgs = args?.[0];
 			expect(callArgs?.prompt).toContain("아이도냥");
 			expect(callArgs?.schema).toBeDefined();
-			expect(callArgs?.maxTokens).toBe(500);
+			expect(callArgs?.maxTokens).toBe(800);
 			expect(callArgs?.temperature).toBe(0.7);
 		});
 	});
@@ -173,7 +174,7 @@ describe("ReportGeneratorService", () => {
 			// Then -주간 전용 키워드가 프롬프트에 포함되어야 한다
 			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
 			expect(callArgs?.prompt).toContain("코칭해줘");
-			expect(callArgs?.prompt).toContain("행동 유형 진단");
+			expect(callArgs?.prompt).toContain("★ summary 작성법");
 			expect(callArgs?.prompt).toContain("주중");
 		});
 
@@ -192,7 +193,7 @@ describe("ReportGeneratorService", () => {
 			const callArgs = mockAiProvider.generateStructured.mock.calls[0]?.[0];
 			expect(callArgs?.prompt).toContain("월간 코칭");
 			expect(callArgs?.prompt).toContain("한 달");
-			expect(callArgs?.prompt).toContain("습관 정착");
+			expect(callArgs?.prompt).toContain("★ summary 작성법");
 		});
 
 		it("지난 기간 대비 변화량이 프롬프트에 포함되어야 한다", async () => {

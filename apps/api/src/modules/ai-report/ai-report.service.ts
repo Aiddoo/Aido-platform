@@ -249,21 +249,27 @@ export class AiReportService {
 			`리포트 생성 시작: userId=${userId}, type=${type}, ${periodLabel}`,
 		);
 
-		// 1. 데이터 집계
-		const aggregatedData = await this.reportAggregatorService.aggregate({
-			userId,
-			startDate,
-			endDate,
-			prevStartDate,
-			prevEndDate,
-			timezone,
-		});
+		// 1. 데이터 집계 + 이전 보고서 조회 (병렬)
+		const [aggregatedData, prevReport] = await Promise.all([
+			this.reportAggregatorService.aggregate({
+				userId,
+				startDate,
+				endDate,
+				prevStartDate,
+				prevEndDate,
+				timezone,
+			}),
+			this.aiReportRepository.findLatest(userId, type),
+		]);
+
+		const prevTips = prevReport ? (prevReport.aiTips as string[] | null) : null;
 
 		// 2. AI 콘텐츠 생성
 		const aiContent = await this.reportGeneratorService.generate({
 			aggregatedData,
 			type,
 			periodLabel,
+			prevTips,
 		});
 
 		// 3. DB 저장

@@ -71,6 +71,8 @@ describe("AiSuggestionService", () => {
 			missingRoutines: [],
 			weather: null,
 			currentDate: "2026-03-31 (화요일, 3월 말)",
+			weeklyReportInsight: null,
+			suggestionHistory: [],
 			...overrides,
 		};
 	}

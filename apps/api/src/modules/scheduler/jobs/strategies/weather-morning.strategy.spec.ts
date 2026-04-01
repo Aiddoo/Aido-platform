@@ -108,13 +108,15 @@ describe("WeatherMorningStrategy", () => {
 	});
 
 	it("대상 유저에게 날씨 알림을 발송해야 한다", async () => {
-		// Given
-		database.user.findMany.mockResolvedValue([
-			{
-				id: "user-1",
-				location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
-			},
-		] as never);
+		// Given — 1단계: 위치 있는 유저, 2단계: 위치 없는 유저 (없음)
+		database.user.findMany
+			.mockResolvedValueOnce([
+				{
+					id: "user-1",
+					location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
+				},
+			] as never)
+			.mockResolvedValueOnce([] as never);
 
 		const forecastMap = new Map<string, WeatherForecast>();
 		forecastMap.set("60:127", makeForecast());
@@ -136,17 +138,29 @@ describe("WeatherMorningStrategy", () => {
 	});
 
 	it("같은 격자의 유저들은 하나의 API 호출로 처리해야 한다", async () => {
-		// Given — 2명이 같은 격자
-		database.user.findMany.mockResolvedValue([
-			{
-				id: "user-1",
-				location: { latitude: 37.56, longitude: 126.97, gridX: 60, gridY: 127 },
-			},
-			{
-				id: "user-2",
-				location: { latitude: 37.57, longitude: 126.98, gridX: 60, gridY: 127 },
-			},
-		] as never);
+		// Given — 2명이 같은 격자 (1단계), 위치 없는 유저 없음 (2단계)
+		database.user.findMany
+			.mockResolvedValueOnce([
+				{
+					id: "user-1",
+					location: {
+						latitude: 37.56,
+						longitude: 126.97,
+						gridX: 60,
+						gridY: 127,
+					},
+				},
+				{
+					id: "user-2",
+					location: {
+						latitude: 37.57,
+						longitude: 126.98,
+						gridX: 60,
+						gridY: 127,
+					},
+				},
+			] as never)
+			.mockResolvedValueOnce([] as never);
 
 		const forecastMap = new Map<string, WeatherForecast>();
 		forecastMap.set("60:127", makeForecast());

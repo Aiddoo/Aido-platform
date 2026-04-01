@@ -3,14 +3,21 @@ import {
 	DAY_OF_WEEK_KO,
 	type DayOfWeek,
 	dayIndexToDayOfWeek,
+	reportStatsSchema,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+import { subtractDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
+import { AiReportRepository } from "../ai-report/ai-report.repository";
 import type { GridInput } from "../weather/services/weather.service";
 import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
-import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
+import type {
+	SuggestionContext,
+	SuggestionHistoryItem,
+	TodoSummaryForAnalysis,
+} from "./types";
 
 const PRECIPITATION_KO: Record<string, string> = {
 	RAIN: "비",
@@ -31,6 +38,7 @@ export class SuggestionContextBuilder {
 	constructor(
 		private readonly repository: AiSuggestionRepository,
 		private readonly weatherService: WeatherService,
+		private readonly aiReportRepository: AiReportRepository,
 	) {}
 
 	/**
@@ -52,27 +60,51 @@ export class SuggestionContextBuilder {
 			.toDate();
 		const to = currentDate.toDate();
 
-		const [todos, dayRates, timeRates, categoryRates, streakInfo, weather] =
-			await Promise.all([
-				this.repository.findRecentTodos(userId, analysisFrom, to, timezone),
-				this.repository.findDayCompletionRates(
-					userId,
-					contextFrom,
-					to,
-					timezone,
-				),
-				this.repository.findTimeCompletionRates(
-					userId,
-					contextFrom,
-					to,
-					timezone,
-				),
-				this.repository.findCategoryCompletionRates(userId, contextFrom, to),
-				this.repository.findUserStreakInfo(userId),
-				this.#fetchWeatherByGrid(weatherGrid, to),
-			]);
+		const historySince = subtractDays(30);
+
+		const [
+			todos,
+			dayRates,
+			timeRates,
+			categoryRates,
+			streakInfo,
+			weather,
+			latestReport,
+			respondedSuggestions,
+		] = await Promise.all([
+			this.repository.findRecentTodos(userId, analysisFrom, to, timezone),
+			this.repository.findDayCompletionRates(userId, contextFrom, to, timezone),
+			this.repository.findTimeCompletionRates(
+				userId,
+				contextFrom,
+				to,
+				timezone,
+			),
+			this.repository.findCategoryCompletionRates(userId, contextFrom, to),
+			this.repository.findUserStreakInfo(userId),
+			this.#fetchWeatherByGrid(weatherGrid, to),
+			this.aiReportRepository.findLatest(userId, "WEEKLY"),
+			this.repository.findRecentResponded(userId, historySince),
+		]);
 
 		const missingRoutines = this.detectMissingRoutines(todos, timezone);
+
+		// 보고서 인사이트 추출
+		let weeklyReportInsight: string | null = null;
+		if (latestReport) {
+			const stats = reportStatsSchema.safeParse(latestReport.stats);
+			if (stats.success) {
+				weeklyReportInsight = `최근 주간 달성률: ${stats.data.completionRate}%, 스트릭: ${stats.data.streakDays}일`;
+			}
+		}
+
+		// 수락/거절 이력
+		const suggestionHistory: SuggestionHistoryItem[] = respondedSuggestions.map(
+			(s) => ({
+				title: s.title,
+				status: s.status as "ACCEPTED" | "DISMISSED",
+			}),
+		);
 
 		return {
 			todos,
@@ -83,6 +115,8 @@ export class SuggestionContextBuilder {
 			missingRoutines,
 			weather,
 			currentDate: this.#formatCurrentDate(currentDate, timezone),
+			weeklyReportInsight,
+			suggestionHistory,
 		};
 	}
 
