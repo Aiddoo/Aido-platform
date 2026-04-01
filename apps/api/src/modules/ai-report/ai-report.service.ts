@@ -1,6 +1,7 @@
 import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { now } from "@/common/date/utils/core";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -249,21 +250,31 @@ export class AiReportService {
 			`리포트 생성 시작: userId=${userId}, type=${type}, ${periodLabel}`,
 		);
 
-		// 1. 데이터 집계
-		const aggregatedData = await this.reportAggregatorService.aggregate({
-			userId,
-			startDate,
-			endDate,
-			prevStartDate,
-			prevEndDate,
-			timezone,
-		});
+		// 1. 데이터 집계 + 이전 보고서 조회 (병렬)
+		const [aggregatedData, prevReport] = await Promise.all([
+			this.reportAggregatorService.aggregate({
+				userId,
+				startDate,
+				endDate,
+				prevStartDate,
+				prevEndDate,
+				timezone,
+			}),
+			this.aiReportRepository.findLatest(userId, type),
+		]);
+
+		const prevTipsResult = z
+			.array(z.string())
+			.nullable()
+			.safeParse(prevReport?.aiTips ?? null);
+		const prevTips = prevTipsResult.success ? prevTipsResult.data : null;
 
 		// 2. AI 콘텐츠 생성
 		const aiContent = await this.reportGeneratorService.generate({
 			aggregatedData,
 			type,
 			periodLabel,
+			prevTips,
 		});
 
 		// 3. DB 저장

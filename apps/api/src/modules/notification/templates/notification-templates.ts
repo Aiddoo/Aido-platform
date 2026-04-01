@@ -1249,6 +1249,26 @@ export class NotificationMessageBuilder {
 			body: fillTemplate(body, vars),
 		};
 	}
+
+	/**
+	 * 위치 미설정 유저용 아침 날씨 폴백 메시지
+	 */
+	static weatherMorningFallback(): { title: string; body: string } {
+		return {
+			title: "좋은 아침이에요!",
+			body: "위치를 설정하면 매일 맞춤 날씨 알림을 받을 수 있어요",
+		};
+	}
+
+	/**
+	 * 위치 미설정 유저용 저녁 날씨 폴백 메시지
+	 */
+	static weatherEveningFallback(): { title: string; body: string } {
+		return {
+			title: "오늘 하루 수고했어요!",
+			body: "위치를 설정하면 내일 날씨 예보를 미리 받아볼 수 있어요",
+		};
+	}
 }
 
 const SKY_LABEL_MAP: Record<string, string> = {

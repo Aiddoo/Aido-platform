@@ -1,7 +1,7 @@
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
-import type { SuggestionContext } from "../types";
+import type { SuggestionContext, SuggestionHistoryItem } from "../types";
 
 /**
  * AI 패턴 감지 응답 스키마
@@ -55,6 +55,12 @@ export function buildSuggestionPrompt(
 			? context.missingRoutines.join("\n")
 			: "없음";
 
+	const reportSection = context.weeklyReportInsight
+		? `\n## 최근 주간 리포트 인사이트\n${context.weeklyReportInsight}\n`
+		: "";
+
+	const historySection = buildHistorySection(context.suggestionHistory);
+
 	return `너는 사용자의 루틴 코치야. 아래 분석 데이터와 할일 기록을 보고 맞춤 루틴을 제안해줘.
 
 ## 사용자 프로필
@@ -72,8 +78,8 @@ ${context.categoryRates}
 
 ## 빠뜨린 루틴 (이번 주에 빠진 정기 활동)
 ${missingRoutinesText}
-${weatherSection}
-## 제안 유형 (6가지 중 최대 5개 선택, 다양하게 섞어서)
+${weatherSection}${reportSection}${historySection}
+## 제안 유형 (8가지 중 최대 5개 선택, 다양하게 섞어서)
 
 1. **빠뜨린 루틴 리마인드**: "빠뜨린 루틴" 섹션에 항목이 있으면, 해당 활동을 반복 루틴으로 제안
    - matchedTitles: 해당 활동의 원본 제목들
@@ -110,6 +116,18 @@ ${weatherSection}
    - confidence: 0.50-0.65
    - ★ 최대 1개만
 
+7. **습관 회복**: 이전에 3주+ 꾸준히 하다가 최근 빠진 활동 재시작 제안
+   - reason에 "N주 연속 하시다가 이번 주 빠졌어요" 패턴
+   - matchedTitles: 해당 활동 이력
+   - confidence: 0.70-0.85
+   - ★ 빠뜨린 루틴(유형1)과 다름: 유형1은 이번 주 빠짐, 유형7은 장기 습관이 깨짐
+
+8. **밸런스 제안**: 한 카테고리가 전체의 60%+ 차지 시, 소외된 카테고리에서 활동 추천
+   - reason에 카테고리 비율 불균형 언급
+   - matchedTitles: 빈 배열 []
+   - confidence: 0.55-0.70
+   - ★ 최대 1개만
+
 ## reason 작성 규칙
 reason은 "[관찰] + [제안]" 2파트로 구성:
 - 관찰: 사용자의 실제 데이터/상황 언급 (완료율, 요일, 시즌 등)
@@ -117,8 +135,10 @@ reason은 "[관찰] + [제안]" 2파트로 구성:
 - 격려하는 친근한 톤, 딱딱한 보고서 톤 금지
 
 ## 규칙
-- ★★★ 반드시 정확히 5개를 제안해. 5개 미만은 절대 안 됨. 6가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
+- ★★★ 반드시 정확히 5개를 제안해. 5개 미만은 절대 안 됨. 8가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
 - ★ 다양한 유형을 골고루 섞어서 제안 (같은 유형 2개 이상 금지, 단 유형5 반복패턴은 2개까지 허용)
+- ★ 밸런스 제안(유형8)은 최대 1개, matchedTitles는 반드시 빈 배열
+- ★ 사용자 제안 선호 이력이 있으면 거절한 것과 유사한 제안은 피하기
 - ★ 빠뜨린 루틴이 있으면 반드시 1개 이상 포함
 - ★ 시즌 추천은 최대 1개, matchedTitles는 반드시 빈 배열
 - ★ 날씨 정보 없으면 유형3 절대 금지
@@ -152,4 +172,29 @@ reason은 "[관찰] + [제안]" 2파트로 구성:
 ${todoLines}
 
 JSON 형식으로 응답해.`;
+}
+
+function buildHistorySection(history: SuggestionHistoryItem[]): string {
+	if (history.length === 0) {
+		return "";
+	}
+
+	const accepted = history
+		.filter((h) => h.status === "ACCEPTED")
+		.map((h) => h.title);
+	const dismissed = history
+		.filter((h) => h.status === "DISMISSED")
+		.map((h) => h.title);
+
+	const lines: string[] = ["\n## 사용자 제안 선호 이력"];
+	if (accepted.length > 0) {
+		lines.push(`수락: ${accepted.join(", ")}`);
+	}
+	if (dismissed.length > 0) {
+		lines.push(`거절: ${dismissed.join(", ")}`);
+	}
+	lines.push(
+		"→ 거절한 것과 유사한 제안은 피하고, 수락 패턴에 맞는 제안을 우선해줘.\n",
+	);
+	return lines.join("\n");
 }

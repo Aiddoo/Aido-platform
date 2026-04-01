@@ -144,12 +144,12 @@ model UserPreference {
   timeFormat        TimeFormat @default(TWELVE_HOUR)
 
   // 날씨 오전 리마인더
-  weatherMorningEnabled  Boolean @default(false)
+  weatherMorningEnabled  Boolean @default(true)
   weatherMorningHour     Int     @default(7)  // 0-23
   weatherMorningMinute   Int     @default(0)  // 0-59
 
   // 날씨 오후 리마인더
-  weatherEveningEnabled  Boolean @default(false)
+  weatherEveningEnabled  Boolean @default(true)
   weatherEveningHour     Int     @default(18) // 0-23
   weatherEveningMinute   Int     @default(0)  // 0-59
 
@@ -873,6 +873,7 @@ model AiReport {
 
   @@unique([userId, type, year, period])
   @@index([userId, type])
+  @@index([userId, type, generatedAt]) // findLatest 정렬 커버링 인덱스
 }
 
 // =============================================================================
@@ -915,4 +916,5 @@ model RecurringSuggestion {
 
   @@index([userId, status])
   @@index([userId, expiresAt])
+  @@index([userId, updatedAt]) // findRecentResponded 이력 조회용
 }

@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 
+import { AiReportRepository } from "../ai-report/ai-report.repository";
 import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
@@ -31,6 +32,7 @@ describe("SuggestionContextBuilder", () => {
 	let builder: SuggestionContextBuilder;
 	let mockRepository: Mocked<AiSuggestionRepository>;
 	let mockWeatherService: Mocked<WeatherService>;
+	let mockReportRepository: Mocked<AiReportRepository>;
 
 	const mockUserId = "user-123";
 	const mockTimezone = "Asia/Seoul";
@@ -43,6 +45,7 @@ describe("SuggestionContextBuilder", () => {
 		builder = unit;
 		mockRepository = unitRef.get(AiSuggestionRepository);
 		mockWeatherService = unitRef.get(WeatherService);
+		mockReportRepository = unitRef.get(AiReportRepository);
 	});
 
 	// ========================================
@@ -93,6 +96,8 @@ describe("SuggestionContextBuilder", () => {
 				defaultCategoryRates,
 			);
 			mockRepository.findUserStreakInfo.mockResolvedValue(defaultStreakInfo);
+			mockRepository.findRecentResponded.mockResolvedValue([]);
+			mockReportRepository.findLatest.mockResolvedValue(null);
 			mockWeatherService.getForecastsByGridBatch.mockResolvedValue(
 				new Map([
 					[

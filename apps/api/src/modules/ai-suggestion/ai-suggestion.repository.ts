@@ -329,4 +329,25 @@ export class AiSuggestionRepository {
 			categoryName: t.category.name,
 		}));
 	}
+
+	/**
+	 * 최근 N일 내 수락/거절된 제안 조회
+	 *
+	 * AI 제안 프롬프트에 사용자 선호 이력을 제공하기 위해 사용합니다.
+	 */
+	async findRecentResponded(
+		userId: string,
+		since: Date,
+		tx?: TransactionClient,
+	): Promise<Pick<RecurringSuggestion, "title" | "status">[]> {
+		const client = tx ?? this.database;
+		return client.recurringSuggestion.findMany({
+			where: {
+				userId,
+				status: { in: ["ACCEPTED", "DISMISSED"] },
+				updatedAt: { gte: since },
+			},
+			select: { title: true, status: true },
+		});
+	}
 }
