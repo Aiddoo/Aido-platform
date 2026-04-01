@@ -219,7 +219,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			await this.monthlyReport.execute(ctx);
 		}
 
-		// 월요일 07:00: 주간 달성 배지 (이전 주 전체 집계, 아침 리마인더 전 발송)
+		// 월요일 08:30: 주간 달성 배지 (아침 리마인더 08:00 직후, 주간 리포트 09:00 직전)
 		if (
 			dayOfWeek === 1 &&
 			localHour === NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour &&
@@ -252,7 +252,7 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 			await this.lunchNudge.execute(ctx);
 		}
 
-		// 로컬 21:00: 스트릭 위기
+		// 로컬 20:00: 스트릭 위기 (야간 21:00 시작 전 마지막 넛지)
 		if (
 			localHour === NOTIFICATION_SCHEDULE.STREAK_AT_RISK.hour &&
 			localMinute === NOTIFICATION_SCHEDULE.STREAK_AT_RISK.minute

@@ -264,72 +264,72 @@ export const SCHEDULER_TEMPLATES = {
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
-		body: "좋은 하루 보내세요!",
+		body: "할 일 해치우기 딱 좋은 날씨야",
 		type: "WEATHER_MORNING" as NotificationType,
 		variants: [
 			{
 				title: "오늘 {skyLabel} {tempMin}~{tempMax}°C",
-				body: "좋은 하루 보내세요!",
+				body: "할 일 해치우기 딱 좋은 날씨야",
 			},
 			{
 				title: "{tempMin}~{tempMax}°C, 오늘 {skyLabel}",
-				body: "오늘도 힘내볼까요?",
+				body: "밖에서 할 일 있으면 오늘이 찬스!",
 			},
 		],
 	} satisfies NotificationTemplate,
 	MORNING_RAIN: {
-		title: "오늘 비 올 확률 {precipProb}%",
-		body: "우산 챙기세요! {tempMin}~{tempMax}°C",
+		title: "☂ 오늘 비 올 확률 {precipProb}%",
+		body: "우산 챙기고 할 일 하러 가자! {tempMin}~{tempMax}°C",
 		type: "WEATHER_MORNING" as NotificationType,
 		variants: [
 			{
-				title: "오늘 비 올 확률 {precipProb}%",
-				body: "우산 챙기세요! {tempMin}~{tempMax}°C",
+				title: "☂ 오늘 비 올 확률 {precipProb}%",
+				body: "우산 챙기고 할 일 하러 가자! {tempMin}~{tempMax}°C",
 			},
 			{
-				title: "☂ 강수확률 {precipProb}%",
-				body: "우산 필수! {tempMin}~{tempMax}°C",
+				title: "오늘 비 소식이야 ({precipProb}%)",
+				body: "실내 할 일부터 먼저 해치우는 건 어때? {tempMin}~{tempMax}°C",
 			},
 		],
 	} satisfies NotificationTemplate,
 	MORNING_SNOW: {
-		title: "오늘 눈 올 확률 {precipProb}%",
-		body: "따뜻하게 입으세요! {tempMin}~{tempMax}°C",
+		title: "❄ 오늘 눈 올 확률 {precipProb}%",
+		body: "따뜻하게 입고 할 일 시작하자! {tempMin}~{tempMax}°C",
 		type: "WEATHER_MORNING" as NotificationType,
 	} satisfies NotificationTemplate,
 	EVENING_CLEAR: {
 		title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
-		body: "내일도 좋은 하루 되세요!",
+		body: "내일 할 일 미리 정해두면 아침이 편해",
 		type: "WEATHER_EVENING" as NotificationType,
 		variants: [
 			{
 				title: "내일 {skyLabel} {tempMin}~{tempMax}°C",
-				body: "내일도 좋은 하루 되세요!",
+				body: "내일 할 일 미리 정해두면 아침이 편해",
 			},
 			{
 				title: "내일 날씨: {skyLabel} {tempMin}~{tempMax}°C",
-				body: "미리 준비해두세요!",
+				body: "내일도 해치울 거 많지? 날씨는 도와줄게",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_RAIN: {
-		title: "내일 비 올 확률 {precipProb}%",
-		body: "우산 미리 챙겨두세요! {tempMin}~{tempMax}°C",
+		title: "☂ 내일 비 올 확률 {precipProb}%",
+		body: "우산 미리 챙겨두고, 내일 할 일도 정리해둬! {tempMin}~{tempMax}°C",
 		type: "WEATHER_EVENING" as NotificationType,
 		variants: [
 			{
-				title: "내일 비 올 확률 {precipProb}%",
-				body: "우산 미리 챙겨두세요! {tempMin}~{tempMax}°C",
+				title: "☂ 내일 비 올 확률 {precipProb}%",
+				body: "우산 미리 챙겨두고, 내일 할 일도 정리해둬! {tempMin}~{tempMax}°C",
 			},
 			{
-				title: "☂ 내일 강수확률 {precipProb}%",
-				body: "우산 준비! {tempMin}~{tempMax}°C",
+				title: "내일 비 소식이야 ({precipProb}%)",
+				body: "비 오면 실내 할 일 몰아서 하기 좋아! {tempMin}~{tempMax}°C",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_SNOW: {
-		title: "내일 눈 올 확률 {precipProb}%",
-		body: "따뜻하게 준비하세요! {tempMin}~{tempMax}°C",
+		title: "❄ 내일 눈 올 확률 {precipProb}%",
+		body: "내일 추우니까 실내 할 일 위주로 계획 세워봐! {tempMin}~{tempMax}°C",
 		type: "WEATHER_EVENING" as NotificationType,
 	} satisfies NotificationTemplate,
 } as const;
@@ -1255,8 +1255,8 @@ export class NotificationMessageBuilder {
 	 */
 	static weatherMorningFallback(): { title: string; body: string } {
 		return {
-			title: "좋은 아침이에요!",
-			body: "위치를 설정하면 매일 맞춤 날씨 알림을 받을 수 있어요",
+			title: "오늘 날씨 어떨까?",
+			body: "위치 설정하면 날씨에 맞는 할 일 팁도 알려줄게",
 		};
 	}
 
@@ -1265,8 +1265,8 @@ export class NotificationMessageBuilder {
 	 */
 	static weatherEveningFallback(): { title: string; body: string } {
 		return {
-			title: "오늘 하루 수고했어요!",
-			body: "위치를 설정하면 내일 날씨 예보를 미리 받아볼 수 있어요",
+			title: "내일 날씨 궁금하지 않아?",
+			body: "위치 설정하면 내일 계획 세울 때 날씨도 같이 알려줄게",
 		};
 	}
 }

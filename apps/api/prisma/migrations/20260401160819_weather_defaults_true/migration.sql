@@ -13,6 +13,16 @@ WHERE "weatherMorningEnabled" = false
   AND "weatherEveningHour" = 18
   AND "weatherEveningMinute" = 0;
 
+-- 날씨 저녁 기본 시간 18:00 → 17:30 변경 (저녁 리마인더 18:00과 동시 도착 방지)
+UPDATE "UserPreference"
+SET "weatherEveningHour" = 17, "weatherEveningMinute" = 30
+WHERE "weatherEveningHour" = 18 AND "weatherEveningMinute" = 0;
+
+ALTER TABLE "UserPreference"
+ALTER COLUMN "weatherEveningHour" SET DEFAULT 17;
+ALTER TABLE "UserPreference"
+ALTER COLUMN "weatherEveningMinute" SET DEFAULT 30;
+
 -- CreateIndex: findLatest 정렬 커버링 인덱스
 CREATE INDEX "AiReport_userId_type_generatedAt_idx" ON "AiReport"("userId", "type", "generatedAt");
 

@@ -65,7 +65,7 @@ describe("ReportGenerationJob", () => {
 			);
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
 				"monthly-report-scheduler",
-				{ pattern: "0 1 1 * *", tz: "Asia/Seoul" },
+				{ pattern: "0 2 1 * *", tz: "Asia/Seoul" },
 				{ name: "dispatch-reports", data: { reportType: "MONTHLY" } },
 			);
 		});

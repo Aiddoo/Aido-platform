@@ -54,7 +54,7 @@ export class ReportGenerationJob implements OnModuleInit {
 		);
 		await this.queue.upsertJobScheduler(
 			"monthly-report-scheduler",
-			{ pattern: "0 1 1 * *", tz: CRON_TZ },
+			{ pattern: "0 2 1 * *", tz: CRON_TZ },
 			{
 				name: AiReportJobName.DISPATCH,
 				data: { reportType: "MONTHLY" } satisfies AiReportJobData,
