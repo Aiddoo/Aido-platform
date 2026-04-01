@@ -125,9 +125,11 @@ export function parseKmaResponse(
 ): WeatherForecast {
 	const allItems = data.response.body?.items?.item ?? [];
 	const targetDateStr = toCompactDateString(targetDate);
-	const items = allItems.filter((item) => item.fcstDate === targetDateStr);
+	const nextDay = new Date(targetDate);
+	nextDay.setDate(nextDay.getDate() + 1);
+	const nextDateStr = toCompactDateString(nextDay);
 
-	// 시간별 데이터 수집 (대상 날짜)
+	// 시간별 데이터 수집 (대상 날짜 + 다음 날)
 	const hourlyMap = new Map<
 		number,
 		{
@@ -149,112 +151,105 @@ export function parseKmaResponse(
 	let humidityCount = 0;
 	let windCount = 0;
 
-	for (const item of items) {
+	const relevantItems = allItems.filter(
+		(item) => item.fcstDate === targetDateStr || item.fcstDate === nextDateStr,
+	);
+
+	for (const item of relevantItems) {
 		const hour = Number.parseInt(item.fcstTime.substring(0, 2), 10);
 		const value = item.fcstValue;
+		const isNextDay = item.fcstDate === nextDateStr;
+		const key = isNextDay ? 24 + hour : hour;
+
+		const getOrCreate = () =>
+			hourlyMap.get(key) ?? {
+				temperature: 0,
+				skyCondition: "CLEAR",
+				precipitationProbability: 0,
+				precipitationAmount: 0,
+				snowAmount: 0,
+			};
 
 		switch (item.category) {
 			case KMA_CATEGORY.TMP: {
 				const temp = Number.parseFloat(value);
 				if (!Number.isNaN(temp)) {
-					const entry = hourlyMap.get(hour) ?? {
-						temperature: 0,
-						skyCondition: "CLEAR",
-						precipitationProbability: 0,
-						precipitationAmount: 0,
-						snowAmount: 0,
-					};
+					const entry = getOrCreate();
 					entry.temperature = temp;
-					hourlyMap.set(hour, entry);
+					hourlyMap.set(key, entry);
 				}
-				break;
-			}
-			case KMA_CATEGORY.TMN: {
-				const v = Number.parseFloat(value);
-				if (!Number.isNaN(v)) tempMin = Math.min(tempMin, v);
-				break;
-			}
-			case KMA_CATEGORY.TMX: {
-				const v = Number.parseFloat(value);
-				if (!Number.isNaN(v)) tempMax = Math.max(tempMax, v);
 				break;
 			}
 			case KMA_CATEGORY.POP: {
 				const prob = Number.parseInt(value, 10);
 				if (!Number.isNaN(prob)) {
-					maxPrecipProb = Math.max(maxPrecipProb, prob);
-					const entry = hourlyMap.get(hour) ?? {
-						temperature: 0,
-						skyCondition: "CLEAR",
-						precipitationProbability: 0,
-						precipitationAmount: 0,
-						snowAmount: 0,
-					};
+					if (!isNextDay) maxPrecipProb = Math.max(maxPrecipProb, prob);
+					const entry = getOrCreate();
 					entry.precipitationProbability = prob;
-					hourlyMap.set(hour, entry);
+					hourlyMap.set(key, entry);
 				}
 				break;
 			}
 			case KMA_CATEGORY.SKY: {
-				dominantSky = value;
-				const entry = hourlyMap.get(hour) ?? {
-					temperature: 0,
-					skyCondition: "CLEAR",
-					precipitationProbability: 0,
-					precipitationAmount: 0,
-					snowAmount: 0,
-				};
+				if (!isNextDay) dominantSky = value;
+				const entry = getOrCreate();
 				entry.skyCondition = SKY_CODE_MAP[value] ?? "CLEAR";
-				hourlyMap.set(hour, entry);
-				break;
-			}
-			case KMA_CATEGORY.PTY: {
-				if (value !== "0") dominantPty = value;
-				break;
-			}
-			case KMA_CATEGORY.REH: {
-				const v = Number.parseInt(value, 10);
-				if (!Number.isNaN(v)) {
-					avgHumidity += v;
-					humidityCount++;
-				}
-				break;
-			}
-			case KMA_CATEGORY.WSD: {
-				const v = Number.parseFloat(value);
-				if (!Number.isNaN(v)) {
-					avgWindSpeed += v;
-					windCount++;
-				}
+				hourlyMap.set(key, entry);
 				break;
 			}
 			case KMA_CATEGORY.PCP: {
 				const amount = Number.parseFloat(value);
 				if (!Number.isNaN(amount)) {
-					const entry = hourlyMap.get(hour) ?? {
-						temperature: 0,
-						skyCondition: "CLEAR",
-						precipitationProbability: 0,
-						precipitationAmount: 0,
-						snowAmount: 0,
-					};
+					const entry = getOrCreate();
 					entry.precipitationAmount = amount;
-					hourlyMap.set(hour, entry);
+					hourlyMap.set(key, entry);
 				}
 				break;
 			}
 			case KMA_CATEGORY.SNO: {
 				const amount = Number.parseFloat(value);
 				if (!Number.isNaN(amount)) {
-					const entry = hourlyMap.get(hour) ?? {
-						temperature: 0,
-						skyCondition: "CLEAR",
-						precipitationProbability: 0,
-						precipitationAmount: 0,
-						snowAmount: 0,
-					};
+					const entry = getOrCreate();
 					entry.snowAmount = amount;
-					hourlyMap.set(hour, entry);
+					hourlyMap.set(key, entry);
+				}
+				break;
+			}
+			case KMA_CATEGORY.TMN: {
+				if (!isNextDay) {
+					const v = Number.parseFloat(value);
+					if (!Number.isNaN(v)) tempMin = Math.min(tempMin, v);
+				}
+				break;
+			}
+			case KMA_CATEGORY.TMX: {
+				if (!isNextDay) {
+					const v = Number.parseFloat(value);
+					if (!Number.isNaN(v)) tempMax = Math.max(tempMax, v);
+				}
+				break;
+			}
+			case KMA_CATEGORY.PTY: {
+				if (!isNextDay && value !== "0") dominantPty = value;
+				break;
+			}
+			case KMA_CATEGORY.REH: {
+				if (!isNextDay) {
+					const v = Number.parseInt(value, 10);
+					if (!Number.isNaN(v)) {
+						avgHumidity += v;
+						humidityCount++;
+					}
+				}
+				break;
+			}
+			case KMA_CATEGORY.WSD: {
+				if (!isNextDay) {
+					const v = Number.parseFloat(value);
+					if (!Number.isNaN(v)) {
+						avgWindSpeed += v;
+						windCount++;
+					}
 				}
 				break;
 			}
@@ -274,11 +269,11 @@ export function parseKmaResponse(
 		}
 	}
 
-	// 시간별 예보 배열 생성
+	// 시간별 예보 배열 생성 (24+hour → hour % 24 변환)
 	const hourlyForecasts: HourlyForecast[] = [...hourlyMap.entries()]
 		.sort(([a], [b]) => a - b)
 		.map(([hour, data]) => ({
-			hour,
+			hour: hour % 24,
 			temperature: data.temperature,
 			skyCondition: data.skyCondition,
 			precipitationProbability: data.precipitationProbability,
