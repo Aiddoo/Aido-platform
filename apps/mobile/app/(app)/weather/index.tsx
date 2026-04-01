@@ -20,7 +20,7 @@ import { useGetConditionsQueryOptions } from '@src/features/weather/presentation
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { Box, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDate, isDateToday } from '@src/shared/utils/date';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Skeleton } from 'heroui-native';
@@ -186,7 +186,9 @@ export default function WeatherDetailScreen() {
             </>
           )}
 
-          <HourlyForecastSection items={forecast.hourlyForecasts} />
+          <HourlyForecastSection
+            items={filterHourlyForecasts(forecast.hourlyForecasts, selectedDate)}
+          />
           {forecast.dailyForecasts?.length > 0 && (
             <DailyForecastSection items={forecast.dailyForecasts} />
           )}
@@ -347,6 +349,19 @@ function FeelsLike({ feelsLike }: { feelsLike: number }) {
       </Box>
     </View>
   );
+}
+
+function filterHourlyForecasts(items: HourlyForecast[], selectedDate: Date): HourlyForecast[] {
+  if (!isDateToday(selectedDate)) {
+    return items.slice(0, 24);
+  }
+
+  const currentHour = new Date().getHours();
+  const startIndex = items.findIndex((item) => item.hour >= currentHour);
+  if (startIndex === -1) {
+    return items.slice(24, 48);
+  }
+  return items.slice(startIndex, startIndex + 24);
 }
 
 function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
