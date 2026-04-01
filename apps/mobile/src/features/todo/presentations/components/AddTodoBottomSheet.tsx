@@ -47,7 +47,7 @@ import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { CategorySelectContent } from './CategorySelectBottomSheet';
 import { TodoDatePickerContent } from './TodoDatePickerContent';
-import { TodoRepeatPickerContent } from './TodoRepeatPickerContent';
+import { type RepeatPickerCloseResult, TodoRepeatPickerContent } from './TodoRepeatPickerContent';
 import { TodoTimePickerContent } from './TodoTimePickerContent';
 
 interface AddTodoBottomSheetBaseProps {
@@ -266,37 +266,42 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const openRepeatPicker = () => {
     Keyboard.dismiss();
-    let pickerResult: { daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null } | null = null;
-    overlay.open<{ daysOfWeek: DayOfWeek[]; repeatEndDate: Date | null } | null>(
-      ({ isOpen, close, exit }) => (
-        <ModalBottomSheet
-          isOpen={isOpen}
-          onClose={() => close(null)}
-          onExit={() => {
-            exit();
-            if (pickerResult) {
+    let pickerResult: RepeatPickerCloseResult | null = null;
+    overlay.open<RepeatPickerCloseResult | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet
+        isOpen={isOpen}
+        onClose={() => close({ type: 'cancel' })}
+        onExit={() => {
+          exit();
+          match(pickerResult)
+            .with({ type: 'reset' }, () => {
+              methods.setValue('isRecurring', false);
+              methods.setValue('daysOfWeek', []);
+              methods.setValue('repeatEndDate', null);
+            })
+            .with({ type: 'confirm' }, ({ value }) => {
               methods.setValue('isRecurring', true);
-              methods.setValue('daysOfWeek', pickerResult.daysOfWeek);
-              methods.setValue('repeatEndDate', pickerResult.repeatEndDate);
-            }
-            focusTodoInput();
+              methods.setValue('daysOfWeek', value.daysOfWeek);
+              methods.setValue('repeatEndDate', value.repeatEndDate);
+              methods.setValue('startDate', value.startDate);
+            })
+            .otherwise(() => {});
+          focusTodoInput();
+        }}
+      >
+        <TodoRepeatPickerContent
+          startDate={methods.getValues('startDate')}
+          repeat={{
+            daysOfWeek: methods.getValues('daysOfWeek') ?? [],
+            repeatEndDate: methods.getValues('repeatEndDate') ?? null,
           }}
-        >
-          <TodoRepeatPickerContent
-            startDate={methods.getValues('startDate')}
-            repeat={{
-              daysOfWeek: methods.getValues('daysOfWeek') ?? [],
-              repeatEndDate: methods.getValues('repeatEndDate') ?? null,
-            }}
-            onConfirm={(repeat) => {
-              pickerResult = repeat;
-              close(repeat);
-            }}
-            onCancel={() => close(null)}
-          />
-        </ModalBottomSheet>
-      ),
-    );
+          onClose={(result) => {
+            pickerResult = result;
+            close(result);
+          }}
+        />
+      </ModalBottomSheet>
+    ));
   };
 
   const openCategoryPicker = () => {
