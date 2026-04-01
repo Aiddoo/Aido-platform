@@ -421,8 +421,8 @@ function HourlyForecastStrip({ items }: { items: HourlyForecast[] }) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8 }}
       >
-        {items.map((item) => (
-          <HourlyCard key={item.hour} item={item} />
+        {items.map((item, i) => (
+          <HourlyCard key={`${item.hour}-${i}`} item={item} />
         ))}
       </ScrollView>
     </VStack>
@@ -437,9 +437,8 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
     <VStack
       py={16}
       px={20}
-      gap={8}
-      className="items-center justify-center rounded-lg"
-      style={{ backgroundColor: palette.glassStrong }}
+      className="items-center justify-between rounded-lg"
+      style={{ backgroundColor: palette.glassStrong, height: 120 }}
     >
       <Text size="e2" align="center" style={{ color: palette.textSub }}>
         {item.hour}시
@@ -447,27 +446,17 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 
       <SkyIcon width={24} height={24} color={palette.icon} />
 
+      {item.precipitationProbability > 0 ? (
+        <Text size="e2" align="center" style={{ color: palette.accent }}>
+          {item.precipitationProbability}%
+        </Text>
+      ) : (
+        <View style={{ height: 14 }} />
+      )}
+
       <Text size="b4" align="center" style={{ color: palette.textSub }}>
         {Math.round(item.temperature)}°
       </Text>
-
-      {item.precipitationProbability > 0 && (
-        <Text size="b4" align="center" style={{ color: palette.textSub }}>
-          {item.precipitationProbability}%
-        </Text>
-      )}
-
-      {item.precipitationAmount > 0 && (
-        <Text size="e2" align="center" style={{ color: palette.accent }}>
-          {item.precipitationAmount}mm
-        </Text>
-      )}
-
-      {item.snowAmount > 0 && (
-        <Text size="e2" align="center" style={{ color: palette.accent }}>
-          {item.snowAmount}cm
-        </Text>
-      )}
     </VStack>
   );
 }
