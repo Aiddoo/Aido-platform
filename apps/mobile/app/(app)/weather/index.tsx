@@ -21,7 +21,7 @@ import { useGetForecastQueryOptions } from '@src/features/weather/presentations/
 import { isApiError } from '@src/shared/errors/api-error';
 import { Box, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Skeleton } from 'heroui-native';
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -101,8 +101,14 @@ export default function WeatherDetailScreen() {
     data: forecast,
     error,
     isPending,
-  } = useQuery(useGetForecastQueryOptions(formatDate(selectedDate)));
-  const { data: conditions } = useQuery(useGetConditionsQueryOptions());
+  } = useQuery({
+    ...useGetForecastQueryOptions(formatDate(selectedDate)),
+    placeholderData: keepPreviousData,
+  });
+  const { data: conditions } = useQuery({
+    ...useGetConditionsQueryOptions(),
+    placeholderData: keepPreviousData,
+  });
 
   if (isPending) {
     return (
