@@ -45,8 +45,8 @@ const TIME_PALETTES = {
     accent: '#A0D8FF',
   },
   day: {
-    bg: '#1976D2',
-    gradient: ['#1976D2', '#42A5F5', '#90CAF9'] as const,
+    bg: '#1565C0',
+    gradient: ['#1565C0', '#1E88E5', '#64B5F6'] as const,
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
