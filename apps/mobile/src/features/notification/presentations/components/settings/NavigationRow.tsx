@@ -1,6 +1,6 @@
 import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Label, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 
 interface NavigationRowProps {
   label: string;
@@ -23,12 +23,18 @@ export function NavigationRow({
       <HStack
         justify="between"
         align="center"
-        className={cn('px-4 py-2', isDisabled && 'opacity-40')}
+        className={cn('py-2', isDisabled && 'opacity-40')}
         gap={20}
       >
-        <Label>{label}</Label>
-        <HStack gap={8} align="center">
-          <Text size="b2" className={summaryEnabled ? 'text-main' : 'text-gray-5'}>
+        <Text size="b2" numberOfLines={1} className="flex-1 text-gray-9">
+          {label}
+        </Text>
+        <HStack gap={8} align="center" className="shrink-0">
+          <Text
+            size="b2"
+            numberOfLines={1}
+            className={summaryEnabled ? 'text-main' : 'text-gray-5'}
+          >
             {summary}
           </Text>
           <ArrowRightIcon colorClassName="text-gray-6" />

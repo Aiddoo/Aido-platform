@@ -52,7 +52,7 @@ function NotificationSettingsForm() {
         />
       </SettingsCard>
 
-      <VStack p={8} gap={8} className="bg-white rounded-2xl">
+      <SettingsCard>
         <NavigationRow
           label="푸시 알림"
           summary={preference.pushEnabled ? '켜짐' : '꺼짐'}
@@ -71,10 +71,11 @@ function NotificationSettingsForm() {
         <NavigationRow
           label="리마인드 알림"
           summary={`${formatReminderTime(preference.morningReminderHour, preference.morningReminderMinute, preference.timeFormat)} / ${formatReminderTime(preference.eveningReminderHour, preference.eveningReminderMinute, preference.timeFormat)}`}
+          summaryEnabled={!pushDisabled}
           onPress={() => router.push('/settings/notifications/reminder')}
           isDisabled={pushDisabled}
         />
-      </VStack>
+      </SettingsCard>
     </VStack>
   );
 }
@@ -86,13 +87,13 @@ NotificationSettingsForm.Loading = function Loading() {
         <ToggleSkeleton />
       </SettingsCard>
 
-      <VStack p={8} gap={8} className="bg-white rounded-2xl">
+      <SettingsCard>
         <NavigationSkeleton />
         <Separator className="bg-gray-2" />
         <NavigationSkeleton />
         <Separator className="bg-gray-2" />
         <NavigationSkeleton />
-      </VStack>
+      </SettingsCard>
     </VStack>
   );
 };

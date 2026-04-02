@@ -51,7 +51,7 @@ export function GroupSkeleton({ rows }: { rows: number }) {
 export function NavigationSkeleton() {
   return (
     <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack justify="between" align="center" className="px-4 py-2">
+      <HStack justify="between" align="center" className="py-2">
         <Skeleton className="h-5 w-24 rounded" />
         <Skeleton className="h-5 w-12 rounded" />
       </HStack>
