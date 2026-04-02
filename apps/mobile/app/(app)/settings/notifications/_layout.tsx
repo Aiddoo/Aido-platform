@@ -5,7 +5,7 @@ import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-export default function SettingsLayout() {
+export default function NotificationsLayout() {
   const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
@@ -31,19 +31,10 @@ export default function SettingsLayout() {
         ),
       }}
     >
-      <Stack.Screen name="notifications" options={{ headerShown: false }} />
-      <Stack.Screen name="theme" options={{ title: '화면 테마' }} />
-      <Stack.Screen name="font-size" options={{ title: '글꼴 크기' }} />
-      <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
-      <Stack.Screen name="inquiry" options={{ title: '문의하기' }} />
-      <Stack.Screen name="linked-accounts" options={{ title: '연결된 계정' }} />
-      <Stack.Screen name="app-icon" options={{ title: '앱 아이콘' }} />
-      <Stack.Screen name="profile" options={{ title: '프로필 정보' }} />
-      <Stack.Screen name="edit-name" options={{ title: '이름 변경' }} />
-      <Stack.Screen name="change-password" options={{ title: '비밀번호 변경' }} />
-      <Stack.Screen name="delete-account" options={{ title: '회원 탈퇴' }} />
-      <Stack.Screen name="subscription" options={{ title: '구독 관리' }} />
-      <Stack.Screen name="category-settings" options={{ title: '카테고리' }} />
+      <Stack.Screen name="index" options={{ title: '알림 설정' }} />
+      <Stack.Screen name="push" options={{ title: '푸시 알림' }} />
+      <Stack.Screen name="weather" options={{ title: '날씨 알림' }} />
+      <Stack.Screen name="reminder" options={{ title: '리마인드 알림' }} />
     </Stack>
   );
 }
