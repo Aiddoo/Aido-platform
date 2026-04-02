@@ -261,7 +261,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
     resolveIconBySky(forecast.skyCondition);
-  const avgTemp = Math.round((forecast.temperatureMin + forecast.temperatureMax) / 2);
+  const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
 
   return (
     <VStack align="center" gap={8}>
@@ -269,7 +269,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
         className="text-[80px] leading-[88px] font-medium tracking-[-2.4px]"
         style={{ color: palette.text }}
       >
-        {avgTemp}°
+        {currentTemp}°
       </Text>
 
       <HStack gap={4} align="center">
@@ -389,7 +389,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
         px={16}
         gap={12}
         mb={12}
-        className="rounded-2xl border border-white/20 overflow-hidden"
+        className="rounded-2xl overflow-hidden"
         style={{ backgroundColor: palette.glassCard }}
       >
         <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
@@ -454,7 +454,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       px={16}
       gap={8}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
@@ -525,7 +525,7 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
       py={16}
       px={16}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">
@@ -565,7 +565,7 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
       py={16}
       px={16}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">

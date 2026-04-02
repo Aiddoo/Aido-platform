@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
+import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
@@ -60,7 +61,13 @@ function WeatherForecastBadge() {
     placeholderData: keepPreviousData,
   });
 
-  if (isPending && !forecast) return null;
+  if (isPending && !forecast) {
+    return (
+      <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
+        <WeatherSunIcon width={18} height={18} colorClassName="text-gray-6" />
+      </Pressable>
+    );
+  }
 
   if (error) {
     const label = isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902) ? '날씨 설정' : '날씨';
@@ -82,6 +89,7 @@ function WeatherForecastBadge() {
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
     resolveIconBySky(forecast.skyCondition);
+  const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
 
   return (
     <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
@@ -89,7 +97,7 @@ function WeatherForecastBadge() {
         <ForecastIcon width={18} height={18} colorClassName="text-gray-7" />
 
         <Text size="b4" weight="semibold" shade={8}>
-          {Math.round(forecast.temperatureMin)}°/{Math.round(forecast.temperatureMax)}°
+          {currentTemp}°
         </Text>
       </HStack>
     </Pressable>

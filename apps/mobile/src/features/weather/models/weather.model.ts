@@ -71,4 +71,16 @@ export const WeatherPolicy = {
   isExpandable(forecast: WeatherForecast): boolean {
     return forecast.hourlyForecasts.length > 0;
   },
+  /** 현재 시각 기온 */
+  getCurrentTemperature(forecast: WeatherForecast): number {
+    const currentHour = new Date().getHours();
+
+    const hourly =
+      forecast.hourlyForecasts.find((h) => h.hour === currentHour) ??
+      forecast.hourlyForecasts.reduce((prev, curr) =>
+        Math.abs(curr.hour - currentHour) < Math.abs(prev.hour - currentHour) ? curr : prev,
+      );
+
+    return Math.round(hourly.temperature);
+  },
 } as const;
