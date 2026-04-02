@@ -52,6 +52,7 @@ import WeatherPartlyCloudyIconSvg from '@assets/icons/ic_weather_partly_cloudy.s
 import WeatherRainIconSvg from '@assets/icons/ic_weather_rain.svg';
 import WeatherShowerIconSvg from '@assets/icons/ic_weather_shower.svg';
 import WeatherSnowIconSvg from '@assets/icons/ic_weather_snow.svg';
+import WeatherSunIconSvg from '@assets/icons/ic_weather_sun.svg';
 import { createStyledIcon } from './createStyledIcon';
 
 // 래핑된 아이콘 컴포넌트들
@@ -104,6 +105,7 @@ export const ToastWarningIcon = createStyledIcon(ToastWarningIconSvg);
 export const TrashIcon = createStyledIcon(TrashIconSvg);
 export const RefreshIcon = createStyledIcon(RefreshIconSvg);
 export const WeatherClearIcon = createStyledIcon(WeatherClearIconSvg);
+export const WeatherSunIcon = createStyledIcon(WeatherSunIconSvg);
 export const WeatherCloudyIcon = createStyledIcon(WeatherCloudyIconSvg);
 export const WeatherPartlyCloudyIcon = createStyledIcon(WeatherPartlyCloudyIconSvg);
 export const WeatherRainIcon = createStyledIcon(WeatherRainIconSvg);

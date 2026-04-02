@@ -8,7 +8,7 @@ import {
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { HStack, Text } from '@src/shared/ui';
-import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
+import { WeatherSunIcon } from '@src/shared/ui/Icon/icons';
 import { formatDate } from '@src/shared/utils/date';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
@@ -68,7 +68,7 @@ function WeatherForecastBadge() {
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
         <HStack align="center" gap={4}>
-          <WeatherClearIcon width={18} height={18} colorClassName="text-gray-6" />
+          <WeatherSunIcon width={18} height={18} colorClassName="text-gray-6" />
           <Text size="b4" shade={6}>
             {label}
           </Text>
