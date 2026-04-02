@@ -30,7 +30,9 @@ settings/notifications/
   reminder.tsx     ← 리마인드 알림 상세
 ```
 
-기존 `settings/notifications.tsx`는 삭제한다.
+기존 `settings/notifications.tsx`는 삭제한다. Expo Router에서 `notifications.tsx`와 `notifications/index.tsx`는 충돌하므로 반드시 동시에 삭제/생성해야 한다.
+
+> **참고**: `app/(app)/notifications/`(알림 수신함 화면)과 `app/(app)/settings/notifications/`(알림 설정 화면)는 경로가 다르므로 충돌하지 않는다.
 
 ## 화면 설계
 
@@ -62,6 +64,8 @@ settings/notifications/
 - **날씨 알림**: 상태 요약 `켜짐` / `꺼짐`
 - **리마인드 알림**: 설정된 시간 표시 (예: `08:00, 18:00`)
 - 각 항목 탭 시 `router.push`로 상세 화면 진입
+- `useSuspenseQuery(useGetPreferenceQueryOptions())`로 데이터 조회. TanStack Query 캐시 공유로 상세 화면 진입 시 중복 fetch 없음
+- `QueryErrorBoundary` + `Suspense`로 감싸되, 로딩 상태는 기존 스켈레톤 패턴 재사용
 
 ### 푸시 알림 상세 (push.tsx)
 
@@ -124,7 +128,7 @@ settings/notifications/
 └──────────────────────────────┘
 ```
 
-기존 리마인드 섹션 이동. 프리미엄 게이트 유지.
+기존 리마인드 섹션 이동. 프리미엄 게이트(`UserPolicy.isPremiumUser` 체크 + `CrownIcon` 표시 + `premiumDialog`) 그대로 유지.
 
 ## 공통 컴포넌트 추출
 
@@ -142,6 +146,21 @@ settings/notifications/
 
 `ReminderTimePicker`, `WeatherTimePicker`는 각 상세 화면에 인라인으로 유지한다 (해당 화면에서만 사용).
 
+추출 컴포넌트들은 알림 설정 전용이므로 `features/notification/presentations/components/settings/`에 배치한다. 기존 알림 수신함 컴포넌트(`notification-bell.tsx`, `notification-item.tsx` 등)와 분리.
+
+### 메인 리스트 전용 컴포넌트
+
+`index.tsx`의 네비게이션 행은 새로운 `NavigationRow` 컴포넌트로 구현한다.
+
+```tsx
+interface NavigationRowProps {
+  label: string;
+  summary: string;      // "켜짐", "꺼짐", "08:00, 18:00"
+  onPress: () => void;
+  isDisabled?: boolean;
+}
+```
+
 ## 변경 범위
 
 | 파일 | 변경 |
@@ -155,8 +174,23 @@ settings/notifications/
 | `settings/_layout.tsx` | `notifications` Screen 설정 조정 (headerShown: false) |
 | `features/notification/presentations/components/` | 공통 컴포넌트 추출 |
 
+## 상태 처리
+
+### 로딩 상태
+- 모든 화면: `QueryErrorBoundary` + `Suspense` 래핑
+- `index.tsx`: 기존 `ToggleSkeleton` 재사용하여 리스트 스켈레톤
+- 상세 화면: 기존 스켈레톤 컴포넌트(`ToggleSkeleton`, `GroupSkeleton`) 추출하여 재사용
+
+### Disabled 상태 (푸시 꺼짐 시)
+- `index.tsx`: 날씨/리마인드 행의 summary 텍스트를 `opacity-40`으로 표시
+- 상세 화면: 기존과 동일하게 각 컨트롤의 `isDisabled` prop으로 처리
+
+### Mutation 독립성
+각 상세 화면이 독립된 `updateMutation` 인스턴스를 가진다. 푸시 설정 변경 중에 날씨 컨트롤이 비활성화되지 않는다 (기존 대비 개선).
+
 ## 주의사항
 
-- `settings/_layout.tsx`에서 `notifications` Screen에 `headerShown: false` 설정 필요 (중첩 Stack의 헤더 중복 방지)
-- `notifications/_layout.tsx`에서 각 상세 화면의 헤더 타이틀 설정
+- `settings/_layout.tsx`에서 `notifications` Screen에만 `headerShown: false` 추가 (다른 Screen은 영향 없음)
+- `notifications/_layout.tsx`는 부모 레이아웃의 헤더 스타일(`useFontScale`, `useResolveClassNames`, custom `headerLeft`)을 동일하게 적용
 - 기존 `useUpdatePreferenceMutationOptions`, `useGetPreferenceQueryOptions` 등 쿼리 훅은 변경 없이 그대로 사용
+- 기존 딥링크(`/settings/notifications`)는 `notifications/index.tsx`로 자동 라우팅되므로 변경 불필요
