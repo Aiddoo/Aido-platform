@@ -36,7 +36,7 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(20,0,50,0.20)',
     glassCard: 'rgba(20,0,50,0.28)',
     glassStrong: 'rgba(20,0,50,0.35)',
@@ -50,7 +50,7 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(0,20,60,0.18)',
     glassCard: 'rgba(0,20,60,0.26)',
     glassStrong: 'rgba(0,20,60,0.32)',
@@ -64,7 +64,7 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(15,5,30,0.22)',
     glassCard: 'rgba(15,5,30,0.30)',
     glassStrong: 'rgba(15,5,30,0.36)',
@@ -78,7 +78,7 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.75)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(140,170,220,0.10)',
     glassCard: 'rgba(140,170,220,0.18)',
     glassStrong: 'rgba(140,170,220,0.24)',
