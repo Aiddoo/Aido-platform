@@ -36,22 +36,24 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(20,0,50,0.20)',
-    glassStrong: 'rgba(245,245,245,0.10)',
+    glassCard: 'rgba(20,0,50,0.28)',
+    glassStrong: 'rgba(20,0,50,0.35)',
     glassBorder: 'rgba(248,248,248,0.20)',
     badge: 'rgba(20,0,50,0.25)',
-    accent: '#F5B078',
+    accent: '#A0D8FF',
   },
   day: {
-    bg: '#1976D2',
-    gradient: ['#1976D2', '#42A5F5', '#90CAF9'] as const,
+    bg: '#1565C0',
+    gradient: ['#1565C0', '#1E88E5', '#64B5F6'] as const,
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(0,20,60,0.18)',
-    glassStrong: 'rgba(245,245,245,0.10)',
+    glassCard: 'rgba(0,20,60,0.26)',
+    glassStrong: 'rgba(0,20,60,0.32)',
     glassBorder: 'rgba(248,248,248,0.20)',
     badge: 'rgba(0,20,60,0.22)',
     accent: '#FFFFFF',
@@ -62,12 +64,13 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.85)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(15,5,30,0.22)',
-    glassStrong: 'rgba(245,245,245,0.10)',
+    glassCard: 'rgba(15,5,30,0.30)',
+    glassStrong: 'rgba(15,5,30,0.36)',
     glassBorder: 'rgba(248,248,248,0.20)',
     badge: 'rgba(15,5,30,0.25)',
-    accent: '#FFB088',
+    accent: '#A0D8FF',
   },
   night: {
     bg: '#080C1A',
@@ -75,9 +78,10 @@ const TIME_PALETTES = {
     text: '#FFFFFF',
     textSub: 'rgba(255,255,255,0.75)',
     icon: '#FFFFFF',
-    iconSun: '#FFD233',
+
     glass: 'rgba(140,170,220,0.10)',
-    glassStrong: 'rgba(245,245,245,0.10)',
+    glassCard: 'rgba(140,170,220,0.18)',
+    glassStrong: 'rgba(140,170,220,0.24)',
     glassBorder: 'rgba(248,248,248,0.20)',
     badge: 'rgba(140,170,220,0.20)',
     accent: '#7DB4F5',
@@ -173,16 +177,16 @@ export default function WeatherDetailScreen() {
 
           <TodayTemperature forecast={forecast} />
 
-          <Spacing size={40} />
+          <Spacing size={32} />
 
           <WeatherStats forecast={forecast} />
 
-          <Spacing size={32} />
+          <Spacing size={20} />
 
           {conditions?.feelsLikeTemperature != null && (
             <>
               <FeelsLike feelsLike={conditions.feelsLikeTemperature} />
-              <Spacing size={40} />
+              <Spacing size={32} />
             </>
           )}
 
@@ -262,31 +266,31 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
   return (
     <VStack align="center" gap={8}>
       <Text
-        className="text-[80px] leading-[88px] font-semibold tracking-[-2.4px]"
+        className="text-[80px] leading-[88px] font-medium tracking-[-2.4px]"
         style={{ color: palette.text }}
       >
-        {avgTemp}
+        {avgTemp}°
       </Text>
 
       <HStack gap={4} align="center">
-        <Text size="b3" style={{ color: palette.textSub }}>
+        <Text size="b2" style={{ color: palette.textSub }}>
           최저
         </Text>
-        <Text size="b3" weight="medium" style={{ color: '#319CFC' }}>
+        <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
           {Math.round(forecast.temperatureMin)}°
         </Text>
-        <Text size="b3" style={{ color: palette.textSub }}>
+        <Text size="b2" style={{ color: palette.textSub }}>
           {' '}
           / 최고
         </Text>
-        <Text size="b3" weight="medium" style={{ color: '#F0503D' }}>
+        <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
           {Math.round(forecast.temperatureMax)}°
         </Text>
       </HStack>
 
       <HStack gap={8} align="center" className="mt-2">
         <ForecastIcon width={18} height={18} color={palette.text} />
-        <Text size="b3" weight="semibold" style={{ color: palette.text }}>
+        <Text size="b2" weight="semibold" style={{ color: palette.text }}>
           {SKY_CONDITION_LABEL[forecast.skyCondition]}
         </Text>
       </HStack>
@@ -298,7 +302,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
           className="rounded-full mt-1"
           style={{ backgroundColor: palette.badge }}
         >
-          <Text size="b4" weight="medium" style={{ color: palette.text }}>
+          <Text size="b3" weight="medium" style={{ color: palette.text }}>
             {PRECIPITATION_TYPE_LABEL[forecast.precipitationType]}{' '}
             {forecast.precipitationProbability}%
           </Text>
@@ -327,7 +331,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 
   return (
     <VStack align="center" gap={4}>
-      <Text size="b4" style={{ color: palette.textSub }}>
+      <Text size="b3" style={{ color: palette.textSub }}>
         {label}
       </Text>
       <Text size="b1" weight="semibold" style={{ color: palette.text }}>
@@ -375,7 +379,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
     <View className="relative mt-16">
       <Image
         source={catImage}
-        className="absolute right-5 w-[140px] h-[102px] z-10"
+        className="absolute right-8 w-[140px] h-[102px] z-10"
         style={{ top: -102 }}
         resizeMode="contain"
       />
@@ -385,8 +389,8 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
         px={16}
         gap={12}
         mb={12}
-        className="rounded-lg border border-white/20 overflow-hidden"
-        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+        className="rounded-2xl border border-white/20 overflow-hidden"
+        style={{ backgroundColor: palette.glassCard }}
       >
         <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
           시간별 예보
@@ -410,21 +414,14 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
   const SkyIcon = resolveIconBySky(item.skyCondition);
 
   return (
-    <VStack
-      py={16}
-      px={20}
-      className="items-center justify-between rounded-lg"
-      style={{ backgroundColor: palette.glassStrong, height: 120 }}
-    >
-      <Text size="e2" align="center" style={{ color: palette.textSub }}>
+    <VStack py={16} px={20} className="items-center justify-between">
+      <Text size="b3" align="center" style={{ color: palette.textSub }}>
         {item.hour}시
       </Text>
 
-      <SkyIcon
-        width={24}
-        height={24}
-        color={item.skyCondition === 'CLEAR' ? palette.iconSun : palette.icon}
-      />
+      <Spacing size={8} />
+
+      <SkyIcon width={24} height={24} color={palette.icon} />
 
       {item.precipitationProbability > 0 ? (
         <Text size="e2" align="center" style={{ color: palette.accent }}>
@@ -434,7 +431,9 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
         <View style={{ height: 14 }} />
       )}
 
-      <Text size="b4" align="center" style={{ color: palette.textSub }}>
+      <Spacing size={8} />
+
+      <Text size="b3" weight="medium" align="center" style={{ color: palette.textSub }}>
         {Math.round(item.temperature)}°
       </Text>
     </VStack>
@@ -455,8 +454,8 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       px={16}
       gap={8}
       mb={12}
-      className="rounded-lg border border-white/20 overflow-hidden"
-      style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+      className="rounded-2xl border border-white/20 overflow-hidden"
+      style={{ backgroundColor: palette.glassCard }}
     >
       <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
         주간 예보
@@ -470,7 +469,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
 
         return (
           <HStack key={item.date} align="center" className="py-1 gap-3 px-1">
-            <Text size="b3" className="w-8" style={{ color: palette.textSub }}>
+            <Text size="b3" weight="medium" className="w-8" style={{ color: palette.textSub }}>
               {dayLabel}
             </Text>
 
@@ -483,12 +482,12 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
               )}
             </VStack>
 
-            <Text size="b4" className="w-8 text-right" style={{ color: '#319CFC' }}>
+            <Text size="b3" weight="medium" className="w-8 text-right" style={{ color: '#A0D8FF' }}>
               {Math.round(item.temperatureMin)}°
             </Text>
             <View
               className="flex-1 h-1 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+              style={{ backgroundColor: palette.glass }}
             >
               <View
                 className="absolute h-1 rounded-full overflow-hidden"
@@ -505,7 +504,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
                 </Svg>
               </View>
             </View>
-            <Text size="b4" className="w-8" style={{ color: '#F0503D' }}>
+            <Text size="b3" weight="medium" className="w-8" style={{ color: palette.text }}>
               {Math.round(item.temperatureMax)}°
             </Text>
           </HStack>
@@ -526,8 +525,8 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
       py={16}
       px={16}
       mb={12}
-      className="rounded-lg border border-white/20 overflow-hidden"
-      style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+      className="rounded-2xl border border-white/20 overflow-hidden"
+      style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">
         {sunrise != null && (
@@ -566,8 +565,8 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
       py={16}
       px={16}
       mb={12}
-      className="rounded-lg border border-white/20 overflow-hidden"
-      style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+      className="rounded-2xl border border-white/20 overflow-hidden"
+      style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">
         {pm10 != null && (
@@ -605,12 +604,12 @@ function getDustGrade(value: number, type: 'pm10' | 'pm25'): string {
 
 function getTempColor(temp: number): string {
   if (temp >= 35) return '#FF3B30';
-  if (temp >= 30) return '#F0503D';
+  if (temp >= 30) return '#FF8A80';
   if (temp >= 25) return '#FF9500';
   if (temp >= 20) return '#F5C842';
   if (temp >= 15) return '#8BC34A';
   if (temp >= 10) return '#4FC3F7';
-  if (temp >= 5) return '#319CFC';
+  if (temp >= 5) return '#A0D8FF';
   return '#2196F3';
 }
 

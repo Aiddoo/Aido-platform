@@ -1,11 +1,11 @@
 import type { PrecipitationType, SkyCondition } from '@aido/validators';
 import {
-  WeatherClearIcon,
   WeatherCloudyIcon,
   WeatherPartlyCloudyIcon,
   WeatherRainIcon,
   WeatherShowerIcon,
   WeatherSnowIcon,
+  WeatherSunIcon,
 } from '@src/shared/ui/Icon';
 import { match } from 'ts-pattern';
 
@@ -19,7 +19,7 @@ export const resolveIconByPrecipitation = (type: PrecipitationType) =>
 
 export const resolveIconBySky = (condition: SkyCondition) =>
   match(condition)
-    .with('CLEAR', () => WeatherClearIcon)
+    .with('CLEAR', () => WeatherSunIcon)
     .with('PARTLY_CLOUDY', () => WeatherPartlyCloudyIcon)
     .with('CLOUDY', () => WeatherCloudyIcon)
     .exhaustive();

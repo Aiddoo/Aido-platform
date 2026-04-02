@@ -54,4 +54,5 @@ export {
   WeatherRainIcon,
   WeatherShowerIcon,
   WeatherSnowIcon,
+  WeatherSunIcon,
 } from './icons';
