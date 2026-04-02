@@ -52,16 +52,18 @@ function NotificationSettingsForm() {
         />
       </SettingsCard>
 
-      <SettingsCard>
+      <VStack p={8} gap={8} className="bg-white rounded-2xl">
         <NavigationRow
           label="푸시 알림"
           summary={preference.pushEnabled ? '켜짐' : '꺼짐'}
+          summaryEnabled={preference.pushEnabled}
           onPress={() => router.push('/settings/notifications/push')}
         />
         <Separator className="bg-gray-2" />
         <NavigationRow
           label="날씨 알림"
           summary={isWeatherEnabled(preference) ? '켜짐' : '꺼짐'}
+          summaryEnabled={isWeatherEnabled(preference)}
           onPress={() => router.push('/settings/notifications/weather')}
           isDisabled={pushDisabled}
         />
@@ -72,7 +74,7 @@ function NotificationSettingsForm() {
           onPress={() => router.push('/settings/notifications/reminder')}
           isDisabled={pushDisabled}
         />
-      </SettingsCard>
+      </VStack>
     </VStack>
   );
 }
@@ -84,13 +86,13 @@ NotificationSettingsForm.Loading = function Loading() {
         <ToggleSkeleton />
       </SettingsCard>
 
-      <SettingsCard>
+      <VStack p={8} gap={8} className="bg-white rounded-2xl">
         <NavigationSkeleton />
         <Separator className="bg-gray-2" />
         <NavigationSkeleton />
         <Separator className="bg-gray-2" />
         <NavigationSkeleton />
-      </SettingsCard>
+      </VStack>
     </VStack>
   );
 };

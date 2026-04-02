@@ -29,7 +29,7 @@ const WeatherLayout = () => {
         headerRight: () => (
           <View className="justify-center items-center">
             <Pressable
-              onPress={() => router.push('/settings/notifications')}
+              onPress={() => router.push('/settings/notifications/weather')}
               hitSlop={8}
               className="p-2"
             >
