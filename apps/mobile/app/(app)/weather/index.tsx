@@ -16,6 +16,10 @@ import {
   PRECIPITATION_TYPE_LABEL,
   SKY_CONDITION_LABEL,
 } from '@src/features/weather/presentations/constants/weather-labels.constant';
+import {
+  type LocationCoords,
+  useSyncWeatherLocation,
+} from '@src/features/weather/presentations/hooks/use-sync-weather-location';
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/use-get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
@@ -208,42 +212,39 @@ export default function WeatherDetailScreen() {
   );
 }
 
-function useLocationName(): string | null {
+function useLocationName(location: LocationCoords | null): string | null {
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!location) return;
+
     let cancelled = false;
 
     (async () => {
       try {
-        const pos = await Location.getLastKnownPositionAsync();
-        if (!pos || cancelled) return;
-
-        const [geo] = await Location.reverseGeocodeAsync({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
+        const [geo] = await Location.reverseGeocodeAsync(location);
 
         if (geo && !cancelled) {
           const parts = [geo.city, geo.district].filter(Boolean);
           setName(parts.join(' ') || null);
         }
       } catch {
-        // 위치 권한 없거나 역지오코딩 실패 시 무시
+        // 역지오코딩 실패 시 무시
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location]);
 
   return name;
 }
 
 function WeatherLocation() {
   const palette = useTimePalette();
-  const locationName = useLocationName();
+  const [location] = useSyncWeatherLocation();
+  const locationName = useLocationName(location);
 
   if (!locationName) return null;
 
