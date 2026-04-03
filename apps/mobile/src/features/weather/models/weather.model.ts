@@ -34,6 +34,8 @@ export const WeatherConditionsSchema = z.object({
 export type WeatherConditions = z.infer<typeof WeatherConditionsSchema>;
 
 export const WeatherForecastSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
   date: z.date(),
   skyCondition: z.enum(SKY_CONDITIONS),
   precipitationType: z.enum(PRECIPITATION_TYPES),
