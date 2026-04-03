@@ -1,4 +1,5 @@
-import { ControlField, Description, Label } from 'heroui-native';
+import { Text } from '@src/shared/ui';
+import { ControlField } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 
@@ -25,8 +26,14 @@ export function SettingsToggle({
       isDisabled={isDisabled}
     >
       <View className="flex-1">
-        <Label>{label}</Label>
-        {description && <Description>{description}</Description>}
+        <Text size="b2" shade={8}>
+          {label}
+        </Text>
+        {description && (
+          <Text size="b3" shade={6}>
+            {description}
+          </Text>
+        )}
       </View>
       <ControlField.Indicator />
     </ControlField>

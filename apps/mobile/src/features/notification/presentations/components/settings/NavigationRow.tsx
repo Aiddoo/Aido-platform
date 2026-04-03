@@ -26,15 +26,11 @@ export function NavigationRow({
         className={cn('py-2', isDisabled && 'opacity-40')}
         gap={20}
       >
-        <Text size="b2" numberOfLines={1} className="flex-1 text-gray-9">
+        <Text size="b2" shade={8}>
           {label}
         </Text>
-        <HStack gap={8} align="center" className="shrink-0">
-          <Text
-            size="b2"
-            numberOfLines={1}
-            className={summaryEnabled ? 'text-main' : 'text-gray-5'}
-          >
+        <HStack gap={8} align="center">
+          <Text size="b2" className={summaryEnabled ? 'text-main' : 'text-gray-5'}>
             {summary}
           </Text>
           <ArrowRightIcon colorClassName="text-gray-6" />

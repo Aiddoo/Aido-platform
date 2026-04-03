@@ -1,7 +1,7 @@
-import { ArrowRightIcon, HStack, VStack } from '@src/shared/ui';
+import { ArrowRightIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime, type TimeFormat } from '@src/shared/utils/time';
-import { Description, Label, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
 interface SettingsTimeRowProps
@@ -30,15 +30,17 @@ export function SettingsTimeRow({
       <HStack justify="between" align="center" className={cn(isDisabled && 'opacity-40')} gap={20}>
         <VStack className="flex-1">
           <HStack gap={8} align="center">
-            <Label>{label}</Label>
+            <Text size="b2" shade={8}>
+              {label}
+            </Text>
             {accessory}
-            <Description className="text-main break-keep">
+            <Text size="b2" className="text-main break-keep">
               {formatReminderTime(hour, minute, timeFormat)}
-            </Description>
+            </Text>
           </HStack>
-          <Description lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          <Text size="b3" shade={6}>
             {description}
-          </Description>
+          </Text>
         </VStack>
         <ArrowRightIcon colorClassName="text-gray-6" />
       </HStack>
