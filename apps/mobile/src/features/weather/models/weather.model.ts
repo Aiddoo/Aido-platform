@@ -73,6 +73,10 @@ export const WeatherPolicy = {
   },
   /** 현재 시각 기온 */
   getCurrentTemperature(forecast: WeatherForecast): number {
+    if (forecast.hourlyForecasts.length === 0) {
+      return Math.round((forecast.temperatureMin + forecast.temperatureMax) / 2);
+    }
+
     const currentHour = new Date().getHours();
 
     const hourly =
