@@ -37,6 +37,8 @@ export type WeatherConditions = z.infer<typeof weatherConditionsSchema>;
 
 export const weatherForecastSchema = z
   .object({
+    latitude: z.number().describe('위도'),
+    longitude: z.number().describe('경도'),
     date: datetimeSchema.describe('예보 날짜'),
     skyCondition: z.enum(SKY_CONDITIONS).describe('하늘 상태'),
     precipitationType: z.enum(PRECIPITATION_TYPES).describe('강수 형태'),
@@ -50,6 +52,8 @@ export const weatherForecastSchema = z
   })
   .meta({
     example: {
+      latitude: 37.5665,
+      longitude: 126.978,
       date: '2026-03-28T00:00:00.000Z',
       skyCondition: 'CLEAR',
       precipitationType: 'NONE',
