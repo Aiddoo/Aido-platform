@@ -5,11 +5,12 @@ import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
+  resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
 import { HStack, Text } from '@src/shared/ui';
-import { WeatherSunIcon } from '@src/shared/ui/Icon/icons';
+import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { formatDate } from '@src/shared/utils/date';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
@@ -64,7 +65,7 @@ function WeatherForecastBadge() {
   if (isPending && !forecast) {
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
-        <WeatherSunIcon width={18} height={18} colorClassName="text-gray-6" />
+        <WeatherClearIcon width={18} height={18} color="#FFD233" />
       </Pressable>
     );
   }
@@ -75,7 +76,7 @@ function WeatherForecastBadge() {
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
         <HStack align="center" gap={4}>
-          <WeatherSunIcon width={18} height={18} colorClassName="text-gray-6" />
+          <WeatherClearIcon width={18} height={18} color="#FFD233" />
           <Text size="b4" shade={6}>
             {label}
           </Text>
@@ -89,12 +90,16 @@ function WeatherForecastBadge() {
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
     resolveIconBySky(forecast.skyCondition);
+  const iconColor =
+    forecast.precipitationType === 'NONE'
+      ? resolveSkyIconColor(forecast.skyCondition, '#8E8E93')
+      : '#8E8E93';
   const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
 
   return (
     <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
       <HStack align="center" gap={6} px={4}>
-        <ForecastIcon width={18} height={18} colorClassName="text-gray-7" />
+        <ForecastIcon width={18} height={18} color={iconColor} />
 
         <Text size="b4" weight="semibold" shade={8}>
           {currentTemp}°
