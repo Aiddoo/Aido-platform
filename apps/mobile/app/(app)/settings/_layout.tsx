@@ -31,7 +31,7 @@ export default function SettingsLayout() {
         ),
       }}
     >
-      <Stack.Screen name="notifications" options={{ title: '알림 설정' }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="theme" options={{ title: '화면 테마' }} />
       <Stack.Screen name="font-size" options={{ title: '글꼴 크기' }} />
       <Stack.Screen name="terms" options={{ title: '약관 및 정책' }} />
