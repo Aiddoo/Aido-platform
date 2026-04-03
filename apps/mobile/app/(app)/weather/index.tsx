@@ -11,25 +11,26 @@ import { WeatherLocationPrompt } from '@src/features/weather/presentations/compo
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
+  resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import {
   PRECIPITATION_TYPE_LABEL,
   SKY_CONDITION_LABEL,
 } from '@src/features/weather/presentations/constants/weather-labels.constant';
-import {
-  type LocationCoords,
-  useSyncWeatherLocation,
-} from '@src/features/weather/presentations/hooks/use-sync-weather-location';
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/use-get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
+import { useUpdateLocationMutationOptions } from '@src/features/weather/presentations/queries/use-update-location-mutation-options';
 import { isApiError } from '@src/shared/errors/api-error';
-import { Box, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
+import { Box, CrosshairIcon, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
+import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
 import { formatDate, isDateToday } from '@src/shared/utils/date';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Skeleton } from 'heroui-native';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { Dimensions, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
@@ -212,6 +213,11 @@ export default function WeatherDetailScreen() {
   );
 }
 
+interface LocationCoords {
+  latitude: number;
+  longitude: number;
+}
+
 function useLocationName(location: LocationCoords | null): string | null {
   const [name, setName] = useState<string | null>(null);
 
@@ -243,17 +249,77 @@ function useLocationName(location: LocationCoords | null): string | null {
 
 function WeatherLocation() {
   const palette = useTimePalette();
-  const [location] = useSyncWeatherLocation();
+  const toast = useAppToast();
+  const [location, setLocation] = useState<LocationCoords | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { mutate } = useMutation(useUpdateLocationMutationOptions());
+  const { requestPermissionAndExecute } = useLocationPermission((message) =>
+    toast.warning(message),
+  );
   const locationName = useLocationName(location);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const { granted } = await Location.getForegroundPermissionsAsync();
+      if (!granted || cancelled) return;
+
+      const position = await Location.getLastKnownPositionAsync();
+      if (!position || cancelled) return;
+
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+
+    await requestPermissionAndExecute(async () => {
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const coords = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+
+        setLocation(coords);
+        mutate(coords);
+      } catch {
+        toast.error('위치를 가져올 수 없어요');
+      }
+    });
+
+    setIsRefreshing(false);
+  }, [requestPermissionAndExecute, toast, mutate]);
 
   if (!locationName) return null;
 
   return (
-    <View className="items-center">
-      <Text size="b3" weight="medium" style={{ color: palette.textSub }}>
+    <HStack align="center" gap={4} justify="center">
+      <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
         {locationName}
       </Text>
-    </View>
+      <TouchableOpacity
+        onPress={handleRefresh}
+        disabled={isRefreshing}
+        hitSlop={8}
+        activeOpacity={0.4}
+        className={isRefreshing ? 'opacity-40' : undefined}
+      >
+        <CrosshairIcon width={18} height={18} color={palette.textSub} />
+      </TouchableOpacity>
+    </HStack>
   );
 }
 
@@ -262,6 +328,10 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
     resolveIconBySky(forecast.skyCondition);
+  const forecastIconColor =
+    forecast.precipitationType === 'NONE'
+      ? resolveSkyIconColor(forecast.skyCondition, palette.text)
+      : palette.text;
   const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
 
   return (
@@ -290,7 +360,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
       </HStack>
 
       <HStack gap={8} align="center" className="mt-2">
-        <ForecastIcon width={18} height={18} color={palette.text} />
+        <ForecastIcon width={18} height={18} color={forecastIconColor} />
         <Text size="b2" weight="semibold" style={{ color: palette.text }}>
           {SKY_CONDITION_LABEL[forecast.skyCondition]}
         </Text>
@@ -422,7 +492,11 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 
       <Spacing size={8} />
 
-      <SkyIcon width={24} height={24} color={palette.icon} />
+      <SkyIcon
+        width={24}
+        height={24}
+        color={resolveSkyIconColor(item.skyCondition, palette.icon)}
+      />
 
       {item.precipitationProbability > 0 ? (
         <Text size="e2" align="center" style={{ color: palette.accent }}>
@@ -464,6 +538,10 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       {items.map((item) => {
         const Icon =
           resolveIconByPrecipitation(item.precipitationType) ?? resolveIconBySky(item.skyCondition);
+        const iconColor =
+          item.precipitationType === 'NONE'
+            ? resolveSkyIconColor(item.skyCondition, palette.icon)
+            : palette.icon;
         const dayLabel = formatDayLabel(item.date);
         const barLeft = ((item.temperatureMin - globalMin) / range) * 100;
         const barRight = ((globalMax - item.temperatureMax) / range) * 100;
@@ -475,7 +553,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
             </Text>
 
             <VStack align="center" className="w-10">
-              <Icon width={20} height={20} color={palette.icon} />
+              <Icon width={20} height={20} color={iconColor} />
               {item.precipitationProbability > 0 && (
                 <Text size="e2" style={{ color: palette.accent }}>
                   {item.precipitationProbability}%
@@ -532,9 +610,12 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
       <HStack gap={20} className="justify-center">
         {sunrise != null && (
           <VStack align="center" gap={4}>
-            <Text size="b4" style={{ color: palette.textSub }}>
-              일출
-            </Text>
+            <HStack align="center" gap={4}>
+              <WeatherSunriseIcon width={18} height={18} color={palette.textSub} />
+              <Text size="b4" style={{ color: palette.textSub }}>
+                일출
+              </Text>
+            </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {sunrise}
             </Text>
@@ -542,9 +623,12 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
         )}
         {sunset != null && (
           <VStack align="center" gap={4}>
-            <Text size="b4" style={{ color: palette.textSub }}>
-              일몰
-            </Text>
+            <HStack align="center" gap={4}>
+              <WeatherSunsetIcon width={18} height={18} color={palette.textSub} />
+              <Text size="b4" style={{ color: palette.textSub }}>
+                일몰
+              </Text>
+            </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {sunset}
             </Text>
