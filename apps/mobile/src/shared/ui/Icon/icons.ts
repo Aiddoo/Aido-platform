@@ -9,6 +9,7 @@ import CheckmarkIconSvg from '@assets/icons/ic_checkmark.svg';
 import ClockIconSvg from '@assets/icons/ic_clock.svg';
 import CloseIconSvg from '@assets/icons/ic_close.svg';
 import CopyIconSvg from '@assets/icons/ic_copy.svg';
+import CrosshairIconSvg from '@assets/icons/ic_crosshair.svg';
 import CrownIconSvg from '@assets/icons/ic_crown.svg';
 import DeviceIconSvg from '@assets/icons/ic_device.svg';
 import DocsIconSvg from '@assets/icons/ic_docs.svg';
@@ -52,6 +53,8 @@ import WeatherPartlyCloudyIconSvg from '@assets/icons/ic_weather_partly_cloudy.s
 import WeatherRainIconSvg from '@assets/icons/ic_weather_rain.svg';
 import WeatherShowerIconSvg from '@assets/icons/ic_weather_shower.svg';
 import WeatherSnowIconSvg from '@assets/icons/ic_weather_snow.svg';
+import WeatherSunriseIconSvg from '@assets/icons/ic_weather_sunrise.svg';
+import WeatherSunsetIconSvg from '@assets/icons/ic_weather_sunset.svg';
 import { createStyledIcon } from './createStyledIcon';
 
 // 래핑된 아이콘 컴포넌트들
@@ -66,6 +69,7 @@ export const CheckmarkIcon = createStyledIcon(CheckmarkIconSvg);
 export const ClockIcon = createStyledIcon(ClockIconSvg);
 export const CloseIcon = createStyledIcon(CloseIconSvg);
 export const CopyIcon = createStyledIcon(CopyIconSvg);
+export const CrosshairIcon = createStyledIcon(CrosshairIconSvg);
 export const CrownIcon = createStyledIcon(CrownIconSvg);
 export const DeviceIcon = createStyledIcon(DeviceIconSvg);
 export const DocsIcon = createStyledIcon(DocsIconSvg);
@@ -109,3 +113,5 @@ export const WeatherPartlyCloudyIcon = createStyledIcon(WeatherPartlyCloudyIconS
 export const WeatherRainIcon = createStyledIcon(WeatherRainIconSvg);
 export const WeatherShowerIcon = createStyledIcon(WeatherShowerIconSvg);
 export const WeatherSnowIcon = createStyledIcon(WeatherSnowIconSvg);
+export const WeatherSunriseIcon = createStyledIcon(WeatherSunriseIconSvg);
+export const WeatherSunsetIcon = createStyledIcon(WeatherSunsetIconSvg);

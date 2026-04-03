@@ -11,6 +11,7 @@ export {
   ClockIcon,
   CloseIcon,
   CopyIcon,
+  CrosshairIcon,
   CrownIcon,
   DeviceIcon,
   DocsIcon,
@@ -54,4 +55,6 @@ export {
   WeatherRainIcon,
   WeatherShowerIcon,
   WeatherSnowIcon,
+  WeatherSunriseIcon,
+  WeatherSunsetIcon,
 } from './icons';

@@ -34,6 +34,8 @@ export const WeatherConditionsSchema = z.object({
 export type WeatherConditions = z.infer<typeof WeatherConditionsSchema>;
 
 export const WeatherForecastSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
   date: z.date(),
   skyCondition: z.enum(SKY_CONDITIONS),
   precipitationType: z.enum(PRECIPITATION_TYPES),
@@ -67,8 +69,8 @@ export const WeatherPolicy = {
   shouldShowHourlyPrecipitation(hourly: HourlyForecast): boolean {
     return hourly.precipitationProbability >= 30;
   },
-  /** 시간별 예보 펼침 가능 여부 */
-  isExpandable(forecast: WeatherForecast): boolean {
+  /** 시간별 예보 데이터 존재 여부 */
+  hasHourlyForecasts(forecast: WeatherForecast): boolean {
     return forecast.hourlyForecasts.length > 0;
   },
 } as const;

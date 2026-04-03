@@ -169,7 +169,7 @@ describe("WeatherService", () => {
 			);
 
 			// Then
-			expect(result).toEqual(forecast);
+			expect(result).toEqual({ forecast, location });
 			expect(weatherProvider.getForecast).not.toHaveBeenCalled();
 		});
 
@@ -196,7 +196,7 @@ describe("WeatherService", () => {
 			);
 
 			// Then
-			expect(result).toEqual(forecast);
+			expect(result).toEqual({ forecast, location });
 			expect(weatherProvider.getForecast).toHaveBeenCalledTimes(1);
 			// 정규 캐시 + latest 캐시 = set 2회
 			expect(cacheService.set).toHaveBeenCalledTimes(2);
@@ -228,7 +228,7 @@ describe("WeatherService", () => {
 			);
 
 			// Then
-			expect(result).toEqual(fallbackForecast);
+			expect(result).toEqual({ forecast: fallbackForecast, location });
 		});
 
 		it("KMA 실패 + latest 캐시도 없으면 예외를 던져야 한다", async () => {

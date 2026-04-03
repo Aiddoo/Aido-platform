@@ -32,6 +32,7 @@ export {
   ClockIcon,
   CloseIcon,
   CopyIcon,
+  CrosshairIcon,
   CrownIcon,
   createStyledIcon,
   DeviceIcon,

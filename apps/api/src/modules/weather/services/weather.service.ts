@@ -167,12 +167,13 @@ export class WeatherService {
 	async getForecastForUser(
 		userId: string,
 		date: Date,
-	): Promise<WeatherForecast> {
+	): Promise<{ forecast: WeatherForecast; location: UserLocation }> {
 		const location = await this.weatherRepository.findByUserId(userId);
 		if (!location) {
 			throw BusinessExceptions.weatherLocationNotFound();
 		}
-		return this.#getForecastForLocation(location, date);
+		const forecast = await this.#getForecastForLocation(location, date);
+		return { forecast, location };
 	}
 
 	async #getForecastForLocation(

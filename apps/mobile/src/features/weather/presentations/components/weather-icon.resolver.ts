@@ -23,3 +23,6 @@ export const resolveIconBySky = (condition: SkyCondition) =>
     .with('PARTLY_CLOUDY', () => WeatherPartlyCloudyIcon)
     .with('CLOUDY', () => WeatherCloudyIcon)
     .exhaustive();
+
+export const resolveSkyIconColor = (condition: SkyCondition, fallback: string) =>
+  condition === 'CLEAR' ? '#FFD233' : fallback;
