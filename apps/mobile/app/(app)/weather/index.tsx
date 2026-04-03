@@ -1,11 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
-import type {
-  DailyForecast,
-  HourlyForecast,
-  WeatherForecast,
-} from '@src/features/weather/models/weather.model';
+import type { DailyForecast, HourlyForecast } from '@src/features/weather/models/weather.model';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
@@ -20,6 +16,7 @@ import {
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/use-get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { useUpdateLocationMutationOptions } from '@src/features/weather/presentations/queries/use-update-location-mutation-options';
+import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
@@ -323,7 +320,7 @@ function WeatherLocation() {
   );
 }
 
-function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
+function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
@@ -332,7 +329,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
     forecast.precipitationType === 'NONE'
       ? resolveSkyIconColor(forecast.skyCondition, palette.text)
       : palette.text;
-  const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
+  const currentTemp = forecast.currentTemperature;
 
   return (
     <VStack align="center" gap={8}>
@@ -383,7 +380,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
   );
 }
 
-function WeatherStats({ forecast }: { forecast: WeatherForecast }) {
+function WeatherStats({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
 
   return (

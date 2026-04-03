@@ -1,7 +1,6 @@
 import { ErrorCode } from '@aido/errors';
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
-import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
@@ -94,7 +93,7 @@ function WeatherForecastBadge() {
     forecast.precipitationType === 'NONE'
       ? resolveSkyIconColor(forecast.skyCondition, '#8E8E93')
       : '#8E8E93';
-  const currentTemp = WeatherPolicy.getCurrentTemperature(forecast);
+  const currentTemp = forecast.currentTemperature;
 
   return (
     <Pressable onPress={() => router.push('/weather')} hitSlop={8}>
