@@ -1,101 +1,49 @@
 import { ErrorCode } from '@aido/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
-import type {
-  DailyForecast,
-  HourlyForecast,
-  WeatherForecast,
-} from '@src/features/weather/models/weather.model';
+import type { DailyForecast, HourlyForecast } from '@src/features/weather/models/weather.model';
 import { WeatherPolicy } from '@src/features/weather/models/weather.model';
 import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
+  resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import {
   PRECIPITATION_TYPE_LABEL,
   SKY_CONDITION_LABEL,
 } from '@src/features/weather/presentations/constants/weather-labels.constant';
+import {
+  getTimeOfDay,
+  TIME_PALETTES,
+  TimePaletteContext,
+  useTimePalette,
+} from '@src/features/weather/presentations/hooks/use-time-palette';
 import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/use-get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
+import { useUpdateLocationMutationOptions } from '@src/features/weather/presentations/queries/use-update-location-mutation-options';
+import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';
-import { Box, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
+import { Box, CrosshairIcon, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
 import { formatDate, isDateToday } from '@src/shared/utils/date';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Skeleton } from 'heroui-native';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
-
-const TIME_PALETTES = {
-  dawn: {
-    bg: '#1B1464',
-    gradient: ['#1B1464', '#7B5EA7', '#E8A87C'] as const,
-    text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.85)',
-    icon: '#FFFFFF',
-
-    glass: 'rgba(20,0,50,0.20)',
-    glassCard: 'rgba(20,0,50,0.28)',
-    glassStrong: 'rgba(20,0,50,0.35)',
-    glassBorder: 'rgba(248,248,248,0.20)',
-    badge: 'rgba(20,0,50,0.25)',
-    accent: '#A0D8FF',
-  },
-  day: {
-    bg: '#1565C0',
-    gradient: ['#1565C0', '#1E88E5', '#64B5F6'] as const,
-    text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.85)',
-    icon: '#FFFFFF',
-
-    glass: 'rgba(0,20,60,0.18)',
-    glassCard: 'rgba(0,20,60,0.26)',
-    glassStrong: 'rgba(0,20,60,0.32)',
-    glassBorder: 'rgba(248,248,248,0.20)',
-    badge: 'rgba(0,20,60,0.22)',
-    accent: '#FFFFFF',
-  },
-  dusk: {
-    bg: '#281740',
-    gradient: ['#281740', '#8B4A6B', '#CA6668'] as const,
-    text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.85)',
-    icon: '#FFFFFF',
-
-    glass: 'rgba(15,5,30,0.22)',
-    glassCard: 'rgba(15,5,30,0.30)',
-    glassStrong: 'rgba(15,5,30,0.36)',
-    glassBorder: 'rgba(248,248,248,0.20)',
-    badge: 'rgba(15,5,30,0.25)',
-    accent: '#A0D8FF',
-  },
-  night: {
-    bg: '#080C1A',
-    gradient: ['#080C1A', '#101D3A', '#1A3355'] as const,
-    text: '#FFFFFF',
-    textSub: 'rgba(255,255,255,0.75)',
-    icon: '#FFFFFF',
-
-    glass: 'rgba(140,170,220,0.10)',
-    glassCard: 'rgba(140,170,220,0.18)',
-    glassStrong: 'rgba(140,170,220,0.24)',
-    glassBorder: 'rgba(248,248,248,0.20)',
-    badge: 'rgba(140,170,220,0.20)',
-    accent: '#7DB4F5',
-  },
-} as const;
-
-type TimeOfDay = keyof typeof TIME_PALETTES;
-type TimePalette = (typeof TIME_PALETTES)[TimeOfDay];
-
-const TimePaletteContext = createContext<TimePalette>(TIME_PALETTES.night);
-
-function useTimePalette(): TimePalette {
-  return useContext(TimePaletteContext);
-}
 
 export default function WeatherDetailScreen() {
   const palette = TIME_PALETTES[getTimeOfDay()];
@@ -105,10 +53,12 @@ export default function WeatherDetailScreen() {
     data: forecast,
     error,
     isPending,
+    isFetching,
   } = useQuery({
     ...useGetForecastQueryOptions(formatDate(selectedDate)),
     placeholderData: keepPreviousData,
   });
+  const isRefreshing = isFetching && !isPending;
   const { data: conditions } = useQuery({
     ...useGetConditionsQueryOptions(),
     placeholderData: keepPreviousData,
@@ -137,15 +87,20 @@ export default function WeatherDetailScreen() {
       );
     }
 
-    if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901) && isKmaPreparationTime()) {
+    if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901)) {
       return (
         <TimePaletteContext.Provider value={palette}>
           <View className="flex-1" style={{ backgroundColor: palette.bg }}>
             <GradientBackground />
-            <Result
-              title="기상청 데이터 준비 중이에요"
-              description="자정~새벽 2시에는 기상청 데이터가 갱신돼요. 잠시 후 다시 확인해주세요"
-            />
+            <VStack align="center" justify="center" flex={1}>
+              <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
+                기상청 데이터 준비 중이에요
+              </Text>
+              <Spacing size={4} />
+              <Text size="b4" align="center" style={{ color: palette.textSub }}>
+                잠시 후 다시 확인해주세요
+              </Text>
+            </VStack>
           </View>
         </TimePaletteContext.Provider>
       );
@@ -155,7 +110,15 @@ export default function WeatherDetailScreen() {
       <TimePaletteContext.Provider value={palette}>
         <View className="flex-1" style={{ backgroundColor: palette.bg }}>
           <GradientBackground />
-          <Result title="날씨 정보를 불러올 수 없어요" description="잠시 후 다시 시도해주세요" />
+          <VStack align="center" justify="center" flex={1}>
+            <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
+              날씨 정보를 불러올 수 없어요
+            </Text>
+            <Spacing size={4} />
+            <Text size="b4" align="center" style={{ color: palette.textSub }}>
+              잠시 후 다시 시도해주세요
+            </Text>
+          </VStack>
         </View>
       </TimePaletteContext.Provider>
     );
@@ -165,13 +128,19 @@ export default function WeatherDetailScreen() {
     <TimePaletteContext.Provider value={palette}>
       <View className="flex-1" style={{ backgroundColor: palette.bg }}>
         <GradientBackground />
+        {isRefreshing && (
+          <View className="absolute inset-0 z-10 items-center justify-center">
+            <ActivityIndicator size="large" color={palette.text} />
+          </View>
+        )}
         <ScrollView
           contentContainerStyle={{
             paddingTop: insets.top + 80,
             paddingBottom: insets.bottom + 24,
           }}
+          style={{ opacity: isRefreshing ? 0.4 : 1 }}
         >
-          <WeatherLocation />
+          <WeatherLocation latitude={forecast.latitude} longitude={forecast.longitude} />
 
           <Spacing size={4} />
 
@@ -208,60 +177,98 @@ export default function WeatherDetailScreen() {
   );
 }
 
-function useLocationName(): string | null {
+interface LocationCoords {
+  latitude: number;
+  longitude: number;
+}
+
+function useLocationName(location: LocationCoords | null): string | null {
   const [name, setName] = useState<string | null>(null);
 
+  const lat = location?.latitude;
+  const lng = location?.longitude;
+
   useEffect(() => {
+    if (lat == null || lng == null) return;
+
     let cancelled = false;
 
     (async () => {
       try {
-        const pos = await Location.getLastKnownPositionAsync();
-        if (!pos || cancelled) return;
-
-        const [geo] = await Location.reverseGeocodeAsync({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
+        const [geo] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
 
         if (geo && !cancelled) {
           const parts = [geo.city, geo.district].filter(Boolean);
           setName(parts.join(' ') || null);
         }
       } catch {
-        // 위치 권한 없거나 역지오코딩 실패 시 무시
+        // 역지오코딩 실패 시 무시
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [lat, lng]);
 
   return name;
 }
 
-function WeatherLocation() {
+function WeatherLocation({ latitude, longitude }: LocationCoords) {
   const palette = useTimePalette();
-  const locationName = useLocationName();
+  const toast = useAppToast();
+  const { mutate: updateLocation, isPending } = useMutation(useUpdateLocationMutationOptions());
+  const { requestPermissionAndExecute } = useLocationPermission((message) =>
+    toast.warning(message),
+  );
+  const locationName = useLocationName({ latitude, longitude });
+
+  const handleRefresh = useCallback(async () => {
+    await requestPermissionAndExecute(async () => {
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        updateLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      } catch {
+        toast.error('위치를 가져올 수 없어요');
+      }
+    });
+  }, [requestPermissionAndExecute, toast, updateLocation]);
 
   if (!locationName) return null;
 
   return (
-    <View className="items-center">
-      <Text size="b3" weight="medium" style={{ color: palette.textSub }}>
+    <HStack align="center" gap={4} justify="center">
+      <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
         {locationName}
       </Text>
-    </View>
+      <TouchableOpacity
+        onPress={handleRefresh}
+        disabled={isPending}
+        hitSlop={8}
+        activeOpacity={0.4}
+      >
+        <CrosshairIcon width={18} height={18} color={palette.textSub} />
+      </TouchableOpacity>
+    </HStack>
   );
 }
 
-function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
+function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
   const ForecastIcon =
     resolveIconByPrecipitation(forecast.precipitationType) ??
     resolveIconBySky(forecast.skyCondition);
-  const avgTemp = Math.round((forecast.temperatureMin + forecast.temperatureMax) / 2);
+  const forecastIconColor =
+    forecast.precipitationType === 'NONE'
+      ? resolveSkyIconColor(forecast.skyCondition, palette.text)
+      : palette.text;
+  const currentTemp = forecast.currentTemperature;
 
   return (
     <VStack align="center" gap={8}>
@@ -269,7 +276,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
         className="text-[80px] leading-[88px] font-medium tracking-[-2.4px]"
         style={{ color: palette.text }}
       >
-        {avgTemp}°
+        {currentTemp}°
       </Text>
 
       <HStack gap={4} align="center">
@@ -289,20 +296,15 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
       </HStack>
 
       <HStack gap={8} align="center" className="mt-2">
-        <ForecastIcon width={18} height={18} color={palette.text} />
+        <ForecastIcon width={18} height={18} color={forecastIconColor} />
         <Text size="b2" weight="semibold" style={{ color: palette.text }}>
           {SKY_CONDITION_LABEL[forecast.skyCondition]}
         </Text>
       </HStack>
 
       {WeatherPolicy.shouldShowPrecipitation(forecast) && (
-        <Box
-          px={14}
-          py={5}
-          className="rounded-full mt-1"
-          style={{ backgroundColor: palette.badge }}
-        >
-          <Text size="b3" weight="medium" style={{ color: palette.text }}>
+        <Box px={14} py={5}>
+          <Text size="b3" weight="medium" style={{ color: palette.icon }}>
             {PRECIPITATION_TYPE_LABEL[forecast.precipitationType]}{' '}
             {forecast.precipitationProbability}%
           </Text>
@@ -312,7 +314,7 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecast }) {
   );
 }
 
-function WeatherStats({ forecast }: { forecast: WeatherForecast }) {
+function WeatherStats({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
 
   return (
@@ -389,7 +391,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
         px={16}
         gap={12}
         mb={12}
-        className="rounded-2xl border border-white/20 overflow-hidden"
+        className="rounded-2xl overflow-hidden"
         style={{ backgroundColor: palette.glassCard }}
       >
         <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
@@ -421,7 +423,11 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 
       <Spacing size={8} />
 
-      <SkyIcon width={24} height={24} color={palette.icon} />
+      <SkyIcon
+        width={24}
+        height={24}
+        color={resolveSkyIconColor(item.skyCondition, palette.icon)}
+      />
 
       {item.precipitationProbability > 0 ? (
         <Text size="e2" align="center" style={{ color: palette.accent }}>
@@ -454,7 +460,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       px={16}
       gap={8}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
@@ -463,6 +469,10 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       {items.map((item) => {
         const Icon =
           resolveIconByPrecipitation(item.precipitationType) ?? resolveIconBySky(item.skyCondition);
+        const iconColor =
+          item.precipitationType === 'NONE'
+            ? resolveSkyIconColor(item.skyCondition, palette.icon)
+            : palette.icon;
         const dayLabel = formatDayLabel(item.date);
         const barLeft = ((item.temperatureMin - globalMin) / range) * 100;
         const barRight = ((globalMax - item.temperatureMax) / range) * 100;
@@ -474,7 +484,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
             </Text>
 
             <VStack align="center" className="w-10">
-              <Icon width={20} height={20} color={palette.icon} />
+              <Icon width={20} height={20} color={iconColor} />
               {item.precipitationProbability > 0 && (
                 <Text size="e2" style={{ color: palette.accent }}>
                   {item.precipitationProbability}%
@@ -525,15 +535,18 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
       py={16}
       px={16}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">
         {sunrise != null && (
           <VStack align="center" gap={4}>
-            <Text size="b4" style={{ color: palette.textSub }}>
-              일출
-            </Text>
+            <HStack align="center" gap={4}>
+              <WeatherSunriseIcon width={18} height={18} color={palette.textSub} />
+              <Text size="b4" style={{ color: palette.textSub }}>
+                일출
+              </Text>
+            </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {sunrise}
             </Text>
@@ -541,9 +554,12 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
         )}
         {sunset != null && (
           <VStack align="center" gap={4}>
-            <Text size="b4" style={{ color: palette.textSub }}>
-              일몰
-            </Text>
+            <HStack align="center" gap={4}>
+              <WeatherSunsetIcon width={18} height={18} color={palette.textSub} />
+              <Text size="b4" style={{ color: palette.textSub }}>
+                일몰
+              </Text>
+            </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {sunset}
             </Text>
@@ -565,7 +581,7 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
       py={16}
       px={16}
       mb={12}
-      className="rounded-2xl border border-white/20 overflow-hidden"
+      className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: palette.glassCard }}
     >
       <HStack gap={20} className="justify-center">
@@ -621,18 +637,34 @@ function formatDayLabel(dateStr: string): string {
 
 function ForecastSkeleton({ insetTop }: { insetTop: number }) {
   const palette = useTimePalette();
+  const glass = palette.glass;
 
   return (
-    <VStack p={16} gap={16} style={{ paddingTop: insetTop + 64 }}>
-      <Skeleton className="h-60 w-full rounded-2xl" style={{ backgroundColor: palette.glass }} />
-      <Skeleton
-        className="h-[72px] w-full rounded-2xl"
-        style={{ backgroundColor: palette.glass }}
-      />
-      <Skeleton
-        className="h-[120px] w-full rounded-2xl"
-        style={{ backgroundColor: palette.glass }}
-      />
+    <VStack align="center" style={{ paddingTop: insetTop + 80 }}>
+      <Skeleton className="h-5 w-20 rounded" style={{ backgroundColor: glass }} />
+
+      <Spacing size={12} />
+
+      <Skeleton className="h-[88px] w-[160px] rounded-xl" style={{ backgroundColor: glass }} />
+
+      <Spacing size={8} />
+
+      <Skeleton className="h-5 w-36 rounded" style={{ backgroundColor: glass }} />
+
+      <Spacing size={32} />
+
+      <HStack align="center" className="justify-center gap-5">
+        <Skeleton className="h-12 w-16 rounded" style={{ backgroundColor: glass }} />
+        <Skeleton className="h-12 w-16 rounded" style={{ backgroundColor: glass }} />
+        <Skeleton className="h-12 w-16 rounded" style={{ backgroundColor: glass }} />
+      </HStack>
+
+      <Spacing size={52} />
+
+      <VStack mx={20} py={16} px={16} gap={12} className="rounded-2xl self-stretch">
+        <Skeleton className="h-5 w-20 rounded" style={{ backgroundColor: glass }} />
+        <Skeleton className="h-24 w-full rounded-xl" style={{ backgroundColor: glass }} />
+      </VStack>
     </VStack>
   );
 }
@@ -653,25 +685,4 @@ function GradientBackground() {
       <Rect width={width} height={height} fill="url(#bg)" />
     </Svg>
   );
-}
-
-function getTimeOfDay(): TimeOfDay {
-  const h = new Date().getHours();
-  if (h >= 6 && h < 9) {
-    return 'dawn';
-  }
-  if (h >= 9 && h < 17) {
-    return 'day';
-  }
-  if (h >= 17 && h < 20) {
-    return 'dusk';
-  }
-  return 'night';
-}
-
-function isKmaPreparationTime(): boolean {
-  const now = new Date();
-  const h = now.getHours();
-  const m = now.getMinutes();
-  return h < 2 || (h === 2 && m <= 15);
 }

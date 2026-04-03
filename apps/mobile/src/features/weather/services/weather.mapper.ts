@@ -35,6 +35,8 @@ export const toDailyForecast = (
 });
 
 export const toWeatherForecast = (dto: WeatherForecastResponse): WeatherForecast => ({
+  latitude: dto.latitude,
+  longitude: dto.longitude,
   date: new Date(dto.date),
   skyCondition: dto.skyCondition,
   precipitationType: dto.precipitationType,

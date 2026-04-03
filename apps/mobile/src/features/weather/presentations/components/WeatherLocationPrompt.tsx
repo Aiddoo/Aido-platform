@@ -1,12 +1,14 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
-import { Result } from '@src/shared/ui';
+import { Result, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
+import { useTimePalette } from '../hooks/use-time-palette';
 import { useUpdateLocationMutationOptions } from '../queries/use-update-location-mutation-options';
 
 export function WeatherLocationPrompt() {
+  const palette = useTimePalette();
   const toast = useAppToast();
   const [isRequesting, setIsRequesting] = useState(false);
   const { mutate: updateLocation } = useMutation(useUpdateLocationMutationOptions());
@@ -36,14 +38,18 @@ export function WeatherLocationPrompt() {
   }, [requestPermissionAndExecute, toast, updateLocation]);
 
   return (
-    <Result
-      title="위치를 등록하면 날씨를 볼 수 있어요"
-      description="현재 위치로 날씨를 알려드려요"
-      button={
-        <Result.Button onPress={handlePress} isDisabled={isRequesting} isLoading={isRequesting}>
-          위치 등록하기
-        </Result.Button>
-      }
-    />
+    <VStack align="center" justify="center" flex={1}>
+      <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
+        위치를 등록하면 날씨를 볼 수 있어요
+      </Text>
+      <Spacing size={4} />
+      <Text size="b4" align="center" style={{ color: palette.textSub }}>
+        현재 위치로 날씨를 알려드려요
+      </Text>
+      <Spacing size={24} />
+      <Result.Button onPress={handlePress} isDisabled={isRequesting} isLoading={isRequesting}>
+        위치 등록하기
+      </Result.Button>
+    </VStack>
   );
 }

@@ -138,7 +138,15 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 		@Query() query: GetForecastQueryDto,
 	) {
 		const date = query.date ? parseDateOnly(query.date) : now();
-		return this.weatherService.getForecastForUser(user.userId, date);
+		const { forecast, location } = await this.weatherService.getForecastForUser(
+			user.userId,
+			date,
+		);
+		return {
+			latitude: location.latitude,
+			longitude: location.longitude,
+			...forecast,
+		};
 	}
 
 	@Get("conditions")
