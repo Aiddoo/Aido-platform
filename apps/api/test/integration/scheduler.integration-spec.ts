@@ -31,6 +31,8 @@ import { NudgeSuggestStrategy } from "@/modules/scheduler/jobs/strategies/nudge-
 import { OnboardingStrategy } from "@/modules/scheduler/jobs/strategies/onboarding.strategy";
 import { SocialDigestStrategy } from "@/modules/scheduler/jobs/strategies/social-digest.strategy";
 import { StreakAtRiskStrategy } from "@/modules/scheduler/jobs/strategies/streak-at-risk.strategy";
+import { WeatherEveningStrategy } from "@/modules/scheduler/jobs/strategies/weather-evening.strategy";
+import { WeatherMorningStrategy } from "@/modules/scheduler/jobs/strategies/weather-morning.strategy";
 import { WeeklyAchievementStrategy } from "@/modules/scheduler/jobs/strategies/weekly-achievement.strategy";
 import { WeeklyReportStrategy } from "@/modules/scheduler/jobs/strategies/weekly-report.strategy";
 import { WinbackStrategy } from "@/modules/scheduler/jobs/strategies/winback.strategy";
@@ -68,6 +70,12 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 	};
 	const mockLunchNudge = { execute: jest.fn().mockResolvedValue({ sent: 0 }) };
 	const mockStreakAtRisk = {
+		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+	};
+	const mockWeatherMorning = {
+		execute: jest.fn().mockResolvedValue({ sent: 0 }),
+	};
+	const mockWeatherEvening = {
 		execute: jest.fn().mockResolvedValue({ sent: 0 }),
 	};
 
@@ -164,6 +172,14 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 				{
 					provide: StreakAtRiskStrategy,
 					useValue: mockStreakAtRisk,
+				},
+				{
+					provide: WeatherMorningStrategy,
+					useValue: mockWeatherMorning,
+				},
+				{
+					provide: WeatherEveningStrategy,
+					useValue: mockWeatherEvening,
 				},
 			],
 		}).compile();
@@ -274,9 +290,9 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			);
 		});
 
-		it("월요일 KST 07:00 — 주간 달성 전략이 실행된다", async () => {
-			// Given - UTC 2026-03-15 22:00 = KST 2026-03-16 (월) 07:00
-			jest.setSystemTime(new Date("2026-03-15T22:00:00Z"));
+		it("월요일 KST 08:30 — 주간 달성 전략이 실행된다", async () => {
+			// Given - UTC 2026-03-15 23:30 = KST 2026-03-16 (월) 08:30
+			jest.setSystemTime(new Date("2026-03-15T23:30:00Z"));
 
 			// When - 매분 스윕 실행
 			await job.handleMinuteSweep();
@@ -285,8 +301,8 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tz: "Asia/Seoul",
-					localHour: 7,
-					localMinute: 0,
+					localHour: 8,
+					localMinute: 30,
 				}),
 			);
 		});

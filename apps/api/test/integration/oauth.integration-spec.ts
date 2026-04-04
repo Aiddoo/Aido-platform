@@ -39,8 +39,12 @@ import { SessionRepository } from "@/modules/auth/repositories/session.repositor
 import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { OAuthService } from "@/modules/auth/services/oauth.service";
 import { OAuthTokenVerifierService } from "@/modules/auth/services/oauth-token-verifier.service";
+import { SessionService } from "@/modules/auth/services/session.service";
 import { TokenService } from "@/modules/auth/services/token.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service";
 import { TestDatabase } from "../setup/test-database";
 
@@ -75,6 +79,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			],
 			providers: [
 				OAuthService,
+				SessionService,
 				TokenService,
 				AccountRepository,
 				UserRepository,
@@ -82,6 +87,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				SecurityLogRepository,
 				LoginAttemptRepository,
 				OAuthStateRepository,
+				UserConsentRepository,
+				UserPreferenceRepository,
+				TodoCategoryRepository,
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
@@ -195,6 +203,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
+		jest.clearAllMocks();
 		await testDb.cleanup();
 		fakeTokenVerifier.clear();
 	});
@@ -452,7 +461,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const user = await databaseService.user.findUnique({
 				where: { id: result.userId },
 			});
-			expect(user?.email).toMatch(/^kakao_kakao-no-email@social\.aido\.app$/);
+			expect(user?.email).toMatch(/^kakao_kakao-no-email@social\.aido\.kr$/);
 		});
 	});
 

@@ -24,7 +24,7 @@ import { ResponseTransformInterceptor } from "@/common/response/interceptors/res
 import { AiSuggestionController } from "@/modules/ai-suggestion/ai-suggestion.controller";
 import { AiSuggestionService } from "@/modules/ai-suggestion/ai-suggestion.service";
 
-describe("AiSuggestionController (Integration)", () => {
+describe("AI 제안 통합 테스트 (Mock DB)", () => {
 	let app: INestApplication;
 	let aiSuggestionService: jest.Mocked<AiSuggestionService>;
 

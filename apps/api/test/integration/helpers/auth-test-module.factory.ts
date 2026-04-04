@@ -25,10 +25,15 @@ import { UserRepository } from "@/modules/auth/repositories/user.repository";
 import { VerificationRepository } from "@/modules/auth/repositories/verification.repository";
 import { AuthService } from "@/modules/auth/services/auth.service";
 import { PasswordService } from "@/modules/auth/services/password.service";
+import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
+import { SessionService } from "@/modules/auth/services/session.service";
 import { TokenService } from "@/modules/auth/services/token.service";
 import { VerificationService } from "@/modules/auth/services/verification.service";
 import { EmailService } from "@/modules/email/email.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
+import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
+import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
 import type { FakeEmailService } from "../../mocks/fake-email.service";
 
 export async function createAuthTestModule(
@@ -45,6 +50,8 @@ export async function createAuthTestModule(
 		providers: [
 			AuthService,
 			PasswordService,
+			PasswordManagementService,
+			SessionService,
 			TokenService,
 			VerificationService,
 			{
@@ -60,6 +67,9 @@ export async function createAuthTestModule(
 			SecurityLogRepository,
 			LoginAttemptRepository,
 			VerificationRepository,
+			UserConsentRepository,
+			UserPreferenceRepository,
+			TodoCategoryRepository,
 			{
 				provide: DatabaseService,
 				useValue: databaseService,
@@ -91,23 +101,32 @@ export async function createAuthTestModule(
 				provide: TypedConfigService,
 				useValue: {
 					get: (key: string) => {
-						const config: Record<string, string | undefined> = {
-							JWT_SECRET: process.env.JWT_SECRET,
-							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-							JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+						const config: Record<string, string> = {
+							JWT_SECRET:
+								process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
+							JWT_REFRESH_SECRET:
+								process.env.JWT_REFRESH_SECRET ??
+								"test-jwt-refresh-secret-for-integration",
+							JWT_REFRESH_EXPIRES_IN:
+								process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						};
 						return config[key];
 					},
-					jwtSecret: process.env.JWT_SECRET,
-					jwtExpiresIn: process.env.JWT_EXPIRES_IN,
-					jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
-					jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+					jwtSecret:
+						process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+					jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+					jwtRefreshSecret:
+						process.env.JWT_REFRESH_SECRET ??
+						"test-jwt-refresh-secret-for-integration",
+					jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 					jwtConfig: {
-						secret: process.env.JWT_SECRET,
-						expiresIn: process.env.JWT_EXPIRES_IN,
-						refreshSecret: process.env.JWT_REFRESH_SECRET,
-						refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+						secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+						expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+						refreshSecret:
+							process.env.JWT_REFRESH_SECRET ??
+							"test-jwt-refresh-secret-for-integration",
+						refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 					},
 				},
 			},
@@ -115,11 +134,15 @@ export async function createAuthTestModule(
 				provide: ConfigService,
 				useValue: {
 					get: (key: string) => {
-						const config: Record<string, string | undefined> = {
-							JWT_SECRET: process.env.JWT_SECRET,
-							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-							JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-							JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN,
+						const config: Record<string, string> = {
+							JWT_SECRET:
+								process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
+							JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? "15m",
+							JWT_REFRESH_SECRET:
+								process.env.JWT_REFRESH_SECRET ??
+								"test-jwt-refresh-secret-for-integration",
+							JWT_REFRESH_EXPIRES_IN:
+								process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
 						};
 						return config[key];
 					},

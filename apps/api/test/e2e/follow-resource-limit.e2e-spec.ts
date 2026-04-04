@@ -55,24 +55,31 @@ describe("Follow Resource Limit (e2e)", () => {
 		});
 
 		it(`친구 ${FREE_LIMIT}명 도달 후 추가 요청 시 403 에러`, async () => {
-			// FREE_LIMIT + 1번째 친구 요청
+			// Given - FREE_LIMIT명과 이미 친구 관계가 성립된 상태
 			const extraFriend = friends[FREE_LIMIT];
 			expect(extraFriend).toBeDefined();
+
+			// When - FREE_LIMIT + 1번째 친구 요청
 			const response = await request(ctx.app.getHttpServer())
 				.post(`/follows/${extraFriend?.userTag}`)
 				.set("Authorization", `Bearer ${freeUser.accessToken}`)
 				.expect(403);
 
+			// Then - 403 에러와 FOLLOW_0909 코드 반환
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("FOLLOW_0909");
 		});
 
 		it("GET /follows/resource-limit - 현재 친구 수와 한도 조회", async () => {
+			// Given - FREE_LIMIT명과 친구 관계가 성립된 Free 유저
+
+			// When - 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/resource-limit")
 				.set("Authorization", `Bearer ${freeUser.accessToken}`)
 				.expect(200);
 
+			// Then - 현재 친구 수와 한도가 FREE_LIMIT과 일치
 			expect(response.body.data.friendCount).toBe(FREE_LIMIT);
 			expect(response.body.data.maxCount).toBe(FREE_LIMIT);
 		});
@@ -116,23 +123,30 @@ describe("Follow Resource Limit (e2e)", () => {
 		});
 
 		it("Free 한도 초과해도 친구 요청 성공", async () => {
-			// FREE_LIMIT + 1번째 친구 요청
+			// Given - FREE_LIMIT명과 이미 친구 관계가 성립된 Premium 유저
 			const extraFriend = friends[FREE_LIMIT];
 			expect(extraFriend).toBeDefined();
+
+			// When - FREE_LIMIT + 1번째 친구 요청
 			const response = await request(ctx.app.getHttpServer())
 				.post(`/follows/${extraFriend?.userTag}`)
 				.set("Authorization", `Bearer ${premiumUser.accessToken}`)
 				.expect(201);
 
+			// Then - 친구 요청 성공
 			expect(response.body.data.autoAccepted).toBe(false);
 		});
 
 		it("GET /follows/resource-limit - maxCount가 null (무제한)", async () => {
+			// Given - Premium 유저
+
+			// When - 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
 				.get("/follows/resource-limit")
 				.set("Authorization", `Bearer ${premiumUser.accessToken}`)
 				.expect(200);
 
+			// Then - maxCount가 null (무제한)이고 친구 수는 FREE_LIMIT
 			expect(response.body.data.maxCount).toBeNull();
 			expect(response.body.data.friendCount).toBe(FREE_LIMIT);
 		});
