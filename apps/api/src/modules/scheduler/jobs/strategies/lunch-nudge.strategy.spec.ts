@@ -1,3 +1,14 @@
+/**
+ * LunchNudgeStrategy 전략 단위 테스트
+ *
+ * @description
+ * LunchNudgeStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test lunch-nudge.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -9,11 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import { LunchNudgeStrategy } from "./lunch-nudge.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("LunchNudgeStrategy", () => {
+describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 	let strategy: LunchNudgeStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -57,11 +64,8 @@ describe("LunchNudgeStrategy", () => {
 		jest.useRealTimers();
 	});
 
-	// =========================================================================
-	// 정상 발송
-	// =========================================================================
-
 	it("오늘 할일이 있지만 완료가 0개인 유저에게 점심 넛지를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -69,8 +73,10 @@ describe("LunchNudgeStrategy", () => {
 			{ id: "user-2" },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 2 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
@@ -87,17 +93,16 @@ describe("LunchNudgeStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 메시지 내용
-	// =========================================================================
-
 	it("NotificationMessageBuilder.lunchNudge() 메시지를 사용한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
 
+		// When
 		await strategy.execute(ctx);
 
+		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.lunchNudge();
@@ -107,11 +112,8 @@ describe("LunchNudgeStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 중복 방지
-	// =========================================================================
-
 	it("이미 알림 받은 사용자를 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -123,8 +125,10 @@ describe("LunchNudgeStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -133,6 +137,7 @@ describe("LunchNudgeStrategy", () => {
 	});
 
 	it("모든 유저가 이미 알림을 받았으면 발송하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
@@ -141,23 +146,24 @@ describe("LunchNudgeStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 		expect(

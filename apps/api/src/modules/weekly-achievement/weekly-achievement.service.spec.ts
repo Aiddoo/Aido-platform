@@ -1,3 +1,14 @@
+/**
+ * WeeklyAchievementService 모듈 단위 테스트
+ *
+ * @description
+ * WeeklyAchievementService 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-achievement.service
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -9,7 +20,7 @@ import type { WeeklyAchievement } from "@/generated/prisma/client";
 import { WeeklyAchievementRepository } from "./weekly-achievement.repository";
 import { WeeklyAchievementService } from "./weekly-achievement.service";
 
-describe("WeeklyAchievementService", () => {
+describe("WeeklyAchievementService — 주간 성취 서비스", () => {
 	let service: WeeklyAchievementService;
 	let repository: Mocked<WeeklyAchievementRepository>;
 	let paginationService: Mocked<PaginationService>;
@@ -32,10 +43,6 @@ describe("WeeklyAchievementService", () => {
 			take: 21,
 		} as NormalizedCursorPagination<number>);
 	});
-
-	// ============================================
-	// getWeeklyAchievements
-	// ============================================
 
 	describe("getWeeklyAchievements", () => {
 		const mockItems: WeeklyAchievement[] = [
@@ -120,10 +127,6 @@ describe("WeeklyAchievementService", () => {
 		});
 	});
 
-	// ============================================
-	// getWeeklyAchievement
-	// ============================================
-
 	describe("getWeeklyAchievement", () => {
 		it("존재하는 기록을 DTO로 반환한다", async () => {
 			// Given
@@ -169,10 +172,6 @@ describe("WeeklyAchievementService", () => {
 			).rejects.toThrow(BusinessExceptions.weeklyAchievementNotFound(2026, 99));
 		});
 	});
-
-	// ============================================
-	// upsertMany
-	// ============================================
 
 	describe("upsertMany", () => {
 		it("Repository.upsertMany에 위임한다", async () => {

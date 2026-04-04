@@ -1,3 +1,14 @@
+/**
+ * AiController 컨트롤러 단위 테스트
+ *
+ * @description
+ * AiController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test ai.controller
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -7,7 +18,7 @@ import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import type { ParseTodoRequestDto } from "./dtos";
 
-describe("AiController", () => {
+describe("AiController — AI 컨트롤러", () => {
 	let controller: AiController;
 	let mockAiService: Mocked<AiService>;
 

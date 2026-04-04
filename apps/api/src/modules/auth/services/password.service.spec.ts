@@ -1,7 +1,20 @@
+/**
+ * PasswordService 단위 테스트
+ *
+ * @description
+ * 비밀번호 해싱, 검증, 리해싱 필요 여부 판단 로직을 검증한다.
+ * argon2 기반 해싱의 일방향성, 솔트 유일성을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test password.service.spec.ts
+ * ```
+ */
+
 import { TestBed } from "@suites/unit";
 import { PasswordService } from "./password.service";
 
-describe("PasswordService", () => {
+describe("PasswordService — 비밀번호 서비스", () => {
 	let service: PasswordService;
 
 	beforeEach(async () => {

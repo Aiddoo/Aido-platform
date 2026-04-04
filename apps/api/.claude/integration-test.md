@@ -57,19 +57,6 @@ test/
 ### 전체 템플릿
 
 ```typescript
-/**
- * {Feature}Service 통합 테스트 (Mock DB)
- *
- * @description
- * {Feature}Service와 {Feature}Repository의 DI 통합을 검증합니다.
- * DB는 Mock으로 처리하며, 실제 DB 연동은 E2E에서 담당합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test cheer.integration-spec
- * ```
- */
-
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
@@ -117,6 +104,9 @@ describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
 
   describe("DI 통합 테스트", () => {
     it("[Feature]Service가 정상적으로 주입되어야 함", () => {
+      // Given — DI 컨테이너 구성 완료
+
+      // When & Then
       expect(service).toBeDefined();
       expect(service).toBeInstanceOf([Feature]Service);
     });
@@ -196,18 +186,6 @@ const mockDb = createMockDatabaseService({
 ### Auth 모듈 팩토리 사용 (password-setup, password-change, password-reset)
 
 ```typescript
-/**
- * 비밀번호 설정 통합 테스트 (실제 DB)
- *
- * @description
- * 소셜 로그인 사용자의 비밀번호 최초 설정 플로우를 실제 DB로 검증합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test auth-password-setup.integration-spec
- * ```
- */
-
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { DatabaseService } from "@/database/database.service";
 import { {Feature}Service } from "@/modules/{feature}/services/{feature}.service";
@@ -286,25 +264,6 @@ describe("{Feature}Service 통합 테스트 (Mock DB)", () => { ... });
 describe("{Feature} 통합 테스트 (실제 DB)", () => { ... });
 ```
 
-### JSDoc 헤더
-
-모든 통합 테스트 파일 상단에 작성:
-
-```typescript
-/**
- * [Feature]Service 통합 테스트 (Mock DB)
- *
- * @description
- * [Feature]Service와 [Feature]Repository의 DI 통합을 검증합니다.
- * DB는 Mock으로 처리합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test {name}.integration-spec
- * ```
- */
-```
-
 ---
 
 ## 실행 명령어
@@ -330,11 +289,9 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 - ✅ 실제 DB Auth: `createAuthTestModule()` 팩토리 사용
 - ✅ 모든 파일에서 `suppressLogger()` 호출
 - ✅ `beforeAll`에서 TestingModule 생성 (성능)
-- ✅ `beforeEach`에서 `jest.clearAllMocks()` 호출
-- ✅ Builder 패턴으로 테스트 데이터 생성
+- ✅ Builder 패턴으로 mock 반환값 생성
 - ✅ GWT 주석으로 테스트 의도 표현
 - ✅ 한국어 describe명 + 유형 태그 `(Mock DB)` / `(실제 DB)`
-- ✅ 파일 상단 JSDoc 헤더 (description + 실행 명령)
 - ✅ `afterAll`에서 `module.close()` 호출
 
 ### DON'T
@@ -348,5 +305,5 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 4.0.0
+**최종 수정일**: 2026-04-05

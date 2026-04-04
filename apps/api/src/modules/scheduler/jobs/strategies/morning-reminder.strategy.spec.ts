@@ -1,3 +1,14 @@
+/**
+ * MorningReminderStrategy 전략 단위 테스트
+ *
+ * @description
+ * MorningReminderStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test morning-reminder.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -9,11 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import { MorningReminderStrategy } from "./morning-reminder.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("MorningReminderStrategy", () => {
+describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
 	let strategy: MorningReminderStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -59,11 +66,8 @@ describe("MorningReminderStrategy", () => {
 		jest.restoreAllMocks();
 	});
 
-	// =========================================================================
-	// 프리미엄 사용자
-	// =========================================================================
-
 	it("프리미엄 사용자에게 커스텀 시간에 아침 리마인더를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx({ localHour: 9, localMinute: 30 });
 
 		database.user.findMany
@@ -72,8 +76,10 @@ describe("MorningReminderStrategy", () => {
 			] as never)
 			.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
@@ -86,40 +92,39 @@ describe("MorningReminderStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 무료 사용자
-	// =========================================================================
-
 	it("무료 사용자에게 08:00에 아침 리마인더를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx({ localHour: 8, localMinute: 0 });
 
 		database.user.findMany
 			.mockResolvedValueOnce([] as never) // 프리미엄
 			.mockResolvedValueOnce([{ id: "free-1", _count: { todos: 2 } }] as never); // 무료
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		expect(database.user.findMany).toHaveBeenCalledTimes(2);
 	});
 
 	it("무료 사용자는 비고정 시간에 리마인더를 발송하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx({ localHour: 9, localMinute: 30 });
 
 		database.user.findMany.mockResolvedValueOnce([] as never); // 프리미엄
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		// 프리미엄 쿼리 1번만 호출, 무료 사용자 쿼리 스킵
 		expect(database.user.findMany).toHaveBeenCalledTimes(1);
 	});
 
-	// =========================================================================
-	// catch-up (userId 지정)
-	// =========================================================================
-
 	it("catch-up(userId) 시 무료 사용자 쿼리를 스킵한다", async () => {
+		// Given
 		const ctx = makeCtx({
 			localHour: 8,
 			localMinute: 0,
@@ -128,26 +133,27 @@ describe("MorningReminderStrategy", () => {
 
 		database.user.findMany.mockResolvedValueOnce([] as never); // 프리미엄
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		// userId가 있으므로 무료 사용자 쿼리 스킵
 		expect(database.user.findMany).toHaveBeenCalledTimes(1);
 	});
 
-	// =========================================================================
-	// 메시지 분기
-	// =========================================================================
-
 	it("할일이 있는 사용자에게 morningReminder(count) 메시지를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
 			.mockResolvedValueOnce([{ id: "user-1", _count: { todos: 5 } }] as never)
 			.mockResolvedValueOnce([] as never);
 
+		// When
 		await strategy.execute(ctx);
 
+		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.morningReminder(5);
@@ -158,14 +164,17 @@ describe("MorningReminderStrategy", () => {
 	});
 
 	it("할일이 없는 사용자에게 morningNoTodo 메시지를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
 			.mockResolvedValueOnce([{ id: "user-1", _count: { todos: 0 } }] as never)
 			.mockResolvedValueOnce([] as never);
 
+		// When
 		await strategy.execute(ctx);
 
+		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		const expected = NotificationMessageBuilder.morningNoTodo();
@@ -175,11 +184,8 @@ describe("MorningReminderStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 중복 방지
-	// =========================================================================
-
 	it("이미 알림 받은 사용자를 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
@@ -193,8 +199,10 @@ describe("MorningReminderStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -202,19 +210,18 @@ describe("MorningReminderStrategy", () => {
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
 			.mockResolvedValueOnce([] as never)
 			.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});

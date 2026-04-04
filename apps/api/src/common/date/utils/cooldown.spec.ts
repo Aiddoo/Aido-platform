@@ -1,3 +1,14 @@
+/**
+ * calculateCooldown 유틸 테스트
+ *
+ * @description
+ * calculateCooldown 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test cooldown
+ * ```
+ */
 import { calculateCooldown } from "./cooldown";
 
 beforeAll(() => {

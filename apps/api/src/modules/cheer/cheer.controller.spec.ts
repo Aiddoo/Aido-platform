@@ -27,7 +27,7 @@ import type {
 	CheerWithRelations,
 } from "./types";
 
-describe("CheerController", () => {
+describe("CheerController — 응원 컨트롤러", () => {
 	let controller: CheerController;
 	let mockCheerService: Mocked<CheerService>;
 

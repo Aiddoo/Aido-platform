@@ -23,23 +23,49 @@ export class E2eHelpers {
 	) {}
 
 	/**
-	 * 사용자 등록 + 이메일 인증 + 토큰 반환
+	 * 사용자 등록 (이메일 인증 전 단계)
 	 */
-	async createVerifiedUser(
+	async registerUser(
 		email: string,
 		password: string,
-	): Promise<VerifiedUser> {
-		// 회원가입
+		options?: { name?: string },
+	): Promise<void> {
 		await request(this.app.getHttpServer())
 			.post("/auth/register")
 			.send({
 				email,
 				password,
 				passwordConfirm: password,
+				name: options?.name,
 				termsAgreed: true,
 				privacyAgreed: true,
 			})
 			.expect(201);
+	}
+
+	/**
+	 * 이메일 인증 + 토큰 반환
+	 */
+	async verifyUser(email: string): Promise<string> {
+		const code = this.fakeEmailService.getLastCode(email);
+		const response = await request(this.app.getHttpServer())
+			.post("/auth/verify-email")
+			.send({ email, code })
+			.expect(200);
+
+		return response.body.data.accessToken;
+	}
+
+	/**
+	 * 사용자 등록 + 이메일 인증 + 토큰 반환
+	 */
+	async createVerifiedUser(
+		email: string,
+		password: string,
+		options?: { name?: string },
+	): Promise<VerifiedUser> {
+		// 회원가입
+		await this.registerUser(email, password, options);
 
 		// 이메일 인증
 		const code = this.fakeEmailService.getLastCode(email);

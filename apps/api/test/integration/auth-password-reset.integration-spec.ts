@@ -128,10 +128,6 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 		return registerResult.userId;
 	}
 
-	// ============================================
-	// forgotPassword
-	// ============================================
-
 	describe("forgotPassword", () => {
 		it("등록된 사용자에게 비밀번호 재설정 코드를 이메일로 발송한다", async () => {
 			// Given
@@ -160,10 +156,6 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			expect(fakeEmailService.getSentCount()).toBe(0);
 		});
 	});
-
-	// ============================================
-	// resetPassword
-	// ============================================
 
 	describe("resetPassword", () => {
 		it("인증 코드 확인 후 비밀번호를 재설정한다", async () => {

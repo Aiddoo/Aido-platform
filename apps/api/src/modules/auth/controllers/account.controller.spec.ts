@@ -1,11 +1,14 @@
 /**
  * AccountController 단위 테스트
  *
- * Suites + GWT 패턴 적용
- * - Suites: TestBed.solitary()로 자동 Mock 생성
- * - GWT: Given/When/Then 주석으로 테스트 구조화
+ * @description
+ * 계정 컨트롤러의 프로필 조회/수정, 소셜 연동/해제, 탈퇴 엔드포인트를 검증한다.
+ * 서비스 위임과 AuthMapper를 통한 응답 변환을 확인한다.
  *
- * @see https://docs.nestjs.com/recipes/suites
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test account.controller.spec.ts
+ * ```
  */
 
 import type { Mocked } from "@suites/doubles.jest";
@@ -20,7 +23,7 @@ import { AuthService } from "../services/auth.service";
 import { OAuthService } from "../services/oauth.service";
 import { AccountController } from "./account.controller";
 
-describe("AccountController", () => {
+describe("AccountController — 계정 컨트롤러", () => {
 	let controller: AccountController;
 	let mockAuthService: Mocked<AuthService>;
 	let mockOAuthService: Mocked<OAuthService>;

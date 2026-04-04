@@ -1,3 +1,16 @@
+/**
+ * AuthController 단위 테스트
+ *
+ * @description
+ * 인증 컨트롤러의 회원가입, 로그인, 전체 로그아웃 엔드포인트를 검증한다.
+ * 서비스 위임과 AuthMapper를 통한 응답 변환을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test auth.controller.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
@@ -7,7 +20,7 @@ import type { LoginDto, RegisterDto } from "../dtos";
 import { AuthService } from "../services/auth.service";
 import { AuthController } from "./auth.controller";
 
-describe("AuthController", () => {
+describe("AuthController — 인증 컨트롤러", () => {
 	let controller: AuthController;
 	let mockAuthService: Mocked<AuthService>;
 

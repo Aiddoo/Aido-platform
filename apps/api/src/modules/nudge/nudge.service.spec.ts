@@ -30,11 +30,7 @@ import { NotificationQueueService } from "@/modules/notification/queue";
 import { NudgeRepository } from "./nudge.repository";
 import { NudgeService } from "./nudge.service";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("NudgeService", () => {
+describe("NudgeService — 찔러보기 서비스", () => {
 	let service: NudgeService;
 	let nudgeRepository: Mocked<NudgeRepository>;
 	let followService: Mocked<FollowService>;
@@ -113,10 +109,6 @@ describe("NudgeService", () => {
 		// ID 카운터 리셋
 		NudgeBuilder.resetIdCounter();
 	});
-
-	// =========================================================================
-	// sendNudge
-	// =========================================================================
 
 	describe("sendNudge", () => {
 		const defaultParams = {
@@ -565,10 +557,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// sendRemindNudge
-	// =========================================================================
-
 	describe("sendRemindNudge", () => {
 		const defaultParams = {
 			senderId: "sender-id",
@@ -716,10 +704,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getRemindCooldownInfo
-	// =========================================================================
-
 	describe("getRemindCooldownInfo", () => {
 		it("기록이 없으면 쿨다운 비활성 상태를 반환한다", async () => {
 			// Given
@@ -784,10 +768,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getReceivedNudges
-	// =========================================================================
-
 	describe("getReceivedNudges", () => {
 		it("받은 Nudge 목록을 조회한다", async () => {
 			// Given
@@ -849,10 +829,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getSentNudges
-	// =========================================================================
-
 	describe("getSentNudges", () => {
 		it("보낸 Nudge 목록을 조회한다", async () => {
 			// Given
@@ -880,10 +856,6 @@ describe("NudgeService", () => {
 			expect(result.items).toBeDefined();
 		});
 	});
-
-	// =========================================================================
-	// getLimitInfo
-	// =========================================================================
 
 	describe("getLimitInfo", () => {
 		it("FREE 사용자의 제한 정보를 조회한다", async () => {
@@ -977,10 +949,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getCooldownInfoForTodo
-	// =========================================================================
-
 	describe("getCooldownInfoForTodo", () => {
 		it("Nudge 기록이 없으면 쿨다운 비활성 상태를 반환한다", async () => {
 			// Given
@@ -1031,10 +999,6 @@ describe("NudgeService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getCooldownInfoForUser
-	// =========================================================================
-
 	describe("getCooldownInfoForUser", () => {
 		it("특정 사용자에 대한 쿨다운 정보를 조회한다", async () => {
 			// Given
@@ -1054,10 +1018,6 @@ describe("NudgeService", () => {
 			expect(result.isActive).toBe(false);
 		});
 	});
-
-	// =========================================================================
-	// markAsRead
-	// =========================================================================
 
 	describe("markAsRead", () => {
 		it("Nudge를 읽음 처리한다", async () => {

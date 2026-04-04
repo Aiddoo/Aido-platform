@@ -1,3 +1,16 @@
+/**
+ * JwtStrategy 단위 테스트
+ *
+ * @description
+ * Access 토큰 전략의 validate 메서드를 검증한다.
+ * 캐시 히트/미스, 세션 상태(폐기/만료), DB 조회 흐름을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test jwt.strategy.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { CacheService } from "@/common/cache/cache.service";
@@ -12,7 +25,7 @@ import { SessionService } from "../services/session.service";
 import type { JwtPayload } from "../services/token.service";
 import { JwtStrategy } from "./jwt.strategy";
 
-describe("JwtStrategy", () => {
+describe("JwtStrategy — JWT 전략", () => {
 	let strategy: JwtStrategy;
 	let sessionRepo: Mocked<SessionRepository>;
 	let sessionService: Mocked<SessionService>;

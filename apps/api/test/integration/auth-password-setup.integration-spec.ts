@@ -102,10 +102,6 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 		return user.id;
 	}
 
-	// ============================================
-	// requestPasswordSetupCode
-	// ============================================
-
 	describe("requestPasswordSetupCode", () => {
 		it("소셜 전용 사용자에게 비밀번호 설정 코드를 발송한다", async () => {
 			// Given
@@ -139,10 +135,6 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// setPassword
-	// ============================================
 
 	describe("setPassword", () => {
 		it("인증 코드 확인 후 CREDENTIAL 계정을 생성한다", async () => {

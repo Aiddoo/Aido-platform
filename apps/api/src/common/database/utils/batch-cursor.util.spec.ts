@@ -1,3 +1,14 @@
+/**
+ * forEachBatch 유틸 테스트
+ *
+ * @description
+ * forEachBatch 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test batch-cursor.util
+ * ```
+ */
 import { forEachBatch } from "./batch-cursor.util";
 
 describe("forEachBatch", () => {

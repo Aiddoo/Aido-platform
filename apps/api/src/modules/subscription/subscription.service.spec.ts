@@ -23,7 +23,7 @@ import { NotificationQueueService } from "@/modules/notification/queue";
 import { SubscriptionRepository } from "./subscription.repository";
 import { SubscriptionService } from "./subscription.service";
 
-describe("SubscriptionService", () => {
+describe("SubscriptionService — 구독 서비스", () => {
 	let service: SubscriptionService;
 	let subscriptionRepository: Mocked<SubscriptionRepository>;
 	let database: Mocked<DatabaseService>;
@@ -84,11 +84,7 @@ describe("SubscriptionService", () => {
 		cacheService.invalidateUserProfile.mockResolvedValue(undefined);
 	});
 
-	// =========================================================================
-	// Lock
-	// =========================================================================
-
-	describe("Lock", () => {
+	describe("Lock — 락", () => {
 		it("Lock 획득 실패 시 BusinessException을 던진다", async () => {
 			// Given
 			lockProvider.acquire.mockResolvedValue(null);
@@ -133,10 +129,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// User lookup
-	// =========================================================================
-
 	describe("사용자 조회", () => {
 		it("사용자가 없으면 BusinessException을 던진다", async () => {
 			// Given
@@ -151,10 +143,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// INITIAL_PURCHASE
-	// =========================================================================
 
 	describe("INITIAL_PURCHASE", () => {
 		it("정상적으로 구독을 생성하고 사용자 상태를 ACTIVE로 업데이트한다", async () => {
@@ -299,10 +287,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// RENEWAL
-	// =========================================================================
-
 	describe("RENEWAL", () => {
 		it("정상적으로 구독을 갱신하고 사용자 상태를 ACTIVE로 업데이트한다", async () => {
 			// Given
@@ -395,10 +379,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// CANCELLATION
-	// =========================================================================
-
 	describe("CANCELLATION (일반 취소)", () => {
 		it("expiresAt이 미래이면 User를 ACTIVE로 유지한다", async () => {
 			// Given
@@ -483,10 +463,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// CANCELLATION (환불 — cancel_reason: CUSTOMER_SUPPORT)
-	// =========================================================================
 
 	describe("CANCELLATION (환불)", () => {
 		it("cancel_reason=CUSTOMER_SUPPORT이면 Subscription을 EXPIRED로, User를 즉시 FREE로 변경한다", async () => {
@@ -583,10 +559,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// NON_RENEWING_PURCHASE
-	// =========================================================================
-
 	describe("NON_RENEWING_PURCHASE", () => {
 		it("INITIAL_PURCHASE와 동일하게 구독을 생성하고 User를 ACTIVE로 변경한다", async () => {
 			// Given
@@ -638,10 +610,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// SUBSCRIPTION_EXTENDED
-	// =========================================================================
 
 	describe("SUBSCRIPTION_EXTENDED", () => {
 		it("expiresAt을 갱신하고 ACTIVE를 유지한다", async () => {
@@ -695,10 +663,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// UNCANCELLATION
-	// =========================================================================
-
 	describe("UNCANCELLATION", () => {
 		it("ACTIVE로 복원하고 cancelledAt을 null로 설정한다", async () => {
 			// Given
@@ -729,10 +693,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// EXPIRATION
-	// =========================================================================
 
 	describe("EXPIRATION", () => {
 		it("Subscription을 EXPIRED로, User를 FREE로 변경하고 subscriptionExpiresAt을 null로 설정한다", async () => {
@@ -765,10 +725,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// BILLING_ISSUE
-	// =========================================================================
-
 	describe("BILLING_ISSUE", () => {
 		it("DB 변경 없이 큐 잡을 등록한다 (Discord 알림 + 푸시 알림)", async () => {
 			// Given
@@ -796,10 +752,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// PRODUCT_CHANGE
-	// =========================================================================
 
 	describe("PRODUCT_CHANGE", () => {
 		it("productId를 업데이트한다", async () => {
@@ -845,10 +797,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// Other events (로그만 남기는 이벤트)
-	// =========================================================================
 
 	describe("기타 이벤트", () => {
 		it("TEST 이벤트는 로그만 남기고 eventPayload가 null이다", async () => {
@@ -978,10 +926,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// 알 수 없는 이벤트 타입 (forward compatibility)
-	// =========================================================================
-
 	describe("알 수 없는 이벤트 타입", () => {
 		it("알 수 없는 이벤트 타입은 에러 없이 로그만 남기고 정상 종료한다", async () => {
 			// Given — RevenueCat이 미래에 추가할 이벤트 시뮬레이션
@@ -1001,10 +945,6 @@ describe("SubscriptionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// transactionId 누락
-	// =========================================================================
-
 	describe("transactionId", () => {
 		it("transactionId와 original_transaction_id 모두 누락되면 에러를 던진다", async () => {
 			// Given
@@ -1019,10 +959,6 @@ describe("SubscriptionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// event.id 기반 중복 방지
-	// =========================================================================
 
 	describe("event.id 중복 방지", () => {
 		it("동일 event.id 웹훅 재전송 시 이벤트를 처리하지 않고 종료한다", async () => {

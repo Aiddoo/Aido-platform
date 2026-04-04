@@ -1,3 +1,14 @@
+/**
+ * classifyHabit 유틸 테스트
+ *
+ * @description
+ * classifyHabit 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test habit-tracker
+ * ```
+ */
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import timezone from "dayjs/plugin/timezone";

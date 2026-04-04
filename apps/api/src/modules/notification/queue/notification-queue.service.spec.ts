@@ -1,3 +1,14 @@
+/**
+ * NotificationQueueService 모듈 단위 테스트
+ *
+ * @description
+ * NotificationQueueService 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test notification-queue.service
+ * ```
+ */
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -9,11 +20,7 @@ import {
 } from "./notification-queue.constants";
 import { NotificationQueueService } from "./notification-queue.service";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("NotificationQueueService", () => {
+describe("NotificationQueueService — 알림 큐 서비스", () => {
 	let service: NotificationQueueService;
 	let queue: Mocked<Queue>;
 
@@ -30,10 +37,6 @@ describe("NotificationQueueService", () => {
 		service = unit;
 		queue = unitRef.get(getQueueToken(NOTIFICATION_QUEUE));
 	});
-
-	// =========================================================================
-	// enqueueFollowNew
-	// =========================================================================
 
 	describe("enqueueFollowNew", () => {
 		it("follow-new 잡을 큐에 등록한다", async () => {
@@ -70,10 +73,6 @@ describe("NotificationQueueService", () => {
 		});
 	});
 
-	// =========================================================================
-	// enqueueFollowMutual
-	// =========================================================================
-
 	describe("enqueueFollowMutual", () => {
 		it("follow-mutual 잡을 큐에 등록한다", async () => {
 			// Given
@@ -108,10 +107,6 @@ describe("NotificationQueueService", () => {
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// enqueueNudgeSent
-	// =========================================================================
 
 	describe("enqueueNudgeSent", () => {
 		it("nudge-sent 잡을 큐에 등록한다", async () => {
@@ -153,10 +148,6 @@ describe("NotificationQueueService", () => {
 		});
 	});
 
-	// =========================================================================
-	// enqueueCheerSent
-	// =========================================================================
-
 	describe("enqueueCheerSent", () => {
 		it("cheer-sent 잡을 큐에 등록한다", async () => {
 			// Given
@@ -195,10 +186,6 @@ describe("NotificationQueueService", () => {
 		});
 	});
 
-	// =========================================================================
-	// enqueueBillingIssue
-	// =========================================================================
-
 	describe("enqueueBillingIssue", () => {
 		it("billing-issue 잡을 큐에 등록한다", async () => {
 			// Given
@@ -225,10 +212,6 @@ describe("NotificationQueueService", () => {
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// enqueueFriendCompleted
-	// =========================================================================
 
 	describe("enqueueFriendCompleted", () => {
 		it("friend-completed 잡을 큐에 등록한다", async () => {

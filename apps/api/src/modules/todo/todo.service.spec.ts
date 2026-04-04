@@ -42,7 +42,7 @@ import type {
 	TodoWithCategory,
 } from "./types/todo.types";
 
-describe("TodoService", () => {
+describe("TodoService — 할 일 서비스", () => {
 	let service: TodoService;
 	let todoRepo: Mocked<TodoRepository>;
 	let todoCategoryService: Mocked<TodoCategoryService>;
@@ -82,10 +82,6 @@ describe("TodoService", () => {
 			(callback: (tx: unknown) => Promise<unknown>) => callback(todoRepo),
 		);
 	});
-
-	// ============================================
-	// create
-	// ============================================
 
 	describe("create", () => {
 		const createInput: CreateTodoData = {
@@ -280,10 +276,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// findById
-	// ============================================
-
 	describe("findById", () => {
 		it("Todo를 조회하고 반환한다", async () => {
 			// Given - 존재하는 Todo
@@ -322,10 +314,6 @@ describe("TodoService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// findMany
-	// ============================================
 
 	describe("findMany", () => {
 		const mockTodos = [
@@ -491,10 +479,6 @@ describe("TodoService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// update
-	// ============================================
 
 	describe("update", () => {
 		const updateInput = { title: "수정된 할 일", content: "수정된 내용" };
@@ -667,10 +651,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// delete
-	// ============================================
-
 	describe("delete", () => {
 		it("Todo를 삭제한다", async () => {
 			// Given - 존재하는 Todo
@@ -721,10 +701,6 @@ describe("TodoService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// toggleComplete (SRP)
-	// ============================================
 
 	describe("toggleComplete", () => {
 		it("미완료 Todo를 완료로 변경하면 completedAt이 설정된다", async () => {
@@ -960,10 +936,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// updateVisibility (SRP)
-	// ============================================
-
 	describe("updateVisibility", () => {
 		it("PUBLIC에서 PRIVATE로 변경한다", async () => {
 			// Given - PUBLIC 상태의 Todo
@@ -1031,10 +1003,6 @@ describe("TodoService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// updateCategory (SRP)
-	// ============================================
 
 	describe("updateCategory", () => {
 		it("카테고리를 변경한다", async () => {
@@ -1175,10 +1143,6 @@ describe("TodoService", () => {
 			expect(todoRepo.update).toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// updateSchedule (SRP)
-	// ============================================
 
 	describe("updateSchedule", () => {
 		it("일정을 변경한다", async () => {
@@ -1330,10 +1294,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// updateContent (SRP)
-	// ============================================
-
 	describe("updateContent", () => {
 		it("제목만 변경한다", async () => {
 			// Given - 존재하는 Todo
@@ -1459,10 +1419,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// reorder
-	// ============================================
-
 	describe("reorder", () => {
 		it("Todo를 특정 위치 앞으로 이동한다", async () => {
 			// Given - 이동할 Todo와 타겟 Todo
@@ -1503,10 +1459,6 @@ describe("TodoService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// findFriendTodos
-	// ============================================
 
 	describe("findFriendTodos", () => {
 		const friendUserId = "friend-user-456";
@@ -1676,10 +1628,6 @@ describe("TodoService", () => {
 			expect(todoRepo.findPublicTodosByUserId).not.toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// createRecurring
-	// ============================================
 
 	describe("createRecurring", () => {
 		const recurringInput: CreateRecurringTodoData = {
@@ -1938,10 +1886,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// addItem
-	// ============================================
-
 	describe("addItem", () => {
 		const mockTodoWithItems = TodoBuilder.create(mockUserId)
 			.withId(1)
@@ -2020,10 +1964,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// updateItem
-	// ============================================
-
 	describe("updateItem", () => {
 		const mockItem: TodoItemData = {
 			id: 10,
@@ -2095,10 +2035,6 @@ describe("TodoService", () => {
 		});
 	});
 
-	// ============================================
-	// deleteItem
-	// ============================================
-
 	describe("deleteItem", () => {
 		const mockItem: TodoItemData = {
 			id: 10,
@@ -2149,10 +2085,6 @@ describe("TodoService", () => {
 			}
 		});
 	});
-
-	// ============================================
-	// reorderItems
-	// ============================================
 
 	describe("reorderItems", () => {
 		const item1: TodoItemData = {
@@ -2251,10 +2183,6 @@ describe("TodoService", () => {
 			}
 		});
 	});
-
-	// ============================================
-	// create with inline items
-	// ============================================
 
 	describe("create with inline items", () => {
 		it("items 배열과 함께 Todo를 생성하면 재조회한다", async () => {

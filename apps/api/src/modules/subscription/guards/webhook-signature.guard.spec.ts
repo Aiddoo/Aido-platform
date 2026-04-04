@@ -1,3 +1,14 @@
+/**
+ * WebhookSignatureGuard 가드 단위 테스트
+ *
+ * @description
+ * WebhookSignatureGuard의 인가 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test webhook-signature.guard
+ * ```
+ */
 import type { ExecutionContext } from "@nestjs/common";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -7,7 +18,7 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 
 import { WebhookSignatureGuard } from "./webhook-signature.guard";
 
-describe("WebhookSignatureGuard", () => {
+describe("WebhookSignatureGuard — 가드", () => {
 	let guard: WebhookSignatureGuard;
 	let _mockConfig: Mocked<TypedConfigService>;
 
@@ -23,10 +34,6 @@ describe("WebhookSignatureGuard", () => {
 			}),
 		} as unknown as ExecutionContext;
 	};
-
-	// =========================================================================
-	// Setup - secret 설정된 경우
-	// =========================================================================
 
 	describe("webhook secret이 설정된 경우", () => {
 		beforeEach(async () => {
@@ -91,10 +98,6 @@ describe("WebhookSignatureGuard", () => {
 		});
 	});
 
-	// =========================================================================
-	// Setup - secret 미설정 (개발 환경)
-	// =========================================================================
-
 	describe("webhook secret이 미설정된 경우 (개발 환경)", () => {
 		beforeEach(async () => {
 			const { unit } = await TestBed.solitary(WebhookSignatureGuard)
@@ -122,10 +125,6 @@ describe("WebhookSignatureGuard", () => {
 			expect(result).toBe(true);
 		});
 	});
-
-	// =========================================================================
-	// Setup - secret 미설정 (프로덕션 환경)
-	// =========================================================================
 
 	describe("webhook secret이 미설정된 경우 (프로덕션 환경)", () => {
 		beforeEach(async () => {

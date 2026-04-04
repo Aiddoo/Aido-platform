@@ -1,8 +1,19 @@
+/**
+ * CheerMapper 매퍼 단위 테스트
+ *
+ * @description
+ * CheerMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test cheer.mapper
+ * ```
+ */
 import { CheerBuilder } from "@test/builders";
 import { CheerMapper } from "./cheer.mapper";
 import type { CheerLimitInfo as ServiceLimitInfo } from "./types";
 
-describe("CheerMapper", () => {
+describe("CheerMapper — 응원 매퍼", () => {
 	describe("toDetailDto", () => {
 		it("CheerWithRelations를 CheerDetail DTO로 변환한다", () => {
 			// Given

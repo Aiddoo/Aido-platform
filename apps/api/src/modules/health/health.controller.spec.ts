@@ -15,7 +15,7 @@ import { TestBed } from "@suites/unit";
 
 import { HealthController } from "./health.controller";
 
-describe("HealthController", () => {
+describe("HealthController — 헬스 체크 컨트롤러", () => {
 	let controller: HealthController;
 	let mockHealthCheckService: Mocked<HealthCheckService>;
 

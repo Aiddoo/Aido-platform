@@ -1,3 +1,14 @@
+/**
+ * SubscriptionController 컨트롤러 단위 테스트
+ *
+ * @description
+ * SubscriptionController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test subscription.controller
+ * ```
+ */
 jest.mock("@sentry/nestjs", () => ({
 	captureException: jest.fn(),
 	withScope: jest.fn((callback) =>
@@ -19,7 +30,7 @@ import { PAYMENT_NOTIFIER } from "@/modules/admin-notification/providers/admin-n
 import { SubscriptionController } from "./subscription.controller";
 import { SubscriptionService } from "./subscription.service";
 
-describe("SubscriptionController", () => {
+describe("SubscriptionController — 구독 컨트롤러", () => {
 	let controller: SubscriptionController;
 	let mockService: Mocked<SubscriptionService>;
 	let mockNotifier: { send: jest.Mock; name: string; isConfigured: jest.Mock };
@@ -39,10 +50,6 @@ describe("SubscriptionController", () => {
 		controller = unit;
 		mockService = unitRef.get(SubscriptionService);
 	});
-
-	// =========================================================================
-	// handleRevenueCatWebhook
-	// =========================================================================
 
 	describe("handleRevenueCatWebhook", () => {
 		const validPayload = SubscriptionEventBuilder.initialPurchase()

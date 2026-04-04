@@ -1,3 +1,14 @@
+/**
+ * SocialDigestStrategy 전략 단위 테스트
+ *
+ * @description
+ * SocialDigestStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test social-digest.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -9,11 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import { SocialDigestStrategy } from "./social-digest.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("SocialDigestStrategy", () => {
+describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 	let strategy: SocialDigestStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -58,11 +65,8 @@ describe("SocialDigestStrategy", () => {
 		jest.useRealTimers();
 	});
 
-	// =========================================================================
-	// 본인 미완료 + 완료 친구 1명
-	// =========================================================================
-
 	it("본인 미완료 + 완료 친구 1명일 때 Social Digest를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		// 미완료 투두가 있는 유저
@@ -87,8 +91,10 @@ describe("SocialDigestStrategy", () => {
 			{ followerId: "user-1", followingId: "friend-1" },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -102,11 +108,8 @@ describe("SocialDigestStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 본인 미완료 + 완료 친구 2명 이상
-	// =========================================================================
-
 	it("본인 미완료 + 완료 친구 2명 이상일 때 다른 메시지를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
@@ -134,8 +137,10 @@ describe("SocialDigestStrategy", () => {
 			{ followerId: "user-1", followingId: "friend-2" },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -147,28 +152,24 @@ describe("SocialDigestStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 본인 전체 완료
-	// =========================================================================
-
 	it("본인이 전체 완료이면 발송하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		// 쿼리에서 completed: false인 투두가 있는 유저만 조회하므로
 		// 전체 완료 유저는 쿼리 결과에 포함되지 않음
 		database.user.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 친구 없음
-	// =========================================================================
-
 	it("친구가 없으면 발송하지 않는다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany
@@ -184,17 +185,16 @@ describe("SocialDigestStrategy", () => {
 		// 팔로우 관계 없음
 		database.follow.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 중복 방지
-	// =========================================================================
-
 	it("이미 알림 받은 사용자를 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -208,8 +208,10 @@ describe("SocialDigestStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});

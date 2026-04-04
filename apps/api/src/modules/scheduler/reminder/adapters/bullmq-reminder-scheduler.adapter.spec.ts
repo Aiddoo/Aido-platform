@@ -1,3 +1,14 @@
+/**
+ * BullMQReminderSchedulerAdapter 모듈 단위 테스트
+ *
+ * @description
+ * BullMQReminderSchedulerAdapter 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test bullmq-reminder-scheduler.adapter
+ * ```
+ */
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -12,18 +23,10 @@ import {
 	TODO_REMINDER_QUEUE,
 } from "./bullmq-reminder-scheduler.adapter";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
 const USER_ID = "user-1";
 const SIXTY_MIN_MS = 60 * 60 * 1000;
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("BullMQReminderSchedulerAdapter", () => {
+describe("BullMQReminderSchedulerAdapter — BullMQ 리마인더 스케줄러 어댑터", () => {
 	let adapter: BullMQReminderSchedulerAdapter;
 	let queue: Mocked<Queue>;
 
@@ -43,10 +46,6 @@ describe("BullMQReminderSchedulerAdapter", () => {
 		adapter = unit;
 		queue = unitRef.get(getQueueToken(TODO_REMINDER_QUEUE));
 	});
-
-	// =========================================================================
-	// scheduleReminder — 다단계 BullMQ 잡 등록
-	// =========================================================================
 
 	describe("scheduleReminder", () => {
 		it("2시간+ 후 마감이면 60분, 10분 두 단계 잡을 등록한다", async () => {
@@ -171,10 +170,6 @@ describe("BullMQReminderSchedulerAdapter", () => {
 			expect(options.delay).toBeLessThanOrEqual(SIXTY_MIN_MS);
 		});
 	});
-
-	// =========================================================================
-	// cancelReminder
-	// =========================================================================
 
 	describe("cancelReminder", () => {
 		it("등록된 모든 단계 잡을 제거한다", async () => {

@@ -43,7 +43,7 @@ import type { JwtPayload } from "./token.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
-describe("AuthService", () => {
+describe("AuthService — 인증 서비스", () => {
 	let service: AuthService;
 	let userRepo: Mocked<UserRepository>;
 	let accountRepo: Mocked<AccountRepository>;
@@ -83,10 +83,6 @@ describe("AuthService", () => {
 		sessionService = unitRef.get(SessionService);
 		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
 	});
-
-	// ============================================
-	// register
-	// ============================================
 
 	describe("register", () => {
 		const registerInput = {
@@ -323,10 +319,6 @@ describe("AuthService", () => {
 		});
 	});
 
-	// ============================================
-	// verifyEmail
-	// ============================================
-
 	describe("verifyEmail", () => {
 		const verifyInput = {
 			email: "test@example.com",
@@ -474,10 +466,6 @@ describe("AuthService", () => {
 			expect(verificationService.verifyCode).not.toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// login
-	// ============================================
 
 	describe("login", () => {
 		const loginInput = {
@@ -692,10 +680,6 @@ describe("AuthService", () => {
 		});
 	});
 
-	// ============================================
-	// logout
-	// ============================================
-
 	describe("logout", () => {
 		const userId = "user-123";
 		const sessionId = "session-123";
@@ -785,10 +769,6 @@ describe("AuthService", () => {
 		});
 	});
 
-	// ============================================
-	// logoutAll
-	// ============================================
-
 	describe("logoutAll", () => {
 		const userId = "user-123";
 
@@ -851,10 +831,6 @@ describe("AuthService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// refreshTokens
-	// ============================================
 
 	describe("refreshTokens", () => {
 		const refreshToken = "refresh-token";
@@ -1048,10 +1024,6 @@ describe("AuthService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// deleteAccount
-	// ============================================
 
 	describe("deleteAccount", () => {
 		const userId = "user-123";
@@ -1248,10 +1220,6 @@ describe("AuthService", () => {
 		});
 	});
 
-	// ============================================
-	// login - 탈퇴 사용자 차단
-	// ============================================
-
 	describe("login - 탈퇴 사용자", () => {
 		it("유예 기간 초과 시 USER_0606 에러", async () => {
 			// Given - 31일 전에 탈퇴한 사용자
@@ -1345,10 +1313,6 @@ describe("AuthService", () => {
 		});
 	});
 
-	// ============================================
-	// getActiveSessions
-	// ============================================
-
 	describe("getActiveSessions", () => {
 		const userId = "user-123";
 
@@ -1393,10 +1357,6 @@ describe("AuthService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// revokeSession
-	// ============================================
 
 	describe("revokeSession", () => {
 		const userId = "user-123";
@@ -1472,10 +1432,6 @@ describe("AuthService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// resendVerification
-	// ============================================
 
 	describe("resendVerification", () => {
 		const email = "test@example.com";
@@ -1565,10 +1521,6 @@ describe("AuthService", () => {
 			expect(result.message).toBeDefined();
 		});
 	});
-
-	// ============================================
-	// getCurrentUser (캐싱)
-	// ============================================
 
 	describe("getCurrentUser", () => {
 		it("캐시된 프로필을 조회하여 사용자 정보를 반환한다", async () => {
@@ -1690,10 +1642,6 @@ describe("AuthService", () => {
 			expect(result.sessionId).toBe("different-session-456");
 		});
 	});
-
-	// ============================================
-	// updateProfile (캐시 무효화)
-	// ============================================
 
 	describe("updateProfile", () => {
 		const userId = "user-123";

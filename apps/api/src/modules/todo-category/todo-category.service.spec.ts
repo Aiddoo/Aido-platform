@@ -30,7 +30,7 @@ import type {
 	TransactionClient,
 } from "./types/todo-category.types";
 
-describe("TodoCategoryService", () => {
+describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 	let service: TodoCategoryService;
 	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
 	let entitlementService: Mocked<EntitlementService>;
@@ -73,10 +73,6 @@ describe("TodoCategoryService", () => {
 			subscriptionStatus: "ACTIVE",
 		});
 	});
-
-	// ============================================
-	// create
-	// ============================================
 
 	describe("create", () => {
 		const createData = { userId, name: "새 카테고리", color: "#FF6B43" };
@@ -205,10 +201,6 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
-	// ============================================
-	// createDefaultCategories
-	// ============================================
-
 	describe("createDefaultCategories", () => {
 		const defaultCategories = [
 			{ name: "중요한 일", color: "#FFB3B3", sortOrder: 0 },
@@ -233,10 +225,6 @@ describe("TodoCategoryService", () => {
 			]);
 		});
 	});
-
-	// ============================================
-	// findById
-	// ============================================
 
 	describe("findById", () => {
 		it("카테고리를 조회해야 한다", async () => {
@@ -288,10 +276,6 @@ describe("TodoCategoryService", () => {
 		});
 	});
 
-	// ============================================
-	// findMany
-	// ============================================
-
 	describe("findMany", () => {
 		it("사용자의 모든 카테고리를 조회해야 한다", async () => {
 			// Given
@@ -329,10 +313,6 @@ describe("TodoCategoryService", () => {
 			expect(result).toEqual([]);
 		});
 	});
-
-	// ============================================
-	// update
-	// ============================================
 
 	describe("update", () => {
 		const updateData = { name: "수정된 카테고리", color: "#00FF00" };
@@ -428,10 +408,6 @@ describe("TodoCategoryService", () => {
 			expect(todoCategoryRepo.existsByUserIdAndName).not.toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// delete
-	// ============================================
 
 	describe("delete", () => {
 		it("Todo가 없는 카테고리를 삭제해야 한다", async () => {
@@ -542,10 +518,6 @@ describe("TodoCategoryService", () => {
 			).rejects.toThrow(BusinessExceptions.todoCategoryNotFound(999));
 		});
 	});
-
-	// ============================================
-	// reorder
-	// ============================================
 
 	describe("reorder", () => {
 		it("카테고리를 특정 카테고리 앞으로 이동해야 한다 (before)", async () => {
@@ -700,10 +672,6 @@ describe("TodoCategoryService", () => {
 			).rejects.toThrow(BusinessExceptions.todoCategoryNotFound(999));
 		});
 	});
-
-	// ============================================
-	// validateOwnership
-	// ============================================
 
 	describe("validateOwnership", () => {
 		it("소유권이 확인된 카테고리를 반환해야 한다", async () => {

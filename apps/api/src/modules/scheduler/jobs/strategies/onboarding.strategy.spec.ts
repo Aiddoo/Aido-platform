@@ -1,3 +1,14 @@
+/**
+ * OnboardingStrategy 전략 단위 테스트
+ *
+ * @description
+ * OnboardingStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test onboarding.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -9,11 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import { OnboardingStrategy } from "./onboarding.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("OnboardingStrategy", () => {
+describe("OnboardingStrategy — 온보딩 전략", () => {
 	let strategy: OnboardingStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -59,10 +66,6 @@ describe("OnboardingStrategy", () => {
 		jest.useRealTimers();
 	});
 
-	// =========================================================================
-	// Day 0 가입 유저에게 온보딩 알림 발송
-	// =========================================================================
-
 	it("Day 0 가입 유저에게 온보딩 알림을 발송한다", async () => {
 		// Given: 오늘 가입한 유저가 있다
 		const ctx = makeCtx();
@@ -89,10 +92,6 @@ describe("OnboardingStrategy", () => {
 			metadata: { onboardingDay: 0 },
 		});
 	});
-
-	// =========================================================================
-	// Day 5에서 completedCount가 포함된 메시지 발송
-	// =========================================================================
 
 	it("Day 5에서 completedCount가 포함된 메시지를 발송한다", async () => {
 		// Given: 5일 전 가입한 유저가 있고, 완료한 todo가 3개이다
@@ -125,10 +124,6 @@ describe("OnboardingStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// Day 4에서는 발송하지 않음
-	// =========================================================================
-
 	it("Day 4에서는 알림을 발송하지 않는다", async () => {
 		// Given: 4일 전 가입한 유저가 있다
 		const ctx = makeCtx();
@@ -146,10 +141,6 @@ describe("OnboardingStrategy", () => {
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// Day 8+ 유저는 무시
-	// =========================================================================
-
 	it("Day 8 이상 유저는 무시한다", async () => {
 		// Given: 10일 전 가입한 유저가 있다
 		const ctx = makeCtx();
@@ -166,10 +157,6 @@ describe("OnboardingStrategy", () => {
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
-
-	// =========================================================================
-	// 이미 오늘 알림 받은 유저는 스킵 (dedup)
-	// =========================================================================
 
 	it("이미 오늘 알림을 받은 유저는 스킵한다", async () => {
 		// Given: 오늘 가입한 유저 2명 중 1명은 이미 알림을 받았다
@@ -195,10 +182,6 @@ describe("OnboardingStrategy", () => {
 		expect(notifications).toHaveLength(1);
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
-
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
 
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
 		// Given: 해당 타임존에 신규 유저가 없다

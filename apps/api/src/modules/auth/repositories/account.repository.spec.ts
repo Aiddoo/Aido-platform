@@ -1,3 +1,16 @@
+/**
+ * AccountRepository 단위 테스트
+ *
+ * @description
+ * 계정 저장소의 Credential/OAuth 계정 CRUD 메서드를 검증한다.
+ * 트랜잭션 지원, OAuth 토큰 암호화 갱신, 계정 삭제를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test account.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { AccountBuilder } from "@test/builders";
@@ -7,7 +20,7 @@ import { DatabaseService } from "@/database";
 
 import { AccountRepository } from "./account.repository";
 
-describe("AccountRepository", () => {
+describe("AccountRepository — 계정 리포지토리", () => {
 	let repository: AccountRepository;
 	let db: Mocked<DatabaseService>;
 	let encryptionService: Mocked<EncryptionService>;

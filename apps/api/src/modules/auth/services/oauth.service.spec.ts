@@ -51,7 +51,7 @@ interface OAuthProfile {
 	picture?: string;
 }
 
-describe("OAuthService", () => {
+describe("OAuthService — OAuth 인증 서비스", () => {
 	let service: OAuthService;
 	let database: Mocked<DatabaseService>;
 	let userRepo: Mocked<UserRepository>;
@@ -191,10 +191,6 @@ describe("OAuthService", () => {
 		// #createSessionAndTokens / #restoreAndCreateSession에서 role 조회용
 		userRepo.findById.mockResolvedValue(mockUser);
 	};
-
-	// ============================================
-	// handleAppleMobileLogin (서버에서 토큰 검증)
-	// ============================================
 
 	describe("handleAppleMobileLogin", () => {
 		const appleVerifiedProfile: AppleVerifiedProfile = {
@@ -503,10 +499,6 @@ describe("OAuthService", () => {
 		});
 	});
 
-	// ============================================
-	// linkAccount
-	// ============================================
-
 	describe("linkAccount", () => {
 		it("새로운 소셜 계정을 연결한다", async () => {
 			// Given
@@ -637,10 +629,6 @@ describe("OAuthService", () => {
 		});
 	});
 
-	// ============================================
-	// unlinkAccount
-	// ============================================
-
 	describe("unlinkAccount", () => {
 		it("연결된 소셜 계정을 해제한다", async () => {
 			// Given - Builder로 계정 생성
@@ -742,10 +730,6 @@ describe("OAuthService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// getLinkedAccounts
-	// ============================================
 
 	describe("getLinkedAccounts", () => {
 		it("4개 provider 전체를 반환하며 연결된 계정은 linked: true", async () => {
@@ -853,10 +837,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// linkSocialAccountWithToken
-	// ============================================
 
 	describe("linkSocialAccountWithToken", () => {
 		beforeEach(() => {
@@ -1042,10 +1022,6 @@ describe("OAuthService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// Redirect URI 검증 (개발/프로덕션 환경)
-	// ============================================
 
 	describe("Redirect URI 검증", () => {
 		const testState = "test-state-123";
@@ -1266,10 +1242,6 @@ describe("OAuthService", () => {
 		});
 	});
 
-	// ============================================
-	// handleKakaoWebCallbackWithExchangeCode (OAuth state 검증 + 토큰 교환)
-	// ============================================
-
 	describe("handleKakaoWebCallbackWithExchangeCode", () => {
 		const mockKakaoProfile: OAuthProfile = {
 			id: "kakao-user-123",
@@ -1396,10 +1368,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// LoginAttempt 기록 테스트
-	// ============================================
 
 	describe("LoginAttempt 기록", () => {
 		describe("Apple 로그인", () => {
@@ -1716,10 +1684,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// Provider별 자동/강제 연동 테스트
-	// ============================================
 
 	describe("이메일 충돌 시 자동/강제 연동", () => {
 		describe("Google (신뢰된 Provider)", () => {
@@ -2103,10 +2067,6 @@ describe("OAuthService", () => {
 		});
 	});
 
-	// ============================================
-	// handleKakaoWebCallbackWithExchangeCode (OAuth state 검증)
-	// ============================================
-
 	describe("handleKakaoWebCallbackWithExchangeCode", () => {
 		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
 			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
@@ -2224,10 +2184,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// handleGoogleWebCallbackWithExchangeCode (OAuth state 검증)
-	// ============================================
 
 	describe("handleGoogleWebCallbackWithExchangeCode", () => {
 		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
@@ -2355,10 +2311,6 @@ describe("OAuthService", () => {
 		});
 	});
 
-	// ============================================
-	// handleNaverWebCallbackWithExchangeCode (OAuth state 검증)
-	// ============================================
-
 	describe("handleNaverWebCallbackWithExchangeCode", () => {
 		describe("state가 DB에 없는 경우 (CSRF 보호)", () => {
 			it("state가 DB에 없으면 invalidCredentials를 throw해야 한다", async () => {
@@ -2475,10 +2427,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// 소셜 계정 연동 (Linking Mode)
-	// ============================================
 
 	describe("소셜 계정 연동 (Linking Mode)", () => {
 		/** 공통 OAuthState mock 생성 헬퍼 */
@@ -2766,10 +2714,6 @@ describe("OAuthService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// linkAccountWithExchangeCode
-	// ============================================
 
 	describe("linkAccountWithExchangeCode", () => {
 		it("유효한 교환 코드로 소셜 계정을 연동한다", async () => {

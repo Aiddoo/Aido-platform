@@ -12,7 +12,7 @@ import { DatabaseService } from "@/database/database.service";
 
 import { AiReportRepository } from "./ai-report.repository";
 
-describe("AiReportRepository", () => {
+describe("AiReportRepository — AI 리포트 리포지토리", () => {
 	let repository: AiReportRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -23,10 +23,6 @@ describe("AiReportRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// =========================================================================
-	// create
-	// =========================================================================
 
 	describe("create", () => {
 		it("리포트를 생성하고 결과를 반환해야 한다", async () => {
@@ -73,10 +69,6 @@ describe("AiReportRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// findByIdAndUserId
-	// =========================================================================
-
 	describe("findByIdAndUserId", () => {
 		it("ID와 userId로 리포트를 조회해야 한다", async () => {
 			// Given -조회할 리포트
@@ -105,10 +97,6 @@ describe("AiReportRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// findLatest
-	// =========================================================================
-
 	describe("findLatest", () => {
 		it("최신 리포트를 타입별로 조회해야 한다", async () => {
 			// Given -최신 리포트
@@ -126,10 +114,6 @@ describe("AiReportRepository", () => {
 			expect(result).toEqual(mockReport);
 		});
 	});
-
-	// =========================================================================
-	// findMany
-	// =========================================================================
 
 	describe("findMany", () => {
 		it("타입 필터를 적용하여 목록을 조회해야 한다", async () => {
@@ -164,10 +148,6 @@ describe("AiReportRepository", () => {
 			});
 		});
 	});
-
-	// =========================================================================
-	// exists
-	// =========================================================================
 
 	describe("exists", () => {
 		it("리포트가 존재하면 true를 반환해야 한다", async () => {

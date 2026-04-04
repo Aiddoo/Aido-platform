@@ -27,7 +27,7 @@ import { PasswordService } from "./password.service";
 import { PasswordManagementService } from "./password-management.service";
 import { VerificationService } from "./verification.service";
 
-describe("PasswordManagementService", () => {
+describe("PasswordManagementService — 비밀번호 서비스", () => {
 	let service: PasswordManagementService;
 	let userRepo: Mocked<UserRepository>;
 	let accountRepo: Mocked<AccountRepository>;
@@ -51,10 +51,6 @@ describe("PasswordManagementService", () => {
 		database = unitRef.get(DatabaseService);
 		securityLogRepo = unitRef.get(SecurityLogRepository);
 	});
-
-	// ============================================
-	// forgotPassword
-	// ============================================
 
 	describe("forgotPassword", () => {
 		const email = "test@example.com";
@@ -122,10 +118,6 @@ describe("PasswordManagementService", () => {
 			).not.toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// resetPassword
-	// ============================================
 
 	describe("resetPassword", () => {
 		const email = "test@example.com";
@@ -280,10 +272,6 @@ describe("PasswordManagementService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// changePassword
-	// ============================================
 
 	describe("changePassword", () => {
 		const userId = "user-123";
@@ -449,10 +437,6 @@ describe("PasswordManagementService", () => {
 		});
 	});
 
-	// ============================================
-	// requestPasswordSetupCode
-	// ============================================
-
 	describe("requestPasswordSetupCode", () => {
 		const userId = "user-setup-1";
 
@@ -518,10 +502,6 @@ describe("PasswordManagementService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// setPassword
-	// ============================================
 
 	describe("setPassword", () => {
 		const userId = "user-setup-2";

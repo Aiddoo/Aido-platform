@@ -22,11 +22,7 @@ import type {
 	RegisterPushTokenData,
 } from "./types/notification.types";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("NotificationRepository", () => {
+describe("NotificationRepository — 알림 리포지토리", () => {
 	let repository: NotificationRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -42,10 +38,6 @@ describe("NotificationRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// ==========================================================================
-	// Notification CRUD Tests
-	// ==========================================================================
 
 	describe("createNotification", () => {
 		it("알림을 생성해야 한다", async () => {
@@ -536,10 +528,6 @@ describe("NotificationRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// Deduplication Queries
-	// ==========================================================================
-
 	describe("existsNotification", () => {
 		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
 
@@ -718,10 +706,6 @@ describe("NotificationRepository", () => {
 			expect(db.notification.count).not.toHaveBeenCalled();
 		});
 	});
-
-	// ==========================================================================
-	// PushToken CRUD Tests
-	// ==========================================================================
 
 	describe("registerPushToken", () => {
 		it("푸시 토큰을 등록해야 한다", async () => {

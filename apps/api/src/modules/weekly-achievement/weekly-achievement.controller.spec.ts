@@ -1,3 +1,14 @@
+/**
+ * WeeklyAchievementController 컨트롤러 단위 테스트
+ *
+ * @description
+ * WeeklyAchievementController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-achievement.controller
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -7,7 +18,7 @@ import { WeeklyAchievementController } from "./weekly-achievement.controller";
 import type { WeeklyAchievementListResult } from "./weekly-achievement.service";
 import { WeeklyAchievementService } from "./weekly-achievement.service";
 
-describe("WeeklyAchievementController", () => {
+describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	let controller: WeeklyAchievementController;
 	let service: Mocked<WeeklyAchievementService>;
 
@@ -26,10 +37,6 @@ describe("WeeklyAchievementController", () => {
 		controller = unit;
 		service = unitRef.get(WeeklyAchievementService);
 	});
-
-	// ============================================
-	// getWeeklyAchievements
-	// ============================================
 
 	describe("getWeeklyAchievements", () => {
 		it("Service에 올바른 파라미터를 전달한다", async () => {
@@ -100,10 +107,6 @@ describe("WeeklyAchievementController", () => {
 			expect(result).toEqual(mockResult);
 		});
 	});
-
-	// ============================================
-	// getWeeklyAchievement
-	// ============================================
 
 	describe("getWeeklyAchievement", () => {
 		it("Service에 올바른 파라미터를 전달한다", async () => {

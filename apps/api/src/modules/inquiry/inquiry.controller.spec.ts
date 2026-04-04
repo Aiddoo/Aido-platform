@@ -17,7 +17,7 @@ import type { CreateInquiryDto } from "./dtos";
 import { InquiryController } from "./inquiry.controller";
 import { InquiryService } from "./inquiry.service";
 
-describe("InquiryController", () => {
+describe("InquiryController — 문의 컨트롤러", () => {
 	let controller: InquiryController;
 	let mockInquiryService: Mocked<InquiryService>;
 

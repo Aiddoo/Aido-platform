@@ -10,11 +10,7 @@ import type { RecurringSuggestion } from "@/generated/prisma/client";
 
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 
-describe("AiSuggestionMapper", () => {
-	// =========================================================================
-	// toResponse
-	// =========================================================================
-
+describe("AiSuggestionMapper — AI 제안 매퍼", () => {
 	describe("toResponse", () => {
 		it("Prisma 엔티티를 올바른 DTO 형식으로 변환해야 한다", () => {
 			// Given -Prisma RecurringSuggestion 엔티티
@@ -101,10 +97,6 @@ describe("AiSuggestionMapper", () => {
 			expect(result.scheduledTime).toBeNull();
 		});
 	});
-
-	// =========================================================================
-	// toManyResponse
-	// =========================================================================
 
 	describe("toManyResponse", () => {
 		it("여러 엔티티를 일괄 변환해야 한다", () => {
