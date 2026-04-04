@@ -30,10 +30,20 @@ type ResendMock = {
 	};
 };
 
+// Resend 생성자를 모킹하여 private #resend 필드에 mock이 주입되도록 함
+const resendMock: ResendMock = {
+	emails: {
+		send: jest.fn(),
+	},
+};
+
+jest.mock("resend", () => ({
+	Resend: jest.fn().mockImplementation(() => resendMock),
+}));
+
 describe("EmailService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
 	let service: EmailService;
-	let resendMock: ResendMock;
 
 	// 테스트 데이터
 	const testEmail = "integration-test@example.com";
@@ -42,6 +52,9 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 
 	beforeAll(async () => {
 		suppressLogger();
+
+		// fake timers를 사용하여 #sleep의 setTimeout을 즉시 실행
+		jest.useFakeTimers();
 
 		module = await Test.createTestingModule({
 			providers: [
@@ -55,6 +68,7 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 							from: "noreply@integration-test.com",
 							fromName: "Integration Test",
 						},
+						nodeEnv: "test",
 					},
 				},
 			],
@@ -64,21 +78,44 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 	});
 
 	afterAll(async () => {
+		jest.useRealTimers();
 		await module.close();
 		jest.restoreAllMocks();
 	});
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-
-		// Resend mock 생성 및 private 필드 교체
-		resendMock = {
-			emails: {
-				send: jest.fn(),
-			},
-		};
-		(service as unknown as { _resend: ResendMock })._resend = resendMock;
 	});
+
+	/**
+	 * #sleep 내부의 setTimeout을 즉시 해소하면서 async 작업을 진행시키는 헬퍼.
+	 * promise를 반환하되, 모든 pending timer를 반복적으로 flush한다.
+	 */
+	async function flushTimersAndAwait<T>(promise: Promise<T>): Promise<T> {
+		let resolved = false;
+		let result: T;
+		let error: unknown;
+
+		promise
+			.then((r) => {
+				resolved = true;
+				result = r;
+			})
+			.catch((e) => {
+				resolved = true;
+				error = e;
+			});
+
+		// 타이머를 반복적으로 flush하여 재시도 루프 전체를 처리
+		while (!resolved) {
+			jest.advanceTimersByTime(10_000);
+			// microtask queue를 비워서 Promise continuation이 실행되도록 함
+			await Promise.resolve();
+		}
+
+		if (error) throw error;
+		return result!;
+	}
 
 	describe("DI 통합", () => {
 		it("EmailService가 올바르게 인스턴스화된다", () => {
@@ -99,10 +136,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 인증 코드 이메일 발송
-			await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - ConfigService에서 가져온 from 값이 사용됨
 			expect(resendMock.emails.send).toHaveBeenCalledWith(
@@ -126,18 +165,13 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 					error: null,
 				});
 
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When - 인증 코드 이메일 발송
-			const result = await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			const result = await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 재시도 후 성공
 			expect(result.success).toBe(true);
@@ -166,18 +200,13 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 					error: null,
 				});
 
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When - 인증 코드 이메일 발송
-			const result = await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			const result = await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 3번 재시도 후 성공
 			expect(result.success).toBe(true);
@@ -192,18 +221,13 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 				error: { name: "application_error", message: "Persistent failure" },
 			});
 
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When - 인증 코드 이메일 발송
-			const result = await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			const result = await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 최대 재시도 후 실패
 			expect(result.success).toBe(false);
@@ -224,10 +248,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 인증 코드 이메일 발송
-			await service.sendVerificationCode(testEmail, {
-				code: "123456",
-				expiryMinutes: 10,
-			});
+			await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: "123456",
+					expiryMinutes: 10,
+				}),
+			);
 
 			// Then - 템플릿에 인증 코드와 만료 시간이 포함됨
 			const call = resendMock.emails.send.mock.calls[0][0];
@@ -247,10 +273,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 비밀번호 재설정 이메일 발송
-			await service.sendPasswordResetCode(testEmail, {
-				code: "654321",
-				expiryMinutes: 30,
-			});
+			await flushTimersAndAwait(
+				service.sendPasswordResetCode(testEmail, {
+					code: "654321",
+					expiryMinutes: 30,
+				}),
+			);
 
 			// Then - 템플릿에 재설정 코드와 만료 시간이 포함됨
 			const call = resendMock.emails.send.mock.calls[0][0];
@@ -271,10 +299,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			const idempotencyKey = "unique-request-id-12345";
 
 			// When - idempotencyKey와 함께 이메일 발송
-			await service.sendVerificationCode(
-				testEmail,
-				{ code: testCode, expiryMinutes: testExpiryMinutes },
-				idempotencyKey,
+			await flushTimersAndAwait(
+				service.sendVerificationCode(
+					testEmail,
+					{ code: testCode, expiryMinutes: testExpiryMinutes },
+					idempotencyKey,
+				),
 			);
 
 			// Then - 헤더에 idempotencyKey가 포함됨
@@ -293,10 +323,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - idempotencyKey 없이 이메일 발송
-			await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 헤더가 undefined
 			expect(resendMock.emails.send).toHaveBeenCalledWith(
@@ -316,17 +348,19 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 인증 코드 이메일 발송
-			await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - verification 태그가 포함됨
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([
 					{ name: "type", value: "verification" },
-					{ name: "environment", value: expect.any(String) },
+					{ name: "environment", value: "test" },
 				]),
 			);
 		});
@@ -339,17 +373,19 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 비밀번호 재설정 이메일 발송
-			await service.sendPasswordResetCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			await flushTimersAndAwait(
+				service.sendPasswordResetCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - password-reset 태그가 포함됨
 			const call = resendMock.emails.send.mock.calls[0][0];
 			expect(call.tags).toEqual(
 				expect.arrayContaining([
 					{ name: "type", value: "password-reset" },
-					{ name: "environment", value: expect.any(String) },
+					{ name: "environment", value: "test" },
 				]),
 			);
 		});
@@ -362,18 +398,13 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 				new Error("Network connection failed"),
 			);
 
-			jest
-				.spyOn(
-					service as unknown as { _sleep: (ms: number) => Promise<void> },
-					"_sleep",
-				)
-				.mockResolvedValue(undefined);
-
 			// When - 인증 코드 이메일 발송
-			const result = await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			const result = await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 실패 결과 반환
 			expect(result.success).toBe(false);
@@ -388,10 +419,12 @@ describe("EmailService 통합 테스트 (Mock DB)", () => {
 			});
 
 			// When - 인증 코드 이메일 발송
-			const result = await service.sendVerificationCode(testEmail, {
-				code: testCode,
-				expiryMinutes: testExpiryMinutes,
-			});
+			const result = await flushTimersAndAwait(
+				service.sendVerificationCode(testEmail, {
+					code: testCode,
+					expiryMinutes: testExpiryMinutes,
+				}),
+			);
 
 			// Then - 재시도 없이 즉시 실패
 			expect(result.success).toBe(false);

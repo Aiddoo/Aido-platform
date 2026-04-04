@@ -4,7 +4,7 @@
  * @description
  * 모든 E2E 테스트에서 반복되는 NestJS 앱 초기화 보일러플레이트를 통합합니다.
  * - TestDatabase (Testcontainers)
- * - 외부 서비스 Fake 처리 (Email, OAuth, Push, AI, Discord)
+ * - 외부 서비스 Fake 처리 (Email, OAuth, Push, AI, Discord, Weather)
  * - ZodValidationPipe
  * - PinoLogger 억제
  */
@@ -52,13 +52,21 @@ import { TIMEZONE_REMINDER_QUEUE } from "@/modules/scheduler/queue/timezone-remi
 import { TimezoneReminderProcessor } from "@/modules/scheduler/queue/timezone-reminder-queue.processor";
 import { TODO_REMINDER_QUEUE } from "@/modules/scheduler/reminder/adapters/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
+import { AIR_QUALITY_PROVIDER } from "@/modules/weather/providers/air/air-quality.types";
+import { LIFESTYLE_INDEX_PROVIDER } from "@/modules/weather/providers/lifestyle/lifestyle-index.types";
+import { SUN_TIME_PROVIDER } from "@/modules/weather/providers/sun/sun-time.types";
+import { WEATHER_PROVIDER } from "@/modules/weather/providers/weather-provider.interface";
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
+import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";
 import { createMockBullQueue } from "../../mocks/fake-bull-queue";
 import { FakeEmailService } from "../../mocks/fake-email.service";
+import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider";
 import { FakeLogger } from "../../mocks/fake-logger.service";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service";
 import { FakePushProvider } from "../../mocks/fake-push.provider";
+import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider";
+import { FakeWeatherProvider } from "../../mocks/fake-weather.provider";
 import { TestDatabase } from "../../setup/test-database";
 import { E2eHelpers } from "./e2e-helpers";
 
@@ -120,6 +128,10 @@ export async function createE2eApp(
 	const fakePaymentNotifier = new FakeAdminNotifier();
 	const fakePushProvider = new FakePushProvider();
 	const fakeAiProvider = new FakeAiProvider();
+	const fakeWeatherProvider = new FakeWeatherProvider();
+	const fakeAirQualityProvider = new FakeAirQualityProvider();
+	const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
+	const fakeSunTimeProvider = new FakeSunTimeProvider();
 
 	const redisMock = new RedisMock();
 
@@ -142,6 +154,14 @@ export async function createE2eApp(
 		.useValue(fakePushProvider)
 		.overrideProvider(AI_PROVIDER)
 		.useValue(fakeAiProvider)
+		.overrideProvider(WEATHER_PROVIDER)
+		.useValue(fakeWeatherProvider)
+		.overrideProvider(AIR_QUALITY_PROVIDER)
+		.useValue(fakeAirQualityProvider)
+		.overrideProvider(LIFESTYLE_INDEX_PROVIDER)
+		.useValue(fakeLifestyleIndexProvider)
+		.overrideProvider(SUN_TIME_PROVIDER)
+		.useValue(fakeSunTimeProvider)
 		.overrideProvider(PinoLogger)
 		.useClass(FakeLogger);
 

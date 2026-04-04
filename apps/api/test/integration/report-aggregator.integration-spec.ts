@@ -59,6 +59,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
 	// 각 테스트 전 데이터 초기화
 	beforeEach(async () => {
+		jest.clearAllMocks();
 		await testDb.cleanup();
 
 		// 테스트 사용자 생성

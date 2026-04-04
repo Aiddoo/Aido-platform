@@ -585,7 +585,10 @@ export class FollowService {
 					followId,
 					tx,
 				);
-				return withUser!;
+				if (!withUser) {
+					throw BusinessExceptions.friendReorderTargetNotFound(followId);
+				}
+				return withUser;
 			}
 
 			const newSortOrder = targetFollowId

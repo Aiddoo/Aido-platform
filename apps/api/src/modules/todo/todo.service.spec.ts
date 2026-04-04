@@ -2155,32 +2155,31 @@ describe("TodoService", () => {
 	// ============================================
 
 	describe("reorderItems", () => {
-		const mockItems: TodoItemData[] = [
-			{
-				id: 1,
-				title: "항목1",
-				completed: false,
-				sortOrder: 0,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
-			{
-				id: 2,
-				title: "항목2",
-				completed: false,
-				sortOrder: 1,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
-			{
-				id: 3,
-				title: "항목3",
-				completed: false,
-				sortOrder: 2,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			},
-		];
+		const item1: TodoItemData = {
+			id: 1,
+			title: "항목1",
+			completed: false,
+			sortOrder: 0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		const item2: TodoItemData = {
+			id: 2,
+			title: "항목2",
+			completed: false,
+			sortOrder: 1,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		const item3: TodoItemData = {
+			id: 3,
+			title: "항목3",
+			completed: false,
+			sortOrder: 2,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		const mockItems: TodoItemData[] = [item1, item2, item3];
 
 		it("하위 항목 순서를 변경한다", async () => {
 			// Given - 3개 항목이 있는 Todo
@@ -2191,9 +2190,9 @@ describe("TodoService", () => {
 			const reorderedTodo = TodoBuilder.create(mockUserId)
 				.withId(1)
 				.withItems([
-					{ ...mockItems[2]!, sortOrder: 0 },
-					{ ...mockItems[0]!, sortOrder: 1 },
-					{ ...mockItems[1]!, sortOrder: 2 },
+					{ ...item3, sortOrder: 0 },
+					{ ...item1, sortOrder: 1 },
+					{ ...item2, sortOrder: 2 },
 				])
 				.build();
 			todoRepo.findByIdAndUserId

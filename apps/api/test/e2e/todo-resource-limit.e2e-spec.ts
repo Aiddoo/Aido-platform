@@ -55,6 +55,9 @@ describe("Todo Resource Limit (e2e)", () => {
 		});
 
 		it(`활성 Todo ${CATEGORY_LIMIT}개 도달 후 생성 시 403 에러`, async () => {
+			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
+
+			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -65,26 +68,35 @@ describe("Todo Resource Limit (e2e)", () => {
 				})
 				.expect(403);
 
+			// Then - 403 에러와 TODO_0811 코드 반환
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("TODO_0811");
 		});
 
 		it("GET /todos/resource-limit?categoryId - 현재 사용량과 한도 조회", async () => {
+			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
+
+			// When - categoryId로 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
 				.get(`/todos/resource-limit?categoryId=${categoryId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - activeCount와 maxPerCategory가 CATEGORY_LIMIT과 일치
 			expect(response.body.data.activeCount).toBe(CATEGORY_LIMIT);
 			expect(response.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
 		});
 
 		it("GET /todos/resource-limit (categoryId 없음) - maxPerCategory만 반환", async () => {
+			// Given - 인증된 사용자
+
+			// When - categoryId 없이 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
 				.get("/todos/resource-limit")
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - maxPerCategory만 반환되고 activeCount는 없음
 			expect(response.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
 			expect(response.body.data.activeCount).toBeUndefined();
 		});
@@ -130,14 +142,15 @@ describe("Todo Resource Limit (e2e)", () => {
 		});
 
 		it("활성 Todo 1개 완료 후 새 Todo 생성 성공", async () => {
-			// 1개 완료
+			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
+
+			// When - 1개 완료 후 새 Todo 생성
 			await request(ctx.app.getHttpServer())
 				.patch(`/todos/${firstTodoId}/complete`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({ completed: true })
 				.expect(200);
 
-			// 새 Todo 생성 → 성공
 			const response = await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -148,6 +161,7 @@ describe("Todo Resource Limit (e2e)", () => {
 				})
 				.expect(201);
 
+			// Then - 새 Todo 생성 성공
 			expect(response.body.data.todo.title).toBe("완료 후 새 할 일");
 		});
 	});
@@ -192,7 +206,9 @@ describe("Todo Resource Limit (e2e)", () => {
 		});
 
 		it("한 카테고리가 꽉 차도 다른 카테고리에는 생성 가능", async () => {
-			// 꽉 찬 카테고리에 생성 → 실패
+			// Given - fullCategoryId에 CATEGORY_LIMIT개, emptyCategoryId에 0개
+
+			// When - 꽉 찬 카테고리에 생성 시도
 			await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -203,7 +219,7 @@ describe("Todo Resource Limit (e2e)", () => {
 				})
 				.expect(403);
 
-			// 빈 카테고리에 생성 → 성공
+			// When - 빈 카테고리에 생성 시도
 			const response = await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -214,6 +230,7 @@ describe("Todo Resource Limit (e2e)", () => {
 				})
 				.expect(201);
 
+			// Then - 빈 카테고리에는 생성 성공
 			expect(response.body.data.todo.title).toBe("다른 카테고리 할 일");
 		});
 	});
@@ -256,6 +273,9 @@ describe("Todo Resource Limit (e2e)", () => {
 		});
 
 		it("프리미엄 유저도 카테고리당 한도에 도달하면 생성 불가", async () => {
+			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재하는 Premium 유저
+
+			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())
 				.post("/todos")
 				.set("Authorization", `Bearer ${accessToken}`)
@@ -266,16 +286,21 @@ describe("Todo Resource Limit (e2e)", () => {
 				})
 				.expect(403);
 
+			// Then - 403 에러와 TODO_0811 코드 반환
 			expect(response.body.success).toBe(false);
 			expect(response.body.error.code).toBe("TODO_0811");
 		});
 
 		it("GET /todos/resource-limit?categoryId - maxPerCategory는 동일", async () => {
+			// Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재하는 Premium 유저
+
+			// When - categoryId로 리소스 제한 조회
 			const response = await request(ctx.app.getHttpServer())
 				.get(`/todos/resource-limit?categoryId=${categoryId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
 				.expect(200);
 
+			// Then - maxPerCategory와 activeCount가 CATEGORY_LIMIT과 일치
 			expect(response.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
 			expect(response.body.data.activeCount).toBe(CATEGORY_LIMIT);
 		});

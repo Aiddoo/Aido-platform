@@ -134,6 +134,14 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
+		// clearAllMocks does not clear mockResolvedValueOnce queues,
+		// so reset database model mocks to prevent leaking between tests
+		for (const method of Object.values(mockTodoCategoryDb)) {
+			(method as jest.Mock).mockReset();
+		}
+		for (const method of Object.values(mockTodoDb)) {
+			(method as jest.Mock).mockReset();
+		}
 		TodoCategoryBuilder.resetIdCounter();
 	});
 

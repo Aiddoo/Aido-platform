@@ -41,5 +41,6 @@ export {
 } from "./todo-category.builder";
 export { UserBuilder } from "./user.builder";
 export { UserConsentBuilder } from "./user-consent.builder";
+export { UserLocationBuilder } from "./user-location.builder";
 export { UserPreferenceBuilder } from "./user-preference.builder";
 export { VerificationBuilder } from "./verification.builder";
