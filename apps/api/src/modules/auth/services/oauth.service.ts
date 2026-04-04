@@ -706,7 +706,6 @@ export class OAuthService {
 				provider,
 				providerAccountId,
 				userName: options.userName,
-				emailVerified: options.emailVerified ?? false,
 				refreshToken: options.appleRefreshToken,
 				profileImage: options.profileImage,
 			});
@@ -731,13 +730,12 @@ export class OAuthService {
 		});
 	}
 
-	// emailVerified=true → ACTIVE, emailVerified=false → PENDING_VERIFY (로그인은 허용)
+	// 소셜 로그인 유저는 OAuth Provider가 신원을 검증하므로 항상 ACTIVE
 	async #createSocialUser(data: {
 		email: string;
 		provider: AccountProvider;
 		providerAccountId: string;
 		userName?: string;
-		emailVerified: boolean;
 		refreshToken?: string;
 		profileImage?: string;
 	}) {
@@ -745,8 +743,8 @@ export class OAuthService {
 			const user = await this.userRepository.create(
 				{
 					email: data.email,
-					status: data.emailVerified ? "ACTIVE" : "PENDING_VERIFY",
-					emailVerifiedAt: data.emailVerified ? now() : null,
+					status: "ACTIVE",
+					emailVerifiedAt: now(),
 				},
 				tx,
 			);
@@ -992,18 +990,12 @@ export class OAuthService {
 		);
 	}
 
-	// PENDING_VERIFY 허용: 소셜 로그인은 OAuth Provider가 신원을 이미 검증함
 	#validateUserStatus(status: string): void {
 		switch (status) {
 			case "LOCKED":
 				throw BusinessExceptions.accountLocked("Social login user");
 			case "SUSPENDED":
 				throw BusinessExceptions.accountSuspended("Social login user");
-			case "PENDING_VERIFY":
-				// 의도된 동작: 소셜 로그인은 이메일 미인증 상태도 허용
-				// Apple/Google은 emailVerified=true로 ACTIVE 상태로 생성됨
-				// Kakao/Naver는 이메일 미인증 시 PENDING_VERIFY이지만 로그인 허용
-				break;
 			default:
 				break;
 		}
