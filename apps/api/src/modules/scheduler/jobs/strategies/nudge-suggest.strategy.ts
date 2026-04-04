@@ -176,6 +176,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				type: "NUDGE_SUGGEST",
 				title: message.title,
 				body: message.body,
+				friendId: target.id,
 				notificationDate: today,
 				metadata: { friendId: target.id },
 			});
