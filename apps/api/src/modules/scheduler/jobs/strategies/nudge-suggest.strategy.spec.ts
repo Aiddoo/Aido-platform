@@ -105,7 +105,7 @@ describe("NudgeSuggestStrategy", () => {
 			type: "NUDGE_SUGGEST",
 			title: expected.title,
 			body: expected.body,
-			metadata: { friendId: "friend-1" },
+			friendId: "friend-1",
 		});
 	});
 
