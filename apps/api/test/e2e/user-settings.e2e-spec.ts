@@ -15,14 +15,9 @@
  */
 
 import request from "supertest";
-import {
-	createE2eApp,
-	destroyE2eApp,
-	type E2eTestContext,
-	type VerifiedUser,
-} from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
-describe("User Settings (e2e)", () => {
+describe("사용자 설정 E2E", () => {
 	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
@@ -33,19 +28,19 @@ describe("User Settings (e2e)", () => {
 		await destroyE2eApp(ctx);
 	});
 
+	beforeEach(async () => {
+		await ctx.testDatabase.cleanup();
+		ctx.fakeEmailService.clear();
+	});
+
 	describe("알림 환경설정", () => {
-		const userEmail = "settings-pref@example.com";
-		const password = "Test1234!";
-
-		let user: VerifiedUser;
-
-		beforeAll(async () => {
-			user = await ctx.helpers.createVerifiedUser(userEmail, password);
-		});
-
 		describe("GET /auth/preference - 환경설정 조회", () => {
 			it("사용자의 환경설정을 조회한다", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-pref@example.com",
+					"Test1234!",
+				);
 
 				// When - 환경설정 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -74,6 +69,10 @@ describe("User Settings (e2e)", () => {
 		describe("PATCH /auth/preference - 환경설정 수정", () => {
 			it("푸시 알림 설정을 변경한다", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-push@example.com",
+					"Test1234!",
+				);
 
 				// When - 푸시 알림 비활성화
 				const response = await request(ctx.app.getHttpServer())
@@ -88,6 +87,10 @@ describe("User Settings (e2e)", () => {
 
 			it("타임존을 변경한다", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-tz@example.com",
+					"Test1234!",
+				);
 
 				// When - 타임존 변경
 				const response = await request(ctx.app.getHttpServer())
@@ -115,18 +118,13 @@ describe("User Settings (e2e)", () => {
 	});
 
 	describe("동의 정보", () => {
-		const userEmail = "settings-consent@example.com";
-		const password = "Test1234!";
-
-		let user: VerifiedUser;
-
-		beforeAll(async () => {
-			user = await ctx.helpers.createVerifiedUser(userEmail, password);
-		});
-
 		describe("GET /auth/consent - 동의 정보 조회", () => {
 			it("사용자의 동의 정보를 조회한다", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-consent@example.com",
+					"Test1234!",
+				);
 
 				// When - 동의 정보 조회 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -153,6 +151,10 @@ describe("User Settings (e2e)", () => {
 		describe("PATCH /auth/consent/marketing - 마케팅 동의 변경", () => {
 			it("마케팅 동의를 활성화한다", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-mkt-on@example.com",
+					"Test1234!",
+				);
 
 				// When - 마케팅 동의 활성화
 				const response = await request(ctx.app.getHttpServer())
@@ -168,6 +170,15 @@ describe("User Settings (e2e)", () => {
 
 			it("마케팅 동의를 철회한다", async () => {
 				// Given - 마케팅 동의가 활성화된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"settings-mkt-off@example.com",
+					"Test1234!",
+				);
+				await request(ctx.app.getHttpServer())
+					.patch("/auth/consent/marketing")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.send({ agreed: true })
+					.expect(200);
 
 				// When - 마케팅 동의 철회
 				const response = await request(ctx.app.getHttpServer())

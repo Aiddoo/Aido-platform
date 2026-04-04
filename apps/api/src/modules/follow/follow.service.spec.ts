@@ -28,7 +28,7 @@ import { FollowRepository } from "./follow.repository";
 import { FollowService } from "./follow.service";
 import type { FollowWithUser } from "./types/follow.types";
 
-describe("FollowService", () => {
+describe("FollowService — 팔로우 서비스", () => {
 	let service: FollowService;
 	let followRepo: Mocked<FollowRepository>;
 	let paginationService: Mocked<PaginationService>;
@@ -74,10 +74,6 @@ describe("FollowService", () => {
 			factory(),
 		);
 	});
-
-	// ============================================
-	// sendRequestByTag
-	// ============================================
 
 	describe("sendRequestByTag", () => {
 		/**
@@ -166,10 +162,6 @@ describe("FollowService", () => {
 			expect(result.follow.status).toBe("ACCEPTED");
 		});
 	});
-
-	// ============================================
-	// sendRequest
-	// ============================================
 
 	describe("sendRequest", () => {
 		/**
@@ -427,10 +419,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// acceptRequest
-	// ============================================
-
 	describe("acceptRequest", () => {
 		/**
 		 * acceptRequest 성공 시나리오 mock 설정 헬퍼
@@ -589,10 +577,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// rejectRequest
-	// ============================================
-
 	describe("rejectRequest", () => {
 		it("친구 요청을 거절하면 삭제된다", async () => {
 			// Given
@@ -634,10 +618,6 @@ describe("FollowService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// remove
-	// ============================================
 
 	describe("remove", () => {
 		it("친구 관계를 삭제하면 양방향 모두 삭제된다", async () => {
@@ -709,10 +689,6 @@ describe("FollowService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// getFriends
-	// ============================================
 
 	describe("getFriends", () => {
 		/**
@@ -876,10 +852,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// getReceivedRequests
-	// ============================================
-
 	describe("getReceivedRequests", () => {
 		it("받은 친구 요청 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
@@ -918,10 +890,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// getSentRequests
-	// ============================================
-
 	describe("getSentRequests", () => {
 		it("보낸 친구 요청 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
@@ -959,10 +927,6 @@ describe("FollowService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// isMutualFriend
-	// ============================================
 
 	describe("isMutualFriend", () => {
 		it("맞팔 관계이면 true를 반환한다", async () => {
@@ -1008,10 +972,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// countFriends
-	// ============================================
-
 	describe("countFriends", () => {
 		it("친구 수를 반환한다 (캐시 wrap)", async () => {
 			// Given
@@ -1029,10 +989,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// countReceivedRequests
-	// ============================================
-
 	describe("countReceivedRequests", () => {
 		it("받은 친구 요청 수를 반환한다", async () => {
 			// Given
@@ -1047,10 +1003,6 @@ describe("FollowService", () => {
 		});
 	});
 
-	// ============================================
-	// countSentRequests
-	// ============================================
-
 	describe("countSentRequests", () => {
 		it("보낸 친구 요청 수를 반환한다", async () => {
 			// Given
@@ -1064,10 +1016,6 @@ describe("FollowService", () => {
 			expect(followRepo.countSentRequests).toHaveBeenCalledWith(mockUserId);
 		});
 	});
-
-	// ============================================
-	// reorder
-	// ============================================
 
 	describe("reorder", () => {
 		const createMockFollowWithUser = (

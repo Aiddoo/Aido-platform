@@ -1,3 +1,14 @@
+/**
+ * TimezoneReminderProcessor 잡/프로세서 단위 테스트
+ *
+ * @description
+ * TimezoneReminderProcessor의 비동기 작업 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test timezone-reminder-queue.processor
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
@@ -10,10 +21,6 @@ import {
 } from "./timezone-reminder-queue.constants";
 import { TimezoneReminderProcessor } from "./timezone-reminder-queue.processor";
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 function createMockJob<T extends TimezoneReminderJobData>(
 	name: string,
 	data: T,
@@ -21,11 +28,7 @@ function createMockJob<T extends TimezoneReminderJobData>(
 	return { name, data, id: `job-${name}` } as unknown as Job<T>;
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("TimezoneReminderProcessor", () => {
+describe("TimezoneReminderProcessor — 타임존 리마인더 프로세서", () => {
 	let processor: TimezoneReminderProcessor;
 	let reminderJob: Mocked<TimezoneAwareReminderJob>;
 
@@ -47,10 +50,6 @@ describe("TimezoneReminderProcessor", () => {
 		);
 	});
 
-	// =========================================================================
-	// sweep-reminders
-	// =========================================================================
-
 	describe("sweep-reminders", () => {
 		it("sweep-reminders 잡을 처리한다", async () => {
 			// Given
@@ -66,10 +65,6 @@ describe("TimezoneReminderProcessor", () => {
 			expect(reminderJob.handleMinuteSweep).toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// reminder-hour-changed
-	// =========================================================================
 
 	describe("reminder-hour-changed", () => {
 		it("reminder-hour-changed 잡을 처리한다", async () => {
@@ -92,10 +87,6 @@ describe("TimezoneReminderProcessor", () => {
 			expect(reminderJob.handleReminderHourChanged).toHaveBeenCalledWith(data);
 		});
 	});
-
-	// =========================================================================
-	// unknown job
-	// =========================================================================
 
 	describe("unknown job", () => {
 		it("알 수 없는 잡 이름은 경고 로그를 남긴다", async () => {

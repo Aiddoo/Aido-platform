@@ -1,9 +1,20 @@
+/**
+ * AdminNotificationModule 모듈 단위 테스트
+ *
+ * @description
+ * AdminNotificationModule 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test admin-notification.module
+ * ```
+ */
 import { AdminNotificationModule } from "./admin-notification.module";
 import { DailySignupSummaryJob } from "./jobs/daily-signup-summary.job";
 import { ADMIN_NOTIFIER } from "./providers/admin-notifier.interface";
 import { AdminNotificationQueueService } from "./queue/admin-notification-queue.service";
 
-describe("AdminNotificationModule", () => {
+describe("AdminNotificationModule — 관리자 알림 모듈", () => {
 	let moduleProviders: any[];
 
 	beforeEach(() => {

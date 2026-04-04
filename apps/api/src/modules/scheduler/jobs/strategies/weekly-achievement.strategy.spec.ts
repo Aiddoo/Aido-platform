@@ -1,3 +1,14 @@
+/**
+ * WeeklyAchievementStrategy 전략 단위 테스트
+ *
+ * @description
+ * WeeklyAchievementStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-achievement.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -10,11 +21,7 @@ import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-ac
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("WeeklyAchievementStrategy", () => {
+describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	let strategy: WeeklyAchievementStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -60,10 +67,6 @@ describe("WeeklyAchievementStrategy", () => {
 	afterEach(() => {
 		jest.useRealTimers();
 	});
-
-	// =========================================================================
-	// 이전 주 날짜 범위 집계
-	// =========================================================================
 
 	it("이전 주 월~일 범위로 todo를 집계한다", async () => {
 		// Given — 2024-01-15(월) 실행 → 이전 주: 01-08(월)~01-14(일)
@@ -111,10 +114,6 @@ describe("WeeklyAchievementStrategy", () => {
 		]);
 	});
 
-	// =========================================================================
-	// DB groupBy 집계
-	// =========================================================================
-
 	it("DB groupBy로 주간 todo를 집계한다", async () => {
 		// Given
 		const ctx = makeCtx();
@@ -144,10 +143,6 @@ describe("WeeklyAchievementStrategy", () => {
 			}),
 		);
 	});
-
-	// =========================================================================
-	// 기록 저장 — pushEnabled 무관
-	// =========================================================================
 
 	it("모든 유저의 기록을 저장한다 (pushEnabled 무관)", async () => {
 		// Given
@@ -183,10 +178,6 @@ describe("WeeklyAchievementStrategy", () => {
 		);
 	});
 
-	// =========================================================================
-	// completedTodos > 0인 모든 유저에게 알림 발송
-	// =========================================================================
-
 	it("completedTodos > 0인 모든 유저에게 알림을 발송한다", async () => {
 		// Given
 		const ctx = makeCtx();
@@ -214,10 +205,6 @@ describe("WeeklyAchievementStrategy", () => {
 		);
 	});
 
-	// =========================================================================
-	// 0% 완료 주차 기록
-	// =========================================================================
-
 	it("0% 완료 주차도 기록을 저장한다", async () => {
 		// Given
 		const ctx = makeCtx();
@@ -239,10 +226,6 @@ describe("WeeklyAchievementStrategy", () => {
 			}),
 		]);
 	});
-
-	// =========================================================================
-	// dedup → 알림만 필터, 기록 독립
-	// =========================================================================
 
 	it("dedup은 알림만 필터하고 기록 저장은 독립적이다", async () => {
 		// Given
@@ -281,10 +264,6 @@ describe("WeeklyAchievementStrategy", () => {
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 groupBy 이후 아무것도 호출하지 않는다", async () => {
 		// Given
 		const ctx = makeCtx();
@@ -299,10 +278,6 @@ describe("WeeklyAchievementStrategy", () => {
 		expect(weeklyAchievementService.upsertMany).not.toHaveBeenCalled();
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
-
-	// =========================================================================
-	// 알림 대상 없어도 기록은 저장
-	// =========================================================================
 
 	it("알림 대상이 없어도 기록은 저장한다", async () => {
 		// Given

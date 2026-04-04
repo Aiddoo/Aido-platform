@@ -15,7 +15,7 @@ import type { CurrentUserPayload } from "@/modules/auth/decorators";
 import { AiReportController } from "./ai-report.controller";
 import { AiReportService } from "./ai-report.service";
 
-describe("AiReportController", () => {
+describe("AiReportController — AI 리포트 컨트롤러", () => {
 	let controller: AiReportController;
 	let mockService: Mocked<AiReportService>;
 
@@ -33,10 +33,6 @@ describe("AiReportController", () => {
 		controller = unit;
 		mockService = unitRef.get(AiReportService);
 	});
-
-	// =========================================================================
-	// getStatus
-	// =========================================================================
 
 	describe("getStatus", () => {
 		it("리포트 상태 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
@@ -63,10 +59,6 @@ describe("AiReportController", () => {
 			expect(result).toEqual({ status: mockStatus });
 		});
 	});
-
-	// =========================================================================
-	// getReports
-	// =========================================================================
 
 	describe("getReports", () => {
 		it("리포트 목록 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
@@ -103,10 +95,6 @@ describe("AiReportController", () => {
 			expect(result).toEqual({ reports: mockReports });
 		});
 	});
-
-	// =========================================================================
-	// getReport
-	// =========================================================================
 
 	describe("getReport", () => {
 		it("리포트 상세 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {

@@ -1,6 +1,17 @@
+/**
+ * InMemoryLockAdapter 단위 테스트
+ *
+ * @description
+ * InMemoryLockAdapter의 개별 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test in-memory-lock.adapter
+ * ```
+ */
 import { InMemoryLockAdapter } from "./in-memory-lock.adapter";
 
-describe("InMemoryLockAdapter", () => {
+describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
 	let lock: InMemoryLockAdapter;
 
 	beforeEach(() => {
@@ -12,10 +23,6 @@ describe("InMemoryLockAdapter", () => {
 		lock.onModuleDestroy();
 		jest.useRealTimers();
 	});
-
-	// ============================================
-	// acquire
-	// ============================================
 
 	describe("acquire", () => {
 		it("잠금을 획득하면 release 함수를 반환한다", async () => {
@@ -101,10 +108,6 @@ describe("InMemoryLockAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// isLocked
-	// ============================================
-
 	describe("isLocked", () => {
 		it("잠겨있는 리소스에 대해 true를 반환한다", async () => {
 			// Given
@@ -171,10 +174,6 @@ describe("InMemoryLockAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// cleanup
-	// ============================================
-
 	describe("cleanup", () => {
 		it("cleanup interval이 만료된 항목을 정리한다", async () => {
 			// Given
@@ -206,10 +205,6 @@ describe("InMemoryLockAdapter", () => {
 			expect(result).toBe(true);
 		});
 	});
-
-	// ============================================
-	// onModuleDestroy
-	// ============================================
 
 	describe("onModuleDestroy", () => {
 		it("cleanup interval을 정리한다", () => {

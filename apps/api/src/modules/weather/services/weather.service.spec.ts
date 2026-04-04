@@ -40,7 +40,7 @@ const makeForecast = (
 	...overrides,
 });
 
-describe("WeatherService", () => {
+describe("WeatherService — 날씨 서비스", () => {
 	let service: WeatherService;
 	let weatherProvider: Mocked<WeatherProvider>;
 	let cacheService: Mocked<CacheService>;

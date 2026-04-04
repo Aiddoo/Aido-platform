@@ -24,11 +24,7 @@ import { NotificationQueueService } from "@/modules/notification/queue";
 import { CheerRepository } from "./cheer.repository";
 import { CheerService } from "./cheer.service";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("CheerService", () => {
+describe("CheerService — 응원 서비스", () => {
 	let service: CheerService;
 	let cheerRepo: Mocked<CheerRepository>;
 	let followService: Mocked<FollowService>;
@@ -108,10 +104,6 @@ describe("CheerService", () => {
 			},
 		}));
 	});
-
-	// ===========================================================================
-	// sendCheer 테스트
-	// ===========================================================================
 
 	describe("sendCheer", () => {
 		const validParams = {
@@ -406,10 +398,6 @@ describe("CheerService", () => {
 		});
 	});
 
-	// ===========================================================================
-	// 목록 조회 테스트
-	// ===========================================================================
-
 	describe("getReceivedCheers", () => {
 		it("받은 응원 목록을 페이지네이션하여 반환한다", async () => {
 			// Given
@@ -502,10 +490,6 @@ describe("CheerService", () => {
 			expect(result).toBeDefined();
 		});
 	});
-
-	// ===========================================================================
-	// 제한 및 쿨다운 정보 테스트
-	// ===========================================================================
 
 	describe("getLimitInfo", () => {
 		it("FREE 구독자의 일일 제한 정보를 반환한다", async () => {
@@ -687,10 +671,6 @@ describe("CheerService", () => {
 			);
 		});
 	});
-
-	// ===========================================================================
-	// 읽음 처리 테스트
-	// ===========================================================================
 
 	describe("markAsRead", () => {
 		it("응원을 읽음 처리한다", async () => {

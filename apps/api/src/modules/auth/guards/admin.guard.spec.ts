@@ -1,25 +1,29 @@
+/**
+ * AdminGuard 단위 테스트
+ *
+ * @description
+ * 관리자 권한 가드의 역할 기반 접근 제어를 검증한다.
+ * ADMIN 허용, USER/미인증/알 수 없는 역할 거부를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test admin.guard.spec.ts
+ * ```
+ */
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
 import { AdminGuard } from "./admin.guard";
 
-describe("AdminGuard", () => {
+describe("AdminGuard — 관리자 가드", () => {
 	let guard: AdminGuard;
-
-	// ==========================================================================
-	// Setup
-	// ==========================================================================
 
 	beforeEach(async () => {
 		const { unit } = await TestBed.solitary(AdminGuard).compile();
 
 		guard = unit;
 	});
-
-	// ==========================================================================
-	// canActivate
-	// ==========================================================================
 
 	describe("canActivate", () => {
 		it("ADMIN 역할을 가진 사용자는 접근을 허용해야 한다", () => {
@@ -93,10 +97,6 @@ describe("AdminGuard", () => {
 			expect(() => guard.canActivate(context)).toThrow(BusinessException);
 		});
 	});
-
-	// ==========================================================================
-	// 에러 메시지 검증
-	// ==========================================================================
 
 	describe("에러 메시지 검증", () => {
 		it("USER 역할 거부 시 ADMIN_1401 에러 코드를 반환해야 한다", () => {

@@ -1,7 +1,18 @@
+/**
+ * DailyCompletionMapper 매퍼 단위 테스트
+ *
+ * @description
+ * DailyCompletionMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test daily-completion.mapper
+ * ```
+ */
 import { DailyCompletionMapper } from "./daily-completion.mapper";
 import type { TodoAggregateByDate } from "./types/daily-completion.types";
 
-describe("DailyCompletionMapper", () => {
+describe("DailyCompletionMapper — 일일 달성 매퍼", () => {
 	/**
 	 * TodoAggregateByDate 빌더 헬퍼
 	 * daily-completion은 전용 Builder가 없으므로 로컬 헬퍼 사용

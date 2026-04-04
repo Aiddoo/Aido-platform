@@ -14,7 +14,7 @@ import { TestBed } from "@suites/unit";
 import { DailyCompletionRepository } from "./daily-completion.repository";
 import { DailyCompletionService } from "./daily-completion.service";
 
-describe("DailyCompletionService", () => {
+describe("DailyCompletionService — 일일 달성 서비스", () => {
 	let service: DailyCompletionService;
 	let dailyCompletionRepo: Mocked<DailyCompletionRepository>;
 
@@ -31,10 +31,6 @@ describe("DailyCompletionService", () => {
 		service = unit;
 		dailyCompletionRepo = unitRef.get(DailyCompletionRepository);
 	});
-
-	// ============================================
-	// getDailyCompletionsRange
-	// ============================================
 
 	describe("getDailyCompletionsRange", () => {
 		it("날짜 범위 내 완료 현황을 조회하여 반환한다", async () => {
@@ -265,10 +261,6 @@ describe("DailyCompletionService", () => {
 		});
 	});
 
-	// ============================================
-	// completionRate 계산
-	// ============================================
-
 	describe("completionRate 계산", () => {
 		it("완료율을 퍼센트로 반올림하여 계산한다", async () => {
 			// Given - 33%, 67% 완료율 데이터
@@ -360,10 +352,6 @@ describe("DailyCompletionService", () => {
 			expect(completion?.isComplete).toBe(true);
 		});
 	});
-
-	// ============================================
-	// isComplete 플래그
-	// ============================================
 
 	describe("isComplete 플래그", () => {
 		it("모든 Todo가 완료되면 isComplete는 true이다", async () => {

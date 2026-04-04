@@ -1,3 +1,14 @@
+/**
+ * TodoController 컨트롤러 단위 테스트
+ *
+ * @description
+ * TodoController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test todo.controller
+ * ```
+ */
 import type { Todo } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -14,7 +25,7 @@ import type {
 import { TodoController } from "./todo.controller";
 import { TodoService } from "./todo.service";
 
-describe("TodoController", () => {
+describe("TodoController — 할 일 컨트롤러", () => {
 	let controller: TodoController;
 	let mockTodoService: Mocked<TodoService>;
 

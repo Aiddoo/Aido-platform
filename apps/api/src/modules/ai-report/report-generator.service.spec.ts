@@ -17,7 +17,7 @@ import {
 import { ReportGeneratorService } from "./report-generator.service";
 import type { AggregatedReportData, GenerateReportParams } from "./types";
 
-describe("ReportGeneratorService", () => {
+describe("ReportGeneratorService — 리포트 생성 서비스", () => {
 	let service: ReportGeneratorService;
 	let mockAiProvider: Mocked<AiProvider>;
 
@@ -62,10 +62,6 @@ describe("ReportGeneratorService", () => {
 		service = unit;
 		mockAiProvider = unitRef.get(AI_PROVIDER);
 	});
-
-	// =========================================================================
-	// AI 호출 성공
-	// =========================================================================
 
 	describe("AI 호출 성공", () => {
 		it("AI가 가용하고 정상 응답하면 생성된 콘텐츠를 반환해야 한다", async () => {
@@ -112,10 +108,6 @@ describe("ReportGeneratorService", () => {
 		});
 	});
 
-	// =========================================================================
-	// AI 불가용 시 폴백
-	// =========================================================================
-
 	describe("AI 불가용 시 폴백", () => {
 		it("AI가 불가용하면 활동이 있는 경우의 폴백 콘텐츠를 반환해야 한다", async () => {
 			// Given -AI Provider가 불가용
@@ -148,14 +140,6 @@ describe("ReportGeneratorService", () => {
 			expect(result.aiTips.length).toBeGreaterThan(0);
 		});
 	});
-
-	// =========================================================================
-	// AI 호출 실패 시 폴백
-	// =========================================================================
-
-	// =========================================================================
-	// 주간/월간 프롬프트 분기
-	// =========================================================================
 
 	describe("주간/월간 프롬프트 분기", () => {
 		beforeEach(() => {
@@ -238,10 +222,6 @@ describe("ReportGeneratorService", () => {
 			expect(callArgs?.prompt).toContain("한 달");
 		});
 	});
-
-	// =========================================================================
-	// AI 호출 실패 시 폴백
-	// =========================================================================
 
 	describe("AI 호출 실패 시 폴백", () => {
 		it("AI 호출 중 에러가 발생하면 폴백 콘텐츠를 반환해야 한다", async () => {

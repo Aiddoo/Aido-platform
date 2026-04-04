@@ -1,6 +1,6 @@
 # Prisma 7 가이드
 
-> Prisma 7.2.0 사용법 및 쿼리 패턴 가이드
+> Prisma 7.4.0 사용법 및 쿼리 패턴 가이드
 
 ## 관련 문서
 
@@ -16,7 +16,7 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | Prisma 7.2.0 |
+| 버전 | Prisma 7.4.0 |
 | 스키마 위치 | `prisma/schema.prisma` |
 | 생성 클라이언트 | `src/generated/prisma/` |
 | 어댑터 | `@prisma/adapter-pg` (PostgreSQL) |
@@ -293,9 +293,9 @@ export class TestDatabase {
 
 - [Prisma 7 릴리즈 공지](https://www.prisma.io/blog/announcing-prisma-orm-7-0-0)
 - [Prisma 7 업그레이드 가이드](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
-- [Prisma 7.2.0 변경사항](https://www.prisma.io/blog/announcing-prisma-orm-7-2-0)
+- [Prisma 7.4.0 변경사항](https://www.prisma.io/blog/announcing-prisma-orm-7-4-0)
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 3.1.0
+**최종 수정일**: 2026-04-05

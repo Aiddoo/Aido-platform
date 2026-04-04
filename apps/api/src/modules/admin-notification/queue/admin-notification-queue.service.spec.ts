@@ -1,3 +1,14 @@
+/**
+ * AdminNotificationQueueService 모듈 단위 테스트
+ *
+ * @description
+ * AdminNotificationQueueService 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test admin-notification-queue.service
+ * ```
+ */
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -11,11 +22,7 @@ import {
 } from "./admin-notification-queue.constants";
 import { AdminNotificationQueueService } from "./admin-notification-queue.service";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("AdminNotificationQueueService", () => {
+describe("AdminNotificationQueueService — 관리자 알림 서비스", () => {
 	let service: AdminNotificationQueueService;
 	let queue: Mocked<Queue>;
 
@@ -34,10 +41,6 @@ describe("AdminNotificationQueueService", () => {
 		service = unit;
 		queue = unitRef.get(getQueueToken(ADMIN_NOTIFICATION_QUEUE));
 	});
-
-	// =========================================================================
-	// enqueueUserRegistered
-	// =========================================================================
 
 	describe("enqueueUserRegistered", () => {
 		it("잡을 큐에 등록한다", async () => {
@@ -76,10 +79,6 @@ describe("AdminNotificationQueueService", () => {
 			await expect(flushPromises()).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// enqueueSubscriptionEvent
-	// =========================================================================
 
 	describe("enqueueSubscriptionEvent", () => {
 		it("잡을 큐에 등록한다", async () => {

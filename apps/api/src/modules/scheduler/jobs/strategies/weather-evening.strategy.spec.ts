@@ -49,7 +49,7 @@ const makeForecast = (
 	...overrides,
 });
 
-describe("WeatherEveningStrategy", () => {
+describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	let strategy: WeatherEveningStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;

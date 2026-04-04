@@ -18,7 +18,7 @@ import type { CurrentUserPayload } from "@/modules/auth/decorators";
 import { AiSuggestionController } from "./ai-suggestion.controller";
 import { AiSuggestionService } from "./ai-suggestion.service";
 
-describe("AiSuggestionController", () => {
+describe("AiSuggestionController — AI 제안 컨트롤러", () => {
 	let controller: AiSuggestionController;
 	let mockService: Mocked<AiSuggestionService>;
 
@@ -37,10 +37,6 @@ describe("AiSuggestionController", () => {
 		controller = unit;
 		mockService = unitRef.get(AiSuggestionService);
 	});
-
-	// =========================================================================
-	// getPendingSuggestions
-	// =========================================================================
 
 	describe("getPendingSuggestions", () => {
 		it("대기 중인 제안 목록 조회를 서비스에 위임하고 결과를 반환해야 한다", async () => {
@@ -83,10 +79,6 @@ describe("AiSuggestionController", () => {
 			expect(result.suggestions).toHaveLength(1);
 		});
 	});
-
-	// =========================================================================
-	// handleSuggestion
-	// =========================================================================
 
 	describe("handleSuggestion", () => {
 		it("제안 수락을 서비스에 위임하고 결과를 반환해야 한다", async () => {

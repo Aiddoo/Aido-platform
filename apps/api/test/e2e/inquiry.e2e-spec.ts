@@ -14,14 +14,9 @@
  */
 
 import request from "supertest";
-import {
-	createE2eApp,
-	destroyE2eApp,
-	type E2eTestContext,
-	type VerifiedUser,
-} from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
-describe("Inquiry (e2e)", () => {
+describe("문의 E2E", () => {
 	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
@@ -32,18 +27,18 @@ describe("Inquiry (e2e)", () => {
 		await destroyE2eApp(ctx);
 	});
 
+	beforeEach(async () => {
+		await ctx.testDatabase.cleanup();
+		ctx.fakeEmailService.clear();
+	});
+
 	describe("POST /inquiries - 문의 접수", () => {
-		const userEmail = "inquiry-user@example.com";
-		const password = "Test1234!";
-
-		let user: VerifiedUser;
-
-		beforeAll(async () => {
-			user = await ctx.helpers.createVerifiedUser(userEmail, password);
-		});
-
 		it("인증된 사용자가 문의를 접수한다 (201)", async () => {
-			// Given - 인증된 사용자 (beforeAll에서 생성)
+			// Given - 인증된 사용자
+			const user = await ctx.helpers.createVerifiedUser(
+				"inquiry-user@example.com",
+				"Test1234!",
+			);
 
 			// When - 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -60,8 +55,22 @@ describe("Inquiry (e2e)", () => {
 			expect(response.body.data.message).toBe("문의가 접수되었습니다.");
 		});
 
-		it("FakeEmailService에 문의가 기록된다", async () => {
-			// Given - 이전 테스트에서 문의 발송 완료
+		it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
+			// Given - 인증된 사용자
+			const user = await ctx.helpers.createVerifiedUser(
+				"inquiry-email@example.com",
+				"Test1234!",
+			);
+
+			// When - 문의 접수 API 호출
+			await request(ctx.app.getHttpServer())
+				.post("/inquiries")
+				.set("Authorization", `Bearer ${user.accessToken}`)
+				.send({
+					category: "BUG_REPORT",
+					content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
+				})
+				.expect(201);
 
 			// Then - FakeEmailService에 기록 확인
 			const lastInquiry = ctx.fakeEmailService.getLastInquiry();
@@ -85,7 +94,11 @@ describe("Inquiry (e2e)", () => {
 		});
 
 		it("잘못된 카테고리 시 400 에러 반환", async () => {
-			// Given - 잘못된 카테고리 값
+			// Given - 인증된 사용자, 잘못된 카테고리 값
+			const user = await ctx.helpers.createVerifiedUser(
+				"inquiry-badcat@example.com",
+				"Test1234!",
+			);
 
 			// When - 잘못된 카테고리로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -102,7 +115,11 @@ describe("Inquiry (e2e)", () => {
 		});
 
 		it("내용이 너무 짧으면 400 에러 반환", async () => {
-			// Given - 너무 짧은 내용 (10자 미만)
+			// Given - 인증된 사용자, 너무 짧은 내용 (10자 미만)
+			const user = await ctx.helpers.createVerifiedUser(
+				"inquiry-short@example.com",
+				"Test1234!",
+			);
 
 			// When - 짧은 내용으로 문의 접수 API 호출
 			const response = await request(ctx.app.getHttpServer())
@@ -121,6 +138,10 @@ describe("Inquiry (e2e)", () => {
 		describe("각 카테고리 타입 정상 작동", () => {
 			it("FEATURE_REQUEST 카테고리로 문의 접수", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"inquiry-feature@example.com",
+					"Test1234!",
+				);
 
 				// When - FEATURE_REQUEST 카테고리로 문의 접수 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -139,6 +160,10 @@ describe("Inquiry (e2e)", () => {
 
 			it("OTHER 카테고리로 문의 접수", async () => {
 				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"inquiry-other@example.com",
+					"Test1234!",
+				);
 
 				// When - OTHER 카테고리로 문의 접수 API 호출
 				const response = await request(ctx.app.getHttpServer())

@@ -20,11 +20,7 @@ import type {
 	FindTodosParams,
 } from "./types/todo.types";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("TodoRepository", () => {
+describe("TodoRepository — 할 일 리포지토리", () => {
 	let repository: TodoRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -37,10 +33,6 @@ describe("TodoRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// ==========================================================================
-	// findManyByUserId
-	// ==========================================================================
 
 	describe("findManyByUserId", () => {
 		it("사용자의 Todo 목록을 조회해야 한다", async () => {
@@ -266,10 +258,6 @@ describe("TodoRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// findPublicTodosByUserId
-	// ==========================================================================
-
 	describe("findPublicTodosByUserId", () => {
 		it("친구의 PUBLIC Todo 목록을 조회해야 한다", async () => {
 			// Given
@@ -456,10 +444,6 @@ describe("TodoRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// createItem
-	// ==========================================================================
-
 	describe("createItem", () => {
 		it("todoItem.create를 올바른 파라미터로 호출한다", async () => {
 			// Given
@@ -494,10 +478,6 @@ describe("TodoRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// updateItem
-	// ==========================================================================
-
 	describe("updateItem", () => {
 		it("todoItem.update를 올바른 파라미터로 호출한다", async () => {
 			// Given
@@ -516,10 +496,6 @@ describe("TodoRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// deleteItem
-	// ==========================================================================
-
 	describe("deleteItem", () => {
 		it("todoItem.delete를 올바른 파라미터로 호출한다", async () => {
 			// Given
@@ -535,10 +511,6 @@ describe("TodoRepository", () => {
 			});
 		});
 	});
-
-	// ==========================================================================
-	// countItemsByTodoId
-	// ==========================================================================
 
 	describe("countItemsByTodoId", () => {
 		it("todoItem.count를 올바른 where로 호출한다", async () => {
@@ -556,10 +528,6 @@ describe("TodoRepository", () => {
 			expect(result).toBe(3);
 		});
 	});
-
-	// ==========================================================================
-	// getMaxItemSortOrder
-	// ==========================================================================
 
 	describe("getMaxItemSortOrder", () => {
 		it("todoItem.aggregate를 올바르게 호출한다", async () => {
@@ -595,10 +563,6 @@ describe("TodoRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// reorderItems
-	// ==========================================================================
-
 	describe("reorderItems", () => {
 		it("각 itemId에 대해 update를 호출한다", async () => {
 			// Given
@@ -624,10 +588,6 @@ describe("TodoRepository", () => {
 			});
 		});
 	});
-
-	// ==========================================================================
-	// createManyBatch
-	// ==========================================================================
 
 	describe("createManyBatch", () => {
 		const recurrenceGroupId = "test-group-id";

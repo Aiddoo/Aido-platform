@@ -1,3 +1,14 @@
+/**
+ * TimezoneReminderQueueService 모듈 단위 테스트
+ *
+ * @description
+ * TimezoneReminderQueueService 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test timezone-reminder-queue.service
+ * ```
+ */
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -10,11 +21,7 @@ import {
 } from "./timezone-reminder-queue.constants";
 import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("TimezoneReminderQueueService", () => {
+describe("TimezoneReminderQueueService — 타임존 리마인더 서비스", () => {
 	let service: TimezoneReminderQueueService;
 	let queue: Mocked<Queue>;
 
@@ -33,10 +40,6 @@ describe("TimezoneReminderQueueService", () => {
 		service = unit;
 		queue = unitRef.get(getQueueToken(TIMEZONE_REMINDER_QUEUE));
 	});
-
-	// =========================================================================
-	// enqueueReminderHourChanged
-	// =========================================================================
 
 	describe("enqueueReminderHourChanged", () => {
 		it("잡을 큐에 등록한다", async () => {

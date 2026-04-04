@@ -1,3 +1,14 @@
+/**
+ * arithmetic 유틸 테스트
+ *
+ * @description
+ * arithmetic 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test arithmetic
+ * ```
+ */
 import {
 	addDays,
 	addMilliseconds,

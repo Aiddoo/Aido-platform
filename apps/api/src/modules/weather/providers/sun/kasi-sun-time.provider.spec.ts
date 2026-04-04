@@ -18,7 +18,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 
 import { KasiSunTimeProvider } from "./kasi-sun-time.provider";
 
-describe("KasiSunTimeProvider", () => {
+describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
 	let provider: KasiSunTimeProvider;
 	let configService: Mocked<TypedConfigService>;
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
@@ -36,10 +36,6 @@ describe("KasiSunTimeProvider", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
-
-	// ========================================
-	// getSunTime
-	// ========================================
 
 	describe("getSunTime", () => {
 		const lat = 37.5;

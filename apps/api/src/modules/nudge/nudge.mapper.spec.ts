@@ -1,8 +1,19 @@
+/**
+ * NudgeMapper 매퍼 단위 테스트
+ *
+ * @description
+ * NudgeMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test nudge.mapper
+ * ```
+ */
 import { NudgeBuilder } from "@test/builders";
 import { NudgeMapper } from "./nudge.mapper";
 import type { NudgeLimitInfo as ServiceLimitInfo } from "./types";
 
-describe("NudgeMapper", () => {
+describe("NudgeMapper — 찔러보기 매퍼", () => {
 	describe("toDetailDto", () => {
 		it("NudgeWithRelations를 NudgeDetail DTO로 변환한다", () => {
 			// Given

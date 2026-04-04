@@ -1,7 +1,18 @@
+/**
+ * NotificationMapper 매퍼 단위 테스트
+ *
+ * @description
+ * NotificationMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test notification.mapper
+ * ```
+ */
 import { NotificationBuilder } from "@test/builders";
 import { NotificationMapper } from "./notification.mapper";
 
-describe("NotificationMapper", () => {
+describe("NotificationMapper — 알림 매퍼", () => {
 	describe("toDto", () => {
 		it("기본 알림을 DTO로 변환한다", () => {
 			// Given

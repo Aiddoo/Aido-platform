@@ -1,3 +1,14 @@
+/**
+ * StreakAtRiskStrategy 전략 단위 테스트
+ *
+ * @description
+ * StreakAtRiskStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test streak-at-risk.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -10,11 +21,7 @@ import { StreakService } from "@/modules/user-settings/services/streak.service";
 import { StreakAtRiskStrategy } from "./streak-at-risk.strategy";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("StreakAtRiskStrategy", () => {
+describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
 	let strategy: StreakAtRiskStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -69,19 +76,18 @@ describe("StreakAtRiskStrategy", () => {
 		jest.restoreAllMocks();
 	});
 
-	// =========================================================================
-	// 정상 발송
-	// =========================================================================
-
 	it("스트릭 3일+ & 미완료 유저에게 스트릭 위기 알림을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
 			makeAtRiskUser("user-1", 5),
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		expect(notificationService.createAndSendBatch).toHaveBeenCalledTimes(1);
 
@@ -94,11 +100,8 @@ describe("StreakAtRiskStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// StreakService.computeEffectiveStreak 호출 검증
-	// =========================================================================
-
 	it("StreakService.computeEffectiveStreak를 호출하여 스트릭을 재검증한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const computeSpy = jest.spyOn(StreakService, "computeEffectiveStreak");
 
@@ -106,8 +109,10 @@ describe("StreakAtRiskStrategy", () => {
 			makeAtRiskUser("user-1", 7),
 		] as never);
 
+		// When
 		await strategy.execute(ctx);
 
+		// Then
 		expect(computeSpy).toHaveBeenCalledWith({
 			currentStreak: 7,
 			lastCompletedDate: YESTERDAY,
@@ -119,19 +124,18 @@ describe("StreakAtRiskStrategy", () => {
 		computeSpy.mockRestore();
 	});
 
-	// =========================================================================
-	// effective streak 값이 메시지에 사용되는지 검증
-	// =========================================================================
-
 	it("computeEffectiveStreak에서 반환한 streak 값을 메시지에 사용한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
 			makeAtRiskUser("user-1", 10),
 		] as never);
 
+		// When
 		await strategy.execute(ctx);
 
+		// Then
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
 		// computeEffectiveStreak는 currentStreak(10)을 그대로 반환 (미완료 시)
@@ -142,11 +146,8 @@ describe("StreakAtRiskStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 필터링: 전체 완료 유저 제외
-	// =========================================================================
-
 	it("오늘 할일을 전부 완료한 유저는 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -157,17 +158,16 @@ describe("StreakAtRiskStrategy", () => {
 			},
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 필터링: isAtRisk === false 유저 제외
-	// =========================================================================
-
 	it("StreakService에서 isAtRisk가 false인 유저는 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		// lastCompletedDate가 null → isAtRisk: false
@@ -179,17 +179,16 @@ describe("StreakAtRiskStrategy", () => {
 			},
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 중복 방지
-	// =========================================================================
-
 	it("이미 알림 받은 사용자를 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -201,8 +200,10 @@ describe("StreakAtRiskStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -210,17 +211,16 @@ describe("StreakAtRiskStrategy", () => {
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 		expect(

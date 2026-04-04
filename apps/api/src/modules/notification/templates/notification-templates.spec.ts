@@ -1,3 +1,14 @@
+/**
+ * notification-templates 유틸 테스트
+ *
+ * @description
+ * notification-templates 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test notification-templates
+ * ```
+ */
 import {
 	fillTemplate,
 	NotificationMessageBuilder,
@@ -6,15 +17,7 @@ import {
 	SYSTEM_TEMPLATES,
 } from "./notification-templates";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
 describe("notification-templates", () => {
-	// =========================================================================
-	// fillTemplate
-	// =========================================================================
-
 	describe("fillTemplate", () => {
 		it("{key} 형식의 플레이스홀더를 올바르게 치환한다", () => {
 			// Given
@@ -105,10 +108,6 @@ describe("notification-templates", () => {
 		});
 	});
 
-	// =========================================================================
-	// pickVariant
-	// =========================================================================
-
 	describe("pickVariant", () => {
 		afterEach(() => {
 			jest.restoreAllMocks();
@@ -180,11 +179,7 @@ describe("notification-templates", () => {
 		});
 	});
 
-	// =========================================================================
-	// NotificationMessageBuilder (variants 적용 후)
-	// =========================================================================
-
-	describe("NotificationMessageBuilder", () => {
+	describe("NotificationMessageBuilder — 알림 빌더", () => {
 		beforeEach(() => {
 			// 첫 번째 variant를 항상 선택하도록 고정
 			jest.spyOn(Math, "random").mockReturnValue(0);
@@ -193,10 +188,6 @@ describe("notification-templates", () => {
 		afterEach(() => {
 			jest.restoreAllMocks();
 		});
-
-		// =====================================================================
-		// morningReminder
-		// =====================================================================
 
 		describe("morningReminder", () => {
 			it("title에 count가 치환된다", () => {
@@ -220,10 +211,6 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// morningNoTodo
-		// =====================================================================
-
 		describe("morningNoTodo", () => {
 			it("variants 풀 내의 값을 반환한다", () => {
 				// When
@@ -235,10 +222,6 @@ describe("notification-templates", () => {
 				expect(allTitles).toContain(result.title);
 			});
 		});
-
-		// =====================================================================
-		// nudgeReceived
-		// =====================================================================
 
 		describe("nudgeReceived", () => {
 			it("title에 이름(조사) + todoTitle이 포함된다 (받침 있음)", () => {
@@ -286,10 +269,6 @@ describe("notification-templates", () => {
 				expect(result.body).toBe("'같이 먹자'");
 			});
 		});
-
-		// =====================================================================
-		// eveningReminder
-		// =====================================================================
 
 		describe("eveningReminder", () => {
 			it("모든 할일 완료 시 EVENING_COMPLETE variants 내의 값을 반환한다", () => {
@@ -380,10 +359,6 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// billingIssue (variants 미적용)
-		// =====================================================================
-
 		describe("billingIssue", () => {
 			it("결제 문제 알림 title을 반환한다", () => {
 				// When
@@ -403,10 +378,6 @@ describe("notification-templates", () => {
 				);
 			});
 		});
-
-		// =====================================================================
-		// winback
-		// =====================================================================
 
 		describe("winback", () => {
 			it("3일 미접속이면 WINBACK_DAY3 variants 내의 값을 반환한다", () => {
@@ -451,10 +422,6 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// weeklyAchievement
-		// =====================================================================
-
 		describe("weeklyAchievement", () => {
 			it("100% 완료 시 PERFECT variants 내의 값을 반환한다", () => {
 				const result = NotificationMessageBuilder.weeklyAchievement(10, 10);
@@ -473,10 +440,6 @@ describe("notification-templates", () => {
 				expect(result.title).toContain("5");
 			});
 		});
-
-		// =====================================================================
-		// onboarding
-		// =====================================================================
 
 		describe("onboarding", () => {
 			it("Day 0이면 첫 할일 만들기 메시지를 반환한다", () => {
@@ -502,10 +465,6 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// milestone
-		// =====================================================================
-
 		describe("milestone", () => {
 			it("FIRST_COMPLETE 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("FIRST_COMPLETE");
@@ -524,10 +483,6 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// lunchNudge
-		// =====================================================================
-
 		describe("lunchNudge", () => {
 			it("variants 풀 내의 값을 반환한다", () => {
 				const result = NotificationMessageBuilder.lunchNudge();
@@ -537,20 +492,12 @@ describe("notification-templates", () => {
 			});
 		});
 
-		// =====================================================================
-		// streakAtRisk
-		// =====================================================================
-
 		describe("streakAtRisk", () => {
 			it("streak이 title에 치환된다", () => {
 				const result = NotificationMessageBuilder.streakAtRisk(5);
 				expect(result.title).toContain("5");
 			});
 		});
-
-		// =====================================================================
-		// socialDigest
-		// =====================================================================
 
 		describe("socialDigest", () => {
 			it("1명이면 SINGLE variants 내의 값을 반환한다", () => {

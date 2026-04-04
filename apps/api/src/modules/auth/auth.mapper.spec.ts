@@ -1,3 +1,16 @@
+/**
+ * AuthMapper 단위 테스트
+ *
+ * @description
+ * 인증 결과를 API 응답 형식으로 변환하는 매퍼를 검증한다.
+ * 회원가입, 로그인, 토큰 갱신, 프로필, OAuth 응답 변환을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test auth.mapper.spec.ts
+ * ```
+ */
+
 import { AuthMapper } from "./auth.mapper";
 import type {
 	CurrentUserResult,
@@ -9,7 +22,7 @@ import type {
 	VerifyEmailResult,
 } from "./types/auth.types";
 
-describe("AuthMapper", () => {
+describe("AuthMapper — 인증 매퍼", () => {
 	describe("toRegisterResponse", () => {
 		it("회원가입 결과를 응답 형식으로 변환한다", () => {
 			// Given

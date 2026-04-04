@@ -49,7 +49,7 @@ import type { Mocked } from "@suites/doubles.jest";
 import { {Feature}Service } from "@/modules/{name}/{name}.service";
 import { {Feature}Repository } from "@/modules/{name}/{name}.repository";
 
-describe("{Feature}Service", () => {
+describe("{Feature}Service — 기능 설명", () => {
   let service: {Feature}Service;
   let repo: Mocked<{Feature}Repository>;
 
@@ -194,7 +194,7 @@ export class {Model}Builder {
   // 3. static resetIdCounter() — auto-increment ID 모델만
   static resetIdCounter(): void { ... }
 
-  // 4. 체이닝 메서드 — 카테고리별 그룹핑 (=== 주석 구분)
+  // 4. 체이닝 메서드 — 카테고리별 그룹핑
   //    - with{Field}(): 단일 필드 설정 (범용)
   //    - as{State}(): 도메인 상태 전환 (여러 필드를 한 번에 변경)
   withTitle(title: string): {Model}Builder { ... }   // 단일 필드
@@ -280,12 +280,8 @@ it("유효하지 않은 토큰이면 예외를 던져야 한다", async () => {
 ## 테스트 구조
 
 ```typescript
-describe("클래스명", () => {
+describe("클래스명 — 한국어 설명", () => {
   // 변수 선언 + beforeEach (Suites 설정)
-
-  // ========================================
-  // 섹션 구분자
-  // ========================================
 
   describe("메서드명", () => {
     it("조건일 때 동작해야 한다", () => {
@@ -331,5 +327,5 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 4.0.0
+**최종 수정일**: 2026-04-05

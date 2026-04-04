@@ -1,3 +1,16 @@
+/**
+ * UserRepository 단위 테스트
+ *
+ * @description
+ * 사용자 저장소의 CRUD, 상태 변경, 프로필 조회 메서드를 검증한다.
+ * userTag 자동 생성, 트랜잭션 지원, 이메일 인증 처리를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test user.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserBuilder } from "@test/builders";
@@ -11,10 +24,6 @@ import type {
 } from "@/generated/prisma/client";
 import * as userTagUtil from "../utils/user-tag.util";
 import { UserRepository } from "./user.repository";
-
-// =============================================================================
-// Type Definitions for Test
-// =============================================================================
 
 /**
  * findByEmailWithCredential의 select 결과 타입
@@ -63,7 +72,7 @@ const mockGenerateUserTag = userTagUtil.generateUserTag as jest.MockedFunction<
 // 테스트용 상수
 const TEST_USER_TAG = "XY7Z9W3K";
 
-describe("UserRepository", () => {
+describe("UserRepository — 사용자 리포지토리", () => {
 	let repository: UserRepository;
 	let db: Mocked<DatabaseService>;
 

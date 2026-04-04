@@ -24,7 +24,7 @@ jest.mock("@sentry/nestjs", () => ({
 	}),
 }));
 
-describe("GlobalExceptionFilter", () => {
+describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 	let filter: GlobalExceptionFilter;
 	let mockLogger: jest.Mocked<PinoLogger>;
 	let mockConfigService: TypedConfigService;

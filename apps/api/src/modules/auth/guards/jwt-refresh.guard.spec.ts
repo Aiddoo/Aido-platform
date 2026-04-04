@@ -1,25 +1,29 @@
+/**
+ * JwtRefreshGuard 단위 테스트
+ *
+ * @description
+ * Refresh 토큰 인증 가드의 handleRequest 로직을 검증한다.
+ * 유효 사용자 반환, 에러/미인증 시 BusinessException 발생을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test jwt-refresh.guard.spec.ts
+ * ```
+ */
 import { TestBed } from "@suites/unit";
 
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 
 import { JwtRefreshGuard } from "./jwt-refresh.guard";
 
-describe("JwtRefreshGuard", () => {
+describe("JwtRefreshGuard — 가드", () => {
 	let guard: JwtRefreshGuard;
-
-	// ==========================================================================
-	// Setup
-	// ==========================================================================
 
 	beforeEach(async () => {
 		const { unit } = await TestBed.solitary(JwtRefreshGuard).compile();
 
 		guard = unit;
 	});
-
-	// ==========================================================================
-	// handleRequest
-	// ==========================================================================
 
 	describe("handleRequest", () => {
 		it("유효한 사용자가 있으면 사용자를 반환해야 한다", () => {

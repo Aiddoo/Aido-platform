@@ -1,3 +1,16 @@
+/**
+ * SecurityLogRepository 단위 테스트
+ *
+ * @description
+ * 보안 로그 저장소의 CRUD 및 집계 메서드를 검증한다.
+ * 트랜잭션 클라이언트 지원, 이벤트별 카운트, 만료 삭제를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test security-log.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SecurityLogBuilder } from "@test/builders";
@@ -6,10 +19,6 @@ import { DatabaseService } from "@/database";
 import type { SecurityLog } from "@/generated/prisma/client";
 
 import { SecurityLogRepository } from "./security-log.repository";
-
-// =============================================================================
-// Type Definitions for Test
-// =============================================================================
 
 /**
  * groupBy 결과 타입 (Prisma groupBy 결과의 부분 타입)
@@ -21,7 +30,7 @@ interface SecurityLogGroupByResult {
 	};
 }
 
-describe("SecurityLogRepository", () => {
+describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 	let repository: SecurityLogRepository;
 	let db: Mocked<DatabaseService>;
 

@@ -18,7 +18,7 @@ import {
 	SuggestionAnalysisProcessor,
 } from "./suggestion-analysis.processor";
 
-describe("SuggestionAnalysisProcessor", () => {
+describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
 	let processor: SuggestionAnalysisProcessor;
 	let mockAiSuggestionService: Mocked<AiSuggestionService>;
 	let mockNotificationService: Mocked<NotificationService>;
@@ -40,20 +40,12 @@ describe("SuggestionAnalysisProcessor", () => {
 		} as unknown as Job<AiSuggestionJobData>;
 	}
 
-	// =========================================================================
-	// Stalled 이벤트
-	// =========================================================================
-
 	describe("onStalled", () => {
 		it("stalled 발생 시 에러 없이 처리해야 한다", () => {
 			// When & Then: 에러 없이 호출되어야 한다
 			expect(() => processor.onStalled("test-job-id")).not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// 서비스 위임
-	// =========================================================================
 
 	describe("서비스 위임", () => {
 		it("서비스에 userId와 timezone을 전달해야 한다", async () => {
@@ -75,10 +67,6 @@ describe("SuggestionAnalysisProcessor", () => {
 			).toHaveBeenCalledWith("user-123", "Asia/Seoul", null);
 		});
 	});
-
-	// =========================================================================
-	// 알림 발송
-	// =========================================================================
 
 	describe("알림 발송", () => {
 		it("패턴 감지 시 알림을 발송해야 한다", async () => {

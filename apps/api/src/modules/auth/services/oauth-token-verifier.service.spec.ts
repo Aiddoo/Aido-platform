@@ -1,3 +1,16 @@
+/**
+ * OAuthTokenVerifierService 단위 테스트
+ *
+ * @description
+ * Google, Kakao, Naver, Apple OAuth 토큰 검증 로직을 검증한다.
+ * 유효/만료/잘못된 토큰 처리, 프로필 파싱을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test oauth-token-verifier.service.spec.ts
+ * ```
+ */
+
 import { ConfigService } from "@nestjs/config";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -13,7 +26,7 @@ jest.mock("google-auth-library", () => ({
 	})),
 }));
 
-describe("OAuthTokenVerifierService", () => {
+describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 	let service: OAuthTokenVerifierService;
 	let mockGoogleVerifyIdToken: jest.Mock;
 	let configService: Mocked<ConfigService>;
@@ -42,10 +55,6 @@ describe("OAuthTokenVerifierService", () => {
 			return config[key];
 		});
 	});
-
-	// ============================================
-	// verifyGoogleToken
-	// ============================================
 
 	describe("verifyGoogleToken", () => {
 		const validGooglePayload = {
@@ -135,10 +144,6 @@ describe("OAuthTokenVerifierService", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ============================================
-	// verifyKakaoToken
-	// ============================================
 
 	describe("verifyKakaoToken", () => {
 		const mockKakaoResponse = {
@@ -236,10 +241,6 @@ describe("OAuthTokenVerifierService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// verifyNaverToken
-	// ============================================
 
 	describe("verifyNaverToken", () => {
 		const mockNaverResponse = {
@@ -379,9 +380,6 @@ describe("OAuthTokenVerifierService", () => {
 		});
 	});
 
-	// ============================================
-	// verifyAppleToken
-	// ============================================
 	// Apple 토큰 검증은 jose ESM 모듈을 사용하므로
 	// 단위 테스트가 어렵습니다. E2E 또는 통합 테스트에서 검증합니다.
 	describe("verifyAppleToken", () => {

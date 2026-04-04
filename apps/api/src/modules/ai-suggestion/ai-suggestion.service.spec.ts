@@ -21,7 +21,7 @@ import { AiSuggestionService } from "./ai-suggestion.service";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
 import type { SuggestionContext } from "./types";
 
-describe("AiSuggestionService", () => {
+describe("AiSuggestionService — AI 제안 서비스", () => {
 	let service: AiSuggestionService;
 	let mockRepository: Mocked<AiSuggestionRepository>;
 	let mockTodoService: Mocked<TodoService>;
@@ -103,10 +103,6 @@ describe("AiSuggestionService", () => {
 		);
 	});
 
-	// =========================================================================
-	// 프리미엄 체크
-	// =========================================================================
-
 	describe("프리미엄 체크", () => {
 		it("비프리미엄 사용자가 getPendingSuggestions를 호출하면 AI_1309 예외를 던져야 한다", async () => {
 			// Given -비프리미엄 사용자
@@ -154,10 +150,6 @@ describe("AiSuggestionService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getPendingSuggestions
-	// =========================================================================
-
 	describe("getPendingSuggestions", () => {
 		it("대기 중인 제안 목록을 DTO로 변환하여 반환해야 한다", async () => {
 			// Given -대기 중인 제안 목록이 존재
@@ -175,10 +167,6 @@ describe("AiSuggestionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// handleAction
-	// =========================================================================
 
 	describe("handleAction", () => {
 		it("존재하지 않는 제안에 대해 AI_1305 예외를 던져야 한다", async () => {
@@ -368,10 +356,6 @@ describe("AiSuggestionService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// analyzeAndCreateSuggestions
-	// =========================================================================
 
 	describe("analyzeAndCreateSuggestions", () => {
 		it("할 일이 최소 횟수 미만이면 AI 호출 없이 0을 반환해야 한다", async () => {

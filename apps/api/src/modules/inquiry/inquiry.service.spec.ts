@@ -1,3 +1,14 @@
+/**
+ * InquiryService 모듈 단위 테스트
+ *
+ * @description
+ * InquiryService 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test inquiry.service
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TypedConfigService } from "@/common/config/services/config.service";
@@ -5,7 +16,7 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { EmailService } from "@/modules/email/email.service";
 import { InquiryService } from "./inquiry.service";
 
-describe("InquiryService", () => {
+describe("InquiryService — 문의 서비스", () => {
 	let service: InquiryService;
 	let emailService: Mocked<EmailService>;
 	let configService: Mocked<TypedConfigService>;

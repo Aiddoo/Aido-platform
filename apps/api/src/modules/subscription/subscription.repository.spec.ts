@@ -1,3 +1,14 @@
+/**
+ * SubscriptionRepository 리포지토리 단위 테스트
+ *
+ * @description
+ * SubscriptionRepository의 데이터 접근 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test subscription.repository
+ * ```
+ */
 import { TestBed } from "@suites/unit";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
@@ -12,7 +23,7 @@ import type {
 } from "./subscription.repository";
 import { SubscriptionRepository } from "./subscription.repository";
 
-describe("SubscriptionRepository", () => {
+describe("SubscriptionRepository — 구독 리포지토리", () => {
 	let repository: SubscriptionRepository;
 
 	const mockDb = createMockDatabaseService({
@@ -36,10 +47,6 @@ describe("SubscriptionRepository", () => {
 
 		repository = unit;
 	});
-
-	// =========================================================================
-	// findByRevenueCatId
-	// =========================================================================
 
 	describe("findByRevenueCatId", () => {
 		it("존재하는 구독을 반환해야 한다", async () => {
@@ -77,10 +84,6 @@ describe("SubscriptionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// findActiveByUserId
-	// =========================================================================
-
 	describe("findActiveByUserId", () => {
 		it("ACTIVE 구독을 반환해야 한다", async () => {
 			// Given
@@ -106,10 +109,6 @@ describe("SubscriptionRepository", () => {
 			expect(result).toEqual(subscription);
 		});
 	});
-
-	// =========================================================================
-	// create
-	// =========================================================================
 
 	describe("create", () => {
 		it("구독 생성 데이터를 올바르게 전달해야 한다", async () => {
@@ -142,10 +141,6 @@ describe("SubscriptionRepository", () => {
 			expect(result).toEqual(created);
 		});
 	});
-
-	// =========================================================================
-	// updateStatus
-	// =========================================================================
 
 	describe("updateStatus", () => {
 		it("구독 상태를 정상 업데이트해야 한다", async () => {
@@ -198,10 +193,6 @@ describe("SubscriptionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// updateUserSubscriptionStatus
-	// =========================================================================
-
 	describe("updateUserSubscriptionStatus", () => {
 		it("사용자 구독 상태를 정상 업데이트해야 한다", async () => {
 			// Given
@@ -226,10 +217,6 @@ describe("SubscriptionRepository", () => {
 			});
 		});
 	});
-
-	// =========================================================================
-	// findUserByAppUserId
-	// =========================================================================
 
 	describe("findUserByAppUserId", () => {
 		it("OR 조건으로 사용자를 검색해야 한다", async () => {

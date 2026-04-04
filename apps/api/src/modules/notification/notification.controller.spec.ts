@@ -1,3 +1,14 @@
+/**
+ * NotificationController 컨트롤러 단위 테스트
+ *
+ * @description
+ * NotificationController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test notification.controller
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { PushTokenBuilder } from "@test/builders";
@@ -9,7 +20,7 @@ import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 import { PushDeliveryService } from "./push-delivery.service";
 
-describe("NotificationController", () => {
+describe("NotificationController — 알림 컨트롤러", () => {
 	let controller: NotificationController;
 	let mockNotificationService: Mocked<NotificationService>;
 	let mockPushDeliveryService: Mocked<PushDeliveryService>;

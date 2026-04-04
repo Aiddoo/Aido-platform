@@ -16,7 +16,7 @@ import { EmailService } from "@/modules/email/email.service";
 import { VerificationRepository } from "../repositories/verification.repository";
 import { VerificationService } from "./verification.service";
 
-describe("VerificationService", () => {
+describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;
 	let verificationRepo: Mocked<VerificationRepository>;
 	let emailService: Mocked<EmailService>;

@@ -23,7 +23,7 @@ import type {
 	NudgeWithRelations,
 } from "./types";
 
-describe("NudgeController", () => {
+describe("NudgeController — 찔러보기 컨트롤러", () => {
 	let controller: NudgeController;
 	let mockNudgeService: Mocked<NudgeService>;
 

@@ -27,7 +27,7 @@ import type {
 	SendFollowRequestResult,
 } from "./types/follow.types";
 
-describe("FollowController", () => {
+describe("FollowController — 팔로우 컨트롤러", () => {
 	let controller: FollowController;
 	let mockFollowService: Mocked<FollowService>;
 

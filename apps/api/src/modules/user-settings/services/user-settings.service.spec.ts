@@ -20,7 +20,7 @@ import { UserConsentRepository } from "../repositories/user-consent.repository";
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 import { UserSettingsService } from "./user-settings.service";
 
-describe("UserSettingsService", () => {
+describe("UserSettingsService — 사용자 설정 서비스", () => {
 	let service: UserSettingsService;
 	let userPreferenceRepo: Mocked<UserPreferenceRepository>;
 	let userConsentRepo: Mocked<UserConsentRepository>;
@@ -46,10 +46,6 @@ describe("UserSettingsService", () => {
 			factory(),
 		);
 	});
-
-	// ============================================
-	// getPreference
-	// ============================================
 
 	describe("getPreference", () => {
 		const userId = "user-123";
@@ -224,10 +220,6 @@ describe("UserSettingsService", () => {
 		});
 	});
 
-	// ============================================
-	// updatePreference
-	// ============================================
-
 	describe("updatePreference", () => {
 		const userId = "user-123";
 
@@ -349,10 +341,6 @@ describe("UserSettingsService", () => {
 		});
 	});
 
-	// ============================================
-	// updatePreference — 리마인더 프리미엄 체크
-	// ============================================
-
 	describe("리마인더 시간 변경 — 프리미엄 체크", () => {
 		const userId = "user-123";
 
@@ -469,10 +457,6 @@ describe("UserSettingsService", () => {
 		});
 	});
 
-	// ============================================
-	// updatePreference — 리마인더 시간 범위 검증
-	// ============================================
-
 	describe("리마인더 시간 범위 검증", () => {
 		const userId = "user-123";
 
@@ -587,10 +571,6 @@ describe("UserSettingsService", () => {
 		});
 	});
 
-	// ============================================
-	// getConsent
-	// ============================================
-
 	describe("getConsent", () => {
 		const userId = "user-123";
 
@@ -655,10 +635,6 @@ describe("UserSettingsService", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// updateMarketingConsent
-	// ============================================
 
 	describe("updateMarketingConsent", () => {
 		const userId = "user-123";

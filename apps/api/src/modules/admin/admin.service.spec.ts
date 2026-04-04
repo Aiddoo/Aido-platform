@@ -21,10 +21,6 @@ import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../notification/notification.service";
 import { AdminService } from "./admin.service";
 
-// =============================================================================
-// Type Definitions for Test
-// =============================================================================
-
 /**
  * user.findMany의 select: { id: true } 결과 타입
  */
@@ -32,7 +28,7 @@ interface UserIdOnly {
 	id: string;
 }
 
-describe("AdminService", () => {
+describe("AdminService — 관리자 서비스", () => {
 	let service: AdminService;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -45,10 +41,6 @@ describe("AdminService", () => {
 		database = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
 	});
-
-	// ==========================================================================
-	// broadcastNotification
-	// ==========================================================================
 
 	describe("broadcastNotification", () => {
 		it("전체 사용자에게 알림을 발송해야 한다", async () => {
@@ -320,10 +312,6 @@ describe("AdminService", () => {
 			});
 		});
 	});
-
-	// ==========================================================================
-	// sendTargetedNotification
-	// ==========================================================================
 
 	describe("sendTargetedNotification", () => {
 		it("특정 사용자들에게 알림을 발송해야 한다", async () => {

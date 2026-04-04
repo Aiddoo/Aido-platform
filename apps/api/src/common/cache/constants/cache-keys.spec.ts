@@ -1,6 +1,17 @@
+/**
+ * CacheKeys 유틸 테스트
+ *
+ * @description
+ * CacheKeys 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test cache-keys
+ * ```
+ */
 import { CacheKeys } from "./cache-keys";
 
-describe("CacheKeys", () => {
+describe("CacheKeys — 캐시 키", () => {
 	describe("TTL 상수", () => {
 		it("세션 TTL은 30초이다", () => {
 			// Given

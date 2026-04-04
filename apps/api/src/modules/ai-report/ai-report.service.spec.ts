@@ -19,7 +19,7 @@ import { ReportAggregatorService } from "./report-aggregator.service";
 import { ReportGeneratorService } from "./report-generator.service";
 import type { AggregatedReportData } from "./types";
 
-describe("AiReportService", () => {
+describe("AiReportService — AI 리포트 서비스", () => {
 	let service: AiReportService;
 	let mockRepository: Mocked<AiReportRepository>;
 	let mockAggregator: Mocked<ReportAggregatorService>;
@@ -91,10 +91,6 @@ describe("AiReportService", () => {
 		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 	});
 
-	// =========================================================================
-	// 프리미엄 체크
-	// =========================================================================
-
 	describe("프리미엄 체크", () => {
 		it("비프리미엄 사용자가 getReportStatus를 호출하면 AI_1308 예외를 던져야 한다", async () => {
 			// Given -비프리미엄 사용자
@@ -149,10 +145,6 @@ describe("AiReportService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getReportStatus
-	// =========================================================================
-
 	describe("getReportStatus", () => {
 		it("daysUntil은 시간이 아닌 날짜(calendar day) 기준으로 계산해야 한다", async () => {
 			// Given — 일요일 23:00 KST (= 14:00 UTC), 다음 월요일까지 D-1
@@ -192,10 +184,6 @@ describe("AiReportService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getReports
-	// =========================================================================
-
 	describe("getReports", () => {
 		it("리포트 목록을 조회하고 DTO로 변환해야 한다", async () => {
 			// Given -리포트 목록이 존재
@@ -218,10 +206,6 @@ describe("AiReportService", () => {
 			});
 		});
 	});
-
-	// =========================================================================
-	// getReportById
-	// =========================================================================
 
 	describe("getReportById", () => {
 		it("존재하는 리포트를 조회하면 DTO를 반환해야 한다", async () => {
@@ -255,10 +239,6 @@ describe("AiReportService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// generateWeeklyReport
-	// =========================================================================
 
 	describe("generateWeeklyReport", () => {
 		it("이미 존재하는 주간 리포트면 null을 반환해야 한다 (skip)", async () => {
@@ -323,10 +303,6 @@ describe("AiReportService", () => {
 			expect(generateCall?.type).toBe("WEEKLY");
 		});
 	});
-
-	// =========================================================================
-	// generateMonthlyReport
-	// =========================================================================
 
 	describe("generateMonthlyReport", () => {
 		it("이미 존재하는 월간 리포트면 null을 반환해야 한다 (skip)", async () => {

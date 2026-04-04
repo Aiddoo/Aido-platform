@@ -1,6 +1,17 @@
+/**
+ * InMemoryCacheAdapter 단위 테스트
+ *
+ * @description
+ * InMemoryCacheAdapter의 개별 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test in-memory-cache.adapter
+ * ```
+ */
 import { InMemoryCacheAdapter } from "./in-memory-cache.adapter";
 
-describe("InMemoryCacheAdapter", () => {
+describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 	let cache: InMemoryCacheAdapter;
 
 	beforeEach(() => {
@@ -14,10 +25,6 @@ describe("InMemoryCacheAdapter", () => {
 		await cache.reset();
 		cache.onModuleDestroy();
 	});
-
-	// ============================================
-	// get / set
-	// ============================================
 
 	describe("get/set", () => {
 		it("값을 저장하고 조회할 수 있다", async () => {
@@ -111,10 +118,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// del
-	// ============================================
-
 	describe("del", () => {
 		it("키를 삭제할 수 있다", async () => {
 			// Given
@@ -138,10 +141,6 @@ describe("InMemoryCacheAdapter", () => {
 			await expect(cache.del(nonExistentKey)).resolves.not.toThrow();
 		});
 	});
-
-	// ============================================
-	// delByPattern
-	// ============================================
 
 	describe("delByPattern", () => {
 		it("패턴에 매칭되는 키들을 삭제한다", async () => {
@@ -206,10 +205,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// reset
-	// ============================================
-
 	describe("reset", () => {
 		it("모든 키를 삭제한다", async () => {
 			// Given
@@ -240,10 +235,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(stats.keys).toBe(0);
 		});
 	});
-
-	// ============================================
-	// getStats
-	// ============================================
 
 	describe("getStats", () => {
 		it("캐시 히트와 미스를 추적한다", async () => {
@@ -302,10 +293,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// FIFO eviction
-	// ============================================
-
 	describe("FIFO eviction", () => {
 		it("최대 항목 수에 도달하면 가장 오래된 항목을 삭제한다", async () => {
 			// Given
@@ -350,10 +337,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// cleanup
-	// ============================================
-
 	describe("cleanup", () => {
 		it("만료된 항목을 정리한다", async () => {
 			// Given
@@ -374,10 +357,6 @@ describe("InMemoryCacheAdapter", () => {
 			testCache.onModuleDestroy();
 		});
 	});
-
-	// ============================================
-	// TTL shorthand
-	// ============================================
 
 	describe("TTL shorthand", () => {
 		it("초 단위 shorthand를 지원한다", async () => {
@@ -445,10 +424,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(result).toBe(value);
 		});
 	});
-
-	// ============================================
-	// wrap
-	// ============================================
 
 	describe("wrap", () => {
 		it("캐시 미스 시 factory를 호출하고 결과를 캐싱한다", async () => {
@@ -529,10 +504,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// mget
-	// ============================================
-
 	describe("mget", () => {
 		it("여러 키를 한 번에 조회한다", async () => {
 			// Given
@@ -579,10 +550,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(results).toEqual([undefined, "b"]);
 		});
 	});
-
-	// ============================================
-	// mset
-	// ============================================
 
 	describe("mset", () => {
 		it("여러 키-값 쌍을 한 번에 저장한다", async () => {
@@ -639,10 +606,6 @@ describe("InMemoryCacheAdapter", () => {
 		});
 	});
 
-	// ============================================
-	// has
-	// ============================================
-
 	describe("has", () => {
 		it("키가 존재하면 true를 반환한다", async () => {
 			// Given
@@ -675,10 +638,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(result).toBe(false);
 		});
 	});
-
-	// ============================================
-	// ttl
-	// ============================================
 
 	describe("ttl", () => {
 		it("키의 남은 TTL을 밀리초로 반환한다", async () => {
@@ -713,10 +672,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(result).toBe(-2);
 		});
 	});
-
-	// ============================================
-	// touch
-	// ============================================
 
 	describe("touch", () => {
 		it("키의 TTL을 갱신한다", async () => {
@@ -765,10 +720,6 @@ describe("InMemoryCacheAdapter", () => {
 			expect(result).toBe(false);
 		});
 	});
-
-	// ============================================
-	// edge cases
-	// ============================================
 
 	describe("edge cases", () => {
 		it("빈 문자열 키를 처리할 수 있다", async () => {

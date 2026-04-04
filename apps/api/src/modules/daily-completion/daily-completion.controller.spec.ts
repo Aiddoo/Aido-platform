@@ -18,7 +18,7 @@ import { DailyCompletionService } from "./daily-completion.service";
 import type { GetDailyCompletionsRangeDto } from "./dtos";
 import type { DailyCompletionsRangeResult } from "./types/daily-completion.types";
 
-describe("DailyCompletionController", () => {
+describe("DailyCompletionController — 일일 달성 컨트롤러", () => {
 	let controller: DailyCompletionController;
 	let mockDailyCompletionService: Mocked<DailyCompletionService>;
 

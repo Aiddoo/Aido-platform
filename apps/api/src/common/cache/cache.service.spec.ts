@@ -18,7 +18,7 @@ import {
 	type TtlValue,
 } from "./interfaces/cache.interface";
 
-describe("CacheService", () => {
+describe("CacheService — 캐시 서비스", () => {
 	let service: CacheService;
 	let mockCacheAdapter: Mocked<ICacheService>;
 

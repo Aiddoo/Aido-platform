@@ -17,7 +17,7 @@ import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 import type { BroadcastNotificationDto, TargetedNotificationDto } from "./dtos";
 
-describe("AdminController", () => {
+describe("AdminController — 관리자 컨트롤러", () => {
 	let controller: AdminController;
 	let mockAdminService: Mocked<AdminService>;
 

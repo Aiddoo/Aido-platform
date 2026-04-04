@@ -1,3 +1,14 @@
+/**
+ * GeminiProvider 프로바이더 단위 테스트
+ *
+ * @description
+ * GeminiProvider의 외부 연동 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test gemini.provider
+ * ```
+ */
 import { ConfigService } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { z } from "zod";
@@ -26,17 +37,9 @@ jest.mock("@ai-sdk/google", () => ({
 	createGoogleGenerativeAI: jest.fn(() => jest.fn(() => "mock-model")),
 }));
 
-// =============================================================================
-// Mock Setup
-// =============================================================================
-
 const mockConfigService = {
 	get: jest.fn(),
 };
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
 
 async function createProvider(): Promise<GeminiProvider> {
 	const module: TestingModule = await Test.createTestingModule({
@@ -49,15 +52,7 @@ async function createProvider(): Promise<GeminiProvider> {
 	return module.get<GeminiProvider>(GeminiProvider);
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("GeminiProvider", () => {
-	// =========================================================================
-	// isAvailable
-	// =========================================================================
-
+describe("GeminiProvider — Gemini AI 프로바이더", () => {
 	describe("isAvailable", () => {
 		it("API 키가 설정되어 있으면 true를 반환한다", async () => {
 			// Given - API 키가 설정됨
@@ -92,10 +87,6 @@ describe("GeminiProvider", () => {
 			expect(provider.isAvailable()).toBe(false);
 		});
 	});
-
-	// =========================================================================
-	// generateStructured
-	// =========================================================================
 
 	describe("generateStructured", () => {
 		const testSchema = z.object({

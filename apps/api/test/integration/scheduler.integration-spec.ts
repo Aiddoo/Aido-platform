@@ -18,6 +18,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { UserPreferenceBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 
@@ -195,20 +196,17 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.clearAllMocks();
+		UserPreferenceBuilder.resetIdCounter();
 
 		// 기본: pushEnabled 유저의 distinct timezone 조회 결과
 		mockUserPreferenceDb.findMany.mockResolvedValue([
-			{ timezone: "Asia/Seoul" },
+			UserPreferenceBuilder.create("user-1").withTimezone("Asia/Seoul").build(),
 		]);
 	});
 
 	afterEach(() => {
 		jest.useRealTimers();
 	});
-
-	// =========================================================================
-	// handleMinuteSweep — 시간대별 전략 실행
-	// =========================================================================
 
 	describe("handleMinuteSweep 전략 실행", () => {
 		it("KST 08:00 — 아침 리마인더 전략이 실행된다", async () => {
@@ -308,18 +306,18 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// =========================================================================
-	// handleMinuteSweep — 오류 격리
-	// =========================================================================
-
 	describe("handleMinuteSweep 오류 격리", () => {
 		it("한 타임존 실패 시 — 다른 타임존은 정상 실행된다", async () => {
 			// Given - 2개 타임존, 첫 번째 타임존에서 에러 발생
 			jest.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
 			mockUserPreferenceDb.findMany.mockResolvedValue([
-				{ timezone: "America/New_York" },
-				{ timezone: "Asia/Seoul" },
+				UserPreferenceBuilder.create("user-ny")
+					.withTimezone("America/New_York")
+					.build(),
+				UserPreferenceBuilder.create("user-seoul")
+					.withTimezone("Asia/Seoul")
+					.build(),
 			]);
 
 			// America/New_York 처리 시 morningReminder에서 에러 발생
@@ -345,10 +343,6 @@ describe("TimezoneAwareReminderJob 통합 테스트 (Mock DB)", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// handleMinuteSweep — 빈 타임존
-	// =========================================================================
 
 	describe("handleMinuteSweep 빈 타임존", () => {
 		it("pushEnabled 사용자 없는 경우 — 전략이 실행되지 않는다", async () => {

@@ -19,6 +19,7 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { NotificationBuilder, TodoBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
@@ -88,17 +89,22 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
+		TodoBuilder.resetIdCounter();
+		NotificationBuilder.resetIdCounter();
 	});
 
 	describe("리마인더 처리 통합 테스트", () => {
 		it("유효한 todo — 리마인더 알림이 생성된다", async () => {
 			// Given - 완료되지 않은 유효한 투두
-			const mockTodo = { id: mockTodoId, title: "운동하기" };
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("운동하기")
+				.build();
 			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
 			mockNotificationDb.findFirst.mockResolvedValue(null);
-			mockNotificationService.createAndSend.mockResolvedValue({
-				id: 1,
-			});
+			mockNotificationService.createAndSend.mockResolvedValue(
+				NotificationBuilder.create(mockUserId).withId(1).build(),
+			);
 
 			const job = createMockJob({
 				todoId: mockTodoId,
@@ -156,9 +162,14 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 		it("24시간 내 동일 스테이지 알림 존재 — 중복 알림이 생성되지 않는다", async () => {
 			// Given - 유효한 투두 + 이미 동일 스테이지 알림이 존재
-			const mockTodo = { id: mockTodoId, title: "공부하기" };
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("공부하기")
+				.build();
 			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
-			mockNotificationDb.findFirst.mockResolvedValue({ id: 100 });
+			mockNotificationDb.findFirst.mockResolvedValue(
+				NotificationBuilder.create(mockUserId).withId(100).build(),
+			);
 
 			const job = createMockJob({
 				todoId: mockTodoId,
@@ -175,10 +186,15 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 
 		it("다단계 리마인더 — 각 스테이지별 알림 메시지가 다르다", async () => {
 			// Given - 동일 투두에 대해 서로 다른 스테이지
-			const mockTodo = { id: mockTodoId, title: "회의 참석" };
+			const mockTodo = TodoBuilder.create(mockUserId)
+				.withId(mockTodoId)
+				.withTitle("회의 참석")
+				.build();
 			mockTodoDb.findFirst.mockResolvedValue(mockTodo);
 			mockNotificationDb.findFirst.mockResolvedValue(null);
-			mockNotificationService.createAndSend.mockResolvedValue({ id: 1 });
+			mockNotificationService.createAndSend.mockResolvedValue(
+				NotificationBuilder.create(mockUserId).withId(1).build(),
+			);
 
 			const stages = ["1시간 전", "30분 전"];
 			const sentMessages: Array<{ title: string; body: string }> = [];
@@ -187,9 +203,9 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				jest.clearAllMocks();
 				mockTodoDb.findFirst.mockResolvedValue(mockTodo);
 				mockNotificationDb.findFirst.mockResolvedValue(null);
-				mockNotificationService.createAndSend.mockResolvedValue({
-					id: 1,
-				});
+				mockNotificationService.createAndSend.mockResolvedValue(
+					NotificationBuilder.create(mockUserId).withId(1).build(),
+				);
 
 				const job = createMockJob({
 					todoId: mockTodoId,

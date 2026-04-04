@@ -1,3 +1,16 @@
+/**
+ * OAuthController 단위 테스트
+ *
+ * @description
+ * OAuth 컨트롤러의 교환 코드 엔드포인트를 검증한다.
+ * 서비스 위임과 AuthMapper를 통한 응답 변환을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test oauth.controller.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -5,7 +18,7 @@ import type { ExchangeCodeDto } from "../dtos";
 import { OAuthService } from "../services/oauth.service";
 import { OAuthController } from "./oauth.controller";
 
-describe("OAuthController", () => {
+describe("OAuthController — OAuth 인증 컨트롤러", () => {
 	let controller: OAuthController;
 	let mockOAuthService: Mocked<OAuthService>;
 

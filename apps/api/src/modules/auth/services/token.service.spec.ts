@@ -16,7 +16,7 @@ import { TestBed } from "@suites/unit";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { TokenService } from "./token.service";
 
-describe("TokenService", () => {
+describe("TokenService — 토큰 서비스", () => {
 	let service: TokenService;
 	let jwtService: Mocked<JwtService>;
 	let configService: Mocked<TypedConfigService>;
@@ -75,10 +75,6 @@ describe("TokenService", () => {
 		});
 	});
 
-	// ============================================
-	// generateTokenPair
-	// ============================================
-
 	describe("generateTokenPair", () => {
 		it("액세스 토큰과 리프레시 토큰 쌍을 생성한다", async () => {
 			// Given
@@ -128,10 +124,6 @@ describe("TokenService", () => {
 		});
 	});
 
-	// ============================================
-	// verifyAccessToken
-	// ============================================
-
 	describe("verifyAccessToken", () => {
 		it("유효한 액세스 토큰을 검증하여 페이로드를 반환한다", async () => {
 			// Given
@@ -160,10 +152,6 @@ describe("TokenService", () => {
 		});
 	});
 
-	// ============================================
-	// verifyRefreshToken
-	// ============================================
-
 	describe("verifyRefreshToken", () => {
 		it("유효한 리프레시 토큰을 검증하여 페이로드를 반환한다", async () => {
 			// Given
@@ -191,10 +179,6 @@ describe("TokenService", () => {
 			expect(result).toBeNull();
 		});
 	});
-
-	// ============================================
-	// hashRefreshToken
-	// ============================================
 
 	describe("hashRefreshToken", () => {
 		it("리프레시 토큰을 SHA-256으로 해싱한다", () => {
@@ -235,10 +219,6 @@ describe("TokenService", () => {
 		});
 	});
 
-	// ============================================
-	// generateTokenFamily
-	// ============================================
-
 	describe("generateTokenFamily", () => {
 		it("32자 hex 문자열의 토큰 패밀리를 생성한다", () => {
 			// Given
@@ -266,10 +246,6 @@ describe("TokenService", () => {
 			expect(family1).not.toBe(family2);
 		});
 	});
-
-	// ============================================
-	// getRefreshTokenExpiresInSeconds
-	// ============================================
 
 	describe("getRefreshTokenExpiresInSeconds", () => {
 		it("리프레시 토큰 만료 시간을 초 단위로 반환한다", () => {

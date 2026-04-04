@@ -1,3 +1,14 @@
+/**
+ * getKoreanSeasonalContext 유틸 테스트
+ *
+ * @description
+ * getKoreanSeasonalContext 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test korean-seasonal-context
+ * ```
+ */
 import { getKoreanSeasonalContext } from "../korean-seasonal-context";
 
 describe("getKoreanSeasonalContext", () => {
