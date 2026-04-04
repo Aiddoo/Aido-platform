@@ -3,4 +3,4 @@
 UPDATE "User"
 SET status = 'ACTIVE', "emailVerifiedAt" = NOW()
 WHERE status = 'PENDING_VERIFY'
-  AND id IN (SELECT "userId" FROM "Account" WHERE provider != 'CREDENTIALS');
+  AND id IN (SELECT "userId" FROM "Account" WHERE provider != 'CREDENTIAL');
