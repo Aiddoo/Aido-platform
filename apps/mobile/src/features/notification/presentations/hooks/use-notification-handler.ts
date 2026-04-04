@@ -41,6 +41,11 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
       response: Notifications.NotificationResponse,
       options?: NotificationResponseOptions,
     ): Promise<void> => {
+      // 0. 연타 방지: 500ms 잠금 (모든 사이드 이펙트 실행 전 차단)
+      const now = Date.now();
+      if (now - lastNavigationTimeRef.current < 500) return;
+      lastNavigationTimeRef.current = now;
+
       const rawData = response.notification.request.content.data;
 
       // 1. Zod 검증으로 타입 안정성 확보
@@ -78,11 +83,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
         }
       }
 
-      // 4. Action Type 기반 분기 처리 (연타 방지: 500ms 잠금)
-      const now = Date.now();
-      if (now - lastNavigationTimeRef.current < 500) return;
-      lastNavigationTimeRef.current = now;
-
+      // 4. Action Type 기반 분기 처리
       match(data.action?.type)
         .with('BROWSER', () => {
           if (data.action?.url) {
