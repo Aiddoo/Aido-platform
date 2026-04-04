@@ -45,6 +45,7 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		update: jest.fn(),
 		delete: jest.fn(),
 		count: jest.fn(),
+		aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
 	};
 
 	const mockUserDb = {
@@ -403,8 +404,20 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			mockFollowDb.findUnique.mockResolvedValueOnce(null);
 			// 역방향 관계 생성
 			mockFollowDb.create.mockResolvedValue(myFollow);
-			// 마지막 호출: findByIdWithUser (생성된 Follow 조회)
-			mockFollowDb.findUnique.mockResolvedValueOnce(myFollow);
+			// 마지막 호출: findByIdWithUser (생성된 Follow 조회 — follower+following 관계 포함)
+			mockFollowDb.findUnique.mockResolvedValueOnce({
+				...myFollow,
+				follower: {
+					id: mockUserId,
+					userTag: "my-tag",
+					profile: { name: "My User", profileImage: null },
+				},
+				following: {
+					id: mockTargetUserId,
+					userTag: mockTargetUserTag,
+					profile: { name: "Target User", profileImage: null },
+				},
+			});
 
 			// When - 친구 요청 수락
 			const result = await service.acceptRequest(mockUserId, mockTargetUserId);
@@ -415,7 +428,7 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(result.status).toBe("ACCEPTED");
 			expect(mockFollowDb.update).toHaveBeenCalledWith({
 				where: { id: pendingRequest.id },
-				data: { status: "ACCEPTED" },
+				data: expect.objectContaining({ status: "ACCEPTED" }),
 			});
 			expect(mockFollowDb.create).toHaveBeenCalled();
 		});

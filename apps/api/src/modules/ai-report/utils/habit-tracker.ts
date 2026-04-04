@@ -138,15 +138,17 @@ function groupByTitleAndWeek(
 	for (const todo of todos) {
 		const week = dayjs(todo.startDate).tz(timezone).isoWeek();
 
-		if (!map.has(todo.title)) {
-			map.set(todo.title, new Map());
+		let weekMap = map.get(todo.title);
+		if (!weekMap) {
+			weekMap = new Map();
+			map.set(todo.title, weekMap);
 		}
-		const weekMap = map.get(todo.title)!;
 
-		if (!weekMap.has(week)) {
-			weekMap.set(week, { total: 0, completed: 0 });
+		let entry = weekMap.get(week);
+		if (!entry) {
+			entry = { total: 0, completed: 0 };
+			weekMap.set(week, entry);
 		}
-		const entry = weekMap.get(week)!;
 		entry.total++;
 		if (todo.completed) {
 			entry.completed++;
@@ -159,7 +161,9 @@ function groupByTitleAndWeek(
 function countConsecutiveWeeks(sortedWeeks: number[]): number {
 	let count = 1;
 	for (let i = sortedWeeks.length - 1; i > 0; i--) {
-		if (sortedWeeks[i]! - sortedWeeks[i - 1]! === 1) {
+		const current = sortedWeeks[i] ?? 0;
+		const previous = sortedWeeks[i - 1] ?? 0;
+		if (current - previous === 1) {
 			count++;
 		} else {
 			break;

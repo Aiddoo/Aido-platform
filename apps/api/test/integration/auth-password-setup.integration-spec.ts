@@ -53,6 +53,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 	}, 60000);
 
 	beforeEach(async () => {
+		jest.clearAllMocks();
 		await testDb.cleanup();
 		fakeEmailService.clear();
 	});
@@ -84,7 +85,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 		const user = await prisma.user.create({
 			data: {
 				email,
-				userTag: `TAG${Date.now().toString(36).slice(-6).toUpperCase()}`,
+				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
 				status: "ACTIVE",
 				emailVerifiedAt: new Date(),
 			},

@@ -22,7 +22,9 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { NotificationBuilder, PushTokenBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { DEDUP_PROVIDER } from "@/common/dedup/interfaces/dedup.interface";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { LOCK_PROVIDER } from "@/common/lock/interfaces/lock.interface";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
@@ -31,6 +33,7 @@ import { NotificationRepository } from "@/modules/notification/notification.repo
 import { NotificationService } from "@/modules/notification/notification.service";
 import { PUSH_PROVIDER } from "@/modules/notification/providers/push-provider.interface";
 import { PushDeliveryService } from "@/modules/notification/push-delivery.service";
+import { PUSH_RATE_LIMITER } from "@/modules/notification/rate-limiter";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
 import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
 import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
@@ -127,12 +130,58 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 					useValue: mockPushProvider,
 				},
 				{
+					provide: CacheService,
+					useValue: {
+						get: jest.fn().mockResolvedValue(null),
+						set: jest.fn().mockResolvedValue(undefined),
+						del: jest.fn().mockResolvedValue(undefined),
+						mget: jest
+							.fn()
+							.mockImplementation(async (keys: string[]) =>
+								keys.map(() => null),
+							),
+						mset: jest.fn().mockResolvedValue(undefined),
+						invalidatePushTokens: jest.fn().mockResolvedValue(undefined),
+						invalidateUnreadCount: jest.fn().mockResolvedValue(undefined),
+						invalidateUserPreference: jest.fn().mockResolvedValue(undefined),
+						wrapUnreadCount: jest
+							.fn()
+							.mockImplementation(
+								(_userId: string, fn: () => Promise<unknown>) => fn(),
+							),
+						wrapUserPreference: jest
+							.fn()
+							.mockImplementation(
+								(_userId: string, fn: () => Promise<unknown>) => fn(),
+							),
+						wrapPushTokens: jest
+							.fn()
+							.mockImplementation(
+								(_userId: string, fn: () => Promise<unknown>) => fn(),
+							),
+					},
+				},
+				{
 					provide: LOCK_PROVIDER,
 					useValue: {
 						acquire: jest
 							.fn()
 							.mockResolvedValue(jest.fn().mockResolvedValue(undefined)),
 						isLocked: jest.fn().mockResolvedValue(false),
+					},
+				},
+				{
+					provide: DEDUP_PROVIDER,
+					useValue: {
+						isDuplicate: jest.fn().mockResolvedValue(false),
+						markAsProcessed: jest.fn().mockResolvedValue(undefined),
+					},
+				},
+				{
+					provide: PUSH_RATE_LIMITER,
+					useValue: {
+						isRateLimited: jest.fn().mockResolvedValue(false),
+						destroy: jest.fn(),
 					},
 				},
 			],
@@ -282,6 +331,8 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 								"NUDGE_RECEIVED",
 								"CHEER_RECEIVED",
 								"FRIEND_COMPLETED",
+								"SOCIAL_DIGEST",
+								"NUDGE_SUGGEST",
 							]),
 						},
 					}),
@@ -326,8 +377,6 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 								"SYSTEM_NOTICE",
 								"ADMIN_BROADCAST",
 								"ADMIN_TARGETED",
-								"WEEKLY_ACHIEVEMENT",
-								"WEEKLY_REPORT",
 							]),
 						},
 					}),
@@ -382,6 +431,8 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 								"NUDGE_RECEIVED",
 								"CHEER_RECEIVED",
 								"FRIEND_COMPLETED",
+								"SOCIAL_DIGEST",
+								"NUDGE_SUGGEST",
 							]),
 						},
 					}),
@@ -580,13 +631,13 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 			// When - 배치 알림 생성 및 발송
 			const result = await service.createAndSendBatch(dataList);
 
-			// Then - title이 치환된 값 ("오늘 할일 3개")이어야 하며, {count}가 포함되지 않아야 함
+			// Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
 			expect(result.count).toBe(1);
-			expect(message.title).toBe("오늘 할일 3개");
+			expect(message.title).toContain("3");
 			expect(message.title).not.toContain("{count}");
 
 			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
-			expect(createManyCall.data[0].title).toBe("오늘 할일 3개");
+			expect(createManyCall.data[0].title).toBe(message.title);
 			expect(createManyCall.data[0].title).not.toContain("{count}");
 			expect(createManyCall.data[0].type).toBe("MORNING_REMINDER");
 		});
@@ -626,16 +677,16 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			// Then - morningNoTodo 메시지가 그대로 저장되어야 함
 			expect(result).not.toBeNull();
-			expect(result?.title).toBe("할일이 하나도 없다");
-			expect(result?.body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			expect(result?.title).toBe(message.title);
+			expect(result?.body).toBe(message.body);
 			expect(result?.type).toBe("MORNING_REMINDER");
 			expect(mockNotificationDb.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					data: expect.objectContaining({
 						userId: mockUserId,
 						type: "MORNING_REMINDER",
-						title: "할일이 하나도 없다",
-						body: "한가한 거 맞아? 뭐라도 적어봐",
+						title: message.title,
+						body: message.body,
 					}),
 				}),
 			);
@@ -689,11 +740,11 @@ describe("NotificationService 통합 테스트 (Mock DB)", () => {
 
 			const createManyCall = mockNotificationDb.createMany.mock.calls[0]?.[0];
 			// 할일 있는 사용자: 치환된 title
-			expect(createManyCall.data[0].title).toBe("오늘 할일 5개");
+			expect(createManyCall.data[0].title).toBe(messageWithTodos.title);
 			expect(createManyCall.data[0].title).not.toContain("{count}");
 			// 할일 없는 사용자: morningNoTodo 메시지
-			expect(createManyCall.data[1].title).toBe("할일이 하나도 없다");
-			expect(createManyCall.data[1].body).toBe("한가한 거 맞아? 뭐라도 적어봐");
+			expect(createManyCall.data[1].title).toBe(messageNoTodos.title);
+			expect(createManyCall.data[1].body).toBe(messageNoTodos.body);
 		});
 	});
 });

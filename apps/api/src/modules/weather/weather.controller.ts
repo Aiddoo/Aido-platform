@@ -14,13 +14,12 @@ import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "@/common/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
-import { GetForecastQueryDto } from "./dtos/get-forecast-query.dto";
-import { UpdateLocationDto } from "./dtos/update-location.dto";
+import { GetForecastQueryDto, UpdateLocationDto } from "./dtos/request";
 import {
 	LocationResponseDto,
 	WeatherConditionsResponseDto,
 	WeatherForecastResponseDto,
-} from "./dtos/weather-forecast-response.dto";
+} from "./dtos/response";
 import { WeatherService } from "./services/weather.service";
 
 @ApiTags(SWAGGER_TAGS.WEATHER)

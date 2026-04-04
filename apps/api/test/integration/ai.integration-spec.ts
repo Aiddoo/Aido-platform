@@ -22,9 +22,8 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { AiController } from "@/modules/ai/ai.controller";
 import { AiService } from "@/modules/ai/ai.service";
 import { AiUsageGuard } from "@/modules/ai/guards/ai-usage.guard";
-import { JwtAuthGuard } from "@/modules/auth/guards";
 
-describe("AiController (Integration)", () => {
+describe("AI 통합 테스트 (Mock DB)", () => {
 	let app: INestApplication;
 	let aiService: jest.Mocked<AiService>;
 
@@ -40,6 +39,16 @@ describe("AiController (Integration)", () => {
 			parseTodo: jest.fn(),
 		};
 
+		const mockAuthGuard = {
+			canActivate: (context: {
+				switchToHttp: () => { getRequest: () => { user: typeof mockUser } };
+			}) => {
+				const req = context.switchToHttp().getRequest();
+				req.user = mockUser;
+				return true;
+			},
+		};
+
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			controllers: [AiController],
 			providers: [
@@ -49,16 +58,6 @@ describe("AiController (Integration)", () => {
 				},
 			],
 		})
-			.overrideGuard(JwtAuthGuard)
-			.useValue({
-				canActivate: (context: {
-					switchToHttp: () => { getRequest: () => { user: typeof mockUser } };
-				}) => {
-					const req = context.switchToHttp().getRequest();
-					req.user = mockUser;
-					return true;
-				},
-			})
 			.overrideGuard(AiUsageGuard)
 			.useValue({
 				canActivate: () => true,
@@ -67,6 +66,7 @@ describe("AiController (Integration)", () => {
 
 		app = moduleFixture.createNestApplication();
 		app.useGlobalPipes(new ZodValidationPipe());
+		app.useGlobalGuards(mockAuthGuard as any);
 
 		await app.init();
 

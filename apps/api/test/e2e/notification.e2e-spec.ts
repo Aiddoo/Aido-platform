@@ -13,7 +13,12 @@
  */
 
 import request from "supertest";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
+import {
+	createE2eApp,
+	destroyE2eApp,
+	type E2eTestContext,
+	type VerifiedUser,
+} from "./helpers";
 
 describe("Notification (e2e)", () => {
 	let ctx: E2eTestContext;
@@ -30,17 +35,10 @@ describe("Notification (e2e)", () => {
 		const userEmail = "notification-user@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string };
+		let user: VerifiedUser;
 
 		beforeAll(async () => {
-			const verified = await ctx.helpers.createVerifiedUser(
-				userEmail,
-				password,
-			);
-			user = {
-				accessToken: verified.accessToken,
-				userId: verified.userId,
-			};
+			user = await ctx.helpers.createVerifiedUser(userEmail, password);
 		});
 
 		describe("POST /notifications/token - 푸시 토큰 등록", () => {
@@ -173,17 +171,10 @@ describe("Notification (e2e)", () => {
 		const userEmail = "notification-list-user@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string };
+		let user: VerifiedUser;
 
 		beforeAll(async () => {
-			const verified = await ctx.helpers.createVerifiedUser(
-				userEmail,
-				password,
-			);
-			user = {
-				accessToken: verified.accessToken,
-				userId: verified.userId,
-			};
+			user = await ctx.helpers.createVerifiedUser(userEmail, password);
 		});
 
 		describe("GET /notifications - 알림 목록 조회", () => {
@@ -675,17 +666,10 @@ describe("Notification (e2e)", () => {
 		const userEmail = "notification-read-user@example.com";
 		const password = "Test1234!";
 
-		let user: { accessToken: string; userId: string };
+		let user: VerifiedUser;
 
 		beforeAll(async () => {
-			const verified = await ctx.helpers.createVerifiedUser(
-				userEmail,
-				password,
-			);
-			user = {
-				accessToken: verified.accessToken,
-				userId: verified.userId,
-			};
+			user = await ctx.helpers.createVerifiedUser(userEmail, password);
 		});
 
 		describe("PATCH /notifications/:id/read - 단일 알림 읽음 처리", () => {
