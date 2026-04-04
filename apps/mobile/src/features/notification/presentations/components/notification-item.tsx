@@ -49,7 +49,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
 
     // 4. 타입 + context 기반 내부 라우팅
     const route = NotificationPolicy.internalRoute(notification);
-    if (route) router.push(route as Href);
+    if (route) router.navigate(route as Href);
   };
 
   return (

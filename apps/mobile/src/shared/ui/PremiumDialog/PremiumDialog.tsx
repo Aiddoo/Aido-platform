@@ -15,7 +15,7 @@ export function PremiumDialog({
   const handleSubscribe = () => {
     onOpenChange(false);
     onConfirm?.();
-    router.push('/settings/subscription');
+    router.navigate('/settings/subscription');
   };
 
   return (
