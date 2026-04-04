@@ -11,7 +11,7 @@ export const NotificationBell = () => {
   const hasUnread = (unreadCount ?? 0) > 0;
 
   return (
-    <Pressable onPress={() => router.push('/notifications')} hitSlop={8} className="p-2">
+    <Pressable onPress={() => router.navigate('/notifications')} hitSlop={8} className="p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-9" />
       {hasUnread && <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-main" />}
     </Pressable>
