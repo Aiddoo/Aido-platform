@@ -16,7 +16,7 @@
 
 ## 개요
 
-통�� 테스트는 두 가지 유형으로 나뉩니다:
+통합 테스트는 두 가지 유형으로 나뉩니다:
 
 | 유형 | DB | 도구 | 목적 | 예시 |
 |------|-----|------|------|------|
@@ -52,7 +52,7 @@ test/
 |------|--------|------|
 | `createMockDatabaseService()` | `@test/mocks/mock-database.factory` | DB Mock + `$transaction` 자동 설정 |
 | `suppressLogger()` | `@test/setup/suppress-logger` | Logger 출력 억제 |
-| Builder | `@test/builders` | 테스트 데��터 생성 |
+| Builder | `@test/builders` | 테스트 데이터 생성 |
 
 ### 전체 템플릿
 
@@ -136,7 +136,7 @@ describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
 ```typescript
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 
-// 필요한 모델만 전달 — $transaction은 ��동 설정됨
+// 필요한 모델만 전달 — $transaction은 자동 설정됨
 const mockDb = createMockDatabaseService({
   todo: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), delete: jest.fn() },
   todoCategory: { findUnique: jest.fn() },
@@ -168,7 +168,7 @@ const mockDb = createMockDatabaseService({
 );
 ```
 
-> **참고**: 통합 테스트에서는 `createMockDatabaseService()`가 `$transaction`을 자동 설정하므로 txProxy가 불필요합니다. txProxy 패턴은 단위 테스��에서만 사용합니다.
+> **참고**: 통합 테스트에서는 `createMockDatabaseService()`가 `$transaction`을 자동 설정하므로 txProxy가 불필요합니다. txProxy 패턴은 단위 테스트에서만 사용합니다.
 
 ---
 
@@ -179,8 +179,8 @@ const mockDb = createMockDatabaseService({
 | 도구 | import | 역할 |
 |------|--------|------|
 | `TestDatabase` | `@test/setup/test-database` | Testcontainers PostgreSQL 관리 |
-| `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토��� |
-| `suppressLogger()` | `@test/setup/suppress-logger` | Logger ���력 억제 |
+| `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토리 |
+| `suppressLogger()` | `@test/setup/suppress-logger` | Logger 출력 억제 |
 | `FakeEmailService` | `@test/mocks/fake-email.service` | 이메일 발송 Mock |
 
 ### Auth 모듈 팩토리 사용 (password-setup, password-change, password-reset)
@@ -286,7 +286,7 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 ### DO
 
 - ✅ Mock DB: `createMockDatabaseService()` 팩토리 사용
-- ��� 실제 DB Auth: `createAuthTestModule()` 팩토리 사용
+- ✅ 실제 DB Auth: `createAuthTestModule()` 팩토리 사용
 - ✅ 모든 파일에서 `suppressLogger()` 호출
 - ✅ `beforeAll`에서 TestingModule 생성 (성능)
 - ✅ Builder 패턴으로 mock 반환값 생성
@@ -296,7 +296,7 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 
 ### DON'T
 
-- ❌ 직접 `$transaction` mock 구현 → `createMockDatabaseService()` 사��
+- ❌ 직접 `$transaction` mock 구현 → `createMockDatabaseService()` 사용
 - ❌ 직접 `Logger.prototype` spy → `suppressLogger()` 사용
 - ❌ HTTP 요청 테스트 (E2E에서 담당)
 - ❌ 테스트 간 상태 공유
@@ -306,4 +306,4 @@ pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
 ---
 
 **문서 버전**: 4.0.0
-**최종 수정���**: 2026-04-05
+**최종 수정일**: 2026-04-05
