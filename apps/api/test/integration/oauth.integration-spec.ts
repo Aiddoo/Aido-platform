@@ -438,11 +438,11 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.userId).toBeDefined();
 			expect(result.name).toBe("Kakao User");
 
-			// Kakao는 이메일 미인증 상태로 생성될 수 있음
+			// 소셜 로그인 유저는 항상 ACTIVE로 생성됨
 			const user = await databaseService.user.findUnique({
 				where: { id: result.userId },
 			});
-			expect(user?.status).toBe("PENDING_VERIFY"); // emailVerified가 false
+			expect(user?.status).toBe("ACTIVE");
 		});
 
 		it("Kakao 로그인 시 이메일이 없어도 처리할 수 있어야 한다", async () => {
@@ -1416,7 +1416,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const user = await databaseService.user.findUnique({
 				where: { id: firstResult.userId },
 			});
-			expect(user?.status).toBe("PENDING_VERIFY");
+			expect(user?.status).toBe("ACTIVE");
 
 			// 두 번째 로그인도 허용되어야 함
 			const secondResult = await oauthService.handleKakaoMobileLogin(token);
