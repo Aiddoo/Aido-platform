@@ -161,9 +161,7 @@ function groupByTitleAndWeek(
 function countConsecutiveWeeks(sortedWeeks: number[]): number {
 	let count = 1;
 	for (let i = sortedWeeks.length - 1; i > 0; i--) {
-		const current = sortedWeeks[i] ?? 0;
-		const previous = sortedWeeks[i - 1] ?? 0;
-		if (current - previous === 1) {
+		if (sortedWeeks[i]! - sortedWeeks[i - 1]! === 1) {
 			count++;
 		} else {
 			break;
