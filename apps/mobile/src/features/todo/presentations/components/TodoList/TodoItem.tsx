@@ -29,7 +29,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
   const todoActions = useTodoActions(todo);
   const subTodoActions = useSubTodoActions(todo);
   const overlay = useOverlay();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const isOptimistic = todo.optimistic;
 
