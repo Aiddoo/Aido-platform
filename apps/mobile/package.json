@@ -119,7 +119,7 @@
     "jest": "catalog:",
     "jest-expo": "~55.0.13",
     "react-native-svg-transformer": "^1.5.2",
-    "react-test-renderer": "19.2.0",
+    "react-test-renderer": "19.2.4",
     "typescript": "catalog:"
   },
   "expo": {
