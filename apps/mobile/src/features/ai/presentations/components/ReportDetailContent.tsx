@@ -261,7 +261,7 @@ function AiTipsSection({ tips }: { tips: string[] }) {
       </Text>
 
       {tips.map((tip, index) => (
-        <HStack key={`${index}-${tip.slice(0, 10)}`} gap={8} className="items-start">
+        <HStack key={tip} gap={8} className="items-start">
           <Text size="b4" weight="bold" tone="brand">
             {index + 1}.
           </Text>

@@ -34,5 +34,5 @@ export const ActionChip = ({ icon, label, isActive = false, onPress }: ActionChi
   );
 };
 
-export { ICON_SIZE as ACTION_CHIP_ICON_SIZE };
 export type { ActionChipProps };
+export { ICON_SIZE as ACTION_CHIP_ICON_SIZE };
