@@ -23,7 +23,7 @@ import {
 import type { TokenPair } from "./token.service";
 import { TokenService } from "./token.service";
 
-describe("SessionService", () => {
+describe("SessionService — 세션 서비스", () => {
 	let service: SessionService;
 	let sessionRepo: Mocked<SessionRepository>;
 	let tokenService: Mocked<TokenService>;
@@ -59,10 +59,6 @@ describe("SessionService", () => {
 		sessionRepo = unitRef.get(SessionRepository);
 		tokenService = unitRef.get(TokenService);
 	});
-
-	// ============================================
-	// createSessionWithTokens
-	// ============================================
 
 	describe("createSessionWithTokens", () => {
 		/**
@@ -272,10 +268,6 @@ describe("SessionService", () => {
 			);
 		});
 	});
-
-	// ============================================
-	// assertSessionValid
-	// ============================================
 
 	describe("assertSessionValid", () => {
 		it("세션이 null이면 sessionNotFound를 던진다", () => {

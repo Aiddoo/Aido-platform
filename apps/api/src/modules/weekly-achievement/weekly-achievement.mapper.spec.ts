@@ -1,12 +1,19 @@
+/**
+ * WeeklyAchievementMapper 매퍼 단위 테스트
+ *
+ * @description
+ * WeeklyAchievementMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-achievement.mapper
+ * ```
+ */
 import type { WeeklyAchievement } from "@/generated/prisma/client";
 import type { WeeklyAchievementRecord } from "./types/weekly-achievement.types";
 import { WeeklyAchievementMapper } from "./weekly-achievement.mapper";
 
-describe("WeeklyAchievementMapper", () => {
-	// ============================================
-	// computeWeekLabel
-	// ============================================
-
+describe("WeeklyAchievementMapper — 주간 성취 매퍼", () => {
 	describe("computeWeekLabel", () => {
 		it("일반 주차의 라벨을 생성한다", () => {
 			// Given - 2026년 10주차 (목요일: 3월 5일)
@@ -37,10 +44,6 @@ describe("WeeklyAchievementMapper", () => {
 		});
 	});
 
-	// ============================================
-	// computeDateRange
-	// ============================================
-
 	describe("computeDateRange", () => {
 		it("월요일~일요일 범위를 반환한다", () => {
 			// Given - 2026년 10주차
@@ -68,10 +71,6 @@ describe("WeeklyAchievementMapper", () => {
 			expect(range.endDate).toBe("2026-03-08");
 		});
 	});
-
-	// ============================================
-	// computeStreak
-	// ============================================
 
 	describe("computeStreak", () => {
 		it("빈 배열이면 0을 반환한다", () => {
@@ -180,10 +179,6 @@ describe("WeeklyAchievementMapper", () => {
 		});
 	});
 
-	// ============================================
-	// computeSummary
-	// ============================================
-
 	describe("computeSummary", () => {
 		it("빈 배열이면 모든 값이 0이다", () => {
 			// When
@@ -218,10 +213,6 @@ describe("WeeklyAchievementMapper", () => {
 			expect(summary.bestStreak).toBe(3);
 		});
 	});
-
-	// ============================================
-	// toResponse
-	// ============================================
 
 	describe("toResponse", () => {
 		it("엔티티를 DTO로 변환한다", () => {
@@ -263,10 +254,6 @@ describe("WeeklyAchievementMapper", () => {
 		});
 	});
 });
-
-// ============================================
-// 헬퍼
-// ============================================
 
 function mockEntity(overrides?: Partial<WeeklyAchievement>): WeeklyAchievement {
 	return {

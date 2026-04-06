@@ -1,3 +1,14 @@
+/**
+ * AiUsageGuard 가드 단위 테스트
+ *
+ * @description
+ * AiUsageGuard의 인가 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test ai-usage.guard
+ * ```
+ */
 import type { CurrentUserPayload } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -7,13 +18,9 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { AiService, type UsageInfo } from "../ai.service";
 import { AiUsageGuard } from "./ai-usage.guard";
 
-describe("AiUsageGuard", () => {
+describe("AiUsageGuard — AI 사용량 가드", () => {
 	let guard: AiUsageGuard;
 	let aiService: Mocked<AiService>;
-
-	// ==========================================================================
-	// Mock Factory Functions
-	// ==========================================================================
 
 	const createMockUsage = (used: number, limit: number | null): UsageInfo => ({
 		used,
@@ -28,20 +35,12 @@ describe("AiUsageGuard", () => {
 		role: "USER",
 	};
 
-	// ==========================================================================
-	// Setup
-	// ==========================================================================
-
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AiUsageGuard).compile();
 
 		guard = unit;
 		aiService = unitRef.get(AiService);
 	});
-
-	// ==========================================================================
-	// canActivate
-	// ==========================================================================
 
 	describe("canActivate", () => {
 		it("사용자가 인증되고 사용량이 제한 미만이면 true를 반환해야 한다", async () => {

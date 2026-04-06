@@ -15,7 +15,7 @@ import type { WeatherConditions } from "./providers/weather-provider.interface";
 import { WeatherService } from "./services/weather.service";
 import { WeatherController } from "./weather.controller";
 
-describe("WeatherController", () => {
+describe("WeatherController — 날씨 컨트롤러", () => {
 	let controller: WeatherController;
 	let weatherService: Mocked<WeatherService>;
 
@@ -35,10 +35,6 @@ describe("WeatherController", () => {
 		controller = unit;
 		weatherService = unitRef.get(WeatherService);
 	});
-
-	// ========================================
-	// updateLocation
-	// ========================================
 
 	describe("updateLocation", () => {
 		it("위치를 등록하고 격자 좌표를 포함한 결과를 반환해야 한다", async () => {
@@ -64,10 +60,6 @@ describe("WeatherController", () => {
 			});
 		});
 	});
-
-	// ========================================
-	// getForecast
-	// ========================================
 
 	describe("getForecast", () => {
 		it("날짜 미지정 시 오늘 기준으로 예보를 조회해야 한다", async () => {
@@ -138,10 +130,6 @@ describe("WeatherController", () => {
 			expect(result.skyCondition).toBe("CLOUDY");
 		});
 	});
-
-	// ========================================
-	// getConditions
-	// ========================================
 
 	describe("getConditions", () => {
 		it("부가 정보를 조회해야 한다", async () => {

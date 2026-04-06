@@ -1,3 +1,14 @@
+/**
+ * NotificationQueueProcessor 잡/프로세서 단위 테스트
+ *
+ * @description
+ * NotificationQueueProcessor의 비동기 작업 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test notification-queue.processor
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
@@ -19,10 +30,6 @@ import {
 } from "./notification-queue.constants";
 import { NotificationQueueProcessor } from "./notification-queue.processor";
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 function createMockJob<T extends NotificationJobData>(
 	name: string,
 	data: T,
@@ -30,11 +37,7 @@ function createMockJob<T extends NotificationJobData>(
 	return { name, data, id: `job-${name}` } as unknown as Job<T>;
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("NotificationQueueProcessor", () => {
+describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let processor: NotificationQueueProcessor;
 	let notificationService: Mocked<NotificationService>;
 	let database: Mocked<DatabaseService>;
@@ -54,10 +57,6 @@ describe("NotificationQueueProcessor", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
-
-	// =========================================================================
-	// follow-new
-	// =========================================================================
 
 	describe("follow-new", () => {
 		it("FOLLOW_NEW 타입으로 createAndSendWithDedup을 호출한다", async () => {
@@ -100,10 +99,6 @@ describe("NotificationQueueProcessor", () => {
 		});
 	});
 
-	// =========================================================================
-	// follow-mutual
-	// =========================================================================
-
 	describe("follow-mutual", () => {
 		it("FOLLOW_ACCEPTED 타입으로 createAndSendWithDedup을 호출한다", async () => {
 			// Given
@@ -144,10 +139,6 @@ describe("NotificationQueueProcessor", () => {
 			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// nudge-sent
-	// =========================================================================
 
 	describe("nudge-sent", () => {
 		it("메시지 없이 NUDGE_RECEIVED 알림을 생성한다", async () => {
@@ -223,10 +214,6 @@ describe("NotificationQueueProcessor", () => {
 			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// cheer-sent
-	// =========================================================================
 
 	describe("cheer-sent", () => {
 		it("메시지가 있으면 CHEER_RECEIVED 알림에 metadata를 포함한다", async () => {
@@ -306,10 +293,6 @@ describe("NotificationQueueProcessor", () => {
 		});
 	});
 
-	// =========================================================================
-	// billing-issue
-	// =========================================================================
-
 	describe("billing-issue", () => {
 		it("SYSTEM_NOTICE 타입으로 createAndSend를 호출한다", async () => {
 			// Given
@@ -341,10 +324,6 @@ describe("NotificationQueueProcessor", () => {
 			await expect(processor.process(job)).rejects.toThrow("DB error");
 		});
 	});
-
-	// =========================================================================
-	// friend-completed
-	// =========================================================================
 
 	describe("friend-completed", () => {
 		const friendCompletedData: FriendCompletedJobData = {
@@ -490,10 +469,6 @@ describe("NotificationQueueProcessor", () => {
 		});
 	});
 
-	// =========================================================================
-	// milestone-reached
-	// =========================================================================
-
 	describe("milestone-reached", () => {
 		const milestoneData: MilestoneReachedJobData = {
 			userId: "user-milestone",
@@ -558,10 +533,6 @@ describe("NotificationQueueProcessor", () => {
 			await expect(processor.process(job)).resolves.not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// unknown job
-	// =========================================================================
 
 	describe("unknown job", () => {
 		it("알 수 없는 잡 이름은 경고만 출력한다", async () => {

@@ -1,3 +1,16 @@
+/**
+ * AccountPurgeJob 단위 테스트
+ *
+ * @description
+ * 계정 정리 잡의 스케줄러 등록, catch-up, hard delete 로직을 검증한다.
+ * 유예 기간 경과 사용자 삭제, 개별 실패 시 나머지 처리 계속을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test account-purge.job.spec.ts
+ * ```
+ */
+
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -14,7 +27,7 @@ import { SecurityLogRepository } from "../repositories/security-log.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AccountPurgeJob } from "./account-purge.job";
 
-describe("AccountPurgeJob", () => {
+describe("AccountPurgeJob — 계정 삭제 잡", () => {
 	let job: AccountPurgeJob;
 	let userRepo: Mocked<UserRepository>;
 	let securityLogRepo: Mocked<SecurityLogRepository>;
@@ -42,10 +55,6 @@ describe("AccountPurgeJob", () => {
 	afterEach(() => {
 		jest.useRealTimers();
 	});
-
-	// =========================================================================
-	// onModuleInit 스케줄러 등록
-	// =========================================================================
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 일일 계정 정리 스케줄러를 등록해야 한다", async () => {
@@ -75,10 +84,6 @@ describe("AccountPurgeJob", () => {
 		});
 	});
 
-	// =========================================================================
-	// catch-up on startup
-	// =========================================================================
-
 	describe("catch-up on startup", () => {
 		it("03:00 이후 시작 시 purge 잡을 추가해야 한다", async () => {
 			// Given — 05:00 KST
@@ -106,10 +111,6 @@ describe("AccountPurgeJob", () => {
 			expect(mockQueue.add).not.toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// purgeDeletedAccounts
-	// =========================================================================
 
 	it("유예 기간이 지난 사용자를 hard delete 한다", async () => {
 		// Given

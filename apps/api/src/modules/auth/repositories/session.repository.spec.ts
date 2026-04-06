@@ -1,3 +1,16 @@
+/**
+ * SessionRepository 단위 테스트
+ *
+ * @description
+ * 세션 저장소의 CRUD, 토큰 로테이션, 폐기 메서드를 검증한다.
+ * 트랜잭션 지원, 버전 기반 낙관적 잠금, 만료 삭제를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test session.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SessionBuilder } from "@test/builders";
@@ -6,7 +19,7 @@ import { DatabaseService } from "@/database";
 
 import { SessionRepository } from "./session.repository";
 
-describe("SessionRepository", () => {
+describe("SessionRepository — 세션 리포지토리", () => {
 	let repository: SessionRepository;
 	let db: Mocked<DatabaseService>;
 

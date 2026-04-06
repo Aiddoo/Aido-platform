@@ -1,3 +1,14 @@
+/**
+ * DailyCompletionRepository 리포지토리 단위 테스트
+ *
+ * @description
+ * DailyCompletionRepository의 데이터 접근 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test daily-completion.repository
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -5,7 +16,7 @@ import { DatabaseService } from "@/database";
 
 import { DailyCompletionRepository } from "./daily-completion.repository";
 
-describe("DailyCompletionRepository", () => {
+describe("DailyCompletionRepository — 일일 달성 리포지토리", () => {
 	let repository: DailyCompletionRepository;
 	let db: Mocked<DatabaseService>;
 

@@ -52,16 +52,15 @@ export const getCategoryLabel = (type: NotificationType): string =>
     .with('NUDGE_RECEIVED', () => '콕 찌르기')
     .with('CHEER_RECEIVED', () => '응원')
     .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => '달성')
-    .with('TODO_REMINDER', 'TODO_SHARED', 'WINBACK', () => '할일')
     .with(
-      'MORNING_REMINDER',
-      'EVENING_REMINDER',
-      'LUNCH_NUDGE',
-      'STREAK_AT_RISK',
+      'TODO_REMINDER',
+      'TODO_SHARED',
+      'WINBACK',
       'WEATHER_MORNING',
       'WEATHER_EVENING',
-      () => '리마인더',
+      () => '할일',
     )
+    .with('MORNING_REMINDER', 'EVENING_REMINDER', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => '리마인더')
     .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'AI')
     .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => '공지')
     .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => '소셜')

@@ -16,11 +16,7 @@ import { DatabaseService } from "@/database/database.service";
 
 import { NudgeRepository } from "./nudge.repository";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("NudgeRepository", () => {
+describe("NudgeRepository — 찔러보기 리포지토리", () => {
 	let repository: NudgeRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -33,10 +29,6 @@ describe("NudgeRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// =========================================================================
-	// 기본 CRUD
-	// =========================================================================
 
 	describe("findById", () => {
 		it("ID로 Nudge를 조회한다", async () => {
@@ -88,10 +80,6 @@ describe("NudgeRepository", () => {
 			expect(result.readAt).not.toBeNull();
 		});
 	});
-
-	// =========================================================================
-	// 목록 조회
-	// =========================================================================
 
 	describe("findReceivedNudges", () => {
 		it("받은 Nudge 목록을 조회한다", async () => {
@@ -184,10 +172,6 @@ describe("NudgeRepository", () => {
 			expect(result).toEqual(mockNudges);
 		});
 	});
-
-	// =========================================================================
-	// 제한 및 쿨다운 체크
-	// =========================================================================
 
 	describe("countTodayNudges", () => {
 		it("오늘 보낸 Nudge 수를 조회한다", async () => {

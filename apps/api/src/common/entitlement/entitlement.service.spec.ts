@@ -33,11 +33,7 @@ import {
 	type ResourceEntitlement,
 } from "./entitlement.service";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("EntitlementService", () => {
+describe("EntitlementService — 권한 관리 서비스", () => {
 	let service: EntitlementService;
 	let cacheService: Mocked<CacheService>;
 	let database: Mocked<DatabaseService>;
@@ -52,10 +48,6 @@ describe("EntitlementService", () => {
 		cacheService = unitRef.get(CacheService);
 		database = unitRef.get(DatabaseService);
 	});
-
-	// =========================================================================
-	// getFeatureLimit (캐시 우선 조회)
-	// =========================================================================
 
 	describe("getFeatureLimit", () => {
 		describe("ADMIN 역할", () => {
@@ -240,10 +232,6 @@ describe("EntitlementService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getFeatureLimitInTx (트랜잭션 내 조회)
-	// =========================================================================
-
 	describe("getFeatureLimitInTx", () => {
 		let txMock: {
 			user: {
@@ -393,10 +381,6 @@ describe("EntitlementService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getResourceLimit (리소스 보유량 제한)
-	// =========================================================================
-
 	describe("getResourceLimit", () => {
 		describe("ADMIN 역할", () => {
 			it.each([
@@ -497,10 +481,6 @@ describe("EntitlementService", () => {
 		});
 	});
 
-	// =========================================================================
-	// hasPremiumAccess (프리미엄 접근 권한)
-	// =========================================================================
-
 	describe("hasPremiumAccess", () => {
 		it("ADMIN 역할은 true를 반환한다", async () => {
 			// Given
@@ -572,10 +552,6 @@ describe("EntitlementService", () => {
 			expect(result).toBe(false);
 		});
 	});
-
-	// =========================================================================
-	// enforceResourceLimit
-	// =========================================================================
 
 	describe("enforceResourceLimit", () => {
 		const errorFactory = (current: number, limit: number) =>

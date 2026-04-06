@@ -142,10 +142,6 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 		UserLocationBuilder.resetIdCounter();
 	});
 
-	// ========================================
-	// DI 통합 검증
-	// ========================================
-
 	describe("DI 통합", () => {
 		it("WeatherService가 정상적으로 생성되어야 한다", () => {
 			// Then
@@ -157,10 +153,6 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			expect(repository).toBeDefined();
 		});
 	});
-
-	// ========================================
-	// upsertLocation
-	// ========================================
 
 	describe("upsertLocation", () => {
 		it("위치를 등록하고 결과를 반환해야 한다", async () => {
@@ -177,10 +169,6 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			expect(mockUserLocationDb.upsert).toHaveBeenCalled();
 		});
 	});
-
-	// ========================================
-	// getForecastForUser
-	// ========================================
 
 	describe("getForecastForUser", () => {
 		it("위치가 등록된 사용자의 예보를 조회해야 한다", async () => {
@@ -207,10 +195,6 @@ describe("WeatherService 통합 테스트 (Mock DB)", () => {
 			).rejects.toThrow(BusinessException);
 		});
 	});
-
-	// ========================================
-	// getConditionsForUser
-	// ========================================
 
 	describe("getConditionsForUser", () => {
 		it("위치가 등록된 사용자의 부가 정보를 조회해야 한다", async () => {

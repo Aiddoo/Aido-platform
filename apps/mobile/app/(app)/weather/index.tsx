@@ -261,13 +261,13 @@ function WeatherLocation({ latitude, longitude }: LocationCoords) {
 
 function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
+  const showPrecipitation = WeatherPolicy.shouldShowPrecipitation(forecast);
   const ForecastIcon =
-    resolveIconByPrecipitation(forecast.precipitationType) ??
+    (showPrecipitation && resolveIconByPrecipitation(forecast.precipitationType)) ||
     resolveIconBySky(forecast.skyCondition);
-  const forecastIconColor =
-    forecast.precipitationType === 'NONE'
-      ? resolveSkyIconColor(forecast.skyCondition, palette.text)
-      : palette.text;
+  const forecastIconColor = showPrecipitation
+    ? palette.text
+    : resolveSkyIconColor(forecast.skyCondition, palette.text);
   const currentTemp = forecast.currentTemperature;
 
   return (
@@ -298,7 +298,9 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) 
       <HStack gap={8} align="center" className="mt-2">
         <ForecastIcon width={18} height={18} color={forecastIconColor} />
         <Text size="b2" weight="semibold" style={{ color: palette.text }}>
-          {SKY_CONDITION_LABEL[forecast.skyCondition]}
+          {showPrecipitation
+            ? PRECIPITATION_TYPE_LABEL[forecast.precipitationType]
+            : SKY_CONDITION_LABEL[forecast.skyCondition]}
         </Text>
       </HStack>
 

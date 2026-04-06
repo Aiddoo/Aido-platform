@@ -1,8 +1,19 @@
+/**
+ * TodoMapper 매퍼 단위 테스트
+ *
+ * @description
+ * TodoMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test todo.mapper
+ * ```
+ */
 import { TodoBuilder } from "@test/builders";
 import type { TodoItemData } from "@/modules/todo/types/todo.types";
 import { TodoMapper } from "./todo.mapper";
 
-describe("TodoMapper", () => {
+describe("TodoMapper — 할 일 매퍼", () => {
 	beforeEach(() => {
 		TodoBuilder.resetIdCounter();
 	});

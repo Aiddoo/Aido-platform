@@ -1,3 +1,14 @@
+/**
+ * WinbackStrategy 전략 단위 테스트
+ *
+ * @description
+ * WinbackStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test winback.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -11,11 +22,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WinbackStrategy } from "./winback.strategy";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("WinbackStrategy", () => {
+describe("WinbackStrategy — 윈백 전략", () => {
 	let strategy: WinbackStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -64,11 +71,8 @@ describe("WinbackStrategy", () => {
 		jest.useRealTimers();
 	});
 
-	// =========================================================================
-	// 단계별 Win-back 발송
-	// =========================================================================
-
 	it("7일 미접속 유저에게 day7 Win-back을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
@@ -76,8 +80,10 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: sevenDaysAgo },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -93,6 +99,7 @@ describe("WinbackStrategy", () => {
 	});
 
 	it("14일 미접속 유저에게 day14 Win-back을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const fourteenDaysAgo = dayjs.utc("2024-01-02").startOf("day").toDate();
 
@@ -100,8 +107,10 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: fourteenDaysAgo },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -115,6 +124,7 @@ describe("WinbackStrategy", () => {
 	});
 
 	it("21일 미접속 유저에게 day21 Win-back을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const twentyOneDaysAgo = dayjs.utc("2023-12-26").startOf("day").toDate();
 
@@ -122,8 +132,10 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: twentyOneDaysAgo },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -139,6 +151,7 @@ describe("WinbackStrategy", () => {
 	});
 
 	it("30일 미접속 유저에게 day30 Win-back을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const thirtyDaysAgo = dayjs.utc("2023-12-17").startOf("day").toDate();
 
@@ -146,8 +159,10 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: thirtyDaysAgo },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -163,6 +178,7 @@ describe("WinbackStrategy", () => {
 	});
 
 	it("3일 미접속 유저에게 day3 Win-back을 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const threeDaysAgo = dayjs.utc("2024-01-13").startOf("day").toDate();
 
@@ -170,8 +186,10 @@ describe("WinbackStrategy", () => {
 			{ id: "user-1", lastActiveAt: threeDaysAgo },
 		] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		const notifications =
@@ -184,11 +202,8 @@ describe("WinbackStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 단계별 중복 방지
-	// =========================================================================
-
 	it("이미 같은 단계를 발송했으면 스킵한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
@@ -199,17 +214,16 @@ describe("WinbackStrategy", () => {
 		// 이미 day7 단계 발송 이력 (Redis)
 		dedupProvider.isMember.mockResolvedValueOnce(true);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 오늘 WINBACK 중복 방지
-	// =========================================================================
-
 	it("오늘 이미 WINBACK을 받은 유저는 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 		const sevenDaysAgo = dayjs.utc("2024-01-09").startOf("day").toDate();
 
@@ -221,23 +235,24 @@ describe("WinbackStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});

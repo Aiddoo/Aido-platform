@@ -17,12 +17,18 @@ interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
 }
 
+export interface NotificationResponseOptions {
+  /** true면 router.replace()로 현재 화면을 교체 (cold start 용) */
+  replace?: boolean;
+}
+
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const logger = useLogger();
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastNavigationTimeRef = useRef(0);
 
   // ref로 최신 auth 상태를 추적하여 deferred 실행 시 stale closure 방지
   const isAuthenticatedRef = useRef(isAuthenticated);
@@ -31,7 +37,15 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
   }, [isAuthenticated]);
 
   const handleNotificationResponse = useCallback(
-    async (response: Notifications.NotificationResponse): Promise<void> => {
+    async (
+      response: Notifications.NotificationResponse,
+      options?: NotificationResponseOptions,
+    ): Promise<void> => {
+      // 0. 연타 방지: 500ms 잠금 (모든 사이드 이펙트 실행 전 차단)
+      const now = Date.now();
+      if (now - lastNavigationTimeRef.current < 500) return;
+      lastNavigationTimeRef.current = now;
+
       const rawData = response.notification.request.content.data;
 
       // 1. Zod 검증으로 타입 안정성 확보
@@ -86,7 +100,11 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
             data.action?.url ?? getInternalRoute(data.type as NotificationType, data.context);
 
           if (route) {
-            router.push(route as Href);
+            if (options?.replace) {
+              router.replace(route as Href);
+            } else {
+              router.navigate(route as Href);
+            }
           }
         });
     },

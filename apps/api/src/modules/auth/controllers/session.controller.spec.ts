@@ -1,11 +1,14 @@
 /**
  * SessionController 단위 테스트
  *
- * Suites + GWT 패턴 적용
- * - Suites: TestBed.solitary()로 자동 Mock 생성
- * - GWT: Given/When/Then 주석으로 테스트 구조화
+ * @description
+ * 세션 컨트롤러의 활성 세션 목록 조회, 세션 종료 엔드포인트를 검증한다.
+ * 현재 세션 표시(isCurrent), 서비스 위임을 확인한다.
  *
- * @see https://docs.nestjs.com/recipes/suites
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test session.controller.spec.ts
+ * ```
  */
 
 import type { Mocked } from "@suites/doubles.jest";
@@ -17,7 +20,7 @@ import type { CurrentUserPayload } from "@/modules/auth/decorators";
 import { AuthService } from "../services/auth.service";
 import { SessionController } from "./session.controller";
 
-describe("SessionController", () => {
+describe("SessionController — 세션 컨트롤러", () => {
 	let controller: SessionController;
 	let mockAuthService: Mocked<AuthService>;
 

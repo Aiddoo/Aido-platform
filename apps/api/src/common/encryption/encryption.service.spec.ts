@@ -1,7 +1,18 @@
+/**
+ * EncryptionService 단위 테스트
+ *
+ * @description
+ * EncryptionService의 개별 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test encryption.service
+ * ```
+ */
 import type { TypedConfigService } from "@/common/config/services/config.service";
 import { EncryptionService } from "./encryption.service";
 
-describe("EncryptionService", () => {
+describe("EncryptionService — 암호화 서비스", () => {
 	let service: EncryptionService;
 
 	beforeEach(() => {

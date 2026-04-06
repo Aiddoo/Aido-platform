@@ -20,7 +20,7 @@ import {
 } from "./admin-notification-queue.constants";
 import { AdminNotificationProcessor } from "./admin-notification-queue.processor";
 
-describe("AdminNotificationProcessor", () => {
+describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 	let processor: AdminNotificationProcessor;
 	let adminNotifier: { send: jest.Mock };
 	let paymentNotifier: { send: jest.Mock };
@@ -58,20 +58,12 @@ describe("AdminNotificationProcessor", () => {
 		} as unknown as Job<AdminNotificationJobData>;
 	}
 
-	// =========================================================================
-	// Stalled 이벤트
-	// =========================================================================
-
 	describe("onStalled", () => {
 		it("stalled 발생 시 에러 없이 처리해야 한다", () => {
 			// When & Then: 에러 없이 호출되어야 한다
 			expect(() => processor.onStalled("test-job-id")).not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// 채널 라우팅
-	// =========================================================================
 
 	describe("채널 라우팅", () => {
 		it("admin 채널 → ADMIN_NOTIFIER로 발송해야 한다", async () => {
@@ -109,10 +101,6 @@ describe("AdminNotificationProcessor", () => {
 		});
 	});
 
-	// =========================================================================
-	// 성공/실패 처리
-	// =========================================================================
-
 	describe("성공/실패 처리", () => {
 		it("send 성공 시 정상 완료해야 한다", async () => {
 			// Given
@@ -142,10 +130,6 @@ describe("AdminNotificationProcessor", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// dispatch-signup-summary
-	// =========================================================================
 
 	describe("dispatch-signup-summary", () => {
 		it("DailySignupSummaryJob.handleDailySummary()를 호출해야 한다", async () => {
@@ -180,10 +164,6 @@ describe("AdminNotificationProcessor", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// unknown job
-	// =========================================================================
 
 	describe("unknown job", () => {
 		it("알 수 없는 잡 이름은 경고만 출력한다", async () => {

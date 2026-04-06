@@ -97,7 +97,64 @@ describe("Todo E2E", () => {
     await ctx.testDatabase.cleanup();
     ctx.fakeEmailService.clear();
   });
+
+  describe("Todo 생성", () => {
+    it("새 Todo를 생성해야 한다", async () => {
+      // Given - 매 테스트마다 데이터를 새로 생성
+      const user = await ctx.helpers.createVerifiedUser("todo@test.com", "Test1234!");
+      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+
+      // When - Todo 생성 요청
+      const response = await request(ctx.app.getHttpServer())
+        .post("/todos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ title: "E2E Test", categoryId })
+        .expect(201);
+
+      // Then - 성공 검증
+      expect(response.body.success).toBe(true);
+    });
+  });
 });
+```
+
+### 데이터 격리 전략 (Per-Test Isolation)
+
+모든 E2E 테스트는 **매 테스트마다 clean state**에서 시작합니다.
+
+- `beforeEach`에서 `ctx.testDatabase.cleanup()` + `ctx.fakeEmailService.clear()` **필수 호출**
+- 각 `it` 블록이 필요한 유저/데이터를 **자체적으로 생성** (shared state 없음)
+- 순차 의존성이 있는 테스트(CRUD 플로우 등)는 **하나의 `it` 블록으로 합침**
+- `describe` 스코프의 `let` 변수로 상태 공유 금지 (`ctx` 제외)
+
+```typescript
+// ✅ 올바른 패턴: 매 테스트가 독립적
+it("Todo CRUD 전체 플로우", async () => {
+  // Given
+  const user = await ctx.helpers.createVerifiedUser("crud@test.com", "Test1234!");
+  const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+
+  // When - 생성
+  const createRes = await request(ctx.app.getHttpServer())
+    .post("/todos").set("Authorization", `Bearer ${user.accessToken}`)
+    .send({ title: "테스트", categoryId }).expect(201);
+  const todoId = createRes.body.data.todo.id;
+
+  // When - 수정
+  await request(ctx.app.getHttpServer())
+    .patch(`/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
+    .send({ title: "수정됨" }).expect(200);
+
+  // When - 삭제
+  await request(ctx.app.getHttpServer())
+    .delete(`/todos/${todoId}`).set("Authorization", `Bearer ${user.accessToken}`)
+    .expect(200);
+});
+
+// ❌ 잘못된 패턴: 테스트 간 상태 공유
+let createdTodoId: number; // describe 스코프 공유 변수
+it("생성", async () => { createdTodoId = ...; }); // 테스트1에서 생성
+it("수정", async () => { /* createdTodoId 사용 */ }); // 테스트2에서 의존
 ```
 
 ### E2eTestContext 타입
@@ -130,7 +187,7 @@ const ctx = await createE2eApp({
 
 ## E2eHelpers API
 
-### `createVerifiedUser(email, password)` → `VerifiedUser`
+### `createVerifiedUser(email, password, options?)` → `VerifiedUser`
 
 회원가입 + 이메일 인증 + 토큰 반환을 한 번에 처리합니다.
 
@@ -141,8 +198,27 @@ interface VerifiedUser {
   userTag: string;
 }
 
+// 기본 사용
 const user = await ctx.helpers.createVerifiedUser("test@example.com", "Test1234!");
-// user.accessToken, user.userId, user.userTag 사용 가능
+
+// 이름 지정
+const user = await ctx.helpers.createVerifiedUser("test@example.com", "Test1234!", { name: "테스트유저" });
+```
+
+### `registerUser(email, password, options?)` → `void`
+
+회원가입만 수행합니다 (이메일 인증 전 단계).
+
+```typescript
+await ctx.helpers.registerUser("test@example.com", "Test1234!", { name: "테스트유저" });
+```
+
+### `verifyUser(email)` → `string` (accessToken)
+
+이메일 인증을 수행하고 accessToken을 반환합니다.
+
+```typescript
+const accessToken = await ctx.helpers.verifyUser("test@example.com");
 ```
 
 ### `loginUser(email, password)` → `{ accessToken, refreshToken }`
@@ -337,26 +413,29 @@ pnpm --filter @aido/api test:e2e -- -t "회원가입"
 ### DO
 
 - ✅ `createE2eApp()` / `destroyE2eApp()` 팩토리 사용
-- ✅ `E2eHelpers`의 `createVerifiedUser()` 등 사용
-- ✅ `ctx.testDatabase.cleanup()` + `ctx.fakeEmailService.clear()` 매 테스트 전 호출
+- ✅ `E2eHelpers`의 `createVerifiedUser()` 등 공유 헬퍼 사용
+- ✅ **`beforeEach`에서 `ctx.testDatabase.cleanup()` + `ctx.fakeEmailService.clear()` 필수 호출**
+- ✅ 각 `it` 블록에서 필요한 데이터를 자체적으로 생성 (per-test isolation)
+- ✅ 순차 의존 테스트(CRUD 등)는 하나의 `it` 블록으로 합침
 - ✅ GWT 주석으로 테스트 의도 표현
 - ✅ `supertest`로 HTTP 요청
 - ✅ 응답 구조 (`success`, `data`, `error.code`) 검증
 - ✅ 상태 코드 검증 (200, 201, 400, 401, 404, 409 등)
 - ✅ `beforeAll` 60초 타임아웃 설정 (Testcontainers 시작 대기)
-- ✅ 파일 상단 JSDoc 헤더 (description + 실행 명령)
 
 ### DON'T
 
-- ❌ 로컬 `createVerifiedUser()` 함수 정의 → `ctx.helpers.createVerifiedUser()` 사용
+- ❌ 로컬 `createVerifiedUser()` / `loginUser()` 함수 정의 → `ctx.helpers` 사용
 - ❌ 직접 `TestDatabase` 초기화 → `createE2eApp()` 사용
 - ❌ 직접 `Test.createTestingModule()` 호출 → 팩토리 사용
 - ❌ `overrideProvider()` 직접 호출 → `customizeBuilder` 옵션 사용
 - ❌ Service/Repository 직접 호출 (HTTP 요청으로 테스트)
 - ❌ 테스트 간 데이터 의존성
 - ❌ 외부 API 직접 호출 (FakeService 사용)
+- ❌ `describe` 스코프 `let` 변수로 테스트 간 상태 공유 (`ctx` 제외)
+- ❌ nested `beforeAll`에서 공유 데이터 생성 (각 `it`에서 직접 생성)
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 4.0.0
+**최종 수정일**: 2026-04-05

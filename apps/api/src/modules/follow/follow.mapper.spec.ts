@@ -1,3 +1,14 @@
+/**
+ * Follow Mapper 매퍼 단위 테스트
+ *
+ * @description
+ * Follow Mapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test follow.mapper
+ * ```
+ */
 import { FollowBuilder, type FollowWithUser } from "@test/builders";
 import { FollowStatus } from "@/generated/prisma/client";
 import { FollowMapper } from "./follow.mapper";

@@ -17,11 +17,7 @@ import { DatabaseService } from "@/database/database.service";
 import { FollowRepository } from "./follow.repository";
 import type { FindFollowsParams } from "./types/follow.types";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("FollowRepository", () => {
+describe("FollowRepository — 팔로우 리포지토리", () => {
 	let repository: FollowRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -32,10 +28,6 @@ describe("FollowRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// ==========================================================================
-	// findMutualFriends
-	// ==========================================================================
 
 	describe("findMutualFriends", () => {
 		it("맞팔 친구 목록을 조회해야 한다", async () => {
@@ -126,10 +118,6 @@ describe("FollowRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// findReceivedRequests
-	// ==========================================================================
-
 	describe("findReceivedRequests", () => {
 		it("받은 친구 요청 목록을 조회해야 한다", async () => {
 			// Given
@@ -200,10 +188,6 @@ describe("FollowRepository", () => {
 			]);
 		});
 	});
-
-	// ==========================================================================
-	// findSentRequests
-	// ==========================================================================
 
 	describe("findSentRequests", () => {
 		it("보낸 친구 요청 목록을 조회해야 한다", async () => {

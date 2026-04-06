@@ -1,3 +1,14 @@
+/**
+ * CacheModule 통합 테스트 단위 테스트
+ *
+ * @description
+ * CacheModule 통합 테스트의 개별 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test cache.integration
+ * ```
+ */
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { CacheModule } from "../../cache.module";

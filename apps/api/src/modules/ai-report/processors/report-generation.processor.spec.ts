@@ -19,7 +19,7 @@ import {
 	ReportGenerationProcessor,
 } from "./report-generation.processor";
 
-describe("ReportGenerationProcessor", () => {
+describe("ReportGenerationProcessor — 리포트 생성 프로세서", () => {
 	let processor: ReportGenerationProcessor;
 	let mockAiReportService: Mocked<AiReportService>;
 
@@ -39,20 +39,12 @@ describe("ReportGenerationProcessor", () => {
 		} as unknown as Job<AiReportJobData>;
 	}
 
-	// =========================================================================
-	// Stalled 이벤트
-	// =========================================================================
-
 	describe("onStalled", () => {
 		it("stalled 발생 시 에러 없이 처리해야 한다", () => {
 			// When & Then: 에러 없이 호출되어야 한다
 			expect(() => processor.onStalled("test-job-id")).not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// 서비스 위임
-	// =========================================================================
 
 	describe("서비스 위임", () => {
 		it("WEEKLY 리포트 시 generateWeeklyReport를 호출해야 한다", async () => {

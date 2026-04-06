@@ -46,7 +46,7 @@ const makeForecast = (): WeatherForecast => ({
 	dailyForecasts: [],
 });
 
-describe("WeatherMorningStrategy", () => {
+describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
 	let strategy: WeatherMorningStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;

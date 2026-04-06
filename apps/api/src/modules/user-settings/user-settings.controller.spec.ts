@@ -1,3 +1,14 @@
+/**
+ * SettingsController 컨트롤러 단위 테스트
+ *
+ * @description
+ * SettingsController의 엔드포인트 핸들러를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test user-settings.controller
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -15,7 +26,7 @@ const WEATHER_DEFAULTS = {
 	weatherEveningMinute: 0,
 } as const;
 
-describe("SettingsController", () => {
+describe("SettingsController — 사용자 설정 컨트롤러", () => {
 	let controller: SettingsController;
 	let mockUserSettingsService: Mocked<UserSettingsService>;
 

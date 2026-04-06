@@ -1,3 +1,16 @@
+/**
+ * VerificationRepository 단위 테스트
+ *
+ * @description
+ * 인증 토큰 저장소의 CRUD, 원자적 사용 처리, 무효화 메서드를 검증한다.
+ * 트랜잭션 지원, 시도 횟수 관리, 만료 삭제를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test verification.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { VerificationBuilder } from "@test/builders";
@@ -7,7 +20,7 @@ import { type Verification, VerificationType } from "@/generated/prisma/client";
 
 import { VerificationRepository } from "./verification.repository";
 
-describe("VerificationRepository", () => {
+describe("VerificationRepository — 인증 코드 리포지토리", () => {
 	let repository: VerificationRepository;
 	let db: Mocked<DatabaseService>;
 

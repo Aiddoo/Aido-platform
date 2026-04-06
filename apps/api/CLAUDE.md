@@ -69,14 +69,14 @@ Request → Guard → Controller → Service → Repository → DB
 | `pnpm test:e2e` | E2E 테스트 |
 | `pnpm typecheck` | 타입 체크 |
 | `pnpm lint` | Biome 린트 |
-| `pnpm prisma:migrate` | DB 마이그레이션 |
+| `pnpm db:migrate` | DB 마이그레이션 |
 | `pnpm build` | 전체 빌드 |
 
 ---
 
 ## 새 기능 추가 순서
 
-1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm prisma:migrate`
+1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
 3. **Repository** → `tx?` 패턴, EncryptionService (민감 데이터)
 4. **Service** → BusinessExceptions, 트랜잭션, QueueService enqueue

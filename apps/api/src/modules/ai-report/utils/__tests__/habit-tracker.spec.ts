@@ -1,3 +1,14 @@
+/**
+ * classifyHabit 유틸 테스트
+ *
+ * @description
+ * classifyHabit 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test habit-tracker
+ * ```
+ */
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import timezone from "dayjs/plugin/timezone";
@@ -82,6 +93,15 @@ describe("classifyHabit", () => {
 
 describe("analyzeHabitFormation", () => {
 	const TZ = "Asia/Seoul";
+
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(new Date("2026-03-24T00:00:00+09:00"));
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
+	});
 
 	function makeTodo(
 		title: string,

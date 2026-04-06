@@ -16,7 +16,7 @@ import {
 	WeatherRepository,
 } from "./weather.repository";
 
-describe("WeatherRepository", () => {
+describe("WeatherRepository — 날씨 리포지토리", () => {
 	let repository: WeatherRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -29,10 +29,6 @@ describe("WeatherRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// ========================================
-	// findByUserId
-	// ========================================
 
 	describe("findByUserId", () => {
 		it("사용자 ID로 위치를 조회해야 한다", async () => {
@@ -79,10 +75,6 @@ describe("WeatherRepository", () => {
 		});
 	});
 
-	// ========================================
-	// upsert
-	// ========================================
-
 	describe("upsert", () => {
 		const upsertData: UpsertLocationData = {
 			latitude: 37.5665,
@@ -123,10 +115,6 @@ describe("WeatherRepository", () => {
 			expect(db.userLocation.upsert).not.toHaveBeenCalled();
 		});
 	});
-
-	// ========================================
-	// delete
-	// ========================================
 
 	describe("delete", () => {
 		it("사용자의 위치를 삭제해야 한다", async () => {

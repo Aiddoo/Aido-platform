@@ -1,7 +1,18 @@
+/**
+ * TodoCategoryMapper 매퍼 단위 테스트
+ *
+ * @description
+ * TodoCategoryMapper의 변환 로직을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test todo-category.mapper
+ * ```
+ */
 import { TodoCategoryBuilder } from "@test/builders";
 import { TodoCategoryMapper } from "./todo-category.mapper";
 
-describe("TodoCategoryMapper", () => {
+describe("TodoCategoryMapper — 할 일 카테고리 매퍼", () => {
 	beforeEach(() => {
 		TodoCategoryBuilder.resetIdCounter();
 	});

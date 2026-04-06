@@ -33,7 +33,7 @@ const mockedIsNightTime = isNightTime as jest.MockedFunction<
 	typeof isNightTime
 >;
 
-describe("PushDeliveryService", () => {
+describe("PushDeliveryService — 푸시 전송 서비스", () => {
 	let service: PushDeliveryService;
 	let notificationRepository: Mocked<NotificationRepository>;
 	let pushProvider: Mocked<PushProvider>;
@@ -90,10 +90,6 @@ describe("PushDeliveryService", () => {
 		// 기본 mock 설정
 		mockedIsNightTime.mockReturnValue(false);
 	});
-
-	// =========================================================================
-	// registerPushToken
-	// =========================================================================
 
 	describe("registerPushToken", () => {
 		it("유효한 토큰을 등록하고 timezone을 upsert한다", async () => {
@@ -164,10 +160,6 @@ describe("PushDeliveryService", () => {
 		});
 	});
 
-	// =========================================================================
-	// unregisterPushToken
-	// =========================================================================
-
 	describe("unregisterPushToken", () => {
 		it("토큰을 삭제한다", async () => {
 			// Given
@@ -202,10 +194,6 @@ describe("PushDeliveryService", () => {
 		});
 	});
 
-	// =========================================================================
-	// unregisterAllPushTokens
-	// =========================================================================
-
 	describe("unregisterAllPushTokens", () => {
 		it("사용자의 모든 토큰을 삭제한다", async () => {
 			// Given
@@ -223,10 +211,6 @@ describe("PushDeliveryService", () => {
 			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		});
 	});
-
-	// =========================================================================
-	// shouldSendPush
-	// =========================================================================
 
 	describe("shouldSendPush", () => {
 		it("preference가 없으면 false를 반환한다", async () => {
@@ -345,10 +329,6 @@ describe("PushDeliveryService", () => {
 		});
 	});
 
-	// =========================================================================
-	// fireAndForgetPush
-	// =========================================================================
-
 	describe("fireAndForgetPush", () => {
 		it("활성 토큰으로 푸시를 발송한다", async () => {
 			// Given
@@ -437,10 +417,6 @@ describe("PushDeliveryService", () => {
 			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 		});
 	});
-
-	// =========================================================================
-	// fireAndForgetBatchPush
-	// =========================================================================
 
 	describe("fireAndForgetBatchPush", () => {
 		it("여러 사용자에게 일괄 발송한다", async () => {
@@ -559,10 +535,6 @@ describe("PushDeliveryService", () => {
 			expect(pushProvider.sendBatch).not.toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// beforeApplicationShutdown
-	// =========================================================================
 
 	describe("beforeApplicationShutdown", () => {
 		it("pending push가 없으면 즉시 반환한다", async () => {

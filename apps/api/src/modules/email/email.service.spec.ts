@@ -32,7 +32,7 @@ type ResendMock = {
 	};
 };
 
-describe("EmailService", () => {
+describe("EmailService — 이메일 서비스", () => {
 	let service: EmailService;
 	let resendMock: ResendMock;
 	let setTimeoutCalls: number[];
@@ -83,10 +83,6 @@ describe("EmailService", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
-
-	// =========================================================================
-	// sendVerificationCode
-	// =========================================================================
 
 	describe("sendVerificationCode", () => {
 		it("성공적으로 인증 코드 이메일을 발송한다", async () => {
@@ -161,10 +157,6 @@ describe("EmailService", () => {
 		});
 	});
 
-	// =========================================================================
-	// sendPasswordResetCode
-	// =========================================================================
-
 	describe("sendPasswordResetCode", () => {
 		it("성공적으로 비밀번호 재설정 이메일을 발송한다", async () => {
 			// Given
@@ -192,10 +184,6 @@ describe("EmailService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// retry 로직
-	// =========================================================================
 
 	describe("retry 로직", () => {
 		it("application_error 발생 시 재시도한다", async () => {
@@ -339,10 +327,6 @@ describe("EmailService", () => {
 		});
 	});
 
-	// =========================================================================
-	// Resend가 설정되지 않은 경우
-	// =========================================================================
-
 	describe("Resend가 설정되지 않은 경우", () => {
 		beforeEach(async () => {
 			MockedResend.mockClear();
@@ -379,10 +363,6 @@ describe("EmailService", () => {
 			expect(result.retryCount).toBe(0);
 		});
 	});
-
-	// =========================================================================
-	// tags
-	// =========================================================================
 
 	describe("tags", () => {
 		it("verification 타입 태그가 포함된다", async () => {
@@ -447,10 +427,6 @@ describe("EmailService", () => {
 			);
 		});
 	});
-
-	// =========================================================================
-	// sendInquiry
-	// =========================================================================
 
 	describe("sendInquiry", () => {
 		const inquiryData: Parameters<EmailService["sendInquiry"]>[1] = {

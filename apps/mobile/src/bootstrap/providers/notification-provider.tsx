@@ -1,4 +1,7 @@
-import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
+import {
+  type NotificationResponseOptions,
+  useNotificationHandler,
+} from '@src/features/notification/presentations/hooks/use-notification-handler';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
@@ -7,7 +10,10 @@ import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-provider';
 
 interface NotificationContextValue {
-  handleNotificationResponse: (response: Notifications.NotificationResponse) => Promise<void>;
+  handleNotificationResponse: (
+    response: Notifications.NotificationResponse,
+    options?: NotificationResponseOptions,
+  ) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -54,9 +60,14 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     if (isAuthResolved) {
       // 인증 완료: 즉시 처리
       if (lastResponseHandled.current !== responseId) {
+        const isColdStart = pendingColdStartResponse.current !== null;
         lastResponseHandled.current = responseId;
         pendingColdStartResponse.current = null;
-        handleNotificationResponse(responseToProcess).catch((e) =>
+        // Cold start: replace로 초기 화면을 알림 대상으로 교체하여 이중 전환 방지
+        handleNotificationResponse(
+          responseToProcess,
+          isColdStart ? { replace: true } : undefined,
+        ).catch((e) =>
           logger.error(
             '[Notification] Response handling failed',
             e instanceof Error ? e : undefined,

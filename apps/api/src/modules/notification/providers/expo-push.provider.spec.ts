@@ -30,7 +30,7 @@ jest.mock("expo-server-sdk", () => {
 	};
 });
 
-describe("ExpoPushProvider", () => {
+describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
 	let provider: ExpoPushProvider;
 
 	const validToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
@@ -48,20 +48,12 @@ describe("ExpoPushProvider", () => {
 		provider = unit;
 	});
 
-	// =========================================================================
-	// name
-	// =========================================================================
-
 	describe("name", () => {
 		it('name이 "expo"여야 한다', () => {
 			// When / Then
 			expect(provider.name).toBe("expo");
 		});
 	});
-
-	// =========================================================================
-	// validateToken
-	// =========================================================================
 
 	describe("validateToken", () => {
 		it("유효한 Expo 토큰은 true를 반환해야 한다", () => {
@@ -86,10 +78,6 @@ describe("ExpoPushProvider", () => {
 			expect(result).toBe(false);
 		});
 	});
-
-	// =========================================================================
-	// send
-	// =========================================================================
 
 	describe("send", () => {
 		it("유효한 토큰으로 성공적으로 발송해야 한다", async () => {
@@ -213,10 +201,6 @@ describe("ExpoPushProvider", () => {
 			]);
 		});
 	});
-
-	// =========================================================================
-	// sendBatch
-	// =========================================================================
 
 	describe("sendBatch", () => {
 		it("여러 알림을 성공적으로 발송해야 한다", async () => {

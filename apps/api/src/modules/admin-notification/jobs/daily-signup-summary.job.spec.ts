@@ -1,3 +1,14 @@
+/**
+ * DailySignupSummaryJob 잡/프로세서 단위 테스트
+ *
+ * @description
+ * DailySignupSummaryJob의 비동기 작업 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test daily-signup-summary.job
+ * ```
+ */
 import { getQueueToken } from "@nestjs/bullmq";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
@@ -8,7 +19,7 @@ import { DatabaseService } from "@/database/database.service";
 import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.constants";
 import { DailySignupSummaryJob } from "./daily-signup-summary.job";
 
-describe("DailySignupSummaryJob", () => {
+describe("DailySignupSummaryJob — 일일 가입 요약 잡", () => {
 	let job: DailySignupSummaryJob;
 	let database: Mocked<DatabaseService>;
 	let mockQueue: Mocked<Queue>;

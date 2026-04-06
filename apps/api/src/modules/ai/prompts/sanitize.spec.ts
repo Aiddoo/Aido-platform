@@ -1,3 +1,14 @@
+/**
+ * sanitizeForPrompt 모듈 단위 테스트
+ *
+ * @description
+ * sanitizeForPrompt 모듈의 DI 구성을 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test sanitize
+ * ```
+ */
 import { sanitizeForPrompt } from "./sanitize";
 
 describe("sanitizeForPrompt", () => {

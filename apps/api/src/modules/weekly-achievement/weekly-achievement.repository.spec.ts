@@ -1,3 +1,14 @@
+/**
+ * WeeklyAchievementRepository 리포지토리 단위 테스트
+ *
+ * @description
+ * WeeklyAchievementRepository의 데이터 접근 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-achievement.repository
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
@@ -5,7 +16,7 @@ import { DatabaseService } from "@/database";
 
 import { WeeklyAchievementRepository } from "./weekly-achievement.repository";
 
-describe("WeeklyAchievementRepository", () => {
+describe("WeeklyAchievementRepository — 주간 성취 리포지토리", () => {
 	let repository: WeeklyAchievementRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -19,10 +30,6 @@ describe("WeeklyAchievementRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// ============================================
-	// findByYear
-	// ============================================
 
 	describe("findByYear", () => {
 		it("커서 없이 연도별 기록을 조회한다", async () => {
@@ -59,10 +66,6 @@ describe("WeeklyAchievementRepository", () => {
 		});
 	});
 
-	// ============================================
-	// findAllByYear
-	// ============================================
-
 	describe("findAllByYear", () => {
 		it("해당 연도의 기록을 week 오름차순으로 조회한다", async () => {
 			// Given
@@ -78,10 +81,6 @@ describe("WeeklyAchievementRepository", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// findByYearAndWeek
-	// ============================================
 
 	describe("findByYearAndWeek", () => {
 		it("unique 제약 조건으로 조회한다", async () => {
@@ -99,10 +98,6 @@ describe("WeeklyAchievementRepository", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// upsert
-	// ============================================
 
 	describe("upsert", () => {
 		it("주간 달성 기록을 upsert한다", async () => {
@@ -141,10 +136,6 @@ describe("WeeklyAchievementRepository", () => {
 			});
 		});
 	});
-
-	// ============================================
-	// upsertMany
-	// ============================================
 
 	describe("upsertMany", () => {
 		it("여러 기록을 트랜잭션으로 일괄 upsert한다", async () => {

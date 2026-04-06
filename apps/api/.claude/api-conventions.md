@@ -518,7 +518,7 @@ import { {Feature}Service } from './{feature}.service';
 ### 1. Prisma 스키마
 
 - [ ] `prisma/schema.prisma`에 모델 추가
-- [ ] `pnpm prisma:migrate` 실행
+- [ ] `pnpm db:migrate` 실행
 
 ### 2. @aido/validators
 
@@ -602,10 +602,10 @@ pnpm docker:down
 1. [ ] Docker Desktop 실행 확인
 2. [ ] `pnpm docker:up`으로 PostgreSQL 컨테이너 시작
 3. [ ] `.env.development` 파일 존재 확인
-4. [ ] `pnpm prisma:migrate`로 DB 마이그레이션 적용
+4. [ ] `pnpm db:migrate`로 DB 마이그레이션 적용
 5. [ ] `pnpm dev`로 개발 서버 시작
 
 ---
 
 **문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**최종 수정일**: 2026-04-05

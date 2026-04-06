@@ -1,3 +1,14 @@
+/**
+ * UserPreferenceRepository 리포지토리 단위 테스트
+ *
+ * @description
+ * UserPreferenceRepository의 데이터 접근 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test user-preference.repository
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { UserPreferenceBuilder } from "@test/builders";
@@ -8,7 +19,7 @@ import {
 	UserPreferenceRepository,
 } from "./user-preference.repository";
 
-describe("UserPreferenceRepository", () => {
+describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", () => {
 	let repository: UserPreferenceRepository;
 	let db: Mocked<DatabaseService>;
 

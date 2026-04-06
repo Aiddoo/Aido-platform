@@ -18,7 +18,7 @@ import {
 } from "../processors/report-generation.processor";
 import { ReportGenerationJob } from "./report-generation.job";
 
-describe("ReportGenerationJob", () => {
+describe("ReportGenerationJob — 리포트 생성 잡", () => {
 	let job: ReportGenerationJob;
 	let mockDatabase: Mocked<DatabaseService>;
 	let mockQueue: Mocked<Queue>;
@@ -43,10 +43,6 @@ describe("ReportGenerationJob", () => {
 	afterEach(() => {
 		jest.useRealTimers();
 	});
-
-	// =========================================================================
-	// onModuleInit 스케줄러 등록
-	// =========================================================================
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 주간/월간 스케줄러를 등록해야 한다", async () => {
@@ -81,10 +77,6 @@ describe("ReportGenerationJob", () => {
 			expect(mockProcessor.setReportJob).toHaveBeenCalledWith(job);
 		});
 	});
-
-	// =========================================================================
-	// catch-up on startup
-	// =========================================================================
 
 	describe("catch-up on startup", () => {
 		it("월요일 01:00 이후 시작 시 WEEKLY dispatch 잡을 추가해야 한다", async () => {
@@ -171,10 +163,6 @@ describe("ReportGenerationJob", () => {
 			expect(mockQueue.add).not.toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// dispatchReports (BullMQ 잡 등록)
-	// =========================================================================
 
 	describe("dispatchReports", () => {
 		it("모든 사용자에 대해 큐에 잡을 등록해야 한다", async () => {

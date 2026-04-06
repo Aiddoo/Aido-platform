@@ -56,7 +56,7 @@ apps/api/
 └── test/
     ├── e2e/{name}.e2e-spec.ts          # E2E 테스트
     ├── integration/{name}.integration-spec.ts  # Integration 테스트
-    ├── builders/                        # 테스트 데이터 빌더 (16+)
+    ├── builders/                        # 테스트 데이터 빌더 (17+)
     ├── mocks/                           # FakeService + Mock 팩토리
     └── setup/                           # TestDatabase, suppressLogger 등
 ```
@@ -105,8 +105,7 @@ apps/api/
 - ✅ Given/When/Then 주석으로 테스트 의도 표현
 - ✅ Builder 패턴으로 테스트 데이터 생성
 - ✅ 한국어 describe명 + 유형 태그 (예: `"(Mock DB)"`, `"(실제 DB)"`)
-- ✅ 모든 테스트 파일 상단에 JSDoc (`@description`, 실행 명령)
-- ✅ `beforeEach`에서 `jest.clearAllMocks()` + Builder ID 카운터 리셋
+- ✅ `jest.clearAllMocks()`는 전역 설정(`test/setup/jest.setup.ts`)에서 자동 호출되므로 **개별 파일에서 불필요** — Builder ID 카운터 리셋만 `beforeEach`에서 호출
 - ✅ FakeService로 외부 서비스 대체 (E2E)
 
 ### DON'T
@@ -118,6 +117,10 @@ apps/api/
 - ❌ 구현 세부사항 테스트 (공개 인터페이스만)
 
 > 유형별 DO/DON'T 상세는 각 개별 가이드 참조.
+
+### 전역 설정 참고
+
+`jest.clearAllMocks()`는 `test/setup/jest.setup.ts`에서 `afterEach`로 전역 호출되며, `jest.preset.cjs`에서도 `clearMocks: true`, `restoreMocks: true`가 설정되어 있습니다. **개별 테스트 파일에서 별도로 호출할 필요가 없습니다.**
 
 ---
 
@@ -145,6 +148,7 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 | 유형 | 예제 파일 |
 |------|----------|
+| **Unit (모범 사례)** | `src/modules/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
 | Unit (Suites) | `src/modules/notification/notification.service.spec.ts` |
 | Integration (Mock DB) | `test/integration/cheer.integration-spec.ts` |
 | Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
@@ -154,5 +158,5 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 4.0.0
+**최종 수정일**: 2026-04-05

@@ -1,6 +1,17 @@
+/**
+ * DiscordWebhookProvider 프로바이더 단위 테스트
+ *
+ * @description
+ * DiscordWebhookProvider의 외부 연동 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test discord-webhook.provider
+ * ```
+ */
 import { DiscordWebhookProvider } from "./discord-webhook.provider";
 
-describe("DiscordWebhookProvider", () => {
+describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 	it("name이 discord이다", () => {
 		// Given
 		const provider = new DiscordWebhookProvider(undefined);

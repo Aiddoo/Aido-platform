@@ -1,3 +1,14 @@
+/**
+ * format 유틸 테스트
+ *
+ * @description
+ * format 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test format
+ * ```
+ */
 import {
 	toCompactDateHourString,
 	toCompactDateString,

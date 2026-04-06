@@ -44,6 +44,9 @@ export const SWAGGER_TAGS = {
 	/** 문의 - 사용자 문의 접수 */
 	INQUIRIES: "Inquiries",
 
+	/** 메모 - 빠른 메모 CRUD, 고정, 순서 변경, 할 일 변환 */
+	MEMOS: "Memos",
+
 	/** 날씨 - 위치 등록, 날씨 예보 조회 */
 	WEATHER: "Weather",
 
@@ -125,6 +128,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
 	[SWAGGER_TAGS.INQUIRIES]:
 		"사용자 문의 접수. 카테고리(버그 신고/기능 요청/기타) + 내용을 관리자 이메일로 발송",
+
+	[SWAGGER_TAGS.MEMOS]:
+		"빠른 메모 CRUD. 핀 고정, 순서 변경, 할 일 변환 지원. 최대 20개/유저",
 
 	[SWAGGER_TAGS.WEATHER]:
 		"날씨 알림용 위치 등록, 날씨 예보 조회. 기상청 단기예보 기반, 격자 캐싱",

@@ -1,3 +1,14 @@
+/**
+ * night-time.util 유틸 테스트
+ *
+ * @description
+ * night-time.util 유틸리티를 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test night-time.util
+ * ```
+ */
 import { NIGHT_TIME_CONFIG } from "@aido/validators";
 
 import { isDayTime, isNightTime } from "./night-time.util";

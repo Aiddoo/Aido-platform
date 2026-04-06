@@ -18,7 +18,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 
 import { KmaLifestyleIndexProvider } from "./kma-lifestyle-index.provider";
 
-describe("KmaLifestyleIndexProvider", () => {
+describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더", () => {
 	let provider: KmaLifestyleIndexProvider;
 	let configService: Mocked<TypedConfigService>;
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
@@ -37,10 +37,6 @@ describe("KmaLifestyleIndexProvider", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
-
-	// ========================================
-	// getIndex
-	// ========================================
 
 	describe("getIndex", () => {
 		const lat = 37.5;

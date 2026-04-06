@@ -14,7 +14,7 @@ import { NotificationQueueService } from "@/modules/notification/queue/notificat
 import { UserPreferenceRepository } from "../repositories/user-preference.repository";
 import { StreakService } from "./streak.service";
 
-describe("StreakService", () => {
+describe("StreakService — 연속 달성 서비스", () => {
 	let service: StreakService;
 	let prefRepo: Mocked<UserPreferenceRepository>;
 	let database: Mocked<DatabaseService>;
@@ -71,10 +71,6 @@ describe("StreakService", () => {
 			.mockResolvedValueOnce(total) // total count
 			.mockResolvedValueOnce(completed); // completed count
 	}
-
-	// ============================================
-	// 전체 완료 → 스트릭 증가
-	// ============================================
 
 	describe("onTodoToggled - 완료 시", () => {
 		it("첫 전체 완료 시 스트릭 1로 시작", async () => {
@@ -248,10 +244,6 @@ describe("StreakService", () => {
 		});
 	});
 
-	// ============================================
-	// 완료 취소 → 스트릭 재계산
-	// ============================================
-
 	describe("onTodoToggled - 완료 취소 시", () => {
 		it("오늘 완료 취소 + 어제 완료 → 스트릭 1 감소", async () => {
 			// Given - 오늘 3개 중 2개 완료 (방금 취소됨), 어제 전체 완료
@@ -322,10 +314,6 @@ describe("StreakService", () => {
 			expect(prefRepo.updateStreak).not.toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// Static — computeEffectiveStreak 순수 함수
-	// ============================================
 
 	describe("computeEffectiveStreak", () => {
 		it("전체 완료 + 이미 DB 반영(오늘) → currentStreak 유지", () => {
@@ -424,10 +412,6 @@ describe("StreakService", () => {
 			expect(result).toEqual({ streak: 3, isAtRisk: false });
 		});
 	});
-
-	// ============================================
-	// 에러 처리
-	// ============================================
 
 	describe("에러 처리", () => {
 		it("에러 발생 시 throw하지 않고 로그만 출력", async () => {

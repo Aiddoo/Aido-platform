@@ -752,4 +752,19 @@ export class BusinessExceptions {
 	static weatherLocationNotFound() {
 		return new BusinessException(ErrorCode.WEATHER_1902);
 	}
+
+	// =========================================================================
+	// 메모 (Memo)
+	// =========================================================================
+	static memoNotFound(memoId: number) {
+		return new BusinessException(ErrorCode.MEMO_2001, { memoId });
+	}
+
+	static memoReorderTargetNotFound(targetMemoId: number) {
+		return new BusinessException(ErrorCode.MEMO_2002, { targetMemoId });
+	}
+
+	static memoLimitExceeded(current: number, limit: number) {
+		return new BusinessException(ErrorCode.MEMO_2003, { current, limit });
+	}
 }

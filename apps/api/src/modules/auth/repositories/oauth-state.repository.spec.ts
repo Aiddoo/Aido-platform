@@ -1,11 +1,14 @@
 /**
  * OAuthStateRepository 단위 테스트
  *
- * Suites + GWT 패턴 적용
- * - Suites: 자동 Mock 생성
- * - GWT: Given/When/Then 주석
+ * @description
+ * OAuth 상태 저장소의 CRUD, 교환 코드 관리 메서드를 검증한다.
+ * 토큰 암호화, 교환 완료 처리, 만료 삭제를 확인한다.
  *
- * @see https://docs.nestjs.com/recipes/suites
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test oauth-state.repository.spec.ts
+ * ```
  */
 
 import type { Mocked } from "@suites/doubles.jest";
@@ -15,11 +18,7 @@ import { DatabaseService } from "@/database";
 
 import { OAuthStateRepository } from "./oauth-state.repository";
 
-// =============================================================================
-// Test Suite
-// =============================================================================
-
-describe("OAuthStateRepository", () => {
+describe("OAuthStateRepository — OAuth 상태 리포지토리", () => {
 	let repository: OAuthStateRepository;
 	let db: Mocked<DatabaseService>;
 	let encryptionService: Mocked<EncryptionService>;
@@ -59,10 +58,6 @@ describe("OAuthStateRepository", () => {
 			(value: string) => `encrypted-${value}`,
 		);
 	});
-
-	// ==========================================================================
-	// create
-	// ==========================================================================
 
 	describe("create", () => {
 		it("OAuth 상태를 생성한다", async () => {
@@ -132,10 +127,6 @@ describe("OAuthStateRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// findByState
-	// ==========================================================================
-
 	describe("findByState", () => {
 		it("state 값으로 OAuth 상태를 찾는다", async () => {
 			// Given
@@ -165,10 +156,6 @@ describe("OAuthStateRepository", () => {
 			expect(result).toBeNull();
 		});
 	});
-
-	// ==========================================================================
-	// findByExchangeCode
-	// ==========================================================================
 
 	describe("findByExchangeCode", () => {
 		it("교환 코드로 아직 교환되지 않은 상태를 찾는다", async () => {
@@ -204,10 +191,6 @@ describe("OAuthStateRepository", () => {
 			expect(result).toBeNull();
 		});
 	});
-
-	// ==========================================================================
-	// saveExchangeData
-	// ==========================================================================
 
 	describe("saveExchangeData", () => {
 		it("교환 데이터를 저장하고 토큰을 암호화한다", async () => {
@@ -251,10 +234,6 @@ describe("OAuthStateRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// saveLinkingData
-	// ==========================================================================
-
 	describe("saveLinkingData", () => {
 		it("계정 연결 모드 교환 데이터를 저장한다", async () => {
 			// Given
@@ -286,10 +265,6 @@ describe("OAuthStateRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// markAsExchanged
-	// ==========================================================================
-
 	describe("markAsExchanged", () => {
 		it("교환 완료 처리하고 토큰을 삭제한다", async () => {
 			// Given
@@ -317,10 +292,6 @@ describe("OAuthStateRepository", () => {
 		});
 	});
 
-	// ==========================================================================
-	// delete
-	// ==========================================================================
-
 	describe("delete", () => {
 		it("ID로 OAuth 상태를 삭제한다", async () => {
 			// Given
@@ -335,10 +306,6 @@ describe("OAuthStateRepository", () => {
 			});
 		});
 	});
-
-	// ==========================================================================
-	// deleteExpired
-	// ==========================================================================
 
 	describe("deleteExpired", () => {
 		it("만료된 레코드를 삭제하고 삭제 수를 반환한다", async () => {
@@ -368,10 +335,6 @@ describe("OAuthStateRepository", () => {
 			expect(result).toBe(0);
 		});
 	});
-
-	// ==========================================================================
-	// generateExchangeCode
-	// ==========================================================================
 
 	describe("generateExchangeCode", () => {
 		it("base64url 형식의 교환 코드를 생성한다", () => {

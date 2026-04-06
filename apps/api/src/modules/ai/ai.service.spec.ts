@@ -17,7 +17,7 @@ import { UserRepository } from "../auth/repositories/user.repository";
 import { AiService } from "./ai.service";
 import { AI_PROVIDER } from "./providers/ai.provider";
 
-describe("AiService", () => {
+describe("AiService — AI 서비스", () => {
 	let service: AiService;
 	let fakeAiProvider: FakeAiProvider;
 	let database: Mocked<DatabaseService>;
@@ -68,10 +68,6 @@ describe("AiService", () => {
 	afterEach(() => {
 		fakeAiProvider.clear();
 	});
-
-	// =========================================================================
-	// parseTodo
-	// =========================================================================
 
 	describe("parseTodo", () => {
 		it("자연어를 구조화된 투두로 파싱한다", async () => {
@@ -432,10 +428,6 @@ describe("AiService", () => {
 		});
 	});
 
-	// =========================================================================
-	// getUsage
-	// =========================================================================
-
 	describe("getUsage", () => {
 		it("현재 사용량을 반환한다", async () => {
 			// Given
@@ -530,10 +522,6 @@ describe("AiService", () => {
 		});
 	});
 
-	// =========================================================================
-	// 토큰 사용량 추적
-	// =========================================================================
-
 	describe("토큰 사용량 추적", () => {
 		it("결과에 토큰 사용량이 포함된다", async () => {
 			// Given
@@ -558,10 +546,6 @@ describe("AiService", () => {
 			});
 		});
 	});
-
-	// =========================================================================
-	// 연속 요청 처리
-	// =========================================================================
 
 	describe("연속 요청 처리", () => {
 		it("여러 응답을 순차적으로 반환한다", async () => {

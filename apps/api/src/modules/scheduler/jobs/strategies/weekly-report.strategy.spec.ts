@@ -1,3 +1,14 @@
+/**
+ * WeeklyReportStrategy 전략 단위 테스트
+ *
+ * @description
+ * WeeklyReportStrategy의 실행 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test weekly-report.strategy
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
@@ -9,11 +20,7 @@ import { NotificationMessageBuilder } from "@/modules/notification/templates/not
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WeeklyReportStrategy } from "./weekly-report.strategy";
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("WeeklyReportStrategy", () => {
+describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
 	let strategy: WeeklyReportStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -56,17 +63,16 @@ describe("WeeklyReportStrategy", () => {
 		jest.useRealTimers();
 	});
 
-	// =========================================================================
-	// 프리미엄 유저 대상 발송
-	// =========================================================================
-
 	it("프리미엄 유저 전체에게 주간 리포트를 발송한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([{ id: "user-1" }] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 
 		// AI 리포트는 유료 기능 → 프리미엄 유저만 조회 (pushEnabled 필터 없음, 푸시 전송은 PushDeliveryService가 담당)
@@ -91,11 +97,8 @@ describe("WeeklyReportStrategy", () => {
 		});
 	});
 
-	// =========================================================================
-	// 중복 방지
-	// =========================================================================
-
 	it("이미 알림 받은 사용자를 제외한다", async () => {
+		// Given
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([
@@ -107,8 +110,10 @@ describe("WeeklyReportStrategy", () => {
 			new Set(["user-1"]),
 		);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 1 });
 		const notifications =
 			notificationService.createAndSendBatch.mock.calls[0]?.[0];
@@ -116,17 +121,16 @@ describe("WeeklyReportStrategy", () => {
 		expect(notifications?.[0]?.userId).toBe("user-2");
 	});
 
-	// =========================================================================
-	// 대상 없음
-	// =========================================================================
-
 	it("대상이 없으면 createAndSendBatch를 호출하지 않는다", async () => {
+		// Given — beforeEach 기본 설정
 		const ctx = makeCtx();
 
 		database.user.findMany.mockResolvedValueOnce([] as never);
 
+		// When
 		const result = await strategy.execute(ctx);
 
+		// Then
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});

@@ -176,8 +176,8 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				type: "NUDGE_SUGGEST",
 				title: message.title,
 				body: message.body,
+				friendId: target.id,
 				notificationDate: today,
-				metadata: { friendId: target.id },
 			});
 		}
 
@@ -185,10 +185,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		if (notifications.length > 0) {
 			await this.notificationService.createAndSendBatch(notifications);
 
-			const members = notifications.map((n) => {
-				const friendId = (n.metadata as { friendId: string }).friendId;
-				return `${n.userId}:${friendId}`;
-			});
+			const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
 			void this.dedupProvider.addMembers(
 				setKey,
 				members,

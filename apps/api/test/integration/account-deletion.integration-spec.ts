@@ -273,10 +273,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		return registerResult.userId;
 	}
 
-	// ============================================
-	// deleteAccount
-	// ============================================
-
 	describe("deleteAccount", () => {
 		it("CREDENTIAL 계정: soft delete + 세션 폐기 + 보안 로그 기록", async () => {
 			// Given
@@ -406,11 +402,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		});
 	});
 
-	// ============================================
-	// AccountPurgeJob
-	// ============================================
-
-	describe("AccountPurgeJob", () => {
+	describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		it("유예 기간 경과 후 hard delete 실행", async () => {
 			// Given - deletedAt이 31일 전인 사용자 DB에 직접 생성
 			const prisma = testDb.getPrisma();
@@ -465,10 +457,6 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			expect(existingUser).not.toBeNull();
 		});
 	});
-
-	// ============================================
-	// forgotPassword — 탈퇴 계정
-	// ============================================
 
 	describe("forgotPassword — 탈퇴 계정", () => {
 		it("탈퇴 계정에 비밀번호 재설정 코드를 발송하지 않는다", async () => {

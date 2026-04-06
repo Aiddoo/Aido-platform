@@ -1,9 +1,22 @@
+/**
+ * JwtRefreshStrategy 단위 테스트
+ *
+ * @description
+ * Refresh 토큰 전략의 validate 메서드를 검증한다.
+ * 토큰 타입, sessionId, Authorization 헤더 유효성을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test jwt-refresh.strategy.spec.ts
+ * ```
+ */
+
 import type { Request } from "express";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { JwtPayload } from "../services/token.service";
 import { JwtRefreshStrategy } from "./jwt-refresh.strategy";
 
-describe("JwtRefreshStrategy", () => {
+describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 	let strategy: JwtRefreshStrategy;
 
 	const validPayload: JwtPayload = {

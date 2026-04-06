@@ -28,7 +28,7 @@ import { NotificationService } from "./notification.service";
 import { PushDeliveryService } from "./push-delivery.service";
 import type { CreateNotificationData } from "./types/notification.types";
 
-describe("NotificationService", () => {
+describe("NotificationService — 알림 서비스", () => {
 	let service: NotificationService;
 	let notificationRepo: Mocked<NotificationRepository>;
 	let paginationService: Mocked<PaginationService>;
@@ -100,10 +100,6 @@ describe("NotificationService", () => {
 		// PushDeliveryService 기본 동작 설정
 		pushDeliveryService.shouldSendPush.mockResolvedValue(true);
 	});
-
-	// ==========================================================================
-	// 알림 생성 및 발송 테스트
-	// ==========================================================================
 
 	describe("createAndSend", () => {
 		it("알림을 생성하고 푸시 발송을 위임해야 한다", async () => {
@@ -277,10 +273,6 @@ describe("NotificationService", () => {
 			expect(pushDeliveryService.fireAndForgetPush).not.toHaveBeenCalled();
 		});
 	});
-
-	// ==========================================================================
-	// 알림 조회 테스트
-	// ==========================================================================
 
 	describe("getNotifications", () => {
 		it("알림 목록을 페이지네이션으로 조회해야 한다", async () => {
@@ -538,10 +530,6 @@ describe("NotificationService", () => {
 		});
 	});
 
-	// ==========================================================================
-	// 읽음 처리 테스트
-	// ==========================================================================
-
 	describe("markAsRead", () => {
 		it("알림을 읽음 처리해야 한다", async () => {
 			// Given - 읽지 않은 알림 존재
@@ -618,10 +606,6 @@ describe("NotificationService", () => {
 		});
 	});
 
-	// ==========================================================================
-	// 관리 기능 테스트
-	// ==========================================================================
-
 	describe("cleanupOldNotifications", () => {
 		it("90일 이상 된 알림을 삭제해야 한다", async () => {
 			// Given - 오래된 알림 10개 존재
@@ -647,10 +631,6 @@ describe("NotificationService", () => {
 			expect(result.count).toBe(5);
 		});
 	});
-
-	// ==========================================================================
-	// createAndSendWithDedup 테스트
-	// ==========================================================================
 
 	describe("createAndSendWithDedup", () => {
 		const baseSetup = () => {
@@ -797,10 +777,6 @@ describe("NotificationService", () => {
 			const expectedMs = before - 24 * 3_600_000;
 			expect(Math.abs(calledSince.getTime() - expectedMs)).toBeLessThan(100);
 		});
-
-		// ======================================================================
-		// 잠금(Lock) 관련 테스트
-		// ======================================================================
 
 		it("dedup 처리 시 잠금을 획득하고 해제해야 한다", async () => {
 			// Given

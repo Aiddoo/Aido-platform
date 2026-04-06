@@ -18,7 +18,7 @@ import {
 } from "../processors/suggestion-analysis.processor";
 import { SuggestionAnalysisJob } from "./suggestion-analysis.job";
 
-describe("SuggestionAnalysisJob", () => {
+describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 	let job: SuggestionAnalysisJob;
 	let mockDatabase: Mocked<DatabaseService>;
 	let mockQueue: Mocked<Queue>;
@@ -44,10 +44,6 @@ describe("SuggestionAnalysisJob", () => {
 	afterEach(() => {
 		jest.useRealTimers();
 	});
-
-	// =========================================================================
-	// onModuleInit 스케줄러 등록
-	// =========================================================================
 
 	describe("onModuleInit 스케줄러 등록", () => {
 		it("서버 시작 시 매일 분석 스케줄러를 등록해야 한다", async () => {
@@ -105,10 +101,6 @@ describe("SuggestionAnalysisJob", () => {
 		});
 	});
 
-	// =========================================================================
-	// catch-up on startup
-	// =========================================================================
-
 	describe("catch-up on startup", () => {
 		it("07:30 이후 시작 시 dispatch 잡을 추가해야 한다", async () => {
 			// Given — 월요일 08:00 KST
@@ -136,10 +128,6 @@ describe("SuggestionAnalysisJob", () => {
 			expect(mockQueue.add).not.toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// dispatchAnalysis (BullMQ 잡 등록)
-	// =========================================================================
 
 	describe("dispatchAnalysis", () => {
 		it("최근 할 일이 있는 모든 사용자에 대해 큐에 잡을 등록해야 한다", async () => {

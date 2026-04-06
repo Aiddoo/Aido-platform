@@ -1,3 +1,16 @@
+/**
+ * LoginAttemptRepository 단위 테스트
+ *
+ * @description
+ * 로그인 시도 저장소의 기록, 실패 카운트, 조회 메서드를 검증한다.
+ * 이메일/IP 기준 실패 횟수 카운트, 만료 삭제를 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test login-attempt.repository.spec.ts
+ * ```
+ */
+
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { LoginAttemptBuilder } from "@test/builders";
@@ -6,7 +19,7 @@ import { DatabaseService } from "@/database";
 
 import { LoginAttemptRepository } from "./login-attempt.repository";
 
-describe("LoginAttemptRepository", () => {
+describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	let repository: LoginAttemptRepository;
 	let db: Mocked<DatabaseService>;
 

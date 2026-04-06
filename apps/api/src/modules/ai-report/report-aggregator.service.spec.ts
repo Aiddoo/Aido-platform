@@ -14,7 +14,7 @@ import { DatabaseService } from "@/database/database.service";
 import { ReportAggregatorService } from "./report-aggregator.service";
 import type { AggregateParams } from "./types";
 
-describe("ReportAggregatorService", () => {
+describe("ReportAggregatorService — 리포트 집계 서비스", () => {
 	let service: ReportAggregatorService;
 	let db: Mocked<DatabaseService>;
 
@@ -109,10 +109,6 @@ describe("ReportAggregatorService", () => {
 		(db.todo.findMany as jest.Mock).mockResolvedValue(completedTodos);
 	}
 
-	// =========================================================================
-	// 병렬 쿼리 검증
-	// =========================================================================
-
 	describe("병렬 쿼리", () => {
 		it("8개의 쿼리가 병렬로 실행되어야 한다 (N+1 방지)", async () => {
 			// Given - 빈 데이터로 쿼리 설정
@@ -128,10 +124,6 @@ describe("ReportAggregatorService", () => {
 			expect(db.todo.findMany).toHaveBeenCalledTimes(1);
 		});
 	});
-
-	// =========================================================================
-	// 빈 데이터 처리
-	// =========================================================================
 
 	describe("빈 데이터 처리", () => {
 		it("활동이 없으면 hasActivity: false, 모든 통계 0이어야 한다", async () => {
@@ -170,10 +162,6 @@ describe("ReportAggregatorService", () => {
 			}
 		});
 	});
-
-	// =========================================================================
-	// 정상 데이터 집계
-	// =========================================================================
 
 	describe("정상 데이터 집계", () => {
 		it("전체/완료 할 일 수와 달성률을 정확하게 계산해야 한다", async () => {

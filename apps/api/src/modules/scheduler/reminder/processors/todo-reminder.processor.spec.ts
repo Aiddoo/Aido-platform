@@ -1,3 +1,14 @@
+/**
+ * TodoReminderProcessor 잡/프로세서 단위 테스트
+ *
+ * @description
+ * TodoReminderProcessor의 비동기 작업 로직을 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test todo-reminder.processor
+ * ```
+ */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import type { Job } from "bullmq";
@@ -8,16 +19,8 @@ import { NotificationService } from "../../../notification/notification.service"
 import type { ReminderJobData } from "../adapters/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "./todo-reminder.processor";
 
-// =============================================================================
-// Constants
-// =============================================================================
-
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 function createMockJob(
 	data: Partial<ReminderJobData> = {},
@@ -31,11 +34,7 @@ function createMockJob(
 	} as Job<ReminderJobData>;
 }
 
-// =============================================================================
-// Tests
-// =============================================================================
-
-describe("TodoReminderProcessor", () => {
+describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let processor: TodoReminderProcessor;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
@@ -87,20 +86,12 @@ describe("TodoReminderProcessor", () => {
 		});
 	};
 
-	// =========================================================================
-	// Stalled 이벤트
-	// =========================================================================
-
 	describe("onStalled", () => {
 		it("stalled 발생 시 에러 없이 처리해야 한다", () => {
 			// When & Then: 에러 없이 호출되어야 한다
 			expect(() => processor.onStalled("test-job-id")).not.toThrow();
 		});
 	});
-
-	// =========================================================================
-	// process — 정상 처리
-	// =========================================================================
 
 	describe("정상 처리", () => {
 		it("유효한 투두에 대해 알림을 발송한다", async () => {
@@ -195,10 +186,6 @@ describe("TodoReminderProcessor", () => {
 		});
 	});
 
-	// =========================================================================
-	// process — 투두 유효성 검증
-	// =========================================================================
-
 	describe("투두 유효성 검증", () => {
 		it("투두가 완료되었으면 알림을 발송하지 않는다", async () => {
 			// Given
@@ -226,10 +213,6 @@ describe("TodoReminderProcessor", () => {
 			expect(notificationService.createAndSend).not.toHaveBeenCalled();
 		});
 	});
-
-	// =========================================================================
-	// process — DB dedup
-	// =========================================================================
 
 	describe("DB 중복 방지", () => {
 		it("24시간 내 동일 알림이 있으면 스킵한다", async () => {
@@ -259,10 +242,6 @@ describe("TodoReminderProcessor", () => {
 			expect(notificationService.createAndSend).toHaveBeenCalledTimes(1);
 		});
 	});
-
-	// =========================================================================
-	// process — 에러 처리
-	// =========================================================================
 
 	describe("에러 처리", () => {
 		it("알림 발송 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {

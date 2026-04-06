@@ -11,11 +11,7 @@ import type { AiReport } from "@/generated/prisma/client";
 
 import { AiReportMapper } from "./ai-report.mapper";
 
-describe("AiReportMapper", () => {
-	// =========================================================================
-	// computePeriodLabel
-	// =========================================================================
-
+describe("AiReportMapper — AI 리포트 매퍼", () => {
 	describe("computePeriodLabel", () => {
 		it("WEEKLY 타입일 때 '년 주차' 형식으로 반환해야 한다", () => {
 			// Given -WEEKLY 타입, 2026년 10주차
@@ -47,10 +43,6 @@ describe("AiReportMapper", () => {
 			expect(result).toBe("2026년 1주차");
 		});
 	});
-
-	// =========================================================================
-	// computeDateRange
-	// =========================================================================
 
 	describe("computeDateRange", () => {
 		it("WEEKLY 타입일 때 월요일 ~ 일요일 범위를 반환해야 한다", () => {
@@ -88,10 +80,6 @@ describe("AiReportMapper", () => {
 			expect(result.endDate).toBe("2026-02-28");
 		});
 	});
-
-	// =========================================================================
-	// toResponse
-	// =========================================================================
 
 	describe("toResponse", () => {
 		it("Prisma 엔티티를 올바른 DTO 형식으로 변환해야 한다", () => {
@@ -174,10 +162,6 @@ describe("AiReportMapper", () => {
 			expect(result.periodLabel).toBe("2026년 3월");
 		});
 	});
-
-	// =========================================================================
-	// toManyResponse
-	// =========================================================================
 
 	describe("toManyResponse", () => {
 		it("여러 엔티티를 일괄 변환해야 한다", () => {

@@ -1170,7 +1170,7 @@ async handleTodoReminder() {
 ### 1단계: 스키마/모델 준비
 
 - [ ] `prisma/schema.prisma`에 모델 추가
-- [ ] `pnpm prisma:migrate` 실행
+- [ ] `pnpm db:migrate` 실행
 - [ ] `@aido/validators`에 Request/Response Zod 스키마 추가 ([validators.md](./validators.md))
 - [ ] NestJS DTO 추가
 - [ ] `pnpm build` 실행
@@ -1212,4 +1212,4 @@ async handleTodoReminder() {
 ---
 
 **문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**최종 수정일**: 2026-04-05

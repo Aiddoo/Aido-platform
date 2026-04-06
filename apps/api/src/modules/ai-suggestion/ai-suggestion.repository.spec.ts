@@ -12,7 +12,7 @@ import { DatabaseService } from "@/database/database.service";
 
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 
-describe("AiSuggestionRepository", () => {
+describe("AiSuggestionRepository — AI 제안 리포지토리", () => {
 	let repository: AiSuggestionRepository;
 	let db: Mocked<DatabaseService>;
 
@@ -24,10 +24,6 @@ describe("AiSuggestionRepository", () => {
 		repository = unit;
 		db = unitRef.get(DatabaseService);
 	});
-
-	// =========================================================================
-	// findPendingByUserId
-	// =========================================================================
 
 	describe("findPendingByUserId", () => {
 		it("PENDING 상태이고 만료되지 않은 제안을 조회해야 한다", async () => {
@@ -69,10 +65,6 @@ describe("AiSuggestionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// findByIdAndUserId
-	// =========================================================================
-
 	describe("findByIdAndUserId", () => {
 		it("ID와 userId로 제안을 조회해야 한다", async () => {
 			// Given -조회할 제안
@@ -103,10 +95,6 @@ describe("AiSuggestionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// updateStatus
-	// =========================================================================
-
 	describe("updateStatus", () => {
 		it("제안 상태를 업데이트해야 한다", async () => {
 			// Given -업데이트할 제안
@@ -126,10 +114,6 @@ describe("AiSuggestionRepository", () => {
 			expect(result).toEqual(mockUpdated);
 		});
 	});
-
-	// =========================================================================
-	// create
-	// =========================================================================
 
 	describe("create", () => {
 		it("제안을 생성하고 결과를 반환해야 한다", async () => {
@@ -159,10 +143,6 @@ describe("AiSuggestionRepository", () => {
 			expect(result).toEqual(mockSuggestion);
 		});
 	});
-
-	// =========================================================================
-	// createMany
-	// =========================================================================
 
 	describe("createMany", () => {
 		it("여러 제안을 한 번에 생성해야 한다", async () => {
@@ -223,10 +203,6 @@ describe("AiSuggestionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// deletePending
-	// =========================================================================
-
 	describe("deletePending", () => {
 		it("사용자의 PENDING 제안을 전부 삭제해야 한다", async () => {
 			// Given -삭제할 PENDING 제안이 존재
@@ -261,10 +237,6 @@ describe("AiSuggestionRepository", () => {
 		});
 	});
 
-	// =========================================================================
-	// deleteExpired
-	// =========================================================================
-
 	describe("deleteExpired", () => {
 		it("만료된 제안을 삭제해야 한다", async () => {
 			// Given -삭제할 만료 제안
@@ -285,10 +257,6 @@ describe("AiSuggestionRepository", () => {
 			expect(result).toEqual({ count: 3 });
 		});
 	});
-
-	// =========================================================================
-	// findRecentTodos
-	// =========================================================================
 
 	describe("findRecentTodos", () => {
 		it("비반복 할 일만 조회하고 요약 형식으로 반환해야 한다", async () => {

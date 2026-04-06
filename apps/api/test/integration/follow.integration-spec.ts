@@ -150,10 +150,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		jest.clearAllMocks();
 	});
 
-	// ============================================
-	// DI 통합 테스트
-	// ============================================
-
 	describe("DI 통합", () => {
 		it("FollowService가 올바르게 인스턴스화된다", () => {
 			// Given - DI 컨테이너가 구성됨
@@ -175,10 +171,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(repository).toBeInstanceOf(FollowRepository);
 		});
 	});
-
-	// ============================================
-	// sendRequest 통합 테스트
-	// ============================================
 
 	describe("sendRequest 통합 테스트", () => {
 		it("친구 요청이 Repository를 통해 올바르게 수행된다", async () => {
@@ -282,10 +274,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// ============================================
-	// sendRequestByTag 통합 테스트
-	// ============================================
-
 	describe("sendRequestByTag 통합 테스트", () => {
 		it("userTag로 친구 요청을 보내고 Follow 레코드가 생성된다", async () => {
 			// Given - userTag로 사용자 검색 준비
@@ -371,10 +359,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// ============================================
-	// acceptRequest 통합 테스트
-	// ============================================
-
 	describe("acceptRequest 통합 테스트", () => {
 		it("친구 요청 수락이 올바르게 수행된다", async () => {
 			// Given - 수락할 친구 요청 준비
@@ -444,10 +428,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// ============================================
-	// rejectRequest 통합 테스트
-	// ============================================
-
 	describe("rejectRequest 통합 테스트", () => {
 		it("친구 요청 거절이 올바르게 수행된다", async () => {
 			// Given - 거절할 친구 요청 준비
@@ -466,10 +446,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(mockFollowDb.delete).toHaveBeenCalled();
 		});
 	});
-
-	// ============================================
-	// remove 통합 테스트
-	// ============================================
 
 	describe("remove 통합 테스트", () => {
 		it("친구 삭제가 양방향으로 수행된다", async () => {
@@ -499,10 +475,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(mockFollowDb.delete).toHaveBeenCalledTimes(2);
 		});
 	});
-
-	// ============================================
-	// getFriends 통합 테스트
-	// ============================================
 
 	describe("getFriends 통합 테스트", () => {
 		it("친구 목록 조회가 페이지네이션과 함께 수행된다", async () => {
@@ -616,10 +588,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// ============================================
-	// getReceivedRequests 통합 테스트
-	// ============================================
-
 	describe("getReceivedRequests 통합 테스트", () => {
 		it("받은 친구 요청 목록이 올바르게 조회된다", async () => {
 			// Given - 받은 요청 목록 준비
@@ -646,10 +614,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	// ============================================
-	// getSentRequests 통합 테스트
-	// ============================================
-
 	describe("getSentRequests 통합 테스트", () => {
 		it("보낸 친구 요청 목록이 올바르게 조회된다", async () => {
 			// Given - 보낸 요청 목록 준비
@@ -675,10 +639,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(result.items).toHaveLength(1);
 		});
 	});
-
-	// ============================================
-	// isMutualFriend 통합 테스트
-	// ============================================
 
 	describe("isMutualFriend 통합 테스트", () => {
 		it("맞팔 관계가 올바르게 확인된다", async () => {
@@ -720,10 +680,6 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 			expect(result).toBe(false);
 		});
 	});
-
-	// ============================================
-	// count 메서드 통합 테스트
-	// ============================================
 
 	describe("count 메서드 통합 테스트", () => {
 		it("친구 수가 올바르게 집계된다", async () => {

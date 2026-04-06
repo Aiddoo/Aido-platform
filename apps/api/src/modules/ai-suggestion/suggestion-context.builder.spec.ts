@@ -28,7 +28,7 @@ jest.mock("@/common/date/utils/core", () => ({
 	now: () => FIXED_NOW,
 }));
 
-describe("SuggestionContextBuilder", () => {
+describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	let builder: SuggestionContextBuilder;
 	let mockRepository: Mocked<AiSuggestionRepository>;
 	let mockWeatherService: Mocked<WeatherService>;
@@ -47,10 +47,6 @@ describe("SuggestionContextBuilder", () => {
 		mockWeatherService = unitRef.get(WeatherService);
 		mockReportRepository = unitRef.get(AiReportRepository);
 	});
-
-	// ========================================
-	// build()
-	// ========================================
 
 	describe("build", () => {
 		const defaultTodos: TodoSummaryForAnalysis[] = [
@@ -170,10 +166,6 @@ describe("SuggestionContextBuilder", () => {
 			expect(result.streak).toBe("정보 없음");
 		});
 	});
-
-	// ========================================
-	// detectMissingRoutines()
-	// ========================================
 
 	describe("detectMissingRoutines", () => {
 		// 이번 주 월요일: 2026-03-30 (FIXED_NOW=2026-03-31 화요일 기준)

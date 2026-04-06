@@ -17,7 +17,7 @@ import { AI_PROVIDER } from "@/modules/ai/providers/ai.provider";
 import { FakeAiProvider } from "../mocks/fake-ai.provider";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
-describe("AI (e2e)", () => {
+describe("AI E2E", () => {
 	let ctx: E2eTestContext;
 	let fakeAiProvider: FakeAiProvider;
 	let accessToken: string;
@@ -63,25 +63,6 @@ describe("AI (e2e)", () => {
 			customizeBuilder: (builder) =>
 				builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
 		});
-
-		// 테스트 사용자 생성 및 인증
-		const user = await ctx.helpers.createVerifiedUser(
-			testUser.email,
-			testUser.password,
-		);
-		accessToken = user.accessToken;
-
-		// 유저 ID 조회
-		const prisma = ctx.testDatabase.getPrisma();
-		const dbUser = await prisma.user.findUnique({
-			where: { email: testUser.email },
-		});
-
-		if (!dbUser) {
-			throw new Error("Test user not found");
-		}
-
-		testUserId = dbUser.id;
 	}, 60000);
 
 	afterAll(async () => {
@@ -89,14 +70,19 @@ describe("AI (e2e)", () => {
 	});
 
 	beforeEach(async () => {
-		// 각 테스트 전에 FakeAiProvider 및 사용량 초기화
+		// 각 테스트 전에 DB 정리 및 사용자 재생성
+		await ctx.testDatabase.cleanup();
+		ctx.fakeEmailService.clear();
 		fakeAiProvider.clear();
-		await resetUsage(testUserId);
-	});
 
-	// ============================================
-	// POST /ai/parse-todo
-	// ============================================
+		// 테스트 사용자 생성 및 인증
+		const user = await ctx.helpers.createVerifiedUser(
+			testUser.email,
+			testUser.password,
+		);
+		accessToken = user.accessToken;
+		testUserId = user.userId;
+	});
 
 	describe("POST /ai/parse-todo", () => {
 		describe("성공 케이스", () => {
@@ -484,10 +470,6 @@ describe("AI (e2e)", () => {
 		});
 	});
 
-	// ============================================
-	// GET /ai/usage
-	// ============================================
-
 	describe("GET /ai/usage", () => {
 		describe("성공 케이스", () => {
 			it("사용량이 0인 경우", async () => {
@@ -591,10 +573,6 @@ describe("AI (e2e)", () => {
 		});
 	});
 
-	// ============================================
-	// 타임존 처리
-	// ============================================
-
 	describe("타임존 처리", () => {
 		it("X-Timezone 헤더가 프롬프트에 반영된다", async () => {
 			// Given
@@ -637,10 +615,6 @@ describe("AI (e2e)", () => {
 			expect(response.body.data.data.title).toBe("테스트");
 		});
 	});
-
-	// ============================================
-	// 통합 시나리오 테스트
-	// ============================================
 
 	describe("통합 시나리오", () => {
 		it("파싱 요청 후 사용량이 정확히 반영됨", async () => {

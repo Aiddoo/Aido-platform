@@ -14,14 +14,9 @@
 
 import request from "supertest";
 import { DatabaseService } from "@/database/database.service";
-import {
-	createE2eApp,
-	destroyE2eApp,
-	type E2eTestContext,
-	type VerifiedUser,
-} from "./helpers";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers";
 
-describe("Admin (e2e)", () => {
+describe("관리자 E2E", () => {
 	let ctx: E2eTestContext;
 
 	beforeAll(async () => {
@@ -32,37 +27,32 @@ describe("Admin (e2e)", () => {
 		await destroyE2eApp(ctx);
 	});
 
-	describe("관리자 알림 발송", () => {
-		const adminEmail = "admin-e2e@example.com";
-		const regularEmail = "regular-e2e@example.com";
-		const password = "Test1234!";
+	beforeEach(async () => {
+		await ctx.testDatabase.cleanup();
+		ctx.fakeEmailService.clear();
+	});
 
-		let adminUser: VerifiedUser;
-		let regularUser: VerifiedUser;
-
-		beforeAll(async () => {
-			// 관리자 사용자 생성 후 역할 업데이트
-			adminUser = await ctx.helpers.createVerifiedUser(adminEmail, password);
-			const database = ctx.module.get(DatabaseService);
-			await database.user.update({
-				where: { id: adminUser.userId },
-				data: { role: "ADMIN" },
-			});
-
-			// role 변경 후 재로그인하여 ADMIN role이 포함된 토큰 발급
-			const loginResult = await ctx.helpers.loginUser(adminEmail, password);
-			adminUser = { ...adminUser, accessToken: loginResult.accessToken };
-
-			// 일반 사용자 생성
-			regularUser = await ctx.helpers.createVerifiedUser(
-				regularEmail,
-				password,
-			);
+	/** 관리자 사용자를 생성하고 ADMIN role 토큰을 반환하는 헬퍼 */
+	async function createAdminUser(email: string, password: string) {
+		const user = await ctx.helpers.createVerifiedUser(email, password);
+		const database = ctx.module.get(DatabaseService);
+		await database.user.update({
+			where: { id: user.userId },
+			data: { role: "ADMIN" },
 		});
+		// role 변경 후 재로그인하여 ADMIN role이 포함된 토큰 발급
+		const loginResult = await ctx.helpers.loginUser(email, password);
+		return { ...user, accessToken: loginResult.accessToken };
+	}
 
+	describe("관리자 알림 발송", () => {
 		describe("POST /admin/notifications/broadcast — 브로드캐스트 알림", () => {
 			it("관리자가 브로드캐스트 알림을 발송한다", async () => {
-				// Given - 관리자 계정으로 로그인된 상태 (beforeAll에서 생성)
+				// Given - 관리자 계정 생성
+				const adminUser = await createAdminUser(
+					"admin-e2e@example.com",
+					"Test1234!",
+				);
 
 				// When - 브로드캐스트 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -82,7 +72,11 @@ describe("Admin (e2e)", () => {
 			});
 
 			it("비관리자가 호출하면 403을 반환한다", async () => {
-				// Given - 일반 사용자로 로그인된 상태
+				// Given - 일반 사용자 생성
+				const regularUser = await ctx.helpers.createVerifiedUser(
+					"regular-e2e@example.com",
+					"Test1234!",
+				);
 
 				// When - 일반 사용자가 브로드캐스트 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())
@@ -118,7 +112,15 @@ describe("Admin (e2e)", () => {
 
 		describe("POST /admin/notifications/targeted — 타겟 알림", () => {
 			it("관리자가 타겟 알림을 발송한다", async () => {
-				// Given - 관리자 계정으로 로그인된 상태
+				// Given - 관리자 계정과 대상 사용자 생성
+				const adminUser = await createAdminUser(
+					"admin-target@example.com",
+					"Test1234!",
+				);
+				const regularUser = await ctx.helpers.createVerifiedUser(
+					"target-user@example.com",
+					"Test1234!",
+				);
 
 				// When - 타겟 알림 API 호출
 				const response = await request(ctx.app.getHttpServer())

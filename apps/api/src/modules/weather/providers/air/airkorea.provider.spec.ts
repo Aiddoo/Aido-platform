@@ -18,7 +18,7 @@ import { TypedConfigService } from "@/common/config/services/config.service";
 
 import { AirkoreaProvider } from "./airkorea.provider";
 
-describe("AirkoreaProvider", () => {
+describe("AirkoreaProvider — 에어코리아 대기질 프로바이더", () => {
 	let provider: AirkoreaProvider;
 	let configService: Mocked<TypedConfigService>;
 	let fetchSpy: jest.SpiedFunction<typeof globalThis.fetch>;
@@ -36,10 +36,6 @@ describe("AirkoreaProvider", () => {
 	afterEach(() => {
 		jest.restoreAllMocks();
 	});
-
-	// ========================================
-	// getAirQuality
-	// ========================================
 
 	describe("getAirQuality", () => {
 		const lat = 37.5;

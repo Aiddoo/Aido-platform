@@ -28,7 +28,7 @@ import type {
 	TodoCategoryWithCount,
 } from "./types/todo-category.types";
 
-describe("TodoCategoryController", () => {
+describe("TodoCategoryController — 할 일 카테고리 컨트롤러", () => {
 	let controller: TodoCategoryController;
 	let mockTodoCategoryService: Mocked<TodoCategoryService>;
 
