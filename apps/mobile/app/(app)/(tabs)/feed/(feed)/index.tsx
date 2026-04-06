@@ -52,6 +52,7 @@ export default function MyFeedScreen() {
           </Suspense>
         </QueryErrorBoundary>
       </Box>
+      <Spacing size={20} />
     </NestableScrollContainer>
   );
 }

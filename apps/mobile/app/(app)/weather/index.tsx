@@ -404,8 +404,8 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8 }}
         >
-          {items.map((item, i) => (
-            <HourlyCard key={`${item.hour}-${i}`} item={item} />
+          {items.map((item) => (
+            <HourlyCard key={item.hour} item={item} />
           ))}
         </ScrollView>
       </VStack>
