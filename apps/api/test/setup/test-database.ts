@@ -153,6 +153,7 @@ export class TestDatabase {
 			// Todo
 			this.prisma.todo.deleteMany(),
 			this.prisma.todoCategory.deleteMany(),
+			this.prisma.memo.deleteMany(),
 			this.prisma.pushToken.deleteMany(),
 
 			// 사용자 (부모 테이블)

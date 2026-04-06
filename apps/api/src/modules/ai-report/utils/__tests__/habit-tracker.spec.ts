@@ -94,6 +94,15 @@ describe("classifyHabit", () => {
 describe("analyzeHabitFormation", () => {
 	const TZ = "Asia/Seoul";
 
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(new Date("2026-03-24T00:00:00+09:00"));
+	});
+
+	afterEach(() => {
+		jest.useRealTimers();
+	});
+
 	function makeTodo(
 		title: string,
 		date: string,

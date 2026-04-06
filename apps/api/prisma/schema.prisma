@@ -83,6 +83,9 @@ model User {
   aiReports            AiReport[]
   recurringSuggestions RecurringSuggestion[]
 
+  // 관계: 메모
+  memos Memo[]
+
   // 관계: 위치
   location UserLocation?
 
@@ -917,4 +920,24 @@ model RecurringSuggestion {
   @@index([userId, status])
   @@index([userId, expiresAt])
   @@index([userId, updatedAt]) // findRecentResponded 이력 조회용
+}
+
+// =============================================================================
+// 메모
+// =============================================================================
+
+/// 빠른 메모 (최대 20개/유저)
+model Memo {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  content   String   @db.VarChar(5000)
+  isPinned  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isPinned, sortOrder])
+  @@index([userId, sortOrder])
 }

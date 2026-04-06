@@ -269,6 +269,13 @@ export const ErrorCode = {
   // =========================================================================
   WEATHER_1901: 'WEATHER_1901',
   WEATHER_1902: 'WEATHER_1902',
+
+  // =========================================================================
+  // 메모 (MEMO_2000-2099)
+  // =========================================================================
+  MEMO_2001: 'MEMO_2001',
+  MEMO_2002: 'MEMO_2002',
+  MEMO_2003: 'MEMO_2003',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1229,5 +1236,27 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: '위치 정보가 등록되지 않았습니다.',
     description: '날씨 알림을 받으려면 먼저 위치를 등록해주세요.',
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // =========================================================================
+  // 메모 (MEMO_2000-2099)
+  // =========================================================================
+  [ErrorCode.MEMO_2001]: {
+    code: 'MEMO_2001',
+    message: '메모를 찾을 수 없습니다.',
+    description: '해당 ID의 메모가 존재하지 않거나 접근 권한이 없습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.MEMO_2002]: {
+    code: 'MEMO_2002',
+    message: '이동할 위치의 메모를 찾을 수 없습니다.',
+    description: '순서 변경 시 기준이 되는 메모가 존재하지 않습니다.',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.MEMO_2003]: {
+    code: 'MEMO_2003',
+    message: '메모 개수가 최대 한도에 도달했습니다.',
+    description: '사용자당 최대 메모 개수를 초과했습니다. 기존 메모를 정리해주세요.',
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 };
