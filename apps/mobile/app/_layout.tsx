@@ -81,8 +81,8 @@ const AppBootstrapLayout = () => {
     <GestureHandlerProvider>
       <KeyboardProvider>
         <FontScaleProvider>
-          <HeroUIProvider>
-            <ThemeProvider>
+          <ThemeProvider>
+            <HeroUIProvider>
               <QueryProvider>
                 <DIProvider>
                   <AuthProvider>
@@ -98,8 +98,8 @@ const AppBootstrapLayout = () => {
                   </AuthProvider>
                 </DIProvider>
               </QueryProvider>
-            </ThemeProvider>
-          </HeroUIProvider>
+            </HeroUIProvider>
+          </ThemeProvider>
         </FontScaleProvider>
       </KeyboardProvider>
     </GestureHandlerProvider>
