@@ -35,6 +35,7 @@ import { DailyCompletionModule } from "@/modules/daily-completion";
 import { FollowModule } from "@/modules/follow";
 import { HealthModule } from "@/modules/health";
 import { InquiryModule } from "@/modules/inquiry";
+import { MemoModule } from "@/modules/memo";
 import { NotificationModule } from "@/modules/notification";
 import { NudgeModule } from "@/modules/nudge";
 import { SchedulerModule } from "@/modules/scheduler";
@@ -108,6 +109,7 @@ import { AppService } from "./app.service";
 		FollowModule,
 		HealthModule,
 		InquiryModule,
+		MemoModule,
 		NotificationModule,
 		NudgeModule,
 		SchedulerModule,
