@@ -114,7 +114,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
   const showDateTime = todo.formattedTime && !todo.isAllDay;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
