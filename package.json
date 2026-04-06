@@ -50,13 +50,13 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.15",
-    "@commitlint/cli": "^20.4.1",
-    "@commitlint/config-conventional": "^20.4.1",
-    "@commitlint/types": "^20.4.0",
+    "@biomejs/biome": "^2.4.10",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/types": "^20.5.0",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.4.0",
     "simple-git-hooks": "^2.13.1",
     "sort-package-json": "^3.6.0",
     "tsx": "^4.21.0",

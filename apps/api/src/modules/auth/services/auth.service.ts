@@ -409,7 +409,7 @@ export class AuthService {
 			user.id,
 			"CREDENTIAL",
 		);
-		if (!account || !account.password) {
+		if (!account?.password) {
 			// Credential 계정이 아닌 경우 (소셜 로그인 등)
 			await this.loginAttemptRepository.create({
 				email,

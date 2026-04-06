@@ -161,7 +161,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 
 			const target = eligibleFriends[0];
 
-			if (!target || !target.lastActiveAt) {
+			if (!target?.lastActiveAt) {
 				continue;
 			}
 

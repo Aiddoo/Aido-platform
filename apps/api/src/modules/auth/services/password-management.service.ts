@@ -140,7 +140,7 @@ export class PasswordManagementService {
 			userId,
 			"CREDENTIAL",
 		);
-		if (!account || !account.password) {
+		if (!account?.password) {
 			throw BusinessExceptions.noCredentialAccountForPasswordChange(userId);
 		}
 
