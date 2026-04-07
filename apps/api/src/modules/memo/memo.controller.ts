@@ -37,6 +37,7 @@ import {
 	CreateMemoDto,
 	GetMemosQueryDto,
 	MemoDeleteResponseDto,
+	MemoDetailResponseDto,
 	MemoIdParamDto,
 	MemoListResponseDto,
 	MemoMutationResponseDto,
@@ -126,6 +127,23 @@ export class MemoController {
 			cursor: query.cursor,
 			size: query.size,
 		});
+	}
+
+	@Get(":id")
+	@ApiDoc({
+		summary: "메모 상세 조회",
+		operationId: "getMemo",
+		description: "메모 ID로 단일 메모를 조회합니다.",
+	})
+	@ApiSuccessResponse({ type: MemoDetailResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.MEMO_2001)
+	async findOne(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: MemoIdParamDto,
+	): Promise<MemoDetailResponseDto> {
+		this.#logger.debug(`메모 조회: id=${params.id}, user=${user.userId}`);
+		return this.memoService.findOne(user.userId, params.id);
 	}
 
 	@Patch(":id")

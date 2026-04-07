@@ -7,6 +7,7 @@ import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
 import { FriendService } from '@src/features/friend/services/friend.service';
 import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
+import { MemoService } from '@src/features/memo/services/memo.service';
 import { DeviceIdRepositoryImpl } from '@src/features/notification/repositories/device-id.repository.impl';
 import { DeviceIdService } from '@src/features/notification/services/device-id.service';
 import { NotificationService } from '@src/features/notification/services/notification.service';
@@ -53,6 +54,7 @@ export interface DIContainer {
   authService: AuthService;
   friendService: FriendService;
   inquiryService: InquiryService;
+  memoService: MemoService;
   subTodoService: SubTodoService;
   todoService: TodoService;
   todoCategoryService: TodoCategoryService;
@@ -112,6 +114,9 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
 
+    // Memo
+    const memoService = new MemoService(authHttpClient);
+
     // Todo
     const subTodoService = new SubTodoService(authHttpClient);
     const todoService = new TodoService(authHttpClient);
@@ -153,6 +158,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       authService,
       friendService,
       inquiryService,
+      memoService,
       subTodoService,
       todoService,
       todoCategoryService,
@@ -190,6 +196,7 @@ export const useAiService = () => useDI().aiService;
 export const useAuthService = () => useDI().authService;
 export const useFriendService = () => useDI().friendService;
 export const useInquiryService = () => useDI().inquiryService;
+export const useMemoService = () => useDI().memoService;
 export const useSubTodoService = () => useDI().subTodoService;
 export const useTodoService = () => useDI().todoService;
 export const useTodoCategoryService = () => useDI().todoCategoryService;

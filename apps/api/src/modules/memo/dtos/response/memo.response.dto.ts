@@ -1,6 +1,7 @@
 import {
 	convertMemoToTodoResponseSchema,
 	memoDeleteResponseSchema,
+	memoDetailResponseSchema,
 	memoListResponseSchema,
 	memoMutationResponseSchema,
 	memoResourceLimitResponseSchema,
@@ -9,6 +10,9 @@ import {
 import { createZodDto } from "nestjs-zod";
 
 export class MemoResponseDto extends createZodDto(memoSchema) {}
+export class MemoDetailResponseDto extends createZodDto(
+	memoDetailResponseSchema,
+) {}
 export class MemoMutationResponseDto extends createZodDto(
 	memoMutationResponseSchema,
 ) {}

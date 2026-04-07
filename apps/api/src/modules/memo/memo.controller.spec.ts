@@ -92,6 +92,27 @@ describe("MemoController — 메모 컨트롤러", () => {
 		});
 	});
 
+	describe("findOne", () => {
+		it("메모 상세 조회 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 조회 대상 메모 ID와 서비스 응답이 준비되었을 때
+			const params = { id: 1 };
+			const serviceResult = {
+				memo: { id: 1, content: "테스트 메모" },
+			};
+			memoService.findOne.mockResolvedValue(serviceResult as any);
+
+			// When - findOne을 호출하면
+			const result = await controller.findOne(mockUser, params);
+
+			// Then - 서비스에 userId와 memoId를 전달하고 결과를 반환해야 한다
+			expect(memoService.findOne).toHaveBeenCalledWith(
+				mockUser.userId,
+				params.id,
+			);
+			expect(result).toEqual(serviceResult);
+		});
+	});
+
 	describe("update", () => {
 		it("메모 수정 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
 			// Given - 수정 DTO와 서비스 응답이 준비되었을 때

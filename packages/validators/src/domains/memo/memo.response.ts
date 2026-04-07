@@ -27,6 +27,26 @@ export const memoSchema = z
 
 export type Memo = z.infer<typeof memoSchema>;
 
+export const memoDetailResponseSchema = z
+  .object({
+    memo: memoSchema.describe('메모 정보'),
+  })
+  .meta({
+    example: {
+      memo: {
+        id: 1,
+        userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+        content: '장보기: 우유, 계란, 빵',
+        isPinned: false,
+        sortOrder: 0,
+        createdAt: '2026-01-17T10:00:00.000Z',
+        updatedAt: '2026-01-17T10:00:00.000Z',
+      },
+    },
+  });
+
+export type MemoDetailResponse = z.infer<typeof memoDetailResponseSchema>;
+
 export const memoListResponseSchema = z
   .object({
     items: z.array(memoSchema).describe('메모 목록'),

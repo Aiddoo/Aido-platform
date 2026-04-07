@@ -12,6 +12,7 @@ export { UpdateMemoDto } from "./request/update-memo.dto";
 export {
 	ConvertMemoToTodoResponseDto,
 	MemoDeleteResponseDto,
+	MemoDetailResponseDto,
 	MemoListResponseDto,
 	MemoMutationResponseDto,
 	MemoResourceLimitResponseDto,

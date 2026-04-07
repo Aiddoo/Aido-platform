@@ -1,5 +1,6 @@
 import type { DayOfWeek } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useConvertMemoToTodoMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todo-mutation-options';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
@@ -74,7 +75,21 @@ interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
   todo: TodoItemViewModel;
 }
 
-type AddTodoBottomSheetProps = AddTodoBottomSheetCreateProps | AddTodoBottomSheetEditProps;
+interface AddTodoBottomSheetConvertMemoProps extends AddTodoBottomSheetBaseProps {
+  mode: 'convert-memo';
+  memoId: number;
+  selectedDate: Date;
+  categoryId: number;
+  initialValues?: {
+    title?: string;
+  };
+  onSuccess?: () => void;
+}
+
+type AddTodoBottomSheetProps =
+  | AddTodoBottomSheetCreateProps
+  | AddTodoBottomSheetEditProps
+  | AddTodoBottomSheetConvertMemoProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
@@ -100,6 +115,19 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       endDate: initialValues?.endDate ?? null,
       scheduledTime: initialValues?.scheduledTime ?? undefined,
       isAllDay: initialValues?.isAllDay ?? true,
+      categoryId,
+      visibility: 'PUBLIC' as const,
+      isRecurring: false,
+      repeatEndDate: null,
+      daysOfWeek: [],
+      source: 'manual' as const,
+    }))
+    .with({ mode: 'convert-memo' }, ({ selectedDate, categoryId, initialValues }) => ({
+      title: initialValues?.title ?? '',
+      startDate: selectedDate,
+      endDate: null,
+      scheduledTime: undefined,
+      isAllDay: true,
       categoryId,
       visibility: 'PUBLIC' as const,
       isRecurring: false,
@@ -137,9 +165,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const createMutation = useMutation(useCreateTodoMutationOptions());
   const updateMutation = useMutation(useUpdateTodoMutationOptions());
   const createRecurringMutation = useMutation(useCreateRecurringTodoMutationOptions());
+  const convertMemoMutation = useMutation(useConvertMemoToTodoMutationOptions());
 
   const isSubmitting =
-    createMutation.isPending || updateMutation.isPending || createRecurringMutation.isPending;
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    createRecurringMutation.isPending ||
+    convertMemoMutation.isPending;
 
   const onSubmit = methods.handleSubmit((data: AddTodoFormInput) => {
     match(props)
@@ -157,6 +189,26 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             },
           },
           { onSuccess: onClose },
+        );
+      })
+      .with({ mode: 'convert-memo' }, (convertProps) => {
+        convertMemoMutation.mutate(
+          {
+            memoId: convertProps.memoId,
+            input: {
+              categoryId: data.categoryId,
+              startDate: formatDate(data.startDate),
+              scheduledTime: data.isAllDay ? undefined : (data.scheduledTime ?? undefined),
+              isAllDay: data.isAllDay,
+              visibility: data.visibility,
+            },
+          },
+          {
+            onSuccess: () => {
+              onClose();
+              convertProps.onSuccess?.();
+            },
+          },
         );
       })
       .with({ mode: 'create' }, (createProps) => {
