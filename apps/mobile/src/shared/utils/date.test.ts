@@ -1,5 +1,5 @@
 import type { DayOfWeek } from '@aido/validators';
-import { formatDaysOfWeek, getDayOfWeekLabel } from './date';
+import { formatDaysOfWeek, getDayOfWeekLabel, getMonthWeeks } from './date';
 
 describe('formatDaysOfWeek', () => {
   it('여러 요일을 순서대로 정렬하여 한글로 변환해야 한다', () => {
@@ -55,6 +55,43 @@ describe('formatDaysOfWeek', () => {
 
     // Then
     expect(days).toEqual(['FRI', 'MON']);
+  });
+});
+
+describe('getMonthWeeks', () => {
+  it('5주짜리 달은 5주를 반환해야 한다', () => {
+    // Given — 2026년 7월 (5주)
+    const july = new Date(2026, 6, 1);
+
+    // When
+    const weeks = getMonthWeeks(july);
+
+    // Then
+    expect(weeks).toHaveLength(5);
+  });
+
+  it('각 주는 7일이어야 한다', () => {
+    // Given
+    const april = new Date(2026, 3, 1);
+
+    // When
+    const weeks = getMonthWeeks(april);
+
+    // Then
+    for (const week of weeks) {
+      expect(week).toHaveLength(7);
+    }
+  });
+
+  it('6주짜리 달은 6주를 반환해야 한다', () => {
+    // Given — 2026년 8월 (6주)
+    const august = new Date(2026, 7, 1);
+
+    // When
+    const weeks = getMonthWeeks(august);
+
+    // Then
+    expect(weeks).toHaveLength(6);
   });
 });
 
