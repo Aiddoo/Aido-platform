@@ -160,7 +160,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
               <>
                 <ActionButton
                   onPress={() => setIsEditing(true)}
-                  icon={<EditIcon width={20} height={20} colorClassName="text-gray-8" />}
+                  icon={<EditIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
                 <ActionButton
                   onPress={handleTogglePin}
@@ -169,17 +169,17 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
                     <PinIcon
                       width={20}
                       height={20}
-                      colorClassName={localPinned ? 'text-main' : 'text-gray-8'}
+                      colorClassName={localPinned ? 'text-main' : 'text-gray-10'}
                     />
                   }
                 />
                 <ActionButton
                   onPress={handleConvertToTodo}
-                  icon={<ListIcon width={20} height={20} colorClassName="text-gray-8" />}
+                  icon={<ListIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
                 <ActionButton
                   onPress={() => setIsDeleteDialogOpen(true)}
-                  icon={<TrashIcon width={20} height={20} colorClassName="text-error" />}
+                  icon={<TrashIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
               </>
             )}
