@@ -25,7 +25,6 @@ export const useToggleMemoPinMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_, { memoId, isPinned }) => {
-      toast.success(isPinned ? '메모를 고정했어요' : '메모 고정을 해제했어요');
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
     onError: (error) => {

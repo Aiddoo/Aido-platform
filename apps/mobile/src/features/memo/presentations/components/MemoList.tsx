@@ -26,49 +26,32 @@ export function MemoList({ header }: MemoListProps) {
     );
   }
 
-  const left = memos.filter((_, i) => i % 2 === 0);
-  const right = memos.filter((_, i) => i % 2 === 1);
+  const columns = [memos.filter((_, i) => i % 2 === 0), memos.filter((_, i) => i % 2 === 1)];
 
   return (
     <>
       {header}
       <HStack px={12} gap={12} align="start">
-        <VStack flex={1} gap={12}>
-          {left.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              layout={LinearTransition.springify().damping(18).stiffness(120)}
-              entering={FadeInDown.delay(index * 2 * 60)
-                .duration(400)
-                .damping(15)}
-            >
-              <MemoList.Item
-                id={item.id}
-                content={item.content}
-                badge={item.isPinned ? '고정됨' : undefined}
-                date={formatMonthDay(item.createdAt)}
-              />
-            </Animated.View>
-          ))}
-        </VStack>
-        <VStack flex={1} gap={12}>
-          {right.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              layout={LinearTransition.springify().damping(18).stiffness(120)}
-              entering={FadeInDown.delay((index * 2 + 1) * 60)
-                .duration(400)
-                .damping(15)}
-            >
-              <MemoList.Item
-                id={item.id}
-                content={item.content}
-                badge={item.isPinned ? '고정됨' : undefined}
-                date={formatMonthDay(item.createdAt)}
-              />
-            </Animated.View>
-          ))}
-        </VStack>
+        {columns.map((column, colIndex) => (
+          <VStack key={`col-${column[0]?.id ?? colIndex}`} flex={1} gap={12}>
+            {column.map((item, rowIndex) => (
+              <Animated.View
+                key={item.id}
+                layout={LinearTransition.springify().damping(18).stiffness(120)}
+                entering={FadeInDown.delay((rowIndex * 2 + colIndex) * 60)
+                  .duration(400)
+                  .damping(15)}
+              >
+                <MemoList.Item
+                  id={item.id}
+                  content={item.content}
+                  isPinned={item.isPinned}
+                  date={formatMonthDay(item.createdAt)}
+                />
+              </Animated.View>
+            ))}
+          </VStack>
+        ))}
       </HStack>
     </>
   );
@@ -77,12 +60,12 @@ export function MemoList({ header }: MemoListProps) {
 MemoList.Item = function Item({
   id,
   content,
-  badge,
+  isPinned,
   date,
 }: {
   id: number;
   content: string;
-  badge?: string;
+  isPinned: boolean;
   date: string;
 }) {
   const router = useRouter();
@@ -94,11 +77,11 @@ MemoList.Item = function Item({
         p={16}
         className="rounded-xl bg-gray-2 border border-gray-3 shadow-sm shadow-black/5"
       >
-        {badge && (
+        {isPinned && (
           <HStack align="center" gap={4}>
             <PinIcon width={12} height={12} colorClassName="text-main" />
             <Text size="e1" tone="brand" weight="medium">
-              {badge}
+              고정됨
             </Text>
           </HStack>
         )}
