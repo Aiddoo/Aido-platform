@@ -1,7 +1,8 @@
 import { Box, FishIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { isSameDay } from '@src/shared/utils/date';
+import { isSameDay, isSameMonth } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
+import { match } from 'ts-pattern';
 import type { DailyCompletionSummary } from '../../../models/todo.model';
 import { DAY_TYPE_TONE, getMonthViewDayStyle, isTodayHighlighted } from '../../utils/calendar-day';
 
@@ -18,6 +19,7 @@ export const CalendarDateCell = ({
   onPress,
   completion,
 }: CalendarDateCellProps) => {
+  const isOutOfMonth = !isSameMonth(date, selectedDate);
   const dayOfMonth = date.getDate();
   const isSelected = isSameDay(date, selectedDate);
   const dayStyle = getMonthViewDayStyle({ date, isSelected });
@@ -30,7 +32,10 @@ export const CalendarDateCell = ({
   return (
     <PressableFeedback
       onPress={() => onPress(date)}
-      className="h-[56px] flex-1 items-center justify-between py-1"
+      className={cn(
+        'h-[56px] flex-1 items-center justify-between py-1',
+        isOutOfMonth && 'opacity-20',
+      )}
     >
       <Box
         className={cn(
@@ -44,11 +49,13 @@ export const CalendarDateCell = ({
         </Text>
       </Box>
       <Box className="h-3 items-center justify-center">
-        {isAllComplete ? (
-          <FishIcon width={16} height={12} colorClassName="text-fish" />
-        ) : hasTodos ? (
-          <CategoryIndicator colors={colors} />
-        ) : null}
+        {match({ isOutOfMonth, isAllComplete, hasTodos })
+          .with({ isOutOfMonth: true }, () => null)
+          .with({ isAllComplete: true }, () => (
+            <FishIcon width={16} height={12} colorClassName="text-fish" />
+          ))
+          .with({ hasTodos: true }, () => <CategoryIndicator colors={colors} />)
+          .otherwise(() => null)}
       </Box>
     </PressableFeedback>
   );
