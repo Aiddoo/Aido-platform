@@ -59,6 +59,7 @@ export {
   PauseIcon,
   PawIcon,
   PersonIcon,
+  PinIcon,
   PlusIcon,
   RepeatIcon,
   SearchIcon,
