@@ -19,11 +19,13 @@ const TIMING = { fast: 250, normal: 400 } as const;
 interface ScrollProgressWidgetProps {
   progress: SharedValue<number>;
   onScrollToTop: () => void;
+  bottomOffset?: number;
 }
 
 export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   progress,
   onScrollToTop,
+  bottomOffset = 50,
 }: ScrollProgressWidgetProps) {
   const surface = useResolveClassNames('bg-gray-2');
   const inner = useResolveClassNames('bg-gray-3');
@@ -66,6 +68,7 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
     <Animated.View
       style={[
         styles.container,
+        { bottom: bottomOffset },
         containerStyle,
         {
           backgroundColor: surface.backgroundColor as string,
@@ -103,7 +106,6 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 50,
     alignSelf: 'center',
     height: 56,
     borderRadius: 28,

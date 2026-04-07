@@ -74,7 +74,11 @@ export default function MemoScreen() {
         </QueryErrorBoundary>
       </Animated.ScrollView>
 
-      <ScrollProgressWidget progress={progress} onScrollToTop={handleScrollToTop} />
+      <ScrollProgressWidget
+        progress={progress}
+        onScrollToTop={handleScrollToTop}
+        bottomOffset={tabBarHeight + safeBottom + 16}
+      />
     </View>
   );
 }
