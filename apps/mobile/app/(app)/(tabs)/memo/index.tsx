@@ -28,7 +28,7 @@ export default function MemoScreen() {
       style={{ flex: 1 }}
       contentContainerStyle={{
         flexGrow: 1,
-        paddingTop: safeTop + 8,
+        paddingTop: safeTop,
         paddingBottom: tabBarHeight,
       }}
       showsVerticalScrollIndicator={false}
