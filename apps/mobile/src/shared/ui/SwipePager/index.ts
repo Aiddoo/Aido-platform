@@ -1,0 +1,1 @@
+export { SwipePager } from './SwipePager';
