@@ -1,3 +1,4 @@
+import DocsIconSvg from '@assets/icons/ic_docs.svg';
 import ListIconSvg from '@assets/icons/ic_list.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -65,6 +66,11 @@ function IOSLiquidGlassTabs() {
         <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="memo">
+        <NativeTabs.Trigger.Label>메모</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="note.text" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="mypage">
         <NativeTabs.Trigger.Label>마이</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.fill" />
@@ -99,6 +105,17 @@ function AndroidBottomTabs() {
         options={{
           title: '할 일',
           tabBarIcon: ({ color, size }) => <ListIconSvg width={size} height={size} color={color} />,
+        }}
+        listeners={{
+          tabPress: () => Haptics.selectionAsync(),
+        }}
+      />
+
+      <Tabs.Screen
+        name="memo"
+        options={{
+          title: '메모',
+          tabBarIcon: ({ color, size }) => <DocsIconSvg width={size} height={size} color={color} />,
         }}
         listeners={{
           tabPress: () => Haptics.selectionAsync(),
