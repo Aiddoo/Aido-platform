@@ -8,11 +8,11 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentatio
 import {
   ArrowLeftIcon,
   Box,
+  CheckboxIcon,
   CheckIcon,
   ConfirmDialog,
   EditIcon,
   HStack,
-  MoveRightIcon,
   PinIcon,
   Text,
   TextArea,
@@ -175,7 +175,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
                 />
                 <ActionButton
                   onPress={handleConvertToTodo}
-                  icon={<MoveRightIcon width={20} height={20} colorClassName="text-gray-10" />}
+                  icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
                 <ActionButton
                   onPress={() => setIsDeleteDialogOpen(true)}

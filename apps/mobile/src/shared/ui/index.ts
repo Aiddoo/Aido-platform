@@ -27,6 +27,7 @@ export {
   ArrowUpIcon,
   BellIcon,
   CalendarIcon,
+  CheckboxIcon,
   CheckIcon,
   CheckmarkIcon,
   ClockIcon,
