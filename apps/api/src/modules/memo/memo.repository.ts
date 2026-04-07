@@ -40,7 +40,7 @@ export class MemoRepository {
 				skip: 1,
 				cursor: { id: cursor },
 			}),
-			orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }, { id: "asc" }],
+			orderBy: [{ isPinned: "desc" }, { sortOrder: "desc" }, { id: "desc" }],
 		});
 	}
 

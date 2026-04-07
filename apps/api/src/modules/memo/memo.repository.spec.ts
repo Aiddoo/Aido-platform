@@ -30,7 +30,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 	describe("findManyByUserId", () => {
 		const userId = "user-123";
 
-		it("isPinned desc, sortOrder asc, id asc 순서로 정렬하여 조회해야 한다", async () => {
+		it("isPinned desc, sortOrder desc, id desc 순서로 정렬하여 조회해야 한다", async () => {
 			// Given - 빈 결과가 준비되었을 때
 			(db.memo.findMany as jest.Mock).mockResolvedValue([]);
 
@@ -41,10 +41,14 @@ describe("MemoRepository — 메모 리포지토리", () => {
 				size: 20,
 			});
 
-			// Then - orderBy가 [isPinned desc, sortOrder asc, id asc]이어야 한다
+			// Then - orderBy가 [isPinned desc, sortOrder desc, id desc]이어야 한다
 			expect(db.memo.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }, { id: "asc" }],
+					orderBy: [
+						{ isPinned: "desc" },
+						{ sortOrder: "desc" },
+						{ id: "desc" },
+					],
 				}),
 			);
 		});
