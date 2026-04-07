@@ -12,7 +12,7 @@ import {
   ConfirmDialog,
   EditIcon,
   HStack,
-  ListIcon,
+  MoveRightIcon,
   PinIcon,
   Text,
   TextArea,
@@ -175,7 +175,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
                 />
                 <ActionButton
                   onPress={handleConvertToTodo}
-                  icon={<ListIcon width={20} height={20} colorClassName="text-gray-10" />}
+                  icon={<MoveRightIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
                 <ActionButton
                   onPress={() => setIsDeleteDialogOpen(true)}
