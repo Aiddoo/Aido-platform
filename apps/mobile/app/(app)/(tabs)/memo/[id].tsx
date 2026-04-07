@@ -27,7 +27,7 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,10 +40,13 @@ export default function MemoDetailScreen() {
   const { data } = useSuspenseInfiniteQuery(useGetMemosQueryOptions());
   const memo = data.pages.flatMap((page) => page.items).find((m) => m.id === memoId);
 
-  if (!memo) {
-    router.back();
-    return null;
-  }
+  useEffect(() => {
+    if (!memo) {
+      router.back();
+    }
+  }, [memo, router]);
+
+  if (!memo) return null;
 
   return (
     <KeyboardAvoidingView
@@ -72,6 +75,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [localPinned, setLocalPinned] = useState(isPinned);
 
   const updateMutation = useMutation(useUpdateMemoMutationOptions());
   const deleteMutation = useMutation(useDeleteMemoMutationOptions());
@@ -90,8 +94,10 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
   };
 
   const handleTogglePin = () => {
+    const newPinned = !localPinned;
+    setLocalPinned(newPinned);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    togglePinMutation.mutate({ memoId, isPinned: !isPinned });
+    togglePinMutation.mutate({ memoId, isPinned: newPinned });
   };
 
   const handleDelete = () => {
@@ -167,7 +173,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
                     <PinIcon
                       width={20}
                       height={20}
-                      colorClassName={isPinned ? 'text-main' : 'text-gray-8'}
+                      colorClassName={localPinned ? 'text-main' : 'text-gray-8'}
                     />
                   }
                 />

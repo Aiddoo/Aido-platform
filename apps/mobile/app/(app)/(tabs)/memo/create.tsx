@@ -6,15 +6,14 @@ import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, type TextInput } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MemoCreateScreen() {
   const router = useRouter();
   const { top: safeTop } = useSafeAreaInsets();
   const [content, setContent] = useState('');
-  const inputRef = useRef<TextInput>(null);
   const createMutation = useMutation(useCreateMemoMutationOptions());
 
   const isValid = MemoPolicy.isContentValid(content);
@@ -67,7 +66,6 @@ export default function MemoCreateScreen() {
             새 메모 작성
           </Text>
           <TextArea
-            ref={inputRef}
             variant="filled"
             placeholder="아이디어를 자유롭게 적어보세요..."
             value={content}
