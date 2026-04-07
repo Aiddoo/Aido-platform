@@ -1,9 +1,9 @@
 import { MemoPolicy } from '@src/features/memo/models/memo.model';
+import { useConvertMemoToTodoMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todo-mutation-options';
 import { useDeleteMemoMutationOptions } from '@src/features/memo/presentations/queries/use-delete-memo-mutation-options';
 import { useGetMemosQueryOptions } from '@src/features/memo/presentations/queries/use-get-memos-query-options';
 import { useToggleMemoPinMutationOptions } from '@src/features/memo/presentations/queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-update-memo-mutation-options';
-import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import {
   ArrowLeftIcon,
@@ -17,10 +17,10 @@ import {
   Text,
   TextArea,
   TrashIcon,
-  useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -68,16 +68,17 @@ interface MemoDetailContentProps {
 
 function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailContentProps) {
   const router = useRouter();
-  const overlay = useOverlay();
 
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [localPinned, setLocalPinned] = useState(isPinned);
 
   const updateMutation = useMutation(useUpdateMemoMutationOptions());
   const deleteMutation = useMutation(useDeleteMemoMutationOptions());
   const togglePinMutation = useMutation(useToggleMemoPinMutationOptions());
+  const convertMutation = useMutation(useConvertMemoToTodoMutationOptions());
 
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = categoriesData.categories[0]?.id;
@@ -106,27 +107,18 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
   const handleConvertToTodo = () => {
     if (!defaultCategoryId) return;
 
-    overlay.open(({ isOpen, close, exit }) => (
-      <AddTodoBottomSheet
-        mode="create"
-        selectedDate={new Date()}
-        categoryId={defaultCategoryId}
-        initialValues={{ title: initialContent.slice(0, 200) }}
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        onSuccess={() => {
-          deleteMutation.mutate(memoId, {
-            onSuccess: () => router.back(),
-          });
-        }}
-      />
-    ));
+    convertMutation.mutate(
+      {
+        memoId,
+        input: {
+          categoryId: defaultCategoryId,
+          startDate: formatDate(new Date()),
+          isAllDay: true,
+          visibility: 'PUBLIC',
+        },
+      },
+      { onSuccess: () => router.back() },
+    );
   };
 
   return (
@@ -174,7 +166,8 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
                   }
                 />
                 <ActionButton
-                  onPress={handleConvertToTodo}
+                  onPress={() => setIsConvertDialogOpen(true)}
+                  isDisabled={!defaultCategoryId}
                   icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-10" />}
                 />
                 <ActionButton
@@ -209,6 +202,33 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
           )}
         </ScrollView>
       </VStack>
+
+      <ConfirmDialog
+        isOpen={isConvertDialogOpen}
+        onOpenChange={setIsConvertDialogOpen}
+        title={<ConfirmDialog.Title>할 일로 옮길까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            이 메모가 오늘의 할 일로 등록되고, 메모에서는 사라져요
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton
+            onPress={() => setIsConvertDialogOpen(false)}
+            disabled={convertMutation.isPending}
+          >
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton
+            onPress={handleConvertToTodo}
+            isLoading={convertMutation.isPending}
+          >
+            옮기기
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
 
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}

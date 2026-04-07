@@ -72,7 +72,7 @@ MemoList.Empty = function Empty() {
     <Result
       icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
       title="아직 메모가 없어요"
-      description="+ 버튼을 눌러 메모를 추가해보세요"
+      description={'애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요'}
     />
   );
 };
