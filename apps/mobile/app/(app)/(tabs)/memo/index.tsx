@@ -55,7 +55,7 @@ export default function MemoScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: safeTop + 8,
+          paddingTop: safeTop,
           paddingBottom: bottomPadding,
         }}
         showsVerticalScrollIndicator={false}
@@ -94,7 +94,7 @@ function Header() {
   };
 
   return (
-    <HStack align="center" px={16} mb={16}>
+    <HStack align="center" px={16} mb={8}>
       <Box flex={1}>
         <Text size="h1" weight="semibold" tone="brand">
           메모 추가

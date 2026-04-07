@@ -17,14 +17,12 @@ import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { z } from 'zod';
 
 type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
 
 export default function MemoCreateScreen() {
   const router = useRouter();
-  const { top: safeTop } = useSafeAreaInsets();
 
   const {
     control,
@@ -48,7 +46,7 @@ export default function MemoCreateScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Box className="flex-1" px={8} style={{ paddingTop: safeTop }}>
+        <Box className="flex-1" px={8}>
           <HStack align="center" mb={16}>
             <PressableFeedback
               onPress={() => router.back()}
