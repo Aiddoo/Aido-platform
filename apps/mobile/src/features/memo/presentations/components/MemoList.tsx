@@ -1,6 +1,5 @@
 import MasonryList from '@react-native-seoul/masonry-list';
 import { DocsIcon, HStack, PinIcon, Result, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { type Href, useRouter } from 'expo-router';
@@ -98,7 +97,11 @@ interface MemoCardProps {
 function MemoCard({ content, isPinned, date, onPress, style }: MemoCardProps) {
   return (
     <PressableFeedback onPress={onPress} style={style}>
-      <VStack gap={8} className={cn('rounded-xl bg-gray-1 p-4', 'shadow-sm shadow-black/5')}>
+      <VStack
+        gap={8}
+        p={16}
+        className="rounded-xl bg-gray-2 border border-gray-3 shadow-sm shadow-black/5"
+      >
         {isPinned && (
           <HStack align="center" gap={4}>
             <PinIcon width={12} height={12} colorClassName="text-main" />
@@ -108,7 +111,7 @@ function MemoCard({ content, isPinned, date, onPress, style }: MemoCardProps) {
           </HStack>
         )}
 
-        <Text size="b3" shade={10} numberOfLines={6}>
+        <Text size="b3" shade={10} numberOfLines={4}>
           {content}
         </Text>
 
