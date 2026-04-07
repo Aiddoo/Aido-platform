@@ -1,5 +1,5 @@
 import MasonryList from '@react-native-seoul/masonry-list';
-import { Box, HStack, PinIcon, Text, VStack } from '@src/shared/ui';
+import { DocsIcon, HStack, PinIcon, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -52,8 +52,6 @@ export function MemoList() {
   );
 }
 
-// ─── Loading ────────────────────────────────────────────────
-
 const SKELETON_KEYS = ['skeleton-a', 'skeleton-b', 'skeleton-c', 'skeleton-d'] as const;
 
 MemoList.Loading = function Loading() {
@@ -70,39 +68,24 @@ MemoList.Loading = function Loading() {
   );
 };
 
-// ─── Empty ──────────────────────────────────────────────────
-
 MemoList.Empty = function Empty() {
   return (
-    <Box className="flex-1 items-center justify-center" py={64}>
-      <Text size="b3" shade={6}>
-        메모가 없어요
-      </Text>
-      <Text size="b4" shade={5} className="mt-1">
-        + 버튼을 눌러 메모를 추가해보세요
-      </Text>
-    </Box>
+    <Result
+      icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
+      title="아직 메모가 없어요"
+      description="+ 버튼을 눌러 메모를 추가해보세요"
+    />
   );
 };
-
-// ─── Error ──────────────────────────────────────────────────
 
 MemoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
   return (
-    <Box className="items-center" px={16} py={24} gap={8}>
-      <Text size="b3" shade={8}>
-        메모를 불러오지 못했어요
-      </Text>
-      <PressableFeedback onPress={reset}>
-        <Text size="b4" tone="brand">
-          재시도
-        </Text>
-      </PressableFeedback>
-    </Box>
+    <Result
+      title="메모를 불러오지 못했어요"
+      button={<Result.Button onPress={reset}>재시도</Result.Button>}
+    />
   );
 };
-
-// ─── MemoCard (지역 컴포넌트) ───────────────────────────────
 
 interface MemoCardProps {
   content: string;

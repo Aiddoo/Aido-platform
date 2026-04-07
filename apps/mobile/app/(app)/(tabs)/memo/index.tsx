@@ -47,8 +47,6 @@ export default function MemoScreen() {
   );
 }
 
-// ─── Header ─────────────────────────────────────────────────
-
 function Header() {
   const router = useRouter();
   const toast = useAppToast();
@@ -64,9 +62,9 @@ function Header() {
   };
 
   return (
-    <HStack align="center" className="mb-4 px-4">
-      <Box className="flex-1">
-        <Text size="h1" weight="semibold" tone="brand" className="uppercase tracking-wide">
+    <HStack align="center" px={16} mb={16}>
+      <Box flex={1}>
+        <Text size="h1" weight="semibold" tone="brand">
           메모 추가
         </Text>
       </Box>
@@ -85,9 +83,5 @@ function Header() {
 }
 
 function HeaderSkeleton() {
-  return (
-    <HStack align="center" className="mb-4 px-4 h-11">
-      <Box className="flex-1" />
-    </HStack>
-  );
+  return <Box px={16} mb={16} style={{ height: 44 }} />;
 }

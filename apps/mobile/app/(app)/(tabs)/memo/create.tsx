@@ -29,9 +29,8 @@ export default function MemoCreateScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Box className="flex-1 px-2" style={{ paddingTop: safeTop + 16 }}>
-        {/* Header */}
-        <HStack align="center" className="mb-4">
+      <Box className="flex-1" px={8} style={{ paddingTop: safeTop + 16 }}>
+        <HStack align="center" mb={16}>
           <PressableFeedback
             onPress={() => router.back()}
             isDisabled={isSubmitting}
@@ -60,21 +59,16 @@ export default function MemoCreateScreen() {
           </PressableFeedback>
         </HStack>
 
-        {/* Content */}
-        <Box className="flex-1 rounded-xl bg-gray-1 p-4">
-          <Text size="e1" weight="medium" tone="brand" className="mb-1 uppercase">
-            새 메모 작성
-          </Text>
-          <TextArea
-            variant="filled"
-            placeholder="아이디어를 자유롭게 적어보세요..."
-            value={content}
-            onChangeText={setContent}
-            maxLength={5000}
-            autoFocus
-            className="flex-1 bg-transparent min-h-[200px]"
-          />
-        </Box>
+        <TextArea
+          variant="filled"
+          label="새 메모 작성"
+          placeholder="아이디어를 자유롭게 적어보세요..."
+          value={content}
+          onChangeText={setContent}
+          maxLength={5000}
+          autoFocus
+          className="flex-1 min-h-[200px]"
+        />
       </Box>
     </KeyboardAvoidingView>
   );

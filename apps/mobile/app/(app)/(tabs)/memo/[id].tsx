@@ -60,8 +60,6 @@ export default function MemoDetailScreen() {
   );
 }
 
-// ─── Main Content ───────────────────────────────────────────
-
 interface MemoDetailContentProps {
   memoId: number;
   initialContent: string;
@@ -81,7 +79,6 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
   const deleteMutation = useMutation(useDeleteMemoMutationOptions());
   const togglePinMutation = useMutation(useToggleMemoPinMutationOptions());
 
-  // Categories for convert-to-todo (hook must be at top level)
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = categoriesData.categories[0]?.id;
 
@@ -135,8 +132,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
   return (
     <>
       <VStack className="flex-1">
-        {/* Header */}
-        <HStack align="center" className="px-2 py-1">
+        <HStack align="center" px={8} py={4}>
           <PressableFeedback
             onPress={() => router.back()}
             style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
@@ -145,7 +141,7 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
             <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-10" />
           </PressableFeedback>
 
-          <Box className="flex-1" />
+          <Box flex={1} />
 
           <HStack gap={4}>
             {isEditing ? (
@@ -190,7 +186,6 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
           </HStack>
         </HStack>
 
-        {/* Content */}
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1, padding: 16 }}
@@ -203,10 +198,10 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
               onChangeText={setContent}
               maxLength={5000}
               autoFocus
-              className="flex-1 bg-gray-1 min-h-[300px] rounded-xl"
+              className="flex-1 min-h-[300px]"
             />
           ) : (
-            <Box className="rounded-xl bg-gray-1 p-4">
+            <Box className="rounded-xl bg-gray-1" p={16}>
               <Text size="b2" shade={10} style={{ lineHeight: 26 }}>
                 {initialContent}
               </Text>
@@ -215,7 +210,6 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
         </ScrollView>
       </VStack>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
@@ -244,8 +238,6 @@ function MemoDetailContent({ memoId, initialContent, isPinned }: MemoDetailConte
     </>
   );
 }
-
-// ─── ActionButton (지역 컴포넌트) ───────────────────────────
 
 interface ActionButtonProps {
   onPress: () => void;
