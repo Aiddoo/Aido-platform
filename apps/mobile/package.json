@@ -117,11 +117,11 @@
     "@types/node": "catalog:",
     "@types/react": "~19.2.14",
     "babel-plugin-module-resolver": "^5.0.3",
-    "babel-preset-expo": "^55.0.15",
+    "babel-preset-expo": "^55.0.16",
     "jest": "catalog:",
-    "jest-expo": "~55.0.13",
+    "jest-expo": "~55.0.14",
     "react-native-svg-transformer": "^1.5.2",
-    "react-test-renderer": "19.2.0",
+    "react-test-renderer": "19.2.4",
     "typescript": "catalog:"
   },
   "expo": {
