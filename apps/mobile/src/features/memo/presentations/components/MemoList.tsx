@@ -4,56 +4,46 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { type Href, useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import type { ReactElement } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { useGetMemosQueryOptions } from '../queries/use-get-memos-query-options';
 
-interface MemoListProps {
-  header?: ReactElement;
-}
-
-export function MemoList({ header }: MemoListProps) {
+export function MemoList() {
   const { data } = useSuspenseInfiniteQuery(useGetMemosQueryOptions());
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
-    return (
-      <>
-        {header}
-        <MemoList.Empty />
-      </>
-    );
+    return <MemoList.Empty />;
   }
 
-  const columns = [memos.filter((_, i) => i % 2 === 0), memos.filter((_, i) => i % 2 === 1)];
+  const columns = [
+    { key: 'left', items: memos.filter((_, i) => i % 2 === 0) },
+    { key: 'right', items: memos.filter((_, i) => i % 2 === 1) },
+  ];
 
   return (
-    <>
-      {header}
-      <HStack px={12} gap={12} align="start">
-        {columns.map((column, colIndex) => (
-          <VStack key={`col-${column[0]?.id ?? colIndex}`} flex={1} gap={12}>
-            {column.map((item, rowIndex) => (
-              <Animated.View
-                key={item.id}
-                layout={LinearTransition.springify().damping(18).stiffness(120)}
-                entering={FadeInDown.delay((rowIndex * 2 + colIndex) * 60)
-                  .duration(400)
-                  .damping(15)}
-              >
-                <MemoList.Item
-                  id={item.id}
-                  content={item.content}
-                  isPinned={item.isPinned}
-                  date={formatMonthDay(item.createdAt)}
-                />
-              </Animated.View>
-            ))}
-          </VStack>
-        ))}
-      </HStack>
-    </>
+    <HStack px={12} gap={12} align="start">
+      {columns.map((column, colIndex) => (
+        <VStack key={column.key} flex={1} gap={12}>
+          {column.items.map((item, rowIndex) => (
+            <Animated.View
+              key={item.id}
+              layout={LinearTransition.springify().damping(18).stiffness(120)}
+              entering={FadeInDown.delay((rowIndex * 2 + colIndex) * 60)
+                .duration(400)
+                .damping(15)}
+            >
+              <MemoList.Item
+                id={item.id}
+                content={item.content}
+                isPinned={item.isPinned}
+                date={formatMonthDay(item.createdAt)}
+              />
+            </Animated.View>
+          ))}
+        </VStack>
+      ))}
+    </HStack>
   );
 }
 

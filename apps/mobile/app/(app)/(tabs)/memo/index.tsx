@@ -18,7 +18,7 @@ import { fontScaledSize } from '@src/shared/utils/scale';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useMemo, useRef } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,15 +48,6 @@ export default function MemoScreen() {
 
   const bottomPadding = Math.max(tabBarHeight, safeBottom + 60);
 
-  const header = useMemo(
-    () => (
-      <Suspense fallback={<HeaderSkeleton />}>
-        <Header />
-      </Suspense>
-    ),
-    [],
-  );
-
   return (
     <View style={{ flex: 1 }}>
       <Animated.ScrollView
@@ -72,9 +63,13 @@ export default function MemoScreen() {
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        <Suspense fallback={<HeaderSkeleton />}>
+          <Header />
+        </Suspense>
+
         <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
           <Suspense fallback={<MemoList.Loading />}>
-            <MemoList header={header} />
+            <MemoList />
           </Suspense>
         </QueryErrorBoundary>
       </Animated.ScrollView>

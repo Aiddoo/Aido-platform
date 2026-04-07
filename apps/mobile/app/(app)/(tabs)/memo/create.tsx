@@ -1,7 +1,15 @@
 import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
-import { Box, CheckmarkIcon, CloseIcon, HStack, Text, TextArea } from '@src/shared/ui';
+import {
+  Box,
+  CheckmarkIcon,
+  CloseIcon,
+  HStack,
+  StyledSafeAreaView,
+  Text,
+  TextArea,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation } from '@tanstack/react-query';
@@ -35,55 +43,57 @@ export default function MemoCreateScreen() {
   });
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Box className="flex-1" px={8} style={{ paddingTop: safeTop + 16 }}>
-        <HStack align="center" mb={16}>
-          <PressableFeedback
-            onPress={() => router.back()}
-            isDisabled={createMutation.isPending}
-            style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-            className="items-center justify-center"
-          >
-            <CloseIcon width={28} height={28} colorClassName="text-gray-10" />
-          </PressableFeedback>
+    <StyledSafeAreaView className="flex-1">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Box className="flex-1" px={8} style={{ paddingTop: safeTop }}>
+          <HStack align="center" mb={16}>
+            <PressableFeedback
+              onPress={() => router.back()}
+              isDisabled={createMutation.isPending}
+              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              className="items-center justify-center"
+            >
+              <CloseIcon width={28} height={28} colorClassName="text-gray-10" />
+            </PressableFeedback>
 
-          <Box className="flex-1 items-center">
-            <Text size="b2" weight="medium" shade={10}>
-              새 메모
-            </Text>
-          </Box>
+            <Box className="flex-1 items-center">
+              <Text size="b2" weight="medium" shade={10}>
+                새 메모
+              </Text>
+            </Box>
 
-          <PressableFeedback
-            onPress={handleSave}
-            isDisabled={!isValid || createMutation.isPending}
-            style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-            className={cn(
-              'items-center justify-center rounded-full',
-              isValid ? 'bg-main' : 'bg-gray-4',
+            <PressableFeedback
+              onPress={handleSave}
+              isDisabled={!isValid || createMutation.isPending}
+              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              className={cn(
+                'items-center justify-center rounded-full',
+                isValid ? 'bg-main' : 'bg-gray-4',
+              )}
+            >
+              <CheckmarkIcon width={22} height={22} colorClassName="text-white" />
+            </PressableFeedback>
+          </HStack>
+
+          <Controller
+            control={control}
+            name="content"
+            render={({ field: { value, onChange } }) => (
+              <TextArea
+                variant="line"
+                placeholder="아이디어를 자유롭게 적어보세요..."
+                value={value}
+                onChangeText={onChange}
+                autoFocus
+                className="flex-1 min-h-[200px] border-b-0"
+              />
             )}
-          >
-            <CheckmarkIcon width={22} height={22} colorClassName="text-white" />
-          </PressableFeedback>
-        </HStack>
-
-        <Controller
-          control={control}
-          name="content"
-          render={({ field: { value, onChange } }) => (
-            <TextArea
-              variant="line"
-              placeholder="아이디어를 자유롭게 적어보세요..."
-              value={value}
-              onChangeText={onChange}
-              autoFocus
-              className="flex-1 min-h-[200px] border-b-0"
-            />
-          )}
-        />
-      </Box>
-    </KeyboardAvoidingView>
+          />
+        </Box>
+      </KeyboardAvoidingView>
+    </StyledSafeAreaView>
   );
 }

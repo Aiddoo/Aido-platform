@@ -113,14 +113,6 @@ export default function MemoDetailScreen() {
     >
       <VStack className="flex-1" style={{ paddingTop: safeTop }}>
         <DetailHeader onBack={() => router.back()}>
-          {isDirty && isValid && (
-            <ActionButton
-              onPress={handleSave}
-              isDisabled={isUpdatePending}
-              icon={<CheckmarkIcon width={20} height={20} colorClassName="text-white" />}
-              className="rounded-full bg-main"
-            />
-          )}
           <ActionButton
             onPress={handleTogglePin}
             isDisabled={isTogglePinPending}
@@ -140,6 +132,13 @@ export default function MemoDetailScreen() {
           <ActionButton
             onPress={() => setIsDeleteDialogOpen(true)}
             icon={<TrashIcon width={20} height={20} colorClassName="text-gray-10" />}
+          />
+          <ActionButton
+            onPress={handleSave}
+            isDisabled={!isDirty || !isValid || isUpdatePending}
+            size={40}
+            icon={<CheckmarkIcon width={20} height={20} colorClassName="text-white" />}
+            className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
           />
         </DetailHeader>
 
