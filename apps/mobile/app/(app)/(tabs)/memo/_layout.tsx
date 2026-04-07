@@ -9,14 +9,26 @@ export default function MemoLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: bg.backgroundColor as string },
+        animation: 'fade',
+        animationDuration: 200,
       }}
     >
       <Stack.Screen name="index" />
       <Stack.Screen
         name="create"
-        options={{ animation: 'slide_from_bottom', gestureEnabled: true }}
+        options={{
+          animation: 'fade_from_bottom',
+          animationDuration: 250,
+          gestureEnabled: true,
+        }}
       />
-      <Stack.Screen name="[id]" />
+      <Stack.Screen
+        name="[id]"
+        options={{
+          animation: 'fade_from_bottom',
+          animationDuration: 200,
+        }}
+      />
     </Stack>
   );
 }

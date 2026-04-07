@@ -5,10 +5,12 @@ import {
   convertMemoToTodoResponseSchema,
   type GetMemosQuery,
   type MemoDeleteResponse,
+  type MemoDetailResponse,
   type MemoListResponse,
   type MemoMutationResponse,
   type MemoResourceLimitResponse,
   memoDeleteResponseSchema,
+  memoDetailResponseSchema,
   memoListResponseSchema,
   memoMutationResponseSchema,
   memoResourceLimitResponseSchema,
@@ -19,18 +21,10 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { err, ok, type Result } from '@src/shared/errors/result';
+import { ok, type Result } from '@src/shared/errors/result';
 
-import { type MemoError, MemoErrors } from '../models/memo.error';
-import {
-  type MemoItem,
-  type MemoPage,
-  MemoPolicy,
-  type MemoResourceLimit,
-} from '../models/memo.model';
+import type { MemoItem, MemoPage, MemoResourceLimit } from '../models/memo.model';
 import { toMemoItem, toMemoPage, toMemoResourceLimit } from './memo.mapper';
-
-export type MemoServiceError = ApiError | MemoError;
 
 export class MemoService {
   readonly #httpClient: HttpClient;
@@ -41,7 +35,9 @@ export class MemoService {
 
   getResourceLimit = async (): Promise<Result<MemoResourceLimit, ApiError>> => {
     const result = await this.#httpClient.get<MemoResourceLimitResponse>('v1/memos/resource-limit');
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoResourceLimitResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -53,6 +49,20 @@ export class MemoService {
     return ok(toMemoResourceLimit(parsed.data));
   };
 
+  getMemo = async (id: number): Promise<Result<MemoItem, ApiError>> => {
+    const result = await this.#httpClient.get<MemoDetailResponse>(`v1/memos/${id}`);
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = memoDetailResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[MemoService] Invalid getMemo response: ${parsed.error.message}`);
+    }
+
+    return ok(toMemoItem(parsed.data.memo));
+  };
+
   getMemos = async (params?: GetMemosQuery): Promise<Result<MemoPage, ApiError>> => {
     const result = await this.#httpClient.get<MemoListResponse>('v1/memos', {
       params: {
@@ -60,7 +70,9 @@ export class MemoService {
         size: params?.size,
       },
     });
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -70,13 +82,11 @@ export class MemoService {
     return ok(toMemoPage(parsed.data));
   };
 
-  createMemo = async (input: CreateMemoInput): Promise<Result<MemoItem, MemoServiceError>> => {
-    if (!MemoPolicy.isContentValid(input.content)) {
-      return err(MemoErrors.contentEmpty());
-    }
-
+  createMemo = async (input: CreateMemoInput): Promise<Result<MemoItem, ApiError>> => {
     const result = await this.#httpClient.post<MemoMutationResponse>('v1/memos', input);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoMutationResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -86,16 +96,11 @@ export class MemoService {
     return ok(toMemoItem(parsed.data.memo));
   };
 
-  updateMemo = async (
-    id: number,
-    input: UpdateMemoInput,
-  ): Promise<Result<MemoItem, MemoServiceError>> => {
-    if (!MemoPolicy.isContentValid(input.content)) {
-      return err(MemoErrors.contentEmpty());
-    }
-
+  updateMemo = async (id: number, input: UpdateMemoInput): Promise<Result<MemoItem, ApiError>> => {
     const result = await this.#httpClient.patch<MemoMutationResponse>(`v1/memos/${id}`, input);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoMutationResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -110,7 +115,9 @@ export class MemoService {
     input: ToggleMemoPinInput,
   ): Promise<Result<MemoItem, ApiError>> => {
     const result = await this.#httpClient.patch<MemoMutationResponse>(`v1/memos/${id}/pin`, input);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoMutationResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -125,7 +132,9 @@ export class MemoService {
       `v1/memos/${id}/reorder`,
       input,
     );
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoMutationResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -137,7 +146,9 @@ export class MemoService {
 
   deleteMemo = async (id: number): Promise<Result<void, ApiError>> => {
     const result = await this.#httpClient.delete<MemoDeleteResponse>(`v1/memos/${id}`);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = memoDeleteResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -155,7 +166,9 @@ export class MemoService {
       `v1/memos/${id}/convert-to-todo`,
       input,
     );
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = convertMemoToTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {

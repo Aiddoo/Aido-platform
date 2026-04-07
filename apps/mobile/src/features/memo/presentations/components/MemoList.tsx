@@ -1,63 +1,129 @@
-import MasonryList from '@react-native-seoul/masonry-list';
 import { DocsIcon, HStack, PinIcon, Result, Text, VStack } from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { type Href, useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
+import type { ReactElement } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import type { MemoItem } from '../../models/memo.model';
 import { useGetMemosQueryOptions } from '../queries/use-get-memos-query-options';
 
-export function MemoList() {
-  const router = useRouter();
+interface MemoListProps {
+  header?: ReactElement;
+}
+
+export function MemoList({ header }: MemoListProps) {
   const { data } = useSuspenseInfiniteQuery(useGetMemosQueryOptions());
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
-    return <MemoList.Empty />;
+    return (
+      <>
+        {header}
+        <MemoList.Empty />
+      </>
+    );
   }
 
-  const gap = 12;
+  const left = memos.filter((_, i) => i % 2 === 0);
+  const right = memos.filter((_, i) => i % 2 === 1);
 
   return (
-    <MasonryList
-      data={memos}
-      numColumns={2}
-      keyExtractor={(item) => String(item.id)}
-      showsVerticalScrollIndicator={false}
-      renderItem={({ item: rawItem, i: index }) => {
-        const item = rawItem as MemoItem;
-        return (
-          <Animated.View
-            layout={LinearTransition}
-            entering={FadeInDown.delay(index * 80).springify()}
-          >
-            <MemoCard
-              content={item.content}
-              isPinned={item.isPinned}
-              date={item.createdAt}
-              onPress={() => router.push(`/memo/${item.id}` as Href)}
-              style={{
-                marginLeft: gap,
-                marginRight: index % 2 !== 0 ? gap : 0,
-                marginBottom: gap,
-              }}
-            />
-          </Animated.View>
-        );
-      }}
-    />
+    <>
+      {header}
+      <HStack px={12} gap={12} align="start">
+        <VStack flex={1} gap={12}>
+          {left.map((item, index) => (
+            <Animated.View
+              key={item.id}
+              layout={LinearTransition.springify().damping(18).stiffness(120)}
+              entering={FadeInDown.delay(index * 2 * 60)
+                .duration(400)
+                .damping(15)}
+            >
+              <MemoList.Item
+                id={item.id}
+                content={item.content}
+                badge={item.isPinned ? '고정됨' : undefined}
+                date={formatMonthDay(item.createdAt)}
+              />
+            </Animated.View>
+          ))}
+        </VStack>
+        <VStack flex={1} gap={12}>
+          {right.map((item, index) => (
+            <Animated.View
+              key={item.id}
+              layout={LinearTransition.springify().damping(18).stiffness(120)}
+              entering={FadeInDown.delay((index * 2 + 1) * 60)
+                .duration(400)
+                .damping(15)}
+            >
+              <MemoList.Item
+                id={item.id}
+                content={item.content}
+                badge={item.isPinned ? '고정됨' : undefined}
+                date={formatMonthDay(item.createdAt)}
+              />
+            </Animated.View>
+          ))}
+        </VStack>
+      </HStack>
+    </>
   );
 }
 
-const SKELETON_KEYS = ['skeleton-a', 'skeleton-b', 'skeleton-c', 'skeleton-d'] as const;
+MemoList.Item = function Item({
+  id,
+  content,
+  badge,
+  date,
+}: {
+  id: number;
+  content: string;
+  badge?: string;
+  date: string;
+}) {
+  const router = useRouter();
+
+  return (
+    <PressableFeedback onPress={() => router.push(`/memo/${id}` as Href)}>
+      <VStack
+        gap={8}
+        p={16}
+        className="rounded-xl bg-gray-2 border border-gray-3 shadow-sm shadow-black/5"
+      >
+        {badge && (
+          <HStack align="center" gap={4}>
+            <PinIcon width={12} height={12} colorClassName="text-main" />
+            <Text size="e1" tone="brand" weight="medium">
+              {badge}
+            </Text>
+          </HStack>
+        )}
+
+        <Text size="b3" shade={10} numberOfLines={4}>
+          {content}
+        </Text>
+
+        <Text size="e1" shade={5}>
+          {date}
+        </Text>
+      </VStack>
+    </PressableFeedback>
+  );
+};
 
 MemoList.Loading = function Loading() {
   return (
     <HStack px={12} gap={12} className="flex-wrap">
-      {SKELETON_KEYS.map((key) => (
-        <VStack key={key} gap={8} className="flex-1 min-w-[45%] rounded-xl bg-gray-1 p-4">
+      {times(4, (i) => (
+        <VStack
+          key={`memo-skeleton-${i}`}
+          gap={8}
+          className="flex-1 min-w-[45%] rounded-xl bg-gray-1 p-4"
+        >
           <Skeleton className="h-4 w-full rounded" />
           <Skeleton className="h-4 w-3/4 rounded" />
           <Skeleton className="h-3 w-1/2 rounded mt-2" />
@@ -85,40 +151,3 @@ MemoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () =
     />
   );
 };
-
-interface MemoCardProps {
-  content: string;
-  isPinned: boolean;
-  date: Date;
-  onPress: () => void;
-  style?: object;
-}
-
-function MemoCard({ content, isPinned, date, onPress, style }: MemoCardProps) {
-  return (
-    <PressableFeedback onPress={onPress} style={style}>
-      <VStack
-        gap={8}
-        p={16}
-        className="rounded-xl bg-gray-2 border border-gray-3 shadow-sm shadow-black/5"
-      >
-        {isPinned && (
-          <HStack align="center" gap={4}>
-            <PinIcon width={12} height={12} colorClassName="text-main" />
-            <Text size="e1" tone="brand" weight="medium">
-              고정됨
-            </Text>
-          </HStack>
-        )}
-
-        <Text size="b3" shade={10} numberOfLines={4}>
-          {content}
-        </Text>
-
-        <Text size="e1" shade={5}>
-          {formatMonthDay(date)}
-        </Text>
-      </VStack>
-    </PressableFeedback>
-  );
-}

@@ -98,6 +98,34 @@ describe("MemoService — 메모 서비스", () => {
 		});
 	});
 
+	describe("findOne", () => {
+		it("메모를 조회하고 매핑된 결과를 반환해야 한다", async () => {
+			// Given - 조회 대상 메모가 존재할 때
+			const memo = MemoBuilder.create(mockUserId)
+				.withContent("테스트 메모")
+				.build();
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
+
+			// When - findOne을 호출하면
+			const result = await service.findOne(mockUserId, memo.id);
+
+			// Then - 매핑된 메모를 반환해야 한다
+			expect(result.memo).toBeDefined();
+			expect(memoRepo.findByIdAndUserId).toHaveBeenCalledWith(
+				memo.id,
+				mockUserId,
+			);
+		});
+
+		it("메모가 없으면 에러를 던져야 한다", async () => {
+			// Given - 메모가 존재하지 않을 때
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(null);
+
+			// When & Then
+			await expect(service.findOne(mockUserId, 999)).rejects.toThrow();
+		});
+	});
+
 	describe("update", () => {
 		it("메모 내용을 수정해야 한다", async () => {
 			// Given

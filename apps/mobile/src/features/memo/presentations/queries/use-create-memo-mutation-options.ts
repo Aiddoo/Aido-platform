@@ -7,7 +7,6 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
-import { isMemoError } from '../../models/memo.error';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys.constant';
 
 export const useCreateMemoMutationOptions = () => {
@@ -28,15 +27,7 @@ export const useCreateMemoMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (isMemoError(error)) {
-        toast.error(error.message);
-        return;
-      }
       if (isApiError(error)) {
-        if (error.code === 'MEMO_2003') {
-          toast.error('메모 개수가 한도에 도달했어요');
-          return;
-        }
         toast.error(error.message);
         return;
       }

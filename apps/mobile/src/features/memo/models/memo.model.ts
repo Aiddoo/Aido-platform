@@ -1,4 +1,3 @@
-import { MEMO_LIMITS } from '@aido/validators';
 import { z } from 'zod';
 
 // ─── Domain Types ───────────────────────────────────────────
@@ -28,11 +27,15 @@ export interface MemoResourceLimit {
   maxPerUser: number;
 }
 
-// ─── Policy ─────────────────────────────────────────────────
+export function canCreate(limit: MemoResourceLimit): boolean {
+  return limit.currentCount < limit.maxPerUser;
+}
+
+export function remainingCount(limit: MemoResourceLimit): number {
+  return limit.maxPerUser - limit.currentCount;
+}
 
 export const MemoPolicy = {
-  canCreate: (currentCount: number, maxPerUser: number): boolean => currentCount < maxPerUser,
-
-  isContentValid: (content: string): boolean =>
-    content.trim().length >= 1 && content.length <= MEMO_LIMITS.MAX_CONTENT_LENGTH,
+  canCreate: (limit: MemoResourceLimit): boolean => canCreate(limit),
+  remainingCount: (limit: MemoResourceLimit): number => remainingCount(limit),
 } as const;

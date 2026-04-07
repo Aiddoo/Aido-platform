@@ -7,7 +7,6 @@ import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
-import { isMemoError } from '../../models/memo.error';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys.constant';
 
 interface UpdateMemoMutationParams {
@@ -32,14 +31,14 @@ export const useUpdateMemoMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (isMemoError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }
       toast.error(undefined, { fallback: '잠시 후 다시 시도해주세요' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });
     },
   });
 };

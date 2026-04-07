@@ -38,7 +38,7 @@ export const useToggleMemoPinMutationOptions = () => {
       toast.error(undefined, { fallback: '잠시 후 다시 시도해주세요' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });
     },
   });
 };

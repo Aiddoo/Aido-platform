@@ -69,6 +69,23 @@ export class MemoService {
 	}
 
 	/**
+	 * 메모 단일 조회
+	 */
+	async findOne(
+		userId: string,
+		memoId: number,
+	): Promise<{ memo: MemoResponse }> {
+		const memo = await this.memoRepository.findByIdAndUserId(memoId, userId);
+		if (!memo) {
+			throw BusinessExceptions.memoNotFound(memoId);
+		}
+
+		this.#logger.debug(`Memo retrieved: ${memoId} for user: ${userId}`);
+
+		return { memo: MemoMapper.toResponse(memo) };
+	}
+
+	/**
 	 * 메모 목록 조회 (커서 기반 페이지네이션)
 	 */
 	async findMany(params: {

@@ -33,7 +33,7 @@ export const useReorderMemoMutationOptions = () => {
       toast.error(undefined, { fallback: '순서 변경에 실패했어요' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });
+      queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });
     },
   });
 };
