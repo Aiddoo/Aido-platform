@@ -40,5 +40,5 @@ export default function FeedLayout() {
 
 function FeedWeatherBadge() {
   const [selectedDate] = useFeedDate();
-  return <WeatherForecastBadge.Header date={formatDate(selectedDate)} />;
+  return <WeatherForecastBadge date={formatDate(selectedDate)} />;
 }

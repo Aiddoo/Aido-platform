@@ -60,5 +60,5 @@ export default function MemoLayout() {
 
 function MemoWeatherBadge() {
   const today = useToday();
-  return <WeatherForecastBadge.Header date={formatDate(today)} />;
+  return <WeatherForecastBadge date={formatDate(today)} />;
 }
