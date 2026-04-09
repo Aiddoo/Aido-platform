@@ -181,13 +181,13 @@ const RepeatCalendar = ({
     <VStack gap={16}>
       <HStack className="items-center justify-between" px={16}>
         <PressableFeedback onPress={goToPrevMonth} hitSlop={12}>
-          <ArrowLeftIcon width={20} height={20} colorClassName="text-neutral-7" />
+          <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
           {getMonthHeaderText(displayMonth)}
         </Text>
         <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
-          <ArrowRightIcon width={20} height={20} colorClassName="text-neutral-7" />
+          <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
       </HStack>
 
