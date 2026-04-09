@@ -50,6 +50,7 @@ export {
   KakaoIcon,
   ListIcon,
   LockIcon,
+  MemoIcon,
   MenuIcon,
   MicIcon,
   MoonIcon,
