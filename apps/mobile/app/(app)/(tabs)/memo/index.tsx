@@ -24,7 +24,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MemoScreen() {
-  const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
+  const { bottom: safeBottom } = useSafeAreaInsets();
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const scrollRef = useRef<Animated.ScrollView>(null);
@@ -55,7 +55,6 @@ export default function MemoScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: safeTop,
           paddingBottom: bottomPadding,
         }}
         showsVerticalScrollIndicator={false}
