@@ -56,17 +56,17 @@ function TermsSettingsForm() {
         <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.TERMS)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
-              <Text size="b2" weight="medium">
+              <Text size="b2" shade={8}>
                 서비스 이용약관
               </Text>
 
               <VStack gap={2}>
-                <Text size="b4" shade={6}>
+                <Text size="b3" shade={6}>
                   동의일: {formatDate(consent.termsAgreedAt)}
                 </Text>
 
                 {consent.agreedTermsVersion && (
-                  <Text size="b4" shade={6}>
+                  <Text size="b3" shade={6}>
                     버전: {consent.agreedTermsVersion}
                   </Text>
                 )}
@@ -81,17 +81,17 @@ function TermsSettingsForm() {
         <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
-              <Text size="b2" weight="medium">
+              <Text size="b2" shade={8}>
                 개인정보처리방침
               </Text>
 
               <VStack gap={2}>
-                <Text size="b4" shade={6}>
+                <Text size="b3" shade={6}>
                   동의일: {formatDate(consent.privacyAgreedAt)}
                 </Text>
 
                 {consent.agreedTermsVersion && (
-                  <Text size="b4" shade={6}>
+                  <Text size="b3" shade={6}>
                     버전: {consent.agreedTermsVersion}
                   </Text>
                 )}
