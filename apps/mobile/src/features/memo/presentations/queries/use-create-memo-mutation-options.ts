@@ -21,7 +21,6 @@ export const useCreateMemoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      toast.success('메모를 추가했어요');
       trackEvent('memo_created');
     },
     onError: (error) => {

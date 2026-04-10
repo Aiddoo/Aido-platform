@@ -13,8 +13,8 @@ import {
   CheckmarkIcon,
   ConfirmDialog,
   HStack,
+  PinFilledIcon,
   PinIcon,
-  TextArea,
   TrashIcon,
   useOverlay,
   VStack,
@@ -26,9 +26,13 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { withUniwind } from 'uniwind';
+
+const StyledTextInput = withUniwind(TextInput);
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { z } from 'zod';
 
@@ -45,6 +49,7 @@ export default function MemoDetailScreen() {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { isDirty, isValid },
     reset,
   } = useForm<UpdateMemoFormInput>({
@@ -53,6 +58,8 @@ export default function MemoDetailScreen() {
   });
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const { mutate: updateMemo, isPending: isUpdatePending } = useMutation(
     useUpdateMemoMutationOptions(),
@@ -70,10 +77,40 @@ export default function MemoDetailScreen() {
 
   const handleSave = handleSubmit((data) => {
     updateMemo(
-      { memoId, input: { content: data.content.trim() } },
-      { onSuccess: () => reset({ content: data.content.trim() }) },
+      {
+        memoId,
+        input: {
+          content: data.content.trim(),
+        },
+      },
+      {
+        onSuccess: () => {
+          reset({
+            content: data.content.trim(),
+          });
+          setIsEditing(false);
+          Keyboard.dismiss();
+        },
+      },
     );
   });
+
+  const handleBack = () => {
+    if (isDirty && isValid) {
+      const content = getValues('content').trim();
+      updateMemo(
+        {
+          memoId,
+          input: { content },
+        },
+        {
+          onSuccess: () => router.back(),
+        },
+      );
+      return;
+    }
+    router.back();
+  };
 
   const handleTogglePin = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -81,7 +118,9 @@ export default function MemoDetailScreen() {
   };
 
   const handleConvertToTodo = () => {
-    if (!defaultCategoryId) return;
+    if (!defaultCategoryId) {
+      return;
+    }
 
     overlay.open(({ isOpen, close, exit }) => (
       <AddTodoBottomSheet
@@ -111,17 +150,17 @@ export default function MemoDetailScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <VStack className="flex-1" style={{ paddingTop: safeTop }}>
-        <DetailHeader onBack={() => router.back()}>
+      <VStack className="flex-1 bg-white" style={{ paddingTop: safeTop }}>
+        <DetailHeader onBack={handleBack}>
           <ActionButton
             onPress={handleTogglePin}
             isDisabled={isTogglePinPending}
             icon={
-              <PinIcon
-                width={20}
-                height={20}
-                colorClassName={memo.isPinned ? 'text-main' : 'text-gray-10'}
-              />
+              memo.isPinned ? (
+                <PinFilledIcon width={20} height={20} colorClassName="text-main" />
+              ) : (
+                <PinIcon width={20} height={20} colorClassName="text-gray-10" />
+              )
             }
           />
           <ActionButton
@@ -133,33 +172,35 @@ export default function MemoDetailScreen() {
             onPress={() => setIsDeleteDialogOpen(true)}
             icon={<TrashIcon width={20} height={20} colorClassName="text-gray-10" />}
           />
-          <ActionButton
-            onPress={handleSave}
-            isDisabled={!isDirty || !isValid || isUpdatePending}
-            size={40}
-            icon={<CheckmarkIcon width={20} height={20} colorClassName="text-white" />}
-            className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
-          />
+          {isEditing && (
+            <ActionButton
+              onPress={handleSave}
+              isDisabled={!isValid || isUpdatePending}
+              size={36}
+              icon={<CheckmarkIcon width={20} height={20} color="white" />}
+              className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
+            />
+          )}
         </DetailHeader>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <Box className="flex-1" px={16} py={12}>
           <Controller
             control={control}
             name="content"
             render={({ field: { value, onChange } }) => (
-              <TextArea
-                variant="line"
+              <StyledTextInput
+                ref={inputRef}
                 value={value}
                 onChangeText={onChange}
-                className="flex-1 min-h-[300px] border-b-0"
+                multiline
+                textAlignVertical="top"
+                allowFontScaling={false}
+                onFocus={() => setIsEditing(true)}
+                className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
               />
             )}
           />
-        </ScrollView>
+        </Box>
       </VStack>
 
       <ConfirmDialog

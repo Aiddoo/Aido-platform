@@ -2,13 +2,12 @@ import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
 import {
+  ArrowLeftIcon,
   Box,
   CheckmarkIcon,
-  CloseIcon,
   HStack,
   StyledSafeAreaView,
   Text,
-  TextArea,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
@@ -16,7 +15,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { withUniwind } from 'uniwind';
+
+const StyledTextInput = withUniwind(TextInput);
+
 import type { z } from 'zod';
 
 type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
@@ -27,6 +30,7 @@ export default function MemoCreateScreen() {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { isValid },
   } = useForm<CreateMemoFormInput>({
     resolver: zodResolver(createMemoSchema),
@@ -40,8 +44,22 @@ export default function MemoCreateScreen() {
     createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => router.back() });
   });
 
+  const handleBack = () => {
+    if (isValid) {
+      const content = getValues('content').trim();
+      createMutation.mutate(
+        { content },
+        {
+          onSuccess: () => router.back(),
+        },
+      );
+      return;
+    }
+    router.back();
+  };
+
   return (
-    <StyledSafeAreaView className="flex-1">
+    <StyledSafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -49,12 +67,12 @@ export default function MemoCreateScreen() {
         <Box className="flex-1" px={8}>
           <HStack align="center" mb={16}>
             <PressableFeedback
-              onPress={() => router.back()}
+              onPress={handleBack}
               isDisabled={createMutation.isPending}
-              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className="items-center justify-center"
             >
-              <CloseIcon width={28} height={28} colorClassName="text-gray-10" />
+              <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-10" />
             </PressableFeedback>
 
             <Box className="flex-1 items-center">
@@ -66,13 +84,13 @@ export default function MemoCreateScreen() {
             <PressableFeedback
               onPress={handleSave}
               isDisabled={!isValid || createMutation.isPending}
-              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className={cn(
                 'items-center justify-center rounded-full',
                 isValid ? 'bg-main' : 'bg-gray-4',
               )}
             >
-              <CheckmarkIcon width={22} height={22} colorClassName="text-white" />
+              <CheckmarkIcon width={20} height={20} color="white" />
             </PressableFeedback>
           </HStack>
 
@@ -80,13 +98,15 @@ export default function MemoCreateScreen() {
             control={control}
             name="content"
             render={({ field: { value, onChange } }) => (
-              <TextArea
-                variant="line"
+              <StyledTextInput
                 placeholder="아이디어를 자유롭게 적어보세요..."
                 value={value}
                 onChangeText={onChange}
                 autoFocus
-                className="flex-1 min-h-[200px] border-b-0"
+                multiline
+                textAlignVertical="top"
+                allowFontScaling={false}
+                className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
               />
             )}
           />

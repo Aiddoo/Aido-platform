@@ -7,11 +7,11 @@ import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
 import {
   Box,
+  H3,
   HStack,
   PlusIcon,
   QueryErrorBoundary,
   ScrollProgressWidget,
-  Text,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
@@ -19,7 +19,7 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useCallback, useRef } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -49,7 +49,11 @@ export default function MemoScreen() {
   const bottomPadding = Math.max(tabBarHeight, safeBottom + 60);
 
   return (
-    <View style={{ flex: 1 }}>
+    <Box className="flex-1">
+      <Suspense fallback={<Header.Loading />}>
+        <Header />
+      </Suspense>
+
       <Animated.ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
@@ -62,10 +66,6 @@ export default function MemoScreen() {
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Suspense fallback={<HeaderSkeleton />}>
-          <Header />
-        </Suspense>
-
         <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
           <Suspense fallback={<MemoList.Loading />}>
             <MemoList />
@@ -78,7 +78,7 @@ export default function MemoScreen() {
         onScrollToTop={handleScrollToTop}
         bottomOffset={tabBarHeight + safeBottom + 16}
       />
-    </View>
+    </Box>
   );
 }
 
@@ -97,26 +97,24 @@ function Header() {
   };
 
   return (
-    <HStack align="center" px={16} mb={8}>
+    <HStack align="center" px={16} mb={16}>
       <Box flex={1}>
-        <Text size="h1" weight="semibold" tone="brand">
-          메모 추가
-        </Text>
+        <H3 shade={7}>메모 추가</H3>
       </Box>
       <PressableFeedback
         onPress={handleCreate}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+        style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
         className={cn(
           'items-center justify-center rounded-full',
           canCreate ? 'bg-main' : 'bg-gray-4',
         )}
       >
-        <PlusIcon width={22} height={22} color="white" />
+        <PlusIcon width={24} height={24} color="white" />
       </PressableFeedback>
     </HStack>
   );
 }
 
-function HeaderSkeleton() {
+Header.Loading = function Loading() {
   return <Box px={16} mb={16} style={{ height: 44 }} />;
-}
+};
