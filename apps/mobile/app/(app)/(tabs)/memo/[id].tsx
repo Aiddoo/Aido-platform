@@ -79,6 +79,19 @@ export default function MemoDetailScreen() {
     );
   });
 
+  const handleBack = () => {
+    if (isDirty && isValid) {
+      handleSubmit((data) => {
+        updateMemo(
+          { memoId, input: { content: data.content.trim() } },
+          { onSuccess: () => router.back() },
+        );
+      })();
+    } else {
+      router.back();
+    }
+  };
+
   const handleTogglePin = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     togglePin({ memoId, isPinned: !memo.isPinned });
@@ -116,7 +129,7 @@ export default function MemoDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <VStack className="flex-1 bg-white" style={{ paddingTop: safeTop }}>
-        <DetailHeader onBack={() => router.back()}>
+        <DetailHeader onBack={handleBack}>
           <ActionButton
             onPress={handleTogglePin}
             isDisabled={isTogglePinPending}

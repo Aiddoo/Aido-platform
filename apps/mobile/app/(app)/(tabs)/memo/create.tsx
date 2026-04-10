@@ -1,7 +1,14 @@
 import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
-import { Box, CheckmarkIcon, CloseIcon, HStack, StyledSafeAreaView, Text } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  Box,
+  CheckmarkIcon,
+  HStack,
+  StyledSafeAreaView,
+  Text,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation } from '@tanstack/react-query';
@@ -36,6 +43,16 @@ export default function MemoCreateScreen() {
     createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => router.back() });
   });
 
+  const handleBack = () => {
+    if (isValid) {
+      handleSubmit((data) => {
+        createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => router.back() });
+      })();
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
@@ -45,12 +62,12 @@ export default function MemoCreateScreen() {
         <Box className="flex-1" px={8}>
           <HStack align="center" mb={16}>
             <PressableFeedback
-              onPress={() => router.back()}
+              onPress={handleBack}
               isDisabled={createMutation.isPending}
               style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className="items-center justify-center"
             >
-              <CloseIcon width={24} height={24} colorClassName="text-gray-10" />
+              <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-10" />
             </PressableFeedback>
 
             <Box className="flex-1 items-center">
