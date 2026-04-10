@@ -61,6 +61,7 @@ export {
   PauseIcon,
   PawIcon,
   PersonIcon,
+  PinFilledIcon,
   PinIcon,
   PlusIcon,
   RepeatIcon,
