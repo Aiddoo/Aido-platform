@@ -41,7 +41,7 @@ export default function MemoCreateScreen() {
   });
 
   return (
-    <StyledSafeAreaView className="flex-1">
+    <StyledSafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -86,7 +86,7 @@ export default function MemoCreateScreen() {
                 value={value}
                 onChangeText={onChange}
                 autoFocus
-                className="flex-1 min-h-[200px] border-b-0"
+                className="min-h-[200px] border-b-0"
               />
             )}
           />

@@ -13,6 +13,7 @@ import {
   CheckmarkIcon,
   ConfirmDialog,
   HStack,
+  PinFilledIcon,
   PinIcon,
   TextArea,
   TrashIcon,
@@ -28,7 +29,7 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { z } from 'zod';
 
@@ -111,17 +112,17 @@ export default function MemoDetailScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <VStack className="flex-1" style={{ paddingTop: safeTop }}>
+      <VStack className="flex-1 bg-white" style={{ paddingTop: safeTop }}>
         <DetailHeader onBack={() => router.back()}>
           <ActionButton
             onPress={handleTogglePin}
             isDisabled={isTogglePinPending}
             icon={
-              <PinIcon
-                width={20}
-                height={20}
-                colorClassName={memo.isPinned ? 'text-main' : 'text-gray-10'}
-              />
+              memo.isPinned ? (
+                <PinFilledIcon width={20} height={20} colorClassName="text-main" />
+              ) : (
+                <PinIcon width={20} height={20} colorClassName="text-gray-10" />
+              )
             }
           />
           <ActionButton
@@ -142,11 +143,7 @@ export default function MemoDetailScreen() {
           />
         </DetailHeader>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <Box className="flex-1" px={16}>
           <Controller
             control={control}
             name="content"
@@ -155,11 +152,11 @@ export default function MemoDetailScreen() {
                 variant="line"
                 value={value}
                 onChangeText={onChange}
-                className="flex-1 min-h-[300px] border-b-0"
+                className="min-h-[300px] border-b-0"
               />
             )}
           />
-        </ScrollView>
+        </Box>
       </VStack>
 
       <ConfirmDialog
