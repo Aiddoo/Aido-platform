@@ -49,6 +49,7 @@ export default function MemoDetailScreen() {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { isDirty, isValid },
     reset,
   } = useForm<UpdateMemoFormInput>({
@@ -76,10 +77,17 @@ export default function MemoDetailScreen() {
 
   const handleSave = handleSubmit((data) => {
     updateMemo(
-      { memoId, input: { content: data.content.trim() } },
+      {
+        memoId,
+        input: {
+          content: data.content.trim(),
+        },
+      },
       {
         onSuccess: () => {
-          reset({ content: data.content.trim() });
+          reset({
+            content: data.content.trim(),
+          });
           setIsEditing(false);
           Keyboard.dismiss();
         },
@@ -89,15 +97,19 @@ export default function MemoDetailScreen() {
 
   const handleBack = () => {
     if (isDirty && isValid) {
-      handleSubmit((data) => {
-        updateMemo(
-          { memoId, input: { content: data.content.trim() } },
-          { onSuccess: () => router.back() },
-        );
-      })();
-    } else {
-      router.back();
+      const content = getValues('content').trim();
+      updateMemo(
+        {
+          memoId,
+          input: { content },
+        },
+        {
+          onSuccess: () => router.back(),
+        },
+      );
+      return;
     }
+    router.back();
   };
 
   const handleTogglePin = () => {
@@ -106,7 +118,9 @@ export default function MemoDetailScreen() {
   };
 
   const handleConvertToTodo = () => {
-    if (!defaultCategoryId) return;
+    if (!defaultCategoryId) {
+      return;
+    }
 
     overlay.open(({ isOpen, close, exit }) => (
       <AddTodoBottomSheet

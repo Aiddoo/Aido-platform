@@ -30,6 +30,7 @@ export default function MemoCreateScreen() {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { isValid },
   } = useForm<CreateMemoFormInput>({
     resolver: zodResolver(createMemoSchema),
@@ -45,12 +46,16 @@ export default function MemoCreateScreen() {
 
   const handleBack = () => {
     if (isValid) {
-      handleSubmit((data) => {
-        createMutation.mutate({ content: data.content.trim() }, { onSuccess: () => router.back() });
-      })();
-    } else {
-      router.back();
+      const content = getValues('content').trim();
+      createMutation.mutate(
+        { content },
+        {
+          onSuccess: () => router.back(),
+        },
+      );
+      return;
     }
+    router.back();
   };
 
   return (
