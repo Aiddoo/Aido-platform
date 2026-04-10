@@ -51,10 +51,10 @@ export default function MemoCreateScreen() {
             <PressableFeedback
               onPress={() => router.back()}
               isDisabled={createMutation.isPending}
-              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className="items-center justify-center"
             >
-              <CloseIcon width={28} height={28} colorClassName="text-gray-10" />
+              <CloseIcon width={24} height={24} colorClassName="text-gray-10" />
             </PressableFeedback>
 
             <Box className="flex-1 items-center">
@@ -66,13 +66,13 @@ export default function MemoCreateScreen() {
             <PressableFeedback
               onPress={handleSave}
               isDisabled={!isValid || createMutation.isPending}
-              style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+              style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className={cn(
                 'items-center justify-center rounded-full',
                 isValid ? 'bg-main' : 'bg-gray-4',
               )}
             >
-              <CheckmarkIcon width={22} height={22} colorClassName="text-white" />
+              <CheckmarkIcon width={20} height={20} color="white" />
             </PressableFeedback>
           </HStack>
 

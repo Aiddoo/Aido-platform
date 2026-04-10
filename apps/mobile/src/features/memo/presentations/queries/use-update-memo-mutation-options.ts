@@ -26,6 +26,7 @@ export const useUpdateMemoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_, { memoId }) => {
+      toast.success('메모를 수정했어요');
       trackEvent('memo_updated', { memo_id: memoId });
     },
     onError: (error) => {

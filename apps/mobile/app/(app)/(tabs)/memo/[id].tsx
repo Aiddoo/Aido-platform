@@ -137,8 +137,8 @@ export default function MemoDetailScreen() {
           <ActionButton
             onPress={handleSave}
             isDisabled={!isDirty || !isValid || isUpdatePending}
-            size={40}
-            icon={<CheckmarkIcon width={20} height={20} colorClassName="text-white" />}
+            size={36}
+            icon={<CheckmarkIcon width={20} height={20} color="white" />}
             className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
           />
         </DetailHeader>
