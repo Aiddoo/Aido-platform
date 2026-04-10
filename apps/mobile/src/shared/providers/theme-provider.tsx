@@ -1,3 +1,8 @@
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from '@react-navigation/native';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
@@ -11,10 +16,11 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import { useColorScheme } from 'react-native';
-import { Uniwind } from 'uniwind';
+import { Uniwind, useResolveClassNames } from 'uniwind';
 
 export type { ThemeMode };
 export type ResolvedTheme = 'light' | 'dark';
@@ -50,9 +56,21 @@ export const ThemeProvider = ({ children, syncStorage = mmkvSyncStorage }: Theme
     [syncStorage],
   );
 
+  const { backgroundColor } = useResolveClassNames('bg-white');
+  const navigationTheme = useMemo(() => {
+    const baseTheme = resolvedTheme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        background: backgroundColor as string,
+      },
+    };
+  }, [resolvedTheme, backgroundColor]);
+
   return (
     <ThemeContext.Provider value={{ mode, resolvedTheme, setMode: persistMode }}>
-      {children}
+      <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
     </ThemeContext.Provider>
   );
 };
