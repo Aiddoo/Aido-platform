@@ -1,22 +1,18 @@
 import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
-import {
-  Box,
-  CheckmarkIcon,
-  CloseIcon,
-  HStack,
-  StyledSafeAreaView,
-  Text,
-  TextArea,
-} from '@src/shared/ui';
+import { Box, CheckmarkIcon, CloseIcon, HStack, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { withUniwind } from 'uniwind';
+
+const StyledTextInput = withUniwind(TextInput);
+
 import type { z } from 'zod';
 
 type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
@@ -80,13 +76,15 @@ export default function MemoCreateScreen() {
             control={control}
             name="content"
             render={({ field: { value, onChange } }) => (
-              <TextArea
-                variant="line"
+              <StyledTextInput
                 placeholder="아이디어를 자유롭게 적어보세요..."
                 value={value}
                 onChangeText={onChange}
                 autoFocus
-                className="min-h-[200px] border-b-0"
+                multiline
+                textAlignVertical="top"
+                allowFontScaling={false}
+                className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
               />
             )}
           />

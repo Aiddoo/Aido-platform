@@ -15,7 +15,6 @@ import {
   HStack,
   PinFilledIcon,
   PinIcon,
-  TextArea,
   TrashIcon,
   useOverlay,
   VStack,
@@ -29,7 +28,11 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { withUniwind } from 'uniwind';
+
+const StyledTextInput = withUniwind(TextInput);
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { z } from 'zod';
 
@@ -143,16 +146,18 @@ export default function MemoDetailScreen() {
           />
         </DetailHeader>
 
-        <Box className="flex-1" px={16}>
+        <Box className="flex-1" px={16} py={12}>
           <Controller
             control={control}
             name="content"
             render={({ field: { value, onChange } }) => (
-              <TextArea
-                variant="line"
+              <StyledTextInput
                 value={value}
                 onChangeText={onChange}
-                className="min-h-[300px] border-b-0"
+                multiline
+                textAlignVertical="top"
+                allowFontScaling={false}
+                className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
               />
             )}
           />
