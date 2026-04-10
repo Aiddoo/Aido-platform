@@ -1,7 +1,8 @@
 import { cn } from '@src/shared/utils/cn';
 import { forwardRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
+import { Box } from '../Box/Box';
 import { Text } from '../Text/Text';
 import { VStack } from '../VStack/VStack';
 import type { TextAreaInternalProps } from './TextArea.types';
@@ -34,7 +35,7 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
     const InputComponent = textInputComponent ?? StyledTextInput;
 
     return (
-      <View className="gap-2">
+      <Box className="flex-1 gap-2">
         {label && (
           <Text
             size="e1"
@@ -44,9 +45,10 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
             {label}
           </Text>
         )}
-        <VStack gap={4}>
-          <View
+        <VStack gap={4} className="flex-1">
+          <Box
             className={cn(
+              'flex-1',
               textAreaContainerVariants({ variant, isFocused, isDisabled, isInvalid }),
               className,
             )}
@@ -69,12 +71,12 @@ export const TextArea = forwardRef<TextInput, TextAreaInternalProps>(
               }}
               {...props}
             />
-          </View>
+          </Box>
           <Text size="e1" className={cn('text-error', !errorMessage && 'opacity-0')}>
             {errorMessage ?? ' '}
           </Text>
         </VStack>
-      </View>
+      </Box>
     );
   },
 );
