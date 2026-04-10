@@ -50,7 +50,7 @@ export default function MemoScreen() {
 
   return (
     <Box className="flex-1">
-      <Suspense fallback={<HeaderSkeleton />}>
+      <Suspense fallback={<Header.Loading />}>
         <Header />
       </Suspense>
 
@@ -115,6 +115,6 @@ function Header() {
   );
 }
 
-function HeaderSkeleton() {
+Header.Loading = function Loading() {
   return <Box px={16} mb={16} style={{ height: 44 }} />;
-}
+};
