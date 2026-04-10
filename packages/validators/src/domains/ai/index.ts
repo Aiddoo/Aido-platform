@@ -11,5 +11,8 @@ export * from './ai-report.response';
 export * from './ai-suggestion.response';
 export * from './ai-usage.response';
 // 요청 스키마 (Request)
+export * from './parse-memo.request';
+// 응답 스키마 (Response - AI parsing)
+export * from './parse-memo.response';
 export * from './parse-todo.request';
 export * from './parse-todo.response';

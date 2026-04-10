@@ -8,8 +8,16 @@
  * - 일일 사용량 추적 (ADMIN/ACTIVE: 무제한, 그 외: 5회/일)
  * - KST 기준 자정 리셋
  */
-import type { ParsedTodoData } from "@aido/validators";
-import { parsedTodoDataSchema } from "@aido/validators";
+import type {
+	LlmParsedMemoResult,
+	ParsedMemoData,
+	ParsedTodoData,
+} from "@aido/validators";
+import {
+	llmParsedMemoResultSchema,
+	parsedMemoDataSchema,
+	parsedTodoDataSchema,
+} from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
 import { addDays } from "@/common/date/utils/arithmetic";
@@ -28,6 +36,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database/database.service";
 import { UserRepository } from "../auth/repositories/user.repository";
 
+import { buildParseMemoPrompt } from "./prompts/parse-memo.prompt";
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
 import {
 	AI_PROVIDER,
@@ -65,6 +74,16 @@ export interface ParseTodoMeta {
 export interface ParseTodoResult {
 	/** 파싱된 투두 데이터 */
 	data: ParsedTodoData;
+	/** 메타데이터 */
+	meta: ParseTodoMeta;
+}
+
+/**
+ * 메모 파싱 결과 — LLM 출력에 categoryId를 주입한 형태
+ */
+export interface ParseMemoResult {
+	/** 파싱된 다중 투두 데이터 */
+	data: ParsedMemoData;
 	/** 메타데이터 */
 	meta: ParseTodoMeta;
 }
@@ -157,6 +176,92 @@ export class AiService {
 			}
 
 			// 기타 에러는 파싱 실패로 처리
+			throw BusinessExceptions.aiParseFailed(
+				error instanceof Error ? error.message : "Unknown error",
+			);
+		}
+	}
+
+	/**
+	 * 메모 내용을 다중 Todo + SubTodo 데이터로 파싱
+	 *
+	 * @param content - 메모 내용
+	 * @param userId - 사용자 ID
+	 * @param timezone - 사용자 타임존 (IANA)
+	 * @param categoryId - 기본 카테고리 ID (모든 todo에 주입)
+	 * @returns 파싱된 다중 투두 데이터와 메타 정보
+	 * @throws AI_1301 - AI 서비스 불가
+	 * @throws AI_1302 - 파싱 실패
+	 * @throws AI_1303 - 일일 사용량 초과
+	 */
+	async parseMemoToTodos(
+		content: string,
+		userId: string,
+		timezone: string,
+		categoryId: number,
+	): Promise<ParseMemoResult> {
+		const startTime = Date.now();
+
+		if (!this.aiProvider.isAvailable()) {
+			this.#logger.error("AI provider is not available");
+			throw BusinessExceptions.aiServiceUnavailable();
+		}
+
+		await this.#checkAndIncrementUsage(userId);
+
+		const prompt = buildParseMemoPrompt(content, timezone, now());
+
+		this.#logger.debug(`Parsing memo to todos: "${content.slice(0, 50)}..."`);
+
+		try {
+			const result =
+				await this.aiProvider.generateStructured<LlmParsedMemoResult>({
+					prompt,
+					schema: llmParsedMemoResultSchema,
+					maxTokens: 600,
+					temperature: 0.1,
+				});
+
+			const processingTimeMs = Date.now() - startTime;
+			const todoCount = result.output.todos.length;
+			const itemCount = result.output.todos.reduce(
+				(sum, t) => sum + t.items.length,
+				0,
+			);
+
+			this.#logger.log(
+				`Memo parsed: ${todoCount} todos, ${itemCount} items (${processingTimeMs}ms, ` +
+					`input: ${result.usage.input}, output: ${result.usage.output})`,
+			);
+
+			const data = parsedMemoDataSchema.parse({
+				todos: result.output.todos.slice(0, 5).map((todo) => ({
+					...todo,
+					categoryId,
+				})),
+			});
+
+			return {
+				data,
+				meta: {
+					model: result.model,
+					processingTimeMs,
+					tokenUsage: result.usage,
+				},
+			};
+		} catch (error) {
+			this.#logger.error(`AI memo parsing failed: ${error}`);
+
+			await this.#decrementUsage(userId);
+
+			if (error instanceof APICallError) {
+				this.#logger.error("AI API call failed", {
+					status: error.statusCode,
+					message: error.message,
+				});
+				throw BusinessExceptions.aiServiceUnavailable();
+			}
+
 			throw BusinessExceptions.aiParseFailed(
 				error instanceof Error ? error.message : "Unknown error",
 			);

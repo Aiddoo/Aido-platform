@@ -5,6 +5,7 @@ import {
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
 import type { TransactionClient } from "@/common/database";
+import { toDateString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
@@ -14,6 +15,7 @@ import { MemoMapper } from "./memo.mapper";
 import { MemoRepository } from "./memo.repository";
 import type {
 	ConvertMemoToTodoData,
+	ConvertMemoToTodosData,
 	CreateMemoData,
 	UpdateMemoData,
 } from "./types";
@@ -277,6 +279,77 @@ export class MemoService {
 		);
 
 		return { message: "메모가 할 일로 변환되었습니다.", todo };
+	}
+
+	/**
+	 * 메모를 여러 할 일로 일괄 변환
+	 *
+	 * 모든 Todo+SubTodo를 순차 생성하고 메모를 삭제합니다.
+	 * 반복 일정은 TodoService.createRecurring, 단건은 TodoService.create를 호출합니다.
+	 */
+	async convertToTodos(
+		userId: string,
+		memoId: number,
+		data: ConvertMemoToTodosData,
+		timezone: string = "UTC",
+	): Promise<{ message: string; todos: Todo[] }> {
+		// 1. 메모 존재/소유권 확인 (읽기 전용, TX 외부)
+		const memo = await this.memoRepository.findByIdAndUserId(memoId, userId);
+		if (!memo) {
+			throw BusinessExceptions.memoNotFound(memoId);
+		}
+
+		// 2. 모든 Todo 생성 (각 TodoService 메서드가 자체 TX 관리)
+		const todos: Todo[] = [];
+
+		for (const todoData of data.todos) {
+			if (todoData.isRecurring && todoData.recurrence) {
+				// 반복 일정: createRecurring은 여러 Todo 인스턴스를 생성
+				const result = await this.todoService.createRecurring(
+					{
+						userId,
+						title: todoData.title,
+						categoryId: todoData.categoryId,
+						startDate: toDateString(todoData.startDate),
+						endDate: toDateString(todoData.recurrence.endDate),
+						daysOfWeek: todoData.recurrence.daysOfWeek,
+						scheduledTime: todoData.scheduledTime
+							? `${String(todoData.scheduledTime.getUTCHours()).padStart(2, "0")}:${String(todoData.scheduledTime.getUTCMinutes()).padStart(2, "0")}`
+							: null,
+						isAllDay: todoData.isAllDay ?? true,
+						visibility: todoData.visibility ?? "PUBLIC",
+					},
+					timezone,
+				);
+				todos.push(...result.todos);
+			} else {
+				// 단건 일정
+				const todo = await this.todoService.create({
+					userId,
+					title: todoData.title,
+					categoryId: todoData.categoryId,
+					startDate: todoData.startDate,
+					endDate: todoData.endDate,
+					scheduledTime: todoData.scheduledTime,
+					isAllDay: todoData.isAllDay ?? true,
+					visibility: todoData.visibility ?? "PUBLIC",
+					items: todoData.items,
+				});
+				todos.push(todo);
+			}
+		}
+
+		// 3. 메모 삭제 (모든 Todo 생성 성공 후)
+		await this.memoRepository.delete(memoId);
+
+		this.#logger.log(
+			`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,
+		);
+
+		return {
+			message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`,
+			todos,
+		};
 	}
 
 	// =========================================================================

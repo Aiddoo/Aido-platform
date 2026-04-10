@@ -355,4 +355,97 @@ describe("MemoService — 메모 서비스", () => {
 			).rejects.toThrow();
 		});
 	});
+
+	describe("convertToTodos", () => {
+		const todosData = {
+			todos: [
+				{
+					title: "버그 수정",
+					categoryId: 1,
+					startDate: new Date("2026-04-12"),
+					isAllDay: false,
+					scheduledTime: new Date("2026-04-12T05:00:00Z"),
+					items: [{ title: "로그 확인" }],
+				},
+				{
+					title: "스터디 자료 올리기",
+					categoryId: 1,
+					startDate: new Date("2026-04-17"),
+					isAllDay: true,
+				},
+			],
+		};
+
+		it("메모를 여러 할 일로 변환하고 메모를 삭제해야 한다", async () => {
+			// Given
+			const memo = MemoBuilder.create(mockUserId)
+				.withContent("버그 수정, 스터디 자료")
+				.build();
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
+			(todoService.create as jest.Mock)
+				.mockResolvedValueOnce({ id: 1, title: "버그 수정" })
+				.mockResolvedValueOnce({ id: 2, title: "스터디 자료 올리기" });
+			(memoRepo.delete as jest.Mock).mockResolvedValue(memo);
+
+			// When
+			const result = await service.convertToTodos(
+				mockUserId,
+				memo.id,
+				todosData,
+			);
+
+			// Then
+			expect(result.todos).toHaveLength(2);
+			expect(result.message).toContain("2개");
+			expect(todoService.create).toHaveBeenCalledTimes(2);
+			expect(memoRepo.delete).toHaveBeenCalledWith(memo.id);
+		});
+
+		it("반복 일정은 createRecurring을 호출해야 한다", async () => {
+			// Given
+			const memo = MemoBuilder.create(mockUserId)
+				.withContent("매주 수요일 학원")
+				.build();
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
+			(todoService.createRecurring as jest.Mock).mockResolvedValue({
+				todos: [
+					{ id: 10, title: "학원" },
+					{ id: 11, title: "학원" },
+				],
+				count: 2,
+			});
+			(memoRepo.delete as jest.Mock).mockResolvedValue(memo);
+
+			// When
+			const result = await service.convertToTodos(mockUserId, memo.id, {
+				todos: [
+					{
+						title: "학원",
+						categoryId: 1,
+						startDate: new Date("2026-04-15"),
+						isAllDay: true,
+						isRecurring: true,
+						recurrence: {
+							daysOfWeek: ["WED"],
+							endDate: new Date("2026-05-08"),
+						},
+					},
+				],
+			});
+
+			// Then
+			expect(todoService.createRecurring).toHaveBeenCalledTimes(1);
+			expect(result.todos).toHaveLength(2);
+		});
+
+		it("메모가 없으면 에러를 던져야 한다", async () => {
+			// Given
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.convertToTodos(mockUserId, 999, todosData),
+			).rejects.toThrow();
+		});
+	});
 });
