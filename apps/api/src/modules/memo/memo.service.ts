@@ -4,8 +4,10 @@ import {
 	type Todo,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database";
 import { toDateString } from "@/common/date/utils/format";
+import { toLocalTimeString } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
@@ -29,6 +31,7 @@ export class MemoService {
 		private readonly paginationService: PaginationService,
 		private readonly database: DatabaseService,
 		private readonly todoService: TodoService,
+		private readonly cacheService: CacheService,
 	) {}
 
 	/**
@@ -284,8 +287,13 @@ export class MemoService {
 	/**
 	 * 메모를 여러 할 일로 일괄 변환
 	 *
-	 * 모든 Todo+SubTodo를 순차 생성하고 메모를 삭제합니다.
 	 * 반복 일정은 TodoService.createRecurring, 단건은 TodoService.create를 호출합니다.
+	 *
+	 * **트랜잭션 설계 의도:**
+	 * 각 TodoService 메서드가 자체 TX + 캐시 무효화 + 리마인더 스케줄링을 포함하므로,
+	 * 외부 TX로 감싸면 nested transaction + side effect 복잡도가 크게 증가합니다.
+	 * 대신 메모 삭제를 마지막에 실행하여, 중간 실패 시 메모가 유지되어 재시도 가능합니다.
+	 * 이미 생성된 Todo는 유지됩니다 (최대 5개로 부분 실패 확률 극히 낮음).
 	 */
 	async convertToTodos(
 		userId: string,
@@ -314,7 +322,7 @@ export class MemoService {
 						endDate: toDateString(todoData.recurrence.endDate),
 						daysOfWeek: todoData.recurrence.daysOfWeek,
 						scheduledTime: todoData.scheduledTime
-							? `${String(todoData.scheduledTime.getUTCHours()).padStart(2, "0")}:${String(todoData.scheduledTime.getUTCMinutes()).padStart(2, "0")}`
+							? toLocalTimeString(todoData.scheduledTime, timezone)
 							: null,
 						isAllDay: todoData.isAllDay ?? true,
 						visibility: todoData.visibility ?? "PUBLIC",
@@ -341,6 +349,9 @@ export class MemoService {
 
 		// 3. 메모 삭제 (모든 Todo 생성 성공 후)
 		await this.memoRepository.delete(memoId);
+
+		// 4. 캐시 무효화 (createRecurring은 내부에서 캐시를 무효화하지 않음)
+		await this.cacheService.invalidateTodoCategories(userId);
 
 		this.#logger.log(
 			`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,

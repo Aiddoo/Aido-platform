@@ -6,14 +6,15 @@ const MAX_MEMO_PROMPT_LENGTH = 1000;
 /**
  * 메모 내용을 AI 프롬프트 삽입용으로 새니타이징합니다.
  *
- * - 연속 줄바꿈 → 단일 공백 (프롬프트 구조 파괴 방지)
- * - 마크다운 메타문자 제거 (인젝션 방지)
+ * - 프롬프트 인젝션 위험 문자(`#`, `` ` ``, `>`, `~`) 제거
+ * - 줄바꿈/목록 기호(`-`, `*`, 숫자)는 유지 (AI가 구조를 파악할 수 있도록)
+ * - 연속 빈 줄(3줄+)만 축소
  * - 길이 제한 (토큰 낭비 방지, 메모용 1000자)
  */
 export function sanitizeMemoForPrompt(input: string): string {
 	return input
-		.replace(/[\r\n]+/g, " ")
-		.replace(/[#\-*>`~]/g, "")
+		.replace(/[#>`~]/g, "")
+		.replace(/\n{3,}/g, "\n\n")
 		.trim()
 		.slice(0, MAX_MEMO_PROMPT_LENGTH);
 }

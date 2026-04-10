@@ -686,6 +686,37 @@ describe("AiService — AI 서비스", () => {
 			expect(prompt).toContain("Korean Memo");
 		});
 
+		it("6개 이상 결과는 5개로 잘린다", async () => {
+			// Given
+			const sixTodos = Array.from({ length: 6 }, (_, i) => ({
+				title: `할 일 ${i + 1}`,
+				startDate: "2026-04-11",
+				endDate: null,
+				scheduledTime: null,
+				isAllDay: true,
+				isRecurring: false,
+				recurrence: null,
+				items: [],
+			}));
+			fakeAiProvider.setRawResponse({ todos: sixTodos });
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"6개 할 일",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.data.todos).toHaveLength(5);
+			expect(result.data.todos[4]).toMatchObject({ title: "할 일 5" });
+		});
+
 		it("메타데이터에 모델명과 토큰 사용량이 포함된다", async () => {
 			// Given
 			fakeAiProvider.setTokenUsage({ input: 450, output: 280 });

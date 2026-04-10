@@ -11,6 +11,7 @@ import { MEMO_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { MemoBuilder } from "@test/builders";
+import { CacheService } from "@/common/cache/cache.service";
 import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
 import { TodoService } from "@/modules/todo/todo.service";
@@ -22,6 +23,7 @@ describe("MemoService — 메모 서비스", () => {
 	let memoRepo: Mocked<MemoRepository>;
 	let database: Mocked<DatabaseService>;
 	let todoService: Mocked<TodoService>;
+	let cacheService: Mocked<CacheService>;
 	let _paginationService: Mocked<PaginationService>;
 
 	const mockUserId = "user-123";
@@ -36,6 +38,7 @@ describe("MemoService — 메모 서비스", () => {
 		memoRepo = unitRef.get(MemoRepository);
 		database = unitRef.get(DatabaseService);
 		todoService = unitRef.get(TodoService);
+		cacheService = unitRef.get(CacheService);
 		_paginationService = unitRef.get(PaginationService);
 
 		// Given - 기본 transaction mock 설정
@@ -436,6 +439,34 @@ describe("MemoService — 메모 서비스", () => {
 			// Then
 			expect(todoService.createRecurring).toHaveBeenCalledTimes(1);
 			expect(result.todos).toHaveLength(2);
+		});
+
+		it("완료 후 카테고리 캐시를 무효화해야 한다", async () => {
+			// Given
+			const memo = MemoBuilder.create(mockUserId).withContent("테스트").build();
+			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
+			(todoService.create as jest.Mock).mockResolvedValue({
+				id: 1,
+				title: "테스트",
+			});
+			(memoRepo.delete as jest.Mock).mockResolvedValue(memo);
+
+			// When
+			await service.convertToTodos(mockUserId, memo.id, {
+				todos: [
+					{
+						title: "테스트",
+						categoryId: 1,
+						startDate: new Date("2026-04-11"),
+						isAllDay: true,
+					},
+				],
+			});
+
+			// Then
+			expect(cacheService.invalidateTodoCategories).toHaveBeenCalledWith(
+				mockUserId,
+			);
 		});
 
 		it("메모가 없으면 에러를 던져야 한다", async () => {
