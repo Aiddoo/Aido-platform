@@ -34,6 +34,8 @@ import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import {
 	ConvertMemoToTodoDto,
 	ConvertMemoToTodoResponseDto,
+	ConvertMemoToTodosDto,
+	ConvertMemoToTodosResponseDto,
 	CreateMemoDto,
 	GetMemosQueryDto,
 	MemoDeleteResponseDto,
@@ -274,5 +276,74 @@ export class MemoController {
 			visibility: dto.visibility,
 			items: dto.items,
 		});
+	}
+
+	@Post(":id/convert-to-todos")
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
+	@ApiDoc({
+		summary: "메모를 여러 할 일로 일괄 변환",
+		operationId: "convertMemoToTodos",
+		description: `메모를 AI 파싱 결과 기반으로 여러 할 일로 일괄 변환합니다.
+변환 후 원본 메모는 삭제됩니다.
+
+## 📱 클라이언트 통합 가이드
+\`\`\`
+1. POST /ai/parse-memo           → AI가 메모를 다중 Todo+SubTodo로 파싱
+2. 사용자에게 결과 표시            → 검토/수정 기회 제공
+3. POST /memos/:id/convert-to-todos → 이 엔드포인트로 일괄 생성
+\`\`\`
+
+## 📝 입력
+- \`todos[]\`: 생성할 할 일 배열 (1-5개)
+  - 각 todo: title, categoryId, startDate (필수) + endDate, scheduledTime, isAllDay, visibility, items (선택)
+  - 반복 일정: isRecurring + recurrence (daysOfWeek, endDate)
+
+## ⚡ 트랜잭션
+- 모든 Todo가 순차 생성된 후 메모가 삭제됩니다.
+- 중간에 실패 시 이미 생성된 Todo는 유지되고 메모도 유지됩니다.`,
+	})
+	@ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiNotFoundError(ErrorCode.MEMO_2001)
+	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+	@ApiForbiddenError(ErrorCode.TODO_0811)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	async convertToTodos(
+		@CurrentUser() user: CurrentUserPayload,
+		@Param() params: MemoIdParamDto,
+		@Body() dto: ConvertMemoToTodosDto,
+		@Timezone() tz: string,
+	): Promise<ConvertMemoToTodosResponseDto> {
+		return this.memoService.convertToTodos(
+			user.userId,
+			params.id,
+			{
+				todos: dto.todos.map((todo) => ({
+					title: todo.title,
+					categoryId: todo.categoryId,
+					startDate: parseDateOnly(todo.startDate),
+					endDate: todo.endDate ? parseDateOnly(todo.endDate) : undefined,
+					scheduledTime: todo.scheduledTime
+						? parseLocalDateTime(todo.startDate, todo.scheduledTime, tz)
+						: undefined,
+					isAllDay: todo.isAllDay,
+					visibility: todo.visibility,
+					isRecurring: todo.isRecurring,
+					recurrence: todo.recurrence
+						? {
+								daysOfWeek: todo.recurrence.daysOfWeek,
+								endDate: parseDateOnly(todo.recurrence.endDate),
+							}
+						: undefined,
+					items: todo.items,
+				})),
+			},
+			tz,
+		);
 	}
 }

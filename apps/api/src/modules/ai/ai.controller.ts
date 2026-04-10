@@ -26,6 +26,8 @@ import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { AiService } from "./ai.service";
 import {
 	AiUsageResponseDto,
+	ParseMemoRequestDto,
+	ParseMemoResponseDto,
 	ParseTodoRequestDto,
 	ParseTodoResponseDto,
 } from "./dtos";
@@ -192,6 +194,154 @@ if (confirmed) {
 
 		this.#logger.log(
 			`AI 파싱 완료: user=${user.userId}, title="${result.data.title}", ` +
+				`model=${result.meta.model}, time=${result.meta.processingTimeMs}ms`,
+		);
+
+		return {
+			success: true,
+			data: result.data,
+			meta: result.meta,
+		};
+	}
+
+	/**
+	 * @example
+	 * ```
+	 * // Request
+	 * POST /ai/parse-memo
+	 * { "content": "내일 오후 2시까지 버그 수정하고 정산 로직도 확인. 금요일엔 스터디 자료 올리기", "categoryId": 1 }
+	 *
+	 * // Response
+	 * {
+	 *   "success": true,
+	 *   "data": {
+	 *     "todos": [
+	 *       {
+	 *         "title": "버그 수정",
+	 *         "startDate": "2026-04-12",
+	 *         "endDate": null,
+	 *         "scheduledTime": "14:00",
+	 *         "isAllDay": false,
+	 *         "isRecurring": false,
+	 *         "recurrence": null,
+	 *         "categoryId": 1,
+	 *         "items": []
+	 *       },
+	 *       {
+	 *         "title": "정산 로직 확인",
+	 *         "startDate": "2026-04-12",
+	 *         "endDate": null,
+	 *         "scheduledTime": null,
+	 *         "isAllDay": true,
+	 *         "isRecurring": false,
+	 *         "recurrence": null,
+	 *         "categoryId": 1,
+	 *         "items": []
+	 *       },
+	 *       {
+	 *         "title": "스터디 자료 올리기",
+	 *         "startDate": "2026-04-17",
+	 *         "endDate": null,
+	 *         "scheduledTime": null,
+	 *         "isAllDay": true,
+	 *         "isRecurring": false,
+	 *         "recurrence": null,
+	 *         "categoryId": 1,
+	 *         "items": []
+	 *       }
+	 *     ]
+	 *   },
+	 *   "meta": {
+	 *     "model": "google:gemini-2.5-flash-lite",
+	 *     "processingTimeMs": 350,
+	 *     "tokenUsage": { "input": 450, "output": 280 }
+	 *   }
+	 * }
+	 * ```
+	 */
+	@Post("parse-memo")
+	@HttpCode(HttpStatus.OK)
+	@UseGuards(AiUsageGuard)
+	@ApiHeader({
+		name: "X-Timezone",
+		required: false,
+		description: "사용자 타임존 (IANA, 기본값: UTC)",
+		example: "Asia/Seoul",
+	})
+	@ApiDoc({
+		summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
+		operationId: "parseMemoToTodos",
+		description: `메모 내용을 AI가 분석하여 여러 개의 구조화된 할 일(각각 서브투두 포함)을 생성합니다.
+
+## 📝 입력 필드
+| 필드 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| \`content\` | string | 1-5000자 | 파싱할 메모 내용 |
+| \`categoryId\` | number | 필수 | 기본 카테고리 ID (생성될 모든 할 일에 적용) |
+
+## 🎯 출력 데이터 (\`data.todos[]\`)
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`title\` | string | AI가 추출한 할 일 제목 (1-200자) |
+| \`startDate\` | string | 시작 날짜 (YYYY-MM-DD) |
+| \`endDate\` | string \\| null | 종료 날짜 (기간 일정용) |
+| \`scheduledTime\` | string \\| null | 예정 시간 (HH:mm) |
+| \`isAllDay\` | boolean | 종일 여부 |
+| \`isRecurring\` | boolean | 반복 일정 여부 |
+| \`recurrence\` | object \\| null | 반복 설정 |
+| \`categoryId\` | number | 카테고리 ID (요청에서 주입) |
+| \`items\` | array | 서브투두 목록 (0-5개) |
+
+## 🧠 AI 파싱 규칙
+- **별개 맥락/주제** → 별도 Todo로 분리 (최대 5개)
+- **하나의 큰 작업 + 세부 단계** → 1개 Todo + 여러 items (서브투두)
+- **날짜/시간 힌트 없음** → 오늘 + 종일
+- **반복 표현** (매주, 매일 등) → isRecurring + recurrence 설정
+
+## 💡 입력 → 출력 예시
+| 메모 입력 | 예상 결과 |
+|----------|----------|
+| \`내일 2시까지 버그 수정하고 정산도 확인\` | 2개 Todo: "버그 수정" (내일 14:00), "정산 확인" (내일 종일) |
+| \`졸업 발표 준비 - 슬라이드, 대본, 리허설\` | 1개 Todo + 3개 SubTodo |
+| \`매주 수요일 학원, 월말까지 포트폴리오\` | 2개 Todo: 반복 + 기간 |
+| \`우유 사기\` | 1개 간단 Todo |
+
+## 📱 클라이언트 통합 가이드
+\`\`\`
+1. POST /ai/parse-memo      → 메모 AI 파싱
+2. 사용자에게 결과 표시       → 검토/수정 기회 제공
+3. POST /memos/:id/convert-to-todos → 일괄 Todo 생성 + 메모 삭제
+\`\`\`
+
+## 🚫 사용량 제한
+- 기존 AI 파싱과 **일일 사용량 공유** (parse-todo와 동일 카운트)
+- 무료 유저: 일일 5회 / 프리미엄: 무제한
+- 리셋: KST 자정`,
+	})
+	@ApiSuccessResponse({ type: ParseMemoResponseDto })
+	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiBadRequestError(ErrorCode.SYS_0002)
+	@ApiUnprocessableError(ErrorCode.AI_1302)
+	@ApiTooManyRequestsError(ErrorCode.AI_1303)
+	@ApiServiceUnavailableError(ErrorCode.AI_1301)
+	async parseMemo(
+		@CurrentUser() user: CurrentUserPayload,
+		@Body() dto: ParseMemoRequestDto,
+		@Timezone() tz: string,
+	): Promise<ParseMemoResponseDto> {
+		this.#logger.debug(
+			`AI 메모 파싱 요청: user=${user.userId}, tz=${tz}, content="${dto.content.slice(0, 50)}..."`,
+		);
+
+		const result = await this.aiService.parseMemoToTodos(
+			dto.content,
+			user.userId,
+			tz,
+			dto.categoryId,
+		);
+
+		this.#logger.log(
+			`AI 메모 파싱 완료: user=${user.userId}, ${result.data.todos.length} todos, ` +
 				`model=${result.meta.model}, time=${result.meta.processingTimeMs}ms`,
 		);
 

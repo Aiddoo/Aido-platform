@@ -112,3 +112,64 @@ export const convertMemoToTodoSchema = z.object({
 });
 
 export type ConvertMemoToTodoInput = z.infer<typeof convertMemoToTodoSchema>;
+
+const convertMemoTodoItemSchema = z.object({
+  title: z
+    .string()
+    .min(1, '제목을 입력해주세요')
+    .max(200, '제목은 200자 이하로 입력해주세요')
+    .describe('하위 항목 제목'),
+});
+
+const convertMemoSingleTodoSchema = z.object({
+  title: z
+    .string()
+    .min(1, '제목을 입력해주세요')
+    .max(200, '제목은 200자 이하로 입력해주세요')
+    .describe('할 일 제목 (AI 파싱 결과 또는 사용자 수정)'),
+  categoryId: z
+    .number()
+    .int()
+    .positive('유효하지 않은 카테고리 ID입니다')
+    .describe('카테고리 ID (양의 정수)'),
+  startDate: z.iso.date().describe('시작 날짜 (YYYY-MM-DD)'),
+  endDate: z.iso.date().optional().describe('종료 날짜 (YYYY-MM-DD, 선택)'),
+  scheduledTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'HH:mm 형식이어야 합니다')
+    .optional()
+    .describe('예정 시간 (HH:mm, 24시간 형식, 선택)'),
+  isAllDay: z.boolean().default(true).describe('종일 여부 (기본값: true)'),
+  visibility: todoVisibilitySchema
+    .default('PUBLIC')
+    .describe('공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)'),
+  isRecurring: z.boolean().default(false).describe('반복 일정 여부 (기본값: false)'),
+  recurrence: z
+    .object({
+      daysOfWeek: z
+        .array(z.enum(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']))
+        .min(1)
+        .max(7),
+      endDate: z.iso.date(),
+    })
+    .optional()
+    .describe('반복 설정 (비반복 일정은 생략)'),
+  items: z
+    .array(convertMemoTodoItemSchema)
+    .max(
+      TODO_ITEM_LIMITS.MAX_PER_TODO,
+      `하위 항목은 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가할 수 있습니다`,
+    )
+    .optional()
+    .describe('서브투두 목록 (선택, 최대 20개)'),
+});
+
+export const convertMemoToTodosSchema = z.object({
+  todos: z
+    .array(convertMemoSingleTodoSchema)
+    .min(1, '최소 1개의 할 일이 필요합니다')
+    .max(5, '최대 5개의 할 일까지 변환할 수 있습니다')
+    .describe('생성할 할 일 목록 (1-5개)'),
+});
+
+export type ConvertMemoToTodosInput = z.infer<typeof convertMemoToTodosSchema>;
