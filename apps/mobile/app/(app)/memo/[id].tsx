@@ -26,9 +26,9 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, TextInput } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
@@ -57,6 +57,8 @@ export default function MemoDetailScreen() {
   });
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const { mutate: updateMemo, isPending: isUpdatePending } = useMutation(
     useUpdateMemoMutationOptions(),
@@ -75,7 +77,13 @@ export default function MemoDetailScreen() {
   const handleSave = handleSubmit((data) => {
     updateMemo(
       { memoId, input: { content: data.content.trim() } },
-      { onSuccess: () => reset({ content: data.content.trim() }) },
+      {
+        onSuccess: () => {
+          reset({ content: data.content.trim() });
+          setIsEditing(false);
+          Keyboard.dismiss();
+        },
+      },
     );
   });
 
@@ -150,13 +158,15 @@ export default function MemoDetailScreen() {
             onPress={() => setIsDeleteDialogOpen(true)}
             icon={<TrashIcon width={20} height={20} colorClassName="text-gray-10" />}
           />
-          <ActionButton
-            onPress={handleSave}
-            isDisabled={!isDirty || !isValid || isUpdatePending}
-            size={36}
-            icon={<CheckmarkIcon width={20} height={20} color="white" />}
-            className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
-          />
+          {isEditing && (
+            <ActionButton
+              onPress={handleSave}
+              isDisabled={!isValid || isUpdatePending}
+              size={36}
+              icon={<CheckmarkIcon width={20} height={20} color="white" />}
+              className={cn('rounded-full', isDirty && isValid ? 'bg-main' : 'bg-gray-4')}
+            />
+          )}
         </DetailHeader>
 
         <Box className="flex-1" px={16} py={12}>
@@ -165,11 +175,13 @@ export default function MemoDetailScreen() {
             name="content"
             render={({ field: { value, onChange } }) => (
               <StyledTextInput
+                ref={inputRef}
                 value={value}
                 onChangeText={onChange}
                 multiline
                 textAlignVertical="top"
                 allowFontScaling={false}
+                onFocus={() => setIsEditing(true)}
                 className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
               />
             )}

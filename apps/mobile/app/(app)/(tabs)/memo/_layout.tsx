@@ -39,21 +39,6 @@ export default function MemoLayout() {
           ),
         }}
       />
-      <Stack.Screen
-        name="create"
-        options={{
-          animation: 'fade_from_bottom',
-          animationDuration: 250,
-          gestureEnabled: true,
-        }}
-      />
-      <Stack.Screen
-        name="[id]"
-        options={{
-          animation: 'fade_from_bottom',
-          animationDuration: 200,
-        }}
-      />
     </Stack>
   );
 }
