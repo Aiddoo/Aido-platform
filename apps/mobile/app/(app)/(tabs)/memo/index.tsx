@@ -99,7 +99,7 @@ function Header() {
   return (
     <HStack align="center" px={16} mb={16}>
       <Box flex={1}>
-        <H3>메모 추가</H3>
+        <H3 shade={7}>메모 추가</H3>
       </Box>
       <PressableFeedback
         onPress={handleCreate}

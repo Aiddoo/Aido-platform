@@ -64,7 +64,7 @@ MemoList.Item = function Item({
     <PressableFeedback onPress={() => router.push(`/memo/${id}` as Href)}>
       <VStack gap={8} p={16} className="rounded-xl bg-gray-1">
         <HStack align="start">
-          <Text className="flex-1" size="b3" shade={10} weight="semibold" numberOfLines={4}>
+          <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
             {content}
           </Text>
           {isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
