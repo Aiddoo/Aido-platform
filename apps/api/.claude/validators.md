@@ -65,11 +65,18 @@ export const createTodoSchema = z
       .min(1, '제목은 필수입니다')
       .max(200, '제목은 200자 이내')
       .describe('할 일 제목'),
-    dueDate: z
-      .string()
-      .datetime()
-      .optional()
-      .describe('마감일'),
+    categoryId: z
+      .number()
+      .int()
+      .positive('유효하지 않은 카테고리 ID입니다')
+      .describe('카테고리 ID'),
+    startDate: z.iso
+      .date()
+      .describe('시작 날짜 (YYYY-MM-DD)'),
+    endDate: z.iso
+      .date()
+      .nullish()
+      .describe('종료 날짜 (YYYY-MM-DD, 선택)'),
   })
   .describe('Todo 생성 요청');
 
@@ -85,10 +92,11 @@ import { z } from 'zod';
 /** Todo 응답 스키마 */
 export const todoResponseSchema = z
   .object({
-    id: z.string().cuid().describe('고유 ID'),
+    id: z.number().int().describe('고유 ID'),
     title: z.string().describe('제목'),
     completed: z.boolean().describe('완료 여부'),
-    dueDate: z.string().datetime().nullable().describe('마감일'),
+    startDate: z.string().describe('시작 날짜 (YYYY-MM-DD)'),
+    endDate: z.string().nullable().describe('종료 날짜'),
     createdAt: z.string().datetime().describe('생성일시'),
     updatedAt: z.string().datetime().describe('수정일시'),
   })
@@ -205,7 +213,7 @@ export function CreateTodoScreen() {
 
   const handleSubmit = async () => {
     // 클라이언트 사전 검증
-    const result = createTodoSchema.safeParse({ title });
+    const result = createTodoSchema.safeParse({ title, categoryId: 1, startDate: '2026-04-11' });
     
     if (!result.success) {
       // Zod 에러를 폼 에러로 변환
