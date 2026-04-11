@@ -224,7 +224,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			const mockTodoWithCategory = TodoBuilder.create(mockUserId)
 				.withId(mockTodoId)
 				.withTitle("통합 테스트 할 일")
-				.withContent("통합 테스트 내용")
 				.withCategoryId(mockCategoryId)
 				.withCategory({
 					id: mockCategoryId,
@@ -241,7 +240,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			const createInput = {
 				userId: mockUserId,
 				title: "새로운 할 일",
-				content: "할 일 내용",
 				categoryId: mockCategoryId,
 				startDate: new Date("2024-01-15"),
 			};
@@ -258,7 +256,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 					data: expect.objectContaining({
 						user: { connect: { id: mockUserId } },
 						title: createInput.title,
-						content: createInput.content,
 						category: { connect: { id: mockCategoryId } },
 					}),
 				}),
@@ -970,8 +967,8 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	describe("updateContent 통합 테스트", () => {
-		it("제목만 변경한다", async () => {
+	describe("updateTitle 통합 테스트", () => {
+		it("제목을 변경한다", async () => {
 			// Given - 제목 변경 대상 Todo 준비
 			const mockTodo = TodoBuilder.create(mockUserId)
 				.withId(mockTodoId)
@@ -985,7 +982,7 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
 
 			// When - 제목 변경
-			const result = await service.updateContent(mockTodoId, mockUserId, {
+			const result = await service.updateTitle(mockTodoId, mockUserId, {
 				title: "새로운 제목",
 			});
 
@@ -999,100 +996,13 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			);
 		});
 
-		it("내용만 변경한다", async () => {
-			// Given - 내용 변경 대상 Todo 준비
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withContent("기존 내용")
-				.build();
-			const updatedTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withContent("새로운 내용")
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
-
-			// When - 내용 변경
-			const result = await service.updateContent(mockTodoId, mockUserId, {
-				content: "새로운 내용",
-			});
-
-			// Then - 내용 변경 검증
-			expect(result.content).toBe("새로운 내용");
-			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockTodoId },
-					data: { content: "새로운 내용" },
-				}),
-			);
-		});
-
-		it("제목과 내용을 동시에 변경한다", async () => {
-			// Given - 제목/내용 변경 대상 Todo 준비
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.build();
-			const updatedTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withTitle("새 제목")
-				.withContent("새 내용")
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
-
-			// When - 제목/내용 동시 변경
-			await service.updateContent(mockTodoId, mockUserId, {
-				title: "새 제목",
-				content: "새 내용",
-			});
-
-			// Then - 동시 변경 검증
-			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockTodoId },
-					data: {
-						title: "새 제목",
-						content: "새 내용",
-					},
-				}),
-			);
-		});
-
-		it("내용을 null로 설정하여 삭제한다", async () => {
-			// Given - 내용 삭제 대상 Todo 준비
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withContent("기존 내용")
-				.build();
-			const updatedTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withContent(null)
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
-
-			// When - 내용 null로 설정
-			const result = await service.updateContent(mockTodoId, mockUserId, {
-				content: null,
-			});
-
-			// Then - 내용 삭제 검증
-			expect(result.content).toBeNull();
-			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockTodoId },
-					data: { content: null },
-				}),
-			);
-		});
-
 		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
 			// Given - 존재하지 않는 Todo
 			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
 
 			// When & Then - 예외 발생 검증
 			await expect(
-				service.updateContent(999, mockUserId, { title: "새 제목" }),
+				service.updateTitle(999, mockUserId, { title: "새 제목" }),
 			).rejects.toThrow(BusinessException);
 		});
 	});

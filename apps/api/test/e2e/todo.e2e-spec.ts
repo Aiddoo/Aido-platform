@@ -71,7 +71,6 @@ describe("할 일 E2E", () => {
 				.set("Authorization", `Bearer ${accessToken}`)
 				.send({
 					title: "운동하기",
-					content: "헬스장에서 1시간 운동",
 					categoryId,
 					startDate: "2024-01-20",
 					endDate: "2024-01-20",
@@ -84,7 +83,6 @@ describe("할 일 E2E", () => {
 			// Then - 모든 필드 검증
 			expect(createAllResponse.body.data.todo).toMatchObject({
 				title: "운동하기",
-				content: "헬스장에서 1시간 운동",
 				startDate: "2024-01-20",
 				endDate: "2024-01-20",
 				isAllDay: false,
@@ -162,22 +160,11 @@ describe("할 일 E2E", () => {
 			const updateMultiResponse = await request(ctx.app.getHttpServer())
 				.patch(`/todos/${createdTodoId}`)
 				.set("Authorization", `Bearer ${accessToken}`)
-				.send({ title: "최종 수정된 제목", content: "새로운 내용" })
+				.send({ title: "최종 수정된 제목" })
 				.expect(200);
 
 			// Then - 수정 결과 검증
 			expect(updateMultiResponse.body.data.todo.title).toBe("최종 수정된 제목");
-			expect(updateMultiResponse.body.data.todo.content).toBe("새로운 내용");
-
-			// When - null 값으로 필드 삭제
-			const nullResponse = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${createdTodoId}`)
-				.set("Authorization", `Bearer ${accessToken}`)
-				.send({ content: null })
-				.expect(200);
-
-			// Then - null 검증
-			expect(nullResponse.body.data.todo.content).toBeNull();
 
 			// When - 할 일 삭제
 			const deleteResponse = await request(ctx.app.getHttpServer())
@@ -255,7 +242,6 @@ describe("할 일 E2E", () => {
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({
 					categoryId,
-					content: "내용만 있음",
 				})
 				.expect(400);
 
@@ -1022,13 +1008,13 @@ describe("할 일 E2E", () => {
 		});
 	});
 
-	describe("제목/내용 수정 (SRP 엔드포인트)", () => {
+	describe("제목 수정 (SRP 엔드포인트)", () => {
 		const testPassword = "Test1234!";
 
-		it("제목만 수정 성공", async () => {
+		it("제목 수정 성공", async () => {
 			// Given - 인증된 사용자와 할 일
 			const user = await ctx.helpers.createVerifiedUser(
-				"todo-content-title@example.com",
+				"todo-title-update@example.com",
 				testPassword,
 			);
 			const categoryId = await ctx.helpers.getDefaultCategoryId(
@@ -1044,7 +1030,7 @@ describe("할 일 E2E", () => {
 
 			// When - 제목 수정 API 호출
 			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/content`)
+				.patch(`/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "SRP로 수정된 제목" })
 				.expect(200);
@@ -1053,67 +1039,10 @@ describe("할 일 E2E", () => {
 			expect(response.body.data.todo.title).toBe("SRP로 수정된 제목");
 		});
 
-		it("내용만 수정 성공", async () => {
-			// Given - 인증된 사용자와 할 일
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-content-body@example.com",
-				testPassword,
-			);
-			const categoryId = await ctx.helpers.getDefaultCategoryId(
-				user.accessToken,
-			);
-
-			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
-				.expect(201);
-			const todoId = createResponse.body.data.todo.id;
-
-			// When - 내용 수정 API 호출
-			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/content`)
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({ content: "SRP로 수정된 내용" })
-				.expect(200);
-
-			// Then - 수정 결과 검증
-			expect(response.body.data.todo.content).toBe("SRP로 수정된 내용");
-		});
-
-		it("제목과 내용 모두 수정 성공", async () => {
-			// Given - 인증된 사용자와 할 일
-			const user = await ctx.helpers.createVerifiedUser(
-				"todo-content-both@example.com",
-				testPassword,
-			);
-			const categoryId = await ctx.helpers.getDefaultCategoryId(
-				user.accessToken,
-			);
-
-			const createResponse = await request(ctx.app.getHttpServer())
-				.post("/todos")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({ title: "테스트", categoryId, startDate: "2024-01-15" })
-				.expect(201);
-			const todoId = createResponse.body.data.todo.id;
-
-			// When - 제목과 내용 동시 수정 API 호출
-			const response = await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/content`)
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({ title: "새 제목", content: "새 내용" })
-				.expect(200);
-
-			// Then - 수정 결과 검증
-			expect(response.body.data.todo.title).toBe("새 제목");
-			expect(response.body.data.todo.content).toBe("새 내용");
-		});
-
 		it("빈 요청은 400 에러", async () => {
 			// Given - 인증된 사용자와 할 일
 			const user = await ctx.helpers.createVerifiedUser(
-				"todo-content-empty@example.com",
+				"todo-title-empty@example.com",
 				testPassword,
 			);
 			const categoryId = await ctx.helpers.getDefaultCategoryId(
@@ -1129,7 +1058,7 @@ describe("할 일 E2E", () => {
 
 			// When - 빈 요청으로 수정 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/content`)
+				.patch(`/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({})
 				.expect(400);
@@ -1140,7 +1069,7 @@ describe("할 일 E2E", () => {
 		it("제목이 200자 초과하면 400 에러", async () => {
 			// Given - 인증된 사용자와 할 일
 			const user = await ctx.helpers.createVerifiedUser(
-				"todo-content-long@example.com",
+				"todo-title-long@example.com",
 				testPassword,
 			);
 			const categoryId = await ctx.helpers.getDefaultCategoryId(
@@ -1156,7 +1085,7 @@ describe("할 일 E2E", () => {
 
 			// When - 긴 제목으로 수정 API 호출
 			await request(ctx.app.getHttpServer())
-				.patch(`/todos/${todoId}/content`)
+				.patch(`/todos/${todoId}/title`)
 				.set("Authorization", `Bearer ${user.accessToken}`)
 				.send({ title: "a".repeat(201) })
 				.expect(400);

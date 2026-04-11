@@ -29,7 +29,6 @@ export interface TodoItemData {
 export interface CreateTodoData {
 	userId: string;
 	title: string;
-	content?: string | null;
 	categoryId: number;
 	startDate: Date;
 	endDate?: Date | null;
@@ -45,7 +44,6 @@ export interface CreateTodoData {
 export interface CreateRecurringTodoData {
 	userId: string;
 	title: string;
-	content?: string | null;
 	categoryId: number;
 	startDate: string;
 	endDate: string;
@@ -60,7 +58,6 @@ export interface CreateRecurringTodoData {
  */
 export interface UpdateTodoData {
 	title?: string;
-	content?: string | null;
 	categoryId?: number;
 	startDate?: Date;
 	endDate?: Date | null;
@@ -128,7 +125,6 @@ export interface TodoWithCategory {
 	id: number;
 	userId: string;
 	title: string;
-	content: string | null;
 	categoryId: number;
 	sortOrder: number;
 	completed: boolean;

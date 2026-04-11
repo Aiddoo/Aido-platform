@@ -87,7 +87,6 @@ describe("TodoService — 할 일 서비스", () => {
 		const createInput: CreateTodoData = {
 			userId: mockUserId,
 			title: "새로운 할 일",
-			content: "할 일 내용",
 			categoryId: 1,
 			startDate: new Date("2024-01-15"),
 			endDate: new Date("2024-01-16"),
@@ -108,7 +107,6 @@ describe("TodoService — 할 일 서비스", () => {
 			const mockTodo = TodoBuilder.create(mockUserId)
 				.withId(1)
 				.withTitle(createInput.title)
-				.withContent(createInput.content ?? null)
 				.withCategoryId(createInput.categoryId)
 				.build();
 
@@ -137,7 +135,6 @@ describe("TodoService — 할 일 서비스", () => {
 					user: { connect: { id: mockUserId } },
 					category: { connect: { id: createInput.categoryId } },
 					title: createInput.title,
-					content: createInput.content,
 				}),
 			);
 		});
@@ -160,28 +157,6 @@ describe("TodoService — 할 일 서비스", () => {
 				expect.objectContaining({
 					isAllDay: true,
 					visibility: "PUBLIC",
-				}),
-			);
-		});
-
-		it("content가 null이면 null로 저장한다", async () => {
-			// Given - content가 null인 입력
-			const inputWithNulls: CreateTodoData = {
-				userId: mockUserId,
-				title: "할 일",
-				categoryId: 1,
-				startDate: new Date("2024-01-15"),
-				content: null,
-			};
-
-			// When - content가 null인 Todo 생성
-			await service.create(inputWithNulls);
-
-			// Then - content가 null로 저장됨
-			const createArgs = todoRepo.create.mock.calls[0]?.[0];
-			expect(createArgs).toEqual(
-				expect.objectContaining({
-					content: null,
 				}),
 			);
 		});
@@ -481,7 +456,7 @@ describe("TodoService — 할 일 서비스", () => {
 	});
 
 	describe("update", () => {
-		const updateInput = { title: "수정된 할 일", content: "수정된 내용" };
+		const updateInput = { title: "수정된 할 일" };
 
 		it("Todo를 수정하고 반환한다", async () => {
 			// Given - 존재하는 Todo
@@ -503,7 +478,6 @@ describe("TodoService — 할 일 서비스", () => {
 				mockTodo.id,
 				expect.objectContaining({
 					title: updateInput.title,
-					content: updateInput.content,
 				}),
 			);
 		});
@@ -1294,13 +1268,12 @@ describe("TodoService — 할 일 서비스", () => {
 		});
 	});
 
-	describe("updateContent", () => {
-		it("제목만 변경한다", async () => {
+	describe("updateTitle", () => {
+		it("제목을 변경한다", async () => {
 			// Given - 존재하는 Todo
 			const mockTodo = TodoBuilder.create(mockUserId)
 				.withId(1)
 				.withTitle("원래 제목")
-				.withContent("원래 내용")
 				.build();
 			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
 			todoRepo.update.mockImplementation(
@@ -1311,100 +1284,15 @@ describe("TodoService — 할 일 서비스", () => {
 					}) as TodoWithCategory,
 			);
 
-			// When - 제목만 변경
-			const result = await service.updateContent(mockTodo.id, mockUserId, {
+			// When - 제목 변경
+			const result = await service.updateTitle(mockTodo.id, mockUserId, {
 				title: "새로운 제목",
 			});
 
-			// Then - 제목만 변경됨
+			// Then - 제목이 변경됨
 			expect(result.title).toBe("새로운 제목");
 			expect(todoRepo.update).toHaveBeenCalledWith(mockTodo.id, {
 				title: "새로운 제목",
-			});
-		});
-
-		it("내용만 변경한다", async () => {
-			// Given - 존재하는 Todo
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(1)
-				.withTitle("원래 제목")
-				.withContent("원래 내용")
-				.build();
-			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoRepo.update.mockImplementation(
-				async (_id: number, data: Record<string, unknown>) =>
-					({
-						...mockTodo,
-						...data,
-					}) as TodoWithCategory,
-			);
-
-			// When - 내용만 변경
-			const result = await service.updateContent(mockTodo.id, mockUserId, {
-				content: "새로운 내용",
-			});
-
-			// Then - 내용만 변경됨
-			expect(result.content).toBe("새로운 내용");
-			expect(todoRepo.update).toHaveBeenCalledWith(mockTodo.id, {
-				content: "새로운 내용",
-			});
-		});
-
-		it("제목과 내용을 동시에 변경한다", async () => {
-			// Given - 존재하는 Todo
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(1)
-				.withTitle("원래 제목")
-				.withContent("원래 내용")
-				.build();
-			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoRepo.update.mockImplementation(
-				async (_id: number, data: Record<string, unknown>) =>
-					({
-						...mockTodo,
-						...data,
-					}) as TodoWithCategory,
-			);
-
-			// When - 제목과 내용 동시 변경
-			await service.updateContent(mockTodo.id, mockUserId, {
-				title: "새 제목",
-				content: "새 내용",
-			});
-
-			// Then - 둘 다 변경됨
-			expect(todoRepo.update).toHaveBeenCalledWith(mockTodo.id, {
-				title: "새 제목",
-				content: "새 내용",
-			});
-		});
-
-		it("내용을 null로 설정하여 삭제한다", async () => {
-			// Given - 존재하는 Todo
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(1)
-				.withTitle("원래 제목")
-				.withContent("원래 내용")
-				.build();
-			todoRepo.findByIdAndUserId.mockResolvedValue(mockTodo);
-			todoRepo.update.mockImplementation(
-				async (_id: number, data: Record<string, unknown>) =>
-					({
-						...mockTodo,
-						...data,
-					}) as TodoWithCategory,
-			);
-
-			// When - 내용을 null로 설정
-			const result = await service.updateContent(mockTodo.id, mockUserId, {
-				content: null,
-			});
-
-			// Then - 내용이 null로 설정됨
-			expect(result.content).toBeNull();
-			expect(todoRepo.update).toHaveBeenCalledWith(mockTodo.id, {
-				content: null,
 			});
 		});
 
@@ -1414,7 +1302,7 @@ describe("TodoService — 할 일 서비스", () => {
 
 			// When & Then: BusinessException 발생
 			await expect(
-				service.updateContent(999, mockUserId, { title: "새 제목" }),
+				service.updateTitle(999, mockUserId, { title: "새 제목" }),
 			).rejects.toThrow(BusinessException);
 		});
 	});
@@ -1633,7 +1521,6 @@ describe("TodoService — 할 일 서비스", () => {
 		const recurringInput: CreateRecurringTodoData = {
 			userId: mockUserId,
 			title: "약 먹기",
-			content: "매일 비타민 복용",
 			categoryId: 1,
 			startDate: "2026-03-01",
 			endDate: "2026-03-31",
@@ -1689,7 +1576,6 @@ describe("TodoService — 할 일 서비스", () => {
 					title: "약 먹기",
 					userId: mockUserId,
 					categoryId: 1,
-					content: "매일 비타민 복용",
 					visibility: "PUBLIC",
 					isAllDay: true,
 				}),
