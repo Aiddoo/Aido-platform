@@ -3,11 +3,7 @@
  *
  * 타입 안전한 Todo 및 관련 엔티티 테스트 데이터 생성
  */
-import type {
-	Todo,
-	TodoCategory,
-	TodoVisibility,
-} from "@/generated/prisma/client";
+import type { Todo, TodoCategory } from "@/generated/prisma/client";
 
 let todoCounter = 0;
 let categoryCounter = 0;
@@ -82,7 +78,6 @@ export const TodoFixture = {
 			userId: overrides.userId ?? `user-${id}`,
 			categoryId: overrides.categoryId ?? id,
 			title: overrides.title ?? `Test Todo ${id}`,
-			content: overrides.content ?? `Test content for todo ${id}`,
 			completed: overrides.completed ?? false,
 			completedAt: overrides.completedAt ?? null,
 			startDate: overrides.startDate ?? now,
@@ -90,7 +85,7 @@ export const TodoFixture = {
 			scheduledTime: overrides.scheduledTime ?? null,
 			isAllDay: overrides.isAllDay ?? true,
 			sortOrder: overrides.sortOrder ?? id,
-			visibility: overrides.visibility ?? ("PRIVATE" as TodoVisibility),
+			visibility: overrides.visibility ?? "PRIVATE",
 			recurrenceGroupId: overrides.recurrenceGroupId ?? null,
 			createdAt: overrides.createdAt ?? now,
 			updatedAt: overrides.updatedAt ?? now,

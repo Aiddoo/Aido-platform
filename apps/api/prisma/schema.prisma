@@ -464,7 +464,6 @@ model Todo {
 
   // 내용
   title   String  @db.VarChar(200)
-  content String? @db.VarChar(5000)
 
   // 카테고리 (필수)
   categoryId Int

@@ -66,7 +66,6 @@ export abstract class TodoMapper {
 			id: entity.id,
 			userId: entity.userId,
 			title: entity.title,
-			content: entity.content,
 			sortOrder: entity.sortOrder,
 			completed: entity.completed,
 			completedAt: toISOStringOrNull(entity.completedAt),
