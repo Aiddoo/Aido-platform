@@ -1,12 +1,12 @@
 # @aido/mobile
 
-Expo 54 기반 React Native 모바일 앱.
+Expo 55 기반 React Native 모바일 앱.
 
 ## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
-| Framework | Expo 54, React Native 0.81 |
+| Framework | Expo 55, React Native 0.83 |
 | Routing | Expo Router |
 | State | TanStack Query v5 |
 | HTTP | Ky |

@@ -1,6 +1,6 @@
 # Mobile App - AI 개발 가이드
 
-Expo 54 + React Native 0.81 기반 모바일 앱.
+Expo 55 + React Native 0.83 기반 모바일 앱.
 
 ## 아키텍처
 

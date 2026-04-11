@@ -8,10 +8,10 @@ AI 기반 할 일 관리 애플리케이션. Turborepo + pnpm 모노레포.
 |------|------|
 | Monorepo | Turborepo 2.7, pnpm 9.15 |
 | Backend | NestJS 11, Prisma 7, PostgreSQL 16 |
-| Mobile | Expo 54, React Native 0.81, React 19.1 |
+| Mobile | Expo 55, React Native 0.83, React 19.2 |
 | Validation | Zod 4.3, nestjs-zod |
 | Testing | Jest 29, Vitest, Testcontainers |
-| Code Quality | Biome 2.3 |
+| Code Quality | Biome 2.4 |
 
 ## 구조
 
