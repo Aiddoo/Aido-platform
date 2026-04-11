@@ -65,11 +65,6 @@ export const createTodoSchema = z
       .min(1, '제목은 필수입니다')
       .max(200, '제목은 200자 이내')
       .describe('할 일 제목'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이내')
-      .optional()
-      .describe('상세 내용'),
     dueDate: z
       .string()
       .datetime()
@@ -92,7 +87,6 @@ export const todoResponseSchema = z
   .object({
     id: z.string().cuid().describe('고유 ID'),
     title: z.string().describe('제목'),
-    content: z.string().nullable().describe('내용'),
     completed: z.boolean().describe('완료 여부'),
     dueDate: z.string().datetime().nullable().describe('마감일'),
     createdAt: z.string().datetime().describe('생성일시'),
@@ -207,12 +201,11 @@ import { createTodo } from '../api/todo.api';
 
 export function CreateTodoScreen() {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async () => {
     // 클라이언트 사전 검증
-    const result = createTodoSchema.safeParse({ title, content });
+    const result = createTodoSchema.safeParse({ title });
     
     if (!result.success) {
       // Zod 에러를 폼 에러로 변환
@@ -254,7 +247,6 @@ export function useCreateTodoForm() {
     resolver: zodResolver(createTodoSchema),
     defaultValues: {
       title: '',
-      content: '',
     },
   });
 }
@@ -328,11 +320,6 @@ export const createExampleSchema = z
       .min(1, '제목은 필수입니다')
       .max(200, '제목은 200자 이내')
       .describe('제목'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이내')
-      .optional()
-      .describe('내용 (선택)'),
   })
   .describe('예시 생성 요청');
 
@@ -395,7 +382,6 @@ export const exampleResponseSchema = z
   .object({
     id: z.string().cuid().describe('고유 ID'),
     title: z.string().describe('제목'),
-    content: z.string().nullable().describe('내용'),
     createdAt: z.string().datetime().describe('생성일시'),
   })
   .describe('예시 응답');
@@ -619,14 +605,16 @@ describe('createTodoSchema', () => {
   it('유효한 데이터를 통과시켜야 한다', () => {
     const result = createTodoSchema.safeParse({
       title: '테스트 제목',
-      content: '테스트 내용',
+      categoryId: 1,
+      startDate: '2026-04-11',
     });
     expect(result.success).toBe(true);
   });
 
   it('제목이 없으면 실패해야 한다', () => {
     const result = createTodoSchema.safeParse({
-      content: '내용만',
+      categoryId: 1,
+      startDate: '2026-04-11',
     });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0].path).toContain('title');
@@ -636,5 +624,5 @@ describe('createTodoSchema', () => {
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+**문서 버전**: 3.1.0
+**최종 수정일**: 2026-04-11
