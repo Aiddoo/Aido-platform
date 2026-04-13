@@ -471,32 +471,4 @@ describe("SessionRepository — 세션 리포지토리", () => {
 			});
 		});
 	});
-
-	describe("findByPreviousTokenHash", () => {
-		it("이전 토큰 해시로 세션을 찾는다 (재사용 감지용)", async () => {
-			// Given - 이전 토큰 해시로 세션 조회 Mock 설정
-			db.session.findFirst.mockResolvedValue(mockSession);
-
-			// When - 이전 토큰 해시로 세션 조회 실행
-			const result = await repository.findByPreviousTokenHash("previous-hash");
-
-			// Then - 조회된 세션 검증
-			expect(result).toEqual(mockSession);
-			expect(db.session.findFirst).toHaveBeenCalledWith({
-				where: { previousTokenHash: "previous-hash" },
-			});
-		});
-
-		it("해당 토큰 해시가 없으면 null을 반환한다", async () => {
-			// Given - 존재하지 않는 토큰 해시 Mock 설정
-			db.session.findFirst.mockResolvedValue(null);
-
-			// When - 존재하지 않는 토큰 해시로 조회 실행
-			const result =
-				await repository.findByPreviousTokenHash("nonexistent-hash");
-
-			// Then - null 반환 검증
-			expect(result).toBeNull();
-		});
-	});
 });

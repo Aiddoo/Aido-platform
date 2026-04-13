@@ -837,7 +837,7 @@ describe("AuthService — 인증 서비스", () => {
 		const userId = "user-123";
 		const sessionId = "session-123";
 
-		const mockPayload = {
+		const _mockPayload = {
 			sub: userId,
 			email: "test@example.com",
 			sessionId,

@@ -31,6 +31,11 @@ describe("AuthController — 인증 컨트롤러", () => {
 		role: "USER",
 	};
 
+	const mockReq = {
+		ip: "127.0.0.1",
+		headers: { "user-agent": "test-agent" },
+	} as unknown as Request;
+
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
@@ -58,10 +63,16 @@ describe("AuthController — 인증 컨트롤러", () => {
 			mockAuthService.register.mockResolvedValue(serviceResult);
 
 			// When -register를 호출하면
-			const result = await controller.register(dto as unknown as RegisterDto);
+			const result = await controller.register(
+				dto as unknown as RegisterDto,
+				mockReq,
+			);
 
 			// Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-			expect(mockAuthService.register).toHaveBeenCalledWith(dto);
+			expect(mockAuthService.register).toHaveBeenCalledWith(
+				dto,
+				expect.any(Object),
+			);
 			expect(result).toEqual({
 				message: serviceResult.message,
 				email: serviceResult.email,
@@ -90,12 +101,6 @@ describe("AuthController — 인증 컨트롤러", () => {
 				},
 			};
 			mockAuthService.login.mockResolvedValue(serviceResult);
-
-			// req mock: extractMetadata에서 사용하는 필드
-			const mockReq = {
-				ip: "127.0.0.1",
-				headers: { "user-agent": "test-agent" },
-			} as unknown as Request;
 
 			// When -login을 호출하면
 			const result = await controller.login(
@@ -129,10 +134,13 @@ describe("AuthController — 인증 컨트롤러", () => {
 			});
 
 			// When -logoutAll을 호출하면
-			const result = await controller.logoutAll(mockUser);
+			const result = await controller.logoutAll(mockUser, mockReq);
 
 			// Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-			expect(mockAuthService.logoutAll).toHaveBeenCalledWith(mockUser.userId);
+			expect(mockAuthService.logoutAll).toHaveBeenCalledWith(
+				mockUser.userId,
+				expect.any(Object),
+			);
 			expect(result).toEqual({
 				message: "모든 기기에서 로그아웃되었습니다.",
 			});

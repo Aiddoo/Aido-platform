@@ -29,7 +29,13 @@ export class PasswordManagementService {
 		private readonly verificationService: VerificationService,
 	) {}
 
-	async forgotPassword(email: string): Promise<{ message: string }> {
+	async forgotPassword(
+		email: string,
+		metadata?: RequestMetadata,
+	): Promise<{ message: string }> {
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
 		// 사용자 존재 확인 (존재하지 않아도 보안상 동일한 응답)
 		const user = await this.userRepository.findByEmail(email);
 
@@ -41,8 +47,8 @@ export class PasswordManagementService {
 			await this.securityLogRepository.create({
 				userId: user.id,
 				event: SECURITY_EVENT.PASSWORD_RESET_REQUESTED,
-				ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-				userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+				ipAddress: ip,
+				userAgent,
 				metadata: { email },
 			});
 

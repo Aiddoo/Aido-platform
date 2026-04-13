@@ -201,11 +201,4 @@ export class SessionRepository {
 		});
 		return result.count;
 	}
-
-	// 토큰 재사용 감지용
-	async findByPreviousTokenHash(hash: string): Promise<Session | null> {
-		return this.database.session.findFirst({
-			where: { previousTokenHash: hash },
-		});
-	}
 }

@@ -80,8 +80,8 @@ export class AuthController {
 	})
 	@ApiCreatedResponse({ type: MessageResponseDto })
 	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
-	async register(@Body() dto: RegisterDto) {
-		const result = await this.authService.register(dto);
+	async register(@Body() dto: RegisterDto, @Req() req: Request) {
+		const result = await this.authService.register(dto, extractMetadata(req));
 		return AuthMapper.toRegisterResponse(result);
 	}
 
@@ -266,8 +266,11 @@ export class AuthController {
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async logoutAll(@CurrentUser() user: CurrentUserPayload) {
-		await this.authService.logoutAll(user.userId);
+	async logoutAll(
+		@CurrentUser() user: CurrentUserPayload,
+		@Req() req: Request,
+	) {
+		await this.authService.logoutAll(user.userId, extractMetadata(req));
 		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
 	}
 
@@ -342,9 +345,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
 	})
 	@ApiSuccessResponse({ type: MessageResponseDto })
-	async forgotPassword(@Body() dto: ForgotPasswordDto) {
+	async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
 		const result = await this.passwordManagementService.forgotPassword(
 			dto.email,
+			extractMetadata(req),
 		);
 		return result;
 	}

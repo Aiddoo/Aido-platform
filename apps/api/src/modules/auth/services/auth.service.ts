@@ -4,7 +4,6 @@ import {
 	type LoginInput,
 	type RegisterInput,
 	type UpdateProfileInput,
-	type UserRole,
 	type VerifyEmailInput,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
@@ -50,18 +49,12 @@ import type {
 	UpdateProfileResult,
 	VerifyEmailResult,
 } from "../types";
+import type { VerifiedRefreshPayload } from "../types/auth.types";
 import { assertNotDeleted } from "../utils/auth-validation.utils";
 import { PasswordService } from "./password.service";
 import { SessionService } from "./session.service";
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
-
-export interface VerifiedRefreshPayload {
-	userId: string;
-	email: string;
-	sessionId: string;
-	role: UserRole;
-}
 
 @Injectable()
 export class AuthService {
@@ -85,7 +78,13 @@ export class AuthService {
 		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 	) {}
 
-	async register(input: RegisterInput): Promise<RegisterResult> {
+	async register(
+		input: RegisterInput,
+		metadata?: RequestMetadata,
+	): Promise<RegisterResult> {
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
 		const {
 			email,
 			password,
@@ -172,8 +171,8 @@ export class AuthService {
 					{
 						userId: newUser.id,
 						event: SECURITY_EVENT.REGISTRATION,
-						ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-						userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+						ipAddress: ip,
+						userAgent,
 					},
 					tx,
 				);

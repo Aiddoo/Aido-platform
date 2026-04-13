@@ -104,3 +104,13 @@ export interface DeleteAccountResult {
 	deletedAt: string;
 	gracePeriodDays: number;
 }
+
+/**
+ * Passport Guard가 검증한 Refresh Token 정보
+ */
+export interface VerifiedRefreshPayload {
+	userId: string;
+	email: string;
+	sessionId: string;
+	role: UserRole;
+}
