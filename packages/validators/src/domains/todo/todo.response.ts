@@ -28,6 +28,7 @@ export const todoSchema = z
     id: z.number().int().describe('할 일 고유 ID (양의 정수)'),
     userId: z.cuid().describe('사용자 ID (CUID 25자)'),
     title: z.string().describe('할 일 제목'),
+    content: z.string().nullable().optional().describe('할 일 내용 (deprecated, 하위 호환용 — 항상 null)'),
     sortOrder: z.number().int().describe('정렬 순서 (작을수록 위)'),
     completed: z.boolean().describe('완료 상태'),
     completedAt: nullableDatetimeSchema.describe(

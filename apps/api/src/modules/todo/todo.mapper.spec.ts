@@ -73,6 +73,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
 				id: 1,
 				userId: "user-123",
 				title: "테스트 할 일",
+				content: null,
 				sortOrder: 0,
 				completed: false,
 				completedAt: null,

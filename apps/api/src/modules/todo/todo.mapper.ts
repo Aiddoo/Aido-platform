@@ -66,6 +66,7 @@ export abstract class TodoMapper {
 			id: entity.id,
 			userId: entity.userId,
 			title: entity.title,
+			content: null, // deprecated: 하위 호환용
 			sortOrder: entity.sortOrder,
 			completed: entity.completed,
 			completedAt: toISOStringOrNull(entity.completedAt),
