@@ -311,10 +311,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 				sessionId: payload.sessionId,
 				role: payload.role,
 			},
-			{
-				ip: req.ip,
-				userAgent: req.headers["user-agent"],
-			},
+			extractMetadata(req),
 		);
 		return AuthMapper.toRefreshTokensResponse(result);
 	}

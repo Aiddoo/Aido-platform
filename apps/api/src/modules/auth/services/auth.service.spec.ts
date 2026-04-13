@@ -868,7 +868,6 @@ describe("AuthService — 인증 서비스", () => {
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
@@ -894,7 +893,6 @@ describe("AuthService — 인증 서비스", () => {
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			sessionRepo.rotateToken.mockResolvedValue({
 				...mockSession,
@@ -965,7 +963,7 @@ describe("AuthService — 인증 서비스", () => {
 		});
 
 		it("토큰 재사용이 감지되면 토큰 패밀리를 폐기한다", async () => {
-			// Given — grace period(30초) 초과: 60초 전 로테이션
+			// Given — grace period(10초) 초과: 60초 전 로테이션
 			const NOW = new Date("2025-06-01T12:01:00Z");
 			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
 			jest.useFakeTimers({ now: NOW });
@@ -974,11 +972,12 @@ describe("AuthService — 인증 서비스", () => {
 				.withId(sessionId)
 				.withTokenFamily("family-id")
 				.withLastUsedAt(LAST_ROTATED)
+				.withPreviousTokenHash("hashed-token")
 				.build();
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(mockSession);
+			sessionRepo.findById.mockResolvedValue(mockSession);
 			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
@@ -1012,11 +1011,86 @@ describe("AuthService — 인증 서비스", () => {
 				.withTokenVersion(2)
 				.withTokenFamily("family-id")
 				.withLastUsedAt(LAST_ROTATED)
+				.withPreviousTokenHash("hashed-token")
 				.build();
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
+			sessionRepo.findById.mockResolvedValue(reusedSession);
+			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
+			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
+			sessionRepo.rotateToken.mockResolvedValue({
+				...reusedSession,
+				tokenVersion: 3,
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When
+			const result = await service.refreshTokens(refreshToken, verifiedPayload);
+
+			// Then
+			expect(result.tokens).toEqual(mockNewTokens);
+			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
+			// Sliding window 방지: previousTokenHash는 현재 세션의 refreshTokenHash여야 함
+			expect(sessionRepo.rotateToken).toHaveBeenCalledWith(
+				sessionId,
+				expect.objectContaining({
+					previousTokenHash: reusedSession.refreshTokenHash, // NOT "hashed-token"
+				}),
+			);
+
+			jest.useRealTimers();
+		});
+
+		it("grace period 초과 시 토큰 재사용으로 판단하여 패밀리를 폐기한다", async () => {
+			// Given — 고정 시간: 12:00:15, 로테이션은 12:00:00 (15초 전, 10초 grace period 초과)
+			const NOW = new Date("2025-06-01T12:00:15Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const reusedSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(2)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.withPreviousTokenHash("hashed-token")
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
+			sessionRepo.findById.mockResolvedValue(reusedSession);
+			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When & Then
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
+			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
+				reusedSession.tokenFamily,
+				REVOKE_REASON.TOKEN_REUSE_DETECTED,
+			);
+
+			jest.useRealTimers();
+		});
+
+		it("grace period 경계값(10초)에서는 재시도로 판단한다", async () => {
+			// Given — 정확히 10초 전 로테이션
+			const NOW = new Date("2025-06-01T12:00:10Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const reusedSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(2)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.withPreviousTokenHash("hashed-token")
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
+			sessionRepo.findById.mockResolvedValue(reusedSession);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
 			sessionRepo.rotateToken.mockResolvedValue({
@@ -1035,66 +1109,30 @@ describe("AuthService — 인증 서비스", () => {
 			jest.useRealTimers();
 		});
 
-		it("grace period 초과 시 토큰 재사용으로 판단하여 패밀리를 폐기한다", async () => {
-			// Given — 고정 시간: 12:01:00, 로테이션은 12:00:00 (60초 전)
-			const NOW = new Date("2025-06-01T12:01:00Z");
-			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+		it("grace period 재시도 후 동일 토큰으로 재시도하면 거부한다 (sliding window 방지)", async () => {
+			const NOW = new Date("2025-06-01T12:00:05Z");
 			jest.useFakeTimers({ now: NOW });
 
-			const reusedSession = SessionBuilder.create(userId)
+			// 이미 grace period 재시도가 완료된 세션 — previousTokenHash가 변경됨
+			const sessionAfterGraceRetry = SessionBuilder.create(userId)
 				.withId(sessionId)
-				.withTokenVersion(2)
+				.withTokenVersion(3)
 				.withTokenFamily("family-id")
-				.withLastUsedAt(LAST_ROTATED)
+				.withLastUsedAt(new Date("2025-06-01T12:00:02Z"))
 				.build();
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
-			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+			// previousTokenHash는 이전 grace period에서 변경됨 → 불일치
+			sessionRepo.findById.mockResolvedValue({
+				...sessionAfterGraceRetry,
+				previousTokenHash: "different-hash",
+			} as Session);
 
 			// When & Then
 			await expect(
 				service.refreshTokens(refreshToken, verifiedPayload),
 			).rejects.toThrow(BusinessException);
-			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
-				reusedSession.tokenFamily,
-				REVOKE_REASON.TOKEN_REUSE_DETECTED,
-			);
-
-			jest.useRealTimers();
-		});
-
-		it("grace period 경계값(30초)에서는 재시도로 판단한다", async () => {
-			// Given — 정확히 30초 전 로테이션
-			const NOW = new Date("2025-06-01T12:00:30Z");
-			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
-			jest.useFakeTimers({ now: NOW });
-
-			const reusedSession = SessionBuilder.create(userId)
-				.withId(sessionId)
-				.withTokenVersion(2)
-				.withTokenFamily("family-id")
-				.withLastUsedAt(LAST_ROTATED)
-				.build();
-
-			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
-			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
-			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
-			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
-			sessionRepo.rotateToken.mockResolvedValue({
-				...reusedSession,
-				tokenVersion: 3,
-			} as Session);
-			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
-
-			// When
-			const result = await service.refreshTokens(refreshToken, verifiedPayload);
-
-			// Then
-			expect(result.tokens).toEqual(mockNewTokens);
 			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
 
 			jest.useRealTimers();
@@ -1148,7 +1186,6 @@ describe("AuthService — 인증 서비스", () => {
 
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
-			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
 			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
 			sessionRepo.rotateToken.mockResolvedValue(null);
 

@@ -662,38 +662,39 @@ export class AuthService {
 		const session =
 			await this.sessionRepository.findByRefreshTokenHash(refreshTokenHash);
 
-		// 세션이 없으면 이전 토큰 해시에서 검색 (재사용 감지)
+		// 세션이 없으면 sessionId(PK)로 조회 — O(1) PK lookup
 		if (!session) {
-			const reusedSession =
-				await this.sessionRepository.findByPreviousTokenHash(refreshTokenHash);
+			// sessionId(PK)로 조회 — O(1) PK lookup
+			const currentSession = await this.sessionRepository.findById(sessionId);
 
-			if (reusedSession) {
-				// Grace period check
+			// previousTokenHash가 제출된 토큰 해시와 일치 → 이전 토큰 재사용
+			if (currentSession?.previousTokenHash === refreshTokenHash) {
+				// Grace period 확인
 				const timeSinceLastRotation =
-					Date.now() - new Date(reusedSession.lastUsedAt).getTime();
+					Date.now() - new Date(currentSession.lastUsedAt).getTime();
 
 				if (timeSinceLastRotation <= TOKEN_REUSE_GRACE_PERIOD_MS) {
-					// Network retry — issue new tokens
+					// 네트워크 재시도로 판단 → 새 토큰 발급
 					this.#logger.debug(
-						`Token retry within grace period for session: ${reusedSession.id} (${timeSinceLastRotation}ms)`,
+						`Token retry within grace period for session: ${currentSession.id} (${timeSinceLastRotation}ms)`,
 					);
 
-					this.sessionService.assertSessionValid(reusedSession);
+					this.sessionService.assertSessionValid(currentSession);
 
 					if (
-						reusedSession.userId !== userId ||
-						reusedSession.id !== sessionId
+						currentSession.userId !== userId ||
+						currentSession.id !== sessionId
 					) {
 						throw BusinessExceptions.sessionNotFound();
 					}
 
-					const newTokenVersion = reusedSession.tokenVersion + 1;
+					const newTokenVersion = currentSession.tokenVersion + 1;
 					const newTokens = await this.tokenService.generateTokenPair(
 						userId,
 						email,
 						sessionId,
 						role,
-						reusedSession.tokenFamily,
+						currentSession.tokenFamily,
 						newTokenVersion,
 					);
 
@@ -704,13 +705,15 @@ export class AuthService {
 						this.tokenService.getRefreshTokenExpiresInSeconds();
 					const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
 
+					// Sliding window 방지: previousTokenHash를 현재 세션의 refreshTokenHash로 설정
+					// → 동일 옛 토큰으로의 재시도는 1회만 허용
 					const rotatedSession = await this.sessionRepository.rotateToken(
 						sessionId,
 						{
 							refreshTokenHash: newRefreshTokenHash,
 							tokenVersion: newTokenVersion,
-							previousTokenHash: refreshTokenHash,
-							expectedTokenVersion: reusedSession.tokenVersion,
+							previousTokenHash: currentSession.refreshTokenHash, // ← 핵심: 옛 토큰이 아닌 현재 토큰
+							expectedTokenVersion: currentSession.tokenVersion,
 							expiresAt: newExpiresAt,
 						},
 					);
@@ -730,25 +733,25 @@ export class AuthService {
 					return { tokens: newTokens, sessionId };
 				}
 
-				// Grace period exceeded — genuine token reuse attack
+				// Grace period 초과 → 토큰 재사용 공격
 				await this.sessionRepository.revokeByTokenFamily(
-					reusedSession.tokenFamily,
+					currentSession.tokenFamily,
 					REVOKE_REASON.TOKEN_REUSE_DETECTED,
 				);
 
 				await this.securityLogRepository.create({
-					userId: reusedSession.userId,
+					userId: currentSession.userId,
 					event: SECURITY_EVENT.SUSPICIOUS_ACTIVITY,
 					ipAddress: ip,
 					userAgent,
 					metadata: {
 						reason: REVOKE_REASON.TOKEN_REUSE_DETECTED,
-						tokenFamily: reusedSession.tokenFamily,
+						tokenFamily: currentSession.tokenFamily,
 					},
 				});
 
 				this.#logger.warn(
-					`Token reuse detected for user: ${reusedSession.userId}`,
+					`Token reuse detected for user: ${currentSession.userId}`,
 				);
 				throw BusinessExceptions.tokenReuseDetected();
 			}
