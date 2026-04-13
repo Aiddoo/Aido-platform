@@ -1,8 +1,11 @@
 import {
   type ConvertMemoToTodoInput,
   type ConvertMemoToTodoResponse,
+  type ConvertMemoToTodosInput,
+  type ConvertMemoToTodosResponse,
   type CreateMemoInput,
   convertMemoToTodoResponseSchema,
+  convertMemoToTodosResponseSchema,
   type GetMemosQuery,
   type MemoDeleteResponse,
   type MemoDetailResponse,
@@ -173,6 +176,28 @@ export class MemoService {
     const parsed = convertMemoToTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[MemoService] Invalid convertToTodo response: ${parsed.error.message}`);
+    }
+
+    return ok(parsed.data);
+  };
+
+  convertToTodos = async (
+    id: number,
+    input: ConvertMemoToTodosInput,
+  ): Promise<Result<ConvertMemoToTodosResponse, ApiError>> => {
+    const result = await this.#httpClient.post<ConvertMemoToTodosResponse>(
+      `v1/memos/${id}/convert-to-todos`,
+      input,
+    );
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = convertMemoToTodosResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[MemoService] Invalid convertToTodos response: ${parsed.error.message}`,
+      );
     }
 
     return ok(parsed.data);

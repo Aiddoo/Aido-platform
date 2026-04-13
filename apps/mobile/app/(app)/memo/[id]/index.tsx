@@ -15,6 +15,7 @@ import {
   HStack,
   PinFilledIcon,
   PinIcon,
+  RobotIcon,
   TrashIcon,
   useOverlay,
   VStack,
@@ -57,7 +58,6 @@ export default function MemoDetailScreen() {
     defaultValues: { content: memo.content },
   });
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
@@ -117,6 +117,42 @@ export default function MemoDetailScreen() {
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 
+  const handleAiParse = () => {
+    router.push(`/memo/${memoId}/ai-review`);
+  };
+
+  const handleDelete = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <ConfirmDialog
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+        title={<ConfirmDialog.Title>메모를 삭제할까요?</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>삭제한 메모는 복구할 수 없어요</ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton onPress={() => close()} disabled={isDeletePending}>
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton
+            color="danger"
+            onPress={() => deleteMemo(memoId, { onSuccess: () => router.back() })}
+            isLoading={isDeletePending}
+          >
+            삭제
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
+    ));
+  };
+
   const handleConvertToTodo = () => {
     if (!defaultCategoryId) {
       return;
@@ -164,12 +200,17 @@ export default function MemoDetailScreen() {
             }
           />
           <ActionButton
+            onPress={handleAiParse}
+            isDisabled={!defaultCategoryId}
+            icon={<RobotIcon width={20} height={20} colorClassName="text-gray-10" />}
+          />
+          <ActionButton
             onPress={handleConvertToTodo}
             isDisabled={!defaultCategoryId}
             icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-10" />}
           />
           <ActionButton
-            onPress={() => setIsDeleteDialogOpen(true)}
+            onPress={handleDelete}
             icon={<TrashIcon width={20} height={20} colorClassName="text-gray-10" />}
           />
           {isEditing && (
@@ -202,32 +243,6 @@ export default function MemoDetailScreen() {
           />
         </Box>
       </VStack>
-
-      <ConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        title={<ConfirmDialog.Title>메모를 삭제할까요?</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>삭제한 메모는 복구할 수 없어요</ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton
-            onPress={() => setIsDeleteDialogOpen(false)}
-            disabled={isDeletePending}
-          >
-            취소
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            color="danger"
-            onPress={() => deleteMemo(memoId, { onSuccess: () => router.back() })}
-            isLoading={isDeletePending}
-          >
-            삭제
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
     </KeyboardAvoidingView>
   );
 }
