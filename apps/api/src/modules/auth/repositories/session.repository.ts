@@ -99,6 +99,7 @@ export class SessionRepository {
 			tokenVersion: number;
 			previousTokenHash: string;
 			expectedTokenVersion: number; // 낙관적 잠금용
+			expiresAt: Date;
 		},
 		tx?: TransactionClient,
 	): Promise<Session | null> {
@@ -115,6 +116,7 @@ export class SessionRepository {
 				refreshTokenHash: data.refreshTokenHash,
 				tokenVersion: data.tokenVersion,
 				previousTokenHash: data.previousTokenHash,
+				expiresAt: data.expiresAt,
 				lastUsedAt: now(),
 			},
 		});
@@ -198,12 +200,5 @@ export class SessionRepository {
 			},
 		});
 		return result.count;
-	}
-
-	// 토큰 재사용 감지용
-	async findByPreviousTokenHash(hash: string): Promise<Session | null> {
-		return this.database.session.findFirst({
-			where: { previousTokenHash: hash },
-		});
 	}
 }

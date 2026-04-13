@@ -17,6 +17,8 @@ import { PinoLogger } from "nestjs-pino";
 import { ZodValidationPipe } from "nestjs-zod";
 import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
+import { InMemoryCacheAdapter } from "@/common/cache/adapters/in-memory-cache.adapter";
+import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
 import { REDIS_CLIENT } from "@/common/redis/redis.constants";
 import { DatabaseService } from "@/database";
 import { DailySignupSummaryJob } from "@/modules/admin-notification/jobs/daily-signup-summary.job";
@@ -140,6 +142,14 @@ export async function createE2eApp(
 	})
 		.overrideProvider(REDIS_CLIENT)
 		.useValue(redisMock)
+		.overrideProvider(CACHE_SERVICE)
+		.useValue(
+			new InMemoryCacheAdapter({
+				defaultTtlMs: 60000,
+				maxItems: 1000,
+				cleanupIntervalMs: 30000,
+			}),
+		)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
 		.overrideProvider(EmailService)

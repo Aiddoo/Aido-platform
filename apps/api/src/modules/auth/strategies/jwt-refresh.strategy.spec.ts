@@ -54,6 +54,7 @@ describe("JwtRefreshStrategy — JWT 리프레시 전략", () => {
 			userId: "user-123",
 			email: "test@example.com",
 			sessionId: "session-456",
+			role: "USER",
 			refreshToken: "valid-refresh-token",
 		});
 	});

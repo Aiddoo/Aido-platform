@@ -259,6 +259,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 				tokenVersion: 2,
 				previousTokenHash: "old-hash",
 				expectedTokenVersion: 1,
+				expiresAt: new Date("2025-01-15"),
 			});
 
 			// Then - 로테이션된 세션 검증
@@ -273,8 +274,39 @@ describe("SessionRepository — 세션 리포지토리", () => {
 					refreshTokenHash: "new-hash",
 					tokenVersion: 2,
 					previousTokenHash: "old-hash",
+					expiresAt: new Date("2025-01-15"),
 					lastUsedAt: expect.any(Date),
 				},
+			});
+		});
+
+		it("rotateToken 호출 시 expiresAt도 함께 업데이트한다", async () => {
+			// Given
+			const sessionId = "session-123";
+			const rotateData = {
+				refreshTokenHash: "new-hash",
+				tokenVersion: 2,
+				previousTokenHash: "old-hash",
+				expectedTokenVersion: 1,
+				expiresAt: new Date("2025-01-15"),
+			};
+
+			db.session.updateMany.mockResolvedValue({ count: 1 });
+			db.session.findUnique.mockResolvedValue(mockSession);
+
+			// When
+			await repository.rotateToken(sessionId, rotateData);
+
+			// Then
+			expect(db.session.updateMany).toHaveBeenCalledWith({
+				where: {
+					id: sessionId,
+					tokenVersion: 1,
+					revokedAt: null,
+				},
+				data: expect.objectContaining({
+					expiresAt: rotateData.expiresAt,
+				}),
 			});
 		});
 
@@ -288,6 +320,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 				tokenVersion: 3,
 				previousTokenHash: "old-hash",
 				expectedTokenVersion: 2, // 실제 버전과 불일치
+				expiresAt: new Date("2025-01-15"),
 			});
 
 			// Then - null 반환 검증
@@ -436,34 +469,6 @@ describe("SessionRepository — 세션 리포지토리", () => {
 					],
 				},
 			});
-		});
-	});
-
-	describe("findByPreviousTokenHash", () => {
-		it("이전 토큰 해시로 세션을 찾는다 (재사용 감지용)", async () => {
-			// Given - 이전 토큰 해시로 세션 조회 Mock 설정
-			db.session.findFirst.mockResolvedValue(mockSession);
-
-			// When - 이전 토큰 해시로 세션 조회 실행
-			const result = await repository.findByPreviousTokenHash("previous-hash");
-
-			// Then - 조회된 세션 검증
-			expect(result).toEqual(mockSession);
-			expect(db.session.findFirst).toHaveBeenCalledWith({
-				where: { previousTokenHash: "previous-hash" },
-			});
-		});
-
-		it("해당 토큰 해시가 없으면 null을 반환한다", async () => {
-			// Given - 존재하지 않는 토큰 해시 Mock 설정
-			db.session.findFirst.mockResolvedValue(null);
-
-			// When - 존재하지 않는 토큰 해시로 조회 실행
-			const result =
-				await repository.findByPreviousTokenHash("nonexistent-hash");
-
-			// Then - null 반환 검증
-			expect(result).toBeNull();
 		});
 	});
 });

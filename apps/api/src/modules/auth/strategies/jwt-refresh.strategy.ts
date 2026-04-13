@@ -1,3 +1,4 @@
+import type { UserRole } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
@@ -13,6 +14,7 @@ export interface RefreshTokenPayload {
 	userId: string;
 	email: string;
 	sessionId: string;
+	role: UserRole;
 	refreshToken: string;
 }
 
@@ -64,6 +66,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 			userId: payload.sub,
 			email: payload.email,
 			sessionId: payload.sessionId,
+			role: payload.role,
 			refreshToken,
 		};
 	}
