@@ -1,4 +1,4 @@
-import { DocsIcon, HStack, PinIcon, Result, Text, VStack } from '@src/shared/ui';
+import { DocsIcon, HStack, PinFilledIcon, Result, Text, VStack } from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -62,23 +62,13 @@ MemoList.Item = function Item({
 
   return (
     <PressableFeedback onPress={() => router.push(`/memo/${id}` as Href)}>
-      <VStack
-        gap={8}
-        p={16}
-        className="rounded-xl bg-gray-2 border border-gray-3 shadow-sm shadow-black/5"
-      >
-        {isPinned && (
-          <HStack align="center" gap={4}>
-            <PinIcon width={12} height={12} colorClassName="text-main" />
-            <Text size="e1" tone="brand" weight="medium">
-              고정됨
-            </Text>
-          </HStack>
-        )}
-
-        <Text size="b3" shade={10} numberOfLines={4}>
-          {content}
-        </Text>
+      <VStack gap={8} p={16} className="rounded-xl bg-gray-1">
+        <HStack align="start">
+          <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
+            {content}
+          </Text>
+          {isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
+        </HStack>
 
         <Text size="e1" shade={5}>
           {date}

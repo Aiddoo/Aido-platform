@@ -1,5 +1,6 @@
 import {
 	convertMemoToTodoResponseSchema,
+	convertMemoToTodosResponseSchema,
 	memoDeleteResponseSchema,
 	memoDetailResponseSchema,
 	memoListResponseSchema,
@@ -22,6 +23,9 @@ export class MemoDeleteResponseDto extends createZodDto(
 export class MemoListResponseDto extends createZodDto(memoListResponseSchema) {}
 export class ConvertMemoToTodoResponseDto extends createZodDto(
 	convertMemoToTodoResponseSchema,
+) {}
+export class ConvertMemoToTodosResponseDto extends createZodDto(
+	convertMemoToTodosResponseSchema,
 ) {}
 export class MemoResourceLimitResponseDto extends createZodDto(
 	memoResourceLimitResponseSchema,

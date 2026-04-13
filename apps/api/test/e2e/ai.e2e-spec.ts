@@ -690,4 +690,164 @@ describe("AI E2E", () => {
 			expect(response.body.data.data.title).toBe("테스트");
 		});
 	});
+
+	describe("POST /ai/parse-memo", () => {
+		describe("성공 케이스", () => {
+			it("메모를 다중 Todo+SubTodo로 파싱", async () => {
+				// Given
+				fakeAiProvider.setRawResponse({
+					todos: [
+						{
+							title: "버그 수정",
+							startDate: "2026-04-12",
+							endDate: null,
+							scheduledTime: "14:00",
+							isAllDay: false,
+							isRecurring: false,
+							recurrence: null,
+							items: [{ title: "로그 확인" }],
+						},
+						{
+							title: "자료 올리기",
+							startDate: "2026-04-11",
+							endDate: null,
+							scheduledTime: null,
+							isAllDay: true,
+							isRecurring: false,
+							recurrence: null,
+							items: [],
+						},
+					],
+				});
+
+				// When
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ content: "내일 2시 버그 수정, 자료 올리기", categoryId: 1 });
+
+				// Then
+				expect(response.status).toBe(200);
+				expect(response.body.data.data.todos).toHaveLength(2);
+				expect(response.body.data.data.todos[0]).toMatchObject({
+					title: "버그 수정",
+					scheduledTime: "14:00",
+					categoryId: 1,
+				});
+				expect(response.body.data.data.todos[0].items).toHaveLength(1);
+				expect(response.body.data.data.todos[1]).toMatchObject({
+					title: "자료 올리기",
+					isAllDay: true,
+					categoryId: 1,
+				});
+			});
+
+			it("categoryId가 모든 todo에 주입됨", async () => {
+				// Given
+				fakeAiProvider.setRawResponse({
+					todos: [
+						{
+							title: "할 일",
+							startDate: "2026-04-11",
+							endDate: null,
+							scheduledTime: null,
+							isAllDay: true,
+							isRecurring: false,
+							recurrence: null,
+							items: [],
+						},
+					],
+				});
+
+				// When
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ content: "할 일", categoryId: 42 });
+
+				// Then
+				expect(response.status).toBe(200);
+				expect(response.body.data.data.todos[0].categoryId).toBe(42);
+			});
+
+			it("파싱 후 사용량이 1 증가", async () => {
+				// Given
+				fakeAiProvider.setRawResponse({
+					todos: [
+						{
+							title: "테스트",
+							startDate: "2026-04-11",
+							endDate: null,
+							scheduledTime: null,
+							isAllDay: true,
+							isRecurring: false,
+							recurrence: null,
+							items: [],
+						},
+					],
+				});
+				await resetUsage(testUserId);
+
+				// When
+				await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ content: "테스트", categoryId: 1 });
+
+				const usageResponse = await request(ctx.app.getHttpServer())
+					.get("/ai/usage")
+					.set("Authorization", `Bearer ${accessToken}`);
+
+				// Then
+				expect(usageResponse.body.data.data.used).toBe(1);
+			});
+		});
+
+		describe("에러 케이스", () => {
+			it("인증 없이 요청 시 401", async () => {
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.send({ content: "테스트", categoryId: 1 });
+
+				expect(response.status).toBe(401);
+			});
+
+			it("빈 content 시 400", async () => {
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ content: "", categoryId: 1 });
+
+				expect(response.status).toBe(400);
+			});
+
+			it("categoryId 누락 시 400", async () => {
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.send({ content: "테스트" });
+
+				expect(response.status).toBe(400);
+			});
+
+			it("사용량 초과 시 429", async () => {
+				// Given
+				await setUsage(testUserId, 5);
+
+				// When
+				const response = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-memo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ content: "테스트", categoryId: 1 });
+
+				// Then
+				expect(response.status).toBe(429);
+				expect(response.body.error.code).toBe("AI_1303");
+			});
+		});
+	});
 });

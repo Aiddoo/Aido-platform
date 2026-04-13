@@ -13,6 +13,7 @@ import {
 	parseLocalDateTime,
 	startOfDayInTimezone,
 	todayInTimezone,
+	toLocalTimeString,
 } from "./timezone";
 
 // 2026-03-03T12:00:00Z = KST 2026-03-03T21:00:00
@@ -57,6 +58,37 @@ describe("timezone", () => {
 		it("기본 타임존(UTC)이면 시간 그대로 반환", () => {
 			const result = parseLocalDateTime("2026-01-15", "14:00");
 			expect(result).toEqual(new Date("2026-01-15T14:00:00.000Z"));
+		});
+	});
+
+	describe("toLocalTimeString", () => {
+		it("UTC Date를 KST 로컬 시간 문자열로 변환", () => {
+			// UTC 05:00 = KST 14:00
+			const utcDate = new Date("2026-01-15T05:00:00.000Z");
+			expect(toLocalTimeString(utcDate, "Asia/Seoul")).toBe("14:00");
+		});
+
+		it("UTC Date를 EST 로컬 시간 문자열로 변환", () => {
+			// UTC 19:00 = EST 14:00
+			const utcDate = new Date("2026-01-15T19:00:00.000Z");
+			expect(toLocalTimeString(utcDate, "America/New_York")).toBe("14:00");
+		});
+
+		it("parseLocalDateTime의 역변환이 정확", () => {
+			// KST 14:00 → UTC → 다시 KST 14:00
+			const utcDate = parseLocalDateTime("2026-01-15", "14:00", "Asia/Seoul");
+			expect(toLocalTimeString(utcDate, "Asia/Seoul")).toBe("14:00");
+		});
+
+		it("기본 타임존(UTC)이면 UTC 시간 반환", () => {
+			const utcDate = new Date("2026-01-15T14:00:00.000Z");
+			expect(toLocalTimeString(utcDate)).toBe("14:00");
+		});
+
+		it("자정 시간을 올바르게 처리", () => {
+			// UTC 15:00 = KST 00:00 (다음날)
+			const utcDate = new Date("2026-01-15T15:00:00.000Z");
+			expect(toLocalTimeString(utcDate, "Asia/Seoul")).toBe("00:00");
 		});
 	});
 

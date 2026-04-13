@@ -9,7 +9,11 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database/prisma.types";
-import { subtractDays, subtractMinutes } from "@/common/date/utils/arithmetic";
+import {
+	addMilliseconds,
+	subtractDays,
+	subtractMinutes,
+} from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -27,6 +31,7 @@ import {
 	LOGIN_FAILURE_REASON,
 	REVOKE_REASON,
 	SECURITY_EVENT,
+	TOKEN_REUSE_GRACE_PERIOD_MS,
 } from "../constants/auth.constants";
 import { AccountRepository } from "../repositories/account.repository";
 import { LoginAttemptRepository } from "../repositories/login-attempt.repository";
@@ -44,6 +49,7 @@ import type {
 	UpdateProfileResult,
 	VerifyEmailResult,
 } from "../types";
+import type { VerifiedRefreshPayload } from "../types/auth.types";
 import { assertNotDeleted } from "../utils/auth-validation.utils";
 import { PasswordService } from "./password.service";
 import { SessionService } from "./session.service";
@@ -72,7 +78,13 @@ export class AuthService {
 		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 	) {}
 
-	async register(input: RegisterInput): Promise<RegisterResult> {
+	async register(
+		input: RegisterInput,
+		metadata?: RequestMetadata,
+	): Promise<RegisterResult> {
+		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
+		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
+
 		const {
 			email,
 			password,
@@ -159,8 +171,8 @@ export class AuthService {
 					{
 						userId: newUser.id,
 						event: SECURITY_EVENT.REGISTRATION,
-						ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-						userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+						ipAddress: ip,
+						userAgent,
 					},
 					tx,
 				);
@@ -632,20 +644,14 @@ export class AuthService {
 	// Token Rotation: 토큰 재사용 감지 시 전체 패밀리 폐기
 	async refreshTokens(
 		refreshToken: string,
+		verifiedPayload: VerifiedRefreshPayload,
 		metadata?: RequestMetadata,
 	): Promise<RefreshTokensResult> {
 		const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
 		const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
-		// 1. 리프레시 토큰 검증
-		const payload = await this.tokenService.verifyRefreshToken(refreshToken);
-		if (!payload) {
-			throw BusinessExceptions.sessionExpired();
-		}
+		const { userId, email, sessionId, role } = verifiedPayload;
 
-		const { sub: userId, email, sessionId, role } = payload;
-
-		// sessionId가 없으면 유효하지 않은 토큰
 		if (!sessionId) {
 			throw BusinessExceptions.sessionNotFound();
 		}
@@ -655,32 +661,96 @@ export class AuthService {
 		const session =
 			await this.sessionRepository.findByRefreshTokenHash(refreshTokenHash);
 
-		// 세션이 없으면 이전 토큰 해시에서 검색 (재사용 감지)
+		// 세션이 없으면 sessionId(PK)로 조회 — O(1) PK lookup
 		if (!session) {
-			const reusedSession =
-				await this.sessionRepository.findByPreviousTokenHash(refreshTokenHash);
+			// sessionId(PK)로 조회 — O(1) PK lookup
+			const currentSession = await this.sessionRepository.findById(sessionId);
 
-			if (reusedSession) {
-				// 토큰 재사용 감지! 전체 토큰 패밀리 폐기
+			// previousTokenHash가 제출된 토큰 해시와 일치 → 이전 토큰 재사용
+			if (currentSession?.previousTokenHash === refreshTokenHash) {
+				// Grace period 확인
+				const timeSinceLastRotation =
+					Date.now() - new Date(currentSession.lastUsedAt).getTime();
+
+				if (timeSinceLastRotation <= TOKEN_REUSE_GRACE_PERIOD_MS) {
+					// 네트워크 재시도로 판단 → 새 토큰 발급
+					this.#logger.debug(
+						`Token retry within grace period for session: ${currentSession.id} (${timeSinceLastRotation}ms)`,
+					);
+
+					this.sessionService.assertSessionValid(currentSession);
+
+					if (
+						currentSession.userId !== userId ||
+						currentSession.id !== sessionId
+					) {
+						throw BusinessExceptions.sessionNotFound();
+					}
+
+					const newTokenVersion = currentSession.tokenVersion + 1;
+					const newTokens = await this.tokenService.generateTokenPair(
+						userId,
+						email,
+						sessionId,
+						role,
+						currentSession.tokenFamily,
+						newTokenVersion,
+					);
+
+					const newRefreshTokenHash = this.tokenService.hashRefreshToken(
+						newTokens.refreshToken,
+					);
+					const refreshExpiresInSeconds =
+						this.tokenService.getRefreshTokenExpiresInSeconds();
+					const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
+
+					// Sliding window 방지: previousTokenHash를 현재 세션의 refreshTokenHash로 설정
+					// → 동일 옛 토큰으로의 재시도는 1회만 허용
+					const rotatedSession = await this.sessionRepository.rotateToken(
+						sessionId,
+						{
+							refreshTokenHash: newRefreshTokenHash,
+							tokenVersion: newTokenVersion,
+							previousTokenHash: currentSession.refreshTokenHash, // ← 핵심: 옛 토큰이 아닌 현재 토큰
+							expectedTokenVersion: currentSession.tokenVersion,
+							expiresAt: newExpiresAt,
+						},
+					);
+
+					if (!rotatedSession) {
+						throw BusinessExceptions.sessionExpired();
+					}
+
+					await this.securityLogRepository.create({
+						userId,
+						event: SECURITY_EVENT.TOKEN_REFRESH,
+						ipAddress: ip,
+						userAgent,
+						metadata: { retryWithinGracePeriod: true },
+					});
+
+					return { tokens: newTokens, sessionId };
+				}
+
+				// Grace period 초과 → 토큰 재사용 공격
 				await this.sessionRepository.revokeByTokenFamily(
-					reusedSession.tokenFamily,
+					currentSession.tokenFamily,
 					REVOKE_REASON.TOKEN_REUSE_DETECTED,
 				);
 
-				// 보안 로그 기록
 				await this.securityLogRepository.create({
-					userId: reusedSession.userId,
+					userId: currentSession.userId,
 					event: SECURITY_EVENT.SUSPICIOUS_ACTIVITY,
 					ipAddress: ip,
 					userAgent,
 					metadata: {
 						reason: REVOKE_REASON.TOKEN_REUSE_DETECTED,
-						tokenFamily: reusedSession.tokenFamily,
+						tokenFamily: currentSession.tokenFamily,
 					},
 				});
 
 				this.#logger.warn(
-					`Token reuse detected for user: ${reusedSession.userId}`,
+					`Token reuse detected for user: ${currentSession.userId}`,
 				);
 				throw BusinessExceptions.tokenReuseDetected();
 			}
@@ -711,11 +781,16 @@ export class AuthService {
 			newTokens.refreshToken,
 		);
 
+		const refreshExpiresInSeconds =
+			this.tokenService.getRefreshTokenExpiresInSeconds();
+		const newExpiresAt = addMilliseconds(refreshExpiresInSeconds * 1000);
+
 		const rotatedSession = await this.sessionRepository.rotateToken(sessionId, {
 			refreshTokenHash: newRefreshTokenHash,
 			tokenVersion: newTokenVersion,
 			previousTokenHash: refreshTokenHash, // 이전 토큰 해시 저장 (재사용 감지용)
 			expectedTokenVersion: session.tokenVersion, // 낙관적 잠금: 레이스 컨디션 방지
+			expiresAt: newExpiresAt,
 		});
 
 		// 로테이션 실패 시 (다른 요청이 먼저 로테이션함)

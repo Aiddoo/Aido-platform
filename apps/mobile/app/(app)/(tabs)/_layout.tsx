@@ -1,5 +1,6 @@
 import DocsIconSvg from '@assets/icons/ic_docs.svg';
 import ListIconSvg from '@assets/icons/ic_list.svg';
+import MemoIconSvg from '@assets/icons/ic_memo.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
@@ -115,7 +116,7 @@ function AndroidBottomTabs() {
         name="memo"
         options={{
           title: '메모',
-          tabBarIcon: ({ color, size }) => <DocsIconSvg width={size} height={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <MemoIconSvg width={size} height={size} color={color} />,
         }}
         listeners={{
           tabPress: () => Haptics.selectionAsync(),

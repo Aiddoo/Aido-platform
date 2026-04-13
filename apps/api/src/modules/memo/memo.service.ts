@@ -4,7 +4,10 @@ import {
 	type Todo,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database";
+import { toDateString } from "@/common/date/utils/format";
+import { toLocalTimeString } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
@@ -14,6 +17,7 @@ import { MemoMapper } from "./memo.mapper";
 import { MemoRepository } from "./memo.repository";
 import type {
 	ConvertMemoToTodoData,
+	ConvertMemoToTodosData,
 	CreateMemoData,
 	UpdateMemoData,
 } from "./types";
@@ -27,6 +31,7 @@ export class MemoService {
 		private readonly paginationService: PaginationService,
 		private readonly database: DatabaseService,
 		private readonly todoService: TodoService,
+		private readonly cacheService: CacheService,
 	) {}
 
 	/**
@@ -277,6 +282,85 @@ export class MemoService {
 		);
 
 		return { message: "메모가 할 일로 변환되었습니다.", todo };
+	}
+
+	/**
+	 * 메모를 여러 할 일로 일괄 변환
+	 *
+	 * 반복 일정은 TodoService.createRecurring, 단건은 TodoService.create를 호출합니다.
+	 *
+	 * **트랜잭션 설계 의도:**
+	 * 각 TodoService 메서드가 자체 TX + 캐시 무효화 + 리마인더 스케줄링을 포함하므로,
+	 * 외부 TX로 감싸면 nested transaction + side effect 복잡도가 크게 증가합니다.
+	 * 대신 메모 삭제를 마지막에 실행하여, 중간 실패 시 메모가 유지되어 재시도 가능합니다.
+	 * 이미 생성된 Todo는 유지됩니다 (최대 5개로 부분 실패 확률 극히 낮음).
+	 */
+	async convertToTodos(
+		userId: string,
+		memoId: number,
+		data: ConvertMemoToTodosData,
+		timezone: string = "UTC",
+	): Promise<{ message: string; todos: Todo[] }> {
+		// 1. 메모 존재/소유권 확인 (읽기 전용, TX 외부)
+		const memo = await this.memoRepository.findByIdAndUserId(memoId, userId);
+		if (!memo) {
+			throw BusinessExceptions.memoNotFound(memoId);
+		}
+
+		// 2. 모든 Todo 생성 (각 TodoService 메서드가 자체 TX 관리)
+		const todos: Todo[] = [];
+
+		for (const todoData of data.todos) {
+			if (todoData.isRecurring && todoData.recurrence) {
+				// 반복 일정: createRecurring은 여러 Todo 인스턴스를 생성
+				const result = await this.todoService.createRecurring(
+					{
+						userId,
+						title: todoData.title,
+						categoryId: todoData.categoryId,
+						startDate: toDateString(todoData.startDate),
+						endDate: toDateString(todoData.recurrence.endDate),
+						daysOfWeek: todoData.recurrence.daysOfWeek,
+						scheduledTime: todoData.scheduledTime
+							? toLocalTimeString(todoData.scheduledTime, timezone)
+							: null,
+						isAllDay: todoData.isAllDay ?? true,
+						visibility: todoData.visibility ?? "PUBLIC",
+					},
+					timezone,
+				);
+				todos.push(...result.todos);
+			} else {
+				// 단건 일정
+				const todo = await this.todoService.create({
+					userId,
+					title: todoData.title,
+					categoryId: todoData.categoryId,
+					startDate: todoData.startDate,
+					endDate: todoData.endDate,
+					scheduledTime: todoData.scheduledTime,
+					isAllDay: todoData.isAllDay ?? true,
+					visibility: todoData.visibility ?? "PUBLIC",
+					items: todoData.items,
+				});
+				todos.push(todo);
+			}
+		}
+
+		// 3. 메모 삭제 (모든 Todo 생성 성공 후)
+		await this.memoRepository.delete(memoId);
+
+		// 4. 캐시 무효화 (createRecurring은 내부에서 캐시를 무효화하지 않음)
+		await this.cacheService.invalidateTodoCategories(userId);
+
+		this.#logger.log(
+			`Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,
+		);
+
+		return {
+			message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`,
+			todos,
+		};
 	}
 
 	// =========================================================================

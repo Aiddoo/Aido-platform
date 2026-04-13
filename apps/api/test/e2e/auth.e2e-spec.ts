@@ -767,7 +767,7 @@ describe("인증 E2E", () => {
 			expect(res.body.error.code).toBe("VERIFY_0754");
 		});
 
-		it("토큰 재사용 감지 및 전체 세션 폐기", async () => {
+		it("grace period 내 이전 토큰 재시도는 새 토큰을 발급한다", async () => {
 			// Given - 로그인된 사용자
 			await ctx.helpers.createVerifiedUser(
 				"security-reuse@example.com",
@@ -783,33 +783,30 @@ describe("인증 E2E", () => {
 
 			const originalRefreshToken = loginRes.body.data.refreshToken;
 
-			// When - refreshToken으로 갱신 후 이전 토큰 재사용 시도
-			const refreshRes = await request(ctx.app.getHttpServer())
+			// When - refreshToken으로 갱신
+			await request(ctx.app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${originalRefreshToken}`)
 				.expect(200);
 
-			const newRefreshToken = refreshRes.body.data.refreshToken;
+			// Grace period(10초) 이내 이전 토큰으로 재시도 → 새 토큰 발급
+			const graceRetryRes = await request(ctx.app.getHttpServer())
+				.post("/auth/refresh")
+				.set("Authorization", `Bearer ${originalRefreshToken}`)
+				.expect(200);
 
-			const reuseRes = await request(ctx.app.getHttpServer())
+			// Then - 새 토큰 발급 확인
+			expect(graceRetryRes.body.success).toBe(true);
+			expect(graceRetryRes.body.data.accessToken).toBeDefined();
+			expect(graceRetryRes.body.data.refreshToken).toBeDefined();
+
+			// Sliding window 방지: 동일 이전 토큰으로 3번째 시도 → 거부
+			const slidingWindowRes = await request(ctx.app.getHttpServer())
 				.post("/auth/refresh")
 				.set("Authorization", `Bearer ${originalRefreshToken}`)
 				.expect(401);
 
-			// Then - 재사용 감지 응답 검증
-			expect(reuseRes.body.success).toBe(false);
-			expect(reuseRes.body.error.code).toBe("SESSION_0704");
-
-			// 새 토큰도 사용 불가 확인 (전체 패밀리 폐기)
-			const newTokenRes = await request(ctx.app.getHttpServer())
-				.post("/auth/refresh")
-				.set("Authorization", `Bearer ${newRefreshToken}`)
-				.expect(401);
-
-			expect(newTokenRes.body.success).toBe(false);
-			expect(["SESSION_0703", "SESSION_0701", "SESSION_0704"]).toContain(
-				newTokenRes.body.error.code,
-			);
+			expect(slidingWindowRes.body.success).toBe(false);
 		});
 
 		it("로그인 실패 5회 후 계정 잠금", async () => {

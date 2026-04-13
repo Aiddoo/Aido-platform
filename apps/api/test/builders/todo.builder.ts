@@ -29,7 +29,6 @@ export class TodoBuilder {
 			id: TodoBuilder.idCounter,
 			userId,
 			title: `테스트 할 일 ${TodoBuilder.idCounter}`,
-			content: null,
 			categoryId: 1,
 			sortOrder: 0,
 			startDate: now,
@@ -68,15 +67,10 @@ export class TodoBuilder {
 		return this;
 	}
 
-	// === 제목/내용 관련 ===
+	// === 제목 관련 ===
 
 	withTitle(title: string): TodoBuilder {
 		this.data.title = title;
-		return this;
-	}
-
-	withContent(content: string | null): TodoBuilder {
-		this.data.content = content;
 		return this;
 	}
 

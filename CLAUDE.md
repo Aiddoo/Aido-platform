@@ -5,7 +5,7 @@ Turborepo + pnpm 모노레포
 ## 기술 스택
 
 - **API**: NestJS 11 + Prisma 7 + PostgreSQL
-- **Mobile**: Expo SDK 54 + React Native 0.81 + React 19.1
+- **Mobile**: Expo SDK 55 + React Native 0.83 + React 19.2
 - **공통**: TypeScript 5.9, Zod 4.3
 
 ## 구조
@@ -45,7 +45,7 @@ pnpm dev          # 전체 개발 서버
 
 ## 규칙
 
-- **린트/포맷**: Biome 2.2
+- **린트/포맷**: Biome 2.4
 - **커밋**: Conventional Commits (`pnpm commit`)
 - **타입**: TypeScript strict 모드
 - **DTO**: Zod 스키마 (@aido/validators)

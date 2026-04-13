@@ -48,7 +48,6 @@ describe("TodoMapper — 할 일 매퍼", () => {
 			const todo = TodoBuilder.create("user-123")
 				.withId(1)
 				.withTitle("테스트 할 일")
-				.withContent("테스트 내용")
 				.withSortOrder(0)
 				.uncompleted()
 				.withStartDate(new Date("2024-01-15T00:00:00.000Z"))
@@ -74,7 +73,6 @@ describe("TodoMapper — 할 일 매퍼", () => {
 				id: 1,
 				userId: "user-123",
 				title: "테스트 할 일",
-				content: "테스트 내용",
 				sortOrder: 0,
 				completed: false,
 				completedAt: null,
@@ -115,7 +113,6 @@ describe("TodoMapper — 할 일 매퍼", () => {
 		it("null 값들을 올바르게 처리해야 한다", () => {
 			// Given - null 값이 포함된 Todo 엔티티 준비
 			const todo = TodoBuilder.create("user-123")
-				.withContent(null)
 				.withEndDate(null)
 				.withScheduledTime(null)
 				.build();
@@ -124,7 +121,6 @@ describe("TodoMapper — 할 일 매퍼", () => {
 			const result = TodoMapper.toResponse(todo);
 
 			// Then - null 값이 올바르게 유지되는지 검증
-			expect(result.content).toBeNull();
 			expect(result.endDate).toBeNull();
 			expect(result.scheduledTime).toBeNull();
 		});

@@ -51,6 +51,22 @@ export function startOfDayInTimezone(
 }
 
 /**
+ * UTC Date → 지정 타임존의 로컬 시간 문자열 (HH:mm)
+ *
+ * `createRecurring`처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.
+ * `parseLocalDateTime`의 역변환입니다.
+ *
+ * @example toLocalTimeString(new Date('2026-01-15T05:00:00Z'), 'Asia/Seoul') // "14:00"
+ * @example toLocalTimeString(new Date('2026-01-15T14:00:00Z'), 'America/New_York') // "09:00"
+ */
+export function toLocalTimeString(
+	date: Date,
+	tz: string = DEFAULT_TIMEZONE,
+): string {
+	return dayjs(date).tz(tz).format("HH:mm");
+}
+
+/**
  * 지정 타임존의 자정을 실제 UTC timestamp로 반환
  *
  * TIMESTAMPTZ 컬럼 범위 쿼리에 사용합니다. (tz 자정 = UTC 오프셋 적용)

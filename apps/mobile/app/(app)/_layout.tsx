@@ -27,6 +27,10 @@ const AppLayout = () => {
       <Stack.Screen name="settings" />
       <Stack.Screen name="weather" />
       <Stack.Screen name="webview/[url]" />
+      <Stack.Screen
+        name="memo"
+        options={{ headerShown: false, animation: 'fade_from_bottom', animationDuration: 200 }}
+      />
     </Stack>
   );
 };

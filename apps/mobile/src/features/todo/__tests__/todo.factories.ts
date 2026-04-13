@@ -12,7 +12,6 @@ const generateTodoDto = (): Todo => ({
   id: 1,
   userId: 'clz7x5p8k0010qz0z8z8z8z8z',
   title: '테스트 할일',
-  content: null,
   sortOrder: 0,
   startDate: '2026-03-08',
   endDate: null,

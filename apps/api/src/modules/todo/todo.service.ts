@@ -126,7 +126,6 @@ export class TodoService {
 					user: { connect: { id: data.userId } },
 					category: { connect: { id: data.categoryId } },
 					title: data.title,
-					content: data.content,
 					sortOrder: maxSortOrder + 1,
 					startDate: data.startDate,
 					endDate: data.endDate,
@@ -596,12 +595,12 @@ export class TodoService {
 	}
 
 	/**
-	 * Todo 제목/내용 수정
+	 * Todo 제목 수정
 	 */
-	async updateContent(
+	async updateTitle(
 		id: number,
 		userId: string,
-		data: { title?: string; content?: string | null },
+		data: { title: string },
 	): Promise<Todo> {
 		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 
@@ -609,19 +608,11 @@ export class TodoService {
 			throw BusinessExceptions.todoNotFound(id);
 		}
 
-		const updateData: { title?: string; content?: string | null } = {};
+		const updatedTodo = await this.todoRepository.update(id, {
+			title: data.title,
+		});
 
-		if (data.title !== undefined) {
-			updateData.title = data.title;
-		}
-
-		if (data.content !== undefined) {
-			updateData.content = data.content;
-		}
-
-		const updatedTodo = await this.todoRepository.update(id, updateData);
-
-		this.#logger.log(`Todo content updated: ${id} for user: ${userId}`);
+		this.#logger.log(`Todo title updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
 	}
@@ -819,7 +810,6 @@ export class TodoService {
 					userId: data.userId,
 					categoryId: data.categoryId,
 					title: data.title,
-					content: data.content,
 					sortOrder: maxSortOrder + 1 + index,
 					startDate: parseDateOnly(dateStr),
 					scheduledTime: data.scheduledTime

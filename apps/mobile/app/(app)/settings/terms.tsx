@@ -1,5 +1,6 @@
 import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/use-get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
+import { SettingsToggle } from '@src/features/notification/presentations/components/settings/SettingsToggle';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
 import {
@@ -12,17 +13,9 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import {
-  ControlField,
-  Description,
-  Label,
-  PressableFeedback,
-  Separator,
-  Skeleton,
-  SkeletonGroup,
-} from 'heroui-native';
+import { PressableFeedback, Separator, Skeleton, SkeletonGroup } from 'heroui-native';
 import { Suspense } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 const TermsSettingsScreen = () => {
   return (
@@ -63,17 +56,17 @@ function TermsSettingsForm() {
         <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.TERMS)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
-              <Text size="b2" weight="medium">
+              <Text size="b2" shade={8}>
                 서비스 이용약관
               </Text>
 
               <VStack gap={2}>
-                <Text size="b4" shade={6}>
+                <Text size="b3" shade={6}>
                   동의일: {formatDate(consent.termsAgreedAt)}
                 </Text>
 
                 {consent.agreedTermsVersion && (
-                  <Text size="b4" shade={6}>
+                  <Text size="b3" shade={6}>
                     버전: {consent.agreedTermsVersion}
                   </Text>
                 )}
@@ -88,17 +81,17 @@ function TermsSettingsForm() {
         <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
-              <Text size="b2" weight="medium">
+              <Text size="b2" shade={8}>
                 개인정보처리방침
               </Text>
 
               <VStack gap={2}>
-                <Text size="b4" shade={6}>
+                <Text size="b3" shade={6}>
                   동의일: {formatDate(consent.privacyAgreedAt)}
                 </Text>
 
                 {consent.agreedTermsVersion && (
-                  <Text size="b4" shade={6}>
+                  <Text size="b3" shade={6}>
                     버전: {consent.agreedTermsVersion}
                   </Text>
                 )}
@@ -112,17 +105,13 @@ function TermsSettingsForm() {
       <Spacing size={12} />
 
       <VStack p={16} className="bg-white rounded-2xl">
-        <ControlField
+        <SettingsToggle
+          label="마케팅 수신 동의"
+          description="이벤트 및 프로모션 정보를 받습니다"
           isSelected={marketingAgreed}
           onSelectedChange={(agreed) => updateMutation.mutate({ agreed })}
           isDisabled={updateMutation.isPending}
-        >
-          <View className="flex-1">
-            <Label>마케팅 수신 동의</Label>
-            <Description>이벤트 및 프로모션 정보를 받습니다</Description>
-          </View>
-          <ControlField.Indicator />
-        </ControlField>
+        />
       </VStack>
     </>
   );

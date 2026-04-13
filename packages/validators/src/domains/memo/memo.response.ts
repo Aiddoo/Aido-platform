@@ -142,6 +142,20 @@ export const convertMemoToTodoResponseSchema = z
 
 export type ConvertMemoToTodoResponse = z.infer<typeof convertMemoToTodoResponseSchema>;
 
+export const convertMemoToTodosResponseSchema = z
+  .object({
+    message: z.string().describe('응답 메시지'),
+    todos: z.array(todoSchema).describe('변환된 할 일 목록'),
+  })
+  .meta({
+    example: {
+      message: '메모가 3개의 할 일로 변환되었습니다.',
+      todos: [],
+    },
+  });
+
+export type ConvertMemoToTodosResponse = z.infer<typeof convertMemoToTodosResponseSchema>;
+
 export const memoResourceLimitResponseSchema = z
   .object({
     currentCount: z.number().int().nonnegative().describe('현재 메모 개수'),

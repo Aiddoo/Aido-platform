@@ -246,6 +246,16 @@ export class FakeAiProvider implements AiProvider {
 	}
 
 	/**
+	 * 임의 구조의 응답 설정 (메모 파싱 등 ParsedTodoData가 아닌 스키마용)
+	 *
+	 * @param response - 임의 형태의 응답 객체
+	 */
+	setRawResponse(response: unknown): this {
+		this._responses.push(response as Partial<ParsedTodoData>);
+		return this;
+	}
+
+	/**
 	 * 상태 초기화
 	 */
 	clear(): this {

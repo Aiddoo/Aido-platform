@@ -15,11 +15,6 @@ export const createTodoSchema = z
       .min(1, '제목을 입력해주세요')
       .max(200, '제목은 200자 이하로 입력해주세요')
       .describe('할 일 제목 (1-200자, 예: 운동하기)'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이하로 입력해주세요')
-      .nullish()
-      .describe('할 일 내용 (선택, 최대 5000자, 미입력 시 null)'),
     categoryId: z
       .number()
       .int()
@@ -81,11 +76,6 @@ export const updateTodoSchema = z
       .max(200, '제목은 200자 이하로 입력해주세요')
       .optional()
       .describe('할 일 제목 (선택, 1-200자)'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이하로 입력해주세요')
-      .nullish()
-      .describe('할 일 내용 (선택, 최대 5000자)'),
     categoryId: z
       .number()
       .int()
@@ -234,26 +224,15 @@ export const updateTodoScheduleSchema = z
 
 export type UpdateTodoScheduleInput = z.infer<typeof updateTodoScheduleSchema>;
 
-export const updateTodoContentSchema = z
-  .object({
-    title: z
-      .string()
-      .min(1, '제목을 입력해주세요')
-      .max(200, '제목은 200자 이하로 입력해주세요')
-      .optional()
-      .describe('할 일 제목 (선택, 1-200자, 예: 운동하기)'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이하로 입력해주세요')
-      .nullable()
-      .optional()
-      .describe('할 일 내용 (선택, 최대 5000자, null 허용)'),
-  })
-  .refine((data) => data.title !== undefined || data.content !== undefined, {
-    message: '제목 또는 내용 중 하나는 입력해야 합니다',
-  });
+export const updateTodoTitleSchema = z.object({
+  title: z
+    .string()
+    .min(1, '제목을 입력해주세요')
+    .max(200, '제목은 200자 이하로 입력해주세요')
+    .describe('할 일 제목 (1-200자)'),
+});
 
-export type UpdateTodoContentInput = z.infer<typeof updateTodoContentSchema>;
+export type UpdateTodoTitleInput = z.infer<typeof updateTodoTitleSchema>;
 
 export const reorderTodoSchema = z.object({
   targetTodoId: z
@@ -274,11 +253,6 @@ export const createRecurringTodoSchema = z
       .min(1, '제목을 입력해주세요')
       .max(200, '제목은 200자 이하로 입력해주세요')
       .describe('할 일 제목 (1-200자, 예: 약먹기)'),
-    content: z
-      .string()
-      .max(5000, '내용은 5000자 이하로 입력해주세요')
-      .nullish()
-      .describe('할 일 내용 (선택, 최대 5000자)'),
     categoryId: z
       .number()
       .int()

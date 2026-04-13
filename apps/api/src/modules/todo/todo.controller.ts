@@ -52,11 +52,11 @@ import {
 	TodoResourceLimitResponseDto,
 	TodoResponseDto,
 	ToggleTodoCompleteDto,
-	UpdateTodoContentDto,
 	UpdateTodoDto,
 	UpdateTodoItemDto,
 	UpdateTodoResponseDto,
 	UpdateTodoScheduleDto,
+	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
 import { TodoService } from "./todo.service";
@@ -107,7 +107,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`startDate\`: 시작 날짜 (YYYY-MM-DD)
 
 **선택 필드**
-- \`content\`: 상세 내용 (최대 5000자)
 - \`endDate\`: 종료 날짜 (YYYY-MM-DD)
 - \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
 - \`isAllDay\`: 종일 여부 (기본값: true)
@@ -156,7 +155,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		const todo = await this.todoService.create({
 			userId: user.userId,
 			title: dto.title,
-			content: dto.content,
 			categoryId: dto.categoryId,
 			startDate: parseDateOnly(dto.startDate),
 			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
@@ -220,7 +218,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			{
 				userId: user.userId,
 				title: dto.title,
-				content: dto.content,
 				categoryId: dto.categoryId,
 				startDate: dto.startDate,
 				endDate: dto.endDate,
@@ -497,7 +494,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		operationId: "updateTodo",
 		description: `할 일의 정보를 부분 수정합니다.
 
-**수정 가능 필드**: title, content, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
+**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -514,7 +511,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 		const todo = await this.todoService.update(params.id, user.userId, {
 			title: dto.title,
-			content: dto.content,
 			categoryId: dto.categoryId,
 			startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
 			endDate:
@@ -707,35 +703,30 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		};
 	}
 
-	@Patch(":id/content")
+	@Patch(":id/title")
 	@HttpCode(HttpStatus.OK)
 	@ApiDoc({
-		summary: "할 일 제목/내용 수정",
-		operationId: "updateTodoContent",
-		description: `할 일의 제목 또는 내용을 수정합니다.
+		summary: "할 일 제목 수정",
+		operationId: "updateTodoTitle",
+		description: `할 일의 제목을 수정합니다.
 
-**요청 필드** (최소 1개 필수)
-- \`title\`: 할 일 제목 (1-200자)
-- \`content\`: 상세 내용 (0-5000자)`,
+**요청 필드**
+- \`title\`: 할 일 제목 (1-200자, 필수)`,
 	})
 	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiNotFoundError(ErrorCode.TODO_0801)
 	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateContent(
+	async updateTitle(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: TodoIdParamDto,
-		@Body() dto: UpdateTodoContentDto,
+		@Body() dto: UpdateTodoTitleDto,
 	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 제목/내용 수정: id=${params.id}, user=${user.userId}`,
-		);
+		this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.updateContent(
-			params.id,
-			user.userId,
-			dto,
-		);
+		const todo = await this.todoService.updateTitle(params.id, user.userId, {
+			title: dto.title,
+		});
 
 		return {
 			message: "할 일이 수정되었습니다.",
