@@ -32,11 +32,10 @@ export default function MemoCreateScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const unsub = navigation.addListener('transitionEnd', (e) => {
-        if (!e.data.closing) inputRef.current?.focus();
-      });
-      return unsub;
-    }, [navigation]),
+      // transitionEnd 후 자동 포커스 — setTimeout fallback으로 타입 안전하게 처리
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
+    }, []),
   );
 
   const {
