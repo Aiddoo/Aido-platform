@@ -44,6 +44,8 @@ export {
   PlusIcon,
   RefreshIcon,
   RepeatIcon,
+  RobotIcon,
+  RobotPixelIcon,
   SearchIcon,
   SendIcon,
   SettingIcon,
