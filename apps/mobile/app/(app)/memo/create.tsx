@@ -12,7 +12,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation } from '@tanstack/react-query';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useCallback, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -27,15 +27,16 @@ type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
 
 export default function MemoCreateScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
 
   useFocusEffect(
     useCallback(() => {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    }, []),
+      const unsub = navigation.addListener('transitionEnd', (e) => {
+        if (!e.data.closing) inputRef.current?.focus();
+      });
+      return unsub;
+    }, [navigation]),
   );
 
   const {
