@@ -99,6 +99,7 @@ export class SessionRepository {
 			tokenVersion: number;
 			previousTokenHash: string;
 			expectedTokenVersion: number; // 낙관적 잠금용
+			expiresAt: Date;
 		},
 		tx?: TransactionClient,
 	): Promise<Session | null> {
@@ -115,6 +116,7 @@ export class SessionRepository {
 				refreshTokenHash: data.refreshTokenHash,
 				tokenVersion: data.tokenVersion,
 				previousTokenHash: data.previousTokenHash,
+				expiresAt: data.expiresAt,
 				lastUsedAt: now(),
 			},
 		});

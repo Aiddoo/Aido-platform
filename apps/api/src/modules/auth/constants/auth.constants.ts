@@ -36,6 +36,9 @@ import type { AccountProvider } from "@/generated/prisma/client";
  */
 export const TRUSTED_EMAIL_PROVIDERS: AccountProvider[] = ["GOOGLE", "APPLE"];
 
+/** 토큰 재사용 감지 grace period (ms) — 이 시간 내 동일 토큰 재사용은 네트워크 재시도로 판단 */
+export const TOKEN_REUSE_GRACE_PERIOD_MS = 30_000; // 30초
+
 /** API 기본값 상수 */
 export const AUTH_DEFAULTS = {
 	/** 알 수 없는 IP 주소 */

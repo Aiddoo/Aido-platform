@@ -303,7 +303,19 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 	@ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
 	async refresh(@Req() req: Request) {
 		const payload = req.user as RefreshTokenPayload;
-		const result = await this.authService.refreshTokens(payload.refreshToken);
+		const result = await this.authService.refreshTokens(
+			payload.refreshToken,
+			{
+				userId: payload.userId,
+				email: payload.email,
+				sessionId: payload.sessionId,
+				role: payload.role,
+			},
+			{
+				ip: req.ip,
+				userAgent: req.headers["user-agent"],
+			},
+		);
 		return AuthMapper.toRefreshTokensResponse(result);
 	}
 

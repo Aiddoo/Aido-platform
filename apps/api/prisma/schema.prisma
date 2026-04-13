@@ -281,6 +281,7 @@ model Session {
   @@index([userId])
   @@index([tokenFamily])
   @@index([expiresAt])
+  @@index([previousTokenHash]) // 토큰 재사용 감지 + grace period 조회
 }
 
 // =============================================================================

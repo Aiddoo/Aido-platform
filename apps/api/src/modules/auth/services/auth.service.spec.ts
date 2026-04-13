@@ -39,7 +39,7 @@ import { UserRepository } from "../repositories/user.repository";
 import { AuthService } from "./auth.service";
 import { PasswordService } from "./password.service";
 import { SessionService } from "./session.service";
-import type { JwtPayload } from "./token.service";
+
 import { TokenService } from "./token.service";
 import { VerificationService } from "./verification.service";
 
@@ -845,6 +845,13 @@ describe("AuthService — 인증 서비스", () => {
 			type: "refresh" as const,
 		};
 
+		const verifiedPayload = {
+			userId,
+			email: "test@example.com",
+			sessionId,
+			role: "USER" as const,
+		};
+
 		const mockNewTokens = {
 			accessToken: "new-access-token",
 			refreshToken: "new-refresh-token",
@@ -859,9 +866,6 @@ describe("AuthService — 인증 서비스", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
-			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -873,7 +877,7 @@ describe("AuthService — 인증 서비스", () => {
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
-			const result = await service.refreshTokens(refreshToken);
+			const result = await service.refreshTokens(refreshToken, verifiedPayload);
 
 			// Then
 			expect(result.tokens).toEqual(mockNewTokens);
@@ -888,9 +892,6 @@ describe("AuthService — 인증 서비스", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
-			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -902,7 +903,7 @@ describe("AuthService — 인증 서비스", () => {
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When
-			await service.refreshTokens(refreshToken);
+			await service.refreshTokens(refreshToken, verifiedPayload);
 
 			// Then
 			expect(sessionRepo.rotateToken).toHaveBeenCalledWith(
@@ -914,26 +915,67 @@ describe("AuthService — 인증 서비스", () => {
 			);
 		});
 
-		it("유효하지 않은 리프레시 토큰이면 에러를 던진다", async () => {
+		it("토큰 로테이션 시 세션 expiresAt을 갱신한다", async () => {
 			// Given
-			tokenService.verifyRefreshToken.mockResolvedValue(null);
+			const NOW = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
 
-			// When & Then
-			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
-				BusinessException,
-			);
-		});
-
-		it("토큰 재사용이 감지되면 토큰 패밀리를 폐기한다", async () => {
-			// Given
 			const mockSession = SessionBuilder.create(userId)
 				.withId(sessionId)
+				.withTokenVersion(1)
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800); // 7 days
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
+			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
+			sessionRepo.rotateToken.mockResolvedValue({
+				...mockSession,
+				tokenVersion: 2,
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When
+			await service.refreshTokens(refreshToken, verifiedPayload);
+
+			// Then — expiresAt = NOW + 604800초 (7일)
+			const expectedExpiresAt = new Date(NOW.getTime() + 604800 * 1000);
+			expect(sessionRepo.rotateToken).toHaveBeenCalledWith(
+				sessionId,
+				expect.objectContaining({
+					expiresAt: expectedExpiresAt,
+				}),
 			);
+
+			jest.useRealTimers();
+		});
+
+		it("sessionId가 없는 페이로드이면 에러를 던진다", async () => {
+			// Given
+			const payloadWithoutSession = {
+				...verifiedPayload,
+				sessionId: "",
+			};
+
+			// When & Then
+			await expect(
+				service.refreshTokens(refreshToken, payloadWithoutSession),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("토큰 재사용이 감지되면 토큰 패밀리를 폐기한다", async () => {
+			// Given — grace period(30초) 초과: 60초 전 로테이션
+			const NOW = new Date("2025-06-01T12:01:00Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const mockSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.build();
+
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(mockSession);
@@ -941,9 +983,9 @@ describe("AuthService — 인증 서비스", () => {
 			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
 
 			// When & Then
-			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
 
 			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
 				mockSession.tokenFamily,
@@ -955,6 +997,107 @@ describe("AuthService — 인증 서비스", () => {
 					event: SECURITY_EVENT.SUSPICIOUS_ACTIVITY,
 				}),
 			);
+
+			jest.useRealTimers();
+		});
+
+		it("grace period 내 동일 토큰 재사용은 새 토큰을 발급한다 (네트워크 재시도)", async () => {
+			// Given — 고정 시간: 12:00:10, 로테이션은 12:00:00 (10초 전)
+			const NOW = new Date("2025-06-01T12:00:10Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const reusedSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(2)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
+			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
+			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
+			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
+			sessionRepo.rotateToken.mockResolvedValue({
+				...reusedSession,
+				tokenVersion: 3,
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When
+			const result = await service.refreshTokens(refreshToken, verifiedPayload);
+
+			// Then
+			expect(result.tokens).toEqual(mockNewTokens);
+			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
+
+			jest.useRealTimers();
+		});
+
+		it("grace period 초과 시 토큰 재사용으로 판단하여 패밀리를 폐기한다", async () => {
+			// Given — 고정 시간: 12:01:00, 로테이션은 12:00:00 (60초 전)
+			const NOW = new Date("2025-06-01T12:01:00Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const reusedSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(2)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
+			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
+			sessionRepo.revokeByTokenFamily.mockResolvedValue(1);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When & Then
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
+			expect(sessionRepo.revokeByTokenFamily).toHaveBeenCalledWith(
+				reusedSession.tokenFamily,
+				REVOKE_REASON.TOKEN_REUSE_DETECTED,
+			);
+
+			jest.useRealTimers();
+		});
+
+		it("grace period 경계값(30초)에서는 재시도로 판단한다", async () => {
+			// Given — 정확히 30초 전 로테이션
+			const NOW = new Date("2025-06-01T12:00:30Z");
+			const LAST_ROTATED = new Date("2025-06-01T12:00:00Z");
+			jest.useFakeTimers({ now: NOW });
+
+			const reusedSession = SessionBuilder.create(userId)
+				.withId(sessionId)
+				.withTokenVersion(2)
+				.withTokenFamily("family-id")
+				.withLastUsedAt(LAST_ROTATED)
+				.build();
+
+			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
+			sessionRepo.findByRefreshTokenHash.mockResolvedValue(null);
+			sessionRepo.findByPreviousTokenHash.mockResolvedValue(reusedSession);
+			tokenService.generateTokenPair.mockResolvedValue(mockNewTokens);
+			tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(604800);
+			sessionRepo.rotateToken.mockResolvedValue({
+				...reusedSession,
+				tokenVersion: 3,
+			} as Session);
+			securityLogRepo.create.mockResolvedValue({} as SecurityLog);
+
+			// When
+			const result = await service.refreshTokens(refreshToken, verifiedPayload);
+
+			// Then
+			expect(result.tokens).toEqual(mockNewTokens);
+			expect(sessionRepo.revokeByTokenFamily).not.toHaveBeenCalled();
+
+			jest.useRealTimers();
 		});
 
 		it("폐기된 세션이면 에러를 던진다", async () => {
@@ -964,9 +1107,6 @@ describe("AuthService — 인증 서비스", () => {
 				.revoked()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
-			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(revokedSession);
 			sessionService.assertSessionValid.mockImplementation(() => {
@@ -974,9 +1114,9 @@ describe("AuthService — 인증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("만료된 세션이면 에러를 던진다", async () => {
@@ -986,9 +1126,6 @@ describe("AuthService — 인증 서비스", () => {
 				.expired()
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
-			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(expiredSession);
 			sessionService.assertSessionValid.mockImplementation(() => {
@@ -996,9 +1133,9 @@ describe("AuthService — 인증 서비스", () => {
 			});
 
 			// When & Then
-			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
 		});
 
 		it("토큰 로테이션 실패 시 에러를 던진다", async () => {
@@ -1009,9 +1146,6 @@ describe("AuthService — 인증 서비스", () => {
 				.withTokenFamily("family-id")
 				.build();
 
-			tokenService.verifyRefreshToken.mockResolvedValue(
-				mockPayload as JwtPayload,
-			);
 			tokenService.hashRefreshToken.mockReturnValue("hashed-token");
 			sessionRepo.findByRefreshTokenHash.mockResolvedValue(mockSession);
 			sessionRepo.findByPreviousTokenHash.mockResolvedValue(null);
@@ -1019,9 +1153,9 @@ describe("AuthService — 인증 서비스", () => {
 			sessionRepo.rotateToken.mockResolvedValue(null);
 
 			// When & Then
-			await expect(service.refreshTokens(refreshToken)).rejects.toThrow(
-				BusinessException,
-			);
+			await expect(
+				service.refreshTokens(refreshToken, verifiedPayload),
+			).rejects.toThrow(BusinessException);
 		});
 	});
 
