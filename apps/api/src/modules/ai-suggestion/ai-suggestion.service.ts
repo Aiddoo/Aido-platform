@@ -211,12 +211,13 @@ export class AiSuggestionService {
 		}
 
 		// 2. AI 제안 생성
-		const prompt = buildSuggestionPrompt(
+		const { system, prompt } = buildSuggestionPrompt(
 			context,
 			AI_SUGGESTION_LIMITS.MIN_OCCURRENCES,
 		);
 
 		const aiResult = await this.aiProvider.generateStructured({
+			system,
 			prompt,
 			schema: detectedPatternsSchema,
 			maxTokens: 1500,

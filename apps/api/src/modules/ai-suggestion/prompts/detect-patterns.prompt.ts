@@ -3,9 +3,6 @@ import { z } from "zod";
 import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import type { SuggestionContext, SuggestionHistoryItem } from "../types";
 
-/**
- * AI 패턴 감지 응답 스키마
- */
 export const detectedPatternsSchema = z.object({
 	patterns: z.array(
 		z.object({
@@ -28,19 +25,18 @@ export const detectedPatternsSchema = z.object({
 
 export type DetectedPatternsResponse = z.infer<typeof detectedPatternsSchema>;
 
-/**
- * AI 제안 프롬프트 생성
- *
- * 사전 계산된 컨텍스트 + 원시 투두 데이터를 기반으로
- * 6가지 유형의 맞춤 루틴 제안을 생성하도록 AI에 요청합니다.
- */
+export interface SuggestionPrompt {
+	system: string;
+	prompt: string;
+}
+
 export function buildSuggestionPrompt(
 	context: SuggestionContext,
 	minOccurrences: number,
-): string {
+): SuggestionPrompt {
 	const todoLines = context.todos
 		.map((t) => {
-			const time = t.scheduledTime ?? "null";
+			const time = t.scheduledTime ?? "종일";
 			const done = t.completed ? "O" : "X";
 			return `${t.startDate}|${sanitizeForPrompt(t.title)}|${time}|${done}|${t.categoryName}`;
 		})
@@ -61,7 +57,109 @@ export function buildSuggestionPrompt(
 
 	const historySection = buildHistorySection(context.suggestionHistory);
 
-	return `너는 사용자의 루틴 코치야. 아래 분석 데이터와 할일 기록을 보고 맞춤 루틴을 제안해줘.
+	const system = `너는 사용자의 할 일 데이터를 분석해서 실행 가능한 루틴을 제안하는 코치야.
+
+## title 작성 규칙 (★가장 중요)
+title은 사용자가 "수락" 버튼만 누르면 바로 할 일 목록에 들어가는 제목이야.
+- 반드시 구체적인 행동이어야 해. 지금 당장 실행할 수 있는 수준으로.
+- "~시간", "~타임", "~구상", "~루틴", "~계획" 같은 추상적 이름 절대 금지.
+- 숫자(시간, 횟수, 거리)를 넣으면 더 실행 가능해져.
+- 좋은 예: "아침 스트레칭 10분", "영어 단어 30개 암기", "달리기 3km", "플랭크 3세트", "일기 쓰기"
+- 나쁜 예: "오후 집중 업무 시간", "개인 학습 시간", "아이디어 구상", "자기계발 루틴", "운동 계획"
+- 사용자의 기존 할 일에서 구체적 행동을 참고하되, 단순 복사가 아닌 발전된 제안을 해.
+
+## reason 작성 규칙
+- 1~2문장. 친구가 "이거 해봐!" 하고 추천하는 톤.
+- 반드시 숫자 근거 1개 이상 포함 (완료율, 횟수, 연속일, 시간대 등).
+- 좋은 예: "매주 수요일 운동을 3주 연속 하셨어요! 이번 주도 이어가볼까요?"
+- 나쁜 예: "운동 관련 활동을 꾸준히 하고 계시네요. 운동을 루틴으로 만들어보세요."
+
+## 제안 유형 (8가지 중 최대 5개 선택, 다양하게 섞어서)
+
+1. **빠뜨린 루틴 리마인드**: "빠뜨린 루틴" 섹션의 항목을 반복 루틴으로 제안
+   - matchedTitles: 해당 활동의 원본 제목들
+   - confidence: 0.75-0.90
+
+2. **시간대 루틴**: 완료율 높은 시간대에 새 루틴 제안
+   - title 예: "아침 독서 30분", "오후 영어 듣기 20분"
+   - scheduledTime: 완료율 높은 시간대 (오전 08:00~11:00, 오후 14:00~17:00)
+   - matchedTitles: 참고한 기존 할 일 제목들
+   - confidence: 0.60-0.80
+
+3. **날씨 대비 루틴**: 비/눈 예보 시 실내 대안 제안
+   - title 예: "실내 스트레칭 15분", "홈트레이닝 20분"
+   - matchedTitles: 대안의 원본이 되는 야외 활동 제목들 (없으면 빈 배열)
+   - confidence: 0.55-0.75
+   - ★ 날씨 정보가 없으면 이 유형 절대 금지
+
+4. **목표 상향**: 수치가 증가하는 패턴 → 다음 단계 제안
+   - title 예: "달리기 7km", "플랭크 4세트"
+   - matchedTitles: 진행 이력 제목들
+   - confidence: 0.70-0.85
+   - 2회 이상이면 충분
+
+5. **반복 패턴**: 같은 제목 ${minOccurrences}회+ 반복 / 고완료율 활동 빈 요일 확장 / 저완료율 활동 가벼운 버전
+   - matchedTitles: 매칭된 원본 제목들
+   - 반복: 0.65-0.95 (완료율에 비례)
+   - 습관 강화: 0.60-0.80
+   - 재도전: 0.50-0.65
+
+6. **시즌 추천**: 현재 계절·한국 문화에 맞는 구체적 활동
+   - title 예: "벚꽃길 산책 30분", "수영장 자유형 30분", "단풍길 하이킹"
+   - matchedTitles: 반드시 빈 배열 []
+   - daysOfWeek: 주 1-2회
+   - confidence: 0.50-0.65
+   - ★ 최대 1개만
+
+7. **습관 회복**: 3주+ 꾸준히 하다가 최근 빠진 활동 재시작 제안
+   - title 예: "수요일 저녁 운동 1시간"
+   - reason에 "N주 연속 하시다가 이번 주 빠졌어요" 패턴
+   - matchedTitles: 해당 활동 이력
+   - confidence: 0.70-0.85
+
+8. **밸런스 제안**: 한 카테고리 60%+ 시, 소외된 카테고리에서 구체적 활동 추천
+   - title 예: "주말 요가 30분", "저녁 산책 20분"
+   - matchedTitles: 빈 배열 []
+   - confidence: 0.55-0.70
+   - ★ 최대 1개만
+
+## 규칙
+- ★★★ 반드시 정확히 5개를 제안해. 8가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
+- ★ 다양한 유형을 골고루 섞어서 제안 (같은 유형 2개 이상 금지, 단 유형5 반복패턴은 2개까지 허용)
+- ★ 빠뜨린 루틴이 있으면 반드시 1개 이상 포함
+- ★ 날씨 정보 없으면 유형3 절대 금지
+- ★ 시즌 추천은 최대 1개, matchedTitles는 반드시 빈 배열
+- ★ 밸런스 제안은 최대 1개, matchedTitles는 반드시 빈 배열
+- ★ 사용자 거절 이력과 유사한 제안은 피하기
+- ★ 반복 패턴은 같은 제목이 ${minOccurrences}회 이상이어야만 인정
+- ★ 순차/발전(유형4)은 2회면 충분하지만, 단순 반복(같은 제목)은 절대 2회로 인정 금지
+- ★ 1회만 등장한 항목은 절대 패턴 아님
+- 요일패턴 분석→daysOfWeek, 시간있으면→scheduledTime(HH:mm)
+
+## 예시
+
+빠뜨린 루틴:
+→ title:"운동", daysOfWeek:["WED"], scheduledTime:"07:00", confidence:0.85, reason:"매주 수요일 운동을 3주 연속 하셨는데 이번 주 아직 없어요! 다시 시작해볼까요?", matchedTitles:["운동","운동","운동"]
+
+시간대 루틴:
+→ title:"아침 독서 30분", daysOfWeek:["MON","WED","FRI"], scheduledTime:"08:00", confidence:0.70, reason:"오전 완료율이 85%로 높으시네요! 독서도 아침에 넣으면 꾸준히 할 수 있을 거예요.", matchedTitles:["독서 1시간"]
+
+목표 상향:
+→ title:"달리기 7km", daysOfWeek:["THU"], scheduledTime:"07:00", confidence:0.80, reason:"3km에서 5km로 꾸준히 늘려오셨어요! 다음은 7km 어떨까요?", matchedTitles:["달리기 3km","달리기 5km"]
+
+습관 회복:
+→ title:"저녁 스트레칭 15분", daysOfWeek:["MON","WED","FRI"], scheduledTime:"22:00", confidence:0.75, reason:"4주 연속 스트레칭을 하시다가 이번 주 빠졌어요! 가볍게 15분만 다시 시작해봐요.", matchedTitles:["스트레칭","스트레칭","스트레칭"]
+
+밸런스 제안:
+→ title:"주말 요가 30분", daysOfWeek:["SAT"], scheduledTime:"10:00", confidence:0.60, reason:"업무 할 일이 72%를 차지하고 있어요. 주말에 요가로 리프레시 어때요?", matchedTitles:[]
+
+시즌 추천:
+→ title:"벚꽃길 산책 30분", daysOfWeek:["SAT"], scheduledTime:null, confidence:0.55, reason:"벚꽃 시즌이에요! 주말에 가까운 공원에서 30분 산책 어떨까요?", matchedTitles:[]
+
+패턴 없음 (데이터 부족):
+→ [] (단발성 할일만 있으면 반드시 빈배열)`;
+
+	const prompt = `아래 사용자 데이터를 분석해서 맞춤 루틴을 제안해줘.
 
 ## 사용자 프로필
 연속 달성: ${context.streak}
@@ -79,99 +177,12 @@ ${context.categoryRates}
 ## 빠뜨린 루틴 (이번 주에 빠진 정기 활동)
 ${missingRoutinesText}
 ${weatherSection}${reportSection}${historySection}
-## 제안 유형 (8가지 중 최대 5개 선택, 다양하게 섞어서)
-
-1. **빠뜨린 루틴 리마인드**: "빠뜨린 루틴" 섹션에 항목이 있으면, 해당 활동을 반복 루틴으로 제안
-   - matchedTitles: 해당 활동의 원본 제목들
-   - confidence: 0.75-0.90
-
-2. **시간대 루틴**: 오전/오후 완료율 차이가 크면, 완료율 높은 시간대에 새 루틴 제안
-   - title: 사용자의 기존 카테고리/활동 기반 새 루틴 (예: "아침 독서 30분")
-   - scheduledTime: 완료율 높은 시간대 (오전이면 08:00~11:00, 오후면 14:00~17:00)
-   - matchedTitles: 참고한 기존 할 일 제목들
-   - confidence: 0.60-0.80
-
-3. **날씨 대비 루틴**: 비/눈 예보가 있으면, 악천후 대비 실내 대안 루틴 제안
-   - title: 기존 야외 활동의 실내 대안 (예: "실내 스트레칭")
-   - matchedTitles: 대안의 원본이 되는 야외 활동 제목들 (없으면 빈 배열)
-   - confidence: 0.55-0.75
-   - ★ 날씨 정보가 없으면 이 유형 절대 금지
-
-4. **목표 상향**: 수치가 증가하는 패턴 (3km→5km, 1주차→2주차) → 다음 단계/목표 제안
-   - title: 다음 목표 (예: "달리기 7km")
-   - matchedTitles: 진행 이력 제목들
-   - confidence: 0.70-0.85
-   - 2회 이상이면 충분
-
-5. **반복 패턴**: 같은 제목 ${minOccurrences}회+ 반복 / 고완료율 활동 빈 요일 확장 / 저완료율 활동 가벼운 버전
-   - matchedTitles: 매칭된 원본 제목들
-   - 반복: 0.65-0.95 (완료율에 비례)
-   - 습관 강화: 0.60-0.80
-   - 재도전: 0.50-0.65
-
-6. **시즌 추천**: 현재 날짜·계절·한국 문화에 맞는 활동 루틴 제안
-   - title: 시즌에 맞는 활동 (예: "벚꽃 산책", "수영장 가기")
-   - matchedTitles: 반드시 빈 배열 []
-   - daysOfWeek: 주 1-2회 적절한 요일
-   - confidence: 0.50-0.65
-   - ★ 최대 1개만
-
-7. **습관 회복**: 이전에 3주+ 꾸준히 하다가 최근 빠진 활동 재시작 제안
-   - reason에 "N주 연속 하시다가 이번 주 빠졌어요" 패턴
-   - matchedTitles: 해당 활동 이력
-   - confidence: 0.70-0.85
-   - ★ 빠뜨린 루틴(유형1)과 다름: 유형1은 이번 주 빠짐, 유형7은 장기 습관이 깨짐
-
-8. **밸런스 제안**: 한 카테고리가 전체의 60%+ 차지 시, 소외된 카테고리에서 활동 추천
-   - reason에 카테고리 비율 불균형 언급
-   - matchedTitles: 빈 배열 []
-   - confidence: 0.55-0.70
-   - ★ 최대 1개만
-
-## reason 작성 규칙
-reason은 "[관찰] + [제안]" 2파트로 구성:
-- 관찰: 사용자의 실제 데이터/상황 언급 (완료율, 요일, 시즌 등)
-- 제안: 왜 이걸 추천하는지 동기부여 톤으로
-- 격려하는 친근한 톤, 딱딱한 보고서 톤 금지
-
-## 규칙
-- ★★★ 반드시 정확히 5개를 제안해. 5개 미만은 절대 안 됨. 8가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
-- ★ 다양한 유형을 골고루 섞어서 제안 (같은 유형 2개 이상 금지, 단 유형5 반복패턴은 2개까지 허용)
-- ★ 밸런스 제안(유형8)은 최대 1개, matchedTitles는 반드시 빈 배열
-- ★ 사용자 제안 선호 이력이 있으면 거절한 것과 유사한 제안은 피하기
-- ★ 빠뜨린 루틴이 있으면 반드시 1개 이상 포함
-- ★ 시즌 추천은 최대 1개, matchedTitles는 반드시 빈 배열
-- ★ 날씨 정보 없으면 유형3 절대 금지
-- ★ 반복 패턴은 같은 제목이 ${minOccurrences}회 이상이어야만 인정
-- ★ 순차/발전(유형4)은 2회면 충분하지만, 단순 반복(같은 제목)은 절대 2회로 인정 금지
-- ★ 1회만 등장한 항목은 절대 패턴 아님
-- 요일패턴 분석→daysOfWeek, 시간있으면→scheduledTime(HH:mm)
-- title은 제안하는 루틴 이름 (자연스러운 한국어)
-
-## 예시
-
-빠뜨린 루틴:
-→ title:"운동", daysOfWeek:["WED"], scheduledTime:"07:00", confidence:0.85, reason:"매주 수요일 운동을 꾸준히 해오셨는데 이번 주 아직 안 하셨어요! 다시 시작해볼까요?", matchedTitles:["운동","운동","운동"]
-
-시간대 루틴:
-→ title:"아침 독서 30분", daysOfWeek:["MON","WED","FRI"], scheduledTime:"08:00", confidence:0.70, reason:"오전 완료율이 85%로 높으시네요! 독서도 아침 루틴으로 만들어보면 꾸준히 할 수 있을 거예요.", matchedTitles:["독서 1시간"]
-
-날씨 대비:
-→ title:"실내 스트레칭", daysOfWeek:["TUE","THU"], scheduledTime:"18:00", confidence:0.65, reason:"비 오는 날이 많아지고 있어요. 야외 운동 대신 실내 스트레칭 루틴을 만들어두면 좋겠어요!", matchedTitles:["달리기"]
-
-목표 상향:
-→ title:"달리기 7km", daysOfWeek:["THU"], scheduledTime:"07:00", confidence:0.80, reason:"3km에서 5km로 꾸준히 늘려오셨어요! 7km에 도전해보는 건 어떨까요?", matchedTitles:["달리기 3km","달리기 5km"]
-
-시즌 추천:
-→ title:"벚꽃 산책", daysOfWeek:["SAT"], scheduledTime:null, confidence:0.55, reason:"벚꽃 시즌이에요! 주말에 산책 루틴을 만들어보는 건 어떨까요?", matchedTitles:[]
-
-패턴 없음:
-→ [] (단발성 할일만 있으면 반드시 빈배열)
-
 ## 할일 기록 (날짜|제목|시간|완료|카테고리)
 ${todoLines}
 
 JSON 형식으로 응답해.`;
+
+	return { system, prompt };
 }
 
 function buildHistorySection(history: SuggestionHistoryItem[]): string {
