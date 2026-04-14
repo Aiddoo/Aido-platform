@@ -1,5 +1,6 @@
 import { updateMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { AiParseConfirmDialog } from '@src/features/memo/presentations/components/AiParseConfirmDialog';
 import { useDeleteMemoMutationOptions } from '@src/features/memo/presentations/queries/use-delete-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-query-options';
@@ -23,7 +24,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
@@ -77,6 +78,7 @@ export default function MemoDetailScreen() {
   );
 
   const overlay = useOverlay();
+  const queryClient = useQueryClient();
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = categoriesData.categories[0]?.id;
   const { isLoading: isAiUsageLoading } = useQuery(useGetAiUsageQueryOptions());
@@ -124,17 +126,19 @@ export default function MemoDetailScreen() {
   };
 
   const handleAiParse = () => {
+    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
+    if (cached) {
+      router.push(`/memo/${memoId}/ai-review`);
+      return;
+    }
+
     overlay.open(({ isOpen, close, exit }) => (
       <AiParseConfirmDialog
         isOpen={isOpen}
+        memoId={memoId}
         onClose={() => {
           close();
           exit();
-        }}
-        onConfirm={() => {
-          close();
-          exit();
-          router.push(`/memo/${memoId}/ai-review`);
         }}
       />
     ));

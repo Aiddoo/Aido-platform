@@ -1,24 +1,33 @@
 import { ErrorCode } from '@aido/errors';
 import { useAiService } from '@src/bootstrap/providers/di-provider';
+import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { mutationOptions } from '@tanstack/react-query';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
+import { AI_QUERY_KEYS } from '../constants/ai-query-keys.constant';
+
 interface ParseMemoParams {
+  memoId: number;
   content: string;
   categoryId: number;
 }
 
 export const useParseMemoMutationOptions = () => {
   const aiService = useAiService();
+  const queryClient = useQueryClient();
   const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: async ({ content, categoryId }: ParseMemoParams) => {
       const result = await aiService.parseMemo(content, categoryId);
       return unwrap(result);
+    },
+    onSuccess: (data, { memoId }) => {
+      queryClient.setQueryData(AI_QUERY_KEYS.parseMemo(memoId), data);
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.aiUsage() });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

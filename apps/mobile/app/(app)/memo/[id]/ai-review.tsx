@@ -1,8 +1,7 @@
 import { ErrorCode } from '@aido/errors';
-import type { ParsedMemoTodo } from '@src/features/ai/models/ai.model';
-import { useParseMemoQueryOptions } from '@src/features/ai/presentations/queries/use-parse-memo-query-options';
+import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/models/ai.model';
+import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todos-mutation-options';
-import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-query-options';
 import { CategorySelectContent } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
 import { TodoDatePickerContent } from '@src/features/todo/presentations/components/TodoDatePickerContent';
 import { TodoTimePickerContent } from '@src/features/todo/presentations/components/TodoTimePickerContent';
@@ -28,7 +27,7 @@ import {
 } from '@src/shared/ui';
 import { formatDate, formatMonthDay } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -119,24 +118,21 @@ function AiReviewContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const memoId = Number(id);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { bottom: safeBottom } = useSafeAreaInsets();
 
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions(memoId));
-  const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const firstCategory = categoriesData.categories[0];
-  if (!firstCategory) throw new Error('카테고리가 없습니다');
-  const defaultCategoryId = firstCategory.id;
-
-  const { data: parsedResult } = useSuspenseQuery(
-    useParseMemoQueryOptions(memoId, memo.content, defaultCategoryId),
-  );
+  const parsedResult = queryClient.getQueryData<ParsedMemoResult>(AI_QUERY_KEYS.parseMemo(memoId));
 
   const nextId = useRef(0);
-  const [todos, setTodos] = useState<TodoWithId[]>(() =>
-    parsedResult.todos.map((todo) => ({ ...todo, _key: `todo-${nextId.current++}` })),
+  const [todos, setTodos] = useState<TodoWithId[]>(
+    () => parsedResult?.todos.map((todo) => ({ ...todo, _key: `todo-${nextId.current++}` })) ?? [],
   );
-
   const convertMutation = useMutation(useConvertMemoToTodosMutationOptions());
+
+  if (!parsedResult) {
+    router.back();
+    return null;
+  }
 
   const updateTodo = (index: number, updates: Partial<ParsedMemoTodo>) => {
     setTodos((prev) => prev.map((todo, i) => (i === index ? { ...todo, ...updates } : todo)));
