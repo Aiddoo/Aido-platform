@@ -7,7 +7,6 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
-	Logger,
 	Param,
 	Patch,
 	Post,
@@ -54,8 +53,6 @@ import { MemoService } from "./memo.service";
 @ApiBearerAuth()
 @Controller("memos")
 export class MemoController {
-	readonly #logger = new Logger(MemoController.name);
-
 	constructor(private readonly memoService: MemoService) {}
 
 	@Get("resource-limit")
@@ -100,8 +97,6 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		this.#logger.debug(`메모 생성: user=${user.userId}`);
-
 		return this.memoService.create({
 			userId: user.userId,
 			content: dto.content,
@@ -144,7 +139,6 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: MemoIdParamDto,
 	): Promise<MemoDetailResponseDto> {
-		this.#logger.debug(`메모 조회: id=${params.id}, user=${user.userId}`);
 		return this.memoService.findOne(user.userId, params.id);
 	}
 

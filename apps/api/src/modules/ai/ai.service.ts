@@ -35,6 +35,7 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { UserRepository } from "../auth/repositories/user.repository";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
 import { buildParseMemoPrompt } from "./prompts/parse-memo.prompt";
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
@@ -98,6 +99,7 @@ export class AiService {
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 		private readonly userRepository: UserRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 	) {}
 
 	/**
@@ -118,23 +120,27 @@ export class AiService {
 	): Promise<ParseTodoResult> {
 		const startTime = Date.now();
 
-		// 1. AI Provider 가용성 확인
 		if (!this.aiProvider.isAvailable()) {
-			this.#logger.error("AI provider is not available");
+			this.#logger.warn(`AI 서비스 불가: userId=${userId}`);
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
-		// 2. 사용량 체크 및 증가 (원자적 처리)
 		await this.#checkAndIncrementUsage(userId);
 
-		// 3. 최적화된 프롬프트 생성
-		const prompt = buildParseTodoPrompt(text, timezone, now());
+		const userCategories =
+			await this.todoCategoryRepository.findManyByUserId(userId);
+		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		this.#logger.debug(`Parsing todo: "${text}"`);
+		const { system, prompt } = buildParseTodoPrompt(
+			text,
+			timezone,
+			now(),
+			userCategories.map((c) => ({ id: c.id, name: c.name })),
+		);
 
 		try {
-			// 4. AI 호출 (구조화된 출력)
 			const result = await this.aiProvider.generateStructured({
+				system,
 				prompt,
 				schema: parsedTodoDataSchema,
 				maxTokens: 200,
@@ -144,14 +150,18 @@ export class AiService {
 			const processingTimeMs = Date.now() - startTime;
 
 			this.#logger.log(
-				`Todo parsed: "${result.output.title}" (${processingTimeMs}ms, ` +
-					`input: ${result.usage.input}, output: ${result.usage.output})`,
+				`투두 파싱 완료: userId=${userId}, title="${result.output.title}", ` +
+					`${processingTimeMs}ms, tokens=${result.usage.input}/${result.usage.output}`,
 			);
+
+			const inferredCategoryId = categoryIds.has(result.output.categoryId ?? 0)
+				? result.output.categoryId
+				: undefined;
 
 			return {
 				data: {
 					...result.output,
-					...(categoryId != null && { categoryId }),
+					categoryId: categoryId ?? inferredCategoryId,
 				},
 				meta: {
 					model: result.model,
@@ -160,22 +170,18 @@ export class AiService {
 				},
 			};
 		} catch (error) {
-			this.#logger.error(`AI parsing failed: ${error}`);
-
-			// AI 호출 실패 시 사용량 롤백 (사용자에게 공평하게)
 			await this.#decrementUsage(userId);
 
-			// AI SDK 에러 타입 기반 분기 처리
 			if (error instanceof APICallError) {
-				// API 호출 실패 (네트워크, 인증, 서버 오류 등)
-				this.#logger.error("AI API call failed", {
-					status: error.statusCode,
-					message: error.message,
-				});
+				this.#logger.error(
+					`AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
+				);
 				throw BusinessExceptions.aiServiceUnavailable();
 			}
 
-			// 기타 에러는 파싱 실패로 처리
+			this.#logger.error(
+				`투두 파싱 실패: userId=${userId}, error=${error instanceof Error ? error.message : "Unknown"}`,
+			);
 			throw BusinessExceptions.aiParseFailed(
 				error instanceof Error ? error.message : "Unknown error",
 			);
@@ -203,22 +209,30 @@ export class AiService {
 		const startTime = Date.now();
 
 		if (!this.aiProvider.isAvailable()) {
-			this.#logger.error("AI provider is not available");
+			this.#logger.warn(`AI 서비스 불가: userId=${userId}`);
 			throw BusinessExceptions.aiServiceUnavailable();
 		}
 
 		await this.#checkAndIncrementUsage(userId);
 
-		const prompt = buildParseMemoPrompt(content, timezone, now());
+		const userCategories =
+			await this.todoCategoryRepository.findManyByUserId(userId);
+		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		this.#logger.debug(`Parsing memo to todos: "${content.slice(0, 50)}..."`);
+		const { system, prompt } = buildParseMemoPrompt(
+			content,
+			timezone,
+			now(),
+			userCategories.map((c) => ({ id: c.id, name: c.name })),
+		);
 
 		try {
 			const result =
 				await this.aiProvider.generateStructured<LlmParsedMemoResult>({
+					system,
 					prompt,
 					schema: llmParsedMemoResultSchema,
-					maxTokens: 600,
+					maxTokens: 800,
 					temperature: 0.1,
 				});
 
@@ -230,14 +244,16 @@ export class AiService {
 			);
 
 			this.#logger.log(
-				`Memo parsed: ${todoCount} todos, ${itemCount} items (${processingTimeMs}ms, ` +
-					`input: ${result.usage.input}, output: ${result.usage.output})`,
+				`메모 파싱 완료: userId=${userId}, ${todoCount} todos, ${itemCount} items, ` +
+					`${processingTimeMs}ms, tokens=${result.usage.input}/${result.usage.output}`,
 			);
 
 			const data = parsedMemoDataSchema.parse({
 				todos: result.output.todos.slice(0, 5).map((todo) => ({
 					...todo,
-					categoryId,
+					categoryId: categoryIds.has(todo.categoryId)
+						? todo.categoryId
+						: categoryId,
 				})),
 			});
 
@@ -250,18 +266,18 @@ export class AiService {
 				},
 			};
 		} catch (error) {
-			this.#logger.error(`AI memo parsing failed: ${error}`);
-
 			await this.#decrementUsage(userId);
 
 			if (error instanceof APICallError) {
-				this.#logger.error("AI API call failed", {
-					status: error.statusCode,
-					message: error.message,
-				});
+				this.#logger.error(
+					`AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
+				);
 				throw BusinessExceptions.aiServiceUnavailable();
 			}
 
+			this.#logger.error(
+				`메모 파싱 실패: userId=${userId}, error=${error instanceof Error ? error.message : "Unknown"}`,
+			);
 			throw BusinessExceptions.aiParseFailed(
 				error instanceof Error ? error.message : "Unknown error",
 			);

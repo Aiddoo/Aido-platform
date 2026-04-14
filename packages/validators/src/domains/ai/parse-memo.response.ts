@@ -89,6 +89,7 @@ export const llmParsedMemoResultSchema = z.object({
         })
         .nullable()
         .default(null),
+      categoryId: z.number().int().positive(),
       items: z.array(z.object({ title: z.string() })).default([]),
     }),
   ),

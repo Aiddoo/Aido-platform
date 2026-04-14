@@ -5,7 +5,6 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
-	Logger,
 	Post,
 	UseGuards,
 } from "@nestjs/common";
@@ -37,8 +36,6 @@ import { AiUsageGuard } from "./guards/ai-usage.guard";
 @ApiBearerAuth()
 @Controller("ai")
 export class AiController {
-	readonly #logger = new Logger(AiController.name);
-
 	constructor(private readonly aiService: AiService) {}
 
 	/**
@@ -181,20 +178,11 @@ if (confirmed) {
 		@Body() dto: ParseTodoRequestDto,
 		@Timezone() tz: string,
 	): Promise<ParseTodoResponseDto> {
-		this.#logger.debug(
-			`AI 파싱 요청: user=${user.userId}, tz=${tz}, text="${dto.text}"`,
-		);
-
 		const result = await this.aiService.parseTodo(
 			dto.text,
 			user.userId,
 			tz,
 			dto.categoryId,
-		);
-
-		this.#logger.log(
-			`AI 파싱 완료: user=${user.userId}, title="${result.data.title}", ` +
-				`model=${result.meta.model}, time=${result.meta.processingTimeMs}ms`,
 		);
 
 		return {
@@ -329,20 +317,11 @@ if (confirmed) {
 		@Body() dto: ParseMemoRequestDto,
 		@Timezone() tz: string,
 	): Promise<ParseMemoResponseDto> {
-		this.#logger.debug(
-			`AI 메모 파싱 요청: user=${user.userId}, tz=${tz}, content="${dto.content.slice(0, 50)}..."`,
-		);
-
 		const result = await this.aiService.parseMemoToTodos(
 			dto.content,
 			user.userId,
 			tz,
 			dto.categoryId,
-		);
-
-		this.#logger.log(
-			`AI 메모 파싱 완료: user=${user.userId}, ${result.data.todos.length} todos, ` +
-				`model=${result.meta.model}, time=${result.meta.processingTimeMs}ms`,
 		);
 
 		return {

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AuthModule } from "../auth/auth.module";
+import { TodoCategoryModule } from "../todo-category/todo-category.module";
 import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import { AiUsageGuard } from "./guards/ai-usage.guard";
@@ -32,7 +33,7 @@ import { GeminiProvider } from "./providers/gemini.provider";
  * | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ | Google AI API 키 |
  */
 @Module({
-	imports: [AuthModule],
+	imports: [AuthModule, TodoCategoryModule],
 	controllers: [AiController],
 	providers: [
 		AiService,

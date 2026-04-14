@@ -115,4 +115,9 @@ export const AiUsagePolicy = {
   isLimitReached(usage: AiUsage): boolean {
     return usage.limit != null && usage.used >= usage.limit;
   },
+
+  /** 남은 사용 횟수 (null이면 무제한/프리미엄) */
+  getRemainingCount(usage: AiUsage): number | null {
+    return usage.limit != null ? usage.limit - usage.used : null;
+  },
 } as const;

@@ -1,4 +1,3 @@
-import DocsIconSvg from '@assets/icons/ic_docs.svg';
 import ListIconSvg from '@assets/icons/ic_list.svg';
 import MemoIconSvg from '@assets/icons/ic_memo.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';

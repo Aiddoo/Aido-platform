@@ -1,5 +1,6 @@
 import type {
   AiReport as AiReportDto,
+  ParsedMemoData as ParsedMemoDataDto,
   RecurringSuggestion as RecurringSuggestionDto,
   ReportStatus as ReportStatusDto,
   SuggestionActionResponse as SuggestionActionResponseDto,
@@ -11,6 +12,8 @@ import {
   aiReportModelSchema,
   aiSuggestionActionResultSchema,
   aiSuggestionModelSchema,
+  type ParsedMemoResult,
+  parsedMemoResultSchema,
   type ReportStatus,
   reportStatusModelSchema,
 } from '../models/ai.model';
@@ -26,3 +29,6 @@ export const toAiSuggestion = (dto: RecurringSuggestionDto): AiSuggestion =>
 export const toAiSuggestionActionResult = (
   dto: SuggestionActionResponseDto,
 ): AiSuggestionActionResult => aiSuggestionActionResultSchema.parse(dto);
+
+export const toParsedMemoResult = (dto: ParsedMemoDataDto): ParsedMemoResult =>
+  parsedMemoResultSchema.parse(dto);

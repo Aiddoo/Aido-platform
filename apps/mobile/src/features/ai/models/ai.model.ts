@@ -1,5 +1,6 @@
 import {
   aiReportSchema,
+  parsedMemoDataSchema,
   recurringSuggestionSchema,
   reportStatusSchema,
   reportTypeSchema,
@@ -40,3 +41,8 @@ export const aiSuggestionActionResultSchema = suggestionActionResponseSchema.ext
   suggestion: aiSuggestionModelSchema,
 });
 export type AiSuggestionActionResult = z.infer<typeof aiSuggestionActionResultSchema>;
+
+export const parsedMemoResultSchema = parsedMemoDataSchema;
+export type ParsedMemoResult = z.infer<typeof parsedMemoResultSchema>;
+
+export type ParsedMemoTodo = ParsedMemoResult['todos'][number];

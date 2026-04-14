@@ -3,6 +3,8 @@ import {
   type AiReportResponse,
   aiReportListResponseSchema,
   aiReportResponseSchema,
+  type ParseMemoResponse,
+  parseMemoResponseSchema,
   type ReportStatusResponse,
   reportStatusResponseSchema,
   type SuggestionActionResponse,
@@ -22,12 +24,14 @@ import type {
   AiSuggestionActionInput,
   AiSuggestionActionResult,
   GetAiReportsParams,
+  ParsedMemoResult,
   ReportStatus,
 } from '../models/ai.model';
 import {
   toAiReport,
   toAiSuggestion,
   toAiSuggestionActionResult,
+  toParsedMemoResult,
   toReportStatus,
 } from './ai.mapper';
 
@@ -116,6 +120,31 @@ export class AiService {
     }
 
     return ok(parsed.data.suggestions.map(toAiSuggestion));
+  };
+
+  parseMemo = async (
+    content: string,
+    categoryId: number,
+  ): Promise<Result<ParsedMemoResult, ApiError>> => {
+    const result = await this.#httpClient.post<ParseMemoResponse>('v1/ai/parse-memo', {
+      content,
+      categoryId,
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = parseMemoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      this.#logger.error('[AiService] Parse failed', undefined, {
+        method: 'parseMemo',
+        zodError: parsed.error.message,
+      });
+      throw new ParseError(`[AiService] Invalid parseMemo response: ${parsed.error.message}`);
+    }
+
+    return ok(toParsedMemoResult(parsed.data.data));
   };
 
   handleSuggestionAction = async (

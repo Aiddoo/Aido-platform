@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 import { type Notification, NotificationPolicy } from '../../models/notification.model';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
@@ -16,46 +17,12 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
-  const router = useRouter();
-  const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
-  const premiumDialog = usePremiumDialog();
   const isUnread = !notification.isRead;
-  const categoryLabel = NotificationPolicy.categoryLabel(notification);
-  const relativeTime = formatRelativeTime(notification.createdAt);
-
-  const handlePress = () => {
-    // 1. 안 읽은 알림만 읽음 처리
-    if (isUnread) markAsRead(notification.id);
-
-    // 2. 외부 URL 처리
-    if (typeof notification.metadata?.externalUrl === 'string') {
-      Linking.openURL(notification.metadata.externalUrl);
-      return;
-    }
-
-    // 3. AI 기능 프리미엄 체크
-    if (NotificationPolicy.isAiFeature(notification)) {
-      const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
-      if (user && !UserPolicy.isPremiumUser(user)) {
-        trackEvent('premium_gate_shown', { feature: 'ai_report' });
-        premiumDialog.open({
-          description: '구독하면 AI 리포트와 제안을 확인할 수 있어요',
-        });
-        return;
-      }
-    }
-
-    // 4. 타입 + context 기반 내부 라우팅
-    const route = NotificationPolicy.internalRoute(notification);
-    if (route) router.navigate(route as Href);
-  };
+  const handlePress = useNotificationPress(notification);
 
   return (
     <Pressable onPress={handlePress}>
       <HStack className={isUnread ? 'bg-highlight' : 'bg-background'}>
-        {/* 안읽음 인디케이터 바 */}
         {isUnread && <View className="w-[3.5px] bg-main self-stretch" />}
 
         <ListRow
@@ -68,10 +35,10 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   shade={isUnread ? undefined : 5}
                   weight="medium"
                 >
-                  {categoryLabel}
+                  {NotificationPolicy.categoryLabel(notification)}
                 </Text>
                 <Text size="b4" shade={5}>
-                  {relativeTime}
+                  {formatRelativeTime(notification.createdAt)}
                 </Text>
               </HStack>
 
@@ -93,4 +60,39 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       </HStack>
     </Pressable>
   );
+}
+
+function useNotificationPress(notification: Notification) {
+  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
+  const router = useRouter();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const premiumDialog = usePremiumDialog();
+
+  return useCallback(() => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    if (typeof notification.metadata?.externalUrl === 'string') {
+      Linking.openURL(notification.metadata.externalUrl);
+      return;
+    }
+
+    if (NotificationPolicy.isAiFeature(notification)) {
+      const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
+      if (user && !UserPolicy.isPremiumUser(user)) {
+        trackEvent('premium_gate_shown', { feature: 'ai_report' });
+        premiumDialog.open({
+          description: '구독하면 AI 리포트와 제안을 확인할 수 있어요',
+        });
+        return;
+      }
+    }
+
+    const route = NotificationPolicy.internalRoute(notification);
+    if (route) {
+      router.navigate(route as Href);
+    }
+  }, [notification, markAsRead, router, trackEvent, queryClient, premiumDialog]);
 }

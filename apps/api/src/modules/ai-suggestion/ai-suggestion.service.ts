@@ -177,6 +177,7 @@ export class AiSuggestionService {
 	async #enforcePremium(userId: string): Promise<void> {
 		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
 		if (!hasPremium) {
+			this.#logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
 			throw BusinessExceptions.aiSuggestionPremiumRequired();
 		}
 	}
@@ -211,12 +212,13 @@ export class AiSuggestionService {
 		}
 
 		// 2. AI 제안 생성
-		const prompt = buildSuggestionPrompt(
+		const { system, prompt } = buildSuggestionPrompt(
 			context,
 			AI_SUGGESTION_LIMITS.MIN_OCCURRENCES,
 		);
 
 		const aiResult = await this.aiProvider.generateStructured({
+			system,
 			prompt,
 			schema: detectedPatternsSchema,
 			maxTokens: 1500,
