@@ -1,6 +1,7 @@
 import { ErrorCode } from '@aido/errors';
 import { useAiService } from '@src/bootstrap/providers/di-provider';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
@@ -18,6 +19,7 @@ interface ParseMemoParams {
 export const useParseMemoMutationOptions = () => {
   const aiService = useAiService();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
@@ -26,13 +28,16 @@ export const useParseMemoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (data, { memoId }) => {
+      trackEvent('ai_parse_used', { success: true });
       queryClient.setQueryData(AI_QUERY_KEYS.parseMemo(memoId), data);
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.aiUsage() });
     },
     onError: (error) => {
+      trackEvent('ai_parse_used', { success: false });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
+        trackEvent('premium_gate_shown', { feature: 'ai_parse' });
         toast.error('오늘의 AI 사용 횟수를 모두 사용했어요');
         return;
       }

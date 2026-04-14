@@ -6,6 +6,7 @@ import { CategorySelectContent } from '@src/features/todo/presentations/componen
 import { TodoDatePickerContent } from '@src/features/todo/presentations/components/TodoDatePickerContent';
 import { TodoTimePickerContent } from '@src/features/todo/presentations/components/TodoTimePickerContent';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import {
   ACTION_CHIP_ICON_SIZE,
@@ -117,6 +118,7 @@ function AiReviewContent() {
   const memoId = Number(id);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
   const { bottom: safeBottom } = useSafeAreaInsets();
 
   const parsedResult = queryClient.getQueryData<ParsedMemoResult>(AI_QUERY_KEYS.parseMemo(memoId));
@@ -164,6 +166,11 @@ function AiReviewContent() {
       },
       {
         onSuccess: () => {
+          trackEvent('memo_converted_to_todos', {
+            memo_id: memoId,
+            todo_count: todos.length,
+            source: 'ai_parse',
+          });
           router.dismiss();
           router.navigate('/feed');
         },

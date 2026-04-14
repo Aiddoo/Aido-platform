@@ -177,6 +177,7 @@ export class AiSuggestionService {
 	async #enforcePremium(userId: string): Promise<void> {
 		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
 		if (!hasPremium) {
+			this.#logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
 			throw BusinessExceptions.aiSuggestionPremiumRequired();
 		}
 	}
