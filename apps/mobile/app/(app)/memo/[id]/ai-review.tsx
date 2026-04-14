@@ -14,7 +14,6 @@ import {
   Button,
   CalendarIcon,
   ClockIcon,
-  CloseIcon,
   HStack,
   ModalBottomSheet,
   QueryErrorBoundary,
@@ -26,11 +25,10 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatDate, formatMonthDay } from '@src/shared/utils/date';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
+import { CloseButton } from 'heroui-native';
 import { createContext, Suspense, use, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -285,24 +283,18 @@ function TodoCard({ index }: TodoCardProps) {
 
   return (
     <VStack px={20} py={16} className="overflow-hidden rounded-2xl bg-gray-1">
-      <HStack justify="between" gap={8}>
-        <VStack className="flex-1 border-b-2 dark:border-gray-2 border-gray-3 ">
-          <StyledTextInput
-            value={todo.title}
-            onChangeText={(text) => updateTodo(index, { title: text })}
-            className="text-b1 font-semibold text-gray-9"
-            allowFontScaling={false}
-          />
-        </VStack>
+      <Box className="absolute right-2 top-2 z-10">
+        <CloseButton onPress={() => removeTodo(index)} iconProps={{ size: 14 }} />
+      </Box>
 
-        <PressableFeedback
-          onPress={() => removeTodo(index)}
-          style={{ width: fontScaledSize(32), height: fontScaledSize(32) }}
-          className="items-center justify-center"
-        >
-          <CloseIcon width={20} height={20} colorClassName="text-gray-9" />
-        </PressableFeedback>
-      </HStack>
+      <VStack className="mr-6 border-b-2 border-gray-3 dark:border-gray-2">
+        <StyledTextInput
+          value={todo.title}
+          onChangeText={(text) => updateTodo(index, { title: text })}
+          className="text-b1 font-semibold text-gray-9"
+          allowFontScaling={false}
+        />
+      </VStack>
 
       <Spacing size={12} />
 

@@ -62,6 +62,7 @@ export class GeminiProvider implements AiProvider {
 		try {
 			const { object, usage } = await generateObject({
 				model: this.#model,
+				...(options.system && { system: options.system }),
 				prompt: options.prompt,
 				schema: options.schema as z.ZodType<T>,
 				maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,

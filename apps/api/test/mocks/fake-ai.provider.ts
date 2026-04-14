@@ -29,6 +29,7 @@ export interface FakeAiProviderOptions {
  * 호출 기록 정보
  */
 export interface CallRecord {
+	system?: string;
 	prompt: string;
 	options: GenerateStructuredOptions<unknown>;
 	timestamp: Date;
@@ -97,6 +98,7 @@ export class FakeAiProvider implements AiProvider {
 	): Promise<GenerateStructuredResult<T>> {
 		// 호출 기록
 		this._callHistory.push({
+			system: options.system,
 			prompt: options.prompt,
 			options: options as GenerateStructuredOptions<unknown>,
 			timestamp: new Date(),
@@ -220,6 +222,13 @@ export class FakeAiProvider implements AiProvider {
 	 */
 	getLastPrompt(): string | undefined {
 		return this._callHistory[this._callHistory.length - 1]?.prompt;
+	}
+
+	/**
+	 * 마지막 호출 시스템 메시지 반환
+	 */
+	getLastSystem(): string | undefined {
+		return this._callHistory[this._callHistory.length - 1]?.system;
 	}
 
 	/**

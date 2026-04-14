@@ -20,6 +20,8 @@ export interface TokenUsage {
  * 구조화된 생성 옵션
  */
 export interface GenerateStructuredOptions<T> {
+	/** 시스템 메시지 (역할, 규칙, 제약 조건) */
+	system?: string;
 	/** 프롬프트 텍스트 */
 	prompt: string;
 	/** 출력 스키마 (Zod) */
