@@ -1,10 +1,12 @@
 import { updateMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AiParseConfirmDialog } from '@src/features/memo/presentations/components/AiParseConfirmDialog';
 import { useDeleteMemoMutationOptions } from '@src/features/memo/presentations/queries/use-delete-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/use-get-memo-query-options';
 import { useToggleMemoPinMutationOptions } from '@src/features/memo/presentations/queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-update-memo-mutation-options';
 import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
+import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import {
   ArrowLeftIcon,
@@ -21,13 +23,20 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextInput,
+} from 'react-native';
 import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
@@ -70,6 +79,7 @@ export default function MemoDetailScreen() {
   const overlay = useOverlay();
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = categoriesData.categories[0]?.id;
+  const { isLoading: isAiUsageLoading } = useQuery(useGetAiUsageQueryOptions());
 
   const handleSave = handleSubmit((data) => {
     updateMemo(
@@ -114,7 +124,20 @@ export default function MemoDetailScreen() {
   };
 
   const handleAiParse = () => {
-    router.push(`/memo/${memoId}/ai-review`);
+    overlay.open(({ isOpen, close, exit }) => (
+      <AiParseConfirmDialog
+        isOpen={isOpen}
+        onClose={() => {
+          close();
+          exit();
+        }}
+        onConfirm={() => {
+          close();
+          exit();
+          router.push(`/memo/${memoId}/ai-review`);
+        }}
+      />
+    ));
   };
 
   const handleDelete = () => {
@@ -205,8 +228,14 @@ export default function MemoDetailScreen() {
               />
               <ActionButton
                 onPress={handleAiParse}
-                disabled={!defaultCategoryId}
-                icon={<RobotIcon width={20} height={20} colorClassName="text-gray-9" />}
+                disabled={!defaultCategoryId || isAiUsageLoading}
+                icon={
+                  isAiUsageLoading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+                  )
+                }
               />
               <ActionButton
                 onPress={handleConvertToTodo}
