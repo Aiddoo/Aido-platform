@@ -11,7 +11,6 @@ import { isApiError } from '@src/shared/errors';
 import {
   ACTION_CHIP_ICON_SIZE,
   ActionChip,
-  ArrowLeftIcon,
   Box,
   Button,
   CalendarIcon,
@@ -66,25 +65,8 @@ const useTodos = () => {
 };
 
 export default function AiReviewScreen() {
-  const { top: safeTop } = useSafeAreaInsets();
-  const router = useRouter();
-
   return (
-    <VStack className="flex-1 bg-white" style={{ paddingTop: safeTop }}>
-      <HStack align="center" px={8} py={4}>
-        <PressableFeedback
-          onPress={() => router.back()}
-          style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-          className="items-center justify-center"
-        >
-          <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-10" />
-        </PressableFeedback>
-        <Text size="b1" weight="semibold" shade={10} align="center" className="flex-1">
-          AI 파싱
-        </Text>
-        <Box style={{ width: fontScaledSize(44) }} />
-      </HStack>
-
+    <VStack className="flex-1 bg-white">
       <QueryErrorBoundary fallback={({ error }) => <AiReviewScreen.Error error={error} />}>
         <Suspense fallback={<AiReviewScreen.Loading />}>
           <AiReviewContent />
