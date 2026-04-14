@@ -17,11 +17,6 @@ interface UseNotificationHandlerOptions {
   isAuthenticated: boolean;
 }
 
-export interface NotificationResponseOptions {
-  /** true면 router.replace()로 현재 화면을 교체 (cold start 용) */
-  replace?: boolean;
-}
-
 export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandlerOptions) => {
   const notificationService = useNotificationService();
   const { trackEvent } = useTrack();
@@ -37,13 +32,12 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
   }, [isAuthenticated]);
 
   const handleNotificationResponse = useCallback(
-    async (
-      response: Notifications.NotificationResponse,
-      options?: NotificationResponseOptions,
-    ): Promise<void> => {
+    async (response: Notifications.NotificationResponse): Promise<void> => {
       // 0. 연타 방지: 500ms 잠금 (모든 사이드 이펙트 실행 전 차단)
       const now = Date.now();
-      if (now - lastNavigationTimeRef.current < 500) return;
+      if (now - lastNavigationTimeRef.current < 500) {
+        return;
+      }
       lastNavigationTimeRef.current = now;
 
       const rawData = response.notification.request.content.data;
@@ -100,11 +94,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
             data.action?.url ?? getInternalRoute(data.type as NotificationType, data.context);
 
           if (route) {
-            if (options?.replace) {
-              router.replace(route as Href);
-            } else {
-              router.navigate(route as Href);
-            }
+            router.navigate(route as Href);
           }
         });
     },
@@ -113,7 +103,9 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
 
   const handleForegroundNotification = useCallback(
     (notification?: Notifications.Notification) => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated) {
+        return;
+      }
 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);

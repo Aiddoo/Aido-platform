@@ -44,7 +44,9 @@ function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePicker
       minuteInterval={1}
       onChange={(event, date) => {
         onDismiss();
-        if (event.type === 'set' && date) onConfirm(date);
+        if (event.type === 'set' && date) {
+          onConfirm(date);
+        }
       }}
     />
   );
@@ -87,8 +89,12 @@ export function SettingsTimePicker({
   };
 
   const handlePress = () => {
-    if (disabled) return;
-    if (onBeforeOpen && !onBeforeOpen()) return;
+    if (disabled) {
+      return;
+    }
+    if (onBeforeOpen && !onBeforeOpen()) {
+      return;
+    }
 
     if (Platform.OS === 'android') {
       setAndroidPickerOpen(true);
@@ -126,7 +132,9 @@ export function SettingsTimePicker({
               minimumDate={timeToDate(field === 'morning' ? 0 : 12, 0)}
               maximumDate={timeToDate(field === 'morning' ? 11 : 23, 59)}
               onChange={(_event, date) => {
-                if (date) tempDate = date;
+                if (date) {
+                  tempDate = date;
+                }
               }}
               locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
             />

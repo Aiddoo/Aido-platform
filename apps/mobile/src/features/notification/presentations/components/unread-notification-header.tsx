@@ -1,19 +1,12 @@
 import { BellIcon, HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, SkeletonGroup } from 'heroui-native';
-import { useCallback } from 'react';
 import { useGetUnreadCountQueryOptions } from '../queries/use-get-unread-count-query-options';
 import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
 
 export function UnreadNotificationHeader() {
   const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
-
-  const handleMarkAllAsRead = useCallback(() => {
-    if (unreadCount > 0 && !markAllAsRead.isPending) {
-      markAllAsRead.mutate();
-    }
-  }, [unreadCount, markAllAsRead]);
 
   if (unreadCount === 0) {
     return null;
@@ -37,7 +30,7 @@ export function UnreadNotificationHeader() {
         <TextButton
           size="medium"
           variant="underline"
-          onPress={handleMarkAllAsRead}
+          onPress={() => markAllAsRead.mutate()}
           isDisabled={markAllAsRead.isPending}
         >
           모두 읽음
