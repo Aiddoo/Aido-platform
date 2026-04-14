@@ -65,6 +65,8 @@ export {
   PinIcon,
   PlusIcon,
   RepeatIcon,
+  RobotIcon,
+  RobotPixelIcon,
   SearchIcon,
   SendIcon,
   SettingIcon,

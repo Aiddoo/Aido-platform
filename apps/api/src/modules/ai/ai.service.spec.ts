@@ -14,6 +14,7 @@ import { BusinessException } from "@/common/exception/services/business-exceptio
 import { DatabaseService } from "@/database/database.service";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
 import { UserRepository } from "../auth/repositories/user.repository";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 import { AiService } from "./ai.service";
 import { AI_PROVIDER } from "./providers/ai.provider";
 
@@ -23,6 +24,7 @@ describe("AiService — AI 서비스", () => {
 	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
 	let userRepository: Mocked<UserRepository>;
+	let todoCategoryRepository: Mocked<TodoCategoryRepository>;
 
 	const mockUser = {
 		id: "user-1",
@@ -42,6 +44,7 @@ describe("AiService — AI 서비스", () => {
 		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
 		userRepository = unitRef.get(UserRepository);
+		todoCategoryRepository = unitRef.get(TodoCategoryRepository);
 
 		// $transaction passthrough
 		(database.$transaction as jest.Mock).mockImplementation(
@@ -54,6 +57,17 @@ describe("AiService — AI 서비스", () => {
 			isAdmin: false,
 			subscriptionStatus: "FREE",
 		});
+
+		// 기본: 카테고리 목록
+		(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+			{
+				id: 1,
+				name: "기본",
+				color: "#FF6B43",
+				sortOrder: 0,
+				_count: { todos: 0 },
+			},
+		]);
 
 		// enforceLimit — 실제 로직 위임
 		(entitlementService.enforceLimit as jest.Mock).mockImplementation(
@@ -240,7 +254,8 @@ describe("AiService — AI 서비스", () => {
 			const prompt = fakeAiProvider.getLastPrompt();
 			expect(prompt).toBeDefined();
 			expect(prompt).toContain("내일 회의");
-			expect(prompt).toContain("Korean Todo Parser");
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("한국어 자연어 입력을 구조화된 할 일");
 		});
 
 		it("categoryId가 전달되면 결과에 포함된다", async () => {
@@ -268,7 +283,7 @@ describe("AiService — AI 서비스", () => {
 			expect(result.data.categoryId).toBe(42);
 		});
 
-		it("categoryId가 없으면 결과에 포함되지 않는다", async () => {
+		it("categoryId가 없으면 결과에 undefined이다", async () => {
 			// Given
 			fakeAiProvider.setResponse({
 				title: "팀 미팅",
@@ -288,8 +303,8 @@ describe("AiService — AI 서비스", () => {
 				"Asia/Seoul",
 			);
 
-			// Then
-			expect(result.data).not.toHaveProperty("categoryId");
+			// Then — 클라이언트가 categoryId를 보내지 않고 LLM도 유추하지 못하면 undefined
+			expect(result.data.categoryId).toBeUndefined();
 		});
 
 		it("타임존이 프롬프트에 반영된다", async () => {
@@ -305,15 +320,18 @@ describe("AiService — AI 서비스", () => {
 
 			// When - 서로 다른 타임존으로 호출
 			await service.parseTodo("회의", "user-1", "Asia/Seoul");
-			const promptKST = fakeAiProvider.getLastPrompt();
+			const _promptKST = fakeAiProvider.getLastPrompt();
 
 			await service.parseTodo("회의", "user-1", "America/New_York");
-			const promptNY = fakeAiProvider.getLastPrompt();
+			const _promptNY = fakeAiProvider.getLastPrompt();
 
-			// Then - 타임존에 따라 프롬프트의 시간이 다르다
-			expect(promptKST).toContain("Korean Todo Parser");
-			expect(promptNY).toContain("Korean Todo Parser");
-			expect(promptKST).not.toBe(promptNY);
+			// Then - 타임존에 따라 시스템 메시지의 시간이 다르다
+			const history = fakeAiProvider.getCallHistory();
+			const systemKST = history[0]?.system;
+			const systemNY = history[1]?.system;
+			expect(systemKST).toBeDefined();
+			expect(systemNY).toBeDefined();
+			expect(systemKST).not.toBe(systemNY);
 		});
 
 		it("사용자를 찾을 수 없으면 USER_0001 에러를 던진다", async () => {
@@ -683,7 +701,137 @@ describe("AiService — AI 서비스", () => {
 			// Then
 			const prompt = fakeAiProvider.getLastPrompt();
 			expect(prompt).toContain("장보기 목록");
-			expect(prompt).toContain("Korean Memo");
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("한국어 메모를 분석");
+		});
+
+		it("AI가 유추한 categoryId를 사용한다", async () => {
+			// Given
+			(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+				{
+					id: 1,
+					name: "업무",
+					color: "#FF6B43",
+					sortOrder: 0,
+					_count: { todos: 0 },
+				},
+				{
+					id: 2,
+					name: "운동",
+					color: "#00B894",
+					sortOrder: 1,
+					_count: { todos: 0 },
+				},
+			]);
+			fakeAiProvider.setRawResponse({
+				todos: [
+					{
+						title: "보고서 작성",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 1,
+						items: [],
+					},
+					{
+						title: "헬스장 가기",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 2,
+						items: [],
+					},
+				],
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"보고서 작성, 헬스장 가기",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.data.todos[0]?.categoryId).toBe(1);
+			expect(result.data.todos[1]?.categoryId).toBe(2);
+		});
+
+		it("AI가 유효하지 않은 categoryId를 반환하면 기본값을 사용한다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse({
+				todos: [
+					{
+						title: "테스트",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 999,
+						items: [],
+					},
+				],
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"테스트",
+				"user-1",
+				"Asia/Seoul",
+				42,
+			);
+
+			// Then — 유효하지 않은 999 대신 요청의 기본값 42 사용
+			expect(result.data.todos[0]?.categoryId).toBe(42);
+		});
+
+		it("시스템 프롬프트에 카테고리 목록이 포함된다", async () => {
+			// Given
+			(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+				{
+					id: 1,
+					name: "업무",
+					color: "#FF6B43",
+					sortOrder: 0,
+					_count: { todos: 0 },
+				},
+				{
+					id: 2,
+					name: "개인",
+					color: "#00B894",
+					sortOrder: 1,
+					_count: { todos: 0 },
+				},
+			]);
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseMemoToTodos("테스트", "user-1", "Asia/Seoul", 1);
+
+			// Then
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("업무");
+			expect(system).toContain("개인");
 		});
 
 		it("6개 이상 결과는 5개로 잘린다", async () => {

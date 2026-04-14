@@ -35,6 +35,7 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { UserRepository } from "../auth/repositories/user.repository";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 
 import { buildParseMemoPrompt } from "./prompts/parse-memo.prompt";
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
@@ -98,6 +99,7 @@ export class AiService {
 		private readonly database: DatabaseService,
 		private readonly entitlementService: EntitlementService,
 		private readonly userRepository: UserRepository,
+		private readonly todoCategoryRepository: TodoCategoryRepository,
 	) {}
 
 	/**
@@ -127,14 +129,24 @@ export class AiService {
 		// 2. 사용량 체크 및 증가 (원자적 처리)
 		await this.#checkAndIncrementUsage(userId);
 
-		// 3. 최적화된 프롬프트 생성
-		const prompt = buildParseTodoPrompt(text, timezone, now());
+		// 3. 카테고리 목록 조회 및 프롬프트 생성
+		const userCategories =
+			await this.todoCategoryRepository.findManyByUserId(userId);
+		const categoryIds = new Set(userCategories.map((c) => c.id));
+
+		const { system, prompt } = buildParseTodoPrompt(
+			text,
+			timezone,
+			now(),
+			userCategories.map((c) => ({ id: c.id, name: c.name })),
+		);
 
 		this.#logger.debug(`Parsing todo: "${text}"`);
 
 		try {
 			// 4. AI 호출 (구조화된 출력)
 			const result = await this.aiProvider.generateStructured({
+				system,
 				prompt,
 				schema: parsedTodoDataSchema,
 				maxTokens: 200,
@@ -148,10 +160,14 @@ export class AiService {
 					`input: ${result.usage.input}, output: ${result.usage.output})`,
 			);
 
+			const inferredCategoryId = categoryIds.has(result.output.categoryId ?? 0)
+				? result.output.categoryId
+				: undefined;
+
 			return {
 				data: {
 					...result.output,
-					...(categoryId != null && { categoryId }),
+					categoryId: categoryId ?? inferredCategoryId,
 				},
 				meta: {
 					model: result.model,
@@ -209,16 +225,26 @@ export class AiService {
 
 		await this.#checkAndIncrementUsage(userId);
 
-		const prompt = buildParseMemoPrompt(content, timezone, now());
+		const userCategories =
+			await this.todoCategoryRepository.findManyByUserId(userId);
+		const categoryIds = new Set(userCategories.map((c) => c.id));
+
+		const { system, prompt } = buildParseMemoPrompt(
+			content,
+			timezone,
+			now(),
+			userCategories.map((c) => ({ id: c.id, name: c.name })),
+		);
 
 		this.#logger.debug(`Parsing memo to todos: "${content.slice(0, 50)}..."`);
 
 		try {
 			const result =
 				await this.aiProvider.generateStructured<LlmParsedMemoResult>({
+					system,
 					prompt,
 					schema: llmParsedMemoResultSchema,
-					maxTokens: 600,
+					maxTokens: 800,
 					temperature: 0.1,
 				});
 
@@ -237,7 +263,9 @@ export class AiService {
 			const data = parsedMemoDataSchema.parse({
 				todos: result.output.todos.slice(0, 5).map((todo) => ({
 					...todo,
-					categoryId,
+					categoryId: categoryIds.has(todo.categoryId)
+						? todo.categoryId
+						: categoryId,
 				})),
 			});
 

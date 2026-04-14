@@ -590,10 +590,11 @@ describe("AI E2E", () => {
 				.send({ text: "테스트" })
 				.expect(200);
 
-			// Then - 프롬프트에 Korean Todo Parser가 포함됨
+			// Then - 프롬프트에 사용자 입력이 포함됨
 			const prompt = fakeAiProvider.getLastPrompt();
-			expect(prompt).toContain("Korean Todo Parser");
-			expect(prompt).toContain('Parse: "테스트"');
+			expect(prompt).toContain("테스트");
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("한국어 자연어 입력을 구조화된 할 일");
 		});
 
 		it("X-Timezone 헤더 없이도 정상 동작한다 (UTC 폴백)", async () => {
