@@ -90,12 +90,21 @@ AiReviewScreen.Loading = function Loading() {
 AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
   const router = useRouter();
 
-  const message =
-    isApiError(error) && error.hasCode(ErrorCode.AI_1303)
-      ? '오늘의 AI 사용 횟수를 모두 사용했어요'
-      : isApiError(error)
-        ? error.message
-        : '잠시 후 다시 시도해 주세요';
+  if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
+    return (
+      <Result
+        title="오늘의 AI 사용 횟수를 모두 사용했어요"
+        description="구독하면 무제한으로 사용할 수 있어요"
+        button={
+          <Result.Button onPress={() => router.replace('/settings/subscription')}>
+            구독하기
+          </Result.Button>
+        }
+      />
+    );
+  }
+
+  const message = isApiError(error) ? error.message : '잠시 후 다시 시도해 주세요';
 
   return (
     <Result

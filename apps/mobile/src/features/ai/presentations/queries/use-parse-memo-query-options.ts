@@ -8,7 +8,7 @@ export const useParseMemoQueryOptions = (memoId: number, content: string, catego
   const aiService = useAiService();
 
   return queryOptions({
-    queryKey: AI_QUERY_KEYS.parseMemo(memoId),
+    queryKey: AI_QUERY_KEYS.parseMemo(memoId, content),
     queryFn: async () => {
       const result = await aiService.parseMemo(content, categoryId);
       return unwrap(result);
