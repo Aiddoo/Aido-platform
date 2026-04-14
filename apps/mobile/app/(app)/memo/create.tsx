@@ -18,6 +18,7 @@ type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
 
 export default function MemoCreateScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
 
   useFocusEffect(
