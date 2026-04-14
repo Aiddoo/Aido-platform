@@ -236,22 +236,12 @@ function TodoCard({ index }: TodoCardProps) {
   const timeLabel = todo.isAllDay ? '종일' : (todo.scheduledTime ?? '종일');
 
   const openDatePicker = () => {
-    let pickerResult: Date | null = null;
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet
-        isOpen={isOpen}
-        onClose={() => close(null)}
-        onExit={() => {
-          exit();
-          if (pickerResult) {
-            updateTodo(index, { startDate: formatDate(pickerResult) });
-          }
-        }}
-      >
+      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
         <TodoDatePickerContent
           startDate={new Date(todo.startDate)}
           onConfirm={(date) => {
-            pickerResult = date;
+            updateTodo(index, { startDate: formatDate(date) });
             close(date);
           }}
           onCancel={() => close(null)}
@@ -261,30 +251,17 @@ function TodoCard({ index }: TodoCardProps) {
   };
 
   const openTimePicker = () => {
-    let pickerResult: { time: string | undefined; isAllDay: boolean } | null = null;
     overlay.open<{ time: string | undefined; isAllDay: boolean } | null>(
       ({ isOpen, close, exit }) => (
-        <ModalBottomSheet
-          isOpen={isOpen}
-          onClose={() => close(null)}
-          onExit={() => {
-            exit();
-            if (pickerResult) {
-              updateTodo(index, {
-                scheduledTime: pickerResult.time ?? null,
-                isAllDay: pickerResult.isAllDay,
-              });
-            }
-          }}
-        >
+        <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
           <Suspense fallback={<ActivityIndicator />}>
             <TodoTimePickerContent
               draftDate={new Date(todo.startDate)}
               scheduledTime={todo.scheduledTime ?? undefined}
               isAllDay={todo.isAllDay}
               onConfirm={(time, isAllDay) => {
-                pickerResult = { time, isAllDay };
-                close(pickerResult);
+                updateTodo(index, { scheduledTime: time ?? null, isAllDay });
+                close({ time, isAllDay });
               }}
               onCancel={() => close(null)}
             />
@@ -295,23 +272,13 @@ function TodoCard({ index }: TodoCardProps) {
   };
 
   const openCategoryPicker = () => {
-    let pickerResult: number | null = null;
     overlay.open<number | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet
-        isOpen={isOpen}
-        onClose={() => close(null)}
-        onExit={() => {
-          exit();
-          if (pickerResult != null) {
-            updateTodo(index, { categoryId: pickerResult });
-          }
-        }}
-      >
+      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
         <Suspense fallback={<ActivityIndicator />}>
           <CategorySelectModalContent
             selectedCategoryId={todo.categoryId}
             onSelect={(categoryId) => {
-              pickerResult = categoryId;
+              updateTodo(index, { categoryId });
               close(categoryId);
             }}
           />
