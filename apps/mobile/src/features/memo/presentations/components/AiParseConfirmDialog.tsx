@@ -17,8 +17,12 @@ export function AiParseConfirmDialog({ isOpen, onClose, onConfirm }: AiParseConf
   const remaining = AiUsagePolicy.getRemainingCount(aiUsage);
   const usageText =
     remaining != null
-      ? `오늘 사용 가능한 횟수: ${remaining}/${aiUsage.limit}회`
-      : '프리미엄 구독 중이라 무제한으로 사용할 수 있어요';
+      ? `오늘 ${remaining}/${aiUsage.limit}회 사용할 수 있어요`
+      : '무제한으로 사용할 수 있어요';
+  const warningText =
+    remaining != null
+      ? '파싱 중 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.'
+      : '파싱 중 화면을 벗어나면 결과를 받을 수 없어요.';
 
   return (
     <ConfirmDialog
@@ -34,12 +38,12 @@ export function AiParseConfirmDialog({ isOpen, onClose, onConfirm }: AiParseConf
               {usageText}
             </Text>
             <Text size="e1" shade={6}>
-              파싱 중 화면을 벗어나면 횟수만 차감될 수 있어요.
+              {warningText}
             </Text>
           </VStack>
         </ConfirmDialog.Description>
       }
-      cancelButton={<ConfirmDialog.CancelButton onPress={onClose}>취소</ConfirmDialog.CancelButton>}
+      cancelButton={<ConfirmDialog.CancelButton onPress={onClose}>닫기</ConfirmDialog.CancelButton>}
       confirmButton={
         <ConfirmDialog.ConfirmButton onPress={onConfirm}>시작하기</ConfirmDialog.ConfirmButton>
       }
