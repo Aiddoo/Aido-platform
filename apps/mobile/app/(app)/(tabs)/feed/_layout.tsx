@@ -1,6 +1,6 @@
 import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
-import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
 import { WeatherForecastBadge } from '@src/features/weather/presentations/components/WeatherForecastBadge';
+import { useToday } from '@src/shared/hooks/useToday';
 import { HStack } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { Stack } from 'expo-router';
@@ -39,6 +39,6 @@ export default function FeedLayout() {
 }
 
 function FeedWeatherBadge() {
-  const [selectedDate] = useFeedDate();
-  return <WeatherForecastBadge date={formatDate(selectedDate)} />;
+  const today = useToday();
+  return <WeatherForecastBadge date={formatDate(today)} />;
 }
