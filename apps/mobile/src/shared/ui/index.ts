@@ -105,7 +105,6 @@ export { StyledSafeAreaView } from './SafeAreaView';
 export { ScrollProgressWidget } from './ScrollProgressWidget/ScrollProgressWidget';
 export { SettingNavigation } from './SettingNavigation';
 export { Spacing, type SpacingProps } from './Spacing';
-export { SwipePager } from './SwipePager';
 export {
   H1,
   type H1Props,

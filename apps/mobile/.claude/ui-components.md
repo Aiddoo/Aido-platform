@@ -65,7 +65,6 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `KeyboardBottomSheet` | 키보드 연동 바텀시트 (폼용) | `src/shared/ui/BottomSheet/BottomSheet.md` |
 | `BottomSheet` | 키보드 불필요 바텀시트 (피커, 액션시트) | `src/shared/ui/BottomSheet/BottomSheet.md` |
 | `ModalBottomSheet` | RN Modal 기반 바텀시트 (시트 위에 시트, 키보드 안전) | `src/shared/ui/BottomSheet/BottomSheet.md` |
-| `SwipePager` | 수평 스와이프 페이저 | `src/shared/ui/SwipePager/SwipePager.md` |
 
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
