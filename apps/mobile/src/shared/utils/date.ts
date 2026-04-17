@@ -72,6 +72,10 @@ export const isSameMonth = (date1: Date, date2: Date): boolean => {
   return dayjs(date1).isSame(date2, 'month');
 };
 
+export const isSameWeek = (date1: Date, date2: Date): boolean => {
+  return dayjs(date1).isSame(date2, 'week');
+};
+
 export const isAfterDay = (date1: Date, date2: Date): boolean => {
   return dayjs(date1).isAfter(date2, 'day');
 };
@@ -128,6 +132,10 @@ export const getWeekStart = (date: Date): Date => {
   return dayjs(date).startOf('week').toDate();
 };
 
+export const getMonthStart = (date: Date): Date => {
+  return dayjs(date).startOf('month').toDate();
+};
+
 export const getWeekEnd = (date: Date): Date => {
   return dayjs(date).endOf('week').toDate();
 };
@@ -150,6 +158,24 @@ export const getPreviousMonth = (date: Date): Date => {
 
 export const getNextMonth = (date: Date): Date => {
   return dayjs(date).add(1, 'month').toDate();
+};
+
+export const addWeeks = (date: Date, weeks: number): Date => {
+  return dayjs(date).add(weeks, 'week').toDate();
+};
+
+export const addMonths = (date: Date, months: number): Date => {
+  return dayjs(date).add(months, 'month').toDate();
+};
+
+/** 그 주 안에서 요일을 n번째로 이동 (0=일, 6=토) */
+export const withDayOfWeek = (date: Date, dayOfWeek: number): Date => {
+  return dayjs(date).day(dayOfWeek).toDate();
+};
+
+/** 그 달 안에서 날짜를 n일로 이동 (월말이면 자동 clamp, 예: 1/31 → 2월은 2/28) */
+export const withDayOfMonth = (date: Date, dayOfMonth: number): Date => {
+  return dayjs(date).date(dayOfMonth).toDate();
 };
 
 export const getWeekDates = (weekStartDate: Date): Date[] => {
