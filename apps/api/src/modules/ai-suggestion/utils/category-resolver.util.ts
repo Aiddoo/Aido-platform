@@ -64,9 +64,9 @@ function pickMostFrequentCategoryId(
 	matchedTitles: string[],
 	todos: TodoSummaryForAnalysis[],
 ): number | null {
-	const matched = todos.filter((t) =>
-		matchedTitles.some((mt) => t.title === mt),
-	);
+	// O(N*M) → O(N) — Set 으로 제목 조회 O(1) 화
+	const matchedTitleSet = new Set(matchedTitles);
+	const matched = todos.filter((t) => matchedTitleSet.has(t.title));
 	if (matched.length === 0) {
 		return null;
 	}

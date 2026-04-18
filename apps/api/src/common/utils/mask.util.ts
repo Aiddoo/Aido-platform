@@ -10,17 +10,26 @@
 /**
  * 이메일을 로그 안전 형태로 마스킹.
  *
+ * RFC 5321 상 quoted local-part 에는 `@` 가 포함될 수 있으므로
+ * `split("@")` 대신 **마지막 `@` 기준** 으로 도메인을 분리한다.
+ *
  * @example maskEmail("yongmin@crabit.co.kr") → "y***@crabit.co.kr"
  * @example maskEmail("a@b.com")              → "a***@b.com"
+ * @example maskEmail('"user@internal"@corp.com') → '"***@corp.com' (domain 보존)
  * @example maskEmail("invalid")              → "<invalid>"
  */
 export function maskEmail(email: string): string {
-	if (!email?.includes("@")) {
+	if (!email) {
 		return "<invalid>";
 	}
-	const [local, domain] = email.split("@");
-	if (!local) {
-		return `***@${domain}`;
+	const lastAtIndex = email.lastIndexOf("@");
+	if (lastAtIndex <= 0) {
+		return "<invalid>";
+	}
+	const local = email.slice(0, lastAtIndex);
+	const domain = email.slice(lastAtIndex + 1);
+	if (!domain) {
+		return "<invalid>";
 	}
 	return `${local[0]}***@${domain}`;
 }
