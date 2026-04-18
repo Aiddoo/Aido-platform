@@ -38,7 +38,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
-        title={<ConfirmDialog.Title>오늘 AI 파싱 횟수를 모두 사용했어요</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>이번 달 AI 파싱 횟수를 모두 사용했어요</ConfirmDialog.Title>}
         description={
           <ConfirmDialog.Description>
             구독하면 무제한으로 사용할 수 있어요
@@ -98,7 +98,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
           <VStack className="gap-1.5">
             {remaining != null && (
               <Text size="b3" shade={7}>
-                오늘 {remaining}/{aiUsage.limit}회 사용할 수 있어요
+                이번 달 {remaining}/{aiUsage.limit}회 사용할 수 있어요
               </Text>
             )}
             <Text size="e1" shade={6}>

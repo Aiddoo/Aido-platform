@@ -1,12 +1,12 @@
 /**
  * AI Service
  *
- * 자연어 투두 파싱 및 일일 사용량 관리를 담당합니다.
+ * 자연어 투두 파싱 및 월간 사용량 관리를 담당합니다.
  *
  * 핵심 기능:
  * - 자연어 → 구조화된 투두 변환 (Gemini 2.5 Flash-Lite)
- * - 일일 사용량 추적 (ADMIN/ACTIVE: 무제한, 그 외: 5회/일)
- * - KST 기준 자정 리셋
+ * - 월간 사용량 추적 (ADMIN/ACTIVE: 무제한, 그 외: 5회/월)
+ * - KST 기준 매월 1일 00:00 리셋
  */
 import type {
 	LlmParsedMemoResult,
@@ -20,14 +20,10 @@ import {
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APICallError } from "ai";
-import { addDays } from "@/common/date/utils/arithmetic";
-import { isSameDay } from "@/common/date/utils/compare";
+import { addMonths } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
-import { toISOString } from "@/common/date/utils/format";
-import {
-	midnightInTimezone,
-	startOfDayInTimezone,
-} from "@/common/date/utils/timezone";
+import { toISOString, toIsoMonthId } from "@/common/date/utils/format";
+import { firstOfMonthInTimezone } from "@/common/date/utils/timezone";
 import {
 	EntitlementService,
 	Feature,
@@ -49,11 +45,11 @@ import {
  * AI 사용량 정보
  */
 export interface UsageInfo {
-	/** 오늘 사용한 횟수 */
+	/** 이번 달 사용한 횟수 */
 	used: number;
-	/** 일일 제한 횟수 (null = 무제한) */
+	/** 월간 제한 횟수 (null = 무제한) */
 	limit: number | null;
-	/** 다음 리셋 시간 (ISO 8601) */
+	/** 다음 리셋 시간 (ISO 8601, UTC, KST 매월 1일 00:00) */
 	resetsAt: string;
 }
 
@@ -110,7 +106,7 @@ export class AiService {
 	 * @returns 파싱된 투두 데이터와 메타 정보
 	 * @throws AI_1301 - AI 서비스 불가
 	 * @throws AI_1302 - 파싱 실패
-	 * @throws AI_1303 - 일일 사용량 초과
+	 * @throws AI_1303 - 월간 사용량 초과
 	 */
 	async parseTodo(
 		text: string,
@@ -198,7 +194,7 @@ export class AiService {
 	 * @returns 파싱된 다중 투두 데이터와 메타 정보
 	 * @throws AI_1301 - AI 서비스 불가
 	 * @throws AI_1302 - 파싱 실패
-	 * @throws AI_1303 - 일일 사용량 초과
+	 * @throws AI_1303 - 월간 사용량 초과
 	 */
 	async parseMemoToTodos(
 		content: string,
@@ -300,12 +296,12 @@ export class AiService {
 			throw BusinessExceptions.userNotFound(userId);
 		}
 
-		const dailyLimit = await this.#getDailyLimit(userId);
-		const isNewDay = this.#isNewDay(user.aiUsageResetAt);
+		const monthlyLimit = await this.#getMonthlyLimit(userId);
+		const isNewMonth = this.#isNewMonth(user.aiUsageResetAt);
 
 		return {
-			used: isNewDay ? 0 : user.aiUsageCount,
-			limit: dailyLimit,
+			used: isNewMonth ? 0 : user.aiUsageCount,
+			limit: monthlyLimit,
 			resetsAt: this.#getNextResetTime(),
 		};
 	}
@@ -317,10 +313,10 @@ export class AiService {
 	 * 동시 요청 시 사용 제한을 정확하게 적용합니다.
 	 *
 	 * @param userId - 사용자 ID
-	 * @throws AI_1303 - 일일 사용량 초과
+	 * @throws AI_1303 - 월간 사용량 초과
 	 */
 	async #checkAndIncrementUsage(userId: string): Promise<void> {
-		const dailyLimit = await this.#getDailyLimit(userId);
+		const monthlyLimit = await this.#getMonthlyLimit(userId);
 
 		await this.database.$transaction(async (tx) => {
 			const user = await this.userRepository.findAiUsage(userId, tx);
@@ -329,16 +325,16 @@ export class AiService {
 				throw BusinessExceptions.userNotFound(userId);
 			}
 
-			const isNewDay = this.#isNewDay(user.aiUsageResetAt);
-			const currentUsage = isNewDay ? 0 : user.aiUsageCount;
+			const isNewMonth = this.#isNewMonth(user.aiUsageResetAt);
+			const currentUsage = isNewMonth ? 0 : user.aiUsageCount;
 
 			this.entitlementService.enforceLimit(
-				{ dailyLimit, isAdmin: false, subscriptionStatus: "" },
+				{ dailyLimit: monthlyLimit, isAdmin: false, subscriptionStatus: "" },
 				currentUsage,
 				BusinessExceptions.aiUsageLimitExceeded,
 			);
 
-			if (isNewDay) {
+			if (isNewMonth) {
 				await this.userRepository.resetAndIncrementAiUsage(userId, tx);
 			} else {
 				await this.userRepository.incrementAiUsage(userId, tx);
@@ -363,8 +359,8 @@ export class AiService {
 		}
 	}
 
-	/** 사용자별 일일 제한 조회 (EntitlementService 위임) */
-	async #getDailyLimit(userId: string): Promise<number | null> {
+	/** 사용자별 월간 제한 조회 (EntitlementService 위임) */
+	async #getMonthlyLimit(userId: string): Promise<number | null> {
 		const entitlement = await this.entitlementService.getFeatureLimit(
 			userId,
 			Feature.AI_PARSE,
@@ -373,26 +369,31 @@ export class AiService {
 	}
 
 	/**
-	 * 새로운 날인지 확인 (KST 기준)
+	 * 새로운 달인지 확인 (KST 기준)
 	 *
-	 * @param lastReset - 마지막 리셋 시간
-	 * @returns 새로운 날 여부
+	 * 마지막 리셋 시각이 KST 기준으로 현재와 다른 달(YYYY-M)에 속하면 `true`.
+	 * 윤년/30일/31일 경계는 `toIsoMonthId` 가 `YYYY-MXX` 로 비교하므로 자동 처리됨.
+	 *
+	 * @param lastReset - 마지막 리셋 시각 (UTC Date)
+	 * @returns 새로운 달 여부
 	 */
-	#isNewDay(lastReset: Date | null): boolean {
+	#isNewMonth(lastReset: Date | null): boolean {
 		if (!lastReset) return true;
-		const kstToday = startOfDayInTimezone(now(), "Asia/Seoul");
-		const kstLastDay = startOfDayInTimezone(lastReset, "Asia/Seoul");
-		return !isSameDay(kstToday, kstLastDay);
+		return (
+			toIsoMonthId(now(), "Asia/Seoul") !==
+			toIsoMonthId(lastReset, "Asia/Seoul")
+		);
 	}
 
 	/**
-	 * 다음 리셋 시간 계산 (KST 자정)
+	 * 다음 리셋 시간 계산 (KST 매월 1일 00:00)
 	 *
+	 * @example KST 2026-04-18 14:00 → "2026-04-30T15:00:00.000Z" (KST 5/1 00:00)
 	 * @returns ISO 8601 형식의 다음 리셋 시간
 	 */
 	#getNextResetTime(): string {
-		const kstTodayMidnight = midnightInTimezone(now(), "Asia/Seoul");
-		const kstTomorrowMidnight = addDays(1, kstTodayMidnight);
-		return toISOString(kstTomorrowMidnight);
+		return toISOString(
+			firstOfMonthInTimezone(addMonths(1, now()), "Asia/Seoul"),
+		);
 	}
 }

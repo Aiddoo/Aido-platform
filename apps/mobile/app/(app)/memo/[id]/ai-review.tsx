@@ -91,7 +91,7 @@ AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
   if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
     return (
       <Result
-        title="오늘의 AI 사용 횟수를 모두 사용했어요"
+        title="이번 달 AI 사용 횟수를 모두 사용했어요"
         description="구독하면 무제한으로 사용할 수 있어요"
         button={
           <Result.Button onPress={() => router.replace('/settings/subscription')}>

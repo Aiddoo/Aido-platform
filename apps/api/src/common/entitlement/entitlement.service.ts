@@ -32,7 +32,7 @@ const FEATURE_LIMITS: Record<Feature, Record<string, number | null>> = {
 const FEATURE_FREE_DEFAULTS: Record<Feature, number> = {
 	CHEER: CHEER_LIMITS.FREE_DAILY_LIMIT,
 	NUDGE: NUDGE_LIMITS.FREE_DAILY_LIMIT,
-	AI_PARSE: AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
+	AI_PARSE: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 };
 
 // =========================================================================
@@ -82,6 +82,12 @@ function resolveFeatureLimit(
 }
 
 export interface FeatureEntitlement {
+	/**
+	 * 기간당 제한 횟수 (null = 무제한).
+	 *
+	 * - CHEER / NUDGE: 일일 제한
+	 * - AI_PARSE: 월간 제한 (KST 매월 1일 00:00 리셋)
+	 */
 	dailyLimit: number | null;
 	isAdmin: boolean;
 	subscriptionStatus: string;

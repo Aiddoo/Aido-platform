@@ -8,7 +8,7 @@
  * ### 테스트 범위
  * - POST /ai/parse-todo: 자연어 파싱
  * - GET /ai/usage: 사용량 조회
- * - 일일 사용량 제한 (5회/일)
+ * - 월간 사용량 제한 (5회/월, KST 매월 1일 00:00 리셋)
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 
@@ -52,6 +52,24 @@ describe("AI E2E", () => {
 			data: {
 				aiUsageCount: count,
 				aiUsageResetAt: new Date(),
+			},
+		});
+	}
+
+	/**
+	 * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
+	 */
+	async function setUsageWithResetAt(
+		userId: string,
+		count: number,
+		resetAt: Date,
+	): Promise<void> {
+		const prisma = ctx.testDatabase.getPrisma();
+		await prisma.user.update({
+			where: { id: userId },
+			data: {
+				aiUsageCount: count,
+				aiUsageResetAt: resetAt,
 			},
 		});
 	}
@@ -294,11 +312,62 @@ describe("AI E2E", () => {
 				expect(response.status).toBe(429);
 				expect(response.body.error.code).toBe("AI_1303");
 				expect(response.body.error.message).toContain(
-					"일일 AI 사용 횟수를 초과",
+					"월간 AI 사용 횟수를 초과",
 				);
 
 				// AI Provider가 호출되지 않았는지 검증
 				expect(fakeAiProvider.getCallCount()).toBe(0);
+			});
+
+			it("지난 달 resetsAt을 가진 사용자는 이번 달 첫 요청 시 사용량이 1로 리셋된다", async () => {
+				// Given - aiUsageCount=5 (소진), resetsAt은 이전 달 중간
+				fakeAiProvider.setDefaultResponse({
+					title: "테스트",
+					startDate: "2026-05-01",
+					isAllDay: true,
+				});
+				const lastMonth = new Date();
+				lastMonth.setMonth(lastMonth.getMonth() - 1);
+				await setUsageWithResetAt(testUserId, 5, lastMonth);
+
+				// When - 새 달 첫 요청
+				const parseResponse = await request(ctx.app.getHttpServer())
+					.post("/ai/parse-todo")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.set("X-Timezone", "Asia/Seoul")
+					.send({ text: "테스트" });
+
+				// Then - 429가 아닌 정상 응답
+				expect(parseResponse.status).toBe(200);
+
+				// 사용량 조회하면 1로 리셋되어 있어야 함
+				const usageResponse = await request(ctx.app.getHttpServer())
+					.get("/ai/usage")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				expect(usageResponse.body.data.data.used).toBe(1);
+				expect(usageResponse.body.data.data.limit).toBe(5);
+			});
+
+			it("resetsAt 필드는 KST 매월 1일 00:00 의 UTC 시각을 반환한다", async () => {
+				// Given
+				await setUsage(testUserId, 2);
+
+				// When
+				const response = await request(ctx.app.getHttpServer())
+					.get("/ai/usage")
+					.set("Authorization", `Bearer ${accessToken}`)
+					.expect(200);
+
+				// Then - KST 다음 달 1일 00:00 = UTC 15:00 (offset -9)
+				const resetsAt = new Date(response.body.data.data.resetsAt);
+				expect(resetsAt.getUTCHours()).toBe(15);
+				expect(resetsAt.getUTCMinutes()).toBe(0);
+				expect(resetsAt.getUTCSeconds()).toBe(0);
+				// KST 기준 다음 달 1일임을 검증
+				const kstDate = new Date(resetsAt.getTime() + 9 * 60 * 60 * 1000);
+				expect(kstDate.getUTCDate()).toBe(1);
 			});
 
 			it("정확히 5회까지는 성공, 6회째에 429 에러", async () => {

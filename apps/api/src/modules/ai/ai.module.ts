@@ -6,6 +6,10 @@ import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import { AiUsageGuard } from "./guards/ai-usage.guard";
 import { AI_PROVIDER } from "./providers/ai.provider";
+import {
+	AI_PROVIDER_GEMINI,
+	AiRouterProvider,
+} from "./providers/ai-router.provider";
 import { GeminiProvider } from "./providers/gemini.provider";
 
 /**
@@ -17,15 +21,13 @@ import { GeminiProvider } from "./providers/gemini.provider";
  * - 자연어 → 투두 데이터 파싱
  * - 스마트 시간 해석 (현재 시간 기반)
  * - 한국어 날짜 표현 처리
- * - 일일 사용량 제한 (무료 유저: 5회/일)
+ * - 월간 사용량 제한 (무료 유저: 5회/월, KST 매월 1일 00:00 리셋)
  *
  * ### AI Provider
- * Google Gemini 2.5 Flash-Lite를 사용하여 비용 효율적인 AI 처리:
- * - Input: $0.10/1M 토큰
- * - Output: $0.40/1M 토큰
- * - 예시 원가(파싱 1회 input 180 / output 45 기준): 약 $0.000036 / 회
- * - 예시 월 원가(1,000명 x 5회/일 x 30일): 약 $5.40 / 월
- * 출처: https://ai.google.dev/gemini-api/docs/pricing
+ * 모든 AI 경로(parse-todo, parse-memo, suggestion, report)는 **Gemini 2.5 Flash-Lite**
+ * 단일 모델을 사용합니다. `AiRouterProvider`는 향후 경로별 모델 추가를 위한
+ * 라우팅 레이어로 남겨둡니다.
+ * - Input: $0.10/1M tokens, Output: $0.40/1M tokens
  *
  * ### 환경 변수
  * | 변수 | 필수 | 설명 |
@@ -38,9 +40,10 @@ import { GeminiProvider } from "./providers/gemini.provider";
 	providers: [
 		AiService,
 		AiUsageGuard,
+		{ provide: AI_PROVIDER_GEMINI, useClass: GeminiProvider },
 		{
 			provide: AI_PROVIDER,
-			useClass: GeminiProvider,
+			useClass: AiRouterProvider,
 		},
 	],
 	exports: [AiService, AI_PROVIDER],

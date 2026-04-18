@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { now } from "@/common/date/utils/core";
 import type { ReportType } from "@/generated/prisma/client";
+import { PROMPT_OUTPUT_DISCIPLINE } from "../../ai/shared/prompt-sections";
 import type { AggregatedReportData } from "../types";
 import { getKoreanSeasonalContext } from "../utils/korean-seasonal-context";
 import { selectProfileTemplate } from "../utils/profile-template-selector";
@@ -245,6 +246,8 @@ function buildWeeklyNoActivityPrompt(periodLabel: string): string {
 - summary: 쉬어가는 주도 있는 거라고 가볍게 공감하고, 다음 주에 딱 1개만 등록해보자고 격려 (2-3문장)
 - tips: 지금 당장 할 수 있는 초간단 할 일 예시 1-2개 (예: "내일 아침 물 한 잔 마시기")
 
+${PROMPT_OUTPUT_DISCIPLINE}
+
 JSON으로 응답해.`;
 }
 
@@ -292,6 +295,8 @@ ${profileTemplate}
 
 ${TIPS_RULES}
 
+${PROMPT_OUTPUT_DISCIPLINE}
+
 JSON으로 응답해.`;
 }
 
@@ -306,6 +311,8 @@ function buildMonthlyNoActivityPrompt(periodLabel: string): string {
 
 - summary: 한 달 쉰 것도 괜찮다고 공감하되, 다음 달에는 하루 1개씩만 시작해보자고 진심으로 격려 (2-3문장)
 - tips: 다음 달 첫 주에 바로 시작할 수 있는 구체적인 할 일 예시 1-2개
+
+${PROMPT_OUTPUT_DISCIPLINE}
 
 JSON으로 응답해.`;
 }
@@ -362,6 +369,8 @@ ${profileTemplate}
 각 팁 = [다음 달 전략] + [구체적 수치/요일] + [왜(데이터 근거)]
 - 행동과학 근거를 자연스럽게 포함
 절대 금지: "꾸준히 해봐", "작은 목표부터", "루틴을 만들어봐"
+
+${PROMPT_OUTPUT_DISCIPLINE}
 
 JSON으로 응답해.`;
 }

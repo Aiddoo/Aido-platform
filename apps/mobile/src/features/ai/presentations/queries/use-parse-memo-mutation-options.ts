@@ -38,7 +38,7 @@ export const useParseMemoMutationOptions = () => {
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
         trackEvent('premium_gate_shown', { feature: 'ai_parse' });
-        toast.error('오늘의 AI 사용 횟수를 모두 사용했어요');
+        toast.error('이번 달 AI 사용 횟수를 모두 사용했어요');
         return;
       }
 
