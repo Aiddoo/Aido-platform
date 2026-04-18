@@ -48,8 +48,8 @@ interface CalendarProps {
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
-const TOTAL_PAGES = 101;
-const CENTER_PAGE = 50;
+const TOTAL_PAGES = 521;
+const CENTER_PAGE = 260;
 const PAGES = range(TOTAL_PAGES);
 
 export function Calendar({ showCompletions = true }: CalendarProps) {
