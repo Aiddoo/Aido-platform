@@ -3,11 +3,14 @@ import { Box, FishIcon, HStack, Text, VStack } from '@src/shared/ui';
 import {
   addMonths,
   addWeeks,
+  diffMonths,
+  diffWeeks,
   formatDate,
   getCalendarRange,
   getMonthHeaderText,
   getMonthStart,
   getMonthWeeks,
+  getNextDay,
   getWeekDates,
   getWeekHeaderText,
   getWeekRange,
@@ -18,10 +21,9 @@ import {
   withDayOfWeek,
 } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
-import dayjs from 'dayjs';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   FlatList,
   type NativeScrollEvent,
@@ -46,8 +48,9 @@ interface CalendarProps {
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
-const TOTAL_PAGES = 9;
-const CENTER_PAGE = 4;
+const TOTAL_PAGES = 101;
+const CENTER_PAGE = 50;
+const PAGES = range(TOTAL_PAGES);
 
 export function Calendar({ showCompletions = true }: CalendarProps) {
   return (
@@ -84,16 +87,16 @@ function CalendarInner({ showCompletions = true }: CalendarProps) {
 
   const handlePrevious = () => {
     const newDate = match(viewMode)
-      .with('week', () => dayjs(selectedDate).startOf('week').subtract(1, 'week').toDate())
-      .with('month', () => dayjs(selectedDate).startOf('month').subtract(1, 'month').toDate())
+      .with('week', () => addWeeks(getWeekStart(selectedDate), -1))
+      .with('month', () => addMonths(getMonthStart(selectedDate), -1))
       .exhaustive();
     setSelectedDate(newDate);
   };
 
   const handleNext = () => {
     const newDate = match(viewMode)
-      .with('week', () => dayjs(selectedDate).startOf('week').add(1, 'week').toDate())
-      .with('month', () => dayjs(selectedDate).startOf('month').add(1, 'month').toDate())
+      .with('week', () => addWeeks(getWeekStart(selectedDate), 1))
+      .with('month', () => addMonths(getMonthStart(selectedDate), 1))
       .exhaustive();
     setSelectedDate(newDate);
   };
@@ -186,19 +189,26 @@ interface CalendarWeekPagerProps {
 
 function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
+  const baseWeekRef = useRef(getWeekStart(selectedDate));
 
-  const [weeks] = useState(() => {
-    const start = getWeekStart(selectedDate);
-    return times(TOTAL_PAGES, (i) => addWeeks(start, i - CENTER_PAGE));
-  });
+  const weekAtPage = useCallback(
+    (page: number) => addWeeks(baseWeekRef.current, page - CENTER_PAGE),
+    [],
+  );
 
-  const handleChange = (week: Date) => {
+  const pageOfWeek = useCallback((week: Date) => {
+    const page = diffWeeks(week, baseWeekRef.current) + CENTER_PAGE;
+    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
+  }, []);
+
+  const handleChange = (page: number) => {
+    const week = weekAtPage(page);
     setSelectedDate(withDayOfWeek(week, selectedDate.getDay()));
   };
 
   return (
-    <CalendarPager data={weeks} value={getWeekStart(selectedDate)} onChange={handleChange}>
-      {(week) => <WeekRow week={week} completions={completions} />}
+    <CalendarPager data={PAGES} value={pageOfWeek(selectedDate)} onChange={handleChange}>
+      {(page) => <WeekRow week={weekAtPage(page)} completions={completions} />}
     </CalendarPager>
   );
 }
@@ -209,55 +219,60 @@ interface CalendarMonthPagerProps {
 
 function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
   const [selectedDate, setSelectedDate] = useFeedDate();
+  const baseMonthRef = useRef(getMonthStart(selectedDate));
 
-  const [months] = useState(() => {
-    const start = getMonthStart(selectedDate);
-    return times(TOTAL_PAGES, (i) => addMonths(start, i - CENTER_PAGE));
-  });
+  const monthAtPage = useCallback(
+    (page: number) => addMonths(baseMonthRef.current, page - CENTER_PAGE),
+    [],
+  );
 
-  const handleChange = (month: Date) => {
+  const pageOfMonth = useCallback((month: Date) => {
+    const page = diffMonths(month, baseMonthRef.current) + CENTER_PAGE;
+    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
+  }, []);
+
+  const handleChange = (page: number) => {
+    const month = monthAtPage(page);
     setSelectedDate(withDayOfMonth(month, selectedDate.getDate()));
   };
 
   return (
-    <CalendarPager data={months} value={getMonthStart(selectedDate)} onChange={handleChange}>
-      {(month) => <MonthGrid month={month} completions={completions} />}
+    <CalendarPager data={PAGES} value={pageOfMonth(selectedDate)} onChange={handleChange}>
+      {(page) => <MonthGrid month={monthAtPage(page)} completions={completions} />}
     </CalendarPager>
   );
 }
 
 interface CalendarPagerProps {
-  data: Date[];
-  value: Date;
-  onChange: (page: Date) => void;
-  children: (page: Date) => React.ReactNode;
+  data: number[];
+  value: number;
+  onChange: (page: number) => void;
+  children: (page: number) => React.ReactNode;
 }
 
 function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) {
   const { width: pageWidth } = useWindowDimensions();
-  const flatListRef = useRef<FlatList<Date>>(null);
-  const currentIndexRef = useRef(CENTER_PAGE);
+  const flatListRef = useRef<FlatList<number>>(null);
+  const currentPageRef = useRef(CENTER_PAGE);
 
   const handleScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const index = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
-      currentIndexRef.current = index;
-      const next = data[index];
-      if (next) onChange(next);
+      const page = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+      currentPageRef.current = page;
+      onChange(page);
     },
-    [pageWidth, data, onChange],
+    [pageWidth, onChange],
   );
 
   useEffect(() => {
-    const target = data.findIndex((page) => page.getTime() === value.getTime());
-    if (target === -1 || target === currentIndexRef.current) return;
-    const distance = Math.abs(target - currentIndexRef.current);
-    currentIndexRef.current = target;
+    if (value === currentPageRef.current) return;
+    const distance = Math.abs(value - currentPageRef.current);
+    currentPageRef.current = value;
     flatListRef.current?.scrollToIndex({
-      index: target,
+      index: value,
       animated: distance <= 2,
     });
-  }, [value, data]);
+  }, [value]);
 
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
@@ -269,7 +284,9 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   const renderItem = useCallback(
-    ({ item: page }: { item: Date }) => <View style={{ width: pageWidth }}>{children(page)}</View>,
+    ({ item: page }: { item: number }) => (
+      <View style={{ width: pageWidth }}>{children(page)}</View>
+    ),
     [pageWidth, children],
   );
 
@@ -279,7 +296,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
       horizontal
       pagingEnabled
       data={data}
-      keyExtractor={(page) => page.toISOString()}
+      keyExtractor={(page) => String(page)}
       renderItem={renderItem}
       getItemLayout={getItemLayout}
       initialScrollIndex={CENTER_PAGE}
@@ -349,9 +366,9 @@ function fillMonthGrid(weeks: Date[][]): Date[][] {
   const filled = [...weeks];
   while (filled.length < MONTH_WEEKS) {
     const lastWeek = filled.at(-1);
-    if (!lastWeek) break;
-    const nextWeekStart = dayjs(lastWeek[6]).add(1, 'day').toDate();
-    filled.push(getWeekDates(nextWeekStart));
+    const lastDate = lastWeek?.[6];
+    if (!lastDate) break;
+    filled.push(getWeekDates(getNextDay(lastDate)));
   }
   return filled;
 }

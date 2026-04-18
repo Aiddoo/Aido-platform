@@ -168,6 +168,16 @@ export const addMonths = (date: Date, months: number): Date => {
   return dayjs(date).add(months, 'month').toDate();
 };
 
+/** 두 날짜의 주 단위 차이 (date1 - date2, startOf('week') 기준으로 정규화) */
+export const diffWeeks = (date1: Date, date2: Date): number => {
+  return dayjs(date1).startOf('week').diff(dayjs(date2).startOf('week'), 'week');
+};
+
+/** 두 날짜의 월 단위 차이 (date1 - date2, startOf('month') 기준으로 정규화) */
+export const diffMonths = (date1: Date, date2: Date): number => {
+  return dayjs(date1).startOf('month').diff(dayjs(date2).startOf('month'), 'month');
+};
+
 /** 그 주 안에서 요일을 n번째로 이동 (0=일, 6=토) */
 export const withDayOfWeek = (date: Date, dayOfWeek: number): Date => {
   return dayjs(date).day(dayOfWeek).toDate();
