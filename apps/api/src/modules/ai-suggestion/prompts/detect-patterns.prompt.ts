@@ -1,6 +1,10 @@
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
 import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
+import {
+	PROMPT_OUTPUT_DISCIPLINE,
+	PROMPT_SECURITY_GUARD,
+} from "../../ai/shared/prompt-sections";
 import type { SuggestionContext, SuggestionHistoryItem } from "../types";
 
 export const detectedPatternsSchema = z.object({
@@ -59,6 +63,8 @@ export function buildSuggestionPrompt(
 
 	const system = `너는 사용자의 할 일 데이터를 분석해서 실행 가능한 루틴을 제안하는 코치야.
 
+${PROMPT_SECURITY_GUARD}
+
 ## title 작성 규칙 (★가장 중요)
 title은 사용자가 "수락" 버튼만 누르면 바로 할 일 목록에 들어가는 제목이야.
 - 반드시 구체적인 행동이어야 해. 지금 당장 실행할 수 있는 수준으로.
@@ -103,6 +109,7 @@ title은 사용자가 "수락" 버튼만 누르면 바로 할 일 목록에 들�
    - 반복: 0.65-0.95 (완료율에 비례)
    - 습관 강화: 0.60-0.80
    - 재도전: 0.50-0.65
+   - ★ 2회 반복일 때는 confidence를 반드시 0.75 이상으로, 3회+ 반복은 0.60 이상으로 매겨.
 
 6. **시즌 추천**: 현재 계절·한국 문화에 맞는 구체적 활동
    - title 예: "벚꽃길 산책 30분", "수영장 자유형 30분", "단풍길 하이킹"
@@ -123,6 +130,8 @@ title은 사용자가 "수락" 버튼만 누르면 바로 할 일 목록에 들�
    - confidence: 0.55-0.70
    - ★ 최대 1개만
 
+${PROMPT_OUTPUT_DISCIPLINE}
+
 ## 규칙
 - ★★★ 반드시 정확히 5개를 제안해. 8가지 유형에서 골고루 뽑아서 반드시 5개를 채워. 데이터가 3개 미만일 때만 빈배열 허용
 - ★ 다양한 유형을 골고루 섞어서 제안 (같은 유형 2개 이상 금지, 단 유형5 반복패턴은 2개까지 허용)
@@ -131,9 +140,10 @@ title은 사용자가 "수락" 버튼만 누르면 바로 할 일 목록에 들�
 - ★ 시즌 추천은 최대 1개, matchedTitles는 반드시 빈 배열
 - ★ 밸런스 제안은 최대 1개, matchedTitles는 반드시 빈 배열
 - ★ 사용자 거절 이력과 유사한 제안은 피하기
-- ★ 반복 패턴은 같은 제목이 ${minOccurrences}회 이상이어야만 인정
-- ★ 순차/발전(유형4)은 2회면 충분하지만, 단순 반복(같은 제목)은 절대 2회로 인정 금지
+- ★ 반복 패턴은 같은 제목이 ${minOccurrences}회 이상이어야 인정 (2회일 때는 confidence 0.75+ 필수)
+- ★ 순차/발전(유형4)은 2회면 충분
 - ★ 1회만 등장한 항목은 절대 패턴 아님
+- ★ reason에는 반드시 숫자 근거 1개 이상 포함 (예: "4주 연속", "완료율 85%", "3회 연속")
 - 요일패턴 분석→daysOfWeek, 시간있으면→scheduledTime(HH:mm)
 
 ## 예시

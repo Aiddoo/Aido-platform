@@ -1,7 +1,7 @@
 /**
  * AiService 단위 테스트 (Suites + GWT 패턴)
  *
- * 자연어 투두 파싱, 일일 사용량 관리, 권한별 제한 검증
+ * 자연어 투두 파싱, 월간 사용량 관리(KST 매월 1일 00:00 리셋), 권한별 제한 검증
  *
  * - Suites: 자동 Mock 생성 (DatabaseService, EntitlementService)
  * - FakeAiProvider: AI_PROVIDER Symbol 토큰용 테스트 더블
@@ -168,7 +168,7 @@ describe("AiService — AI 서비스", () => {
 			).toBe("user-1");
 		});
 
-		it("날짜가 바뀌면 사용량을 리셋한다", async () => {
+		it("달이 바뀌면 사용량을 리셋한다", async () => {
 			// Given
 			fakeAiProvider.setResponse({
 				title: "테스트",
@@ -176,13 +176,14 @@ describe("AiService — AI 서비스", () => {
 				isAllDay: true,
 			});
 
-			const yesterday = new Date();
-			yesterday.setDate(yesterday.getDate() - 1);
+			// KST 기준으로 지난 달에 속하는 시각
+			const lastMonth = new Date();
+			lastMonth.setMonth(lastMonth.getMonth() - 1);
 
 			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
 				...mockUser,
 				aiUsageCount: 5,
-				aiUsageResetAt: yesterday,
+				aiUsageResetAt: lastMonth,
 			});
 			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
 				undefined,
@@ -196,6 +197,35 @@ describe("AiService — AI 서비스", () => {
 			expect(
 				(userRepository.resetAndIncrementAiUsage as jest.Mock).mock.calls[0][0],
 			).toBe("user-1");
+		});
+
+		it("같은 달 안이면 사용량을 증가만 한다 (리셋 없음)", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+
+			// 이번 달 1일 KST — 같은 달이므로 리셋되면 안 됨
+			const earlierThisMonth = new Date();
+			earlierThisMonth.setDate(1);
+
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 2,
+				aiUsageResetAt: earlierThisMonth,
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
 		});
 
 		it("AI Provider가 불가용하면 AI_1301 에러를 던진다", async () => {
@@ -349,7 +379,7 @@ describe("AiService — AI 서비스", () => {
 			).rejects.toThrow(BusinessException);
 		});
 
-		it("일일 사용량 초과 시 AI_1303 에러를 던진다", async () => {
+		it("월간 사용량 초과 시 AI_1303 에러를 던진다", async () => {
 			// Given
 			fakeAiProvider.setResponse({
 				title: "테스트",
@@ -467,14 +497,14 @@ describe("AiService — AI 서비스", () => {
 			expect(result.resetsAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 		});
 
-		it("날짜가 바뀌면 0을 반환한다", async () => {
+		it("달이 바뀌면 0을 반환한다", async () => {
 			// Given
-			const yesterday = new Date();
-			yesterday.setDate(yesterday.getDate() - 1);
+			const lastMonth = new Date();
+			lastMonth.setMonth(lastMonth.getMonth() - 1);
 
 			(database.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
-				aiUsageResetAt: yesterday,
+				aiUsageResetAt: lastMonth,
 			});
 
 			// When
@@ -537,6 +567,161 @@ describe("AiService — AI 서비스", () => {
 				used: 10,
 				limit: null,
 			});
+		});
+	});
+
+	describe("월 경계 (KST 매월 1일 00:00 리셋)", () => {
+		// Helper: 고정 시각을 Date.now() 로 제공
+		const setSystemTime = (iso: string) => {
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date(iso));
+		};
+
+		afterEach(() => {
+			jest.useRealTimers();
+		});
+
+		it("같은 달 다른 날이면 리셋되지 않는다 (KST 4/1 → 4/30)", async () => {
+			// Given: now = KST 4/30 14:00 (UTC 4/30 05:00)
+			setSystemTime("2026-04-30T05:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-04-30",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 4/1 00:00 = UTC 2026-03-31T15:00:00Z
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 3,
+				aiUsageResetAt: new Date("2026-03-31T15:00:00.000Z"),
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("KST 월 말일 23:59 → 다음 달 1일 00:00 경계에서 리셋된다", async () => {
+			// Given: now = KST 5/1 00:00 (UTC 2026-04-30T15:00Z)
+			setSystemTime("2026-04-30T15:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-05-01",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 4/30 23:59 = UTC 2026-04-30T14:59:00Z (같은 날 UTC이나 KST는 다른 달)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date("2026-04-30T14:59:00.000Z"),
+			});
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.incrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("UTC는 새 달이지만 KST는 같은 달이면 리셋되지 않는다", async () => {
+			// now = UTC 2026-05-01T00:00Z = KST 2026-05-01 09:00 (둘 다 KST 5월)
+			setSystemTime("2026-05-01T00:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-05-01",
+				isAllDay: true,
+			});
+
+			// lastReset = UTC 2026-04-30T16:00Z = KST 2026-05-01 01:00 (KST 5월)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 1,
+				aiUsageResetAt: new Date("2026-04-30T16:00:00.000Z"),
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then — 같은 KST 5월이므로 리셋 안 됨
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("getUsage: resetsAt은 KST 다음 달 1일 00:00의 UTC", async () => {
+			// now = KST 2026-04-18 14:00 (UTC 2026-04-18T05:00:00Z)
+			setSystemTime("2026-04-18T05:00:00.000Z");
+
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 2,
+				aiUsageResetAt: new Date("2026-04-01T00:00:00.000Z"),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then — KST 5/1 00:00 = UTC 2026-04-30T15:00:00Z
+			expect(result.resetsAt).toBe("2026-04-30T15:00:00.000Z");
+		});
+
+		it("getUsage: 12월 → 1월 연도 경계에서 올바르게 계산된다", async () => {
+			// now = KST 2026-12-15 09:00 (UTC 2026-12-15T00:00:00Z)
+			setSystemTime("2026-12-15T00:00:00.000Z");
+
+			(database.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 1,
+				aiUsageResetAt: new Date("2026-12-01T00:00:00.000Z"),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then — KST 2027-01-01 00:00 = UTC 2026-12-31T15:00:00Z
+			expect(result.resetsAt).toBe("2026-12-31T15:00:00.000Z");
+		});
+
+		it("윤년 2월 경계: KST 2/29 → 3/1 리셋", async () => {
+			// now = KST 2024-03-01 00:00 (UTC 2024-02-29T15:00Z)
+			setSystemTime("2024-02-29T15:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2024-03-01",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 2024-02-29 23:00 (UTC 2024-02-29T14:00Z)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date("2024-02-29T14:00:00.000Z"),
+			});
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then — KST 2월 vs KST 3월 경계
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
 		});
 	});
 

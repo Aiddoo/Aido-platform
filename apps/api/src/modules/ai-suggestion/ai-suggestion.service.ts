@@ -20,11 +20,16 @@ import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
 import {
 	buildSuggestionPrompt,
-	type DetectedPatternsResponse,
 	detectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
-import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
+import { resolveSuggestedCategoryId } from "./utils/category-resolver.util";
+import {
+	applyTypeCap,
+	dedupeByTitlePrefixAndDays,
+	filterWeakPatterns,
+	mergeUniquePatterns,
+} from "./utils/pattern-filter.util";
 
 /**
  * AI 반복 제안 서비스
@@ -211,13 +216,13 @@ export class AiSuggestionService {
 			return 0;
 		}
 
-		// 2. AI 제안 생성
+		// 2. AI 제안 생성 — 제안 수 부족 시 1회 다양성 재시도
 		const { system, prompt } = buildSuggestionPrompt(
 			context,
-			AI_SUGGESTION_LIMITS.MIN_OCCURRENCES,
+			AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES,
 		);
 
-		const aiResult = await this.aiProvider.generateStructured({
+		const firstResult = await this.aiProvider.generateStructured({
 			system,
 			prompt,
 			schema: detectedPatternsSchema,
@@ -225,10 +230,28 @@ export class AiSuggestionService {
 			temperature: 0.3,
 		});
 
-		const patterns = this.#filterWeakPatterns(
-			aiResult.output.patterns,
-			context,
-		);
+		let patterns = filterWeakPatterns(firstResult.output.patterns, context);
+
+		if (patterns.length < AI_SUGGESTION_LIMITS.RETRY_THRESHOLD) {
+			this.#logger.debug(
+				`제안 수 부족 → 재시도: userId=${userId}, first=${patterns.length}`,
+			);
+			const retryResult = await this.aiProvider.generateStructured({
+				system,
+				prompt,
+				schema: detectedPatternsSchema,
+				maxTokens: 1500,
+				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
+			});
+			const retryPatterns = filterWeakPatterns(
+				retryResult.output.patterns,
+				context,
+			);
+			patterns = mergeUniquePatterns(patterns, retryPatterns);
+		}
+
+		patterns = applyTypeCap(patterns);
+		patterns = dedupeByTitlePrefixAndDays(patterns);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -241,10 +264,10 @@ export class AiSuggestionService {
 			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
 			.toDate();
 
-		const limitedPatterns = patterns.slice(
-			0,
-			AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER,
-		);
+		// 신뢰도 내림차순 정렬 후 상한 적용 (Gemini review 반영)
+		const limitedPatterns = [...patterns]
+			.sort((a, b) => b.confidence - a.confidence)
+			.slice(0, AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER);
 
 		const createdCount = await this.database.$transaction(async (tx) => {
 			await this.aiSuggestionRepository.deletePending(userId, tx);
@@ -261,7 +284,8 @@ export class AiSuggestionService {
 					matchedTodos:
 						pattern.matchedTitles as unknown as Prisma.InputJsonValue,
 					expiresAt,
-					suggestedCategoryId: this.#findSuggestedCategoryId(
+					suggestedCategoryId: resolveSuggestedCategoryId(
+						pattern.title,
 						pattern.matchedTitles,
 						context.todos,
 					),
@@ -276,85 +300,5 @@ export class AiSuggestionService {
 		);
 
 		return createdCount;
-	}
-
-	/**
-	 * AI가 반환한 패턴 중 약한 패턴을 필터링
-	 *
-	 * - 반복 패턴(같은 제목 반복): matchedTitles가 minOccurrences 미만이면 제거
-	 * - 순차/발전 패턴(서로 다른 제목): 2개 이상이면 허용
-	 * - 시즌 추천(matchedTitles 빈 배열): 허용
-	 * - 날씨 컨텍스트 없는데 날씨 관련 제안: 제거
-	 */
-	#filterWeakPatterns(
-		patterns: DetectedPatternsResponse["patterns"],
-		context: SuggestionContext,
-	): DetectedPatternsResponse["patterns"] {
-		return patterns.filter((p) => {
-			// 시즌 추천: matchedTitles가 빈 배열이면 허용
-			if (p.matchedTitles.length === 0) {
-				return true;
-			}
-
-			// 날씨 컨텍스트 없는데 날씨 관련 제안 필터링
-			if (!context.weather && this.#isWeatherRelated(p.reason)) {
-				return false;
-			}
-
-			const uniqueTitles = new Set(p.matchedTitles);
-			const isRepetition = uniqueTitles.size === 1;
-
-			if (isRepetition) {
-				return p.matchedTitles.length >= AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
-			}
-			return p.matchedTitles.length >= 2;
-		});
-	}
-
-	/**
-	 * reason 텍스트에서 날씨 관련 키워드 감지
-	 */
-	#isWeatherRelated(reason: string): boolean {
-		const weatherKeywords = [
-			"날씨",
-			"비",
-			"눈",
-			"소나기",
-			"우천",
-			"실내",
-			"악천후",
-		];
-		return weatherKeywords.some((keyword) => reason.includes(keyword));
-	}
-
-	/**
-	 * 매칭된 투두의 최빈 카테고리 ID를 반환
-	 */
-	#findSuggestedCategoryId(
-		matchedTitles: string[],
-		todos: TodoSummaryForAnalysis[],
-	): number | null {
-		const matched = todos.filter((t) =>
-			matchedTitles.some((mt) => t.title === mt),
-		);
-
-		if (matched.length === 0) {
-			return null;
-		}
-
-		const freq = new Map<number, number>();
-		for (const t of matched) {
-			freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
-		}
-
-		let maxId: number | null = null;
-		let maxCount = 0;
-		for (const [categoryId, count] of freq) {
-			if (count > maxCount) {
-				maxId = categoryId;
-				maxCount = count;
-			}
-		}
-		return maxId;
 	}
 }

@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Timezone } from "@/common/decorators";
 
@@ -34,6 +34,7 @@ import {
  * - 리포트 상세 조회
  *
  * ### AI 분석 방식
+ * - **모델**: 모든 경로에서 **Gemini 2.5 Flash-Lite** 사용
  * - **행동과학 프레임워크**: 습관 루프(신호→루틴→보상), 최소 유효 용량, 구현 의도, 자기효능감 적용
  * - **동적 프롬프트**: 달성률/변화율에 따라 4가지 템플릿 자동 분기 (고달성/저달성/큰변화/안정)
  * - **이전 보고서 연계**: 지난 보고서의 팁이 이번 주 데이터에서 효과가 있었는지 추적
@@ -54,8 +55,6 @@ import {
 @ApiBearerAuth()
 @Controller("ai/reports")
 export class AiReportController {
-	readonly #logger = new Logger(AiReportController.name);
-
 	constructor(private readonly aiReportService: AiReportService) {}
 
 	/**
@@ -140,8 +139,6 @@ export class AiReportController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Timezone() tz: string,
 	): Promise<ReportStatusResponseDto> {
-		this.#logger.debug(`리포트 상태 조회: userId=${user.userId}`);
-
 		const status = await this.aiReportService.getReportStatus(user.userId, tz);
 
 		return { status };
@@ -179,10 +176,6 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetAiReportsQueryDto,
 	): Promise<AiReportListResponseDto> {
-		this.#logger.debug(
-			`리포트 목록 조회: userId=${user.userId}, type=${query.type}, limit=${query.limit}`,
-		);
-
 		const reports = await this.aiReportService.getReports(user.userId, {
 			type: query.type as "WEEKLY" | "MONTHLY" | undefined,
 			limit: query.limit,
@@ -226,10 +219,6 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
-		this.#logger.debug(
-			`리포트 상세 조회: id=${params.id}, userId=${user.userId}`,
-		);
-
 		const report = await this.aiReportService.getReportById(
 			user.userId,
 			params.id,

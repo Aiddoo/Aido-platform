@@ -29,7 +29,7 @@ export const useParseTodoMutationOptions = () => {
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
         trackEvent('premium_gate_shown', { feature: 'ai_parse' });
         premiumDialog.open({
-          description: '프리미엄 구독으로 매일 무제한 AI 파싱을 사용할 수 있어요',
+          description: '프리미엄 구독으로 무제한 AI 파싱을 사용할 수 있어요',
         });
         return;
       }

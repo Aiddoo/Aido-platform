@@ -10,6 +10,7 @@
  * ```
  */
 import {
+	firstOfMonthInTimezone,
 	parseLocalDateTime,
 	startOfDayInTimezone,
 	todayInTimezone,
@@ -106,6 +107,53 @@ describe("timezone", () => {
 			const date = new Date("2026-02-06T15:30:00Z");
 			const result = startOfDayInTimezone(date, "UTC");
 			expect(result).toEqual(new Date("2026-02-06T00:00:00.000Z"));
+		});
+	});
+
+	describe("firstOfMonthInTimezone", () => {
+		it("KST 기준 해당 월의 1일 00:00을 실제 UTC timestamp로 반환", () => {
+			// KST 2026-04-18 14:00 → KST 2026-04-01 00:00 → UTC 2026-03-31T15:00:00Z
+			const date = new Date("2026-04-18T05:00:00.000Z");
+			expect(firstOfMonthInTimezone(date, "Asia/Seoul")).toEqual(
+				new Date("2026-03-31T15:00:00.000Z"),
+			);
+		});
+
+		it("KST 기준 월 말일(23:00)에도 같은 달의 월초를 반환", () => {
+			// UTC 2026-05-31 14:00 = KST 2026-05-31 23:00 → KST 5/1 00:00 → UTC 2026-04-30T15:00:00Z
+			const date = new Date("2026-05-31T14:00:00.000Z");
+			expect(firstOfMonthInTimezone(date, "Asia/Seoul")).toEqual(
+				new Date("2026-04-30T15:00:00.000Z"),
+			);
+		});
+
+		it("UTC 월 말일인데 KST 다음 달 첫날인 경계에서 KST 기준으로 판단", () => {
+			// UTC 2026-04-30T15:30Z = KST 2026-05-01 00:30 → KST 5/1 00:00 → UTC 2026-04-30T15:00:00Z
+			const date = new Date("2026-04-30T15:30:00.000Z");
+			expect(firstOfMonthInTimezone(date, "Asia/Seoul")).toEqual(
+				new Date("2026-04-30T15:00:00.000Z"),
+			);
+		});
+
+		it("연도 경계: KST 2026-12 → 2026-11-30T15:00:00Z", () => {
+			const date = new Date("2026-12-15T00:00:00.000Z");
+			expect(firstOfMonthInTimezone(date, "Asia/Seoul")).toEqual(
+				new Date("2026-11-30T15:00:00.000Z"),
+			);
+		});
+
+		it("UTC 기본값: 해당 월의 UTC 1일 00:00 반환", () => {
+			const date = new Date("2026-04-18T05:00:00.000Z");
+			expect(firstOfMonthInTimezone(date)).toEqual(
+				new Date("2026-04-01T00:00:00.000Z"),
+			);
+		});
+
+		it("date 미지정 시 현재 시각 기준", () => {
+			// FROZEN: 2026-03-03T12:00:00Z = KST 2026-03-03 21:00 → KST 3/1 00:00 → UTC 2026-02-28T15:00:00Z
+			expect(firstOfMonthInTimezone(undefined, "Asia/Seoul")).toEqual(
+				new Date("2026-02-28T15:00:00.000Z"),
+			);
 		});
 	});
 });

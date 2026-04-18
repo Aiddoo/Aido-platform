@@ -17,8 +17,8 @@ export interface AiUsageRequest extends Request {
 /**
  * AI 사용량 제한 Guard
  *
- * 사용자의 일일 AI 사용량을 체크하여 제한을 초과한 경우 요청을 차단합니다.
- * - 무료 사용자: 일일 5회 제한
+ * 사용자의 월간 AI 사용량을 체크하여 제한을 초과한 경우 요청을 차단합니다.
+ * - 무료 사용자: 월 5회 제한 (KST 매월 1일 00:00 리셋)
  * - ADMIN/ACTIVE 구독자: 무제한
  *
  * Guard에서 조회한 usage 정보를 request에 첨부하여 Service에서 재사용합니다.

@@ -106,7 +106,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					"FREE",
 					"AI_PARSE",
 					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
+					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 				],
 				["EXPIRED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
 				["EXPIRED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
@@ -114,7 +114,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					"EXPIRED",
 					"AI_PARSE",
 					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
+					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 				],
 				["CANCELLED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
 				["CANCELLED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
@@ -122,7 +122,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 					"CANCELLED",
 					"AI_PARSE",
 					Feature.AI_PARSE,
-					AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
+					AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 				],
 			] as const)("%s 구독 + %s 기능은 일일 %d회 제한이다", async (status, _featureName, feature, expectedLimit) => {
 				// Given
@@ -335,7 +335,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 			// Then - FREE는 일일 제한 적용
 			expect(result).toEqual<FeatureEntitlement>({
-				dailyLimit: AI_PARSE_LIMITS.FREE_DAILY_LIMIT,
+				dailyLimit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});

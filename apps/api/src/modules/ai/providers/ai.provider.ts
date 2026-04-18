@@ -17,6 +17,14 @@ export interface TokenUsage {
 }
 
 /**
+ * 모델 선택 힌트
+ *
+ * 현재는 Gemini Flash-Lite 단일 모델만 사용하지만, 향후 경로별로 다른 모델을
+ * 추가할 수 있도록 힌트 타입을 유지합니다. 확장 예: `"fast"`, `"quality"`.
+ */
+export type AiModelHint = "default";
+
+/**
  * 구조화된 생성 옵션
  */
 export interface GenerateStructuredOptions<T> {
@@ -30,6 +38,8 @@ export interface GenerateStructuredOptions<T> {
 	maxTokens?: number;
 	/** 온도 (0.0 ~ 1.0, 낮을수록 결정적) */
 	temperature?: number;
+	/** 모델 선택 힌트 (라우터가 있는 환경에서만 의미 있음) */
+	modelHint?: AiModelHint;
 }
 
 /**

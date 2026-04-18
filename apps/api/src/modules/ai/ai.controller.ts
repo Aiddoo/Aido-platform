@@ -125,9 +125,9 @@ export class AiController {
 - "월요일부터 금요일까지" → startDate + endDate 모두 설정
 
 ## 🚫 사용량 제한
-- 무료 유저: **일일 5회**
+- 무료 유저: **월 5회** (Todo 파싱과 메모 파싱 합산)
 - 프리미엄: 무제한 (향후)
-- 리셋 시간: KST 자정
+- 리셋 시간: KST 매월 1일 00:00
 
 ## 💡 입력 예시
 | 입력 | 예상 출력 |
@@ -302,9 +302,9 @@ if (confirmed) {
 \`\`\`
 
 ## 🚫 사용량 제한
-- 기존 AI 파싱과 **일일 사용량 공유** (parse-todo와 동일 카운트)
-- 무료 유저: 일일 5회 / 프리미엄: 무제한
-- 리셋: KST 자정`,
+- 기존 AI 파싱과 **월간 사용량 공유** (parse-todo와 동일 카운트)
+- 무료 유저: 월 5회 / 프리미엄: 무제한
+- 리셋: KST 매월 1일 00:00`,
 	})
 	@ApiSuccessResponse({ type: ParseMemoResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -343,7 +343,7 @@ if (confirmed) {
 	 *   "data": {
 	 *     "used": 3,
 	 *     "limit": 5,
-	 *     "resetsAt": "2026-03-05T15:00:00.000Z"
+	 *     "resetsAt": "2026-04-30T15:00:00.000Z"
 	 *   }
 	 * }
 	 *
@@ -353,7 +353,7 @@ if (confirmed) {
 	 *   "data": {
 	 *     "used": 12,
 	 *     "limit": null,
-	 *     "resetsAt": "2026-03-05T15:00:00.000Z"
+	 *     "resetsAt": "2026-04-30T15:00:00.000Z"
 	 *   }
 	 * }
 	 * ```
@@ -363,17 +363,17 @@ if (confirmed) {
 	@ApiDoc({
 		summary: "AI 사용량 조회",
 		operationId: "getAiUsage",
-		description: `현재 사용자의 일일 AI 사용량을 조회합니다.
+		description: `현재 사용자의 월간 AI 사용량을 조회합니다.
 
 ## 📊 응답 데이터
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`used\` | number | 오늘 사용한 횟수 |
-| \`limit\` | number \\| null | 일일 제한 횟수 (null = 무제한, 프리미엄) |
-| \`resetsAt\` | string | 다음 리셋 시간 (ISO 8601, UTC) |
+| \`used\` | number | 이번 달 사용한 횟수 |
+| \`limit\` | number \\| null | 월간 제한 횟수 (null = 무제한, 프리미엄) |
+| \`resetsAt\` | string | 다음 리셋 시간 (ISO 8601, UTC, KST 매월 1일 00:00) |
 
 ## ⏰ 리셋 규칙
-- 리셋 시간: KST 자정 (UTC 15:00)
+- 리셋 시간: KST 매월 1일 00:00 (UTC 전월 말일 15:00)
 - 리셋 후 \`used\`는 0으로 초기화됩니다.
 
 ## 💡 사용 예시

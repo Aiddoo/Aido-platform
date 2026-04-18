@@ -5,11 +5,7 @@ import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import type { CalendarViewMode } from './calendar.types';
-
-interface CalendarViewModeToggleProps {
-  value: CalendarViewMode;
-  onChange: (mode: CalendarViewMode) => void;
-}
+import { useCalendarContext } from './calendar-view-mode-context';
 
 const CALENDAR_VIEW_MODE: { value: CalendarViewMode; label: string }[] = [
   { value: 'week', label: '주' },
@@ -20,7 +16,8 @@ const PADDING = 2;
 const ITEM_HEIGHT = 22;
 const SPRING_CONFIG = { stiffness: 500, damping: 30, mass: 0.8 };
 
-export const CalendarViewModeToggle = ({ value, onChange }: CalendarViewModeToggleProps) => {
+export const CalendarViewModeToggle = () => {
+  const { viewMode: value, setViewMode: onChange } = useCalendarContext();
   const [itemLayouts, setItemLayouts] = useState<Record<string, { x: number; width: number }>>({});
   const hasAnimated = useRef(false);
   const translateX = useSharedValue(0);
