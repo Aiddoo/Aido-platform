@@ -331,13 +331,15 @@ export class UserRepository {
 	}
 
 	/**
-	 * AI 사용량 롤백 (1 감소, 0 미만으로 내려가지 않도록 GREATEST 클램프)
+	 * AI 사용량 롤백 (1 감소).
+	 *
+	 * `aiUsageCount > 0` 조건을 걸어 음수로 내려가지 않도록 보장합니다.
+	 * count=0 상태에서 중복 호출되더라도 matched row 0 으로 no-op 처리됩니다.
 	 */
 	async decrementAiUsage(userId: string): Promise<void> {
-		await this.database.$executeRaw`
-			UPDATE "User"
-			SET "aiUsageCount" = GREATEST("aiUsageCount" - 1, 0)
-			WHERE "id" = ${userId}
-		`;
+		await this.database.user.updateMany({
+			where: { id: userId, aiUsageCount: { gt: 0 } },
+			data: { aiUsageCount: { decrement: 1 } },
+		});
 	}
 }
