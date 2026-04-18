@@ -109,12 +109,7 @@ export const TodoRepeatPickerContent = ({
         isConfirmDisabled={isConfirmDisabled}
       />
 
-      <DayOfWeekSelector
-        selectedDays={repeatSetting.selectedDays}
-        onToggleDay={repeatSetting.toggleDay}
-        onToggleAll={repeatSetting.toggleAllDays}
-        isAllSelected={repeatSetting.isAllDaysSelected}
-      />
+      <DayOfWeekSelector repeatSetting={repeatSetting} />
 
       <RepeatCalendar
         picker={picker}
