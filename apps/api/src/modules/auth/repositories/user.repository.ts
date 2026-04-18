@@ -331,12 +331,13 @@ export class UserRepository {
 	}
 
 	/**
-	 * AI 사용량 롤백 (1 감소)
+	 * AI 사용량 롤백 (1 감소, 0 미만으로 내려가지 않도록 GREATEST 클램프)
 	 */
 	async decrementAiUsage(userId: string): Promise<void> {
-		await this.database.user.update({
-			where: { id: userId },
-			data: { aiUsageCount: { decrement: 1 } },
-		});
+		await this.database.$executeRaw`
+			UPDATE "User"
+			SET "aiUsageCount" = GREATEST("aiUsageCount" - 1, 0)
+			WHERE "id" = ${userId}
+		`;
 	}
 }

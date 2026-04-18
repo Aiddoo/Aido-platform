@@ -80,3 +80,20 @@ export function midnightInTimezone(
 ): Date {
 	return dayjs(date).tz(tz).startOf("day").utc().toDate();
 }
+
+/**
+ * 지정 타임존의 월초(1일 00:00)를 실제 UTC timestamp로 반환
+ *
+ * `midnightInTimezone`의 월 단위 대응체. 월간 리셋/경계 비교에 사용합니다.
+ *
+ * @example firstOfMonthInTimezone(new Date('2026-04-18T05:00:00Z'), 'Asia/Seoul')
+ *   // KST 2026-04-18 14:00 → KST 2026-04-01 00:00 → 2026-03-31T15:00:00.000Z
+ * @example firstOfMonthInTimezone(new Date('2026-12-15T00:00:00Z'), 'Asia/Seoul')
+ *   // KST 2026-12-15 → KST 2026-12-01 00:00 → 2026-11-30T15:00:00.000Z
+ */
+export function firstOfMonthInTimezone(
+	date: Date = now(),
+	tz: string = DEFAULT_TIMEZONE,
+): Date {
+	return dayjs(date).tz(tz).startOf("month").utc().toDate();
+}

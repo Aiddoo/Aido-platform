@@ -28,6 +28,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.71",
 		"@ai-sdk/google": "^3.0.29",
 		"@aido/errors": "workspace:*",
 		"@aido/utils": "workspace:*",

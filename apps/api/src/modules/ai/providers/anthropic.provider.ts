@@ -1,14 +1,15 @@
 /**
- * Google Gemini Provider
+ * Anthropic Claude Provider
  *
- * Vercel AI SDK를 사용하여 Google Gemini 2.5 Flash-Lite 모델과 통신합니다.
+ * Vercel AI SDK를 사용하여 Anthropic Claude Sonnet 4.6 모델과 통신합니다.
+ * 사용자 전담 코치 톤이 중요한 주간/월간 리포트 등 품질 민감 경로 전용입니다.
  *
- * 가격 (2026년 4월 기준, Gemini Developer API Standard / text,image,video):
- * - Input: $0.10 / 1M tokens
- * - Output: $0.40 / 1M tokens
- * 출처: https://ai.google.dev/gemini-api/docs/pricing
+ * 가격 (2026년 4월 기준):
+ * - Input: $3 / 1M tokens
+ * - Output: $15 / 1M tokens
+ * 프리미엄 전용·저빈도 호출(유저당 월 1~4회)이므로 비용 영향 미미.
  */
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APICallError, generateObject } from "ai";
@@ -22,34 +23,24 @@ import type {
 	GenerateStructuredResult,
 } from "./ai.provider";
 
-/** Gemini 모델 설정 */
-const GEMINI_MODEL = "gemini-2.5-flash-lite" as const;
-const DEFAULT_MAX_TOKENS = 150;
-const DEFAULT_TEMPERATURE = 0.1;
-const API_TIMEOUT_MS = 30_000;
+const ANTHROPIC_MODEL = "claude-sonnet-4-6" as const;
+const DEFAULT_MAX_TOKENS = 800;
+const DEFAULT_TEMPERATURE = 0.5;
+const API_TIMEOUT_MS = 60_000;
 
 @Injectable()
-export class GeminiProvider implements AiProvider {
-	readonly #model: ReturnType<ReturnType<typeof createGoogleGenerativeAI>>;
+export class AnthropicProvider implements AiProvider {
+	readonly #model: ReturnType<ReturnType<typeof createAnthropic>>;
 	readonly #available: boolean;
 
 	constructor(private readonly configService: ConfigService) {
-		const apiKey = this.configService.get<string>(
-			"GOOGLE_GENERATIVE_AI_API_KEY",
-		);
+		const apiKey = this.configService.get<string>("ANTHROPIC_API_KEY");
 		this.#available = !!apiKey;
-		// API 키가 있으면 클라이언트와 모델을 한 번만 생성하여 재사용
 		this.#model = apiKey
-			? createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL)
+			? createAnthropic({ apiKey })(ANTHROPIC_MODEL)
 			: (undefined as never);
 	}
 
-	/**
-	 * 구조화된 출력 생성
-	 *
-	 * Vercel AI SDK의 generateObject를 사용하여
-	 * Zod 스키마에 맞는 구조화된 JSON 응답을 생성합니다.
-	 */
 	async generateStructured<T>(
 		options: GenerateStructuredOptions<T>,
 	): Promise<GenerateStructuredResult<T>> {
@@ -70,7 +61,7 @@ export class GeminiProvider implements AiProvider {
 
 			return {
 				output: object,
-				model: `google:${GEMINI_MODEL}`,
+				model: `anthropic:${ANTHROPIC_MODEL}`,
 				usage: {
 					input: usage.inputTokens ?? 0,
 					output: usage.outputTokens ?? 0,
@@ -84,11 +75,6 @@ export class GeminiProvider implements AiProvider {
 		}
 	}
 
-	/**
-	 * Provider 가용성 확인
-	 *
-	 * @returns API 키 설정 여부
-	 */
 	isAvailable(): boolean {
 		return this.#available;
 	}

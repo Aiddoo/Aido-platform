@@ -11,6 +11,11 @@ export function addDays(days: number, from: Date = now()): Date {
 	return dayjs.utc(from).add(days, "day").toDate();
 }
 
+/** 지정 개월 후의 시각 반환 */
+export function addMonths(months: number, from: Date = now()): Date {
+	return dayjs.utc(from).add(months, "month").toDate();
+}
+
 /** 지정 밀리초 후의 시각 반환 */
 export function addMilliseconds(ms: number, from: Date = now()): Date {
 	return dayjs.utc(from).add(ms, "millisecond").toDate();

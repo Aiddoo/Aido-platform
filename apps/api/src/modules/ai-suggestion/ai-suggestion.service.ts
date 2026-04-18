@@ -211,13 +211,13 @@ export class AiSuggestionService {
 			return 0;
 		}
 
-		// 2. AI 제안 생성
+		// 2. AI 제안 생성 — 제안 수 부족 시 1회 다양성 재시도
 		const { system, prompt } = buildSuggestionPrompt(
 			context,
-			AI_SUGGESTION_LIMITS.MIN_OCCURRENCES,
+			AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES,
 		);
 
-		const aiResult = await this.aiProvider.generateStructured({
+		const firstResult = await this.aiProvider.generateStructured({
 			system,
 			prompt,
 			schema: detectedPatternsSchema,
@@ -225,10 +225,30 @@ export class AiSuggestionService {
 			temperature: 0.3,
 		});
 
-		const patterns = this.#filterWeakPatterns(
-			aiResult.output.patterns,
+		let patterns = this.#filterWeakPatterns(
+			firstResult.output.patterns,
 			context,
 		);
+
+		if (patterns.length < AI_SUGGESTION_LIMITS.RETRY_THRESHOLD) {
+			this.#logger.debug(
+				`제안 수 부족 → 재시도: userId=${userId}, first=${patterns.length}`,
+			);
+			const retryResult = await this.aiProvider.generateStructured({
+				system,
+				prompt,
+				schema: detectedPatternsSchema,
+				maxTokens: 1500,
+				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
+			});
+			const retryPatterns = this.#filterWeakPatterns(
+				retryResult.output.patterns,
+				context,
+			);
+			patterns = this.#mergeUniquePatterns(patterns, retryPatterns);
+		}
+
+		patterns = this.#applyTypeCap(patterns);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -281,22 +301,20 @@ export class AiSuggestionService {
 	/**
 	 * AI가 반환한 패턴 중 약한 패턴을 필터링
 	 *
-	 * - 반복 패턴(같은 제목 반복): matchedTitles가 minOccurrences 미만이면 제거
-	 * - 순차/발전 패턴(서로 다른 제목): 2개 이상이면 허용
-	 * - 시즌 추천(matchedTitles 빈 배열): 허용
-	 * - 날씨 컨텍스트 없는데 날씨 관련 제안: 제거
+	 * - 시즌/밸런스(matchedTitles 빈 배열): 허용 (라운드로빈 캡은 #applyTypeCap에서 적용)
+	 * - 날씨 관련 제안이지만 날씨 컨텍스트 없음: 제거
+	 * - 단순 반복(같은 제목): 2회+면 인정하되 2회는 높은 confidence, 3회+는 낮은 confidence 허용
+	 * - 순차/발전(서로 다른 제목): 2개 이상이면 허용
 	 */
 	#filterWeakPatterns(
 		patterns: DetectedPatternsResponse["patterns"],
 		context: SuggestionContext,
 	): DetectedPatternsResponse["patterns"] {
 		return patterns.filter((p) => {
-			// 시즌 추천: matchedTitles가 빈 배열이면 허용
 			if (p.matchedTitles.length === 0) {
 				return true;
 			}
 
-			// 날씨 컨텍스트 없는데 날씨 관련 제안 필터링
 			if (!context.weather && this.#isWeatherRelated(p.reason)) {
 				return false;
 			}
@@ -305,10 +323,53 @@ export class AiSuggestionService {
 			const isRepetition = uniqueTitles.size === 1;
 
 			if (isRepetition) {
-				return p.matchedTitles.length >= AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
+				const count = p.matchedTitles.length;
+				if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) return false;
+				const gate =
+					count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
+						? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
+						: AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
+				return p.confidence >= gate;
 			}
 			return p.matchedTitles.length >= 2;
 		});
+	}
+
+	/**
+	 * matchedTitles가 빈 유형(시즌/밸런스)이 전체의 절반을 넘지 않도록 캡을 씌운다.
+	 * 빈 유형이 많이 남아 제안이 획일화되는 것을 방지.
+	 */
+	#applyTypeCap(
+		patterns: DetectedPatternsResponse["patterns"],
+	): DetectedPatternsResponse["patterns"] {
+		const noMatchCap = AI_SUGGESTION_LIMITS.NO_MATCH_TYPE_CAP;
+		const matched: DetectedPatternsResponse["patterns"] = [];
+		const noMatched: DetectedPatternsResponse["patterns"] = [];
+		for (const p of patterns) {
+			if (p.matchedTitles.length === 0) noMatched.push(p);
+			else matched.push(p);
+		}
+		const cappedNoMatched = noMatched
+			.sort((a, b) => b.confidence - a.confidence)
+			.slice(0, noMatchCap);
+		return [...matched, ...cappedNoMatched];
+	}
+
+	/**
+	 * 두 패턴 리스트를 제목 기준으로 중복 제거하여 병합.
+	 */
+	#mergeUniquePatterns(
+		primary: DetectedPatternsResponse["patterns"],
+		secondary: DetectedPatternsResponse["patterns"],
+	): DetectedPatternsResponse["patterns"] {
+		const seen = new Set(primary.map((p) => p.title));
+		const merged = [...primary];
+		for (const p of secondary) {
+			if (seen.has(p.title)) continue;
+			merged.push(p);
+			seen.add(p.title);
+		}
+		return merged;
 	}
 
 	/**

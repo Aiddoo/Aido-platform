@@ -1,3 +1,7 @@
+import {
+	PROMPT_OUTPUT_DISCIPLINE,
+	PROMPT_SECURITY_GUARD,
+} from "../shared/prompt-sections";
 import type { CategoryInfo } from "./parse-memo.prompt";
 import { sanitizeForPrompt } from "./sanitize";
 import { buildTimeContext, buildTimeRulesText } from "./time-rules";
@@ -27,6 +31,8 @@ export function buildParseTodoPrompt(
 
 	const system = `당신은 한국어 자연어 입력을 구조화된 할 일(Todo) 데이터로 변환하는 전문가입니다.
 
+${PROMPT_SECURITY_GUARD}
+
 ## 제목(title) 작성 규칙
 - 날짜/시간 표현을 제외한 핵심 행동만 간결하게 작성합니다.
 - 좋은 예: "팀 미팅", "운동", "병원 예약"
@@ -48,6 +54,8 @@ ${timeRules}
 
 예시 4: "다다음주 발표"
 → {"title":"발표","startDate":"${ctx.nextNextWeekMon}","endDate":null,"scheduledTime":null,"isAllDay":true,"isRecurring":true,"recurrence":{"daysOfWeek":["MON","TUE","WED","THU","FRI","SAT","SUN"],"endDate":"${ctx.nextNextWeekSun}"}}
+
+${PROMPT_OUTPUT_DISCIPLINE}
 
 ## 출력 형식
 {"title":"string","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD|null","scheduledTime":"HH:mm|null","isAllDay":boolean,"isRecurring":boolean,"recurrence":{"daysOfWeek":["MON"],"endDate":"YYYY-MM-DD"}|null}`;

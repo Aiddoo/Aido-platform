@@ -17,6 +17,15 @@ export interface TokenUsage {
 }
 
 /**
+ * 모델 선택 힌트
+ *
+ * - `default`: 파싱·제안 등 빠른 구조화 출력이 중요한 기본 경로 (Gemini Flash)
+ * - `report`: 코칭 톤과 뉘앙스가 중요한 리포트 (Anthropic Claude Sonnet)
+ *   Anthropic 키 미설정 환경에서는 자동으로 default 모델로 fallback됩니다.
+ */
+export type AiModelHint = "default" | "report";
+
+/**
  * 구조화된 생성 옵션
  */
 export interface GenerateStructuredOptions<T> {
@@ -30,6 +39,8 @@ export interface GenerateStructuredOptions<T> {
 	maxTokens?: number;
 	/** 온도 (0.0 ~ 1.0, 낮을수록 결정적) */
 	temperature?: number;
+	/** 모델 선택 힌트 (라우터가 있는 환경에서만 의미 있음) */
+	modelHint?: AiModelHint;
 }
 
 /**

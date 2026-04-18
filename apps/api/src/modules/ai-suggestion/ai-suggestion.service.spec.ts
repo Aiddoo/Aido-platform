@@ -864,5 +864,257 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			expect(result).toBe(1);
 			expect(mockRepository.createMany).toHaveBeenCalledTimes(1);
 		});
+
+		it("2회 반복 패턴은 confidence 0.75 이상이면 통과, 미만이면 제거", async () => {
+			// Given -투두 5개, 2회 매칭 + 고confidence(0.8) / 2회 매칭 + 저confidence(0.6) 패턴
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: `할일${i}`,
+				startDate: `2026-04-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 1,
+				completed: false,
+				categoryName: "기본",
+			}));
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "고신뢰 2회",
+							daysOfWeek: ["MON"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "두 번 반복",
+							matchedTitles: ["할일0", "할일0"],
+						},
+						{
+							title: "저신뢰 2회",
+							daysOfWeek: ["TUE"],
+							scheduledTime: null,
+							confidence: 0.6,
+							reason: "약한 반복",
+							matchedTitles: ["할일1", "할일1"],
+						},
+					],
+				},
+				model: "gemini-2.5-flash-lite",
+				usage: { input: 100, output: 50 },
+			});
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockImplementation(async (items) => ({
+				count: (items as unknown[]).length,
+			}));
+
+			// When -분석 실행
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
+
+			// Then -고신뢰 2회 1개만 통과, 재시도 포함 (저신뢰 제거로 3개 미만 → 재시도 트리거)
+			expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(2);
+			expect(result).toBeGreaterThanOrEqual(1);
+		});
+
+		it("1차 결과가 3개 미만이면 재시도 호출이 발생해야 한다", async () => {
+			// Given -충분한 todos, 1차는 1개만 리턴, 2차는 3개 리턴
+			const todos = Array.from({ length: 6 }, (_, i) => ({
+				title: `할일${i}`,
+				startDate: `2026-04-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 1,
+				completed: false,
+				categoryName: "기본",
+			}));
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+			mockAiProvider.generateStructured
+				.mockResolvedValueOnce({
+					output: {
+						patterns: [
+							{
+								title: "첫번째",
+								daysOfWeek: ["MON"],
+								scheduledTime: null,
+								confidence: 0.85,
+								reason: "r1",
+								matchedTitles: ["할일0", "할일0", "할일0"],
+							},
+						],
+					},
+					model: "gemini-2.5-flash-lite",
+					usage: { input: 100, output: 50 },
+				})
+				.mockResolvedValueOnce({
+					output: {
+						patterns: [
+							{
+								title: "추가1",
+								daysOfWeek: ["TUE"],
+								scheduledTime: null,
+								confidence: 0.8,
+								reason: "r2",
+								matchedTitles: ["할일1", "할일1", "할일1"],
+							},
+							{
+								title: "추가2",
+								daysOfWeek: ["WED"],
+								scheduledTime: null,
+								confidence: 0.75,
+								reason: "r3",
+								matchedTitles: ["할일2", "할일2"],
+							},
+						],
+					},
+					model: "gemini-2.5-flash-lite",
+					usage: { input: 100, output: 50 },
+				});
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockImplementation(async (items) => ({
+				count: (items as unknown[]).length,
+			}));
+
+			// When -분석 실행
+			const result = await service.analyzeAndCreateSuggestions(
+				mockUserId,
+				"Asia/Seoul",
+			);
+
+			// Then -재시도 호출 1회 + 중복제거 병합으로 3개 저장
+			expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(2);
+			expect(result).toBe(3);
+		});
+
+		it("1차 결과가 3개 이상이면 재시도하지 않아야 한다", async () => {
+			// Given -1차에서 충분한 패턴을 바로 리턴
+			const todos = Array.from({ length: 10 }, (_, i) => ({
+				title: `할일${i}`,
+				startDate: `2026-04-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 1,
+				completed: false,
+				categoryName: "기본",
+			}));
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "P1",
+							daysOfWeek: ["MON"],
+							scheduledTime: null,
+							confidence: 0.85,
+							reason: "r",
+							matchedTitles: ["할일0", "할일0", "할일0"],
+						},
+						{
+							title: "P2",
+							daysOfWeek: ["TUE"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "r",
+							matchedTitles: ["할일1", "할일1", "할일1"],
+						},
+						{
+							title: "P3",
+							daysOfWeek: ["WED"],
+							scheduledTime: null,
+							confidence: 0.75,
+							reason: "r",
+							matchedTitles: ["할일2", "할일2"],
+						},
+					],
+				},
+				model: "gemini-2.5-flash-lite",
+				usage: { input: 100, output: 50 },
+			});
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockImplementation(async (items) => ({
+				count: (items as unknown[]).length,
+			}));
+
+			// When
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then -재시도 없이 1회만 호출
+			expect(mockAiProvider.generateStructured).toHaveBeenCalledTimes(1);
+		});
+
+		it("matchedTitles 빈 유형(시즌/밸런스)은 최대 2개만 허용해야 한다", async () => {
+			// Given -시즌/밸런스 유형 4개 + 매칭 유형 1개가 AI로부터 반환
+			const todos = Array.from({ length: 5 }, (_, i) => ({
+				title: `할일${i}`,
+				startDate: `2026-04-${String(10 + i).padStart(2, "0")}`,
+				scheduledTime: null,
+				categoryId: 1,
+				completed: false,
+				categoryName: "기본",
+			}));
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "시즌1",
+							daysOfWeek: ["SAT"],
+							scheduledTime: null,
+							confidence: 0.6,
+							reason: "봄 시즌",
+							matchedTitles: [],
+						},
+						{
+							title: "시즌2",
+							daysOfWeek: ["SAT"],
+							scheduledTime: null,
+							confidence: 0.58,
+							reason: "봄 시즌",
+							matchedTitles: [],
+						},
+						{
+							title: "시즌3",
+							daysOfWeek: ["SAT"],
+							scheduledTime: null,
+							confidence: 0.55,
+							reason: "봄 시즌",
+							matchedTitles: [],
+						},
+						{
+							title: "밸런스1",
+							daysOfWeek: ["SUN"],
+							scheduledTime: null,
+							confidence: 0.65,
+							reason: "카테고리 편중",
+							matchedTitles: [],
+						},
+						{
+							title: "매칭유형",
+							daysOfWeek: ["MON"],
+							scheduledTime: null,
+							confidence: 0.85,
+							reason: "3회 반복",
+							matchedTitles: ["할일0", "할일0", "할일0"],
+						},
+					],
+				},
+				model: "gemini-2.5-flash-lite",
+				usage: { input: 100, output: 50 },
+			});
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockImplementation(async (items) => ({
+				count: (items as unknown[]).length,
+			}));
+
+			// When
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then -매칭유형 1 + 빈유형 2(캡) = 3개 저장
+			expect(mockRepository.createMany).toHaveBeenCalledTimes(1);
+			const createManyArg = mockRepository.createMany.mock
+				.calls[0]?.[0] as unknown[];
+			expect(createManyArg).toHaveLength(3);
+		});
 	});
 });

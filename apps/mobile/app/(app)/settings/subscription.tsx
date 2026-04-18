@@ -50,7 +50,7 @@ const HIGHLIGHT_BENEFITS = [
   {
     icon: DocsIcon,
     title: 'AI 할일 파싱 무제한',
-    description: '하루 5회 제한 없이, 자연어로 할 일을 마음껏 정리해요',
+    description: '월 5회 제한 없이, 자연어로 할 일을 마음껏 정리해요',
     image: benefitAiParsingImage,
   },
   {

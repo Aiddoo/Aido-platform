@@ -155,7 +155,7 @@ const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
   FOLLOW_0901: '이미 친구 요청을 보냈어요',
   VERIFY_0752: '인증 코드가 만료되었어요. 다시 요청해주세요.',
   USER_0615:   '탈퇴한 계정이 복구되었어요',
-  AI_1303:     '오늘 AI 사용 횟수를 모두 사용했어요',
+  AI_1303:     '이번 달 AI 사용 횟수를 모두 사용했어요',
   // ... 150+ 에러 코드 매핑
 };
 ```

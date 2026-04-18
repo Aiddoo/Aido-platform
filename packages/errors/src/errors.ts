@@ -1082,8 +1082,9 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.AI_1303]: {
     code: 'AI_1303',
-    message: '일일 AI 사용 횟수를 초과했습니다.',
-    description: '무료 사용자는 하루 5회까지만 AI 기능을 사용할 수 있습니다.',
+    message: '월간 AI 사용 횟수를 초과했습니다.',
+    description:
+      '무료 사용자는 한 달에 5회까지만 AI 기능을 사용할 수 있습니다. (KST 매월 1일 00:00 리셋)',
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.AI_1304]: {
