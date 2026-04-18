@@ -249,6 +249,7 @@ export class AiSuggestionService {
 		}
 
 		patterns = this.#applyTypeCap(patterns);
+		patterns = this.#dedupeByTitlePrefixAndDays(patterns);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -261,10 +262,10 @@ export class AiSuggestionService {
 			.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day")
 			.toDate();
 
-		const limitedPatterns = patterns.slice(
-			0,
-			AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER,
-		);
+		// 신뢰도 내림차순 정렬 후 상한 적용 (Gemini review 반영)
+		const limitedPatterns = [...patterns]
+			.sort((a, b) => b.confidence - a.confidence)
+			.slice(0, AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER);
 
 		const createdCount = await this.database.$transaction(async (tx) => {
 			await this.aiSuggestionRepository.deletePending(userId, tx);
@@ -282,6 +283,7 @@ export class AiSuggestionService {
 						pattern.matchedTitles as unknown as Prisma.InputJsonValue,
 					expiresAt,
 					suggestedCategoryId: this.#findSuggestedCategoryId(
+						pattern.title,
 						pattern.matchedTitles,
 						context.todos,
 					),
@@ -356,6 +358,34 @@ export class AiSuggestionService {
 	}
 
 	/**
+	 * 제목의 앞 2어절 + daysOfWeek 세트가 동일하면 같은 제안으로 간주해 중복 제거.
+	 *
+	 * 실제 관찰된 품질 저하 사례:
+	 *  - "오전 자기계발 30분" / "오전 자기계발 1시간" 같은 유형의 제안이
+	 *    시간·시각 파라미터만 다르게 2개 생성되어 다양성 저하.
+	 *
+	 * 동일 키의 후보가 여러 개면 가장 높은 confidence 하나만 남긴다.
+	 */
+	#dedupeByTitlePrefixAndDays(
+		patterns: DetectedPatternsResponse["patterns"],
+	): DetectedPatternsResponse["patterns"] {
+		const seen = new Map<
+			string,
+			DetectedPatternsResponse["patterns"][number]
+		>();
+		for (const p of patterns) {
+			const firstTwoWords = p.title.trim().split(/\s+/).slice(0, 2).join(" ");
+			const daysKey = [...p.daysOfWeek].sort().join(",");
+			const key = `${firstTwoWords}|${daysKey}`;
+			const existing = seen.get(key);
+			if (!existing || p.confidence > existing.confidence) {
+				seen.set(key, p);
+			}
+		}
+		return [...seen.values()];
+	}
+
+	/**
 	 * 두 패턴 리스트를 제목 기준으로 중복 제거하여 병합.
 	 */
 	#mergeUniquePatterns(
@@ -389,12 +419,33 @@ export class AiSuggestionService {
 	}
 
 	/**
-	 * 매칭된 투두의 최빈 카테고리 ID를 반환
+	 * 제안의 suggestedCategoryId 결정.
+	 *
+	 * 1) 제목에 사용자 카테고리명과 **완전히 일치하는 단어**가 있으면 그 카테고리를 우선 선택
+	 *    (Live QA 에서 "운동 30분" 제안이 자기계발 카테고리로 잘못 할당되는 문제 방지)
+	 * 2) 아니면 매칭된 투두들의 최빈 카테고리
+	 * 3) 매칭이 없으면 null
 	 */
 	#findSuggestedCategoryId(
+		title: string,
 		matchedTitles: string[],
 		todos: TodoSummaryForAnalysis[],
 	): number | null {
+		// 1) 제목 단어 기반 카테고리명 매칭 (가장 강한 시그널)
+		const titleWords = new Set(title.split(/\s+/).filter(Boolean));
+		const categoryByName = new Map<string, number>();
+		for (const t of todos) {
+			if (t.categoryName && !categoryByName.has(t.categoryName)) {
+				categoryByName.set(t.categoryName, t.categoryId);
+			}
+		}
+		for (const [name, id] of categoryByName) {
+			if (titleWords.has(name)) {
+				return id;
+			}
+		}
+
+		// 2) matched todos 의 최빈 카테고리
 		const matched = todos.filter((t) =>
 			matchedTitles.some((mt) => t.title === mt),
 		);

@@ -19,11 +19,10 @@ export interface TokenUsage {
 /**
  * 모델 선택 힌트
  *
- * - `default`: 파싱·제안 등 빠른 구조화 출력이 중요한 기본 경로 (Gemini Flash)
- * - `report`: 코칭 톤과 뉘앙스가 중요한 리포트 (Anthropic Claude Sonnet)
- *   Anthropic 키 미설정 환경에서는 자동으로 default 모델로 fallback됩니다.
+ * 현재는 Gemini Flash-Lite 단일 모델만 사용하지만, 향후 경로별로 다른 모델을
+ * 추가할 수 있도록 힌트 타입을 유지합니다. 확장 예: `"fast"`, `"quality"`.
  */
-export type AiModelHint = "default" | "report";
+export type AiModelHint = "default";
 
 /**
  * 구조화된 생성 옵션

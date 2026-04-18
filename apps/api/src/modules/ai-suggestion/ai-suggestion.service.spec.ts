@@ -688,15 +688,16 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			expect(createManyArg?.[0]?.suggestedCategoryId).toBe(3);
 		});
 
-		it("매칭되는 투두가 없으면 suggestedCategoryId가 null이어야 한다", async () => {
-			// Given -투두 제목과 패턴 matchedTitles가 일치하지 않는 상황
+		it("매칭되는 투두가 없고 제목-카테고리명 일치도 없으면 suggestedCategoryId가 null이어야 한다", async () => {
+			// Given -투두 제목과 패턴 matchedTitles가 일치하지 않고,
+			//        패턴 제목 단어도 어느 카테고리명과도 일치하지 않는 상황
 			const todos = Array.from({ length: 5 }, (_, i) => ({
-				title: "운동",
+				title: "공부",
 				startDate: `2026-02-${String(10 + i).padStart(2, "0")}`,
 				scheduledTime: null,
 				categoryId: 5,
 				completed: true,
-				categoryName: "운동",
+				categoryName: "자기계발",
 			}));
 			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
 
@@ -704,7 +705,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 				output: {
 					patterns: [
 						{
-							title: "운동",
+							title: "영화 감상",
 							daysOfWeek: ["MON"],
 							scheduledTime: null,
 							confidence: 0.8,
@@ -728,6 +729,68 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			const createManyArg = mockRepository.createMany.mock
 				.calls[0]?.[0] as Record<string, unknown>[];
 			expect(createManyArg?.[0]?.suggestedCategoryId).toBeNull();
+		});
+
+		it("제목 단어가 사용자 카테고리명과 일치하면 matchedTitles 최빈 카테고리보다 우선한다", async () => {
+			// Given — matchedTitles 는 자기계발 카테고리 todo 2건에 매칭 (filterWeakPatterns 통과)
+			//         제안 title 에 "운동" 이 있고 사용자 카테고리에 "운동"(30) 이 있는 경우
+			const todos = [
+				{
+					title: "매칭대상A",
+					startDate: "2026-02-10",
+					scheduledTime: null,
+					categoryId: 5,
+					completed: true,
+					categoryName: "자기계발",
+				},
+				{
+					title: "매칭대상B",
+					startDate: "2026-02-12",
+					scheduledTime: null,
+					categoryId: 5,
+					completed: true,
+					categoryName: "자기계발",
+				},
+				// 운동 카테고리 todo (제목 단어 매칭용)
+				{
+					title: "다른할일",
+					startDate: "2026-02-11",
+					scheduledTime: null,
+					categoryId: 30,
+					completed: true,
+					categoryName: "운동",
+				},
+			];
+			mockContextBuilder.build.mockResolvedValue(createMockContext({ todos }));
+
+			mockAiProvider.generateStructured.mockResolvedValue({
+				output: {
+					patterns: [
+						{
+							title: "운동 30분",
+							daysOfWeek: ["TUE"],
+							scheduledTime: null,
+							confidence: 0.8,
+							reason: "이유",
+							matchedTitles: ["매칭대상A", "매칭대상B"],
+						},
+					],
+				},
+				model: "gemini-2.0-flash",
+				usage: { input: 100, output: 50 },
+			});
+
+			mockRepository.deletePending.mockResolvedValue({ count: 0 });
+			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
+			mockRepository.createMany.mockResolvedValue({ count: 1 });
+
+			// When
+			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
+
+			// Then — 최빈(5) 이 아니라 제목 단어 매칭 카테고리(30) 반환
+			const createManyArg = mockRepository.createMany.mock
+				.calls[0]?.[0] as Record<string, unknown>[];
+			expect(createManyArg?.[0]?.suggestedCategoryId).toBe(30);
 		});
 
 		it("시즌 추천(빈 matchedTitles)은 필터를 통과해야 한다", async () => {

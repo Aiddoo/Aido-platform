@@ -346,8 +346,8 @@ describe("AI E2E", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				expect(usageResponse.body.data.used).toBe(1);
-				expect(usageResponse.body.data.limit).toBe(5);
+				expect(usageResponse.body.data.data.used).toBe(1);
+				expect(usageResponse.body.data.data.limit).toBe(5);
 			});
 
 			it("resetsAt 필드는 KST 매월 1일 00:00 의 UTC 시각을 반환한다", async () => {
@@ -360,9 +360,8 @@ describe("AI E2E", () => {
 					.set("Authorization", `Bearer ${accessToken}`)
 					.expect(200);
 
-				// Then - KST 다음 달 1일 00:00 = UTC HH:00 (offset -9)
-				// UTC 시각이 15:00:00 에 위치해야 함
-				const resetsAt = new Date(response.body.data.resetsAt);
+				// Then - KST 다음 달 1일 00:00 = UTC 15:00 (offset -9)
+				const resetsAt = new Date(response.body.data.data.resetsAt);
 				expect(resetsAt.getUTCHours()).toBe(15);
 				expect(resetsAt.getUTCMinutes()).toBe(0);
 				expect(resetsAt.getUTCSeconds()).toBe(0);

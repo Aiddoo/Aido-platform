@@ -7,11 +7,9 @@ import { AiService } from "./ai.service";
 import { AiUsageGuard } from "./guards/ai-usage.guard";
 import { AI_PROVIDER } from "./providers/ai.provider";
 import {
-	AI_PROVIDER_ANTHROPIC,
 	AI_PROVIDER_GEMINI,
 	AiRouterProvider,
 } from "./providers/ai-router.provider";
-import { AnthropicProvider } from "./providers/anthropic.provider";
 import { GeminiProvider } from "./providers/gemini.provider";
 
 /**
@@ -25,17 +23,16 @@ import { GeminiProvider } from "./providers/gemini.provider";
  * - 한국어 날짜 표현 처리
  * - 월간 사용량 제한 (무료 유저: 5회/월, KST 매월 1일 00:00 리셋)
  *
- * ### AI Provider 라우팅
- * - 기본 경로(parse-todo, parse-memo, suggestion): **Gemini 2.5 Flash-Lite**
- *   - Input: $0.10/1M tokens, Output: $0.40/1M tokens
- * - 리포트 경로(`modelHint: "report"`): **Claude Sonnet 4.6** (Anthropic)
- *   - `ANTHROPIC_API_KEY` 미설정 시 Gemini로 자동 fallback
+ * ### AI Provider
+ * 모든 AI 경로(parse-todo, parse-memo, suggestion, report)는 **Gemini 2.5 Flash-Lite**
+ * 단일 모델을 사용합니다. `AiRouterProvider`는 향후 경로별 모델 추가를 위한
+ * 라우팅 레이어로 남겨둡니다.
+ * - Input: $0.10/1M tokens, Output: $0.40/1M tokens
  *
  * ### 환경 변수
  * | 변수 | 필수 | 설명 |
  * |------|------|------|
  * | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ | Google AI API 키 |
- * | `ANTHROPIC_API_KEY` | ⚠️ 권장 | 리포트 품질 상향용. 미설정 시 Gemini fallback |
  */
 @Module({
 	imports: [AuthModule, TodoCategoryModule],
@@ -44,7 +41,6 @@ import { GeminiProvider } from "./providers/gemini.provider";
 		AiService,
 		AiUsageGuard,
 		{ provide: AI_PROVIDER_GEMINI, useClass: GeminiProvider },
-		{ provide: AI_PROVIDER_ANTHROPIC, useClass: AnthropicProvider },
 		{
 			provide: AI_PROVIDER,
 			useClass: AiRouterProvider,

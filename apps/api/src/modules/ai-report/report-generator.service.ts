@@ -53,7 +53,6 @@ export class ReportGeneratorService {
 				schema: reportAiResponseSchema,
 				maxTokens: REPORT_AI_MAX_TOKENS,
 				temperature: REPORT_AI_TEMPERATURE,
-				modelHint: "report",
 			});
 
 			this.#logger.debug(
