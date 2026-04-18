@@ -20,11 +20,16 @@ import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
 import {
 	buildSuggestionPrompt,
-	type DetectedPatternsResponse,
 	detectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
-import type { SuggestionContext, TodoSummaryForAnalysis } from "./types";
+import { resolveSuggestedCategoryId } from "./utils/category-resolver.util";
+import {
+	applyTypeCap,
+	dedupeByTitlePrefixAndDays,
+	filterWeakPatterns,
+	mergeUniquePatterns,
+} from "./utils/pattern-filter.util";
 
 /**
  * AI 반복 제안 서비스
@@ -225,10 +230,7 @@ export class AiSuggestionService {
 			temperature: 0.3,
 		});
 
-		let patterns = this.#filterWeakPatterns(
-			firstResult.output.patterns,
-			context,
-		);
+		let patterns = filterWeakPatterns(firstResult.output.patterns, context);
 
 		if (patterns.length < AI_SUGGESTION_LIMITS.RETRY_THRESHOLD) {
 			this.#logger.debug(
@@ -241,15 +243,15 @@ export class AiSuggestionService {
 				maxTokens: 1500,
 				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
 			});
-			const retryPatterns = this.#filterWeakPatterns(
+			const retryPatterns = filterWeakPatterns(
 				retryResult.output.patterns,
 				context,
 			);
-			patterns = this.#mergeUniquePatterns(patterns, retryPatterns);
+			patterns = mergeUniquePatterns(patterns, retryPatterns);
 		}
 
-		patterns = this.#applyTypeCap(patterns);
-		patterns = this.#dedupeByTitlePrefixAndDays(patterns);
+		patterns = applyTypeCap(patterns);
+		patterns = dedupeByTitlePrefixAndDays(patterns);
 
 		if (patterns.length === 0) {
 			this.#logger.debug(`패턴 미감지: userId=${userId}`);
@@ -282,7 +284,7 @@ export class AiSuggestionService {
 					matchedTodos:
 						pattern.matchedTitles as unknown as Prisma.InputJsonValue,
 					expiresAt,
-					suggestedCategoryId: this.#findSuggestedCategoryId(
+					suggestedCategoryId: resolveSuggestedCategoryId(
 						pattern.title,
 						pattern.matchedTitles,
 						context.todos,
@@ -298,175 +300,5 @@ export class AiSuggestionService {
 		);
 
 		return createdCount;
-	}
-
-	/**
-	 * AI가 반환한 패턴 중 약한 패턴을 필터링
-	 *
-	 * - 시즌/밸런스(matchedTitles 빈 배열): 허용 (라운드로빈 캡은 #applyTypeCap에서 적용)
-	 * - 날씨 관련 제안이지만 날씨 컨텍스트 없음: 제거
-	 * - 단순 반복(같은 제목): 2회+면 인정하되 2회는 높은 confidence, 3회+는 낮은 confidence 허용
-	 * - 순차/발전(서로 다른 제목): 2개 이상이면 허용
-	 */
-	#filterWeakPatterns(
-		patterns: DetectedPatternsResponse["patterns"],
-		context: SuggestionContext,
-	): DetectedPatternsResponse["patterns"] {
-		return patterns.filter((p) => {
-			if (p.matchedTitles.length === 0) {
-				return true;
-			}
-
-			if (!context.weather && this.#isWeatherRelated(p.reason)) {
-				return false;
-			}
-
-			const uniqueTitles = new Set(p.matchedTitles);
-			const isRepetition = uniqueTitles.size === 1;
-
-			if (isRepetition) {
-				const count = p.matchedTitles.length;
-				if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) return false;
-				const gate =
-					count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
-						? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
-						: AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
-				return p.confidence >= gate;
-			}
-			return p.matchedTitles.length >= 2;
-		});
-	}
-
-	/**
-	 * matchedTitles가 빈 유형(시즌/밸런스)이 전체의 절반을 넘지 않도록 캡을 씌운다.
-	 * 빈 유형이 많이 남아 제안이 획일화되는 것을 방지.
-	 */
-	#applyTypeCap(
-		patterns: DetectedPatternsResponse["patterns"],
-	): DetectedPatternsResponse["patterns"] {
-		const noMatchCap = AI_SUGGESTION_LIMITS.NO_MATCH_TYPE_CAP;
-		const matched: DetectedPatternsResponse["patterns"] = [];
-		const noMatched: DetectedPatternsResponse["patterns"] = [];
-		for (const p of patterns) {
-			if (p.matchedTitles.length === 0) noMatched.push(p);
-			else matched.push(p);
-		}
-		const cappedNoMatched = noMatched
-			.sort((a, b) => b.confidence - a.confidence)
-			.slice(0, noMatchCap);
-		return [...matched, ...cappedNoMatched];
-	}
-
-	/**
-	 * 제목의 앞 2어절 + daysOfWeek 세트가 동일하면 같은 제안으로 간주해 중복 제거.
-	 *
-	 * 실제 관찰된 품질 저하 사례:
-	 *  - "오전 자기계발 30분" / "오전 자기계발 1시간" 같은 유형의 제안이
-	 *    시간·시각 파라미터만 다르게 2개 생성되어 다양성 저하.
-	 *
-	 * 동일 키의 후보가 여러 개면 가장 높은 confidence 하나만 남긴다.
-	 */
-	#dedupeByTitlePrefixAndDays(
-		patterns: DetectedPatternsResponse["patterns"],
-	): DetectedPatternsResponse["patterns"] {
-		const seen = new Map<
-			string,
-			DetectedPatternsResponse["patterns"][number]
-		>();
-		for (const p of patterns) {
-			const firstTwoWords = p.title.trim().split(/\s+/).slice(0, 2).join(" ");
-			const daysKey = [...p.daysOfWeek].sort().join(",");
-			const key = `${firstTwoWords}|${daysKey}`;
-			const existing = seen.get(key);
-			if (!existing || p.confidence > existing.confidence) {
-				seen.set(key, p);
-			}
-		}
-		return [...seen.values()];
-	}
-
-	/**
-	 * 두 패턴 리스트를 제목 기준으로 중복 제거하여 병합.
-	 */
-	#mergeUniquePatterns(
-		primary: DetectedPatternsResponse["patterns"],
-		secondary: DetectedPatternsResponse["patterns"],
-	): DetectedPatternsResponse["patterns"] {
-		const seen = new Set(primary.map((p) => p.title));
-		const merged = [...primary];
-		for (const p of secondary) {
-			if (seen.has(p.title)) continue;
-			merged.push(p);
-			seen.add(p.title);
-		}
-		return merged;
-	}
-
-	/**
-	 * reason 텍스트에서 날씨 관련 키워드 감지
-	 */
-	#isWeatherRelated(reason: string): boolean {
-		const weatherKeywords = [
-			"날씨",
-			"비",
-			"눈",
-			"소나기",
-			"우천",
-			"실내",
-			"악천후",
-		];
-		return weatherKeywords.some((keyword) => reason.includes(keyword));
-	}
-
-	/**
-	 * 제안의 suggestedCategoryId 결정.
-	 *
-	 * 1) 제목에 사용자 카테고리명과 **완전히 일치하는 단어**가 있으면 그 카테고리를 우선 선택
-	 *    (Live QA 에서 "운동 30분" 제안이 자기계발 카테고리로 잘못 할당되는 문제 방지)
-	 * 2) 아니면 매칭된 투두들의 최빈 카테고리
-	 * 3) 매칭이 없으면 null
-	 */
-	#findSuggestedCategoryId(
-		title: string,
-		matchedTitles: string[],
-		todos: TodoSummaryForAnalysis[],
-	): number | null {
-		// 1) 제목 단어 기반 카테고리명 매칭 (가장 강한 시그널)
-		const titleWords = new Set(title.split(/\s+/).filter(Boolean));
-		const categoryByName = new Map<string, number>();
-		for (const t of todos) {
-			if (t.categoryName && !categoryByName.has(t.categoryName)) {
-				categoryByName.set(t.categoryName, t.categoryId);
-			}
-		}
-		for (const [name, id] of categoryByName) {
-			if (titleWords.has(name)) {
-				return id;
-			}
-		}
-
-		// 2) matched todos 의 최빈 카테고리
-		const matched = todos.filter((t) =>
-			matchedTitles.some((mt) => t.title === mt),
-		);
-
-		if (matched.length === 0) {
-			return null;
-		}
-
-		const freq = new Map<number, number>();
-		for (const t of matched) {
-			freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
-		}
-
-		let maxId: number | null = null;
-		let maxCount = 0;
-		for (const [categoryId, count] of freq) {
-			if (count > maxCount) {
-				maxId = categoryId;
-				maxCount = count;
-			}
-		}
-		return maxId;
 	}
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { maskEmail } from "@/common/utils/mask.util";
 import { DatabaseService } from "@/database";
 import {
 	AUTH_DEFAULTS,
@@ -52,9 +53,9 @@ export class PasswordManagementService {
 				metadata: { email },
 			});
 
-			this.#logger.debug(`Password reset code sent to: ${email}`);
+			this.#logger.debug(`Password reset code sent to: ${maskEmail(email)}`);
 		} else {
-			this.#logger.debug(`Password reset skipped: ${email}`);
+			this.#logger.debug(`Password reset skipped: ${maskEmail(email)}`);
 		}
 
 		// 보안상 동일한 응답 (이메일 존재 여부 노출 방지)
@@ -121,7 +122,7 @@ export class PasswordManagementService {
 			);
 		});
 
-		this.#logger.log(`Password reset completed for: ${email}`);
+		this.#logger.log(`Password reset completed for: ${maskEmail(email)}`);
 
 		return { message: "비밀번호가 재설정되었습니다. 다시 로그인해주세요." };
 	}

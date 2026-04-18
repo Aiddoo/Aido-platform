@@ -1,6 +1,6 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import { type Job, UnrecoverableError } from "bullmq";
 
 import type { TimezoneAwareReminderJob } from "../jobs/timezone-aware-reminder.job";
 import {
@@ -48,7 +48,10 @@ export class TimezoneReminderProcessor extends WorkerHost {
 
 	async process(job: Job<TimezoneReminderJobData>): Promise<void> {
 		if (!this.#reminderJob) {
-			throw new Error("TimezoneAwareReminderJob not initialized");
+			// 영구 실패: 의존성이 주입되지 않은 상태는 재시도해도 해결되지 않음.
+			// BullMQ UnrecoverableError 로 즉시 failed set 으로 이동시켜 재시도 루프 방지.
+			this.#logger.error("TimezoneAwareReminderJob not initialized");
+			throw new UnrecoverableError("TimezoneAwareReminderJob not initialized");
 		}
 
 		switch (job.name) {

@@ -1,6 +1,6 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Inject, Logger } from "@nestjs/common";
-import type { Job } from "bullmq";
+import { type Job, UnrecoverableError } from "bullmq";
 
 import type { DailySignupSummaryJob } from "../jobs/daily-signup-summary.job";
 import {
@@ -63,7 +63,9 @@ export class AdminNotificationProcessor extends WorkerHost {
 	async process(job: Job<AdminNotificationJobData>): Promise<void> {
 		if (job.name === AdminNotificationJobName.DISPATCH_SUMMARY) {
 			if (!this.#dailySummaryJob) {
-				throw new Error("DailySignupSummaryJob not initialized");
+				// 영구 실패: 의존성 미주입 상태는 재시도해도 해결 불가.
+				this.#logger.error("DailySignupSummaryJob not initialized");
+				throw new UnrecoverableError("DailySignupSummaryJob not initialized");
 			}
 
 			await this.#dailySummaryJob.handleDailySummary();
