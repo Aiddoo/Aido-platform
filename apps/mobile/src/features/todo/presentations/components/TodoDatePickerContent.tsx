@@ -7,6 +7,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { type DatePicker, useDatePicker } from '../hooks/useDatePicker';
+import type { RepeatSetting } from '../hooks/useRepeatSetting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './Calendar/CalendarWeekdayHeader';
 import { PickerHeader } from './PickerHeader';
@@ -201,10 +202,7 @@ const DAY_LABELS: { key: DayOfWeek; label: string }[] = [
 ];
 
 interface DayOfWeekSelectorProps {
-  selectedDays: DayOfWeek[];
-  onToggleDay: (day: DayOfWeek) => void;
-  onToggleAll: () => void;
-  isAllSelected: boolean;
+  repeatSetting: RepeatSetting;
 }
 
 const formatSelectedDays = (days: DayOfWeek[]): string => {
@@ -213,12 +211,60 @@ const formatSelectedDays = (days: DayOfWeek[]): string => {
   return sorted.map((d) => DAY_LABELS.find((l) => l.key === d)?.label ?? '').join(', ');
 };
 
-export const DayOfWeekSelector = ({
+const getRepeatSummary = ({
   selectedDays,
-  onToggleDay,
-  onToggleAll,
   isAllSelected,
-}: DayOfWeekSelectorProps) => {
+  isWeekdaysSelected,
+  isWeekendsSelected,
+}: {
+  selectedDays: DayOfWeek[];
+  isAllSelected: boolean;
+  isWeekdaysSelected: boolean;
+  isWeekendsSelected: boolean;
+}): string => {
+  if (isAllSelected) return '매일 반복';
+  if (isWeekdaysSelected) return '주중 반복';
+  if (isWeekendsSelected) return '주말 반복';
+  return `매주 ${formatSelectedDays(selectedDays)} 반복`;
+};
+
+interface PresetChipProps {
+  label: string;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+const PresetChip = ({ label, isSelected, onPress }: PresetChipProps) => (
+  <PressableFeedback
+    onPress={onPress}
+    className={cn(
+      'h-8 items-center justify-center rounded-4xl px-3',
+      isSelected ? 'bg-main' : 'bg-gray-2',
+    )}
+  >
+    <Text
+      size="b4"
+      weight="medium"
+      className={isSelected ? 'text-white' : undefined}
+      shade={isSelected ? undefined : 7}
+    >
+      {label}
+    </Text>
+  </PressableFeedback>
+);
+
+export const DayOfWeekSelector = ({ repeatSetting }: DayOfWeekSelectorProps) => {
+  const {
+    selectedDays,
+    toggleDay,
+    toggleAllDays,
+    toggleWeekdays,
+    toggleWeekends,
+    isAllDaysSelected,
+    isWeekdaysSelected,
+    isWeekendsSelected,
+  } = repeatSetting;
+
   return (
     <VStack gap={12}>
       <ScrollView
@@ -226,12 +272,15 @@ export const DayOfWeekSelector = ({
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="gap-1.5 px-4"
       >
+        <PresetChip label="매일" isSelected={isAllDaysSelected} onPress={toggleAllDays} />
+        <PresetChip label="주중" isSelected={isWeekdaysSelected} onPress={toggleWeekdays} />
+        <PresetChip label="주말" isSelected={isWeekendsSelected} onPress={toggleWeekends} />
         {DAY_LABELS.map(({ key, label }) => {
           const isSelected = selectedDays.includes(key);
           return (
             <PressableFeedback
               key={key}
-              onPress={() => onToggleDay(key)}
+              onPress={() => toggleDay(key)}
               className={cn(
                 'size-8 items-center justify-center rounded-4xl',
                 isSelected ? 'bg-main' : 'bg-gray-2',
@@ -248,26 +297,16 @@ export const DayOfWeekSelector = ({
             </PressableFeedback>
           );
         })}
-        <PressableFeedback
-          onPress={onToggleAll}
-          className={cn(
-            'h-8 items-center justify-center rounded-4xl px-3',
-            isAllSelected ? 'bg-main' : 'bg-gray-2',
-          )}
-        >
-          <Text
-            size="b4"
-            weight="medium"
-            className={isAllSelected ? 'text-white' : undefined}
-            shade={isAllSelected ? undefined : 7}
-          >
-            매일
-          </Text>
-        </PressableFeedback>
       </ScrollView>
       {selectedDays.length > 0 ? (
         <Text size="b3" tone="brand" align="right" className="px-4">
-          * {isAllSelected ? '매일 반복' : `매주 ${formatSelectedDays(selectedDays)} 반복`}
+          *{' '}
+          {getRepeatSummary({
+            selectedDays,
+            isAllSelected: isAllDaysSelected,
+            isWeekdaysSelected,
+            isWeekendsSelected,
+          })}
         </Text>
       ) : (
         <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">

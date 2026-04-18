@@ -155,4 +155,52 @@ describe('repeatSettingReducer', () => {
       expect(next.selectedDays).toEqual(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
     });
   });
+
+  describe('toggleWeekdays', () => {
+    it('주중(월~금)이 정확히 선택되어 있으면 모두 해제한다', () => {
+      // Given
+      const state = createState({ selectedDays: ['FRI', 'MON', 'WED', 'TUE', 'THU'] });
+
+      // When
+      const next = repeatSettingReducer(state, { type: 'toggleWeekdays' });
+
+      // Then
+      expect(next.selectedDays).toEqual([]);
+    });
+
+    it('다른 조합이 선택되어 있으면 주중(월~금)으로 덮어쓴다', () => {
+      // Given
+      const state = createState({ selectedDays: ['SAT', 'SUN'] });
+
+      // When
+      const next = repeatSettingReducer(state, { type: 'toggleWeekdays' });
+
+      // Then
+      expect(next.selectedDays).toEqual(['MON', 'TUE', 'WED', 'THU', 'FRI']);
+    });
+  });
+
+  describe('toggleWeekends', () => {
+    it('주말(토,일)이 정확히 선택되어 있으면 모두 해제한다', () => {
+      // Given
+      const state = createState({ selectedDays: ['SUN', 'SAT'] });
+
+      // When
+      const next = repeatSettingReducer(state, { type: 'toggleWeekends' });
+
+      // Then
+      expect(next.selectedDays).toEqual([]);
+    });
+
+    it('다른 조합이 선택되어 있으면 주말(토,일)로 덮어쓴다', () => {
+      // Given
+      const state = createState({ selectedDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'] });
+
+      // When
+      const next = repeatSettingReducer(state, { type: 'toggleWeekends' });
+
+      // Then
+      expect(next.selectedDays).toEqual(['SAT', 'SUN']);
+    });
+  });
 });

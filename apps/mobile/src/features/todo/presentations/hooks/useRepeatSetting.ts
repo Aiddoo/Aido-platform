@@ -5,6 +5,11 @@ import { match } from 'ts-pattern';
 import { getDayOfWeekFromDate } from '../utils/day-of-week';
 
 const ALL_DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const WEEKDAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+const WEEKEND_DAYS: DayOfWeek[] = ['SAT', 'SUN'];
+
+const isSameDaySet = (a: DayOfWeek[], b: DayOfWeek[]): boolean =>
+  a.length === b.length && b.every((d) => a.includes(d));
 
 export interface RepeatSettingState {
   isEnabled: boolean;
@@ -16,6 +21,8 @@ type RepeatSettingAction =
   | { type: 'toggle'; enabled: boolean; startDate: Date }
   | { type: 'toggleDay'; day: DayOfWeek }
   | { type: 'toggleAllDays' }
+  | { type: 'toggleWeekdays' }
+  | { type: 'toggleWeekends' }
   | { type: 'setEndDate'; date: Date }
   | { type: 'clearEndDate' };
 
@@ -52,6 +59,14 @@ export const repeatSettingReducer = (
       ...state,
       selectedDays: state.selectedDays.length === 7 ? [] : [...ALL_DAYS],
     }))
+    .with({ type: 'toggleWeekdays' }, () => ({
+      ...state,
+      selectedDays: isSameDaySet(state.selectedDays, WEEKDAYS) ? [] : [...WEEKDAYS],
+    }))
+    .with({ type: 'toggleWeekends' }, () => ({
+      ...state,
+      selectedDays: isSameDaySet(state.selectedDays, WEEKEND_DAYS) ? [] : [...WEEKEND_DAYS],
+    }))
     .with({ type: 'setEndDate' }, ({ date }) => ({
       ...state,
       endDate: date,
@@ -80,9 +95,13 @@ export const useRepeatSetting = ({ isEnabled, selectedDays, endDate }: UseRepeat
     selectedDays: state.selectedDays,
     endDate: state.endDate,
     isAllDaysSelected: state.selectedDays.length === 7,
+    isWeekdaysSelected: isSameDaySet(state.selectedDays, WEEKDAYS),
+    isWeekendsSelected: isSameDaySet(state.selectedDays, WEEKEND_DAYS),
     toggle: (enabled: boolean, startDate: Date) => dispatch({ type: 'toggle', enabled, startDate }),
     toggleDay: (day: DayOfWeek) => dispatch({ type: 'toggleDay', day }),
     toggleAllDays: () => dispatch({ type: 'toggleAllDays' }),
+    toggleWeekdays: () => dispatch({ type: 'toggleWeekdays' }),
+    toggleWeekends: () => dispatch({ type: 'toggleWeekends' }),
     setEndDate: (date: Date) => dispatch({ type: 'setEndDate', date }),
     clearEndDate: () => dispatch({ type: 'clearEndDate' }),
   };
