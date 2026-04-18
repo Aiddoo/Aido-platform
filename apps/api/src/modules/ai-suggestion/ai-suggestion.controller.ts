@@ -5,7 +5,6 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
-	Logger,
 	Param,
 	Patch,
 } from "@nestjs/common";
@@ -72,8 +71,6 @@ import {
 @ApiBearerAuth()
 @Controller("ai/suggestions")
 export class AiSuggestionController {
-	readonly #logger = new Logger(AiSuggestionController.name);
-
 	constructor(private readonly aiSuggestionService: AiSuggestionService) {}
 
 	/**
@@ -225,8 +222,6 @@ export class AiSuggestionController {
 	async getPendingSuggestions(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<SuggestionListResponseDto> {
-		this.#logger.debug(`제안 목록 조회: userId=${user.userId}`);
-
 		const suggestions = await this.aiSuggestionService.getPendingSuggestions(
 			user.userId,
 		);
@@ -270,10 +265,6 @@ export class AiSuggestionController {
 		@Body() body: SuggestionActionDto,
 		@Timezone() tz: string,
 	): Promise<SuggestionActionResponseDto> {
-		this.#logger.debug(
-			`제안 액션: id=${params.id}, userId=${user.userId}, action=${body.action}`,
-		);
-
 		const result = await this.aiSuggestionService.handleAction(
 			user.userId,
 			params.id,

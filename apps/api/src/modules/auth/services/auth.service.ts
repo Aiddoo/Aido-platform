@@ -17,6 +17,7 @@ import {
 import { now } from "@/common/date/utils/core";
 import { toISOString, toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
+import { maskEmail } from "@/common/utils/mask.util";
 import { DatabaseService } from "@/database";
 import { Prisma, type UserStatus } from "@/generated/prisma/client";
 import type { UserRegisteredEventPayload } from "@/modules/admin-notification/events/admin-notification.events";
@@ -209,12 +210,14 @@ export class AuthService {
 		} catch (error) {
 			emailSent = false;
 			this.#logger.error(
-				`Unexpected error sending verification email to ${email}:`,
+				`Unexpected error sending verification email to ${maskEmail(email)}:`,
 				error,
 			);
 		}
 
-		this.#logger.log(`User registered: ${result.user.id} (${email})`);
+		this.#logger.log(
+			`User registered: ${result.user.id} (${maskEmail(email)})`,
+		);
 
 		this.adminNotificationQueueService.enqueueUserRegistered({
 			userId: result.user.id,
@@ -313,7 +316,7 @@ export class AuthService {
 			};
 		});
 
-		this.#logger.log(`Email verified: ${user.id} (${email})`);
+		this.#logger.log(`Email verified: ${user.id} (${maskEmail(email)})`);
 
 		return {
 			userId: user.id,
@@ -361,12 +364,14 @@ export class AuthService {
 			);
 		} catch (error) {
 			this.#logger.error(
-				`Unexpected error sending verification email to ${email}:`,
+				`Unexpected error sending verification email to ${maskEmail(email)}:`,
 				error,
 			);
 		}
 
-		this.#logger.log(`Verification code resent: ${user.id} (${email})`);
+		this.#logger.log(
+			`Verification code resent: ${user.id} (${maskEmail(email)})`,
+		);
 
 		return {
 			message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
@@ -545,11 +550,11 @@ export class AuthService {
 		if (needsRestore) {
 			await this.cacheService.invalidateUserProfile(user.id);
 			this.#logger.log(
-				`Deleted account restored on login: ${user.id} (${email})`,
+				`Deleted account restored on login: ${user.id} (${maskEmail(email)})`,
 			);
 		}
 
-		this.#logger.log(`User logged in: ${user.id} (${email})`);
+		this.#logger.log(`User logged in: ${user.id} (${maskEmail(email)})`);
 
 		return {
 			userId: user.id,

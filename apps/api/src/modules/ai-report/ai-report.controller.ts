@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/errors";
-import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Timezone } from "@/common/decorators";
 
@@ -55,8 +55,6 @@ import {
 @ApiBearerAuth()
 @Controller("ai/reports")
 export class AiReportController {
-	readonly #logger = new Logger(AiReportController.name);
-
 	constructor(private readonly aiReportService: AiReportService) {}
 
 	/**
@@ -141,8 +139,6 @@ export class AiReportController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Timezone() tz: string,
 	): Promise<ReportStatusResponseDto> {
-		this.#logger.debug(`리포트 상태 조회: userId=${user.userId}`);
-
 		const status = await this.aiReportService.getReportStatus(user.userId, tz);
 
 		return { status };
@@ -180,10 +176,6 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetAiReportsQueryDto,
 	): Promise<AiReportListResponseDto> {
-		this.#logger.debug(
-			`리포트 목록 조회: userId=${user.userId}, type=${query.type}, limit=${query.limit}`,
-		);
-
 		const reports = await this.aiReportService.getReports(user.userId, {
 			type: query.type as "WEEKLY" | "MONTHLY" | undefined,
 			limit: query.limit,
@@ -227,10 +219,6 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: AiReportIdParamDto,
 	): Promise<AiReportResponseDto> {
-		this.#logger.debug(
-			`리포트 상세 조회: id=${params.id}, userId=${user.userId}`,
-		);
-
 		const report = await this.aiReportService.getReportById(
 			user.userId,
 			params.id,
