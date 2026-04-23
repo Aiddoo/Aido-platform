@@ -1,5 +1,7 @@
 # @aido/validators
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 Zod 4.3 기반 공유 스키마 패키지. 프론트엔드/백엔드 타입 안전 검증.
 
 ## 설치

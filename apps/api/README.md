@@ -1,6 +1,20 @@
 # @aido/api
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 NestJS 11 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
+
+## 목차
+
+- [기술 스택](#기술-스택)
+- [구조](#구조)
+- [아키텍처](#아키텍처)
+- [시작하기](#시작하기)
+- [Docker 실행](#docker-실행-개발)
+- [환경 변수](#환경-변수)
+- [스크립트](#스크립트)
+- [API 문서](#api-문서)
+- [배포](#배포)
 
 ## 기술 스택
 
@@ -52,8 +66,8 @@ pnpm --filter @aido/api dev
 ## Docker 실행 (개발)
 
 ```bash
-# apps/api 디렉토리에서
-cp .env.docker.development.example .env.docker.development
+# 모노레포 루트에서
+cp .env.docker.dev.example .env.docker.dev
 
 pnpm docker:dev:up
 pnpm docker:dev:logs
@@ -69,9 +83,9 @@ pnpm docker:dev:down
 ## Docker 실행 (운영)
 
 ```bash
-# apps/api 디렉토리에서
-cp .env.docker.production.example .env.docker.production
-# 실제 운영 값으로 .env.docker.production 수정
+# 모노레포 루트에서
+cp .env.docker.prod.example .env.docker.prod
+# 실제 운영 값으로 .env.docker.prod 수정
 
 pnpm docker:prod:build
 pnpm docker:prod:up
@@ -87,12 +101,15 @@ pnpm docker:prod:down
 
 ## 환경 변수
 
+필수 항목만 표시. 전체 목록은 [DEPLOYMENT.md](./DEPLOYMENT.md#4-환경변수-레퍼런스) 참조.
+
 | 변수 | 설명 |
 |------|------|
 | `DATABASE_URL` | PostgreSQL 연결 URL |
 | `PORT` | 서버 포트 (기본: 8080) |
-| `JWT_SECRET` | JWT 서명 키 |
-| `JWT_EXPIRES_IN` | 토큰 만료 (기본: 15m) |
+| `JWT_SECRET` | JWT 서명 키 (min 32자) |
+| `JWT_REFRESH_SECRET` | Refresh 토큰 서명 키 (min 32자) |
+| `TOKEN_ENCRYPTION_KEY` | AES-256-GCM 암호화 키 (min 32자) |
 
 ## 스크립트
 
@@ -111,9 +128,6 @@ pnpm docker:prod:down
 ### Swagger UI
 - **개발 환경**: http://localhost:8080/api-docs
 - **OpenAPI JSON**: http://localhost:8080/api-docs-json
-
-### 클라이언트 가이드
-- [📱 알림 구현 가이드](./docs/PUSH_NOTIFICATION_GUIDE.md)
 
 ## 배포
 

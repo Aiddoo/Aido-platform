@@ -1,5 +1,7 @@
 # 통합 테스트 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > Mock DB 또는 실제 DB로 Service + Repository DI 통합을 검증하는 테스트
 
 ---

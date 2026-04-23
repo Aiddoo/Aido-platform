@@ -1,5 +1,7 @@
 # @aido/errors
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 API/Mobile에서 일관된 에러 처리를 위한 에러 코드 패키지.
 
 ## 설치

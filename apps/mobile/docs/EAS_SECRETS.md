@@ -1,5 +1,7 @@
 # EAS Secrets 설정 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
 EAS Build에서 민감한 파일들을 환경변수로 관리하는 방법입니다.
 
 ## 환경변수 설정

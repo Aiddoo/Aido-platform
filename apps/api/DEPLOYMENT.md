@@ -1,9 +1,20 @@
 # Aido API 배포 가이드
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
+## 목차
+
+- [Prerequisites](#prerequisites)
+- [1. Local Development](#1-local-development)
+- [2. Production Docker (로컬 테스트)](#2-production-docker-로컬-테스트)
+- [3. AWS ECS + ECR 배포](#3-aws-ecs--ecr-배포)
+- [4. 환경변수 레퍼런스](#4-환경변수-레퍼런스)
+- [5. 트러블슈팅](#5-트러블슈팅)
+
 ## Prerequisites
 
 - Docker 24+ / Docker Compose V2
-- Node.js 22+ / pnpm 9.15.4
+- Node.js 20+ / pnpm 10.29+
 - AWS CLI v2 (AWS 배포 시)
 
 ---

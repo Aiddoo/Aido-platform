@@ -1,5 +1,7 @@
 # @aido/jest-config
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 Aido 모노레포 공유 Jest 설정
 
 ## 설정 파일

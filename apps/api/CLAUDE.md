@@ -1,6 +1,24 @@
 # Aido API
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 NestJS 기반 백엔드 API. 3계층 아키텍처 + BullMQ 큐 기반 알림.
+
+---
+
+## 문서 가이드
+
+| 상황 | 읽을 문서 |
+|------|----------|
+| 전체 아키텍처 이해 (에러, BullMQ 큐, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
+| Controller/Service/Repository 코드 작성 | [.claude/api-conventions.md](.claude/api-conventions.md) |
+| Zod 스키마/DTO 추가 | [.claude/validators.md](.claude/validators.md) |
+| Prisma 스키마/마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
+| 테스트 작성 (종합) | [.claude/testing-guide.md](.claude/testing-guide.md) |
+| 단위 테스트 | [.claude/unit-test.md](.claude/unit-test.md) |
+| 통합 테스트 | [.claude/integration-test.md](.claude/integration-test.md) |
+| E2E 테스트 | [.claude/e2e-test.md](.claude/e2e-test.md) |
+| 로깅 패턴 | [.claude/logging-guide.md](.claude/logging-guide.md) |
 
 ---
 
@@ -39,22 +57,6 @@ Request → Guard → Controller → Service → Repository → DB
 - **중복 방지**: 크론 작업은 DB 기반 (in-memory Set/Map 금지)
 - **응답 래핑**: 자동 (`ResponseTransformInterceptor` / `GlobalExceptionFilter`)
 - **타임존**: 서버는 UTC 저장, 클라이언트 `X-Timezone` 헤더로 날짜 경계 판단
-
----
-
-## 문서 가이드
-
-| 상황 | 읽을 문서 |
-|------|----------|
-| 전체 아키텍처 이해 (에러, BullMQ 큐, 보안, 공통 모듈) | [.claude/architecture.md](.claude/architecture.md) |
-| Controller/Service/Repository 코드 작성 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| Zod 스키마/DTO 추가 | [.claude/validators.md](.claude/validators.md) |
-| Prisma 스키마/마이그레이션 | [.claude/prisma.md](.claude/prisma.md) |
-| 테스트 작성 (종합) | [.claude/testing-guide.md](.claude/testing-guide.md) |
-| 단위 테스트 | [.claude/unit-test.md](.claude/unit-test.md) |
-| E2E 테스트 | [.claude/e2e-test.md](.claude/e2e-test.md) |
-| 통합 테스트 | [.claude/integration-test.md](.claude/integration-test.md) |
-| 로깅 패턴 | [.claude/logging-guide.md](.claude/logging-guide.md) |
 
 ---
 

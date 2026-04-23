@@ -1,5 +1,7 @@
 # @aido/vitest-config
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 Aido 모노레포 공유 Vitest 설정
 
 ## 사용 대상

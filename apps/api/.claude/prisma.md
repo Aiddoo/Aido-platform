@@ -1,6 +1,8 @@
 # Prisma 7 가이드
 
-> Prisma 7.4.0 사용법 및 쿼리 패턴 가이드
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
+> Prisma 7.4 사용법 및 쿼리 패턴 가이드
 
 ## 관련 문서
 

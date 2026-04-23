@@ -1,5 +1,9 @@
 # UI 컴포넌트 사용 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
+> 컴포넌트 선택 우선순위: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native 기본.
+
 ## 컴포넌트 선택 우선순위
 
 UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:

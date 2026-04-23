@@ -1,5 +1,7 @@
 # API 아키텍처 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > NestJS 기반 백엔드 API의 전체 아키텍처 · 에러 처리 · BullMQ 큐 · 보안 · 공통 모듈
 
 ## 관련 문서

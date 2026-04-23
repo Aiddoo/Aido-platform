@@ -1,5 +1,7 @@
 # 단위 테스트 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > `@suites/unit` + Builder 패턴으로 개별 클래스/메서드를 격리 테스트
 >
 > DI 기반 스텁 교체 — `TestBed.solitary()`가 모든 의존성을 자동 mock하므로 구현 세부사항에 결합되지 않는 테스트 작성 가능.

@@ -1,5 +1,7 @@
 # @aido/validators 패키지 규칙
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > Zod 스키마 중앙 관리 및 클라이언트-서버 타입 공유
 >
 > 서버-클라이언트 간 계약(Contract). Zod 스키마 한 곳에서 정의하여 양쪽 타입 동기화.

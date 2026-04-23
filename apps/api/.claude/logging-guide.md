@@ -1,5 +1,9 @@
 # API 로깅 가이드라인
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
+> Pino 기반 구조화 로깅 패턴과 민감 데이터 마스킹 규칙.
+
 ## 관련 문서
 
 | 문서 | 내용 |

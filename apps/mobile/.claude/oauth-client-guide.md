@@ -1,5 +1,7 @@
 # OAuth 클라이언트 구현 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
 Expo + React Native 환경에서 OAuth 소셜 로그인을 구현하는 상세 가이드.
 
 ---
