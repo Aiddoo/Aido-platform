@@ -1,5 +1,9 @@
 # 에러 처리 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
+> Result 타입 · ApiError · BusinessError · ErrorBoundary 분류 체계.
+
 ## 핵심 원칙
 
 > **"이 에러를 UI가 예상하고 있는가?"**

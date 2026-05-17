@@ -73,6 +73,14 @@
       "@suites/di.nestjs",
       "@suites/doubles.jest"
     ],
-    "overrides": {}
+    "overrides": {},
+    "packageExtensions": {
+      "uniwind@*": {
+        "dependencies": {
+          "metro": "0.83.7",
+          "metro-cache": "0.83.7"
+        }
+      }
+    }
   }
 }

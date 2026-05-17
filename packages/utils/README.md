@@ -1,5 +1,7 @@
 # @aido/utils
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 공유 유틸리티 함수 패키지.
 
 ## 설치

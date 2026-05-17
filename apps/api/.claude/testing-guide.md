@@ -1,5 +1,7 @@
 # Aido API 종합 테스팅 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > 테스트 유형 선택 기준 + 공유 인프라 + 공통 규칙. 각 유형별 상세는 개별 가이드 참조.
 
 ## 관련 문서

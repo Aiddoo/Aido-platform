@@ -1,5 +1,7 @@
 # EAS Build & Submit 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
 > EAS 무료 티어 사용량 관리 및 배포 방법 정리
 
 ## 무료 티어 제한

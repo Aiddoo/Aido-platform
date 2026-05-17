@@ -1,5 +1,7 @@
 # Aido Mobile App 배포 가이드
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
 ## 목차
 
 - [EAS 빌드 및 배포](#eas-빌드-및-배포)

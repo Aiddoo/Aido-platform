@@ -1,5 +1,7 @@
 # E2E 테스트 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > `createE2eApp()` 팩토리 + `E2eHelpers`로 전체 API 흐름을 검증하는 테스트
 
 ---

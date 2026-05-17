@@ -1,5 +1,7 @@
 # API 코드 규칙
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 > Controller, Service, Repository, Module 계층별 코드 작성 규칙
 
 ## 관련 문서

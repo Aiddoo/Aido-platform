@@ -1,17 +1,33 @@
 # Aido
 
+> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+
 AI 기반 할 일 관리 애플리케이션. Turborepo + pnpm 모노레포.
+
+## 목차
+
+- [기술 스택](#기술-스택)
+- [구조](#구조)
+- [시작하기](#시작하기)
+- [스크립트](#스크립트)
+- [Docker 워크플로우](#docker-워크플로우)
+- [패키지](#패키지)
+- [개발 가이드](#개발-가이드)
+- [API 문서](#api-문서)
+- [배포](#배포)
+- [라이선스](#라이선스)
 
 ## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
-| Monorepo | Turborepo 2.7, pnpm 9.15 |
+| Monorepo | Turborepo 2.9, pnpm 10.29 |
 | Backend | NestJS 11, Prisma 7, PostgreSQL 16 |
 | Mobile | Expo 55, React Native 0.83, React 19.2 |
 | Validation | Zod 4.3, nestjs-zod |
-| Testing | Jest 29, Vitest, Testcontainers |
+| Testing | Jest 29, Vitest 4, Testcontainers |
 | Code Quality | Biome 2.4 |
+| Runtime | Node.js 20+ |
 
 ## 구조
 
@@ -114,19 +130,21 @@ pnpm dev
 ## 개발 가이드
 
 - **커밋**: Conventional Commits (`pnpm commit`)
-- **린트/포맷**: Biome
+- **린트/포맷**: Biome 2.4
 - **타입**: TypeScript strict 모드
-- **DTO**: Zod 스키마 (@aido/validators)
+- **DTO**: Zod 스키마 (`@aido/validators`)
+- **에러 코드**: `@aido/errors`의 `ErrorCode` 사용 (하드코딩 금지)
+- **AI/Claude 워크플로우**: [CLAUDE.md](./CLAUDE.md) 참조
 
 ## API 문서
 
-```
-http://localhost:8080/api/docs
-```
+- Swagger UI: `http://localhost:8080/api-docs`
+- OpenAPI JSON: `http://localhost:8080/api-docs-json`
 
 ## 배포
 
-프로덕션 배포는 AWS ECS + ECR 기반. 상세 가이드는 [API 배포 문서](./apps/api/DEPLOYMENT.md)를 참고.
+- **API**: AWS ECS + ECR 기반. [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
+- **Mobile**: Expo EAS 빌드. [apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)
 
 ## 라이선스
 

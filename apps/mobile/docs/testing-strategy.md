@@ -1,5 +1,7 @@
 # Mobile 테스트 전략
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
 > Hexagonal Architecture 기반 React Native 앱의 테스트 전략
 
 ---

@@ -1,5 +1,9 @@
 # Mobile 앱 테스트 가이드
 
+**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+
+> DI + `jest.fn()` 기반 레이어별 격리 테스트.
+
 ## 핵심 원칙
 
 > **DI + `jest.fn()` = 레이어 격리 테스트**
