@@ -25,10 +25,7 @@ import { Prisma } from "@/generated/prisma/client";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
 import { TodoCategoryService } from "./todo-category.service";
-import type {
-	TodoCategoryWithCount,
-	TransactionClient,
-} from "./types/todo-category.types";
+import type { TodoCategoryWithCount } from "./types/todo-category.types";
 
 describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 	let service: TodoCategoryService;
@@ -53,10 +50,10 @@ describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 		database = unitRef.get(DatabaseService);
 
 		// $transaction 기본 mock 설정
-		// Note: 테스트에서는 repository mock을 TransactionClient로 사용
+		// Note: 테스트에서는 repository mock을 트랜잭션 클라이언트로 사용
 		// 실제로는 서비스가 tx를 repository에 전달하고, mock이 tx 없이도 동작하도록 설정됨
 		database.$transaction.mockImplementation(async (callback) =>
-			callback(todoCategoryRepo as unknown as TransactionClient),
+			callback(todoCategoryRepo as never),
 		);
 
 		cacheService = unitRef.get(CacheService);
