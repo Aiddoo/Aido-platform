@@ -405,6 +405,25 @@ export class TodoRepository {
 
 	// ===== TodoItem CRUD =====
 
+	/**
+	 * 인라인 하위 항목 일괄 생성 (createMany, 1쿼리)
+	 *
+	 * Todo 생성 시 함께 전달된 체크리스트를 배열 순서대로 sortOrder를 부여해 생성합니다.
+	 */
+	async createManyItems(
+		todoId: number,
+		items: { title: string }[],
+		tx: TransactionClient,
+	): Promise<void> {
+		await tx.todoItem.createMany({
+			data: items.map((item, index) => ({
+				todoId,
+				title: item.title,
+				sortOrder: index,
+			})),
+		});
+	}
+
 	async createItem(
 		todoId: number,
 		data: { title: string; sortOrder: number },

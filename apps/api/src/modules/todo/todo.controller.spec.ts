@@ -10,12 +10,15 @@
  * ```
  */
 import type { Todo } from "@aido/validators";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
+import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { Todo as TodoEntity } from "./domain/entities/todo.entity";
 import type {
 	CreateRecurringTodoDto,
 	CreateTodoDto,
@@ -23,11 +26,41 @@ import type {
 	TodoIdParamDto,
 } from "./dtos";
 import { TodoController } from "./todo.controller";
+import { TodoMapper } from "./todo.mapper";
 import { TodoService } from "./todo.service";
+import type { TodoWithCategory } from "./types/todo.types";
+
+/** 테스트용 TodoWithCategory(행 스냅샷) 생성 헬퍼 */
+function buildTodoRow(
+	overrides: Partial<TodoWithCategory> = {},
+): TodoWithCategory {
+	return {
+		id: 1,
+		userId: "user-123",
+		title: "팀 미팅",
+		categoryId: 1,
+		sortOrder: 0,
+		completed: false,
+		completedAt: null,
+		startDate: new Date("2026-02-22"),
+		endDate: null,
+		scheduledTime: null,
+		isAllDay: true,
+		visibility: "PUBLIC",
+		recurrenceGroupId: null,
+		createdAt: new Date("2026-02-20T00:00:00.000Z"),
+		updatedAt: new Date("2026-02-20T00:00:00.000Z"),
+		category: { id: 1, name: "일반", color: "#FFFFFF", sortOrder: 0 },
+		items: [],
+		...overrides,
+	};
+}
 
 describe("TodoController — 할 일 컨트롤러", () => {
 	let controller: TodoController;
 	let mockTodoService: Mocked<TodoService>;
+	let mockCommandBus: Mocked<CommandBus>;
+	let mockQueryBus: Mocked<QueryBus>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -41,11 +74,13 @@ describe("TodoController — 할 일 컨트롤러", () => {
 
 		controller = unit;
 		mockTodoService = unitRef.get(TodoService);
+		mockCommandBus = unitRef.get(CommandBus);
+		mockQueryBus = unitRef.get(QueryBus);
 	});
 
 	describe("create", () => {
-		it("할 일 생성 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 할 일 생성 DTO와 서비스 응답이 준비되었을 때
+		it("할 일 생성 요청을 CommandBus에 위임하고 매핑된 결과를 반환해야 한다", async () => {
+			// Given - 할 일 생성 DTO와 커맨드 핸들러가 반환할 애그리게잇이 준비되었을 때
 			const dto = {
 				title: "팀 미팅",
 				categoryId: 1,
@@ -54,19 +89,22 @@ describe("TodoController — 할 일 컨트롤러", () => {
 				visibility: "PUBLIC",
 			} as unknown as CreateTodoDto;
 			const tz = "Asia/Seoul";
-			const mockTodo = TodoBuilder.create("user-123")
-				.withId(1)
-				.withTitle("팀 미팅")
-				.withStartDate(new Date("2026-02-22"))
-				.withIsAllDay(true)
-				.build() as unknown as Todo;
-			mockTodoService.create.mockResolvedValue(mockTodo);
+			const todoRow = buildTodoRow({ title: "팀 미팅" });
+			mockCommandBus.execute.mockResolvedValue(
+				TodoEntity.reconstitute(todoRow),
+			);
 
 			// When - create를 호출하면
 			const result = await controller.create(mockUser, dto, tz);
 
-			// Then - 서비스에 변환된 데이터를 전달하고 응답을 반환해야 한다
-			expect(mockTodoService.create).toHaveBeenCalledWith(
+			// Then - CreateTodoCommand를 디스패치하고 매퍼로 변환된 응답을 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateTodoCommand),
+			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0] as
+				| CreateTodoCommand
+				| undefined;
+			expect(command?.data).toEqual(
 				expect.objectContaining({
 					userId: mockUser.userId,
 					title: dto.title,
@@ -77,16 +115,16 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			);
 			expect(result).toEqual({
 				message: "할 일이 생성되었습니다.",
-				todo: mockTodo,
+				todo: TodoMapper.toResponse(todoRow),
 			});
 		});
 	});
 
 	describe("findMany", () => {
-		it("할 일 목록 조회 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 목록 조회 쿼리와 서비스 응답이 준비되었을 때
+		it("할 일 목록 조회 요청을 QueryBus에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 목록 조회 쿼리와 쿼리 핸들러 응답이 준비되었을 때
 			const query = { size: 20 } as unknown as GetTodosQueryDto;
-			const serviceResult = {
+			const queryResult = {
 				items: [
 					TodoBuilder.create("user-123").withId(1).withTitle("할 일 1").build(),
 					TodoBuilder.create("user-123").withId(2).withTitle("할 일 2").build(),
@@ -97,51 +135,55 @@ describe("TodoController — 할 일 컨트롤러", () => {
 					size: 20,
 				},
 			};
-			mockTodoService.findMany.mockResolvedValue(serviceResult);
+			mockQueryBus.execute.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - 서비스에 userId를 포함한 쿼리를 전달하고 결과를 반환해야 한다
-			expect(mockTodoService.findMany).toHaveBeenCalledWith(
+			// Then - userId를 포함한 GetTodosQuery를 디스패치하고 결과를 반환해야 한다
+			expect(mockQueryBus.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: mockUser.userId,
-					size: query.size,
+					params: expect.objectContaining({
+						userId: mockUser.userId,
+						size: query.size,
+					}),
 				}),
 			);
 			expect(result).toEqual({
-				items: serviceResult.items,
-				pagination: serviceResult.pagination,
+				items: queryResult.items,
+				pagination: queryResult.pagination,
 			});
 		});
 
-		it("날짜 필터가 있으면 변환하여 서비스에 전달해야 한다", async () => {
+		it("날짜 필터가 있으면 변환하여 쿼리에 전달해야 한다", async () => {
 			// Given - 날짜 필터가 포함된 쿼리가 있을 때
 			const query = {
 				size: 20,
 				startDate: "2026-02-01",
 				endDate: "2026-02-28",
 			} as unknown as GetTodosQueryDto;
-			const serviceResult = {
+			const queryResult = {
 				items: [] as Todo[],
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
-			mockTodoService.findMany.mockResolvedValue(serviceResult);
+			mockQueryBus.execute.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - 날짜가 parseDateOnly로 변환되어 서비스에 전달되어야 한다
-			expect(mockTodoService.findMany).toHaveBeenCalledWith(
+			// Then - 날짜가 parseDateOnly로 변환되어 쿼리에 전달되어야 한다
+			expect(mockQueryBus.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: mockUser.userId,
-					startDate: expect.any(Date),
-					endDate: expect.any(Date),
+					params: expect.objectContaining({
+						userId: mockUser.userId,
+						startDate: expect.any(Date),
+						endDate: expect.any(Date),
+					}),
 				}),
 			);
 			expect(result).toEqual({
 				items: [],
-				pagination: serviceResult.pagination,
+				pagination: queryResult.pagination,
 			});
 		});
 	});

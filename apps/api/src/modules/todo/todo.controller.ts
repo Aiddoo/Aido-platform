@@ -13,6 +13,7 @@ import {
 	Post,
 	Query,
 } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
@@ -31,7 +32,13 @@ import {
 
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 import { UserIdParamDto } from "../follow/dtos";
-
+import { GetFriendTodosQuery } from "./application/queries/get-friend-todos.query";
+import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id.query";
+import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit.query";
+import { GetTodosQuery } from "./application/queries/get-todos.query";
+import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
+import type { Todo } from "./domain/entities/todo.entity";
 import {
 	ChangeTodoCategoryDto,
 	CreateRecurringTodoDto,
@@ -59,6 +66,7 @@ import {
 	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
+import { TodoMapper } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
@@ -67,7 +75,11 @@ import { TodoService } from "./todo.service";
 export class TodoController {
 	readonly #logger = new Logger(TodoController.name);
 
-	constructor(private readonly todoService: TodoService) {}
+	constructor(
+		private readonly todoService: TodoService,
+		private readonly commandBus: CommandBus,
+		private readonly queryBus: QueryBus,
+	) {}
 
 	@Get("resource-limit")
 	@ApiDoc({
@@ -86,7 +98,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: TodoResourceLimitQueryDto,
 	): Promise<TodoResourceLimitResponseDto> {
-		return this.todoService.getResourceLimitInfo(user.userId, query.categoryId);
+		return this.queryBus.execute(
+			new GetTodoResourceLimitQuery(user.userId, query.categoryId),
+		);
 	}
 
 	@Post()
@@ -152,19 +166,22 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<CreateTodoResponseDto> {
 		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
-		const todo = await this.todoService.create({
-			userId: user.userId,
-			title: dto.title,
-			categoryId: dto.categoryId,
-			startDate: parseDateOnly(dto.startDate),
-			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-			scheduledTime: dto.scheduledTime
-				? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-				: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			items: dto.items,
-		});
+		const entity = await this.commandBus.execute<CreateTodoCommand, Todo>(
+			new CreateTodoCommand({
+				userId: user.userId,
+				title: dto.title,
+				categoryId: dto.categoryId,
+				startDate: parseDateOnly(dto.startDate),
+				endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
+				scheduledTime: dto.scheduledTime
+					? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+					: undefined,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+				items: dto.items,
+			}),
+		);
+		const todo = TodoMapper.toResponse(entity.getSnapshot());
 
 		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
@@ -377,16 +394,18 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
 		);
 
-		const result = await this.todoService.findMany({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.size,
-			completed: query.completed,
-			categoryId: query.categoryId,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+		const result = await this.queryBus.execute(
+			new GetTodosQuery({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.size,
+				completed: query.completed,
+				categoryId: query.categoryId,
+				// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+				startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+				endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+			}),
+		);
 
 		return {
 			items: result.items,
@@ -411,9 +430,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<TodoResponseDto> {
 		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.findById(params.id, user.userId);
+		const entity = await this.queryBus.execute<GetTodoByIdQuery, Todo>(
+			new GetTodoByIdQuery(params.id, user.userId),
+		);
 
-		return todo;
+		return TodoMapper.toResponse(entity.getSnapshot());
 	}
 
 	@Get("friends/:userId")
@@ -465,15 +486,17 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
 		);
 
-		const result = await this.todoService.findFriendTodos({
-			userId: user.userId,
-			friendUserId: params.userId,
-			cursor: query.cursor,
-			size: query.size,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+		const result = await this.queryBus.execute(
+			new GetFriendTodosQuery({
+				userId: user.userId,
+				friendUserId: params.userId,
+				cursor: query.cursor,
+				size: query.size,
+				// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+				startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+				endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+			}),
+		);
 
 		return {
 			items: result.items,
@@ -573,12 +596,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.toggleComplete(
-			params.id,
-			user.userId,
-			dto,
-			tz,
-		);
+		const entity = await this.commandBus.execute<
+			ToggleTodoCompleteCommand,
+			Todo
+		>(new ToggleTodoCompleteCommand(params.id, user.userId, dto.completed, tz));
+		const todo = TodoMapper.toResponse(entity.getSnapshot());
 
 		return {
 			message: dto.completed
