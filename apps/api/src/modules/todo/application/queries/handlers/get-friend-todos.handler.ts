@@ -6,13 +6,12 @@ import { isAfter } from "@/common/date/utils/compare";
 import { ApplicationException } from "@/common/domain";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { FollowService } from "../../../../follow/follow.service";
-import { TodoMapper } from "../../../todo.mapper";
 import type { FindFriendTodosParams } from "../../../types/todo.types";
+import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
+	TODO_READ_REPOSITORY,
+	type TodoReadRepositoryPort,
+} from "../../ports/todo-read.repository.port";
 import { GetFriendTodosQuery } from "../get-friend-todos.query";
 
 /**
@@ -29,10 +28,11 @@ export class GetFriendTodosHandler
 		>
 {
 	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
+		@Inject(TODO_READ_REPOSITORY)
+		private readonly todoReadRepository: TodoReadRepositoryPort,
 		private readonly paginationService: PaginationService,
-		private readonly followService: FollowService,
+		@Inject(FRIEND_PORT)
+		private readonly friendPort: FriendPort,
 	) {}
 
 	async execute(
@@ -52,7 +52,7 @@ export class GetFriendTodosHandler
 			});
 		}
 
-		const isMutualFriend = await this.followService.isMutualFriend(
+		const isMutualFriend = await this.friendPort.isMutualFriend(
 			userId,
 			friendUserId,
 		);
@@ -76,14 +76,12 @@ export class GetFriendTodosHandler
 			endDate: query.params.endDate,
 		};
 
-		const todos = await this.todoRepository.findPublicTodosByUserId(repoParams);
+		const items =
+			await this.todoReadRepository.findPublicTodosByUserId(repoParams);
 
 		return this.paginationService.createCursorPaginatedResponse<
 			TodoResponse,
 			number
-		>({
-			items: todos.map((todo) => TodoMapper.toResponse(todo.getSnapshot())),
-			size,
-		});
+		>({ items, size });
 	}
 }

@@ -1,22 +1,55 @@
 import { now } from "@/common/date/utils/core";
 import { AggregateRoot } from "@/common/domain";
-import type { TodoWithCategory } from "../../types/todo.types";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
+import { TodoId } from "../value-objects/todo-id.vo";
+
+export type TodoVisibility = "PUBLIC" | "PRIVATE";
 
 /**
- * Todo 애그리게잇 프로퍼티
+ * 하위 항목 도메인 스냅샷
  *
- * 조회 시 카테고리/하위 항목 스냅샷을 함께 보유해, 매퍼가 기존 응답 형식을
- * 그대로 생성할 수 있게 합니다(응답 계약 무변경).
+ * 애그리게잇 내부 값. 응답 read model이 아니라 도메인 상태의 일부입니다.
  */
-export type TodoProps = TodoWithCategory;
+export interface TodoItemSnapshot {
+	id: number;
+	title: string;
+	completed: boolean;
+	sortOrder: number;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+/**
+ * Todo 애그리게잇 프로퍼티 (순수 쓰기 모델)
+ *
+ * 카테고리 name/color 등 타 애그리게잇의 read model은 담지 않고 `categoryId` 참조만 보유합니다.
+ * 조회 응답(카테고리 정보·itemStats)은 읽기 포트/read model이 별도로 담당합니다.
+ */
+export interface TodoProps {
+	id: TodoId;
+	userId: string;
+	title: string;
+	categoryId: number;
+	sortOrder: number;
+	completed: boolean;
+	completedAt: Date | null;
+	startDate: Date;
+	endDate: Date | null;
+	scheduledTime: Date | null;
+	isAllDay: boolean;
+	visibility: TodoVisibility;
+	recurrenceGroupId: string | null;
+	items: TodoItemSnapshot[];
+	createdAt: Date;
+	updatedAt: Date;
+}
 
 /**
  * Todo 애그리게잇 루트
  *
  * 완료 상태 전이 등 비즈니스 불변식과 상태 변화를 담당합니다.
- * 영속성(행 매핑)은 인프라 어댑터가, 응답 변환은 매퍼가 담당합니다.
+ * 영속성(행 매핑)은 인프라 어댑터가, 조회 응답 변환은 읽기 어댑터가 담당합니다.
  */
 export class Todo extends AggregateRoot<TodoProps> {
 	private constructor(props: TodoProps) {
@@ -24,7 +57,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	}
 
 	/**
-	 * DB 행으로부터 애그리게잇을 복원합니다(불변식 재검증 없음).
+	 * DB 행에서 매핑된 도메인 props로 애그리게잇을 복원합니다(불변식 재검증 없음).
 	 */
 	static reconstitute(props: TodoProps): Todo {
 		return new Todo(props);
@@ -38,7 +71,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	markCreated(): void {
 		this.apply(
 			new TodoCreatedEvent(
-				this.props.id,
+				this.props.id.getValue(),
 				this.props.userId,
 				this.props.scheduledTime,
 			),
@@ -57,7 +90,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 
 		this.apply(
 			new TodoToggledEvent(
-				this.props.id,
+				this.props.id.getValue(),
 				this.props.userId,
 				completed,
 				timezone,
@@ -65,7 +98,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 		);
 	}
 
-	getId(): number {
+	getId(): TodoId {
 		return this.props.id;
 	}
 
@@ -77,10 +110,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 		return this.props.completed;
 	}
 
-	/**
-	 * 매퍼/영속성용 스냅샷을 반환합니다.
-	 */
-	getSnapshot(): TodoWithCategory {
-		return this.props;
+	getCompletedAt(): Date | null {
+		return this.props.completedAt;
 	}
 }

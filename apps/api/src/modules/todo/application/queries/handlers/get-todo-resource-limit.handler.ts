@@ -2,9 +2,9 @@ import { TODO_LIMITS } from "@aido/validators";
 import { Inject } from "@nestjs/common";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
+	TODO_READ_REPOSITORY,
+	type TodoReadRepositoryPort,
+} from "../../ports/todo-read.repository.port";
 import { GetTodoResourceLimitQuery } from "../get-todo-resource-limit.query";
 
 export interface TodoResourceLimitResult {
@@ -20,15 +20,15 @@ export class GetTodoResourceLimitHandler
 	implements IQueryHandler<GetTodoResourceLimitQuery, TodoResourceLimitResult>
 {
 	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
+		@Inject(TODO_READ_REPOSITORY)
+		private readonly todoReadRepository: TodoReadRepositoryPort,
 	) {}
 
 	async execute(
 		query: GetTodoResourceLimitQuery,
 	): Promise<TodoResourceLimitResult> {
 		if (query.categoryId) {
-			const activeCount = await this.todoRepository.countActiveByCategory(
+			const activeCount = await this.todoReadRepository.countActiveByCategory(
 				query.userId,
 				query.categoryId,
 			);

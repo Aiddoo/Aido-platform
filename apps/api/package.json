@@ -17,6 +17,7 @@
 		"format": "biome format --write src/",
 		"lint": "biome check src/",
 		"lint:fix": "biome check --write src/",
+		"lint:no-cast": "node scripts/check-no-cast.mjs",
 		"start": "nest start",
 		"start:prod": "NODE_ENV=production node dist/main",
 		"test": "jest",

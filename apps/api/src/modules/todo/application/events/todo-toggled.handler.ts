@@ -1,19 +1,22 @@
 import { Inject, Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
-import { FollowService } from "../../../follow/follow.service";
 import type { MilestoneReachedJobData } from "../../../notification/queue/notification-queue.constants";
-import { NotificationQueueService } from "../../../notification/queue/notification-queue.service";
 import {
 	type IReminderScheduler,
 	REMINDER_SCHEDULER,
 } from "../../../scheduler/reminder";
-import { StreakService } from "../../../user-settings/services/streak.service";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
+import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
+import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../ports/todo.repository.port";
+	TODO_NOTIFICATION,
+	type TodoNotificationPort,
+} from "../ports/todo-notification.port";
+import {
+	TODO_READ_REPOSITORY,
+	type TodoReadRepositoryPort,
+} from "../ports/todo-read.repository.port";
 
 /** 누적 완료 카운트 → 마일스톤 매핑 */
 const COMPLETION_MILESTONES: ReadonlyMap<
@@ -33,17 +36,21 @@ const COMPLETION_MILESTONES: ReadonlyMap<
  * - 완료로 전환된 경우에만 리마인더 취소 + 친구 완료 알림 + 마일스톤 체크를 수행합니다.
  *
  * 모든 부수효과는 fire-and-forget이며 실패는 로깅만 합니다(기존 동작 보존).
+ * 크로스모듈 의존은 포트를 통해서만 접근합니다.
  */
 @EventsHandler(TodoToggledEvent)
 export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 	readonly #logger = new Logger(TodoToggledHandler.name);
 
 	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
-		private readonly followService: FollowService,
-		private readonly notificationQueueService: NotificationQueueService,
-		private readonly streakService: StreakService,
+		@Inject(TODO_READ_REPOSITORY)
+		private readonly todoReadRepository: TodoReadRepositoryPort,
+		@Inject(FRIEND_PORT)
+		private readonly friendPort: FriendPort,
+		@Inject(TODO_NOTIFICATION)
+		private readonly todoNotification: TodoNotificationPort,
+		@Inject(STREAK_PORT)
+		private readonly streakPort: StreakPort,
 		@Inject(REMINDER_SCHEDULER)
 		private readonly reminderScheduler: IReminderScheduler,
 	) {}
@@ -58,7 +65,7 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 		}
 
 		// 스트릭은 양방향 갱신 (fire-and-forget)
-		this.streakService.onTodoToggled(userId, completed, timezone);
+		this.streakPort.onTodoToggled(userId, completed, timezone);
 	}
 
 	/**
@@ -70,16 +77,19 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 	): Promise<void> {
 		try {
 			const today = todayInTimezone(timezone);
-			const stats = await this.todoRepository.getTodayTodoStats(userId, today);
+			const stats = await this.todoReadRepository.getTodayTodoStats(
+				userId,
+				today,
+			);
 
 			if (stats.total > 0 && stats.total === stats.completed) {
 				const [friendIds, userName] = await Promise.all([
-					this.followService.getMutualFriendIds(userId),
-					this.followService.getUserDisplayName(userId),
+					this.friendPort.getMutualFriendIds(userId),
+					this.friendPort.getUserDisplayName(userId),
 				]);
 
 				if (friendIds.length > 0) {
-					this.notificationQueueService.enqueueFriendCompleted({
+					this.todoNotification.enqueueFriendCompleted({
 						friendId: userId,
 						friendName: userName,
 						notifyUserIds: friendIds,
@@ -104,12 +114,12 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 	 */
 	async #checkAndEnqueueMilestone(userId: string): Promise<void> {
 		try {
-			const count = await this.todoRepository.countCompletedByUser(userId);
+			const count = await this.todoReadRepository.countCompletedByUser(userId);
 			const milestone = COMPLETION_MILESTONES.get(count);
 			if (!milestone) {
 				return;
 			}
-			this.notificationQueueService.enqueueMilestoneReached({
+			this.todoNotification.enqueueMilestoneReached({
 				userId,
 				milestone,
 			});

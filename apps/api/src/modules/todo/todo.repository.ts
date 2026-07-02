@@ -3,36 +3,13 @@ import type { TransactionClient } from "@/common/database";
 import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
-import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-	TodoItemData,
-	TodoWithCategory,
-} from "./types/todo.types.ts";
-
-/**
- * Todo 조회 시 포함할 카테고리 필드
- *
- * @description
- * 모든 Todo 조회/생성/수정 메서드에서 공통으로 사용하는 category include 설정.
- * 필드 변경 시 이 상수만 수정하면 전체 반영됩니다.
- */
-const TODO_CATEGORY_INCLUDE = {
-	category: {
-		select: { id: true, name: true, color: true, sortOrder: true },
-	},
-	items: {
-		select: {
-			id: true,
-			title: true,
-			completed: true,
-			sortOrder: true,
-			createdAt: true,
-			updatedAt: true,
-		},
-		orderBy: { sortOrder: "asc" as const },
-	},
-} as const;
+import {
+	type FindFriendTodosParams,
+	type FindTodosParams,
+	TODO_CATEGORY_INCLUDE,
+	type TodoItemData,
+	type TodoWithCategory,
+} from "./types/todo.types";
 
 /**
  * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)
@@ -108,7 +85,7 @@ export class TodoRepository {
 		return client.todo.create({
 			data,
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory>;
+		});
 	}
 
 	/**
@@ -122,7 +99,7 @@ export class TodoRepository {
 		return client.todo.findUnique({
 			where: { id },
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory | null>;
+		});
 	}
 
 	/**
@@ -137,7 +114,7 @@ export class TodoRepository {
 		return client.todo.findFirst({
 			where: { id, userId },
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory | null>;
+		});
 	}
 
 	/**
@@ -184,7 +161,7 @@ export class TodoRepository {
 				{ id: "asc" },
 			],
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory[]>;
+		});
 	}
 
 	/**
@@ -200,7 +177,7 @@ export class TodoRepository {
 			where: { id },
 			data,
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory>;
+		});
 	}
 
 	/**
@@ -247,7 +224,7 @@ export class TodoRepository {
 				{ id: "asc" },
 			],
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory[]>;
+		});
 	}
 
 	/**
@@ -377,7 +354,7 @@ export class TodoRepository {
 			where: { id },
 			data: { sortOrder },
 			include: TODO_CATEGORY_INCLUDE,
-		}) as Promise<TodoWithCategory>;
+		});
 	}
 
 	/**
@@ -400,7 +377,7 @@ export class TodoRepository {
 			where: { recurrenceGroupId },
 			include: TODO_CATEGORY_INCLUDE,
 			orderBy: { sortOrder: "asc" },
-		}) as Promise<TodoWithCategory[]>;
+		});
 	}
 
 	// ===== TodoItem CRUD =====

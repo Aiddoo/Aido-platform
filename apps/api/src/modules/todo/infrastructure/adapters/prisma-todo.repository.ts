@@ -1,23 +1,52 @@
 import { Injectable } from "@nestjs/common";
 import type { TransactionClient } from "@/common/database";
-import type { Prisma } from "@/generated/prisma/client";
-import type { TodoRepositoryPort } from "../../application/ports/todo.repository.port";
-import { Todo } from "../../domain/entities/todo.entity";
-import { TodoRepository } from "../../todo.repository";
 import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-} from "../../types/todo.types";
+	NewTodoData,
+	TodoRepositoryPort,
+} from "../../application/ports/todo.repository.port";
+import { Todo } from "../../domain/entities/todo.entity";
+import { TodoId } from "../../domain/value-objects/todo-id.vo";
+import { TodoRepository } from "../../todo.repository";
+import type { TodoWithCategory } from "../../types/todo.types";
 
 /**
- * Prisma Todo 리포지토리 어댑터
+ * Prisma Todo 쓰기 어댑터
  *
- * TodoRepositoryPort 구현체. 기존 행 기반 TodoRepository의 쿼리를 재사용하고
- * 결과를 도메인 애그리게잇(Todo)으로 복원(reconstitute)해 반환합니다.
+ * TodoRepositoryPort 구현체. 행 기반 TodoRepository의 쿼리를 재사용하되,
+ * 행 ↔ 도메인 애그리게잇 매핑(toDomain/toPersistence)을 이 어댑터가 소유합니다.
  */
 @Injectable()
 export class PrismaTodoRepository implements TodoRepositoryPort {
 	constructor(private readonly todoRepository: TodoRepository) {}
+
+	/** DB 행 → 도메인 애그리게잇 (카테고리 read model은 버리고 순수 도메인 상태만 복원) */
+	private static toDomain(row: TodoWithCategory): Todo {
+		return Todo.reconstitute({
+			id: TodoId.create(row.id),
+			userId: row.userId,
+			title: row.title,
+			categoryId: row.categoryId,
+			sortOrder: row.sortOrder,
+			completed: row.completed,
+			completedAt: row.completedAt,
+			startDate: row.startDate,
+			endDate: row.endDate,
+			scheduledTime: row.scheduledTime,
+			isAllDay: row.isAllDay,
+			visibility: row.visibility,
+			recurrenceGroupId: row.recurrenceGroupId,
+			items: row.items.map((item) => ({
+				id: item.id,
+				title: item.title,
+				completed: item.completed,
+				sortOrder: item.sortOrder,
+				createdAt: item.createdAt,
+				updatedAt: item.updatedAt,
+			})),
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+		});
+	}
 
 	async findByIdAndUserId(
 		id: number,
@@ -25,31 +54,25 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		tx?: TransactionClient,
 	): Promise<Todo | null> {
 		const row = await this.todoRepository.findByIdAndUserId(id, userId, tx);
-		return row ? Todo.reconstitute(row) : null;
+		return row ? PrismaTodoRepository.toDomain(row) : null;
 	}
 
-	async findManyByUserId(
-		params: FindTodosParams,
-		tx?: TransactionClient,
-	): Promise<Todo[]> {
-		const rows = await this.todoRepository.findManyByUserId(params, tx);
-		return rows.map((row) => Todo.reconstitute(row));
-	}
-
-	async findPublicTodosByUserId(
-		params: FindFriendTodosParams,
-		tx?: TransactionClient,
-	): Promise<Todo[]> {
-		const rows = await this.todoRepository.findPublicTodosByUserId(params, tx);
-		return rows.map((row) => Todo.reconstitute(row));
-	}
-
-	async create(
-		data: Prisma.TodoCreateInput,
-		tx?: TransactionClient,
-	): Promise<Todo> {
-		const row = await this.todoRepository.create(data, tx);
-		return Todo.reconstitute(row);
+	async create(data: NewTodoData, tx?: TransactionClient): Promise<Todo> {
+		const row = await this.todoRepository.create(
+			{
+				user: { connect: { id: data.userId } },
+				category: { connect: { id: data.categoryId } },
+				title: data.title,
+				sortOrder: data.sortOrder,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				scheduledTime: data.scheduledTime,
+				isAllDay: data.isAllDay,
+				visibility: data.visibility,
+			},
+			tx,
+		);
+		return PrismaTodoRepository.toDomain(row);
 	}
 
 	async createInlineItems(
@@ -60,13 +83,13 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		await this.todoRepository.createManyItems(todoId, items, tx);
 	}
 
-	async update(
+	async updateCompletion(
 		id: number,
-		data: Prisma.TodoUpdateInput,
+		completed: boolean,
+		completedAt: Date | null,
 		tx?: TransactionClient,
-	): Promise<Todo> {
-		const row = await this.todoRepository.update(id, data, tx);
-		return Todo.reconstitute(row);
+	): Promise<void> {
+		await this.todoRepository.update(id, { completed, completedAt }, tx);
 	}
 
 	countActiveByCategory(
@@ -79,20 +102,5 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 
 	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number> {
 		return this.todoRepository.getMaxSortOrder(userId, tx);
-	}
-
-	countCompletedByUser(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		return this.todoRepository.countCompletedByUser(userId, tx);
-	}
-
-	getTodayTodoStats(
-		userId: string,
-		today: Date,
-		tx?: TransactionClient,
-	): Promise<{ total: number; completed: number }> {
-		return this.todoRepository.getTodayTodoStats(userId, today, tx);
 	}
 }

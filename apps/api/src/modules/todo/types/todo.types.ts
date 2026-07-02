@@ -3,9 +3,33 @@
  */
 
 import type { DayOfWeek } from "@aido/validators";
+import type { Prisma } from "@/generated/prisma/client";
 
 // 공통 타입 재내보내기
 export type { TransactionClient } from "@/common/database";
+
+/**
+ * Todo 조회 시 포함할 카테고리·하위 항목 select 설정
+ *
+ * 모든 Todo 조회/생성/수정 메서드의 공통 include. 필드 변경 시 이 상수만 수정하면 반영됩니다.
+ * 이 상수에서 `TodoWithCategory` 타입을 파생하므로 타입 단언(as) 없이 정합됩니다.
+ */
+export const TODO_CATEGORY_INCLUDE = {
+	category: {
+		select: { id: true, name: true, color: true, sortOrder: true },
+	},
+	items: {
+		select: {
+			id: true,
+			title: true,
+			completed: true,
+			sortOrder: true,
+			createdAt: true,
+			updatedAt: true,
+		},
+		orderBy: { sortOrder: "asc" as const },
+	},
+} as const;
 
 // ===== 공통 타입 =====
 
@@ -119,32 +143,13 @@ export interface FindFriendTodosParams {
 }
 
 /**
- * 카테고리 정보가 포함된 Todo (Repository에서 사용)
+ * 카테고리·하위 항목이 포함된 Todo 행 (Repository 반환 타입)
+ *
+ * `TODO_CATEGORY_INCLUDE`에서 파생 — Prisma 결과와 정확히 일치하므로 `as` 단언이 불필요합니다.
  */
-export interface TodoWithCategory {
-	id: number;
-	userId: string;
-	title: string;
-	categoryId: number;
-	sortOrder: number;
-	completed: boolean;
-	completedAt: Date | null;
-	startDate: Date;
-	endDate: Date | null;
-	scheduledTime: Date | null;
-	isAllDay: boolean;
-	visibility: "PUBLIC" | "PRIVATE";
-	recurrenceGroupId: string | null;
-	createdAt: Date;
-	updatedAt: Date;
-	category: {
-		id: number;
-		name: string;
-		color: string;
-		sortOrder: number;
-	};
-	items: TodoItemData[];
-}
+export type TodoWithCategory = Prisma.TodoGetPayload<{
+	include: typeof TODO_CATEGORY_INCLUDE;
+}>;
 
 /**
  * Todo 순서 변경 파라미터

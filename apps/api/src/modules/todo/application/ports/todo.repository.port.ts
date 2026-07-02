@@ -1,19 +1,30 @@
 import type { TransactionClient } from "@/common/database";
-import type { Prisma } from "@/generated/prisma/client";
-import type { Todo } from "../../domain/entities/todo.entity";
-import type {
-	FindFriendTodosParams,
-	FindTodosParams,
-} from "../../types/todo.types";
+import type { Todo, TodoVisibility } from "../../domain/entities/todo.entity";
 
 export const TODO_REPOSITORY = Symbol("TODO_REPOSITORY");
 
 /**
- * Todo 리포지토리 포트
+ * 신규 Todo 영속화 입력 (도메인 관점)
  *
- * 애플리케이션(핸들러)이 Prisma 구현체에 의존하지 않도록 하는 경계입니다.
- * 조회 메서드는 도메인 애그리게잇(Todo)을 반환하고, 카운트/집계는 원시값을 반환합니다.
- * `tx?` 파라미터는 트랜잭션 클라이언트 전달용(기존 관례 유지)입니다.
+ * Prisma 관계 connect 등 영속성 세부는 어댑터가 담당하므로 포트는 순수 데이터만 받습니다.
+ */
+export interface NewTodoData {
+	userId: string;
+	categoryId: number;
+	title: string;
+	sortOrder: number;
+	startDate: Date;
+	endDate?: Date | null;
+	scheduledTime?: Date | null;
+	isAllDay: boolean;
+	visibility: TodoVisibility;
+}
+
+/**
+ * Todo 쓰기 리포지토리 포트 (애그리게잇 경계)
+ *
+ * 커맨드 핸들러가 Prisma 구현체에 의존하지 않도록 하는 쓰기 측 경계입니다.
+ * 조회는 애그리게잇(Todo)을 반환하고, 응답 read model은 TodoReadRepositoryPort가 담당합니다.
  */
 export interface TodoRepositoryPort {
 	findByIdAndUserId(
@@ -22,17 +33,7 @@ export interface TodoRepositoryPort {
 		tx?: TransactionClient,
 	): Promise<Todo | null>;
 
-	findManyByUserId(
-		params: FindTodosParams,
-		tx?: TransactionClient,
-	): Promise<Todo[]>;
-
-	findPublicTodosByUserId(
-		params: FindFriendTodosParams,
-		tx?: TransactionClient,
-	): Promise<Todo[]>;
-
-	create(data: Prisma.TodoCreateInput, tx?: TransactionClient): Promise<Todo>;
+	create(data: NewTodoData, tx?: TransactionClient): Promise<Todo>;
 
 	/** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
 	createInlineItems(
@@ -41,11 +42,13 @@ export interface TodoRepositoryPort {
 		tx: TransactionClient,
 	): Promise<void>;
 
-	update(
+	/** 완료 상태 등 애그리게잇 변경분 영속화 */
+	updateCompletion(
 		id: number,
-		data: Prisma.TodoUpdateInput,
+		completed: boolean,
+		completedAt: Date | null,
 		tx?: TransactionClient,
-	): Promise<Todo>;
+	): Promise<void>;
 
 	countActiveByCategory(
 		userId: string,
@@ -54,12 +57,4 @@ export interface TodoRepositoryPort {
 	): Promise<number>;
 
 	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number>;
-
-	countCompletedByUser(userId: string, tx?: TransactionClient): Promise<number>;
-
-	getTodayTodoStats(
-		userId: string,
-		today: Date,
-		tx?: TransactionClient,
-	): Promise<{ total: number; completed: number }>;
 }

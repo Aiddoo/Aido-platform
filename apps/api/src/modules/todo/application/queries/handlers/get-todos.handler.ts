@@ -6,16 +6,15 @@ import { isAfter } from "@/common/date/utils/compare";
 import { ApplicationException } from "@/common/domain";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { TodoMapper } from "../../../todo.mapper";
 import type { FindTodosParams } from "../../../types/todo.types";
 import {
-	TODO_REPOSITORY,
-	type TodoRepositoryPort,
-} from "../../ports/todo.repository.port";
+	TODO_READ_REPOSITORY,
+	type TodoReadRepositoryPort,
+} from "../../ports/todo-read.repository.port";
 import { GetTodosQuery } from "../get-todos.query";
 
 /**
- * Todo 목록 조회 핸들러 (커서 기반 페이지네이션)
+ * Todo 목록 조회 핸들러 (커서 기반 페이지네이션, read model 직접 반환)
  */
 @QueryHandler(GetTodosQuery)
 export class GetTodosHandler
@@ -23,8 +22,8 @@ export class GetTodosHandler
 		IQueryHandler<GetTodosQuery, CursorPaginatedResponse<TodoResponse, number>>
 {
 	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
+		@Inject(TODO_READ_REPOSITORY)
+		private readonly todoReadRepository: TodoReadRepositoryPort,
 		private readonly paginationService: PaginationService,
 	) {}
 
@@ -61,14 +60,11 @@ export class GetTodosHandler
 			endDate: params.endDate,
 		};
 
-		const todos = await this.todoRepository.findManyByUserId(repoParams);
+		const items = await this.todoReadRepository.findManyByUserId(repoParams);
 
 		return this.paginationService.createCursorPaginatedResponse<
 			TodoResponse,
 			number
-		>({
-			items: todos.map((todo) => TodoMapper.toResponse(todo.getSnapshot())),
-			size,
-		});
+		>({ items, size });
 	}
 }

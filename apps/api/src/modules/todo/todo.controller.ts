@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/errors";
+import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
 import {
 	Body,
@@ -38,7 +39,6 @@ import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resour
 import { GetTodosQuery } from "./application/queries/get-todos.query";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
 import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
-import type { Todo } from "./domain/entities/todo.entity";
 import {
 	ChangeTodoCategoryDto,
 	CreateRecurringTodoDto,
@@ -66,7 +66,6 @@ import {
 	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
-import { TodoMapper } from "./todo.mapper";
 import { TodoService } from "./todo.service";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
@@ -166,7 +165,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<CreateTodoResponseDto> {
 		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
-		const entity = await this.commandBus.execute<CreateTodoCommand, Todo>(
+		const todo = await this.commandBus.execute<CreateTodoCommand, TodoResponse>(
 			new CreateTodoCommand({
 				userId: user.userId,
 				title: dto.title,
@@ -181,7 +180,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 				items: dto.items,
 			}),
 		);
-		const todo = TodoMapper.toResponse(entity.getSnapshot());
 
 		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
@@ -430,11 +428,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<TodoResponseDto> {
 		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
-		const entity = await this.queryBus.execute<GetTodoByIdQuery, Todo>(
+		return this.queryBus.execute<GetTodoByIdQuery, TodoResponse>(
 			new GetTodoByIdQuery(params.id, user.userId),
 		);
-
-		return TodoMapper.toResponse(entity.getSnapshot());
 	}
 
 	@Get("friends/:userId")
@@ -596,11 +592,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
 		);
 
-		const entity = await this.commandBus.execute<
+		const todo = await this.commandBus.execute<
 			ToggleTodoCompleteCommand,
-			Todo
+			TodoResponse
 		>(new ToggleTodoCompleteCommand(params.id, user.userId, dto.completed, tz));
-		const todo = TodoMapper.toResponse(entity.getSnapshot());
 
 		return {
 			message: dto.completed
