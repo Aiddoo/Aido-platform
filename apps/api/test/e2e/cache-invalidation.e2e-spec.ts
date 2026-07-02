@@ -9,10 +9,10 @@
 import type { INestApplication } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { CacheModule } from "../../cache.module";
-import { CacheService } from "../../cache.service";
-import { CacheKeys } from "../../constants/cache-keys";
-import { createMockUserProfile, delay } from "../test-utils";
+import { CacheModule } from "@/common/cache/cache.module";
+import { CacheService } from "@/common/cache/cache.service";
+import { CacheKeys } from "@/common/cache/constants/cache-keys";
+import { createMockUserProfile, delay } from "../mocks/cache-test-utils";
 
 describe("캐시 무효화 E2E 테스트", () => {
 	let app: INestApplication;
@@ -103,8 +103,8 @@ describe("캐시 무효화 E2E 테스트", () => {
 				revokedAt: null,
 			};
 
-			// When - 세션 저장
-			await shortTtlCache.setSession(sessionId, session);
+			// When - 세션 저장 (setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정)
+			await shortTtlCache.set(CacheKeys.session(sessionId), session, 50);
 			expect(await shortTtlCache.getSession(sessionId)).toEqual(session);
 
 			// When - TTL 만료 대기

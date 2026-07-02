@@ -6,15 +6,22 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test cache.integration
+ * pnpm --filter @aido/api test:integration -- cache
  * ```
  */
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CacheModule } from "../../cache.module";
-import { CacheService } from "../../cache.service";
-import { CACHE_SERVICE, ICacheService } from "../../interfaces/cache.interface";
-import { createMockUserProfile, delay, MockCacheAdapter } from "../test-utils";
+import { CacheModule } from "@/common/cache/cache.module";
+import { CacheService } from "@/common/cache/cache.service";
+import {
+	CACHE_SERVICE,
+	ICacheService,
+} from "@/common/cache/interfaces/cache.interface";
+import {
+	createMockUserProfile,
+	delay,
+	MockCacheAdapter,
+} from "../mocks/cache-test-utils";
 
 describe("CacheModule 통합 테스트", () => {
 	describe("인메모리 어댑터 (기본 설정)", () => {
