@@ -119,4 +119,27 @@ export interface TodoRepositoryPort {
 	): Promise<number>;
 
 	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number>;
+
+	// ===== 하위 항목 (체크리스트) =====
+
+	countItemsByTodoId(todoId: number, tx?: TransactionClient): Promise<number>;
+
+	getMaxItemSortOrder(todoId: number, tx?: TransactionClient): Promise<number>;
+
+	createItem(
+		todoId: number,
+		data: { title: string; sortOrder: number },
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	updateItem(
+		itemId: number,
+		data: { title?: string; completed?: boolean },
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	deleteItem(itemId: number, tx?: TransactionClient): Promise<void>;
+
+	/** 배열 인덱스가 새 sortOrder가 되도록 일괄 재정렬 */
+	reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void>;
 }

@@ -182,4 +182,38 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number> {
 		return this.todoRepository.getMaxSortOrder(userId, tx);
 	}
+
+	// ===== 하위 항목 (체크리스트) =====
+
+	countItemsByTodoId(todoId: number, tx?: TransactionClient): Promise<number> {
+		return this.todoRepository.countItemsByTodoId(todoId, tx);
+	}
+
+	getMaxItemSortOrder(todoId: number, tx?: TransactionClient): Promise<number> {
+		return this.todoRepository.getMaxItemSortOrder(todoId, tx);
+	}
+
+	async createItem(
+		todoId: number,
+		data: { title: string; sortOrder: number },
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.createItem(todoId, data, tx);
+	}
+
+	async updateItem(
+		itemId: number,
+		data: { title?: string; completed?: boolean },
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.updateItem(itemId, data, tx);
+	}
+
+	async deleteItem(itemId: number, tx?: TransactionClient): Promise<void> {
+		await this.todoRepository.deleteItem(itemId, tx);
+	}
+
+	async reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void> {
+		await this.todoRepository.reorderItems(itemIds, tx);
+	}
 }

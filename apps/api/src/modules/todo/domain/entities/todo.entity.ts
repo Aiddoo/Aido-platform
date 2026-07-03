@@ -234,6 +234,14 @@ export class Todo extends AggregateRoot<TodoProps> {
 		return this.props.sortOrder;
 	}
 
+	getItemIds(): number[] {
+		return this.props.items.map((item) => item.id);
+	}
+
+	hasItem(itemId: number): boolean {
+		return this.props.items.some((item) => item.id === itemId);
+	}
+
 	isCompleted(): boolean {
 		return this.props.completed;
 	}

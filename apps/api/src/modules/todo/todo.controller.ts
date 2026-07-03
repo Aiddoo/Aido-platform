@@ -37,12 +37,16 @@ import { GetFriendTodosQuery } from "./application/queries/get-friend-todos.quer
 import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id.query";
 import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit.query";
 import { GetTodosQuery } from "./application/queries/get-todos.query";
+import { AddTodoItemCommand } from "./application/use-cases/add-todo-item/add-todo-item.command";
 import { ChangeTodoCategoryCommand } from "./application/use-cases/change-todo-category/change-todo-category.command";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
 import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
+import { DeleteTodoItemCommand } from "./application/use-cases/delete-todo-item/delete-todo-item.command";
 import { ReorderTodoCommand } from "./application/use-cases/reorder-todo/reorder-todo.command";
+import { ReorderTodoItemsCommand } from "./application/use-cases/reorder-todo-items/reorder-todo-items.command";
 import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
 import { UpdateTodoCommand } from "./application/use-cases/update-todo/update-todo.command";
+import { UpdateTodoItemCommand } from "./application/use-cases/update-todo-item/update-todo-item.command";
 import { UpdateTodoScheduleCommand } from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
 import { UpdateTodoTitleCommand } from "./application/use-cases/update-todo-title/update-todo-title.command";
 import { UpdateTodoVisibilityCommand } from "./application/use-cases/update-todo-visibility/update-todo-visibility.command";
@@ -884,7 +888,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.addItem(params.id, user.userId, dto);
+		const todo = await this.commandBus.execute<
+			AddTodoItemCommand,
+			TodoResponse
+		>(new AddTodoItemCommand(params.id, user.userId, dto.title));
 
 		return {
 			message: "하위 항목이 추가되었습니다.",
@@ -931,11 +938,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.reorderItems(
-			params.id,
-			user.userId,
-			dto,
-		);
+		const todo = await this.commandBus.execute<
+			ReorderTodoItemsCommand,
+			TodoResponse
+		>(new ReorderTodoItemsCommand(params.id, user.userId, dto.itemIds));
 
 		return {
 			message: "하위 항목 순서가 변경되었습니다.",
@@ -989,11 +995,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateItem(
-			params.id,
-			params.itemId,
-			user.userId,
-			dto,
+		const todo = await this.commandBus.execute<
+			UpdateTodoItemCommand,
+			TodoResponse
+		>(
+			new UpdateTodoItemCommand(params.id, params.itemId, user.userId, {
+				title: dto.title,
+				completed: dto.completed,
+			}),
 		);
 
 		return {
@@ -1037,11 +1046,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.deleteItem(
-			params.id,
-			params.itemId,
-			user.userId,
-		);
+		const todo = await this.commandBus.execute<
+			DeleteTodoItemCommand,
+			TodoResponse
+		>(new DeleteTodoItemCommand(params.id, params.itemId, user.userId));
 
 		return {
 			message: "하위 항목이 삭제되었습니다.",

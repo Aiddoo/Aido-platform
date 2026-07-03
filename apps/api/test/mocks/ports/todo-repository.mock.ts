@@ -21,6 +21,12 @@ export function createTodoRepositoryMock(): TodoRepositoryPort {
 		delete: jest.fn(),
 		updateSortOrder: jest.fn(),
 		shiftSortOrders: jest.fn(),
+		countItemsByTodoId: jest.fn(),
+		getMaxItemSortOrder: jest.fn(),
+		createItem: jest.fn(),
+		updateItem: jest.fn(),
+		deleteItem: jest.fn(),
+		reorderItems: jest.fn(),
 		countActiveByCategory: jest.fn(),
 		getMaxSortOrder: jest.fn(),
 	};
