@@ -4,6 +4,7 @@ import {
 	type Todo,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { CommandBus } from "@nestjs/cqrs";
 import { CacheService } from "@/common/cache/cache.service";
 import type { TransactionClient } from "@/common/database";
 import { toDateString } from "@/common/date/utils/format";
@@ -12,7 +13,11 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
-import { TodoService } from "../todo/todo.service";
+import {
+	CreateRecurringTodosCommand,
+	type CreateRecurringTodosResult,
+	CreateTodoCommand,
+} from "../todo";
 import { MemoMapper } from "./memo.mapper";
 import { MemoRepository } from "./memo.repository";
 import type {
@@ -30,7 +35,7 @@ export class MemoService {
 		private readonly memoRepository: MemoRepository,
 		private readonly paginationService: PaginationService,
 		private readonly database: DatabaseService,
-		private readonly todoService: TodoService,
+		private readonly commandBus: CommandBus,
 		private readonly cacheService: CacheService,
 	) {}
 
@@ -261,18 +266,20 @@ export class MemoService {
 			throw BusinessExceptions.memoNotFound(memoId);
 		}
 
-		// 2. Todo 생성 (TodoService.create 내부 TX)
-		const todo = await this.todoService.create({
-			userId,
-			title: memo.content.substring(0, 200),
-			categoryId: data.categoryId,
-			startDate: data.startDate,
-			endDate: data.endDate,
-			scheduledTime: data.scheduledTime,
-			isAllDay: data.isAllDay ?? true,
-			visibility: data.visibility ?? "PUBLIC",
-			items: data.items,
-		});
+		// 2. Todo 생성 (CreateTodoHandler 내부 TX)
+		const todo = await this.commandBus.execute<CreateTodoCommand, Todo>(
+			new CreateTodoCommand({
+				userId,
+				title: memo.content.substring(0, 200),
+				categoryId: data.categoryId,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				scheduledTime: data.scheduledTime,
+				isAllDay: data.isAllDay ?? true,
+				visibility: data.visibility ?? "PUBLIC",
+				items: data.items,
+			}),
+		);
 
 		// 3. 메모 삭제 (Todo 생성 커밋 후)
 		await this.memoRepository.delete(memoId);
@@ -287,10 +294,10 @@ export class MemoService {
 	/**
 	 * 메모를 여러 할 일로 일괄 변환
 	 *
-	 * 반복 일정은 TodoService.createRecurring, 단건은 TodoService.create를 호출합니다.
+	 * 반복 일정은 CreateRecurringTodosCommand, 단건은 CreateTodoCommand를 디스패치합니다.
 	 *
 	 * **트랜잭션 설계 의도:**
-	 * 각 TodoService 메서드가 자체 TX + 캐시 무효화 + 리마인더 스케줄링을 포함하므로,
+	 * 각 커맨드 핸들러가 자체 TX + 캐시 무효화 + 리마인더 스케줄링(이벤트)을 포함하므로,
 	 * 외부 TX로 감싸면 nested transaction + side effect 복잡도가 크게 증가합니다.
 	 * 대신 메모 삭제를 마지막에 실행하여, 중간 실패 시 메모가 유지되어 재시도 가능합니다.
 	 * 이미 생성된 Todo는 유지됩니다 (최대 5개로 부분 실패 확률 극히 낮음).
@@ -312,37 +319,44 @@ export class MemoService {
 
 		for (const todoData of data.todos) {
 			if (todoData.isRecurring && todoData.recurrence) {
-				// 반복 일정: createRecurring은 여러 Todo 인스턴스를 생성
-				const result = await this.todoService.createRecurring(
-					{
-						userId,
-						title: todoData.title,
-						categoryId: todoData.categoryId,
-						startDate: toDateString(todoData.startDate),
-						endDate: toDateString(todoData.recurrence.endDate),
-						daysOfWeek: todoData.recurrence.daysOfWeek,
-						scheduledTime: todoData.scheduledTime
-							? toLocalTimeString(todoData.scheduledTime, timezone)
-							: null,
-						isAllDay: todoData.isAllDay ?? true,
-						visibility: todoData.visibility ?? "PUBLIC",
-					},
-					timezone,
+				// 반복 일정: CreateRecurringTodosHandler가 여러 Todo 인스턴스를 생성
+				const result = await this.commandBus.execute<
+					CreateRecurringTodosCommand,
+					CreateRecurringTodosResult
+				>(
+					new CreateRecurringTodosCommand(
+						{
+							userId,
+							title: todoData.title,
+							categoryId: todoData.categoryId,
+							startDate: toDateString(todoData.startDate),
+							endDate: toDateString(todoData.recurrence.endDate),
+							daysOfWeek: todoData.recurrence.daysOfWeek,
+							scheduledTime: todoData.scheduledTime
+								? toLocalTimeString(todoData.scheduledTime, timezone)
+								: null,
+							isAllDay: todoData.isAllDay ?? true,
+							visibility: todoData.visibility ?? "PUBLIC",
+						},
+						timezone,
+					),
 				);
 				todos.push(...result.todos);
 			} else {
 				// 단건 일정
-				const todo = await this.todoService.create({
-					userId,
-					title: todoData.title,
-					categoryId: todoData.categoryId,
-					startDate: todoData.startDate,
-					endDate: todoData.endDate,
-					scheduledTime: todoData.scheduledTime,
-					isAllDay: todoData.isAllDay ?? true,
-					visibility: todoData.visibility ?? "PUBLIC",
-					items: todoData.items,
-				});
+				const todo = await this.commandBus.execute<CreateTodoCommand, Todo>(
+					new CreateTodoCommand({
+						userId,
+						title: todoData.title,
+						categoryId: todoData.categoryId,
+						startDate: todoData.startDate,
+						endDate: todoData.endDate,
+						scheduledTime: todoData.scheduledTime,
+						isAllDay: todoData.isAllDay ?? true,
+						visibility: todoData.visibility ?? "PUBLIC",
+						items: todoData.items,
+					}),
+				);
 				todos.push(todo);
 			}
 		}

@@ -96,6 +96,8 @@ HTTP Request
 | Repository → 다른 Repository | ❌ | |
 | Repository → Service | ❌ | |
 
+> ⚠️ 위 표는 **레거시 3계층 모듈** 기준. 클린아키텍처로 전환된 모듈(todo)은 §1.4의 규칙을 따른다.
+
 ### 1.3 디렉토리 구조
 
 ```
@@ -140,7 +142,11 @@ apps/api/
 │       ├── nudge/              # 찌르기
 │       ├── scheduler/          # 스케줄러 (리마인더)
 │       ├── subscription/       # 구독/결제
-│       ├── todo/               # 할 일 CRUD
+│       ├── todo/               # 할 일 (클린아키텍처+CQRS, §1.4)
+│       │   ├── domain/         #   애그리게잇·VO·이벤트·도메인 서비스
+│       │   ├── application/    #   포트·유스케이스(커맨드)·쿼리·이벤트 핸들러
+│       │   ├── infrastructure/ #   어댑터 (포트 구현)
+│       │   └── ...             #   controller·행 repository·mapper·dtos
 │       ├── todo-category/      # 할 일 카테고리
 │       ├── user-settings/      # 사용자 설정/프로필
 │       └── weekly-achievement/ # 주간 달성 통계
@@ -152,6 +158,55 @@ apps/api/
 ```
 
 ---
+
+### 1.4 클린아키텍처 모듈 (CQRS) — todo부터 적용
+
+todo 모듈은 3계층에서 클린아키텍처+CQRS로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
+코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처cqrs-모듈-규칙)
+
+```
+HTTP Request
+     ↓
+Controller ── DTO→Command/Query 매핑, 날짜·타임존 파싱만 담당
+     ↓
+CommandBus / QueryBus (@nestjs/cqrs)
+     ↓
+Application: 커맨드/쿼리 핸들러 (유스케이스당 1개, SRP)
+     │  · 포트(Symbol 토큰 인터페이스)에만 의존
+     │  · TRANSACTION_MANAGER.run(tx => ...) 로 트랜잭션
+     │  · ApplicationException(ErrorCode)으로 유스케이스 규칙 위반 표현
+     ↓
+Domain: 애그리게잇(AggregateRoot) · VO · 도메인 서비스 · 도메인 이벤트
+     │  · 불변식 위반은 DomainException
+     │  · 상태 전이 메서드에서 apply(event) → 영속화 후 commit()
+     ↓
+Infrastructure: 어댑터 (포트 구현)
+     │  · Prisma{X}Repository → 레거시 행 Repository에 위임 + 도메인/응답 매핑
+     │  · 크로스모듈 어댑터 → 타 모듈 서비스에 thin delegation
+     ↓
+행 Repository → DatabaseService (Prisma) → PostgreSQL
+
+     ── 부수효과 (커밋 후) ──
+@EventsHandler ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
+              └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
+```
+
+**의존성 방향 (클린아키텍처 모듈)**
+
+| 방향 | 허용 여부 | 비고 |
+|------|----------|------|
+| Controller → CommandBus/QueryBus | ✅ | 서비스 직접 호출 금지 |
+| application → domain | ✅ | 핸들러가 애그리게잇/VO/도메인 서비스 사용 |
+| application → 포트(인터페이스) | ✅ | `@Inject(SYMBOL_TOKEN)` |
+| infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
+| infrastructure → 레거시 Repository/타 모듈 서비스 | ✅ | 위임 전용 (쿼리 중복 금지) |
+| domain → application/infrastructure | ❌ | 도메인은 안쪽으로만 |
+| application → Prisma/타 모듈 구체 클래스 | ❌ | 포트로 역전 |
+| 외부 모듈 → 이 모듈의 서비스 | ❌ | CommandBus로 커맨드 디스패치 (memo·ai-suggestion 참조) |
+| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` CI 강제 |
+
+**계약 안전장치**: `test/e2e/openapi-contract.e2e-spec.ts` 스냅샷이 전체 API 계약을 고정 —
+마이그레이션 중 스냅샷 diff 0 = 클라이언트 영향 0.
 
 ## 2. 에러 처리 체계
 

@@ -58,7 +58,7 @@ tooling/*           공유 설정 (biome, jest, vitest, typescript)
 
 | 하려는 일 | 읽을 문서 |
 |-----------|-----------|
-| API 기능 추가 (Controller/Service/Repository) | [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) → [`apps/api/.claude/architecture.md`](apps/api/.claude/architecture.md) |
+| API 기능 추가 (클린아키텍처 CQRS — todo 표준 / 레거시 3계층) | [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) → [`apps/api/.claude/architecture.md`](apps/api/.claude/architecture.md) |
 | Mobile 기능 추가 (Feature-based) | [`apps/mobile/CLAUDE.md`](apps/mobile/CLAUDE.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md) |
 | Zod 스키마 / DTO 추가 | [`apps/api/.claude/validators.md`](apps/api/.claude/validators.md) |
 | Prisma 스키마 변경 | [`apps/api/.claude/prisma.md`](apps/api/.claude/prisma.md) |

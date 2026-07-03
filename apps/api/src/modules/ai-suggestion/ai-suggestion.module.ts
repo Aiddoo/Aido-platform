@@ -1,5 +1,6 @@
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
+import { CqrsModule } from "@nestjs/cqrs";
 
 import { AiModule } from "../ai/ai.module";
 import { AiReportModule } from "../ai-report/ai-report.module";
@@ -30,11 +31,13 @@ import { SuggestionContextBuilder } from "./suggestion-context.builder";
  * ### 의존성
  * - AiModule: AI Provider (Gemini)를 통한 제안 생성
  * - NotificationModule: 새 제안 생성 알림 발송
- * - TodoModule: 제안 수락 시 반복 할 일 생성
+ * - CqrsModule: 제안 수락 시 CreateRecurringTodos 커맨드 디스패치
+ * - TodoModule: 커맨드 핸들러 등록 보장 (명시적 의존)
  * - WeatherModule: 날씨 기반 제안을 위한 날씨 조회
  */
 @Module({
 	imports: [
+		CqrsModule,
 		AiModule,
 		AiReportModule,
 		NotificationModule,

@@ -5,6 +5,7 @@ import {
 	type SuggestionActionResponse,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { CommandBus } from "@nestjs/cqrs";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { now } from "@/common/date/utils/core";
@@ -14,7 +15,10 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { AI_PROVIDER, type AiProvider } from "../ai/providers/ai.provider";
-import { TodoService } from "../todo/todo.service";
+import {
+	CreateRecurringTodosCommand,
+	type CreateRecurringTodosResult,
+} from "../todo";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
@@ -42,7 +46,7 @@ export class AiSuggestionService {
 
 	constructor(
 		private readonly aiSuggestionRepository: AiSuggestionRepository,
-		private readonly todoService: TodoService,
+		private readonly commandBus: CommandBus,
 		@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
 		private readonly entitlementService: EntitlementService,
 		private readonly database: DatabaseService,
@@ -143,17 +147,22 @@ export class AiSuggestionService {
 		);
 
 		try {
-			const result = await this.todoService.createRecurring(
-				{
-					userId,
-					title: suggestion.title,
-					categoryId: dto.categoryId,
-					startDate,
-					endDate,
-					daysOfWeek,
-					scheduledTime: suggestion.scheduledTime,
-				},
-				timezone,
+			const result = await this.commandBus.execute<
+				CreateRecurringTodosCommand,
+				CreateRecurringTodosResult
+			>(
+				new CreateRecurringTodosCommand(
+					{
+						userId,
+						title: suggestion.title,
+						categoryId: dto.categoryId,
+						startDate,
+						endDate,
+						daysOfWeek,
+						scheduledTime: suggestion.scheduledTime,
+					},
+					timezone,
+				),
 			);
 
 			this.#logger.log(
