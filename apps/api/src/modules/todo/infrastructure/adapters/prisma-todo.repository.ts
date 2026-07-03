@@ -137,6 +137,40 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		);
 	}
 
+	async updateCategory(
+		id: number,
+		categoryId: number,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.update(
+			id,
+			{ category: { connect: { id: categoryId } } },
+			tx,
+		);
+	}
+
+	async delete(id: number, tx?: TransactionClient): Promise<void> {
+		await this.todoRepository.delete(id, tx);
+	}
+
+	async updateSortOrder(
+		id: number,
+		sortOrder: number,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.updateSortOrder(id, sortOrder, tx);
+	}
+
+	async shiftSortOrders(
+		userId: string,
+		from: number,
+		to: number | null,
+		delta: number,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.shiftSortOrders(userId, from, to, delta, tx);
+	}
+
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,

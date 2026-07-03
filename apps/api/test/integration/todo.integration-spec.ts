@@ -452,45 +452,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 		});
 	});
 
-	describe("delete 통합 테스트", () => {
-		it("Todo를 삭제한다", async () => {
-			// Given - 삭제할 Todo 준비
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockDatabaseService.todo.delete.mockResolvedValue(mockTodo);
-
-			// When - 서비스 메서드 호출
-			await service.delete(mockTodoId, mockUserId);
-
-			// Then - 삭제 메서드 호출 검증
-			expect(mockDatabaseService.todo.delete).toHaveBeenCalledWith({
-				where: { id: mockTodoId },
-			});
-		});
-
-		it("존재하지 않는 Todo 삭제 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 Todo
-			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
-			await expect(service.delete(999, mockUserId)).rejects.toThrow(
-				BusinessException,
-			);
-		});
-
-		it("다른 사용자의 Todo 삭제 시 BusinessException을 던진다", async () => {
-			// Given - 다른 사용자의 Todo
-			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
-			await expect(service.delete(mockTodoId, "other-user")).rejects.toThrow(
-				BusinessException,
-			);
-		});
-	});
-
 	describe("에러 핸들링 통합 테스트", () => {
 		it("Repository 에러가 적절하게 전파된다", async () => {
 			// Given - DB 연결 실패 시뮬레이션
@@ -598,80 +559,6 @@ describe("TodoService 통합 테스트 (Mock DB)", () => {
 			// When & Then - 예외 발생 검증
 			await expect(
 				service.toggleComplete(999, mockUserId, { completed: true }),
-			).rejects.toThrow(BusinessException);
-		});
-	});
-
-	describe("updateCategory 통합 테스트", () => {
-		it("카테고리를 변경한다", async () => {
-			// Given - 카테고리 변경 대상 Todo 준비
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withCategoryId(1)
-				.build();
-			const newCategory = TodoCategoryBuilder.create(mockUserId)
-				.withId(2)
-				.withName("할 일")
-				.withColor("#FF6B43")
-				.build();
-			const updatedTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withCategoryId(2)
-				.withCategory({
-					id: 2,
-					name: "할 일",
-					color: "#FF6B43",
-					sortOrder: 1,
-				})
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockTodoCategoryRepository.findByIdAndUserId.mockResolvedValue(
-				newCategory,
-			);
-			mockDatabaseService.todo.update.mockResolvedValue(updatedTodo);
-
-			// When - 카테고리 변경
-			const result = await service.updateCategory(mockTodoId, mockUserId, {
-				categoryId: 2,
-			});
-
-			// Then - 변경된 카테고리 검증
-			expect(result.category.id).toBe(2);
-			expect(result.category.name).toBe("할 일");
-			expect(mockDatabaseService.todo.update).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockTodoId },
-					data: { category: { connect: { id: 2 } } },
-				}),
-			);
-		});
-
-		it("존재하지 않는 카테고리로 변경 시 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 카테고리
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.build();
-			mockDatabaseService.todo.findFirst.mockResolvedValue(mockTodo);
-			mockTodoCategoryService.validateOwnership.mockRejectedValue(
-				BusinessExceptions.todoCategoryNotFound(999),
-			);
-
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.updateCategory(mockTodoId, mockUserId, { categoryId: 999 }),
-			).rejects.toThrow(BusinessException);
-
-			// cleanup
-			mockTodoCategoryService.validateOwnership.mockResolvedValue(undefined);
-		});
-
-		it("존재하지 않는 Todo에 대해 BusinessException을 던진다", async () => {
-			// Given - 존재하지 않는 Todo
-			mockDatabaseService.todo.findFirst.mockResolvedValue(null);
-
-			// When & Then - 예외 발생 검증
-			await expect(
-				service.updateCategory(999, mockUserId, { categoryId: 1 }),
 			).rejects.toThrow(BusinessException);
 		});
 	});

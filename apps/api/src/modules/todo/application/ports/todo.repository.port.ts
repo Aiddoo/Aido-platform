@@ -86,6 +86,32 @@ export interface TodoRepositoryPort {
 		tx?: TransactionClient,
 	): Promise<void>;
 
+	updateCategory(
+		id: number,
+		categoryId: number,
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	delete(id: number, tx?: TransactionClient): Promise<void>;
+
+	updateSortOrder(
+		id: number,
+		sortOrder: number,
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	/**
+	 * [from, to] 범위(둘 다 포함)의 sortOrder를 delta만큼 일괄 이동.
+	 * to가 null이면 from 이상 전체.
+	 */
+	shiftSortOrders(
+		userId: string,
+		from: number,
+		to: number | null,
+		delta: number,
+		tx?: TransactionClient,
+	): Promise<void>;
+
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,

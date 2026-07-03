@@ -18,6 +18,7 @@ import { TodoBuilder } from "@test/builders";
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
 import type {
 	CreateRecurringTodoDto,
 	CreateTodoDto,
@@ -260,19 +261,24 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("delete", () => {
-		it("할 일 삭제 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
+		it("할 일 삭제 요청을 CommandBus에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given - 삭제할 할 일 ID가 있을 때
 			const params: TodoIdParamDto = { id: 1 };
-			mockTodoService.delete.mockResolvedValue(undefined);
+			mockCommandBus.execute.mockResolvedValue(undefined);
 
 			// When - delete를 호출하면
 			const result = await controller.delete(mockUser, params);
 
-			// Then - 서비스에 id와 userId를 전달하고 메시지를 반환해야 한다
-			expect(mockTodoService.delete).toHaveBeenCalledWith(
-				params.id,
-				mockUser.userId,
+			// Then - DeleteTodoCommand를 디스패치하고 메시지를 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(DeleteTodoCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(DeleteTodoCommand);
+			if (command instanceof DeleteTodoCommand) {
+				expect(command.id).toBe(params.id);
+				expect(command.userId).toBe(mockUser.userId);
+			}
 			expect(result).toEqual({
 				message: "할 일이 삭제되었습니다.",
 			});

@@ -17,6 +17,10 @@ export function createTodoRepositoryMock(): TodoRepositoryPort {
 		updateTitle: jest.fn(),
 		updateVisibility: jest.fn(),
 		updateSchedule: jest.fn(),
+		updateCategory: jest.fn(),
+		delete: jest.fn(),
+		updateSortOrder: jest.fn(),
+		shiftSortOrders: jest.fn(),
 		countActiveByCategory: jest.fn(),
 		getMaxSortOrder: jest.fn(),
 	};

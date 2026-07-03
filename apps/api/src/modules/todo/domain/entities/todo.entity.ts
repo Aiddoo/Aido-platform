@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import { now } from "@/common/date/utils/core";
 import { AggregateRoot, DomainException } from "@/common/domain";
 import { TodoCreatedEvent } from "../events/todo-created.event";
+import { TodoDeletedEvent } from "../events/todo-deleted.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
@@ -209,12 +210,28 @@ export class Todo extends AggregateRoot<TodoProps> {
 		);
 	}
 
+	/**
+	 * 삭제 완료를 표시합니다 (DELETE /todos/:id).
+	 *
+	 * 상태 변화 없이 TodoDeletedEvent만 적립합니다(markCreated와 대칭).
+	 * 커밋 후 이벤트 핸들러가 리마인더를 취소합니다.
+	 */
+	markDeleted(): void {
+		this.apply(
+			new TodoDeletedEvent(this.props.id.getValue(), this.props.userId),
+		);
+	}
+
 	getId(): TodoId {
 		return this.props.id;
 	}
 
 	getUserId(): string {
 		return this.props.userId;
+	}
+
+	getSortOrder(): number {
+		return this.props.sortOrder;
 	}
 
 	isCompleted(): boolean {

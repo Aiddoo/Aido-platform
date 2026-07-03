@@ -10,7 +10,6 @@ import {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { CacheService } from "@/common/cache/cache.service";
-import type { TransactionClient } from "@/common/database";
 import { isAfter } from "@/common/date/utils/compare";
 import { now } from "@/common/date/utils/core";
 import { parseDateOnly } from "@/common/date/utils/parse";
@@ -299,24 +298,6 @@ export class TodoService {
 		});
 	}
 
-	/**
-	 * Todo 삭제
-	 */
-	async delete(id: number, userId: string): Promise<void> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		await this.todoRepository.delete(id);
-		this.reminderScheduler.cancelReminder(id);
-
-		await this.cacheService.invalidateTodoCategories(userId);
-
-		this.#logger.log(`Todo deleted: ${id} for user: ${userId}`);
-	}
-
 	// ===== 액션별 수정 메서드 (SRP) =====
 
 	/**
@@ -419,173 +400,6 @@ export class TodoService {
 			userId,
 			milestone,
 		});
-	}
-
-	/**
-	 * Todo 색상 변경
-	 */
-	async updateCategory(
-		id: number,
-		userId: string,
-		data: { categoryId: number },
-	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		// 새 카테고리 소유권 확인 (읽기 전용, TX 외부)
-		await this.todoCategoryService.validateOwnership(data.categoryId, userId);
-
-		const updateData = { category: { connect: { id: data.categoryId } } };
-
-		// 활성 투두 이동 시 TX 내에서 check + update (race condition 방지)
-		const updatedTodo = !todo.completed
-			? await this.database.$transaction(async (tx) => {
-					const activeInTarget =
-						await this.todoRepository.countActiveByCategory(
-							userId,
-							data.categoryId,
-							tx,
-						);
-					if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
-						throw BusinessExceptions.todoCategoryFull(
-							activeInTarget,
-							TODO_LIMITS.MAX_PER_CATEGORY,
-						);
-					}
-					return this.todoRepository.update(id, updateData, tx);
-				})
-			: await this.todoRepository.update(id, updateData);
-
-		await this.cacheService.invalidateTodoCategories(userId);
-
-		this.#logger.log(
-			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,
-		);
-
-		return TodoMapper.toResponse(updatedTodo);
-	}
-
-	/**
-	 * Todo 순서 변경 (개별 이동)
-	 *
-	 * @param id - 이동할 Todo ID
-	 * @param userId - 사용자 ID
-	 * @param data.targetTodoId - 기준이 되는 Todo ID (없으면 맨 처음/끝으로 이동)
-	 * @param data.position - 기준 Todo의 앞('before') 또는 뒤('after')로 이동
-	 */
-	async reorder(
-		id: number,
-		userId: string,
-		data: { targetTodoId?: number; position: "before" | "after" },
-	): Promise<Todo> {
-		const { targetTodoId, position } = data;
-
-		return this.database.$transaction(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
-
-			if (!todo) {
-				throw BusinessExceptions.todoNotFound(id);
-			}
-
-			if (targetTodoId === id) {
-				return TodoMapper.toResponse(todo);
-			}
-
-			const newSortOrder = targetTodoId
-				? await this.#reorderRelativeTo(
-						todo.sortOrder,
-						targetTodoId,
-						position,
-						userId,
-						tx,
-					)
-				: await this.#reorderToEdge(todo.sortOrder, position, userId, tx);
-
-			const updatedTodo = await this.todoRepository.updateSortOrder(
-				id,
-				newSortOrder,
-				tx,
-			);
-
-			this.#logger.log(
-				`Todo reordered: ${id} to sortOrder ${newSortOrder} for user: ${userId}`,
-			);
-
-			return TodoMapper.toResponse(updatedTodo);
-		});
-	}
-
-	async #reorderRelativeTo(
-		currentSortOrder: number,
-		targetTodoId: number,
-		position: "before" | "after",
-		userId: string,
-		tx: TransactionClient,
-	): Promise<number> {
-		const targetTodo = await this.todoRepository.findByIdAndUserId(
-			targetTodoId,
-			userId,
-			tx,
-		);
-
-		if (!targetTodo) {
-			throw BusinessExceptions.todoReorderTargetNotFound(targetTodoId);
-		}
-
-		let newSortOrder =
-			position === "before" ? targetTodo.sortOrder : targetTodo.sortOrder + 1;
-
-		if (currentSortOrder < newSortOrder) {
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				currentSortOrder + 1,
-				newSortOrder - 1,
-				-1,
-				tx,
-			);
-			newSortOrder -= 1;
-		} else {
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				newSortOrder,
-				currentSortOrder - 1,
-				1,
-				tx,
-			);
-		}
-
-		return newSortOrder;
-	}
-
-	async #reorderToEdge(
-		currentSortOrder: number,
-		position: "before" | "after",
-		userId: string,
-		tx: TransactionClient,
-	): Promise<number> {
-		if (position === "before") {
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				0,
-				currentSortOrder - 1,
-				1,
-				tx,
-			);
-			return 0;
-		}
-
-		const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId, tx);
-		await this.todoRepository.shiftSortOrders(
-			userId,
-			currentSortOrder + 1,
-			null,
-			-1,
-			tx,
-		);
-		return maxSortOrder;
 	}
 
 	// ===== 반복 Todo 생성 =====

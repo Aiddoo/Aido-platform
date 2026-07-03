@@ -37,7 +37,10 @@ import { GetFriendTodosQuery } from "./application/queries/get-friend-todos.quer
 import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id.query";
 import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit.query";
 import { GetTodosQuery } from "./application/queries/get-todos.query";
+import { ChangeTodoCategoryCommand } from "./application/use-cases/change-todo-category/change-todo-category.command";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
+import { ReorderTodoCommand } from "./application/use-cases/reorder-todo/reorder-todo.command";
 import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
 import { UpdateTodoCommand } from "./application/use-cases/update-todo/update-todo.command";
 import { UpdateTodoScheduleCommand } from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
@@ -667,11 +670,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateCategory(
-			params.id,
-			user.userId,
-			dto,
-		);
+		const todo = await this.commandBus.execute<
+			ChangeTodoCategoryCommand,
+			TodoResponse
+		>(new ChangeTodoCategoryCommand(params.id, user.userId, dto.categoryId));
 
 		return {
 			message: "카테고리가 변경되었습니다.",
@@ -788,7 +790,17 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.reorder(params.id, user.userId, dto);
+		const todo = await this.commandBus.execute<
+			ReorderTodoCommand,
+			TodoResponse
+		>(
+			new ReorderTodoCommand(
+				params.id,
+				user.userId,
+				dto.targetTodoId,
+				dto.position,
+			),
+		);
 
 		return {
 			message: "할 일 순서가 변경되었습니다.",
@@ -814,7 +826,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<DeleteTodoResponseDto> {
 		this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
 
-		await this.todoService.delete(params.id, user.userId);
+		await this.commandBus.execute<DeleteTodoCommand, void>(
+			new DeleteTodoCommand(params.id, user.userId),
+		);
 
 		this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
 
