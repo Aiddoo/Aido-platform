@@ -11,6 +11,7 @@ export function createTodoRepositoryMock(): TodoRepositoryPort {
 	return {
 		findByIdAndUserId: jest.fn(),
 		create: jest.fn(),
+		createMany: jest.fn(),
 		createInlineItems: jest.fn(),
 		updateCompletion: jest.fn(),
 		updateDetails: jest.fn(),

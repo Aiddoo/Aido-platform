@@ -1,5 +1,6 @@
 import { AddTodoItemHandler } from "./add-todo-item/add-todo-item.handler";
 import { ChangeTodoCategoryHandler } from "./change-todo-category/change-todo-category.handler";
+import { CreateRecurringTodosHandler } from "./create-recurring-todos/create-recurring-todos.handler";
 import { CreateTodoHandler } from "./create-todo/create-todo.handler";
 import { DeleteTodoHandler } from "./delete-todo/delete-todo.handler";
 import { DeleteTodoItemHandler } from "./delete-todo-item/delete-todo-item.handler";
@@ -16,6 +17,8 @@ export * from "./add-todo-item/add-todo-item.command";
 export * from "./add-todo-item/add-todo-item.handler";
 export * from "./change-todo-category/change-todo-category.command";
 export * from "./change-todo-category/change-todo-category.handler";
+export * from "./create-recurring-todos/create-recurring-todos.command";
+export * from "./create-recurring-todos/create-recurring-todos.handler";
 export * from "./create-todo/create-todo.command";
 export * from "./create-todo/create-todo.handler";
 export * from "./delete-todo/delete-todo.command";
@@ -43,6 +46,7 @@ export * from "./update-todo-visibility/update-todo-visibility.handler";
 export const CommandHandlers = [
 	AddTodoItemHandler,
 	ChangeTodoCategoryHandler,
+	CreateRecurringTodosHandler,
 	CreateTodoHandler,
 	DeleteTodoHandler,
 	DeleteTodoItemHandler,

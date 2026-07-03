@@ -17,6 +17,7 @@ import { TodoBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
+import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
 import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
 import type {
@@ -27,7 +28,6 @@ import type {
 } from "./dtos";
 import { TodoController } from "./todo.controller";
 import { TodoMapper } from "./todo.mapper";
-import { TodoService } from "./todo.service";
 import type { TodoWithCategory } from "./types/todo.types";
 
 /** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
@@ -81,7 +81,6 @@ function makeRecurringDto(
 
 describe("TodoController — 할 일 컨트롤러", () => {
 	let controller: TodoController;
-	let mockTodoService: Mocked<TodoService>;
 	let mockCommandBus: Mocked<CommandBus>;
 	let mockQueryBus: Mocked<QueryBus>;
 
@@ -96,7 +95,6 @@ describe("TodoController — 할 일 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoController).compile();
 
 		controller = unit;
-		mockTodoService = unitRef.get(TodoService);
 		mockCommandBus = unitRef.get(CommandBus);
 		mockQueryBus = unitRef.get(QueryBus);
 	});
@@ -204,8 +202,8 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("createRecurring", () => {
-		it("반복 할 일 생성 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 반복 할 일 생성 DTO와 서비스 응답이 준비되었을 때
+		it("반복 할 일 생성 요청을 CommandBus에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 반복 할 일 생성 DTO와 핸들러 응답이 준비되었을 때
 			const dto = makeRecurringDto();
 			const tz = "Asia/Seoul";
 			const mockTodos = [
@@ -213,7 +211,7 @@ describe("TodoController — 할 일 컨트롤러", () => {
 				buildResponse({ id: 2, title: "약 먹기" }),
 				buildResponse({ id: 3, title: "약 먹기" }),
 			];
-			mockTodoService.createRecurring.mockResolvedValue({
+			mockCommandBus.execute.mockResolvedValue({
 				todos: mockTodos,
 				count: 3,
 			});
@@ -221,18 +219,25 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			// When - createRecurring을 호출하면
 			const result = await controller.createRecurring(mockUser, dto, tz);
 
-			// Then - 서비스에 데이터를 전달하고 응답을 반환해야 한다
-			expect(mockTodoService.createRecurring).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUser.userId,
-					title: dto.title,
-					categoryId: dto.categoryId,
-					startDate: dto.startDate,
-					endDate: dto.endDate,
-					daysOfWeek: dto.daysOfWeek,
-				}),
-				tz,
+			// Then - CreateRecurringTodosCommand를 디스패치하고 응답을 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateRecurringTodosCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateRecurringTodosCommand);
+			if (command instanceof CreateRecurringTodosCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						userId: mockUser.userId,
+						title: dto.title,
+						categoryId: dto.categoryId,
+						startDate: dto.startDate,
+						endDate: dto.endDate,
+						daysOfWeek: dto.daysOfWeek,
+					}),
+				);
+				expect(command.timezone).toBe(tz);
+			}
 			expect(result).toEqual({
 				message: "반복 할 일이 3개 생성되었습니다.",
 				todos: mockTodos,
@@ -246,7 +251,7 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			const mockTodos = Array.from({ length: 13 }, (_, i) =>
 				buildResponse({ id: i + 1, title: "운동하기" }),
 			);
-			mockTodoService.createRecurring.mockResolvedValue({
+			mockCommandBus.execute.mockResolvedValue({
 				todos: mockTodos,
 				count: 13,
 			});

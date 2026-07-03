@@ -112,6 +112,16 @@ export interface TodoRepositoryPort {
 		tx?: TransactionClient,
 	): Promise<void>;
 
+	/**
+	 * 반복 그룹 일괄 생성 — 생성된 애그리게잇을 sortOrder 순으로 반환.
+	 * 다중 쓰기이므로 트랜잭션 필수.
+	 */
+	createMany(
+		items: NewTodoData[],
+		recurrenceGroupId: string,
+		tx: TransactionClient,
+	): Promise<Todo[]>;
+
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,

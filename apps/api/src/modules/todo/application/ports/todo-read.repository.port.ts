@@ -15,6 +15,12 @@ export const TODO_READ_REPOSITORY = Symbol("TODO_READ_REPOSITORY");
 export interface TodoReadRepositoryPort {
 	findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null>;
 
+	/** 반복 그룹 전체 조회 (sortOrder asc — 생성 순서와 동일) */
+	findManyByRecurrenceGroupId(
+		userId: string,
+		recurrenceGroupId: string,
+	): Promise<TodoResponse[]>;
+
 	findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
 
 	findPublicTodosByUserId(

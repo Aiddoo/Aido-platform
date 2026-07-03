@@ -8,6 +8,7 @@ import type { TodoReadRepositoryPort } from "@/modules/todo/application/ports/to
 export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
 	return {
 		findByIdAndUserId: jest.fn(),
+		findManyByRecurrenceGroupId: jest.fn(),
 		findManyByUserId: jest.fn(),
 		findPublicTodosByUserId: jest.fn(),
 		countActiveByCategory: jest.fn(),

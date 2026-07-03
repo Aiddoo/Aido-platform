@@ -26,6 +26,17 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 		return row ? TodoMapper.toResponse(row) : null;
 	}
 
+	async findManyByRecurrenceGroupId(
+		userId: string,
+		recurrenceGroupId: string,
+	): Promise<TodoResponse[]> {
+		const rows = await this.todoRepository.findManyByRecurrenceGroupId(
+			userId,
+			recurrenceGroupId,
+		);
+		return TodoMapper.toManyResponse(rows);
+	}
+
 	async findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]> {
 		const rows = await this.todoRepository.findManyByUserId(params);
 		return TodoMapper.toManyResponse(rows);

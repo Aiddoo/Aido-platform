@@ -380,6 +380,22 @@ export class TodoRepository {
 		});
 	}
 
+	/**
+	 * 반복 그룹 전체 조회 (sortOrder asc — createManyBatch 재조회와 동일 정렬)
+	 */
+	async findManyByRecurrenceGroupId(
+		userId: string,
+		recurrenceGroupId: string,
+		tx?: TransactionClient,
+	): Promise<TodoWithCategory[]> {
+		const client = tx ?? this.database;
+		return client.todo.findMany({
+			where: { userId, recurrenceGroupId },
+			include: TODO_CATEGORY_INCLUDE,
+			orderBy: { sortOrder: "asc" },
+		});
+	}
+
 	// ===== TodoItem CRUD =====
 
 	/**

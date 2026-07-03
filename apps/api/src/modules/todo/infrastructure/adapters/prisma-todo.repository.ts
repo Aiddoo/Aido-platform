@@ -171,6 +171,30 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		await this.todoRepository.shiftSortOrders(userId, from, to, delta, tx);
 	}
 
+	async createMany(
+		items: NewTodoData[],
+		recurrenceGroupId: string,
+		tx: TransactionClient,
+	): Promise<Todo[]> {
+		const rows = await this.todoRepository.createManyBatch(
+			items.map((item) => ({
+				userId: item.userId,
+				categoryId: item.categoryId,
+				title: item.title,
+				sortOrder: item.sortOrder,
+				startDate: item.startDate,
+				endDate: item.endDate,
+				scheduledTime: item.scheduledTime,
+				isAllDay: item.isAllDay,
+				visibility: item.visibility,
+				recurrenceGroupId,
+			})),
+			recurrenceGroupId,
+			tx,
+		);
+		return rows.map((row) => PrismaTodoRepository.toDomain(row));
+	}
+
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,

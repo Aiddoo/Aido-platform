@@ -39,6 +39,8 @@ import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resour
 import { GetTodosQuery } from "./application/queries/get-todos.query";
 import { AddTodoItemCommand } from "./application/use-cases/add-todo-item/add-todo-item.command";
 import { ChangeTodoCategoryCommand } from "./application/use-cases/change-todo-category/change-todo-category.command";
+import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
+import type { CreateRecurringTodosResult } from "./application/use-cases/create-recurring-todos/create-recurring-todos.handler";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
 import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
 import { DeleteTodoItemCommand } from "./application/use-cases/delete-todo-item/delete-todo-item.command";
@@ -77,7 +79,6 @@ import {
 	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
-import { TodoService } from "./todo.service";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -86,7 +87,6 @@ export class TodoController {
 	readonly #logger = new Logger(TodoController.name);
 
 	constructor(
-		private readonly todoService: TodoService,
 		private readonly commandBus: CommandBus,
 		private readonly queryBus: QueryBus,
 	) {}
@@ -240,19 +240,24 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
 		);
 
-		const result = await this.todoService.createRecurring(
-			{
-				userId: user.userId,
-				title: dto.title,
-				categoryId: dto.categoryId,
-				startDate: dto.startDate,
-				endDate: dto.endDate,
-				daysOfWeek: dto.daysOfWeek,
-				scheduledTime: dto.scheduledTime,
-				isAllDay: dto.isAllDay,
-				visibility: dto.visibility,
-			},
-			tz,
+		const result = await this.commandBus.execute<
+			CreateRecurringTodosCommand,
+			CreateRecurringTodosResult
+		>(
+			new CreateRecurringTodosCommand(
+				{
+					userId: user.userId,
+					title: dto.title,
+					categoryId: dto.categoryId,
+					startDate: dto.startDate,
+					endDate: dto.endDate,
+					daysOfWeek: dto.daysOfWeek,
+					scheduledTime: dto.scheduledTime,
+					isAllDay: dto.isAllDay,
+					visibility: dto.visibility,
+				},
+				tz,
+			),
 		);
 
 		this.#logger.log(
