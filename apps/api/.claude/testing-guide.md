@@ -54,14 +54,48 @@
 ```
 apps/api/
 ├── src/modules/{name}/
-│   └── {name}.service.spec.ts          # Unit 테스트
+│   ├── {name}.service.spec.ts          # Unit 테스트 (레거시 Service)
+│   ├── domain/
+│   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (CQRS 모듈)
+│   │   └── value-objects/*.vo.spec.ts           # VO 불변식 Unit
+│   └── application/
+│       ├── use-cases/<kebab>/<kebab>.handler.spec.ts  # 커맨드 핸들러 Unit
+│       ├── queries/handlers/*.handler.spec.ts          # 쿼리 핸들러 Unit
+│       └── events/*.handler.spec.ts                    # 이벤트 핸들러 Unit
 └── test/
     ├── e2e/{name}.e2e-spec.ts          # E2E 테스트
     ├── integration/{name}.integration-spec.ts  # Integration 테스트
     ├── builders/                        # 테스트 데이터 빌더 (17+)
     ├── mocks/                           # FakeService + Mock 팩토리
+    │   └── ports/                       # Symbol 토큰 포트 mock 팩토리 (CQRS)
     └── setup/                           # TestDatabase, suppressLogger 등
 ```
+
+### 3.1 CQRS 핸들러 spec 패턴 (클린아키텍처 모듈)
+
+`@suites/unit`은 Symbol 토큰 포트를 auto-mock하지 못하므로 `test/mocks/ports/`의 수제 팩토리를 사용한다:
+
+```ts
+const { unit, unitRef } = await TestBed.solitary(UpdateTodoHandler)
+	.mock<TodoRepositoryPort>(TODO_REPOSITORY)
+	.impl(() => createTodoRepositoryMock())
+	.mock(TRANSACTION_MANAGER)
+	.impl(() => createTransactionManagerMock())   // run(fn) 즉시 실행 패스스루
+	.compile();
+eventPublisher = unitRef.get(EventPublisher);
+eventPublisher.mergeObjectContext.mockImplementation((aggregate) => aggregate);
+```
+
+- 이벤트 발행 검증: `commit()` 후엔 `getUncommittedEvents()`가 비므로 **`jest.spyOn(entity, "apply")`** 로 검증
+- 포트 mock 팩토리는 포트 인터페이스 반환 타입 강제 → 포트 확장 시 누락이 컴파일 에러로 드러남
+- 애그리게잇 픽스처는 `Todo.reconstitute({...})`, 응답 read model은 `TodoBuilder` + `TodoMapper.toResponse`
+
+### 3.2 동작 동일성 게이트 (마이그레이션 필수)
+
+| 게이트 | 파일 | 검증 내용 |
+|--------|------|----------|
+| **OpenAPI 계약 스냅샷** | `test/e2e/openapi-contract.e2e-spec.ts` | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0 = 클라이언트 영향 0**. 의도적 계약 변경 시에만 `-u`로 재생성 |
+| **블랙박스 E2E** | `test/e2e/todo.e2e-spec.ts` 등 | 리팩터링 시 **무수정 통과**가 원칙 — 테스트를 고치면 동일성 증명이 깨진다 |
 
 ---
 

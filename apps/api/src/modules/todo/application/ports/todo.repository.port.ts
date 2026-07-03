@@ -1,7 +1,22 @@
 import type { TransactionClient } from "@/common/database";
-import type { Todo, TodoVisibility } from "../../domain/entities/todo.entity";
+import type {
+	Todo,
+	TodoDetailsPatch,
+	TodoVisibility,
+} from "../../domain/entities/todo.entity";
+import type { TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
 
 export const TODO_REPOSITORY = Symbol("TODO_REPOSITORY");
+
+/**
+ * Todo 부분 수정 영속화 패치
+ *
+ * 도메인 패치에 전이로 파생된 completedAt을 더한 형태입니다.
+ * undefined 필드는 변경하지 않습니다(Prisma partial update 시맨틱).
+ */
+export type TodoUpdatePatch = TodoDetailsPatch & {
+	completedAt?: Date | null;
+};
 
 /**
  * 신규 Todo 영속화 입력 (도메인 관점)
@@ -47,6 +62,27 @@ export interface TodoRepositoryPort {
 		id: number,
 		completed: boolean,
 		completedAt: Date | null,
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	/** 부분 수정 패치 영속화 (undefined 필드는 미변경) */
+	updateDetails(
+		id: number,
+		patch: TodoUpdatePatch,
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	updateTitle(id: number, title: string, tx?: TransactionClient): Promise<void>;
+
+	updateVisibility(
+		id: number,
+		visibility: TodoVisibility,
+		tx?: TransactionClient,
+	): Promise<void>;
+
+	updateSchedule(
+		id: number,
+		schedule: TodoScheduleProps,
 		tx?: TransactionClient,
 	): Promise<void>;
 

@@ -13,6 +13,10 @@ export function createTodoRepositoryMock(): TodoRepositoryPort {
 		create: jest.fn(),
 		createInlineItems: jest.fn(),
 		updateCompletion: jest.fn(),
+		updateDetails: jest.fn(),
+		updateTitle: jest.fn(),
+		updateVisibility: jest.fn(),
+		updateSchedule: jest.fn(),
 		countActiveByCategory: jest.fn(),
 		getMaxSortOrder: jest.fn(),
 	};

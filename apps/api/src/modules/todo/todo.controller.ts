@@ -39,6 +39,10 @@ import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resour
 import { GetTodosQuery } from "./application/queries/get-todos.query";
 import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
 import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
+import { UpdateTodoCommand } from "./application/use-cases/update-todo/update-todo.command";
+import { UpdateTodoScheduleCommand } from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
+import { UpdateTodoTitleCommand } from "./application/use-cases/update-todo-title/update-todo-title.command";
+import { UpdateTodoVisibilityCommand } from "./application/use-cases/update-todo-visibility/update-todo-visibility.command";
 import {
 	ChangeTodoCategoryDto,
 	CreateRecurringTodoDto,
@@ -528,26 +532,28 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.update(params.id, user.userId, {
-			title: dto.title,
-			categoryId: dto.categoryId,
-			startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
-			endDate:
-				dto.endDate === null
-					? null
-					: dto.endDate
-						? parseDateOnly(dto.endDate)
-						: undefined,
-			scheduledTime:
-				dto.scheduledTime === null
-					? null
-					: dto.scheduledTime && dto.startDate
-						? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-						: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			completed: dto.completed,
-		});
+		const todo = await this.commandBus.execute<UpdateTodoCommand, TodoResponse>(
+			new UpdateTodoCommand(params.id, user.userId, {
+				title: dto.title,
+				categoryId: dto.categoryId,
+				startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
+				endDate:
+					dto.endDate === null
+						? null
+						: dto.endDate
+							? parseDateOnly(dto.endDate)
+							: undefined,
+				scheduledTime:
+					dto.scheduledTime === null
+						? null
+						: dto.scheduledTime && dto.startDate
+							? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+							: undefined,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+				completed: dto.completed,
+			}),
+		);
 
 		this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
 
@@ -627,11 +633,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateVisibility(
-			params.id,
-			user.userId,
-			dto,
-		);
+		const todo = await this.commandBus.execute<
+			UpdateTodoVisibilityCommand,
+			TodoResponse
+		>(new UpdateTodoVisibilityCommand(params.id, user.userId, dto.visibility));
 
 		return {
 			message: `공개 범위가 ${dto.visibility}로 변경되었습니다.`,
@@ -707,11 +712,18 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateSchedule(
-			params.id,
-			user.userId,
-			dto,
-			tz,
+		const todo = await this.commandBus.execute<
+			UpdateTodoScheduleCommand,
+			TodoResponse
+		>(
+			new UpdateTodoScheduleCommand(params.id, user.userId, {
+				startDate: parseDateOnly(dto.startDate),
+				endDate: dto.endDate ? parseDateOnly(dto.endDate) : null,
+				scheduledTime: dto.scheduledTime
+					? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+					: null,
+				isAllDay: dto.isAllDay ?? true,
+			}),
 		);
 
 		return {
@@ -741,9 +753,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.updateTitle(params.id, user.userId, {
-			title: dto.title,
-		});
+		const todo = await this.commandBus.execute<
+			UpdateTodoTitleCommand,
+			TodoResponse
+		>(new UpdateTodoTitleCommand(params.id, user.userId, dto.title));
 
 		return {
 			message: "할 일이 수정되었습니다.",

@@ -3,9 +3,11 @@ import type { TransactionClient } from "@/common/database";
 import type {
 	NewTodoData,
 	TodoRepositoryPort,
+	TodoUpdatePatch,
 } from "../../application/ports/todo.repository.port";
-import { Todo } from "../../domain/entities/todo.entity";
+import { Todo, type TodoVisibility } from "../../domain/entities/todo.entity";
 import { TodoId } from "../../domain/value-objects/todo-id.vo";
+import type { TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
 import { TodoRepository } from "../../todo.repository";
 import type { TodoWithCategory } from "../../types/todo.types";
 
@@ -90,6 +92,49 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		tx?: TransactionClient,
 	): Promise<void> {
 		await this.todoRepository.update(id, { completed, completedAt }, tx);
+	}
+
+	async updateDetails(
+		id: number,
+		patch: TodoUpdatePatch,
+		tx?: TransactionClient,
+	): Promise<void> {
+		// 스칼라 categoryId 포함 패치 — Prisma 런타임은 unchecked 스칼라 update를 허용하며
+		// 레거시 서비스도 동일 방식으로 전달했습니다(동작 보존).
+		await this.todoRepository.update(id, patch, tx);
+	}
+
+	async updateTitle(
+		id: number,
+		title: string,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.update(id, { title }, tx);
+	}
+
+	async updateVisibility(
+		id: number,
+		visibility: TodoVisibility,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.update(id, { visibility }, tx);
+	}
+
+	async updateSchedule(
+		id: number,
+		schedule: TodoScheduleProps,
+		tx?: TransactionClient,
+	): Promise<void> {
+		await this.todoRepository.update(
+			id,
+			{
+				startDate: schedule.startDate,
+				endDate: schedule.endDate,
+				scheduledTime: schedule.scheduledTime,
+				isAllDay: schedule.isAllDay,
+			},
+			tx,
+		);
 	}
 
 	countActiveByCategory(

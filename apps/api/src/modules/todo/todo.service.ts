@@ -54,7 +54,6 @@ import type {
 	FindTodosParams,
 	GetFriendTodosParams,
 	GetTodosParams,
-	UpdateTodoData,
 } from "./types/todo.types.ts";
 
 @Injectable()
@@ -301,55 +300,6 @@ export class TodoService {
 	}
 
 	/**
-	 * Todo 수정
-	 */
-	async update(
-		id: number,
-		userId: string,
-		data: UpdateTodoData,
-	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		// 카테고리 변경 시 소유권 확인
-		if (data.categoryId !== undefined) {
-			await this.todoCategoryService.validateOwnership(data.categoryId, userId);
-		}
-
-		// 완료 상태 변경 시 completedAt 자동 설정
-		const updateData: UpdateTodoData & { completedAt?: Date | null } = {
-			...data,
-		};
-
-		if (data.completed !== undefined) {
-			if (data.completed && !todo.completed) {
-				// 완료로 변경
-				updateData.completedAt = now();
-			} else if (!data.completed && todo.completed) {
-				// 미완료로 변경
-				updateData.completedAt = null;
-			}
-		}
-
-		const updatedTodo = await this.todoRepository.update(id, updateData);
-
-		if (data.completed) {
-			this.reminderScheduler.cancelReminder(id);
-		}
-
-		if (data.categoryId !== undefined) {
-			await this.cacheService.invalidateTodoCategories(userId);
-		}
-
-		this.#logger.log(`Todo updated: ${id} for user: ${userId}`);
-
-		return TodoMapper.toResponse(updatedTodo);
-	}
-
-	/**
 	 * Todo 삭제
 	 */
 	async delete(id: number, userId: string): Promise<void> {
@@ -472,31 +422,6 @@ export class TodoService {
 	}
 
 	/**
-	 * Todo 공개 범위 변경
-	 */
-	async updateVisibility(
-		id: number,
-		userId: string,
-		data: { visibility: "PUBLIC" | "PRIVATE" },
-	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		const updatedTodo = await this.todoRepository.update(id, {
-			visibility: data.visibility,
-		});
-
-		this.#logger.log(
-			`Todo visibility updated: ${id} -> ${data.visibility} for user: ${userId}`,
-		);
-
-		return TodoMapper.toResponse(updatedTodo);
-	}
-
-	/**
 	 * Todo 색상 변경
 	 */
 	async updateCategory(
@@ -539,80 +464,6 @@ export class TodoService {
 		this.#logger.log(
 			`Todo category updated: ${id} -> ${data.categoryId} for user: ${userId}`,
 		);
-
-		return TodoMapper.toResponse(updatedTodo);
-	}
-
-	/**
-	 * Todo 일정 변경
-	 */
-	async updateSchedule(
-		id: number,
-		userId: string,
-		data: {
-			startDate: string;
-			endDate?: string | null;
-			scheduledTime?: string | null;
-			isAllDay?: boolean;
-		},
-		tz: string = "UTC",
-	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		const updatedTodo = await this.todoRepository.update(id, {
-			startDate: parseDateOnly(data.startDate),
-			endDate: data.endDate ? parseDateOnly(data.endDate) : null,
-			scheduledTime: data.scheduledTime
-				? parseLocalDateTime(data.startDate, data.scheduledTime, tz)
-				: null,
-			isAllDay: data.isAllDay ?? true,
-		});
-
-		try {
-			if (updatedTodo.scheduledTime) {
-				this.reminderScheduler.scheduleReminder(
-					id,
-					updatedTodo.scheduledTime,
-					userId,
-				);
-			} else {
-				this.reminderScheduler.cancelReminder(id);
-			}
-		} catch (error) {
-			this.#logger.error(
-				`Failed to schedule reminder for todo ${id}: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-
-		this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
-
-		return TodoMapper.toResponse(updatedTodo);
-	}
-
-	/**
-	 * Todo 제목 수정
-	 */
-	async updateTitle(
-		id: number,
-		userId: string,
-		data: { title: string },
-	): Promise<Todo> {
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-
-		if (!todo) {
-			throw BusinessExceptions.todoNotFound(id);
-		}
-
-		const updatedTodo = await this.todoRepository.update(id, {
-			title: data.title,
-		});
-
-		this.#logger.log(`Todo title updated: ${id} for user: ${userId}`);
 
 		return TodoMapper.toResponse(updatedTodo);
 	}
