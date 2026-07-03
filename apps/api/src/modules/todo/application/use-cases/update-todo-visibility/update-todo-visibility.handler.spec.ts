@@ -102,4 +102,17 @@ describe("UpdateTodoVisibilityHandler — 할 일 공개 범위 변경 핸들러
 		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
 		expect(todoRepository.updateVisibility).not.toHaveBeenCalled();
 	});
+
+	it("재조회 응답이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {
+		// Given - 영속화는 성공했지만 재조회가 비어 있는 비정상 상태
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
+
+		// When & Then
+		await expect(
+			handler.execute(
+				new UpdateTodoVisibilityCommand(1, "user-123", "PRIVATE"),
+			),
+		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+	});
 });

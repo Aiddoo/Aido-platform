@@ -25,9 +25,7 @@ import { AddTodoItemCommand } from "./add-todo-item.command";
  * 읽기 포트로 부모 할 일 전체를 재조회해 반환.
  */
 @CommandHandler(AddTodoItemCommand)
-export class AddTodoItemHandler
-	implements ICommandHandler<AddTodoItemCommand, TodoResponse>
-{
+export class AddTodoItemHandler implements ICommandHandler<AddTodoItemCommand> {
 	readonly #logger = new Logger(AddTodoItemHandler.name);
 
 	constructor(

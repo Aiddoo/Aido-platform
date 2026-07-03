@@ -6,6 +6,7 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -14,6 +15,7 @@ import {
 	createTodoRepositoryMock,
 } from "@test/mocks/ports";
 import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoMapper } from "../../../todo.mapper";
 import {
@@ -58,6 +60,7 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 	let handler: UpdateTodoTitleHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoTitleHandler)
@@ -71,9 +74,10 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+		eventBus = unitRef.get(EventBus);
 	});
 
-	it("제목을 영속화하고 응답을 재조회한다", async () => {
+	it("애그리게잇 상태로 제목을 영속화하고 TodoUpdatedEvent를 발행한 뒤 응답을 재조회한다", async () => {
 		// Given
 		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
@@ -83,9 +87,26 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			new UpdateTodoTitleCommand(1, "user-123", "새 제목"),
 		);
 
-		// Then
+		// Then - 영속화 + 이벤트(완료 필드 없음 → completed=undefined)
 		expect(todoRepository.updateTitle).toHaveBeenCalledWith(1, "새 제목");
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
+			new TodoUpdatedEvent(1, "user-123", undefined),
+		]);
 		expect(result.title).toBe("새 제목");
+	});
+
+	it("제목이 200자를 초과하면 DomainException(SYS_0002)을 던지고 영속화하지 않는다 (도메인 자기방어)", async () => {
+		// Given - 201자 제목 (Zod 통과를 우회한 비정상 입력 가정)
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
+
+		// When & Then
+		await expect(
+			handler.execute(
+				new UpdateTodoTitleCommand(1, "user-123", "가".repeat(201)),
+			),
+		).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+		expect(todoRepository.updateTitle).not.toHaveBeenCalled();
+		expect(eventBus.publishAll).not.toHaveBeenCalled();
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {

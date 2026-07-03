@@ -636,12 +636,12 @@ modules/{name}/
 |------|------|
 | 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
 | 트랜잭션 | `@Inject(TRANSACTION_MANAGER)` → `txManager.run(tx => ...)`. `database.$transaction` 직접 호출 금지 |
-| 부수효과 | 도메인 이벤트로 — 애그리게잇 `apply()` → 영속화 → `commit()` (커밋 후 `@EventsHandler`가 처리) |
+| 부수효과 | 도메인 이벤트로 — 애그리게잇 `apply()` → 영속화 → `eventBus.publishAll(agg.pullDomainEvents())` (커밋 후 `@EventsHandler`가 처리) |
 | 캐시 무효화 | 영속화 후 핸들러 인라인 (`TodoCachePort` 등 캐시 포트) |
 | 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
-| 이벤트 발행 | `eventPublisher.mergeObjectContext(aggregate)` 후 상태 전이, **영속화가 끝난 뒤** `commit()` |
+| 이벤트 발행 | 상태 전이로 이벤트 적립 후 **영속화가 끝난 뒤** `eventBus.publishAll(aggregate.pullDomainEvents())` (도메인은 @nestjs/cqrs 무의존) |
 | 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전 |
-| 타입 | `as`/`!` 금지 (`pnpm lint:no-cast`가 CI 강제), 핸들러 `execute` 명시적 반환 타입 |
+| 타입 | `as`/`!` 금지 (`pnpm lint:no-cast` 수동 게이트), 커맨드는 `Command<TResult>` 확장으로 버스 반환 타입 추론 |
 | 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
 
 ### 컨트롤러 규칙 (CQRS 전환분)

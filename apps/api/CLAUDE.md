@@ -59,7 +59,7 @@ Request → Guard → Controller → CommandBus/QueryBus → Handler(use-case)
 
 - **예외**: 레거시는 `BusinessExceptions.xxx()` 팩토리, 클린아키 모듈은 `ApplicationException`/`DomainException` (`new HttpException()` 금지)
 - **트랜잭션**: 레거시는 `database.$transaction(tx => ...)`, 클린아키 모듈은 `TRANSACTION_MANAGER.run(tx => ...)`. Repository 메서드는 `tx?` 파라미터 필수
-- **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `pnpm lint:no-cast` CI 강제
+- **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `pnpm lint:no-cast`로 검사 (수동 게이트, CI 미연결)
 - **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (리팩터링 게이트)
 - **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장

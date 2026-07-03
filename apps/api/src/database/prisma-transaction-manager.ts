@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type {
-	TransactionClient,
-	TransactionManagerPort,
+import {
+	type TransactionContext,
+	type TransactionManagerPort,
+	wrapTransaction,
 } from "@/common/database";
 import { DatabaseService } from "./database.service";
 
@@ -15,7 +16,7 @@ import { DatabaseService } from "./database.service";
 export class PrismaTransactionManager implements TransactionManagerPort {
 	constructor(private readonly database: DatabaseService) {}
 
-	run<T>(fn: (tx: TransactionClient) => Promise<T>): Promise<T> {
-		return this.database.$transaction(fn);
+	run<T>(fn: (tx: TransactionContext) => Promise<T>): Promise<T> {
+		return this.database.$transaction((tx) => fn(wrapTransaction(tx)));
 	}
 }

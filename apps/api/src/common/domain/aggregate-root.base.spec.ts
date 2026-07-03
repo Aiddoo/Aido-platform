@@ -2,14 +2,17 @@
  * AggregateRoot 베이스 단위 테스트
  *
  * GWT 패턴 적용
- * - 도메인 이벤트 적립(apply) → 커밋 전 미발행 → commit 시 발행 검증
+ * - 도메인 이벤트 적립(apply) → pullDomainEvents 드레인 검증
  */
 
-import type { IEvent } from "@nestjs/cqrs";
 import { AggregateRoot } from "./aggregate-root.base";
 
-class TestCreatedEvent implements IEvent {
+class TestCreatedEvent {
 	constructor(public readonly id: number) {}
+}
+
+class TestRenamedEvent {
+	constructor(public readonly title: string) {}
 }
 
 interface TestProps {
@@ -28,38 +31,55 @@ class TestAggregate extends AggregateRoot<TestProps> {
 		return aggregate;
 	}
 
+	rename(title: string): void {
+		this.props.title = title;
+		this.apply(new TestRenamedEvent(title));
+	}
+
 	getTitle(): string {
 		return this.props.title;
 	}
 }
 
 describe("AggregateRoot — 애그리게잇 루트 베이스", () => {
-	it("apply한 이벤트는 commit 전까지 uncommitted 상태로 쌓인다", () => {
-		// Given & When
-		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
-
-		// Then
-		const events = aggregate.getUncommittedEvents();
-		expect(events).toHaveLength(1);
-		expect(events[0]).toBeInstanceOf(TestCreatedEvent);
-	});
-
-	it("commit하면 이벤트가 발행되고 uncommitted 목록이 비워진다", () => {
+	it("apply한 이벤트는 pullDomainEvents로 적립 순서대로 드레인된다", () => {
 		// Given
 		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
-		// commit()이 내부 배열을 참조로 넘긴 뒤 비우므로 스파이에서 복사해 캡처
-		const published: IEvent[] = [];
-		aggregate.publishAll = (events: IEvent[]) => {
-			published.push(...events);
-		};
+		aggregate.rename("변경");
 
 		// When
-		aggregate.commit();
+		const events = aggregate.pullDomainEvents();
 
 		// Then
-		expect(published).toHaveLength(1);
-		expect(published[0]).toBeInstanceOf(TestCreatedEvent);
-		expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+		expect(events).toHaveLength(2);
+		expect(events[0]).toBeInstanceOf(TestCreatedEvent);
+		expect(events[1]).toBeInstanceOf(TestRenamedEvent);
+	});
+
+	it("pullDomainEvents 재호출 시 빈 배열을 반환한다 (중복 발행 차단)", () => {
+		// Given
+		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
+		aggregate.pullDomainEvents();
+
+		// When
+		const second = aggregate.pullDomainEvents();
+
+		// Then
+		expect(second).toHaveLength(0);
+	});
+
+	it("드레인 후 새로 apply한 이벤트만 다음 드레인에 포함된다", () => {
+		// Given
+		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
+		aggregate.pullDomainEvents();
+
+		// When
+		aggregate.rename("두번째");
+		const events = aggregate.pullDomainEvents();
+
+		// Then
+		expect(events).toHaveLength(1);
+		expect(events[0]).toBeInstanceOf(TestRenamedEvent);
 	});
 
 	it("props는 하위 클래스 getter로만 노출된다", () => {

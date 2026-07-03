@@ -1,11 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import {
-	CommandHandler,
-	EventPublisher,
-	type ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 import { ApplicationException } from "@/common/domain";
 import {
 	CATEGORY_OWNERSHIP,
@@ -34,9 +30,7 @@ import { UpdateTodoCommand } from "./update-todo.command";
  * 않습니다 — 한도 체크는 PATCH /todos/:id/category 전용입니다. 통일 여부는 별도 티켓.
  */
 @CommandHandler(UpdateTodoCommand)
-export class UpdateTodoHandler
-	implements ICommandHandler<UpdateTodoCommand, TodoResponse>
-{
+export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 	readonly #logger = new Logger(UpdateTodoHandler.name);
 
 	constructor(
@@ -48,15 +42,15 @@ export class UpdateTodoHandler
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
-		private readonly eventPublisher: EventPublisher,
+		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: UpdateTodoCommand): Promise<TodoResponse> {
 		const { id, userId, data } = command;
 
 		// 1. 소유권 확인
-		const found = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!found) {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		if (!todo) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 
@@ -65,14 +59,39 @@ export class UpdateTodoHandler
 			await this.categoryOwnership.validateOwnership(data.categoryId, userId);
 		}
 
-		// 3. 애그리게잇 전이 + 패치 영속화 (완료 전이 시에만 completedAt 파생)
-		const wasCompleted = found.isCompleted();
-		const todo = this.eventPublisher.mergeObjectContext(found);
+		// 3. 애그리게잇 전이 → 애그리게잇 상태를 단일 소스로 패치 영속화
+		//    (요청에 포함된 필드만 쓰되, 값은 커맨드가 아닌 애그리게잇에서 가져옴)
+		const wasCompleted = todo.isCompleted();
 		todo.updateDetails(data);
+		const snapshot = todo.toPersistence();
 
-		const patch: TodoUpdatePatch = { ...data };
-		if (data.completed !== undefined && data.completed !== wasCompleted) {
-			patch.completedAt = todo.getCompletedAt();
+		const patch: TodoUpdatePatch = {};
+		if (data.title !== undefined) {
+			patch.title = snapshot.title;
+		}
+		if (data.categoryId !== undefined) {
+			patch.categoryId = snapshot.categoryId;
+		}
+		if (data.startDate !== undefined) {
+			patch.startDate = snapshot.startDate;
+		}
+		if (data.endDate !== undefined) {
+			patch.endDate = snapshot.endDate;
+		}
+		if (data.scheduledTime !== undefined) {
+			patch.scheduledTime = snapshot.scheduledTime;
+		}
+		if (data.isAllDay !== undefined) {
+			patch.isAllDay = snapshot.isAllDay;
+		}
+		if (data.visibility !== undefined) {
+			patch.visibility = snapshot.visibility;
+		}
+		if (data.completed !== undefined) {
+			patch.completed = snapshot.completed;
+			if (snapshot.completed !== wasCompleted) {
+				patch.completedAt = snapshot.completedAt;
+			}
 		}
 		await this.todoRepository.updateDetails(id, patch);
 
@@ -84,7 +103,7 @@ export class UpdateTodoHandler
 		}
 
 		// 5. 저장 완료 후 이벤트 발행 (완료 요청이면 이벤트 핸들러가 리마인더 취소)
-		todo.commit();
+		this.eventBus.publishAll(todo.pullDomainEvents());
 
 		// 6. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

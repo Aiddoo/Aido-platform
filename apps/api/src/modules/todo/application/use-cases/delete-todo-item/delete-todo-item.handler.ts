@@ -25,7 +25,7 @@ import { DeleteTodoItemCommand } from "./delete-todo-item.command";
  */
 @CommandHandler(DeleteTodoItemCommand)
 export class DeleteTodoItemHandler
-	implements ICommandHandler<DeleteTodoItemCommand, TodoResponse>
+	implements ICommandHandler<DeleteTodoItemCommand>
 {
 	readonly #logger = new Logger(DeleteTodoItemHandler.name);
 

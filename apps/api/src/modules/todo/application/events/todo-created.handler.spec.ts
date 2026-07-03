@@ -1,19 +1,19 @@
 /**
- * TodoRescheduledHandler 단위 테스트
+ * TodoCreatedHandler 단위 테스트
  *
- * Suites + GWT 패턴 — scheduledTime 유무에 따른 재스케줄/취소 분기 검증
+ * Suites + GWT 패턴 — scheduledTime 유무에 따른 리마인더 스케줄 분기 검증
  */
 
 import { TestBed } from "@suites/unit";
-import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
+import { TodoCreatedEvent } from "../../domain/events/todo-created.event";
 import {
 	TODO_REMINDER,
 	type TodoReminderPort,
 } from "../ports/todo-reminder.port";
-import { TodoRescheduledHandler } from "./todo-rescheduled.handler";
+import { TodoCreatedHandler } from "./todo-created.handler";
 
-describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
-	let handler: TodoRescheduledHandler;
+describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
+	let handler: TodoCreatedHandler;
 	let todoReminder: TodoReminderPort;
 
 	beforeEach(async () => {
@@ -22,7 +22,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 			cancelReminder: jest.fn(),
 		};
 
-		const { unit } = await TestBed.solitary(TodoRescheduledHandler)
+		const { unit } = await TestBed.solitary(TodoCreatedHandler)
 			.mock(TODO_REMINDER)
 			.impl(() => todoReminder)
 			.compile();
@@ -30,12 +30,12 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 		handler = unit;
 	});
 
-	it("scheduledTime이 있으면 리마인더를 재스케줄한다", () => {
+	it("scheduledTime이 있으면 리마인더를 스케줄한다", () => {
 		// Given
 		const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
 
 		// When
-		handler.handle(new TodoRescheduledEvent(1, "user-123", scheduledTime));
+		handler.handle(new TodoCreatedEvent(1, "user-123", scheduledTime));
 
 		// Then
 		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(
@@ -43,16 +43,15 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 			scheduledTime,
 			"user-123",
 		);
-		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
-	it("scheduledTime이 null이면 리마인더를 취소한다", () => {
+	it("scheduledTime이 null이면 리마인더를 스케줄하지 않는다", () => {
 		// Given & When
-		handler.handle(new TodoRescheduledEvent(1, "user-123", null));
+		handler.handle(new TodoCreatedEvent(1, "user-123", null));
 
 		// Then
-		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
 		expect(todoReminder.scheduleReminder).not.toHaveBeenCalled();
+		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
 	it("스케줄러가 던져도 예외를 전파하지 않는다 (fire-and-forget)", () => {
@@ -63,7 +62,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
 
 		// When & Then - 삼켜진다
 		expect(() =>
-			handler.handle(new TodoRescheduledEvent(1, "user-123", new Date())),
+			handler.handle(new TodoCreatedEvent(1, "user-123", new Date())),
 		).not.toThrow();
 	});
 });

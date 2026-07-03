@@ -6,7 +6,7 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -14,8 +14,8 @@ import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 } from "@test/mocks/ports";
-import { ApplicationException } from "@/common/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoToggledEvent } from "../../../domain/events/todo-toggled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoMapper } from "../../../todo.mapper";
 import {
@@ -61,7 +61,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 	let handler: ToggleTodoCompleteHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(ToggleTodoCompleteHandler)
@@ -75,11 +75,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventPublisher = unitRef.get(EventPublisher);
-		// mergeObjectContext는 전달된 애그리게잇을 그대로 반환하도록 설정
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		eventBus = unitRef.get(EventBus);
 	});
 
 	it("대상 할 일이 없으면 ApplicationException(TODO_0801)을 던진다", async () => {
@@ -105,24 +101,31 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			new ToggleTodoCompleteCommand(1, "user-123", true, "Asia/Seoul"),
 		);
 
-		// Then - completed=true, completedAt(Date)로 저장을 위임하고 응답을 반환한다
+		// Then - completed=true, completedAt(Date)로 저장을 위임하고 이벤트를 발행한다
 		expect(todoRepository.updateCompletion).toHaveBeenCalledWith(
 			1,
 			true,
 			expect.any(Date),
 		);
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
+			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
+		]);
 		expect(result.completed).toBe(true);
 	});
 
-	it("throws로 실패해도 ApplicationException 인스턴스여야 한다", async () => {
-		// Given
-		todoRepository.findByIdAndUserId.mockResolvedValue(null);
+	it("같은 값으로 재토글하면 쓰기·이벤트 없이 현재 응답을 그대로 반환한다 (스트릭/알림 재발화 억제)", async () => {
+		// Given - 이미 완료된 할 일에 completed=true 재요청
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity(true));
+		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse(true));
 
-		// When & Then
-		await expect(
-			handler.execute(
-				new ToggleTodoCompleteCommand(1, "user-123", true, "UTC"),
-			),
-		).rejects.toBeInstanceOf(ApplicationException);
+		// When
+		const result = await handler.execute(
+			new ToggleTodoCompleteCommand(1, "user-123", true, "UTC"),
+		);
+
+		// Then - 영속화·이벤트 발행 생략, 응답 계약(200)은 유지
+		expect(todoRepository.updateCompletion).not.toHaveBeenCalled();
+		expect(eventBus.publishAll).not.toHaveBeenCalled();
+		expect(result.completed).toBe(true);
 	});
 });

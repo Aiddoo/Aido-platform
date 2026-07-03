@@ -5,26 +5,26 @@
  */
 
 import { TestBed } from "@suites/unit";
-import {
-	type IReminderScheduler,
-	REMINDER_SCHEDULER,
-} from "../../../scheduler/reminder";
 import { TodoUpdatedEvent } from "../../domain/events/todo-updated.event";
+import {
+	TODO_REMINDER,
+	type TodoReminderPort,
+} from "../ports/todo-reminder.port";
 import { TodoUpdatedHandler } from "./todo-updated.handler";
 
 describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 	let handler: TodoUpdatedHandler;
-	let reminderScheduler: IReminderScheduler;
+	let todoReminder: TodoReminderPort;
 
 	beforeEach(async () => {
-		reminderScheduler = {
+		todoReminder = {
 			scheduleReminder: jest.fn(),
 			cancelReminder: jest.fn(),
 		};
 
 		const { unit } = await TestBed.solitary(TodoUpdatedHandler)
-			.mock(REMINDER_SCHEDULER)
-			.impl(() => reminderScheduler)
+			.mock(TODO_REMINDER)
+			.impl(() => todoReminder)
 			.compile();
 
 		handler = unit;
@@ -35,7 +35,7 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		handler.handle(new TodoUpdatedEvent(1, "user-123", true));
 
 		// Then
-		expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(1);
+		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
 	});
 
 	it("미완료 요청(completed=false)이면 리마인더를 취소하지 않는다", () => {
@@ -43,7 +43,7 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		handler.handle(new TodoUpdatedEvent(1, "user-123", false));
 
 		// Then
-		expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
+		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
 	it("완료 필드가 없는 수정(undefined)이면 리마인더를 취소하지 않는다", () => {
@@ -51,6 +51,18 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		handler.handle(new TodoUpdatedEvent(1, "user-123", undefined));
 
 		// Then
-		expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
+		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
+	});
+
+	it("리마인더 포트가 던져도 예외를 전파하지 않는다 (fire-and-forget)", () => {
+		// Given - 리마인더 취소 실패
+		jest.mocked(todoReminder.cancelReminder).mockImplementation(() => {
+			throw new Error("scheduler down");
+		});
+
+		// When & Then - 삼켜진다
+		expect(() =>
+			handler.handle(new TodoUpdatedEvent(1, "user-123", true)),
+		).not.toThrow();
 	});
 });

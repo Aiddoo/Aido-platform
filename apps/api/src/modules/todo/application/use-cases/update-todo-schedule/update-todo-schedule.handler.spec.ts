@@ -7,7 +7,7 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -76,7 +76,7 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 	let handler: UpdateTodoScheduleHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoScheduleHandler)
@@ -90,18 +90,12 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-		eventPublisher = unitRef.get(EventPublisher);
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		eventBus = unitRef.get(EventBus);
 	});
 
 	it("시간 일정으로 변경하면 영속화하고 scheduledTime을 담은 이벤트를 발행한다", async () => {
 		// Given
-		const entity = buildEntity();
-		const applySpy = jest.spyOn(entity, "apply");
-		const commitSpy = jest.spyOn(entity, "commit");
-		todoRepository.findByIdAndUserId.mockResolvedValue(entity);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
 
 		// When
@@ -114,18 +108,15 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 			1,
 			timedSchedule,
 		);
-		expect(applySpy).toHaveBeenCalledWith(
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", timedSchedule.scheduledTime),
-		);
-		expect(commitSpy).toHaveBeenCalledTimes(1);
+		]);
 		expect(result.id).toBe(1);
 	});
 
 	it("종일 일정(scheduledTime=null)으로 변경하면 이벤트의 scheduledTime이 null이다 (리마인더 취소 트리거)", async () => {
 		// Given
-		const entity = buildEntity();
-		const applySpy = jest.spyOn(entity, "apply");
-		todoRepository.findByIdAndUserId.mockResolvedValue(entity);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
 
 		// When
@@ -138,9 +129,9 @@ describe("UpdateTodoScheduleHandler — 할 일 일정 변경 핸들러", () => 
 			1,
 			allDaySchedule,
 		);
-		expect(applySpy).toHaveBeenCalledWith(
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoRescheduledEvent(1, "user-123", null),
-		);
+		]);
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {

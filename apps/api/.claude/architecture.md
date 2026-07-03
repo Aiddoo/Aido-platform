@@ -178,7 +178,7 @@ Application: 커맨드/쿼리 핸들러 (유스케이스당 1개, SRP)
      ↓
 Domain: 애그리게잇(AggregateRoot) · VO · 도메인 서비스 · 도메인 이벤트
      │  · 불변식 위반은 DomainException
-     │  · 상태 전이 메서드에서 apply(event) → 영속화 후 commit()
+     │  · 상태 전이 메서드에서 apply(event) → 영속화 후 eventBus.publishAll(pullDomainEvents())
      ↓
 Infrastructure: 어댑터 (포트 구현)
      │  · Prisma{X}Repository → 레거시 행 Repository에 위임 + 도메인/응답 매핑
@@ -203,7 +203,7 @@ Infrastructure: 어댑터 (포트 구현)
 | domain → application/infrastructure | ❌ | 도메인은 안쪽으로만 |
 | application → Prisma/타 모듈 구체 클래스 | ❌ | 포트로 역전 |
 | 외부 모듈 → 이 모듈의 서비스 | ❌ | CommandBus로 커맨드 디스패치 (memo·ai-suggestion 참조) |
-| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` CI 강제 |
+| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` 수동 게이트 (CI 미연결) |
 
 **계약 안전장치**: `test/e2e/openapi-contract.e2e-spec.ts` 스냅샷이 전체 API 계약을 고정 —
 마이그레이션 중 스냅샷 diff 0 = 클라이언트 영향 0.

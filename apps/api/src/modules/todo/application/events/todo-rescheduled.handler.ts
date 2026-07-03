@@ -1,10 +1,10 @@
 import { Inject, Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
-import {
-	type IReminderScheduler,
-	REMINDER_SCHEDULER,
-} from "../../../scheduler/reminder";
 import { TodoRescheduledEvent } from "../../domain/events/todo-rescheduled.event";
+import {
+	TODO_REMINDER,
+	type TodoReminderPort,
+} from "../ports/todo-reminder.port";
 
 /**
  * Todo 일정 변경 이벤트 핸들러
@@ -19,20 +19,20 @@ export class TodoRescheduledHandler
 	readonly #logger = new Logger(TodoRescheduledHandler.name);
 
 	constructor(
-		@Inject(REMINDER_SCHEDULER)
-		private readonly reminderScheduler: IReminderScheduler,
+		@Inject(TODO_REMINDER)
+		private readonly todoReminder: TodoReminderPort,
 	) {}
 
 	handle(event: TodoRescheduledEvent): void {
 		try {
 			if (event.scheduledTime) {
-				this.reminderScheduler.scheduleReminder(
+				this.todoReminder.scheduleReminder(
 					event.todoId,
 					event.scheduledTime,
 					event.userId,
 				);
 			} else {
-				this.reminderScheduler.cancelReminder(event.todoId);
+				this.todoReminder.cancelReminder(event.todoId);
 			}
 		} catch (error) {
 			this.#logger.error(

@@ -5,19 +5,17 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
-import { GetTodoResourceLimitQuery } from "../get-todo-resource-limit.query";
-
-export interface TodoResourceLimitResult {
-	activeCount?: number;
-	maxPerCategory: number;
-}
+import {
+	GetTodoResourceLimitQuery,
+	type TodoResourceLimitResult,
+} from "../get-todo-resource-limit.query";
 
 /**
  * 카테고리당 활성 Todo 리소스 제한 정보 조회 핸들러
  */
 @QueryHandler(GetTodoResourceLimitQuery)
 export class GetTodoResourceLimitHandler
-	implements IQueryHandler<GetTodoResourceLimitQuery, TodoResourceLimitResult>
+	implements IQueryHandler<GetTodoResourceLimitQuery>
 {
 	constructor(
 		@Inject(TODO_READ_REPOSITORY)

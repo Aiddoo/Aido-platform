@@ -17,10 +17,7 @@ import { GetTodosQuery } from "../get-todos.query";
  * Todo 목록 조회 핸들러 (커서 기반 페이지네이션, read model 직접 반환)
  */
 @QueryHandler(GetTodosQuery)
-export class GetTodosHandler
-	implements
-		IQueryHandler<GetTodosQuery, CursorPaginatedResponse<TodoResponse, number>>
-{
+export class GetTodosHandler implements IQueryHandler<GetTodosQuery> {
 	constructor(
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,

@@ -1,4 +1,4 @@
-import type { TransactionClient } from "@/common/database";
+import type { TransactionContext } from "@/common/database";
 import type {
 	Todo,
 	TodoDetailsPatch,
@@ -45,16 +45,16 @@ export interface TodoRepositoryPort {
 	findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<Todo | null>;
 
-	create(data: NewTodoData, tx?: TransactionClient): Promise<Todo>;
+	create(data: NewTodoData, tx?: TransactionContext): Promise<Todo>;
 
 	/** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
 	createInlineItems(
 		todoId: number,
 		items: { title: string }[],
-		tx: TransactionClient,
+		tx: TransactionContext,
 	): Promise<void>;
 
 	/** 완료 상태 등 애그리게잇 변경분 영속화 */
@@ -62,42 +62,46 @@ export interface TodoRepositoryPort {
 		id: number,
 		completed: boolean,
 		completedAt: Date | null,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	/** 부분 수정 패치 영속화 (undefined 필드는 미변경) */
 	updateDetails(
 		id: number,
 		patch: TodoUpdatePatch,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
-	updateTitle(id: number, title: string, tx?: TransactionClient): Promise<void>;
+	updateTitle(
+		id: number,
+		title: string,
+		tx?: TransactionContext,
+	): Promise<void>;
 
 	updateVisibility(
 		id: number,
 		visibility: TodoVisibility,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	updateSchedule(
 		id: number,
 		schedule: TodoScheduleProps,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	updateCategory(
 		id: number,
 		categoryId: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
-	delete(id: number, tx?: TransactionClient): Promise<void>;
+	delete(id: number, tx?: TransactionContext): Promise<void>;
 
 	updateSortOrder(
 		id: number,
 		sortOrder: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	/**
@@ -109,7 +113,7 @@ export interface TodoRepositoryPort {
 		from: number,
 		to: number | null,
 		delta: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	/**
@@ -119,37 +123,37 @@ export interface TodoRepositoryPort {
 	createMany(
 		items: NewTodoData[],
 		recurrenceGroupId: string,
-		tx: TransactionClient,
+		tx: TransactionContext,
 	): Promise<Todo[]>;
 
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<number>;
 
-	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number>;
+	getMaxSortOrder(userId: string, tx?: TransactionContext): Promise<number>;
 
 	// ===== 하위 항목 (체크리스트) =====
 
-	countItemsByTodoId(todoId: number, tx?: TransactionClient): Promise<number>;
+	countItemsByTodoId(todoId: number, tx?: TransactionContext): Promise<number>;
 
-	getMaxItemSortOrder(todoId: number, tx?: TransactionClient): Promise<number>;
+	getMaxItemSortOrder(todoId: number, tx?: TransactionContext): Promise<number>;
 
 	createItem(
 		todoId: number,
 		data: { title: string; sortOrder: number },
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
 	updateItem(
 		itemId: number,
 		data: { title?: string; completed?: boolean },
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void>;
 
-	deleteItem(itemId: number, tx?: TransactionClient): Promise<void>;
+	deleteItem(itemId: number, tx?: TransactionContext): Promise<void>;
 
 	/** 배열 인덱스가 새 sortOrder가 되도록 일괄 재정렬 */
-	reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void>;
+	reorderItems(itemIds: number[], tx?: TransactionContext): Promise<void>;
 }

@@ -1,11 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import {
-	CommandHandler,
-	EventPublisher,
-	type ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 import { ApplicationException } from "@/common/domain";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import {
@@ -27,7 +23,7 @@ import { UpdateTodoScheduleCommand } from "./update-todo-schedule.command";
  */
 @CommandHandler(UpdateTodoScheduleCommand)
 export class UpdateTodoScheduleHandler
-	implements ICommandHandler<UpdateTodoScheduleCommand, TodoResponse>
+	implements ICommandHandler<UpdateTodoScheduleCommand>
 {
 	readonly #logger = new Logger(UpdateTodoScheduleHandler.name);
 
@@ -36,28 +32,33 @@ export class UpdateTodoScheduleHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		private readonly eventPublisher: EventPublisher,
+		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: UpdateTodoScheduleCommand): Promise<TodoResponse> {
 		const { id, userId, schedule } = command;
 
 		// 1. 소유권 확인
-		const found = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!found) {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		if (!todo) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 
-		// 2. 일정 전이 (VO가 날짜 불변식 보장) + 영속화
-		const todo = this.eventPublisher.mergeObjectContext(found);
+		// 2. 일정 전이 (VO가 날짜 불변식 보장) → 애그리게잇 상태로 영속화
 		todo.reschedule(TodoSchedule.create(schedule));
 
-		await this.todoRepository.updateSchedule(id, schedule);
+		const snapshot = todo.toPersistence();
+		await this.todoRepository.updateSchedule(id, {
+			startDate: snapshot.startDate,
+			endDate: snapshot.endDate,
+			scheduledTime: snapshot.scheduledTime,
+			isAllDay: snapshot.isAllDay,
+		});
 
 		this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 
 		// 3. 저장 완료 후 이벤트 발행 (리마인더 재스케줄/취소는 이벤트 핸들러)
-		todo.commit();
+		this.eventBus.publishAll(todo.pullDomainEvents());
 
 		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(

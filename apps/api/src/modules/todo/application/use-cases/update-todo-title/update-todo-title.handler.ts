@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -16,12 +16,12 @@ import { UpdateTodoTitleCommand } from "./update-todo-title.command";
 /**
  * Todo 제목 수정 핸들러
  *
- * 소유권 확인 → 제목 영속화 → 읽기 포트로 응답 재조회.
- * 부수효과 없음(리마인더·캐시·이벤트 미발생 — 레거시 동작 보존).
+ * 소유권 확인 → 애그리게잇 전이(TodoTitle 불변식 검증) → 애그리게잇 상태로 영속화 →
+ * 이벤트 발행 → 읽기 포트로 응답 재조회.
  */
 @CommandHandler(UpdateTodoTitleCommand)
 export class UpdateTodoTitleHandler
-	implements ICommandHandler<UpdateTodoTitleCommand, TodoResponse>
+	implements ICommandHandler<UpdateTodoTitleCommand>
 {
 	readonly #logger = new Logger(UpdateTodoTitleHandler.name);
 
@@ -30,23 +30,28 @@ export class UpdateTodoTitleHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
+		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: UpdateTodoTitleCommand): Promise<TodoResponse> {
 		const { id, userId, title } = command;
 
 		// 1. 소유권 확인
-		const found = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!found) {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		if (!todo) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 
-		// 2. 제목 영속화
-		await this.todoRepository.updateTitle(id, title);
+		// 2. 애그리게잇 전이(제목 불변식 검증) → 애그리게잇 상태로 영속화
+		todo.updateDetails({ title });
+		await this.todoRepository.updateTitle(id, todo.toPersistence().title);
 
 		this.#logger.log(`Todo title updated: ${id} for user: ${userId}`);
 
-		// 3. 응답 재조회
+		// 3. 저장 완료 후 이벤트 발행 (완료 필드 없음 → 부수효과 없음)
+		this.eventBus.publishAll(todo.pullDomainEvents());
+
+		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,
 			userId,

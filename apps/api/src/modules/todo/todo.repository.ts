@@ -89,20 +89,6 @@ export class TodoRepository {
 	}
 
 	/**
-	 * ID로 Todo 조회
-	 */
-	async findById(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<TodoWithCategory | null> {
-		const client = tx ?? this.database;
-		return client.todo.findUnique({
-			where: { id },
-			include: TODO_CATEGORY_INCLUDE,
-		});
-	}
-
-	/**
 	 * 사용자의 Todo 조회 (소유권 확인용)
 	 */
 	async findByIdAndUserId(
@@ -237,16 +223,6 @@ export class TodoRepository {
 		const client = tx ?? this.database;
 		return client.todo.count({
 			where: { userId, completed: true },
-		});
-	}
-
-	/**
-	 * 사용자의 활성(미완료) Todo 개수 조회
-	 */
-	async countActive(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todo.count({
-			where: { userId, completed: false },
 		});
 	}
 

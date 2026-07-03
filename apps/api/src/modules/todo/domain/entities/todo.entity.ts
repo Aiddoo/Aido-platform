@@ -1,19 +1,15 @@
-import { ErrorCode } from "@aido/errors";
 import { now } from "@/common/date/utils/core";
-import { AggregateRoot, DomainException } from "@/common/domain";
+import { AggregateRoot } from "@/common/domain";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoDeletedEvent } from "../events/todo-deleted.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
 import { TodoId } from "../value-objects/todo-id.vo";
-import type { TodoSchedule } from "../value-objects/todo-schedule.vo";
+import { TodoSchedule } from "../value-objects/todo-schedule.vo";
+import { TodoTitle } from "../value-objects/todo-title.vo";
 
 export type TodoVisibility = "PUBLIC" | "PRIVATE";
-
-/** 제목 불변식 (Zod 경계 검증과 동일 규칙 — 도메인 자기방어) */
-const TITLE_MIN_LENGTH = 1;
-const TITLE_MAX_LENGTH = 200;
 
 /**
  * Todo 부분 수정 패치 (도메인 관점)
@@ -44,6 +40,24 @@ export interface TodoItemSnapshot {
 	sortOrder: number;
 	createdAt: Date;
 	updatedAt: Date;
+}
+
+/**
+ * 저장용 상태 스냅샷 (`Todo.toPersistence()` 반환 타입)
+ *
+ * 애그리게잇의 가변 필드만 담습니다. id/userId/sortOrder/items는
+ * 각자의 전용 경로(생성·reorder·item 유스케이스)로만 변경됩니다.
+ */
+export interface TodoPersistenceSnapshot {
+	title: string;
+	categoryId: number;
+	startDate: Date;
+	endDate: Date | null;
+	scheduledTime: Date | null;
+	isAllDay: boolean;
+	visibility: TodoVisibility;
+	completed: boolean;
+	completedAt: Date | null;
 }
 
 /**
@@ -94,15 +108,9 @@ export class Todo extends AggregateRoot<TodoProps> {
 		return new Todo(props);
 	}
 
-	/** 제목 불변식 검증 — 위반 시 DomainException */
+	/** 제목 불변식 검증 — 위반 시 DomainException (규칙 소유는 TodoTitle VO) */
 	static #validateTitle(title: string): void {
-		if (title.length < TITLE_MIN_LENGTH || title.length > TITLE_MAX_LENGTH) {
-			throw new DomainException(
-				ErrorCode.SYS_0002,
-				{ titleLength: title.length, max: TITLE_MAX_LENGTH },
-				`제목은 ${TITLE_MIN_LENGTH}~${TITLE_MAX_LENGTH}자여야 합니다.`,
-			);
-		}
+		TodoTitle.create(title);
 	}
 
 	/**
@@ -125,8 +133,15 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 *
 	 * 완료로 전환 시 completedAt을 현재 시각으로, 미완료로 전환 시 null로 설정하고
 	 * TodoToggledEvent를 적립합니다(부수효과는 커밋 후 이벤트 핸들러가 처리).
+	 *
+	 * @returns 실제 상태 전이 여부. 같은 값 재토글이면 상태·이벤트 모두 변화 없이
+	 *          false를 반환합니다(스트릭/알림 재발화 억제 — 응답 계약은 핸들러가 유지).
 	 */
-	toggleComplete(completed: boolean, timezone: string): void {
+	toggleComplete(completed: boolean, timezone: string): boolean {
+		if (this.props.completed === completed) {
+			return false;
+		}
+
 		this.props.completed = completed;
 		this.props.completedAt = completed ? now() : null;
 
@@ -138,6 +153,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 				timezone,
 			),
 		);
+		return true;
 	}
 
 	/**
@@ -150,8 +166,29 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 *   리마인더를 취소합니다. 스트릭·마일스톤은 토글 전용이므로 발생하지 않습니다.
 	 */
 	updateDetails(patch: TodoDetailsPatch): void {
+		if (Object.values(patch).every((value) => value === undefined)) {
+			return;
+		}
+
+		// 검증을 모두 통과한 뒤에만 상태를 변경합니다 (부분 변경 방지)
 		if (patch.title !== undefined) {
 			Todo.#validateTitle(patch.title);
+		}
+		if (patch.startDate !== undefined || patch.endDate !== undefined) {
+			// 단일 필드 패치에서도 저장값과 머지해 endDate >= startDate 교차 검증
+			TodoSchedule.create({
+				startDate: patch.startDate ?? this.props.startDate,
+				endDate:
+					patch.endDate !== undefined ? patch.endDate : this.props.endDate,
+				scheduledTime:
+					patch.scheduledTime !== undefined
+						? patch.scheduledTime
+						: this.props.scheduledTime,
+				isAllDay: patch.isAllDay ?? this.props.isAllDay,
+			});
+		}
+
+		if (patch.title !== undefined) {
 			this.props.title = patch.title;
 		}
 		if (patch.categoryId !== undefined) {
@@ -220,6 +257,45 @@ export class Todo extends AggregateRoot<TodoProps> {
 		this.apply(
 			new TodoDeletedEvent(this.props.id.getValue(), this.props.userId),
 		);
+	}
+
+	/**
+	 * 공개 범위를 변경합니다 (PATCH /todos/:id/visibility).
+	 *
+	 * 부수효과가 없는 단순 상태 전이라 이벤트를 적립하지 않습니다.
+	 */
+	changeVisibility(visibility: TodoVisibility): void {
+		this.props.visibility = visibility;
+	}
+
+	/**
+	 * 카테고리를 변경합니다 (PATCH /todos/:id/category).
+	 *
+	 * 소유권·활성 여부 검증은 애플리케이션 계층(포트) 책임이며,
+	 * 부수효과가 없는 단순 상태 전이라 이벤트를 적립하지 않습니다.
+	 */
+	changeCategory(categoryId: number): void {
+		this.props.categoryId = categoryId;
+	}
+
+	/**
+	 * 저장용 상태 스냅샷을 반환합니다.
+	 *
+	 * 핸들러가 커맨드 패치가 아닌 **애그리게잇 상태**를 영속화하도록 해
+	 * 도메인과 저장 데이터의 이중 소스 문제를 제거합니다.
+	 */
+	toPersistence(): TodoPersistenceSnapshot {
+		return {
+			title: this.props.title,
+			categoryId: this.props.categoryId,
+			startDate: this.props.startDate,
+			endDate: this.props.endDate,
+			scheduledTime: this.props.scheduledTime,
+			isAllDay: this.props.isAllDay,
+			visibility: this.props.visibility,
+			completed: this.props.completed,
+			completedAt: this.props.completedAt,
+		};
 	}
 
 	getId(): TodoId {

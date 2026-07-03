@@ -7,7 +7,7 @@
 
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -72,7 +72,7 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(UpdateTodoHandler)
@@ -92,10 +92,7 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get(EventPublisher);
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		eventBus = unitRef.get(EventBus);
 	});
 
 	it("존재하지 않는 할 일이면 ApplicationException(TODO_0801)을 던진다", async () => {
@@ -130,10 +127,9 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 
 	it("미완료→완료 전이 시 completedAt을 패치에 포함하고 TodoUpdatedEvent를 발행한다", async () => {
 		// Given - 미완료 할 일
-		const entity = buildEntity({ completed: false });
-		const applySpy = jest.spyOn(entity, "apply");
-		const commitSpy = jest.spyOn(entity, "commit");
-		todoRepository.findByIdAndUserId.mockResolvedValue(entity);
+		todoRepository.findByIdAndUserId.mockResolvedValue(
+			buildEntity({ completed: false }),
+		);
 		todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
 
 		// When
@@ -141,13 +137,14 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			new UpdateTodoCommand(1, "user-123", { completed: true }),
 		);
 
-		// Then - 전이 패치 + 이벤트 적립 + 커밋(이벤트 핸들러가 리마인더 취소)
+		// Then - 전이 패치 + 저장 후 이벤트 발행(이벤트 핸들러가 리마인더 취소)
 		expect(todoRepository.updateDetails).toHaveBeenCalledWith(1, {
 			completed: true,
 			completedAt: expect.any(Date),
 		});
-		expect(applySpy).toHaveBeenCalledWith(expect.any(TodoUpdatedEvent));
-		expect(commitSpy).toHaveBeenCalledTimes(1);
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
+			new TodoUpdatedEvent(1, "user-123", true),
+		]);
 	});
 
 	it("완료→미완료 전이 시 completedAt=null을 패치에 포함한다", async () => {

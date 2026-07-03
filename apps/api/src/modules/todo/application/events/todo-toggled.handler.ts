@@ -1,33 +1,31 @@
 import { Inject, Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
-import type { MilestoneReachedJobData } from "../../../notification/queue/notification-queue.constants";
-import {
-	type IReminderScheduler,
-	REMINDER_SCHEDULER,
-} from "../../../scheduler/reminder";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
 import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
 import {
 	TODO_NOTIFICATION,
+	type TodoCompletionMilestone,
 	type TodoNotificationPort,
 } from "../ports/todo-notification.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../ports/todo-read.repository.port";
+import {
+	TODO_REMINDER,
+	type TodoReminderPort,
+} from "../ports/todo-reminder.port";
 
 /** 누적 완료 카운트 → 마일스톤 매핑 */
-const COMPLETION_MILESTONES: ReadonlyMap<
-	number,
-	MilestoneReachedJobData["milestone"]
-> = new Map([
-	[1, "FIRST_COMPLETE"],
-	[10, "COUNT_10"],
-	[50, "COUNT_50"],
-	[100, "COUNT_100"],
-]);
+const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> =
+	new Map([
+		[1, "FIRST_COMPLETE"],
+		[10, "COUNT_10"],
+		[50, "COUNT_50"],
+		[100, "COUNT_100"],
+	]);
 
 /**
  * Todo 완료 토글 이벤트 핸들러
@@ -51,15 +49,15 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 		private readonly todoNotification: TodoNotificationPort,
 		@Inject(STREAK_PORT)
 		private readonly streakPort: StreakPort,
-		@Inject(REMINDER_SCHEDULER)
-		private readonly reminderScheduler: IReminderScheduler,
+		@Inject(TODO_REMINDER)
+		private readonly todoReminder: TodoReminderPort,
 	) {}
 
 	handle(event: TodoToggledEvent): void {
 		const { todoId, userId, completed, timezone } = event;
 
 		if (completed) {
-			this.reminderScheduler.cancelReminder(todoId);
+			this.todoReminder.cancelReminder(todoId);
 			void this.#checkAndEnqueueFriendCompleted(userId, timezone);
 			void this.#checkAndEnqueueMilestone(userId);
 		}

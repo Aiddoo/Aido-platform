@@ -15,10 +15,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { AI_PROVIDER, type AiProvider } from "../ai/providers/ai.provider";
-import {
-	CreateRecurringTodosCommand,
-	type CreateRecurringTodosResult,
-} from "../todo";
+import { CreateRecurringTodosCommand } from "../todo";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
@@ -147,10 +144,7 @@ export class AiSuggestionService {
 		);
 
 		try {
-			const result = await this.commandBus.execute<
-				CreateRecurringTodosCommand,
-				CreateRecurringTodosResult
-			>(
+			const result = await this.commandBus.execute(
 				new CreateRecurringTodosCommand(
 					{
 						userId,

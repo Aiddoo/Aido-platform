@@ -7,7 +7,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
@@ -19,7 +19,9 @@ import {
 	createTransactionManagerMock,
 } from "@test/mocks/ports";
 import { TRANSACTION_MANAGER } from "@/common/database";
+import { DomainException } from "@/common/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoMapper } from "../../../todo.mapper";
 import type { CreateTodoData } from "../../../types/todo.types";
@@ -81,7 +83,7 @@ describe("CreateTodoHandler — 할 일 생성 핸들러", () => {
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(CreateTodoHandler)
@@ -103,10 +105,7 @@ describe("CreateTodoHandler — 할 일 생성 핸들러", () => {
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get(EventPublisher);
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		eventBus = unitRef.get(EventBus);
 	});
 
 	it("카테고리 소유권 확인 후 할 일을 생성하고 캐시를 무효화한 뒤 응답을 반환한다", async () => {
@@ -119,14 +118,45 @@ describe("CreateTodoHandler — 할 일 생성 핸들러", () => {
 		// When
 		const result = await handler.execute(new CreateTodoCommand(baseData));
 
-		// Then
+		// Then - 생성 + 캐시 + TodoCreatedEvent 발행(리마인더는 이벤트 핸들러)
 		expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(
 			1,
 			"user-123",
 		);
 		expect(todoRepository.create).toHaveBeenCalledTimes(1);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
+			new TodoCreatedEvent(1, "user-123", null),
+		]);
 		expect(result.id).toBe(1);
+	});
+
+	it("카테고리 소유권 확인이 실패하면 예외를 전파하고 생성하지 않는다", async () => {
+		// Given - 소유권 검증 실패
+		categoryOwnership.validateOwnership.mockRejectedValue(
+			new Error("not owner"),
+		);
+
+		// When & Then
+		await expect(
+			handler.execute(new CreateTodoCommand(baseData)),
+		).rejects.toThrow("not owner");
+		expect(todoRepository.create).not.toHaveBeenCalled();
+		expect(eventBus.publishAll).not.toHaveBeenCalled();
+	});
+
+	it("제목이 200자를 초과하면 소유권 확인 전에 DomainException(SYS_0002)을 던진다 (도메인 자기방어)", async () => {
+		// Given - 201자 제목 (Zod 통과를 우회한 비정상 입력 가정)
+		const data: CreateTodoData = { ...baseData, title: "가".repeat(201) };
+
+		// When & Then - 어떤 포트도 호출되기 전에 거부된다
+		const execution = handler.execute(new CreateTodoCommand(data));
+		await expect(execution).rejects.toBeInstanceOf(DomainException);
+		await expect(execution).rejects.toMatchObject({
+			errorCode: ErrorCode.SYS_0002,
+		});
+		expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
+		expect(todoRepository.create).not.toHaveBeenCalled();
 	});
 
 	it("카테고리 활성 한도를 초과하면 ApplicationException(TODO_0811)을 던진다", async () => {

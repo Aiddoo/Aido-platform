@@ -25,7 +25,7 @@ import { ReorderTodoItemsCommand } from "./reorder-todo-items.command";
  */
 @CommandHandler(ReorderTodoItemsCommand)
 export class ReorderTodoItemsHandler
-	implements ICommandHandler<ReorderTodoItemsCommand, TodoResponse>
+	implements ICommandHandler<ReorderTodoItemsCommand>
 {
 	readonly #logger = new Logger(ReorderTodoItemsHandler.name);
 

@@ -6,7 +6,6 @@ import type { DayOfWeek } from "@aido/validators";
 import type { Prisma } from "@/generated/prisma/client";
 
 // 공통 타입 재내보내기
-export type { TransactionClient } from "@/common/database";
 
 /**
  * Todo 조회 시 포함할 카테고리·하위 항목 select 설정

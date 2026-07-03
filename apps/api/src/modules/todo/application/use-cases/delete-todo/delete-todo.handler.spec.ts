@@ -5,7 +5,7 @@
  */
 
 import { ErrorCode } from "@aido/errors";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import {
@@ -48,7 +48,7 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 	let handler: DeleteTodoHandler;
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoCache: Mocked<TodoCachePort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(DeleteTodoHandler)
@@ -61,26 +61,21 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 		handler = unit;
 		todoRepository = unitRef.get<TodoRepositoryPort>(TODO_REPOSITORY);
 		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
-		eventPublisher = unitRef.get(EventPublisher);
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		eventBus = unitRef.get(EventBus);
 	});
 
 	it("삭제 후 TodoDeletedEvent를 발행하고 캐시를 무효화한다", async () => {
 		// Given
-		const entity = buildEntity();
-		const applySpy = jest.spyOn(entity, "apply");
-		const commitSpy = jest.spyOn(entity, "commit");
-		todoRepository.findByIdAndUserId.mockResolvedValue(entity);
+		todoRepository.findByIdAndUserId.mockResolvedValue(buildEntity());
 
 		// When
 		await handler.execute(new DeleteTodoCommand(1, "user-123"));
 
 		// Then - 삭제 → 이벤트(리마인더 취소는 이벤트 핸들러) → 캐시
 		expect(todoRepository.delete).toHaveBeenCalledWith(1);
-		expect(applySpy).toHaveBeenCalledWith(new TodoDeletedEvent(1, "user-123"));
-		expect(commitSpy).toHaveBeenCalledTimes(1);
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
+			new TodoDeletedEvent(1, "user-123"),
+		]);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 	});
 

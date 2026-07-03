@@ -32,7 +32,7 @@ import { ChangeTodoCategoryCommand } from "./change-todo-category.command";
  */
 @CommandHandler(ChangeTodoCategoryCommand)
 export class ChangeTodoCategoryHandler
-	implements ICommandHandler<ChangeTodoCategoryCommand, TodoResponse>
+	implements ICommandHandler<ChangeTodoCategoryCommand>
 {
 	readonly #logger = new Logger(ChangeTodoCategoryHandler.name);
 
@@ -61,9 +61,12 @@ export class ChangeTodoCategoryHandler
 		// 2. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
 		await this.categoryOwnership.validateOwnership(categoryId, userId);
 
-		// 3. 카테고리 이동 — 활성 할 일만 TX 안에서 한도 체크 (race condition 방지)
+		// 3. 애그리게잇 전이 → 활성 할 일만 TX 안에서 한도 체크 후 영속화 (race 방지)
+		todo.changeCategory(categoryId);
+		const targetCategoryId = todo.toPersistence().categoryId;
+
 		if (todo.isCompleted()) {
-			await this.todoRepository.updateCategory(id, categoryId);
+			await this.todoRepository.updateCategory(id, targetCategoryId);
 		} else {
 			await this.txManager.run(async (tx) => {
 				const activeInTarget = await this.todoRepository.countActiveByCategory(
@@ -77,7 +80,7 @@ export class ChangeTodoCategoryHandler
 						maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
 					});
 				}
-				await this.todoRepository.updateCategory(id, categoryId, tx);
+				await this.todoRepository.updateCategory(id, targetCategoryId, tx);
 			});
 		}
 

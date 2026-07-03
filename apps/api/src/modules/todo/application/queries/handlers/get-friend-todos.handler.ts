@@ -21,11 +21,7 @@ import { GetFriendTodosQuery } from "../get-friend-todos.query";
  */
 @QueryHandler(GetFriendTodosQuery)
 export class GetFriendTodosHandler
-	implements
-		IQueryHandler<
-			GetFriendTodosQuery,
-			CursorPaginatedResponse<TodoResponse, number>
-		>
+	implements IQueryHandler<GetFriendTodosQuery>
 {
 	constructor(
 		@Inject(TODO_READ_REPOSITORY)

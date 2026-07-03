@@ -13,11 +13,7 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
-import {
-	CreateRecurringTodosCommand,
-	type CreateRecurringTodosResult,
-	CreateTodoCommand,
-} from "../todo";
+import { CreateRecurringTodosCommand, CreateTodoCommand } from "../todo";
 import { MemoMapper } from "./memo.mapper";
 import { MemoRepository } from "./memo.repository";
 import type {
@@ -267,7 +263,7 @@ export class MemoService {
 		}
 
 		// 2. Todo 생성 (CreateTodoHandler 내부 TX)
-		const todo = await this.commandBus.execute<CreateTodoCommand, Todo>(
+		const todo = await this.commandBus.execute(
 			new CreateTodoCommand({
 				userId,
 				title: memo.content.substring(0, 200),
@@ -314,16 +310,13 @@ export class MemoService {
 			throw BusinessExceptions.memoNotFound(memoId);
 		}
 
-		// 2. 모든 Todo 생성 (각 TodoService 메서드가 자체 TX 관리)
+		// 2. 모든 Todo 생성 (각 커맨드 핸들러가 자체 TX 관리)
 		const todos: Todo[] = [];
 
 		for (const todoData of data.todos) {
 			if (todoData.isRecurring && todoData.recurrence) {
 				// 반복 일정: CreateRecurringTodosHandler가 여러 Todo 인스턴스를 생성
-				const result = await this.commandBus.execute<
-					CreateRecurringTodosCommand,
-					CreateRecurringTodosResult
-				>(
+				const result = await this.commandBus.execute(
 					new CreateRecurringTodosCommand(
 						{
 							userId,
@@ -344,7 +337,7 @@ export class MemoService {
 				todos.push(...result.todos);
 			} else {
 				// 단건 일정
-				const todo = await this.commandBus.execute<CreateTodoCommand, Todo>(
+				const todo = await this.commandBus.execute(
 					new CreateTodoCommand({
 						userId,
 						title: todoData.title,

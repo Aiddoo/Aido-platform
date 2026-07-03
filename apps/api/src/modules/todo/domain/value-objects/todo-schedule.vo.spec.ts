@@ -66,6 +66,47 @@ describe("TodoSchedule — 일정 값 객체", () => {
 		}
 	});
 
+	it("getter가 반환한 Date를 변조해도 이후 조회 값은 영향받지 않는다 (방어 복사)", () => {
+		// Given
+		const schedule = TodoSchedule.create({
+			startDate: new Date("2026-03-01"),
+			endDate: new Date("2026-03-05"),
+			scheduledTime: new Date("2026-03-01T06:00:00.000Z"),
+			isAllDay: false,
+		});
+
+		// When - 반환된 Date를 임의로 변조
+		schedule.getStartDate().setFullYear(1999);
+		schedule.getEndDate()?.setFullYear(1999);
+		schedule.getScheduledTime()?.setFullYear(1999);
+
+		// Then - 내부 값은 불변
+		expect(schedule.getStartDate()).toEqual(new Date("2026-03-01"));
+		expect(schedule.getEndDate()).toEqual(new Date("2026-03-05"));
+		expect(schedule.getScheduledTime()).toEqual(
+			new Date("2026-03-01T06:00:00.000Z"),
+		);
+	});
+
+	it("getValue()가 반환한 props를 변조해도 이후 조회 값은 영향받지 않는다 (방어 복사)", () => {
+		// Given
+		const schedule = TodoSchedule.create({
+			startDate: new Date("2026-03-01"),
+			endDate: new Date("2026-03-05"),
+			scheduledTime: null,
+			isAllDay: true,
+		});
+
+		// When - 반환된 props의 Date를 임의로 변조
+		const value = schedule.getValue();
+		value.startDate.setFullYear(1999);
+		value.endDate?.setFullYear(1999);
+
+		// Then - 재조회 값은 불변
+		expect(schedule.getValue().startDate).toEqual(new Date("2026-03-01"));
+		expect(schedule.getValue().endDate).toEqual(new Date("2026-03-05"));
+	});
+
 	it("endDate와 startDate가 같으면 허용한다 (경계값)", () => {
 		// Given & When
 		const sameDay = new Date("2026-03-01");

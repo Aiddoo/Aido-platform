@@ -31,18 +31,28 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
 	}
 
 	getStartDate(): Date {
-		return this.value.startDate;
+		return new Date(this.value.startDate);
 	}
 
 	getEndDate(): Date | null {
-		return this.value.endDate;
+		return this.value.endDate ? new Date(this.value.endDate) : null;
 	}
 
 	getScheduledTime(): Date | null {
-		return this.value.scheduledTime;
+		return this.value.scheduledTime ? new Date(this.value.scheduledTime) : null;
 	}
 
 	isAllDay(): boolean {
 		return this.value.isAllDay;
+	}
+
+	/** 내부 Date 참조 누출을 막기 위해 방어 복사본으로 반환합니다. */
+	override getValue(): TodoScheduleProps {
+		return {
+			startDate: this.getStartDate(),
+			endDate: this.getEndDate(),
+			scheduledTime: this.getScheduledTime(),
+			isAllDay: this.value.isAllDay,
+		};
 	}
 }

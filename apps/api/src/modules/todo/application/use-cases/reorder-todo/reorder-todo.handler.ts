@@ -1,13 +1,17 @@
 import { ErrorCode } from "@aido/errors";
-import type { ReorderPosition, Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import type { TransactionClient } from "@/common/database";
 import {
 	TRANSACTION_MANAGER,
 	type TransactionManagerPort,
 } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
+import {
+	planReorderRelativeTo,
+	planReorderToEdge,
+	type ReorderPlan,
+} from "../../../domain/services/reorder-position";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -21,15 +25,13 @@ import { ReorderTodoCommand } from "./reorder-todo.command";
 /**
  * Todo 순서 변경 핸들러 (드래그 앤 드롭)
  *
- * 전체 트랜잭션 안에서: 소유권 확인 → 기준 할 일 상대 이동(#reorderRelativeTo)
- * 또는 맨 앞/뒤 이동(#reorderToEdge)으로 새 sortOrder 계산·범위 시프트 →
- * sortOrder 영속화 → 커밋 후 읽기 포트로 응답 재조회.
+ * 전체 트랜잭션 안에서: 소유권 확인 → 도메인 정책(planReorderRelativeTo /
+ * planReorderToEdge)으로 시프트 계획 계산 → 시프트·sortOrder 영속화 →
+ * 커밋 후 읽기 포트로 응답 재조회.
  * targetTodoId가 자기 자신이면 쓰기 없이 현재 상태를 반환합니다.
  */
 @CommandHandler(ReorderTodoCommand)
-export class ReorderTodoHandler
-	implements ICommandHandler<ReorderTodoCommand, TodoResponse>
-{
+export class ReorderTodoHandler implements ICommandHandler<ReorderTodoCommand> {
 	readonly #logger = new Logger(ReorderTodoHandler.name);
 
 	constructor(
@@ -56,20 +58,42 @@ export class ReorderTodoHandler
 				return;
 			}
 
-			const newSortOrder = targetTodoId
-				? await this.#reorderRelativeTo(
-						todo.getSortOrder(),
+			let plan: ReorderPlan;
+			if (targetTodoId) {
+				const targetTodo = await this.todoRepository.findByIdAndUserId(
+					targetTodoId,
+					userId,
+					tx,
+				);
+				if (!targetTodo) {
+					throw new ApplicationException(ErrorCode.TODO_0810, {
 						targetTodoId,
-						position,
-						userId,
-						tx,
-					)
-				: await this.#reorderToEdge(todo.getSortOrder(), position, userId, tx);
+					});
+				}
+				plan = planReorderRelativeTo(
+					todo.getSortOrder(),
+					targetTodo.getSortOrder(),
+					position,
+				);
+			} else {
+				const maxSortOrder = await this.todoRepository.getMaxSortOrder(
+					userId,
+					tx,
+				);
+				plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
+			}
 
-			await this.todoRepository.updateSortOrder(id, newSortOrder, tx);
+			await this.todoRepository.shiftSortOrders(
+				userId,
+				plan.shift.from,
+				plan.shift.to,
+				plan.shift.delta,
+				tx,
+			);
+			await this.todoRepository.updateSortOrder(id, plan.newSortOrder, tx);
 
 			this.#logger.log(
-				`Todo reordered: ${id} to sortOrder ${newSortOrder} for user: ${userId}`,
+				`Todo reordered: ${id} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
 			);
 		});
 
@@ -82,80 +106,5 @@ export class ReorderTodoHandler
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 		return response;
-	}
-
-	/** 기준 할 일의 앞/뒤로 이동 — 사이 구간을 한 칸씩 시프트 */
-	async #reorderRelativeTo(
-		currentSortOrder: number,
-		targetTodoId: number,
-		position: ReorderPosition,
-		userId: string,
-		tx: TransactionClient,
-	): Promise<number> {
-		const targetTodo = await this.todoRepository.findByIdAndUserId(
-			targetTodoId,
-			userId,
-			tx,
-		);
-		if (!targetTodo) {
-			throw new ApplicationException(ErrorCode.TODO_0810, { targetTodoId });
-		}
-
-		let newSortOrder =
-			position === "before"
-				? targetTodo.getSortOrder()
-				: targetTodo.getSortOrder() + 1;
-
-		if (currentSortOrder < newSortOrder) {
-			// 아래로 이동: 사이 구간을 위로 당김
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				currentSortOrder + 1,
-				newSortOrder - 1,
-				-1,
-				tx,
-			);
-			newSortOrder -= 1;
-		} else {
-			// 위로 이동: 사이 구간을 아래로 밀어냄
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				newSortOrder,
-				currentSortOrder - 1,
-				1,
-				tx,
-			);
-		}
-
-		return newSortOrder;
-	}
-
-	/** 맨 앞(before) 또는 맨 뒤(after)로 이동 */
-	async #reorderToEdge(
-		currentSortOrder: number,
-		position: ReorderPosition,
-		userId: string,
-		tx: TransactionClient,
-	): Promise<number> {
-		if (position === "before") {
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				0,
-				currentSortOrder - 1,
-				1,
-				tx,
-			);
-			return 0;
-		}
-
-		const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId, tx);
-		await this.todoRepository.shiftSortOrders(
-			userId,
-			currentSortOrder + 1,
-			null,
-			-1,
-			tx,
-		);
-		return maxSortOrder;
 	}
 }

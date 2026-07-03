@@ -7,11 +7,12 @@
 
 import { ErrorCode } from "@aido/errors";
 import { TODO_LIMITS } from "@aido/validators";
-import { EventPublisher } from "@nestjs/cqrs";
+import { EventBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import {
 	createCategoryOwnershipMock,
+	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
 	createTransactionManagerMock,
@@ -29,6 +30,7 @@ import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
+import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
@@ -72,7 +74,8 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 	let todoRepository: Mocked<TodoRepositoryPort>;
 	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 	let categoryOwnership: Mocked<CategoryOwnershipPort>;
-	let eventPublisher: Mocked<EventPublisher>;
+	let todoCache: Mocked<TodoCachePort>;
+	let eventBus: Mocked<EventBus>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -86,6 +89,8 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 			.impl(() => createTransactionManagerMock())
 			.mock<CategoryOwnershipPort>(CATEGORY_OWNERSHIP)
 			.impl(() => createCategoryOwnershipMock())
+			.mock<TodoCachePort>(TODO_CACHE)
+			.impl(() => createTodoCacheMock())
 			.compile();
 
 		handler = unit;
@@ -93,16 +98,13 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 		todoReadRepository =
 			unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
 		categoryOwnership = unitRef.get<CategoryOwnershipPort>(CATEGORY_OWNERSHIP);
-		eventPublisher = unitRef.get(EventPublisher);
-		eventPublisher.mergeObjectContext.mockImplementation(
-			(aggregate) => aggregate,
-		);
+		todoCache = unitRef.get<TodoCachePort>(TODO_CACHE);
+		eventBus = unitRef.get(EventBus);
 	});
 
-	it("요일 매칭 날짜만큼 일괄 생성하고 인스턴스별 TodoCreatedEvent를 발행한다", async () => {
+	it("요일 매칭 날짜만큼 일괄 생성하고 인스턴스별 TodoCreatedEvent를 발행한 뒤 캐시를 무효화한다", async () => {
 		// Given - 3개 생성 (월/수/금)
 		const created = [buildEntity(1), buildEntity(2), buildEntity(3)];
-		const applySpies = created.map((e) => jest.spyOn(e, "apply"));
 		todoRepository.countActiveByCategory.mockResolvedValue(0);
 		todoRepository.getMaxSortOrder.mockResolvedValue(-1);
 		todoRepository.createMany.mockResolvedValue(created);
@@ -123,9 +125,14 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 		expect(items?.[0]).toMatchObject({ sortOrder: 0, title: "반복 할 일" });
 		expect(items?.[2]).toMatchObject({ sortOrder: 2 });
 		expect(typeof groupId).toBe("string");
-		for (const spy of applySpies) {
-			expect(spy).toHaveBeenCalledWith(expect.any(TodoCreatedEvent));
-		}
+		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
+		expect(eventBus.publishAll).toHaveBeenCalledTimes(3);
+		expect(eventBus.publishAll).toHaveBeenNthCalledWith(1, [
+			new TodoCreatedEvent(1, "user-123", null),
+		]);
+		expect(eventBus.publishAll).toHaveBeenNthCalledWith(3, [
+			new TodoCreatedEvent(3, "user-123", null),
+		]);
 		expect(result.count).toBe(3);
 	});
 

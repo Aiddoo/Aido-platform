@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database";
+import { type TransactionContext, unwrapTransaction } from "@/common/database";
 import type {
 	NewTodoData,
 	TodoRepositoryPort,
@@ -53,13 +53,17 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	async findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<Todo | null> {
-		const row = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		const row = await this.todoRepository.findByIdAndUserId(
+			id,
+			userId,
+			tx && unwrapTransaction(tx),
+		);
 		return row ? PrismaTodoRepository.toDomain(row) : null;
 	}
 
-	async create(data: NewTodoData, tx?: TransactionClient): Promise<Todo> {
+	async create(data: NewTodoData, tx?: TransactionContext): Promise<Todo> {
 		const row = await this.todoRepository.create(
 			{
 				user: { connect: { id: data.userId } },
@@ -72,7 +76,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 				isAllDay: data.isAllDay,
 				visibility: data.visibility,
 			},
-			tx,
+			tx && unwrapTransaction(tx),
 		);
 		return PrismaTodoRepository.toDomain(row);
 	}
@@ -80,50 +84,66 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	async createInlineItems(
 		todoId: number,
 		items: { title: string }[],
-		tx: TransactionClient,
+		tx: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.createManyItems(todoId, items, tx);
+		await this.todoRepository.createManyItems(
+			todoId,
+			items,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async updateCompletion(
 		id: number,
 		completed: boolean,
 		completedAt: Date | null,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.update(id, { completed, completedAt }, tx);
+		await this.todoRepository.update(
+			id,
+			{ completed, completedAt },
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async updateDetails(
 		id: number,
 		patch: TodoUpdatePatch,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
 		// 스칼라 categoryId 포함 패치 — Prisma 런타임은 unchecked 스칼라 update를 허용하며
 		// 레거시 서비스도 동일 방식으로 전달했습니다(동작 보존).
-		await this.todoRepository.update(id, patch, tx);
+		await this.todoRepository.update(id, patch, tx && unwrapTransaction(tx));
 	}
 
 	async updateTitle(
 		id: number,
 		title: string,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.update(id, { title }, tx);
+		await this.todoRepository.update(
+			id,
+			{ title },
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async updateVisibility(
 		id: number,
 		visibility: TodoVisibility,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.update(id, { visibility }, tx);
+		await this.todoRepository.update(
+			id,
+			{ visibility },
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async updateSchedule(
 		id: number,
 		schedule: TodoScheduleProps,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
 		await this.todoRepository.update(
 			id,
@@ -133,32 +153,36 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 				scheduledTime: schedule.scheduledTime,
 				isAllDay: schedule.isAllDay,
 			},
-			tx,
+			tx && unwrapTransaction(tx),
 		);
 	}
 
 	async updateCategory(
 		id: number,
 		categoryId: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
 		await this.todoRepository.update(
 			id,
 			{ category: { connect: { id: categoryId } } },
-			tx,
+			tx && unwrapTransaction(tx),
 		);
 	}
 
-	async delete(id: number, tx?: TransactionClient): Promise<void> {
-		await this.todoRepository.delete(id, tx);
+	async delete(id: number, tx?: TransactionContext): Promise<void> {
+		await this.todoRepository.delete(id, tx && unwrapTransaction(tx));
 	}
 
 	async updateSortOrder(
 		id: number,
 		sortOrder: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.updateSortOrder(id, sortOrder, tx);
+		await this.todoRepository.updateSortOrder(
+			id,
+			sortOrder,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async shiftSortOrders(
@@ -166,15 +190,21 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		from: number,
 		to: number | null,
 		delta: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.shiftSortOrders(userId, from, to, delta, tx);
+		await this.todoRepository.shiftSortOrders(
+			userId,
+			from,
+			to,
+			delta,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async createMany(
 		items: NewTodoData[],
 		recurrenceGroupId: string,
-		tx: TransactionClient,
+		tx: TransactionContext,
 	): Promise<Todo[]> {
 		const rows = await this.todoRepository.createManyBatch(
 			items.map((item) => ({
@@ -190,7 +220,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 				recurrenceGroupId,
 			})),
 			recurrenceGroupId,
-			tx,
+			tx && unwrapTransaction(tx),
 		);
 		return rows.map((row) => PrismaTodoRepository.toDomain(row));
 	}
@@ -198,46 +228,76 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	countActiveByCategory(
 		userId: string,
 		categoryId: number,
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<number> {
-		return this.todoRepository.countActiveByCategory(userId, categoryId, tx);
+		return this.todoRepository.countActiveByCategory(
+			userId,
+			categoryId,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
-	getMaxSortOrder(userId: string, tx?: TransactionClient): Promise<number> {
-		return this.todoRepository.getMaxSortOrder(userId, tx);
+	getMaxSortOrder(userId: string, tx?: TransactionContext): Promise<number> {
+		return this.todoRepository.getMaxSortOrder(
+			userId,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	// ===== 하위 항목 (체크리스트) =====
 
-	countItemsByTodoId(todoId: number, tx?: TransactionClient): Promise<number> {
-		return this.todoRepository.countItemsByTodoId(todoId, tx);
+	countItemsByTodoId(todoId: number, tx?: TransactionContext): Promise<number> {
+		return this.todoRepository.countItemsByTodoId(
+			todoId,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
-	getMaxItemSortOrder(todoId: number, tx?: TransactionClient): Promise<number> {
-		return this.todoRepository.getMaxItemSortOrder(todoId, tx);
+	getMaxItemSortOrder(
+		todoId: number,
+		tx?: TransactionContext,
+	): Promise<number> {
+		return this.todoRepository.getMaxItemSortOrder(
+			todoId,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async createItem(
 		todoId: number,
 		data: { title: string; sortOrder: number },
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.createItem(todoId, data, tx);
+		await this.todoRepository.createItem(
+			todoId,
+			data,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
 	async updateItem(
 		itemId: number,
 		data: { title?: string; completed?: boolean },
-		tx?: TransactionClient,
+		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.updateItem(itemId, data, tx);
+		await this.todoRepository.updateItem(
+			itemId,
+			data,
+			tx && unwrapTransaction(tx),
+		);
 	}
 
-	async deleteItem(itemId: number, tx?: TransactionClient): Promise<void> {
-		await this.todoRepository.deleteItem(itemId, tx);
+	async deleteItem(itemId: number, tx?: TransactionContext): Promise<void> {
+		await this.todoRepository.deleteItem(itemId, tx && unwrapTransaction(tx));
 	}
 
-	async reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void> {
-		await this.todoRepository.reorderItems(itemIds, tx);
+	async reorderItems(
+		itemIds: number[],
+		tx?: TransactionContext,
+	): Promise<void> {
+		await this.todoRepository.reorderItems(
+			itemIds,
+			tx && unwrapTransaction(tx),
+		);
 	}
 }

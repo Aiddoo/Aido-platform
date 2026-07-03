@@ -1,11 +1,7 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import {
-	CommandHandler,
-	EventPublisher,
-	type ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -26,7 +22,7 @@ import { ToggleTodoCompleteCommand } from "./toggle-todo-complete.command";
  */
 @CommandHandler(ToggleTodoCompleteCommand)
 export class ToggleTodoCompleteHandler
-	implements ICommandHandler<ToggleTodoCompleteCommand, TodoResponse>
+	implements ICommandHandler<ToggleTodoCompleteCommand>
 {
 	readonly #logger = new Logger(ToggleTodoCompleteHandler.name);
 
@@ -35,32 +31,34 @@ export class ToggleTodoCompleteHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		private readonly eventPublisher: EventPublisher,
+		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: ToggleTodoCompleteCommand): Promise<TodoResponse> {
 		const { id, userId, completed, timezone } = command;
 
-		const found = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!found) {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		if (!todo) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 
-		const todo = this.eventPublisher.mergeObjectContext(found);
-		todo.toggleComplete(completed, timezone);
+		// 같은 값 재토글이면 쓰기·이벤트 생략 (스트릭/알림 재발화 억제, 응답은 동일)
+		const changed = todo.toggleComplete(completed, timezone);
 
-		await this.todoRepository.updateCompletion(
-			id,
-			todo.isCompleted(),
-			todo.getCompletedAt(),
-		);
+		if (changed) {
+			await this.todoRepository.updateCompletion(
+				id,
+				todo.isCompleted(),
+				todo.getCompletedAt(),
+			);
 
-		this.#logger.log(
-			`Todo completion toggled: ${id} -> ${completed} for user: ${userId}`,
-		);
+			this.#logger.log(
+				`Todo completion toggled: ${id} -> ${completed} for user: ${userId}`,
+			);
 
-		// 저장 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
-		todo.commit();
+			// 저장 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
+			this.eventBus.publishAll(todo.pullDomainEvents());
+		}
 
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,

@@ -2,16 +2,13 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
-import {
-	CommandHandler,
-	EventPublisher,
-	type ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
 import {
 	TRANSACTION_MANAGER,
 	type TransactionManagerPort,
 } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
+import { TodoTitle } from "../../../domain/value-objects/todo-title.vo";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -35,9 +32,7 @@ import { CreateTodoCommand } from "./create-todo.command";
  * 읽기 포트로 응답 read model 조회 후 반환.
  */
 @CommandHandler(CreateTodoCommand)
-export class CreateTodoHandler
-	implements ICommandHandler<CreateTodoCommand, TodoResponse>
-{
+export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 	readonly #logger = new Logger(CreateTodoHandler.name);
 
 	constructor(
@@ -51,11 +46,14 @@ export class CreateTodoHandler
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
-		private readonly eventPublisher: EventPublisher,
+		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: CreateTodoCommand): Promise<TodoResponse> {
 		const { data } = command;
+
+		// 도메인 제목 불변식 검증 (Zod 경계와 동일 규칙 — 도메인 자기방어)
+		TodoTitle.create(data.title);
 
 		// 카테고리 존재 및 소유권 확인 (읽기 전용, TX 외부)
 		await this.categoryOwnership.validateOwnership(
@@ -114,10 +112,9 @@ export class CreateTodoHandler
 
 		await this.todoCache.invalidateTodoCategories(data.userId);
 
-		// 생성 이벤트 발행 → 리마인더 스케줄링은 이벤트 핸들러가 처리
-		const todo = this.eventPublisher.mergeObjectContext(created);
-		todo.markCreated();
-		todo.commit();
+		// 생성 이벤트 발행(TX 커밋 후) → 리마인더 스케줄링은 이벤트 핸들러가 처리
+		created.markCreated();
+		this.eventBus.publishAll(created.pullDomainEvents());
 
 		// 응답 read model 조회 (카테고리·itemStats 포함)
 		const response = await this.todoReadRepository.findByIdAndUserId(

@@ -13,9 +13,7 @@ import { GetTodoByIdQuery } from "../get-todo-by-id.query";
  * 단일 Todo 조회 핸들러 (read model 직접 반환)
  */
 @QueryHandler(GetTodoByIdQuery)
-export class GetTodoByIdHandler
-	implements IQueryHandler<GetTodoByIdQuery, TodoResponse>
-{
+export class GetTodoByIdHandler implements IQueryHandler<GetTodoByIdQuery> {
 	constructor(
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,

@@ -13,10 +13,6 @@ import {
 	createTodoNotificationMock,
 	createTodoReadRepositoryMock,
 } from "@test/mocks/ports";
-import {
-	type IReminderScheduler,
-	REMINDER_SCHEDULER,
-} from "../../../scheduler/reminder";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
 import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
@@ -28,6 +24,10 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../ports/todo-read.repository.port";
+import {
+	TODO_REMINDER,
+	type TodoReminderPort,
+} from "../ports/todo-reminder.port";
 import { TodoToggledHandler } from "./todo-toggled.handler";
 
 /** 마이크로태스크 큐를 비워 fire-and-forget 비동기 부수효과를 완료시킨다 */
@@ -39,10 +39,10 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 	let friendPort: Mocked<FriendPort>;
 	let todoNotification: Mocked<TodoNotificationPort>;
 	let streakPort: Mocked<StreakPort>;
-	let reminderScheduler: IReminderScheduler;
+	let todoReminder: TodoReminderPort;
 
 	beforeEach(async () => {
-		reminderScheduler = {
+		todoReminder = {
 			scheduleReminder: jest.fn(),
 			cancelReminder: jest.fn(),
 		};
@@ -56,8 +56,8 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 			.impl(() => createStreakMock())
 			.mock<TodoNotificationPort>(TODO_NOTIFICATION)
 			.impl(() => createTodoNotificationMock())
-			.mock(REMINDER_SCHEDULER)
-			.impl(() => reminderScheduler)
+			.mock(TODO_REMINDER)
+			.impl(() => todoReminder)
 			.compile();
 
 		handler = unit;
@@ -81,7 +81,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		await flush();
 
 		// Then
-		expect(reminderScheduler.cancelReminder).toHaveBeenCalledWith(1);
+		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
 		expect(streakPort.onTodoToggled).toHaveBeenCalledWith(
 			"user-123",
 			true,
@@ -142,7 +142,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 			false,
 			"UTC",
 		);
-		expect(reminderScheduler.cancelReminder).not.toHaveBeenCalled();
+		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueFriendCompleted).not.toHaveBeenCalled();
 		expect(todoNotification.enqueueMilestoneReached).not.toHaveBeenCalled();
 	});

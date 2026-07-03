@@ -25,7 +25,7 @@ import { UpdateTodoItemCommand } from "./update-todo-item.command";
  */
 @CommandHandler(UpdateTodoItemCommand)
 export class UpdateTodoItemHandler
-	implements ICommandHandler<UpdateTodoItemCommand, TodoResponse>
+	implements ICommandHandler<UpdateTodoItemCommand>
 {
 	readonly #logger = new Logger(UpdateTodoItemHandler.name);
 

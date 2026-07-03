@@ -15,6 +15,7 @@ import { TODO_REPOSITORY } from "./application/ports/todo.repository.port";
 import { TODO_CACHE } from "./application/ports/todo-cache.port";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
+import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
 import { QueryHandlers } from "./application/queries/handlers";
 import { CommandHandlers } from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
@@ -24,6 +25,7 @@ import { PrismaTodoReadRepository } from "./infrastructure/adapters/prisma-todo-
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter";
 import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter";
+import { TodoReminderAdapter } from "./infrastructure/adapters/todo-reminder.adapter";
 import { TodoController } from "./todo.controller";
 import { TodoRepository } from "./todo.repository";
 
@@ -68,6 +70,7 @@ import { TodoRepository } from "./todo.repository";
 		{ provide: FRIEND_PORT, useClass: FriendAdapter },
 		{ provide: STREAK_PORT, useClass: StreakAdapter },
 		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
+		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
 		...CommandHandlers,
 		...QueryHandlers,
 		...EventHandlers,

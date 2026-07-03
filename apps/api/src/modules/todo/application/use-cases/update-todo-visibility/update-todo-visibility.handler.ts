@@ -16,12 +16,12 @@ import { UpdateTodoVisibilityCommand } from "./update-todo-visibility.command";
 /**
  * Todo 공개 범위 변경 핸들러
  *
- * 소유권 확인 → 공개 범위 영속화 → 읽기 포트로 응답 재조회.
+ * 소유권 확인 → 애그리게잇 전이 → 애그리게잇 상태로 영속화 → 읽기 포트로 응답 재조회.
  * 부수효과 없음(레거시 동작 보존).
  */
 @CommandHandler(UpdateTodoVisibilityCommand)
 export class UpdateTodoVisibilityHandler
-	implements ICommandHandler<UpdateTodoVisibilityCommand, TodoResponse>
+	implements ICommandHandler<UpdateTodoVisibilityCommand>
 {
 	readonly #logger = new Logger(UpdateTodoVisibilityHandler.name);
 
@@ -36,13 +36,17 @@ export class UpdateTodoVisibilityHandler
 		const { id, userId, visibility } = command;
 
 		// 1. 소유권 확인
-		const found = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!found) {
+		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+		if (!todo) {
 			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 		}
 
-		// 2. 공개 범위 영속화
-		await this.todoRepository.updateVisibility(id, visibility);
+		// 2. 애그리게잇 전이 → 애그리게잇 상태로 영속화
+		todo.changeVisibility(visibility);
+		await this.todoRepository.updateVisibility(
+			id,
+			todo.toPersistence().visibility,
+		);
 
 		this.#logger.log(
 			`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`,
