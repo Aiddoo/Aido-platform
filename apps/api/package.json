@@ -20,7 +20,7 @@
 		"lint:fix": "biome check --write src/",
 		"lint:no-cast": "node scripts/check-no-cast.mjs",
 		"start": "nest start",
-		"start:prod": "NODE_ENV=production node dist/main",
+		"start:prod": "NODE_ENV=production node dist/src/main",
 		"test": "jest",
 		"test:cov": "jest --coverage",
 		"test:coverage": "jest --coverage",
