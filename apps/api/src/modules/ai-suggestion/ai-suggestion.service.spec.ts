@@ -6,16 +6,16 @@
  * - analyzeAndCreateSuggestions: 분석 로직 검증
  */
 
+import { CommandBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import type { RecurringSuggestion } from "@/generated/prisma/client";
-
 import type { AiProvider } from "../ai/providers/ai.provider";
 import { AI_PROVIDER } from "../ai/providers/ai.provider";
-import { TodoService } from "../todo/todo.service";
+import { CreateRecurringTodosCommand } from "../todo";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { AiSuggestionService } from "./ai-suggestion.service";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
@@ -24,7 +24,7 @@ import type { SuggestionContext } from "./types";
 describe("AiSuggestionService — AI 제안 서비스", () => {
 	let service: AiSuggestionService;
 	let mockRepository: Mocked<AiSuggestionRepository>;
-	let mockTodoService: Mocked<TodoService>;
+	let mockCommandBus: Mocked<CommandBus>;
 	let mockAiProvider: Mocked<AiProvider>;
 	let mockEntitlementService: Mocked<EntitlementService>;
 	let mockDatabase: Mocked<DatabaseService>;
@@ -88,7 +88,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 
 		service = unit;
 		mockRepository = unitRef.get(AiSuggestionRepository);
-		mockTodoService = unitRef.get(TodoService);
+		mockCommandBus = unitRef.get(CommandBus);
 		mockAiProvider = unitRef.get(AI_PROVIDER);
 		mockEntitlementService = unitRef.get(EntitlementService);
 		mockDatabase = unitRef.get(DatabaseService);
@@ -237,18 +237,18 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			expect(result.suggestion.status).toBe("DISMISSED");
 			expect(result.message).toContain("거절");
 			expect(result.createdTodosCount).toBeUndefined();
-			expect(mockTodoService.createRecurring).not.toHaveBeenCalled();
+			expect(mockCommandBus.execute).not.toHaveBeenCalled();
 		});
 
-		it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 TodoService.createRecurring을 호출해야 한다", async () => {
-			// Given -PENDING 상태의 제안과 TodoService 응답
+		it("수락 시 상태를 먼저 ACCEPTED로 변경한 후 CreateRecurringTodosCommand를 디스패치해야 한다", async () => {
+			// Given -PENDING 상태의 제안과 핸들러 응답
 			const suggestion = createMockSuggestionEntity();
 			mockRepository.findByIdAndUserId.mockResolvedValue(suggestion);
 
-			mockTodoService.createRecurring.mockResolvedValue({
+			mockCommandBus.execute.mockResolvedValue({
 				todos: [],
 				count: 12,
-			} as never);
+			});
 
 			const updatedSuggestion = createMockSuggestionEntity({
 				status: "ACCEPTED",
@@ -267,20 +267,27 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			const updateStatusOrder =
 				mockRepository.updateStatus.mock.invocationCallOrder[0];
 			const createRecurringOrder =
-				mockTodoService.createRecurring.mock.invocationCallOrder[0];
+				mockCommandBus.execute.mock.invocationCallOrder[0];
 			expect(updateStatusOrder).toBeLessThan(createRecurringOrder as number);
 
 			expect(mockRepository.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
-			expect(mockTodoService.createRecurring).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUserId,
-					title: "팀 미팅",
-					categoryId: 5,
-					daysOfWeek: ["MON", "WED", "FRI"],
-					scheduledTime: "10:00",
-				}),
-				"Asia/Seoul",
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateRecurringTodosCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateRecurringTodosCommand);
+			if (command instanceof CreateRecurringTodosCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						userId: mockUserId,
+						title: "팀 미팅",
+						categoryId: 5,
+						daysOfWeek: ["MON", "WED", "FRI"],
+						scheduledTime: "10:00",
+					}),
+				);
+				expect(command.timezone).toBe("Asia/Seoul");
+			}
 			expect(result.suggestion.status).toBe("ACCEPTED");
 			expect(result.createdTodosCount).toBe(12);
 		});
@@ -295,9 +302,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			});
 			mockRepository.updateStatus.mockResolvedValue(updatedSuggestion);
 
-			mockTodoService.createRecurring.mockRejectedValue(
-				new Error("투두 생성 실패"),
-			);
+			mockCommandBus.execute.mockRejectedValue(new Error("투두 생성 실패"));
 
 			// When & Then: 에러가 전파되어야 한다
 			await expect(
@@ -334,9 +339,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 				)
 				.mockRejectedValueOnce(new Error("DB 연결 끊김"));
 
-			mockTodoService.createRecurring.mockRejectedValue(
-				new Error("투두 생성 실패"),
-			);
+			mockCommandBus.execute.mockRejectedValue(new Error("투두 생성 실패"));
 
 			// When & Then: 롤백 실패와 무관하게 원본 에러("투두 생성 실패")가 전파되어야 한다
 			await expect(

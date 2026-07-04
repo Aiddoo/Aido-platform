@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { DatabaseService } from "@/database/database.service";
 import type { AiReport, Prisma, ReportType } from "@/generated/prisma/client";
 import type { FindReportsParams } from "./types";

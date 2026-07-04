@@ -10,7 +10,7 @@
 
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { createMockUserProfile } from "./__tests__/test-utils";
+import { createMockUserProfile } from "@test/mocks/cache-test-utils";
 import { CacheService } from "./cache.service";
 import {
 	CACHE_SERVICE,

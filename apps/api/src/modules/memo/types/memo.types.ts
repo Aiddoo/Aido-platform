@@ -1,5 +1,5 @@
 import type { DayOfWeek } from "@aido/validators";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 
 export interface CreateMemoData {
 	userId: string;

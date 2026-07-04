@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+/**
+ * 클린아키텍처 영역 타입 안전성 가드
+ *
+ * 아래 대상에서 `as` 타입 단언과 `!` non-null 단언을 금지합니다.
+ * Biome에는 전역 no-assertion 규칙이 없어(noNonNullAssertion만 존재) 이 스크립트로 `as`를 보완합니다.
+ * (import 별칭 `X as Y`, `as const`는 허용)
+ *
+ * 대상:
+ * - src/modules/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
+ * - src/common/domain/**
+ *
+ * 실행: node scripts/check-no-cast.mjs  (실패 시 exit 1)
+ */
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const ROOT = join(import.meta.dirname, "..");
+const TARGET_DIRS = [
+	"src/common/domain",
+	"src/modules/todo/domain",
+	"src/modules/todo/application",
+	"src/modules/todo/infrastructure",
+];
+
+/** 재귀적으로 .ts 파일 수집 */
+function collectTsFiles(dir) {
+	const abs = join(ROOT, dir);
+	let entries;
+	try {
+		entries = readdirSync(abs);
+	} catch {
+		return [];
+	}
+	const files = [];
+	for (const entry of entries) {
+		const full = join(abs, entry);
+		if (statSync(full).isDirectory()) {
+			files.push(...collectTsFiles(relative(ROOT, full)));
+		} else if (entry.endsWith(".ts")) {
+			files.push(full);
+		}
+	}
+	return files;
+}
+
+// `as` 타입 단언: `as Type` / `as {` / `as (` / `as unknown` — `as const`와 import/export 별칭 제외
+const AS_ASSERTION = /\bas\s+(?!const\b)[A-Za-z_{(]/;
+// non-null 단언: 식별자/`)`/`]` 뒤의 `!`, 단 `!=`(비교)는 제외
+const NON_NULL = /[A-Za-z0-9_)\]]!(?![=])/;
+
+const violations = [];
+
+for (const dir of TARGET_DIRS) {
+	for (const file of collectTsFiles(dir)) {
+		const lines = readFileSync(file, "utf8").split("\n");
+		lines.forEach((line, idx) => {
+			const trimmed = line.trim();
+			const isImportLike =
+				trimmed.startsWith("import ") ||
+				trimmed.startsWith("export ") ||
+				trimmed.startsWith("} from") ||
+				line.includes(" from ");
+			if (!isImportLike && AS_ASSERTION.test(line)) {
+				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[as] ${trimmed}`);
+			}
+			if (NON_NULL.test(line)) {
+				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[!]  ${trimmed}`);
+			}
+		});
+	}
+}
+
+if (violations.length > 0) {
+	console.error(
+		`\n❌ 클린아키텍처 영역에서 타입 단언(as)/non-null(!) ${violations.length}건 발견:\n`,
+	);
+	for (const v of violations) {
+		console.error(`  ${v}`);
+	}
+	console.error(
+		"\n타입 단언 없이 정합되도록 수정하세요 (import 별칭·as const는 허용).\n",
+	);
+	process.exit(1);
+}
+
+console.log("✅ 클린아키텍처 영역: as/non-null 단언 없음 (타입세이프 100%)");

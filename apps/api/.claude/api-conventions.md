@@ -609,5 +609,64 @@ pnpm docker:down
 
 ---
 
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-04-05
+## 9. 클린아키텍처(CQRS) 모듈 규칙
+
+> todo 모듈부터 적용 중인 신규 표준. 마이그레이션이 진행 중인 모듈은 레거시 Service 규칙(§3)과 공존한다.
+
+### 디렉터리 구조
+
+```
+modules/{name}/
+  domain/
+    entities/{name}.entity.ts        # AggregateRoot 상속, private ctor + reconstitute + planCreation
+    entities/{child}.entity.ts       # 자식 엔티티 (Entity 상속 — 예: todo-item)
+    events/*.event.ts                # plain readonly-param 클래스 (과거형 사실, 전이 후 상태를 실음)
+    value-objects/*.vo.ts            # EntityId/ValueObject 상속, static create 검증 + reconstitute 무검증
+    services/*.ts                    # 순수 도메인 정책 함수 (예: completion-policy, reorder-position)
+  application/
+    ports/*.port.ts                  # Symbol 토큰 + 인터페이스 (파일당 1포트, 페이로드 계약 소유)
+    types.ts                         # 애플리케이션 파라미터 타입 (프레임워크·Prisma 무의존)
+    use-cases/<kebab>/               # 커맨드 1개 = 엔드포인트 1개 (SRP)
+      <kebab>.command.ts / .handler.ts / .handler.spec.ts
+    queries/<kebab>/                 # 쿼리도 동일 구조 (커맨드와 대칭)
+      <kebab>.query.ts / .handler.ts / .handler.spec.ts
+    events/*.handler.ts              # @EventsHandler 부수효과 핸들러
+  infrastructure/
+    adapters/*.ts                    # 포트 구현 — persistence DAO/타 모듈 서비스에 위임(쿼리 중복 금지)
+    persistence/                     # 행 DAO({name}-row.repository) · 응답 매퍼 · Prisma 행 타입
+```
+
+### 커맨드 핸들러 규칙
+
+| 규칙 | 내용 |
+|------|------|
+| 예외 | `ApplicationException(ErrorCode.XXX, context)` — 유스케이스 규칙 위반. 도메인 불변식은 `DomainException` |
+| 트랜잭션 | `@Inject(TRANSACTION_MANAGER)` → `txManager.run(tx => ...)`. load→mutate→write를 TX 안에 묶는다. tx는 불투명 `TransactionContext` — Prisma 타입 사용 금지. `database.$transaction` 직접 호출 금지 |
+| 부수효과 | 도메인 이벤트로 — 애그리게잇 `raise()` 적립 → TX 안에서 영속화 → **run resolve 후** `eventBus.publishAll(events)` (커밋 후 `@EventsHandler`가 처리) |
+| 캐시 무효화 | 영속화 후 핸들러 인라인 (`TodoCachePort` 등 캐시 포트) |
+| 응답 | 애그리게잇에서 직접 만들지 않는다 — 항상 read 포트(`~ReadRepositoryPort`) 재조회 |
+| 이벤트 발행 | TX 콜백이 `todo.pullDomainEvents()`를 반환하고, 핸들러는 run resolve 후 `eventBus.publishAll(events)` (도메인은 @nestjs/cqrs 무의존) |
+| 크로스 모듈 | 타 모듈 구체 클래스 import 금지 — 포트 + 어댑터로 역전 |
+| 타입 | `as`/`!` 금지(`pnpm lint:no-cast`), 임포트 경계는 `pnpm lint:boundaries` — 둘 다 수동 게이트. 커맨드/쿼리는 `Command<T>`/`Query<T>` 확장으로 버스 반환 타입 추론 |
+| 가독성 | JSDoc에 흐름 요약, `execute()` 본문은 번호 주석으로 위→아래 단일 경로 |
+
+### 컨트롤러 규칙 (CQRS 전환분)
+
+- `CommandBus`/`QueryBus`만 주입 — 서비스 직접 호출 금지
+- DTO → Command 매핑과 날짜/타임존 파싱(`parseDateOnly`, `parseLocalDateTime`)은 컨트롤러 책임
+- Swagger 데코레이터는 마이그레이션 중 **절대 변경 금지** (openapi-contract 스냅샷이 게이트)
+
+### 도메인 규칙
+
+- 애그리게잇: `private constructor` + `static reconstitute(props)`. 행동 메서드에서만 상태 전이 + `raise(event)` (이벤트는 전이 후 **사실**을 실음 — 명령 에코 금지)
+- 생성 불변식·기본값은 `static planCreation(input)` 단일 지점 — autoincrement id 제약으로 `create()` 팩토리 대신 계획 패턴 (엔티티 JSDoc 참조)
+- props는 가능하면 VO로 저장 (예: `schedule: TodoSchedule`) — 불변식이 타입 수준에서 유지
+- 자식 엔티티(예: TodoItem)의 불변식(개수 한도·존재·제목)은 애그리게잇 행동 메서드가 소유 — 핸들러의 직접 검증 금지
+- 판단 규칙(마일스톤·전체완료·재정렬 계산 등)은 `domain/services/`의 순수 정책 함수로 — 이벤트 핸들러에 상주 금지
+- VO: `static create()` 검증(위반 시 `DomainException`) + `static reconstitute()` 무검증 복원(DB 전용)
+- Zod는 경계 검증, 도메인 불변식은 자기방어 — 역할이 다르므로 중복이 아니다
+
+---
+
+**문서 버전**: 3.1.0
+**최종 수정일**: 2026-07-04

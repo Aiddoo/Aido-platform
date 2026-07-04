@@ -9,5 +9,7 @@ export * from "./fake-bull-queue";
 export * from "./fake-email.service";
 export * from "./jose.mock";
 export * from "./mock-database.factory";
+// 포트 mock 팩토리 (Symbol 토큰 포트용)
+export * from "./ports";
 export * from "./prisma.mock";
 export * from "./transaction.mock";
