@@ -22,9 +22,17 @@ export abstract class ValueObject<TValue> {
 		if (other === null || other === undefined) {
 			return false;
 		}
+		if (other === this) {
+			return true;
+		}
 		if (other.constructor !== this.constructor) {
 			return false;
 		}
+		// 원시 값·동일 참조는 직렬화 없이 즉시 판정 (EntityId 등 빈번 비교 최적화)
+		if (Object.is(this.value, other.value)) {
+			return true;
+		}
+		// 구조 비교 폴백 — VO props는 내부에서 고정 키 순서로 생성되므로 안전
 		return JSON.stringify(this.value) === JSON.stringify(other.value);
 	}
 }
