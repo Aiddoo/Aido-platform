@@ -9,25 +9,80 @@
  * pnpm --filter @aido/api test todo.controller
  * ```
  */
-import type { Todo } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/validators";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/modules/auth/decorators";
 
+import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
+import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
 import type {
 	CreateRecurringTodoDto,
 	CreateTodoDto,
 	GetTodosQueryDto,
 	TodoIdParamDto,
 } from "./dtos";
+import { TodoMapper } from "./infrastructure/persistence/todo-response.mapper";
+import type { TodoWithCategory } from "./infrastructure/persistence/todo-row.types";
 import { TodoController } from "./todo.controller";
-import { TodoService } from "./todo.service";
+
+/** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
+function buildResponse(
+	overrides: Partial<TodoWithCategory> = {},
+): TodoResponse {
+	return TodoMapper.toResponse(
+		TodoBuilder.create("user-123")
+			.withId(overrides.id ?? 1)
+			.withTitle(overrides.title ?? "팀 미팅")
+			.build(),
+	);
+}
+
+/** 타입 지정 CreateTodoDto 팩토리 (as 캐스팅 없이 부분 오버라이드) */
+function makeCreateTodoDto(
+	overrides: Partial<CreateTodoDto> = {},
+): CreateTodoDto {
+	return {
+		title: "팀 미팅",
+		categoryId: 1,
+		startDate: "2026-02-22",
+		isAllDay: true,
+		visibility: "PUBLIC",
+		...overrides,
+	};
+}
+
+/** 타입 지정 GetTodosQueryDto 팩토리 */
+function makeGetTodosQueryDto(
+	overrides: Partial<GetTodosQueryDto> = {},
+): GetTodosQueryDto {
+	return { size: 20, ...overrides };
+}
+
+/** 타입 지정 CreateRecurringTodoDto 팩토리 */
+function makeRecurringDto(
+	overrides: Partial<CreateRecurringTodoDto> = {},
+): CreateRecurringTodoDto {
+	return {
+		title: "약 먹기",
+		categoryId: 1,
+		startDate: "2026-03-01",
+		endDate: "2026-03-31",
+		daysOfWeek: ["MON", "WED", "FRI"],
+		isAllDay: true,
+		visibility: "PUBLIC",
+		...overrides,
+	};
+}
 
 describe("TodoController — 할 일 컨트롤러", () => {
 	let controller: TodoController;
-	let mockTodoService: Mocked<TodoService>;
+	let mockCommandBus: Mocked<CommandBus>;
+	let mockQueryBus: Mocked<QueryBus>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -40,129 +95,123 @@ describe("TodoController — 할 일 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoController).compile();
 
 		controller = unit;
-		mockTodoService = unitRef.get(TodoService);
+		mockCommandBus = unitRef.get(CommandBus);
+		mockQueryBus = unitRef.get(QueryBus);
 	});
 
 	describe("create", () => {
-		it("할 일 생성 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 할 일 생성 DTO와 서비스 응답이 준비되었을 때
-			const dto = {
-				title: "팀 미팅",
-				categoryId: 1,
-				startDate: "2026-02-22",
-				isAllDay: true,
-				visibility: "PUBLIC",
-			} as unknown as CreateTodoDto;
+		it("할 일 생성 요청을 CommandBus에 위임하고 응답 read model을 반환해야 한다", async () => {
+			// Given - 할 일 생성 DTO와 커맨드 핸들러가 반환할 응답이 준비되었을 때
+			const dto = makeCreateTodoDto({ title: "팀 미팅" });
 			const tz = "Asia/Seoul";
-			const mockTodo = TodoBuilder.create("user-123")
-				.withId(1)
-				.withTitle("팀 미팅")
-				.withStartDate(new Date("2026-02-22"))
-				.withIsAllDay(true)
-				.build() as unknown as Todo;
-			mockTodoService.create.mockResolvedValue(mockTodo);
+			const response = buildResponse({ title: "팀 미팅" });
+			mockCommandBus.execute.mockResolvedValue(response);
 
 			// When - create를 호출하면
 			const result = await controller.create(mockUser, dto, tz);
 
-			// Then - 서비스에 변환된 데이터를 전달하고 응답을 반환해야 한다
-			expect(mockTodoService.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUser.userId,
-					title: dto.title,
-					categoryId: dto.categoryId,
-					isAllDay: dto.isAllDay,
-					visibility: dto.visibility,
-				}),
+			// Then - CreateTodoCommand를 디스패치하고 응답을 그대로 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateTodoCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateTodoCommand);
+			if (command instanceof CreateTodoCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						userId: mockUser.userId,
+						title: dto.title,
+						categoryId: dto.categoryId,
+						isAllDay: dto.isAllDay,
+						visibility: dto.visibility,
+					}),
+				);
+			}
 			expect(result).toEqual({
 				message: "할 일이 생성되었습니다.",
-				todo: mockTodo,
+				todo: response,
 			});
 		});
 	});
 
 	describe("findMany", () => {
-		it("할 일 목록 조회 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 목록 조회 쿼리와 서비스 응답이 준비되었을 때
-			const query = { size: 20 } as unknown as GetTodosQueryDto;
-			const serviceResult = {
+		it("할 일 목록 조회 요청을 QueryBus에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 목록 조회 쿼리와 쿼리 핸들러 응답이 준비되었을 때
+			const query = makeGetTodosQueryDto();
+			const queryResult = {
 				items: [
-					TodoBuilder.create("user-123").withId(1).withTitle("할 일 1").build(),
-					TodoBuilder.create("user-123").withId(2).withTitle("할 일 2").build(),
-				] as unknown as Todo[],
+					buildResponse({ id: 1, title: "할 일 1" }),
+					buildResponse({ id: 2, title: "할 일 2" }),
+				],
 				pagination: {
 					hasNext: false,
 					nextCursor: null,
 					size: 20,
 				},
 			};
-			mockTodoService.findMany.mockResolvedValue(serviceResult);
+			mockQueryBus.execute.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - 서비스에 userId를 포함한 쿼리를 전달하고 결과를 반환해야 한다
-			expect(mockTodoService.findMany).toHaveBeenCalledWith(
+			// Then - userId를 포함한 GetTodosQuery를 디스패치하고 결과를 반환해야 한다
+			expect(mockQueryBus.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: mockUser.userId,
-					size: query.size,
+					params: expect.objectContaining({
+						userId: mockUser.userId,
+						size: query.size,
+					}),
 				}),
 			);
 			expect(result).toEqual({
-				items: serviceResult.items,
-				pagination: serviceResult.pagination,
+				items: queryResult.items,
+				pagination: queryResult.pagination,
 			});
 		});
 
-		it("날짜 필터가 있으면 변환하여 서비스에 전달해야 한다", async () => {
+		it("날짜 필터가 있으면 변환하여 쿼리에 전달해야 한다", async () => {
 			// Given - 날짜 필터가 포함된 쿼리가 있을 때
-			const query = {
-				size: 20,
+			const query = makeGetTodosQueryDto({
 				startDate: "2026-02-01",
 				endDate: "2026-02-28",
-			} as unknown as GetTodosQueryDto;
-			const serviceResult = {
-				items: [] as Todo[],
+			});
+			const queryResult = {
+				items: [],
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
-			mockTodoService.findMany.mockResolvedValue(serviceResult);
+			mockQueryBus.execute.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - 날짜가 parseDateOnly로 변환되어 서비스에 전달되어야 한다
-			expect(mockTodoService.findMany).toHaveBeenCalledWith(
+			// Then - 날짜가 parseDateOnly로 변환되어 쿼리에 전달되어야 한다
+			expect(mockQueryBus.execute).toHaveBeenCalledWith(
 				expect.objectContaining({
-					userId: mockUser.userId,
-					startDate: expect.any(Date),
-					endDate: expect.any(Date),
+					params: expect.objectContaining({
+						userId: mockUser.userId,
+						startDate: expect.any(Date),
+						endDate: expect.any(Date),
+					}),
 				}),
 			);
 			expect(result).toEqual({
 				items: [],
-				pagination: serviceResult.pagination,
+				pagination: queryResult.pagination,
 			});
 		});
 	});
 
 	describe("createRecurring", () => {
-		it("반복 할 일 생성 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 반복 할 일 생성 DTO와 서비스 응답이 준비되었을 때
-			const dto = {
-				title: "약 먹기",
-				categoryId: 1,
-				startDate: "2026-03-01",
-				endDate: "2026-03-31",
-				daysOfWeek: ["MON", "WED", "FRI"],
-			} as unknown as CreateRecurringTodoDto;
+		it("반복 할 일 생성 요청을 CommandBus에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 반복 할 일 생성 DTO와 핸들러 응답이 준비되었을 때
+			const dto = makeRecurringDto();
 			const tz = "Asia/Seoul";
 			const mockTodos = [
-				TodoBuilder.create("user-123").withTitle("약 먹기").withId(1).build(),
-				TodoBuilder.create("user-123").withTitle("약 먹기").withId(2).build(),
-				TodoBuilder.create("user-123").withTitle("약 먹기").withId(3).build(),
-			] as unknown as Todo[];
-			mockTodoService.createRecurring.mockResolvedValue({
+				buildResponse({ id: 1, title: "약 먹기" }),
+				buildResponse({ id: 2, title: "약 먹기" }),
+				buildResponse({ id: 3, title: "약 먹기" }),
+			];
+			mockCommandBus.execute.mockResolvedValue({
 				todos: mockTodos,
 				count: 3,
 			});
@@ -170,18 +219,25 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			// When - createRecurring을 호출하면
 			const result = await controller.createRecurring(mockUser, dto, tz);
 
-			// Then - 서비스에 데이터를 전달하고 응답을 반환해야 한다
-			expect(mockTodoService.createRecurring).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUser.userId,
-					title: dto.title,
-					categoryId: dto.categoryId,
-					startDate: dto.startDate,
-					endDate: dto.endDate,
-					daysOfWeek: dto.daysOfWeek,
-				}),
-				tz,
+			// Then - CreateRecurringTodosCommand를 디스패치하고 응답을 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateRecurringTodosCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateRecurringTodosCommand);
+			if (command instanceof CreateRecurringTodosCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						userId: mockUser.userId,
+						title: dto.title,
+						categoryId: dto.categoryId,
+						startDate: dto.startDate,
+						endDate: dto.endDate,
+						daysOfWeek: dto.daysOfWeek,
+					}),
+				);
+				expect(command.timezone).toBe(tz);
+			}
 			expect(result).toEqual({
 				message: "반복 할 일이 3개 생성되었습니다.",
 				todos: mockTodos,
@@ -191,22 +247,11 @@ describe("TodoController — 할 일 컨트롤러", () => {
 
 		it("생성된 수에 맞는 메시지를 반환해야 한다", async () => {
 			// Given - 13개의 반복 할 일이 생성되는 경우
-			const dto = {
-				title: "운동하기",
-				categoryId: 2,
-				startDate: "2026-03-01",
-				endDate: "2026-03-31",
-				daysOfWeek: ["MON", "WED", "FRI"],
-			} as unknown as CreateRecurringTodoDto;
-			const mockTodos = Array.from(
-				{ length: 13 },
-				(_, i) =>
-					TodoBuilder.create("user-123")
-						.withTitle("운동하기")
-						.withId(i + 1)
-						.build() as unknown as Todo,
+			const dto = makeRecurringDto({ title: "운동하기", categoryId: 2 });
+			const mockTodos = Array.from({ length: 13 }, (_, i) =>
+				buildResponse({ id: i + 1, title: "운동하기" }),
 			);
-			mockTodoService.createRecurring.mockResolvedValue({
+			mockCommandBus.execute.mockResolvedValue({
 				todos: mockTodos,
 				count: 13,
 			});
@@ -221,19 +266,24 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("delete", () => {
-		it("할 일 삭제 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
+		it("할 일 삭제 요청을 CommandBus에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given - 삭제할 할 일 ID가 있을 때
-			const params = { id: 1 } as unknown as TodoIdParamDto;
-			mockTodoService.delete.mockResolvedValue(undefined);
+			const params: TodoIdParamDto = { id: 1 };
+			mockCommandBus.execute.mockResolvedValue(undefined);
 
 			// When - delete를 호출하면
 			const result = await controller.delete(mockUser, params);
 
-			// Then - 서비스에 id와 userId를 전달하고 메시지를 반환해야 한다
-			expect(mockTodoService.delete).toHaveBeenCalledWith(
-				params.id,
-				mockUser.userId,
+			// Then - DeleteTodoCommand를 디스패치하고 메시지를 반환해야 한다
+			expect(mockCommandBus.execute).toHaveBeenCalledWith(
+				expect.any(DeleteTodoCommand),
 			);
+			const command = mockCommandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(DeleteTodoCommand);
+			if (command instanceof DeleteTodoCommand) {
+				expect(command.id).toBe(params.id);
+				expect(command.userId).toBe(mockUser.userId);
+			}
 			expect(result).toEqual({
 				message: "할 일이 삭제되었습니다.",
 			});

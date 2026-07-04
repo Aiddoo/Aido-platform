@@ -8,13 +8,14 @@
  */
 
 import { MEMO_LIMITS } from "@aido/validators";
+import { CommandBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { MemoBuilder } from "@test/builders";
 import { CacheService } from "@/common/cache/cache.service";
 import { PaginationService } from "@/common/pagination";
 import { DatabaseService } from "@/database/database.service";
-import { TodoService } from "@/modules/todo/todo.service";
+import { CreateRecurringTodosCommand, CreateTodoCommand } from "@/modules/todo";
 import { MemoRepository } from "./memo.repository";
 import { MemoService } from "./memo.service";
 
@@ -22,7 +23,7 @@ describe("MemoService — 메모 서비스", () => {
 	let service: MemoService;
 	let memoRepo: Mocked<MemoRepository>;
 	let database: Mocked<DatabaseService>;
-	let todoService: Mocked<TodoService>;
+	let commandBus: Mocked<CommandBus>;
 	let cacheService: Mocked<CacheService>;
 	let _paginationService: Mocked<PaginationService>;
 
@@ -37,7 +38,7 @@ describe("MemoService — 메모 서비스", () => {
 		service = unit;
 		memoRepo = unitRef.get(MemoRepository);
 		database = unitRef.get(DatabaseService);
-		todoService = unitRef.get(TodoService);
+		commandBus = unitRef.get(CommandBus);
 		cacheService = unitRef.get(CacheService);
 		_paginationService = unitRef.get(PaginationService);
 
@@ -294,7 +295,7 @@ describe("MemoService — 메모 서비스", () => {
 				.withContent("할 일로 변환할 메모")
 				.build();
 			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
-			(todoService.create as jest.Mock).mockResolvedValue({
+			commandBus.execute.mockResolvedValue({
 				id: 1,
 				title: "할 일로 변환할 메모",
 			});
@@ -310,12 +311,19 @@ describe("MemoService — 메모 서비스", () => {
 			// Then
 			expect(result.message).toBeDefined();
 			expect(result.todo).toBeDefined();
-			expect(todoService.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUserId,
-					title: "할 일로 변환할 메모",
-				}),
+			expect(commandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateTodoCommand),
 			);
+			const command = commandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateTodoCommand);
+			if (command instanceof CreateTodoCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						userId: mockUserId,
+						title: "할 일로 변환할 메모",
+					}),
+				);
+			}
 			expect(memoRepo.delete).toHaveBeenCalledWith(memo.id);
 		});
 
@@ -326,7 +334,7 @@ describe("MemoService — 메모 서비스", () => {
 				.withContent(longContent)
 				.build();
 			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
-			(todoService.create as jest.Mock).mockResolvedValue({
+			commandBus.execute.mockResolvedValue({
 				id: 1,
 				title: longContent.substring(0, 200),
 			});
@@ -336,16 +344,20 @@ describe("MemoService — 메모 서비스", () => {
 			await service.convertToTodo(mockUserId, memo.id, convertData);
 
 			// Then
-			expect(todoService.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: longContent.substring(0, 200),
-				}),
-			);
-			expect(todoService.create).toHaveBeenCalledWith(
-				expect.not.objectContaining({
-					content: expect.anything(),
-				}),
-			);
+			const command = commandBus.execute.mock.calls[0]?.[0];
+			expect(command).toBeInstanceOf(CreateTodoCommand);
+			if (command instanceof CreateTodoCommand) {
+				expect(command.data).toEqual(
+					expect.objectContaining({
+						title: longContent.substring(0, 200),
+					}),
+				);
+				expect(command.data).toEqual(
+					expect.not.objectContaining({
+						content: expect.anything(),
+					}),
+				);
+			}
 		});
 
 		it("메모가 없으면 에러를 던져야 한다", async () => {
@@ -385,7 +397,7 @@ describe("MemoService — 메모 서비스", () => {
 				.withContent("버그 수정, 스터디 자료")
 				.build();
 			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
-			(todoService.create as jest.Mock)
+			commandBus.execute
 				.mockResolvedValueOnce({ id: 1, title: "버그 수정" })
 				.mockResolvedValueOnce({ id: 2, title: "스터디 자료 올리기" });
 			(memoRepo.delete as jest.Mock).mockResolvedValue(memo);
@@ -400,17 +412,17 @@ describe("MemoService — 메모 서비스", () => {
 			// Then
 			expect(result.todos).toHaveLength(2);
 			expect(result.message).toContain("2개");
-			expect(todoService.create).toHaveBeenCalledTimes(2);
+			expect(commandBus.execute).toHaveBeenCalledTimes(2);
 			expect(memoRepo.delete).toHaveBeenCalledWith(memo.id);
 		});
 
-		it("반복 일정은 createRecurring을 호출해야 한다", async () => {
+		it("반복 일정은 CreateRecurringTodosCommand를 디스패치해야 한다", async () => {
 			// Given
 			const memo = MemoBuilder.create(mockUserId)
 				.withContent("매주 수요일 학원")
 				.build();
 			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
-			(todoService.createRecurring as jest.Mock).mockResolvedValue({
+			commandBus.execute.mockResolvedValue({
 				todos: [
 					{ id: 10, title: "학원" },
 					{ id: 11, title: "학원" },
@@ -437,7 +449,10 @@ describe("MemoService — 메모 서비스", () => {
 			});
 
 			// Then
-			expect(todoService.createRecurring).toHaveBeenCalledTimes(1);
+			expect(commandBus.execute).toHaveBeenCalledTimes(1);
+			expect(commandBus.execute).toHaveBeenCalledWith(
+				expect.any(CreateRecurringTodosCommand),
+			);
 			expect(result.todos).toHaveLength(2);
 		});
 
@@ -445,7 +460,7 @@ describe("MemoService — 메모 서비스", () => {
 			// Given
 			const memo = MemoBuilder.create(mockUserId).withContent("테스트").build();
 			(memoRepo.findByIdAndUserId as jest.Mock).mockResolvedValue(memo);
-			(todoService.create as jest.Mock).mockResolvedValue({
+			commandBus.execute.mockResolvedValue({
 				id: 1,
 				title: "테스트",
 			});

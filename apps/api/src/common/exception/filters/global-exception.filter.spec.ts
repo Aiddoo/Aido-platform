@@ -9,6 +9,8 @@ import { HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { PinoLogger } from "nestjs-pino";
 import type { TypedConfigService } from "@/common/config/services/config.service";
+import { ApplicationException } from "@/common/domain/exceptions/application.exception";
+import { DomainException } from "@/common/domain/exceptions/domain.exception";
 import { Prisma } from "@/generated/prisma/client";
 import { BusinessExceptions } from "../services/business-exception.service";
 import { GlobalExceptionFilter } from "./global-exception.filter";
@@ -330,6 +332,76 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			// Given
 			filter = createFilter(false);
 			const exception = new Error("unexpected error");
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.details).toBeUndefined();
+		});
+	});
+
+	describe("Domain/Application 예외 정규화", () => {
+		it("DomainException을 BusinessException과 동일한 응답 포맷으로 변환한다", () => {
+			// Given
+			const exception = new DomainException(ErrorCode.TODO_0801, {
+				todoId: 1,
+			});
+			const expected = BusinessExceptions.todoNotFound(1);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then - 동일 ErrorCode의 BusinessException과 상태/바디가 동일
+			expect(mockResponse.status).toHaveBeenCalledWith(expected.getStatus());
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			const expectedResponse = expected.getResponse() as {
+				error: { code: string; message: string; details: unknown };
+			};
+			expect(jsonArg.error.code).toBe(expectedResponse.error.code);
+			expect(jsonArg.error.message).toBe(expectedResponse.error.message);
+			expect(jsonArg.error.details).toEqual(expectedResponse.error.details);
+			expect(jsonArg.success).toBe(false);
+		});
+
+		it("ApplicationException을 BusinessException과 동일한 응답 포맷으로 변환한다", () => {
+			// Given
+			const exception = new ApplicationException(ErrorCode.USER_0601, {
+				userId: "user-123",
+			});
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.code).toBe(ErrorCode.USER_0601);
+			expect(jsonArg.success).toBe(false);
+		});
+
+		it("커스텀 메시지가 있는 DomainException은 메시지를 보존한다", () => {
+			// Given
+			const exception = new DomainException(
+				ErrorCode.TODO_0801,
+				undefined,
+				"커스텀 도메인 메시지",
+			);
+
+			// When
+			filter.catch(exception, mockHost as never);
+
+			// Then
+			const jsonArg = mockResponse.json.mock.calls[0][0];
+			expect(jsonArg.error.message).toBe("커스텀 도메인 메시지");
+		});
+
+		it("production 환경에서 DomainException의 details가 제거된다", () => {
+			// Given
+			filter = createFilter(false);
+			const exception = new DomainException(ErrorCode.TODO_0801, {
+				todoId: 1,
+			});
 
 			// When
 			filter.catch(exception, mockHost as never);

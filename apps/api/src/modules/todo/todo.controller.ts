@@ -13,11 +13,12 @@ import {
 	Post,
 	Query,
 } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
 import { Timezone } from "@/common/decorators";
-
+import { UserIdParamDto } from "@/common/dtos";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -28,10 +29,25 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
-
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { UserIdParamDto } from "../follow/dtos";
-
+import { GetFriendTodosQuery } from "./application/queries/get-friend-todos/get-friend-todos.query";
+import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id/get-todo-by-id.query";
+import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit/get-todo-resource-limit.query";
+import { GetTodosQuery } from "./application/queries/get-todos/get-todos.query";
+import { AddTodoItemCommand } from "./application/use-cases/add-todo-item/add-todo-item.command";
+import { ChangeTodoCategoryCommand } from "./application/use-cases/change-todo-category/change-todo-category.command";
+import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
+import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
+import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
+import { DeleteTodoItemCommand } from "./application/use-cases/delete-todo-item/delete-todo-item.command";
+import { ReorderTodoCommand } from "./application/use-cases/reorder-todo/reorder-todo.command";
+import { ReorderTodoItemsCommand } from "./application/use-cases/reorder-todo-items/reorder-todo-items.command";
+import { ToggleTodoCompleteCommand } from "./application/use-cases/toggle-todo-complete/toggle-todo-complete.command";
+import { UpdateTodoCommand } from "./application/use-cases/update-todo/update-todo.command";
+import { UpdateTodoItemCommand } from "./application/use-cases/update-todo-item/update-todo-item.command";
+import { UpdateTodoScheduleCommand } from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
+import { UpdateTodoTitleCommand } from "./application/use-cases/update-todo-title/update-todo-title.command";
+import { UpdateTodoVisibilityCommand } from "./application/use-cases/update-todo-visibility/update-todo-visibility.command";
 import {
 	ChangeTodoCategoryDto,
 	CreateRecurringTodoDto,
@@ -59,7 +75,6 @@ import {
 	UpdateTodoTitleDto,
 	UpdateTodoVisibilityDto,
 } from "./dtos";
-import { TodoService } from "./todo.service";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -67,7 +82,10 @@ import { TodoService } from "./todo.service";
 export class TodoController {
 	readonly #logger = new Logger(TodoController.name);
 
-	constructor(private readonly todoService: TodoService) {}
+	constructor(
+		private readonly commandBus: CommandBus,
+		private readonly queryBus: QueryBus,
+	) {}
 
 	@Get("resource-limit")
 	@ApiDoc({
@@ -86,7 +104,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: TodoResourceLimitQueryDto,
 	): Promise<TodoResourceLimitResponseDto> {
-		return this.todoService.getResourceLimitInfo(user.userId, query.categoryId);
+		return this.queryBus.execute(
+			new GetTodoResourceLimitQuery(user.userId, query.categoryId),
+		);
 	}
 
 	@Post()
@@ -152,19 +172,21 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<CreateTodoResponseDto> {
 		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
-		const todo = await this.todoService.create({
-			userId: user.userId,
-			title: dto.title,
-			categoryId: dto.categoryId,
-			startDate: parseDateOnly(dto.startDate),
-			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-			scheduledTime: dto.scheduledTime
-				? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-				: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			items: dto.items,
-		});
+		const todo = await this.commandBus.execute(
+			new CreateTodoCommand({
+				userId: user.userId,
+				title: dto.title,
+				categoryId: dto.categoryId,
+				startDate: parseDateOnly(dto.startDate),
+				endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
+				scheduledTime: dto.scheduledTime
+					? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+					: undefined,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+				items: dto.items,
+			}),
+		);
 
 		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
@@ -214,19 +236,21 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
 		);
 
-		const result = await this.todoService.createRecurring(
-			{
-				userId: user.userId,
-				title: dto.title,
-				categoryId: dto.categoryId,
-				startDate: dto.startDate,
-				endDate: dto.endDate,
-				daysOfWeek: dto.daysOfWeek,
-				scheduledTime: dto.scheduledTime,
-				isAllDay: dto.isAllDay,
-				visibility: dto.visibility,
-			},
-			tz,
+		const result = await this.commandBus.execute(
+			new CreateRecurringTodosCommand(
+				{
+					userId: user.userId,
+					title: dto.title,
+					categoryId: dto.categoryId,
+					startDate: dto.startDate,
+					endDate: dto.endDate,
+					daysOfWeek: dto.daysOfWeek,
+					scheduledTime: dto.scheduledTime,
+					isAllDay: dto.isAllDay,
+					visibility: dto.visibility,
+				},
+				tz,
+			),
 		);
 
 		this.#logger.log(
@@ -377,16 +401,18 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
 		);
 
-		const result = await this.todoService.findMany({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.size,
-			completed: query.completed,
-			categoryId: query.categoryId,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+		const result = await this.queryBus.execute(
+			new GetTodosQuery({
+				userId: user.userId,
+				cursor: query.cursor,
+				size: query.size,
+				completed: query.completed,
+				categoryId: query.categoryId,
+				// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+				startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+				endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+			}),
+		);
 
 		return {
 			items: result.items,
@@ -411,9 +437,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<TodoResponseDto> {
 		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.findById(params.id, user.userId);
-
-		return todo;
+		return this.queryBus.execute(new GetTodoByIdQuery(params.id, user.userId));
 	}
 
 	@Get("friends/:userId")
@@ -465,15 +489,17 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`,
 		);
 
-		const result = await this.todoService.findFriendTodos({
-			userId: user.userId,
-			friendUserId: params.userId,
-			cursor: query.cursor,
-			size: query.size,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+		const result = await this.queryBus.execute(
+			new GetFriendTodosQuery({
+				userId: user.userId,
+				friendUserId: params.userId,
+				cursor: query.cursor,
+				size: query.size,
+				// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+				startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+				endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+			}),
+		);
 
 		return {
 			items: result.items,
@@ -509,26 +535,28 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.update(params.id, user.userId, {
-			title: dto.title,
-			categoryId: dto.categoryId,
-			startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
-			endDate:
-				dto.endDate === null
-					? null
-					: dto.endDate
-						? parseDateOnly(dto.endDate)
-						: undefined,
-			scheduledTime:
-				dto.scheduledTime === null
-					? null
-					: dto.scheduledTime && dto.startDate
-						? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-						: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			completed: dto.completed,
-		});
+		const todo = await this.commandBus.execute(
+			new UpdateTodoCommand(params.id, user.userId, {
+				title: dto.title,
+				categoryId: dto.categoryId,
+				startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
+				endDate:
+					dto.endDate === null
+						? null
+						: dto.endDate
+							? parseDateOnly(dto.endDate)
+							: undefined,
+				scheduledTime:
+					dto.scheduledTime === null
+						? null
+						: dto.scheduledTime && dto.startDate
+							? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+							: undefined,
+				isAllDay: dto.isAllDay,
+				visibility: dto.visibility,
+				completed: dto.completed,
+			}),
+		);
 
 		this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
 
@@ -573,11 +601,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.toggleComplete(
-			params.id,
-			user.userId,
-			dto,
-			tz,
+		const todo = await this.commandBus.execute(
+			new ToggleTodoCompleteCommand(params.id, user.userId, dto.completed, tz),
 		);
 
 		return {
@@ -610,10 +635,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateVisibility(
-			params.id,
-			user.userId,
-			dto,
+		const todo = await this.commandBus.execute(
+			new UpdateTodoVisibilityCommand(params.id, user.userId, dto.visibility),
 		);
 
 		return {
@@ -645,10 +668,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateCategory(
-			params.id,
-			user.userId,
-			dto,
+		const todo = await this.commandBus.execute(
+			new ChangeTodoCategoryCommand(params.id, user.userId, dto.categoryId),
 		);
 
 		return {
@@ -670,7 +691,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 		operationId: "updateTodoSchedule",
 		description: `할 일의 날짜와 시간을 변경합니다.
 
-**요청 필드** (모두 선택)
+**요청 필드** (\`startDate\` 필수, 나머지 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
 - \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
@@ -690,11 +711,15 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateSchedule(
-			params.id,
-			user.userId,
-			dto,
-			tz,
+		const todo = await this.commandBus.execute(
+			new UpdateTodoScheduleCommand(params.id, user.userId, {
+				startDate: parseDateOnly(dto.startDate),
+				endDate: dto.endDate ? parseDateOnly(dto.endDate) : null,
+				scheduledTime: dto.scheduledTime
+					? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+					: null,
+				isAllDay: dto.isAllDay ?? true,
+			}),
 		);
 
 		return {
@@ -724,9 +749,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<UpdateTodoResponseDto> {
 		this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.todoService.updateTitle(params.id, user.userId, {
-			title: dto.title,
-		});
+		const todo = await this.commandBus.execute(
+			new UpdateTodoTitleCommand(params.id, user.userId, dto.title),
+		);
 
 		return {
 			message: "할 일이 수정되었습니다.",
@@ -758,7 +783,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.reorder(params.id, user.userId, dto);
+		const todo = await this.commandBus.execute(
+			new ReorderTodoCommand(
+				params.id,
+				user.userId,
+				dto.targetTodoId,
+				dto.position,
+			),
+		);
 
 		return {
 			message: "할 일 순서가 변경되었습니다.",
@@ -784,7 +816,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 	): Promise<DeleteTodoResponseDto> {
 		this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
 
-		await this.todoService.delete(params.id, user.userId);
+		await this.commandBus.execute(
+			new DeleteTodoCommand(params.id, user.userId),
+		);
 
 		this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
 
@@ -840,7 +874,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.addItem(params.id, user.userId, dto);
+		const todo = await this.commandBus.execute(
+			new AddTodoItemCommand(params.id, user.userId, dto.title),
+		);
 
 		return {
 			message: "하위 항목이 추가되었습니다.",
@@ -887,10 +923,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.reorderItems(
-			params.id,
-			user.userId,
-			dto,
+		const todo = await this.commandBus.execute(
+			new ReorderTodoItemsCommand(params.id, user.userId, dto.itemIds),
 		);
 
 		return {
@@ -945,11 +979,11 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.updateItem(
-			params.id,
-			params.itemId,
-			user.userId,
-			dto,
+		const todo = await this.commandBus.execute(
+			new UpdateTodoItemCommand(params.id, params.itemId, user.userId, {
+				title: dto.title,
+				completed: dto.completed,
+			}),
 		);
 
 		return {
@@ -993,10 +1027,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 			`Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
 		);
 
-		const todo = await this.todoService.deleteItem(
-			params.id,
-			params.itemId,
-			user.userId,
+		const todo = await this.commandBus.execute(
+			new DeleteTodoItemCommand(params.id, params.itemId, user.userId),
 		);
 
 		return {

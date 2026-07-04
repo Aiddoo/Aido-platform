@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/nestjs";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { ErrorCodedException } from "@/common/domain/exceptions/error-coded.exception";
 import { Prisma } from "@/generated/prisma/client";
 import type { ErrorResponse } from "../interfaces/error.interface";
 import {
@@ -35,13 +36,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		const response = ctx.getResponse<Response>();
 		const request = ctx.getRequest<Request>();
 
+		// Domain/Application 예외(순수 계층) → BusinessException 정규화
+		// 동일 ErrorCode를 사용하므로 응답 포맷이 기존과 바이트 단위로 동일
+		const normalized =
+			exception instanceof ErrorCodedException
+				? new BusinessException(
+						exception.errorCode,
+						exception.details,
+						exception.message,
+					)
+				: exception;
+
 		let errorResponse: ErrorResponse;
 		let statusCode: HttpStatus;
 
-		if (exception instanceof BusinessException) {
+		if (normalized instanceof BusinessException) {
 			// Business Exception 처리
-			statusCode = exception.getStatus();
-			const response = exception.getResponse() as ErrorResponse;
+			statusCode = normalized.getStatus();
+			const response = normalized.getResponse() as ErrorResponse;
 
 			// 프로덕션에서는 details 필드 제거 (민감 정보 노출 방지)
 			if (
@@ -56,10 +68,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 			} else {
 				errorResponse = response;
 			}
-		} else if (exception instanceof HttpException) {
+		} else if (normalized instanceof HttpException) {
 			// HTTP Exception 처리
-			statusCode = exception.getStatus();
-			const exceptionResponse = exception.getResponse();
+			statusCode = normalized.getStatus();
+			const exceptionResponse = normalized.getResponse();
 
 			if (
 				typeof exceptionResponse === "object" &&
@@ -83,15 +95,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 					success: false,
 					error: {
 						code: ErrorCode.SYS_0001,
-						message: exception.message,
+						message: normalized.message,
 					},
 					timestamp: Date.now(),
 				};
 			}
-		} else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+		} else if (normalized instanceof Prisma.PrismaClientKnownRequestError) {
 			// Prisma 에러 처리
 			const businessException =
-				this.#mapPrismaErrorToBusinessException(exception);
+				this.#mapPrismaErrorToBusinessException(normalized);
 			statusCode = businessException.getStatus();
 			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {

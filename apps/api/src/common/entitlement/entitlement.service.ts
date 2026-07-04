@@ -12,7 +12,7 @@ import {
 } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import type { BusinessException } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 

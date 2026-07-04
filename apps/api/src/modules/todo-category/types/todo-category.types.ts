@@ -5,7 +5,7 @@
 import type { TodoCategory } from "@/generated/prisma/client";
 
 // 공통 타입 재내보내기
-export type { TransactionClient } from "@/common/database";
+export type { TransactionClient } from "@/common/database/prisma.types";
 
 // ===== Entity Types =====
 

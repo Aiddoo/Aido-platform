@@ -28,6 +28,21 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"**/modules/**/domain/**",
+				"**/modules/**/application/**",
+				"**/modules/**/infrastructure/**",
+				"**/common/domain/**"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "error"
+					}
+				}
+			}
 		}
 	]
 }

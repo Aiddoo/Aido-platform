@@ -1,7 +1,7 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
