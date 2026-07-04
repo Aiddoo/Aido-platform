@@ -143,6 +143,13 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 */
 	static planCreation(input: TodoCreationInput): TodoCreationDraft {
 		TodoTitle.create(input.title);
+		// 생성 시점에도 일정 불변식(endDate >= startDate) 강제 — 도메인 자기방어
+		TodoSchedule.create({
+			startDate: input.startDate,
+			endDate: input.endDate ?? null,
+			scheduledTime: input.scheduledTime ?? null,
+			isAllDay: input.isAllDay ?? true,
+		});
 
 		return {
 			userId: input.userId,
@@ -380,6 +387,14 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 */
 	validateItemsReorder(itemIds: number[]): void {
 		const currentIds = new Set(this.getItemIds());
+		const uniqueItemIds = new Set(itemIds);
+		if (uniqueItemIds.size !== itemIds.length) {
+			throw new DomainException(
+				ErrorCode.SYS_0002,
+				{ received: itemIds.length, unique: uniqueItemIds.size },
+				"중복된 하위 항목 ID가 있습니다",
+			);
+		}
 		if (itemIds.length !== currentIds.size) {
 			throw new DomainException(
 				ErrorCode.SYS_0002,

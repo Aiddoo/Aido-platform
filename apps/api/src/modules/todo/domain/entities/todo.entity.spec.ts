@@ -105,6 +105,22 @@ describe("Todo — 할 일 애그리게잇", () => {
 			expect(draft.scheduledTime).toEqual(scheduledTime);
 		});
 
+		it("endDate가 startDate보다 빠르면 DomainException(SYS_0002)을 던진다 (생성 시 일정 불변식)", () => {
+			// Given
+			const plan = () =>
+				Todo.planCreation({
+					userId: "user-123",
+					categoryId: 1,
+					title: "정상 제목",
+					startDate: new Date("2026-02-22"),
+					endDate: new Date("2026-02-20"),
+				});
+
+			// When & Then
+			expect(plan).toThrow(DomainException);
+			expect(plan).toThrow("종료 날짜는 시작 날짜보다 빠를 수 없습니다.");
+		});
+
 		it("제목이 200자를 초과하면 DomainException(SYS_0002)을 던진다 (생성 불변식 단일 지점)", () => {
 			// Given
 			const plan = () =>
@@ -580,6 +596,20 @@ describe("Todo — 할 일 애그리게잇", () => {
 
 			// When & Then
 			expect(() => todo.validateItemsReorder([3, 1, 2])).not.toThrow();
+		});
+
+		it("중복 ID가 포함되면 길이가 같아도 DomainException(SYS_0002)을 던진다 (정합성 가드)", () => {
+			// Given - 항목 [1, 2]인데 [1, 1] 전달 (길이는 일치)
+			const todo = Todo.reconstitute(
+				buildProps({
+					items: [buildItem(1, 0), buildItem(2, 1)],
+				}),
+			);
+			const validate = () => todo.validateItemsReorder([1, 1]);
+
+			// When & Then
+			expect(validate).toThrow(DomainException);
+			expect(validate).toThrow("중복된 하위 항목 ID가 있습니다");
 		});
 
 		it("개수가 다르면 DomainException(SYS_0002)을 기존 메시지·details로 던진다", () => {
