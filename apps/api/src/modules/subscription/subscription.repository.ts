@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma, type Subscription } from "@/generated/prisma/client";

@@ -52,20 +52,8 @@ export class ReorderTodoItemsHandler
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
 
-			// 전체 항목 ID 필수 검증 (부분 전달 시 sortOrder 충돌 방지)
-			const todoItemIds = new Set(todo.getItemIds());
-			if (itemIds.length !== todoItemIds.size) {
-				throw new ApplicationException(ErrorCode.SYS_0002, {
-					message: "모든 하위 항목 ID를 전달해야 합니다",
-					expected: todoItemIds.size,
-					received: itemIds.length,
-				});
-			}
-			for (const id of itemIds) {
-				if (!todoItemIds.has(id)) {
-					throw new ApplicationException(ErrorCode.TODO_0822, { itemId: id });
-				}
-			}
+			// 전체 항목 ID 집합 일치 검증은 애그리게잇 불변식 (부분 전달 방지)
+			todo.validateItemsReorder(itemIds);
 
 			await this.todoRepository.reorderItems(itemIds, tx);
 		});

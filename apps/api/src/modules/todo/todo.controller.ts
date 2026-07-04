@@ -18,7 +18,7 @@ import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
 import { Timezone } from "@/common/decorators";
-
+import { UserIdParamDto } from "@/common/dtos";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -29,13 +29,11 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
-
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-import { UserIdParamDto } from "../follow/dtos";
-import { GetFriendTodosQuery } from "./application/queries/get-friend-todos.query";
-import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id.query";
-import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit.query";
-import { GetTodosQuery } from "./application/queries/get-todos.query";
+import { GetFriendTodosQuery } from "./application/queries/get-friend-todos/get-friend-todos.query";
+import { GetTodoByIdQuery } from "./application/queries/get-todo-by-id/get-todo-by-id.query";
+import { GetTodoResourceLimitQuery } from "./application/queries/get-todo-resource-limit/get-todo-resource-limit.query";
+import { GetTodosQuery } from "./application/queries/get-todos/get-todos.query";
 import { AddTodoItemCommand } from "./application/use-cases/add-todo-item/add-todo-item.command";
 import { ChangeTodoCategoryCommand } from "./application/use-cases/change-todo-category/change-todo-category.command";
 import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";

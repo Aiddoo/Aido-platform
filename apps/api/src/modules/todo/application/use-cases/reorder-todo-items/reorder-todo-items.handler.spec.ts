@@ -16,12 +16,11 @@ import {
 	createTransactionManagerMock,
 } from "@test/mocks/ports";
 import { TRANSACTION_MANAGER } from "@/common/database";
-import {
-	Todo,
-	type TodoItemSnapshot,
-} from "../../../domain/entities/todo.entity";
+import { Todo } from "../../../domain/entities/todo.entity";
+import { TodoItem } from "../../../domain/entities/todo-item.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -33,18 +32,18 @@ import {
 import { ReorderTodoItemsCommand } from "./reorder-todo-items.command";
 import { ReorderTodoItemsHandler } from "./reorder-todo-items.handler";
 
-function buildItem(id: number): TodoItemSnapshot {
-	return {
+function buildItem(id: number): TodoItem {
+	return TodoItem.reconstitute({
 		id,
 		title: `항목 ${id}`,
 		completed: false,
 		sortOrder: id - 1,
 		createdAt: new Date("2026-02-20T00:00:00.000Z"),
 		updatedAt: new Date("2026-02-20T00:00:00.000Z"),
-	};
+	});
 }
 
-function buildEntity(items: TodoItemSnapshot[]): Todo {
+function buildEntity(items: TodoItem[]): Todo {
 	return Todo.reconstitute({
 		id: TodoId.create(1),
 		userId: "user-123",
@@ -53,10 +52,12 @@ function buildEntity(items: TodoItemSnapshot[]): Todo {
 		sortOrder: 0,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items,

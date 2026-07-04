@@ -30,6 +30,42 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
 		return new TodoSchedule(props);
 	}
 
+	/**
+	 * DB 행에서 복원합니다(불변식 재검증 없음 — Todo.reconstitute와 같은 원칙).
+	 *
+	 * 가드 도입 이전에 저장된 위반 데이터가 있어도 복원은 항상 성공해야 합니다.
+	 */
+	static reconstitute(props: TodoScheduleProps): TodoSchedule {
+		return new TodoSchedule(props);
+	}
+
+	/**
+	 * 부분 패치를 머지해 새 VO를 반환합니다 (undefined 키는 변경하지 않음).
+	 *
+	 * 날짜(startDate/endDate)가 패치에 포함될 때만 `create`로 순서 불변식을
+	 * 재검증합니다 — 시간/종일 여부만 바꾸는 패치가 가드 도입 이전의 위반
+	 * 데이터 때문에 실패하지 않도록(기존 API 동작 보존).
+	 */
+	patch(partial: Partial<TodoScheduleProps>): TodoSchedule {
+		const merged: TodoScheduleProps = {
+			startDate: partial.startDate ?? this.getStartDate(),
+			endDate:
+				partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
+			scheduledTime:
+				partial.scheduledTime !== undefined
+					? partial.scheduledTime
+					: this.getScheduledTime(),
+			isAllDay: partial.isAllDay ?? this.value.isAllDay,
+		};
+
+		const touchesDates =
+			partial.startDate !== undefined || partial.endDate !== undefined;
+		if (touchesDates) {
+			return TodoSchedule.create(merged);
+		}
+		return TodoSchedule.reconstitute(merged);
+	}
+
 	getStartDate(): Date {
 		return new Date(this.value.startDate);
 	}

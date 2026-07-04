@@ -21,7 +21,7 @@ import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import type { CreateRecurringTodoData } from "../../../types/todo.types";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -35,6 +35,7 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import type { CreateRecurringTodoData } from "../../types";
 import { CreateRecurringTodosCommand } from "./create-recurring-todos.command";
 import { CreateRecurringTodosHandler } from "./create-recurring-todos.handler";
 
@@ -47,10 +48,12 @@ function buildEntity(id: number, scheduledTime: Date | null = null): Todo {
 		sortOrder: id,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-03-02"),
-		endDate: null,
-		scheduledTime,
-		isAllDay: scheduledTime === null,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-03-02"),
+			endDate: null,
+			scheduledTime,
+			isAllDay: scheduledTime === null,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: "group-1",
 		items: [],

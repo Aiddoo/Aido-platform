@@ -1,15 +1,15 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Query } from "@nestjs/cqrs";
 import type { CursorPaginatedResponse } from "@/common/pagination";
-import type { GetTodosParams } from "../../types/todo.types";
+import type { GetFriendTodosParams } from "../../types";
 
 /**
- * Todo 목록 조회 쿼리 (커서 기반 페이지네이션)
+ * 친구의 PUBLIC Todo 목록 조회 쿼리
  */
-export class GetTodosQuery extends Query<
+export class GetFriendTodosQuery extends Query<
 	CursorPaginatedResponse<TodoResponse, number>
 > {
-	constructor(public readonly params: GetTodosParams) {
+	constructor(public readonly params: GetFriendTodosParams) {
 		super();
 	}
 }

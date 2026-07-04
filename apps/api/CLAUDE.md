@@ -60,6 +60,7 @@ Request → Guard → Controller → CommandBus/QueryBus → Handler(use-case)
 - **예외**: 레거시는 `BusinessExceptions.xxx()` 팩토리, 클린아키 모듈은 `ApplicationException`/`DomainException` (`new HttpException()` 금지)
 - **트랜잭션**: 레거시는 `database.$transaction(tx => ...)`, 클린아키 모듈은 `TRANSACTION_MANAGER.run(tx => ...)`. Repository 메서드는 `tx?` 파라미터 필수
 - **타입 단언 금지**: 클린아키 영역(domain/application/infrastructure)은 `as`/`!` 금지 — `pnpm lint:no-cast`로 검사 (수동 게이트, CI 미연결)
+- **임포트 경계**: 클린아키 모듈의 레이어 의존성 방향은 `pnpm lint:boundaries`로 검사 (수동 게이트) — domain은 프레임워크·DB 금지, application은 Prisma 타입·타 모듈 내부 금지, 외부는 배럴만
 - **API 계약 고정**: `openapi-contract.e2e-spec` 스냅샷 diff 0 = 클라이언트 영향 0 (리팩터링 게이트)
 - **큐**: 알림/부수효과는 `QueueService.enqueueXxx()` fire-and-forget 패턴 (트랜잭션 커밋 후 enqueue)
 - **암호화**: OAuth 토큰 등 민감 데이터는 `EncryptionService`로 암호화 저장
@@ -91,12 +92,12 @@ Request → Guard → Controller → CommandBus/QueryBus → Handler(use-case)
 
 1. **Prisma 스키마** → `prisma/schema.prisma` + `pnpm db:migrate`
 2. **Validators** → `@aido/validators`에 Zod 스키마 + NestJS DTO + `pnpm build`
-3. **Domain** → 애그리게잇 행동 메서드/VO/이벤트 (불변식은 DomainException)
+3. **Domain** → 애그리게잇 행동 메서드/자식 엔티티/VO/정책 함수/이벤트 (불변식은 DomainException, 생성은 planCreation, 판단 규칙은 domain/services/ 정책)
 4. **Application** → 포트 확장 + `use-cases/<kebab>/` 커맨드·핸들러(+spec)
 5. **Infrastructure** → 어댑터에 포트 구현 (레거시 Repository 위임)
 6. **Controller** → CommandBus 디스패치, Swagger 문서화
 7. **Module** → 배럴(CommandHandlers 등) 자동 등록 확인
-8. **테스트** → 핸들러 spec → e2e (openapi 스냅샷 diff 0 확인)
+8. **테스트** → 핸들러 spec → e2e (openapi 스냅샷 diff 0 확인) + `lint:no-cast`·`lint:boundaries` 통과
 
 **레거시 3계층 모듈에 기능 추가:**
 

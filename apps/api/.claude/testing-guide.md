@@ -80,15 +80,16 @@ const { unit, unitRef } = await TestBed.solitary(UpdateTodoHandler)
 	.mock<TodoRepositoryPort>(TODO_REPOSITORY)
 	.impl(() => createTodoRepositoryMock())
 	.mock(TRANSACTION_MANAGER)
-	.impl(() => createTransactionManagerMock())   // run(fn) 즉시 실행 패스스루
+	.impl(() => createTransactionManagerMock())   // run(fn) 즉시 실행 패스스루 (wrapTransaction 기반)
 	.compile();
-eventPublisher = unitRef.get(EventPublisher);
-eventPublisher.mergeObjectContext.mockImplementation((aggregate) => aggregate);
+eventBus = unitRef.get(EventBus);   // 클래스 의존성이라 auto-mock됨
 ```
 
-- 이벤트 발행 검증: `commit()` 후엔 `getUncommittedEvents()`가 비므로 **`jest.spyOn(entity, "apply")`** 로 검증
+- 이벤트 발행 검증: **`expect(eventBus.publishAll).toHaveBeenCalledWith([new TodoDeletedEvent(1, "user-123")])`** — 이벤트 인스턴스 배열로 정확 단언. 애그리게잇 내부(`raise`)는 protected라 스파이하지 않는다
+- TX mock: `createTransactionManagerMock()`이 `wrapTransaction()`으로 불투명 TransactionContext를 만들어 콜백에 전달 — 캐스트 없이 타입 세이프
 - 포트 mock 팩토리는 포트 인터페이스 반환 타입 강제 → 포트 확장 시 누락이 컴파일 에러로 드러남
-- 애그리게잇 픽스처는 `Todo.reconstitute({...})`, 응답 read model은 `TodoBuilder` + `TodoMapper.toResponse`
+- 애그리게잇 픽스처는 `Todo.reconstitute({...})` — schedule은 `TodoSchedule.reconstitute`, 항목은 `TodoItem.reconstitute`로 조립. 응답 read model은 `TodoBuilder` + 응답 매퍼
+- 자식 엔티티·VO·도메인 정책은 프레임워크 없이 순수 단위 테스트 (예: `todo-item.entity.spec.ts`, `completion-policy.spec.ts`)
 
 ### 3.2 동작 동일성 게이트 (마이그레이션 필수)
 

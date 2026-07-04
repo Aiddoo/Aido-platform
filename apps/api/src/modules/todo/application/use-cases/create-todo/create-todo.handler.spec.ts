@@ -23,8 +23,8 @@ import { DomainException } from "@/common/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
-import type { CreateTodoData } from "../../../types/todo.types";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -38,6 +38,7 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import type { CreateTodoData } from "../../types";
 import { CreateTodoCommand } from "./create-todo.command";
 import { CreateTodoHandler } from "./create-todo.handler";
 
@@ -51,10 +52,12 @@ function buildEntity(): Todo {
 		sortOrder: 0,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],

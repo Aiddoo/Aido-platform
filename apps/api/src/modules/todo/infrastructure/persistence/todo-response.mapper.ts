@@ -14,7 +14,7 @@ import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/common/date/utils/format";
-import type { TodoWithCategory } from "./types/todo.types.ts";
+import type { TodoWithCategory } from "./todo-row.types";
 
 /**
  * Todo 매퍼 클래스
@@ -22,23 +22,6 @@ import type { TodoWithCategory } from "./types/todo.types.ts";
  * Prisma 엔티티를 API 응답 형식으로 변환하는 Static 메서드를 제공합니다.
  */
 export abstract class TodoMapper {
-	/**
-	 * ISO 날짜 문자열에서 날짜 부분만 추출합니다. (YYYY-MM-DD)
-	 *
-	 * @param date - 변환할 Date 객체
-	 * @returns YYYY-MM-DD 형식의 날짜 문자열
-	 *
-	 * @example
-	 * ```typescript
-	 * const date = new Date('2024-01-15T09:30:00Z');
-	 * const dateString = TodoMapper.formatDate(date);
-	 * // 결과: '2024-01-15'
-	 * ```
-	 */
-	static formatDate(date: Date): string {
-		return toDateString(date);
-	}
-
 	/**
 	 * Prisma Todo 엔티티를 API 응답 형식으로 변환합니다.
 	 *

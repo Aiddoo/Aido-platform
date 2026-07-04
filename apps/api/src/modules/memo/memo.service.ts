@@ -6,7 +6,7 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { CacheService } from "@/common/cache/cache.service";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { toDateString } from "@/common/date/utils/format";
 import { toLocalTimeString } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";

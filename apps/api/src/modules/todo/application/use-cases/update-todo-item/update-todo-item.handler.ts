@@ -51,11 +51,19 @@ export class UpdateTodoItemHandler
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
-			if (!todo.hasItem(itemId)) {
-				throw new ApplicationException(ErrorCode.TODO_0822, { itemId });
-			}
+			// 애그리게잇이 존재·제목 불변식을 검증하고 자식 엔티티를 전이시킴
+			const item = todo.updateItem(itemId, data);
 
-			await this.todoRepository.updateItem(itemId, data, tx);
+			// 요청에 포함된 필드만 쓰되, 값은 엔티티 상태에서 가져옴 (단일 소스)
+			const snapshot = item.toPersistence();
+			const patch: { title?: string; completed?: boolean } = {};
+			if (data.title !== undefined) {
+				patch.title = snapshot.title;
+			}
+			if (data.completed !== undefined) {
+				patch.completed = snapshot.completed;
+			}
+			await this.todoRepository.updateItem(itemId, patch, tx);
 		});
 
 		this.#logger.log(

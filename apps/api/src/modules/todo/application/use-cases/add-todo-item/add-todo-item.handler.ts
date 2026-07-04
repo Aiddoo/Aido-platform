@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
-import { TODO_ITEM_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import {
@@ -21,8 +20,9 @@ import { AddTodoItemCommand } from "./add-todo-item.command";
 /**
  * 하위 항목 추가 핸들러
  *
- * 소유권 확인(TX 외부) → TX 안에서 항목 한도 체크·sortOrder 결정·생성(race 방지) →
- * 읽기 포트로 부모 할 일 전체를 재조회해 반환.
+ * TX 안에서 애그리게잇 로드 → 애그리게잇이 항목 한도·제목 불변식 검증 및
+ * sortOrder 계획(planItemAddition) → 계획 영속화 → 읽기 포트로 재조회.
+ * 동시 추가 레이스 특성은 기존 in-TX count 방식과 동등합니다(read committed).
  */
 @CommandHandler(AddTodoItemCommand)
 export class AddTodoItemHandler implements ICommandHandler<AddTodoItemCommand> {
@@ -40,34 +40,19 @@ export class AddTodoItemHandler implements ICommandHandler<AddTodoItemCommand> {
 	async execute(command: AddTodoItemCommand): Promise<TodoResponse> {
 		const { todoId, userId, title } = command;
 
-		// 1. 소유권 확인 (읽기 전용, TX 외부)
-		const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
-		}
-
-		// 2. TX 안에서 한도 체크 + sortOrder 결정 + 생성 (race condition 방지)
+		// TX 안에서 애그리게잇 로드 → 불변식 검증·계획(도메인) → 영속화
 		await this.txManager.run(async (tx) => {
-			const itemCount = await this.todoRepository.countItemsByTodoId(
+			const todo = await this.todoRepository.findByIdAndUserId(
 				todoId,
+				userId,
 				tx,
 			);
-			if (itemCount >= TODO_ITEM_LIMITS.MAX_PER_TODO) {
-				throw new ApplicationException(ErrorCode.TODO_0821, {
-					currentCount: itemCount,
-					maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
-				});
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
 
-			const maxSortOrder = await this.todoRepository.getMaxItemSortOrder(
-				todoId,
-				tx,
-			);
-			await this.todoRepository.createItem(
-				todoId,
-				{ title, sortOrder: maxSortOrder + 1 },
-				tx,
-			);
+			const plan = todo.planItemAddition(title);
+			await this.todoRepository.createItem(todoId, plan, tx);
 		});
 
 		this.#logger.log(`Todo item added: todo=${todoId} for user: ${userId}`);

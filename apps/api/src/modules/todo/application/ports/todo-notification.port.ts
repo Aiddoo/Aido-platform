@@ -1,4 +1,8 @@
+import type { TodoCompletionMilestone } from "../../domain/services/completion-policy";
+
 export const TODO_NOTIFICATION = Symbol("TODO_NOTIFICATION");
+
+export type { TodoCompletionMilestone };
 
 /**
  * 친구 할일 전체 완료 알림 페이로드 (todo 컨텍스트 소유 계약)
@@ -14,15 +18,10 @@ export interface FriendCompletedPayload {
 	timezone: string;
 }
 
-/** todo 컨텍스트가 발생시키는 완료 마일스톤 */
-export type TodoCompletionMilestone =
-	| "FIRST_COMPLETE"
-	| "COUNT_10"
-	| "COUNT_50"
-	| "COUNT_100";
-
 /**
  * 마일스톤 달성 알림 페이로드 (todo 컨텍스트 소유 계약)
+ *
+ * 마일스톤 어휘(TodoCompletionMilestone)는 도메인 정책(completion-policy)이 소유합니다.
  */
 export interface MilestoneReachedPayload {
 	/** 사용자 ID */

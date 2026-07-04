@@ -51,9 +51,8 @@ export class DeleteTodoItemHandler
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
-			if (!todo.hasItem(itemId)) {
-				throw new ApplicationException(ErrorCode.TODO_0822, { itemId });
-			}
+			// 애그리게잇이 존재를 검증하고 자식 엔티티를 제거
+			todo.removeItem(itemId);
 
 			await this.todoRepository.deleteItem(itemId, tx);
 		});

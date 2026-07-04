@@ -12,10 +12,13 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
+	createTransactionManagerMock,
 } from "@test/mocks/ports";
+import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -36,10 +39,12 @@ function buildEntity(): Todo {
 		sortOrder: 0,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],
@@ -67,6 +72,8 @@ describe("UpdateTodoVisibilityHandler — 할 일 공개 범위 변경 핸들러
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
+			.mock(TRANSACTION_MANAGER)
+			.impl(() => createTransactionManagerMock())
 			.compile();
 
 		handler = unit;
@@ -86,7 +93,11 @@ describe("UpdateTodoVisibilityHandler — 할 일 공개 범위 변경 핸들러
 		);
 
 		// Then
-		expect(todoRepository.updateVisibility).toHaveBeenCalledWith(1, "PRIVATE");
+		expect(todoRepository.updateVisibility).toHaveBeenCalledWith(
+			1,
+			"PRIVATE",
+			expect.anything(),
+		);
 		expect(result.id).toBe(1);
 	});
 

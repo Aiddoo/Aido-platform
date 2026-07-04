@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { addDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";

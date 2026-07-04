@@ -2,7 +2,12 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	TRANSACTION_MANAGER,
+	type TransactionManagerPort,
+} from "@/common/database";
 import { ApplicationException } from "@/common/domain";
+import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.entity";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -17,6 +22,7 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
+import type { UpdateTodoData } from "../../types";
 import { UpdateTodoCommand } from "./update-todo.command";
 
 /**
@@ -38,6 +44,8 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
+		@Inject(TRANSACTION_MANAGER)
+		private readonly txManager: TransactionManagerPort,
 		@Inject(CATEGORY_OWNERSHIP)
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
@@ -48,64 +56,65 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 	async execute(command: UpdateTodoCommand): Promise<TodoResponse> {
 		const { id, userId, data } = command;
 
-		// 1. 소유권 확인
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
-
-		// 2. 카테고리 변경 시 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
+		// 1. 카테고리 변경 시 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
 		if (data.categoryId !== undefined) {
 			await this.categoryOwnership.validateOwnership(data.categoryId, userId);
 		}
 
-		// 3. 애그리게잇 전이 → 애그리게잇 상태를 단일 소스로 패치 영속화
-		//    (요청에 포함된 필드만 쓰되, 값은 커맨드가 아닌 애그리게잇에서 가져옴)
-		const wasCompleted = todo.isCompleted();
-		todo.updateDetails(data);
-		const snapshot = todo.toPersistence();
-
-		const patch: TodoUpdatePatch = {};
-		if (data.title !== undefined) {
-			patch.title = snapshot.title;
-		}
-		if (data.categoryId !== undefined) {
-			patch.categoryId = snapshot.categoryId;
-		}
-		if (data.startDate !== undefined) {
-			patch.startDate = snapshot.startDate;
-		}
-		if (data.endDate !== undefined) {
-			patch.endDate = snapshot.endDate;
-		}
-		if (data.scheduledTime !== undefined) {
-			patch.scheduledTime = snapshot.scheduledTime;
-		}
-		if (data.isAllDay !== undefined) {
-			patch.isAllDay = snapshot.isAllDay;
-		}
-		if (data.visibility !== undefined) {
-			patch.visibility = snapshot.visibility;
-		}
-		if (data.completed !== undefined) {
-			patch.completed = snapshot.completed;
-			if (snapshot.completed !== wasCompleted) {
-				patch.completedAt = snapshot.completedAt;
+		// 2. TX 안에서 로드 → 애그리게잇 전이 → 애그리게잇 상태를 단일 소스로 영속화
+		//    (load-mutate-write를 한 트랜잭션으로 묶어 동시 수정 레이스 창 축소)
+		const events = await this.txManager.run(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
-		}
-		await this.todoRepository.updateDetails(id, patch);
+
+			const wasCompleted = todo.isCompleted();
+			todo.updateDetails(data);
+			const snapshot = todo.toPersistence();
+
+			// 요청에 포함된 필드만 쓰되, 값은 커맨드가 아닌 애그리게잇에서 가져옴
+			const patch: TodoUpdatePatch = {};
+			const copyField = <
+				K extends keyof UpdateTodoData &
+					keyof TodoPersistenceSnapshot &
+					keyof TodoUpdatePatch,
+			>(
+				key: K,
+			): void => {
+				if (data[key] !== undefined) {
+					patch[key] = snapshot[key];
+				}
+			};
+			copyField("title");
+			copyField("categoryId");
+			copyField("startDate");
+			copyField("endDate");
+			copyField("scheduledTime");
+			copyField("isAllDay");
+			copyField("visibility");
+			if (data.completed !== undefined) {
+				patch.completed = snapshot.completed;
+				if (snapshot.completed !== wasCompleted) {
+					patch.completedAt = snapshot.completedAt;
+				}
+			}
+			await this.todoRepository.updateDetails(id, patch, tx);
+
+			return todo.pullDomainEvents();
+		});
 
 		this.#logger.log(`Todo updated: ${id} for user: ${userId}`);
 
-		// 4. 카테고리 변경 시 캐시 무효화
+		// 3. 카테고리 변경 시 캐시 무효화
 		if (data.categoryId !== undefined) {
 			await this.todoCache.invalidateTodoCategories(userId);
 		}
 
-		// 5. 저장 완료 후 이벤트 발행 (완료 요청이면 이벤트 핸들러가 리마인더 취소)
-		this.eventBus.publishAll(todo.pullDomainEvents());
+		// 저장(TX 커밋) 완료 후 이벤트 발행 (완료 상태면 이벤트 핸들러가 리마인더 취소)
+		this.eventBus.publishAll(events);
 
-		// 6. 응답 재조회
+		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,
 			userId,

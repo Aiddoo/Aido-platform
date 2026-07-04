@@ -21,7 +21,8 @@ import {
 import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -47,10 +48,12 @@ function buildEntity(overrides: { completed?: boolean } = {}): Todo {
 		sortOrder: 0,
 		completed: overrides.completed ?? false,
 		completedAt: overrides.completed ? new Date("2026-01-01") : null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],
@@ -138,7 +141,7 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 		expect(todoRepository.updateCategory).not.toHaveBeenCalled();
 	});
 
-	it("완료된 할 일은 한도 체크 없이(TX 없이) 이동한다 (레거시 동작 보존)", async () => {
+	it("완료된 할 일은 한도 체크 없이 이동한다 (레거시 동작 보존)", async () => {
 		// Given - 완료 상태
 		todoRepository.findByIdAndUserId.mockResolvedValue(
 			buildEntity({ completed: true }),
@@ -150,7 +153,11 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 
 		// Then - 카운트 조회 없이 바로 이동 + 캐시는 항상 무효화
 		expect(todoRepository.countActiveByCategory).not.toHaveBeenCalled();
-		expect(todoRepository.updateCategory).toHaveBeenCalledWith(1, 2);
+		expect(todoRepository.updateCategory).toHaveBeenCalledWith(
+			1,
+			2,
+			expect.anything(),
+		);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 	});
 
@@ -158,10 +165,10 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 		// Given
 		todoRepository.findByIdAndUserId.mockResolvedValue(null);
 
-		// When & Then
+		// When & Then - 대상 카테고리 소유권 확인(선행) 후 로드 실패로 거부
 		await expect(
 			handler.execute(new ChangeTodoCategoryCommand(999, "user-123", 2)),
 		).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
-		expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
+		expect(todoRepository.updateCategory).not.toHaveBeenCalled();
 	});
 });

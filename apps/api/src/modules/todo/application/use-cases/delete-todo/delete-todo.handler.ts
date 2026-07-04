@@ -1,6 +1,10 @@
 import { ErrorCode } from "@aido/errors";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	TRANSACTION_MANAGER,
+	type TransactionManagerPort,
+} from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -24,26 +28,31 @@ export class DeleteTodoHandler implements ICommandHandler<DeleteTodoCommand> {
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_CACHE)
 		private readonly todoCache: TodoCachePort,
+		@Inject(TRANSACTION_MANAGER)
+		private readonly txManager: TransactionManagerPort,
 		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: DeleteTodoCommand): Promise<void> {
 		const { id, userId } = command;
 
-		// 1. 소유권 확인
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
+		// TX 안에서 소유권 확인 → 삭제 (하위 항목은 Cascade)
+		const events = await this.txManager.run(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+			}
 
-		// 2. 삭제 (하위 항목은 Cascade)
-		await this.todoRepository.delete(id);
+			await this.todoRepository.delete(id, tx);
 
-		// 3. 삭제 완료 후 이벤트 발행 (이벤트 핸들러가 리마인더 취소)
-		todo.markDeleted();
-		this.eventBus.publishAll(todo.pullDomainEvents());
+			todo.markDeleted();
+			return todo.pullDomainEvents();
+		});
 
-		// 4. 캐시 무효화 (todoCount 변경)
+		// 삭제(TX 커밋) 완료 후 이벤트 발행 (이벤트 핸들러가 리마인더 취소)
+		this.eventBus.publishAll(events);
+
+		// 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);
 
 		this.#logger.log(`Todo deleted: ${id} for user: ${userId}`);

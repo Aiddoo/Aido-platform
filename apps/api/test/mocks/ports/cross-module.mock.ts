@@ -32,7 +32,7 @@ export function createFriendMock(): FriendPort {
 
 export function createStreakMock(): StreakPort {
 	return {
-		onTodoToggled: jest.fn(),
+		recordTodoToggle: jest.fn(),
 	};
 }
 

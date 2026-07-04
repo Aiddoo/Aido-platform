@@ -26,9 +26,9 @@ import type {
 	GetTodosQueryDto,
 	TodoIdParamDto,
 } from "./dtos";
+import { TodoMapper } from "./infrastructure/persistence/todo-response.mapper";
+import type { TodoWithCategory } from "./infrastructure/persistence/todo-row.types";
 import { TodoController } from "./todo.controller";
-import { TodoMapper } from "./todo.mapper";
-import type { TodoWithCategory } from "./types/todo.types";
 
 /** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
 function buildResponse(

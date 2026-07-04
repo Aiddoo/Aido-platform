@@ -1,6 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Command } from "@nestjs/cqrs";
-import type { UpdateTodoData } from "../../../types/todo.types";
+import type { UpdateTodoData } from "../../types";
 
 export class UpdateTodoCommand extends Command<TodoResponse> {
 	constructor(

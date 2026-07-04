@@ -1,15 +1,17 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database";
+import type { TransactionClient } from "@/common/database/prisma.types";
 import { now } from "@/common/date/utils/core";
 import { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
+import type {
+	FindFriendTodosParams,
+	FindTodosParams,
+} from "../../application/types";
 import {
-	type FindFriendTodosParams,
-	type FindTodosParams,
 	TODO_CATEGORY_INCLUDE,
 	type TodoItemData,
 	type TodoWithCategory,
-} from "./types/todo.types";
+} from "./todo-row.types";
 
 /**
  * 날짜 범위 필터 조건 생성 (Overlapping Intervals 패턴)
@@ -70,8 +72,15 @@ function buildDateRangeFilter(
 	return { OR: [multiDayCondition, singleDayCondition] };
 }
 
+/**
+ * Todo 행 리포지토리 (row-level DAO)
+ *
+ * Prisma 행(TodoWithCategory)을 그대로 다루는 저수준 데이터 접근 객체입니다.
+ * 도메인 애그리게잇 매핑은 PrismaTodoRepository, 응답 read model 매핑은
+ * PrismaTodoReadRepository(+ TodoMapper)가 담당합니다.
+ */
 @Injectable()
-export class TodoRepository {
+export class TodoRowRepository {
 	constructor(private readonly database: DatabaseService) {}
 
 	/**
@@ -424,26 +433,6 @@ export class TodoRepository {
 	async deleteItem(itemId: number, tx?: TransactionClient): Promise<void> {
 		const client = tx ?? this.database;
 		await client.todoItem.delete({ where: { id: itemId } });
-	}
-
-	async countItemsByTodoId(
-		todoId: number,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todoItem.count({ where: { todoId } });
-	}
-
-	async getMaxItemSortOrder(
-		todoId: number,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.todoItem.aggregate({
-			where: { todoId },
-			_max: { sortOrder: true },
-		});
-		return result._max.sortOrder ?? -1;
 	}
 
 	async reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void> {

@@ -1,25 +1,32 @@
 import { Injectable } from "@nestjs/common";
 import { type TransactionContext, unwrapTransaction } from "@/common/database";
 import type {
-	NewTodoData,
 	TodoRepositoryPort,
 	TodoUpdatePatch,
 } from "../../application/ports/todo.repository.port";
-import { Todo, type TodoVisibility } from "../../domain/entities/todo.entity";
+import {
+	Todo,
+	type TodoCreationPlan,
+	type TodoVisibility,
+} from "../../domain/entities/todo.entity";
+import { TodoItem } from "../../domain/entities/todo-item.entity";
 import { TodoId } from "../../domain/value-objects/todo-id.vo";
-import type { TodoScheduleProps } from "../../domain/value-objects/todo-schedule.vo";
-import { TodoRepository } from "../../todo.repository";
-import type { TodoWithCategory } from "../../types/todo.types";
+import {
+	TodoSchedule,
+	type TodoScheduleProps,
+} from "../../domain/value-objects/todo-schedule.vo";
+import { TodoRowRepository } from "../persistence/todo-row.repository";
+import type { TodoWithCategory } from "../persistence/todo-row.types";
 
 /**
  * Prisma Todo 쓰기 어댑터
  *
- * TodoRepositoryPort 구현체. 행 기반 TodoRepository의 쿼리를 재사용하되,
+ * TodoRepositoryPort 구현체. 행 기반 TodoRowRepository의 쿼리를 재사용하되,
  * 행 ↔ 도메인 애그리게잇 매핑(toDomain/toPersistence)을 이 어댑터가 소유합니다.
  */
 @Injectable()
 export class PrismaTodoRepository implements TodoRepositoryPort {
-	constructor(private readonly todoRepository: TodoRepository) {}
+	constructor(private readonly todoRepository: TodoRowRepository) {}
 
 	/** DB 행 → 도메인 애그리게잇 (카테고리 read model은 버리고 순수 도메인 상태만 복원) */
 	private static toDomain(row: TodoWithCategory): Todo {
@@ -31,20 +38,25 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 			sortOrder: row.sortOrder,
 			completed: row.completed,
 			completedAt: row.completedAt,
-			startDate: row.startDate,
-			endDate: row.endDate,
-			scheduledTime: row.scheduledTime,
-			isAllDay: row.isAllDay,
+			// 복원은 불변식 재검증 없음 (가드 도입 이전 데이터 보호)
+			schedule: TodoSchedule.reconstitute({
+				startDate: row.startDate,
+				endDate: row.endDate,
+				scheduledTime: row.scheduledTime,
+				isAllDay: row.isAllDay,
+			}),
 			visibility: row.visibility,
 			recurrenceGroupId: row.recurrenceGroupId,
-			items: row.items.map((item) => ({
-				id: item.id,
-				title: item.title,
-				completed: item.completed,
-				sortOrder: item.sortOrder,
-				createdAt: item.createdAt,
-				updatedAt: item.updatedAt,
-			})),
+			items: row.items.map((item) =>
+				TodoItem.reconstitute({
+					id: item.id,
+					title: item.title,
+					completed: item.completed,
+					sortOrder: item.sortOrder,
+					createdAt: item.createdAt,
+					updatedAt: item.updatedAt,
+				}),
+			),
 			createdAt: row.createdAt,
 			updatedAt: row.updatedAt,
 		});
@@ -63,7 +75,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		return row ? PrismaTodoRepository.toDomain(row) : null;
 	}
 
-	async create(data: NewTodoData, tx?: TransactionContext): Promise<Todo> {
+	async create(data: TodoCreationPlan, tx?: TransactionContext): Promise<Todo> {
 		const row = await this.todoRepository.create(
 			{
 				user: { connect: { id: data.userId } },
@@ -202,7 +214,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	}
 
 	async createMany(
-		items: NewTodoData[],
+		items: TodoCreationPlan[],
 		recurrenceGroupId: string,
 		tx: TransactionContext,
 	): Promise<Todo[]> {
@@ -245,23 +257,6 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	}
 
 	// ===== 하위 항목 (체크리스트) =====
-
-	countItemsByTodoId(todoId: number, tx?: TransactionContext): Promise<number> {
-		return this.todoRepository.countItemsByTodoId(
-			todoId,
-			tx && unwrapTransaction(tx),
-		);
-	}
-
-	getMaxItemSortOrder(
-		todoId: number,
-		tx?: TransactionContext,
-	): Promise<number> {
-		return this.todoRepository.getMaxItemSortOrder(
-			todoId,
-			tx && unwrapTransaction(tx),
-		);
-	}
 
 	async createItem(
 		todoId: number,

@@ -1,22 +1,22 @@
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port";
-import { TodoMapper } from "../../todo.mapper";
-import { TodoRepository } from "../../todo.repository";
 import type {
 	FindFriendTodosParams,
 	FindTodosParams,
-} from "../../types/todo.types";
+} from "../../application/types";
+import { TodoMapper } from "../persistence/todo-response.mapper";
+import { TodoRowRepository } from "../persistence/todo-row.repository";
 
 /**
  * Prisma Todo 읽기 어댑터
  *
- * TodoReadRepositoryPort 구현체. 행 기반 TodoRepository 조회를 재사용하고
+ * TodoReadRepositoryPort 구현체. 행 기반 TodoRowRepository 조회를 재사용하고
  * 행 → 응답 read model 매핑(TodoMapper, 순수 함수)을 수행합니다.
  */
 @Injectable()
 export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
-	constructor(private readonly todoRepository: TodoRepository) {}
+	constructor(private readonly todoRepository: TodoRowRepository) {}
 
 	async findByIdAndUserId(
 		id: number,

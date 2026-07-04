@@ -16,7 +16,7 @@
 import type {
 	TodoItemData,
 	TodoWithCategory,
-} from "@/modules/todo/types/todo.types";
+} from "@/modules/todo/infrastructure/persistence/todo-row.types";
 
 export class TodoBuilder {
 	private data: TodoWithCategory;

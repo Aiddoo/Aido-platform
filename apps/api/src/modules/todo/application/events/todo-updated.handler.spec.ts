@@ -46,14 +46,6 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
 		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
 	});
 
-	it("완료 필드가 없는 수정(undefined)이면 리마인더를 취소하지 않는다", () => {
-		// Given & When
-		handler.handle(new TodoUpdatedEvent(1, "user-123", undefined));
-
-		// Then
-		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
-	});
-
 	it("리마인더 포트가 던져도 예외를 전파하지 않는다 (fire-and-forget)", () => {
 		// Given - 리마인더 취소 실패
 		jest.mocked(todoReminder.cancelReminder).mockImplementation(() => {

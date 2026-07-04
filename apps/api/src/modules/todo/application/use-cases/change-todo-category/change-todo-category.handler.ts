@@ -52,23 +52,20 @@ export class ChangeTodoCategoryHandler
 	async execute(command: ChangeTodoCategoryCommand): Promise<TodoResponse> {
 		const { id, userId, categoryId } = command;
 
-		// 1. 소유권 확인
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
-
-		// 2. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
+		// 1. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
 		await this.categoryOwnership.validateOwnership(categoryId, userId);
 
-		// 3. 애그리게잇 전이 → 활성 할 일만 TX 안에서 한도 체크 후 영속화 (race 방지)
-		todo.changeCategory(categoryId);
-		const targetCategoryId = todo.toPersistence().categoryId;
+		// 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
+		await this.txManager.run(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+			}
 
-		if (todo.isCompleted()) {
-			await this.todoRepository.updateCategory(id, targetCategoryId);
-		} else {
-			await this.txManager.run(async (tx) => {
+			todo.changeCategory(categoryId);
+			const targetCategoryId = todo.toPersistence().categoryId;
+
+			if (!todo.isCompleted()) {
 				const activeInTarget = await this.todoRepository.countActiveByCategory(
 					userId,
 					categoryId,
@@ -80,18 +77,18 @@ export class ChangeTodoCategoryHandler
 						maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
 					});
 				}
-				await this.todoRepository.updateCategory(id, targetCategoryId, tx);
-			});
-		}
+			}
+			await this.todoRepository.updateCategory(id, targetCategoryId, tx);
+		});
 
-		// 4. 캐시 무효화 (todoCount 변경)
+		// 3. 캐시 무효화 (todoCount 변경)
 		await this.todoCache.invalidateTodoCategories(userId);
 
 		this.#logger.log(
 			`Todo category updated: ${id} -> ${categoryId} for user: ${userId}`,
 		);
 
-		// 5. 응답 재조회
+		// 4. 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,
 			userId,

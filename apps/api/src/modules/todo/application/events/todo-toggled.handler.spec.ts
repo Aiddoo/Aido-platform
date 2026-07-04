@@ -82,7 +82,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 
 		// Then
 		expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
-		expect(streakPort.onTodoToggled).toHaveBeenCalledWith(
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
 			"user-123",
 			true,
 			"UTC",
@@ -137,7 +137,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
 		await flush();
 
 		// Then
-		expect(streakPort.onTodoToggled).toHaveBeenCalledWith(
+		expect(streakPort.recordTodoToggle).toHaveBeenCalledWith(
 			"user-123",
 			false,
 			"UTC",

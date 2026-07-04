@@ -10,14 +10,16 @@ import {
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
 import { ApplicationException } from "@/common/domain";
+import {
+	Todo,
+	type TodoCreationPlan,
+} from "../../../domain/entities/todo.entity";
 import { expandRecurringDates } from "../../../domain/services/expand-recurring-dates";
-import { TodoTitle } from "../../../domain/value-objects/todo-title.vo";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port";
 import {
-	type NewTodoData,
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
 } from "../../ports/todo.repository.port";
@@ -64,8 +66,17 @@ export class CreateRecurringTodosHandler
 	): Promise<CreateRecurringTodosResult> {
 		const { data, timezone } = command;
 
-		// 도메인 제목 불변식 검증 (Zod 경계와 동일 규칙 — 도메인 자기방어)
-		TodoTitle.create(data.title);
+		// 생성 초안 — 생성 불변식(제목)·기본값 파생의 단일 지점 (도메인 팩토리)
+		// 날짜·시간은 인스턴스별로 달라 확장 단계에서 덮어씁니다.
+		const draft = Todo.planCreation({
+			userId: data.userId,
+			categoryId: data.categoryId,
+			title: data.title,
+			startDate: parseDateOnly(data.startDate),
+			scheduledTime: null,
+			isAllDay: data.isAllDay,
+			visibility: data.visibility,
+		});
 
 		// 1. 날짜 확장 (요일 매칭, 도메인 서비스)
 		const matchingDates = expandRecurringDates(
@@ -119,17 +130,13 @@ export class CreateRecurringTodosHandler
 				tx,
 			);
 
-			const items: NewTodoData[] = matchingDates.map((dateStr, index) => ({
-				userId: data.userId,
-				categoryId: data.categoryId,
-				title: data.title,
+			const items: TodoCreationPlan[] = matchingDates.map((dateStr, index) => ({
+				...draft,
 				sortOrder: maxSortOrder + 1 + index,
 				startDate: parseDateOnly(dateStr),
 				scheduledTime: data.scheduledTime
 					? parseLocalDateTime(dateStr, data.scheduledTime, timezone)
 					: null,
-				isAllDay: data.isAllDay ?? true,
-				visibility: data.visibility ?? "PUBLIC",
 			}));
 
 			return this.todoRepository.createMany(items, recurrenceGroupId, tx);

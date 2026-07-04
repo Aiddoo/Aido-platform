@@ -8,7 +8,7 @@ import {
 	type TransactionManagerPort,
 } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
-import { TodoTitle } from "../../../domain/value-objects/todo-title.vo";
+import { Todo } from "../../../domain/entities/todo.entity";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -52,8 +52,17 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 	async execute(command: CreateTodoCommand): Promise<TodoResponse> {
 		const { data } = command;
 
-		// 도메인 제목 불변식 검증 (Zod 경계와 동일 규칙 — 도메인 자기방어)
-		TodoTitle.create(data.title);
+		// 생성 초안 — 생성 불변식(제목)·기본값 파생의 단일 지점 (도메인 팩토리)
+		const draft = Todo.planCreation({
+			userId: data.userId,
+			categoryId: data.categoryId,
+			title: data.title,
+			startDate: data.startDate,
+			endDate: data.endDate,
+			scheduledTime: data.scheduledTime,
+			isAllDay: data.isAllDay,
+			visibility: data.visibility,
+		});
 
 		// 카테고리 존재 및 소유권 확인 (읽기 전용, TX 외부)
 		await this.categoryOwnership.validateOwnership(
@@ -81,17 +90,7 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 			);
 
 			const todo = await this.todoRepository.create(
-				{
-					userId: data.userId,
-					categoryId: data.categoryId,
-					title: data.title,
-					sortOrder: maxSortOrder + 1,
-					startDate: data.startDate,
-					endDate: data.endDate,
-					scheduledTime: data.scheduledTime,
-					isAllDay: data.isAllDay ?? true,
-					visibility: data.visibility ?? "PUBLIC",
-				},
+				{ ...draft, sortOrder: maxSortOrder + 1 },
 				tx,
 			);
 

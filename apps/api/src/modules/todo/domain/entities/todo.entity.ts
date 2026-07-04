@@ -1,13 +1,19 @@
+import { ErrorCode } from "@aido/errors";
+import { TODO_ITEM_LIMITS } from "@aido/validators";
 import { now } from "@/common/date/utils/core";
-import { AggregateRoot } from "@/common/domain";
+import { AggregateRoot, DomainException } from "@/common/domain";
 import { TodoCreatedEvent } from "../events/todo-created.event";
 import { TodoDeletedEvent } from "../events/todo-deleted.event";
 import { TodoRescheduledEvent } from "../events/todo-rescheduled.event";
 import { TodoToggledEvent } from "../events/todo-toggled.event";
 import { TodoUpdatedEvent } from "../events/todo-updated.event";
 import { TodoId } from "../value-objects/todo-id.vo";
-import { TodoSchedule } from "../value-objects/todo-schedule.vo";
+import {
+	TodoSchedule,
+	type TodoScheduleProps,
+} from "../value-objects/todo-schedule.vo";
 import { TodoTitle } from "../value-objects/todo-title.vo";
+import type { TodoItem } from "./todo-item.entity";
 
 export type TodoVisibility = "PUBLIC" | "PRIVATE";
 
@@ -29,17 +35,38 @@ export interface TodoDetailsPatch {
 }
 
 /**
- * 하위 항목 도메인 스냅샷
+ * 생성 초안 (`Todo.planCreation()` 반환 타입 — sortOrder 미정)
  *
- * 애그리게잇 내부 값. 응답 read model이 아니라 도메인 상태의 일부입니다.
+ * id가 DB autoincrement라 영속화 전에 애그리게잇을 만들 수 없어,
+ * 생성 불변식(제목)·기본값 파생을 도메인이 담당하고 저장 데이터를 초안으로
+ * 반환합니다. sortOrder는 TX 안에서 결정되므로 핸들러가 나중에 붙입니다.
  */
-export interface TodoItemSnapshot {
-	id: number;
+export interface TodoCreationDraft {
+	userId: string;
+	categoryId: number;
 	title: string;
-	completed: boolean;
+	startDate: Date;
+	endDate?: Date | null;
+	scheduledTime?: Date | null;
+	isAllDay: boolean;
+	visibility: TodoVisibility;
+}
+
+/** 영속화 직전의 완성된 생성 계획 (초안 + TX 내 결정된 sortOrder) */
+export interface TodoCreationPlan extends TodoCreationDraft {
 	sortOrder: number;
-	createdAt: Date;
-	updatedAt: Date;
+}
+
+/** `Todo.planCreation()` 입력 (기본값 파생 전) */
+export interface TodoCreationInput {
+	userId: string;
+	categoryId: number;
+	title: string;
+	startDate: Date;
+	endDate?: Date | null;
+	scheduledTime?: Date | null;
+	isAllDay?: boolean;
+	visibility?: TodoVisibility;
 }
 
 /**
@@ -63,8 +90,11 @@ export interface TodoPersistenceSnapshot {
 /**
  * Todo 애그리게잇 프로퍼티 (순수 쓰기 모델)
  *
- * 카테고리 name/color 등 타 애그리게잇의 read model은 담지 않고 `categoryId` 참조만 보유합니다.
- * 조회 응답(카테고리 정보·itemStats)은 읽기 포트/read model이 별도로 담당합니다.
+ * - 일정은 TodoSchedule VO로 저장해 날짜 불변식이 타입 수준에서 보장됩니다.
+ * - 하위 항목은 TodoItem 자식 엔티티로 보유하며, 항목 불변식(개수 한도·제목·
+ *   존재)은 애그리게잇 행동 메서드가 소유합니다.
+ * - 카테고리 name/color 등 타 애그리게잇의 read model은 담지 않고
+ *   `categoryId` 참조만 보유합니다.
  */
 export interface TodoProps {
 	id: TodoId;
@@ -74,13 +104,10 @@ export interface TodoProps {
 	sortOrder: number;
 	completed: boolean;
 	completedAt: Date | null;
-	startDate: Date;
-	endDate: Date | null;
-	scheduledTime: Date | null;
-	isAllDay: boolean;
+	schedule: TodoSchedule;
 	visibility: TodoVisibility;
 	recurrenceGroupId: string | null;
-	items: TodoItemSnapshot[];
+	items: TodoItem[];
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -88,7 +115,7 @@ export interface TodoProps {
 /**
  * Todo 애그리게잇 루트
  *
- * 완료 상태 전이 등 비즈니스 불변식과 상태 변화를 담당합니다.
+ * 완료 상태 전이·일정·하위 항목 등 비즈니스 불변식과 상태 변화를 담당합니다.
  * 영속성(행 매핑)은 인프라 어댑터가, 조회 응답 변환은 읽기 어댑터가 담당합니다.
  */
 export class Todo extends AggregateRoot<TodoProps> {
@@ -100,17 +127,33 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * DB 행에서 매핑된 도메인 props로 애그리게잇을 복원합니다(불변식 재검증 없음).
 	 *
 	 * `static create()` 팩토리가 없는 이유: id가 DB autoincrement라 영속화 전에
-	 * TodoId를 만들 수 없습니다. 생성은 리포지토리 create → reconstitute →
-	 * `markCreated()`로 생성 이벤트를 적립하는 방식이 의도된 선택입니다.
+	 * TodoId를 만들 수 없습니다. 생성은 `planCreation()`(불변식·기본값) →
+	 * 리포지토리 create → reconstitute → `markCreated()` 순서가 의도된 선택입니다.
 	 * (id 전략을 UUID 등 도메인 생성으로 바꾸는 것은 별도 논의)
 	 */
 	static reconstitute(props: TodoProps): Todo {
 		return new Todo(props);
 	}
 
-	/** 제목 불변식 검증 — 위반 시 DomainException (규칙 소유는 TodoTitle VO) */
-	static #validateTitle(title: string): void {
-		TodoTitle.create(title);
+	/**
+	 * 생성 초안을 수립합니다 — 생성 불변식(제목)과 기본값 파생의 단일 지점.
+	 *
+	 * 모든 생성 경로(단건·반복·메모 변환)가 이 팩토리를 통과해야 합니다.
+	 * sortOrder는 TX 안에서 결정되므로 핸들러가 초안에 붙여 계획을 완성합니다.
+	 */
+	static planCreation(input: TodoCreationInput): TodoCreationDraft {
+		TodoTitle.create(input.title);
+
+		return {
+			userId: input.userId,
+			categoryId: input.categoryId,
+			title: input.title,
+			startDate: input.startDate,
+			endDate: input.endDate,
+			scheduledTime: input.scheduledTime,
+			isAllDay: input.isAllDay ?? true,
+			visibility: input.visibility ?? "PUBLIC",
+		};
 	}
 
 	/**
@@ -119,11 +162,11 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * 리마인더 스케줄링 등 생성 부수효과 트리거로 TodoCreatedEvent를 적립합니다.
 	 */
 	markCreated(): void {
-		this.apply(
+		this.raise(
 			new TodoCreatedEvent(
 				this.props.id.getValue(),
 				this.props.userId,
-				this.props.scheduledTime,
+				this.props.schedule.getScheduledTime(),
 			),
 		);
 	}
@@ -145,7 +188,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 		this.props.completed = completed;
 		this.props.completedAt = completed ? now() : null;
 
-		this.apply(
+		this.raise(
 			new TodoToggledEvent(
 				this.props.id.getValue(),
 				this.props.userId,
@@ -160,10 +203,13 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * 부분 수정을 적용합니다 (PATCH /todos/:id).
 	 *
 	 * - undefined 필드는 변경하지 않습니다.
+	 * - 일정 필드는 TodoSchedule.patch가 머지·검증을 원자적으로 수행합니다
+	 *   (단일 필드 패치에서도 endDate >= startDate 교차 검증).
 	 * - 완료 상태는 이전 상태와 **다를 때만** 전이하며 completedAt을 함께 파생합니다.
 	 *   (같은 값으로 재요청 시 completedAt 불변 — 레거시 동작 보존)
-	 * - TodoUpdatedEvent를 적립합니다. 완료 요청(true)이면 커밋 후 이벤트 핸들러가
-	 *   리마인더를 취소합니다. 스트릭·마일스톤은 토글 전용이므로 발생하지 않습니다.
+	 * - TodoUpdatedEvent에는 전이 후 완료 **상태**(사실)를 싣습니다. 완료 상태(true)면
+	 *   커밋 후 이벤트 핸들러가 리마인더를 취소합니다(완료 todo에는 리마인더가 없어
+	 *   멱등). 스트릭·마일스톤은 토글 전용이므로 발생하지 않습니다.
 	 */
 	updateDetails(patch: TodoDetailsPatch): void {
 		if (Object.values(patch).every((value) => value === undefined)) {
@@ -172,21 +218,25 @@ export class Todo extends AggregateRoot<TodoProps> {
 
 		// 검증을 모두 통과한 뒤에만 상태를 변경합니다 (부분 변경 방지)
 		if (patch.title !== undefined) {
-			Todo.#validateTitle(patch.title);
+			TodoTitle.create(patch.title);
 		}
-		if (patch.startDate !== undefined || patch.endDate !== undefined) {
-			// 단일 필드 패치에서도 저장값과 머지해 endDate >= startDate 교차 검증
-			TodoSchedule.create({
-				startDate: patch.startDate ?? this.props.startDate,
-				endDate:
-					patch.endDate !== undefined ? patch.endDate : this.props.endDate,
-				scheduledTime:
-					patch.scheduledTime !== undefined
-						? patch.scheduledTime
-						: this.props.scheduledTime,
-				isAllDay: patch.isAllDay ?? this.props.isAllDay,
-			});
+		const schedulePatch: Partial<TodoScheduleProps> = {};
+		if (patch.startDate !== undefined) {
+			schedulePatch.startDate = patch.startDate;
 		}
+		if (patch.endDate !== undefined) {
+			schedulePatch.endDate = patch.endDate;
+		}
+		if (patch.scheduledTime !== undefined) {
+			schedulePatch.scheduledTime = patch.scheduledTime;
+		}
+		if (patch.isAllDay !== undefined) {
+			schedulePatch.isAllDay = patch.isAllDay;
+		}
+		const nextSchedule =
+			Object.keys(schedulePatch).length > 0
+				? this.props.schedule.patch(schedulePatch)
+				: null;
 
 		if (patch.title !== undefined) {
 			this.props.title = patch.title;
@@ -194,17 +244,8 @@ export class Todo extends AggregateRoot<TodoProps> {
 		if (patch.categoryId !== undefined) {
 			this.props.categoryId = patch.categoryId;
 		}
-		if (patch.startDate !== undefined) {
-			this.props.startDate = patch.startDate;
-		}
-		if (patch.endDate !== undefined) {
-			this.props.endDate = patch.endDate;
-		}
-		if (patch.scheduledTime !== undefined) {
-			this.props.scheduledTime = patch.scheduledTime;
-		}
-		if (patch.isAllDay !== undefined) {
-			this.props.isAllDay = patch.isAllDay;
+		if (nextSchedule) {
+			this.props.schedule = nextSchedule;
 		}
 		if (patch.visibility !== undefined) {
 			this.props.visibility = patch.visibility;
@@ -217,11 +258,11 @@ export class Todo extends AggregateRoot<TodoProps> {
 			this.props.completedAt = patch.completed ? now() : null;
 		}
 
-		this.apply(
+		this.raise(
 			new TodoUpdatedEvent(
 				this.props.id.getValue(),
 				this.props.userId,
-				patch.completed,
+				this.props.completed,
 			),
 		);
 	}
@@ -233,12 +274,9 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * TodoRescheduledEvent를 적립합니다(커밋 후 이벤트 핸들러가 리마인더 재스케줄/취소).
 	 */
 	reschedule(schedule: TodoSchedule): void {
-		this.props.startDate = schedule.getStartDate();
-		this.props.endDate = schedule.getEndDate();
-		this.props.scheduledTime = schedule.getScheduledTime();
-		this.props.isAllDay = schedule.isAllDay();
+		this.props.schedule = schedule;
 
-		this.apply(
+		this.raise(
 			new TodoRescheduledEvent(
 				this.props.id.getValue(),
 				this.props.userId,
@@ -254,7 +292,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 	 * 커밋 후 이벤트 핸들러가 리마인더를 취소합니다.
 	 */
 	markDeleted(): void {
-		this.apply(
+		this.raise(
 			new TodoDeletedEvent(this.props.id.getValue(), this.props.userId),
 		);
 	}
@@ -278,23 +316,115 @@ export class Todo extends AggregateRoot<TodoProps> {
 		this.props.categoryId = categoryId;
 	}
 
+	// ── 하위 항목 (자식 엔티티) ───────────────────────────────────────────
+
+	/**
+	 * 하위 항목 추가를 계획합니다 (POST /todos/:id/items).
+	 *
+	 * MAX_PER_TODO 개수 불변식과 제목 불변식을 애그리게잇이 소유합니다.
+	 * 항목 id가 DB autoincrement라 planCreation과 같은 계획 패턴을 사용하며,
+	 * 리포지토리가 계획을 영속화합니다. 동시 추가 레이스 특성은 기존
+	 * in-TX count 방식과 동등합니다(read committed — 애그리게잇을 TX 안에서
+	 * 로드하는 전제).
+	 */
+	planItemAddition(title: string): { title: string; sortOrder: number } {
+		TodoTitle.create(title);
+
+		if (this.props.items.length >= TODO_ITEM_LIMITS.MAX_PER_TODO) {
+			throw new DomainException(ErrorCode.TODO_0821, {
+				currentCount: this.props.items.length,
+				maxPerTodo: TODO_ITEM_LIMITS.MAX_PER_TODO,
+			});
+		}
+
+		const maxSortOrder = this.props.items.reduce(
+			(max, item) => Math.max(max, item.getSortOrder()),
+			-1,
+		);
+		return { title, sortOrder: maxSortOrder + 1 };
+	}
+
+	/**
+	 * 하위 항목을 부분 수정합니다 (PATCH /todos/:id/items/:itemId).
+	 *
+	 * 존재하지 않는 항목이면 DomainException(TODO_0822).
+	 * 변경된 항목 엔티티를 반환하며, 핸들러는 그 상태를 영속화합니다.
+	 */
+	updateItem(
+		itemId: number,
+		patch: { title?: string; completed?: boolean },
+	): TodoItem {
+		const item = this.#requireItem(itemId);
+		if (patch.title !== undefined) {
+			item.rename(patch.title);
+		}
+		if (patch.completed !== undefined) {
+			item.setCompleted(patch.completed);
+		}
+		return item;
+	}
+
+	/** 하위 항목을 제거합니다 — 존재하지 않으면 DomainException(TODO_0822). */
+	removeItem(itemId: number): void {
+		this.#requireItem(itemId);
+		this.props.items = this.props.items.filter(
+			(item) => item.getId() !== itemId,
+		);
+	}
+
+	/**
+	 * 하위 항목 순서 일괄 변경을 검증합니다 (PATCH /todos/:id/items/reorder).
+	 *
+	 * 전체 항목 ID 집합 일치를 요구합니다 — 부분 전달 시 sortOrder 충돌 방지.
+	 * (기존 핸들러 검증을 애그리게잇으로 이관 — 에러 코드·메시지 보존)
+	 */
+	validateItemsReorder(itemIds: number[]): void {
+		const currentIds = new Set(this.getItemIds());
+		if (itemIds.length !== currentIds.size) {
+			throw new DomainException(
+				ErrorCode.SYS_0002,
+				{ expected: currentIds.size, received: itemIds.length },
+				"모든 하위 항목 ID를 전달해야 합니다",
+			);
+		}
+		for (const id of itemIds) {
+			if (!currentIds.has(id)) {
+				throw new DomainException(ErrorCode.TODO_0822, { itemId: id });
+			}
+		}
+	}
+
+	#requireItem(itemId: number): TodoItem {
+		const item = this.props.items.find((entry) => entry.getId() === itemId);
+		if (!item) {
+			throw new DomainException(ErrorCode.TODO_0822, { itemId });
+		}
+		return item;
+	}
+
+	// ── 조회/스냅샷 ─────────────────────────────────────────────────────
+
 	/**
 	 * 저장용 상태 스냅샷을 반환합니다.
 	 *
 	 * 핸들러가 커맨드 패치가 아닌 **애그리게잇 상태**를 영속화하도록 해
 	 * 도메인과 저장 데이터의 이중 소스 문제를 제거합니다.
+	 * Date는 방어 복사본으로 반환합니다.
 	 */
 	toPersistence(): TodoPersistenceSnapshot {
+		const schedule = this.props.schedule.getValue();
 		return {
 			title: this.props.title,
 			categoryId: this.props.categoryId,
-			startDate: this.props.startDate,
-			endDate: this.props.endDate,
-			scheduledTime: this.props.scheduledTime,
-			isAllDay: this.props.isAllDay,
+			startDate: schedule.startDate,
+			endDate: schedule.endDate,
+			scheduledTime: schedule.scheduledTime,
+			isAllDay: schedule.isAllDay,
 			visibility: this.props.visibility,
 			completed: this.props.completed,
-			completedAt: this.props.completedAt,
+			completedAt: this.props.completedAt
+				? new Date(this.props.completedAt)
+				: null,
 		};
 	}
 
@@ -311,11 +441,11 @@ export class Todo extends AggregateRoot<TodoProps> {
 	}
 
 	getItemIds(): number[] {
-		return this.props.items.map((item) => item.id);
+		return this.props.items.map((item) => item.getId());
 	}
 
 	hasItem(itemId: number): boolean {
-		return this.props.items.some((item) => item.id === itemId);
+		return this.props.items.some((item) => item.getId() === itemId);
 	}
 
 	isCompleted(): boolean {
@@ -323,6 +453,6 @@ export class Todo extends AggregateRoot<TodoProps> {
 	}
 
 	getCompletedAt(): Date | null {
-		return this.props.completedAt;
+		return this.props.completedAt ? new Date(this.props.completedAt) : null;
 	}
 }

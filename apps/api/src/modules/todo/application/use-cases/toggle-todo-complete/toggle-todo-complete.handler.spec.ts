@@ -13,11 +13,14 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
+	createTransactionManagerMock,
 } from "@test/mocks/ports";
+import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoToggledEvent } from "../../../domain/events/todo-toggled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -38,10 +41,12 @@ function buildEntity(completed = false): Todo {
 		sortOrder: 0,
 		completed,
 		completedAt: completed ? new Date() : null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],
@@ -69,6 +74,8 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
+			.mock(TRANSACTION_MANAGER)
+			.impl(() => createTransactionManagerMock())
 			.compile();
 
 		handler = unit;
@@ -106,6 +113,7 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			1,
 			true,
 			expect.any(Date),
+			expect.anything(),
 		);
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),
@@ -123,9 +131,9 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			new ToggleTodoCompleteCommand(1, "user-123", true, "UTC"),
 		);
 
-		// Then - 영속화·이벤트 발행 생략, 응답 계약(200)은 유지
+		// Then - 영속화 생략 + 빈 이벤트 배열 발행(부수효과 없음), 응답 계약(200)은 유지
 		expect(todoRepository.updateCompletion).not.toHaveBeenCalled();
-		expect(eventBus.publishAll).not.toHaveBeenCalled();
+		expect(eventBus.publishAll).toHaveBeenCalledWith([]);
 		expect(result.completed).toBe(true);
 	});
 });

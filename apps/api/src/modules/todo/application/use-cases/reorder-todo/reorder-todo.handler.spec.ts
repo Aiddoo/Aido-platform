@@ -18,7 +18,8 @@ import {
 import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -39,10 +40,12 @@ function buildEntity(id: number, sortOrder: number): Todo {
 		sortOrder,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],

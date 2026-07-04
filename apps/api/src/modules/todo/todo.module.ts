@@ -16,7 +16,7 @@ import { TODO_CACHE } from "./application/ports/todo-cache.port";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port";
 import { TODO_READ_REPOSITORY } from "./application/ports/todo-read.repository.port";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port";
-import { QueryHandlers } from "./application/queries/handlers";
+import { QueryHandlers } from "./application/queries";
 import { CommandHandlers } from "./application/use-cases";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-ownership.adapter";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter";
@@ -26,8 +26,8 @@ import { StreakAdapter } from "./infrastructure/adapters/streak.adapter";
 import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter";
 import { TodoReminderAdapter } from "./infrastructure/adapters/todo-reminder.adapter";
+import { TodoRowRepository } from "./infrastructure/persistence/todo-row.repository";
 import { TodoController } from "./todo.controller";
-import { TodoRepository } from "./todo.repository";
 
 /**
  * Todo 모듈
@@ -60,7 +60,7 @@ import { TodoRepository } from "./todo.repository";
 	],
 	controllers: [TodoController],
 	providers: [
-		TodoRepository,
+		TodoRowRepository,
 		PrismaTodoRepository,
 		PrismaTodoReadRepository,
 		{ provide: TODO_REPOSITORY, useExisting: PrismaTodoRepository },

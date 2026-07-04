@@ -6,13 +6,13 @@ import { isAfter } from "@/common/date/utils/compare";
 import { ApplicationException } from "@/common/domain";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import type { FindFriendTodosParams } from "../../../types/todo.types";
 import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port";
 import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
-import { GetFriendTodosQuery } from "../get-friend-todos.query";
+import type { FindFriendTodosParams } from "../../types";
+import { GetFriendTodosQuery } from "./get-friend-todos.query";
 
 /**
  * 친구의 PUBLIC Todo 목록 조회 핸들러

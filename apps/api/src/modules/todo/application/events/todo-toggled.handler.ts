@@ -2,11 +2,14 @@ import { Inject, Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { TodoToggledEvent } from "../../domain/events/todo-toggled.event";
+import {
+	isAllCompletedToday,
+	milestoneForCount,
+} from "../../domain/services/completion-policy";
 import { FRIEND_PORT, type FriendPort } from "../ports/friend.port";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port";
 import {
 	TODO_NOTIFICATION,
-	type TodoCompletionMilestone,
 	type TodoNotificationPort,
 } from "../ports/todo-notification.port";
 import {
@@ -18,15 +21,6 @@ import {
 	type TodoReminderPort,
 } from "../ports/todo-reminder.port";
 
-/** 누적 완료 카운트 → 마일스톤 매핑 */
-const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> =
-	new Map([
-		[1, "FIRST_COMPLETE"],
-		[10, "COUNT_10"],
-		[50, "COUNT_50"],
-		[100, "COUNT_100"],
-	]);
-
 /**
  * Todo 완료 토글 이벤트 핸들러
  *
@@ -34,7 +28,7 @@ const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> =
  * - 완료로 전환된 경우에만 리마인더 취소 + 친구 완료 알림 + 마일스톤 체크를 수행합니다.
  *
  * 모든 부수효과는 fire-and-forget이며 실패는 로깅만 합니다(기존 동작 보존).
- * 크로스모듈 의존은 포트를 통해서만 접근합니다.
+ * 크로스모듈 의존은 포트를 통해서만, 판단 규칙은 도메인 정책(completion-policy)을 통해 접근합니다.
  */
 @EventsHandler(TodoToggledEvent)
 export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
@@ -63,7 +57,7 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 		}
 
 		// 스트릭은 양방향 갱신 (fire-and-forget)
-		this.streakPort.onTodoToggled(userId, completed, timezone);
+		this.streakPort.recordTodoToggle(userId, completed, timezone);
 	}
 
 	/**
@@ -80,7 +74,7 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 				today,
 			);
 
-			if (stats.total > 0 && stats.total === stats.completed) {
+			if (isAllCompletedToday(stats)) {
 				const [friendIds, userName] = await Promise.all([
 					this.friendPort.getMutualFriendIds(userId),
 					this.friendPort.getUserDisplayName(userId),
@@ -113,7 +107,7 @@ export class TodoToggledHandler implements IEventHandler<TodoToggledEvent> {
 	async #checkAndEnqueueMilestone(userId: string): Promise<void> {
 		try {
 			const count = await this.todoReadRepository.countCompletedByUser(userId);
-			const milestone = COMPLETION_MILESTONES.get(count);
+			const milestone = milestoneForCount(count);
 			if (!milestone) {
 				return;
 			}

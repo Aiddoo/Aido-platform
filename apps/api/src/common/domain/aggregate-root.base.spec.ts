@@ -2,7 +2,7 @@
  * AggregateRoot 베이스 단위 테스트
  *
  * GWT 패턴 적용
- * - 도메인 이벤트 적립(apply) → pullDomainEvents 드레인 검증
+ * - 도메인 이벤트 적립(raise) → pullDomainEvents 드레인 검증
  */
 
 import { AggregateRoot } from "./aggregate-root.base";
@@ -27,13 +27,13 @@ class TestAggregate extends AggregateRoot<TestProps> {
 
 	static create(props: TestProps): TestAggregate {
 		const aggregate = new TestAggregate(props);
-		aggregate.apply(new TestCreatedEvent(props.id));
+		aggregate.raise(new TestCreatedEvent(props.id));
 		return aggregate;
 	}
 
 	rename(title: string): void {
 		this.props.title = title;
-		this.apply(new TestRenamedEvent(title));
+		this.raise(new TestRenamedEvent(title));
 	}
 
 	getTitle(): string {
@@ -42,7 +42,7 @@ class TestAggregate extends AggregateRoot<TestProps> {
 }
 
 describe("AggregateRoot — 애그리게잇 루트 베이스", () => {
-	it("apply한 이벤트는 pullDomainEvents로 적립 순서대로 드레인된다", () => {
+	it("raise한 이벤트는 pullDomainEvents로 적립 순서대로 드레인된다", () => {
 		// Given
 		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
 		aggregate.rename("변경");
@@ -68,7 +68,7 @@ describe("AggregateRoot — 애그리게잇 루트 베이스", () => {
 		expect(second).toHaveLength(0);
 	});
 
-	it("드레인 후 새로 apply한 이벤트만 다음 드레인에 포함된다", () => {
+	it("드레인 후 새로 raise한 이벤트만 다음 드레인에 포함된다", () => {
 		// Given
 		const aggregate = TestAggregate.create({ id: 1, title: "테스트" });
 		aggregate.pullDomainEvents();

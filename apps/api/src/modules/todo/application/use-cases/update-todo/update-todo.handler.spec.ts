@@ -16,11 +16,14 @@ import {
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
+	createTransactionManagerMock,
 } from "@test/mocks/ports";
+import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	CATEGORY_OWNERSHIP,
 	type CategoryOwnershipPort,
@@ -47,10 +50,12 @@ function buildEntity(overrides: { completed?: boolean } = {}): Todo {
 		sortOrder: 0,
 		completed: overrides.completed ?? false,
 		completedAt: overrides.completed ? new Date("2026-01-01") : null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],
@@ -80,6 +85,8 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
+			.mock(TRANSACTION_MANAGER)
+			.impl(() => createTransactionManagerMock())
 			.mock<CategoryOwnershipPort>(CATEGORY_OWNERSHIP)
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
@@ -117,9 +124,11 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 		);
 
 		// Then - completedAt 미포함 패치 + 캐시/소유권 확인 없음
-		expect(todoRepository.updateDetails).toHaveBeenCalledWith(1, {
-			title: "새 제목",
-		});
+		expect(todoRepository.updateDetails).toHaveBeenCalledWith(
+			1,
+			{ title: "새 제목" },
+			expect.anything(),
+		);
 		expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
 		expect(todoCache.invalidateTodoCategories).not.toHaveBeenCalled();
 		expect(result.id).toBe(1);
@@ -138,10 +147,11 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 		);
 
 		// Then - 전이 패치 + 저장 후 이벤트 발행(이벤트 핸들러가 리마인더 취소)
-		expect(todoRepository.updateDetails).toHaveBeenCalledWith(1, {
-			completed: true,
-			completedAt: expect.any(Date),
-		});
+		expect(todoRepository.updateDetails).toHaveBeenCalledWith(
+			1,
+			{ completed: true, completedAt: expect.any(Date) },
+			expect.anything(),
+		);
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoUpdatedEvent(1, "user-123", true),
 		]);
@@ -160,10 +170,11 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 		);
 
 		// Then
-		expect(todoRepository.updateDetails).toHaveBeenCalledWith(1, {
-			completed: false,
-			completedAt: null,
-		});
+		expect(todoRepository.updateDetails).toHaveBeenCalledWith(
+			1,
+			{ completed: false, completedAt: null },
+			expect.anything(),
+		);
 	});
 
 	it("같은 완료 상태로 재요청하면 completedAt을 패치에 포함하지 않는다 (레거시 동작 보존)", async () => {
@@ -179,9 +190,11 @@ describe("UpdateTodoHandler — 할 일 부분 수정 핸들러", () => {
 		);
 
 		// Then - completedAt 없이 completed만
-		expect(todoRepository.updateDetails).toHaveBeenCalledWith(1, {
-			completed: true,
-		});
+		expect(todoRepository.updateDetails).toHaveBeenCalledWith(
+			1,
+			{ completed: true },
+			expect.anything(),
+		);
 	});
 
 	it("카테고리 변경 시 소유권을 확인하고 캐시를 무효화한다 (활성 한도 재체크는 없음)", async () => {

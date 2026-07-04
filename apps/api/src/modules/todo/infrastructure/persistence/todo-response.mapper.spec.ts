@@ -6,40 +6,16 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo.mapper
+ * pnpm --filter @aido/api test todo-response.mapper
  * ```
  */
 import { TodoBuilder } from "@test/builders";
-import type { TodoItemData } from "@/modules/todo/types/todo.types";
-import { TodoMapper } from "./todo.mapper";
+import { TodoMapper } from "./todo-response.mapper";
+import type { TodoItemData } from "./todo-row.types";
 
 describe("TodoMapper — 할 일 매퍼", () => {
 	beforeEach(() => {
 		TodoBuilder.resetIdCounter();
-	});
-
-	describe("formatDate", () => {
-		it("Date 객체를 YYYY-MM-DD 형식의 문자열로 변환해야 한다", () => {
-			// Given - 변환할 Date 객체 준비
-			const date = new Date("2024-01-15T10:30:00.000Z");
-
-			// When - formatDate 호출
-			const result = TodoMapper.formatDate(date);
-
-			// Then - YYYY-MM-DD 형식으로 변환되었는지 검증
-			expect(result).toBe("2024-01-15");
-		});
-
-		it("월과 일이 한 자리수일 때 0을 패딩해야 한다", () => {
-			// Given - 한 자리수 월/일이 포함된 Date 객체 준비
-			const date = new Date("2024-03-05T00:00:00.000Z");
-
-			// When - formatDate 호출
-			const result = TodoMapper.formatDate(date);
-
-			// Then - 0 패딩이 적용되었는지 검증
-			expect(result).toBe("2024-03-05");
-		});
 	});
 
 	describe("toResponse", () => {

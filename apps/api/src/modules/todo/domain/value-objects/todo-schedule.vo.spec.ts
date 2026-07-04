@@ -120,4 +120,102 @@ describe("TodoSchedule — 일정 값 객체", () => {
 		// Then
 		expect(schedule.getEndDate()).toEqual(sameDay);
 	});
+
+	describe("reconstitute", () => {
+		it("역전된 날짜 범위도 재검증 없이 복원한다 (가드 도입 이전 데이터 보호)", () => {
+			// Given - 불변식을 위반하는 저장 데이터
+			const schedule = TodoSchedule.reconstitute({
+				startDate: new Date("2026-03-05"),
+				endDate: new Date("2026-03-01"),
+				scheduledTime: null,
+				isAllDay: true,
+			});
+
+			// When & Then - 복원은 항상 성공하고 값을 그대로 노출한다
+			expect(schedule.getStartDate()).toEqual(new Date("2026-03-05"));
+			expect(schedule.getEndDate()).toEqual(new Date("2026-03-01"));
+		});
+	});
+
+	describe("patch", () => {
+		it("undefined 키는 기존 값을 유지하고 전달된 키만 머지한 새 VO를 반환한다", () => {
+			// Given
+			const base = TodoSchedule.create({
+				startDate: new Date("2026-03-01"),
+				endDate: new Date("2026-03-05"),
+				scheduledTime: null,
+				isAllDay: true,
+			});
+
+			// When - scheduledTime/isAllDay만 패치
+			const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
+			const patched = base.patch({ scheduledTime, isAllDay: false });
+
+			// Then - 날짜는 유지, 시간·종일 여부만 변경 (원본 VO는 불변)
+			expect(patched.getStartDate()).toEqual(new Date("2026-03-01"));
+			expect(patched.getEndDate()).toEqual(new Date("2026-03-05"));
+			expect(patched.getScheduledTime()).toEqual(scheduledTime);
+			expect(patched.isAllDay()).toBe(false);
+			expect(base.getScheduledTime()).toBeNull();
+			expect(base.isAllDay()).toBe(true);
+		});
+
+		it("endDate: null 패치는 종료 날짜 제거로 반영된다 (undefined와 구분)", () => {
+			// Given
+			const base = TodoSchedule.create({
+				startDate: new Date("2026-03-01"),
+				endDate: new Date("2026-03-05"),
+				scheduledTime: null,
+				isAllDay: true,
+			});
+
+			// When
+			const patched = base.patch({ endDate: null });
+
+			// Then
+			expect(patched.getEndDate()).toBeNull();
+		});
+
+		it("날짜를 건드리는 패치는 머지 결과를 재검증해 역전이면 DomainException(SYS_0002)을 던진다", () => {
+			// Given - startDate가 2026-03-01인 일정
+			const base = TodoSchedule.create({
+				startDate: new Date("2026-03-01"),
+				endDate: null,
+				scheduledTime: null,
+				isAllDay: true,
+			});
+			const patch = () => base.patch({ endDate: new Date("2026-02-20") });
+
+			// When & Then - 단일 필드 패치도 교차 검증
+			expect(patch).toThrow(DomainException);
+			try {
+				patch();
+			} catch (error) {
+				if (error instanceof DomainException) {
+					expect(error.errorCode).toBe(ErrorCode.SYS_0002);
+				}
+			}
+		});
+
+		it("시간만 바꾸는 패치는 재검증하지 않아 위반 상태의 기존 날짜가 살아남는다 (기존 API 동작 보존)", () => {
+			// Given - 가드 도입 이전에 저장된 역전 날짜 데이터
+			const legacyViolating = TodoSchedule.reconstitute({
+				startDate: new Date("2026-03-05"),
+				endDate: new Date("2026-03-01"),
+				scheduledTime: null,
+				isAllDay: true,
+			});
+
+			// When - 날짜를 건드리지 않는 패치
+			const patched = legacyViolating.patch({
+				scheduledTime: new Date("2026-03-05T09:00:00.000Z"),
+				isAllDay: false,
+			});
+
+			// Then - 실패 없이 위반 날짜가 그대로 유지된다
+			expect(patched.getStartDate()).toEqual(new Date("2026-03-05"));
+			expect(patched.getEndDate()).toEqual(new Date("2026-03-01"));
+			expect(patched.isAllDay()).toBe(false);
+		});
+	});
 });

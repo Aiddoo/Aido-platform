@@ -13,7 +13,7 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-
+import { UserIdParamDto } from "@/common/dtos";
 import {
 	ApiBadRequestError,
 	ApiConflictError,
@@ -25,7 +25,6 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/common/swagger";
-
 import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
 import {
@@ -41,7 +40,6 @@ import {
 	ReorderFriendResponseDto,
 	SendFriendRequestResponseDto,
 	SentRequestsResponseDto,
-	UserIdParamDto,
 	UserTagParamDto,
 } from "./dtos";
 import { FollowMapper } from "./follow.mapper";

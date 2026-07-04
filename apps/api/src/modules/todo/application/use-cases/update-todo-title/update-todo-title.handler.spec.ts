@@ -13,11 +13,14 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
+	createTransactionManagerMock,
 } from "@test/mocks/ports";
+import { TRANSACTION_MANAGER } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
-import { TodoMapper } from "../../../todo.mapper";
+import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
+import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper";
 import {
 	TODO_REPOSITORY,
 	type TodoRepositoryPort,
@@ -38,10 +41,12 @@ function buildEntity(): Todo {
 		sortOrder: 0,
 		completed: false,
 		completedAt: null,
-		startDate: new Date("2026-02-22"),
-		endDate: null,
-		scheduledTime: null,
-		isAllDay: true,
+		schedule: TodoSchedule.reconstitute({
+			startDate: new Date("2026-02-22"),
+			endDate: null,
+			scheduledTime: null,
+			isAllDay: true,
+		}),
 		visibility: "PUBLIC",
 		recurrenceGroupId: null,
 		items: [],
@@ -68,6 +73,8 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
+			.mock(TRANSACTION_MANAGER)
+			.impl(() => createTransactionManagerMock())
 			.compile();
 
 		handler = unit;
@@ -87,10 +94,14 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			new UpdateTodoTitleCommand(1, "user-123", "새 제목"),
 		);
 
-		// Then - 영속화 + 이벤트(완료 필드 없음 → completed=undefined)
-		expect(todoRepository.updateTitle).toHaveBeenCalledWith(1, "새 제목");
+		// Then - 영속화 + 이벤트(전이 후 완료 상태 사실 → completed=false)
+		expect(todoRepository.updateTitle).toHaveBeenCalledWith(
+			1,
+			"새 제목",
+			expect.anything(),
+		);
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
-			new TodoUpdatedEvent(1, "user-123", undefined),
+			new TodoUpdatedEvent(1, "user-123", false),
 		]);
 		expect(result.title).toBe("새 제목");
 	});

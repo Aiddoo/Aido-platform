@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	TRANSACTION_MANAGER,
+	type TransactionManagerPort,
+} from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -30,29 +34,33 @@ export class UpdateTodoVisibilityHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
+		@Inject(TRANSACTION_MANAGER)
+		private readonly txManager: TransactionManagerPort,
 	) {}
 
 	async execute(command: UpdateTodoVisibilityCommand): Promise<TodoResponse> {
 		const { id, userId, visibility } = command;
 
-		// 1. 소유권 확인
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
+		// TX 안에서 로드 → 애그리게잇 전이 → 애그리게잇 상태로 영속화
+		await this.txManager.run(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+			}
 
-		// 2. 애그리게잇 전이 → 애그리게잇 상태로 영속화
-		todo.changeVisibility(visibility);
-		await this.todoRepository.updateVisibility(
-			id,
-			todo.toPersistence().visibility,
-		);
+			todo.changeVisibility(visibility);
+			await this.todoRepository.updateVisibility(
+				id,
+				todo.toPersistence().visibility,
+				tx,
+			);
+		});
 
 		this.#logger.log(
 			`Todo visibility updated: ${id} -> ${visibility} for user: ${userId}`,
 		);
 
-		// 3. 응답 재조회
+		// 응답 재조회
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,
 			userId,

@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import {
+	TRANSACTION_MANAGER,
+	type TransactionManagerPort,
+} from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -31,34 +35,42 @@ export class ToggleTodoCompleteHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
+		@Inject(TRANSACTION_MANAGER)
+		private readonly txManager: TransactionManagerPort,
 		private readonly eventBus: EventBus,
 	) {}
 
 	async execute(command: ToggleTodoCompleteCommand): Promise<TodoResponse> {
 		const { id, userId, completed, timezone } = command;
 
-		const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
+		// TX 안에서 로드 → 전이 → 영속화 (동시 수정 레이스 창 축소)
+		const events = await this.txManager.run(async (tx) => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+			if (!todo) {
+				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+			}
 
-		// 같은 값 재토글이면 쓰기·이벤트 생략 (스트릭/알림 재발화 억제, 응답은 동일)
-		const changed = todo.toggleComplete(completed, timezone);
+			// 같은 값 재토글이면 쓰기·이벤트 생략 (스트릭/알림 재발화 억제, 응답은 동일)
+			const changed = todo.toggleComplete(completed, timezone);
+			if (!changed) {
+				return [];
+			}
 
-		if (changed) {
 			await this.todoRepository.updateCompletion(
 				id,
 				todo.isCompleted(),
 				todo.getCompletedAt(),
+				tx,
 			);
 
 			this.#logger.log(
 				`Todo completion toggled: ${id} -> ${completed} for user: ${userId}`,
 			);
+			return todo.pullDomainEvents();
+		});
 
-			// 저장 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
-			this.eventBus.publishAll(todo.pullDomainEvents());
-		}
+		// 저장(TX 커밋) 완료 후 이벤트 발행 (부수효과는 이벤트 핸들러가 처리)
+		this.eventBus.publishAll(events);
 
 		const response = await this.todoReadRepository.findByIdAndUserId(
 			id,

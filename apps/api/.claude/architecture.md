@@ -159,9 +159,9 @@ apps/api/
 
 ---
 
-### 1.4 클린아키텍처 모듈 (CQRS) — todo부터 적용
+### 1.4 클린아키텍처 모듈 (CQRS + DDD) — todo부터 적용
 
-todo 모듈은 3계층에서 클린아키텍처+CQRS로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
+todo 모듈은 3계층에서 클린아키텍처+CQRS+전술적 DDD로 완전 전환됐다. 신규 표준이며, 다른 모듈도 순차 이관 예정.
 코드 작성 규칙 상세: [api-conventions.md §9](./api-conventions.md#9-클린아키텍처cqrs-모듈-규칙)
 
 ```
@@ -169,29 +169,54 @@ HTTP Request
      ↓
 Controller ── DTO→Command/Query 매핑, 날짜·타임존 파싱만 담당
      ↓
-CommandBus / QueryBus (@nestjs/cqrs)
+CommandBus / QueryBus ── Command<T>/Query<T> 확장으로 반환 타입 자동 추론
      ↓
 Application: 커맨드/쿼리 핸들러 (유스케이스당 1개, SRP)
-     │  · 포트(Symbol 토큰 인터페이스)에만 의존
-     │  · TRANSACTION_MANAGER.run(tx => ...) 로 트랜잭션
+     │  · 포트(Symbol 토큰 인터페이스)에만 의존 — 8종 (repo 쓰기/읽기,
+     │    category-ownership, cache, friend, streak, notification, reminder)
+     │  · TRANSACTION_MANAGER.run(tx => ...) — tx는 불투명 TransactionContext
+     │    (Prisma 타입은 application에 노출되지 않음, 인프라만 unwrapTransaction)
+     │  · load→mutate→write는 TX 안에서 (동시 수정 레이스 창 축소)
      │  · ApplicationException(ErrorCode)으로 유스케이스 규칙 위반 표현
      ↓
-Domain: 애그리게잇(AggregateRoot) · VO · 도메인 서비스 · 도메인 이벤트
+Domain: 애그리게잇 · 자식 엔티티 · VO · 도메인 서비스/정책 · 도메인 이벤트
      │  · 불변식 위반은 DomainException
-     │  · 상태 전이 메서드에서 apply(event) → 영속화 후 eventBus.publishAll(pullDomainEvents())
+     │  · props는 VO로 저장 (TodoSchedule — 날짜 불변식이 타입 수준 보장)
+     │  · 하위 항목은 TodoItem 자식 엔티티 — 개수 한도·존재·제목 불변식을
+     │    애그리게잇 행동 메서드(planItemAddition/updateItem/removeItem/
+     │    validateItemsReorder)가 소유
+     │  · 생성은 Todo.planCreation() (birth 불변식·기본값의 단일 지점 —
+     │    id가 autoincrement라 팩토리 대신 계획 패턴)
+     │  · 판단 규칙은 도메인 정책 함수 (completion-policy, reorder-position,
+     │    expand-recurring-dates — 전부 순수 함수)
+     │  · 상태 전이 메서드에서 raise(event) 적립 → 핸들러가 TX 커밋 후
+     │    eventBus.publishAll(pullDomainEvents())
      ↓
 Infrastructure: 어댑터 (포트 구현)
-     │  · Prisma{X}Repository → 레거시 행 Repository에 위임 + 도메인/응답 매핑
+     │  · PrismaTodo{Read}Repository → persistence/의 행 DAO(TodoRowRepository)에
+     │    위임 + 도메인/응답 매핑 (reconstitute는 불변식 재검증 없음)
      │  · 크로스모듈 어댑터 → 타 모듈 서비스에 thin delegation
+     │  · 페이로드 계약(알림 등)은 todo 포트가 소유, 어댑터가 구조 매핑
      ↓
-행 Repository → DatabaseService (Prisma) → PostgreSQL
+TodoRowRepository (행 DAO) → DatabaseService (Prisma) → PostgreSQL
 
      ── 부수효과 (커밋 후) ──
 @EventsHandler ── TodoCreated/Updated/Rescheduled/Deleted → 리마인더 스케줄/취소
               └─ TodoToggled → 리마인더 취소 + 스트릭 + 친구완료/마일스톤 큐
 ```
 
-**의존성 방향 (클린아키텍처 모듈)**
+**폴더 규칙** (커맨드·쿼리 대칭):
+
+```
+modules/todo/
+├── domain/            entities/ (todo, todo-item) · value-objects/ · events/ · services/
+├── application/       ports/ (8종) · types.ts · use-cases/<kebab>/{command,handler,spec}
+│                      · queries/<kebab>/{query,handler,spec} · events/ (5종 부수효과 핸들러)
+├── infrastructure/    adapters/ (포트 구현 8종) · persistence/ (행 DAO·응답 매퍼·행 타입)
+├── dtos/  todo.controller.ts  todo.module.ts  index.ts (공개 API = 커맨드 클래스)
+```
+
+**의존성 방향 (클린아키텍처 모듈)** — `pnpm lint:boundaries`가 기계적으로 강제
 
 | 방향 | 허용 여부 | 비고 |
 |------|----------|------|
@@ -199,11 +224,25 @@ Infrastructure: 어댑터 (포트 구현)
 | application → domain | ✅ | 핸들러가 애그리게잇/VO/도메인 서비스 사용 |
 | application → 포트(인터페이스) | ✅ | `@Inject(SYMBOL_TOKEN)` |
 | infrastructure → application 포트 | ✅ | 어댑터가 포트 구현 |
-| infrastructure → 레거시 Repository/타 모듈 서비스 | ✅ | 위임 전용 (쿼리 중복 금지) |
-| domain → application/infrastructure | ❌ | 도메인은 안쪽으로만 |
-| application → Prisma/타 모듈 구체 클래스 | ❌ | 포트로 역전 |
-| 외부 모듈 → 이 모듈의 서비스 | ❌ | CommandBus로 커맨드 디스패치 (memo·ai-suggestion 참조) |
-| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` 수동 게이트 (CI 미연결) |
+| infrastructure → 행 DAO/타 모듈 서비스 | ✅ | 위임 전용 (쿼리 중복 금지) |
+| domain → application/infrastructure/@nestjs/DB | ❌ | 도메인은 프레임워크 제로 의존 |
+| application → Prisma 타입/타 모듈 내부 | ❌ | 불투명 TransactionContext·포트로 역전 |
+| 외부 모듈 → 이 모듈 내부 깊은 경로 | ❌ | 배럴(index)·커맨드 디스패치만 (memo·ai-suggestion 참조) |
+| domain/application/infrastructure에서 `as`/`!` | ❌ | `pnpm lint:no-cast` |
+
+> `lint:no-cast`·`lint:boundaries`는 수동 게이트다(CI 미연결 — 연결은 별도 결정).
+> 새 모듈 전환 시 두 스크립트의 대상 배열(`TARGET_DIRS`/`CLEAN_MODULES`)에 모듈명을 추가한다.
+
+**의도적 트레이드오프** (재검토 시점과 함께 기록):
+
+| 결정 | 이유 | 재검토 시점 |
+|------|------|------------|
+| `reconstitute` 무검증 복원 | 가드 도입 이전 데이터도 복원은 성공해야 함 | 데이터 정합 백필 후 |
+| `create()` 팩토리 대신 `planCreation()` 계획 패턴 | id가 DB autoincrement | id 전략을 UUID로 바꿀 때 |
+| 행 단위 저장(필드별 update) — 컬렉션형 save(todo) 아님 | 동시 필드 쓰기 클로버 방지, Prisma partial update 적합 | 낙관적 잠금(version) 도입 시 |
+| version 컬럼(낙관적 잠금) 미도입 | 스키마·충돌 에러 시맨틱 변경 = 클라 영향 | 충돌 빈도가 문제 될 때 (현재는 TX 감싸기로 창 축소) |
+| 이벤트 아웃박스 없음 | 기존 fire-and-forget 큐 규칙과 일관 | 부수효과가 유실 불가 요건이 될 때 |
+| TodoTitle을 props에 string으로 저장 | 매핑 노이즈 대비 이득 없음 (모든 쓰기 경로가 VO 게이트 통과) | 제목 규칙이 늘어날 때 |
 
 **계약 안전장치**: `test/e2e/openapi-contract.e2e-spec.ts` 스냅샷이 전체 API 계약을 고정 —
 마이그레이션 중 스냅샷 diff 0 = 클라이언트 영향 0.
