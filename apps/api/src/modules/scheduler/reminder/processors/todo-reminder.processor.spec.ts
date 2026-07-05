@@ -177,8 +177,8 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 			// Then — DB의 최신 제목이 알림에 사용됨
 			expect(notificationService.createAndSend).toHaveBeenCalledWith(
 				expect.objectContaining({
-					title: "밥먹고 약먹기, 1시간 남았어",
-					body: "미리 시작하면 여유롭게 끝나",
+					title: "⏰ 밥먹고 약먹기, 1시간 뒤 시작!",
+					body: "미리 해두면 마음이 편해져",
 				}),
 			);
 

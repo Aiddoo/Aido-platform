@@ -1,10 +1,10 @@
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
+import { BottomTabBarHeightContext } from 'expo-router/js-tabs';
 import { useContext } from 'react';
 
 /**
  * Bottom Tab Bar 높이를 안전하게 반환하는 훅.
  *
- * `@react-navigation/bottom-tabs`의 `useBottomTabBarHeight()`는
+ * `expo-router/js-tabs`(구 `@react-navigation/bottom-tabs`)의 `useBottomTabBarHeight()`는
  * `BottomTabBarHeightContext`가 없으면 throw하지만, iOS Liquid Glass 환경에서
  * 사용하는 `NativeTabs`(expo-router/unstable-native-tabs)는 이 context를 제공하지 않는다.
  *

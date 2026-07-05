@@ -1,10 +1,10 @@
 import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validators';
-import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRoute } from 'expo-router';
+import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
 

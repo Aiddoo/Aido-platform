@@ -2,7 +2,7 @@
 
 **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
 
-Expo 55 + React Native 0.83 기반 모바일 앱.
+Expo 57 + React Native 0.86 기반 모바일 앱.
 
 ## 아키텍처
 

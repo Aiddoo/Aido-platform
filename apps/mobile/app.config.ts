@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.3.2';
+const VERSION = '1.3.3';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -141,13 +141,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: ICON,
     userInterfaceStyle: 'automatic',
 
-    // Splash
-    splash: {
-      image: SPLASH,
-      resizeMode: 'contain',
-      backgroundColor: BRAND_COLOR,
-    },
-
     // iOS
     ios: {
       requireFullScreen: true,
@@ -224,8 +217,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Plugins
     plugins: [
       './plugins/withJitpackFilter',
+      './plugins/withGradleJvmArgs',
       '@react-native-firebase/app',
       '@react-native-firebase/crashlytics',
+      '@react-native-community/datetimepicker',
       [
         'expo-build-properties',
         {
@@ -245,6 +240,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-splash-screen',
         {
+          ios: {
+            image: SPLASH,
+            resizeMode: 'contain',
+            backgroundColor: BRAND_COLOR,
+            // SDK 57: 플러그인 기본은 100pt 로고 모드 — 기존 전체 화면 스플래시 유지
+            enableFullScreenImage_legacy: true,
+          },
           android: {
             image: SPLASH_ANDROID,
             imageWidth: 288,

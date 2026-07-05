@@ -52,6 +52,19 @@ describe('Box 컴포넌트', () => {
     expect(box.props.style).toContainEqual({ padding: 10 });
   });
 
+  it('spacing props 미지정 시 undefined 키를 style로 전달하지 않아야 한다', () => {
+    render(
+      <Box testID="box" className="flex-1 py-2">
+        콘텐츠
+      </Box>,
+    );
+    const box = screen.getByTestId('box');
+    const flattened = Object.assign({}, ...[box.props.style].flat().filter(Boolean));
+
+    expect(flattened).not.toHaveProperty('flex');
+    expect(flattened).not.toHaveProperty('paddingVertical');
+  });
+
   it('여러 자식 요소를 렌더링해야 한다', () => {
     render(
       <Box>

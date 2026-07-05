@@ -9,12 +9,14 @@
  * pnpm --filter @aido/api test notification-templates
  * ```
  */
+import type { WeatherForecast } from "@/modules/weather/providers/weather-provider.interface";
 import {
 	fillTemplate,
 	NotificationMessageBuilder,
 	pickVariant,
 	SCHEDULER_TEMPLATES,
 	SYSTEM_TEMPLATES,
+	WEATHER_TEMPLATES,
 } from "./notification-templates";
 
 describe("notification-templates", () => {
@@ -96,6 +98,24 @@ describe("notification-templates", () => {
 			);
 			expect(fillTemplate("{item:을/를} 완료", { item: "운동" })).toBe(
 				"운동을 완료",
+			);
+		});
+
+		it("{key:와/과} 구문도 정상 동작한다", () => {
+			expect(fillTemplate("{name:와/과} 연결", { name: "민지" })).toBe(
+				"민지와 연결",
+			);
+			expect(fillTemplate("{name:와/과} 연결", { name: "길동" })).toBe(
+				"길동과 연결",
+			);
+		});
+
+		it("{key:은/는} 구문도 정상 동작한다", () => {
+			expect(fillTemplate("{name:은/는} 끝냈어", { name: "민지" })).toBe(
+				"민지는 끝냈어",
+			);
+			expect(fillTemplate("{name:은/는} 끝냈어", { name: "길동" })).toBe(
+				"길동은 끝냈어",
 			);
 		});
 
@@ -232,7 +252,7 @@ describe("notification-templates", () => {
 				);
 
 				// Then — 첫 번째 variant
-				expect(result.title).toBe("홍길동이 '밥먹기' 콕 찔렀어!");
+				expect(result.title).toBe("👉 홍길동이 '밥먹기' 콕!");
 			});
 
 			it("title에 이름(조사) + todoTitle이 포함된다 (받침 없음)", () => {
@@ -243,7 +263,7 @@ describe("notification-templates", () => {
 				);
 
 				// Then
-				expect(result.title).toBe("철수가 '운동하기' 콕 찔렀어!");
+				expect(result.title).toBe("👉 철수가 '운동하기' 콕!");
 			});
 
 			it("message가 없으면 body는 variants 풀 내의 값을 반환한다", () => {
@@ -254,7 +274,7 @@ describe("notification-templates", () => {
 				);
 
 				// Then — 첫 번째 variant body
-				expect(result.body).toBe("아직도 안 했어?");
+				expect(result.body).toBe("아직도 안 했어? 😏");
 			});
 
 			it("message가 있으면 body에 메시지만 표시한다", () => {
@@ -266,7 +286,7 @@ describe("notification-templates", () => {
 				);
 
 				// Then — WITH_MESSAGE 템플릿은 variants 없음, 고정 포맷
-				expect(result.body).toBe("'같이 먹자'");
+				expect(result.body).toBe("💬 '같이 먹자'");
 			});
 		});
 
@@ -304,8 +324,8 @@ describe("notification-templates", () => {
 				const result = NotificationMessageBuilder.eveningReminder(5, 5, 7);
 
 				// Then — 고정 (variants 없음)
-				expect(result.title).toBe("7일 연속! 일주일 내내 해냈어");
-				expect(result.body).toBe("이거 실화냐");
+				expect(result.title).toBe(SCHEDULER_TEMPLATES.EVENING_STREAK_7.title);
+				expect(result.body).toBe(SCHEDULER_TEMPLATES.EVENING_STREAK_7.body);
 			});
 
 			it("스트릭 14일이면 고정 메시지를 반환한다", () => {
@@ -313,15 +333,20 @@ describe("notification-templates", () => {
 				const result = NotificationMessageBuilder.eveningReminder(5, 5, 14);
 
 				// Then
-				expect(result.title).toBe("2주 연속이다. 진심이구나");
+				expect(result.title).toBe(SCHEDULER_TEMPLATES.EVENING_STREAK_14.title);
 			});
 
-			it("스트릭 30일 이상이면 고정 메시지를 반환한다", () => {
+			it("스트릭 30일 이상이면 streak이 치환된 고정 메시지를 반환한다", () => {
 				// When
 				const result = NotificationMessageBuilder.eveningReminder(5, 5, 30);
 
 				// Then
-				expect(result.title).toBe("30일째. 전설이 되고 있어");
+				expect(result.title).toBe(
+					fillTemplate(SCHEDULER_TEMPLATES.EVENING_STREAK_30.title, {
+						streak: 30,
+					}),
+				);
+				expect(result.title).toContain("30");
 			});
 
 			it("스트릭 2~6일이면 EVENING_STREAK variants 내의 값을 반환한다", () => {
@@ -365,7 +390,7 @@ describe("notification-templates", () => {
 				const result = NotificationMessageBuilder.billingIssue();
 
 				// Then
-				expect(result.title).toBe("결제 문제가 발생했어요");
+				expect(result.title).toBe(SYSTEM_TEMPLATES.BILLING_ISSUE.title);
 			});
 
 			it("결제 문제 알림 body를 반환한다", () => {
@@ -373,9 +398,7 @@ describe("notification-templates", () => {
 				const result = NotificationMessageBuilder.billingIssue();
 
 				// Then
-				expect(result.body).toBe(
-					"결제 수단을 확인해주세요. 구독이 중단될 수 있습니다.",
-				);
+				expect(result.body).toBe(SYSTEM_TEMPLATES.BILLING_ISSUE.body);
 			});
 		});
 
@@ -445,13 +468,13 @@ describe("notification-templates", () => {
 			it("Day 0이면 첫 할일 만들기 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.onboarding(0);
 				expect(result).not.toBeNull();
-				expect(result?.title).toBe("첫 할일을 만들어볼까?");
+				expect(result?.title).toBe(SYSTEM_TEMPLATES.ONBOARDING_DAY0.title);
 			});
 
 			it("Day 5이면 completedCount가 치환된다", () => {
 				const result = NotificationMessageBuilder.onboarding(5, 8);
 				expect(result).not.toBeNull();
-				expect(result?.title).toBe("벌써 8개 완료!");
+				expect(result?.title).toBe("벌써 8개 완료! 🔥");
 			});
 
 			it("Day 4이면 null을 반환한다 (발송 없는 날)", () => {
@@ -468,18 +491,24 @@ describe("notification-templates", () => {
 		describe("milestone", () => {
 			it("FIRST_COMPLETE 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("FIRST_COMPLETE");
-				expect(result.title).toBe("첫 번째 완료!");
-				expect(result.body).toBe("시작이 반이야");
+				expect(result.title).toBe(
+					SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.title,
+				);
+				expect(result.body).toBe(
+					SYSTEM_TEMPLATES.MILESTONE_FIRST_COMPLETE.body,
+				);
 			});
 
 			it("COUNT_100 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("COUNT_100");
-				expect(result.title).toBe("100개 달성!");
+				expect(result.title).toBe(SYSTEM_TEMPLATES.MILESTONE_100.title);
 			});
 
 			it("FIRST_FRIEND 마일스톤 메시지를 반환한다", () => {
 				const result = NotificationMessageBuilder.milestone("FIRST_FRIEND");
-				expect(result.title).toBe("첫 친구가 생겼어!");
+				expect(result.title).toBe(
+					SYSTEM_TEMPLATES.MILESTONE_FIRST_FRIEND.title,
+				);
 			});
 		});
 
@@ -508,6 +537,101 @@ describe("notification-templates", () => {
 			it("2명 이상이면 MULTI variants 내의 값을 반환한다", () => {
 				const result = NotificationMessageBuilder.socialDigest(3);
 				expect(result.title).toContain("3");
+			});
+		});
+
+		describe("weatherMorning / weatherEvening — 템플릿 선택", () => {
+			const makeForecast = (
+				overrides: Partial<WeatherForecast>,
+			): WeatherForecast => ({
+				date: new Date("2026-07-05T00:00:00Z"),
+				skyCondition: "CLEAR",
+				precipitationType: "NONE",
+				precipitationProbability: 0,
+				temperatureMin: 20,
+				temperatureMax: 28,
+				humidity: 50,
+				windSpeed: 2,
+				hourlyForecasts: [],
+				dailyForecasts: [],
+				...overrides,
+			});
+
+			// Math.random=0 → 항상 첫 번째 variant
+			const firstTitle = (
+				template: (typeof WEATHER_TEMPLATES)[keyof typeof WEATHER_TEMPLATES],
+			) => template.variants[0]?.title ?? template.title;
+
+			it("비 예보면 강수확률 40% 미만이어도 비 템플릿을 선택한다", () => {
+				const result = NotificationMessageBuilder.weatherMorning(
+					makeForecast({
+						precipitationType: "RAIN",
+						precipitationProbability: 30,
+					}),
+				);
+				expect(result.title).toBe(
+					fillTemplate(firstTitle(WEATHER_TEMPLATES.MORNING_RAIN), {
+						precipProb: 30,
+					}),
+				);
+			});
+
+			it("소나기 예보도 비 템플릿을 선택한다", () => {
+				const result = NotificationMessageBuilder.weatherMorning(
+					makeForecast({
+						precipitationType: "SHOWER",
+						precipitationProbability: 20,
+					}),
+				);
+				expect(result.title).toBe(
+					fillTemplate(firstTitle(WEATHER_TEMPLATES.MORNING_RAIN), {
+						precipProb: 20,
+					}),
+				);
+			});
+
+			it("진눈깨비 예보는 눈 템플릿을 선택한다", () => {
+				const result = NotificationMessageBuilder.weatherMorning(
+					makeForecast({
+						precipitationType: "RAIN_SNOW",
+						precipitationProbability: 60,
+					}),
+				);
+				expect(result.title).toBe(
+					fillTemplate(firstTitle(WEATHER_TEMPLATES.MORNING_SNOW), {
+						precipProb: 60,
+					}),
+				);
+			});
+
+			it("강수형태가 없어도 확률 40% 이상이면 비 템플릿을 선택한다", () => {
+				const result = NotificationMessageBuilder.weatherEvening(
+					makeForecast({
+						precipitationType: "NONE",
+						precipitationProbability: 50,
+					}),
+				);
+				expect(result.title).toBe(
+					fillTemplate(firstTitle(WEATHER_TEMPLATES.EVENING_RAIN), {
+						precipProb: 50,
+					}),
+				);
+			});
+
+			it("강수형태 없음 + 확률 40% 미만이면 맑음 템플릿을 선택한다", () => {
+				const result = NotificationMessageBuilder.weatherEvening(
+					makeForecast({
+						precipitationType: "NONE",
+						precipitationProbability: 10,
+					}),
+				);
+				expect(result.title).toBe(
+					fillTemplate(firstTitle(WEATHER_TEMPLATES.EVENING_CLEAR), {
+						skyLabel: "맑음",
+						tempMin: 20,
+						tempMax: 28,
+					}),
+				);
 			});
 		});
 	});

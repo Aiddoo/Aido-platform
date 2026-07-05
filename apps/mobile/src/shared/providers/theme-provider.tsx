@@ -1,8 +1,3 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider as NavigationThemeProvider,
-} from '@react-navigation/native';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
@@ -10,6 +5,7 @@ import {
   type ThemeMode,
   writeThemeMode,
 } from '@src/shared/preferences/theme-mode.preference';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import {
   createContext,
   type PropsWithChildren,

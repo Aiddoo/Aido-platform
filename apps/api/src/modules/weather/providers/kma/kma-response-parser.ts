@@ -38,6 +38,21 @@ function formatDateString(yyyymmdd: string): string {
 }
 
 /**
+ * non-zero PTY 코드 중 가장 빈도 높은 코드를 반환 (없으면 "0")
+ */
+function mostFrequentPty(ptyCounts: Map<string, number>): string {
+	let dominantPty = "0";
+	let maxCount = 0;
+	for (const [code, count] of ptyCounts) {
+		if (count > maxCount) {
+			maxCount = count;
+			dominantPty = code;
+		}
+	}
+	return dominantPty;
+}
+
+/**
  * 특정 날짜의 아이템들로부터 DailyForecast를 생성
  */
 function buildDailyForecast(
@@ -48,8 +63,7 @@ function buildDailyForecast(
 	let tempMax = Number.NEGATIVE_INFINITY;
 	let maxPrecipProb = 0;
 	const skyCounts = new Map<string, number>();
-	let hasNonNonePty = false;
-	let dominantPty = "0";
+	const ptyCounts = new Map<string, number>();
 
 	for (const item of dateItems) {
 		const value = item.fcstValue;
@@ -86,8 +100,7 @@ function buildDailyForecast(
 			}
 			case KMA_CATEGORY.PTY: {
 				if (value !== "0") {
-					hasNonNonePty = true;
-					dominantPty = value;
+					ptyCounts.set(value, (ptyCounts.get(value) ?? 0) + 1);
 				}
 				break;
 			}
@@ -107,9 +120,7 @@ function buildDailyForecast(
 	return {
 		date: formatDateString(dateStr),
 		skyCondition: SKY_CODE_MAP[mostCommonSky] ?? "CLEAR",
-		precipitationType: hasNonNonePty
-			? (PTY_CODE_MAP[dominantPty] ?? "NONE")
-			: "NONE",
+		precipitationType: PTY_CODE_MAP[mostFrequentPty(ptyCounts)] ?? "NONE",
 		precipitationProbability: maxPrecipProb,
 		temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
 		temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
@@ -145,7 +156,7 @@ export function parseKmaResponse(
 	let tempMax = Number.NEGATIVE_INFINITY;
 	let maxPrecipProb = 0;
 	let dominantSky = "1"; // 기본: 맑음
-	let dominantPty = "0"; // 기본: 없음
+	const ptyCounts = new Map<string, number>(); // non-zero PTY 빈도
 	let avgHumidity = 0;
 	let avgWindSpeed = 0;
 	let humidityCount = 0;
@@ -230,7 +241,9 @@ export function parseKmaResponse(
 				break;
 			}
 			case KMA_CATEGORY.PTY: {
-				if (!isNextDay && value !== "0") dominantPty = value;
+				if (!isNextDay && value !== "0") {
+					ptyCounts.set(value, (ptyCounts.get(value) ?? 0) + 1);
+				}
 				break;
 			}
 			case KMA_CATEGORY.REH: {
@@ -300,7 +313,7 @@ export function parseKmaResponse(
 	return {
 		date: targetDate,
 		skyCondition: SKY_CODE_MAP[dominantSky] ?? "CLEAR",
-		precipitationType: PTY_CODE_MAP[dominantPty] ?? "NONE",
+		precipitationType: PTY_CODE_MAP[mostFrequentPty(ptyCounts)] ?? "NONE",
 		precipitationProbability: maxPrecipProb,
 		temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
 		temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,

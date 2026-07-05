@@ -24,7 +24,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useRef } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 const BADGE_NAME: Record<BadgeType, string> = {
   perfect: '빈틈없는 한 주',
@@ -64,7 +64,7 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   const { trackEvent } = useTrack();
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
 
   const badgeType = getBadgeType(achievement.completionRate);

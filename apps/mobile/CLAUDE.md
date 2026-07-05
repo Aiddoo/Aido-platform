@@ -24,7 +24,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 기술 스택 (요약)
 
-Expo SDK 55 · React Native 0.83 · React 19.2 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · NativeWind · `react-hook-form`
+Expo SDK 57 · React Native 0.86 · React 19.2 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · NativeWind · `react-hook-form`
 
 ---
 

@@ -2,6 +2,11 @@ import { PixelRatio } from 'react-native';
 import { fontScaledSize } from './scale';
 
 jest.mock('react-native', () => ({
+  // jest-expo 57이 설치하는 expo/fetch 글로벌이 Platform.select를 요구한다
+  Platform: {
+    OS: 'ios',
+    select: (specifics: Record<string, unknown>) => specifics.ios ?? specifics.default,
+  },
   PixelRatio: {
     getFontScale: jest.fn(),
   },
