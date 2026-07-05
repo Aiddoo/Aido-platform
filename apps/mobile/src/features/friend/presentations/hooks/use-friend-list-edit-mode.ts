@@ -1,5 +1,5 @@
-import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRoute } from 'expo-router';
+import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
 import { useCallback } from 'react';
 
 type RouteParams = {
