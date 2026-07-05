@@ -217,6 +217,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Plugins
     plugins: [
       './plugins/withJitpackFilter',
+      './plugins/withGradleJvmArgs',
       '@react-native-firebase/app',
       '@react-native-firebase/crashlytics',
       '@react-native-community/datetimepicker',
