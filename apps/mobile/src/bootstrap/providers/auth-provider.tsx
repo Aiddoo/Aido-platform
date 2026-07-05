@@ -1,3 +1,6 @@
+import { subscribeSessionExpired } from '@src/core/events/session-expired';
+import { resetAuthClient } from '@src/shared/infra/http/auth-client';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   type PropsWithChildren,
@@ -19,6 +22,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const storage = useStorage();
+  const queryClient = useQueryClient();
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
   // 앱 시작 시 토큰 확인
@@ -29,6 +33,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     };
     checkAuth();
   }, [storage]);
+
+  // 토큰 갱신 최종 실패(세션 만료 확정) 시 로그아웃과 동일한 순서로 정리
+  useEffect(() => {
+    return subscribeSessionExpired(() => {
+      setStatusState('unauthenticated');
+      queryClient.clear();
+      resetAuthClient();
+    });
+  }, [queryClient]);
 
   const setStatus = useCallback((newStatus: AuthStatus) => {
     setStatusState(newStatus);

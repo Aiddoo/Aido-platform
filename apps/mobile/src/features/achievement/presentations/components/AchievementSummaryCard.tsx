@@ -7,7 +7,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import type { AchievementSummary } from '../../models/achievement.model';
 import type {
@@ -31,7 +31,7 @@ interface AchievementSummaryCardProps {
 export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCardProps) {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { trackEvent } = useTrack();
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
   const badgeName = BADGE_NAME[latest.badgeType];
 

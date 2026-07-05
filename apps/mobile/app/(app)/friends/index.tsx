@@ -1,10 +1,10 @@
-import { type NavigationProp, type RouteProp, useRoute } from '@react-navigation/native';
 import { FriendList } from '@src/features/friend/presentations/components/FriendList';
 import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
 import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
 import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
 import { HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
-import { router, useNavigation } from 'expo-router';
+import { router, useNavigation, useRoute } from 'expo-router';
+import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback, useLayoutEffect } from 'react';
 import { Pressable, View } from 'react-native';
