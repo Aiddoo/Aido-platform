@@ -14,7 +14,7 @@ module.exports = (api) => {
           },
         },
       ],
-      'react-native-worklets/plugin',
+      // react-native-worklets/plugin은 babel-preset-expo(SDK 57+)가 자동 주입
     ],
   };
 };
