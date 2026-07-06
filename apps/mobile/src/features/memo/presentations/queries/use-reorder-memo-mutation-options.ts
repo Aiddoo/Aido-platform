@@ -3,6 +3,7 @@ import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -30,7 +31,7 @@ export const useReorderMemoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '순서 변경에 실패했어요' });
+      toast.error(undefined, { fallback: t('memo:toasts.reorderFailed') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });

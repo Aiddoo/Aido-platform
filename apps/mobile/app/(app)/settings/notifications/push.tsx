@@ -6,6 +6,7 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/presentations/components/settings';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
@@ -30,23 +31,23 @@ export default function PushSettingsScreen() {
 function PushSettingsForm() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const { t } = useTranslation('notification');
 
   return (
     <VStack gap={24}>
       <SettingsCard>
         <SettingsToggle
-          label="푸시 알림"
-          description="모든 푸시 알림을 받아요"
+          label={t('settings.pushLabel')}
+          description={t('settings.pushDescription')}
           isSelected={preference.pushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ pushEnabled: enabled })}
           isDisabled={updateMutation.isPending}
         />
         <Separator className="bg-gray-2" />
         <SettingsToggle
-          label="야간 푸시 알림"
+          label={t('settings.nightPushLabel')}
           description={
-            PreferencePolicy.pushDisabledMessage(preference) ??
-            '21:00 - 08:00 시간대에도 알림을 받아요'
+            PreferencePolicy.pushDisabledMessage(preference) ?? t('settings.nightPushDescription')
           }
           isSelected={preference.nightPushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}

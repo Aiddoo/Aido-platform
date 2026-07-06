@@ -3,6 +3,7 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -22,7 +23,7 @@ export const useVerifyEmailMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
+      toast.error(error, { fallback: t('auth:toasts.codeInvalidFormal') });
     },
   });
 };

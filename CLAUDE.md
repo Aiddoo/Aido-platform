@@ -64,6 +64,7 @@ tooling/*           공유 설정 (biome, jest, vitest, typescript)
 | Prisma 스키마 변경 | [`apps/api/.claude/prisma.md`](apps/api/.claude/prisma.md) |
 | 단위/통합/E2E 테스트 | `apps/{api,mobile}/.claude/testing-guide.md` |
 | Mobile UI 컴포넌트 | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md) |
+| Mobile 다국어 / 문자열 추가 | [`apps/mobile/.claude/i18n-guide.md`](apps/mobile/.claude/i18n-guide.md) |
 | OAuth / 소셜 로그인 | [`apps/mobile/.claude/oauth-client-guide.md`](apps/mobile/.claude/oauth-client-guide.md) |
 | 로깅 패턴 | [`apps/api/.claude/logging-guide.md`](apps/api/.claude/logging-guide.md) |
 | 배포 | `apps/{api,mobile}/DEPLOYMENT.md` |

@@ -5,6 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -23,7 +24,7 @@ export const useEmailLoginMutationOptions = () => {
     onSuccess: (data) => {
       setStatus('authenticated');
       if (data.accountRestored) {
-        toast.success('탈퇴한 계정이 복구되었어요');
+        toast.success(t('auth:toasts.accountRestored'));
       }
       trackEvent('auth_login', { method: 'email' });
     },
@@ -35,7 +36,7 @@ export const useEmailLoginMutationOptions = () => {
         return;
       }
 
-      toast.error(error, { fallback: '로그인에 실패했어요' });
+      toast.error(error, { fallback: t('auth:toasts.loginFailed') });
     },
   });
 };

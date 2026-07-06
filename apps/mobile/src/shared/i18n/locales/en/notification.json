@@ -1,1 +1,54 @@
-{}
+{
+  "titles": {
+    "notifications": "Notifications",
+    "settings": "Notification Settings",
+    "push": "Push Notifications",
+    "weather": "Weather Alerts",
+    "reminder": "Reminders"
+  },
+  "categories": {
+    "all": "All",
+    "notice": "Notices",
+    "todo": "To-dos",
+    "social": "Social",
+    "friend": "Friends",
+    "nudge": "Nudges",
+    "cheer": "Cheers",
+    "achievement": "Achievements",
+    "reminder": "Reminders",
+    "ai": "AI"
+  },
+  "list": {
+    "empty": "No notifications yet",
+    "unreadTitle": "Unread",
+    "unreadCount": "{{count}}",
+    "markAllRead": "Mark all read",
+    "premiumDescription": "Subscribe to unlock AI reports and suggestions"
+  },
+  "settings": {
+    "timeFormat24": "24-hour time",
+    "on": "On",
+    "off": "Off",
+    "pushLabel": "Push notifications",
+    "pushDescription": "Receive all push notifications",
+    "nightPushLabel": "Night push notifications",
+    "nightPushDescription": "Also receive notifications between 21:00 and 08:00",
+    "weatherLabel": "Weather alerts",
+    "weatherDescription": "Receive weather alerts",
+    "weatherMorningLabel": "Morning weather alert",
+    "weatherMorningDescription": "Get today's weather at your morning time",
+    "weatherEveningLabel": "Evening weather alert",
+    "weatherEveningDescription": "Get tomorrow's weather at your evening time",
+    "reminderLabel": "Reminders",
+    "reminderMorningLabel": "Morning reminder",
+    "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",
+    "reminderEveningLabel": "Evening reminder",
+    "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
+    "reminderPremium": "Changing reminder times is available to premium subscribers only."
+  },
+  "errors": {
+    "permissionDenied": "Notification permission was denied. Please allow notifications in Settings.",
+    "notPhysicalDevice": "Push notifications only work on a physical device.",
+    "validationFailed": "Failed to validate notification data"
+  }
+}

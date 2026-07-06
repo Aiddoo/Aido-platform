@@ -1,6 +1,7 @@
 import { emailSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
+import { useTranslation } from '@src/shared/i18n';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, VStack } from '@src/shared/ui';
 import { useEffect, useRef } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
@@ -12,9 +13,9 @@ import { SuggestedEmailDomainList } from './SuggestedEmailDomainList';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
 
-const STEP_DESCRIPTIONS = {
-  name: '반가워요!\n어떤 닉네임으로 불러드릴까요?',
-  email: '로그인에 사용할\n이메일을 입력해주세요.',
+const STEP_DESCRIPTION_KEYS = {
+  name: 'auth:signUp.nameTitle',
+  email: 'auth:signUp.emailTitle',
 } as const;
 
 interface SignUpUserInfoFormProps {
@@ -22,6 +23,7 @@ interface SignUpUserInfoFormProps {
 }
 
 export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
+  const { t } = useTranslation(['auth']);
   const {
     control,
     formState: { errors },
@@ -70,7 +72,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{STEP_DESCRIPTIONS[step]}</H3>
+          <H3>{t(STEP_DESCRIPTION_KEYS[step])}</H3>
         </Animated.View>
 
         {step === 'email' && (
@@ -84,7 +86,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                 <VStack gap={8}>
                   <Input
                     ref={emailInputRef}
-                    label="이메일"
+                    label={t('auth:signUp.emailLabel')}
                     placeholder="example@email.com"
                     value={value}
                     onChangeText={onChange}
@@ -115,8 +117,8 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
             name="name"
             render={({ field: { onChange, value } }) => (
               <Input
-                label="닉네임"
-                placeholder="닉네임을 입력해주세요."
+                label={t('auth:signUp.nicknameLabel')}
+                placeholder={t('auth:signUp.nicknamePlaceholder')}
                 value={value}
                 onChangeText={onChange}
                 autoCapitalize="none"
@@ -135,7 +137,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
       </ScrollView>
 
       <KeyboardAdaptiveButton color="dark" onPress={handleNext} isDisabled={!isNextButtonEnabled}>
-        다음
+        {t('auth:signUp.next')}
       </KeyboardAdaptiveButton>
     </View>
   );

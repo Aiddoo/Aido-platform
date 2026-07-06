@@ -5,6 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -26,9 +27,9 @@ export const useRegisterMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
-        toast.error('이미 가입된 이메일이에요', {
+        toast.error(t('auth:toasts.alreadyRegistered'), {
           action: {
-            label: '로그인하기',
+            label: t('auth:toasts.goToLogin'),
             onPress: () => {
               router.replace('/(auth)/email-login');
             },
@@ -36,7 +37,7 @@ export const useRegisterMutationOptions = () => {
         });
         return;
       }
-      toast.error(error, { fallback: '회원가입에 실패했습니다' });
+      toast.error(error, { fallback: t('auth:toasts.registerFailed') });
     },
   });
 };

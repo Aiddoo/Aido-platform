@@ -2,6 +2,7 @@ import type { ForgotPasswordInput } from '@aido/validators';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -16,7 +17,7 @@ export const useForgotPasswordMutationOptions = () => {
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      toast.error(error, { fallback: '요청에 실패했어요. 잠시 후 다시 시도해주세요' });
+      toast.error(error, { fallback: t('auth:toasts.requestFailed') });
     },
   });
 };

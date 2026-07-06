@@ -25,12 +25,12 @@ import { ScrollView } from 'react-native';
 const MyPageScreen = () => {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
-  const { t } = useTranslation('settings');
+  const { t } = useTranslation(['user', 'settings']);
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: tabBarHeight }}>
-        <H3>내 정보</H3>
+        <H3>{t('mypage.header')}</H3>
 
         <Spacing size={20} />
 
@@ -42,46 +42,55 @@ const MyPageScreen = () => {
 
         <Spacing size={12} />
 
-        <SettingNavigation label="활동">
-          <SettingNavigation.Item label="친구 관리" onPress={() => router.push('/friends')} />
+        <SettingNavigation label={t('mypage.sections.activity')}>
           <SettingNavigation.Item
-            label="카테고리 관리"
+            label={t('mypage.items.friends')}
+            onPress={() => router.push('/friends')}
+          />
+          <SettingNavigation.Item
+            label={t('mypage.items.categories')}
             onPress={() => router.push('/settings/category-settings')}
           />
-          <SettingNavigation.Item label="달성 배지" onPress={() => router.push('/achievements')} />
+          <SettingNavigation.Item
+            label={t('mypage.items.achievements')}
+            onPress={() => router.push('/achievements')}
+          />
         </SettingNavigation>
 
         <Spacing size={12} />
 
-        <SettingNavigation label="구독">
-          <SettingNavigation.Item label="AI 리포트" onPress={() => router.push('/reports')} />
+        <SettingNavigation label={t('mypage.sections.subscription')}>
           <SettingNavigation.Item
-            label="앱 아이콘"
+            label={t('mypage.items.aiReports')}
+            onPress={() => router.push('/reports')}
+          />
+          <SettingNavigation.Item
+            label={t('mypage.items.appIcon')}
             onPress={() => router.push('/settings/app-icon')}
           />
           <SettingNavigation.Item
-            label="구독 관리"
+            label={t('mypage.items.subscription')}
             onPress={() => router.push('/settings/subscription')}
           />
         </SettingNavigation>
 
         <Spacing size={12} />
 
-        <SettingNavigation label="설정">
+        <SettingNavigation label={t('mypage.sections.settings')}>
           <SettingNavigation.Item
-            label="알림 설정"
+            label={t('mypage.items.notifications')}
             onPress={() => router.push('/settings/notifications')}
           />
           <SettingNavigation.Item
-            label="화면 테마"
+            label={t('mypage.items.theme')}
             onPress={() => router.push('/settings/theme')}
           />
           <SettingNavigation.Item
-            label="글꼴 크기"
+            label={t('mypage.items.fontSize')}
             onPress={() => router.push('/settings/font-size')}
           />
           <SettingNavigation.Item
-            label={t('titles.language')}
+            label={t('settings:titles.language')}
             onPress={() => router.push('/settings/language')}
           />
         </SettingNavigation>
@@ -90,11 +99,11 @@ const MyPageScreen = () => {
 
         <SettingNavigation>
           <SettingNavigation.Item
-            label="문의하기"
+            label={t('mypage.items.inquiry')}
             onPress={() => router.push('/settings/inquiry')}
           />
           <SettingNavigation.Item
-            label="약관 및 정책"
+            label={t('mypage.items.terms')}
             onPress={() => router.push('/settings/terms')}
           />
         </SettingNavigation>
@@ -112,6 +121,7 @@ const MyPageScreen = () => {
 export default MyPageScreen;
 
 function AccountActionButtons() {
+  const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const router = useRouter();
   const logout = useMutation(useLogoutMutationOptions());
@@ -128,9 +138,9 @@ function AccountActionButtons() {
             exit();
           }
         }}
-        title={<ConfirmDialog.Title>로그아웃</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>{t('logout.confirmTitle')}</ConfirmDialog.Title>}
         description={
-          <ConfirmDialog.Description>정말 로그아웃 하시겠습니까?</ConfirmDialog.Description>
+          <ConfirmDialog.Description>{t('logout.confirmDescription')}</ConfirmDialog.Description>
         }
         cancelButton={
           <ConfirmDialog.CancelButton
@@ -139,7 +149,7 @@ function AccountActionButtons() {
               exit();
             }}
           >
-            취소
+            {t('common:actions.cancel')}
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
@@ -150,7 +160,7 @@ function AccountActionButtons() {
               logout.mutate();
             }}
           >
-            확인
+            {t('common:actions.confirm')}
           </ConfirmDialog.ConfirmButton>
         }
       />
@@ -170,10 +180,10 @@ function AccountActionButtons() {
               exit();
             }
           }}
-          title={<ConfirmDialog.Title>회원 탈퇴</ConfirmDialog.Title>}
+          title={<ConfirmDialog.Title>{t('withdraw.confirmTitle')}</ConfirmDialog.Title>}
           description={
             <ConfirmDialog.Description>
-              {'탈퇴 후 30일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?'}
+              {t('withdraw.confirmDescription')}
             </ConfirmDialog.Description>
           }
           cancelButton={
@@ -183,7 +193,7 @@ function AccountActionButtons() {
                 exit();
               }}
             >
-              취소
+              {t('common:actions.cancel')}
             </ConfirmDialog.CancelButton>
           }
           confirmButton={
@@ -195,7 +205,7 @@ function AccountActionButtons() {
                 deleteAccount.mutate({});
               }}
             >
-              탈퇴하기
+              {t('withdraw.confirmAction')}
             </ConfirmDialog.ConfirmButton>
           }
         />
@@ -206,11 +216,11 @@ function AccountActionButtons() {
   return (
     <HStack justify="center" align="center" gap={8} pb={40}>
       <TextButton size="medium" onPress={handleLogoutPress}>
-        로그아웃
+        {t('logout.action')}
       </TextButton>
       <Separator orientation="vertical" className="h-3 bg-gray-6" />
       <TextButton size="medium" onPress={handleWithdrawPress}>
-        탈퇴하기
+        {t('withdraw.action')}
       </TextButton>
     </HStack>
   );

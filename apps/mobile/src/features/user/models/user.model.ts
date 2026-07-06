@@ -1,4 +1,5 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/validators';
+import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
@@ -26,7 +27,11 @@ export const updateProfileResultSchema = userSchema.pick({ name: true, profileIm
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
 export const updateNameInputSchema = z.object({
-  name: z.string().min(1, '이름을 입력해주세요').max(20, '이름은 20자 이내여야 합니다').trim(),
+  name: z
+    .string()
+    .min(1, { error: () => t('user:editName.required') })
+    .max(20, { error: () => t('user:editName.maxLength') })
+    .trim(),
 });
 export type UpdateNameInput = z.infer<typeof updateNameInputSchema>;
 

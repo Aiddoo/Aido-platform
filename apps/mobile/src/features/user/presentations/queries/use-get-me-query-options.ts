@@ -1,6 +1,7 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { unwrap } from '@src/shared/errors/result';
+import { t } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys.constant';
 
@@ -27,7 +28,7 @@ export const useGetMeQueryOptions = () => {
     },
     select: (user) => ({
       ...user,
-      name: user.name ?? '열정적인 사용자',
+      name: user.name ?? t('user:profile.defaultName'),
       tier: getUserTier(user),
     }),
   });

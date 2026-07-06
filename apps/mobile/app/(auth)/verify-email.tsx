@@ -5,6 +5,7 @@ import { useResendVerificationMutationOptions } from '@src/features/auth/present
 import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
   H3,
@@ -28,6 +29,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
  * - 로그인 시 미인증 에러(EMAIL_0503) 발생 시 이동
  */
 const VerifyEmailScreen = () => {
+  const { t } = useTranslation(['auth']);
   const { email } = useLocalSearchParams<{ email: string }>();
   const toast = useAppToast();
 
@@ -50,7 +52,7 @@ const VerifyEmailScreen = () => {
         setIsInvalid(true);
         setValue('code', '');
         inputOTPRef.current?.clear();
-        toast.error(error, { fallback: '인증 코드가 올바르지 않습니다' });
+        toast.error(error, { fallback: t('auth:toasts.codeInvalidFormal') });
       },
     });
   };
@@ -71,10 +73,10 @@ const VerifyEmailScreen = () => {
           reset({ email, code: '' });
           inputOTPRef.current?.clear();
           setIsInvalid(false);
-          toast.success('인증 코드가 재발송되었습니다');
+          toast.success(t('auth:toasts.codeResent'));
         },
         onError: (error) => {
-          toast.error(error, { fallback: '인증 코드 재발송에 실패했습니다' });
+          toast.error(error, { fallback: t('auth:toasts.codeResendFailed') });
         },
       },
     );
@@ -86,10 +88,10 @@ const VerifyEmailScreen = () => {
     return (
       <StyledSafeAreaView className="flex-1 bg-white items-center justify-center">
         <Result
-          title="이메일 정보가 없습니다"
+          title={t('auth:verifyEmail.noEmail')}
           button={
             <Result.Button color="dark" onPress={() => router.back()}>
-              돌아가기
+              {t('auth:verifyEmail.goBack')}
             </Result.Button>
           }
         />
@@ -105,7 +107,7 @@ const VerifyEmailScreen = () => {
           <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-8" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" align="center" className="flex-1">
-          이메일 인증
+          {t('auth:verifyEmail.title')}
         </Text>
         <View className="w-6" />
       </HStack>
@@ -121,9 +123,7 @@ const VerifyEmailScreen = () => {
             entering={FadeIn.duration(ANIMATION.duration.slow)}
             style={{ marginBottom: 24 }}
           >
-            <H3>
-              {maskedEmail}로{'\n'}발송된 코드를 입력해주세요
-            </H3>
+            <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
           </Animated.View>
 
           <VStack gap={32} align="center">
@@ -156,20 +156,22 @@ const VerifyEmailScreen = () => {
 
             {verify.isPending && (
               <Text size="b4" className="text-main">
-                인증 중...
+                {t('auth:verification.verifying')}
               </Text>
             )}
 
             <HStack gap={8} justify="center">
               <Text size="b4" shade={7}>
-                코드를 받지 못하셨나요?
+                {t('auth:verification.didNotReceive')}
               </Text>
               <TextButton
                 size="medium"
                 onPress={handleResend}
                 disabled={cooldown > 0 || resend.isPending}
               >
-                {cooldown > 0 ? `${cooldown}초 후 재발송` : '인증코드 재발송'}
+                {cooldown > 0
+                  ? t('auth:verification.resendIn', { count: cooldown })
+                  : t('auth:verification.resend')}
               </TextButton>
             </HStack>
           </VStack>

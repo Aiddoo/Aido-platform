@@ -1,6 +1,7 @@
 import { type User, UserPolicy } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ interface NotificationItemProps {
 export function NotificationItem({ notification }: NotificationItemProps) {
   const isUnread = !notification.isRead;
   const handlePress = useNotificationPress(notification);
+  const { t } = useTranslation('notification');
 
   return (
     <Pressable onPress={handlePress}>
@@ -35,7 +37,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   shade={isUnread ? undefined : 5}
                   weight="medium"
                 >
-                  {NotificationPolicy.categoryLabel(notification)}
+                  {t(`categories.${NotificationPolicy.categoryKey(notification)}`)}
                 </Text>
                 <Text size="b4" shade={5}>
                   {formatRelativeTime(notification.createdAt)}
@@ -84,7 +86,7 @@ function useNotificationPress(notification: Notification) {
       if (user && !UserPolicy.isPremiumUser(user)) {
         trackEvent('premium_gate_shown', { feature: 'ai_report' });
         premiumDialog.open({
-          description: '구독하면 AI 리포트와 제안을 확인할 수 있어요',
+          description: tGlobal('notification:list.premiumDescription'),
         });
         return;
       }

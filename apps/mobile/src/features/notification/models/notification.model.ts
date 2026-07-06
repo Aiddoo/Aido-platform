@@ -45,25 +45,37 @@ export interface GetNotificationsQuery {
 
 // ─── 순수 함수 (독립 테스트 가능) ───
 
-/** 알림 타입 → 카테고리 라벨 */
-export const getCategoryLabel = (type: NotificationType): string =>
-  match(type)
-    .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => '친구')
-    .with('NUDGE_RECEIVED', () => '콕 찌르기')
-    .with('CHEER_RECEIVED', () => '응원')
-    .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => '달성')
+/** 알림 카테고리 키 (표시 문구는 notification:categories.* 카탈로그) */
+export type NotificationCategoryKey =
+  | 'friend'
+  | 'nudge'
+  | 'cheer'
+  | 'achievement'
+  | 'todo'
+  | 'reminder'
+  | 'ai'
+  | 'notice'
+  | 'social';
+
+/** 알림 타입 → 카테고리 키 */
+export const getCategoryKey = (type: NotificationType): NotificationCategoryKey =>
+  match<NotificationType, NotificationCategoryKey>(type)
+    .with('FOLLOW_NEW', 'FOLLOW_ACCEPTED', () => 'friend')
+    .with('NUDGE_RECEIVED', () => 'nudge')
+    .with('CHEER_RECEIVED', () => 'cheer')
+    .with('DAILY_COMPLETE', 'FRIEND_COMPLETED', 'WEEKLY_ACHIEVEMENT', () => 'achievement')
     .with(
       'TODO_REMINDER',
       'TODO_SHARED',
       'WINBACK',
       'WEATHER_MORNING',
       'WEATHER_EVENING',
-      () => '할일',
+      () => 'todo',
     )
-    .with('MORNING_REMINDER', 'EVENING_REMINDER', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => '리마인더')
-    .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'AI')
-    .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => '공지')
-    .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => '소셜')
+    .with('MORNING_REMINDER', 'EVENING_REMINDER', 'LUNCH_NUDGE', 'STREAK_AT_RISK', () => 'reminder')
+    .with('WEEKLY_REPORT', 'MONTHLY_REPORT', 'AI_SUGGESTION', () => 'ai')
+    .with('SYSTEM_NOTICE', 'ADMIN_BROADCAST', 'ADMIN_TARGETED', () => 'notice')
+    .with('SOCIAL_DIGEST', 'NUDGE_SUGGEST', () => 'social')
     .exhaustive();
 
 /** 알림 타입 + context → 앱 내부 라우트 */
@@ -113,9 +125,9 @@ const AI_FEATURE_TYPES: ReadonlySet<NotificationType> = new Set([
 ]);
 
 export const NotificationPolicy = {
-  /** 타입 → 카테고리 라벨 (기획 정의) */
-  categoryLabel(notification: Notification) {
-    return getCategoryLabel(notification.type);
+  /** 타입 → 카테고리 키 (기획 정의, 표시 문구는 카탈로그) */
+  categoryKey(notification: Notification) {
+    return getCategoryKey(notification.type);
   },
 
   /** 타입+context → 내부 라우트 (기획 정의) */

@@ -1,4 +1,5 @@
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { StyledSafeAreaView } from '@src/shared/ui';
@@ -8,6 +9,7 @@ import { Text as RNText, ScrollView, View } from 'react-native';
 
 const FontSizeSettingsScreen = () => {
   const { fontScale, setFontScale } = useFontScale();
+  const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
 
   const handleChange = (value: string) => {
@@ -26,11 +28,11 @@ const FontSizeSettingsScreen = () => {
           onValueChange={handleChange}
           className="bg-white rounded-2xl overflow-hidden gap-0"
         >
-          <FontScaleRadioItem value="xsmall" label="아주 작게" />
-          <FontScaleRadioItem value="small" label="작게" />
-          <FontScaleRadioItem value="medium" label="보통" />
-          <FontScaleRadioItem value="large" label="크게" />
-          <FontScaleRadioItem value="xlarge" label="아주 크게" />
+          <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
+          <FontScaleRadioItem value="small" label={t('fontSize.small')} />
+          <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
+          <FontScaleRadioItem value="large" label={t('fontSize.large')} />
+          <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
         </RadioGroup>
       </ScrollView>
     </StyledSafeAreaView>
@@ -45,6 +47,8 @@ interface FontScaleRadioItemProps {
 }
 
 function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
+  const { t } = useTranslation('settings');
+  const sample = t('fontSize.sample');
   return (
     <RadioGroup.Item value={value}>
       {() => (
@@ -58,7 +62,7 @@ function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
               className="text-gray-6 font-normal"
               style={SCALED_FONT_STYLES[value]}
             >
-              가나다라마바사 ABC 123
+              {sample}
             </RNText>
           </View>
           <Radio />

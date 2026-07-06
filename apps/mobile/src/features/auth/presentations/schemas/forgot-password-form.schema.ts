@@ -1,4 +1,5 @@
 import { emailSchema, passwordSchema, VERIFICATION_CODE } from '@aido/validators';
+import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 export const forgotPasswordFormSchema = z
@@ -6,13 +7,15 @@ export const forgotPasswordFormSchema = z
     email: emailSchema,
     code: z
       .string()
-      .length(VERIFICATION_CODE.LENGTH, `인증 코드는 ${VERIFICATION_CODE.LENGTH}자리입니다`)
-      .regex(/^\d+$/, '인증 코드는 숫자만 입력 가능합니다'),
+      .length(VERIFICATION_CODE.LENGTH, {
+        error: () => t('auth:forms.codeLength', { length: VERIFICATION_CODE.LENGTH }),
+      })
+      .regex(/^\d+$/, { error: () => t('auth:forms.codeDigitsOnly') }),
     newPassword: passwordSchema,
     newPasswordConfirm: z.string(),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
-    message: '비밀번호가 일치하지 않습니다',
+    error: () => t('auth:forms.passwordMismatch'),
     path: ['newPasswordConfirm'],
   });
 

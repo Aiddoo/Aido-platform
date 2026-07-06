@@ -2,6 +2,7 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileImageBottomSheet } from '@src/features/user/presentations/components/ProfileImageBottomSheet';
 import { ProfileInfoCard } from '@src/features/user/presentations/components/ProfileInfoCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   HStack,
@@ -35,6 +36,7 @@ const ProfileScreen = () => {
 export default ProfileScreen;
 
 function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) {
+  const { t } = useTranslation('settings');
   const router = useRouter();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const hasCredential = UserPolicy.hasCredential(user);
@@ -50,7 +52,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
       {/* 정보 변경 */}
       <SettingNavigation>
         <SettingNavigation.Item
-          label="이름 변경"
+          label={t('titles.editName')}
           onPress={() => router.push('/settings/edit-name')}
           right={
             <HStack align="center" gap={4}>
@@ -64,7 +66,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
 
         {hasCredential && (
           <SettingNavigation.Item
-            label="비밀번호 변경"
+            label={t('titles.changePassword')}
             onPress={() => router.push('/settings/change-password')}
           />
         )}
@@ -75,7 +77,7 @@ function ProfileScreenContent({ onAvatarPress }: { onAvatarPress: () => void }) 
       {/* 계정 */}
       <SettingNavigation>
         <SettingNavigation.Item
-          label="연결된 계정"
+          label={t('titles.linkedAccounts')}
           onPress={() => router.push('/settings/linked-accounts')}
         />
       </SettingNavigation>

@@ -1,6 +1,7 @@
 import type { NotificationCategory } from '@aido/validators';
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Flex, HStack, NotiIcon, Result, Text, VStack } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
@@ -17,6 +18,7 @@ interface NotificationListProps {
 }
 
 export function NotificationList({ category, unreadOnly, limit }: NotificationListProps) {
+  const { t } = useTranslation('notification');
   const {
     data: listData,
     fetchNextPage,
@@ -58,7 +60,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
         }
         ListEmptyComponent={
           <Flex flex={1} justify="center" align="center">
-            <Result icon={<NotiIcon width={72} height={72} />} title="아직 알림이 없어요" />
+            <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
           </Flex>
         }
         ListFooterComponent={

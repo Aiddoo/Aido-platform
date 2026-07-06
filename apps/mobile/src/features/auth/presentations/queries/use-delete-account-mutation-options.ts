@@ -11,6 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -43,7 +44,7 @@ export const useDeleteAccountMutationOptions = () => {
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast.success('계정이 탈퇴 처리되었어요');
+      toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       analytics.resetData();
     },
@@ -51,11 +52,11 @@ export const useDeleteAccountMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
-        toast.error('비밀번호가 일치하지 않아요');
+        toast.error(t('auth:toasts.passwordMismatch'));
         return;
       }
 
-      toast.error(error, { fallback: '회원 탈퇴에 실패했어요' });
+      toast.error(error, { fallback: t('auth:toasts.deleteAccountFailed') });
     },
     onSettled: (_data, error) => {
       if (!error) {

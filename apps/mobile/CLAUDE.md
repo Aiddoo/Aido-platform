@@ -13,6 +13,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md) |
 | 테스트 작성 (DI + jest.fn() 레이어별) | [.claude/testing-guide.md](.claude/testing-guide.md) |
 | UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN) | [.claude/ui-components.md](.claude/ui-components.md) |
+| 다국어 / 문자열 추가 (i18n, ko+en 카탈로그) | [.claude/i18n-guide.md](.claude/i18n-guide.md) |
 | OAuth · 소셜 로그인 구현 | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md) |
 | 에러 처리 (Result, ApiError, BusinessError) | [docs/error-handling.md](docs/error-handling.md) |
 | 관측 (Analytics · Sentry · Breadcrumb · Severity) | [.claude/observability.md](.claude/observability.md) |
@@ -69,6 +70,7 @@ features/{feature}/
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
 - **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.
 - **DTO**: `@aido/validators` 사용, 모바일 내부 중복 금지.
+- **i18n**: 사용자 노출 문자열 하드코딩 금지 — ko/en 카탈로그(`src/shared/i18n/locales`) 동시 추가. 상세: [.claude/i18n-guide.md](.claude/i18n-guide.md)
 
 ---
 

@@ -1,4 +1,5 @@
 import { APP_ICONS, getAppIconLabel } from '@src/features/app-icon/constants/app-icons.constant';
+import { useTranslation } from '@src/shared/i18n';
 import { Avatar, Button, Grid, GridItem, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { BottomSheet, PressableFeedback } from 'heroui-native';
@@ -14,6 +15,7 @@ interface ProfileImageBottomSheetProps {
 }
 
 export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBottomSheetProps) {
+  const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
@@ -49,12 +51,12 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
           <VStack gap={20}>
             <BottomSheet.Title>
               <Text size="b2" weight="semibold">
-                프로필 이미지 선택
+                {t('profile.imageSheet.title')}
               </Text>
             </BottomSheet.Title>
 
             <VStack align="center">
-              <Avatar className="w-24 h-24 rounded-full" alt="선택된 프로필 이미지">
+              <Avatar className="w-24 h-24 rounded-full" alt={t('profile.imageSheet.selectedAlt')}>
                 <Avatar.Image source={getProfileIconSource(selectedIcon)} />
               </Avatar>
             </VStack>
@@ -106,7 +108,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                 isDisabled={updateProfileMutation.isPending}
                 className="flex-1"
               >
-                지우기
+                {t('profile.imageSheet.clear')}
               </Button>
               <Button
                 size="large"
@@ -116,7 +118,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                 isLoading={updateProfileMutation.isPending}
                 className="flex-1"
               >
-                저장
+                {t('profile.imageSheet.save')}
               </Button>
             </HStack>
           </VStack>

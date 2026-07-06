@@ -7,6 +7,7 @@ import {
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import {
   CrownIcon,
   QueryErrorBoundary,
@@ -36,18 +37,19 @@ export default function ReminderSettingsScreen() {
 }
 
 function ReminderSettingsForm() {
+  const { t } = useTranslation('notification');
   return (
     <VStack gap={24}>
       <SettingsCard>
         <ReminderTimePicker
-          label="오전 리마인드"
-          description="오전 시간대(00:00~11:59)에 오늘의 할일을 알려줘요"
+          label={t('settings.reminderMorningLabel')}
+          description={t('settings.reminderMorningDescription')}
           field="morning"
         />
         <Separator className="bg-gray-2" />
         <ReminderTimePicker
-          label="오후 리마인드"
-          description="오후 시간대(12:00~23:59)에 남은 할일을 알려줘요"
+          label={t('settings.reminderEveningLabel')}
+          description={t('settings.reminderEveningDescription')}
           field="evening"
         />
       </SettingsCard>
@@ -71,6 +73,7 @@ function ReminderTimePicker({
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
+  const { t } = useTranslation('notification');
 
   return (
     <SettingsTimePicker
@@ -89,7 +92,7 @@ function ReminderTimePicker({
         if (!UserPolicy.isPremiumUser(user)) {
           trackEvent('premium_gate_shown', { feature: 'reminder_time' });
           premiumDialog.open({
-            description: '리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요.',
+            description: t('settings.reminderPremium'),
           });
           return false;
         }

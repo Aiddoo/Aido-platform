@@ -3,11 +3,12 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isAuthError, isCancelledError } from '../../models/auth.error';
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
-import { OAUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
+import { getOAuthProviderLabel } from '../constants/auth-provider-labels.constant';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useLinkAccountMutationOptions = () => {
@@ -24,7 +25,9 @@ export const useLinkAccountMutationOptions = () => {
     onSuccess: (_data, provider) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
       toast.success(
-        `${OAUTH_PROVIDER_LABELS[provider.toUpperCase() as OAuthProvider]} 계정이 연결되었습니다`,
+        t('auth:toasts.accountLinked', {
+          provider: getOAuthProviderLabel(provider.toUpperCase() as OAuthProvider),
+        }),
       );
       trackEvent('auth_social_linked', { provider });
     },
@@ -36,7 +39,7 @@ export const useLinkAccountMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '계정 연결에 실패했습니다' });
+      toast.error(undefined, { fallback: t('auth:toasts.linkFailed') });
     },
   });
 };

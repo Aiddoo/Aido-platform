@@ -1,5 +1,6 @@
 import { PASSWORD_RULES } from '@aido/validators';
 import { PasswordPolicy } from '@src/features/auth/models/auth.model';
+import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';
 
 export interface PasswordStrengthIndicatorProps {
@@ -7,15 +8,16 @@ export interface PasswordStrengthIndicatorProps {
 }
 
 export const PasswordStrengthIndicator = ({ password }: PasswordStrengthIndicatorProps) => {
+  const { t } = useTranslation('auth');
   const value = password || '';
 
   return (
     <HStack gap={16} className="items-center">
-      <RuleItem satisfied={PasswordPolicy.hasLetter(value)} label="영문 포함" />
-      <RuleItem satisfied={PasswordPolicy.hasNumber(value)} label="숫자 포함" />
+      <RuleItem satisfied={PasswordPolicy.hasLetter(value)} label={t('passwordRules.hasLetter')} />
+      <RuleItem satisfied={PasswordPolicy.hasNumber(value)} label={t('passwordRules.hasNumber')} />
       <RuleItem
         satisfied={PasswordPolicy.hasMinLength(value)}
-        label={`${PASSWORD_RULES.MIN_LENGTH}자 이상`}
+        label={t('passwordRules.minLength', { count: PASSWORD_RULES.MIN_LENGTH })}
       />
     </HStack>
   );

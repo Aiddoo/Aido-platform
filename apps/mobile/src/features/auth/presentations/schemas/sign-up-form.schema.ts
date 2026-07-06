@@ -1,4 +1,5 @@
 import { emailSchema, passwordSchema } from '@aido/validators';
+import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 export const signUpFormSchema = z
@@ -6,10 +7,14 @@ export const signUpFormSchema = z
     email: emailSchema,
     password: passwordSchema,
     passwordConfirm: z.string(),
-    name: z.string().min(1, '닉네임을 입력해주세요').max(20, '이름은 20자 이내여야 합니다').trim(),
+    name: z
+      .string()
+      .min(1, { error: () => t('auth:forms.nicknameRequired') })
+      .max(20, { error: () => t('auth:forms.nameMaxLength', { max: 20 }) })
+      .trim(),
   })
   .refine((data) => data.password === data.passwordConfirm, {
-    message: '비밀번호가 일치하지 않습니다',
+    error: () => t('auth:forms.passwordMismatch'),
     path: ['passwordConfirm'],
   });
 

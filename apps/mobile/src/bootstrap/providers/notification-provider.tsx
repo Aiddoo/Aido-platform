@@ -1,10 +1,11 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
-import { useLogger, useNotificationService } from './di-provider';
+import { useLogger, useNotificationService } from './di-context';
 
 interface NotificationContextValue {
   handleNotificationResponse: (response: Notifications.NotificationResponse) => Promise<void>;
@@ -29,6 +30,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();
   const notificationService = useNotificationService();
   const logger = useLogger();
+  const { resolvedLanguage } = useLanguage();
   const isAuthenticated = status === 'authenticated';
 
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
@@ -94,7 +96,8 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     };
   }, [handleForegroundNotification, handleNotificationResponse, logger]);
 
-  // Effect 2: 푸시 토큰 관리
+  // Effect 2: 푸시 토큰 관리 — resolvedLanguage 변경 시 재등록해 서버 UserPreference.locale 동기화
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 언어 변경 시 토큰 재등록을 트리거하는 의도적 의존성 (Accept-Language → 서버 locale upsert)
   useEffect(() => {
     if (isAuthenticated) {
       notificationService.setupPushNotifications().catch((error) => {
@@ -105,7 +108,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
         logger.warn('[Notification] Push token unregister skipped', { error });
       });
     }
-  }, [isAuthenticated, notificationService, logger]);
+  }, [isAuthenticated, notificationService, logger, resolvedLanguage]);
 
   // Effect 3: 배지 동기화
   useEffect(() => {

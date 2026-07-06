@@ -9,6 +9,7 @@ import { useUpdateMemoMutationOptions } from '@src/features/memo/presentations/q
 import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
 import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
   Box,
@@ -47,6 +48,7 @@ import type { z } from 'zod';
 type UpdateMemoFormInput = z.infer<typeof updateMemoSchema>;
 
 export default function MemoDetailScreen() {
+  const { t } = useTranslation(['memo', 'common']);
   const { id } = useLocalSearchParams<{ id: string }>();
   const memoId = Number(id);
   const router = useRouter();
@@ -154,13 +156,15 @@ export default function MemoDetailScreen() {
             exit();
           }
         }}
-        title={<ConfirmDialog.Title>메모를 삭제할까요?</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
         description={
-          <ConfirmDialog.Description>삭제한 메모는 복구할 수 없어요</ConfirmDialog.Description>
+          <ConfirmDialog.Description>
+            {t('memo:detail.deleteConfirmDescription')}
+          </ConfirmDialog.Description>
         }
         cancelButton={
           <ConfirmDialog.CancelButton onPress={() => close()} disabled={isDeletePending}>
-            취소
+            {t('common:actions.cancel')}
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
@@ -169,7 +173,7 @@ export default function MemoDetailScreen() {
             onPress={() => deleteMemo(memoId, { onSuccess: () => router.back() })}
             isLoading={isDeletePending}
           >
-            삭제
+            {t('common:actions.delete')}
           </ConfirmDialog.ConfirmButton>
         }
       />

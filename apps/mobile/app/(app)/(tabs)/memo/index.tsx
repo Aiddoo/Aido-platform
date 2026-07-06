@@ -5,6 +5,7 @@ import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presenta
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   H3,
@@ -85,12 +86,13 @@ export default function MemoScreen() {
 function Header() {
   const router = useRouter();
   const toast = useAppToast();
+  const { t } = useTranslation('memo');
   const { data: resourceLimit } = useSuspenseQuery(useGetMemoResourceLimitQueryOptions());
   const canCreate = MemoPolicy.canCreate(resourceLimit);
 
   const handleCreate = () => {
     if (!canCreate) {
-      toast.error('메모 개수가 한도에 도달했어요');
+      toast.error(t('toasts.limitReached'));
       return;
     }
     router.push('/memo/create');
@@ -99,7 +101,7 @@ function Header() {
   return (
     <HStack align="center" px={16} mb={16}>
       <Box flex={1}>
-        <H3 shade={7}>메모 추가</H3>
+        <H3 shade={7}>{t('tab.addMemo')}</H3>
       </Box>
       <PressableFeedback
         onPress={handleCreate}

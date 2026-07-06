@@ -5,6 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -27,7 +28,7 @@ export const useConvertMemoToTodoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_, { memoId }) => {
-      toast.success('메모를 할 일로 변환했어요');
+      toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
     onError: (error) => {
@@ -37,7 +38,7 @@ export const useConvertMemoToTodoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해주세요' });
+      toast.error(undefined, { fallback: t('memo:toasts.retryLater') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });

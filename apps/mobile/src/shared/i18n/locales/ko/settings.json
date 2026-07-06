@@ -17,5 +17,33 @@
   "language": {
     "system": "시스템 설정",
     "systemDescription": "기기 언어를 따라요"
+  },
+  "theme": {
+    "light": "라이트 모드",
+    "dark": "다크 모드",
+    "system": "시스템 설정"
+  },
+  "fontSize": {
+    "xsmall": "아주 작게",
+    "small": "작게",
+    "medium": "보통",
+    "large": "크게",
+    "xlarge": "아주 크게",
+    "sample": "가나다라마바사 ABC 123"
+  },
+  "terms": {
+    "termsOfService": "서비스 이용약관",
+    "privacyPolicy": "개인정보처리방침",
+    "agreedAt": "동의일: {{date}}",
+    "version": "버전: {{version}}",
+    "notAgreed": "미동의",
+    "marketing": "마케팅 수신 동의",
+    "marketingDescription": "이벤트 및 프로모션 정보를 받습니다"
+  },
+  "categorySettings": {
+    "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",
+    "editTab": "카테고리 편집",
+    "reorderTab": "순서 바꾸기",
+    "add": "카테고리 추가"
   }
 }
