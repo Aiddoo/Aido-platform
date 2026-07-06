@@ -20,6 +20,8 @@ const ExtraSchema = z.object({
   revenueCatAppleApiKey: z.string().optional(),
   revenueCatGoogleApiKey: z.string().optional(),
   revenueCatTestApiKey: z.string().optional(),
+  sentryDsn: z.string().optional(),
+  sentryDebug: z.boolean().optional(),
 });
 
 // =============================================================================
@@ -142,6 +144,10 @@ export const ENV = {
   API_URL: resolveApiUrl(),
   SCHEME: resolveScheme(),
   REVENUECAT_API_KEY: resolveRevenueCatApiKey(),
+
+  SENTRY_DSN: extra.sentryDsn,
+  // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).
+  SENTRY_ENABLED: extra.isProduction || extra.sentryDebug === true,
 } as const;
 
 export type Env = typeof ENV;

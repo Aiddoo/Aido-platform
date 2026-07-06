@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.3.3';
+const VERSION = '1.3.4';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -219,14 +219,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       './plugins/withJitpackFilter',
       './plugins/withGradleJvmArgs',
       '@react-native-firebase/app',
-      '@react-native-firebase/crashlytics',
       '@react-native-community/datetimepicker',
+      [
+        '@sentry/react-native/expo',
+        {
+          url: 'https://sentry.io/',
+          organization: 'redband',
+          project: 'aido-mobile-production',
+        },
+      ],
       [
         'expo-build-properties',
         {
           ios: {
             useFrameworks: 'static',
-            forceStaticLinking: ['RNFBApp', 'RNFBAnalytics', 'RNFBCrashlytics'],
+            forceStaticLinking: ['RNFBApp', 'RNFBAnalytics'],
           },
           android: {
             edgeToEdgeEnabled: true,
@@ -359,6 +366,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       revenueCatAppleApiKey: process.env.REVENUECAT_APPLE_API_KEY,
       revenueCatGoogleApiKey: process.env.REVENUECAT_GOOGLE_API_KEY,
       revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY,
+      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      // dev에서 Sentry 전송을 강제로 켜는 플래그(테스트 버튼 검증용). 평소 미설정 → dev는 전송 안 함.
+      sentryDebug: process.env.EXPO_PUBLIC_SENTRY_DEBUG === 'true',
     },
   };
 };

@@ -1,12 +1,12 @@
-const { getDefaultConfig } = require('expo/metro-config');
 const fs = require('node:fs');
 const path = require('node:path');
 const { withUniwindConfig } = require('uniwind/metro');
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 const projectRootFromWorkspace = path.relative(workspaceRoot, __dirname).replace(/\\/g, '/');
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // SVG transformer 설정
 config.transformer = {

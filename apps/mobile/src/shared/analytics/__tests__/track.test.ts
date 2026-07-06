@@ -70,4 +70,16 @@ describe('track', () => {
     expect(analytics.trackEvent).toHaveBeenCalledWith('badge_empty_cta_tapped', undefined);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
+
+  test('session_expired 이벤트를 reason과 함께 전달한다(카탈로그 경유)', () => {
+    // Given
+    const params = { reason: 'refresh-rejected-401' as const };
+
+    // When
+    track(analytics, 'session_expired', params);
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith('session_expired', params);
+    expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+  });
 });

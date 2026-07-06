@@ -1,3 +1,4 @@
+import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 
 export const createConsoleErrorReporter = (): ErrorReporter => ({
@@ -10,6 +11,13 @@ export const createConsoleErrorReporter = (): ErrorReporter => ({
     context
       ? console.error('[ErrorReporter] captureMessage:', message, context)
       : console.error('[ErrorReporter] captureMessage:', message);
+  },
+  addBreadcrumb(breadcrumb: Breadcrumb): void {
+    console.info(
+      `[ErrorReporter] breadcrumb(${breadcrumb.category}):`,
+      breadcrumb.message,
+      breadcrumb.data ?? {},
+    );
   },
   setUserId(userId: string | null): void {
     console.info('[ErrorReporter] setUserId:', userId);

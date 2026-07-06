@@ -1,6 +1,6 @@
 # Mobile App - AI 개발 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
 
 Expo 57 + React Native 0.86 기반 모바일 앱.
 
@@ -43,6 +43,11 @@ DI + `jest.fn()` 기반 레이어별 독립 테스트. Given/When/Then 패턴.
 - 예측 불가능 (5xx, 네트워크): `throw` -> ErrorBoundary
 - 상세: [error-handling.md](../docs/error-handling.md)
 
+### 관측 (Observability)
+- **Sentry**(`ErrorReporter` 포트): 크래시·에러·검색가능 이벤트·breadcrumb(severity 판정)
+- **Firebase Analytics**(`Analytics` 포트 + 타입 카탈로그 `track()`): 제품 지표. Crashlytics 미사용
+- 벤더 코드는 어댑터에만. 상세: [observability.md](./observability.md)
+
 ### 폼
 - `react-hook-form` + Zod (`@aido/validators`)
 
@@ -55,10 +60,13 @@ DI + `jest.fn()` 기반 레이어별 독립 테스트. Given/When/Then 패턴.
 # 런타임
 APP_ENV                      # development | preview | production
 EXPO_PUBLIC_API_URL          # API 서버 URL
+EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable)
+EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry 강제 활성화 — 'true'일 때만
 
 # 빌드 (EAS Secrets)
-GOOGLE_SERVICES_JSON         # Firebase Android (Base64)
-GOOGLE_SERVICES_INFO_PLIST   # Firebase iOS (Base64)
+GOOGLE_SERVICES_JSON         # Firebase Android (Base64) — Analytics
+GOOGLE_SERVICES_INFO_PLIST   # Firebase iOS (Base64) — Analytics
+SENTRY_AUTH_TOKEN            # Sentry 소스맵 업로드 (sensitive)
 EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 ```
 
@@ -66,6 +74,7 @@ EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 
 - [인증 가이드](../docs/authentication_guide.md)
 - [에러 처리](../docs/error-handling.md)
+- [관측 (Analytics/Sentry)](./observability.md)
 - [EAS 빌드](../docs/eas-build-guide.md)
 - [EAS Secrets](../docs/EAS_SECRETS.md)
 - [배포 가이드](../DEPLOYMENT.md)

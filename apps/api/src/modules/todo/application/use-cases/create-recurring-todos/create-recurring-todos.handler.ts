@@ -149,11 +149,12 @@ export class CreateRecurringTodosHandler
 		// 5. 캐시 무효화 (todoCount 변경 — 단건 create와 동일 규칙)
 		await this.todoCache.invalidateTodoCategories(data.userId);
 
-		// 6. 저장 완료 후 인스턴스별 이벤트 발행 (리마인더 스케줄링은 이벤트 핸들러)
-		for (const todo of created) {
+		// 6. 저장 완료 후 이벤트 일괄 발행 (인스턴스 순서 보존 · 리마인더 스케줄링은 이벤트 핸들러)
+		const domainEvents = created.flatMap((todo) => {
 			todo.markCreated();
-			this.eventBus.publishAll(todo.pullDomainEvents());
-		}
+			return todo.pullDomainEvents();
+		});
+		this.eventBus.publishAll(domainEvents);
 
 		// 7. 그룹 재조회 (sortOrder asc — 생성 순서와 동일)
 		const todos = await this.todoReadRepository.findManyByRecurrenceGroupId(

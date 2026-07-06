@@ -55,17 +55,20 @@ for (const dir of TARGET_DIRS) {
 	for (const file of collectTsFiles(dir)) {
 		const lines = readFileSync(file, "utf8").split("\n");
 		lines.forEach((line, idx) => {
-			const trimmed = line.trim();
+			// 한 줄 주석 제거 후 검사 — 주석 속 영단어 `as`/`!`(예: `// as a result`, `// Don't!`) 오탐 방지
+			const code = line.replace(/\/\/.*$/, "");
+			const trimmed = code.trim();
+			if (!trimmed) return;
 			const isImportLike =
 				trimmed.startsWith("import ") ||
 				trimmed.startsWith("export ") ||
 				trimmed.startsWith("} from") ||
-				line.includes(" from ");
-			if (!isImportLike && AS_ASSERTION.test(line)) {
-				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[as] ${trimmed}`);
+				code.includes(" from ");
+			if (!isImportLike && AS_ASSERTION.test(code)) {
+				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[as] ${line.trim()}`);
 			}
-			if (NON_NULL.test(line)) {
-				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[!]  ${trimmed}`);
+			if (NON_NULL.test(code)) {
+				violations.push(`${relative(ROOT, file)}:${idx + 1}\t[!]  ${line.trim()}`);
 			}
 		});
 	}
