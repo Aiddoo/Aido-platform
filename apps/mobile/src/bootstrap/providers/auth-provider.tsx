@@ -2,6 +2,7 @@ import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import { track } from '@src/shared/analytics';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
@@ -11,6 +12,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { resolveInitialAuthStatus } from './auth-boot';
 import { useAnalytics, useErrorReporter, useStorage } from './di-provider';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -29,11 +31,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
-  // 앱 시작 시 토큰 확인
+  // 앱 시작 시 초기 인증 상태 결정 (재설치 잔존 토큰 가드 포함)
   useEffect(() => {
     const checkAuth = async () => {
-      const token = await storage.get<string>('accessToken');
-      setStatusState(token ? 'authenticated' : 'unauthenticated');
+      const initialStatus = await resolveInitialAuthStatus(storage, mmkvSyncStorage);
+      setStatusState(initialStatus);
     };
     checkAuth();
   }, [storage]);

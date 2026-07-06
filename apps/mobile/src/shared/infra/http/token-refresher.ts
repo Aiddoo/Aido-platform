@@ -3,6 +3,7 @@ import { emitSessionExpired } from '@src/core/events/session-expired';
 import type { Storage } from '@src/core/ports/storage';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import { ENV } from '@src/shared/config/env';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import ky from 'ky';
 import { z } from 'zod';
@@ -26,13 +27,16 @@ export const createTokenRefresher = (storage: Storage): TokenRefresher => {
 
   const expireSession = async (reason: SessionExpiredReason): Promise<false> => {
     logger.warn('[TokenRefresher] 세션 만료 확정', { reason });
-    await Promise.all([storage.remove('accessToken'), storage.remove('refreshToken')]);
+    await Promise.all([
+      storage.remove(STORAGE_KEYS.ACCESS_TOKEN),
+      storage.remove(STORAGE_KEYS.REFRESH_TOKEN),
+    ]);
     emitSessionExpired(reason);
     return false;
   };
 
   const refresh = async (): Promise<boolean> => {
-    const refreshToken = await storage.get<string>('refreshToken');
+    const refreshToken = await storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN);
     if (!refreshToken) {
       return expireSession('no-refresh-token');
     }
@@ -65,8 +69,8 @@ export const createTokenRefresher = (storage: Storage): TokenRefresher => {
       }
       const { accessToken, refreshToken: nextRefreshToken } = parsed.data.data;
       await Promise.all([
-        storage.set('accessToken', accessToken),
-        storage.set('refreshToken', nextRefreshToken),
+        storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
+        storage.set(STORAGE_KEYS.REFRESH_TOKEN, nextRefreshToken),
       ]);
       return true;
     }
