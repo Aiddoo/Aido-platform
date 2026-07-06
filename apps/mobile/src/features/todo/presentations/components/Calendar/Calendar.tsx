@@ -16,7 +16,6 @@ import {
   getWeekRange,
   getWeekStart,
   isSameMonth,
-  WEEKDAY_LABELS,
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
@@ -46,6 +45,7 @@ interface CalendarProps {
 }
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
+const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
 const TOTAL_PAGES = 521;
@@ -165,16 +165,16 @@ Calendar.Loading = function Loading() {
       </HStack>
 
       <HStack px={8}>
-        {WEEKDAY_LABELS.map((label) => (
-          <Box key={`weekday-skeleton-${label}`} className="flex-1 items-center py-2">
+        {WEEKDAY_INDICES.map((dayIndex) => (
+          <Box key={`weekday-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
             <Skeleton className="size-4" />
           </Box>
         ))}
       </HStack>
 
       <HStack px={8}>
-        {WEEKDAY_LABELS.map((label) => (
-          <Box key={`date-skeleton-${label}`} className="flex-1 items-center py-2">
+        {WEEKDAY_INDICES.map((dayIndex) => (
+          <Box key={`date-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
             <Skeleton className="size-8 overflow-hidden rounded-2xl" />
           </Box>
         ))}

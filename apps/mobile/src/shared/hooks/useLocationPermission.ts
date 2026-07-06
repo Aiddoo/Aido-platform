@@ -1,3 +1,4 @@
+import { t } from '@src/shared/i18n';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { useCallback } from 'react';
@@ -19,14 +20,10 @@ const openSettings = () => {
 
 /** 권한 거부 시 설정으로 이동 안내 Alert */
 const showPermissionDeniedAlert = () => {
-  Alert.alert(
-    '위치 권한 필요',
-    '날씨 정보를 제공하려면 위치 권한이 필요합니다. 설정에서 권한을 허용해주세요.',
-    [
-      { text: '취소', style: 'cancel' },
-      { text: '설정으로 이동', onPress: openSettings },
-    ],
-  );
+  Alert.alert(t('common:permissions.location.title'), t('common:permissions.location.message'), [
+    { text: t('common:permissions.cancel'), style: 'cancel' },
+    { text: t('common:permissions.openSettings'), onPress: openSettings },
+  ]);
 };
 
 /**
@@ -76,7 +73,9 @@ export const useLocationPermission = (
       match(permissionResult)
         .with({ granted: true }, () => onGranted())
         .with({ granted: false, canAskAgain: false }, () => showPermissionDeniedAlert())
-        .with({ granted: false, canAskAgain: true }, () => onDenied?.('위치 권한이 필요합니다.'))
+        .with({ granted: false, canAskAgain: true }, () =>
+          onDenied?.(t('common:permissions.location.denied')),
+        )
         .exhaustive();
     },
     [onDenied],

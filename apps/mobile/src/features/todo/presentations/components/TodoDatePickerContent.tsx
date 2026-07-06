@@ -1,7 +1,12 @@
 import type { DayOfWeek } from '@aido/validators';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { getMonthHeaderText, isSameDay, isSameMonth, WEEKDAY_LABELS } from '@src/shared/utils/date';
+import {
+  getMonthHeaderText,
+  getWeekdayLabels,
+  isSameDay,
+  isSameMonth,
+} from '@src/shared/utils/date';
 import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo } from 'react';
@@ -54,8 +59,8 @@ const getQuickDateOptions = (): QuickDateOption[] => {
   const today = dayjs();
   const tomorrow = today.add(1, 'day');
   return [
-    { label: '오늘', day: WEEKDAY_LABELS[today.day()], date: today.toDate() },
-    { label: '내일', day: WEEKDAY_LABELS[tomorrow.day()], date: tomorrow.toDate() },
+    { label: '오늘', day: getWeekdayLabels()[today.day()] as string, date: today.toDate() },
+    { label: '내일', day: getWeekdayLabels()[tomorrow.day()] as string, date: tomorrow.toDate() },
   ];
 };
 

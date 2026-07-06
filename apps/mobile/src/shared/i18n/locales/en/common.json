@@ -8,5 +8,87 @@
     "done": "Done",
     "edit": "Edit",
     "retry": "Try again"
+  },
+  "dateFormats": {
+    "fullDate": "MMMM D, YYYY",
+    "monthDay": "MMM D",
+    "dayOfMonth": "D",
+    "yearMonth": "MMMM YYYY",
+    "monthLabel": "MMM",
+    "shortDate": "M/D/YYYY"
+  },
+  "daysOfWeek": {
+    "MON": "Mon",
+    "TUE": "Tue",
+    "WED": "Wed",
+    "THU": "Thu",
+    "FRI": "Fri",
+    "SAT": "Sat",
+    "SUN": "Sun"
+  },
+  "calendar": {
+    "weekHeader": "Week {{week}} of {{month}}"
+  },
+  "dateSections": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "earlier": "Earlier"
+  },
+  "relativeTime": {
+    "justNow": "Just now",
+    "minutesAgo_one": "{{count}} minute ago",
+    "minutesAgo_other": "{{count}} minutes ago",
+    "hoursAgo_one": "{{count}} hour ago",
+    "hoursAgo_other": "{{count}} hours ago",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago"
+  },
+  "premiumDialog": {
+    "title": "Premium Feature",
+    "close": "Close",
+    "subscribe": "Subscribe"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "retry": "Retry"
+  },
+  "toast": {
+    "defaultError": "Something went wrong"
+  },
+  "share": {
+    "unsupported": "Sharing isn't available on this device",
+    "prepareFailed": "Couldn't prepare the image to share",
+    "failed": "Failed to share"
+  },
+  "permissions": {
+    "cancel": "Cancel",
+    "openSettings": "Open Settings",
+    "microphone": {
+      "title": "Microphone Access Needed",
+      "message": "Voice input requires microphone access. Please allow it in Settings.",
+      "denied": "Microphone access is required."
+    },
+    "location": {
+      "title": "Location Access Needed",
+      "message": "Weather updates require location access. Please allow it in Settings.",
+      "denied": "Location access is required."
+    }
+  },
+  "speechErrors": {
+    "no-speech": "We didn't catch that. Please try speaking again.",
+    "speech-timeout": "Voice input timed out. Please try again.",
+    "aborted": "Voice recognition was canceled.",
+    "not-allowed": "Microphone access is needed. Please allow it in Settings.",
+    "service-not-allowed": "Voice recognition isn't available.",
+    "busy": "Voice recognition is already running. Please try again shortly.",
+    "audio-capture": "Please check your microphone connection.",
+    "network": "Please check your internet connection.",
+    "interrupted": "Another app is using the microphone. Please try again shortly.",
+    "language-not-supported": "This language isn't supported.",
+    "bad-grammar": "There's a problem with the voice recognition settings.",
+    "client": "Something went wrong during voice recognition. Please try again.",
+    "unknown": "Something went wrong. Please try again."
   }
 }

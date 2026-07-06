@@ -1,7 +1,13 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import { Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
-import { formatTimeDisplay, getDateWithTime, toHHmm } from '@src/shared/utils/time';
+import {
+  formatTimeDisplay,
+  getDateWithTime,
+  getPickerLocale,
+  toHHmm,
+} from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
@@ -27,6 +33,7 @@ export const TodoTimePickerContent = ({
   onCancel,
 }: TodoTimePickerContentProps) => {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TIME);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
@@ -113,7 +120,7 @@ export const TodoTimePickerContent = ({
               value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
               mode="time"
               display="spinner"
-              locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
+              locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
               onChange={(_event, date) => {
                 if (date) {
                   setLocalTime(toHHmm(date));
