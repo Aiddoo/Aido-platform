@@ -2,6 +2,7 @@ import { emailSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, VStack } from '@src/shared/ui';
 import { useEffect, useRef } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
@@ -98,7 +99,10 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                     submitBehavior="submit"
                     returnKeyType="next"
                     isInvalid={!!errors.email}
-                    errorMessage={errors.email?.message}
+                    errorMessage={resolveValidationMessage(errors.email, {
+                      default: 'email.invalid',
+                      byType: { too_big: 'email.tooLong' },
+                    })}
                     onSubmitEditing={() => {
                       if (isEmailValid) handleNext();
                     }}

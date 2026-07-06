@@ -90,5 +90,31 @@
     "bad-grammar": "There's a problem with the voice recognition settings.",
     "client": "Something went wrong during voice recognition. Please try again.",
     "unknown": "Something went wrong. Please try again."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "goBack": "Go back"
+  },
+  "appError": {
+    "title": "Something went wrong",
+    "description": "Please try again later",
+    "retry": "Retry",
+    "logout": "Sign out"
+  },
+  "tabs": {
+    "todo": "To-dos",
+    "memo": "Memos",
+    "mypage": "My Page"
+  },
+  "webview": {
+    "invalidUrl": "Invalid URL",
+    "title": "Web Page",
+    "back": "Back"
+  },
+  "infraErrors": {
+    "network": "Please check your internet connection",
+    "timeout": "The request timed out",
+    "server": "There's a problem with the server",
+    "invalidResponse": "The response format is invalid"
   }
 }

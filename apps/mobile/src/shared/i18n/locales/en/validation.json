@@ -1,1 +1,19 @@
-{}
+{
+  "email": {
+    "invalid": "Please enter a valid email address",
+    "tooLong": "Email must be 255 characters or fewer"
+  },
+  "password": {
+    "tooShort": "Password must be at least 8 characters",
+    "tooLong": "Password must be 72 characters or fewer",
+    "pattern": "Password must be at least 8 characters and include letters and numbers"
+  },
+  "userTag": {
+    "length": "User tags are 8 characters long",
+    "pattern": "User tags can only contain uppercase letters and numbers"
+  },
+  "categoryName": {
+    "required": "Please enter a category name",
+    "tooLong": "Category names must be 50 characters or fewer"
+  }
+}

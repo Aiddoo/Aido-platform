@@ -2,6 +2,7 @@ import { userTagParamSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -69,7 +70,10 @@ const AddFriendScreen = () => {
               submitBehavior="submit"
               returnKeyType="done"
               isInvalid={!!errors.userTag}
-              errorMessage={errors.userTag?.message}
+              errorMessage={resolveValidationMessage(errors.userTag, {
+                default: 'userTag.pattern',
+                byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
+              })}
               onSubmitEditing={() => {
                 if (isValid) handleSubmit(onSubmit)();
               }}

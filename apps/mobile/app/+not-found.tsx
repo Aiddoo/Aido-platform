@@ -1,12 +1,15 @@
+import { useTranslation } from '@src/shared/i18n';
 import { DocsIcon, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation();
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <Result
         icon={<DocsIcon width={72} height={72} />}
-        title="페이지를 찾을 수 없어요"
+        title={t('notFound.title')}
         button={
           <Result.Button
             onPress={() => {
@@ -17,7 +20,7 @@ export default function NotFoundScreen() {
               }
             }}
           >
-            돌아가기
+            {t('notFound.goBack')}
           </Result.Button>
         }
       />

@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useTranslation } from '@src/shared/i18n';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,6 +48,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const queryClient = useQueryClient();
   const errorReporter = useErrorReporter();
 
+  const { t } = useTranslation();
   errorReporter.captureException(error, { feature: 'error_boundary' });
 
   const handleLogout = () => {
@@ -58,13 +60,13 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <Result
-        title="문제가 발생했어요"
-        description="잠시 후 다시 시도해주세요"
+        title={t('appError.title')}
+        description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button onPress={retry}>재시도</Result.Button>
+            <Result.Button onPress={retry}>{t('appError.retry')}</Result.Button>
             <Result.Button color="primary" onPress={handleLogout}>
-              로그아웃
+              {t('appError.logout')}
             </Result.Button>
           </HStack>
         }

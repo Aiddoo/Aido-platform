@@ -15,6 +15,7 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
@@ -128,7 +129,10 @@ function EmailStep({ onNext }: EmailStepProps) {
                   returnKeyType="done"
                   submitBehavior="submit"
                   isInvalid={!!errors.email}
-                  errorMessage={errors.email?.message}
+                  errorMessage={resolveValidationMessage(errors.email, {
+                    default: 'email.invalid',
+                    byType: { too_big: 'email.tooLong' },
+                  })}
                   onSubmitEditing={() => {
                     if (isValid) handleNext();
                   }}

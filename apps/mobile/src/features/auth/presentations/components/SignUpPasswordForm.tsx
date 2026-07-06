@@ -2,6 +2,7 @@ import { passwordSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, VStack } from '@src/shared/ui';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
@@ -120,7 +121,10 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                     submitBehavior="submit"
                     returnKeyType="next"
                     isInvalid={!!errors.password}
-                    errorMessage={errors.password?.message}
+                    errorMessage={resolveValidationMessage(errors.password, {
+                      default: 'password.pattern',
+                      byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
+                    })}
                     renderErrorMessage={false}
                     onSubmitEditing={() => {
                       if (isPasswordValid) handleNext();

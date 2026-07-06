@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-create-todo-category-mutation-options';
 import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheetInput,
   Button,
@@ -80,7 +81,10 @@ export const CategoryCreateBottomSheet = ({
                   value={value}
                   onChangeText={onChange}
                   isInvalid={!!errors.name}
-                  errorMessage={errors.name?.message}
+                  errorMessage={resolveValidationMessage(errors.name, {
+                    default: 'categoryName.required',
+                    byType: { too_big: 'categoryName.tooLong' },
+                  })}
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit(onSubmit)}
                 />
