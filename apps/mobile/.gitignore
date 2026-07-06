@@ -61,3 +61,5 @@ play-store-service-account.json
 *.ipa
 *.apk
 *.aab
+
+.env.local

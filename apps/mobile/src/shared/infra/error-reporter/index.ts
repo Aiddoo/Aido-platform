@@ -1,3 +1,3 @@
 export { createConsoleErrorReporter } from './console-error-reporter';
-export { createCrashlyticsErrorReporter } from './crashlytics-error-reporter';
-export { initCrashlytics } from './crashlytics-init';
+export { errorReporter, setGlobalErrorReporter } from './global-error-reporter';
+export { createSentryErrorReporter } from './sentry-error-reporter';
