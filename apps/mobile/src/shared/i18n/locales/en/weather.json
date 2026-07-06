@@ -45,13 +45,13 @@
     "weekly": "Weekly Forecast",
     "sunrise": "Sunrise",
     "sunset": "Sunset",
-    "pm10": "Fine Dust",
-    "pm25": "Ultrafine Dust"
+    "pm10": "PM10",
+    "pm25": "PM2.5"
   },
   "dust": {
     "good": "Good",
     "normal": "Moderate",
-    "bad": "Bad",
-    "veryBad": "Very Bad"
+    "bad": "Unhealthy",
+    "veryBad": "Very Unhealthy"
   }
 }

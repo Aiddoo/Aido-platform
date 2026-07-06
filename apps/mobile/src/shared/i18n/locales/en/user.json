@@ -1,6 +1,6 @@
 {
   "mypage": {
-    "header": "My Page",
+    "header": "My Account",
     "sections": {
       "activity": "Activity",
       "subscription": "Subscription",
@@ -55,6 +55,6 @@
     "placeholder": "Enter your name",
     "submit": "Change Name",
     "required": "Please enter your name",
-    "maxLength": "Name must be 20 characters or less"
+    "maxLength": "Name must be 20 characters or fewer"
   }
 }

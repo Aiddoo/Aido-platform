@@ -32,7 +32,7 @@
     "pushLabel": "Push notifications",
     "pushDescription": "Receive all push notifications",
     "nightPushLabel": "Night push notifications",
-    "nightPushDescription": "Also receive notifications between 21:00 and 08:00",
+    "nightPushDescription": "Also receive notifications between 9 PM and 8 AM",
     "weatherLabel": "Weather alerts",
     "weatherDescription": "Receive weather alerts",
     "weatherMorningLabel": "Morning weather alert",

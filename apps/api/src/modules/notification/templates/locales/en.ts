@@ -107,7 +107,7 @@ export const SCHEDULER_TEMPLATES = {
 			},
 			{
 				title: "{count} to-dos just arrived 📬",
-				body: "Please handle them one at a time~",
+				body: "One at a time — you've got this",
 			},
 		],
 	} satisfies NotificationTemplate,
@@ -339,92 +339,92 @@ export const SCHEDULER_TEMPLATES = {
 
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
-		title: "☀️ {skyLabel} today, {tempMin}~{tempMax}°C",
+		title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
 		body: "Perfect weather for crushing your to-dos",
 		type: "WEATHER_MORNING" as NotificationType,
 		variants: [
 			{
-				title: "☀️ {skyLabel} today, {tempMin}~{tempMax}°C",
+				title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
 				body: "Perfect weather for crushing your to-dos",
 			},
 			{
-				title: "{skyLabel} today, {tempMin}~{tempMax}°C 🌤️",
+				title: "{skyLabel} today, {tempMin}–{tempMax}°C 🌤️",
 				body: "Got outdoor to-dos? Today's your chance!",
 			},
 		],
 	} satisfies NotificationTemplate,
 	MORNING_RAIN: {
 		title: "☔ Rain expected today, {precipProb}% chance",
-		body: "Don't forget your umbrella! {tempMin}~{tempMax}°C",
+		body: "Don't forget your umbrella! {tempMin}–{tempMax}°C",
 		type: "WEATHER_MORNING" as NotificationType,
 		variants: [
 			{
 				title: "☔ Rain expected today, {precipProb}% chance",
-				body: "Don't forget your umbrella! {tempMin}~{tempMax}°C",
+				body: "Don't forget your umbrella! {tempMin}–{tempMax}°C",
 			},
 			{
 				title: "🌧️ {precipProb}% chance of rain today",
-				body: "Great day to knock out indoor to-dos ({tempMin}~{tempMax}°C)",
+				body: "Great day to knock out indoor to-dos ({tempMin}–{tempMax}°C)",
 			},
 		],
 	} satisfies NotificationTemplate,
 	MORNING_SNOW: {
 		title: "❄️ Snow expected today, {precipProb}% chance",
-		body: "Bundle up before heading out! {tempMin}~{tempMax}°C",
+		body: "Bundle up before heading out! {tempMin}–{tempMax}°C",
 		type: "WEATHER_MORNING" as NotificationType,
 		variants: [
 			{
 				title: "❄️ Snow expected today, {precipProb}% chance",
-				body: "Bundle up before heading out! {tempMin}~{tempMax}°C",
+				body: "Bundle up before heading out! {tempMin}–{tempMax}°C",
 			},
 			{
 				title: "☃️ It might snow today ({precipProb}%)",
-				body: "Roads may be slippery — take it slow {tempMin}~{tempMax}°C",
+				body: "Roads may be slippery — take it slow {tempMin}–{tempMax}°C",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_CLEAR: {
-		title: "🌙 Tomorrow: {skyLabel}, {tempMin}~{tempMax}°C",
+		title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
 		body: "Plan tomorrow's to-dos now for an easier morning",
 		type: "WEATHER_EVENING" as NotificationType,
 		variants: [
 			{
-				title: "🌙 Tomorrow: {skyLabel}, {tempMin}~{tempMax}°C",
+				title: "🌙 Tomorrow: {skyLabel}, {tempMin}–{tempMax}°C",
 				body: "Plan tomorrow's to-dos now for an easier morning",
 			},
 			{
-				title: "Tomorrow's weather: {skyLabel} {tempMin}~{tempMax}°C ✨",
+				title: "Tomorrow's weather: {skyLabel} {tempMin}–{tempMax}°C ✨",
 				body: "Plan now and tomorrow's you will say thanks",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_RAIN: {
 		title: "☔ {precipProb}% chance of rain tomorrow",
-		body: "Get your umbrella ready! {tempMin}~{tempMax}°C",
+		body: "Get your umbrella ready! {tempMin}–{tempMax}°C",
 		type: "WEATHER_EVENING" as NotificationType,
 		variants: [
 			{
 				title: "☔ {precipProb}% chance of rain tomorrow",
-				body: "Get your umbrella ready! {tempMin}~{tempMax}°C",
+				body: "Get your umbrella ready! {tempMin}–{tempMax}°C",
 			},
 			{
 				title: "🌧️ Rain is coming tomorrow ({precipProb}%)",
-				body: "Great day to batch indoor to-dos! {tempMin}~{tempMax}°C",
+				body: "Great day to batch indoor to-dos! {tempMin}–{tempMax}°C",
 			},
 		],
 	} satisfies NotificationTemplate,
 	EVENING_SNOW: {
 		title: "❄️ {precipProb}% chance of snow tomorrow",
-		body: "Dress warm and keep to-dos indoors! {tempMin}~{tempMax}°C",
+		body: "Dress warm and keep to-dos indoors! {tempMin}–{tempMax}°C",
 		type: "WEATHER_EVENING" as NotificationType,
 		variants: [
 			{
 				title: "❄️ {precipProb}% chance of snow tomorrow",
-				body: "Dress warm and keep to-dos indoors! {tempMin}~{tempMax}°C",
+				body: "Dress warm and keep to-dos indoors! {tempMin}–{tempMax}°C",
 			},
 			{
 				title: "☃️ Snow is coming tomorrow ({precipProb}%)",
-				body: "Plan ahead and there's nothing to worry about {tempMin}~{tempMax}°C",
+				body: "Plan ahead and there's nothing to worry about {tempMin}–{tempMax}°C",
 			},
 		],
 	} satisfies NotificationTemplate,
@@ -655,7 +655,7 @@ export const SYSTEM_TEMPLATES = {
 			},
 			{ title: "It's been 3 days!", body: "How about one easy one?" },
 			{
-				title: "Where did you go~ 🥺",
+				title: "Where'd you go? 🥺",
 				body: "Let's do just one together today",
 			},
 		],

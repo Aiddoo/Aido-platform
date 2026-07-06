@@ -7,7 +7,7 @@
     "close": "Close",
     "done": "Done",
     "edit": "Edit",
-    "retry": "Try again"
+    "retry": "Try Again"
   },
   "dateFormats": {
     "fullDate": "MMMM D, YYYY",
@@ -104,11 +104,11 @@
   "tabs": {
     "todo": "To-dos",
     "memo": "Memos",
-    "mypage": "My Page"
+    "mypage": "Me"
   },
   "webview": {
     "invalidUrl": "Invalid URL",
-    "title": "Web Page",
+    "title": "Browser",
     "back": "Back"
   },
   "infraErrors": {

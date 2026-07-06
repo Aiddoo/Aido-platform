@@ -47,7 +47,7 @@
     "allDay": "All day",
     "time": "Time",
     "selectTime": "Choose a time",
-    "reminderInfo": "ⓘ We'll remind you 1 hour and 10 minutes before",
+    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
     "repeatPeriod": "Repeat period",
     "selectPeriod": "Please choose a period",
     "repeatDaily": "Repeats daily",

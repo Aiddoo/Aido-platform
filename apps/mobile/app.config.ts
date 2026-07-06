@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.3.5';
+const VERSION = '1.4.0';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
@@ -140,6 +140,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // Branding
     icon: ICON,
     userInterfaceStyle: 'automatic',
+
+    // iOS 권한 다이얼로그 등 네이티브 문구 다국어 (InfoPlist.strings)
+    locales: {
+      ko: './native-locales/ko.json',
+      en: './native-locales/en.json',
+    },
 
     // iOS
     ios: {
