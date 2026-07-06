@@ -1,7 +1,3 @@
-import type { Analytics } from '@src/core/ports/analytics';
-import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { Logger } from '@src/core/ports/logger';
-import type { Storage } from '@src/core/ports/storage';
 import { AchievementService } from '@src/features/achievement/services/achievement.service';
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
@@ -39,34 +35,8 @@ import {
 } from '@src/shared/infra/logger';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 
-import { createContext, type PropsWithChildren, use, useState } from 'react';
-
-export interface DIContainer {
-  // Infrastructure
-  storage: Storage;
-  logger: Logger;
-  analytics: Analytics;
-  errorReporter: ErrorReporter;
-
-  // Services
-  achievementService: AchievementService;
-  aiService: AiService;
-  authService: AuthService;
-  friendService: FriendService;
-  inquiryService: InquiryService;
-  memoService: MemoService;
-  subTodoService: SubTodoService;
-  todoService: TodoService;
-  todoCategoryService: TodoCategoryService;
-  notificationService: NotificationService;
-  todoNudgeService: TodoNudgeService;
-  userService: UserService;
-  revenueCatSdkManager: RevenueCatSdkManager;
-  subscriptionService: SubscriptionService;
-  weatherService: WeatherService;
-}
-
-const DIContext = createContext<DIContainer | null>(null);
+import { type PropsWithChildren, useState } from 'react';
+import { type DIContainer, DIContext } from './di-context';
 
 export const DIProvider = ({ children }: PropsWithChildren) => {
   const [di] = useState<DIContainer>(() => {
@@ -175,35 +145,28 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
   return <DIContext.Provider value={di}>{children}</DIContext.Provider>;
 };
 
-export const useDI = (): DIContainer => {
-  const context = use(DIContext);
-
-  if (!context) {
-    throw new Error('useDI must be used within DIProvider');
-  }
-
-  return context;
-};
-
-// Infrastructure Hooks
-export const useStorage = () => useDI().storage;
-export const useLogger = () => useDI().logger;
-export const useAnalytics = () => useDI().analytics;
-export const useErrorReporter = () => useDI().errorReporter;
-
-// Service Hooks
-export const useAchievementService = () => useDI().achievementService;
-export const useAiService = () => useDI().aiService;
-export const useAuthService = () => useDI().authService;
-export const useFriendService = () => useDI().friendService;
-export const useInquiryService = () => useDI().inquiryService;
-export const useMemoService = () => useDI().memoService;
-export const useSubTodoService = () => useDI().subTodoService;
-export const useTodoService = () => useDI().todoService;
-export const useTodoCategoryService = () => useDI().todoCategoryService;
-export const useNotificationService = () => useDI().notificationService;
-export const useTodoNudgeService = () => useDI().todoNudgeService;
-export const useUserService = () => useDI().userService;
-export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
-export const useSubscriptionService = () => useDI().subscriptionService;
-export const useWeatherService = () => useDI().weatherService;
+// DI 컨텍스트/훅은 di-context로 분리 — 기존 import 경로 호환을 위해 re-export
+export {
+  type DIContainer,
+  StaticDIProvider,
+  useAchievementService,
+  useAiService,
+  useAnalytics,
+  useAuthService,
+  useDI,
+  useErrorReporter,
+  useFriendService,
+  useInquiryService,
+  useLogger,
+  useMemoService,
+  useNotificationService,
+  useRevenueCatSdkManager,
+  useStorage,
+  useSubscriptionService,
+  useSubTodoService,
+  useTodoCategoryService,
+  useTodoNudgeService,
+  useTodoService,
+  useUserService,
+  useWeatherService,
+} from './di-context';

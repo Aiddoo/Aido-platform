@@ -1,4 +1,4 @@
-import { useMemoService } from '@src/bootstrap/providers/di-provider';
+import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys.constant';

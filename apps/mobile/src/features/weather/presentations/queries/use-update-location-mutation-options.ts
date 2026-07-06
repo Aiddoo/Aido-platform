@@ -1,5 +1,5 @@
 import type { UpdateLocationInput } from '@aido/validators';
-import { useWeatherService } from '@src/bootstrap/providers/di-provider';
+import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';

@@ -1,5 +1,5 @@
 import type { NotificationCategory } from '@aido/validators';
-import { useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { useNotificationService } from '@src/bootstrap/providers/di-context';
 import type {
   Notification,
   NotificationListResult,

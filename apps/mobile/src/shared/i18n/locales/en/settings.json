@@ -1,4 +1,19 @@
 {
+  "titles": {
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "language": "Language",
+    "terms": "Terms & Policies",
+    "inquiry": "Contact Us",
+    "linkedAccounts": "Linked Accounts",
+    "appIcon": "App Icon",
+    "profile": "Profile",
+    "editName": "Edit Name",
+    "changePassword": "Change Password",
+    "deleteAccount": "Delete Account",
+    "subscription": "Manage Subscription",
+    "categorySettings": "Categories"
+  },
   "language": {
     "system": "System default",
     "systemDescription": "Follows your device language"

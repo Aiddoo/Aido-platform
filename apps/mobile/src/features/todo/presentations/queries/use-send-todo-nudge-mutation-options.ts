@@ -1,4 +1,4 @@
-import { useTodoNudgeService } from '@src/bootstrap/providers/di-provider';
+import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

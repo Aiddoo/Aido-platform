@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/errors';
-import { useAiService, useLogger } from '@src/bootstrap/providers/di-provider';
+import { useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import type { AiSuggestionActionInput } from '@src/features/ai/models/ai.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';

@@ -1,4 +1,4 @@
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 

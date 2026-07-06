@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/errors';
-import { useSubTodoService } from '@src/bootstrap/providers/di-provider';
+import { useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';

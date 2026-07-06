@@ -1,5 +1,5 @@
 import type { ConvertMemoToTodoInput } from '@aido/validators';
-import { useMemoService } from '@src/bootstrap/providers/di-provider';
+import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';

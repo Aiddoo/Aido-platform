@@ -4,6 +4,7 @@ import { UserPolicy } from '@src/features/user/models/user.model';
 import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,
   H3,
@@ -24,6 +25,7 @@ import { ScrollView } from 'react-native';
 const MyPageScreen = () => {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
+  const { t } = useTranslation('settings');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -77,6 +79,10 @@ const MyPageScreen = () => {
           <SettingNavigation.Item
             label="글꼴 크기"
             onPress={() => router.push('/settings/font-size')}
+          />
+          <SettingNavigation.Item
+            label={t('titles.language')}
+            onPress={() => router.push('/settings/language')}
           />
         </SettingNavigation>
 

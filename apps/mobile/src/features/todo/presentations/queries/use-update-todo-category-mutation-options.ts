@@ -1,5 +1,5 @@
 import type { UpdateTodoCategoryInput } from '@aido/validators';
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/models/todo-category.model';
 import { useTrack } from '@src/shared/analytics';

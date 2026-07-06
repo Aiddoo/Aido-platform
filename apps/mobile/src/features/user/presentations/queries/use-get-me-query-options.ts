@@ -1,4 +1,4 @@
-import { useUserService } from '@src/bootstrap/providers/di-provider';
+import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';

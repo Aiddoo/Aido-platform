@@ -2,7 +2,7 @@ import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsin
 import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
-import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-provider';
+import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
 import {
   isActiveSubscription,

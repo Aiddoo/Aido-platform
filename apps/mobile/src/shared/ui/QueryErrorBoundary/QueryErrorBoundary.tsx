@@ -1,4 +1,4 @@
-import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';

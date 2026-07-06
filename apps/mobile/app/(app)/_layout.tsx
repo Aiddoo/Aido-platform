@@ -1,5 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';

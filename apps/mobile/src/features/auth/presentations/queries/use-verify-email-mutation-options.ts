@@ -1,6 +1,6 @@
 import type { VerifyEmailInput } from '@aido/validators';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';

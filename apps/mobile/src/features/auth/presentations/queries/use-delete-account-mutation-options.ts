@@ -6,7 +6,7 @@ import {
   useAuthService,
   useLogger,
   useNotificationService,
-} from '@src/bootstrap/providers/di-provider';
+} from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

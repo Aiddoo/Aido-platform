@@ -1,4 +1,4 @@
-import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
 

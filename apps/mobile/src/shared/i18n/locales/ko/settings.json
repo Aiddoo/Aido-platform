@@ -1,4 +1,19 @@
 {
+  "titles": {
+    "theme": "화면 테마",
+    "fontSize": "글꼴 크기",
+    "language": "언어",
+    "terms": "약관 및 정책",
+    "inquiry": "문의하기",
+    "linkedAccounts": "연결된 계정",
+    "appIcon": "앱 아이콘",
+    "profile": "프로필 정보",
+    "editName": "이름 변경",
+    "changePassword": "비밀번호 변경",
+    "deleteAccount": "회원 탈퇴",
+    "subscription": "구독 관리",
+    "categorySettings": "카테고리"
+  },
   "language": {
     "system": "시스템 설정",
     "systemDescription": "기기 언어를 따라요"

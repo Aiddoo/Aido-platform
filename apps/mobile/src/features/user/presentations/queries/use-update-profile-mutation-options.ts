@@ -1,5 +1,5 @@
 import type { UpdateProfileInput } from '@aido/validators';
-import { useUserService } from '@src/bootstrap/providers/di-provider';
+import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';

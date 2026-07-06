@@ -1,5 +1,5 @@
 import type { CreateInquiryInput } from '@aido/validators';
-import { useInquiryService } from '@src/bootstrap/providers/di-provider';
+import { useInquiryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { mutationOptions } from '@tanstack/react-query';
