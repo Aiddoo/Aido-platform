@@ -62,7 +62,10 @@ describe('createSentryLogger', () => {
       message: 'failed',
       data: { feature: 'x' },
     });
-    expect(captureException).toHaveBeenCalledWith(error, { tags: { source: 'logger' } });
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { source: 'logger' },
+      extra: { loggerMessage: 'failed', feature: 'x' },
+    });
   });
 
   it('error에 Error가 없으면 breadcrumb만 남기고 captureException은 호출하지 않는다', () => {

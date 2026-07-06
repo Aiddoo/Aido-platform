@@ -41,7 +41,11 @@ export const createSentryLogger = (): Logger => {
     error(message: string, error?: Error, context?: LogContext): void {
       breadcrumb('error', message, context);
       if (error) {
-        Sentry.captureException(error, { tags: { source: 'logger' } });
+        // 커스텀 메시지·컨텍스트를 extra로 첨부 → Sentry 이슈 상세에서 바로 확인 가능.
+        Sentry.captureException(error, {
+          tags: { source: 'logger' },
+          extra: { loggerMessage: message, ...context },
+        });
       }
     },
   };

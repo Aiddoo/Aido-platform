@@ -220,10 +220,10 @@ const pathnameOf = (url: string): string => {
   }
 };
 
-/** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). */
+/** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). clone으로 원본 스트림 보존. */
 const readBody = async (response: Response): Promise<unknown> => {
   try {
-    return await response.json();
+    return await response.clone().json();
   } catch {
     return null;
   }
