@@ -1,6 +1,8 @@
-import type { ErrorCodeType } from '@aido/errors';
+import { ErrorCode, type ErrorCodeType, isErrorCode } from '@aido/errors';
 import { ApiError } from '@src/shared/errors';
+import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { AfterResponseHook } from 'ky';
+import { z } from 'zod';
 
 const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
   // =========================================================================
@@ -200,31 +202,78 @@ const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
   ADMIN_1403: '잘못된 검색 조건이에요',
 };
 
-interface ServerErrorResponse {
-  success: false;
-  error: { code: string; message: string };
-}
+const FALLBACK_MESSAGE = '알 수 없는 오류가 발생했어요';
+
+/** 서버 에러 envelope(신뢰 불가 입력)를 런타임 검증 — `as` 캐스트 없이 타입 확정. */
+const errorEnvelopeSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }),
+});
+
+const pathnameOf = (url: string): string => {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url;
+  }
+};
+
+/** 응답 본문을 안전하게 JSON으로 읽는다(비-JSON/빈 본문이면 null). */
+const readBody = async (response: Response): Promise<unknown> => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+/** code가 알려진 ErrorCode면 한국어 문구를, 아니면 서버 메시지/폴백을 사용(무캐스트, isErrorCode 가드). */
+const resolveMessage = (code: string, serverMessage: string): string => {
+  if (isErrorCode(code)) {
+    const mapped = MOBILE_ERROR_MESSAGES[code];
+    if (mapped) return mapped;
+  }
+  return serverMessage || FALLBACK_MESSAGE;
+};
+
+/**
+ * 실패한 API 응답을 Sentry breadcrumb(category: 'http')로 남긴다.
+ * 이후 발생하는 에러 이벤트의 타임라인에 "어떤 요청이 어떤 코드로 실패했는지"가 붙는다.
+ */
+const breadcrumbFailure = (request: Request, response: Response, code: string): void => {
+  errorReporter.addBreadcrumb({
+    category: 'http',
+    level: 'warning',
+    message: 'API 요청 실패',
+    data: {
+      method: request.method,
+      path: pathnameOf(request.url),
+      status: response.status,
+      code,
+    },
+  });
+};
+
+const toApiError = async (request: Request, response: Response): Promise<ApiError> => {
+  const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
+  const code = parsed.success ? parsed.data.error.code : ErrorCode.SYS_0001;
+  const serverMessage = parsed.success ? parsed.data.error.message : '';
+  breadcrumbFailure(request, response, code);
+  return new ApiError(code, resolveMessage(code, serverMessage), response.status);
+};
 
 /** auth-client용: 401은 refresh 로직에서 처리하므로 건너뜀 */
-export const handleApiErrors: AfterResponseHook = async (_request, _options, response) => {
+export const handleApiErrors: AfterResponseHook = async (request, _options, response) => {
   if (!response.ok && response.status !== 401) {
-    const { error } = (await response.json()) as ServerErrorResponse;
-    const userMessage =
-      MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
-      error.message ||
-      '알 수 없는 오류가 발생했어요';
-    throw new ApiError(error.code, userMessage, response.status);
+    throw await toApiError(request, response);
   }
 };
 
 /** public-client용: 401 포함 모든 에러 처리 */
-export const handlePublicApiErrors: AfterResponseHook = async (_request, _options, response) => {
+export const handlePublicApiErrors: AfterResponseHook = async (request, _options, response) => {
   if (!response.ok) {
-    const { error } = (await response.json()) as ServerErrorResponse;
-    const userMessage =
-      MOBILE_ERROR_MESSAGES[error.code as ErrorCodeType] ||
-      error.message ||
-      '알 수 없는 오류가 발생했어요';
-    throw new ApiError(error.code, userMessage, response.status);
+    throw await toApiError(request, response);
   }
 };

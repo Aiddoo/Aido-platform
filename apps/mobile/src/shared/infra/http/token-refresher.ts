@@ -1,6 +1,7 @@
 import { refreshTokensSchema } from '@aido/validators';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import type { Storage } from '@src/core/ports/storage';
+import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import { ENV } from '@src/shared/config/env';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import ky from 'ky';
@@ -23,10 +24,10 @@ export type TokenRefresher = () => Promise<boolean>;
 export const createTokenRefresher = (storage: Storage): TokenRefresher => {
   let inFlight: Promise<boolean> | null = null;
 
-  const expireSession = async (reason: string): Promise<false> => {
+  const expireSession = async (reason: SessionExpiredReason): Promise<false> => {
     logger.warn('[TokenRefresher] 세션 만료 확정', { reason });
     await Promise.all([storage.remove('accessToken'), storage.remove('refreshToken')]);
-    emitSessionExpired();
+    emitSessionExpired(reason);
     return false;
   };
 
@@ -41,7 +42,9 @@ export const createTokenRefresher = (storage: Storage): TokenRefresher => {
       response = await ky.post('v1/auth/refresh', {
         prefixUrl: ENV.API_URL,
         retry: 0,
-        timeout: 10_000,
+        // 서버 토큰 재사용 grace(10초)보다 짧게 — 회전 성공+응답 유실 시 재시도가 grace 창을 넘겨
+        // SESSION_0704(강제 로그아웃)로 이어지는 충돌 여백 확보.
+        timeout: 8_000,
         throwHttpErrors: false,
         headers: {
           Authorization: `Bearer ${refreshToken}`,

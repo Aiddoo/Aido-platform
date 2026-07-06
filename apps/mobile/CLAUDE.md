@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+> **Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -15,6 +15,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN) | [.claude/ui-components.md](.claude/ui-components.md) |
 | OAuth · 소셜 로그인 구현 | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md) |
 | 에러 처리 (Result, ApiError, BusinessError) | [docs/error-handling.md](docs/error-handling.md) |
+| 관측 (Analytics · Sentry · Breadcrumb · Severity) | [.claude/observability.md](.claude/observability.md) |
 | 테스트 전략 (단위/통합) | [docs/testing-strategy.md](docs/testing-strategy.md) |
 | EAS 빌드 | [docs/eas-build-guide.md](docs/eas-build-guide.md) |
 | EAS Secrets 관리 | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md) |
@@ -104,13 +105,17 @@ features/{feature}/
 # 런타임
 APP_ENV                      # development | preview | production
 EXPO_PUBLIC_API_URL          # API 서버 URL
+EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable, 관측)
+EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry 강제 활성화 — 'true'일 때만
 
 # 빌드 (EAS Secrets)
-GOOGLE_SERVICES_JSON         # Firebase Android (Base64)
-GOOGLE_SERVICES_INFO_PLIST   # Firebase iOS (Base64)
+GOOGLE_SERVICES_JSON         # Firebase Android (Base64) — Analytics
+GOOGLE_SERVICES_INFO_PLIST   # Firebase iOS (Base64) — Analytics
+SENTRY_AUTH_TOKEN            # Sentry 소스맵 업로드 (sensitive)
 EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 ```
 
+> 관측 스택: **Sentry**(크래시·에러·이벤트·breadcrumb) + **Firebase Analytics**(제품 지표). Crashlytics 미사용.
 > OAuth 클라이언트 ID는 **모바일에 불필요** (API 서버에서 관리).
 
 ---

@@ -1,6 +1,6 @@
 # 에러 처리 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
 
 > Result 타입 · ApiError · BusinessError · ErrorBoundary 분류 체계.
 
@@ -337,6 +337,20 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
 `onError`에서 에러 리포터를 통해 예외를 캡처하여, 프로덕션 환경에서 ErrorBoundary에 잡힌 에러를 모니터링합니다.
 
 `QueryErrorResetBoundary`는 에러 reset 시 쿼리 에러 상태도 초기화하여, 재시도가 실제로 데이터를 다시 fetch합니다.
+
+### 관측 리포팅 원칙 (Sentry via `ErrorReporter` 포트)
+
+에러 처리는 관측(Sentry)과 어휘를 공유한다. 벤더 직접호출 없이 `ErrorReporter` 포트만 사용한다.
+
+| 상황 | 남기는 것 | 왜 |
+|------|-----------|----|
+| 예측 불가(ErrorBoundary 도달, 5xx·네트워크·파싱) | `captureException(error, { feature })` — **event** | 진짜 문제만 Sentry Issue로 |
+| 도메인 신호(비자발 로그아웃 등) | `captureMessage(msg, { severity, errorCode })` — **event** | 검색·집계·알림 대상 |
+| 행적(HTTP 실패·화면 이동) | `addBreadcrumb({ category, level, data })` — **breadcrumb** | 이벤트 타임라인 재현용 |
+
+- **예측 가능한 4xx는 event가 아니다.** `Result.err()`로 UI가 처리하고, HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남는다 → Sentry Issue는 예상 못한 문제로만 채워져 신호 대 잡음비가 좋다.
+- **Severity**는 `Severity` union(`debug`~`fatal`)으로 판정 → 알림 규칙/우선순위에 사용.
+- 전체 규칙(카테고리·태그·Analytics 분담)은 [.claude/observability.md](../.claude/observability.md) 참조.
 
 ### ErrorBoundary 배치 전략
 

@@ -25,8 +25,8 @@ import { ENV } from '@src/shared/config/env';
 import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
 import {
   createConsoleErrorReporter,
-  createCrashlyticsErrorReporter,
-  initCrashlytics,
+  createSentryErrorReporter,
+  setGlobalErrorReporter,
 } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -34,7 +34,7 @@ import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
   createCompositeLogger,
   createConsoleLogger,
-  createCrashlyticsLogger,
+  createSentryLogger,
   setGlobalLogger,
 } from '@src/shared/infra/logger';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
@@ -72,15 +72,12 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
 
-    // Observability
+    // Observability — 크래시/에러/이벤트/로그는 Sentry로 일원화(네이티브 크래시 포함),
+    // Firebase는 Analytics(제품 지표)만 담당. Sentry init은 앱 루트(initSentry)에서 1회.
     const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
 
-    if (ENV.IS_PRODUCTION) {
-      initCrashlytics(true, consoleLogger);
-    }
-
     const logger = ENV.IS_PRODUCTION
-      ? createCompositeLogger([consoleLogger, createCrashlyticsLogger()])
+      ? createCompositeLogger([consoleLogger, createSentryLogger()])
       : consoleLogger;
 
     setGlobalLogger(logger);
@@ -89,9 +86,13 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       ? createFirebaseAnalytics(logger)
       : createConsoleAnalytics();
 
+    // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
     const errorReporter = ENV.IS_PRODUCTION
-      ? createCrashlyticsErrorReporter(logger)
+      ? createSentryErrorReporter()
       : createConsoleErrorReporter();
+
+    // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
+    setGlobalErrorReporter(errorReporter);
 
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);

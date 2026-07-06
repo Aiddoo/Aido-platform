@@ -18,6 +18,10 @@ import { useEffect } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useResolveClassNames } from 'uniwind';
 import '../global.css';
+import * as Sentry from '@sentry/react-native';
+import { initSentry } from '@src/shared/infra/observability/sentry';
+
+initSentry();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -106,4 +110,4 @@ const AppBootstrapLayout = () => {
   );
 };
 
-export default AppBootstrapLayout;
+export default Sentry.wrap(AppBootstrapLayout);

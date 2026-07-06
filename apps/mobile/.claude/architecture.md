@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
@@ -77,12 +77,29 @@ export interface HttpClient {
 |------|--------|------|
 | `HttpClient` | `KyHttpClient` | `shared/infra/http/ky-client.ts` |
 | `Storage` | `SecureStorage` | `shared/infra/storage/secure-storage.ts` |
-| `Logger` | `ConsoleLogger` | `shared/infra/logger/console-logger.ts` |
+| `Logger` | `ConsoleLogger` / `SentryLogger`(prod, composite) | `shared/infra/logger/` |
+| `Analytics` | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev) | `shared/infra/analytics/` |
+| `ErrorReporter` | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/` |
+
+> 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 
 | 클라이언트 | 용도 |
 |-----------|------|
 | `createPublicClient()` | 인증 전 요청 (로그인, 회원가입) |
 | `createAuthClient(storage)` | 인증 후 요청 (Bearer 토큰 자동 첨부) |
+
+### 관측(Observability) 스택
+
+역할을 **분리**하되 타입 어휘를 통일한다. 상세 규칙: [observability.md](./observability.md)
+
+| 도구 | 담당 | 진입점 |
+|------|------|--------|
+| **Sentry** | 크래시·에러·검색가능 이벤트·breadcrumb (severity 판정) | `ErrorReporter` 포트 (`captureException`/`captureMessage`/`addBreadcrumb`) |
+| **Firebase Analytics** | 제품 지표(이벤트/화면/유저 속성) | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()` |
+
+- **Crashlytics는 사용하지 않는다** (Sentry로 크래시까지 일원화, 2026-07 정리).
+- Breadcrumb 카테고리는 `BreadcrumbCategory` union(`http`·`navigation`·…)으로 고정 — 매직 문자열 금지.
+- Analytics 이벤트는 `AppEventMap`(`shared/analytics/events/*.events.ts`)에만 정의, raw `trackEvent` 직접호출 금지.
 
 ---
 

@@ -1,6 +1,6 @@
 # EAS Secrets 설정 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
 
 EAS Build에서 민감한 파일들을 환경변수로 관리하는 방법입니다.
 
@@ -36,6 +36,24 @@ base64 -i GoogleService-Info.plist | pbcopy
 # EAS Secret에 저장
 eas secret:create --scope project --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" --type string
 ```
+
+### 4. Sentry (관측)
+
+Sentry는 두 종류의 키를 쓴다 — 노출 성격이 다르므로 등록 방식도 다르다.
+
+```bash
+# (a) DSN — publishable(클라이언트 노출 OK). eas env로 런타임 주입.
+eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value "https://...@oXXX.ingest.sentry.io/XXX" \
+  --environment production --visibility plaintext
+
+# (b) Auth Token — 빌드 시 소스맵 업로드용. 절대 노출 금지 → sensitive.
+eas env:create --name SENTRY_AUTH_TOKEN --value "sntrys_..." \
+  --environment production --visibility sensitive
+```
+
+> - `EXPO_PUBLIC_SENTRY_DSN`은 `app.config.ts`의 `extra.sentryDsn`으로 전달되어 `initSentry()`에서 사용.
+> - `SENTRY_AUTH_TOKEN`은 Sentry Expo 플러그인이 빌드 중 소스맵을 업로드할 때만 사용(런타임 미포함).
+> - dev에서 로컬 테스트 시에만 `EXPO_PUBLIC_SENTRY_DEBUG=true`로 활성화(평소 dev는 리포팅 off).
 
 ## 설정 확인
 

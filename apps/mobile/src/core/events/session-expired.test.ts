@@ -1,16 +1,17 @@
 import { emitSessionExpired, subscribeSessionExpired } from './session-expired';
 
 describe('session-expired 이벤트', () => {
-  it('구독자에게 발행이 전달되어야 한다', () => {
+  it('구독자에게 발행이 만료 사유와 함께 전달되어야 한다', () => {
     // Given
     const listener = jest.fn();
     const unsubscribe = subscribeSessionExpired(listener);
 
     // When
-    emitSessionExpired();
+    emitSessionExpired('refresh-rejected-401');
 
     // Then
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith('refresh-rejected-401');
     unsubscribe();
   });
 
@@ -21,7 +22,7 @@ describe('session-expired 이벤트', () => {
     unsubscribe();
 
     // When
-    emitSessionExpired();
+    emitSessionExpired('no-refresh-token');
 
     // Then
     expect(listener).not.toHaveBeenCalled();
@@ -35,7 +36,7 @@ describe('session-expired 이벤트', () => {
     const unsubscribeSecond = subscribeSessionExpired(second);
 
     // When
-    emitSessionExpired();
+    emitSessionExpired('no-refresh-token');
 
     // Then
     expect(first).toHaveBeenCalledTimes(1);
@@ -54,7 +55,7 @@ describe('session-expired 이벤트', () => {
     const unsubscribeHealthy = subscribeSessionExpired(healthy);
 
     // When
-    emitSessionExpired();
+    emitSessionExpired('no-refresh-token');
 
     // Then
     expect(healthy).toHaveBeenCalledTimes(1);
