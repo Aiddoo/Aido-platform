@@ -129,11 +129,10 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 		expect(items?.[2]).toMatchObject({ sortOrder: 2 });
 		expect(typeof groupId).toBe("string");
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
-		expect(eventBus.publishAll).toHaveBeenCalledTimes(3);
-		expect(eventBus.publishAll).toHaveBeenNthCalledWith(1, [
+		expect(eventBus.publishAll).toHaveBeenCalledTimes(1);
+		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoCreatedEvent(1, "user-123", null),
-		]);
-		expect(eventBus.publishAll).toHaveBeenNthCalledWith(3, [
+			new TodoCreatedEvent(2, "user-123", null),
 			new TodoCreatedEvent(3, "user-123", null),
 		]);
 		expect(result.count).toBe(3);
