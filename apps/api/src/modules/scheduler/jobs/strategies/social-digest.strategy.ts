@@ -5,6 +5,7 @@ import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { fetchUserLocales } from "@/modules/notification/templates/user-locale.util";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
 
 import type {
@@ -120,15 +121,20 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 			},
 		});
 
-		// 전체 완료한 친구만 필터링
-		const completedFriendMap = new Map<string, { name: string }>();
+		// 전체 완료한 친구만 필터링 (이름 미설정은 수신자 로케일별 폴백으로 치환)
+		const completedFriendMap = new Map<string, { name: string | null }>();
 		for (const f of friendsWithTodos) {
 			if (f.todos.length > 0 && f.todos.every((t) => t.completed)) {
 				completedFriendMap.set(f.id, {
-					name: f.profile?.name ?? "친구",
+					name: f.profile?.name ?? null,
 				});
 			}
 		}
+
+		const locales = await fetchUserLocales(
+			this.database,
+			candidates.map((u) => u.id),
+		);
 
 		// 인메모리 매칭
 		const notifications: CreateNotificationData[] = [];
@@ -142,18 +148,23 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 
 			const completedFriends = [...userFriendIds]
 				.map((id) => completedFriendMap.get(id))
-				.filter((f): f is { name: string } => f !== undefined);
+				.filter((f): f is { name: string | null } => f !== undefined);
 
 			if (completedFriends.length === 0) {
 				continue;
 			}
 
+			const locale = locales.get(user.id) ?? "ko";
+			const fallbackName = locale === "en" ? "Your friend" : "친구";
 			const friendName =
-				completedFriends.length === 1 ? completedFriends[0]?.name : undefined;
+				completedFriends.length === 1
+					? (completedFriends[0]?.name ?? fallbackName)
+					: undefined;
 
 			const message = NotificationMessageBuilder.socialDigest(
 				completedFriends.length,
 				friendName,
+				locale,
 			);
 
 			notifications.push({

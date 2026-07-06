@@ -6,7 +6,10 @@ import { subtractDays } from "@/common/date/utils/arithmetic";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../../notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "../../../notification/templates/notification-templates";
 import {
 	type ReminderJobData,
 	TODO_REMINDER_QUEUE,
@@ -91,9 +94,14 @@ export class TodoReminderProcessor extends WorkerHost {
 		}
 
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
+		const preference = await this.database.userPreference.findUnique({
+			where: { userId },
+			select: { locale: true },
+		});
 		const message = NotificationMessageBuilder.todoReminder(
 			todo.title,
 			stageLabel,
+			resolveTemplateLocale(preference?.locale),
 		);
 
 		await this.notificationService.createAndSend({

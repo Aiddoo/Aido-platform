@@ -14,6 +14,7 @@ import {
 	fillTemplate,
 	NotificationMessageBuilder,
 	pickVariant,
+	resolveTemplateLocale,
 	SCHEDULER_TEMPLATES,
 	SYSTEM_TEMPLATES,
 	WEATHER_TEMPLATES,
@@ -634,5 +635,76 @@ describe("notification-templates", () => {
 				);
 			});
 		});
+	});
+});
+
+describe("NotificationMessageBuilder locale 분기", () => {
+	it("locale 미전달 시 ko(원문) 문구를 사용한다 — 하위 호환", () => {
+		// Given / When
+		const message = NotificationMessageBuilder.weeklyReport();
+
+		// Then
+		expect(message.title).toBe("📊 주간 리포트 도착!");
+		expect(message.body).toBe("이번 주 어땠는지 같이 볼까?");
+	});
+
+	it("en 전달 시 영어 문구를 사용한다", () => {
+		// Given / When
+		const message = NotificationMessageBuilder.weeklyReport("en");
+
+		// Then
+		expect(message.title).toBe("📊 Your weekly report is here!");
+		expect(message.body).toBe("Want to see how this week went?");
+	});
+
+	it("ko에서 조사(이/가)가 받침에 맞게 부착된다 — 기존 동작 보존", () => {
+		// Given: variants 중 어떤 것이 선택되어도 senderName이 포함됨
+		const message = NotificationMessageBuilder.remindNudgeReceived("홍길동");
+
+		// Then
+		expect(`${message.title} ${message.body}`).toContain("홍길동");
+		// 조사 미치환 잔여 패턴이 없어야 한다
+		expect(message.title).not.toMatch(/\{\w+(?::[^}]+)?\}/);
+	});
+
+	it("en에서 이름이 단순 치환되고 잔여 플레이스홀더가 없다", () => {
+		// Given / When
+		const message = NotificationMessageBuilder.remindNudgeReceived(
+			"John",
+			undefined,
+			"en",
+		);
+
+		// Then
+		expect(`${message.title} ${message.body}`).toContain("John");
+		expect(message.title).not.toMatch(/\{\w+(?::[^}]+)?\}/);
+		expect(message.body).not.toMatch(/\{\w+(?::[^}]+)?\}/);
+	});
+
+	it("en 날씨 메시지는 영어 하늘 라벨을 사용한다", () => {
+		// Given
+		const forecast = {
+			skyCondition: "CLOUDY",
+			precipitationType: "NONE",
+			precipitationProbability: 10,
+			temperatureMin: 5.4,
+			temperatureMax: 12.6,
+		} as WeatherForecast;
+
+		// When
+		const koMessage = NotificationMessageBuilder.weatherMorning(forecast);
+		const enMessage = NotificationMessageBuilder.weatherMorning(forecast, "en");
+
+		// Then
+		expect(`${koMessage.title} ${koMessage.body}`).toContain("흐림");
+		expect(`${enMessage.title} ${enMessage.body}`).toContain("cloudy");
+	});
+
+	it("resolveTemplateLocale은 미지원/누락 값을 ko로 내로잉한다", () => {
+		expect(resolveTemplateLocale("en")).toBe("en");
+		expect(resolveTemplateLocale("ko")).toBe("ko");
+		expect(resolveTemplateLocale("ja")).toBe("ko");
+		expect(resolveTemplateLocale(null)).toBe("ko");
+		expect(resolveTemplateLocale(undefined)).toBe("ko");
 	});
 });

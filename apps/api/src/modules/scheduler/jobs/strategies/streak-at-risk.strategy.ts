@@ -4,7 +4,10 @@ import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
-import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "@/modules/notification/templates/notification-templates";
 import { StreakService } from "@/modules/user-settings/services/streak.service";
 
 import type {
@@ -57,6 +60,7 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 					select: {
 						currentStreak: true,
 						lastCompletedDate: true,
+						locale: true,
 					},
 				},
 			},
@@ -84,7 +88,11 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 				});
 
 				return isAtRisk && streak >= 3
-					? { id: user.id, effectiveStreak: streak }
+					? {
+							id: user.id,
+							effectiveStreak: streak,
+							locale: resolveTemplateLocale(user.preference?.locale),
+						}
 					: null;
 			})
 			.filter((u): u is NonNullable<typeof u> => u !== null);
@@ -110,6 +118,7 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
 		const notifications = filteredUsers.map((user) => {
 			const message = NotificationMessageBuilder.streakAtRisk(
 				user.effectiveStreak,
+				user.locale,
 			);
 			return {
 				userId: user.id,

@@ -11,6 +11,7 @@ import {
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { fetchUserLocales } from "@/modules/notification/templates/user-locale.util";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
 import { WINBACK_STAGES } from "../../constants/reminder.constants";
 
@@ -78,11 +79,21 @@ export class WinbackStrategy implements ITimezoneStrategy {
 			}),
 		);
 
-		const notifications: CreateNotificationData[] = [];
-		for (const check of checks) {
-			if (!check || check.alreadySent) continue;
+		const activeChecks = checks.filter(
+			(check): check is NonNullable<typeof check> =>
+				check !== null && check !== undefined && !check.alreadySent,
+		);
+		const locales = await fetchUserLocales(
+			this.database,
+			activeChecks.map((check) => check.user.id),
+		);
 
-			const message = NotificationMessageBuilder.winback(check.inactiveDays);
+		const notifications: CreateNotificationData[] = [];
+		for (const check of activeChecks) {
+			const message = NotificationMessageBuilder.winback(
+				check.inactiveDays,
+				locales.get(check.user.id) ?? "ko",
+			);
 			notifications.push({
 				userId: check.user.id,
 				type: "WINBACK",

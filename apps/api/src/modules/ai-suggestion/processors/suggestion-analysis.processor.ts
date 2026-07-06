@@ -2,8 +2,12 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
+import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "../../notification/templates/notification-templates";
 import { AiSuggestionService } from "../ai-suggestion.service";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 
@@ -61,6 +65,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 	constructor(
 		private readonly aiSuggestionService: AiSuggestionService,
 		private readonly notificationService: NotificationService,
+		private readonly database: DatabaseService,
 	) {
 		super();
 	}
@@ -113,7 +118,13 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 			return;
 		}
 
-		const message = NotificationMessageBuilder.aiSuggestion();
+		const preference = await this.database.userPreference.findUnique({
+			where: { userId },
+			select: { locale: true },
+		});
+		const message = NotificationMessageBuilder.aiSuggestion(
+			resolveTemplateLocale(preference?.locale),
+		);
 		await this.notificationService.createAndSend({
 			userId,
 			type: "AI_SUGGESTION",

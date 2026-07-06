@@ -50,6 +50,7 @@ describe("MonthlyReportStrategy — 월간 리포트 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 
 		// 기본 mock 설정

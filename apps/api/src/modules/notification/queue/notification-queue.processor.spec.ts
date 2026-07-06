@@ -52,6 +52,8 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 		processor = unit;
 		notificationService = unitRef.get(NotificationService);
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findUnique.mockResolvedValue(null as never);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 	});
 
 	afterEach(() => {
