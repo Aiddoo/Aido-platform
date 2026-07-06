@@ -37,6 +37,7 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
@@ -199,13 +200,16 @@ export class AuthService {
 
   #saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
     await Promise.all([
-      this.#storage.set('accessToken', accessToken),
-      this.#storage.set('refreshToken', refreshToken),
+      this.#storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
+      this.#storage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
     ]);
   };
 
   #clearTokens = async (): Promise<void> => {
-    await Promise.all([this.#storage.remove('accessToken'), this.#storage.remove('refreshToken')]);
+    await Promise.all([
+      this.#storage.remove(STORAGE_KEYS.ACCESS_TOKEN),
+      this.#storage.remove(STORAGE_KEYS.REFRESH_TOKEN),
+    ]);
   };
 
   #parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {

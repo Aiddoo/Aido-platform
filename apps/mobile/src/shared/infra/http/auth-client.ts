@@ -1,5 +1,6 @@
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type AfterResponseHook, type KyInstance } from 'ky';
 import { handleApiErrors } from './error-handler';
@@ -42,7 +43,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
       return response;
     }
 
-    const storedAccessToken = await storage.get<string>('accessToken');
+    const storedAccessToken = await storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
     const sentAuthorization = request.headers.get('Authorization');
     if (storedAccessToken && sentAuthorization !== `Bearer ${storedAccessToken}`) {
       return retryWithMarker(request);
@@ -74,7 +75,7 @@ export const createAuthClient = (storage: Storage): KyInstance => {
     hooks: {
       beforeRequest: [
         async (request) => {
-          const accessToken = await storage.get<string>('accessToken');
+          const accessToken = await storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
           if (accessToken) {
             request.headers.set('Authorization', `Bearer ${accessToken}`);
           }
