@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPrice } from '@src/shared/utils/format';
@@ -54,10 +55,11 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: PlanCardProps) {
+  const { t } = useTranslation('subscription');
   const isAnnual = plan.planType === 'annual';
 
-  const label = isAnnual ? '연간 구독' : '월간 구독';
-  const periodLabel = isAnnual ? '/년' : '/월';
+  const label = isAnnual ? t('plan.annual') : t('plan.monthly');
+  const periodLabel = isAnnual ? t('plan.perYear') : t('plan.perMonth');
 
   const monthlyEquivalent = isAnnual ? getMonthlyEquivalent(plan.price) : null;
 
@@ -74,14 +76,14 @@ function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: Pla
               {isCurrent && (
                 <View className="bg-gray-2 px-2 py-0.5 rounded-full">
                   <Text size="e2" weight="bold" className="text-gray-6">
-                    현재 플랜
+                    {t('plan.current')}
                   </Text>
                 </View>
               )}
               {isAnnual && discountPercent > 0 && !isCurrent && (
                 <View className="bg-main/10 px-2 py-0.5 rounded-full">
                   <Text size="e2" weight="bold" className="text-main">
-                    {discountPercent}% 할인
+                    {t('plan.discount', { percent: discountPercent })}
                   </Text>
                 </View>
               )}
@@ -107,7 +109,9 @@ function PlanCard({ plan, isSelected, isCurrent, discountPercent, onPress }: Pla
 
           <Text size="e1" className={cn('text-gray-5', monthlyEquivalent === null && 'opacity-0')}>
             {monthlyEquivalent !== null
-              ? `월 ${formatPrice(monthlyEquivalent, plan.currencyCode)} 상당`
+              ? t('plan.monthlyEquivalent', {
+                  price: formatPrice(monthlyEquivalent, plan.currencyCode),
+                })
               : '\u00A0'}
           </Text>
         </VStack>

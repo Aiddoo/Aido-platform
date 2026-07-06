@@ -2,6 +2,7 @@ import type { CreateInquiryInput } from '@aido/validators';
 import { useInquiryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -27,7 +28,7 @@ export const useCreateInquiryMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      toast.error(error, { fallback: '문의 접수에 실패했어요' });
+      toast.error(error, { fallback: t('inquiry:toasts.submitFailed') });
     },
   });
 };

@@ -20,7 +20,9 @@ export const createPublicClient = (): KyInstance => {
       beforeRequest: [
         (request) => {
           // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
-          request.headers.set('Accept-Language', i18n.language);
+          if (i18n.language) {
+            request.headers.set('Accept-Language', i18n.language);
+          }
         },
       ],
       afterResponse: [handlePublicApiErrors],

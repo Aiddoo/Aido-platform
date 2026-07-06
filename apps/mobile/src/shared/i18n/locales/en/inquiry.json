@@ -1,1 +1,16 @@
-{}
+{
+  "category": {
+    "bugReport": "Bug Report",
+    "featureRequest": "Feature Request",
+    "other": "Other"
+  },
+  "form": {
+    "selectCategory": "Choose an inquiry type",
+    "contentLabel": "Details",
+    "contentPlaceholder": "Please describe your inquiry in detail.\n\nExample:\n- Device: iPhone 16 Pro, Galaxy S25\n- What happened: the app closed when adding a to-do\n- When: around 3 PM, March 14, 2026\n\nThe more detail you share, the faster we can help.",
+    "submit": "Send Inquiry"
+  },
+  "toasts": {
+    "submitFailed": "Failed to submit your inquiry"
+  }
+}

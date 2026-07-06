@@ -17,6 +17,7 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/u
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+import { useTranslation } from '@src/shared/i18n';
 import {
   BellIcon,
   Button,
@@ -45,62 +46,62 @@ import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { Image, Linking, ScrollView, View } from 'react-native';
 
-/** 이미지가 있는 핵심 프리미엄 기능 */
+/** 이미지가 있는 핵심 프리미엄 기능 (문구는 subscription 카탈로그 키) */
 const HIGHLIGHT_BENEFITS = [
   {
     icon: DocsIcon,
-    title: 'AI 할일 파싱 무제한',
-    description: '월 5회 제한 없이, 자연어로 할 일을 마음껏 정리해요',
+    titleKey: 'benefits.aiParsing.title',
+    descriptionKey: 'benefits.aiParsing.description',
     image: benefitAiParsingImage,
   },
   {
     icon: SendIcon,
-    title: '콕 찌르기 무제한',
-    description: '하루 3회 제한 없이, 친구에게 마음껏 찔러요',
+    titleKey: 'benefits.nudge.title',
+    descriptionKey: 'benefits.nudge.description',
     image: benefitNudgeImage,
   },
   {
     icon: BellIcon,
-    title: '리마인더 시간 자유 설정',
-    description: '고정 시간 대신, 내가 원하는 시간에 알림을 받아요',
+    titleKey: 'benefits.reminder.title',
+    descriptionKey: 'benefits.reminder.description',
     image: benefitNotificationImage,
   },
   {
     icon: DeviceIcon,
-    title: '앱 아이콘 커스터마이징',
-    description: '나만의 스타일로 앱 아이콘을 바꿀 수 있어요',
+    titleKey: 'benefits.appIcon.title',
+    descriptionKey: 'benefits.appIcon.description',
     image: benefitAppIconImage,
   },
 ] as const;
 
-/** 이미지 없는 추가 프리미엄 기능 */
+/** 이미지 없는 추가 프리미엄 기능 (문구는 subscription 카탈로그 키) */
 const EXTRA_BENEFITS = [
   {
     icon: PersonIcon,
-    title: '친구 무제한 추가',
-    description: '5명 제한 없이, 친구를 자유롭게 추가해요',
+    titleKey: 'benefits.friends.title',
+    descriptionKey: 'benefits.friends.description',
   },
   {
     icon: ListIcon,
-    title: '카테고리 최대 30개',
-    description: '3개 제한에서 최대 30개까지 늘어나요',
+    titleKey: 'benefits.categories.title',
+    descriptionKey: 'benefits.categories.description',
   },
   {
     icon: CalendarIcon,
-    title: 'AI 반복 제안',
-    description: '반복되는 할 일을 AI가 자동으로 제안해요',
+    titleKey: 'benefits.aiRepeat.title',
+    descriptionKey: 'benefits.aiRepeat.description',
   },
   {
     icon: DocsIcon,
-    title: 'AI 주간/월간 리포트',
-    description: '내 할 일 달성률과 패턴을 한눈에 확인해요',
+    titleKey: 'benefits.aiReport.title',
+    descriptionKey: 'benefits.aiReport.description',
   },
 ] as const;
 
-/** 구독자 체크리스트용 전체 혜택 제목 */
-const ALL_BENEFIT_TITLES = [
-  ...HIGHLIGHT_BENEFITS.map((b) => b.title),
-  ...EXTRA_BENEFITS.map((b) => b.title),
+/** 구독자 체크리스트용 전체 혜택 제목 키 */
+const ALL_BENEFIT_TITLE_KEYS = [
+  ...HIGHLIGHT_BENEFITS.map((b) => b.titleKey),
+  ...EXTRA_BENEFITS.map((b) => b.titleKey),
 ];
 
 const SubscriptionScreen = () => {
@@ -135,6 +136,7 @@ function SubscriptionContent() {
 }
 
 function SubscriberView() {
+  const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const restore = useMutation(useRestoreMutationOptions());
 
@@ -162,11 +164,11 @@ function SubscriberView() {
 
             <VStack gap={2}>
               <Text size="t3" weight="bold" tone="brand">
-                프리미엄 이용 중
+                {t('subscriber.title')}
               </Text>
 
               <Text size="b4" shade={6}>
-                모든 프리미엄 기능을 이용하고 있어요
+                {t('subscriber.description')}
               </Text>
             </VStack>
           </HStack>
@@ -179,7 +181,7 @@ function SubscriberView() {
                 verticalPadding="small"
                 contents={
                   <Text size="b4" shade={6}>
-                    {isActive ? '다음 결제일' : '만료일'}
+                    {isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
                   </Text>
                 }
                 right={
@@ -194,12 +196,12 @@ function SubscriberView() {
                   verticalPadding="small"
                   contents={
                     <Text size="b4" shade={6}>
-                      구독 상태
+                      {t('status.statusLabel')}
                     </Text>
                   }
                   right={
                     <Text size="b4" weight="semibold" tone="brand">
-                      자동 갱신
+                      {t('status.autoRenewal')}
                     </Text>
                   }
                 />
@@ -212,13 +214,13 @@ function SubscriberView() {
 
         <View className="px-5">
           <Text size="b3" weight="semibold" shade={9} className="mb-3">
-            이용 중인 혜택
+            {t('subscriber.benefitsTitle')}
           </Text>
 
           <VStack gap={2}>
-            {ALL_BENEFIT_TITLES.map((title) => (
+            {ALL_BENEFIT_TITLE_KEYS.map((titleKey) => (
               <ListRow
-                key={title}
+                key={titleKey}
                 verticalPadding="small"
                 left={
                   <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
@@ -227,7 +229,7 @@ function SubscriberView() {
                 }
                 contents={
                   <Text size="b3" shade={8}>
-                    {title}
+                    {t(titleKey)}
                   </Text>
                 }
               />
@@ -241,7 +243,7 @@ function SubscriberView() {
               }
               contents={
                 <Text size="b3" shade={8}>
-                  향후 출시되는 모든 프리미엄 기능
+                  {t('benefits.future')}
                 </Text>
               }
             />
@@ -258,7 +260,7 @@ function SubscriberView() {
       <Spacing size={16} />
 
       <Button onPress={handleManageSubscription} variant="weak" color="dark">
-        구독 관리 (스토어 설정)
+        {t('subscriber.manageButton')}
       </Button>
 
       <Spacing size={16} />
@@ -270,7 +272,7 @@ function SubscriberView() {
           onPress={() => restore.mutate()}
           isDisabled={restore.isPending}
         >
-          이전 구매 복원
+          {t('subscriber.restoreButton')}
         </TextButton>
       </View>
     </ScrollView>
@@ -288,16 +290,19 @@ function NonSubscriberView() {
 }
 
 function SubscriptionUnavailableView() {
+  const { t } = useTranslation('subscription');
+
   return (
     <Result
       icon={<DocsIcon width={72} height={72} />}
-      title="구독을 준비 중이에요"
-      description="현재 구독 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요."
+      title={t('paywall.unavailableTitle')}
+      description={t('paywall.unavailableDescription')}
     />
   );
 }
 
 function OfferingsView() {
+  const { t } = useTranslation('subscription');
   const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
 
   const purchase = useMutation(usePurchaseMutationOptions());
@@ -329,10 +334,10 @@ function OfferingsView() {
         <ScallopedContainer>
           <View className="px-5 pt-5">
             <VStack gap={4} className="items-center">
-              <H2>프리미엄으로 업그레이드</H2>
+              <H2>{t('paywall.title')}</H2>
 
               <Text size="b3" shade={6}>
-                모든 기능을 제한 없이 사용해보세요
+                {t('paywall.subtitle')}
               </Text>
             </VStack>
 
@@ -340,7 +345,7 @@ function OfferingsView() {
 
             <VStack gap={20}>
               {HIGHLIGHT_BENEFITS.map((benefit) => (
-                <BenefitCard key={benefit.title} benefit={benefit} />
+                <BenefitCard key={benefit.titleKey} benefit={benefit} />
               ))}
             </VStack>
 
@@ -351,7 +356,7 @@ function OfferingsView() {
             <Spacing size={8} />
 
             <Text size="e2" shade={5} align="center">
-              향후 출시되는 모든 프리미엄 기능도 포함돼요
+              {t('paywall.futureIncluded')}
             </Text>
           </View>
 
@@ -376,7 +381,7 @@ function OfferingsView() {
             onPress={() => restore.mutate()}
             isDisabled={restore.isPending}
           >
-            이전 구매 복원
+            {t('subscriber.restoreButton')}
           </TextButton>
         </VStack>
       </ScrollView>
@@ -387,7 +392,7 @@ function OfferingsView() {
           isLoading={purchase.isPending}
           isDisabled={!selectedPlan || purchase.isPending}
         >
-          구독하기
+          {t('paywall.subscribeButton')}
         </Button>
       </View>
     </View>
@@ -395,14 +400,16 @@ function OfferingsView() {
 }
 
 function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number] }) {
+  const { t } = useTranslation('subscription');
+
   return (
     <VStack gap={12}>
       <VStack className="flex-1">
         <Text size="b3" weight="semibold" shade={9}>
-          {benefit.title}
+          {t(benefit.titleKey)}
         </Text>
         <Text size="b4" shade={6}>
-          {benefit.description}
+          {t(benefit.descriptionKey)}
         </Text>
       </VStack>
 
@@ -414,17 +421,19 @@ function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number]
 }
 
 function ExtraBenefitCard() {
+  const { t } = useTranslation('subscription');
+
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        더 많은 프리미엄 혜택
+        {t('paywall.moreBenefits')}
       </Text>
 
       {EXTRA_BENEFITS.map((benefit, index) => {
         const Icon = benefit.icon;
 
         return (
-          <View key={benefit.title}>
+          <View key={benefit.titleKey}>
             {index > 0 && <Separator className="bg-gray-2 dark:bg-gray-3 mb-4" />}
             <HStack gap={12} className="items-center">
               <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
@@ -433,11 +442,11 @@ function ExtraBenefitCard() {
 
               <VStack gap={2} className="flex-1">
                 <Text size="b3" weight="bold" shade={9}>
-                  {benefit.title}
+                  {t(benefit.titleKey)}
                 </Text>
 
                 <Text size="b4" shade={6}>
-                  {benefit.description}
+                  {t(benefit.descriptionKey)}
                 </Text>
               </VStack>
             </HStack>
@@ -449,19 +458,20 @@ function ExtraBenefitCard() {
 }
 
 function TermsNotice() {
+  const { t } = useTranslation('subscription');
   const openUrl = useOpenUrl();
 
   return (
     <Text size="e2" shade={4} align="center">
-      구매 시{' '}
+      {t('paywall.termsPrefix')}
       <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.TERMS)}>
-        이용약관
+        {t('paywall.termsLink')}
       </Text>
-      {' 및 '}
+      {t('paywall.termsAnd')}
       <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
-        개인정보처리방침
+        {t('paywall.privacyLink')}
       </Text>
-      에 동의하게 됩니다.
+      {t('paywall.termsSuffix')}
     </Text>
   );
 }

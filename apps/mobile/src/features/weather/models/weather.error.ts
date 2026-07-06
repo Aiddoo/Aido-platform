@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const WeatherErrorCode = {
   LOCATION_NOT_REGISTERED: 'WEATHER_LOCATION_NOT_REGISTERED',
@@ -19,7 +20,10 @@ export class WeatherError extends Error implements BusinessError {
 
 export const WeatherErrors = {
   locationNotRegistered: () =>
-    new WeatherError(WeatherErrorCode.LOCATION_NOT_REGISTERED, '위치 정보가 등록되지 않았습니다'),
+    new WeatherError(
+      WeatherErrorCode.LOCATION_NOT_REGISTERED,
+      t('weather:errors.locationNotRegistered'),
+    ),
 } as const;
 
 export const isWeatherError = (error: unknown): error is WeatherError =>

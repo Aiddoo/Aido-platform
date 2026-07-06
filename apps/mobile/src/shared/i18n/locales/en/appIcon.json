@@ -1,1 +1,24 @@
-{}
+{
+  "icons": {
+    "default": "Default",
+    "scottishFold": "Scottish Fold",
+    "orangeTabby": "Orange Tabby",
+    "blackCat": "Black Cat",
+    "whiteCat": "White Cat",
+    "siamese": "Siamese"
+  },
+  "screen": {
+    "unsupported": "Changing the app icon isn't supported on this device",
+    "chooseIcon": "Choose the app icon shown on your home screen",
+    "premiumRequired": "Changing the app icon is available to premium subscribers only."
+  },
+  "restartDialog": {
+    "title": "Change App Icon",
+    "description": "Changing the icon will restart the app.",
+    "confirm": "Change"
+  },
+  "errorDialog": {
+    "title": "Couldn't Change Icon",
+    "description": "The app icon couldn't be changed. Try reinstalling the app or using a physical device."
+  }
+}

@@ -8,7 +8,14 @@ import {
   resolveLanguage,
   writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
-import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
+import {
+  createContext,
+  type PropsWithChildren,
+  use,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 interface LanguageContextValue {
   languageMode: LanguageMode;
@@ -32,17 +39,23 @@ export const LanguageProvider = ({
     readLanguageMode(syncStorage),
   );
 
+  const resolvedLanguage = resolveLanguage(languageMode, deviceLanguage());
+
+  // 단방향 동기화: resolvedLanguage(단일 소스)가 바뀔 때만 i18n에 반영한다.
+  // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다.
+  useEffect(() => {
+    if (i18n.language !== resolvedLanguage) {
+      void i18n.changeLanguage(resolvedLanguage);
+    }
+  }, [resolvedLanguage]);
+
   const persistMode = useCallback(
     (newMode: LanguageMode) => {
       setLanguageModeState(newMode);
       writeLanguageMode(syncStorage, newMode);
-      // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다
-      void i18n.changeLanguage(resolveLanguage(newMode, deviceLanguage()));
     },
-    [syncStorage, deviceLanguage],
+    [syncStorage],
   );
-
-  const resolvedLanguage = resolveLanguage(languageMode, deviceLanguage());
 
   return (
     <LanguageContext.Provider

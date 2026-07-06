@@ -3,6 +3,7 @@ import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys.constant';
@@ -22,7 +23,7 @@ export const useUpdateLocationMutationOptions = () => {
     },
     onError: (error) => {
       if (isApiError(error)) {
-        toast.error(error, { fallback: '위치 등록에 실패했어요' });
+        toast.error(error, { fallback: t('weather:toasts.locationUpdateFailed') });
         return;
       }
     },

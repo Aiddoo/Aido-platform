@@ -1,1 +1,24 @@
-{}
+{
+  "icons": {
+    "default": "기본",
+    "scottishFold": "스코티시폴드",
+    "orangeTabby": "치즈 태비",
+    "blackCat": "검은 고양이",
+    "whiteCat": "하얀 고양이",
+    "siamese": "샴"
+  },
+  "screen": {
+    "unsupported": "이 기기에서는 앱 아이콘 변경을 지원하지 않아요",
+    "chooseIcon": "홈 화면에 표시될 앱 아이콘을 선택하세요",
+    "premiumRequired": "앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요."
+  },
+  "restartDialog": {
+    "title": "앱 아이콘 변경",
+    "description": "아이콘을 변경하면 앱이 재시작됩니다.",
+    "confirm": "변경"
+  },
+  "errorDialog": {
+    "title": "아이콘 변경 실패",
+    "description": "앱 아이콘을 변경할 수 없습니다. 앱을 삭제 후 다시 설치하거나, 실기기에서 시도해 주세요."
+  }
+}

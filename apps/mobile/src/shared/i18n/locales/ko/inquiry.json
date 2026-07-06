@@ -1,1 +1,16 @@
-{}
+{
+  "category": {
+    "bugReport": "버그 신고",
+    "featureRequest": "기능 요청",
+    "other": "기타"
+  },
+  "form": {
+    "selectCategory": "문의 유형을 선택해주세요",
+    "contentLabel": "문의 내용",
+    "contentPlaceholder": "문의 내용을 자세히 작성해주세요.\n\n예시:\n- 사용 기기: iPhone 16 Pro, Galaxy S25\n- 발생 상황: 할 일 추가 시 앱이 종료됨\n- 발생 시점: 2026년 3월 14일 오후 3시경\n\n상세하게 작성할수록 빠르게 도움을 드릴 수 있어요.",
+    "submit": "문의 보내기"
+  },
+  "toasts": {
+    "submitFailed": "문의 접수에 실패했어요"
+  }
+}

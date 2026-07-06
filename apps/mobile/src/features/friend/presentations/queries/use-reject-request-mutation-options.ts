@@ -2,6 +2,7 @@ import { useFriendService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys.constant';
@@ -19,7 +20,7 @@ export const useRejectRequestMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() });
-      toast.success('친구 요청을 거절했어요');
+      toast.success(t('friend:toast.requestRejected'));
       trackEvent('friend_request_rejected');
     },
     onError: () => {

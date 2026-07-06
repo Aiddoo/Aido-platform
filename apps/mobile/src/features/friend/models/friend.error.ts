@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const FriendErrorCode = {
   INVALID_TAG: 'FRIEND_INVALID_TAG',
@@ -19,8 +20,8 @@ export class FriendError extends Error implements BusinessError {
 }
 
 export const FriendErrors = {
-  invalidTag: () => new FriendError(FriendErrorCode.INVALID_TAG, '올바른 태그 형식이 아니에요'),
-  emptyTag: () => new FriendError(FriendErrorCode.EMPTY_TAG, '태그를 입력해주세요'),
+  invalidTag: () => new FriendError(FriendErrorCode.INVALID_TAG, t('friend:errors.invalidTag')),
+  emptyTag: () => new FriendError(FriendErrorCode.EMPTY_TAG, t('friend:errors.emptyTag')),
 } as const;
 
 export const isFriendError = (error: unknown): error is FriendError => error instanceof FriendError;

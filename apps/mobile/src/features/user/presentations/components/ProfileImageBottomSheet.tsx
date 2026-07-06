@@ -1,4 +1,4 @@
-import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
+import { APP_ICONS, getAppIconLabel } from '@src/features/app-icon/constants/app-icons.constant';
 import { Avatar, Button, Grid, GridItem, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { BottomSheet, PressableFeedback } from 'heroui-native';
@@ -73,7 +73,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                       <VStack align="center" gap={8} p={8} className="overflow-visible">
                         <Avatar
                           isSelected={isSelected}
-                          alt={icon.label}
+                          alt={getAppIconLabel(icon)}
                           className="w-20 h-20 rounded-2xl"
                         >
                           <Avatar.Image source={icon.preview} />
@@ -84,7 +84,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
                           shade={isSelected ? 9 : 6}
                           numberOfLines={1}
                         >
-                          {icon.label}
+                          {getAppIconLabel(icon)}
                         </Text>
                       </VStack>
                       <PressableFeedback.Highlight className="rounded-2xl" />
