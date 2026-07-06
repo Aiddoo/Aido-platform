@@ -1,5 +1,5 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
-import { useLanguage } from '@src/shared/providers/language-provider';
+import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
@@ -30,7 +30,6 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();
   const notificationService = useNotificationService();
   const logger = useLogger();
-  const { resolvedLanguage } = useLanguage();
   const isAuthenticated = status === 'authenticated';
 
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
@@ -96,8 +95,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     };
   }, [handleForegroundNotification, handleNotificationResponse, logger]);
 
-  // Effect 2: 푸시 토큰 관리 — resolvedLanguage 변경 시 재등록해 서버 UserPreference.locale 동기화
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 언어 변경 시 토큰 재등록을 트리거하는 의도적 의존성 (Accept-Language → 서버 locale upsert)
+  // Effect 2: 푸시 토큰 관리
   useEffect(() => {
     if (isAuthenticated) {
       notificationService.setupPushNotifications().catch((error) => {
@@ -108,7 +106,26 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
         logger.warn('[Notification] Push token unregister skipped', { error });
       });
     }
-  }, [isAuthenticated, notificationService, logger, resolvedLanguage]);
+  }, [isAuthenticated, notificationService, logger]);
+
+  // Effect 2-1: 언어 변경 시 토큰 재등록 — 재등록 요청의 Accept-Language 헤더를
+  // 서버가 UserPreference.locale로 upsert해 푸시 알림 언어가 즉시 동기화된다
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const handleLanguageChanged = () => {
+      notificationService.setupPushNotifications().catch((error) => {
+        logger.warn('[Notification] Push token re-registration skipped', { error });
+      });
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, [isAuthenticated, notificationService, logger]);
 
   // Effect 3: 배지 동기화
   useEffect(() => {

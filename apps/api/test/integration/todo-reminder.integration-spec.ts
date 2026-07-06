@@ -48,9 +48,15 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 		findFirst: jest.fn(),
 	};
 
+	// 발송 시점 로케일 선택용 — 기본 ko (B-2 푸시 다국어)
+	const mockUserPreferenceDb = {
+		findUnique: jest.fn().mockResolvedValue({ locale: "ko" }),
+	};
+
 	const mockDatabaseService = createMockDatabaseService({
 		todo: mockTodoDb,
 		notification: mockNotificationDb,
+		userPreference: mockUserPreferenceDb,
 	});
 
 	// Mock NotificationService

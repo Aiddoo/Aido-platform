@@ -148,6 +148,118 @@ describe("알림 E2E", () => {
 				expect(response.body.data.registered).toBe(true);
 			});
 
+			it("Accept-Language: en 헤더로 등록하면 UserPreference.locale이 en으로 저장된다", async () => {
+				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"notif-locale-en@test.com",
+					password,
+				);
+
+				// When - Accept-Language 헤더와 함께 토큰 등록
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.set("Accept-Language", "en-US,en;q=0.9")
+					.send({
+						token: "ExponentPushToken[locale-en-xxxxxxxxxxxx]",
+						deviceId: "test-device-locale-en",
+					})
+					.expect(201);
+
+				// Then - UserPreference.locale이 en으로 upsert된다
+				const prisma = ctx.testDatabase.getPrisma();
+				const preference = await prisma.userPreference.findUnique({
+					where: { userId: user.userId },
+				});
+				expect(preference?.locale).toBe("en");
+			});
+
+			it("Accept-Language 미전송(1.3.x 구버전)이면 locale이 ko로 유지된다", async () => {
+				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"notif-locale-none@test.com",
+					password,
+				);
+
+				// When - 헤더 없이 토큰 등록 (구버전 클라이언트 시뮬레이션)
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.send({
+						token: "ExponentPushToken[locale-none-xxxxxxxxxx]",
+						deviceId: "test-device-locale-none",
+					})
+					.expect(201);
+
+				// Then - 기본값 ko 유지
+				const prisma = ctx.testDatabase.getPrisma();
+				const preference = await prisma.userPreference.findUnique({
+					where: { userId: user.userId },
+				});
+				expect(preference?.locale).toBe("ko");
+			});
+
+			it("미지원 언어(Accept-Language: ja)는 ko로 폴백된다", async () => {
+				// Given - 인증된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"notif-locale-ja@test.com",
+					password,
+				);
+
+				// When - 미지원 언어 헤더로 토큰 등록
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.set("Accept-Language", "ja-JP")
+					.send({
+						token: "ExponentPushToken[locale-ja-xxxxxxxxxxxx]",
+						deviceId: "test-device-locale-ja",
+					})
+					.expect(201);
+
+				// Then - 화이트리스트 밖 언어는 ko
+				const prisma = ctx.testDatabase.getPrisma();
+				const preference = await prisma.userPreference.findUnique({
+					where: { userId: user.userId },
+				});
+				expect(preference?.locale).toBe("ko");
+			});
+
+			it("언어 변경 후 재등록하면 locale이 갱신된다", async () => {
+				// Given - en으로 등록된 사용자
+				const user = await ctx.helpers.createVerifiedUser(
+					"notif-locale-switch@test.com",
+					password,
+				);
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.set("Accept-Language", "en")
+					.send({
+						token: "ExponentPushToken[locale-switch-xxxxxxxx]",
+						deviceId: "test-device-locale-switch",
+					})
+					.expect(201);
+
+				// When - 앱 언어를 한국어로 바꾸고 재등록 (모바일의 언어 변경 → 토큰 재등록 흐름)
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.set("Accept-Language", "ko")
+					.send({
+						token: "ExponentPushToken[locale-switch-xxxxxxxx]",
+						deviceId: "test-device-locale-switch",
+					})
+					.expect(201);
+
+				// Then - locale이 ko로 갱신된다
+				const prisma = ctx.testDatabase.getPrisma();
+				const preference = await prisma.userPreference.findUnique({
+					where: { userId: user.userId },
+				});
+				expect(preference?.locale).toBe("ko");
+			});
+
 			it("유효하지 않은 토큰 형식은 400 에러 반환", async () => {
 				// Given - 유효하지 않은 토큰 형식
 				const user = await ctx.helpers.createVerifiedUser(
