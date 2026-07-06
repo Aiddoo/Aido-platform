@@ -125,6 +125,32 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			expect(result).toEqual(expectedToken);
 		});
 
+		it("locale이 있으면 UserPreference에 upsert한다", async () => {
+			// Given
+			const data = {
+				userId: "user-1",
+				token: "ExponentPushToken[valid]",
+				deviceId: "device-1",
+				locale: "en",
+			};
+			const expectedToken = PushTokenBuilder.create("user-1").build();
+			pushProvider.validateToken.mockReturnValue(true);
+			notificationRepository.registerPushToken.mockResolvedValue(expectedToken);
+
+			// When
+			await service.registerPushToken(data);
+
+			// Then
+			expect(userPreferenceRepository.upsertLocale).toHaveBeenCalledWith(
+				"user-1",
+				"en",
+			);
+			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
+				"user-1",
+			);
+		});
+
 		it("timezone이 없으면 upsert하지 않는다", async () => {
 			// Given
 			const data = {
@@ -141,6 +167,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 			// Then
 			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(userPreferenceRepository.upsertLocale).not.toHaveBeenCalled();
 			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 			expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
 		});

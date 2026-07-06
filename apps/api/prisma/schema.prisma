@@ -138,6 +138,7 @@ model UserPreference {
   pushEnabled         Boolean @default(false) // 푸시 알림 전체 on/off
   nightPushEnabled    Boolean @default(false) // 야간 푸시 동의 (21:00-08:00)
   timezone            String  @default("UTC") @db.VarChar(50) // IANA timezone (e.g. "Asia/Seoul")
+  locale              String  @default("ko") @db.VarChar(10) // 푸시 알림 언어 ("ko" | "en") — 기존 유저 전원 ko
   morningReminderHour   Int     @default(8) // 0-11, 사용자 로컬 시간 기준 아침 리마인더
   morningReminderMinute Int     @default(0) // 0-59
   eveningReminderHour   Int     @default(18) // 12-23, 사용자 로컬 시간 기준 저녁 리마인더

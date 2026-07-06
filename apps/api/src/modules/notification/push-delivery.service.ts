@@ -78,6 +78,16 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 				data.userId,
 				data.timezone,
 			);
+		}
+
+		if (data.locale) {
+			await this.userPreferenceRepository.upsertLocale(
+				data.userId,
+				data.locale,
+			);
+		}
+
+		if (data.timezone || data.locale) {
 			await this.cacheService.invalidateUserPreference(data.userId);
 		}
 

@@ -31,6 +31,7 @@ describe("StreakService — 연속 달성 서비스", () => {
 		pushEnabled: true,
 		nightPushEnabled: true,
 		timezone: "UTC",
+		locale: "ko",
 		morningReminderHour: 8,
 		morningReminderMinute: 0,
 		eveningReminderHour: 18,

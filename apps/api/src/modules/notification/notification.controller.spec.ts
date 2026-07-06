@@ -77,6 +77,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				deviceId: "device-abc",
 			};
 			const tz = "Asia/Seoul";
+			const locale = "ko";
 			mockPushDeliveryService.registerPushToken.mockResolvedValue(
 				PushTokenBuilder.create(mockUser.userId).withToken(dto.token).build(),
 			);
@@ -86,6 +87,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				mockUser,
 				dto as unknown as RegisterPushTokenDto,
 				tz,
+				locale,
 			);
 
 			// Then -서비스에 올바른 파라미터를 전달하고 성공 응답을 반환해야 한다
@@ -94,6 +96,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
 				token: dto.token,
 				deviceId: dto.deviceId,
 				timezone: tz,
+				locale,
 			});
 			expect(result).toEqual({
 				message: "푸시 토큰이 등록되었습니다.",

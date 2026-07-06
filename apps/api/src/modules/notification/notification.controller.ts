@@ -20,7 +20,7 @@ import {
 	ApiQuery,
 	ApiTags,
 } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators";
+import { Locale, Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiCreatedResponse,
@@ -75,6 +75,12 @@ export class NotificationController {
 		required: false,
 		example: "Asia/Seoul",
 	})
+	@ApiHeader({
+		name: "Accept-Language",
+		description: '푸시 알림 언어 ("ko" | "en", 미전송 시 ko)',
+		required: false,
+		example: "ko",
+	})
 	@ApiCreatedResponse({ type: RegisterTokenResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
 	@ApiBadRequestError(ErrorCode.NOTIFICATION_1001)
@@ -82,6 +88,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: RegisterPushTokenDto,
 		@Timezone() tz: string,
+		@Locale() locale: string,
 	): Promise<RegisterTokenResponseDto> {
 		this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 
@@ -90,6 +97,7 @@ export class NotificationController {
 			token: dto.token,
 			deviceId: dto.deviceId,
 			timezone: tz,
+			locale,
 		});
 
 		this.#logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);
