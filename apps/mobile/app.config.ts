@@ -153,6 +153,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         usesNonExemptEncryption: false,
       },
       infoPlist: {
+        CFBundleAllowMixedLocalizations: true,
+        CFBundleLocalizations: ['ko', 'en'],
         NSMicrophoneUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
         NSFaceIDUsageDescription:
@@ -218,6 +220,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       './plugins/withJitpackFilter',
       './plugins/withGradleJvmArgs',
+      'expo-localization',
       '@react-native-firebase/app',
       '@react-native-community/datetimepicker',
       [

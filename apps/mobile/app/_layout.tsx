@@ -18,8 +18,10 @@ import { useEffect } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useResolveClassNames } from 'uniwind';
 import '../global.css';
+import '@src/shared/i18n/init';
 import * as Sentry from '@sentry/react-native';
 import { initSentry } from '@src/shared/infra/observability/sentry';
+import { LanguageProvider } from '@src/shared/providers/language-provider';
 
 initSentry();
 
@@ -85,25 +87,27 @@ const AppBootstrapLayout = () => {
     <GestureHandlerProvider>
       <KeyboardProvider>
         <FontScaleProvider>
-          <ThemeProvider>
-            <HeroUIProvider>
-              <QueryProvider>
-                <DIProvider>
-                  <AuthProvider>
-                    <RevenueCatProvider>
-                      <NotificationProvider>
-                        <BottomSheetModalProvider>
-                          <OverlayProvider>
-                            <AuthGateLayout />
-                          </OverlayProvider>
-                        </BottomSheetModalProvider>
-                      </NotificationProvider>
-                    </RevenueCatProvider>
-                  </AuthProvider>
-                </DIProvider>
-              </QueryProvider>
-            </HeroUIProvider>
-          </ThemeProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <HeroUIProvider>
+                <QueryProvider>
+                  <DIProvider>
+                    <AuthProvider>
+                      <RevenueCatProvider>
+                        <NotificationProvider>
+                          <BottomSheetModalProvider>
+                            <OverlayProvider>
+                              <AuthGateLayout />
+                            </OverlayProvider>
+                          </BottomSheetModalProvider>
+                        </NotificationProvider>
+                      </RevenueCatProvider>
+                    </AuthProvider>
+                  </DIProvider>
+                </QueryProvider>
+              </HeroUIProvider>
+            </ThemeProvider>
+          </LanguageProvider>
         </FontScaleProvider>
       </KeyboardProvider>
     </GestureHandlerProvider>
