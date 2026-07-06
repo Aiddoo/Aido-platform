@@ -34,11 +34,20 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   // 앱 시작 시 초기 인증 상태 결정 (재설치 잔존 토큰 가드 포함)
   useEffect(() => {
     const checkAuth = async () => {
-      const initialStatus = await resolveInitialAuthStatus(storage, mmkvSyncStorage);
-      setStatusState(initialStatus);
+      try {
+        const initialStatus = await resolveInitialAuthStatus(storage, mmkvSyncStorage);
+        setStatusState(initialStatus);
+      } catch (error) {
+        // 키체인 접근 실패(기기 잠김 등)로 throw되어도 'loading'에 영구히 갇히지 않도록
+        // 미인증으로 폴백하고 관측 리포팅한다.
+        errorReporter.captureException(error instanceof Error ? error : new Error(String(error)), {
+          feature: 'auth',
+        });
+        setStatusState('unauthenticated');
+      }
     };
     checkAuth();
-  }, [storage]);
+  }, [storage, errorReporter]);
 
   // 토큰 갱신 최종 실패(세션 만료 확정) 시 로그아웃과 동일한 순서로 정리 + 관측 리포팅
   useEffect(() => {
