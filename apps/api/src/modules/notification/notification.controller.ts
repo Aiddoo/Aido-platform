@@ -77,7 +77,8 @@ export class NotificationController {
 	})
 	@ApiHeader({
 		name: "Accept-Language",
-		description: '푸시 알림 언어 ("ko" | "en", 미전송 시 ko)',
+		description:
+			'푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko',
 		required: false,
 		example: "ko",
 	})
@@ -88,7 +89,7 @@ export class NotificationController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: RegisterPushTokenDto,
 		@Timezone() tz: string,
-		@Locale() locale: string,
+		@Locale() locale: string | undefined,
 	): Promise<RegisterTokenResponseDto> {
 		this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
 

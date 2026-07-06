@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
@@ -15,6 +16,7 @@ export const PickerHeader = ({
   onConfirm,
   isConfirmDisabled = false,
 }: PickerHeaderProps) => {
+  const { t } = useTranslation('common');
   return (
     <HStack className="items-center" px={16}>
       <Box className="flex-1 items-start">
@@ -37,7 +39,7 @@ export const PickerHeader = ({
             tone={isConfirmDisabled ? 'neutral' : 'brand'}
             shade={isConfirmDisabled ? 4 : undefined}
           >
-            확인
+            {t('actions.confirm')}
           </Text>
         </PressableFeedback>
       </Box>

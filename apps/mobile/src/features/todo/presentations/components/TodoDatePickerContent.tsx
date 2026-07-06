@@ -1,7 +1,10 @@
 import type { DayOfWeek } from '@aido/validators';
+import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
+  formatDaysOfWeek,
+  getDayOfWeekLabel,
   getMonthHeaderText,
   getWeekdayLabels,
   isSameDay,
@@ -29,6 +32,7 @@ export const TodoDatePickerContent = ({
   onCancel,
 }: TodoDatePickerContentProps) => {
   const picker = useDatePicker({ startDate });
+  const { t } = useTranslation('todo');
 
   const handleConfirm = () => {
     onConfirm(picker.date);
@@ -40,7 +44,7 @@ export const TodoDatePickerContent = ({
 
   return (
     <VStack gap={20}>
-      <PickerHeader title="날짜" onCancel={onCancel} onConfirm={handleConfirm} />
+      <PickerHeader title={t('picker.dateTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
 
       <QuickDateOptions picker={picker} onSelect={handleQuickSelect} />
 
@@ -50,8 +54,7 @@ export const TodoDatePickerContent = ({
 };
 
 interface QuickDateOption {
-  label: string;
-  day: string;
+  labelKey: 'picker.today' | 'picker.tomorrow';
   date: Date;
 }
 
@@ -59,8 +62,8 @@ const getQuickDateOptions = (): QuickDateOption[] => {
   const today = dayjs();
   const tomorrow = today.add(1, 'day');
   return [
-    { label: '오늘', day: getWeekdayLabels()[today.day()] as string, date: today.toDate() },
-    { label: '내일', day: getWeekdayLabels()[tomorrow.day()] as string, date: tomorrow.toDate() },
+    { labelKey: 'picker.today', date: today.toDate() },
+    { labelKey: 'picker.tomorrow', date: tomorrow.toDate() },
   ];
 };
 
@@ -70,8 +73,10 @@ interface QuickDateOptionsProps {
 }
 
 const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
+  const { t } = useTranslation('todo');
   const { date: pickerDate } = picker;
   const options = useMemo(() => getQuickDateOptions(), []);
+  const weekdayLabels = getWeekdayLabels();
 
   return (
     <VStack gap={4}>
@@ -80,7 +85,7 @@ const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
         const tone = isSelected ? 'brand' : 'neutral';
         return (
           <PressableFeedback
-            key={option.label}
+            key={option.labelKey}
             onPress={() => onSelect(option.date)}
             className={cn('rounded-lg', isSelected && 'bg-main/5')}
           >
@@ -88,7 +93,7 @@ const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
               contents={
                 <ListRow.Texts
                   type="1RowTypeA"
-                  top={option.label}
+                  top={t(option.labelKey)}
                   topProps={{
                     size: 'b2',
                     weight: 'medium',
@@ -99,7 +104,7 @@ const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
               }
               right={
                 <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-                  {option.day}
+                  {weekdayLabels[option.date.getDay()]}
                 </Text>
               }
               horizontalPadding="medium"
@@ -196,41 +201,31 @@ const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProp
   );
 };
 
-const DAY_LABELS: { key: DayOfWeek; label: string }[] = [
-  { key: 'MON', label: '월' },
-  { key: 'TUE', label: '화' },
-  { key: 'WED', label: '수' },
-  { key: 'THU', label: '목' },
-  { key: 'FRI', label: '금' },
-  { key: 'SAT', label: '토' },
-  { key: 'SUN', label: '일' },
-];
+const DAY_KEYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 interface DayOfWeekSelectorProps {
   repeatSetting: RepeatSetting;
 }
 
-const formatSelectedDays = (days: DayOfWeek[]): string => {
-  const dayOrder: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  const sorted = dayOrder.filter((d) => days.includes(d));
-  return sorted.map((d) => DAY_LABELS.find((l) => l.key === d)?.label ?? '').join(', ');
-};
+type RepeatSummaryKey =
+  | 'picker.repeatDaily'
+  | 'picker.repeatWeekdays'
+  | 'picker.repeatWeekends'
+  | 'picker.repeatWeekly';
 
-const getRepeatSummary = ({
-  selectedDays,
+const getRepeatSummaryKey = ({
   isAllSelected,
   isWeekdaysSelected,
   isWeekendsSelected,
 }: {
-  selectedDays: DayOfWeek[];
   isAllSelected: boolean;
   isWeekdaysSelected: boolean;
   isWeekendsSelected: boolean;
-}): string => {
-  if (isAllSelected) return '매일 반복';
-  if (isWeekdaysSelected) return '주중 반복';
-  if (isWeekendsSelected) return '주말 반복';
-  return `매주 ${formatSelectedDays(selectedDays)} 반복`;
+}): RepeatSummaryKey => {
+  if (isAllSelected) return 'picker.repeatDaily';
+  if (isWeekdaysSelected) return 'picker.repeatWeekdays';
+  if (isWeekendsSelected) return 'picker.repeatWeekends';
+  return 'picker.repeatWeekly';
 };
 
 interface PresetChipProps {
@@ -259,6 +254,7 @@ const PresetChip = ({ label, isSelected, onPress }: PresetChipProps) => (
 );
 
 export const DayOfWeekSelector = ({ repeatSetting }: DayOfWeekSelectorProps) => {
+  const { t } = useTranslation('todo');
   const {
     selectedDays,
     toggleDay,
@@ -277,10 +273,23 @@ export const DayOfWeekSelector = ({ repeatSetting }: DayOfWeekSelectorProps) => 
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="gap-1.5 px-4"
       >
-        <PresetChip label="매일" isSelected={isAllDaysSelected} onPress={toggleAllDays} />
-        <PresetChip label="주중" isSelected={isWeekdaysSelected} onPress={toggleWeekdays} />
-        <PresetChip label="주말" isSelected={isWeekendsSelected} onPress={toggleWeekends} />
-        {DAY_LABELS.map(({ key, label }) => {
+        <PresetChip
+          label={t('picker.presetDaily')}
+          isSelected={isAllDaysSelected}
+          onPress={toggleAllDays}
+        />
+        <PresetChip
+          label={t('picker.presetWeekdays')}
+          isSelected={isWeekdaysSelected}
+          onPress={toggleWeekdays}
+        />
+        <PresetChip
+          label={t('picker.presetWeekends')}
+          isSelected={isWeekendsSelected}
+          onPress={toggleWeekends}
+        />
+        {DAY_KEYS.map((key) => {
+          const label = getDayOfWeekLabel(key);
           const isSelected = selectedDays.includes(key);
           return (
             <PressableFeedback
@@ -306,16 +315,18 @@ export const DayOfWeekSelector = ({ repeatSetting }: DayOfWeekSelectorProps) => 
       {selectedDays.length > 0 ? (
         <Text size="b3" tone="brand" align="right" className="px-4">
           *{' '}
-          {getRepeatSummary({
-            selectedDays,
-            isAllSelected: isAllDaysSelected,
-            isWeekdaysSelected,
-            isWeekendsSelected,
-          })}
+          {t(
+            getRepeatSummaryKey({
+              isAllSelected: isAllDaysSelected,
+              isWeekdaysSelected,
+              isWeekendsSelected,
+            }),
+            { days: formatDaysOfWeek(selectedDays) },
+          )}
         </Text>
       ) : (
         <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-          * 요일을 선택해주세요
+          * {t('picker.selectDays')}
         </Text>
       )}
     </VStack>

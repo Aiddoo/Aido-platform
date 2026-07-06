@@ -1,1 +1,150 @@
-{}
+{
+  "toast": {
+    "todoAdded": "할 일을 추가했어요!",
+    "todoUpdated": "할 일을 수정했어요",
+    "todoDeleted": "할 일을 삭제했어요",
+    "scheduleChanged": "일정을 변경했어요",
+    "categoryChanged": "카테고리를 변경했어요",
+    "categoryAdded": "카테고리를 추가했어요",
+    "categoryUpdated": "카테고리를 수정했어요",
+    "categoryDeleted": "카테고리를 삭제했어요",
+    "recurringAdded": "반복 할 일을 추가했어요!",
+    "recurringCategoryLimit": "반복 할 일을 생성하면 카테고리 한도를 초과해요. 날짜 범위를 줄여주세요.",
+    "categoryLimitReached": "이 카테고리의 할 일이 최대 한도에 도달했어요. 완료하거나 다른 카테고리로 이동해 주세요.",
+    "subTodoAddFailed": "항목 추가에 실패했어요",
+    "subTodoUpdateFailed": "항목 수정에 실패했어요",
+    "subTodoDeleteFailed": "항목 삭제에 실패했어요",
+    "parseFailed": "할 일을 제대로 이해하지 못했어요. 다시 시도해주세요.",
+    "nudgeSent": "콕 찔렀어요!",
+    "remindNudgeSent": "할일 만들라고 콕 찔렀어요!",
+    "addFailedRetry": "잠시 후 다시 추가해 보세요",
+    "updateFailedRetry": "잠시 후 다시 수정해 보세요",
+    "deleteFailedRetry": "잠시 후 다시 삭제해 보세요",
+    "changeFailedRetry": "잠시 후 다시 변경해 보세요",
+    "retryLater": "잠시 후 다시 시도해 주세요"
+  },
+  "errors": {
+    "categoryValidationFailed": "다시 시도해 주세요",
+    "todoValidationFailed": "응답 형식이 올바르지 않아요",
+    "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
+  },
+  "form": {
+    "titleRequired": "제목을 입력해 주세요",
+    "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
+    "timeFormatInvalid": "시간은 HH:mm 형식으로 입력해 주세요",
+    "repeatEndDateRequired": "반복 종료일을 선택해 주세요",
+    "repeatDaysRequired": "반복할 요일을 선택해 주세요",
+    "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
+  },
+  "picker": {
+    "dateTitle": "날짜",
+    "timeTitle": "시간",
+    "repeatTitle": "반복",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "allDay": "종일",
+    "time": "시간",
+    "selectTime": "시간 선택",
+    "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
+    "repeatPeriod": "반복 기간",
+    "selectPeriod": "기간을 선택해주세요",
+    "repeatDaily": "매일 반복",
+    "repeatWeekdays": "주중 반복",
+    "repeatWeekends": "주말 반복",
+    "repeatWeekly": "매주 {{days}} 반복",
+    "presetDaily": "매일",
+    "presetWeekdays": "주중",
+    "presetWeekends": "주말",
+    "selectDays": "요일을 선택해주세요"
+  },
+  "chip": {
+    "repeat": "반복",
+    "daily": "매일",
+    "weeklyDays": "매주 {{days}}",
+    "allDay": "종일",
+    "private": "비공개",
+    "public": "공개",
+    "category": "카테고리"
+  },
+  "add": {
+    "placeholder": "무엇을 하고 싶으신가요?",
+    "submit": "선택하기",
+    "aiFeature": "AI 기능",
+    "voiceAddTitle": "말로 할일을 추가해요",
+    "voiceAddHint": "\"이번 주 금요일 저녁 7시 약속\"처럼\n말하면 날짜·시간을 채워줘요"
+  },
+  "subTodo": {
+    "addItem": "항목 추가",
+    "placeholder": "항목을 입력하세요",
+    "voiceInput": "음성 입력",
+    "voiceTitle": "음성으로 입력해요",
+    "voiceHint": "마이크 버튼을 누르고 말하면\n음성이 텍스트로 입력돼요"
+  },
+  "actions": {
+    "edit": "수정하기",
+    "delete": "삭제하기",
+    "deleting": "삭제 중...",
+    "changeDate": "날짜 변경",
+    "changeTime": "시간 변경",
+    "changeCategory": "카테고리 변경",
+    "doToday": "오늘하기",
+    "doTomorrow": "내일하기",
+    "changeSubmit": "변경하기"
+  },
+  "list": {
+    "loadError": "할 일을 불러오는 중에 오류가 발생했습니다."
+  },
+  "friendTodo": {
+    "emptyTitle": "친구의 등록된 할 일이 없어요",
+    "emptyDescription": "친구에게 할 일을 만들라고 찔러보세요",
+    "nudge": "콕 찌르기",
+    "alreadyNudged": "이미 콕 찔렀어요"
+  },
+  "nudge": {
+    "limitTitle": "오늘 콕 찌르기를 다 했어요",
+    "limitSpentTitle": "오늘 콕 찌르기를 다 썼어요",
+    "subscribeUnlimited": "구독하면 무제한으로 찌를 수 있어요",
+    "promptPrefix": "친구를",
+    "promptHighlight": "콕",
+    "promptSuffix": "찌를까요?",
+    "hintPrefix": "잊고 있는 것 같다면",
+    "hintHighlight": "콕",
+    "hintSuffix": "을 눌러 알림을 보내보세요!",
+    "remaining": "오늘 {{count}}회 남았어요 (구독하면 무제한)",
+    "sheetTitle": "따끔하게 콕 찌르기",
+    "whenTodo": "{{title}} 언제해?",
+    "placeholder": "(선택) 오늘 안에 꼭 해줘 !",
+    "send": "콕 찌르기",
+    "dialogTarget": "할 일을 잊은 {{name}}님에게",
+    "dialogPlaceholder": "(선택) {{title}} 언제 할 거야?",
+    "remindTitle": "할일이 없네? 빨리 만들어!",
+    "remindPlaceholder": "(선택) 할일 좀 만들어!"
+  },
+  "category": {
+    "nameLabel": "카테고리 이름",
+    "namePlaceholder": "카테고리 이름을 입력해 주세요",
+    "premiumMore": "프리미엄 구독으로 더 많은 카테고리를 만들 수 있어요",
+    "deleteTitle": "{{name}} 카테고리를 삭제할까요?",
+    "deleteDescription": "삭제하면 되돌릴 수 없어요",
+    "todoCount": "할 일 {{count}}개가 포함되어 있어요",
+    "moveSelect": "이동할 카테고리를 선택해주세요",
+    "select": "카테고리 선택",
+    "fallback": "카테고리"
+  },
+  "premium": {
+    "unlimitedParse": "프리미엄 구독으로 무제한 AI 파싱을 사용할 수 있어요"
+  },
+  "calendar": {
+    "week": "주",
+    "month": "월"
+  },
+  "feed": {
+    "me": "나",
+    "avatarAlt": "{{name}} 프로필",
+    "loading": "불러오는 중...",
+    "suggestionsLoading": "제안을 불러오는 중...",
+    "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
+    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
+    "preparing": "이번 주 제안을 준비 중이에요"
+  }
+}

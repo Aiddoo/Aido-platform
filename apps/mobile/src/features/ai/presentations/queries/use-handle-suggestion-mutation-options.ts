@@ -7,6 +7,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { usePremiumDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -48,7 +49,7 @@ export const useHandleSuggestionMutationOptions = () => {
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {
         trackEvent('premium_gate_shown', { feature: 'ai_suggestion' });
         premiumDialog.open({
-          description: 'AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요',
+          description: t('ai:suggestions.toasts.premiumOnly'),
         });
         return;
       }
@@ -70,7 +71,7 @@ export const useHandleSuggestionMutationOptions = () => {
       }
 
       logger.error('[AiSuggestion] Unexpected error', error instanceof Error ? error : undefined);
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해 주세요' });
+      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });
 };

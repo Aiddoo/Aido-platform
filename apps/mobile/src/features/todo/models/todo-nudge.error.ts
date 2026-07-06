@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const TodoNudgeErrorCode = {
   MESSAGE_TOO_LONG: 'TODO_NUDGE_MESSAGE_TOO_LONG',
@@ -22,7 +23,7 @@ export const TodoNudgeErrors = {
   messageTooLong: (maxLength: number) =>
     new TodoNudgeError(
       TodoNudgeErrorCode.MESSAGE_TOO_LONG,
-      `메시지는 ${maxLength}자 이내로 입력할 수 있어요`,
+      t('todo:errors.nudgeMessageTooLong', { count: maxLength }),
       { maxLength },
     ),
 } as const;

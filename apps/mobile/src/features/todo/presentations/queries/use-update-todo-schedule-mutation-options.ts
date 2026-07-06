@@ -4,6 +4,7 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/const
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -28,7 +29,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      toast.success('일정을 변경했어요');
+      toast.success(t('todo:toast.scheduleChanged'));
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -37,7 +38,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 수정해 보세요' });
+      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
     },
   });
 };

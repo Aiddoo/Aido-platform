@@ -8,6 +8,7 @@ import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/u
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/presentations/constants/weather-query-keys.constant';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useTabBarHeight } from '@src/shared/hooks/useTabBarHeight';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, ListRow, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 
 export default function MyFeedScreen() {
+  const { t } = useTranslation('todo');
   const tabBarHeight = useTabBarHeight();
   const queryClient = useQueryClient();
   const [refreshing, onRefresh] = useRefresh(() =>
@@ -47,7 +49,7 @@ export default function MyFeedScreen() {
 
       <Box px={16}>
         <QueryErrorBoundary>
-          <Suspense fallback={<InfoCard label="불러오는 중..." />}>
+          <Suspense fallback={<InfoCard label={t('feed.loading')} />}>
             <SuggestionEntry />
           </Suspense>
         </QueryErrorBoundary>
@@ -58,18 +60,19 @@ export default function MyFeedScreen() {
 }
 
 function SuggestionEntry() {
+  const { t } = useTranslation('todo');
   const router = useRouter();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
 
   if (!isPremium) {
     return (
-      <InfoCard label="딱 맞는 루틴을 제안해드려요 !" onPress={() => router.push('/suggestions')} />
+      <InfoCard label={t('feed.routineSuggestion')} onPress={() => router.push('/suggestions')} />
     );
   }
 
   return (
-    <Suspense fallback={<InfoCard label="제안을 불러오는 중..." />}>
+    <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
       <PremiumSuggestionEntry name={user.name} />
     </Suspense>
   );
@@ -80,13 +83,14 @@ interface PremiumSuggestionEntryProps {
 }
 
 function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+  const { t } = useTranslation('todo');
   const router = useRouter();
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
 
   const label =
     suggestions.length > 0
-      ? `${name}님, ${suggestions.length}개의 맞춤 제안이 도착했어요 !`
-      : '이번 주 제안을 준비 중이에요';
+      ? t('feed.suggestionsArrived', { name, count: suggestions.length })
+      : t('feed.preparing');
 
   return <InfoCard label={label} onPress={() => router.push('/suggestions')} />;
 }

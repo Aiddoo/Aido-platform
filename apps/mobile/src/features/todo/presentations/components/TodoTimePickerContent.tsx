@@ -1,5 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
 import {
@@ -32,6 +33,7 @@ export const TodoTimePickerContent = ({
   onConfirm,
   onCancel,
 }: TodoTimePickerContentProps) => {
+  const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
@@ -44,7 +46,7 @@ export const TodoTimePickerContent = ({
 
   return (
     <VStack>
-      <PickerHeader title="시간" onCancel={onCancel} onConfirm={handleConfirm} />
+      <PickerHeader title={t('picker.timeTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
 
       <Spacing size={24} />
 
@@ -53,7 +55,7 @@ export const TodoTimePickerContent = ({
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top="종일"
+              top={t('picker.allDay')}
               topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
             />
           }
@@ -65,7 +67,7 @@ export const TodoTimePickerContent = ({
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top="시간"
+              top={t('picker.time')}
               topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
             />
           }
@@ -76,7 +78,7 @@ export const TodoTimePickerContent = ({
                 className="h-[34px] justify-center"
               >
                 <Text size="b1" shade={7}>
-                  시간 선택
+                  {t('picker.selectTime')}
                 </Text>
               </PressableFeedback>
             ) : isIOS ? (
@@ -136,7 +138,7 @@ export const TodoTimePickerContent = ({
 
       <Flex px={4} justify="center" align="center">
         <Text size="b3" shade={5}>
-          ⓘ 1시간 전, 10분 전에 알림을 보내드려요
+          {t('picker.reminderInfo')}
         </Text>
       </Flex>
     </VStack>

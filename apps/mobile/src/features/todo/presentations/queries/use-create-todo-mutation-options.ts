@@ -6,6 +6,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isTodoError } from '../../models/todo.error';
@@ -93,7 +94,7 @@ export const useCreateTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      toast.success('할 일을 추가했어요!');
+      toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source,
         is_recurring: false,
@@ -113,9 +114,7 @@ export const useCreateTodoMutationOptions = () => {
       }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
-        toast.error(
-          '이 카테고리의 할 일이 최대 한도에 도달했어요. 완료하거나 다른 카테고리로 이동해 주세요.',
-        );
+        toast.error(t('todo:toast.categoryLimitReached'));
         return;
       }
 
@@ -123,7 +122,7 @@ export const useCreateTodoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 추가해 보세요' });
+      toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
     },
   });
 };

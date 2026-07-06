@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const TodoErrorCode = {
   VALIDATION_FAILED: 'TODO_VALIDATION_FAILED',
@@ -19,7 +20,7 @@ export class TodoError extends Error implements BusinessError {
 
 export const TodoErrors = {
   validationFailed: () =>
-    new TodoError(TodoErrorCode.VALIDATION_FAILED, '응답 형식이 올바르지 않아요'),
+    new TodoError(TodoErrorCode.VALIDATION_FAILED, t('todo:errors.todoValidationFailed')),
 } as const;
 
 export const isTodoError = (error: unknown): error is TodoError => error instanceof TodoError;

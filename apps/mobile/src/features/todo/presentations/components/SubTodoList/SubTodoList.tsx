@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
@@ -10,6 +11,7 @@ interface SubTodoListProps {
 }
 
 export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoListProps) {
+  const { t } = useTranslation('todo');
   return (
     <VStack className="ml-8 pl-4 border-l border-gray-2" gap={0}>
       {children}
@@ -19,7 +21,7 @@ export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoList
           <HStack gap={8} align="center">
             <PlusIcon width={14} height={14} colorClassName="text-gray-4" />
             <Text size="e1" shade={5}>
-              항목 추가
+              {t('subTodo.addItem')}
             </Text>
           </HStack>
         </PressableFeedback>

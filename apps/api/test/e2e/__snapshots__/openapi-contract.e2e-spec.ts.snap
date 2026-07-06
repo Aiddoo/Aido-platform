@@ -23717,7 +23717,7 @@ The Health Check is not successful",
       "operationId": "registerPushToken",
       "parameters": [
         {
-          "description": "푸시 알림 언어 ("ko" | "en", 미전송 시 ko)",
+          "description": "푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko",
           "in": "header",
           "name": "Accept-Language",
           "required": false,

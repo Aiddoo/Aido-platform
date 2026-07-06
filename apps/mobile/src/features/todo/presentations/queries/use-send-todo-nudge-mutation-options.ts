@@ -3,6 +3,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { isTodoNudgeError } from '../../models/todo-nudge.error';
@@ -26,7 +27,7 @@ export const useSendTodoNudgeMutationOptions = () => {
       queryClient.invalidateQueries({
         queryKey: TODO_QUERY_KEYS.nudgeCooldown(variables.receiverId),
       });
-      toast.success('콕 찔렀어요!');
+      toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },
     onError: (error) => {
@@ -36,7 +37,7 @@ export const useSendTodoNudgeMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해 주세요' });
+      toast.error(undefined, { fallback: t('todo:toast.retryLater') });
     },
   });
 };

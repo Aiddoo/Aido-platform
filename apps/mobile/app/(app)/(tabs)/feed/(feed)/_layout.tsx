@@ -1,6 +1,7 @@
 import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/use-get-friends-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PlusIcon,
@@ -32,6 +33,7 @@ export default function FeedGroupLayout() {
 }
 
 function AvatarList() {
+  const { t } = useTranslation('todo');
   const { friendId, date } = useGlobalSearchParams<{ friendId?: string; date?: string }>();
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -61,7 +63,7 @@ function AvatarList() {
       onMomentumScrollEnd={handleScrollEnd}
     >
       <AvatarList.Item
-        name="나"
+        name={t('feed.me')}
         image={user.profileImage}
         isSelected={selectedFriendId === null}
         onPress={() => router.replace({ pathname: '/feed', params: date ? { date } : undefined })}
@@ -108,10 +110,11 @@ interface AvatarListItemProps {
 }
 
 AvatarList.Item = function Item({ name, image, isSelected, onPress }: AvatarListItemProps) {
+  const { t } = useTranslation('todo');
   return (
     <PressableFeedback onPress={onPress}>
       <VStack align="center" gap={4}>
-        <Avatar size="sm" alt={`${name} 프로필`}>
+        <Avatar size="sm" alt={t('feed.avatarAlt', { name })}>
           <Avatar.Image source={getProfileIconSource(image)} />
         </Avatar>
         <Text

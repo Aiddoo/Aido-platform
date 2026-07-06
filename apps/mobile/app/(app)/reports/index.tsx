@@ -7,6 +7,7 @@ import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/q
 import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/use-get-reports-query-options';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   H4,
@@ -39,6 +40,7 @@ const ReportsScreen = () => {
 export default ReportsScreen;
 
 function ReportsContent() {
+  const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
@@ -67,12 +69,10 @@ function ReportsContent() {
           />
           <Spacing size={8} />
           <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-            {isPremium ? 'AI 리포트' : 'AI가 분석한 나만의 리포트'}
+            {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
           </H4>
           <Text size="b4" shade={6} align="center">
-            {isPremium
-              ? '할 일 데이터를 분석해서 리포트를 만들어드려요'
-              : '프리미엄 구독으로 매주/매월 AI 리포트를 받아보세요'}
+            {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
           </Text>
         </View>
 
@@ -121,6 +121,8 @@ function ReportTypeTabs({
   value: ReportType;
   onValueChange: (v: ReportType) => void;
 }) {
+  const { t } = useTranslation('ai');
+
   return (
     <Tabs value={value} onValueChange={(v) => onValueChange(v as ReportType)} variant="primary">
       <Tabs.List>
@@ -129,7 +131,7 @@ function ReportTypeTabs({
           {({ isSelected }) => (
             <Tabs.Label>
               <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                주간
+                {t('report.typeWeekly')}
               </Text>
             </Tabs.Label>
           )}
@@ -138,7 +140,7 @@ function ReportTypeTabs({
           {({ isSelected }) => (
             <Tabs.Label>
               <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                월간
+                {t('report.typeMonthly')}
               </Text>
             </Tabs.Label>
           )}
@@ -149,6 +151,7 @@ function ReportTypeTabs({
 }
 
 function FreeReportPreview({ type }: { type: ReportType }) {
+  const { t } = useTranslation('ai');
   const router = useRouter();
   const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
 
@@ -159,7 +162,7 @@ function FreeReportPreview({ type }: { type: ReportType }) {
       </View>
 
       <Button size="medium" onPress={() => router.push('/settings/subscription')}>
-        구독하고 리포트 받기
+        {t('report.list.subscribeCta')}
       </Button>
     </VStack>
   );
@@ -182,11 +185,12 @@ function ReportList({ type }: { type: ReportType }) {
 }
 
 function PremiumPendingPreview({ type }: { type: ReportType }) {
+  const { t } = useTranslation('ai');
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
   const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
 
   const daysUntil = type === 'WEEKLY' ? status.daysUntilWeekly : status.daysUntilMonthly;
-  const reportLabel = type === 'WEEKLY' ? '주간' : '월간';
+  const reportLabel = type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly');
 
   return (
     <VStack gap={12}>
@@ -196,8 +200,8 @@ function PremiumPendingPreview({ type }: { type: ReportType }) {
 
       <Text size="b3" shade={7} align="center">
         {daysUntil === 0
-          ? `오늘 첫 번째 ${reportLabel} 리포트가 도착해요!`
-          : `${daysUntil}일 후에 첫 번째 ${reportLabel} 리포트가 도착해요`}
+          ? t('report.list.arrivalToday', { type: reportLabel })
+          : t('report.list.arrivalInDays', { count: daysUntil, type: reportLabel })}
       </Text>
     </VStack>
   );

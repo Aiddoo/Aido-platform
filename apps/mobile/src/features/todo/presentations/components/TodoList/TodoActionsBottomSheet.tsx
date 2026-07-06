@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   BottomSheet,
@@ -36,6 +37,7 @@ export const TodoActionsBottomSheet = ({
   todo,
   onNavigate,
 }: TodoActionsBottomSheetProps) => {
+  const { t } = useTranslation('todo');
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
 
@@ -82,7 +84,9 @@ export const TodoActionsBottomSheet = ({
                 <EditIcon width={16} height={16} colorClassName="text-gray-7" />
               </Box>
             }
-            contents={<ListRow.Texts type="1RowTypeA" top="수정하기" topProps={{ size: 'b2' }} />}
+            contents={
+              <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
+            }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>
@@ -102,7 +106,13 @@ export const TodoActionsBottomSheet = ({
                 <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />
               </Box>
             }
-            contents={<ListRow.Texts type="1RowTypeA" top="날짜 변경" topProps={{ size: 'b2' }} />}
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.changeDate')}
+                topProps={{ size: 'b2' }}
+              />
+            }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>
@@ -122,7 +132,13 @@ export const TodoActionsBottomSheet = ({
                 <ClockIcon width={16} height={16} colorClassName="text-gray-7" />
               </Box>
             }
-            contents={<ListRow.Texts type="1RowTypeA" top="시간 변경" topProps={{ size: 'b2' }} />}
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.changeTime')}
+                topProps={{ size: 'b2' }}
+              />
+            }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>
@@ -143,7 +159,11 @@ export const TodoActionsBottomSheet = ({
               </Box>
             }
             contents={
-              <ListRow.Texts type="1RowTypeA" top="카테고리 변경" topProps={{ size: 'b2' }} />
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.changeCategory')}
+                topProps={{ size: 'b2' }}
+              />
             }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
@@ -165,7 +185,7 @@ export const TodoActionsBottomSheet = ({
             contents={
               <ListRow.Texts
                 type="1RowTypeA"
-                top={isTodoToday ? '내일하기' : '오늘하기'}
+                top={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
                 topProps={{ size: 'b2' }}
               />
             }
@@ -184,7 +204,7 @@ export const TodoActionsBottomSheet = ({
             contents={
               <ListRow.Texts
                 type="1RowTypeA"
-                top={deleteMutation.isPending ? '삭제 중...' : '삭제하기'}
+                top={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
                 topProps={{ size: 'b2', tone: 'danger' }}
               />
             }

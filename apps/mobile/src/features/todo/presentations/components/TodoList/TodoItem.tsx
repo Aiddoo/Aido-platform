@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet, HStack, LockIcon, MoreIcon, Text, useOverlay } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
@@ -26,6 +27,7 @@ interface TodoItemProps {
 }
 
 export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps) {
+  const { t } = useTranslation('todo');
   const todoActions = useTodoActions(todo);
   const subTodoActions = useSubTodoActions(todo);
   const overlay = useOverlay();
@@ -157,7 +159,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
             },
           });
         }}
-        submitLabel="변경하기"
+        submitLabel={t('actions.changeSubmit')}
         isLoading={todoActions.isCategoryPending}
       />
     ));

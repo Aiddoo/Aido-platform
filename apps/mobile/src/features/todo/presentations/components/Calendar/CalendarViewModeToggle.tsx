@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useCallback, useRef, useState } from 'react';
@@ -7,16 +8,17 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import type { CalendarViewMode } from './calendar.types';
 import { useCalendarContext } from './calendar-view-mode-context';
 
-const CALENDAR_VIEW_MODE: { value: CalendarViewMode; label: string }[] = [
-  { value: 'week', label: '주' },
-  { value: 'month', label: '월' },
-];
+const CALENDAR_VIEW_MODE = [
+  { value: 'week', labelKey: 'calendar.week' },
+  { value: 'month', labelKey: 'calendar.month' },
+] as const satisfies ReadonlyArray<{ value: CalendarViewMode; labelKey: string }>;
 
 const PADDING = 2;
 const ITEM_HEIGHT = 22;
 const SPRING_CONFIG = { stiffness: 500, damping: 30, mass: 0.8 };
 
 export const CalendarViewModeToggle = () => {
+  const { t } = useTranslation('todo');
   const { viewMode: value, setViewMode: onChange } = useCalendarContext();
   const [itemLayouts, setItemLayouts] = useState<Record<string, { x: number; width: number }>>({});
   const hasAnimated = useRef(false);
@@ -66,7 +68,7 @@ export const CalendarViewModeToggle = () => {
           style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
         >
           <Text size="e1" weight="medium" shade={value === mode.value ? 9 : 5}>
-            {mode.label}
+            {t(mode.labelKey)}
           </Text>
         </Pressable>
       ))}

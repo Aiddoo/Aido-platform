@@ -28,7 +28,7 @@ describe("parseAcceptLanguage", () => {
 		"",
 		123,
 		["en"],
-	])("헤더 미전송/비정상 값(%s)은 ko로 폴백된다 — 1.3.x 구버전 클라이언트 하위 호환", (header) => {
-		expect(parseAcceptLanguage(header)).toBe("ko");
+	])("헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다 (1.3.x 하위 호환)", (header) => {
+		expect(parseAcceptLanguage(header)).toBeUndefined();
 	});
 });

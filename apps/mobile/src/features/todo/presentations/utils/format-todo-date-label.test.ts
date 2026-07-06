@@ -1,4 +1,9 @@
+import { i18n } from '@src/shared/i18n';
 import { formatTodoDateLabel } from './format-todo-date-label';
+
+afterEach(async () => {
+  await i18n.changeLanguage('ko');
+});
 
 const createParams = (overrides?: Partial<Parameters<typeof formatTodoDateLabel>[0]>) => ({
   startDate: new Date('2025-03-15'),
@@ -80,5 +85,31 @@ describe('formatTodoDateLabel', () => {
       // Then
       expect(result).toBe('3월 15일');
     });
+  });
+});
+
+describe('en 로케일', () => {
+  it('startDate가 오늘이면 "Today"를 반환해야 한다', async () => {
+    // Given
+    await i18n.changeLanguage('en');
+    const params = createParams({ startDate: new Date(), isAllDay: true });
+
+    // When
+    const result = formatTodoDateLabel(params);
+
+    // Then
+    expect(result).toBe('Today');
+  });
+
+  it('startDate가 오늘이 아니면 영어 월 표기("MMM D")를 반환해야 한다', async () => {
+    // Given
+    await i18n.changeLanguage('en');
+    const params = createParams({ startDate: new Date('2025-03-15'), isAllDay: true });
+
+    // When
+    const result = formatTodoDateLabel(params);
+
+    // Then
+    expect(result).toBe('Mar 15');
   });
 });

@@ -4,6 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -71,7 +72,7 @@ export const useAddSubTodoMutationOptions = () => {
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0821)) {
         toast.error(error.message);
       } else {
-        toast.error(undefined, { fallback: '항목 추가에 실패했어요' });
+        toast.error(undefined, { fallback: t('todo:toast.subTodoAddFailed') });
       }
 
       if (context) {

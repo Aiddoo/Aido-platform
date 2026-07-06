@@ -1,6 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { useDeleteTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-delete-todo-category-mutation-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, ConfirmDialog, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ export const CategoryDeleteDialog = ({
   isOpen,
   onOpenChange,
 }: CategoryDeleteDialogProps) => {
+  const { t } = useTranslation(['todo', 'common']);
   const deleteMutation = useMutation(useDeleteTodoCategoryMutationOptions());
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
@@ -65,11 +67,17 @@ export const CategoryDeleteDialog = ({
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>{category.name} 카테고리를 삭제할까요?</ConfirmDialog.Title>}
-      description={<ConfirmDialog.Description>삭제하면 되돌릴 수 없어요</ConfirmDialog.Description>}
+      title={
+        <ConfirmDialog.Title>
+          {t('category.deleteTitle', { name: category.name })}
+        </ConfirmDialog.Title>
+      }
+      description={
+        <ConfirmDialog.Description>{t('category.deleteDescription')}</ConfirmDialog.Description>
+      }
       cancelButton={
         <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          취소
+          {t('common:actions.cancel')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
@@ -77,7 +85,7 @@ export const CategoryDeleteDialog = ({
           onPress={() => handleDelete()}
           isLoading={deleteMutation.isPending}
         >
-          삭제
+          {t('common:actions.delete')}
         </ConfirmDialog.ConfirmButton>
       }
     />
@@ -99,6 +107,7 @@ const TodoMoveCategoryDeleteSection = ({
   onDelete,
   isPending,
 }: TodoMoveCategoryDeleteSectionProps) => {
+  const { t } = useTranslation('todo');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     otherCategories[0]?.id ?? null,
   );
@@ -107,11 +116,11 @@ const TodoMoveCategoryDeleteSection = ({
     <>
       <VStack gap={4}>
         <Dialog.Title>
-          <H4>할 일 {category.todoCount}개가 포함되어 있어요</H4>
+          <H4>{t('category.todoCount', { count: category.todoCount })}</H4>
         </Dialog.Title>
         <Dialog.Description>
           <Text size="b3" shade={6}>
-            이동할 카테고리를 선택해주세요
+            {t('category.moveSelect')}
           </Text>
         </Dialog.Description>
       </VStack>
@@ -146,16 +155,25 @@ interface DialogActionsProps {
   isPending: boolean;
 }
 
-const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) => (
-  <HStack gap={8} justify="end">
-    <Button variant="weak" color="dark" size="medium" display="inline" onPress={onCancel}>
-      취소
-    </Button>
-    <Button color="danger" size="medium" display="inline" onPress={onDelete} isLoading={isPending}>
-      삭제
-    </Button>
-  </HStack>
-);
+const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) => {
+  const { t } = useTranslation('common');
+  return (
+    <HStack gap={8} justify="end">
+      <Button variant="weak" color="dark" size="medium" display="inline" onPress={onCancel}>
+        {t('actions.cancel')}
+      </Button>
+      <Button
+        color="danger"
+        size="medium"
+        display="inline"
+        onPress={onDelete}
+        isLoading={isPending}
+      >
+        {t('actions.delete')}
+      </Button>
+    </HStack>
+  );
+};
 
 interface CategoryRadioItemProps {
   category: TodoCategoryWithCount;

@@ -1,1 +1,117 @@
-{}
+{
+  "titles": {
+    "reports": "AI 리포트",
+    "suggestions": "AI 제안"
+  },
+  "report": {
+    "typeWeekly": "주간",
+    "typeMonthly": "월간",
+    "sampleBadge": "예시",
+    "card": {
+      "completionRate": "달성률",
+      "completed": "완료",
+      "streak": "연속",
+      "streakDays": "{{count}}일",
+      "viewDetail": "자세히 보기"
+    },
+    "detail": {
+      "statsSummary": "통계 요약",
+      "categoryBreakdown": "카테고리별 분석",
+      "dayPatterns": "요일별 패턴",
+      "activeHours": "활발한 시간대",
+      "countUnit": "{{count}}건",
+      "aiSummary": "AI 요약",
+      "aiTips": "AI 팁"
+    },
+    "hour": {
+      "am": "오전 {{hour}}시",
+      "pm": "오후 {{hour}}시",
+      "h24": "{{hour}}시"
+    },
+    "dday": {
+      "today": "오늘 생성!",
+      "inDays": "D-{{count}}"
+    },
+    "statusBanner": {
+      "nextWeekly": "다음 주간 리포트",
+      "nextMonthly": "다음 월간 리포트"
+    },
+    "premiumBanner": {
+      "title": "AI가 분석한 나만의 리포트",
+      "description": "프리미엄 구독으로 매주/매월\nAI 리포트를 받아보세요",
+      "subscribe": "구독하기"
+    },
+    "list": {
+      "premiumTitle": "AI 리포트",
+      "freeTitle": "AI가 분석한 나만의 리포트",
+      "premiumDescription": "할 일 데이터를 분석해서 리포트를 만들어드려요",
+      "freeDescription": "프리미엄 구독으로 매주/매월 AI 리포트를 받아보세요",
+      "subscribeCta": "구독하고 리포트 받기",
+      "arrivalToday": "오늘 첫 번째 {{type}} 리포트가 도착해요!",
+      "arrivalInDays": "{{count}}일 후에 첫 번째 {{type}} 리포트가 도착해요"
+    },
+    "lockedDetail": {
+      "title": "나만의 리포트를 받아보세요",
+      "description": "프리미엄 구독으로 매주/매월\nAI가 분석한 리포트를 보내드려요",
+      "premiumDialogDescription": "AI 리포트는 프리미엄 구독자만 이용할 수 있어요.",
+      "subscribe": "프리미엄 구독하기"
+    }
+  },
+  "suggestions": {
+    "list": {
+      "emptyNoHistory": "제안이 아직 도착하지 않았어요",
+      "emptyNoHistoryDescription": "할 일 기록이 쌓이면 AI가 반복 패턴을 분석해 추천해드려요",
+      "emptyNoPending": "지금은 추천할 제안이 없어요",
+      "emptyNoPendingDescription": "반복 할 일이 생기면 여기에 바로 도착해요",
+      "header": "{{count}}개의 제안이 도착했어요",
+      "headerDescription": "반복되는 패턴을 분석해서 추천해드려요",
+      "allDay": "종일",
+      "confidence": "신뢰도 {{value}}",
+      "expires": "만료 {{date}}",
+      "reject": "거절",
+      "accept": "수락"
+    },
+    "paywall": {
+      "title": "AI가 투두를 제안해드려요",
+      "description": "반복 패턴을 분석해서 맞춤 투두를 추천받을 수 있어요",
+      "sampleTitle": "매일 아침 스트레칭",
+      "sampleConfidence": "신뢰도 92%",
+      "sampleSchedule": "월, 화, 수, 목, 금 · 07:30",
+      "sampleReason": "최근 2주간 아침 운동 패턴이 감지되었어요",
+      "subscribeCta": "구독하고 제안 받기"
+    },
+    "category": {
+      "submit": "생성하기"
+    },
+    "toasts": {
+      "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
+      "retryLater": "잠시 후 다시 시도해 주세요",
+      "quotaExceeded": "이번 달 AI 사용 횟수를 모두 사용했어요"
+    }
+  },
+  "sampleReport": {
+    "categories": {
+      "work": "업무 프로젝트",
+      "selfDev": "자기개발",
+      "health": "건강·운동",
+      "life": "생활관리",
+      "side": "사이드 프로젝트"
+    },
+    "weekly": {
+      "periodLabel": "2026년 10주차",
+      "summary": "업무 프로젝트 달성률 92%로 이번 주 가장 집중한 카테고리예요. 퇴근 후 자기개발 루틴이 자리 잡아가고 있고, 5일 연속 달성 중이에요! 다만 수요일에 달성률이 눈에 띄게 떨어졌어요.",
+      "tip1": "수요일마다 달성률이 낮아지는 패턴이 보여요. 수요일은 할 일을 3~4개로 줄여보면 달성률이 올라갈 거예요.",
+      "tip2": "오전 9시와 퇴근 후 7시가 가장 활발한 시간이에요. 중요한 할 일은 이 시간에 배치해보세요.",
+      "tip3": "건강·운동 카테고리가 71%로 다른 카테고리보다 낮아요. 운동 시간을 미리 캘린더에 잡아두면 꾸준히 하기 쉬워져요.",
+      "tip4": "5일 연속 달성 중! 주말까지 이어가면 7일 연속 달성 뱃지를 받을 수 있어요."
+    },
+    "monthly": {
+      "periodLabel": "2026년 2월",
+      "summary": "2월 한 달간 82% 달성률을 기록했어요. 지난달(74%)보다 8%p 올랐어요! 업무 프로젝트 달성률이 91%로 가장 높았고, 월초에 세운 자기개발 루틴이 점점 습관으로 자리 잡고 있어요. 셋째 주에 달성률이 살짝 주춤했지만 넷째 주에 다시 회복한 점이 인상적이에요.",
+      "tip1": "월간 목표를 주간 단위로 쪼개면 부담이 줄어들어요. 이번 달 자기개발 목표를 주 8개씩 나눠보세요.",
+      "tip2": "수요일 달성률이 74%로 매주 가장 낮아요. 주 중반 리프레시 루틴(산책, 짧은 명상)을 넣어보면 집중력 회복에 도움이 될 거예요.",
+      "tip3": "사이드 프로젝트 달성률이 67%로 아쉬워요. 주말 오전에 2시간 블록을 확보하면 꾸준히 진행할 수 있어요.",
+      "tip4": "9일 연속 달성 기록이 있어요! 다음 달에는 14일 연속에 도전해보는 건 어떨까요?"
+    }
+  }
+}

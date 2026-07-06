@@ -6,6 +6,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -31,7 +32,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
     onSuccess: (_data, { input, source }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      toast.success('반복 할 일을 추가했어요!');
+      toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
         source,
         is_recurring: true,
@@ -44,7 +45,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
-        toast.error('반복 할 일을 생성하면 카테고리 한도를 초과해요. 날짜 범위를 줄여주세요.');
+        toast.error(t('todo:toast.recurringCategoryLimit'));
         return;
       }
 
@@ -52,7 +53,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 추가해 보세요' });
+      toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
     },
   });
 };

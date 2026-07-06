@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
@@ -174,15 +175,16 @@ TodoList.Progress = function Progress({ value, total }: { value: number; total: 
 };
 
 TodoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+  const { t } = useTranslation(['todo', 'common']);
   return (
     <Box px={16} py={24} gap={8} className="items-center">
       <Text size="b3" shade={8}>
-        할 일을 불러오는 중에 오류가 발생했습니다.
+        {t('list.loadError')}
       </Text>
 
       <PressableFeedback onPress={reset}>
         <Text size="b4" tone="brand">
-          재시도
+          {t('common:errorBoundary.retry')}
         </Text>
       </PressableFeedback>
     </Box>

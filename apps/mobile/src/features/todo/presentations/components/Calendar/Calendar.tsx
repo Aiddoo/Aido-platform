@@ -1,4 +1,5 @@
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Text, VStack } from '@src/shared/ui';
 import {
   addMonths,
@@ -61,6 +62,7 @@ export function Calendar({ showCompletions = true }: CalendarProps) {
 }
 
 function CalendarInner({ showCompletions = true }: CalendarProps) {
+  const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { viewMode } = useCalendarContext();
 
@@ -111,7 +113,7 @@ function CalendarInner({ showCompletions = true }: CalendarProps) {
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>
-              오늘
+              {t('dateSections.today')}
             </Text>
           </PressableFeedback>
         </HStack>

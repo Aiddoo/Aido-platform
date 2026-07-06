@@ -174,29 +174,38 @@ describe("알림 E2E", () => {
 				expect(preference?.locale).toBe("en");
 			});
 
-			it("Accept-Language 미전송(1.3.x 구버전)이면 locale이 ko로 유지된다", async () => {
-				// Given - 인증된 사용자
+			it("Accept-Language 미전송(1.3.x 구버전)은 저장된 locale을 덮어쓰지 않는다", async () => {
+				// Given - en으로 저장된 사용자 (1.4.0 기기에서 영어 사용 중)
 				const user = await ctx.helpers.createVerifiedUser(
 					"notif-locale-none@test.com",
 					password,
 				);
-
-				// When - 헤더 없이 토큰 등록 (구버전 클라이언트 시뮬레이션)
 				await request(ctx.app.getHttpServer())
 					.post("/notifications/token")
 					.set("Authorization", `Bearer ${user.accessToken}`)
+					.set("Accept-Language", "en")
 					.send({
 						token: "ExponentPushToken[locale-none-xxxxxxxxxx]",
 						deviceId: "test-device-locale-none",
 					})
 					.expect(201);
 
-				// Then - 기본값 ko 유지
+				// When - 구버전 기기가 헤더 없이 토큰 재등록
+				await request(ctx.app.getHttpServer())
+					.post("/notifications/token")
+					.set("Authorization", `Bearer ${user.accessToken}`)
+					.send({
+						token: "ExponentPushToken[locale-none-old-device]",
+						deviceId: "test-device-locale-none-old",
+					})
+					.expect(201);
+
+				// Then - en이 ko로 롤백되지 않고 유지된다
 				const prisma = ctx.testDatabase.getPrisma();
 				const preference = await prisma.userPreference.findUnique({
 					where: { userId: user.userId },
 				});
-				expect(preference?.locale).toBe("ko");
+				expect(preference?.locale).toBe("en");
 			});
 
 			it("미지원 언어(Accept-Language: ja)는 ko로 폴백된다", async () => {

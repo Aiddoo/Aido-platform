@@ -2,6 +2,7 @@ import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/va
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
 import { useUpdateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-update-todo-category-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetInput,
   Button,
@@ -29,6 +30,7 @@ export const CategoryEditBottomSheet = ({
   onClose,
   category,
 }: CategoryEditBottomSheetProps) => {
+  const { t } = useTranslation(['todo', 'common']);
   const updateMutation = useMutation(useUpdateTodoCategoryMutationOptions());
 
   const {
@@ -59,8 +61,8 @@ export const CategoryEditBottomSheet = ({
             render={({ field: { onChange, value } }) => (
               <BottomSheetInput
                 autoFocus
-                label="카테고리 이름"
-                placeholder="카테고리 이름을 입력해 주세요"
+                label={t('category.nameLabel')}
+                placeholder={t('category.namePlaceholder')}
                 value={value}
                 onChangeText={onChange}
                 isInvalid={!!errors.name}
@@ -100,7 +102,7 @@ export const CategoryEditBottomSheet = ({
         </VStack>
 
         <Button size="large" onPress={handleSubmit(onSubmit)} isLoading={updateMutation.isPending}>
-          확인
+          {t('common:actions.confirm')}
         </Button>
       </VStack>
     </KeyboardBottomSheet>
