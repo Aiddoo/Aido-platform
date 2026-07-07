@@ -12,6 +12,7 @@ import {
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { fetchUserLocales } from "@/modules/notification/templates/user-locale.util";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
 
 import type {
@@ -109,7 +110,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 		// per-user 친구 맵 생성
 		const friendMap = new Map<
 			string,
-			Array<{ id: string; name: string; lastActiveAt: Date | null }>
+			Array<{ id: string; name: string | null; lastActiveAt: Date | null }>
 		>();
 		for (const f of allFollows) {
 			const userIds = [f.followerId, f.followingId].filter((id) =>
@@ -120,7 +121,7 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 				if (!friendMap.has(uid)) friendMap.set(uid, []);
 				friendMap.get(uid)?.push({
 					id: friend.id,
-					name: friend.profile?.name ?? "친구",
+					name: friend.profile?.name ?? null,
 					lastActiveAt: friend.lastActiveAt,
 				});
 			}
@@ -140,6 +141,11 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 
 		// 단일 SMISMEMBER — O(allPairs.length)
 		const sentPairs = await this.dedupProvider.filterMembers(setKey, allPairs);
+
+		const locales = await fetchUserLocales(
+			this.database,
+			candidates.map((u) => u.id),
+		);
 
 		// 인메모리 매칭
 		const notifications: CreateNotificationData[] = [];
@@ -166,9 +172,11 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
 			}
 
 			const days = diffInDays(today, target.lastActiveAt);
+			const locale = locales.get(user.id) ?? "ko";
 			const message = NotificationMessageBuilder.nudgeSuggest(
-				target.name,
+				target.name ?? (locale === "en" ? "Your friend" : "친구"),
 				days,
+				locale,
 			);
 
 			notifications.push({

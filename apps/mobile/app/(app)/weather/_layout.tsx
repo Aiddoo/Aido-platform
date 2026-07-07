@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon, SettingIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -5,6 +6,7 @@ import { router, Stack } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 const WeatherLayout = () => {
+  const { t } = useTranslation('weather');
   const { fontScale } = useFontScale();
   return (
     <Stack
@@ -39,7 +41,7 @@ const WeatherLayout = () => {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '날씨' }} />
+      <Stack.Screen name="index" options={{ title: t('titles.index') }} />
     </Stack>
   );
 };

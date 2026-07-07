@@ -1,4 +1,5 @@
 import { type DayOfWeek, dayOfWeekSchema } from '@aido/validators';
+import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 import { todoVisibilitySchema } from '../../models/todo.model';
@@ -9,10 +10,16 @@ const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
 
 export const addTodoFormSchema = z
   .object({
-    title: z.string().min(1, '제목을 입력해 주세요').max(200, '제목은 200자까지 입력할 수 있어요'),
+    title: z
+      .string()
+      .min(1, { error: () => t('todo:form.titleRequired') })
+      .max(200, { error: () => t('todo:form.titleMaxLength') }),
     startDate: z.date(),
     endDate: z.date().nullable().default(null),
-    scheduledTime: z.string().regex(timeRegex, '시간은 HH:mm 형식으로 입력해 주세요').nullish(),
+    scheduledTime: z
+      .string()
+      .regex(timeRegex, { error: () => t('todo:form.timeFormatInvalid') })
+      .nullish(),
     isAllDay: z.boolean().default(true),
     visibility: todoVisibilitySchema.default('PUBLIC'),
     categoryId: z.number().int(),
@@ -22,11 +29,11 @@ export const addTodoFormSchema = z
     source: todoSourceSchema,
   })
   .refine((data) => !data.isRecurring || data.repeatEndDate !== null, {
-    message: '반복 종료일을 선택해 주세요',
+    error: () => t('todo:form.repeatEndDateRequired'),
     path: ['repeatEndDate'],
   })
   .refine((data) => !data.isRecurring || data.daysOfWeek.length > 0, {
-    message: '반복할 요일을 선택해 주세요',
+    error: () => t('todo:form.repeatDaysRequired'),
     path: ['daysOfWeek'],
   });
 

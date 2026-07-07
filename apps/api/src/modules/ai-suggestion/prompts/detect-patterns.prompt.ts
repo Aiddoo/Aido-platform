@@ -1,11 +1,13 @@
 import { dayOfWeekSchema } from "@aido/validators";
 import { z } from "zod";
+import type { SupportedLocale } from "@/common/decorators";
 import { sanitizeForPrompt } from "../../ai/prompts/sanitize";
 import {
 	PROMPT_OUTPUT_DISCIPLINE,
 	PROMPT_SECURITY_GUARD,
 } from "../../ai/shared/prompt-sections";
 import type { SuggestionContext, SuggestionHistoryItem } from "../types";
+import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en";
 
 export const detectedPatternsSchema = z.object({
 	patterns: z.array(
@@ -29,6 +31,39 @@ export const detectedPatternsSchema = z.object({
 
 export type DetectedPatternsResponse = z.infer<typeof detectedPatternsSchema>;
 
+/** en 로케일용 스키마 — describe만 영어 (구조 동일) */
+export const detectedPatternsSchemaEn = z.object({
+	patterns: z.array(
+		z.object({
+			title: z.string().describe("Title of the recurring to-do"),
+			daysOfWeek: z
+				.array(dayOfWeekSchema)
+				.describe("Recurring days (e.g. ['MON', 'WED', 'FRI'])"),
+			scheduledTime: z
+				.string()
+				.nullable()
+				.describe("Scheduled time (HH:mm format, null if none)"),
+			confidence: z
+				.number()
+				.min(0)
+				.max(1)
+				.describe("Pattern confidence (0.0~1.0)"),
+			reason: z
+				.string()
+				.describe("Why this pattern was detected (English, 1-2 sentences)"),
+			matchedTitles: z
+				.array(z.string())
+				.describe(
+					"Original to-do titles matching this pattern (empty array for seasonal suggestions)",
+				),
+		}),
+	),
+});
+
+export function getDetectedPatternsSchema(locale: SupportedLocale) {
+	return locale === "en" ? detectedPatternsSchemaEn : detectedPatternsSchema;
+}
+
 export interface SuggestionPrompt {
 	system: string;
 	prompt: string;
@@ -37,7 +72,11 @@ export interface SuggestionPrompt {
 export function buildSuggestionPrompt(
 	context: SuggestionContext,
 	minOccurrences: number,
+	locale: SupportedLocale = "ko",
 ): SuggestionPrompt {
+	if (locale === "en") {
+		return buildSuggestionPromptEn(context, minOccurrences);
+	}
 	const todoLines = context.todos
 		.map((t) => {
 			const time = t.scheduledTime ?? "종일";

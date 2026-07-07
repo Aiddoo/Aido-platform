@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
@@ -15,6 +16,7 @@ interface ReportCardProps {
 
 export function ReportCard({ report, isSample, isLast = false }: ReportCardProps) {
   const router = useRouter();
+  const { t } = useTranslation('ai');
   const href = (
     isSample ? `/reports/sample-${report.type.toLowerCase()}` : `/reports/${report.id}`
   ) as Href;
@@ -28,7 +30,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
             <HStack align="center" gap={6}>
               {isSample && (
                 <Chip size="sm" variant="soft" color="warning">
-                  <Chip.Label>예시</Chip.Label>
+                  <Chip.Label>{t('report.sampleBadge')}</Chip.Label>
                 </Chip>
               )}
               <Chip
@@ -36,7 +38,9 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
                 variant="soft"
                 color={report.type === 'WEEKLY' ? 'accent' : 'success'}
               >
-                <Chip.Label>{report.type === 'WEEKLY' ? '주간' : '월간'}</Chip.Label>
+                <Chip.Label>
+                  {report.type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly')}
+                </Chip.Label>
               </Chip>
             </HStack>
 
@@ -46,12 +50,18 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
           </HStack>
 
           <HStack gap={20}>
-            <StatItem label="달성률" value={`${formatPercent(report.stats.completionRate)}%`} />
             <StatItem
-              label="완료"
+              label={t('report.card.completionRate')}
+              value={`${formatPercent(report.stats.completionRate)}%`}
+            />
+            <StatItem
+              label={t('report.card.completed')}
               value={`${report.stats.completedTodos}/${report.stats.totalTodos}`}
             />
-            <StatItem label="연속" value={`${report.stats.streakDays}일`} />
+            <StatItem
+              label={t('report.card.streak')}
+              value={t('report.card.streakDays', { count: report.stats.streakDays })}
+            />
           </HStack>
 
           {report.hasActivity && report.aiSummary && (
@@ -62,7 +72,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
 
           <View className="items-end">
             <TextButton size="small" variant="arrow">
-              자세히 보기
+              {t('report.card.viewDetail')}
             </TextButton>
           </View>
         </VStack>

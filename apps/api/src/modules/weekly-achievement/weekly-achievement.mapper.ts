@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isoWeeksInYear from "dayjs/plugin/isoWeeksInYear";
+import type { SupportedLocale } from "@/common/decorators";
 
 import type { WeeklyAchievement } from "@/generated/prisma/client";
 import type {
@@ -28,13 +29,33 @@ function dayjsFromIsoWeek(year: number, week: number): dayjs.Dayjs {
  *
  * DB 엔티티를 API 응답 DTO로 변환하고, 통계를 계산합니다.
  */
+const MONTH_SHORT_EN = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+] as const;
+
 export abstract class WeeklyAchievementMapper {
 	/**
 	 * ISO 주차의 목요일 기준으로 월을 판별하여 주차 라벨을 생성합니다.
 	 *
-	 * @example computeWeekLabel(2026, 10) // "3월 2주차"
+	 * @example computeWeekLabel(2026, 10)        // "3월 2주차"
+	 * @example computeWeekLabel(2026, 10, "en")  // "Week 2 of Mar"
 	 */
-	static computeWeekLabel(year: number, week: number): string {
+	static computeWeekLabel(
+		year: number,
+		week: number,
+		locale: SupportedLocale = "ko",
+	): string {
 		// ISO 주차의 목요일을 기준으로 해당 주의 월을 결정
 		const thursday = dayjsFromIsoWeek(year, week).isoWeekday(4);
 		const month = thursday.month() + 1; // 0-indexed → 1-indexed
@@ -52,6 +73,10 @@ export abstract class WeeklyAchievementMapper {
 			1,
 			Math.floor(thursday.diff(adjustedFirst, "day") / 7) + 1,
 		);
+
+		if (locale === "en") {
+			return `Week ${weekInMonth} of ${MONTH_SHORT_EN[month - 1]}`;
+		}
 
 		return `${month}월 ${weekInMonth}주차`;
 	}
@@ -153,7 +178,7 @@ export abstract class WeeklyAchievementMapper {
 	/**
 	 * DB 엔티티를 응답 DTO로 변환합니다.
 	 */
-	static toResponse(entity: WeeklyAchievement) {
+	static toResponse(entity: WeeklyAchievement, locale: SupportedLocale = "ko") {
 		const completionRate =
 			entity.totalTodos > 0
 				? Math.round((entity.completedTodos / entity.totalTodos) * 100)
@@ -163,7 +188,7 @@ export abstract class WeeklyAchievementMapper {
 			id: entity.id,
 			year: entity.year,
 			week: entity.week,
-			weekLabel: this.computeWeekLabel(entity.year, entity.week),
+			weekLabel: this.computeWeekLabel(entity.year, entity.week, locale),
 			dateRange: this.computeDateRange(entity.year, entity.week),
 			totalTodos: entity.totalTodos,
 			completedTodos: entity.completedTodos,

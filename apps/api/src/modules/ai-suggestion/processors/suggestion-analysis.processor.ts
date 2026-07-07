@@ -2,8 +2,12 @@ import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
 
+import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "../../notification/notification.service";
-import { NotificationMessageBuilder } from "../../notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "../../notification/templates/notification-templates";
 import { AiSuggestionService } from "../ai-suggestion.service";
 import type { SuggestionAnalysisJob } from "../jobs/suggestion-analysis.job";
 
@@ -61,6 +65,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 	constructor(
 		private readonly aiSuggestionService: AiSuggestionService,
 		private readonly notificationService: NotificationService,
+		private readonly database: DatabaseService,
 	) {
 		super();
 	}
@@ -99,11 +104,19 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 
 		this.#logger.debug(`Processing suggestion analysis: userId=${userId}`);
 
+		// 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
+		const preference = await this.database.userPreference.findUnique({
+			where: { userId },
+			select: { locale: true },
+		});
+		const locale = resolveTemplateLocale(preference?.locale);
+
 		const createdCount =
 			await this.aiSuggestionService.analyzeAndCreateSuggestions(
 				userId,
 				timezone,
 				weatherGrid,
+				locale,
 			);
 
 		if (createdCount === 0) {
@@ -113,7 +126,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 			return;
 		}
 
-		const message = NotificationMessageBuilder.aiSuggestion();
+		const message = NotificationMessageBuilder.aiSuggestion(locale);
 		await this.notificationService.createAndSend({
 			userId,
 			type: "AI_SUGGESTION",

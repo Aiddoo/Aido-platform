@@ -8,6 +8,7 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/presentations/components/settings';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { formatReminderTime } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -34,6 +35,7 @@ export default function NotificationSettingsScreen() {
 function NotificationSettingsForm() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const { t } = useTranslation('notification');
 
   const pushDisabled = PreferencePolicy.isPushDisabled(preference);
 
@@ -41,7 +43,7 @@ function NotificationSettingsForm() {
     <VStack gap={24}>
       <SettingsCard>
         <SettingsToggle
-          label="24시간제"
+          label={t('settings.timeFormat24')}
           isSelected={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
@@ -54,22 +56,22 @@ function NotificationSettingsForm() {
 
       <SettingsCard>
         <NavigationRow
-          label="푸시 알림"
-          summary={preference.pushEnabled ? '켜짐' : '꺼짐'}
+          label={t('settings.pushLabel')}
+          summary={preference.pushEnabled ? t('settings.on') : t('settings.off')}
           summaryEnabled={preference.pushEnabled}
           onPress={() => router.push('/settings/notifications/push')}
         />
         <Separator className="bg-gray-2" />
         <NavigationRow
-          label="날씨 알림"
-          summary={isWeatherEnabled(preference) ? '켜짐' : '꺼짐'}
+          label={t('settings.weatherLabel')}
+          summary={isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
           summaryEnabled={isWeatherEnabled(preference)}
           onPress={() => router.push('/settings/notifications/weather')}
           isDisabled={pushDisabled}
         />
         <Separator className="bg-gray-2" />
         <NavigationRow
-          label="리마인드 알림"
+          label={t('settings.reminderLabel')}
           summary={`${formatReminderTime(preference.morningReminderHour, preference.morningReminderMinute, preference.timeFormat)} / ${formatReminderTime(preference.eveningReminderHour, preference.eveningReminderMinute, preference.timeFormat)}`}
           summaryEnabled={!pushDisabled}
           onPress={() => router.push('/settings/notifications/reminder')}

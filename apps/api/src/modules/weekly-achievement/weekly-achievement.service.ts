@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import type { SupportedLocale } from "@/common/decorators";
 
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginationInfo } from "@/common/pagination";
@@ -41,6 +42,7 @@ export class WeeklyAchievementService {
 	 */
 	async getWeeklyAchievements(
 		params: GetWeeklyAchievementsParams,
+		locale: SupportedLocale = "ko",
 	): Promise<WeeklyAchievementListResult> {
 		const { userId, year } = params;
 
@@ -73,7 +75,9 @@ export class WeeklyAchievementService {
 		);
 
 		return {
-			items: paginatedItems.map((e) => WeeklyAchievementMapper.toResponse(e)),
+			items: paginatedItems.map((e) =>
+				WeeklyAchievementMapper.toResponse(e, locale),
+			),
 			pagination,
 			summary,
 		};
@@ -84,6 +88,7 @@ export class WeeklyAchievementService {
 	 */
 	async getWeeklyAchievement(
 		params: GetWeeklyAchievementParams,
+		locale: SupportedLocale = "ko",
 	): Promise<WeeklyAchievementDto> {
 		const { userId, year, week } = params;
 
@@ -97,7 +102,7 @@ export class WeeklyAchievementService {
 			throw BusinessExceptions.weeklyAchievementNotFound(year, week);
 		}
 
-		return WeeklyAchievementMapper.toResponse(entity);
+		return WeeklyAchievementMapper.toResponse(entity, locale);
 	}
 
 	/**

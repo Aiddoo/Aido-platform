@@ -12,6 +12,44 @@ import type { AiReport } from "@/generated/prisma/client";
 import { AiReportMapper } from "./ai-report.mapper";
 
 describe("AiReportMapper — AI 리포트 매퍼", () => {
+	describe("computePeriodLabel — en 로케일", () => {
+		it("en 주간 라벨은 'Week N, YYYY' 형식이다", () => {
+			// Given / When
+			const result = AiReportMapper.computePeriodLabel(
+				"WEEKLY",
+				2026,
+				10,
+				"en",
+			);
+
+			// Then
+			expect(result).toBe("Week 10, 2026");
+		});
+
+		it("en 월간 라벨은 영어 월 이름을 사용한다", () => {
+			// Given / When
+			const result = AiReportMapper.computePeriodLabel(
+				"MONTHLY",
+				2026,
+				3,
+				"en",
+			);
+
+			// Then
+			expect(result).toBe("March 2026");
+		});
+
+		it("locale 생략 시 한국어 라벨을 유지한다 (하위 호환)", () => {
+			// Given / When / Then
+			expect(AiReportMapper.computePeriodLabel("WEEKLY", 2026, 10)).toBe(
+				"2026년 10주차",
+			);
+			expect(AiReportMapper.computePeriodLabel("MONTHLY", 2026, 3)).toBe(
+				"2026년 3월",
+			);
+		});
+	});
+
 	describe("computePeriodLabel", () => {
 		it("WEEKLY 타입일 때 '년 주차' 형식으로 반환해야 한다", () => {
 			// Given -WEEKLY 타입, 2026년 10주차
@@ -103,6 +141,7 @@ describe("AiReportMapper — AI 리포트 매퍼", () => {
 				dayPatterns: [{ day: "MON", total: 3, completed: 2, rate: 67 }],
 				timePatterns: [{ hour: 10, count: 5 }],
 				aiSummary: "좋은 한 주였어!",
+				locale: "ko",
 				aiTips: ["계속 이렇게 해봐!"],
 				hasActivity: true,
 				generatedAt: new Date("2026-03-09T07:00:00.000Z"),
@@ -149,6 +188,7 @@ describe("AiReportMapper — AI 리포트 매퍼", () => {
 				dayPatterns: [],
 				timePatterns: [],
 				aiSummary: "요약",
+				locale: "ko",
 				aiTips: [],
 				hasActivity: false,
 				generatedAt: new Date("2026-04-01T00:00:00.000Z"),
@@ -178,6 +218,7 @@ describe("AiReportMapper — AI 리포트 매퍼", () => {
 					dayPatterns: [],
 					timePatterns: [],
 					aiSummary: "요약1",
+					locale: "ko",
 					aiTips: [],
 					hasActivity: true,
 					generatedAt: new Date("2026-03-02T00:00:00.000Z"),
@@ -194,6 +235,7 @@ describe("AiReportMapper — AI 리포트 매퍼", () => {
 					dayPatterns: [],
 					timePatterns: [],
 					aiSummary: "요약2",
+					locale: "ko",
 					aiTips: [],
 					hasActivity: true,
 					generatedAt: new Date("2026-03-09T00:00:00.000Z"),

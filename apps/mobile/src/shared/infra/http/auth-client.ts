@@ -1,5 +1,7 @@
 import type { Storage } from '@src/core/ports/storage';
 import { ENV } from '@src/shared/config/env';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
+import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type AfterResponseHook, type KyInstance } from 'ky';
 import { handleApiErrors } from './error-handler';
@@ -42,7 +44,7 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
       return response;
     }
 
-    const storedAccessToken = await storage.get<string>('accessToken');
+    const storedAccessToken = await storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
     const sentAuthorization = request.headers.get('Authorization');
     if (storedAccessToken && sentAuthorization !== `Bearer ${storedAccessToken}`) {
       return retryWithMarker(request);
@@ -74,7 +76,12 @@ export const createAuthClient = (storage: Storage): KyInstance => {
     hooks: {
       beforeRequest: [
         async (request) => {
-          const accessToken = await storage.get<string>('accessToken');
+          // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
+          if (i18n.language) {
+            request.headers.set('Accept-Language', i18n.language);
+          }
+
+          const accessToken = await storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
           if (accessToken) {
             request.headers.set('Authorization', `Bearer ${accessToken}`);
           }

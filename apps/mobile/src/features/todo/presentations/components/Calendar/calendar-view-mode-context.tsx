@@ -31,7 +31,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 export const useCalendarContext = (): CalendarContextValue => {
   const ctx = useContext(CalendarContext);
   if (!ctx) {
-    throw new Error('Calendar 하위 컴포넌트는 <CalendarProvider> 안에서만 사용할 수 있어요');
+    throw new Error('Calendar subcomponents must be used within <CalendarProvider>');
   }
   return ctx;
 };

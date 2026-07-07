@@ -125,6 +125,32 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			expect(result).toEqual(expectedToken);
 		});
 
+		it("locale이 있으면 UserPreference에 upsert한다", async () => {
+			// Given
+			const data = {
+				userId: "user-1",
+				token: "ExponentPushToken[valid]",
+				deviceId: "device-1",
+				locale: "en",
+			};
+			const expectedToken = PushTokenBuilder.create("user-1").build();
+			pushProvider.validateToken.mockReturnValue(true);
+			notificationRepository.registerPushToken.mockResolvedValue(expectedToken);
+
+			// When
+			await service.registerPushToken(data);
+
+			// Then
+			expect(userPreferenceRepository.upsertLocale).toHaveBeenCalledWith(
+				"user-1",
+				"en",
+			);
+			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(cacheService.invalidateUserPreference).toHaveBeenCalledWith(
+				"user-1",
+			);
+		});
+
 		it("timezone이 없으면 upsert하지 않는다", async () => {
 			// Given
 			const data = {
@@ -141,6 +167,7 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 
 			// Then
 			expect(userPreferenceRepository.upsertTimezone).not.toHaveBeenCalled();
+			expect(userPreferenceRepository.upsertLocale).not.toHaveBeenCalled();
 			expect(cacheService.invalidatePushTokens).toHaveBeenCalledWith("user-1");
 			expect(cacheService.invalidateUserPreference).not.toHaveBeenCalled();
 		});
@@ -326,6 +353,77 @@ describe("PushDeliveryService — 푸시 전송 서비스", () => {
 			// Then — user-b는 영향 없음
 			const result = await service.shouldSendPush("user-b", "CHEER_RECEIVED");
 			expect(result).toBe(true);
+		});
+	});
+
+	describe("getUserLocale", () => {
+		it("preference에 locale이 있으면 그대로 반환한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1").withLocale("en").build(),
+			);
+
+			// When
+			const result = await service.getUserLocale("user-1");
+
+			// Then
+			expect(result).toBe("en");
+		});
+
+		it("preference가 없으면 ko를 반환한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue(null);
+
+			// When
+			const result = await service.getUserLocale("user-1");
+
+			// Then
+			expect(result).toBe("ko");
+		});
+
+		it("구버전 캐시 엔트리(locale 필드 없음)는 ko로 내로잉한다", async () => {
+			// Given — locale 도입 전 Redis에 적재된 엔트리 시뮬레이션
+			cacheService.wrapUserPreference.mockResolvedValue({
+				pushEnabled: true,
+				nightPushEnabled: false,
+				timezone: "Asia/Seoul",
+				morningReminderHour: 8,
+				morningReminderMinute: 0,
+				eveningReminderHour: 18,
+				eveningReminderMinute: 0,
+				timeFormat: "TWELVE_HOUR",
+				weatherMorningEnabled: true,
+				weatherMorningHour: 7,
+				weatherMorningMinute: 0,
+				weatherEveningEnabled: true,
+				weatherEveningHour: 17,
+				weatherEveningMinute: 30,
+			});
+
+			// When
+			const result = await service.getUserLocale("user-1");
+
+			// Then
+			expect(result).toBe("ko");
+		});
+
+		it("shouldSendPush와 같은 캐시 래퍼(wrapUserPreference)를 사용한다", async () => {
+			// Given
+			userPreferenceRepository.findByUserId.mockResolvedValue(
+				UserPreferenceBuilder.create("user-1").withLocale("en").build(),
+			);
+
+			// When
+			await service.getUserLocale("user-1");
+			await service.shouldSendPush("user-1", "FOLLOW_NEW");
+
+			// Then — 두 경로 모두 동일 캐시 키 래퍼 경유
+			expect(cacheService.wrapUserPreference).toHaveBeenCalledTimes(2);
+			expect(cacheService.wrapUserPreference).toHaveBeenNthCalledWith(
+				1,
+				"user-1",
+				expect.any(Function),
+			);
 		});
 	});
 

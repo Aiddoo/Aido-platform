@@ -1,7 +1,8 @@
-import { useSubTodoService } from '@src/bootstrap/providers/di-provider';
+import { useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -59,7 +60,7 @@ export const useDeleteSubTodoMutationOptions = () => {
     },
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      toast.error(undefined, { fallback: '항목 삭제에 실패했어요' });
+      toast.error(undefined, { fallback: t('todo:toast.subTodoDeleteFailed') });
       if (context) {
         queryClient.setQueryData(
           TODO_QUERY_KEYS.listByDate(context.startDate),

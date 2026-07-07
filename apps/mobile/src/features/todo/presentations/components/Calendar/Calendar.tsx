@@ -1,4 +1,5 @@
 import { useFeedDate } from '@src/features/todo/presentations/hooks/use-feed-date';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Text, VStack } from '@src/shared/ui';
 import {
   addMonths,
@@ -16,7 +17,6 @@ import {
   getWeekRange,
   getWeekStart,
   isSameMonth,
-  WEEKDAY_LABELS,
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
@@ -46,6 +46,7 @@ interface CalendarProps {
 }
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
+const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
 const TOTAL_PAGES = 521;
@@ -61,6 +62,7 @@ export function Calendar({ showCompletions = true }: CalendarProps) {
 }
 
 function CalendarInner({ showCompletions = true }: CalendarProps) {
+  const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
   const { viewMode } = useCalendarContext();
 
@@ -111,7 +113,7 @@ function CalendarInner({ showCompletions = true }: CalendarProps) {
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>
-              오늘
+              {t('dateSections.today')}
             </Text>
           </PressableFeedback>
         </HStack>
@@ -165,16 +167,16 @@ Calendar.Loading = function Loading() {
       </HStack>
 
       <HStack px={8}>
-        {WEEKDAY_LABELS.map((label) => (
-          <Box key={`weekday-skeleton-${label}`} className="flex-1 items-center py-2">
+        {WEEKDAY_INDICES.map((dayIndex) => (
+          <Box key={`weekday-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
             <Skeleton className="size-4" />
           </Box>
         ))}
       </HStack>
 
       <HStack px={8}>
-        {WEEKDAY_LABELS.map((label) => (
-          <Box key={`date-skeleton-${label}`} className="flex-1 items-center py-2">
+        {WEEKDAY_INDICES.map((dayIndex) => (
+          <Box key={`date-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
             <Skeleton className="size-8 overflow-hidden rounded-2xl" />
           </Box>
         ))}

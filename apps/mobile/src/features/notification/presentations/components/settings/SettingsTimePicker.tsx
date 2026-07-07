@@ -7,8 +7,9 @@ import type { Preference } from '@src/features/auth/models/auth.model';
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
 import { PickerHeader } from '@src/features/todo/presentations/components/PickerHeader';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import { KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
-import { timeToDate } from '@src/shared/utils/time';
+import { getPickerLocale, timeToDate } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type React from 'react';
 import { useState } from 'react';
@@ -76,6 +77,7 @@ export function SettingsTimePicker({
   accessory,
 }: SettingsTimePickerProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const { resolvedLanguage } = useLanguage();
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const overlay = useOverlay();
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
@@ -136,7 +138,7 @@ export function SettingsTimePicker({
                   tempDate = date;
                 }
               }}
-              locale={preference.timeFormat === 'TWENTY_FOUR_HOUR' ? 'en_GB' : 'ko'}
+              locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
             />
           </View>
         </VStack>

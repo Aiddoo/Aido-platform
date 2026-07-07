@@ -1,7 +1,8 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -18,7 +19,7 @@ export const useOpenAppleLoginMutationOptions = () => {
     onSuccess: (data) => {
       setStatus('authenticated');
       if (data.accountRestored) {
-        toast.success('탈퇴한 계정이 복구되었어요');
+        toast.success(t('auth:toasts.accountRestored'));
       }
     },
     onError: () => {

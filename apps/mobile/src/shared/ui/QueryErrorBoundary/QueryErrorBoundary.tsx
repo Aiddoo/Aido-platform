@@ -1,4 +1,5 @@
-import { useErrorReporter } from '@src/bootstrap/providers/di-provider';
+import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -16,6 +17,7 @@ interface QueryErrorBoundaryProps {
 
 export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
+  const { t } = useTranslation();
 
   return (
     <QueryErrorResetBoundary>
@@ -33,8 +35,12 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
               fallback({ error, reset: resetErrorBoundary })
             ) : (
               <Result
-                title="오류가 발생했어요"
-                button={<Result.Button onPress={resetErrorBoundary}>재시도</Result.Button>}
+                title={t('errorBoundary.title')}
+                button={
+                  <Result.Button onPress={resetErrorBoundary}>
+                    {t('errorBoundary.retry')}
+                  </Result.Button>
+                }
               />
             )
           }

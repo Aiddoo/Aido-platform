@@ -4,6 +4,7 @@ import {
   SubscriptionPolicy,
 } from '@src/features/subscription/models/subscription.model';
 import type { SubscriptionStatus } from '@src/features/user/models/user.model';
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { Card, Chip, Separator } from 'heroui-native';
@@ -13,18 +14,19 @@ interface SubscriptionStatusCardProps {
   subscriptionExpiresAt: Date | null;
 }
 
-const STATUS_CONFIG: Record<SubscriptionStatus, { label: string; description: string }> = {
-  ACTIVE: { label: '구독 중', description: '모든 프리미엄 기능을 이용 중이에요' },
-  CANCELLED: { label: '취소됨', description: '구독이 취소되었어요' },
-  EXPIRED: { label: '만료됨', description: '구독이 만료되었어요' },
-  FREE: { label: '무료', description: '무료 플랜을 이용 중이에요' },
-};
+const STATUS_KEYS = {
+  ACTIVE: { label: 'status.active.label', description: 'status.active.description' },
+  CANCELLED: { label: 'status.cancelled.label', description: 'status.cancelled.description' },
+  EXPIRED: { label: 'status.expired.label', description: 'status.expired.description' },
+  FREE: { label: 'status.free.label', description: 'status.free.description' },
+} as const satisfies Record<SubscriptionStatus, { label: string; description: string }>;
 
 export function SubscriptionStatusCard({
   subscriptionStatus,
   subscriptionExpiresAt,
 }: SubscriptionStatusCardProps) {
-  const config = STATUS_CONFIG[subscriptionStatus];
+  const { t } = useTranslation('subscription');
+  const statusKeys = STATUS_KEYS[subscriptionStatus];
   const isActive = isActiveSubscription(subscriptionStatus);
   const showDetails = SubscriptionPolicy.shouldShowExpirationDetails(
     subscriptionStatus,
@@ -33,19 +35,19 @@ export function SubscriptionStatusCard({
 
   const description =
     isCancelledSubscription(subscriptionStatus) && subscriptionExpiresAt
-      ? `구독이 취소되었어요. ${formatFullDate(subscriptionExpiresAt)}까지 이용할 수 있어요`
-      : config.description;
+      ? t('status.cancelledUntil', { date: formatFullDate(subscriptionExpiresAt) })
+      : t(statusKeys.description);
 
   return (
     <Card className="dark:bg-gray-2">
       <VStack gap={12}>
         <HStack justify="between" align="center">
           <Text size="t3" weight="bold" shade={9}>
-            Aido 프리미엄
+            {t('status.premiumTitle')}
           </Text>
 
           <Chip size="sm" variant="soft" color="accent">
-            <Chip.Label>{config.label}</Chip.Label>
+            <Chip.Label>{t(statusKeys.label)}</Chip.Label>
           </Chip>
         </HStack>
 
@@ -60,7 +62,7 @@ export function SubscriptionStatusCard({
             <VStack gap={8}>
               <HStack className="items-center justify-between">
                 <Text size="b4" shade={5}>
-                  {isActive ? '다음 결제일' : '만료일'}
+                  {isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
                 </Text>
                 <Text size="b4" weight="semibold" shade={8}>
                   {formatFullDate(subscriptionExpiresAt)}
@@ -70,10 +72,10 @@ export function SubscriptionStatusCard({
               {isActive && (
                 <HStack className="items-center justify-between">
                   <Text size="b4" shade={5}>
-                    구독 상태
+                    {t('status.statusLabel')}
                   </Text>
                   <Text size="b4" weight="semibold" tone="brand">
-                    자동 갱신
+                    {t('status.autoRenewal')}
                   </Text>
                 </HStack>
               )}

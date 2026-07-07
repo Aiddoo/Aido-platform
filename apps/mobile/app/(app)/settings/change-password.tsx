@@ -5,6 +5,8 @@ import { PasswordStrengthIndicator } from '@src/features/auth/presentations/comp
 import { useChangePasswordMutationOptions } from '@src/features/auth/presentations/queries/use-change-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, QueryErrorBoundary, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense, useCallback, useRef } from 'react';
@@ -14,7 +16,7 @@ import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
-const STEPS = ['현재_비밀번호', '새_비밀번호'] as const;
+const STEPS = ['currentPassword', 'newPassword'] as const;
 
 const ChangePasswordScreen = () => {
   const form = useForm<ChangePasswordInput>({
@@ -26,7 +28,7 @@ const ChangePasswordScreen = () => {
 
   const handleNextStep = async () => {
     const isValid = await form.trigger(['currentPassword']);
-    if (isValid) setStep('새_비밀번호');
+    if (isValid) setStep('newPassword');
   };
 
   return (
@@ -35,8 +37,8 @@ const ChangePasswordScreen = () => {
         <Suspense fallback={<View className="flex-1" />}>
           <FormProvider {...form}>
             {match(step)
-              .with('현재_비밀번호', () => <CurrentPasswordStep onNext={handleNextStep} />)
-              .with('새_비밀번호', () => <NewPasswordStep />)
+              .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
+              .with('newPassword', () => <NewPasswordStep />)
               .exhaustive()}
           </FormProvider>
         </Suspense>
@@ -52,6 +54,7 @@ interface CurrentPasswordStepProps {
 }
 
 function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
+  const { t } = useTranslation('auth');
   const {
     control,
     formState: { errors },
@@ -71,7 +74,7 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{'현재 비밀번호를\n입력해주세요'}</H3>
+          <H3>{t('changePassword.currentTitle')}</H3>
         </Animated.View>
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
@@ -80,15 +83,17 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
             name="currentPassword"
             render={({ field: { onChange, value } }) => (
               <PasswordInput
-                label="현재 비밀번호"
-                placeholder="현재 비밀번호를 입력해주세요"
+                label={t('changePassword.currentLabel')}
+                placeholder={t('changePassword.currentPlaceholder')}
                 value={value}
                 onChangeText={onChange}
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="next"
                 isInvalid={!!errors.currentPassword}
-                errorMessage={errors.currentPassword?.message}
+                errorMessage={resolveValidationMessage(errors.currentPassword, {
+                  default: 'currentPassword.required',
+                })}
                 onSubmitEditing={() => {
                   if (isValid) {
                     onNext();
@@ -101,7 +106,7 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
       </ScrollView>
 
       <KeyboardAdaptiveButton onPress={onNext} isDisabled={!isValid}>
-        다음
+        {t('changePassword.next')}
       </KeyboardAdaptiveButton>
     </View>
   );
@@ -110,6 +115,7 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 
 function NewPasswordStep() {
+  const { t } = useTranslation('auth');
   const { step, setStep } = useStepper(NEW_PASSWORD_SUB_STEPS);
   const newPasswordConfirmInputRef = useRef<TextInput>(null);
   const focusConfirmInput = useCallback(() => {
@@ -161,7 +167,7 @@ function NewPasswordStep() {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{'영문 숫자를 포함한\n새 비밀번호를 설정해주세요'}</H3>
+          <H3>{t('forgotPassword.newPasswordTitle')}</H3>
         </Animated.View>
 
         {step === 'newPasswordConfirm' && (
@@ -180,13 +186,15 @@ function NewPasswordStep() {
                 render={({ field: { onChange, value } }) => (
                   <PasswordInput
                     ref={newPasswordConfirmInputRef}
-                    label="새 비밀번호 확인"
-                    placeholder="새 비밀번호를 다시 입력해주세요"
+                    label={t('forgotPassword.newPasswordConfirmLabel')}
+                    placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
                     value={value}
                     onChangeText={onChange}
                     returnKeyType="done"
                     isInvalid={!!errors.newPasswordConfirm}
-                    errorMessage={errors.newPasswordConfirm?.message}
+                    errorMessage={resolveValidationMessage(errors.newPasswordConfirm, {
+                      default: 'password.mismatch',
+                    })}
                     onSubmitEditing={() => {
                       if (newPasswordConfirm.length > 0 && !errors.newPasswordConfirm) handleNext();
                     }}
@@ -204,8 +212,8 @@ function NewPasswordStep() {
             render={({ field: { onChange, value } }) => (
               <VStack gap={4}>
                 <PasswordInput
-                  label="새 비밀번호"
-                  placeholder="새 비밀번호를 입력해주세요"
+                  label={t('forgotPassword.newPasswordLabel')}
+                  placeholder={t('forgotPassword.newPasswordPlaceholder')}
                   value={value}
                   onChangeText={onChange}
                   autoFocus={step === 'newPassword'}
@@ -228,7 +236,7 @@ function NewPasswordStep() {
         isDisabled={!isNextEnabled}
         isLoading={changePasswordMutation.isPending}
       >
-        {step === 'newPasswordConfirm' ? '비밀번호 변경' : '다음'}
+        {step === 'newPasswordConfirm' ? t('changePassword.submit') : t('changePassword.next')}
       </KeyboardAdaptiveButton>
     </View>
   );

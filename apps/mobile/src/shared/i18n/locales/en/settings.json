@@ -1,0 +1,49 @@
+{
+  "titles": {
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "language": "Language",
+    "terms": "Terms & Policies",
+    "inquiry": "Contact Us",
+    "linkedAccounts": "Linked Accounts",
+    "appIcon": "App Icon",
+    "profile": "Profile",
+    "editName": "Edit Name",
+    "changePassword": "Change Password",
+    "deleteAccount": "Delete Account",
+    "subscription": "Manage Subscription",
+    "categorySettings": "Categories"
+  },
+  "language": {
+    "system": "System default",
+    "systemDescription": "Follows your device language"
+  },
+  "theme": {
+    "light": "Light Mode",
+    "dark": "Dark Mode",
+    "system": "System default"
+  },
+  "fontSize": {
+    "xsmall": "Extra Small",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "xlarge": "Extra Large",
+    "sample": "The quick brown fox 123"
+  },
+  "terms": {
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "agreedAt": "Agreed on: {{date}}",
+    "version": "Version: {{version}}",
+    "notAgreed": "Not agreed",
+    "marketing": "Marketing Emails",
+    "marketingDescription": "Receive events and promotional updates"
+  },
+  "categorySettings": {
+    "header": "Edit your categories\nor change their order",
+    "editTab": "Edit Categories",
+    "reorderTab": "Reorder",
+    "add": "Add Category"
+  }
+}

@@ -1,10 +1,11 @@
 import type { UpdateMemoInput } from '@aido/validators';
-import { useMemoService } from '@src/bootstrap/providers/di-provider';
+import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys.constant';
@@ -36,7 +37,7 @@ export const useUpdateMemoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해주세요' });
+      toast.error(undefined, { fallback: t('memo:toasts.retryLater') });
     },
     onSettled: (_, __, { memoId }) => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });

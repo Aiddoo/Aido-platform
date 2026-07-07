@@ -5,8 +5,10 @@ import {
   INQUIRY_CONTENT_LIMITS,
 } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INQUIRY_CATEGORY_LABELS } from '@src/features/inquiry/presentations/constants/inquiry-category-labels.constant';
+import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/presentations/constants/inquiry-category-labels.constant';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/presentations/queries/use-create-inquiry-mutation-options';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
@@ -24,18 +26,10 @@ import { ScrollView, View } from 'react-native';
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 
-const CONTENT_PLACEHOLDER = `문의 내용을 자세히 작성해주세요.
-
-예시:
-- 사용 기기: iPhone 16 Pro, Galaxy S25
-- 발생 상황: 할 일 추가 시 앱이 종료됨
-- 발생 시점: 2026년 3월 14일 오후 3시경
-
-상세하게 작성할수록 빠르게 도움을 드릴 수 있어요.`;
-
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 const InquiryScreen = () => {
+  const { t } = useTranslation('inquiry');
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
   const contentHeight = useSharedValue(0);
   const hasScrolled = useSharedValue(false);
@@ -83,7 +77,7 @@ const InquiryScreen = () => {
         automaticallyAdjustKeyboardInsets
       >
         <VStack gap={16}>
-          <H3>문의 유형을 선택해주세요</H3>
+          <H3>{t('form.selectCategory')}</H3>
 
           <Controller
             control={control}
@@ -94,14 +88,14 @@ const InquiryScreen = () => {
                 onValueChange={onChange}
                 className="bg-white rounded-2xl overflow-hidden gap-0"
               >
-                {Object.entries(INQUIRY_CATEGORY_LABELS).map(([key, label]) => (
+                {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
                   <RadioGroup.Item key={key} value={key}>
                     {(_props) => (
                       <ListRow
                         contents={
                           <ListRow.Texts
                             type="1RowTypeA"
-                            top={label}
+                            top={tGlobal(labelKey)}
                             topProps={{ size: 'b3', weight: 'semibold' }}
                           />
                         }
@@ -129,12 +123,15 @@ const InquiryScreen = () => {
           render={({ field: { onChange, value } }) => (
             <VStack gap={4}>
               <TextArea
-                label="문의 내용"
-                placeholder={CONTENT_PLACEHOLDER}
+                label={t('form.contentLabel')}
+                placeholder={t('form.contentPlaceholder')}
                 value={value}
                 onChangeText={onChange}
                 isInvalid={!!errors.content}
-                errorMessage={errors.content?.message}
+                errorMessage={resolveValidationMessage(errors.content, {
+                  default: 'inquiryContent.tooShort',
+                  byType: { too_big: 'inquiryContent.tooLong' },
+                })}
                 maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
                 className="min-h-40 bg-white border-gray-2"
               />
@@ -154,7 +151,7 @@ const InquiryScreen = () => {
         isDisabled={!isValid}
         isLoading={createInquiryMutation.isPending}
       >
-        문의 보내기
+        {t('form.submit')}
       </KeyboardAdaptiveButton>
     </View>
   );

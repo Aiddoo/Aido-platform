@@ -1,4 +1,4 @@
-import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import type { TimeFormat } from '@src/shared/utils/time';
 import { queryOptions } from '@tanstack/react-query';

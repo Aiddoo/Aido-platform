@@ -7,21 +7,23 @@ import {
   signUpFormSchema,
 } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/useStepper';
+import { useTranslation } from '@src/shared/i18n';
 import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { match } from 'ts-pattern';
 
-const SIGN_UP_STEPS = ['정보_입력', '비밀번호_설정', '이메일_인증'] as const;
+const SIGN_UP_STEPS = ['userInfo', 'password', 'verification'] as const;
 type SignUpStep = (typeof SIGN_UP_STEPS)[number];
 
-const SIGN_UP_STEP_TITLES = {
-  정보_입력: '회원가입',
-  비밀번호_설정: '비밀번호 설정',
-  이메일_인증: '이메일 인증',
+const SIGN_UP_STEP_TITLE_KEYS = {
+  userInfo: 'auth:signUp.title',
+  password: 'auth:signUp.passwordStepTitle',
+  verification: 'auth:signUp.verificationStepTitle',
 } as const satisfies Record<SignUpStep, string>;
 
 const SignUpScreen = () => {
+  const { t } = useTranslation(['auth']);
   const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);
 
   const form = useForm<SignUpFormData>({
@@ -37,17 +39,13 @@ const SignUpScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
-      <Stack.Screen options={{ title: SIGN_UP_STEP_TITLES[step] }} />
+      <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
 
       <FormProvider {...form}>
         {match(step)
-          .with('정보_입력', () => (
-            <SignUpUserInfoForm onNextStep={() => setStep('비밀번호_설정')} />
-          ))
-          .with('비밀번호_설정', () => (
-            <SignUpPasswordForm onNextStep={() => setStep('이메일_인증')} />
-          ))
-          .with('이메일_인증', () => <SignUpVerificationForm />)
+          .with('userInfo', () => <SignUpUserInfoForm onNextStep={() => setStep('password')} />)
+          .with('password', () => <SignUpPasswordForm onNextStep={() => setStep('verification')} />)
+          .with('verification', () => <SignUpVerificationForm />)
           .exhaustive()}
       </FormProvider>
     </View>

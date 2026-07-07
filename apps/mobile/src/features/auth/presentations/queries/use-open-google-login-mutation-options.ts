@@ -1,4 +1,4 @@
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';

@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon, SearchIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -9,6 +10,7 @@ const FriendsLayout = () => {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
+  const { t } = useTranslation('friend');
 
   return (
     <Stack
@@ -35,7 +37,7 @@ const FriendsLayout = () => {
       <Stack.Screen
         name="index"
         options={{
-          title: '친구 관리',
+          title: t('screenTitle'),
           headerRight: () => (
             <View className="justify-center items-center">
               <Pressable onPress={() => router.push('/friends/add')} hitSlop={8} className="p-2">

@@ -1,10 +1,11 @@
 import type { ConvertMemoToTodosInput } from '@aido/validators';
-import { useMemoService } from '@src/bootstrap/providers/di-provider';
+import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -27,7 +28,7 @@ export const useConvertMemoToTodosMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, { memoId, input }) => {
-      toast.success(`메모를 ${input.todos.length}개의 할 일로 변환했어요`);
+      toast.success(t('memo:toasts.convertedMany', { count: input.todos.length }));
       trackEvent('memo_converted_to_todos', {
         memo_id: memoId,
         todo_count: input.todos.length,
@@ -41,7 +42,7 @@ export const useConvertMemoToTodosMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해주세요' });
+      toast.error(undefined, { fallback: t('memo:toasts.retryLater') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() });

@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui/ConfirmDialog';
 import { useOverlay } from '@src/shared/ui/Overlay';
 import { useRouter } from 'expo-router';
@@ -6,11 +7,12 @@ import type { PremiumDialogProps } from './PremiumDialog.types';
 export function PremiumDialog({
   isOpen,
   onOpenChange,
-  title = '프리미엄 기능',
+  title,
   description,
   onConfirm,
 }: PremiumDialogProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleSubscribe = () => {
     onOpenChange(false);
@@ -22,16 +24,16 @@ export function PremiumDialog({
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>{title}</ConfirmDialog.Title>}
+      title={<ConfirmDialog.Title>{title ?? t('premiumDialog.title')}</ConfirmDialog.Title>}
       description={<ConfirmDialog.Description>{description}</ConfirmDialog.Description>}
       cancelButton={
         <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          닫기
+          {t('premiumDialog.close')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
         <ConfirmDialog.ConfirmButton onPress={handleSubscribe}>
-          구독하기
+          {t('premiumDialog.subscribe')}
         </ConfirmDialog.ConfirmButton>
       }
     />

@@ -1,5 +1,6 @@
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { BottomSheet, Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
@@ -54,12 +55,13 @@ export function CategorySelectContent({
   submitLabel,
   isLoading,
 }: CategorySelectContentProps) {
+  const { t } = useTranslation('todo');
   const [localCategoryId, setLocalCategoryId] = useState(selectedCategoryId);
 
   return (
     <VStack gap={20}>
       <Text size="b3" weight="semibold">
-        카테고리 선택
+        {t('category.select')}
       </Text>
 
       <VStack gap={8}>

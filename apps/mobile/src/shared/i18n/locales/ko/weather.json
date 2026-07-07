@@ -1,0 +1,57 @@
+{
+  "titles": {
+    "index": "날씨"
+  },
+  "sky": {
+    "clear": "맑음",
+    "partlyCloudy": "구름많음",
+    "cloudy": "흐림"
+  },
+  "precipitation": {
+    "rain": "비",
+    "rainSnow": "비/눈",
+    "snow": "눈",
+    "shower": "소나기"
+  },
+  "badge": {
+    "setup": "날씨 설정",
+    "label": "날씨"
+  },
+  "locationPrompt": {
+    "title": "위치를 등록하면 날씨를 볼 수 있어요",
+    "subtitle": "현재 위치로 날씨를 알려드려요",
+    "register": "위치 등록하기"
+  },
+  "toasts": {
+    "locationFailed": "위치를 가져올 수 없어요",
+    "locationUpdateFailed": "위치 등록에 실패했어요"
+  },
+  "errors": {
+    "locationNotRegistered": "위치 정보가 등록되지 않았습니다"
+  },
+  "screen": {
+    "kmaPreparing": "기상청 데이터 준비 중이에요",
+    "checkLater": "잠시 후 다시 확인해주세요",
+    "loadFailed": "날씨 정보를 불러올 수 없어요",
+    "retryLater": "잠시 후 다시 시도해주세요",
+    "tempLow": "최저",
+    "tempHigh": "최고",
+    "wind": "바람",
+    "humidity": "습도",
+    "precipProb": "강수확률",
+    "feelsLike": "체감온도 {{temp}}°로 예상된다냥",
+    "hourly": "시간별 예보",
+    "hourLabel": "{{hour}}시",
+    "weekly": "주간 예보",
+    "sunrise": "일출",
+    "sunset": "일몰",
+    "pm10": "미세먼지",
+    "pm25": "초미세먼지"
+  },
+  "dust": {
+    "good": "좋음",
+    "normal": "보통",
+    "bad": "나쁨",
+    "veryBad": "매우나쁨"
+  }
+}

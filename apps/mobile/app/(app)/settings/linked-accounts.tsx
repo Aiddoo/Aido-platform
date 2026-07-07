@@ -1,6 +1,7 @@
 import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
 import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
 import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   ConfirmDialog,
@@ -20,13 +21,14 @@ import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
 
 const LinkedAccountsScreen = () => {
+  const { t } = useTranslation('auth');
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
         <Spacing size={20} />
 
         <Text size="b4" shade={6} className="px-2 pb-2">
-          소셜 계정을 연결하면 다양한 방법으로 로그인할 수 있습니다
+          {t('linkedAccounts.description')}
         </Text>
 
         <QueryErrorBoundary>
@@ -45,6 +47,7 @@ const visibleConfigs =
   Platform.OS === 'ios' ? PROVIDER_CONFIGS : PROVIDER_CONFIGS.filter((c) => c.provider !== 'APPLE');
 
 function LinkedAccountsList() {
+  const { t } = useTranslation(['auth', 'common']);
   const { canUnlink, getProviderState, link, unlink } = useLinkedAccounts();
 
   const [unlinkTarget, setUnlinkTarget] = useState<{
@@ -84,7 +87,7 @@ function LinkedAccountsList() {
                 slug={config.slug}
                 icon={config.icon}
                 iconClassName={config.iconClassName}
-                label={config.label}
+                label={t(config.labelKey)}
                 isLinked={isLinked}
                 isPending={isPending}
                 canUnlink={canUnlink}
@@ -101,21 +104,20 @@ function LinkedAccountsList() {
         onOpenChange={(open) => {
           if (!open) setUnlinkTarget(null);
         }}
-        title={<ConfirmDialog.Title>계정 연결 해제</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>{t('linkedAccounts.unlinkDialogTitle')}</ConfirmDialog.Title>}
         description={
           <ConfirmDialog.Description>
-            {unlinkTarget?.label} 계정 연결을 해제하시겠습니까?{'\n'}해제 후 해당 계정으로 로그인할
-            수 없습니다.
+            {t('linkedAccounts.unlinkDialogMessage', { provider: unlinkTarget?.label ?? '' })}
           </ConfirmDialog.Description>
         }
         cancelButton={
           <ConfirmDialog.CancelButton onPress={() => setUnlinkTarget(null)}>
-            취소
+            {t('common:actions.cancel')}
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
           <ConfirmDialog.ConfirmButton onPress={handleUnlinkConfirm}>
-            해제
+            {t('linkedAccounts.unlink')}
           </ConfirmDialog.ConfirmButton>
         }
       />
@@ -176,6 +178,7 @@ const ProviderListRow = memo(function ProviderListRow({
   onLink,
   onUnlinkRequest,
 }: ProviderListRowProps) {
+  const { t } = useTranslation('auth');
   const handleLinkPress = useCallback(() => {
     onLink(slug);
   }, [onLink, slug]);
@@ -204,7 +207,9 @@ const ProviderListRow = memo(function ProviderListRow({
             size="sm"
             className="self-start mt-0.5 px-2 rounded-lg"
           >
-            <Chip.Label className="text-e2">{isLinked ? '연결됨' : '연결 안 됨'}</Chip.Label>
+            <Chip.Label className="text-e2">
+              {isLinked ? t('linkedAccounts.linked') : t('linkedAccounts.notLinked')}
+            </Chip.Label>
           </Chip>
         </VStack>
       }
@@ -215,11 +220,11 @@ const ProviderListRow = memo(function ProviderListRow({
           </View>
         ) : isLinked ? (
           <Button size="small" variant="weak" onPress={handleUnlinkPress} isDisabled={!canUnlink}>
-            해제
+            {t('linkedAccounts.unlink')}
           </Button>
         ) : (
           <Button size="small" onPress={handleLinkPress}>
-            연결
+            {t('linkedAccounts.connect')}
           </Button>
         )
       }

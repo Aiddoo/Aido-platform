@@ -53,6 +53,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 

@@ -51,6 +51,7 @@ describe("WinbackStrategy — 윈백 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 		dedupProvider = unitRef.get(DEDUP_PROVIDER);
 

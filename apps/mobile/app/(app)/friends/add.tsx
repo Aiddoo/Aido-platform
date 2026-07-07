@@ -1,6 +1,8 @@
 import { userTagParamSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -11,6 +13,7 @@ import type { z } from 'zod';
 type FormData = z.infer<typeof userTagParamSchema>;
 
 const AddFriendScreen = () => {
+  const { t } = useTranslation('friend');
   const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
   const router = useRouter();
 
@@ -41,12 +44,12 @@ const AddFriendScreen = () => {
         alwaysBounceVertical={false}
         overScrollMode="never"
       >
-        <H3>친구를 추가해 보세요</H3>
+        <H3>{t('add.title')}</H3>
 
         <Spacing size={4} />
 
         <Text size="b4" shade={6}>
-          친구와 할 일을 공유하고 콕 찔러줄 수 있어요
+          {t('add.description')}
         </Text>
 
         <Spacing size={24} />
@@ -56,7 +59,7 @@ const AddFriendScreen = () => {
           name="userTag"
           render={({ field: { onChange, value } }) => (
             <Input
-              label="친구 태그"
+              label={t('add.tagLabel')}
               placeholder="ABC12345"
               value={value}
               onChangeText={onChange}
@@ -67,7 +70,10 @@ const AddFriendScreen = () => {
               submitBehavior="submit"
               returnKeyType="done"
               isInvalid={!!errors.userTag}
-              errorMessage={errors.userTag?.message}
+              errorMessage={resolveValidationMessage(errors.userTag, {
+                default: 'userTag.pattern',
+                byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
+              })}
               onSubmitEditing={() => {
                 if (isValid) handleSubmit(onSubmit)();
               }}
@@ -81,7 +87,7 @@ const AddFriendScreen = () => {
         isDisabled={!isValid}
         isLoading={sendRequestMutation.isPending}
       >
-        친구 추가하기
+        {t('add.submit')}
       </KeyboardAdaptiveButton>
     </View>
   );

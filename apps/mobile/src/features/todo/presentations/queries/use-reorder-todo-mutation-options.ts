@@ -1,5 +1,5 @@
 import type { ReorderTodoInput } from '@aido/validators';
-import { useTodoService } from '@src/bootstrap/providers/di-provider';
+import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';

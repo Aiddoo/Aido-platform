@@ -124,6 +124,38 @@ describe("ReportGeneratorService — 리포트 생성 서비스", () => {
 			expect(mockAiProvider.generateStructured).not.toHaveBeenCalled();
 		});
 
+		it("en 로케일이면 영어 폴백 콘텐츠를 반환해야 한다", async () => {
+			// Given -AI Provider가 불가용, en 로케일
+			mockAiProvider.isAvailable.mockReturnValue(false);
+			const enParams: GenerateReportParams = {
+				...mockParams,
+				locale: "en",
+			};
+
+			// When -generate를 호출하면
+			const result = await service.generate(enParams);
+
+			// Then -영어 폴백을 반환해야 한다
+			expect(result.aiSummary).toContain("to-do stats");
+			expect(result.aiSummary).not.toContain("리포트");
+		});
+
+		it("en 로케일 + 활동 없음이면 영어 활동 없음 폴백을 반환해야 한다", async () => {
+			// Given
+			mockAiProvider.isAvailable.mockReturnValue(false);
+			const enNoActivityParams: GenerateReportParams = {
+				...mockParams,
+				locale: "en",
+				aggregatedData: { ...mockAggregatedData, hasActivity: false },
+			};
+
+			// When
+			const result = await service.generate(enNoActivityParams);
+
+			// Then
+			expect(result.aiSummary).toContain("No to-dos were registered");
+		});
+
 		it("AI가 불가용하고 활동이 없으면 활동 없음 폴백을 반환해야 한다", async () => {
 			// Given -AI Provider가 불가용하고 활동 없음
 			mockAiProvider.isAvailable.mockReturnValue(false);

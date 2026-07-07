@@ -1,4 +1,4 @@
-import { useFriendService } from '@src/bootstrap/providers/di-provider';
+import { useFriendService } from '@src/bootstrap/providers/di-context';
 import type { FriendUser } from '@src/features/friend/models/friend.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';

@@ -6,6 +6,7 @@ import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/
 import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/use-get-weekly-achievements-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   Button,
@@ -52,6 +53,7 @@ interface AchievementsContentProps {
 
 function AchievementsContent({ year }: AchievementsContentProps) {
   const router = useRouter();
+  const { t } = useTranslation('achievement');
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const queryOptions = useGetWeeklyAchievementsQueryOptions(year);
@@ -90,7 +92,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
             <Spacing size={24} />
             <View className="px-1 pb-2">
               <Text size="b2" shade={8} weight="bold">
-                기록
+                {t('list.sectionTitle')}
               </Text>
             </View>
           </>
@@ -122,6 +124,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
 }
 
 function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation('achievement');
   return (
     <View>
       <View className="bg-white rounded-sm overflow-hidden p-3">
@@ -131,7 +134,7 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
               <Text size="e1" tone="brand" className="tracking-widest">
                 WEEKLY BADGE
               </Text>
-              <H3 className="tracking-wider">주간 달성 배지</H3>
+              <H3 className="tracking-wider">{t('card.title')}</H3>
             </VStack>
 
             <Spacing size={12} />
@@ -160,7 +163,7 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {'이번 주 할 일을 완료하면\n첫 번째 배지가 여기에 나타나요'}
+              {t('list.emptyTitle')}
             </Text>
 
             <Spacing size={20} />
@@ -170,7 +173,7 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
             <Spacing size={14} />
 
             <Button size="medium" variant="weak" display="block" onPress={onPress}>
-              지금 시작하기
+              {t('list.startNow')}
             </Button>
           </View>
         </CertificateBorder>
@@ -180,22 +183,20 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
 
       <View className="px-1">
         <Text size="b2" shade={8} weight="bold">
-          기록
+          {t('list.sectionTitle')}
         </Text>
       </View>
 
       <Spacing size={32} />
 
-      <Result
-        title="배지를 모으면 기록이 쌓여요"
-        description="매주 완료한 할 일이 여기에 기록돼요"
-      />
+      <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
     </View>
   );
 }
 
 function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementViewModel }) {
   const router = useRouter();
+  const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
 
   const handlePress = () => {
@@ -220,7 +221,10 @@ function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementVi
             type="2RowTypeA"
             top={achievement.weekLabel}
             topProps={{ weight: 'semibold', shade: 8 }}
-            bottom={`${achievement.completedTodos}/${achievement.totalTodos} 완료`}
+            bottom={t('list.completedRatio', {
+              completed: achievement.completedTodos,
+              total: achievement.totalTodos,
+            })}
           />
         }
         right={

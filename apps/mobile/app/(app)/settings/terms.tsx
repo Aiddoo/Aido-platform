@@ -3,6 +3,7 @@ import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/pre
 import { SettingsToggle } from '@src/features/notification/presentations/components/settings/SettingsToggle';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   HStack,
@@ -12,6 +13,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
+import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Separator, Skeleton, SkeletonGroup } from 'heroui-native';
 import { Suspense } from 'react';
@@ -35,17 +37,16 @@ const TermsSettingsScreen = () => {
 export default TermsSettingsScreen;
 
 function TermsSettingsForm() {
+  const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const updateMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const openUrl = useOpenUrl();
 
   const formatDate = (date: Date | null) => {
-    if (!date) return '미동의';
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    if (!date) {
+      return t('terms.notAgreed');
+    }
+    return formatFullDate(date);
   };
 
   const marketingAgreed = consent.marketingAgreedAt !== null;
@@ -57,17 +58,17 @@ function TermsSettingsForm() {
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" shade={8}>
-                서비스 이용약관
+                {t('terms.termsOfService')}
               </Text>
 
               <VStack gap={2}>
                 <Text size="b3" shade={6}>
-                  동의일: {formatDate(consent.termsAgreedAt)}
+                  {t('terms.agreedAt', { date: formatDate(consent.termsAgreedAt) })}
                 </Text>
 
                 {consent.agreedTermsVersion && (
                   <Text size="b3" shade={6}>
-                    버전: {consent.agreedTermsVersion}
+                    {t('terms.version', { version: consent.agreedTermsVersion })}
                   </Text>
                 )}
               </VStack>
@@ -82,17 +83,17 @@ function TermsSettingsForm() {
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" shade={8}>
-                개인정보처리방침
+                {t('terms.privacyPolicy')}
               </Text>
 
               <VStack gap={2}>
                 <Text size="b3" shade={6}>
-                  동의일: {formatDate(consent.privacyAgreedAt)}
+                  {t('terms.agreedAt', { date: formatDate(consent.privacyAgreedAt) })}
                 </Text>
 
                 {consent.agreedTermsVersion && (
                   <Text size="b3" shade={6}>
-                    버전: {consent.agreedTermsVersion}
+                    {t('terms.version', { version: consent.agreedTermsVersion })}
                   </Text>
                 )}
               </VStack>
@@ -106,8 +107,8 @@ function TermsSettingsForm() {
 
       <VStack p={16} className="bg-white rounded-2xl">
         <SettingsToggle
-          label="마케팅 수신 동의"
-          description="이벤트 및 프로모션 정보를 받습니다"
+          label={t('terms.marketing')}
+          description={t('terms.marketingDescription')}
           isSelected={marketingAgreed}
           onSelectedChange={(agreed) => updateMutation.mutate({ agreed })}
           isDisabled={updateMutation.isPending}

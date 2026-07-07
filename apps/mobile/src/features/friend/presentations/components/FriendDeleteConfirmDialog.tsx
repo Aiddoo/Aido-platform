@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui';
 
 interface FriendDeleteConfirmDialogProps {
@@ -15,22 +16,24 @@ export function FriendDeleteConfirmDialog({
   onCancel,
   onConfirm,
 }: FriendDeleteConfirmDialogProps) {
+  const { t } = useTranslation(['friend', 'common']);
+
   return (
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>친구를 삭제할까요?</ConfirmDialog.Title>}
+      title={<ConfirmDialog.Title>{t('deleteDialog.title')}</ConfirmDialog.Title>}
       description={
-        <ConfirmDialog.Description>삭제하면 서로의 할 일이 보이지 않아요</ConfirmDialog.Description>
+        <ConfirmDialog.Description>{t('deleteDialog.description')}</ConfirmDialog.Description>
       }
       cancelButton={
         <ConfirmDialog.CancelButton onPress={onCancel} disabled={isProcessing}>
-          취소
+          {t('common:actions.cancel')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
         <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm} isLoading={isProcessing}>
-          삭제
+          {t('common:actions.delete')}
         </ConfirmDialog.ConfirmButton>
       }
     />

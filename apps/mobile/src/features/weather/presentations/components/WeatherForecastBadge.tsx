@@ -6,6 +6,7 @@ import {
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/use-get-forecast-query-options';
 import { isApiError } from '@src/shared/errors/api-error';
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text } from '@src/shared/ui';
 import { WeatherClearIcon } from '@src/shared/ui/Icon/icons';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface WeatherForecastBadgeProps {
 
 export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
   const router = useRouter();
+  const { t } = useTranslation('weather');
   const {
     data: forecast,
     error,
@@ -36,7 +38,10 @@ export const WeatherForecastBadge = ({ date }: WeatherForecastBadgeProps) => {
   }
 
   if (error) {
-    const label = isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902) ? '날씨 설정' : '날씨';
+    const label =
+      isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902)
+        ? t('badge.setup')
+        : t('badge.label');
 
     return (
       <Pressable onPress={() => router.push('/weather')} hitSlop={8}>

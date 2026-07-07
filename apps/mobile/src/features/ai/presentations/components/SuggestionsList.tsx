@@ -1,4 +1,5 @@
 import type { AiSuggestion } from '@src/features/ai/models/ai.model';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { Button, H4, HStack, Spacing, Text, useOverlay, VStack } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ import { ScallopedContainer } from './ScallopedContainer';
 import { SuggestionCategoryBottomSheet } from './SuggestionCategoryBottomSheet';
 
 export function SuggestionsList() {
+  const { t } = useTranslation('ai');
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
   const router = useRouter();
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
@@ -29,10 +31,10 @@ export function SuggestionsList() {
           />
           <Spacing size={8} />
           <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-            제안이 아직 도착하지 않았어요
+            {t('suggestions.list.emptyNoHistory')}
           </H4>
           <Text size="b4" shade={6} align="center">
-            할 일 기록이 쌓이면 AI가 반복 패턴을 분석해 추천해드려요
+            {t('suggestions.list.emptyNoHistoryDescription')}
           </Text>
         </View>
 
@@ -42,10 +44,10 @@ export function SuggestionsList() {
           <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
             <VStack gap={4} align="center">
               <Text size="b3" weight="semibold" shade={8} align="center">
-                지금은 추천할 제안이 없어요
+                {t('suggestions.list.emptyNoPending')}
               </Text>
               <Text size="b4" shade={6} align="center">
-                반복 할 일이 생기면 여기에 바로 도착해요
+                {t('suggestions.list.emptyNoPendingDescription')}
               </Text>
             </VStack>
           </View>
@@ -78,10 +80,10 @@ export function SuggestionsList() {
         />
         <Spacing size={8} />
         <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          {suggestions.length}개의 제안이 도착했어요
+          {t('suggestions.list.header', { count: suggestions.length })}
         </H4>
         <Text size="b4" shade={6} align="center">
-          반복되는 패턴을 분석해서 추천해드려요
+          {t('suggestions.list.headerDescription')}
         </Text>
       </View>
 
@@ -116,7 +118,7 @@ SuggestionsList.Loading = function Loading() {
 
 const formatSchedule = (suggestion: AiSuggestion): string => {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
-  const time = suggestion.scheduledTime ?? '종일';
+  const time = suggestion.scheduledTime ?? tGlobal('ai:suggestions.list.allDay');
   return `${days} · ${time}`;
 };
 
@@ -137,6 +139,7 @@ function SuggestionCard({
   isPending = false,
   isLast = false,
 }: SuggestionCardProps) {
+  const { t } = useTranslation('ai');
   const overlay = useOverlay();
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
@@ -170,7 +173,7 @@ function SuggestionCard({
               {suggestion.title}
             </Text>
             <Text size="e1" shade={5}>
-              신뢰도 {confidenceLabel}
+              {t('suggestions.list.confidence', { value: confidenceLabel })}
             </Text>
           </HStack>
           <Text size="b4" shade={7}>
@@ -184,7 +187,7 @@ function SuggestionCard({
 
         <HStack justify="between" align="center" className="mt-1">
           <Text size="e1" shade={5}>
-            만료 {formatMonthDay(suggestion.expiresAt)}
+            {t('suggestions.list.expires', { date: formatMonthDay(suggestion.expiresAt) })}
           </Text>
 
           <HStack gap={8}>
@@ -197,7 +200,7 @@ function SuggestionCard({
               isDisabled={isPending}
               isLoading={isPending && pendingAction === 'dismiss'}
             >
-              거절
+              {t('suggestions.list.reject')}
             </Button>
             <Button
               size="small"
@@ -206,7 +209,7 @@ function SuggestionCard({
               isDisabled={isPending}
               isLoading={isPending && pendingAction === 'accept'}
             >
-              수락
+              {t('suggestions.list.accept')}
             </Button>
           </HStack>
         </HStack>

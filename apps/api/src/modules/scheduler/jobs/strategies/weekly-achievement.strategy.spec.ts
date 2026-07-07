@@ -52,6 +52,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 		weeklyAchievementService = unitRef.get(WeeklyAchievementService);
 

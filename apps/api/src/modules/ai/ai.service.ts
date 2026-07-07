@@ -24,6 +24,7 @@ import { addMonths } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { toISOString, toIsoMonthId } from "@/common/date/utils/format";
 import { firstOfMonthInTimezone } from "@/common/date/utils/timezone";
+import type { SupportedLocale } from "@/common/decorators";
 import {
 	EntitlementService,
 	Feature,
@@ -32,9 +33,10 @@ import { BusinessExceptions } from "@/common/exception/services/business-excepti
 import { DatabaseService } from "@/database/database.service";
 import { UserRepository } from "../auth/repositories/user.repository";
 import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
-
 import { buildParseMemoPrompt } from "./prompts/parse-memo.prompt";
+import { buildParseMemoPromptEn } from "./prompts/parse-memo.prompt.en";
 import { buildParseTodoPrompt } from "./prompts/parse-todo.prompt";
+import { buildParseTodoPromptEn } from "./prompts/parse-todo.prompt.en";
 import {
 	AI_PROVIDER,
 	type AiProvider,
@@ -113,6 +115,7 @@ export class AiService {
 		userId: string,
 		timezone: string,
 		categoryId?: number,
+		locale: SupportedLocale = "ko",
 	): Promise<ParseTodoResult> {
 		const startTime = Date.now();
 
@@ -127,7 +130,9 @@ export class AiService {
 			await this.todoCategoryRepository.findManyByUserId(userId);
 		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		const { system, prompt } = buildParseTodoPrompt(
+		const buildTodoPrompt =
+			locale === "en" ? buildParseTodoPromptEn : buildParseTodoPrompt;
+		const { system, prompt } = buildTodoPrompt(
 			text,
 			timezone,
 			now(),
@@ -201,6 +206,7 @@ export class AiService {
 		userId: string,
 		timezone: string,
 		categoryId: number,
+		locale: SupportedLocale = "ko",
 	): Promise<ParseMemoResult> {
 		const startTime = Date.now();
 
@@ -215,7 +221,9 @@ export class AiService {
 			await this.todoCategoryRepository.findManyByUserId(userId);
 		const categoryIds = new Set(userCategories.map((c) => c.id));
 
-		const { system, prompt } = buildParseMemoPrompt(
+		const buildMemoPrompt =
+			locale === "en" ? buildParseMemoPromptEn : buildParseMemoPrompt;
+		const { system, prompt } = buildMemoPrompt(
 			content,
 			timezone,
 			now(),

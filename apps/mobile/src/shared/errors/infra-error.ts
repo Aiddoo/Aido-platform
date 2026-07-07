@@ -1,3 +1,4 @@
+import { t } from '@src/shared/i18n';
 /**
  * 인프라 에러 - ErrorBoundary에서 처리
  * - 5xx 서버 에러
@@ -17,7 +18,7 @@ export class NetworkError extends InfraError {
   readonly statusCode = null;
 
   constructor() {
-    super('네트워크 연결을 확인해주세요');
+    super(t('common:infraErrors.network'));
   }
 }
 
@@ -26,7 +27,7 @@ export class TimeoutError extends InfraError {
   readonly statusCode = 504;
 
   constructor() {
-    super('요청 시간이 초과되었어요');
+    super(t('common:infraErrors.timeout'));
   }
 }
 
@@ -35,7 +36,7 @@ export class ServerError extends InfraError {
   readonly statusCode: number;
 
   constructor(status: number) {
-    super('서버에 문제가 발생했어요');
+    super(t('common:infraErrors.server'));
     this.statusCode = status;
   }
 }
@@ -44,7 +45,7 @@ export class ServerError extends InfraError {
 export class ParseError extends InfraError {
   readonly statusCode = null;
 
-  constructor(message = '응답 형식이 올바르지 않아요') {
+  constructor(message = t('common:infraErrors.invalidResponse')) {
     super(message);
   }
 }

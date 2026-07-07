@@ -1,5 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, Flex, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -12,6 +13,7 @@ import { useRejectRequestMutationOptions } from '../queries/use-reject-request-m
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function ReceivedRequestList() {
+  const { t } = useTranslation('friend');
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetReceivedRequestsQueryOptions());
   const acceptMutation = useMutation(useAcceptRequestMutationOptions());
@@ -34,7 +36,7 @@ export function ReceivedRequestList() {
       ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>
-            총 {totalCount}개 요청
+            {t('list.requestCount', { count: totalCount })}
           </Text>
         </Box>
       }
@@ -57,7 +59,7 @@ export function ReceivedRequestList() {
                   onPress={() => handleAccept(item.id)}
                   disabled={isProcessing}
                 >
-                  수락
+                  {t('list.accept')}
                 </Button>
                 <Button
                   variant="weak"
@@ -67,7 +69,7 @@ export function ReceivedRequestList() {
                   onPress={() => handleReject(item.id)}
                   disabled={isProcessing}
                 >
-                  거절
+                  {t('list.reject')}
                 </Button>
               </HStack>
             }
@@ -76,7 +78,7 @@ export function ReceivedRequestList() {
       }}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
-          <Result icon={<DocsIcon width={72} height={72} />} title="아직 받은 요청이 없어요" />
+          <Result icon={<DocsIcon width={72} height={72} />} title={t('list.emptyReceived')} />
         </Flex>
       }
       ListFooterComponent={

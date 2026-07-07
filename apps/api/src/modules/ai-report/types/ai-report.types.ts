@@ -3,6 +3,7 @@ import type {
 	DayPatternItem,
 	TimePatternItem,
 } from "@aido/validators";
+import type { SupportedLocale } from "@/common/decorators";
 import type { AiReport, ReportType } from "@/generated/prisma/client";
 
 /**
@@ -45,6 +46,8 @@ export interface AggregatedReportData {
  * AI 리포트 생성 파라미터
  */
 export interface GenerateReportParams {
+	/** 생성 언어 (기본 ko — 기존 유저 하위 호환) */
+	locale?: SupportedLocale;
 	aggregatedData: AggregatedReportData;
 	type: ReportType;
 	periodLabel: string;

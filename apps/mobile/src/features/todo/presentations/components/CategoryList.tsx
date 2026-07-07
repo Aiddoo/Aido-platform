@@ -1,6 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/models/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-reorder-todo-category-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
@@ -24,6 +25,7 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ mode }: CategoryListProps) {
+  const { t } = useTranslation('common');
   const editOverlay = useOverlay();
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
@@ -126,7 +128,7 @@ export function CategoryList({ mode }: CategoryListProps) {
                           display="inline"
                           onPress={() => openEditSheet(item)}
                         >
-                          수정
+                          {t('actions.edit')}
                         </Button>
                         <Button
                           variant="weak"
@@ -135,7 +137,7 @@ export function CategoryList({ mode }: CategoryListProps) {
                           display="inline"
                           onPress={() => openDeleteDialog(item)}
                         >
-                          삭제
+                          {t('actions.delete')}
                         </Button>
                       </HStack>
                     ))

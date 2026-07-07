@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { getDayOfWeekLabel } from '@src/shared/utils/date';
@@ -68,6 +69,7 @@ export function ReportDetailContent({ report }: ReportDetailContentProps) {
 }
 
 function ReportHeader({ report }: { report: AiReport }) {
+  const { t } = useTranslation('ai');
   return (
     <HStack align="center" gap={8} className="flex-wrap">
       <Chip
@@ -76,7 +78,9 @@ function ReportHeader({ report }: { report: AiReport }) {
         color={report.type === 'WEEKLY' ? 'accent' : 'success'}
         className="self-center"
       >
-        <Chip.Label>{report.type === 'WEEKLY' ? '주간' : '월간'}</Chip.Label>
+        <Chip.Label>
+          {report.type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly')}
+        </Chip.Label>
       </Chip>
 
       <Text size="b2" weight="semibold" shade={9}>
@@ -91,6 +95,7 @@ function ReportHeader({ report }: { report: AiReport }) {
 }
 
 function StatsOverview({ report }: { report: AiReport }) {
+  const { t } = useTranslation('ai');
   const { stats } = report;
   const rateDiff =
     stats.prevCompletionRate !== null ? stats.completionRate - stats.prevCompletionRate : null;
@@ -98,13 +103,13 @@ function StatsOverview({ report }: { report: AiReport }) {
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        통계 요약
+        {t('report.detail.statsSummary')}
       </Text>
 
       <HStack justify="around">
         <VStack align="center" gap={4}>
           <Text size="e1" shade={6}>
-            달성률
+            {t('report.card.completionRate')}
           </Text>
           <Text size="t2" weight="bold" tone="brand">
             {formatPercent(stats.completionRate)}%
@@ -119,7 +124,7 @@ function StatsOverview({ report }: { report: AiReport }) {
 
         <VStack align="center" gap={4}>
           <Text size="e1" shade={6}>
-            완료
+            {t('report.card.completed')}
           </Text>
 
           <Text size="t2" weight="bold" shade={9}>
@@ -132,11 +137,11 @@ function StatsOverview({ report }: { report: AiReport }) {
         </VStack>
         <VStack align="center" gap={4}>
           <Text size="e1" shade={6}>
-            연속
+            {t('report.card.streak')}
           </Text>
 
           <Text size="t2" weight="bold" shade={9}>
-            {stats.streakDays}일
+            {t('report.card.streakDays', { count: stats.streakDays })}
           </Text>
         </VStack>
       </HStack>
@@ -145,10 +150,11 @@ function StatsOverview({ report }: { report: AiReport }) {
 }
 
 function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) {
+  const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        카테고리별 분석
+        {t('report.detail.categoryBreakdown')}
       </Text>
       {items.map((item) => (
         <VStack key={item.name} gap={4}>
@@ -176,10 +182,11 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
 }
 
 function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
+  const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        요일별 패턴
+        {t('report.detail.dayPatterns')}
       </Text>
       <HStack justify="around">
         {items.map((item) => (
@@ -211,13 +218,14 @@ function TimePatternSummary({
   items: AiReport['timePatterns'];
   timeFormat: TimeFormat;
 }) {
+  const { t } = useTranslation('ai');
   const sorted = [...items].sort((a, b) => b.count - a.count);
   const top3 = sorted.slice(0, 3);
 
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        활발한 시간대
+        {t('report.detail.activeHours')}
       </Text>
       {top3.map((item, index) => (
         <HStack key={item.hour} align="center" gap={8}>
@@ -232,7 +240,7 @@ function TimePatternSummary({
           </Text>
 
           <Text size="b4" shade={6}>
-            {item.count}건
+            {t('report.detail.countUnit', { count: item.count })}
           </Text>
         </HStack>
       ))}
@@ -241,10 +249,11 @@ function TimePatternSummary({
 }
 
 function AiSummarySection({ summary }: { summary: string }) {
+  const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        AI 요약
+        {t('report.detail.aiSummary')}
       </Text>
       <Text size="b4" shade={7} className="leading-5">
         {summary}
@@ -254,10 +263,11 @@ function AiSummarySection({ summary }: { summary: string }) {
 }
 
 function AiTipsSection({ tips }: { tips: string[] }) {
+  const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
-        AI 팁
+        {t('report.detail.aiTips')}
       </Text>
 
       {tips.map((tip, index) => (

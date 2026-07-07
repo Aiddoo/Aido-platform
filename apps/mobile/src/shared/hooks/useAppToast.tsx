@@ -1,3 +1,4 @@
+import { t } from '@src/shared/i18n';
 import { AppToast, type AppToastVariant } from '@src/shared/ui/Toast';
 import { useToast } from 'heroui-native';
 import { useCallback } from 'react';
@@ -21,11 +22,9 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
   fallback?: string;
 }
 
-const DEFAULT_ERROR_MESSAGE = '오류가 발생했어요';
-
 const extractErrorMessage = (
   input: string | Error | undefined,
-  fallback = DEFAULT_ERROR_MESSAGE,
+  fallback = t('common:toast.defaultError'),
 ): string => {
   if (typeof input === 'string' && input.trim()) {
     return input;

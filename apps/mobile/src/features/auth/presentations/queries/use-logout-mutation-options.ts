@@ -5,7 +5,7 @@ import {
   useLogger,
   useNotificationService,
   useRevenueCatSdkManager,
-} from '@src/bootstrap/providers/di-provider';
+} from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { resetAuthClient } from '@src/shared/infra/http/auth-client';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

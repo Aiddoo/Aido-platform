@@ -1,5 +1,6 @@
 import { CategorySelectBottomSheet } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
+import { useTranslation } from '@src/shared/i18n';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
@@ -19,6 +20,7 @@ export function SuggestionCategoryBottomSheet({
   onOpenChange,
   onAccepted,
 }: SuggestionCategoryBottomSheetProps) {
+  const { t } = useTranslation('ai');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const handleSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
 
@@ -52,7 +54,7 @@ export function SuggestionCategoryBottomSheet({
           },
         );
       }}
-      submitLabel="생성하기"
+      submitLabel={t('suggestions.category.submit')}
       isLoading={handleSuggestionMutation.isPending}
     />
   );

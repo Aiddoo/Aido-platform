@@ -1,9 +1,10 @@
 import { ErrorCode } from '@aido/errors';
 import type { ChangePasswordInput } from '@aido/validators';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -20,18 +21,18 @@ export const useChangePasswordMutationOptions = () => {
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast.success('비밀번호가 변경되었어요');
+      toast.success(t('auth:toasts.passwordChanged'));
       router.back();
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
-        toast.error('현재 비밀번호가 일치하지 않아요');
+        toast.error(t('auth:toasts.currentPasswordMismatch'));
         return;
       }
 
-      toast.error(error, { fallback: '비밀번호 변경에 실패했어요' });
+      toast.error(error, { fallback: t('auth:toasts.passwordChangeFailed') });
     },
   });
 };

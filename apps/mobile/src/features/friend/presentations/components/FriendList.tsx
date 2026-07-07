@@ -1,6 +1,7 @@
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
@@ -39,6 +40,7 @@ import type { FriendUserViewModel } from '../view-models/friend-user.view-model'
 import { FriendDeleteConfirmDialog } from './FriendDeleteConfirmDialog';
 
 export function FriendList() {
+  const { t } = useTranslation(['friend', 'common']);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, dataUpdatedAt } =
     useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
 
@@ -99,7 +101,7 @@ export function FriendList() {
       ListHeaderComponent={
         <HStack py={12} align="center" justify="between">
           <Text size="b4" shade={6}>
-            총 {totalCount}명
+            {t('list.friendCount', { count: totalCount })}
           </Text>
           <EditModeGuideTooltip />
         </HStack>
@@ -164,7 +166,7 @@ export function FriendList() {
                               onPress={() => openDeleteConfirmDialog(item.id)}
                               disabled={isProcessing}
                             >
-                              삭제
+                              {t('common:actions.delete')}
                             </Button>
                           </Animated.View>
                         ) : null
@@ -182,8 +184,8 @@ export function FriendList() {
         <Flex flex={1} justify="center" align="center">
           <Result
             icon={<DocsIcon width={72} height={72} />}
-            title="친구를 추가해 보세요"
-            description="검색 아이콘을 눌러 친구를 찾을 수 있어요"
+            title={t('list.emptyTitle')}
+            description={t('list.emptyDescription')}
           />
         </Flex>
       }
@@ -233,6 +235,7 @@ FriendList.Loading = function Loading() {
 };
 
 function EditModeGuideTooltip() {
+  const { t } = useTranslation(['friend', 'common']);
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -257,7 +260,7 @@ function EditModeGuideTooltip() {
         >
           <Popover.Arrow />
           <Text size="b4" shade={6}>
-            편집을 눌러 피드에 보이는{'\n'}친구 순서를 변경하거나 삭제할 수 있어요
+            {t('list.editHint')}
           </Text>
         </Popover.Content>
       </Popover.Portal>

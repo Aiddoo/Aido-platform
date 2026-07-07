@@ -1,0 +1,124 @@
+{
+  "titles": {
+    "reports": "AI Reports",
+    "suggestions": "AI Suggestions"
+  },
+  "report": {
+    "typeWeekly": "Weekly",
+    "typeMonthly": "Monthly",
+    "sampleBadge": "Sample",
+    "card": {
+      "completionRate": "Completion",
+      "completed": "Done",
+      "streak": "Streak",
+      "streakDays_one": "{{count}} day",
+      "streakDays_other": "{{count}} days",
+      "viewDetail": "View details"
+    },
+    "detail": {
+      "statsSummary": "Stats Summary",
+      "categoryBreakdown": "By Category",
+      "dayPatterns": "By Day of Week",
+      "activeHours": "Most Active Hours",
+      "countUnit_one": "{{count}} task",
+      "countUnit_other": "{{count}} tasks",
+      "aiSummary": "AI Summary",
+      "aiTips": "AI Tips"
+    },
+    "hour": {
+      "am": "{{hour}} AM",
+      "pm": "{{hour}} PM",
+      "h24": "{{hour}}:00"
+    },
+    "dday": {
+      "today": "Arrived today!",
+      "inDays_one": "In {{count}} day",
+      "inDays_other": "In {{count}} days"
+    },
+    "statusBanner": {
+      "nextWeekly": "Next weekly report",
+      "nextMonthly": "Next monthly report"
+    },
+    "premiumBanner": {
+      "title": "Your personal AI-powered report",
+      "description": "Subscribe to Premium to get\nweekly and monthly AI reports",
+      "subscribe": "Subscribe"
+    },
+    "list": {
+      "premiumTitle": "AI Reports",
+      "freeTitle": "Your personal AI-powered report",
+      "premiumDescription": "We analyze your to-dos and turn them into reports",
+      "freeDescription": "Subscribe to Premium to get weekly and monthly AI reports",
+      "subscribeCta": "Subscribe to Get Reports",
+      "arrivalToday": "Your first {{type}} report arrives today!",
+      "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
+      "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days"
+    },
+    "lockedDetail": {
+      "title": "Get your personal report",
+      "description": "Subscribe to Premium and we'll send you\nAI-powered reports every week and month",
+      "premiumDialogDescription": "AI reports are available to Premium subscribers only.",
+      "subscribe": "Subscribe to Premium"
+    }
+  },
+  "suggestions": {
+    "list": {
+      "emptyNoHistory": "No suggestions yet",
+      "emptyNoHistoryDescription": "As your to-do history grows, AI will spot recurring patterns and suggest them here",
+      "emptyNoPending": "Nothing to suggest right now",
+      "emptyNoPendingDescription": "New recurring patterns will show up here as soon as we find them",
+      "header_one": "{{count}} suggestion has arrived",
+      "header_other": "{{count}} suggestions have arrived",
+      "headerDescription": "We analyze your recurring patterns and suggest them back",
+      "allDay": "All day",
+      "confidence": "Confidence {{value}}",
+      "expires": "Expires {{date}}",
+      "reject": "Dismiss",
+      "accept": "Accept"
+    },
+    "paywall": {
+      "title": "Let AI suggest your to-dos",
+      "description": "Get personalized to-do suggestions based on your recurring patterns",
+      "sampleTitle": "Morning stretch every day",
+      "sampleConfidence": "Confidence 92%",
+      "sampleSchedule": "Mon, Tue, Wed, Thu, Fri · 07:30",
+      "sampleReason": "We spotted a morning workout pattern over the last 2 weeks",
+      "subscribeCta": "Subscribe to Get Suggestions"
+    },
+    "category": {
+      "submit": "Create"
+    },
+    "toasts": {
+      "premiumOnly": "AI recurring suggestions are available to Premium subscribers only",
+      "retryLater": "Please try again later",
+      "quotaExceeded": "You've used all your AI credits for this month",
+      "accepted": "Suggestion accepted — your repeating to-do is ready.",
+      "rejected": "Suggestion dismissed."
+    }
+  },
+  "sampleReport": {
+    "categories": {
+      "work": "Work Projects",
+      "selfDev": "Self-Development",
+      "health": "Health & Fitness",
+      "life": "Everyday Life",
+      "side": "Side Projects"
+    },
+    "weekly": {
+      "periodLabel": "Week 10, 2026",
+      "summary": "Work Projects hit a 92% completion rate — your most focused category this week. Your after-work self-development routine is settling in, and you're on a 5-day streak! Wednesday's completion rate dipped noticeably, though.",
+      "tip1": "Your completion rate tends to drop on Wednesdays. Try trimming Wednesdays down to 3–4 to-dos and your rate should climb.",
+      "tip2": "9 AM and 7 PM after work are your most active hours. Try scheduling important to-dos in those slots.",
+      "tip3": "Health & Fitness sits at 71%, lower than your other categories. Blocking workout time on your calendar in advance makes it easier to stay consistent.",
+      "tip4": "You're on a 5-day streak! Keep it going through the weekend to earn the 7-day streak badge."
+    },
+    "monthly": {
+      "periodLabel": "February 2026",
+      "summary": "You finished February at an 82% completion rate — up 8 points from last month (74%)! Work Projects led the way at 91%, and the self-development routine you set early in the month is turning into a habit. Your rate dipped slightly in week three but bounced back in week four, which is impressive.",
+      "tip1": "Breaking monthly goals into weekly chunks makes them lighter. Try splitting this month's self-development goal into 8 per week.",
+      "tip2": "Wednesday is your lowest day every week at 74%. A midweek refresh routine — a walk or a short meditation — can help you recharge.",
+      "tip3": "Side Projects came in at 67%, a bit short. Reserving a 2-hour block on weekend mornings will help you make steady progress.",
+      "tip4": "You logged a 9-day streak! How about going for 14 days next month?"
+    }
+  }
+}

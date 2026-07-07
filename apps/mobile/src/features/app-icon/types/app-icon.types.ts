@@ -10,6 +10,7 @@ export type AppIconKey =
 
 export interface AppIconItem {
   key: AppIconKey;
-  label: string;
+  /** appIcon 네임스페이스의 아이콘 라벨 키 (예: 'icons.default') */
+  labelKey: string;
   preview: ImageSourcePropType;
 }

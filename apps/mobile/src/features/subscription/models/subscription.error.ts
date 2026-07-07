@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 import { PURCHASES_ERROR_CODE } from 'react-native-purchases';
 
 export const SubscriptionErrorCode = {
@@ -28,28 +29,43 @@ export class SubscriptionError extends Error implements BusinessError {
 
 export const SubscriptionErrors = {
   notConfigured: () =>
-    new SubscriptionError(SubscriptionErrorCode.NOT_CONFIGURED, 'RevenueCat이 초기화되지 않았어요'),
+    new SubscriptionError(
+      SubscriptionErrorCode.NOT_CONFIGURED,
+      t('subscription:errors.notConfigured'),
+    ),
 
   noOfferings: () =>
-    new SubscriptionError(SubscriptionErrorCode.NO_OFFERINGS, '사용 가능한 구독 상품이 없어요'),
+    new SubscriptionError(SubscriptionErrorCode.NO_OFFERINGS, t('subscription:errors.noOfferings')),
 
   fetchOfferingsFailed: (reason?: string) =>
     new SubscriptionError(
       SubscriptionErrorCode.FETCH_OFFERINGS_FAILED,
-      reason ?? '구독 상품을 불러오는데 실패했어요',
+      reason ?? t('subscription:errors.fetchOfferingsFailed'),
     ),
 
   purchaseCancelled: () =>
-    new SubscriptionError(SubscriptionErrorCode.PURCHASE_CANCELLED, '구매가 취소되었어요'),
+    new SubscriptionError(
+      SubscriptionErrorCode.PURCHASE_CANCELLED,
+      t('subscription:errors.purchaseCancelled'),
+    ),
 
   purchaseFailed: (reason?: string) =>
-    new SubscriptionError(SubscriptionErrorCode.PURCHASE_FAILED, reason ?? '구매에 실패했어요'),
+    new SubscriptionError(
+      SubscriptionErrorCode.PURCHASE_FAILED,
+      reason ?? t('subscription:errors.purchaseFailed'),
+    ),
 
   paymentPending: () =>
-    new SubscriptionError(SubscriptionErrorCode.PAYMENT_PENDING, '결제 승인 대기 중이에요'),
+    new SubscriptionError(
+      SubscriptionErrorCode.PAYMENT_PENDING,
+      t('subscription:errors.paymentPending'),
+    ),
 
   restoreFailed: (reason?: string) =>
-    new SubscriptionError(SubscriptionErrorCode.RESTORE_FAILED, reason ?? '구매 복원에 실패했어요'),
+    new SubscriptionError(
+      SubscriptionErrorCode.RESTORE_FAILED,
+      reason ?? t('subscription:errors.restoreFailed'),
+    ),
 
   /** RevenueCat SDK 에러 → 도메인 SubscriptionError 변환 */
   fromPurchaseError: (error: unknown): SubscriptionError => {
@@ -59,7 +75,8 @@ export const SubscriptionErrors = {
     if (isRevenueCatPaymentPendingError(error)) {
       return SubscriptionErrors.paymentPending();
     }
-    const message = error instanceof Error ? error.message : '구매에 실패했어요';
+    const message =
+      error instanceof Error ? error.message : t('subscription:errors.purchaseFailed');
     return SubscriptionErrors.purchaseFailed(message);
   },
 } as const;

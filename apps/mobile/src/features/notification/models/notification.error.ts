@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const NotificationErrorCode = {
   PERMISSION_DENIED: 'NOTIFICATION_PERMISSION_DENIED',
@@ -24,15 +25,18 @@ export const NotificationErrors = {
   permissionDenied: () =>
     new NotificationError(
       NotificationErrorCode.PERMISSION_DENIED,
-      '알림 권한이 거부되었어요. 설정에서 알림을 허용해주세요.',
+      t('notification:errors.permissionDenied'),
     ),
   notPhysicalDevice: () =>
     new NotificationError(
       NotificationErrorCode.NOT_PHYSICAL_DEVICE,
-      '푸시 알림은 실제 기기에서만 사용할 수 있어요.',
+      t('notification:errors.notPhysicalDevice'),
     ),
   validationFailed: () =>
-    new NotificationError(NotificationErrorCode.VALIDATION_FAILED, '알림 데이터 검증에 실패했어요'),
+    new NotificationError(
+      NotificationErrorCode.VALIDATION_FAILED,
+      t('notification:errors.validationFailed'),
+    ),
 } as const;
 
 export const isNotificationError = (error: unknown): error is NotificationError =>

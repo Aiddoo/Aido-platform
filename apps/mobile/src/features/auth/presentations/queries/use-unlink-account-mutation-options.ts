@@ -1,12 +1,13 @@
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import type { OAuthProvider, OAuthProviderSlug } from '../../models/oauth.model';
-import { OAUTH_PROVIDER_LABELS } from '../constants/auth-provider-labels.constant';
+import { getOAuthProviderLabel } from '../constants/auth-provider-labels.constant';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys.constant';
 
 export const useUnlinkAccountMutationOptions = () => {
@@ -22,7 +23,9 @@ export const useUnlinkAccountMutationOptions = () => {
     },
     onSuccess: (_data, provider) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
-      toast.success(`${OAUTH_PROVIDER_LABELS[provider]} 계정 연결이 해제되었습니다`);
+      toast.success(
+        t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
+      );
       trackEvent('auth_social_unlinked', {
         provider: provider.toLowerCase() as OAuthProviderSlug,
       });
@@ -34,7 +37,7 @@ export const useUnlinkAccountMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '연결 해제에 실패했습니다' });
+      toast.error(undefined, { fallback: t('auth:toasts.unlinkFailed') });
     },
   });
 };

@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 import type { OAuthProviderSlug } from './oauth.model';
 
 export interface ExpoCodedError extends Error {
@@ -34,20 +35,27 @@ export class AuthError extends Error implements BusinessError {
 }
 
 export const AuthErrors = {
-  loginCancelled: () => new AuthError(AuthErrorCode.LOGIN_CANCELLED, '로그인이 취소되었어요'),
+  loginCancelled: () =>
+    new AuthError(AuthErrorCode.LOGIN_CANCELLED, t('auth:errors.loginCancelled')),
 
   providerError: (provider: OAuthProviderSlug, msg?: string) =>
-    new AuthError(AuthErrorCode.PROVIDER_ERROR, msg ?? `${provider} 로그인에 실패했어요`),
+    new AuthError(
+      AuthErrorCode.PROVIDER_ERROR,
+      msg ?? t('auth:errors.providerFailed', { provider }),
+    ),
 
   validationFailed: (endpoint?: string) =>
     new AuthError(
       AuthErrorCode.VALIDATION_FAILED,
-      endpoint ? `잘못된 인증 응답이에요 (${endpoint})` : '잘못된 인증 응답이에요',
+      endpoint
+        ? t('auth:errors.invalidResponseWithEndpoint', { endpoint })
+        : t('auth:errors.invalidResponse'),
     ),
 
-  noCodeReceived: () => new AuthError(AuthErrorCode.NO_CODE_RECEIVED, '인증 코드를 받지 못했어요'),
+  noCodeReceived: () =>
+    new AuthError(AuthErrorCode.NO_CODE_RECEIVED, t('auth:errors.noCodeReceived')),
 
-  unknown: (msg?: string) => new AuthError(AuthErrorCode.UNKNOWN, msg ?? '인증 작업에 실패했어요'),
+  unknown: (msg?: string) => new AuthError(AuthErrorCode.UNKNOWN, msg ?? t('auth:errors.unknown')),
 
   fromExpoAppleError: (error: ExpoCodedError): AuthError => {
     switch (error.code) {
@@ -55,9 +63,9 @@ export const AuthErrors = {
         return AuthErrors.loginCancelled();
       case EXPO_APPLE_ERROR_CODES.REQUEST_FAILED:
       case EXPO_APPLE_ERROR_CODES.INVALID_RESPONSE:
-        return AuthErrors.providerError('apple', 'Apple 인증 응답이 올바르지 않아요');
+        return AuthErrors.providerError('apple', t('auth:errors.appleInvalidResponse'));
       case EXPO_APPLE_ERROR_CODES.NOT_AVAILABLE:
-        return AuthErrors.providerError('apple', 'Apple 로그인을 사용할 수 없어요');
+        return AuthErrors.providerError('apple', t('auth:errors.appleUnavailable'));
       default:
         return AuthErrors.unknown(error.message);
     }

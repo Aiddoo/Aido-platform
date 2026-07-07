@@ -10130,6 +10130,16 @@ exports[`OpenAPI 계약 (e2e) OpenAPI 문서가 스냅샷과 일치한다 (클�
       "operationId": "parseMemoToTodos",
       "parameters": [
         {
+          "description": "파싱 결과 언어 ("ko" | "en", 미전송 시 ko)",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
           "description": "사용자 타임존 (IANA, 기본값: UTC)",
           "in": "header",
           "name": "X-Timezone",
@@ -10535,6 +10545,16 @@ if (confirmed) {
 - **오류 복구**: 파싱 실패 시 사용자가 직접 수정 가능",
       "operationId": "parseNaturalLanguageTodo",
       "parameters": [
+        {
+          "description": "파싱 결과 언어 ("ko" | "en", 미전송 시 ko)",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
         {
           "description": "사용자 타임존 (IANA, 기본값: UTC)",
           "in": "header",
@@ -23717,6 +23737,16 @@ The Health Check is not successful",
       "operationId": "registerPushToken",
       "parameters": [
         {
+          "description": "푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
           "description": "IANA 타임존 (e.g. "Asia/Seoul")",
           "in": "header",
           "name": "X-Timezone",
@@ -31793,6 +31823,16 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
             "type": "number",
           },
         },
+        {
+          "description": "응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -31942,6 +31982,16 @@ GET /weekly-achievements/2026/10
             "maximum": 53,
             "minimum": 1,
             "type": "integer",
+          },
+        },
+        {
+          "description": "응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
           },
         },
       ],

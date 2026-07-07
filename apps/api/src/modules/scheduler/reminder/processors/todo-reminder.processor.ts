@@ -6,6 +6,7 @@ import { subtractDays } from "@/common/date/utils/arithmetic";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
+import { PushDeliveryService } from "../../../notification/push-delivery.service";
 import { NotificationMessageBuilder } from "../../../notification/templates/notification-templates";
 import {
 	type ReminderJobData,
@@ -26,6 +27,7 @@ export class TodoReminderProcessor extends WorkerHost {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
+		private readonly pushDeliveryService: PushDeliveryService,
 	) {
 		super();
 	}
@@ -91,9 +93,12 @@ export class TodoReminderProcessor extends WorkerHost {
 		}
 
 		// 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
+		// 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
+		const locale = await this.pushDeliveryService.getUserLocale(userId);
 		const message = NotificationMessageBuilder.todoReminder(
 			todo.title,
 			stageLabel,
+			locale,
 		);
 
 		await this.notificationService.createAndSend({

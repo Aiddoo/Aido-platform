@@ -1,4 +1,5 @@
 import { PASSWORD_RULES } from '@aido/validators';
+import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -42,12 +43,12 @@ export const PreferencePolicy = {
   },
 
   pushDisabledMessage(preference: Preference) {
-    return !preference.pushEnabled ? '푸시 알림을 먼저 활성화해주세요' : undefined;
+    return !preference.pushEnabled ? t('auth:preference.enablePushFirst') : undefined;
   },
 
   weatherDisabledMessage(preference: Preference) {
-    if (!preference.pushEnabled) return '푸시 알림을 먼저 활성화해주세요';
-    if (!isWeatherEnabled(preference)) return '날씨 알림을 먼저 활성화해주세요';
+    if (!preference.pushEnabled) return t('auth:preference.enablePushFirst');
+    if (!isWeatherEnabled(preference)) return t('auth:preference.enableWeatherFirst');
     return undefined;
   },
 } as const;

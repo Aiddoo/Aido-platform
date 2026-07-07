@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type UpdateNameInput, updateNameInputSchema } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
 import { H3, Input, KeyboardAdaptiveButton, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -24,6 +25,7 @@ const EditNameScreen = () => {
 export default EditNameScreen;
 
 function EditNameForm() {
+  const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
   const router = useRouter();
@@ -52,7 +54,7 @@ function EditNameForm() {
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
       >
-        <H3>이름을 입력해주세요</H3>
+        <H3>{t('editName.header')}</H3>
 
         <Spacing size={24} />
 
@@ -61,8 +63,8 @@ function EditNameForm() {
           name="name"
           render={({ field: { onChange, value } }) => (
             <Input
-              label="이름"
-              placeholder="이름을 입력해주세요"
+              label={t('editName.label')}
+              placeholder={t('editName.placeholder')}
               value={value}
               onChangeText={onChange}
               autoFocus
@@ -84,7 +86,7 @@ function EditNameForm() {
         isDisabled={!canSubmit}
         isLoading={updateProfileMutation.isPending}
       >
-        이름 변경
+        {t('editName.submit')}
       </KeyboardAdaptiveButton>
     </View>
   );

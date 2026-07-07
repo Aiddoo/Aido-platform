@@ -1,0 +1,52 @@
+{
+  "titles": {
+    "create": "새 메모",
+    "aiReview": "AI 파싱"
+  },
+  "tab": {
+    "addMemo": "메모 추가"
+  },
+  "list": {
+    "emptyTitle": "아직 메모가 없어요",
+    "emptyDescription": "애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요",
+    "loadFailed": "메모를 불러오지 못했어요"
+  },
+  "create": {
+    "placeholder": "아이디어를 자유롭게 적어보세요..."
+  },
+  "detail": {
+    "deleteConfirmTitle": "메모를 삭제할까요?",
+    "deleteConfirmDescription": "삭제한 메모는 복구할 수 없어요"
+  },
+  "toasts": {
+    "convertedOne": "메모를 할 일로 변환했어요",
+    "convertedMany": "메모를 {{count}}개의 할 일로 변환했어요",
+    "deleted": "메모를 삭제했어요",
+    "retryLater": "잠시 후 다시 시도해주세요",
+    "reorderFailed": "순서 변경에 실패했어요",
+    "deleteRetry": "잠시 후 다시 삭제해 보세요",
+    "limitReached": "메모 개수가 한도에 도달했어요"
+  },
+  "aiDialog": {
+    "limitTitle": "이번 달 AI 파싱 횟수를 모두 사용했어요",
+    "subscribeUnlimited": "구독하면 무제한으로 사용할 수 있어요",
+    "confirmTitle": "AI로 메모를 할 일로 만들게요",
+    "usageRemaining": "이번 달 {{remaining}}/{{limit}}회 사용할 수 있어요",
+    "warnWithDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.",
+    "warnNoDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없어요.",
+    "start": "시작하기"
+  },
+  "aiReview": {
+    "analyzing": "메모를 분석하고 있어요...",
+    "limitTitle": "이번 달 AI 사용 횟수를 모두 사용했어요",
+    "parseFailed": "파싱에 실패했어요",
+    "retryLater": "잠시 후 다시 시도해 주세요",
+    "goBack": "돌아가기",
+    "noTodosTitle": "생성할 할 일이 없어요",
+    "createCount": "{{count}}개 할 일 생성",
+    "allDay": "종일",
+    "categoryFallback": "카테고리",
+    "weeklyRepeat": "매주 {{days}}",
+    "select": "선택하기"
+  }
+}

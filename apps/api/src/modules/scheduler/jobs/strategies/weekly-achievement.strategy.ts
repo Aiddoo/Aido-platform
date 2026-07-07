@@ -5,6 +5,7 @@ import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { fetchUserLocales } from "@/modules/notification/templates/user-locale.util";
 import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
 
 import type {
@@ -95,10 +96,15 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
+		const locales = await fetchUserLocales(
+			this.database,
+			finalRecords.map((r) => r.userId),
+		);
 		const notifications = finalRecords.map((r) => {
 			const message = NotificationMessageBuilder.weeklyAchievement(
 				r.completedTodos,
 				r.totalTodos,
+				locales.get(r.userId) ?? "ko",
 			);
 			return {
 				userId: r.userId,

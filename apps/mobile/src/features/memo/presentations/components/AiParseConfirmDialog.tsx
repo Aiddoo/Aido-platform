@@ -6,6 +6,7 @@ import { AiUsagePolicy } from '@src/features/todo/models/todo.model';
 import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/use-get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
+import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, Text, VStack } from '@src/shared/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ interface AiParseConfirmDialogProps {
 }
 
 export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirmDialogProps) {
+  const { t } = useTranslation(['memo', 'common']);
   const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
   const { data: memo } = useQuery(useGetMemoQueryOptions(memoId));
   const { data: categoriesData } = useQuery(useGetTodoCategoriesQueryOptions());
@@ -38,18 +40,20 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
-        title={<ConfirmDialog.Title>이번 달 AI 파싱 횟수를 모두 사용했어요</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>{t('memo:aiDialog.limitTitle')}</ConfirmDialog.Title>}
         description={
           <ConfirmDialog.Description>
-            구독하면 무제한으로 사용할 수 있어요
+            {t('memo:aiDialog.subscribeUnlimited')}
           </ConfirmDialog.Description>
         }
         cancelButton={
-          <ConfirmDialog.CancelButton onPress={onClose}>닫기</ConfirmDialog.CancelButton>
+          <ConfirmDialog.CancelButton onPress={onClose}>
+            {t('common:actions.close')}
+          </ConfirmDialog.CancelButton>
         }
         confirmButton={
           <ConfirmDialog.ConfirmButton onPress={() => router.replace('/settings/subscription')}>
-            구독하기
+            {t('common:premiumDialog.subscribe')}
           </ConfirmDialog.ConfirmButton>
         }
       />
@@ -57,9 +61,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
   }
 
   const warningText =
-    remaining != null
-      ? '파싱 중 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.'
-      : '파싱 중 화면을 벗어나면 결과를 받을 수 없어요.';
+    remaining != null ? t('memo:aiDialog.warnWithDeduction') : t('memo:aiDialog.warnNoDeduction');
 
   const handleStart = () => {
     const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
@@ -92,13 +94,13 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={<ConfirmDialog.Title>AI로 메모를 할 일로 만들게요</ConfirmDialog.Title>}
+      title={<ConfirmDialog.Title>{t('memo:aiDialog.confirmTitle')}</ConfirmDialog.Title>}
       description={
         <ConfirmDialog.Description>
           <VStack className="gap-1.5">
             {remaining != null && (
               <Text size="b3" shade={7}>
-                이번 달 {remaining}/{aiUsage.limit}회 사용할 수 있어요
+                {t('memo:aiDialog.usageRemaining', { remaining, limit: aiUsage.limit })}
               </Text>
             )}
             <Text size="e1" shade={6}>
@@ -107,10 +109,14 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
           </VStack>
         </ConfirmDialog.Description>
       }
-      cancelButton={<ConfirmDialog.CancelButton onPress={onClose}>닫기</ConfirmDialog.CancelButton>}
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={onClose}>
+          {t('common:actions.close')}
+        </ConfirmDialog.CancelButton>
+      }
       confirmButton={
         <ConfirmDialog.ConfirmButton onPress={handleStart} isLoading={parseMutation.isPending}>
-          시작하기
+          {t('memo:aiDialog.start')}
         </ConfirmDialog.ConfirmButton>
       }
     />

@@ -50,6 +50,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 
 		// 기본 mock 설정

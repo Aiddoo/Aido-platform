@@ -4,6 +4,7 @@ import { useConvertMemoToTodoMutationOptions } from '@src/features/memo/presenta
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ACTION_CHIP_ICON_SIZE,
   ActionChip,
@@ -27,7 +28,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
@@ -399,7 +400,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               <BottomSheetInput
                 ref={todoInputRef}
                 autoFocus
-                placeholder="무엇을 하고 싶으신가요?"
+                placeholder={tGlobal('todo:add.placeholder')}
                 value={value}
                 onChangeText={onChange}
                 maxLength={200}
@@ -461,21 +462,11 @@ const DEFAULT_CATEGORY_COLOR = '#999';
 
 // --- helpers ---
 
-const ALL_DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-const DAY_SHORT: Record<DayOfWeek, string> = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-};
-
 const formatRepeatLabel = (days: DayOfWeek[]): string => {
-  if (days.length === 7) return '매일';
-  const sorted = ALL_DAYS.filter((d) => days.includes(d));
-  return `매주 ${sorted.map((d) => DAY_SHORT[d]).join(', ')}`;
+  if (days.length === 7) {
+    return tGlobal('todo:chip.daily');
+  }
+  return tGlobal('todo:chip.weeklyDays', { days: formatDaysOfWeek(days) });
 };
 
 // --- chip components ---
@@ -505,7 +496,8 @@ const TimeChip = ({ onPress }: { onPress: () => void }) => {
     name: ['scheduledTime', 'isAllDay'],
   });
   const hasTime = !isAllDay && !!scheduledTime;
-  const label = isAllDay ? '종일' : (scheduledTime ?? '종일');
+  const { t } = useTranslation('todo');
+  const label = isAllDay ? t('chip.allDay') : (scheduledTime ?? t('chip.allDay'));
 
   return (
     <ActionChip
@@ -527,8 +519,9 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
   const [isRecurring, daysOfWeek] = useWatch<AddTodoFormValues, ['isRecurring', 'daysOfWeek']>({
     name: ['isRecurring', 'daysOfWeek'],
   });
+  const { t } = useTranslation('todo');
   const isActive = isRecurring && (daysOfWeek?.length ?? 0) > 0;
-  const label = isActive ? formatRepeatLabel(daysOfWeek ?? []) : '반복';
+  const label = isActive ? formatRepeatLabel(daysOfWeek ?? []) : t('chip.repeat');
 
   return (
     <ActionChip
@@ -571,7 +564,7 @@ const VisibilityChip = () => {
                 />
               )
             }
-            label={isPrivate ? '비공개' : '공개'}
+            label={isPrivate ? tGlobal('todo:chip.private') : tGlobal('todo:chip.public')}
             onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
           />
         );
@@ -581,6 +574,7 @@ const VisibilityChip = () => {
 };
 
 const CategoryChip = ({ onPress }: { onPress: () => void }) => {
+  const { t } = useTranslation('todo');
   const categoryId = useWatch<AddTodoFormValues, 'categoryId'>({ name: 'categoryId' });
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useMemo(
@@ -596,7 +590,7 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
           style={{ backgroundColor: category?.color ?? DEFAULT_CATEGORY_COLOR }}
         />
       }
-      label={category?.name ?? '카테고리'}
+      label={category?.name ?? t('chip.category')}
       onPress={onPress}
     />
   );
@@ -616,13 +610,14 @@ function CategorySelectModalContent({
       categories={data.categories}
       selectedCategoryId={selectedCategoryId}
       onSelect={onSelect}
-      submitLabel="선택하기"
+      submitLabel={tGlobal('todo:add.submit')}
       isLoading={false}
     />
   );
 }
 
 const AiFeatureTooltip = () => {
+  const { t } = useTranslation('todo');
   const [tooltipOpen, setTooltipOpen] = useState(false);
 
   return (
@@ -634,7 +629,7 @@ const AiFeatureTooltip = () => {
         >
           <HStack gap={4} align="center">
             <Text size="e2" weight="medium" shade={6}>
-              AI 기능
+              {t('add.aiFeature')}
             </Text>
             <InfoIcon
               width={fontScaledSize(16)}
@@ -662,11 +657,11 @@ const AiFeatureTooltip = () => {
                 colorClassName="text-main"
               />
               <Text size="b3" weight="semibold">
-                말로 할일을 추가해요
+                {t('add.voiceAddTitle')}
               </Text>
             </HStack>
             <Text size="b3" shade={6}>
-              "이번 주 금요일 저녁 7시 약속"처럼{'\n'}말하면 날짜·시간을 채워줘요
+              {t('add.voiceAddHint')}
             </Text>
           </VStack>
         </Popover.Content>
@@ -737,7 +732,7 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
     if (isAiLimitReached) {
       trackEvent('premium_gate_shown', { feature: 'ai_parse' });
       premiumDialog.open({
-        description: '프리미엄 구독으로 무제한 AI 파싱을 사용할 수 있어요',
+        description: tGlobal('todo:premium.unlimitedParse'),
         onConfirm: onClose,
       });
       return;
