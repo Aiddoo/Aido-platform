@@ -5,14 +5,6 @@ import type {
 	WeatherFallbackTemplates,
 } from "../template.types";
 
-// =============================================================================
-// 한국어(원문) 템플릿 — 기존 문구를 그대로 보존한다 (기존 유저 알림 무변경 보장)
-// =============================================================================
-
-// =============================================================================
-// Scheduler Templates
-// =============================================================================
-
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
 		title: "⏰ {todoTitle}, 1시간 뒤 시작!",
@@ -278,10 +270,6 @@ export const SCHEDULER_TEMPLATES = {
 	} satisfies NotificationTemplate,
 } as const;
 
-// =============================================================================
-// Weather Templates
-// =============================================================================
-
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		title: "☀️ 오늘 {skyLabel}, {tempMin}~{tempMax}°C",
@@ -374,10 +362,6 @@ export const WEATHER_TEMPLATES = {
 		],
 	} satisfies NotificationTemplate,
 } as const;
-
-// =============================================================================
-// Social Templates
-// =============================================================================
 
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
@@ -566,10 +550,6 @@ export const SOCIAL_TEMPLATES = {
 		],
 	} satisfies NotificationTemplate,
 } as const;
-
-// =============================================================================
-// System Templates
-// =============================================================================
 
 export const SYSTEM_TEMPLATES = {
 	// Win-back (비활성 유저 재방문 유도)

@@ -5,14 +5,8 @@ import type {
 	WeatherFallbackTemplates,
 } from "../template.types";
 
-// =============================================================================
 // English templates — same keys/variants as ko.ts (parity is unit-tested).
 // No josa placeholders ({name:이/가}) — plain {name} substitution only.
-// =============================================================================
-
-// =============================================================================
-// Scheduler Templates
-// =============================================================================
 
 export const SCHEDULER_TEMPLATES = {
 	TODO_REMINDER: {
@@ -333,10 +327,6 @@ export const SCHEDULER_TEMPLATES = {
 	} satisfies NotificationTemplate,
 } as const;
 
-// =============================================================================
-// Weather Templates
-// =============================================================================
-
 export const WEATHER_TEMPLATES = {
 	MORNING_CLEAR: {
 		title: "☀️ {skyLabel} today, {tempMin}–{tempMax}°C",
@@ -429,10 +419,6 @@ export const WEATHER_TEMPLATES = {
 		],
 	} satisfies NotificationTemplate,
 } as const;
-
-// =============================================================================
-// Social Templates
-// =============================================================================
 
 export const SOCIAL_TEMPLATES = {
 	FOLLOW_NEW: {
@@ -636,10 +622,6 @@ export const SOCIAL_TEMPLATES = {
 		],
 	} satisfies NotificationTemplate,
 } as const;
-
-// =============================================================================
-// System Templates
-// =============================================================================
 
 export const SYSTEM_TEMPLATES = {
 	// Win-back (비활성 유저 재방문 유도)

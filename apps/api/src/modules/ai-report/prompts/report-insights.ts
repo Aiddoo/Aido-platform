@@ -1,10 +1,6 @@
 import type { SupportedLocale } from "@/common/decorators";
 import type { AggregatedReportData } from "../types";
 
-// ============================================================================
-// 파생 인사이트 계산 (ko/en 프롬프트 빌더 공용)
-// ============================================================================
-
 const DAY_KOREAN: Record<string, string> = {
 	MON: "월요일",
 	TUE: "화요일",

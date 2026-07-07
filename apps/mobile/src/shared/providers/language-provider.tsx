@@ -14,6 +14,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -39,7 +40,10 @@ export const LanguageProvider = ({
     readLanguageMode(syncStorage),
   );
 
-  const resolvedLanguage = resolveLanguage(languageMode, deviceLanguage());
+  const resolvedLanguage = useMemo(
+    () => resolveLanguage(languageMode, deviceLanguage()),
+    [languageMode, deviceLanguage],
+  );
 
   // 단방향 동기화: resolvedLanguage(단일 소스)가 바뀔 때만 i18n에 반영한다.
   // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다.
@@ -57,13 +61,12 @@ export const LanguageProvider = ({
     [syncStorage],
   );
 
-  return (
-    <LanguageContext.Provider
-      value={{ languageMode, resolvedLanguage, setLanguageMode: persistMode }}
-    >
-      {children}
-    </LanguageContext.Provider>
+  const value = useMemo(
+    () => ({ languageMode, resolvedLanguage, setLanguageMode: persistMode }),
+    [languageMode, resolvedLanguage, persistMode],
   );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
 // Provider 없이도 안전하게 동작해야 함 (테스트, 부분 렌더 환경)

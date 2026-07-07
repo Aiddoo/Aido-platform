@@ -6,10 +6,6 @@ dayjs.extend(customParseFormat);
 
 export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
 
-// =============================================================================
-// 빌딩 블록 — 함수 하나는 하나의 역할만 한다
-// =============================================================================
-
 /** 앱 표시 언어에 맞는 Intl 로케일 태그 */
 const getIntlLocale = (): string => (i18n.language === 'en' ? 'en-US' : 'ko-KR');
 
@@ -51,10 +47,6 @@ function formatTimeByLocale(date: Date, hour12: boolean): string {
     hour12,
   }).format(date);
 }
-
-// =============================================================================
-// 조합 — 빌딩 블록을 엮어서 만든 공개 API
-// =============================================================================
 
 export const toHHmm = (date: Date): string => dayjs(date).format('HH:mm');
 
