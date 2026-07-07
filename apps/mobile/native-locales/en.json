@@ -1,6 +1,8 @@
 {
-  "NSMicrophoneUsageDescription": "Aido needs microphone access for voice input.",
-  "NSFaceIDUsageDescription": "Aido uses Face ID to unlock the app.",
-  "NSSpeechRecognitionUsageDescription": "Aido needs speech recognition access for voice input.",
-  "NSPhotoLibraryUsageDescription": "Aido needs photo library access to load images."
+  "ios": {
+    "NSMicrophoneUsageDescription": "Aido needs microphone access for voice input.",
+    "NSFaceIDUsageDescription": "Aido uses Face ID to unlock the app.",
+    "NSSpeechRecognitionUsageDescription": "Aido needs speech recognition access for voice input.",
+    "NSPhotoLibraryUsageDescription": "Aido needs photo library access to load images."
+  }
 }

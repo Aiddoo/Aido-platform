@@ -1,6 +1,8 @@
 {
-  "NSMicrophoneUsageDescription": "Aido이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.",
-  "NSFaceIDUsageDescription": "Aido이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.",
-  "NSSpeechRecognitionUsageDescription": "Aido이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.",
-  "NSPhotoLibraryUsageDescription": "Aido이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다."
+  "ios": {
+    "NSMicrophoneUsageDescription": "Aido이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.",
+    "NSFaceIDUsageDescription": "Aido이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.",
+    "NSSpeechRecognitionUsageDescription": "Aido이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.",
+    "NSPhotoLibraryUsageDescription": "Aido이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다."
+  }
 }
