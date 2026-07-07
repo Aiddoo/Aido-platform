@@ -65,6 +65,6 @@ import {
 		// BullMQ Queue Processor
 		NotificationQueueProcessor,
 	],
-	exports: [NotificationService, NotificationQueueModule],
+	exports: [NotificationService, PushDeliveryService, NotificationQueueModule],
 })
 export class NotificationModule {}

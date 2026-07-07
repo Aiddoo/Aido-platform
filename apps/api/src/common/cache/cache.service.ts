@@ -47,6 +47,8 @@ export interface CachedUserPreference {
 	pushEnabled: boolean;
 	nightPushEnabled: boolean;
 	timezone: string;
+	/** 푸시 언어 ("ko" | "en"). 구버전 캐시 엔트리에는 없을 수 있음 — 읽기 시 toSupportedLocale로 내로잉 */
+	locale?: string;
 	morningReminderHour: number;
 	morningReminderMinute: number;
 	eveningReminderHour: number;

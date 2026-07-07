@@ -7,6 +7,7 @@ import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
 import { NotificationService } from "../notification.service";
+import { PushDeliveryService } from "../push-delivery.service";
 import {
 	NotificationMessageBuilder,
 	resolveTemplateLocale,
@@ -30,6 +31,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	constructor(
 		private readonly notificationService: NotificationService,
+		private readonly pushDeliveryService: PushDeliveryService,
 		private readonly database: DatabaseService,
 	) {
 		super();
@@ -53,13 +55,9 @@ export class NotificationQueueProcessor extends WorkerHost {
 		);
 	}
 
-	/** 수신자 푸시 언어 조회 (preference 없으면 ko) */
+	/** 수신자 푸시 언어 조회 — UserPreference 캐시 경유 (shouldSendPush와 캐시 공유) */
 	async #getLocale(userId: string): Promise<SupportedLocale> {
-		const preference = await this.database.userPreference.findUnique({
-			where: { userId },
-			select: { locale: true },
-		});
-		return resolveTemplateLocale(preference?.locale);
+		return this.pushDeliveryService.getUserLocale(userId);
 	}
 
 	async process(job: Job<NotificationJobData>): Promise<void> {

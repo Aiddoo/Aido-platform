@@ -9,8 +9,16 @@ import {
 	Injectable,
 	Logger,
 } from "@nestjs/common";
-import { CacheService } from "@/common/cache/cache.service";
+import {
+	type CachedUserPreference,
+	CacheService,
+} from "@/common/cache/cache.service";
 import { CacheKeys } from "@/common/cache/constants/cache-keys";
+import {
+	DEFAULT_LOCALE,
+	type SupportedLocale,
+	toSupportedLocale,
+} from "@/common/decorators";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import {
 	type NotificationType,
@@ -212,58 +220,72 @@ export class PushDeliveryService implements BeforeApplicationShutdown {
 	}
 
 	/**
+	 * UserPreference를 캐시 경유로 로드 (cache-aside — 미스 시 DB 조회 후 적재)
+	 */
+	async #loadPreference(userId: string): Promise<CachedUserPreference> {
+		return this.cacheService.wrapUserPreference(userId, async () => {
+			const raw = await this.userPreferenceRepository.findByUserId(userId);
+			if (!raw) {
+				return {
+					pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
+					nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
+					timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
+					locale: DEFAULT_LOCALE,
+					morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+					morningReminderMinute:
+						USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
+					eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+					eveningReminderMinute:
+						USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
+					timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+					weatherMorningEnabled:
+						USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
+					weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
+					weatherMorningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
+					weatherEveningEnabled:
+						USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
+					weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
+					weatherEveningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
+				};
+			}
+			return {
+				pushEnabled: raw.pushEnabled,
+				nightPushEnabled: raw.nightPushEnabled,
+				timezone: raw.timezone,
+				locale: raw.locale,
+				morningReminderHour: raw.morningReminderHour,
+				morningReminderMinute: raw.morningReminderMinute,
+				eveningReminderHour: raw.eveningReminderHour,
+				eveningReminderMinute: raw.eveningReminderMinute,
+				timeFormat: raw.timeFormat,
+				weatherMorningEnabled: raw.weatherMorningEnabled,
+				weatherMorningHour: raw.weatherMorningHour,
+				weatherMorningMinute: raw.weatherMorningMinute,
+				weatherEveningEnabled: raw.weatherEveningEnabled,
+				weatherEveningHour: raw.weatherEveningHour,
+				weatherEveningMinute: raw.weatherEveningMinute,
+			};
+		});
+	}
+
+	/**
+	 * 수신자 푸시 언어 조회 — shouldSendPush와 같은 캐시 키를 공유하므로
+	 * 한 발송 사이클에서 preference는 사실상 1회만 읽힌다.
+	 * 구버전 캐시 엔트리(locale 없음)는 ko로 내로잉.
+	 */
+	async getUserLocale(userId: string): Promise<SupportedLocale> {
+		const preference = await this.#loadPreference(userId);
+		return toSupportedLocale(preference.locale);
+	}
+
+	/**
 	 * 푸시 발송 여부 결정
 	 */
 	async shouldSendPush(
 		userId: string,
 		type: NotificationType,
 	): Promise<boolean> {
-		const preference = await this.cacheService.wrapUserPreference(
-			userId,
-			async () => {
-				const raw = await this.userPreferenceRepository.findByUserId(userId);
-				if (!raw) {
-					return {
-						pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
-						nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
-						timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
-						morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
-						morningReminderMinute:
-							USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
-						eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-						eveningReminderMinute:
-							USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
-						timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
-						weatherMorningEnabled:
-							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
-						weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
-						weatherMorningMinute:
-							USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
-						weatherEveningEnabled:
-							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
-						weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
-						weatherEveningMinute:
-							USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
-					};
-				}
-				return {
-					pushEnabled: raw.pushEnabled,
-					nightPushEnabled: raw.nightPushEnabled,
-					timezone: raw.timezone,
-					morningReminderHour: raw.morningReminderHour,
-					morningReminderMinute: raw.morningReminderMinute,
-					eveningReminderHour: raw.eveningReminderHour,
-					eveningReminderMinute: raw.eveningReminderMinute,
-					timeFormat: raw.timeFormat,
-					weatherMorningEnabled: raw.weatherMorningEnabled,
-					weatherMorningHour: raw.weatherMorningHour,
-					weatherMorningMinute: raw.weatherMorningMinute,
-					weatherEveningEnabled: raw.weatherEveningEnabled,
-					weatherEveningHour: raw.weatherEveningHour,
-					weatherEveningMinute: raw.weatherEveningMinute,
-				};
-			},
-		);
+		const preference = await this.#loadPreference(userId);
 
 		if (!preference.pushEnabled) {
 			return false;

@@ -9,6 +9,7 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
 import { toISOStringOrNull } from "@/common/date/utils/format";
+import { DEFAULT_LOCALE } from "@/common/decorators";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { TimeFormat } from "@/generated/prisma/enums";
@@ -40,6 +41,7 @@ export class UserSettingsService {
 						pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
 						nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
 						timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
+						locale: DEFAULT_LOCALE,
 						morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
 						morningReminderMinute:
 							USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
@@ -63,6 +65,7 @@ export class UserSettingsService {
 					pushEnabled: raw.pushEnabled,
 					nightPushEnabled: raw.nightPushEnabled,
 					timezone: raw.timezone,
+					locale: raw.locale,
 					morningReminderHour: raw.morningReminderHour,
 					morningReminderMinute: raw.morningReminderMinute,
 					eveningReminderHour: raw.eveningReminderHour,
