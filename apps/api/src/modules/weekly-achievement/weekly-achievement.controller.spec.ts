@@ -55,19 +55,26 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			service.getWeeklyAchievements.mockResolvedValue(mockResult);
 
 			// When
-			await controller.getWeeklyAchievements(mockUser, {
-				year: 2026,
-				cursor: 10,
-				size: 5,
-			});
+			await controller.getWeeklyAchievements(
+				mockUser,
+				{
+					year: 2026,
+					cursor: 10,
+					size: 5,
+				},
+				undefined,
+			);
 
 			// Then
-			expect(service.getWeeklyAchievements).toHaveBeenCalledWith({
-				userId: "user-123",
-				year: 2026,
-				cursor: 10,
-				size: 5,
-			});
+			expect(service.getWeeklyAchievements).toHaveBeenCalledWith(
+				{
+					userId: "user-123",
+					year: 2026,
+					cursor: 10,
+					size: 5,
+				},
+				"ko",
+			);
 		});
 
 		it("Service 응답을 그대로 반환한다", async () => {
@@ -98,10 +105,14 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			service.getWeeklyAchievements.mockResolvedValue(mockResult);
 
 			// When
-			const result = await controller.getWeeklyAchievements(mockUser, {
-				year: 2026,
-				size: 20,
-			});
+			const result = await controller.getWeeklyAchievements(
+				mockUser,
+				{
+					year: 2026,
+					size: 20,
+				},
+				undefined,
+			);
 
 			// Then
 			expect(result).toEqual(mockResult);
@@ -124,14 +135,21 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			});
 
 			// When
-			await controller.getWeeklyAchievement(mockUser, { year: 2026, week: 10 });
+			await controller.getWeeklyAchievement(
+				mockUser,
+				{ year: 2026, week: 10 },
+				undefined,
+			);
 
 			// Then
-			expect(service.getWeeklyAchievement).toHaveBeenCalledWith({
-				userId: "user-123",
-				year: 2026,
-				week: 10,
-			});
+			expect(service.getWeeklyAchievement).toHaveBeenCalledWith(
+				{
+					userId: "user-123",
+					year: 2026,
+					week: 10,
+				},
+				"ko",
+			);
 		});
 	});
 });

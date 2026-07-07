@@ -30,6 +30,15 @@ export function parseAcceptLanguage(
 	return matched ?? DEFAULT_LOCALE;
 }
 
+/**
+ * DB 저장값·큐 페이로드 등 신뢰할 수 없는 문자열을 지원 로케일로 내로잉한다.
+ * 화이트리스트 밖 값은 DEFAULT_LOCALE("ko") — 기존 유저 하위 호환.
+ */
+export function toSupportedLocale(value: unknown): SupportedLocale {
+	const matched = SUPPORTED_LOCALES.find((locale) => locale === value);
+	return matched ?? DEFAULT_LOCALE;
+}
+
 export const Locale = createParamDecorator(
 	(_data: unknown, ctx: ExecutionContext): SupportedLocale | undefined => {
 		const request = ctx.switchToHttp().getRequest();

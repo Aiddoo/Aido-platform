@@ -863,6 +863,7 @@ model AiReport {
   // AI 분석 결과
   aiSummary String  @db.Text
   aiTips    Json
+  locale    String  @default("ko") @db.VarChar(10) // 생성 언어 — 과거 리포트는 생성 당시 언어 유지
 
   // 상태
   hasActivity Boolean

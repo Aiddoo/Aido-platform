@@ -89,7 +89,7 @@ export class ReportGenerationJob implements OnModuleInit {
 					select: {
 						id: true,
 						preference: {
-							select: { timezone: true },
+							select: { timezone: true, locale: true },
 						},
 					},
 					orderBy: { id: "asc" },
@@ -101,6 +101,7 @@ export class ReportGenerationJob implements OnModuleInit {
 					data: {
 						userId: user.id,
 						timezone: user.preference?.timezone ?? "Asia/Seoul",
+						locale: user.preference?.locale ?? "ko",
 						reportType: type,
 					} satisfies AiReportGenerateData,
 					opts: {

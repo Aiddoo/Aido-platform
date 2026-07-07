@@ -104,11 +104,19 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 
 		this.#logger.debug(`Processing suggestion analysis: userId=${userId}`);
 
+		// 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
+		const preference = await this.database.userPreference.findUnique({
+			where: { userId },
+			select: { locale: true },
+		});
+		const locale = resolveTemplateLocale(preference?.locale);
+
 		const createdCount =
 			await this.aiSuggestionService.analyzeAndCreateSuggestions(
 				userId,
 				timezone,
 				weatherGrid,
+				locale,
 			);
 
 		if (createdCount === 0) {
@@ -118,13 +126,7 @@ export class SuggestionAnalysisProcessor extends WorkerHost {
 			return;
 		}
 
-		const preference = await this.database.userPreference.findUnique({
-			where: { userId },
-			select: { locale: true },
-		});
-		const message = NotificationMessageBuilder.aiSuggestion(
-			resolveTemplateLocale(preference?.locale),
-		);
+		const message = NotificationMessageBuilder.aiSuggestion(locale);
 		await this.notificationService.createAndSend({
 			userId,
 			type: "AI_SUGGESTION",

@@ -63,6 +63,7 @@ describe("AiController — AI 컨트롤러", () => {
 				mockUser,
 				dto as unknown as ParseTodoRequestDto,
 				"Asia/Seoul",
+				undefined,
 			);
 
 			// Then -서비스에 text, userId, timezone, categoryId를 전달하고 성공 응답을 반환해야 한다
@@ -70,6 +71,7 @@ describe("AiController — AI 컨트롤러", () => {
 				dto.text,
 				mockUser.userId,
 				"Asia/Seoul",
+				undefined,
 				undefined,
 			);
 			expect(result).toEqual({
@@ -106,6 +108,7 @@ describe("AiController — AI 컨트롤러", () => {
 				mockUser,
 				dto as unknown as ParseTodoRequestDto,
 				"Asia/Seoul",
+				undefined,
 			);
 
 			// Then -categoryId가 서비스에 전달되고 응답에 포함되어야 한다
@@ -114,6 +117,7 @@ describe("AiController — AI 컨트롤러", () => {
 				mockUser.userId,
 				"Asia/Seoul",
 				42,
+				undefined,
 			);
 			expect(result.data.categoryId).toBe(42);
 		});

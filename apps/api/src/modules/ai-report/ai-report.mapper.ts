@@ -14,6 +14,7 @@ import {
 import dayjs from "dayjs";
 import { z } from "zod";
 import { toDateString } from "@/common/date/utils/format";
+import { type SupportedLocale, toSupportedLocale } from "@/common/decorators";
 import type { AiReport } from "@/generated/prisma/client";
 
 /**
@@ -21,19 +22,43 @@ import type { AiReport } from "@/generated/prisma/client";
  *
  * Prisma 엔티티를 API 응답 형식으로 변환합니다.
  */
+const MONTH_NAMES_EN = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+] as const;
+
 export abstract class AiReportMapper {
 	/**
-	 * 기간 라벨 생성
+	 * 기간 라벨 생성 — 리포트 생성 언어(locale)에 맞춰 표기한다.
 	 *
 	 * @example
-	 * computePeriodLabel("WEEKLY", 2026, 10)  → "2026년 10주차"
-	 * computePeriodLabel("MONTHLY", 2026, 3)  → "2026년 3월"
+	 * computePeriodLabel("WEEKLY", 2026, 10)        → "2026년 10주차"
+	 * computePeriodLabel("MONTHLY", 2026, 3)        → "2026년 3월"
+	 * computePeriodLabel("WEEKLY", 2026, 10, "en")  → "Week 10, 2026"
+	 * computePeriodLabel("MONTHLY", 2026, 3, "en")  → "March 2026"
 	 */
 	static computePeriodLabel(
 		type: "WEEKLY" | "MONTHLY",
 		year: number,
 		period: number,
+		locale: SupportedLocale = "ko",
 	): string {
+		if (locale === "en") {
+			if (type === "WEEKLY") {
+				return `Week ${period}, ${year}`;
+			}
+			return `${MONTH_NAMES_EN[period - 1]} ${year}`;
+		}
 		if (type === "WEEKLY") {
 			return `${year}년 ${period}주차`;
 		}
@@ -89,6 +114,7 @@ export abstract class AiReportMapper {
 				type,
 				entity.year,
 				entity.period,
+				toSupportedLocale(entity.locale),
 			),
 			dateRange: AiReportMapper.computeDateRange(
 				type,

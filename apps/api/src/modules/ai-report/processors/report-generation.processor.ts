@@ -1,6 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
+import { toSupportedLocale } from "@/common/decorators";
 
 import { AiReportService } from "../ai-report.service";
 import type { ReportGenerationJob } from "../jobs/report-generation.job";
@@ -22,6 +23,8 @@ export interface AiReportDispatchData {
 export interface AiReportGenerateData {
 	userId: string;
 	timezone: string;
+	/** 생성 언어 — 없으면 ko (구버전 잡 하위 호환) */
+	locale?: string;
 	reportType: "WEEKLY" | "MONTHLY";
 }
 
@@ -92,15 +95,24 @@ export class ReportGenerationProcessor extends WorkerHost {
 			return;
 		}
 
-		const { userId, timezone, reportType } =
+		const { userId, timezone, locale, reportType } =
 			job.data as AiReportJobMap[typeof AiReportJobName.GENERATE];
+		const reportLocale = toSupportedLocale(locale);
 
 		this.#logger.debug(`Processing ${reportType} report: userId=${userId}`);
 
 		const report =
 			reportType === "WEEKLY"
-				? await this.aiReportService.generateWeeklyReport(userId, timezone)
-				: await this.aiReportService.generateMonthlyReport(userId, timezone);
+				? await this.aiReportService.generateWeeklyReport(
+						userId,
+						timezone,
+						reportLocale,
+					)
+				: await this.aiReportService.generateMonthlyReport(
+						userId,
+						timezone,
+						reportLocale,
+					);
 
 		if (!report) {
 			this.#logger.debug(
