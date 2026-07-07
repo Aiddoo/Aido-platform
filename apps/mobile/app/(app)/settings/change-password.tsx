@@ -6,6 +6,7 @@ import { useChangePasswordMutationOptions } from '@src/features/auth/presentatio
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, QueryErrorBoundary, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense, useCallback, useRef } from 'react';
@@ -90,7 +91,9 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
                 submitBehavior="submit"
                 returnKeyType="next"
                 isInvalid={!!errors.currentPassword}
-                errorMessage={errors.currentPassword?.message}
+                errorMessage={resolveValidationMessage(errors.currentPassword, {
+                  default: 'currentPassword.required',
+                })}
                 onSubmitEditing={() => {
                   if (isValid) {
                     onNext();
@@ -189,7 +192,9 @@ function NewPasswordStep() {
                     onChangeText={onChange}
                     returnKeyType="done"
                     isInvalid={!!errors.newPasswordConfirm}
-                    errorMessage={errors.newPasswordConfirm?.message}
+                    errorMessage={resolveValidationMessage(errors.newPasswordConfirm, {
+                      default: 'password.mismatch',
+                    })}
                     onSubmitEditing={() => {
                       if (newPasswordConfirm.length > 0 && !errors.newPasswordConfirm) handleNext();
                     }}

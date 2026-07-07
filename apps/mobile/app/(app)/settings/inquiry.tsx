@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/presentations/constants/inquiry-category-labels.constant';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/presentations/queries/use-create-inquiry-mutation-options';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
@@ -127,7 +128,10 @@ const InquiryScreen = () => {
                 value={value}
                 onChangeText={onChange}
                 isInvalid={!!errors.content}
-                errorMessage={errors.content?.message}
+                errorMessage={resolveValidationMessage(errors.content, {
+                  default: 'inquiryContent.tooShort',
+                  byType: { too_big: 'inquiryContent.tooLong' },
+                })}
                 maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
                 className="min-h-40 bg-white border-gray-2"
               />

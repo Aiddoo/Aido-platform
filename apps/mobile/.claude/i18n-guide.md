@@ -74,6 +74,13 @@ toast.error(t('friend:toast.sendFailed'));
 
 ---
 
+## 자산 배치 원칙 (모노레포)
+
+- **카탈로그(locales/*.json)는 앱 소유** — 소비자가 모바일 하나뿐이라 패키지화하지 않는다 (dist 빌드 체인·Metro 우회 비용만 추가). 서버 푸시 템플릿과 중복 문자열 0건 확인됨 (2026-07)
+- **공유 계약은 `@aido/errors`의 ErrorCode뿐** — 클라 errors.json이 코드를 키로 소비. 메시지 문구는 서버(정중체)/클라(구어체)로 의도적 분리 유지
+- **서버 발송·생성 텍스트(푸시 템플릿, AI 프롬프트)는 서버 소유** — `apps/api/src/modules/notification/templates/locales/`
+- **저장된 히스토리는 생성 당시 언어 유지가 설계** — 과거 알림 title/body, 과거 AI 리포트 본문은 언어 변경 후에도 그대로 (본문-라벨 일관성)
+
 ## 서버 연동
 
 - Ky 클라이언트가 `Accept-Language: <i18n.language>` 헤더 전송 (auth/public 공통, beforeRequest 훅)

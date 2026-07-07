@@ -2,7 +2,7 @@ import { ErrorCode } from '@aido/errors';
 import { isApiError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import type { AfterResponseState, KyRequest, KyResponse, NormalizedOptions } from 'ky';
-import { handlePublicApiErrors } from './error-handler';
+import { handlePublicApiErrors, resolveMessage } from './error-handler';
 
 const createErrorResponse = (code: string, message: string, status = 400): Response =>
   new Response(JSON.stringify({ success: false, error: { code, message } }), {
@@ -114,5 +114,21 @@ describe('resolveMessage (handlePublicApiErrors 경유)', () => {
       expect(error.code).toBe(ErrorCode.SYS_0001);
       expect(error.message).toBe('서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
     }
+  });
+});
+
+describe('resolveMessage (ky-client HTTPError 분기에서 직접 사용)', () => {
+  it('알려진 코드는 서버 메시지 대신 카탈로그 문구를 사용한다', () => {
+    expect(resolveMessage('TODO_0801', '서버의 포멀한 메시지')).toBe('할 일을 찾을 수 없어요');
+  });
+
+  it('en에서는 같은 코드가 영어 문구로 번역된다', async () => {
+    await i18n.changeLanguage('en');
+    expect(resolveMessage('TODO_0801', '서버의 포멀한 메시지')).toBe('To-do not found');
+  });
+
+  it('미지 코드는 서버 메시지, 그것도 없으면 폴백을 사용한다', () => {
+    expect(resolveMessage('HTTP_418', '서버 메시지')).toBe('서버 메시지');
+    expect(resolveMessage('HTTP_418', '')).toBe('알 수 없는 오류가 발생했어요');
   });
 });

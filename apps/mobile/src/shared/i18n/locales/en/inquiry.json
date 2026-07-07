@@ -11,6 +11,7 @@
     "submit": "Send Inquiry"
   },
   "toasts": {
-    "submitFailed": "Failed to submit your inquiry"
+    "submitFailed": "Failed to submit your inquiry",
+    "submitted": "Your inquiry has been submitted."
   }
 }

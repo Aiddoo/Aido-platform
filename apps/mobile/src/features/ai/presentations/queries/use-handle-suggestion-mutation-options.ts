@@ -32,7 +32,7 @@ export const useHandleSuggestionMutationOptions = () => {
       const result = await aiService.handleSuggestionAction(suggestionId, input);
       return unwrap(result);
     },
-    onSuccess: (result, { input }) => {
+    onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
       queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
 
@@ -41,7 +41,11 @@ export const useHandleSuggestionMutationOptions = () => {
         queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       }
 
-      toast.success(result.message);
+      toast.success(
+        input.action === 'accept'
+          ? t('ai:suggestions.toasts.accepted')
+          : t('ai:suggestions.toasts.rejected'),
+      );
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

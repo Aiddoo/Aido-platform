@@ -36,7 +36,7 @@ const readBody = async (response: Response): Promise<unknown> => {
 };
 
 /** code가 알려진 ErrorCode면 로케일 문구를, 아니면 서버 메시지/폴백을 사용(무캐스트, isErrorCode 가드). */
-const resolveMessage = (code: string, serverMessage: string): string => {
+export const resolveMessage = (code: string, serverMessage: string): string => {
   if (isErrorCode(code)) {
     const mapped = tDynamic('errors', code);
     if (mapped) {

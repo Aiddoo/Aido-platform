@@ -18,10 +18,10 @@ export const useCreateInquiryMutationOptions = () => {
 
       return unwrap(result);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      toast.success(data.message);
+      toast.success(t('inquiry:toasts.submitted'));
 
       router.back();
     },

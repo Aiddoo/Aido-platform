@@ -86,7 +86,9 @@
     "toasts": {
       "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
       "retryLater": "잠시 후 다시 시도해 주세요",
-      "quotaExceeded": "이번 달 AI 사용 횟수를 모두 사용했어요"
+      "quotaExceeded": "이번 달 AI 사용 횟수를 모두 사용했어요",
+      "accepted": "제안이 수락되어 반복 할 일이 생성되었습니다.",
+      "rejected": "제안이 거절되었습니다."
     }
   },
   "sampleReport": {

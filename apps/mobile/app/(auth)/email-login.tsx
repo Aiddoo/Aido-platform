@@ -7,6 +7,7 @@ import {
   emailLoginFormSchema,
 } from '@src/features/auth/presentations/schemas/email-login-form.schema';
 import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Button, H3, HStack, Input, Spacing, TextButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -75,7 +76,10 @@ const EmailLoginScreen = () => {
               returnKeyType="next"
               submitBehavior="submit"
               isInvalid={!!errors.email}
-              errorMessage={errors.email?.message}
+              errorMessage={resolveValidationMessage(errors.email, {
+                default: 'email.invalid',
+                byType: { too_big: 'email.tooLong' },
+              })}
               onSubmitEditing={() => passwordRef.current?.focus()}
             />
           )}

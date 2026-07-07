@@ -91,7 +91,9 @@
     "toasts": {
       "premiumOnly": "AI recurring suggestions are available to Premium subscribers only",
       "retryLater": "Please try again later",
-      "quotaExceeded": "You've used all your AI credits for this month"
+      "quotaExceeded": "You've used all your AI credits for this month",
+      "accepted": "Suggestion accepted — your repeating to-do is ready.",
+      "rejected": "Suggestion dismissed."
     }
   },
   "sampleReport": {
