@@ -5,7 +5,7 @@ import { i18n } from '@src/shared/i18n';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type AfterResponseHook, type KyInstance } from 'ky';
 import { handleApiErrors } from './error-handler';
-import { createTokenRefresher, type TokenRefresher } from './token-refresher';
+import type { TokenRefresher } from './token-refresher';
 
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
 const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
@@ -59,12 +59,17 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
   };
 };
 
-export const createAuthClient = (storage: Storage): KyInstance => {
+/**
+ * 인증 ky 클라이언트를 생성한다.
+ *
+ * refresh는 앱 전체에서 단일 인스턴스를 주입받는다(bootstrap의 DI에서 생성) —
+ * 인스턴스가 갈라지면 single-flight mutex가 분리되어 동시 회전(토큰 패밀리 소모)이
+ * 발생할 수 있다.
+ */
+export const createAuthClient = (storage: Storage, refresh: TokenRefresher): KyInstance => {
   if (kyInstance) {
     return kyInstance;
   }
-
-  const refresh = createTokenRefresher(storage);
 
   kyInstance = ky.create({
     prefixUrl: ENV.API_URL,

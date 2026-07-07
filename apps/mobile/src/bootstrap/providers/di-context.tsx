@@ -17,6 +17,7 @@ import type { TodoCategoryService } from '@src/features/todo/services/todo-categ
 import type { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import type { UserService } from '@src/features/user/services/user.service';
 import type { WeatherService } from '@src/features/weather/services/weather.service';
+import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
 export interface DIContainer {
@@ -25,6 +26,8 @@ export interface DIContainer {
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
+  /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅과 부팅 검증이 공유 (single-flight) */
+  tokenRefresher: TokenRefresher;
 
   // Services
   achievementService: AchievementService;
@@ -70,6 +73,7 @@ export const useDI = (): DIContainer => {
 
 // Infrastructure Hooks
 export const useStorage = () => useDI().storage;
+export const useTokenRefresher = () => useDI().tokenRefresher;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
