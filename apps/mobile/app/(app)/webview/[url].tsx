@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
@@ -5,11 +6,12 @@ import { WebView } from 'react-native-webview';
 
 const WebViewScreen = () => {
   const { url } = useLocalSearchParams<{ url: string }>();
+  const { t } = useTranslation();
 
   if (!url || typeof url !== 'string') {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text size="b3">유효하지 않은 URL입니다</Text>
+        <Text size="b3">{t('webview.invalidUrl')}</Text>
       </View>
     );
   }
@@ -21,8 +23,8 @@ const WebViewScreen = () => {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: '웹페이지',
-          headerBackTitle: '뒤로',
+          title: t('webview.title'),
+          headerBackTitle: t('webview.back'),
         }}
       />
       <WebView

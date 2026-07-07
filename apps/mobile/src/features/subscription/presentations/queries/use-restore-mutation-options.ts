@@ -1,7 +1,8 @@
-import { useSubscriptionService } from '@src/bootstrap/providers/di-provider';
+import { useSubscriptionService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -21,14 +22,14 @@ export const useRestoreMutationOptions = () => {
       if (hasActive) {
         trackEvent('subscription_restored');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        success('구매가 복원되었어요!');
+        success(t('subscription:toast.restoreSuccess'));
       } else {
-        success('복원할 구매 내역이 없어요');
+        success(t('subscription:toast.restoreEmpty'));
       }
     },
     onError: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      error('구매 복원에 실패했어요');
+      error(t('subscription:toast.restoreFailed'));
     },
   });
 };

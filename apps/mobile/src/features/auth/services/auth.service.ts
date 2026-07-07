@@ -41,6 +41,7 @@ import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
+import { t } from '@src/shared/i18n';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Crypto from 'expo-crypto';
@@ -249,7 +250,8 @@ export class AuthService {
           return err(
             AuthErrors.providerError(
               provider,
-              oauthError.description ?? `${provider} 로그인에 실패했어요 (${oauthError.code})`,
+              oauthError.description ??
+                t('auth:errors.providerFailedWithCode', { provider, code: oauthError.code }),
             ),
           );
         }
@@ -265,7 +267,7 @@ export class AuthService {
       return err(AuthErrors.loginCancelled());
     }
 
-    return err(AuthErrors.unknown('OAuth 인증 중 문제가 발생했어요'));
+    return err(AuthErrors.unknown(t('auth:errors.oauthProblem')));
   };
 
   openKakaoLogin = (): Promise<Result<string, AuthError>> => {
@@ -294,7 +296,7 @@ export class AuthService {
 
       const idToken = credential.identityToken;
       if (!idToken) {
-        return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
+        return err(AuthErrors.providerError('apple', t('auth:errors.appleNoToken')));
       }
 
       const input: AppleMobileCallbackInput = {
@@ -512,7 +514,7 @@ export class AuthService {
 
       const idToken = credential.identityToken;
       if (!idToken) {
-        return err(AuthErrors.providerError('apple', 'Apple 인증 토큰을 받지 못했어요'));
+        return err(AuthErrors.providerError('apple', t('auth:errors.appleNoToken')));
       }
 
       return this.#authHttpClient.post('v1/auth/link', { provider: 'APPLE', idToken, nonce });

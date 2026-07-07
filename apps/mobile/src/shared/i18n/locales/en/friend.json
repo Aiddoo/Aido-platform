@@ -1,0 +1,46 @@
+{
+  "screenTitle": "Friends",
+  "fallbackName": "Friend",
+  "errors": {
+    "invalidTag": "Invalid tag format",
+    "emptyTag": "Please enter a tag"
+  },
+  "toast": {
+    "requestSent": "Friend request sent",
+    "requestAccepted": "Friend request accepted",
+    "requestRejected": "Friend request declined",
+    "requestFailed": "Couldn't send the friend request"
+  },
+  "premium": {
+    "unlimitedFriends": "Subscribe to Premium to add unlimited friends"
+  },
+  "deleteDialog": {
+    "title": "Remove this friend?",
+    "description": "You'll no longer see each other's to-dos"
+  },
+  "tabs": {
+    "friends": "Friends",
+    "received": "Received",
+    "sent": "Sent"
+  },
+  "list": {
+    "friendCount_one": "{{count}} friend total",
+    "friendCount_other": "{{count}} friends total",
+    "requestCount_one": "{{count}} request total",
+    "requestCount_other": "{{count}} requests total",
+    "emptyTitle": "Add your friends",
+    "emptyDescription": "Tap the search icon to find friends",
+    "emptyReceived": "No received requests yet",
+    "emptySent": "No sent requests yet",
+    "editHint": "Tap Edit to reorder or remove\nfriends shown in your feed",
+    "accept": "Accept",
+    "reject": "Decline",
+    "edit": "Edit"
+  },
+  "add": {
+    "title": "Add your friends",
+    "description": "Share to-dos and nudge each other",
+    "tagLabel": "Friend tag",
+    "submit": "Add Friend"
+  }
+}

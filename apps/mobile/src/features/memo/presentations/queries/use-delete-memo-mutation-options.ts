@@ -1,8 +1,9 @@
-import { useMemoService } from '@src/bootstrap/providers/di-provider';
+import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -20,7 +21,7 @@ export const useDeleteMemoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_, memoId) => {
-      toast.success('메모를 삭제했어요');
+      toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
     },
     onError: (error) => {
@@ -30,7 +31,7 @@ export const useDeleteMemoMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 삭제해 보세요' });
+      toast.error(undefined, { fallback: t('memo:toasts.deleteRetry') });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all });

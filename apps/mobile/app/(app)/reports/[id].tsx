@@ -6,6 +6,7 @@ import {
 } from '@src/features/ai/presentations/constants/sample-reports.constant';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/use-get-report-detail-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   QueryErrorBoundary,
@@ -61,6 +62,7 @@ function ReportDetailBody({ id }: { id: number }) {
 }
 
 function SampleReportDetail({ report }: { report: AiReport }) {
+  const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
 
@@ -72,10 +74,10 @@ function SampleReportDetail({ report }: { report: AiReport }) {
 
       <VStack gap={8} align="center">
         <Text size="b3" weight="bold" shade={9}>
-          나만의 리포트를 받아보세요
+          {t('report.lockedDetail.title')}
         </Text>
         <Text size="b4" shade={6} className="text-center">
-          {'프리미엄 구독으로 매주/매월\nAI가 분석한 리포트를 보내드려요'}
+          {t('report.lockedDetail.description')}
         </Text>
         <Spacing size={4} />
         <Button
@@ -83,11 +85,11 @@ function SampleReportDetail({ report }: { report: AiReport }) {
           onPress={() => {
             trackEvent('premium_gate_shown', { feature: 'ai_report' });
             premiumDialog.open({
-              description: 'AI 리포트는 프리미엄 구독자만 이용할 수 있어요.',
+              description: t('report.lockedDetail.premiumDialogDescription'),
             });
           }}
         >
-          프리미엄 구독하기
+          {t('report.lockedDetail.subscribe')}
         </Button>
       </VStack>
 

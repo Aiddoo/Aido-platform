@@ -1,4 +1,5 @@
 import type { DayOfWeek } from '@aido/validators';
+import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
@@ -54,6 +55,7 @@ export const TodoRepeatPickerContent = ({
   repeat,
   onClose,
 }: TodoRepeatPickerContentProps) => {
+  const { t } = useTranslation(['todo', 'common']);
   const [startDate, setStartDate] = useState(initialStartDate);
   const picker = useDatePicker({ startDate });
   const repeatSetting = useRepeatSetting({
@@ -103,7 +105,7 @@ export const TodoRepeatPickerContent = ({
   return (
     <VStack gap={20}>
       <PickerHeader
-        title="반복"
+        title={t('picker.repeatTitle')}
         onCancel={() => onClose({ type: 'cancel' })}
         onConfirm={handleConfirm}
         isConfirmDisabled={isConfirmDisabled}
@@ -123,7 +125,7 @@ export const TodoRepeatPickerContent = ({
         <HStack align="center" justify="between" gap={8}>
           <HStack gap={4} align="center" className="shrink">
             <Text size="b3" tone="neutral" shade={7}>
-              반복 기간
+              {t('picker.repeatPeriod')}
             </Text>
             <Text size="b3" tone="neutral" shade={6}>
               •
@@ -134,7 +136,7 @@ export const TodoRepeatPickerContent = ({
               </Text>
             ) : (
               <Text size="b3" tone="neutral" shade={5}>
-                기간을 선택해주세요
+                {t('picker.selectPeriod')}
               </Text>
             )}
           </HStack>
@@ -146,7 +148,7 @@ export const TodoRepeatPickerContent = ({
               display="inline"
               onPress={() => onClose({ type: 'reset' })}
             >
-              삭제
+              {t('common:actions.delete')}
             </Button>
           )}
         </HStack>

@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/errors';
-import { useAiService, useLogger } from '@src/bootstrap/providers/di-provider';
+import { useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import type { AiSuggestionActionInput } from '@src/features/ai/models/ai.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
@@ -7,6 +7,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { usePremiumDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -31,7 +32,7 @@ export const useHandleSuggestionMutationOptions = () => {
       const result = await aiService.handleSuggestionAction(suggestionId, input);
       return unwrap(result);
     },
-    onSuccess: (result, { input }) => {
+    onSuccess: (_result, { input }) => {
       trackEvent('ai_suggestion_acted', { action: input.action });
       queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
 
@@ -40,7 +41,11 @@ export const useHandleSuggestionMutationOptions = () => {
         queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       }
 
-      toast.success(result.message);
+      toast.success(
+        input.action === 'accept'
+          ? t('ai:suggestions.toasts.accepted')
+          : t('ai:suggestions.toasts.rejected'),
+      );
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -48,7 +53,7 @@ export const useHandleSuggestionMutationOptions = () => {
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {
         trackEvent('premium_gate_shown', { feature: 'ai_suggestion' });
         premiumDialog.open({
-          description: 'AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요',
+          description: t('ai:suggestions.toasts.premiumOnly'),
         });
         return;
       }
@@ -70,7 +75,7 @@ export const useHandleSuggestionMutationOptions = () => {
       }
 
       logger.error('[AiSuggestion] Unexpected error', error instanceof Error ? error : undefined);
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해 주세요' });
+      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });
 };

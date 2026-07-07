@@ -1,6 +1,7 @@
 import { createMemoSchema } from '@aido/validators';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, Box, CheckmarkIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
@@ -17,6 +18,7 @@ import type { z } from 'zod';
 type CreateMemoFormInput = z.infer<typeof createMemoSchema>;
 
 export default function MemoCreateScreen() {
+  const { t } = useTranslation('memo');
   const router = useRouter();
   const navigation = useNavigation();
   const inputRef = useRef<TextInput>(null);
@@ -111,7 +113,7 @@ export default function MemoCreateScreen() {
           render={({ field: { value, onChange } }) => (
             <StyledTextInput
               ref={inputRef}
-              placeholder="아이디어를 자유롭게 적어보세요..."
+              placeholder={t('create.placeholder')}
               value={value}
               onChangeText={onChange}
               multiline

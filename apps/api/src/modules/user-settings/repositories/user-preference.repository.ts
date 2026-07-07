@@ -208,4 +208,20 @@ export class UserPreferenceRepository {
 			update: { timezone },
 		});
 	}
+
+	/**
+	 * 사용자 푸시 언어 upsert (없으면 생성, 있으면 갱신) — 토큰 등록 시 Accept-Language 동기화
+	 */
+	async upsertLocale(
+		userId: string,
+		locale: string,
+		tx?: TransactionClient,
+	): Promise<void> {
+		const client = tx ?? this.database;
+		await client.userPreference.upsert({
+			where: { userId },
+			create: { userId, locale },
+			update: { locale },
+		});
+	}
 }

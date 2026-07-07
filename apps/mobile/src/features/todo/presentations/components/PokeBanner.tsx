@@ -2,6 +2,7 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Text, usePremiumDialog, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
@@ -10,6 +11,7 @@ import { match } from 'ts-pattern';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-limit-query-options';
 
 export function PokeBanner() {
+  const { t } = useTranslation('todo');
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
@@ -20,28 +22,28 @@ export function PokeBanner() {
     if (isLimitReached) {
       trackEvent('premium_gate_shown', { feature: 'nudge_limit' });
       premiumDialog.open({
-        title: '오늘 콕 찌르기를 다 했어요',
-        description: '구독하면 무제한으로 찌를 수 있어요',
+        title: t('nudge.limitTitle'),
+        description: t('nudge.subscribeUnlimited'),
       });
     }
   };
 
   const defaultTitle = (
     <>
-      친구를{' '}
+      {t('nudge.promptPrefix')}{' '}
       <Text size="b3" weight="bold" className="text-main">
-        콕
+        {t('nudge.promptHighlight')}
       </Text>{' '}
-      찌를까요?
+      {t('nudge.promptSuffix')}
     </>
   );
 
   const bannerText = match(bannerState)
     .with({ type: 'limitReached' }, () => ({
-      title: '오늘 콕 찌르기를 다 썼어요' as React.ReactNode,
+      title: t('nudge.limitSpentTitle') as React.ReactNode,
       description: (
         <Text size="e1" shade={6}>
-          구독하면 무제한으로 찌를 수 있어요
+          {t('nudge.subscribeUnlimited')}
         </Text>
       ),
     }))
@@ -50,11 +52,11 @@ export function PokeBanner() {
       description: (
         <HStack gap={2} align="center" className="flex-wrap">
           <Text size="e1" shade={6}>
-            잊고 있는 것 같다면
+            {t('nudge.hintPrefix')}
           </Text>
           <PawIcon width={12} height={12} colorClassName="text-gray-6" />
           <Text size="e1" shade={6}>
-            을 눌러 알림을 보내보세요!
+            {t('nudge.hintSuffix')}
           </Text>
         </HStack>
       ),
@@ -63,7 +65,7 @@ export function PokeBanner() {
       title: defaultTitle,
       description: (
         <Text size="e1" shade={6}>
-          {`오늘 ${remainingToday}회 남았어요 (구독하면 무제한)`}
+          {t('nudge.remaining', { count: remainingToday })}
         </Text>
       ),
     }))

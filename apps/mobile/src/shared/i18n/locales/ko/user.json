@@ -1,0 +1,60 @@
+{
+  "mypage": {
+    "header": "내 정보",
+    "sections": {
+      "activity": "활동",
+      "subscription": "구독",
+      "settings": "설정"
+    },
+    "items": {
+      "friends": "친구 관리",
+      "categories": "카테고리 관리",
+      "achievements": "달성 배지",
+      "aiReports": "AI 리포트",
+      "notifications": "알림 설정",
+      "theme": "화면 테마",
+      "fontSize": "글꼴 크기",
+      "appIcon": "앱 아이콘",
+      "subscription": "구독 관리",
+      "inquiry": "문의하기",
+      "terms": "약관 및 정책"
+    }
+  },
+  "logout": {
+    "action": "로그아웃",
+    "confirmTitle": "로그아웃",
+    "confirmDescription": "정말 로그아웃 하시겠습니까?"
+  },
+  "withdraw": {
+    "action": "탈퇴하기",
+    "confirmTitle": "회원 탈퇴",
+    "confirmDescription": "탈퇴 후 30일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?",
+    "confirmAction": "탈퇴하기"
+  },
+  "profile": {
+    "defaultName": "열정적인 사용자",
+    "avatarAlt": "{{name}} 프로필",
+    "tagCopied": "태그 복사 완료",
+    "tagCopiedDescription": "친구에게 공유해서 친구 요청을 받아보세요",
+    "updateFailed": "프로필 변경에 실패했어요",
+    "badges": {
+      "admin": "어드민",
+      "premium": "프리미엄",
+      "basic": "베이직"
+    },
+    "imageSheet": {
+      "title": "프로필 이미지 선택",
+      "selectedAlt": "선택된 프로필 이미지",
+      "clear": "지우기",
+      "save": "저장"
+    }
+  },
+  "editName": {
+    "header": "이름을 입력해주세요",
+    "label": "이름",
+    "placeholder": "이름을 입력해주세요",
+    "submit": "이름 변경",
+    "required": "이름을 입력해주세요",
+    "maxLength": "이름은 20자 이내여야 합니다"
+  }
+}

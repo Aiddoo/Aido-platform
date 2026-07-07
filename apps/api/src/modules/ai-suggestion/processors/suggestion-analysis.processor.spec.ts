@@ -64,7 +64,7 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 			// Then -서비스에 올바른 파라미터를 전달해야 한다
 			expect(
 				mockAiSuggestionService.analyzeAndCreateSuggestions,
-			).toHaveBeenCalledWith("user-123", "Asia/Seoul", null);
+			).toHaveBeenCalledWith("user-123", "Asia/Seoul", null, "ko");
 		});
 	});
 

@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { Box, EditIcon, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Avatar, PressableFeedback, SkeletonGroup } from 'heroui-native';
@@ -9,13 +10,14 @@ interface ProfileInfoCardProps {
 }
 
 export function ProfileInfoCard({ onAvatarPress }: ProfileInfoCardProps) {
+  const { t } = useTranslation('user');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   return (
     <VStack align="center" py={32}>
       <PressableFeedback onPress={onAvatarPress}>
         <Box className="relative overflow-visible">
-          <Avatar alt={`${user.name} 프로필`} className="size-24">
+          <Avatar alt={t('profile.avatarAlt', { name: user.name })} className="size-24">
             <Avatar.Image source={getProfileIconSource(user.profileImage)} />
           </Avatar>
 

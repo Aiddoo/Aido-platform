@@ -1,6 +1,8 @@
 import { passwordSchema } from '@aido/validators';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, VStack } from '@src/shared/ui';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
@@ -19,6 +21,7 @@ interface SignUpPasswordFormProps {
 }
 
 export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
+  const { t } = useTranslation('auth');
   const {
     control,
     formState: { errors },
@@ -72,7 +75,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
             entering={FadeIn.duration(ANIMATION.duration.slow)}
             style={{ marginBottom: 24 }}
           >
-            <H3>{`영문 숫자를 포함한\n비밀번호를 설정해주세요`}</H3>
+            <H3>{t('signUp.passwordTitle')}</H3>
           </Animated.View>
 
           {step === 'passwordConfirm' && (
@@ -86,8 +89,8 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                   render={({ field: { onChange, value } }) => (
                     <PasswordInput
                       ref={passwordConfirmInputRef}
-                      label="비밀번호 확인"
-                      placeholder="비밀번호를 다시 입력해주세요"
+                      label={t('signUp.passwordConfirmLabel')}
+                      placeholder={t('signUp.passwordConfirmPlaceholder')}
                       value={value}
                       onChangeText={onChange}
                       returnKeyType="done"
@@ -110,15 +113,18 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
               render={({ field: { onChange, value } }) => (
                 <VStack gap={8}>
                   <PasswordInput
-                    label="비밀번호"
-                    placeholder="비밀번호를 입력해주세요"
+                    label={t('signUp.passwordLabel')}
+                    placeholder={t('signUp.passwordPlaceholder')}
                     value={value}
                     onChangeText={onChange}
                     autoFocus={step === 'password'}
                     submitBehavior="submit"
                     returnKeyType="next"
                     isInvalid={!!errors.password}
-                    errorMessage={errors.password?.message}
+                    errorMessage={resolveValidationMessage(errors.password, {
+                      default: 'password.pattern',
+                      byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
+                    })}
                     renderErrorMessage={false}
                     onSubmitEditing={() => {
                       if (isPasswordValid) handleNext();
@@ -138,7 +144,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
           isDisabled={!isNextEnabled}
           enabled={!isTermsOpen}
         >
-          다음
+          {t('signUp.next')}
         </KeyboardAdaptiveButton>
       </View>
 

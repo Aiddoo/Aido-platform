@@ -1,6 +1,13 @@
 import { ErrorCode } from "@aido/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiHeader,
+	ApiParam,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
+import { Locale } from "@/common/decorators";
 
 import {
 	ApiDoc,
@@ -81,20 +88,30 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 	})
 	@ApiSuccessResponse({ type: WeeklyAchievementListResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiHeader({
+		name: "Accept-Language",
+		description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
+		required: false,
+		example: "ko",
+	})
 	async getWeeklyAchievements(
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetWeeklyAchievementsQueryDto,
+		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<WeeklyAchievementListResponseDto> {
 		this.#logger.debug(
 			`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`,
 		);
 
-		return this.weeklyAchievementService.getWeeklyAchievements({
-			userId: user.userId,
-			year: query.year,
-			cursor: query.cursor,
-			size: query.size,
-		});
+		return this.weeklyAchievementService.getWeeklyAchievements(
+			{
+				userId: user.userId,
+				year: query.year,
+				cursor: query.cursor,
+				size: query.size,
+			},
+			locale ?? "ko",
+		);
 	}
 
 	@Get(":year/:week")
@@ -127,18 +144,28 @@ GET /weekly-achievements/2026/10
 	})
 	@ApiSuccessResponse({ type: WeeklyAchievementDetailResponseDto })
 	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
+	@ApiHeader({
+		name: "Accept-Language",
+		description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
+		required: false,
+		example: "ko",
+	})
 	async getWeeklyAchievement(
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: WeeklyAchievementParamDto,
+		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<WeeklyAchievementDetailResponseDto> {
 		this.#logger.debug(
 			`주간 달성 상세 조회: user=${user.userId}, year=${params.year}, week=${params.week}`,
 		);
 
-		return this.weeklyAchievementService.getWeeklyAchievement({
-			userId: user.userId,
-			year: params.year,
-			week: params.week,
-		});
+		return this.weeklyAchievementService.getWeeklyAchievement(
+			{
+				userId: user.userId,
+				year: params.year,
+				week: params.week,
+			},
+			locale ?? "ko",
+		);
 	}
 }

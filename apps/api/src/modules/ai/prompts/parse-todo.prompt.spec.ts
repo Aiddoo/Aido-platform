@@ -163,3 +163,38 @@ describe("buildParseTodoPrompt", () => {
 		});
 	});
 });
+
+describe("buildParseTodoPromptEn — en 로케일", () => {
+	const { buildParseTodoPromptEn } = require("./parse-todo.prompt.en");
+
+	it("영어 지시 프롬프트를 생성하고 입력을 삽입한다", () => {
+		// Given / When
+		const { system, prompt } = buildParseTodoPromptEn(
+			"dentist tomorrow at 3pm",
+			"America/New_York",
+			new Date("2026-07-07T12:00:00Z"),
+			[{ id: 1, name: "Health" }],
+		);
+
+		// Then
+		expect(system).toContain(
+			"You are an expert at converting natural language input",
+		);
+		expect(system).toContain('1:"Health"');
+		expect(system).toContain("Needs review");
+		expect(prompt).toContain('Input: "dentist tomorrow at 3pm"');
+		expect(system).not.toContain("한국어");
+	});
+
+	it("카테고리가 없으면 카테고리 섹션을 생략한다", () => {
+		// Given / When
+		const { system } = buildParseTodoPromptEn(
+			"buy milk",
+			"UTC",
+			new Date("2026-07-07T12:00:00Z"),
+		);
+
+		// Then
+		expect(system).not.toContain("Category assignment");
+	});
+});

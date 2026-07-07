@@ -1,10 +1,16 @@
 import { z } from "zod";
 import { now } from "@/common/date/utils/core";
+import type { SupportedLocale } from "@/common/decorators";
 import type { ReportType } from "@/generated/prisma/client";
 import { PROMPT_OUTPUT_DISCIPLINE } from "../../ai/shared/prompt-sections";
 import type { AggregatedReportData } from "../types";
 import { getKoreanSeasonalContext } from "../utils/korean-seasonal-context";
 import { selectProfileTemplate } from "../utils/profile-template-selector";
+import { buildReportPromptEn } from "./report.prompt.en";
+import {
+	computeDerivedInsights,
+	type DerivedInsights,
+} from "./report-insights";
 
 /**
  * AI 리포트 생성 응답 스키마
@@ -21,6 +27,24 @@ export const reportAiResponseSchema = z.object({
 export type ReportAiResponse = z.infer<typeof reportAiResponseSchema>;
 
 /**
+ * en 로케일용 응답 스키마 — describe만 영어 (스키마 구조 동일)
+ */
+export const reportAiResponseSchemaEn = z.object({
+	summary: z
+		.string()
+		.describe("Weekly/monthly summary written in English (4-6 sentences)"),
+	tips: z
+		.array(z.string())
+		.min(1)
+		.max(3)
+		.describe("1-3 actionable tips (English)"),
+});
+
+export function getReportAiResponseSchema(locale: SupportedLocale) {
+	return locale === "en" ? reportAiResponseSchemaEn : reportAiResponseSchema;
+}
+
+/**
  * 프롬프트 빌드 옵션
  */
 export interface BuildReportPromptOptions {
@@ -30,131 +54,6 @@ export interface BuildReportPromptOptions {
 // ============================================================================
 // 파생 인사이트 계산
 // ============================================================================
-
-const DAY_KOREAN: Record<string, string> = {
-	MON: "월요일",
-	TUE: "화요일",
-	WED: "수요일",
-	THU: "목요일",
-	FRI: "금요일",
-	SAT: "토요일",
-	SUN: "일요일",
-};
-
-const WEEKDAYS = new Set(["MON", "TUE", "WED", "THU", "FRI"]);
-
-export interface DerivedInsights {
-	rateChange: number | null;
-	rateDirection: "UP" | "DOWN" | "SAME" | null;
-	bestCategory: { name: string; rate: number } | null;
-	worstCategory: { name: string; rate: number } | null;
-	bestDay: { day: string; rate: number } | null;
-	worstDay: { day: string; rate: number } | null;
-	avgDailyTodos: number;
-	perfectDays: number;
-	activeDays: number;
-	weekdayRate: number;
-	weekendRate: number;
-	peakHour: { hour: number; count: number } | null;
-	peakPeriod: string;
-	topTimeSlots: { hour: number; count: number }[];
-}
-
-function computeDerivedInsights(data: AggregatedReportData): DerivedInsights {
-	// 달성률 변화
-	let rateChange: number | null = null;
-	let rateDirection: "UP" | "DOWN" | "SAME" | null = null;
-	if (data.prevCompletionRate !== null) {
-		rateChange = data.completionRate - data.prevCompletionRate;
-		rateDirection = rateChange > 0 ? "UP" : rateChange < 0 ? "DOWN" : "SAME";
-	}
-
-	// 카테고리 분석
-	const activeCats = data.categoryBreakdown.filter((c) => c.total > 0);
-	const bestCategory =
-		activeCats.length > 0
-			? activeCats.reduce((a, b) => (b.rate > a.rate ? b : a))
-			: null;
-	const worstCategory =
-		activeCats.length > 1
-			? activeCats.reduce((a, b) => (b.rate < a.rate ? b : a))
-			: null;
-
-	// 요일 분석
-	const activeDayPatterns = data.dayPatterns.filter((d) => d.total > 0);
-	const bestDay =
-		activeDayPatterns.length > 0
-			? activeDayPatterns.reduce((a, b) => (b.rate > a.rate ? b : a))
-			: null;
-	const worstDay =
-		activeDayPatterns.length > 1
-			? activeDayPatterns.reduce((a, b) => (b.rate < a.rate ? b : a))
-			: null;
-
-	const activeDays = activeDayPatterns.length;
-	const perfectDays = activeDayPatterns.filter((d) => d.rate === 100).length;
-	const avgDailyTodos =
-		activeDays > 0 ? Math.round(data.totalTodos / activeDays) : 0;
-
-	// 주중 vs 주말
-	const weekdayDays = activeDayPatterns.filter((d) => WEEKDAYS.has(d.day));
-	const weekendDays = activeDayPatterns.filter((d) => !WEEKDAYS.has(d.day));
-
-	const computeAvgRate = (
-		days: { total: number; completed: number }[],
-	): number => {
-		const totalAll = days.reduce((s, d) => s + d.total, 0);
-		const compAll = days.reduce((s, d) => s + d.completed, 0);
-		return totalAll > 0 ? Math.round((compAll / totalAll) * 100) : 0;
-	};
-
-	const weekdayRate = computeAvgRate(weekdayDays);
-	const weekendRate = computeAvgRate(weekendDays);
-
-	// 시간대 분석
-	const sortedTime = [...data.timePatterns].sort((a, b) => b.count - a.count);
-	const peakHour = sortedTime[0] ?? null;
-	const topTimeSlots = sortedTime.slice(0, 3);
-
-	let peakPeriod = "없음";
-	if (peakHour) {
-		const h = peakHour.hour;
-		if (h >= 6 && h < 12) {
-			peakPeriod = "오전";
-		} else if (h >= 12 && h < 18) {
-			peakPeriod = "오후";
-		} else if (h >= 18 && h < 23) {
-			peakPeriod = "저녁";
-		} else {
-			peakPeriod = "새벽/밤";
-		}
-	}
-
-	return {
-		rateChange,
-		rateDirection,
-		bestCategory: bestCategory
-			? { name: bestCategory.name, rate: bestCategory.rate }
-			: null,
-		worstCategory: worstCategory
-			? { name: worstCategory.name, rate: worstCategory.rate }
-			: null,
-		bestDay: bestDay
-			? { day: DAY_KOREAN[bestDay.day] ?? bestDay.day, rate: bestDay.rate }
-			: null,
-		worstDay: worstDay
-			? { day: DAY_KOREAN[worstDay.day] ?? worstDay.day, rate: worstDay.rate }
-			: null,
-		avgDailyTodos,
-		perfectDays,
-		activeDays,
-		weekdayRate,
-		weekendRate,
-		peakHour,
-		peakPeriod,
-		topTimeSlots,
-	};
-}
 
 // ============================================================================
 // 공통 헬퍼
@@ -389,7 +288,11 @@ export function buildReportPrompt(
 	periodLabel: string,
 	type: ReportType,
 	options: BuildReportPromptOptions,
+	locale: SupportedLocale = "ko",
 ): string {
+	if (locale === "en") {
+		return buildReportPromptEn(data, periodLabel, type, options);
+	}
 	if (type === "WEEKLY") {
 		return data.hasActivity
 			? buildWeeklyActivityPrompt(data, periodLabel, options)

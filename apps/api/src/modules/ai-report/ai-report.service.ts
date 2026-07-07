@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { now } from "@/common/date/utils/core";
+import type { SupportedLocale } from "@/common/decorators";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { Prisma, ReportType } from "@/generated/prisma/client";
@@ -126,6 +127,7 @@ export class AiReportService {
 	async generateWeeklyReport(
 		userId: string,
 		timezone: string,
+		locale: SupportedLocale = "ko",
 	): Promise<AiReportDto | null> {
 		const localNow = dayjs(now()).tz(timezone);
 
@@ -160,7 +162,13 @@ export class AiReportService {
 			endDate: lastWeekEnd.utc().toDate(),
 			prevStartDate: prevWeekStart.utc().toDate(),
 			prevEndDate: prevWeekEnd.utc().toDate(),
-			periodLabel: AiReportMapper.computePeriodLabel("WEEKLY", year, period),
+			periodLabel: AiReportMapper.computePeriodLabel(
+				"WEEKLY",
+				year,
+				period,
+				locale,
+			),
+			locale,
 		});
 	}
 
@@ -172,6 +180,7 @@ export class AiReportService {
 	async generateMonthlyReport(
 		userId: string,
 		timezone: string,
+		locale: SupportedLocale = "ko",
 	): Promise<AiReportDto | null> {
 		const localNow = dayjs(now()).tz(timezone);
 
@@ -207,7 +216,13 @@ export class AiReportService {
 			endDate: lastMonthEnd.utc().toDate(),
 			prevStartDate: prevMonthStart.utc().toDate(),
 			prevEndDate: prevMonthEnd.utc().toDate(),
-			periodLabel: AiReportMapper.computePeriodLabel("MONTHLY", year, period),
+			periodLabel: AiReportMapper.computePeriodLabel(
+				"MONTHLY",
+				year,
+				period,
+				locale,
+			),
+			locale,
 		});
 	}
 
@@ -224,6 +239,7 @@ export class AiReportService {
 	async #generateReport(params: {
 		userId: string;
 		timezone: string;
+		locale?: SupportedLocale;
 		type: ReportType;
 		year: number;
 		period: number;
@@ -244,6 +260,7 @@ export class AiReportService {
 			prevStartDate,
 			prevEndDate,
 			periodLabel,
+			locale = "ko",
 		} = params;
 
 		this.#logger.log(
@@ -275,6 +292,7 @@ export class AiReportService {
 			type,
 			periodLabel,
 			prevTips,
+			locale,
 		});
 
 		// 3. DB 저장
@@ -298,6 +316,7 @@ export class AiReportService {
 				aggregatedData.timePatterns as unknown as Prisma.InputJsonValue,
 			aiSummary: aiContent.aiSummary,
 			aiTips: aiContent.aiTips as unknown as Prisma.InputJsonValue,
+			locale,
 			hasActivity: aggregatedData.hasActivity,
 			generatedAt: now(),
 		});

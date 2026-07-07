@@ -1,0 +1,155 @@
+{
+  "toast": {
+    "todoAdded": "Added your to-do!",
+    "todoUpdated": "Updated your to-do",
+    "todoDeleted": "Deleted your to-do",
+    "scheduleChanged": "Schedule updated",
+    "categoryChanged": "Category changed",
+    "categoryAdded": "Category added",
+    "categoryUpdated": "Category updated",
+    "categoryDeleted": "Category deleted",
+    "recurringAdded": "Added your repeating to-dos!",
+    "recurringCategoryLimit": "Creating these repeating to-dos would exceed the category limit. Try a shorter date range.",
+    "categoryLimitReached": "This category has reached its to-do limit. Complete some or move them to another category.",
+    "subTodoAddFailed": "Couldn't add the item",
+    "subTodoUpdateFailed": "Couldn't update the item",
+    "subTodoDeleteFailed": "Couldn't delete the item",
+    "parseFailed": "We couldn't quite understand that. Please try again.",
+    "nudgeSent": "Nudge sent!",
+    "remindNudgeSent": "Nudged them to make a to-do!",
+    "addFailedRetry": "Try adding again in a moment",
+    "updateFailedRetry": "Try editing again in a moment",
+    "deleteFailedRetry": "Try deleting again in a moment",
+    "changeFailedRetry": "Try again in a moment",
+    "retryLater": "Please try again in a moment"
+  },
+  "errors": {
+    "categoryValidationFailed": "Please try again",
+    "todoValidationFailed": "The response format is invalid",
+    "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
+    "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
+  },
+  "form": {
+    "titleRequired": "Please enter a title",
+    "titleMaxLength": "Title can be up to 200 characters",
+    "timeFormatInvalid": "Time must be in HH:mm format",
+    "repeatEndDateRequired": "Please choose an end date for the repeat",
+    "repeatDaysRequired": "Please choose days to repeat",
+    "nudgeMessageMax_one": "Your message can be up to {{count}} character",
+    "nudgeMessageMax_other": "Your message can be up to {{count}} characters"
+  },
+  "picker": {
+    "dateTitle": "Date",
+    "timeTitle": "Time",
+    "repeatTitle": "Repeat",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "allDay": "All day",
+    "time": "Time",
+    "selectTime": "Choose a time",
+    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
+    "repeatPeriod": "Repeat period",
+    "selectPeriod": "Please choose a period",
+    "repeatDaily": "Repeats daily",
+    "repeatWeekdays": "Repeats on weekdays",
+    "repeatWeekends": "Repeats on weekends",
+    "repeatWeekly": "Repeats weekly on {{days}}",
+    "presetDaily": "Daily",
+    "presetWeekdays": "Weekdays",
+    "presetWeekends": "Weekends",
+    "selectDays": "Please choose days"
+  },
+  "chip": {
+    "repeat": "Repeat",
+    "daily": "Daily",
+    "weeklyDays": "Weekly on {{days}}",
+    "allDay": "All day",
+    "private": "Private",
+    "public": "Public",
+    "category": "Category"
+  },
+  "add": {
+    "placeholder": "What do you want to get done?",
+    "submit": "Select",
+    "aiFeature": "AI Features",
+    "voiceAddTitle": "Add to-dos by voice",
+    "voiceAddHint": "Say something like \"Dinner at 7 PM this Friday\"\nand we'll fill in the date and time"
+  },
+  "subTodo": {
+    "addItem": "Add item",
+    "placeholder": "Enter an item",
+    "voiceInput": "Voice input",
+    "voiceTitle": "Type with your voice",
+    "voiceHint": "Tap the mic button and speak —\nyour words become text"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "changeDate": "Change date",
+    "changeTime": "Change time",
+    "changeCategory": "Change category",
+    "doToday": "Do today",
+    "doTomorrow": "Do tomorrow",
+    "changeSubmit": "Save"
+  },
+  "list": {
+    "loadError": "Something went wrong while loading your to-dos."
+  },
+  "friendTodo": {
+    "emptyTitle": "Your friend has no to-dos yet",
+    "emptyDescription": "Nudge them to create one",
+    "nudge": "Nudge",
+    "alreadyNudged": "Already nudged"
+  },
+  "nudge": {
+    "limitTitle": "You've used all your nudges for today",
+    "limitSpentTitle": "You've used up today's nudges",
+    "subscribeUnlimited": "Subscribe for unlimited nudges",
+    "promptPrefix": "Want to",
+    "promptHighlight": "nudge",
+    "promptSuffix": "your friend?",
+    "hintPrefix": "If they seem to have forgotten, tap",
+    "hintHighlight": "nudge",
+    "hintSuffix": "to send them a reminder!",
+    "remaining_one": "{{count}} nudge left today (unlimited with Pro)",
+    "remaining_other": "{{count}} nudges left today (unlimited with Pro)",
+    "sheetTitle": "Give them a sharp nudge",
+    "whenTodo": "{{title}} — when are you doing it?",
+    "placeholder": "(Optional) Get it done today!",
+    "send": "Nudge",
+    "dialogTarget": "To {{name}}, who forgot their to-do",
+    "dialogPlaceholder": "(Optional) When will you do {{title}}?",
+    "remindTitle": "No to-dos yet? Go make one!",
+    "remindPlaceholder": "(Optional) Make a to-do already!"
+  },
+  "category": {
+    "nameLabel": "Category name",
+    "namePlaceholder": "Enter a category name",
+    "premiumMore": "Subscribe to create more categories",
+    "deleteTitle": "Delete the {{name}} category?",
+    "deleteDescription": "This can't be undone",
+    "todoCount_one": "It contains {{count}} to-do",
+    "todoCount_other": "It contains {{count}} to-dos",
+    "moveSelect": "Please choose a category to move them to",
+    "select": "Choose a category",
+    "fallback": "Category"
+  },
+  "premium": {
+    "unlimitedParse": "Subscribe for unlimited AI parsing"
+  },
+  "calendar": {
+    "week": "Week",
+    "month": "Month"
+  },
+  "feed": {
+    "me": "Me",
+    "avatarAlt": "{{name}}'s profile",
+    "loading": "Loading...",
+    "suggestionsLoading": "Loading suggestions...",
+    "routineSuggestion": "We'll suggest routines just for you!",
+    "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
+    "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
+    "preparing": "We're preparing this week's suggestions"
+  }
+}

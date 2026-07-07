@@ -1,5 +1,6 @@
 import { CategoryCreateBottomSheet } from '@src/features/todo/presentations/components/CategoryCreateBottomSheet';
 import { CategoryList } from '@src/features/todo/presentations/components/CategoryList';
+import { useTranslation } from '@src/shared/i18n';
 import {
   type ButtonProps,
   Flex,
@@ -23,6 +24,7 @@ const TAB = {
 type TabValue = (typeof TAB)[keyof typeof TAB];
 
 const TodoCategorySettingsScreen = () => {
+  const { t } = useTranslation('settings');
   const createOverlay = useOverlay();
   const [tab, setTab] = useState<TabValue>(TAB.edit);
 
@@ -46,7 +48,7 @@ const TodoCategorySettingsScreen = () => {
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <Flex direction="column" gap={8} flex={1} className="px-4">
         <Flex direction="column" gap={4} className="my-4">
-          <H3>카테고리를 편집하거나{'\n'}순서를 바꿀 수 있어요</H3>
+          <H3>{t('categorySettings.header')}</H3>
         </Flex>
 
         <HStack justify="between" align="center" className="mb-3">
@@ -61,7 +63,7 @@ const TodoCategorySettingsScreen = () => {
                       weight={isSelected ? 'bold' : 'medium'}
                       shade={isSelected ? 8 : 6}
                     >
-                      카테고리 편집
+                      {t('categorySettings.editTab')}
                     </Text>
                   </Tabs.Label>
                 )}
@@ -74,7 +76,7 @@ const TodoCategorySettingsScreen = () => {
                       weight={isSelected ? 'bold' : 'medium'}
                       shade={isSelected ? 8 : 6}
                     >
-                      순서 바꾸기
+                      {t('categorySettings.reorderTab')}
                     </Text>
                   </Tabs.Label>
                 )}
@@ -89,7 +91,7 @@ const TodoCategorySettingsScreen = () => {
               colorClassName="text-main"
             />
             <Text size="b3" tone="brand" weight="medium">
-              카테고리 추가
+              {t('categorySettings.add')}
             </Text>
           </CreateCategoryButton>
         </HStack>

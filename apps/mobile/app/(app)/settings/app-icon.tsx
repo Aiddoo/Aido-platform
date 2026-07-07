@@ -1,9 +1,10 @@
-import { APP_ICONS } from '@src/features/app-icon/constants/app-icons.constant';
+import { APP_ICONS, getAppIconLabel } from '@src/features/app-icon/constants/app-icons.constant';
 import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
 import type { AppIconKey } from '@src/features/app-icon/types/app-icon.types';
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Avatar,
   Box,
@@ -24,6 +25,7 @@ import { PressableFeedback } from 'heroui-native';
 import { Platform, ScrollView, View } from 'react-native';
 
 const AppIconScreen = () => {
+  const { t } = useTranslation('appIcon');
   const { currentIcon, isSupported, isChanging, changeIcon } = useAppIcon();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
@@ -35,7 +37,7 @@ const AppIconScreen = () => {
     if (!isPremium && key !== 'default') {
       trackEvent('premium_gate_shown', { feature: 'app_icon' });
       premiumDialog.open({
-        description: '앱 아이콘 변경은 프리미엄 구독자만 이용할 수 있어요.',
+        description: t('screen.premiumRequired'),
       });
       return;
     }
@@ -87,7 +89,7 @@ const AppIconScreen = () => {
           <Spacing size={8} />
           <HStack justify="center" align="center">
             <Text size="b4" shade={6}>
-              이 기기에서는 앱 아이콘 변경을 지원하지 않아요
+              {t('screen.unsupported')}
             </Text>
           </HStack>
         </ScrollView>
@@ -100,7 +102,7 @@ const AppIconScreen = () => {
       <ScrollView className="px-4 flex-1">
         <Spacing size={8} />
         <Text size="b4" shade={6} className="px-2 pb-2">
-          홈 화면에 표시될 앱 아이콘을 선택하세요
+          {t('screen.chooseIcon')}
         </Text>
 
         <Box p={16} className="bg-white rounded-2xl">
@@ -119,7 +121,7 @@ const AppIconScreen = () => {
                       <View>
                         <Avatar
                           isSelected={selected}
-                          alt={icon.label}
+                          alt={getAppIconLabel(icon)}
                           className="w-20 h-20 rounded-2xl"
                         >
                           <Avatar.Image source={icon.preview} />
@@ -136,7 +138,7 @@ const AppIconScreen = () => {
                         shade={selected ? 9 : 6}
                         numberOfLines={1}
                       >
-                        {icon.label}
+                        {getAppIconLabel(icon)}
                       </Text>
                     </VStack>
                     <PressableFeedback.Highlight className="rounded-2xl" />
@@ -160,21 +162,24 @@ interface AppIconRestartDialogProps {
 }
 
 function AppIconRestartDialog({ isOpen, onOpenChange, onConfirm }: AppIconRestartDialogProps) {
+  const { t } = useTranslation('appIcon');
   return (
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>앱 아이콘 변경</ConfirmDialog.Title>}
+      title={<ConfirmDialog.Title>{t('restartDialog.title')}</ConfirmDialog.Title>}
       description={
-        <ConfirmDialog.Description>아이콘을 변경하면 앱이 재시작됩니다.</ConfirmDialog.Description>
+        <ConfirmDialog.Description>{t('restartDialog.description')}</ConfirmDialog.Description>
       }
       cancelButton={
         <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
-          취소
+          {tGlobal('common:actions.cancel')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={onConfirm}>변경</ConfirmDialog.ConfirmButton>
+        <ConfirmDialog.ConfirmButton onPress={onConfirm}>
+          {t('restartDialog.confirm')}
+        </ConfirmDialog.ConfirmButton>
       }
     />
   );
@@ -186,19 +191,18 @@ interface AppIconErrorDialogProps {
 }
 
 function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
+  const { t } = useTranslation('appIcon');
   return (
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={<ConfirmDialog.Title>아이콘 변경 실패</ConfirmDialog.Title>}
+      title={<ConfirmDialog.Title>{t('errorDialog.title')}</ConfirmDialog.Title>}
       description={
-        <ConfirmDialog.Description>
-          앱 아이콘을 변경할 수 없습니다. 앱을 삭제 후 다시 설치하거나, 실기기에서 시도해 주세요.
-        </ConfirmDialog.Description>
+        <ConfirmDialog.Description>{t('errorDialog.description')}</ConfirmDialog.Description>
       }
       confirmButton={
         <ConfirmDialog.ConfirmButton onPress={() => onOpenChange(false)}>
-          확인
+          {tGlobal('common:actions.confirm')}
         </ConfirmDialog.ConfirmButton>
       }
     />

@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, SkeletonGroup } from 'heroui-native';
@@ -6,6 +7,7 @@ import { useGetReportStatusQueryOptions } from '../queries/use-get-report-status
 import { formatDday } from '../utils/format-report';
 
 export function ReportStatusBanner() {
+  const { t } = useTranslation('ai');
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
 
   return (
@@ -13,7 +15,7 @@ export function ReportStatusBanner() {
       <HStack className="items-stretch">
         <VStack gap={4} align="center" className="flex-1">
           <Text size="b4" shade={6}>
-            다음 주간 리포트
+            {t('report.statusBanner.nextWeekly')}
           </Text>
 
           <Text size="t3" weight="bold" tone="brand">
@@ -23,7 +25,7 @@ export function ReportStatusBanner() {
         <Separator orientation="vertical" className="bg-gray-5" />
         <VStack gap={4} align="center" className="flex-1">
           <Text size="b4" shade={6}>
-            다음 월간 리포트
+            {t('report.statusBanner.nextMonthly')}
           </Text>
 
           <Text size="t3" weight="bold" tone="brand">

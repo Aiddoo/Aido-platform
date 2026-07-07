@@ -14,6 +14,8 @@ import {
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { useStepper } from '@src/shared/hooks/useStepper';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
@@ -32,7 +34,7 @@ import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
-const STEPS = ['이메일_입력', '인증코드_입력', '새_비밀번호'] as const;
+const STEPS = ['email', 'verificationCode', 'newPassword'] as const;
 
 const ForgotPasswordScreen = () => {
   const form = useForm<ForgotPasswordFormData>({
@@ -51,11 +53,11 @@ const ForgotPasswordScreen = () => {
     <View className="flex-1 bg-background">
       <FormProvider {...form}>
         {match(step)
-          .with('이메일_입력', () => <EmailStep onNext={() => setStep('인증코드_입력')} />)
-          .with('인증코드_입력', () => (
-            <VerificationCodeStep onNext={() => setStep('새_비밀번호')} />
+          .with('email', () => <EmailStep onNext={() => setStep('verificationCode')} />)
+          .with('verificationCode', () => (
+            <VerificationCodeStep onNext={() => setStep('newPassword')} />
           ))
-          .with('새_비밀번호', () => <NewPasswordStep />)
+          .with('newPassword', () => <NewPasswordStep />)
           .exhaustive()}
       </FormProvider>
     </View>
@@ -69,6 +71,7 @@ interface EmailStepProps {
 }
 
 function EmailStep({ onNext }: EmailStepProps) {
+  const { t } = useTranslation('auth');
   const {
     control,
     formState: { errors },
@@ -103,7 +106,7 @@ function EmailStep({ onNext }: EmailStepProps) {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{'비밀번호를 재설정할\n이메일을 입력해주세요'}</H3>
+          <H3>{t('forgotPassword.emailTitle')}</H3>
         </Animated.View>
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
@@ -113,7 +116,7 @@ function EmailStep({ onNext }: EmailStepProps) {
               name="email"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
-                  placeholder="이메일"
+                  placeholder={t('forgotPassword.emailPlaceholder')}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -126,7 +129,10 @@ function EmailStep({ onNext }: EmailStepProps) {
                   returnKeyType="done"
                   submitBehavior="submit"
                   isInvalid={!!errors.email}
-                  errorMessage={errors.email?.message}
+                  errorMessage={resolveValidationMessage(errors.email, {
+                    default: 'email.invalid',
+                    byType: { too_big: 'email.tooLong' },
+                  })}
                   onSubmitEditing={() => {
                     if (isValid) handleNext();
                   }}
@@ -143,7 +149,7 @@ function EmailStep({ onNext }: EmailStepProps) {
         isDisabled={!isValid}
         isLoading={forgotPasswordMutation.isPending}
       >
-        다음
+        {t('forgotPassword.next')}
       </KeyboardAdaptiveButton>
     </View>
   );
@@ -154,6 +160,7 @@ interface VerificationCodeStepProps {
 }
 
 function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
+  const { t } = useTranslation('auth');
   const { getValues, setValue } = useFormContext<ForgotPasswordFormData>();
   const email = getValues('email');
   const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
@@ -204,9 +211,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>
-            {maskedEmail}로{'\n'}발송된 코드를 입력해주세요
-          </H3>
+          <H3>{t('verification.codeSentTo', { email: maskedEmail })}</H3>
         </Animated.View>
 
         <VStack gap={32} align="center">
@@ -229,14 +234,16 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
 
           <HStack gap={8} justify="center">
             <Text size="b4" shade={7}>
-              코드를 받지 못하셨나요?
+              {t('verification.didNotReceive')}
             </Text>
             <TextButton
               size="medium"
               onPress={handleResend}
               disabled={cooldown > 0 || forgotPasswordMutation.isPending}
             >
-              {cooldown > 0 ? `${cooldown}초 후 재발송` : '인증코드 재발송'}
+              {cooldown > 0
+                ? t('verification.resendIn', { count: cooldown })
+                : t('verification.resend')}
             </TextButton>
           </HStack>
         </VStack>
@@ -248,6 +255,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 
 function NewPasswordStep() {
+  const { t } = useTranslation('auth');
   const { step, setStep } = useStepper(NEW_PASSWORD_SUB_STEPS);
   const newPasswordConfirmInputRef = useRef<TextInput>(null);
   const focusConfirmInput = useCallback(() => {
@@ -296,7 +304,7 @@ function NewPasswordStep() {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{'영문 숫자를 포함한\n새 비밀번호를 설정해주세요'}</H3>
+          <H3>{t('forgotPassword.newPasswordTitle')}</H3>
         </Animated.View>
 
         {step === 'newPasswordConfirm' && (
@@ -315,8 +323,8 @@ function NewPasswordStep() {
                 render={({ field: { onChange, value } }) => (
                   <PasswordInput
                     ref={newPasswordConfirmInputRef}
-                    label="새 비밀번호 확인"
-                    placeholder="새 비밀번호를 다시 입력해주세요"
+                    label={t('forgotPassword.newPasswordConfirmLabel')}
+                    placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
                     value={value}
                     onChangeText={onChange}
                     returnKeyType="done"
@@ -339,8 +347,8 @@ function NewPasswordStep() {
             render={({ field: { onChange, value } }) => (
               <VStack gap={4}>
                 <PasswordInput
-                  label="새 비밀번호"
-                  placeholder="새 비밀번호를 입력해주세요"
+                  label={t('forgotPassword.newPasswordLabel')}
+                  placeholder={t('forgotPassword.newPasswordPlaceholder')}
                   value={value}
                   onChangeText={onChange}
                   autoFocus={step === 'newPassword'}
@@ -363,7 +371,7 @@ function NewPasswordStep() {
         isDisabled={!isNextEnabled}
         isLoading={resetPasswordMutation.isPending}
       >
-        {step === 'newPasswordConfirm' ? '비밀번호 재설정' : '다음'}
+        {step === 'newPasswordConfirm' ? t('forgotPassword.submit') : t('forgotPassword.next')}
       </KeyboardAdaptiveButton>
     </View>
   );

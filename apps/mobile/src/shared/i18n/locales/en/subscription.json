@@ -1,0 +1,110 @@
+{
+  "status": {
+    "premiumTitle": "Aido Premium",
+    "active": {
+      "label": "Subscribed",
+      "description": "You're enjoying all premium features"
+    },
+    "cancelled": {
+      "label": "Canceled",
+      "description": "Your subscription has been canceled"
+    },
+    "expired": {
+      "label": "Expired",
+      "description": "Your subscription has expired"
+    },
+    "free": {
+      "label": "Free",
+      "description": "You're on the free plan"
+    },
+    "cancelledUntil": "Your subscription has been canceled. You can keep using it until {{date}}",
+    "nextBillingDate": "Next billing date",
+    "expiresAt": "Expires on",
+    "statusLabel": "Subscription status",
+    "autoRenewal": "Auto-renews"
+  },
+  "plan": {
+    "annual": "Annual",
+    "monthly": "Monthly",
+    "perYear": "/year",
+    "perMonth": "/month",
+    "current": "Current plan",
+    "discount": "{{percent}}% off",
+    "monthlyEquivalent": "About {{price}}/month"
+  },
+  "toast": {
+    "purchaseSuccess": "You're subscribed!",
+    "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
+    "purchaseFailed": "Subscription failed",
+    "restoreSuccess": "Purchases restored!",
+    "restoreEmpty": "No purchases to restore",
+    "restoreFailed": "Failed to restore purchases"
+  },
+  "errors": {
+    "notConfigured": "RevenueCat isn't initialized",
+    "noOfferings": "No subscription products available",
+    "fetchOfferingsFailed": "Failed to load subscription products",
+    "purchaseCancelled": "Purchase canceled",
+    "purchaseFailed": "Purchase failed",
+    "paymentPending": "Payment approval is pending",
+    "restoreFailed": "Failed to restore purchases",
+    "offeringsInfoUnavailable": "Couldn't load subscription product info",
+    "offeringsInfoNotFound": "Subscription product info not found"
+  },
+  "benefits": {
+    "aiParsing": {
+      "title": "Unlimited AI to-do parsing",
+      "description": "Organize to-dos in natural language, without the 5-per-month limit"
+    },
+    "nudge": {
+      "title": "Unlimited nudges",
+      "description": "Nudge your friends freely, without the 3-per-day limit"
+    },
+    "reminder": {
+      "title": "Custom reminder times",
+      "description": "Get notified when you want, not at fixed times"
+    },
+    "appIcon": {
+      "title": "App icon customization",
+      "description": "Change the app icon to match your style"
+    },
+    "friends": {
+      "title": "Unlimited friends",
+      "description": "Add friends freely, without the 5-friend limit"
+    },
+    "categories": {
+      "title": "Up to 30 categories",
+      "description": "Grow from the 3-category limit up to 30"
+    },
+    "aiRepeat": {
+      "title": "AI repeat suggestions",
+      "description": "AI automatically suggests recurring to-dos"
+    },
+    "aiReport": {
+      "title": "AI weekly/monthly reports",
+      "description": "See your completion rate and patterns at a glance"
+    },
+    "future": "All future premium features"
+  },
+  "subscriber": {
+    "title": "Premium active",
+    "description": "You're enjoying all premium features",
+    "benefitsTitle": "Your benefits",
+    "manageButton": "Manage subscription (store settings)",
+    "restoreButton": "Restore purchases"
+  },
+  "paywall": {
+    "title": "Upgrade to Premium",
+    "subtitle": "Use every feature without limits",
+    "futureIncluded": "All future premium features are included too",
+    "moreBenefits": "More premium benefits",
+    "subscribeButton": "Subscribe",
+    "unavailableTitle": "Subscriptions are coming soon",
+    "unavailableDescription": "The subscription service isn't available right now. Please try again later.",
+    "termsPrefix": "By purchasing, you agree to the ",
+    "termsLink": "Terms of Service",
+    "termsAnd": " and ",
+    "privacyLink": "Privacy Policy",
+    "termsSuffix": "."
+  }
+}

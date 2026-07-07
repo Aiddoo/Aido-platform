@@ -1,0 +1,32 @@
+{
+  "titles": {
+    "index": "Badges",
+    "detail": "Weekly Badge"
+  },
+  "badgeNames": {
+    "perfect": "Flawless Week",
+    "almost": "So Close",
+    "completed": "Steady Steps"
+  },
+  "card": {
+    "title": "Weekly Achievement Badge",
+    "nameLabel": "Name",
+    "certificate": "This certifies that the person above\ncompleted {{completed}} of {{total}} to-dos in {{weekLabel}},\nachieving a {{rate}}% completion rate,\nand is hereby awarded this badge.",
+    "share": "Share",
+    "statPerfect": "Perfect",
+    "statStreak": "Streak",
+    "statAverage": "Average",
+    "perfectCount_one": "{{count}} time",
+    "perfectCount_other": "{{count}} times",
+    "streakWeeks_one": "{{count}} week",
+    "streakWeeks_other": "{{count}} weeks"
+  },
+  "list": {
+    "sectionTitle": "History",
+    "completedRatio": "{{completed}}/{{total}} done",
+    "emptyTitle": "Complete this week's to-dos\nand your first badge will appear here",
+    "startNow": "Start Now",
+    "emptyRecordTitle": "Collect badges to build your history",
+    "emptyRecordDescription": "Your weekly completed to-dos are recorded here"
+  }
+}

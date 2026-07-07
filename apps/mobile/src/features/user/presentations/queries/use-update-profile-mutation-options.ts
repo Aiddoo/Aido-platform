@@ -1,9 +1,10 @@
 import type { UpdateProfileInput } from '@aido/validators';
-import { useUserService } from '@src/bootstrap/providers/di-provider';
+import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { USER_QUERY_KEYS } from '../constants/user-query-keys.constant';
@@ -48,7 +49,7 @@ export const useUpdateProfileMutationOptions = () => {
     },
     onError: (error, _input, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      toast.error(error, { fallback: '프로필 변경에 실패했어요' });
+      toast.error(error, { fallback: t('user:profile.updateFailed') });
 
       if (context?.previousData) {
         queryClient.setQueryData(USER_QUERY_KEYS.me(), context.previousData);

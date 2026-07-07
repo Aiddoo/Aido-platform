@@ -1,6 +1,7 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
+import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetTextArea, Button, H4, KeyboardBottomSheet, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
@@ -19,6 +20,7 @@ export function RemindNudgeBottomSheet({
   isOpen,
   onOpenChange,
 }: RemindNudgeBottomSheetProps) {
+  const { t } = useTranslation('todo');
   const sendRemindNudgeMutation = useMutation(useSendRemindNudgeMutationOptions());
 
   const {
@@ -57,9 +59,9 @@ export function RemindNudgeBottomSheet({
         <VStack gap={4}>
           <VStack gap={2}>
             <Text size="b3" shade={6}>
-              할일이 없네? 빨리 만들어!
+              {t('nudge.remindTitle')}
             </Text>
-            <H4>따끔하게 콕 찌르기</H4>
+            <H4>{t('nudge.sheetTitle')}</H4>
           </VStack>
         </VStack>
 
@@ -76,7 +78,7 @@ export function RemindNudgeBottomSheet({
               <BottomSheetTextArea
                 label={`to. ${friend.displayName}`}
                 isInvalid={!!errors.message}
-                placeholder="(선택) 할일 좀 만들어!"
+                placeholder={t('nudge.remindPlaceholder')}
                 value={value}
                 onChangeText={onChange}
                 className="z-10 min-h-0 h-[80px]"
@@ -94,7 +96,7 @@ export function RemindNudgeBottomSheet({
           isDisabled={!isValid}
           isLoading={sendRemindNudgeMutation.isPending}
         >
-          콕 찌르기
+          {t('nudge.send')}
         </Button>
       </VStack>
     </KeyboardBottomSheet>

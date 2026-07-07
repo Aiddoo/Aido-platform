@@ -4,6 +4,7 @@ import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentatio
 import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
 import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
 import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
+import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   AppleIcon,
@@ -26,6 +27,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
 const LoginScreen = () => {
+  const { t } = useTranslation('auth');
   const exchangeCodeMutation = useMutation(useExchangeCodeMutationOptions());
 
   const kakaoLoginMutation = useMutation(useOpenKakaoLoginMutationOptions());
@@ -82,7 +84,7 @@ const LoginScreen = () => {
           <VStack align="center">
             <H1>Aido</H1>
             <Text size="b4" shade={6}>
-              할 일을 미루지 않고, I DO
+              {t('login.slogan')}
             </Text>
           </VStack>
         </VStack>
@@ -97,7 +99,7 @@ const LoginScreen = () => {
                   colorClassName={isDark ? 'text-black' : 'text-white'}
                 />
               }
-              label="Apple로 계속하기"
+              label={t('login.continueWith', { provider: t('providers.APPLE') })}
               onPress={handleAppleLogin}
               isLoading={appleLoginMutation.isPending}
               className="bg-apple-button dark:bg-apple-button-dark"
@@ -106,7 +108,7 @@ const LoginScreen = () => {
           )}
           <SocialLoginButton
             icon={<KakaoIcon width={20} height={20} />}
-            label="카카오로 계속하기"
+            label={t('login.continueWith', { provider: t('providers.KAKAO') })}
             onPress={handleKakaoLogin}
             isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-kakao"
@@ -114,7 +116,7 @@ const LoginScreen = () => {
           />
           <SocialLoginButton
             icon={<GoogleIcon width={20} height={20} />}
-            label="Google로 계속하기"
+            label={t('login.continueWith', { provider: t('providers.GOOGLE') })}
             onPress={handleGoogleLogin}
             isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
@@ -122,7 +124,7 @@ const LoginScreen = () => {
           />
           <SocialLoginButton
             icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
-            label="네이버로 계속하기"
+            label={t('login.continueWith', { provider: t('providers.NAVER') })}
             onPress={handleNaverLogin}
             isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-naver"
@@ -134,13 +136,13 @@ const LoginScreen = () => {
 
         <HStack justify="center" align="center" gap={8} pb={40}>
           <TextButton size="medium" onPress={() => router.push('/sign-up')}>
-            회원가입
+            {t('login.signUp')}
           </TextButton>
 
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
 
           <TextButton size="medium" onPress={() => router.push('/email-login')}>
-            이메일로 로그인
+            {t('login.emailLogin')}
           </TextButton>
         </HStack>
       </VStack>

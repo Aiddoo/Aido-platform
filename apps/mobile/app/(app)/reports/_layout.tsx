@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -6,6 +7,7 @@ import { Pressable, View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const ReportsLayout = () => {
+  const { t } = useTranslation('ai');
   const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
@@ -32,7 +34,7 @@ const ReportsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'AI 리포트' }} />
+      <Stack.Screen name="index" options={{ title: t('titles.reports') }} />
       <Stack.Screen name="[id]" options={{ title: '' }} />
     </Stack>
   );

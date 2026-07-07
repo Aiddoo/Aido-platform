@@ -1,6 +1,7 @@
 import type { RegisterInput } from '@aido/validators';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
@@ -20,6 +21,7 @@ interface TermsBottomSheetProps {
 }
 
 export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
+  const { t } = useTranslation(['auth', 'common']);
   const { handleSubmit } = useFormContext<SignUpFormData>();
   const insets = useSafeAreaInsets();
   const openUrl = useOpenUrl();
@@ -82,7 +84,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
                 </ControlField.Indicator>
                 <Label>
                   <Text size="b2" weight="semibold">
-                    약관에 모두 동의
+                    {t('terms.agreeAll')}
                   </Text>
                 </Label>
               </ControlField>
@@ -91,21 +93,21 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
 
               <VStack gap={20}>
                 <TermsAgreementItem
-                  label="서비스 이용약관 동의"
+                  label={t('terms.termsOfService')}
                   isRequired
                   isSelected={agreements.terms}
                   onSelectedChange={setAgreement('terms')}
                   onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
                 />
                 <TermsAgreementItem
-                  label="개인정보처리방침 동의"
+                  label={t('terms.privacyPolicy')}
                   isRequired
                   isSelected={agreements.privacy}
                   onSelectedChange={setAgreement('privacy')}
                   onPressLink={() => openUrl(LEGAL_URLS.PRIVACY)}
                 />
                 <TermsAgreementItem
-                  label="마케팅 정보 수신 동의"
+                  label={t('terms.marketing')}
                   isSelected={agreements.marketing}
                   onSelectedChange={setAgreement('marketing')}
                 />
@@ -118,7 +120,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
               isLoading={register.isPending}
               isDisabled={!isRequiredAgreed}
             >
-              확인
+              {t('common:actions.confirm')}
             </Button>
           </VStack>
         </BottomSheet.Content>
@@ -142,7 +144,8 @@ const TermsAgreementItem = ({
   onSelectedChange,
   onPressLink,
 }: TermsAgreementItemProps) => {
-  const requiredLabel = isRequired ? '필수' : '선택';
+  const { t } = useTranslation('auth');
+  const requiredLabel = isRequired ? t('terms.required') : t('terms.optional');
 
   return (
     <ControlField isSelected={isSelected} onSelectedChange={onSelectedChange}>

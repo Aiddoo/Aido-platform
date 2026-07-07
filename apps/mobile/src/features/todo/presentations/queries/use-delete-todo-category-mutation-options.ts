@@ -1,5 +1,5 @@
 import type { DeleteTodoCategoryQuery } from '@aido/validators';
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/models/todo-category.model';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
@@ -7,6 +7,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
@@ -50,7 +51,7 @@ export const useDeleteTodoCategoryMutationOptions = () => {
       trackEvent('category_deleted');
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
-      toast.success('카테고리를 삭제했어요');
+      toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -63,7 +64,7 @@ export const useDeleteTodoCategoryMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 삭제해 보세요' });
+      toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
     },
   });
 };

@@ -1,9 +1,10 @@
 import { ErrorCode } from '@aido/errors';
 import type { ResetPasswordInput } from '@aido/validators';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -20,7 +21,7 @@ export const useResetPasswordMutationOptions = () => {
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast.success('비밀번호가 재설정되었어요');
+      toast.success(t('auth:toasts.passwordResetDone'));
       router.replace('/(auth)/email-login');
     },
     onError: (error) => {
@@ -28,20 +29,20 @@ export const useResetPasswordMutationOptions = () => {
 
       if (isApiError(error)) {
         if (error.hasCode(ErrorCode.VERIFY_0751)) {
-          toast.error('인증 코드가 올바르지 않아요');
+          toast.error(t('auth:toasts.codeInvalid'));
           return;
         }
         if (error.hasCode(ErrorCode.VERIFY_0752)) {
-          toast.error('인증 코드가 만료되었어요. 다시 요청해주세요');
+          toast.error(t('auth:toasts.codeExpired'));
           return;
         }
         if (error.hasCode(ErrorCode.VERIFY_0754)) {
-          toast.error('인증 시도 횟수를 초과했어요. 새 인증 코드를 요청해주세요');
+          toast.error(t('auth:toasts.codeAttemptsExceeded'));
           return;
         }
       }
 
-      toast.error(error, { fallback: '비밀번호 재설정에 실패했어요' });
+      toast.error(error, { fallback: t('auth:toasts.passwordResetFailed') });
     },
   });
 };

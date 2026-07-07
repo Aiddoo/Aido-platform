@@ -20,6 +20,7 @@ module.exports = {
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',
+    '^expo-localization$': '<rootDir>/src/shared/__tests__/mocks/expo-localization.ts',
   },
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/*.(test|spec).[jt]s?(x)'],
   collectCoverageFrom: [

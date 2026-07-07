@@ -14,6 +14,23 @@ import type { WeeklyAchievementRecord } from "./types/weekly-achievement.types";
 import { WeeklyAchievementMapper } from "./weekly-achievement.mapper";
 
 describe("WeeklyAchievementMapper — 주간 성취 매퍼", () => {
+	describe("computeWeekLabel — en 로케일", () => {
+		it("en 라벨은 'Week N of MMM' 형식이다 (모바일 캘린더 표기와 일치)", () => {
+			// Given / When
+			const label = WeeklyAchievementMapper.computeWeekLabel(2026, 10, "en");
+
+			// Then
+			expect(label).toBe("Week 1 of Mar");
+		});
+
+		it("locale 생략 시 한국어 라벨을 유지한다 (하위 호환)", () => {
+			// Given / When / Then
+			expect(WeeklyAchievementMapper.computeWeekLabel(2026, 10)).toBe(
+				"3월 1주차",
+			);
+		});
+	});
+
 	describe("computeWeekLabel", () => {
 		it("일반 주차의 라벨을 생성한다", () => {
 			// Given - 2026년 10주차 (목요일: 3월 5일)

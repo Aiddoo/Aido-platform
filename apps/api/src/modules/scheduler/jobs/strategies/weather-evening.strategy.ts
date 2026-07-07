@@ -2,7 +2,11 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
-import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "@/modules/notification/templates/notification-templates";
+import { createLocaleMessageCache } from "@/modules/notification/templates/user-locale.util";
 import { WeatherService } from "@/modules/weather/services/weather.service";
 
 import type {
@@ -12,6 +16,7 @@ import type {
 
 interface VerifiedUserWithLocation {
 	id: string;
+	preference: { locale: string } | null;
 	location: {
 		latitude: number;
 		longitude: number;
@@ -78,6 +83,7 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 			},
 			select: {
 				id: true,
+				preference: { select: { locale: true } },
 				location: {
 					select: {
 						latitude: true,
@@ -138,7 +144,10 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 					return null;
 				}
 
-				const message = NotificationMessageBuilder.weatherEvening(forecast);
+				const message = NotificationMessageBuilder.weatherEvening(
+					forecast,
+					resolveTemplateLocale(user.preference?.locale),
+				);
 				return {
 					userId: user.id,
 					type: "WEATHER_EVENING" as const,
@@ -170,7 +179,7 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 				preference: preferenceWhere,
 				location: null,
 			},
-			select: { id: true },
+			select: { id: true, preference: { select: { locale: true } } },
 		});
 
 		if (users.length === 0) {
@@ -188,14 +197,21 @@ export class WeatherEveningStrategy implements ITimezoneStrategy {
 			return 0;
 		}
 
-		const message = NotificationMessageBuilder.weatherEveningFallback();
-		const notifications = filtered.map((user) => ({
-			userId: user.id,
-			type: "WEATHER_EVENING" as const,
-			title: message.title,
-			body: message.body,
-			notificationDate: today,
-		}));
+		const getMessage = createLocaleMessageCache((locale) =>
+			NotificationMessageBuilder.weatherEveningFallback(locale),
+		);
+		const notifications = filtered.map((user) => {
+			const message = getMessage(
+				resolveTemplateLocale(user.preference?.locale),
+			);
+			return {
+				userId: user.id,
+				type: "WEATHER_EVENING" as const,
+				title: message.title,
+				body: message.body,
+				notificationDate: today,
+			};
+		});
 
 		await this.notificationService.createAndSendBatch(notifications);
 		return notifications.length;

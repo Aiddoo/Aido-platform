@@ -28,6 +28,7 @@ export class UserPreferenceBuilder {
 			pushEnabled: true,
 			nightPushEnabled: false,
 			timezone: "UTC",
+			locale: "ko",
 			morningReminderHour: 8,
 			morningReminderMinute: 0,
 			eveningReminderHour: 18,
@@ -79,6 +80,11 @@ export class UserPreferenceBuilder {
 	}
 
 	// === 타임존 & 리마인더 ===
+
+	withLocale(locale: string): UserPreferenceBuilder {
+		this.data.locale = locale;
+		return this;
+	}
 
 	withTimezone(timezone: string): UserPreferenceBuilder {
 		this.data.timezone = timezone;

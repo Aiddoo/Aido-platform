@@ -1,4 +1,4 @@
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 

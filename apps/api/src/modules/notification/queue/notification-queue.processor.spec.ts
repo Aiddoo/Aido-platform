@@ -15,8 +15,8 @@ import type { Job } from "bullmq";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 import { NotificationService } from "../notification.service";
+import { PushDeliveryService } from "../push-delivery.service";
 import { NotificationMessageBuilder } from "../templates/notification-templates";
-
 import {
 	type BillingIssueJobData,
 	type CheerSentJobData,
@@ -40,6 +40,7 @@ function createMockJob<T extends NotificationJobData>(
 describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 	let processor: NotificationQueueProcessor;
 	let notificationService: Mocked<NotificationService>;
+	let pushDeliveryService: Mocked<PushDeliveryService>;
 	let database: Mocked<DatabaseService>;
 
 	beforeEach(async () => {
@@ -51,7 +52,10 @@ describe("NotificationQueueProcessor — 알림 큐 프로세서", () => {
 
 		processor = unit;
 		notificationService = unitRef.get(NotificationService);
+		pushDeliveryService = unitRef.get(PushDeliveryService);
 		database = unitRef.get(DatabaseService);
+		pushDeliveryService.getUserLocale.mockResolvedValue("ko");
+		database.userPreference.findMany.mockResolvedValue([] as never);
 	});
 
 	afterEach(() => {

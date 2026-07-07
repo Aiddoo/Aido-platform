@@ -1,6 +1,7 @@
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useClipboard } from '@src/shared/hooks/useClipboard';
+import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ import { useGetMeQueryOptions } from '../queries/use-get-me-query-options';
 export function ProfileCard() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
+  const { t } = useTranslation('user');
   const { copyToClipboard } = useClipboard();
   const router = useRouter();
 
@@ -19,7 +21,7 @@ export function ProfileCard() {
     const result = await copyToClipboard(user.userTag);
 
     if (result.success) {
-      toast.success('태그 복사 완료', { description: '친구에게 공유해서 친구 요청을 받아보세요' });
+      toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
     }
   };
 
@@ -29,7 +31,7 @@ export function ProfileCard() {
       className="rounded-2xl px-4 py-3"
     >
       <HStack gap={12} align="center">
-        <Avatar size="lg" alt={`${user.name} 프로필`}>
+        <Avatar size="lg" alt={t('profile.avatarAlt', { name: user.name })}>
           <Avatar.Image source={getProfileIconSource(user.profileImage)} />
         </Avatar>
 
@@ -70,13 +72,27 @@ export function ProfileCard() {
 }
 
 const USER_TIER_CONFIG = {
-  ADMIN: { label: '어드민', color: 'warning', className: 'self-center shrink-0' },
-  PREMIUM: { label: '프리미엄', color: 'accent', className: 'self-center shrink-0' },
-  BASIC: { label: '베이직', color: 'default', className: 'self-center shrink-0 bg-gray-3' },
+  ADMIN: {
+    labelKey: 'user:profile.badges.admin',
+    color: 'warning',
+    className: 'self-center shrink-0',
+  },
+  PREMIUM: {
+    labelKey: 'user:profile.badges.premium',
+    color: 'accent',
+    className: 'self-center shrink-0',
+  },
+  BASIC: {
+    labelKey: 'user:profile.badges.basic',
+    color: 'default',
+    className: 'self-center shrink-0 bg-gray-3',
+  },
 } as const;
 
 function UserTierChip({ tier }: { tier: 'ADMIN' | 'PREMIUM' | 'BASIC' }) {
-  const { label, color, className } = USER_TIER_CONFIG[tier];
+  const { t } = useTranslation('user');
+  const { labelKey, color, className } = USER_TIER_CONFIG[tier];
+  const label = t(labelKey.replace('user:', '') as 'profile.badges.admin');
 
   return (
     <Chip size="sm" variant="soft" color={color} className={className}>

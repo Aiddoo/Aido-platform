@@ -1,5 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, Flex, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -11,6 +12,7 @@ import { useGetSentRequestsQueryOptions } from '../queries/use-get-sent-requests
 import { FriendRequestRow } from './FriendRequestRow';
 
 export function SentRequestList() {
+  const { t } = useTranslation(['friend', 'common']);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetSentRequestsQueryOptions());
   const cancelMutation = useMutation(useCancelRequestMutationOptions());
@@ -24,7 +26,7 @@ export function SentRequestList() {
       ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>
-            총 {totalCount}개 요청
+            {t('list.requestCount', { count: totalCount })}
           </Text>
         </Box>
       }
@@ -44,7 +46,7 @@ export function SentRequestList() {
                 onPress={() => cancelMutation.mutate(item.id)}
                 disabled={isProcessing}
               >
-                취소
+                {t('common:actions.cancel')}
               </Button>
             }
           />
@@ -52,7 +54,7 @@ export function SentRequestList() {
       }}
       ListEmptyComponent={
         <Flex flex={1} justify="center" align="center">
-          <Result icon={<DocsIcon width={72} height={72} />} title="아직 보낸 요청이 없어요" />
+          <Result icon={<DocsIcon width={72} height={72} />} title={t('list.emptySent')} />
         </Flex>
       }
       ListFooterComponent={

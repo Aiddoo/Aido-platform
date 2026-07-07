@@ -3,6 +3,7 @@ import { ApiError } from '@src/shared/errors/api-error';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import { HTTPError, type KyInstance, TimeoutError as KyTimeoutError, type Options } from 'ky';
+import { resolveMessage } from './error-handler';
 
 interface ServerResponse<T> {
   success: boolean;
@@ -84,10 +85,11 @@ export class KyHttpClient implements HttpClient {
         }
 
         const body = await this.#parseErrorBody(response);
+        const code = body?.error.code ?? `HTTP_${response.status}`;
         return err(
           new ApiError(
-            body?.error.code ?? `HTTP_${response.status}`,
-            body?.error.message ?? response.statusText,
+            code,
+            resolveMessage(code, body?.error.message ?? response.statusText),
             response.status,
             body?.error.details,
           ),

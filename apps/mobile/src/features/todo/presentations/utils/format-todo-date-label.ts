@@ -1,3 +1,4 @@
+import { t } from '@src/shared/i18n';
 import { formatMonthDay, isDateToday } from '@src/shared/utils/date';
 
 interface FormatTodoDateLabelParams {
@@ -11,7 +12,7 @@ export const formatTodoDateLabel = ({
   scheduledTime,
   isAllDay,
 }: FormatTodoDateLabelParams): string => {
-  let label = isDateToday(startDate) ? '오늘' : formatMonthDay(startDate);
+  let label = isDateToday(startDate) ? t('common:dateSections.today') : formatMonthDay(startDate);
 
   if (!isAllDay && scheduledTime) {
     label += ` ${scheduledTime}`;

@@ -8,6 +8,7 @@ import { TodoTimePickerContent } from '@src/features/todo/presentations/componen
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/use-get-todo-categories-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ACTION_CHIP_ICON_SIZE,
   ActionChip,
@@ -25,7 +26,7 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { formatDate, formatMonthDay } from '@src/shared/utils/date';
+import { formatDate, formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -36,16 +37,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
-
-const DAY_LABELS: Record<string, string> = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-};
 
 type TodoWithId = ParsedMemoTodo & { _key: string };
 
@@ -75,11 +66,12 @@ export default function AiReviewScreen() {
 }
 
 AiReviewScreen.Loading = function Loading() {
+  const { t } = useTranslation('memo');
   return (
     <VStack className="flex-1 items-center justify-center gap-3">
       <ActivityIndicator size="large" />
       <Text size="b3" shade={7}>
-        메모를 분석하고 있어요...
+        {t('aiReview.analyzing')}
       </Text>
     </VStack>
   );
@@ -87,33 +79,37 @@ AiReviewScreen.Loading = function Loading() {
 
 AiReviewScreen.Error = function ErrorFallback({ error }: { error: unknown }) {
   const router = useRouter();
+  const { t } = useTranslation(['memo', 'common']);
 
   if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
     return (
       <Result
-        title="이번 달 AI 사용 횟수를 모두 사용했어요"
-        description="구독하면 무제한으로 사용할 수 있어요"
+        title={t('memo:aiReview.limitTitle')}
+        description={t('memo:aiDialog.subscribeUnlimited')}
         button={
           <Result.Button onPress={() => router.replace('/settings/subscription')}>
-            구독하기
+            {t('common:premiumDialog.subscribe')}
           </Result.Button>
         }
       />
     );
   }
 
-  const message = isApiError(error) ? error.message : '잠시 후 다시 시도해 주세요';
+  const message = isApiError(error) ? error.message : t('memo:aiReview.retryLater');
 
   return (
     <Result
-      title="파싱에 실패했어요"
+      title={t('memo:aiReview.parseFailed')}
       description={message}
-      button={<Result.Button onPress={() => router.back()}>돌아가기</Result.Button>}
+      button={
+        <Result.Button onPress={() => router.back()}>{t('memo:aiReview.goBack')}</Result.Button>
+      }
     />
   );
 };
 
 function AiReviewContent() {
+  const { t } = useTranslation('memo');
   const { id } = useLocalSearchParams<{ id: string }>();
   const memoId = Number(id);
   const router = useRouter();
@@ -181,8 +177,8 @@ function AiReviewContent() {
   if (todos.length === 0) {
     return (
       <Result
-        title="생성할 할 일이 없어요"
-        button={<Result.Button onPress={() => router.back()}>돌아가기</Result.Button>}
+        title={t('aiReview.noTodosTitle')}
+        button={<Result.Button onPress={() => router.back()}>{t('aiReview.goBack')}</Result.Button>}
       />
     );
   }
@@ -206,7 +202,7 @@ function AiReviewContent() {
           isDisabled={todos.length === 0}
           isLoading={convertMutation.isPending}
         >
-          {`${todos.length}개 할 일 생성`}
+          {t('aiReview.createCount', { count: todos.length })}
         </Button>
       </Box>
     </>
@@ -218,6 +214,7 @@ interface TodoCardProps {
 }
 
 function TodoCard({ index }: TodoCardProps) {
+  const { t } = useTranslation('memo');
   const { todos, updateTodo, removeTodo } = useTodos();
   const todo = todos[index];
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -234,7 +231,9 @@ function TodoCard({ index }: TodoCardProps) {
     ? `${formatMonthDay(todo.startDate)} ~ ${formatMonthDay(todo.endDate)}`
     : formatMonthDay(todo.startDate);
 
-  const timeLabel = todo.isAllDay ? '종일' : (todo.scheduledTime ?? '종일');
+  const timeLabel = todo.isAllDay
+    ? t('aiReview.allDay')
+    : (todo.scheduledTime ?? t('aiReview.allDay'));
 
   const openDatePicker = () => {
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
@@ -351,14 +350,14 @@ function TodoCard({ index }: TodoCardProps) {
           icon={
             <Box className="size-2 rounded-full" style={{ backgroundColor: category?.color }} />
           }
-          label={category?.name ?? '카테고리'}
+          label={category?.name ?? t('aiReview.categoryFallback')}
           onPress={openCategoryPicker}
         />
       </ScrollView>
 
       {todo.isRecurring && todo.recurrence && (
         <Text size="e1" shade={6}>
-          매주 {todo.recurrence.daysOfWeek.map((d) => DAY_LABELS[d] ?? d).join(', ')}
+          {t('aiReview.weeklyRepeat', { days: formatDaysOfWeek(todo.recurrence.daysOfWeek) })}
         </Text>
       )}
 
@@ -376,6 +375,7 @@ function CategorySelectModalContent({
   selectedCategoryId: number;
   onSelect: (categoryId: number) => void;
 }) {
+  const { t } = useTranslation('memo');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
   return (
@@ -383,7 +383,7 @@ function CategorySelectModalContent({
       categories={data.categories}
       selectedCategoryId={selectedCategoryId}
       onSelect={onSelect}
-      submitLabel="선택하기"
+      submitLabel={t('aiReview.select')}
       isLoading={false}
     />
   );

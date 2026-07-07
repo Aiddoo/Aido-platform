@@ -6,6 +6,8 @@ import {
   type EmailLoginFormData,
   emailLoginFormSchema,
 } from '@src/features/auth/presentations/schemas/email-login-form.schema';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Button, H3, HStack, Input, Spacing, TextButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -16,6 +18,7 @@ import { Image, type TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 const EmailLoginScreen = () => {
+  const { t } = useTranslation('auth');
   const passwordRef = useRef<TextInput>(null);
 
   const {
@@ -52,7 +55,7 @@ const EmailLoginScreen = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <H3 align="center">로그인</H3>
+        <H3 align="center">{t('emailLogin.title')}</H3>
 
         <Spacing size={60} />
 
@@ -61,7 +64,7 @@ const EmailLoginScreen = () => {
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input
-              placeholder="이메일"
+              placeholder={t('emailLogin.emailPlaceholder')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -73,7 +76,10 @@ const EmailLoginScreen = () => {
               returnKeyType="next"
               submitBehavior="submit"
               isInvalid={!!errors.email}
-              errorMessage={errors.email?.message}
+              errorMessage={resolveValidationMessage(errors.email, {
+                default: 'email.invalid',
+                byType: { too_big: 'email.tooLong' },
+              })}
               onSubmitEditing={() => passwordRef.current?.focus()}
             />
           )}
@@ -87,7 +93,7 @@ const EmailLoginScreen = () => {
           render={({ field: { onChange, onBlur, value } }) => (
             <PasswordInput
               ref={passwordRef}
-              placeholder="비밀번호"
+              placeholder={t('emailLogin.passwordPlaceholder')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -105,18 +111,18 @@ const EmailLoginScreen = () => {
         <Spacing size={16} />
 
         <Button color="primary" onPress={onSubmit} isLoading={emailLoginMutation.isPending}>
-          로그인
+          {t('emailLogin.submit')}
         </Button>
 
         <Spacing size={24} />
 
         <HStack justify="center" align="center" gap={8}>
           <TextButton size="medium" onPress={() => router.push('/sign-up')}>
-            회원가입
+            {t('emailLogin.signUp')}
           </TextButton>
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
           <TextButton size="medium" onPress={() => router.push('/(auth)/forgot-password')}>
-            비밀번호 찾기
+            {t('emailLogin.forgotPassword')}
           </TextButton>
         </HStack>
       </KeyboardAwareScrollView>

@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -9,6 +10,7 @@ const NotificationsLayout = () => {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
+  const { t } = useTranslation('notification');
 
   return (
     <Stack
@@ -31,7 +33,7 @@ const NotificationsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '알림' }} />
+      <Stack.Screen name="index" options={{ title: t('titles.notifications') }} />
     </Stack>
   );
 };

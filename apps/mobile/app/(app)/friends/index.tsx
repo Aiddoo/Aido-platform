@@ -2,6 +2,7 @@ import { FriendList } from '@src/features/friend/presentations/components/Friend
 import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
 import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
 import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
+import { useTranslation } from '@src/shared/i18n';
 import { HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
 import { router, useNavigation, useRoute } from 'expo-router';
 import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
@@ -43,6 +44,7 @@ const useView = () => {
 };
 
 export default function FriendsScreen() {
+  const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useView();
   const [isEditMode, setIsEditMode] = useFriendListEditMode();
   const navigation = useNavigation();
@@ -67,14 +69,14 @@ export default function FriendsScreen() {
           {view === TabView.friends && (
             <Pressable onPress={() => setIsEditMode(!isEditMode)} hitSlop={8} className="p-2">
               <Text size="b3" weight="medium" shade={9}>
-                {isEditMode ? '완료' : '편집'}
+                {isEditMode ? t('common:actions.done') : t('list.edit')}
               </Text>
             </Pressable>
           )}
         </HStack>
       ),
     });
-  }, [navigation, view, isEditMode, setIsEditMode]);
+  }, [navigation, view, isEditMode, setIsEditMode, t]);
 
   return (
     <View className="flex-1 bg-white">
@@ -86,7 +88,7 @@ export default function FriendsScreen() {
             {({ isSelected }) => (
               <Tabs.Label>
                 <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  친구 목록
+                  {t('tabs.friends')}
                 </Text>
               </Tabs.Label>
             )}
@@ -95,7 +97,7 @@ export default function FriendsScreen() {
             {({ isSelected }) => (
               <Tabs.Label>
                 <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  받은 요청
+                  {t('tabs.received')}
                 </Text>
               </Tabs.Label>
             )}
@@ -104,7 +106,7 @@ export default function FriendsScreen() {
             {({ isSelected }) => (
               <Tabs.Label>
                 <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  보낸 요청
+                  {t('tabs.sent')}
                 </Text>
               </Tabs.Label>
             )}

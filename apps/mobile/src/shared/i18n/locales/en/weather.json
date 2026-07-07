@@ -1,0 +1,57 @@
+{
+  "titles": {
+    "index": "Weather"
+  },
+  "sky": {
+    "clear": "Clear",
+    "partlyCloudy": "Partly Cloudy",
+    "cloudy": "Cloudy"
+  },
+  "precipitation": {
+    "rain": "Rain",
+    "rainSnow": "Rain/Snow",
+    "snow": "Snow",
+    "shower": "Showers"
+  },
+  "badge": {
+    "setup": "Set up weather",
+    "label": "Weather"
+  },
+  "locationPrompt": {
+    "title": "Register your location to see the weather",
+    "subtitle": "We'll show the weather for your current location",
+    "register": "Register Location"
+  },
+  "toasts": {
+    "locationFailed": "Couldn't get your location",
+    "locationUpdateFailed": "Failed to register your location"
+  },
+  "errors": {
+    "locationNotRegistered": "No location has been registered"
+  },
+  "screen": {
+    "kmaPreparing": "Weather data is being prepared",
+    "checkLater": "Please check back shortly",
+    "loadFailed": "Couldn't load weather info",
+    "retryLater": "Please try again shortly",
+    "tempLow": "Low",
+    "tempHigh": "High",
+    "wind": "Wind",
+    "humidity": "Humidity",
+    "precipProb": "Rain Chance",
+    "feelsLike": "Feels like {{temp}}°, meow",
+    "hourly": "Hourly Forecast",
+    "hourLabel": "{{hour}}:00",
+    "weekly": "Weekly Forecast",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "pm10": "PM10",
+    "pm25": "PM2.5"
+  },
+  "dust": {
+    "good": "Good",
+    "normal": "Moderate",
+    "bad": "Unhealthy",
+    "veryBad": "Very Unhealthy"
+  }
+}

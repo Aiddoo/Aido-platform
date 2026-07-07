@@ -2,6 +2,7 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import type { TodoItem } from '@src/features/todo/models/todo.model';
+import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, H4, HStack, Spacing, Text, TextArea, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Dialog } from 'heroui-native';
@@ -18,6 +19,7 @@ interface NudgeDialogProps {
 }
 
 export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogProps) {
+  const { t } = useTranslation(['todo', 'common']);
   const sendNudgeMutation = useMutation(useSendTodoNudgeMutationOptions());
   const {
     control,
@@ -59,9 +61,9 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
             <Dialog.Title>
               <VStack>
                 <Text size="b4" shade={6}>
-                  할 일을 잊은 {friend.displayName}님에게
+                  {t('nudge.dialogTarget', { name: friend.displayName })}
                 </Text>
-                <H4>따끔하게 콕 찌르기</H4>
+                <H4>{t('nudge.sheetTitle')}</H4>
               </VStack>
             </Dialog.Title>
 
@@ -81,7 +83,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
                     autoFocus
                     isInvalid={!!errors.message}
                     label={`to. ${friend.displayName}`}
-                    placeholder={`(선택) ${todo.title} 언제 할 거야?`}
+                    placeholder={t('nudge.dialogPlaceholder', { title: todo.title })}
                     value={value}
                     onChangeText={onChange}
                     className="min-h-[100px]"
@@ -100,7 +102,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
                 className="flex-1"
                 onPress={() => handleOpenChange(false)}
               >
-                취소
+                {t('common:actions.cancel')}
               </Button>
               <Button
                 color="primary"
@@ -111,7 +113,7 @@ export function NudgeDialog({ friend, todo, isOpen, onOpenChange }: NudgeDialogP
                 isDisabled={!isValid}
                 isLoading={sendNudgeMutation.isPending}
               >
-                콕 찌르기
+                {t('nudge.send')}
               </Button>
             </HStack>
           </Dialog.Content>

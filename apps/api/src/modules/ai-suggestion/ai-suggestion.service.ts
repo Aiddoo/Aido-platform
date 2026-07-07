@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
+import type { SupportedLocale } from "@/common/decorators";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { DatabaseService } from "@/database/database.service";
@@ -21,7 +22,7 @@ import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type { SuggestionActionDto } from "./dtos";
 import {
 	buildSuggestionPrompt,
-	detectedPatternsSchema,
+	getDetectedPatternsSchema,
 } from "./prompts/detect-patterns.prompt";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
 import { resolveSuggestedCategoryId } from "./utils/category-resolver.util";
@@ -204,6 +205,7 @@ export class AiSuggestionService {
 			lat: number;
 			lon: number;
 		} | null,
+		locale: SupportedLocale = "ko",
 	): Promise<number> {
 		// 1. 컨텍스트 수집 (통계 분석 + 투두 조회 + 날씨)
 		const context = await this.contextBuilder.build(
@@ -223,12 +225,14 @@ export class AiSuggestionService {
 		const { system, prompt } = buildSuggestionPrompt(
 			context,
 			AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES,
+			locale,
 		);
+		const patternsSchema = getDetectedPatternsSchema(locale);
 
 		const firstResult = await this.aiProvider.generateStructured({
 			system,
 			prompt,
-			schema: detectedPatternsSchema,
+			schema: patternsSchema,
 			maxTokens: 1500,
 			temperature: 0.3,
 		});
@@ -242,7 +246,7 @@ export class AiSuggestionService {
 			const retryResult = await this.aiProvider.generateStructured({
 				system,
 				prompt,
-				schema: detectedPatternsSchema,
+				schema: patternsSchema,
 				maxTokens: 1500,
 				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
 			});

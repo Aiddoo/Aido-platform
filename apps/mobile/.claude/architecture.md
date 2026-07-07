@@ -387,16 +387,19 @@ export const useGet{Feature}sQueryOptions = () => {
 
 **Component에서 UI 표시 문구 관리**
 
+UI 표시 문구는 i18n 카탈로그 키를 참조한다 (하드코딩 금지 — [i18n-guide.md](./i18n-guide.md)):
+
 ```typescript
 // presentations/components/{Feature}Card.tsx
 import type { DerivedType } from '../view-models/{feature}.view-model';
 
-// UI 표시 문구는 컴포넌트 내부 상수로 관리
-const DERIVED_LABEL: Record<DerivedType, string> = {
-  typeA: '최고 등급입니다',
-  typeB: '거의 달성했어요',
-  typeC: '한 걸음 전진했어요',
-};
+// 라벨 맵은 값 대신 i18n 키를 담는다 (satisfies로 enum 누락 방지)
+const DERIVED_LABEL_KEYS = {
+  typeA: '{feature}:card.gradeTop',
+  typeB: '{feature}:card.gradeAlmost',
+  typeC: '{feature}:card.gradeStep',
+} as const satisfies Record<DerivedType, string>;
+// 사용처: t(DERIVED_LABEL_KEYS[type])
 ```
 
 **Query Keys**

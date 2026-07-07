@@ -1,4 +1,5 @@
 import type { BusinessError } from '@src/shared/errors';
+import { t } from '@src/shared/i18n';
 
 export const TodoCategoryErrorCode = {
   VALIDATION_FAILED: 'TODO_CATEGORY_VALIDATION_FAILED',
@@ -20,7 +21,10 @@ export class TodoCategoryError extends Error implements BusinessError {
 
 export const TodoCategoryErrors = {
   validationFailed: () =>
-    new TodoCategoryError(TodoCategoryErrorCode.VALIDATION_FAILED, '다시 시도해 주세요'),
+    new TodoCategoryError(
+      TodoCategoryErrorCode.VALIDATION_FAILED,
+      t('todo:errors.categoryValidationFailed'),
+    ),
 } as const;
 
 export const isTodoCategoryError = (error: unknown): error is TodoCategoryError =>

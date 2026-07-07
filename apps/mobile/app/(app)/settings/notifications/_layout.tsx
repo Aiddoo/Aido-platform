@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -9,6 +10,7 @@ export default function NotificationsLayout() {
   const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
+  const { t } = useTranslation('notification');
 
   return (
     <Stack
@@ -31,10 +33,10 @@ export default function NotificationsLayout() {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: '알림 설정' }} />
-      <Stack.Screen name="push" options={{ title: '푸시 알림' }} />
-      <Stack.Screen name="weather" options={{ title: '날씨 알림' }} />
-      <Stack.Screen name="reminder" options={{ title: '리마인드 알림' }} />
+      <Stack.Screen name="index" options={{ title: t('titles.settings') }} />
+      <Stack.Screen name="push" options={{ title: t('titles.push') }} />
+      <Stack.Screen name="weather" options={{ title: t('titles.weather') }} />
+      <Stack.Screen name="reminder" options={{ title: t('titles.reminder') }} />
     </Stack>
   );
 }

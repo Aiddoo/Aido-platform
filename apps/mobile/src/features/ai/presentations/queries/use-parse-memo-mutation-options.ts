@@ -1,10 +1,11 @@
 import { ErrorCode } from '@aido/errors';
-import { useAiService } from '@src/bootstrap/providers/di-provider';
+import { useAiService } from '@src/bootstrap/providers/di-context';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -38,7 +39,7 @@ export const useParseMemoMutationOptions = () => {
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
         trackEvent('premium_gate_shown', { feature: 'ai_parse' });
-        toast.error('이번 달 AI 사용 횟수를 모두 사용했어요');
+        toast.error(t('ai:suggestions.toasts.quotaExceeded'));
         return;
       }
 
@@ -47,7 +48,7 @@ export const useParseMemoMutationOptions = () => {
         return;
       }
 
-      toast.error(undefined, { fallback: '잠시 후 다시 시도해 주세요' });
+      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });
 };

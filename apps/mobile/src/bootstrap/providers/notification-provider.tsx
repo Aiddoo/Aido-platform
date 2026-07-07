@@ -1,10 +1,11 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
+import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
-import { useLogger, useNotificationService } from './di-provider';
+import { useLogger, useNotificationService } from './di-context';
 
 interface NotificationContextValue {
   handleNotificationResponse: (response: Notifications.NotificationResponse) => Promise<void>;
@@ -105,6 +106,25 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
         logger.warn('[Notification] Push token unregister skipped', { error });
       });
     }
+  }, [isAuthenticated, notificationService, logger]);
+
+  // Effect 2-1: 언어 변경 시 토큰 재등록 — 재등록 요청의 Accept-Language 헤더를
+  // 서버가 UserPreference.locale로 upsert해 푸시 알림 언어가 즉시 동기화된다
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const handleLanguageChanged = () => {
+      notificationService.setupPushNotifications().catch((error) => {
+        logger.warn('[Notification] Push token re-registration skipped', { error });
+      });
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
   }, [isAuthenticated, notificationService, logger]);
 
   // Effect 3: 배지 동기화

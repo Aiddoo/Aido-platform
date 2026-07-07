@@ -2,6 +2,7 @@ import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validato
 import { NotificationList } from '@src/features/notification/presentations/components/notification-list';
 import { UnreadNotificationHeader } from '@src/features/notification/presentations/components/unread-notification-header';
 import { CATEGORY_TABS } from '@src/features/notification/presentations/constants/notification';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useNavigation, useRoute } from 'expo-router';
 import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
@@ -34,6 +35,7 @@ const useView = () => {
 
 export default function NotificationsScreen() {
   const [category, setCategory] = useView();
+  const { t } = useTranslation('notification');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-background" edges={['bottom']}>
@@ -54,7 +56,7 @@ export default function NotificationsScreen() {
                     size="b3"
                     className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
                   >
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </Text>
                 </Tabs.Label>
               )}

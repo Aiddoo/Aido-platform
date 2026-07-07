@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { SupportedLocale } from "@/common/decorators";
 import {
 	AI_PROVIDER,
 	type AiProvider,
 } from "@/modules/ai/providers/ai.provider";
 import {
 	buildReportPrompt,
-	reportAiResponseSchema,
+	getReportAiResponseSchema,
 } from "./prompts/report.prompt";
 import type { GeneratedReportContent, GenerateReportParams } from "./types";
 
@@ -36,21 +37,27 @@ export class ReportGeneratorService {
 	async generate(
 		params: GenerateReportParams,
 	): Promise<GeneratedReportContent> {
-		const { aggregatedData, periodLabel, type } = params;
+		const { aggregatedData, periodLabel, type, locale = "ko" } = params;
 
 		if (!this.aiProvider.isAvailable()) {
 			this.#logger.warn("AI Provider 불가용 — 폴백 콘텐츠 사용");
-			return this.#buildFallbackContent(aggregatedData.hasActivity);
+			return this.#buildFallbackContent(aggregatedData.hasActivity, locale);
 		}
 
 		try {
-			const prompt = buildReportPrompt(aggregatedData, periodLabel, type, {
-				prevTips: params.prevTips,
-			});
+			const prompt = buildReportPrompt(
+				aggregatedData,
+				periodLabel,
+				type,
+				{
+					prevTips: params.prevTips,
+				},
+				locale,
+			);
 
 			const result = await this.aiProvider.generateStructured({
 				prompt,
-				schema: reportAiResponseSchema,
+				schema: getReportAiResponseSchema(locale),
 				maxTokens: REPORT_AI_MAX_TOKENS,
 				temperature: REPORT_AI_TEMPERATURE,
 			});
@@ -68,14 +75,34 @@ export class ReportGeneratorService {
 				`AI 리포트 생성 실패 — 폴백 사용: ${error}`,
 				error instanceof Error ? error.stack : undefined,
 			);
-			return this.#buildFallbackContent(aggregatedData.hasActivity);
+			return this.#buildFallbackContent(aggregatedData.hasActivity, locale);
 		}
 	}
 
 	/**
 	 * AI 불가용 시 폴백 콘텐츠
 	 */
-	#buildFallbackContent(hasActivity: boolean): GeneratedReportContent {
+	#buildFallbackContent(
+		hasActivity: boolean,
+		locale: SupportedLocale = "ko",
+	): GeneratedReportContent {
+		if (locale === "en") {
+			if (!hasActivity) {
+				return {
+					aiSummary:
+						"No to-dos were registered this period. Next time, try starting with one small goal!",
+					aiTips: ["Try building the habit of adding just 1 to-do a day."],
+				};
+			}
+			return {
+				aiSummary:
+					"This report was generated from your to-do stats for the period. Check the data above for details.",
+				aiTips: [
+					"Keep up your current pace and check in on your progress regularly.",
+				],
+			};
+		}
+
 		if (!hasActivity) {
 			return {
 				aiSummary:

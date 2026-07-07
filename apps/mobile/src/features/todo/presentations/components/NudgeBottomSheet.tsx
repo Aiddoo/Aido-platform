@@ -2,6 +2,7 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import type { TodoItem } from '@src/features/todo/models/todo.model';
+import { useTranslation } from '@src/shared/i18n';
 import { BottomSheetTextArea, Button, H4, KeyboardBottomSheet, Text, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
@@ -17,6 +18,7 @@ interface NudgeBottomSheetProps {
 }
 
 export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBottomSheetProps) {
+  const { t } = useTranslation('todo');
   const sendNudgeMutation = useMutation(useSendTodoNudgeMutationOptions());
 
   const {
@@ -56,9 +58,9 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
         <VStack gap={4}>
           <VStack gap={2}>
             <Text size="b3" shade={6}>
-              {todo.title} 언제해?
+              {t('nudge.whenTodo', { title: todo.title })}
             </Text>
-            <H4>따끔하게 콕 찌르기</H4>
+            <H4>{t('nudge.sheetTitle')}</H4>
           </VStack>
         </VStack>
 
@@ -75,7 +77,7 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
               <BottomSheetTextArea
                 label={`to. ${friend.displayName}`}
                 isInvalid={!!errors.message}
-                placeholder="(선택) 오늘 안에 꼭 해줘 !"
+                placeholder={t('nudge.placeholder')}
                 value={value}
                 onChangeText={onChange}
                 className="z-10 min-h-0 h-[80px]"
@@ -93,7 +95,7 @@ export function NudgeBottomSheet({ friend, todo, isOpen, onOpenChange }: NudgeBo
           isDisabled={!isValid}
           isLoading={sendNudgeMutation.isPending}
         >
-          콕 찌르기
+          {t('nudge.send')}
         </Button>
       </VStack>
     </KeyboardBottomSheet>

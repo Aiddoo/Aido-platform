@@ -3,6 +3,7 @@ import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@ai
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
+import { useTranslation } from '@src/shared/i18n';
 import { H3, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
@@ -16,6 +17,7 @@ import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutat
 import type { SignUpFormData } from '../schemas/sign-up-form.schema';
 
 export const SignUpVerificationForm = () => {
+  const { t } = useTranslation(['auth']);
   const { getValues } = useFormContext<SignUpFormData>();
   const email = getValues('email');
 
@@ -85,9 +87,7 @@ export const SignUpVerificationForm = () => {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>
-            {maskedEmail}로{'\n'}발송된 코드를 입력해주세요
-          </H3>
+          <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
         </Animated.View>
 
         <VStack gap={32} align="center">
@@ -117,20 +117,22 @@ export const SignUpVerificationForm = () => {
 
           {verify.isPending && (
             <Text size="b4" className="text-main">
-              인증 중...
+              {t('auth:verification.verifying')}
             </Text>
           )}
 
           <HStack gap={8} justify="center">
             <Text size="b4" shade={7}>
-              코드를 받지 못하셨나요?
+              {t('auth:verification.didNotReceive')}
             </Text>
             <TextButton
               size="medium"
               onPress={handleResend}
               disabled={cooldown > 0 || resend.isPending}
             >
-              {cooldown > 0 ? `${cooldown}초 후 재발송` : '인증코드 재발송'}
+              {cooldown > 0
+                ? t('auth:verification.resendIn', { count: cooldown })
+                : t('auth:verification.resend')}
             </TextButton>
           </HStack>
         </VStack>

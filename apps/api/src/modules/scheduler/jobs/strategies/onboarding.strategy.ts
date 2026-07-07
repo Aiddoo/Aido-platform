@@ -5,6 +5,7 @@ import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import { fetchUserLocales } from "@/modules/notification/templates/user-locale.util";
 import type { CreateNotificationData } from "@/modules/notification/types/notification.types";
 
 import {
@@ -97,12 +98,17 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 		}
 
 		// 알림 데이터 생성
+		const locales = await fetchUserLocales(
+			this.database,
+			filteredUsers.map(({ user }) => user.id),
+		);
 		const notifications: CreateNotificationData[] = [];
 		for (const { user, day } of filteredUsers) {
 			const completedCount = completedCountMap.get(user.id) ?? 0;
 			const message = NotificationMessageBuilder.onboarding(
 				day,
 				completedCount,
+				locales.get(user.id) ?? "ko",
 			);
 
 			if (!message) continue;

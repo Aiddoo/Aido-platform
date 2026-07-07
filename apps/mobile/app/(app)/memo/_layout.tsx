@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
@@ -9,6 +10,7 @@ export default function MemoLayout() {
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
+  const { t } = useTranslation('memo');
 
   return (
     <Stack
@@ -34,9 +36,9 @@ export default function MemoLayout() {
         animationDuration: 200,
       }}
     >
-      <Stack.Screen name="create" options={{ title: '새 메모' }} />
+      <Stack.Screen name="create" options={{ title: t('titles.create') }} />
       <Stack.Screen name="[id]/index" options={{ title: '' }} />
-      <Stack.Screen name="[id]/ai-review" options={{ title: 'AI 파싱' }} />
+      <Stack.Screen name="[id]/ai-review" options={{ title: t('titles.aiReview') }} />
     </Stack>
   );
 }

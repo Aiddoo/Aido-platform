@@ -9,7 +9,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
-import { Timezone } from "@/common/decorators";
+import { Locale, Timezone } from "@/common/decorators";
 import {
 	ApiBadRequestError,
 	ApiDoc,
@@ -173,16 +173,24 @@ if (confirmed) {
 	@ApiUnprocessableError(ErrorCode.AI_1302)
 	@ApiTooManyRequestsError(ErrorCode.AI_1303)
 	@ApiServiceUnavailableError(ErrorCode.AI_1301)
+	@ApiHeader({
+		name: "Accept-Language",
+		description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+		required: false,
+		example: "ko",
+	})
 	async parseTodo(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ParseTodoRequestDto,
 		@Timezone() tz: string,
+		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseTodoResponseDto> {
 		const result = await this.aiService.parseTodo(
 			dto.text,
 			user.userId,
 			tz,
 			dto.categoryId,
+			locale,
 		);
 
 		return {
@@ -312,16 +320,24 @@ if (confirmed) {
 	@ApiUnprocessableError(ErrorCode.AI_1302)
 	@ApiTooManyRequestsError(ErrorCode.AI_1303)
 	@ApiServiceUnavailableError(ErrorCode.AI_1301)
+	@ApiHeader({
+		name: "Accept-Language",
+		description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+		required: false,
+		example: "ko",
+	})
 	async parseMemo(
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: ParseMemoRequestDto,
 		@Timezone() tz: string,
+		@Locale() locale: "ko" | "en" | undefined,
 	): Promise<ParseMemoResponseDto> {
 		const result = await this.aiService.parseMemoToTodos(
 			dto.content,
 			user.userId,
 			tz,
 			dto.categoryId,
+			locale,
 		);
 
 		return {

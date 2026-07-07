@@ -1,0 +1,44 @@
+{
+  "screenTitle": "친구 관리",
+  "fallbackName": "친구",
+  "errors": {
+    "invalidTag": "올바른 태그 형식이 아니에요",
+    "emptyTag": "태그를 입력해주세요"
+  },
+  "toast": {
+    "requestSent": "친구 요청을 보냈어요",
+    "requestAccepted": "친구 요청을 수락했어요",
+    "requestRejected": "친구 요청을 거절했어요",
+    "requestFailed": "친구 요청에 실패했어요"
+  },
+  "premium": {
+    "unlimitedFriends": "프리미엄 구독으로 무제한 친구를 추가할 수 있어요"
+  },
+  "deleteDialog": {
+    "title": "친구를 삭제할까요?",
+    "description": "삭제하면 서로의 할 일이 보이지 않아요"
+  },
+  "tabs": {
+    "friends": "친구 목록",
+    "received": "받은 요청",
+    "sent": "보낸 요청"
+  },
+  "list": {
+    "friendCount": "총 {{count}}명",
+    "requestCount": "총 {{count}}개 요청",
+    "emptyTitle": "친구를 추가해 보세요",
+    "emptyDescription": "검색 아이콘을 눌러 친구를 찾을 수 있어요",
+    "emptyReceived": "아직 받은 요청이 없어요",
+    "emptySent": "아직 보낸 요청이 없어요",
+    "editHint": "편집을 눌러 피드에 보이는\n친구 순서를 변경하거나 삭제할 수 있어요",
+    "accept": "수락",
+    "reject": "거절",
+    "edit": "편집"
+  },
+  "add": {
+    "title": "친구를 추가해 보세요",
+    "description": "친구와 할 일을 공유하고 콕 찔러줄 수 있어요",
+    "tagLabel": "친구 태그",
+    "submit": "친구 추가하기"
+  }
+}

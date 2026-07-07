@@ -1,5 +1,5 @@
+import { t } from '@src/shared/i18n';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ko';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import isToday from 'dayjs/plugin/isToday';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
@@ -8,7 +8,7 @@ import { times } from 'es-toolkit/compat';
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
 dayjs.extend(isToday);
-dayjs.locale('ko');
+// dayjs 전역 locale은 i18n init(languageChanged 리스너)이 관리한다
 
 // Format
 export const formatDate = (date: Date | string | number): string => {
@@ -27,17 +27,17 @@ export const formatTime = (
 
 export const formatFullDate = (date: Date | string | number): string => {
   const d = dayjs(date);
-  return d.isValid() ? d.format('YYYY년 M월 D일') : '';
+  return d.isValid() ? d.format(t('common:dateFormats.fullDate')) : '';
 };
 
 export const formatMonthDay = (date: Date | string | number): string => {
   const d = dayjs(date);
-  return d.isValid() ? d.format('M월 D일') : '';
+  return d.isValid() ? d.format(t('common:dateFormats.monthDay')) : '';
 };
 
 export const formatDayOfMonth = (date: Date | string | number): string => {
   const d = dayjs(date);
-  return d.isValid() ? d.format('D일') : '';
+  return d.isValid() ? d.format(t('common:dateFormats.dayOfMonth')) : '';
 };
 
 export const formatTime24 = (date: Date | string | number): string => {
@@ -95,37 +95,35 @@ export const isSaturday = (date: Date): boolean => {
 // DayOfWeek
 import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/validators';
 
-const DAY_OF_WEEK_LABELS: Record<DayOfWeek, string> = {
-  MON: '월',
-  TUE: '화',
-  WED: '수',
-  THU: '목',
-  FRI: '금',
-  SAT: '토',
-  SUN: '일',
-};
-
-/** DayOfWeek 배열을 요일 순서로 정렬 후 한글로 변환 (예: "월, 수, 금") */
+/** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
 export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
   [...daysOfWeek]
     .sort((a, b) => DAY_OF_WEEK_MAP[a] - DAY_OF_WEEK_MAP[b])
-    .map((day) => DAY_OF_WEEK_LABELS[day])
+    .map((day) => t(`common:daysOfWeek.${day}`))
     .join(', ');
 
-/** DayOfWeek → 한글 요일 한 글자 */
-export const getDayOfWeekLabel = (day: DayOfWeek): string => DAY_OF_WEEK_LABELS[day];
+/** DayOfWeek → 로케일 요일 라벨 */
+export const getDayOfWeekLabel = (day: DayOfWeek): string => t(`common:daysOfWeek.${day}`);
 
 // Calendar
-export const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+/** 캘린더 헤더용 요일 라벨 (일요일 시작, Date#getDay() 인덱스와 일치) */
+export const getWeekdayLabels = (): string[] =>
+  (['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const).map((day) =>
+    t(`common:daysOfWeek.${day}`),
+  );
 
 export const getWeekHeaderText = (date: Date): string => {
   const d = dayjs(date);
   const weekOfMonth = Math.ceil(d.date() / 7);
-  return `${d.format('M')}월 ${weekOfMonth}주차`;
+  return t('common:calendar.weekHeader', {
+    month: d.format(t('common:dateFormats.monthLabel')),
+    week: weekOfMonth,
+  });
 };
 
 export const getMonthHeaderText = (date: Date): string => {
-  return dayjs(date).format('YYYY년 M월');
+  return dayjs(date).format(t('common:dateFormats.yearMonth'));
 };
 
 export const getWeekStart = (date: Date): Date => {
@@ -254,11 +252,11 @@ export const getDateSectionLabel = (date: Date): string => {
   const now = dayjs();
   const target = dayjs(date);
 
-  if (target.isToday()) return '오늘';
-  if (now.subtract(1, 'day').isSame(target, 'day')) return '어제';
-  if (target.isSame(now, 'isoWeek')) return '이번 주';
-  if (target.isSame(now, 'month')) return '이번 달';
-  return '이전';
+  if (target.isToday()) return t('common:dateSections.today');
+  if (now.subtract(1, 'day').isSame(target, 'day')) return t('common:dateSections.yesterday');
+  if (target.isSame(now, 'isoWeek')) return t('common:dateSections.thisWeek');
+  if (target.isSame(now, 'month')) return t('common:dateSections.thisMonth');
+  return t('common:dateSections.earlier');
 };
 
 /** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
@@ -269,10 +267,10 @@ export const formatRelativeTime = (date: Date): string => {
   const diffHours = now.diff(target, 'hour');
   const diffDays = now.diff(target, 'day');
 
-  if (diffMinutes < 1) return '방금 전';
-  if (diffMinutes < 60) return `${diffMinutes}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
-  if (target.year() === now.year()) return target.format('M월 D일');
-  return target.format('YYYY.M.D');
+  if (diffMinutes < 1) return t('common:relativeTime.justNow');
+  if (diffMinutes < 60) return t('common:relativeTime.minutesAgo', { count: diffMinutes });
+  if (diffHours < 24) return t('common:relativeTime.hoursAgo', { count: diffHours });
+  if (diffDays < 7) return t('common:relativeTime.daysAgo', { count: diffDays });
+  if (target.year() === now.year()) return target.format(t('common:dateFormats.monthDay'));
+  return target.format(t('common:dateFormats.shortDate'));
 };

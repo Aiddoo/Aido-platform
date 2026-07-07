@@ -1,5 +1,6 @@
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { useTranslation } from '@src/shared/i18n';
 import { type ThemeMode, useTheme } from '@src/shared/providers/theme-provider';
 import {
   DeviceIcon,
@@ -15,6 +16,7 @@ import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-rea
 
 const ThemeSettingsScreen = () => {
   const { mode, setMode } = useTheme();
+  const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
 
   const handleThemeChange = (value: string) => {
@@ -31,9 +33,9 @@ const ThemeSettingsScreen = () => {
           onValueChange={handleThemeChange}
           className="bg-white rounded-2xl overflow-hidden gap-0"
         >
-          <ThemeRadioItem value="light" label="라이트 모드" Icon={SunIcon} />
-          <ThemeRadioItem value="dark" label="다크 모드" Icon={MoonIcon} />
-          <ThemeRadioItem value="system" label="시스템 설정" Icon={DeviceIcon} />
+          <ThemeRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
+          <ThemeRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
+          <ThemeRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
         </RadioGroup>
       </ScrollView>
     </StyledSafeAreaView>

@@ -25,6 +25,7 @@ import { suppressLogger } from "@test/setup/suppress-logger";
 import type { Job } from "bullmq";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
+import { PushDeliveryService } from "@/modules/notification/push-delivery.service";
 import { TodoReminderProcessor } from "@/modules/scheduler/reminder/processors/todo-reminder.processor";
 
 function createMockJob(data: {
@@ -58,6 +59,11 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 		createAndSend: jest.fn(),
 	};
 
+	// 발송 시점 로케일은 UserPreference 캐시 경유 (PushDeliveryService.getUserLocale)
+	const mockPushDeliveryService = {
+		getUserLocale: jest.fn().mockResolvedValue("ko"),
+	};
+
 	// 테스트 데이터
 	const mockUserId = "user-reminder-123";
 	const mockTodoId = 42;
@@ -75,6 +81,10 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
 				{
 					provide: NotificationService,
 					useValue: mockNotificationService,
+				},
+				{
+					provide: PushDeliveryService,
+					useValue: mockPushDeliveryService,
 				},
 			],
 		}).compile();

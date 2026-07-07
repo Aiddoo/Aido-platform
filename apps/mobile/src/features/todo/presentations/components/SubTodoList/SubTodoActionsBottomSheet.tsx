@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   BottomSheet,
@@ -26,6 +27,7 @@ export const SubTodoActionsBottomSheet = ({
   onDelete,
   isDeleting,
 }: SubTodoActionsBottomSheetProps) => {
+  const { t } = useTranslation('todo');
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
@@ -44,7 +46,9 @@ export const SubTodoActionsBottomSheet = ({
                 <EditIcon width={16} height={16} colorClassName="text-gray-7" />
               </Box>
             }
-            contents={<ListRow.Texts type="1RowTypeA" top="수정하기" topProps={{ size: 'b2' }} />}
+            contents={
+              <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
+            }
             right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
           />
         </PressableFeedback>
@@ -61,7 +65,7 @@ export const SubTodoActionsBottomSheet = ({
             contents={
               <ListRow.Texts
                 type="1RowTypeA"
-                top={isDeleting ? '삭제 중...' : '삭제하기'}
+                top={isDeleting ? t('actions.deleting') : t('actions.delete')}
                 topProps={{ size: 'b2', tone: 'danger' }}
               />
             }

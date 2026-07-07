@@ -1,6 +1,6 @@
 import type { NotificationType } from '@aido/validators';
 import { pushNotificationDataSchema } from '@aido/validators';
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-provider';
+import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';

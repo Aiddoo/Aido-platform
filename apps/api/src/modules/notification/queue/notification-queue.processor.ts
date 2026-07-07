@@ -1,13 +1,17 @@
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import type { Job } from "bullmq";
-
 import { todayInTimezone } from "@/common/date/utils/timezone";
+import type { SupportedLocale } from "@/common/decorators";
 import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
 import { NotificationService } from "../notification.service";
-import { NotificationMessageBuilder } from "../templates/notification-templates";
+import { PushDeliveryService } from "../push-delivery.service";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "../templates/notification-templates";
 import {
 	type BillingIssueJobData,
 	type CheerSentJobData,
@@ -27,6 +31,7 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	constructor(
 		private readonly notificationService: NotificationService,
+		private readonly pushDeliveryService: PushDeliveryService,
 		private readonly database: DatabaseService,
 	) {
 		super();
@@ -48,6 +53,11 @@ export class NotificationQueueProcessor extends WorkerHost {
 			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
 			error.stack,
 		);
+	}
+
+	/** 수신자 푸시 언어 조회 — UserPreference 캐시 경유 (shouldSendPush와 캐시 공유) */
+	async #getLocale(userId: string): Promise<SupportedLocale> {
+		return this.pushDeliveryService.getUserLocale(userId);
 	}
 
 	async process(job: Job<NotificationJobData>): Promise<void> {
@@ -80,7 +90,11 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleFollowNew(data: FollowNewJobData): Promise<void> {
 		try {
-			const message = NotificationMessageBuilder.followNew(data.followerName);
+			const locale = await this.#getLocale(data.followingId);
+			const message = NotificationMessageBuilder.followNew(
+				data.followerName,
+				locale,
+			);
 
 			await this.notificationService.createAndSendWithDedup({
 				userId: data.followingId,
@@ -103,8 +117,10 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleFollowMutual(data: FollowMutualJobData): Promise<void> {
 		try {
+			const locale = await this.#getLocale(data.userId);
 			const message = NotificationMessageBuilder.followAccepted(
 				data.friendName,
+				locale,
 			);
 
 			await this.notificationService.createAndSendWithDedup({
@@ -128,15 +144,18 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleNudgeSent(data: NudgeSentJobData): Promise<void> {
 		try {
+			const locale = await this.#getLocale(data.receiverId);
 			const message = data.todoId
 				? NotificationMessageBuilder.nudgeReceived(
 						data.senderName,
 						data.todoTitle,
 						data.message,
+						locale,
 					)
 				: NotificationMessageBuilder.remindNudgeReceived(
 						data.senderName,
 						data.message,
+						locale,
 					);
 
 			await this.notificationService.createAndSendWithDedup({
@@ -163,9 +182,11 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleCheerSent(data: CheerSentJobData): Promise<void> {
 		try {
+			const locale = await this.#getLocale(data.receiverId);
 			const message = NotificationMessageBuilder.cheerReceived(
 				data.senderName,
 				data.message,
+				locale,
 			);
 
 			await this.notificationService.createAndSendWithDedup({
@@ -191,7 +212,8 @@ export class NotificationQueueProcessor extends WorkerHost {
 
 	async #handleBillingIssue(data: BillingIssueJobData): Promise<void> {
 		try {
-			const message = NotificationMessageBuilder.billingIssue();
+			const locale = await this.#getLocale(data.userId);
+			const message = NotificationMessageBuilder.billingIssue(locale);
 
 			await this.notificationService.createAndSend({
 				userId: data.userId,
@@ -245,18 +267,38 @@ export class NotificationQueueProcessor extends WorkerHost {
 					return;
 				}
 
-				const message = NotificationMessageBuilder.friendCompleted(
-					data.friendName,
+				// 수신자별 푸시 언어로 메시지 생성 (로케일별 1회 조립)
+				const preferences = await tx.userPreference.findMany({
+					where: { userId: { in: newUserIds } },
+					select: { userId: true, locale: true },
+				});
+				const localeByUserId = new Map(
+					preferences.map((p) => [p.userId, resolveTemplateLocale(p.locale)]),
 				);
+				const messageByLocale = new Map<
+					SupportedLocale,
+					{ title: string; body: string }
+				>();
 
-				const notifications = newUserIds.map((userId) => ({
-					userId,
-					type: "FRIEND_COMPLETED" as const,
-					title: message.title,
-					body: message.body,
-					friendId: data.friendId,
-					notificationDate: today,
-				}));
+				const notifications = newUserIds.map((userId) => {
+					const locale = localeByUserId.get(userId) ?? "ko";
+					let message = messageByLocale.get(locale);
+					if (!message) {
+						message = NotificationMessageBuilder.friendCompleted(
+							data.friendName,
+							locale,
+						);
+						messageByLocale.set(locale, message);
+					}
+					return {
+						userId,
+						type: "FRIEND_COMPLETED" as const,
+						title: message.title,
+						body: message.body,
+						friendId: data.friendId,
+						notificationDate: today,
+					};
+				});
 
 				await this.notificationService.createAndSendBatch(notifications, tx);
 
@@ -298,7 +340,11 @@ export class NotificationQueueProcessor extends WorkerHost {
 				return;
 			}
 
-			const message = NotificationMessageBuilder.milestone(data.milestone);
+			const locale = await this.#getLocale(data.userId);
+			const message = NotificationMessageBuilder.milestone(
+				data.milestone,
+				locale,
+			);
 
 			await this.notificationService.createAndSend({
 				userId: data.userId,

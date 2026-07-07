@@ -1,4 +1,4 @@
-import { useAchievementService } from '@src/bootstrap/providers/di-provider';
+import { useAchievementService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 

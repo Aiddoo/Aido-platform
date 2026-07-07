@@ -5,7 +5,10 @@ import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
-import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import {
+	NotificationMessageBuilder,
+	resolveTemplateLocale,
+} from "@/modules/notification/templates/notification-templates";
 
 import type {
 	ITimezoneStrategy,
@@ -28,6 +31,7 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 
 		const selectClause = {
 			id: true,
+			preference: { select: { locale: true } },
 			_count: {
 				select: {
 					todos: {
@@ -91,10 +95,11 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
 
 		const notifications = filteredUsers.map((user) => {
 			const count = user._count.todos;
+			const locale = resolveTemplateLocale(user.preference?.locale);
 			const message =
 				count > 0
-					? NotificationMessageBuilder.morningReminder(count)
-					: NotificationMessageBuilder.morningNoTodo();
+					? NotificationMessageBuilder.morningReminder(count, locale)
+					: NotificationMessageBuilder.morningNoTodo(locale);
 
 			return {
 				userId: user.id,

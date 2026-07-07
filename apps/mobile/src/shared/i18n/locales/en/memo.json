@@ -1,0 +1,54 @@
+{
+  "titles": {
+    "create": "New Memo",
+    "aiReview": "AI Parsing"
+  },
+  "tab": {
+    "addMemo": "Add Memo"
+  },
+  "list": {
+    "emptyTitle": "No memos yet",
+    "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",
+    "loadFailed": "Couldn't load your memos"
+  },
+  "create": {
+    "placeholder": "Write down your ideas freely..."
+  },
+  "detail": {
+    "deleteConfirmTitle": "Delete this memo?",
+    "deleteConfirmDescription": "Deleted memos can't be recovered"
+  },
+  "toasts": {
+    "convertedOne": "Converted the memo into a to-do",
+    "convertedMany_one": "Converted the memo into {{count}} to-do",
+    "convertedMany_other": "Converted the memo into {{count}} to-dos",
+    "deleted": "Memo deleted",
+    "retryLater": "Please try again later",
+    "reorderFailed": "Failed to change the order",
+    "deleteRetry": "Please try deleting again later",
+    "limitReached": "You've reached the memo limit"
+  },
+  "aiDialog": {
+    "limitTitle": "You've used all your AI parses this month",
+    "subscribeUnlimited": "Subscribe for unlimited use",
+    "confirmTitle": "Let AI turn this memo into to-dos",
+    "usageRemaining": "{{remaining}} of {{limit}} uses left this month",
+    "warnWithDeduction": "If you leave during parsing, you won't get the result and a use will be deducted.",
+    "warnNoDeduction": "If you leave during parsing, you won't get the result.",
+    "start": "Start"
+  },
+  "aiReview": {
+    "analyzing": "Analyzing your memo...",
+    "limitTitle": "You've used all your AI credits this month",
+    "parseFailed": "Parsing failed",
+    "retryLater": "Please try again later",
+    "goBack": "Go back",
+    "noTodosTitle": "No to-dos to create",
+    "createCount_one": "Create {{count}} to-do",
+    "createCount_other": "Create {{count}} to-dos",
+    "allDay": "All day",
+    "categoryFallback": "Category",
+    "weeklyRepeat": "Weekly on {{days}}",
+    "select": "Select"
+  }
+}

@@ -16,6 +16,7 @@ import type { Job } from "bullmq";
 import { DatabaseService } from "@/database/database.service";
 
 import { NotificationService } from "../../../notification/notification.service";
+import { PushDeliveryService } from "../../../notification/push-delivery.service";
 import type { ReminderJobData } from "../adapters/bullmq-reminder-scheduler.adapter";
 import { TodoReminderProcessor } from "./todo-reminder.processor";
 
@@ -38,6 +39,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 	let processor: TodoReminderProcessor;
 	let databaseService: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
+	let pushDeliveryService: Mocked<PushDeliveryService>;
 
 	beforeEach(async () => {
 		const { unit, unitRef } = await TestBed.solitary(
@@ -47,6 +49,8 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
 		processor = unit;
 		databaseService = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
+		pushDeliveryService = unitRef.get(PushDeliveryService);
+		pushDeliveryService.getUserLocale.mockResolvedValue("ko");
 	});
 
 	/**

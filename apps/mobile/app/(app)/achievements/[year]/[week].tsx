@@ -8,6 +8,7 @@ import {
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useShareView } from '@src/shared/hooks/useShareView';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   H3,
   H4,
@@ -26,11 +27,11 @@ import { Suspense, useRef } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
-const BADGE_NAME: Record<BadgeType, string> = {
-  perfect: '빈틈없는 한 주',
-  almost: '아깝다 한 끗',
-  completed: '꾸준한 한 걸음',
-};
+const BADGE_NAME_KEYS = {
+  perfect: 'achievement:badgeNames.perfect',
+  almost: 'achievement:badgeNames.almost',
+  completed: 'achievement:badgeNames.completed',
+} as const satisfies Record<BadgeType, string>;
 
 const AchievementDetailScreen = () => {
   const { year, week } = useLocalSearchParams<{ year: string; week: string }>();
@@ -62,13 +63,14 @@ interface AchievementDetailContentProps {
 function AchievementDetailContent({ year, week }: AchievementDetailContentProps) {
   const { data: achievement } = useSuspenseQuery(useGetWeeklyAchievementQueryOptions(year, week));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { t } = useTranslation('achievement');
 
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
 
   const badgeType = getBadgeType(achievement.completionRate);
-  const badgeName = BADGE_NAME[badgeType];
+  const badgeName = tGlobal(BADGE_NAME_KEYS[badgeType]);
 
   const handleShare = async () => {
     trackEvent('badge_share_attempted', { badge_type: badgeType, year, week });
@@ -88,7 +90,7 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
                 <Text size="e1" tone="brand" className="tracking-widest">
                   WEEKLY BADGE
                 </Text>
-                <H3 className="tracking-wider">주간 달성 배지</H3>
+                <H3 className="tracking-wider">{t('card.title')}</H3>
                 <Text size="b4" shade={6} weight="medium">
                   {badgeName}
                 </Text>
@@ -110,7 +112,7 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
 
               <VStack align="center" gap={4}>
                 <Text size="e1" shade={5}>
-                  성명
+                  {t('card.nameLabel')}
                 </Text>
                 <View className="border-b border-gray-3 pb-1 px-8">
                   <H4
@@ -134,7 +136,12 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
                 lineBreakStrategyIOS="hangul-word"
                 textBreakStrategy="highQuality"
               >
-                {`위 사람은 ${achievement.weekLabel}에\n${achievement.totalTodos}개의 할 일 중 ${achievement.completedTodos}개를 완료하여\n완료율 ${achievement.completionRate}%를 달성하였기에\n이 배지를 수여합니다.`}
+                {t('card.certificate', {
+                  weekLabel: achievement.weekLabel,
+                  total: achievement.totalTodos,
+                  completed: achievement.completedTodos,
+                  rate: achievement.completionRate,
+                })}
               </Text>
 
               <Spacing size={20} />
@@ -161,7 +168,7 @@ function AchievementDetailContent({ year, week }: AchievementDetailContentProps)
         className="flex-row items-center gap-1.5 self-end py-1"
       >
         <Text size="b3" shade={6} weight="medium">
-          공유하기
+          {t('card.share')}
         </Text>
         <ShareIcon
           width={fontScaledSize(16)}

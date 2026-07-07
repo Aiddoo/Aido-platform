@@ -1,0 +1,60 @@
+{
+  "mypage": {
+    "header": "My Account",
+    "sections": {
+      "activity": "Activity",
+      "subscription": "Subscription",
+      "settings": "Settings"
+    },
+    "items": {
+      "friends": "Manage Friends",
+      "categories": "Manage Categories",
+      "achievements": "Achievement Badges",
+      "aiReports": "AI Reports",
+      "notifications": "Notifications",
+      "theme": "Theme",
+      "fontSize": "Font Size",
+      "appIcon": "App Icon",
+      "subscription": "Manage Subscription",
+      "inquiry": "Contact Us",
+      "terms": "Terms & Policies"
+    }
+  },
+  "logout": {
+    "action": "Sign Out",
+    "confirmTitle": "Sign Out",
+    "confirmDescription": "Are you sure you want to sign out?"
+  },
+  "withdraw": {
+    "action": "Delete Account",
+    "confirmTitle": "Delete Account",
+    "confirmDescription": "You can restore your account within 30 days.\nAre you sure you want to delete it?",
+    "confirmAction": "Delete"
+  },
+  "profile": {
+    "defaultName": "Motivated User",
+    "avatarAlt": "{{name}}'s profile",
+    "tagCopied": "Tag copied",
+    "tagCopiedDescription": "Share it with friends to receive friend requests",
+    "updateFailed": "Failed to update your profile",
+    "badges": {
+      "admin": "Admin",
+      "premium": "Premium",
+      "basic": "Basic"
+    },
+    "imageSheet": {
+      "title": "Choose Profile Image",
+      "selectedAlt": "Selected profile image",
+      "clear": "Clear",
+      "save": "Save"
+    }
+  },
+  "editName": {
+    "header": "Enter your name",
+    "label": "Name",
+    "placeholder": "Enter your name",
+    "submit": "Change Name",
+    "required": "Please enter your name",
+    "maxLength": "Name must be 20 characters or fewer"
+  }
+}

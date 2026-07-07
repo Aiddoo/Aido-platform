@@ -1,10 +1,11 @@
 import { ErrorCode } from '@aido/errors';
 import type { UpdatePreferenceInput } from '@aido/validators';
-import { useAuthService } from '@src/bootstrap/providers/di-provider';
+import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
@@ -61,16 +62,16 @@ export const useUpdatePreferenceMutationOptions = () => {
 
       if (isApiError(error)) {
         if (error.hasCode(ErrorCode.PREFERENCE_1701)) {
-          toast.error('리마인드 시간 변경은 프리미엄 기능이에요');
+          toast.error(t('auth:toasts.premiumReminderTime'));
           return;
         }
         if (error.hasCode(ErrorCode.PREFERENCE_1702)) {
-          toast.error('시간 범위가 올바르지 않아요');
+          toast.error(t('auth:toasts.invalidTimeRange'));
           return;
         }
       }
 
-      toast.error(error, { fallback: '설정 변경에 실패했어요' });
+      toast.error(error, { fallback: t('auth:toasts.settingsChangeFailed') });
     },
   });
 };

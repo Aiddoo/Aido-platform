@@ -3,6 +3,8 @@ import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/va
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-create-todo-category-mutation-options';
 import { isApiError } from '@src/shared/errors';
+import { useTranslation } from '@src/shared/i18n';
+import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheetInput,
   Button,
@@ -32,6 +34,7 @@ export const CategoryCreateBottomSheet = ({
   onClose,
   onExit,
 }: CategoryCreateBottomSheetProps) => {
+  const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
   const [premiumOpen, setPremiumOpen] = useState(false);
 
@@ -73,12 +76,15 @@ export const CategoryCreateBottomSheet = ({
               render={({ field: { onChange, value } }) => (
                 <BottomSheetInput
                   autoFocus
-                  label="카테고리 이름"
-                  placeholder="카테고리 이름을 입력해 주세요"
+                  label={t('category.nameLabel')}
+                  placeholder={t('category.namePlaceholder')}
                   value={value}
                   onChangeText={onChange}
                   isInvalid={!!errors.name}
-                  errorMessage={errors.name?.message}
+                  errorMessage={resolveValidationMessage(errors.name, {
+                    default: 'categoryName.required',
+                    byType: { too_big: 'categoryName.tooLong' },
+                  })}
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit(onSubmit)}
                 />
@@ -118,7 +124,7 @@ export const CategoryCreateBottomSheet = ({
             onPress={handleSubmit(onSubmit)}
             isLoading={createMutation.isPending}
           >
-            확인
+            {t('common:actions.confirm')}
           </Button>
         </VStack>
       </KeyboardBottomSheet>
@@ -132,7 +138,7 @@ export const CategoryCreateBottomSheet = ({
           }
         }}
         onConfirm={onExit}
-        description="프리미엄 구독으로 더 많은 카테고리를 만들 수 있어요"
+        description={t('category.premiumMore')}
       />
     </>
   );

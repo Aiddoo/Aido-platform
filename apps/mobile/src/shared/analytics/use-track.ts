@@ -1,4 +1,4 @@
-import { useAnalytics } from '@src/bootstrap/providers/di-provider';
+import { useAnalytics } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
 import { useCallback } from 'react';
 import type { AppEventMap } from './events';

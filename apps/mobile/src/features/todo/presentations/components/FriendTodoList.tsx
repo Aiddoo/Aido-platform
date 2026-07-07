@@ -2,6 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/q
 import type { FriendUserViewModel } from '@src/features/friend/presentations/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/models/todo-nudge.model';
 import { useTrack } from '@src/shared/analytics';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   DocsIcon,
@@ -34,6 +35,7 @@ interface FriendTodoListProps {
 }
 
 export function FriendTodoList({ friend }: FriendTodoListProps) {
+  const { t } = useTranslation('todo');
   const [date] = useFeedDate();
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { data: categoryGroups } = useSuspenseQuery(
@@ -48,8 +50,8 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
     return (
       <Result
         icon={<DocsIcon width={72} height={72} />}
-        title="친구의 등록된 할 일이 없어요"
-        description={isToday ? '친구에게 할 일을 만들라고 찔러보세요' : undefined}
+        title={t('friendTodo.emptyTitle')}
+        description={isToday ? t('friendTodo.emptyDescription') : undefined}
         button={isToday ? <RemindNudgeButton friend={friend} /> : undefined}
       />
     );
@@ -111,6 +113,7 @@ interface FriendTodoItemProps {
 }
 
 function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemProps) {
+  const { t } = useTranslation('todo');
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
@@ -140,8 +143,8 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   const openLimitDialog = () => {
     trackEvent('premium_gate_shown', { feature: 'friend_todo_view' });
     premiumDialog.open({
-      title: '오늘 콕 찌르기를 다 했어요',
-      description: '구독하면 무제한으로 찌를 수 있어요',
+      title: t('nudge.limitTitle'),
+      description: t('nudge.subscribeUnlimited'),
     });
   };
 
@@ -198,6 +201,7 @@ interface RemindNudgeButtonProps {
 }
 
 function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
+  const { t } = useTranslation('todo');
   const overlay = useOverlay();
   const { data: cooldownInfo } = useQuery(useGetRemindNudgeCooldownQueryOptions(friend.id));
   const canNudge = cooldownInfo?.canNudge ?? true;
@@ -226,7 +230,7 @@ function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
     >
       <HStack gap={6} align="center">
         <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
-          {canNudge ? '콕 찌르기' : '이미 콕 찔렀어요'}
+          {canNudge ? t('friendTodo.nudge') : t('friendTodo.alreadyNudged')}
         </Text>
         <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
       </HStack>

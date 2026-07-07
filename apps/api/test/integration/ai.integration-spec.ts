@@ -122,6 +122,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				mockUser.userId,
 				"Asia/Seoul",
 				undefined,
+				undefined,
 			);
 		});
 
@@ -159,6 +160,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				mockUser.userId,
 				"Asia/Seoul",
 				7,
+				undefined,
 			);
 			expect(response.body.data.categoryId).toBe(7);
 		});
@@ -310,6 +312,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				mockUser.userId,
 				"Asia/Seoul",
 				undefined,
+				undefined,
 			);
 			expect(response.body.data.title).toBe("테스트");
 		});
@@ -345,6 +348,7 @@ describe("AI 통합 테스트 (Mock DB)", () => {
 				"테스트",
 				mockUser.userId,
 				"UTC",
+				undefined,
 				undefined,
 			);
 		});

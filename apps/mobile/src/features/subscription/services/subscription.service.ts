@@ -1,5 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import { err, ok, type Result } from '@src/shared/errors/result';
+import { t } from '@src/shared/i18n';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
 import { type SubscriptionError, SubscriptionErrors } from '../models/subscription.error';
@@ -55,11 +56,15 @@ export class SubscriptionService {
     if (!rcPackage) {
       const refetchResult = await this.getOfferings();
       if (!refetchResult.ok) {
-        return err(SubscriptionErrors.purchaseFailed('구독 상품 정보를 불러올 수 없어요'));
+        return err(
+          SubscriptionErrors.purchaseFailed(t('subscription:errors.offeringsInfoUnavailable')),
+        );
       }
       rcPackage = this.#packageMap.get(identifier);
       if (!rcPackage) {
-        return err(SubscriptionErrors.purchaseFailed('구독 상품 정보를 찾을 수 없어요'));
+        return err(
+          SubscriptionErrors.purchaseFailed(t('subscription:errors.offeringsInfoNotFound')),
+        );
       }
     }
 
@@ -82,7 +87,8 @@ export class SubscriptionService {
       const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
       return ok(hasActive);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '구매 복원에 실패했어요';
+      const message =
+        error instanceof Error ? error.message : t('subscription:errors.restoreFailed');
       return err(SubscriptionErrors.restoreFailed(message));
     }
   };

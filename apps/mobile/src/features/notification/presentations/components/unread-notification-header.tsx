@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { BellIcon, HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, SkeletonGroup } from 'heroui-native';
@@ -7,6 +8,7 @@ import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read
 export function UnreadNotificationHeader() {
   const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
+  const { t } = useTranslation('notification');
 
   if (unreadCount === 0) {
     return null;
@@ -19,10 +21,10 @@ export function UnreadNotificationHeader() {
           <BellIcon width={18} height={18} colorClassName="text-main" />
           <HStack align="baseline" gap={4}>
             <Text size="b3" shade={7} weight="medium">
-              읽지 않은 알림
+              {t('list.unreadTitle')}
             </Text>
             <Text size="b3" tone="brand" weight="bold">
-              {unreadCount}건
+              {t('list.unreadCount', { count: unreadCount })}
             </Text>
           </HStack>
         </HStack>
@@ -33,7 +35,7 @@ export function UnreadNotificationHeader() {
           onPress={() => markAllAsRead.mutate()}
           isDisabled={markAllAsRead.isPending}
         >
-          모두 읽음
+          {t('list.markAllRead')}
         </TextButton>
       </HStack>
     </Card>

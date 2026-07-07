@@ -1,3 +1,4 @@
+import { useTranslation } from '@src/shared/i18n';
 import { DocsIcon, HStack, PinFilledIcon, Result, Text, VStack } from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -97,20 +98,22 @@ MemoList.Loading = function Loading() {
 };
 
 MemoList.Empty = function Empty() {
+  const { t } = useTranslation('memo');
   return (
     <Result
       icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
-      title="아직 메모가 없어요"
-      description={'애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요'}
+      title={t('list.emptyTitle')}
+      description={t('list.emptyDescription')}
     />
   );
 };
 
 MemoList.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+  const { t } = useTranslation(['memo', 'common']);
   return (
     <Result
-      title="메모를 불러오지 못했어요"
-      button={<Result.Button onPress={reset}>재시도</Result.Button>}
+      title={t('memo:list.loadFailed')}
+      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
     />
   );
 };

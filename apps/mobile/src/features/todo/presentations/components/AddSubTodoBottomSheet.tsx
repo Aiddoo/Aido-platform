@@ -1,5 +1,6 @@
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useSpeechRecognition } from '@src/shared/hooks/useSpeechRecognition';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ArrowUpIcon,
   BottomSheetInput,
@@ -68,7 +69,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
         <BottomSheetInput
           ref={inputRef}
           autoFocus
-          placeholder="항목을 입력하세요"
+          placeholder={tGlobal('todo:subTodo.placeholder')}
           value={value}
           onChangeText={setValue}
           maxLength={200}
@@ -125,6 +126,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
 };
 
 function SpeechTooltip() {
+  const { t } = useTranslation('todo');
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -133,7 +135,7 @@ function SpeechTooltip() {
         <PressableFeedback onPress={() => setIsOpen(true)} className="items-center justify-center">
           <HStack gap={4} align="center">
             <Text size="e2" weight="medium" shade={6}>
-              음성 입력
+              {t('subTodo.voiceInput')}
             </Text>
 
             <InfoIcon
@@ -163,12 +165,12 @@ function SpeechTooltip() {
               />
 
               <Text size="b3" weight="semibold">
-                음성으로 입력해요
+                {t('subTodo.voiceTitle')}
               </Text>
             </HStack>
 
             <Text size="b3" shade={6}>
-              마이크 버튼을 누르고 말하면{'\n'}음성이 텍스트로 입력돼요
+              {t('subTodo.voiceHint')}
             </Text>
           </VStack>
         </Popover.Content>

@@ -1,6 +1,7 @@
 import ListIconSvg from '@assets/icons/ic_list.svg';
 import MemoIconSvg from '@assets/icons/ic_memo.svg';
 import PersonIconSvg from '@assets/icons/ic_person.svg';
+import { useTranslation } from '@src/shared/i18n';
 import { isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Tabs } from 'expo-router';
@@ -58,21 +59,22 @@ export default function TabsLayout() {
 
 function IOSLiquidGlassTabs() {
   const activeStyle = useResolveClassNames('text-main');
+  const { t } = useTranslation();
 
   return (
     <NativeTabs tintColor={activeStyle.color} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="feed">
-        <NativeTabs.Trigger.Label>할 일</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.todo')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="list.bullet" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="memo">
-        <NativeTabs.Trigger.Label>메모</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.memo')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="note.text" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mypage">
-        <NativeTabs.Trigger.Label>마이</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.mypage')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.fill" />
       </NativeTabs.Trigger>
     </NativeTabs>
@@ -81,6 +83,7 @@ function IOSLiquidGlassTabs() {
 
 function AndroidBottomTabs() {
   const activeStyle = useResolveClassNames('text-main');
+  const { t } = useTranslation();
   const inactiveStyle = useResolveClassNames('text-gray-5');
   const tabBarBg = useResolveClassNames('bg-white');
   const tabBarBorder = useResolveClassNames('border-gray-3');
@@ -103,7 +106,7 @@ function AndroidBottomTabs() {
       <Tabs.Screen
         name="feed"
         options={{
-          title: '할 일',
+          title: t('tabs.todo'),
           tabBarIcon: ({ color, size }) => <ListIconSvg width={size} height={size} color={color} />,
         }}
         listeners={{
@@ -114,7 +117,7 @@ function AndroidBottomTabs() {
       <Tabs.Screen
         name="memo"
         options={{
-          title: '메모',
+          title: t('tabs.memo'),
           tabBarIcon: ({ color, size }) => <MemoIconSvg width={size} height={size} color={color} />,
         }}
         listeners={{
@@ -125,7 +128,7 @@ function AndroidBottomTabs() {
       <Tabs.Screen
         name="mypage"
         options={{
-          title: '마이',
+          title: t('tabs.mypage'),
           tabBarIcon: ({ color, size }) => (
             <PersonIconSvg width={size} height={size} color={color} />
           ),

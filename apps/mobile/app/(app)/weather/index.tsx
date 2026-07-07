@@ -10,8 +10,8 @@ import {
   resolveSkyIconColor,
 } from '@src/features/weather/presentations/components/weather-icon.resolver';
 import {
-  PRECIPITATION_TYPE_LABEL,
-  SKY_CONDITION_LABEL,
+  getPrecipitationTypeLabel,
+  getSkyConditionLabel,
 } from '@src/features/weather/presentations/constants/weather-labels.constant';
 import {
   getTimeOfDay,
@@ -26,9 +26,10 @@ import type { WeatherForecastViewModel } from '@src/features/weather/presentatio
 import { isApiError } from '@src/shared/errors/api-error';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { useLocationPermission } from '@src/shared/hooks/useLocationPermission';
+import { t as globalT, useTranslation } from '@src/shared/i18n';
 import { Box, CrosshairIcon, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
-import { formatDate, isDateToday } from '@src/shared/utils/date';
+import { formatDate, getWeekdayLabels, isDateToday } from '@src/shared/utils/date';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { Skeleton } from 'heroui-native';
@@ -46,6 +47,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
 export default function WeatherDetailScreen() {
+  const { t } = useTranslation('weather');
   const palette = TIME_PALETTES[getTimeOfDay()];
   const insets = useSafeAreaInsets();
   const [selectedDate] = useFeedDate();
@@ -94,11 +96,11 @@ export default function WeatherDetailScreen() {
             <GradientBackground />
             <VStack align="center" justify="center" flex={1}>
               <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
-                기상청 데이터 준비 중이에요
+                {t('screen.kmaPreparing')}
               </Text>
               <Spacing size={4} />
               <Text size="b4" align="center" style={{ color: palette.textSub }}>
-                잠시 후 다시 확인해주세요
+                {t('screen.checkLater')}
               </Text>
             </VStack>
           </View>
@@ -112,11 +114,11 @@ export default function WeatherDetailScreen() {
           <GradientBackground />
           <VStack align="center" justify="center" flex={1}>
             <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
-              날씨 정보를 불러올 수 없어요
+              {t('screen.loadFailed')}
             </Text>
             <Spacing size={4} />
             <Text size="b4" align="center" style={{ color: palette.textSub }}>
-              잠시 후 다시 시도해주세요
+              {t('screen.retryLater')}
             </Text>
           </VStack>
         </View>
@@ -216,6 +218,7 @@ function useLocationName(location: LocationCoords | null): string | null {
 
 function WeatherLocation({ latitude, longitude }: LocationCoords) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
   const toast = useAppToast();
   const { mutate: updateLocation, isPending } = useMutation(useUpdateLocationMutationOptions());
   const { requestPermissionAndExecute } = useLocationPermission((message) =>
@@ -235,10 +238,10 @@ function WeatherLocation({ latitude, longitude }: LocationCoords) {
           longitude: position.coords.longitude,
         });
       } catch {
-        toast.error('위치를 가져올 수 없어요');
+        toast.error(t('toasts.locationFailed'));
       }
     });
-  }, [requestPermissionAndExecute, toast, updateLocation]);
+  }, [requestPermissionAndExecute, toast, updateLocation, t]);
 
   if (!locationName) return null;
 
@@ -261,6 +264,7 @@ function WeatherLocation({ latitude, longitude }: LocationCoords) {
 
 function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
   const showPrecipitation = WeatherPolicy.shouldShowPrecipitation(forecast);
   const ForecastIcon =
     (showPrecipitation && resolveIconByPrecipitation(forecast.precipitationType)) ||
@@ -281,14 +285,14 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) 
 
       <HStack gap={4} align="center">
         <Text size="b2" style={{ color: palette.textSub }}>
-          최저
+          {t('screen.tempLow')}
         </Text>
         <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
           {Math.round(forecast.temperatureMin)}°
         </Text>
         <Text size="b2" style={{ color: palette.textSub }}>
-          {' '}
-          / 최고
+          {' / '}
+          {t('screen.tempHigh')}
         </Text>
         <Text size="b2" weight="medium" style={{ color: palette.textSub }}>
           {Math.round(forecast.temperatureMax)}°
@@ -299,15 +303,15 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) 
         <ForecastIcon width={18} height={18} color={forecastIconColor} />
         <Text size="b2" weight="semibold" style={{ color: palette.text }}>
           {showPrecipitation
-            ? PRECIPITATION_TYPE_LABEL[forecast.precipitationType]
-            : SKY_CONDITION_LABEL[forecast.skyCondition]}
+            ? getPrecipitationTypeLabel(forecast.precipitationType)
+            : getSkyConditionLabel(forecast.skyCondition)}
         </Text>
       </HStack>
 
       {WeatherPolicy.shouldShowPrecipitation(forecast) && (
         <Box px={14} py={5}>
           <Text size="b3" weight="medium" style={{ color: palette.icon }}>
-            {PRECIPITATION_TYPE_LABEL[forecast.precipitationType]}{' '}
+            {getPrecipitationTypeLabel(forecast.precipitationType)}{' '}
             {forecast.precipitationProbability}%
           </Text>
         </Box>
@@ -318,14 +322,15 @@ function TodayTemperature({ forecast }: { forecast: WeatherForecastViewModel }) 
 
 function WeatherStats({ forecast }: { forecast: WeatherForecastViewModel }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   return (
     <HStack align="center" className="justify-center gap-5">
-      <StatItem label="바람" value={`${forecast.windSpeed} m/s`} />
+      <StatItem label={t('screen.wind')} value={`${forecast.windSpeed} m/s`} />
       <View className="w-px h-12 opacity-20" style={{ backgroundColor: palette.textSub }} />
-      <StatItem label="습도" value={`${forecast.humidity}%`} />
+      <StatItem label={t('screen.humidity')} value={`${forecast.humidity}%`} />
       <View className="w-px h-12 opacity-20" style={{ backgroundColor: palette.textSub }} />
-      <StatItem label="강수확률" value={`${forecast.precipitationProbability}%`} />
+      <StatItem label={t('screen.precipProb')} value={`${forecast.precipitationProbability}%`} />
     </HStack>
   );
 }
@@ -347,12 +352,13 @@ function StatItem({ label, value }: { label: string; value: string }) {
 
 function FeelsLike({ feelsLike }: { feelsLike: number }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   return (
     <View className="items-center">
       <Box px={16} py={8} className="rounded-[20px]" style={{ backgroundColor: palette.glass }}>
         <Text size="b4" weight="medium" style={{ color: palette.text }}>
-          체감온도 {Math.round(feelsLike)}°로 예상된다냥
+          {t('screen.feelsLike', { temp: Math.round(feelsLike) })}
         </Text>
       </Box>
     </View>
@@ -374,6 +380,7 @@ function filterHourlyForecasts(items: HourlyForecast[], selectedDate: Date): Hou
 
 function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   if (items.length === 0) {
     return null;
@@ -397,7 +404,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
         style={{ backgroundColor: palette.glassCard }}
       >
         <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
-          시간별 예보
+          {t('screen.hourly')}
         </Text>
         <ScrollView
           horizontal
@@ -415,12 +422,13 @@ function HourlyForecastSection({ items }: { items: HourlyForecast[] }) {
 
 function HourlyCard({ item }: { item: HourlyForecast }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
   const SkyIcon = resolveIconBySky(item.skyCondition);
 
   return (
     <VStack py={16} px={20} className="items-center justify-between">
       <Text size="b3" align="center" style={{ color: palette.textSub }}>
-        {item.hour}시
+        {t('screen.hourLabel', { hour: item.hour })}
       </Text>
 
       <Spacing size={8} />
@@ -450,6 +458,7 @@ function HourlyCard({ item }: { item: HourlyForecast }) {
 
 function DailyForecastSection({ items }: { items: DailyForecast[] }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   const globalMin = Math.min(...items.map((i) => i.temperatureMin));
   const globalMax = Math.max(...items.map((i) => i.temperatureMax));
@@ -466,7 +475,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
       style={{ backgroundColor: palette.glassCard }}
     >
       <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
-        주간 예보
+        {t('screen.weekly')}
       </Text>
       {items.map((item) => {
         const Icon =
@@ -528,6 +537,7 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
 
 function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string | null }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   if (sunrise == null && sunset == null) return null;
 
@@ -546,7 +556,7 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
             <HStack align="center" gap={4}>
               <WeatherSunriseIcon width={18} height={18} color={palette.textSub} />
               <Text size="b4" style={{ color: palette.textSub }}>
-                일출
+                {t('screen.sunrise')}
               </Text>
             </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
@@ -559,7 +569,7 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
             <HStack align="center" gap={4}>
               <WeatherSunsetIcon width={18} height={18} color={palette.textSub} />
               <Text size="b4" style={{ color: palette.textSub }}>
-                일몰
+                {t('screen.sunset')}
               </Text>
             </HStack>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
@@ -574,6 +584,7 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
 
 function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) {
   const palette = useTimePalette();
+  const { t } = useTranslation('weather');
 
   if (pm10 == null && pm25 == null) return null;
 
@@ -590,7 +601,7 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
         {pm10 != null && (
           <VStack align="center" gap={4}>
             <Text size="b4" style={{ color: palette.textSub }}>
-              미세먼지
+              {t('screen.pm10')}
             </Text>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {getDustGrade(pm10, 'pm10')}
@@ -600,7 +611,7 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
         {pm25 != null && (
           <VStack align="center" gap={4}>
             <Text size="b4" style={{ color: palette.textSub }}>
-              초미세먼지
+              {t('screen.pm25')}
             </Text>
             <Text size="b1" weight="semibold" style={{ color: palette.text }}>
               {getDustGrade(pm25, 'pm25')}
@@ -614,10 +625,10 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
 
 function getDustGrade(value: number, type: 'pm10' | 'pm25'): string {
   const thresholds = type === 'pm10' ? ([30, 80, 150] as const) : ([15, 35, 75] as const);
-  if (value <= thresholds[0]) return '좋음';
-  if (value <= thresholds[1]) return '보통';
-  if (value <= thresholds[2]) return '나쁨';
-  return '매우나쁨';
+  if (value <= thresholds[0]) return globalT('weather:dust.good');
+  if (value <= thresholds[1]) return globalT('weather:dust.normal');
+  if (value <= thresholds[2]) return globalT('weather:dust.bad');
+  return globalT('weather:dust.veryBad');
 }
 
 function getTempColor(temp: number): string {
@@ -632,9 +643,8 @@ function getTempColor(temp: number): string {
 }
 
 function formatDayLabel(dateStr: string): string {
-  const days = ['일', '월', '화', '수', '목', '금', '토'] as const;
   const d = new Date(dateStr);
-  return days[d.getDay()] as string;
+  return getWeekdayLabels()[d.getDay()] as string;
 }
 
 function ForecastSkeleton({ insetTop }: { insetTop: number }) {

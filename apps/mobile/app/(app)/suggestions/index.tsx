@@ -4,6 +4,7 @@ import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query
 import { UserPolicy } from '@src/features/user/models/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/use-get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
   H4,
@@ -73,6 +74,7 @@ function SuggestionsContent() {
 }
 
 function SuggestionsPremiumPreview() {
+  const { t } = useTranslation('ai');
   const router = useRouter();
 
   return (
@@ -85,10 +87,10 @@ function SuggestionsPremiumPreview() {
         />
         <Spacing size={8} />
         <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          AI가 투두를 제안해드려요
+          {t('suggestions.paywall.title')}
         </H4>
         <Text size="b4" shade={6} align="center">
-          반복 패턴을 분석해서 맞춤 투두를 추천받을 수 있어요
+          {t('suggestions.paywall.description')}
         </Text>
       </View>
 
@@ -100,18 +102,18 @@ function SuggestionsPremiumPreview() {
             <VStack gap={4}>
               <HStack justify="between" align="center">
                 <Text size="b2" weight="semibold" shade={9}>
-                  매일 아침 스트레칭
+                  {t('suggestions.paywall.sampleTitle')}
                 </Text>
                 <Text size="e1" shade={5}>
-                  신뢰도 92%
+                  {t('suggestions.paywall.sampleConfidence')}
                 </Text>
               </HStack>
               <Text size="b4" shade={7}>
-                월, 화, 수, 목, 금 · 07:30
+                {t('suggestions.paywall.sampleSchedule')}
               </Text>
             </VStack>
             <Text size="b4" shade={6}>
-              최근 2주간 아침 운동 패턴이 감지되었어요
+              {t('suggestions.paywall.sampleReason')}
             </Text>
           </VStack>
         </View>
@@ -119,7 +121,7 @@ function SuggestionsPremiumPreview() {
         <Spacing size={16} />
 
         <Button size="medium" onPress={() => router.push('/settings/subscription')}>
-          구독하고 제안 받기
+          {t('suggestions.paywall.subscribeCta')}
         </Button>
       </View>
     </ScallopedContainer>

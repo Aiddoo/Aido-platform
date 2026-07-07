@@ -7,6 +7,7 @@ import {
   SettingsTimePicker,
   SettingsToggle,
 } from '@src/features/notification/presentations/components/settings';
+import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
@@ -31,6 +32,7 @@ export default function WeatherSettingsScreen() {
 function WeatherSettingsForm() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const { t } = useTranslation('notification');
 
   const pushDisabled = PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending;
 
@@ -38,8 +40,10 @@ function WeatherSettingsForm() {
     <VStack gap={24}>
       <SettingsCard>
         <SettingsToggle
-          label="날씨 알림"
-          description={PreferencePolicy.pushDisabledMessage(preference) ?? '날씨 알림을 받아요'}
+          label={t('settings.weatherLabel')}
+          description={
+            PreferencePolicy.pushDisabledMessage(preference) ?? t('settings.weatherDescription')
+          }
           isSelected={isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
@@ -52,14 +56,14 @@ function WeatherSettingsForm() {
         />
         <Separator className="bg-gray-2" />
         <WeatherTimePicker
-          label="오전 날씨 알림"
-          description="설정한 오전 시간에 오늘의 날씨를 알려줘요"
+          label={t('settings.weatherMorningLabel')}
+          description={t('settings.weatherMorningDescription')}
           field="morning"
         />
         <Separator className="bg-gray-2" />
         <WeatherTimePicker
-          label="오후 날씨 알림"
-          description="설정한 오후 시간에 내일의 날씨를 알려줘요"
+          label={t('settings.weatherEveningLabel')}
+          description={t('settings.weatherEveningDescription')}
           field="evening"
         />
       </SettingsCard>

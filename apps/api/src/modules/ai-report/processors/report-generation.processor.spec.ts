@@ -64,6 +64,7 @@ describe("ReportGenerationProcessor — 리포트 생성 프로세서", () => {
 			expect(mockAiReportService.generateWeeklyReport).toHaveBeenCalledWith(
 				"user-123",
 				"Asia/Seoul",
+				"ko",
 			);
 		});
 
@@ -84,6 +85,7 @@ describe("ReportGenerationProcessor — 리포트 생성 프로세서", () => {
 			expect(mockAiReportService.generateMonthlyReport).toHaveBeenCalledWith(
 				"user-123",
 				"Asia/Seoul",
+				"ko",
 			);
 		});
 

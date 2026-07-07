@@ -5,6 +5,10 @@ import { todayInTimezone } from "@/common/date/utils/timezone";
 import { DatabaseService } from "@/database/database.service";
 import { NotificationService } from "@/modules/notification/notification.service";
 import { NotificationMessageBuilder } from "@/modules/notification/templates/notification-templates";
+import {
+	createLocaleMessageCache,
+	fetchUserLocales,
+} from "@/modules/notification/templates/user-locale.util";
 
 import type {
 	ITimezoneStrategy,
@@ -52,14 +56,23 @@ export class WeeklyReportStrategy implements ITimezoneStrategy {
 			return { sent: 0 };
 		}
 
-		const message = NotificationMessageBuilder.weeklyReport();
-		const notifications = filteredUsers.map((user) => ({
-			userId: user.id,
-			type: "WEEKLY_REPORT" as const,
-			title: message.title,
-			body: message.body,
-			notificationDate: today,
-		}));
+		const locales = await fetchUserLocales(
+			this.database,
+			filteredUsers.map((u) => u.id),
+		);
+		const getMessage = createLocaleMessageCache((locale) =>
+			NotificationMessageBuilder.weeklyReport(locale),
+		);
+		const notifications = filteredUsers.map((user) => {
+			const message = getMessage(locales.get(user.id) ?? "ko");
+			return {
+				userId: user.id,
+				type: "WEEKLY_REPORT" as const,
+				title: message.title,
+				body: message.body,
+				notificationDate: today,
+			};
+		});
 
 		await this.notificationService.createAndSendBatch(notifications);
 		this.#logger.log(`Weekly report: tz=${tz}, count=${notifications.length}`);

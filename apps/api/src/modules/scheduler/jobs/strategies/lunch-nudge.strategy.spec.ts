@@ -50,6 +50,7 @@ describe("LunchNudgeStrategy — 점심 찔러보기 전략", () => {
 
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
+		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
 
 		// 기본 mock 설정

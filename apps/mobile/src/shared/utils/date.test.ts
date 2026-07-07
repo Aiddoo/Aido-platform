@@ -1,5 +1,22 @@
 import type { DayOfWeek } from '@aido/validators';
-import { diffMonths, diffWeeks, formatDaysOfWeek, getDayOfWeekLabel, getMonthWeeks } from './date';
+import { i18n } from '@src/shared/i18n';
+import {
+  diffMonths,
+  diffWeeks,
+  formatDaysOfWeek,
+  formatFullDate,
+  formatRelativeTime,
+  getDateSectionLabel,
+  getDayOfWeekLabel,
+  getMonthHeaderText,
+  getMonthWeeks,
+  getWeekdayLabels,
+  getWeekHeaderText,
+} from './date';
+
+afterEach(async () => {
+  await i18n.changeLanguage('ko');
+});
 
 describe('formatDaysOfWeek', () => {
   it('여러 요일을 순서대로 정렬하여 한글로 변환해야 한다', () => {
@@ -186,5 +203,55 @@ describe('getDayOfWeekLabel', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('로케일 인지 포맷 (i18n)', () => {
+  const date = new Date(2026, 6, 7); // 2026-07-07 (화)
+
+  it('ko에서 원문 그대로 포맷한다', () => {
+    expect(formatFullDate(date)).toBe('2026년 7월 7일');
+    expect(getMonthHeaderText(date)).toBe('2026년 7월');
+    expect(getWeekHeaderText(date)).toBe('7월 1주차');
+    expect(getWeekdayLabels()).toEqual(['일', '월', '화', '수', '목', '금', '토']);
+  });
+
+  it('en으로 전환하면 영어 포맷을 사용한다', async () => {
+    // Given
+    await i18n.changeLanguage('en');
+
+    // Then
+    expect(formatFullDate(date)).toBe('July 7, 2026');
+    expect(getMonthHeaderText(date)).toBe('July 2026');
+    expect(getWeekHeaderText(date)).toBe('Week 1 of Jul');
+    expect(getWeekdayLabels()).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+    expect(formatDaysOfWeek(['MON', 'WED'])).toBe('Mon, Wed');
+    expect(getDayOfWeekLabel('SAT')).toBe('Sat');
+  });
+
+  it('상대 시간을 로케일과 복수형에 맞춰 포맷한다', async () => {
+    // Given
+    const now = new Date();
+    const oneMinuteAgo = new Date(now.getTime() - 61_000);
+    const twoHoursAgo = new Date(now.getTime() - 2 * 3600_000);
+
+    // Then (ko)
+    expect(formatRelativeTime(now)).toBe('방금 전');
+    expect(formatRelativeTime(oneMinuteAgo)).toBe('1분 전');
+    expect(formatRelativeTime(twoHoursAgo)).toBe('2시간 전');
+
+    // Then (en — 단수/복수)
+    await i18n.changeLanguage('en');
+    expect(formatRelativeTime(now)).toBe('Just now');
+    expect(formatRelativeTime(oneMinuteAgo)).toBe('1 minute ago');
+    expect(formatRelativeTime(twoHoursAgo)).toBe('2 hours ago');
+  });
+
+  it('오늘 날짜의 섹션 라벨을 로케일에 맞춰 반환한다', async () => {
+    const today = new Date();
+    expect(getDateSectionLabel(today)).toBe('오늘');
+
+    await i18n.changeLanguage('en');
+    expect(getDateSectionLabel(today)).toBe('Today');
   });
 });

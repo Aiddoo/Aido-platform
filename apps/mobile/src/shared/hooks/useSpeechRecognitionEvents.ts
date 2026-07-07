@@ -30,7 +30,7 @@ interface UseSpeechRecognitionEventsReturn {
  * const { isRecognizing, resetErrorFlag } = useSpeechRecognitionEvents({
  *   onResult: (transcript) => setInputText(transcript),
  *   onError: (errorCode) => {
- *     const message = SPEECH_RECOGNITION_ERROR_MESSAGES[errorCode];
+ *     const message = getSpeechRecognitionErrorMessage(errorCode);
  *     toast.error(message);
  *   },
  * });

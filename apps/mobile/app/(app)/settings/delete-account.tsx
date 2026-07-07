@@ -1,6 +1,7 @@
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,
   H3,
@@ -30,6 +31,7 @@ const DeleteAccountScreen = () => {
 export default DeleteAccountScreen;
 
 function DeleteAccountForm() {
+  const { t } = useTranslation(['auth', 'common']);
   const [password, setPassword] = useState('');
   const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
   const overlay = useOverlay();
@@ -47,11 +49,9 @@ function DeleteAccountForm() {
             exit();
           }
         }}
-        title={<ConfirmDialog.Title>회원 탈퇴</ConfirmDialog.Title>}
+        title={<ConfirmDialog.Title>{t('deleteAccount.dialogTitle')}</ConfirmDialog.Title>}
         description={
-          <ConfirmDialog.Description>
-            {'정말 탈퇴하시겠어요?\n30일 이내에 복구할 수 있어요.'}
-          </ConfirmDialog.Description>
+          <ConfirmDialog.Description>{t('deleteAccount.dialogMessage')}</ConfirmDialog.Description>
         }
         cancelButton={
           <ConfirmDialog.CancelButton
@@ -60,7 +60,7 @@ function DeleteAccountForm() {
               exit();
             }}
           >
-            취소
+            {t('common:actions.cancel')}
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
@@ -72,7 +72,7 @@ function DeleteAccountForm() {
               deleteAccountMutation.mutate({ password });
             }}
           >
-            탈퇴하기
+            {t('deleteAccount.confirm')}
           </ConfirmDialog.ConfirmButton>
         }
       />
@@ -91,13 +91,13 @@ function DeleteAccountForm() {
           entering={FadeIn.duration(ANIMATION.duration.slow)}
           style={{ marginBottom: 24 }}
         >
-          <H3>{'탈퇴를 위해\n비밀번호를 입력해주세요'}</H3>
+          <H3>{t('deleteAccount.passwordTitle')}</H3>
         </Animated.View>
 
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <PasswordInput
-            label="현재 비밀번호"
-            placeholder="비밀번호를 입력해주세요"
+            label={t('deleteAccount.currentPasswordLabel')}
+            placeholder={t('deleteAccount.passwordPlaceholder')}
             value={password}
             onChangeText={setPassword}
             autoFocus
@@ -114,10 +114,10 @@ function DeleteAccountForm() {
         >
           <VStack mt={16} p={16} gap={4} className="bg-warning-1 rounded-xl">
             <Text size="b3" shade={7}>
-              탈퇴 후 30일 이내에 다시 로그인하면 계정을 복구할 수 있어요.
+              {t('deleteAccount.restoreNotice')}
             </Text>
             <Text size="b3" shade={5}>
-              30일이 지나면 모든 데이터가 영구적으로 삭제돼요.
+              {t('deleteAccount.purgeNotice')}
             </Text>
           </VStack>
         </Animated.View>
@@ -129,7 +129,7 @@ function DeleteAccountForm() {
         isDisabled={!isValid}
         isLoading={deleteAccountMutation.isPending}
       >
-        탈퇴하기
+        {t('deleteAccount.submit')}
       </KeyboardAdaptiveButton>
     </View>
   );

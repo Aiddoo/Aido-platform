@@ -12,13 +12,17 @@ export interface TimeContext {
 	remainingDays: string[];
 }
 
-export function buildTimeContext(tz: string, now: Date): TimeContext {
+export function buildTimeContext(
+	tz: string,
+	now: Date,
+	locale: "ko" | "en" = "ko",
+): TimeContext {
 	const localNow = dayjs(now).tz(tz);
 	const todayDayIdx = localNow.day();
 	const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 	return {
-		datetime: localNow.locale("ko").format("YYYY-MM-DD HH:mm (dddd)"),
+		datetime: localNow.locale(locale).format("YYYY-MM-DD HH:mm (dddd)"),
 		fourWeeksLater: localNow.add(4, "week").format("YYYY-MM-DD"),
 		thisWeekSun: localNow.day(todayDayIdx === 0 ? 0 : 7).format("YYYY-MM-DD"),
 		nextWeekMon: localNow.day(todayDayIdx === 0 ? 1 : 8).format("YYYY-MM-DD"),
@@ -99,4 +103,72 @@ export function buildTimeRulesText(ctx: TimeContext): string {
 - 기간이 명시된 경우("한 달간 매주") → recurrence.endDate = 시작 + 해당 기간
 
 이번 주 남은 요일: ${JSON.stringify(ctx.remainingDays)}`;
+}
+
+/**
+ * buildTimeRulesText의 영어 버전 — 영어 자연어 시간 표현 해석 규칙.
+ * 날짜 산식(ctx)은 한국어 버전과 동일하다.
+ */
+export function buildTimeRulesTextEn(ctx: TimeContext): string {
+	return `Current time: ${ctx.datetime}
+
+Base rules:
+- If no date is given, use today.
+- If no time is given, make it an all-day item (isAllDay: true).
+- "right now", "immediately", "asap" → today.
+
+Time interpretation:
+- early morning, morning, AM → AM hours
+- noon, lunch → 12:00
+- afternoon, evening, night, PM → PM hours
+- midnight → 00:00
+- half past N → N:30
+- in N hours → current time + N hours
+
+Past-time handling:
+- Time only (no date) and the time already passed today → schedule for tomorrow
+- Explicit date given ("today at 3pm") → keep as is
+
+Date expressions:
+- today → today
+- tomorrow → +1 day
+- the day after tomorrow → +2 days
+- in N days → +N days, in N weeks → +N weeks, in N months → +N months
+- next month → +1 month, next year → next year
+
+Weekday handling:
+- Weekday only → this week if it hasn't passed yet, otherwise next week
+- "this Friday" → this week's Friday
+- "next Friday" → next week's Friday
+- Codes: Mon=MON, Tue=TUE, Wed=WED, Thu=THU, Fri=FRI, Sat=SAT, Sun=SUN
+- "Mon/Wed/Fri" → MON+WED+FRI, "weekdays" → MON~FRI
+
+Date expressions (calendar):
+- "March 5th" → that date (next year if already passed)
+- "the 5th" → that day this month (next month if already passed)
+- "beginning of the month" → the 1st, "end of the month" → last day of the month
+- "beginning of the year" → Jan 1, "end of the year" → Dec 31
+
+Week-long periods (★must use isRecurring: true):
+- "this week" → daysOfWeek: today through Sunday, endDate: ${ctx.thisWeekSun}
+- "next week" → daysOfWeek: MON~SUN, startDate: ${ctx.nextWeekMon}, endDate: ${ctx.nextWeekSun}
+- "the week after next" → daysOfWeek: MON~SUN, startDate: ${ctx.nextNextWeekMon}, endDate: ${ctx.nextNextWeekSun}
+- "this/next weekend" → SAT+SUN
+- "during the week" → MON~FRI
+- Exception: one-off events (trip, exam, conference) → isRecurring: false + startDate~endDate
+
+Date ranges:
+- "by/until X" → set endDate (startDate=today)
+- date + "from ~ to" → startDate + endDate
+- "for N days/weeks" → endDate = start + N
+
+Recurring:
+- "every week" → isRecurring: true + those weekdays
+- "every day" → MON~SUN
+- "every weekend" → SAT+SUN
+- "every weekday" → MON~FRI
+- "every ..." with no end date → recurrence.endDate: ${ctx.fourWeeksLater} (4 weeks out)
+- Explicit duration ("every week for a month") → recurrence.endDate = start + that duration
+
+Remaining days this week: ${JSON.stringify(ctx.remainingDays)}`;
 }

@@ -1,11 +1,12 @@
 import type { UpdateTodoCategoryInput } from '@aido/validators';
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-provider';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/models/todo-category.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
+import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys.constant';
@@ -51,7 +52,7 @@ export const useUpdateTodoCategoryMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      toast.success('카테고리를 수정했어요');
+      toast.success(t('todo:toast.categoryUpdated'));
       trackEvent('category_updated', {
         field: variables.input.color ? 'color' : 'name',
       });
@@ -67,7 +68,7 @@ export const useUpdateTodoCategoryMutationOptions = () => {
         toast.error(error.message);
         return;
       }
-      toast.error(undefined, { fallback: '잠시 후 다시 수정해 보세요' });
+      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
     },
   });
 };
