@@ -160,7 +160,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       infoPlist: {
         CFBundleAllowMixedLocalizations: true,
-        CFBundleLocalizations: ['ko', 'en'],
+        // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
         NSMicrophoneUsageDescription:
           '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
         NSFaceIDUsageDescription:
@@ -226,7 +226,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [
       './plugins/withJitpackFilter',
       './plugins/withGradleJvmArgs',
-      'expo-localization',
+      [
+        'expo-localization',
+        {
+          // iOS CFBundleLocalizations + Android locales_config.xml(13+ 앱별 언어) 생성
+          supportedLocales: ['ko', 'en'],
+          // 시스템 언어 변경 시 액티비티 재시작 없이 JS(i18n)가 처리
+          allowDynamicLocaleChangesAndroid: true,
+        },
+      ],
       '@react-native-firebase/app',
       '@react-native-community/datetimepicker',
       [
