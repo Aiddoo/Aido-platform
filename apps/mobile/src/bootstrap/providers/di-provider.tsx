@@ -27,6 +27,7 @@ import {
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
+import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import {
   createCompositeLogger,
   createConsoleLogger,
@@ -67,7 +68,11 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
 
-    const authKyInstance = createAuthClient(storage);
+    // 단일 리프레셔: 401 훅(auth-client)과 부팅 세션 검증(auth-provider)이 공유해
+    // single-flight mutex가 갈라지지 않도록 한다.
+    const tokenRefresher = createTokenRefresher(storage);
+
+    const authKyInstance = createAuthClient(storage, tokenRefresher);
     const authHttpClient = new KyHttpClient(authKyInstance);
 
     // Achievement
@@ -124,6 +129,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       logger,
       analytics,
       errorReporter,
+      tokenRefresher,
       achievementService,
       aiService,
       authService,
@@ -167,6 +173,7 @@ export {
   useTodoCategoryService,
   useTodoNudgeService,
   useTodoService,
+  useTokenRefresher,
   useUserService,
   useWeatherService,
 } from './di-context';
