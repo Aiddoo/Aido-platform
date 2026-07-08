@@ -22,3 +22,9 @@ export {
   type Result,
   unwrap,
 } from './result';
+
+// Storage Errors
+export { isKeychainLockedError, KeychainLockedError } from './storage-error';
+
+// 던져진 값 정규화
+export { errorMessageOf, toError } from './to-error';
