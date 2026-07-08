@@ -1,5 +1,6 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import { KeychainLockedError } from '@src/core/ports/storage';
 import {
   createMockAnalytics,
   createMockDIContainer,
@@ -67,15 +68,57 @@ describe('AuthProvider', () => {
       await expectStatus('authenticated');
     });
 
-    it('키체인을 읽을 수 없으면 locked이며 로그인 화면으로 내려보내지 않는다', async () => {
+    it('기기 잠금으로 읽지 못하면 locked이며 로그인 화면으로 내려보내지 않는다', async () => {
       // Given — 기기 잠금 중 콜드 스타트
-      tokenStore.readRefreshToken.mockRejectedValue(new Error('User interaction is not allowed.'));
+      tokenStore.readRefreshToken.mockRejectedValue(
+        new KeychainLockedError(new Error('User interaction is not allowed.')),
+      );
 
       // When
       renderProvider();
 
       // Then
       await expectStatus('locked');
+      expect(tokenStore.clear).not.toHaveBeenCalled();
+    });
+
+    it('locked 상태에서는 리포팅하지 않는다 (잠금은 오류가 아니라 대기다)', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+
+      // When
+      renderProvider();
+      await expectStatus('locked');
+
+      // Then
+      expect(errorReporter.captureException).not.toHaveBeenCalled();
+    });
+
+    it('잠금이 아닌 판정 실패는 리포팅하고 미인증으로 폴백한다 (무한 로딩 금지)', async () => {
+      // Given — 키체인 손상 등 영구 오류. locked로 두면 재판정도 실패해 앱이 조용히 갇힌다.
+      tokenStore.readRefreshToken.mockRejectedValue(new Error('Could not decrypt the value'));
+
+      // When
+      renderProvider();
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
+      expect(errorReporter.captureException).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ feature: 'auth' }),
+      );
+    });
+
+    it('판정 실패로 폴백해도 토큰을 지우지 않는다', async () => {
+      // Given — 원인이 해소되면 다음 실행에 회복되어야 한다
+      tokenStore.readRefreshToken.mockRejectedValue(new Error('boom'));
+
+      // When
+      renderProvider();
+      await expectStatus('unauthenticated');
+
+      // Then
       expect(tokenStore.clear).not.toHaveBeenCalled();
     });
   });
