@@ -28,7 +28,7 @@ import { useGetTodoNudgeLimitQueryOptions } from '../queries/use-get-todo-nudge-
 import type { TodoItemViewModel } from '../view-models/todo-item.view-model';
 import { NudgeBottomSheet } from './NudgeBottomSheet';
 import { RemindNudgeBottomSheet } from './RemindNudgeBottomSheet';
-import { TodoList } from './TodoList/TodoList';
+import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './TodoRow';
 
 interface FriendTodoListProps {
   friend: FriendUserViewModel;
@@ -157,9 +157,9 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
   };
 
   return (
-    <TodoList.Item
-      left={<TodoList.Checkbox isChecked={todo.completed} />}
-      top={<TodoList.Label isChecked={todo.completed}>{todo.title}</TodoList.Label>}
+    <TodoRow
+      left={<TodoCheckbox isChecked={todo.completed} />}
+      top={<TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>}
       middle={
         showDateTime ? (
           <Text size="e1" shade={6}>
@@ -169,7 +169,7 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
       }
       bottom={
         todo.hasSubTodos ? (
-          <TodoList.Progress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+          <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
         ) : undefined
       }
       right={
@@ -184,15 +184,15 @@ function FriendTodoItem({ todo, friend, isLimitReached, date }: FriendTodoItemPr
       {isExpanded && (
         <VStack className="ml-8 pl-4 border-l border-gray-2">
           {todo.subTodos.map((subTodo) => (
-            <TodoList.Item
+            <TodoRow
               key={subTodo.id}
-              left={<TodoList.Checkbox isChecked={subTodo.completed} />}
-              top={<TodoList.Label isChecked={subTodo.completed}>{subTodo.title}</TodoList.Label>}
+              left={<TodoCheckbox isChecked={subTodo.completed} />}
+              top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
             />
           ))}
         </VStack>
       )}
-    </TodoList.Item>
+    </TodoRow>
   );
 }
 

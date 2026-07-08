@@ -1,5 +1,5 @@
-import { KeychainLockedError } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
+import { isKeychainLockedError } from '@src/shared/errors';
 
 /**
  * 부팅 판정이 내려진 뒤의 인증 상태.
@@ -36,7 +36,7 @@ export const resolveInitialAuthStatus = async (
     const refreshToken = await tokenStore.readRefreshToken();
     return refreshToken ? 'authenticated' : 'unauthenticated';
   } catch (error) {
-    if (error instanceof KeychainLockedError) {
+    if (isKeychainLockedError(error)) {
       return 'locked';
     }
     throw error;

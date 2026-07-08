@@ -1,13 +1,11 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/use-get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, PlusIcon, Text, useOverlay, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
-import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { useFeedDate } from '../../hooks/use-feed-date';
@@ -61,116 +59,6 @@ TodoList.Loading = function Loading() {
         </HStack>
       ))}
     </VStack>
-  );
-};
-
-interface TodoListItemProps {
-  left?: ReactNode;
-  top: ReactNode;
-  middle?: ReactNode;
-  bottom?: ReactNode;
-  right?: ReactNode;
-  onPress?: () => void;
-  onLongPress?: () => void;
-  isActive?: boolean;
-  isDisabled?: boolean;
-  children?: ReactNode;
-}
-
-TodoList.Item = function Item({
-  left,
-  top,
-  middle,
-  bottom,
-  right,
-  onPress,
-  onLongPress,
-  isActive,
-  isDisabled,
-  children,
-}: TodoListItemProps) {
-  return (
-    <>
-      <PressableFeedback
-        onPress={onPress}
-        onLongPress={onLongPress}
-        isDisabled={isActive || isDisabled || (!onPress && !onLongPress)}
-        className={cn('py-2 rounded-xl', isActive && 'bg-gray-1', isDisabled && 'opacity-50')}
-      >
-        <HStack gap={12} align="center">
-          {left}
-          <VStack flex={1} gap={2}>
-            {top}
-            {middle}
-            {bottom}
-          </VStack>
-          {right}
-        </HStack>
-      </PressableFeedback>
-      {children}
-    </>
-  );
-};
-
-interface TodoListCheckboxProps
-  extends Omit<ComponentProps<typeof Checkbox>, 'isSelected' | 'onSelectedChange' | 'className'> {
-  isChecked: boolean;
-  onCheckedChange?: (checked: boolean) => void;
-}
-
-TodoList.Checkbox = function TodoCheckbox({
-  isChecked,
-  onCheckedChange,
-  isDisabled,
-  ...props
-}: TodoListCheckboxProps) {
-  return (
-    <Checkbox
-      className="shadow-none border border-main size-5 rounded-md"
-      isSelected={isChecked}
-      onSelectedChange={onCheckedChange ? () => onCheckedChange(!isChecked) : undefined}
-      isDisabled={isDisabled || !onCheckedChange}
-      {...props}
-    />
-  );
-};
-
-interface TodoListLabelProps
-  extends Omit<
-    ComponentProps<typeof Text>,
-    'size' | 'weight' | 'strikethrough' | 'shade' | 'children'
-  > {
-  isChecked: boolean;
-  children: string;
-}
-
-TodoList.Label = function TodoLabel({ isChecked, children, ...props }: TodoListLabelProps) {
-  return (
-    <Text
-      size="b3"
-      weight="medium"
-      strikethrough={isChecked}
-      shade={isChecked ? 5 : undefined}
-      {...props}
-    >
-      {children}
-    </Text>
-  );
-};
-
-TodoList.Progress = function Progress({ value, total }: { value: number; total: number }) {
-  return (
-    <HStack gap={6} align="center">
-      <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
-        <Box
-          className="h-full rounded-full bg-main"
-          style={{ width: `${(value / total) * 100}%` }}
-        />
-      </Box>
-      <Text size="e1" shade={6}>
-        {value}/{total}
-      </Text>
-    </HStack>
   );
 };
 

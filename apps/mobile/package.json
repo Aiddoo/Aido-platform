@@ -16,7 +16,7 @@
     "build:production": "eas build --profile production --platform all",
     "build:production:android": "eas build --profile production --platform android",
     "build:production:ios": "eas build --profile production --platform ios",
-    "check": "biome check .",
+    "check": "biome check . && pnpm lint:cycles",
     "clean": "rm -rf dist .expo android ios node_modules/.cache",
     "dev": "expo start",
     "dev:android": "pnpm adb:reverse || true && expo start --android",
@@ -24,7 +24,7 @@
     "dev:web": "expo start --web",
     "format": "biome format --write .",
     "ios": "expo run:ios",
-    "lint": "biome lint .",
+    "lint": "biome lint . && pnpm lint:cycles",
     "native:prebuild": "expo prebuild --clean",
     "submit:production": "eas submit --profile production --platform all --latest",
     "submit:production:android": "eas submit --profile production --platform android --latest",
@@ -33,7 +33,8 @@
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --branch preview",
-    "update:production": "eas update --branch production"
+    "update:production": "eas update --branch production",
+    "lint:cycles": "node scripts/check-import-cycles.mjs"
   },
   "dependencies": {
     "@aido/errors": "workspace:^",

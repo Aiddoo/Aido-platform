@@ -1,4 +1,5 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import { toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -25,10 +26,7 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
         <ErrorBoundary
           onReset={reset}
           onError={(error) => {
-            errorReporter.captureException(
-              error instanceof Error ? error : new Error(String(error)),
-              { feature: 'error_boundary' },
-            );
+            errorReporter.captureException(toError(error), { feature: 'error_boundary' });
           }}
           fallbackRender={({ error, resetErrorBoundary }) =>
             fallback ? (

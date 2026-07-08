@@ -1,5 +1,5 @@
-import { KeychainLockedError } from '@src/core/ports/storage';
 import { createMockTokenStore } from '@src/shared/__tests__';
+import { KeychainLockedError } from '@src/shared/errors';
 import { resolveInitialAuthStatus } from './auth-boot';
 
 describe('앱 부팅 인증 판정 — 클라이언트는 세션을 먼저 끊지 않는다', () => {

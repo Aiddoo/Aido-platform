@@ -1,7 +1,7 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
-
 import {
   isNotificationError,
   isNotPhysicalDeviceError,
@@ -39,10 +39,7 @@ export const useRegisterPushTokenMutationOptions = () => {
         logger.info('[PushNotification] Permission denied by user');
         return;
       }
-      logger.error(
-        '[PushNotification] Failed to register after retries',
-        error instanceof Error ? error : undefined,
-      );
+      logger.error('[PushNotification] Failed to register after retries', toError(error));
     },
   });
 };

@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ReactNode } from 'react';
-import { TodoList } from '../TodoList/TodoList';
+import { TodoCheckbox, TodoLabel, TodoRow } from '../TodoRow';
 
 interface SubTodoListProps {
   children: ReactNode;
@@ -50,9 +50,9 @@ SubTodoList.Item = function Item({
   isDragDisabled,
 }: SubTodoListItemProps) {
   return (
-    <TodoList.Item
-      left={<TodoList.Checkbox isChecked={isChecked} onCheckedChange={onCheckedChange} />}
-      top={<TodoList.Label isChecked={isChecked}>{label}</TodoList.Label>}
+    <TodoRow
+      left={<TodoCheckbox isChecked={isChecked} onCheckedChange={onCheckedChange} />}
+      top={<TodoLabel isChecked={isChecked}>{label}</TodoLabel>}
       right={
         <PressableFeedback onPress={onMorePress} hitSlop={8}>
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />

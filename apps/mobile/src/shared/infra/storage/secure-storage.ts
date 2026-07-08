@@ -1,4 +1,5 @@
-import { KeychainLockedError, type Storage } from '@src/core/ports/storage';
+import type { Storage } from '@src/core/ports/storage';
+import { errorMessageOf, KeychainLockedError } from '@src/shared/errors';
 import * as ExpoSecureStore from 'expo-secure-store';
 
 // AFTER_FIRST_UNLOCK: 첫 잠금해제 후 접근 가능(잠금 중 백그라운드 접근 throw 방지), 재설치해도 유지.
@@ -20,11 +21,14 @@ const SECURE_STORE_OPTIONS: ExpoSecureStore.SecureStoreOptions = {
  *
  * Android에는 잠금 개념이 없다(`requireAuthentication` 미사용). `DecryptException` 등은
  * 영구 오류이므로 잠김으로 승격하지 않는다.
+ *
+ * `instanceof Error`를 관문으로 두지 않는다 — 네이티브 브릿지가 `{ message }` 형태의
+ * 평범한 객체를 던지면 판별에 실패해 **잠긴 키체인이 곧 로그아웃**이 된다.
  */
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
 const isLockedKeychain = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+  errorMessageOf(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
 
 export class SecureStorage implements Storage {
   async get<T>(key: string): Promise<T | null> {
