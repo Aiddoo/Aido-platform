@@ -47,14 +47,37 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     setStatusState(next);
   }, []);
 
+  /**
+   * 판정 실패를 관측하고 미인증으로 폴백한다.
+   *
+   * `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류(키체인 손상 등)까지
+   * `locked`로 두면 재판정도 계속 실패해 **조용히 무한 로딩**에 갇힌다.
+   * 미인증 폴백은 토큰을 지우지 않으므로, 원인이 해소되면 다음 실행에 회복된다.
+   */
+  const fallbackToUnauthenticated = useCallback(
+    (error: unknown) => {
+      errorReporter.captureException(error instanceof Error ? error : new Error(String(error)), {
+        feature: 'auth',
+      });
+      applyStatus('unauthenticated');
+    },
+    [errorReporter, applyStatus],
+  );
+
   // 앱 시작 시 초기 인증 상태 결정 (읽기만 한다 — auth-boot.ts의 불변식 참조)
   useEffect(() => {
     let cancelled = false;
 
     const checkAuth = async () => {
-      const initialStatus = await resolveInitialAuthStatus(tokenStore);
-      if (!cancelled) {
-        applyStatus(initialStatus);
+      try {
+        const initialStatus = await resolveInitialAuthStatus(tokenStore);
+        if (!cancelled) {
+          applyStatus(initialStatus);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          fallbackToUnauthenticated(error);
+        }
       }
     };
     checkAuth();
@@ -62,7 +85,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     return () => {
       cancelled = true;
     };
-  }, [tokenStore, applyStatus]);
+  }, [tokenStore, applyStatus, fallbackToUnauthenticated]);
 
   // 잠긴 키체인으로 판정을 미뤘다면, 잠금 해제(포그라운드 복귀) 후 다시 시도한다.
   // 이 재판정이 없으면 잠금 중 콜드 스타트가 영구 로그인 화면이 된다.
@@ -75,11 +98,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       if (appState !== 'active') {
         return;
       }
-      applyStatus(await resolveInitialAuthStatus(tokenStore));
+      try {
+        applyStatus(await resolveInitialAuthStatus(tokenStore));
+      } catch (error) {
+        fallbackToUnauthenticated(error);
+      }
     });
 
     return () => subscription.remove();
-  }, [status, tokenStore, applyStatus]);
+  }, [status, tokenStore, applyStatus, fallbackToUnauthenticated]);
 
   // 세션 만료 확정 → 미인증으로 전환 + 관측 리포팅.
   useEffect(() => {
