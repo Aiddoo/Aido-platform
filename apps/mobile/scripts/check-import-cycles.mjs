@@ -11,7 +11,10 @@
  * - 루트 설정에 켜면 project 스캐너가 한글 마크다운에서 패닉한다(biome_markdown_parser)
  * 업스트림이 해결되면 이 스크립트를 규칙으로 교체한다.
  *
- * 타입 전용 import(`import type`)는 컴파일 후 사라지므로 사이클을 만들지 않는다 — 제외한다.
+ * **타입 전용 import는 컴파일 후 사라지므로 런타임 사이클을 만들지 않는다.**
+ * 단, 같은 모듈에서 타입과 값을 함께 가져올 수 있다(`import type {T}` + `import {v}`).
+ * 그래서 모듈 단위가 아니라 **구문 단위**로 판정한다. 모듈 단위로 뭉개면 값 의존성을
+ * 통째로 놓쳐 사이클을 못 잡는다 — 지키는 게 없는 초록불이 된다.
  */
 import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
@@ -23,10 +26,93 @@ const SOURCE_DIRS = ['src', 'app'];
 const EXTENSIONS = ['.tsx', '.ts'];
 const ALIASES = { '@src/': 'src/', '@/': 'app/' };
 
-const IMPORT_PATTERN = /(?:from|require\()\s*['"]([^'"]+)['"]/g;
-const TYPE_IMPORT_PATTERN = /import\s+type\s+[^;]*?from\s*['"]([^'"]+)['"]/gs;
+/** `import ... from 'x'` / `export ... from 'x'` — 바인딩 절을 1번 그룹으로 잡는다. */
+const BINDING_STATEMENT = /\b(?:import|export)\s+([^;'"]*?)\s*from\s*['"]([^'"]+)['"]/gs;
+/** `import 'x'`(부수효과)와 `require('x')` — 언제나 런타임 엣지다. */
+const SIDE_EFFECT_STATEMENT = /\bimport\s*['"]([^'"]+)['"]|\brequire\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 const isTestFile = (path) => path.includes('__tests__') || /\.test\.tsx?$/.test(path);
+
+/**
+ * 주석을 제거한다. 문자열·템플릿 리터럴 안의 `//`는 주석이 아니므로 따옴표를 추적한다.
+ *
+ * 이게 없으면 주석에 적어둔 예시 import가 진짜 의존성으로 둔갑해 없는 사이클을 만든다.
+ */
+function stripComments(source) {
+  let output = '';
+  let quote = null;
+  let index = 0;
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (quote) {
+      if (char === '\\') {
+        output += char + (next ?? '');
+        index += 2;
+        continue;
+      }
+      if (char === quote) {
+        quote = null;
+      }
+      output += char;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      while (index < source.length && source[index] !== '\n') {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      index += 2;
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        index += 1;
+      }
+      index += 2;
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    }
+    output += char;
+    index += 1;
+  }
+
+  return output;
+}
+
+/**
+ * 이 구문이 컴파일 후 사라지는가?
+ *
+ * - `import type { T } from 'x'`         → 사라진다
+ * - `export type { T } from 'x'`         → 사라진다
+ * - `import { type A, type B } from 'x'` → 지정자가 전부 type이면 사라진다
+ * - `import { type A, b } from 'x'`      → `b`가 남으므로 런타임 엣지다
+ */
+function isTypeOnlyClause(clause) {
+  const trimmed = clause.trim();
+  if (trimmed === 'type' || trimmed.startsWith('type ') || trimmed.startsWith('type{')) {
+    return true;
+  }
+
+  const braces = trimmed.match(/^\{([^}]*)\}$/);
+  if (!braces) {
+    return false;
+  }
+
+  const specifiers = braces[1]
+    .split(',')
+    .map((specifier) => specifier.trim())
+    .filter(Boolean);
+
+  return specifiers.length > 0 && specifiers.every((specifier) => specifier.startsWith('type '));
+}
 
 async function collectSourceFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true, recursive: true });
@@ -36,23 +122,24 @@ async function collectSourceFiles(dir) {
     .filter((path) => !isTestFile(path));
 }
 
-/** 임포트 지정자를 실제 파일 경로로 해석한다. 외부 패키지는 null. */
+/** 임포트 지정자를 실제 파일 경로로 해석한다. 외부 패키지는 undefined. */
 function resolveSpecifier(specifier, fromFile) {
-  let base;
   const alias = Object.keys(ALIASES).find((prefix) => specifier.startsWith(prefix));
 
+  let base;
   if (alias) {
     base = join(ROOT, ALIASES[alias], specifier.slice(alias.length));
   } else if (specifier.startsWith('.')) {
     base = resolve(dirname(fromFile), specifier);
   } else {
-    return null;
+    return undefined;
   }
 
   const candidates = [
     ...EXTENSIONS.map((ext) => base + ext),
     ...EXTENSIONS.map((ext) => join(base, `index${ext}`)),
   ];
+
   return candidates.find((candidate) => {
     try {
       readFileSync(candidate);
@@ -63,29 +150,30 @@ function resolveSpecifier(specifier, fromFile) {
   });
 }
 
-function buildGraph(files) {
-  const graph = new Map();
+/** 한 파일이 런타임에 실제로 끌어오는 모듈들. */
+function runtimeDependencies(file) {
+  const source = stripComments(readFileSync(file, 'utf8'));
+  const specifiers = new Set();
 
-  for (const file of files) {
-    const source = readFileSync(file, 'utf8');
-    const typeOnly = new Set(
-      [...source.matchAll(TYPE_IMPORT_PATTERN)].map(([, specifier]) => specifier),
-    );
-
-    const dependencies = new Set();
-    for (const [, specifier] of source.matchAll(IMPORT_PATTERN)) {
-      if (typeOnly.has(specifier)) {
-        continue;
-      }
-      const target = resolveSpecifier(specifier, file);
-      if (target && target !== file) {
-        dependencies.add(target);
-      }
+  for (const [, clause, specifier] of source.matchAll(BINDING_STATEMENT)) {
+    if (!isTypeOnlyClause(clause)) {
+      specifiers.add(specifier);
     }
-    graph.set(file, dependencies);
   }
 
-  return graph;
+  for (const [, bare, required] of source.matchAll(SIDE_EFFECT_STATEMENT)) {
+    specifiers.add(bare ?? required);
+  }
+
+  const dependencies = new Set();
+  for (const specifier of specifiers) {
+    const target = resolveSpecifier(specifier, file);
+    if (target && target !== file) {
+      dependencies.add(target);
+    }
+  }
+
+  return dependencies;
 }
 
 /** Tarjan 대신 DFS + 스택 — 사이클 경로를 그대로 보여주기 위해. */
@@ -124,7 +212,9 @@ function findCycles(graph) {
 const files = (
   await Promise.all(SOURCE_DIRS.map((dir) => collectSourceFiles(join(ROOT, dir))))
 ).flat();
-const cycles = findCycles(buildGraph(files));
+
+const graph = new Map(files.map((file) => [file, runtimeDependencies(file)]));
+const cycles = findCycles(graph);
 
 if (cycles.length === 0) {
   console.log(`✓ 순환 참조 없음 (${files.length}개 파일)`);
