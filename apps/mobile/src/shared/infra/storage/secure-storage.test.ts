@@ -1,4 +1,4 @@
-import { KeychainLockedError } from '@src/core/ports/storage';
+import { KeychainLockedError } from '@src/shared/errors';
 import * as ExpoSecureStore from 'expo-secure-store';
 import { SecureStorage } from './secure-storage';
 
@@ -43,6 +43,15 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue(new Error('User interaction is not allowed.'));
 
     // When & Then — "지금 못 읽는다"는 "토큰이 없다"와 다르다
+    await expect(storage.get('key')).rejects.toBeInstanceOf(KeychainLockedError);
+  });
+
+  it('Error가 아닌 값으로 던져져도 잠금을 판별한다', async () => {
+    // Given — RN 네이티브 브릿지가 { message } 객체를 던지는 경우.
+    // instanceof Error를 관문으로 두면 판별에 실패해 잠긴 키체인이 곧 로그아웃이 된다.
+    getItemAsync.mockRejectedValue({ message: 'User interaction is not allowed.' });
+
+    // When & Then
     await expect(storage.get('key')).rejects.toBeInstanceOf(KeychainLockedError);
   });
 
