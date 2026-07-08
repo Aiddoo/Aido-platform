@@ -384,6 +384,51 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
 
 ---
 
+## 저장소 에러: KeychainLockedError
+
+`shared/errors/storage-error.ts`. `InfraError`가 **아니다** — ErrorBoundary로 보내지 않는다.
+
+| 상황 | `Storage.get()` 결과 |
+|------|---------------------|
+| 값이 있음 | 파싱된 값 |
+| 값이 없음 (`errSecItemNotFound`) | `null` |
+| **지금 못 읽음** (기기 잠금) | `throw KeychainLockedError` |
+| 영구 오류 (키체인 손상, entitlement 오설정) | **원본 오류 그대로 throw** |
+| 저장된 값 파싱 실패 | `null` (손상된 항목 하나가 부팅을 막지 않는다) |
+
+"지금 못 읽는다"를 "토큰이 없다"로 확정하면 **잠긴 키체인이 곧 로그아웃**이 된다.
+반대로 모든 읽기 실패를 잠김으로 뭉개면 재판정도 계속 실패해 **조용히 무한 로딩**에 갇힌다.
+그래서 일시적 오류만 이 타입으로 승격하고, 영구 오류는 상위(`AuthProvider`)가 관측하고 미인증으로 폴백한다.
+
+벤더 에러 판별(OSStatus 메시지 매칭)은 **인프라 경계**(`secure-storage.ts`)에만 둔다.
+도메인 판정 함수(`auth-boot.ts`)는 `isKeychainLockedError()`만 안다.
+
+---
+
+## 던져진 값 다루기: toError / errorMessageOf
+
+JS는 무엇이든 throw할 수 있다. RN 네이티브 브릿지와 서드파티 SDK는 `Error`가 아닌 값
+(문자열, `{ message }` 객체)을 던지기도 한다. `instanceof Error`를 **관문**으로 쓰면 조용히 무너진다.
+
+```typescript
+// ❌ 평범한 객체가 "[object Object]"가 되어 원인이 사라진다
+new Error(String(error))
+
+// ❌ 더 나쁘다 — 에러를 통째로 버린다
+logger.error('failed', error instanceof Error ? error : undefined)
+
+// ✅ 값의 모양이 아니라 내용으로 판단. 원본은 cause로 보존
+errorReporter.captureException(toError(error), { feature: 'auth' });
+logger.warn('갱신 실패', { error: errorMessageOf(error) });
+```
+
+| 함수 | 용도 |
+|------|------|
+| `toError(value)` | `ErrorReporter.captureException`·`logger.error`처럼 `Error`를 요구하는 곳 |
+| `errorMessageOf(value)` | 로그 필드, 벤더 에러 메시지 판별 |
+
+---
+
 ## UI 에러 처리 패턴
 
 ### 패턴 1: toast.error 기본 처리

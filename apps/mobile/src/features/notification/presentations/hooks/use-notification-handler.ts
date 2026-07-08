@@ -4,6 +4,7 @@ import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-c
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
+import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import type * as Notifications from 'expo-notifications';
@@ -123,7 +124,7 @@ export const useNotificationHandler = ({ isAuthenticated }: UseNotificationHandl
         }
 
         Promise.all(invalidations).catch((e) =>
-          logger.error('[Notification] Handler failed', e instanceof Error ? e : undefined),
+          logger.error('[Notification] Handler failed', toError(e)),
         );
       }, 1000);
     },

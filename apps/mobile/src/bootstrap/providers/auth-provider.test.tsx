@@ -1,11 +1,11 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { KeychainLockedError } from '@src/core/ports/storage';
 import {
   createMockAnalytics,
   createMockDIContainer,
   createMockTokenStore,
 } from '@src/shared/__tests__';
+import { KeychainLockedError } from '@src/shared/errors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
@@ -106,6 +106,21 @@ describe('AuthProvider', () => {
       expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
       expect(errorReporter.captureException).toHaveBeenCalledWith(
         expect.any(Error),
+        expect.objectContaining({ feature: 'auth' }),
+      );
+    });
+
+    it('Error가 아닌 값이 던져져도 메시지를 잃지 않고 리포팅한다', async () => {
+      // Given — String(value)로 감싸면 "[object Object]"가 되어 원인을 알 수 없다
+      tokenStore.readRefreshToken.mockRejectedValue({ message: 'native bridge failure' });
+
+      // When
+      renderProvider();
+      await expectStatus('unauthenticated');
+
+      // Then — String(value)였다면 message가 "[object Object]"가 된다
+      expect(errorReporter.captureException).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'native bridge failure' }),
         expect.objectContaining({ feature: 'auth' }),
       );
     });

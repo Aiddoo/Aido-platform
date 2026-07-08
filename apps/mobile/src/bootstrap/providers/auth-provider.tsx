@@ -1,6 +1,7 @@
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import { track } from '@src/shared/analytics';
+import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
@@ -56,9 +57,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    */
   const fallbackToUnauthenticated = useCallback(
     (error: unknown) => {
-      errorReporter.captureException(error instanceof Error ? error : new Error(String(error)), {
-        feature: 'auth',
-      });
+      errorReporter.captureException(toError(error), { feature: 'auth' });
       applyStatus('unauthenticated');
     },
     [errorReporter, applyStatus],
