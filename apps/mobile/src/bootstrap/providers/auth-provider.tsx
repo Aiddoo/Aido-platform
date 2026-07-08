@@ -13,7 +13,7 @@ import {
   useState,
 } from 'react';
 import { resolveInitialAuthStatus } from './auth-boot';
-import { useAnalytics, useErrorReporter, useStorage } from './di-provider';
+import { useAnalytics, useErrorReporter, useStorage, useTokenRefresher } from './di-provider';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -26,16 +26,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const storage = useStorage();
+  const tokenRefresher = useTokenRefresher();
   const errorReporter = useErrorReporter();
   const analytics = useAnalytics();
   const queryClient = useQueryClient();
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
-  // 앱 시작 시 초기 인증 상태 결정 (재설치 잔존 토큰 가드 포함)
+  // 앱 시작 시 초기 인증 상태 결정 (낙관적 부팅 — 토큰 선제 삭제 금지, auth-boot.ts 참조)
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const initialStatus = await resolveInitialAuthStatus(storage, mmkvSyncStorage);
+        const initialStatus = await resolveInitialAuthStatus(
+          storage,
+          mmkvSyncStorage,
+          tokenRefresher,
+        );
         setStatusState(initialStatus);
       } catch (error) {
         // 키체인 접근 실패(기기 잠김 등)로 throw되어도 'loading'에 영구히 갇히지 않도록
@@ -47,7 +52,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       }
     };
     checkAuth();
-  }, [storage, errorReporter]);
+  }, [storage, tokenRefresher, errorReporter]);
 
   // 토큰 갱신 최종 실패(세션 만료 확정) 시 로그아웃과 동일한 순서로 정리 + 관측 리포팅
   useEffect(() => {
