@@ -110,13 +110,14 @@ interface TodoProgressProps {
 }
 
 export function TodoProgress({ value, total }: TodoProgressProps) {
+  // total이 0이면 `NaN%`가 되어 RN 스타일 파서가 레이아웃을 깨뜨린다.
+  // 호출자가 지금은 하위 할 일이 있을 때만 렌더하지만, 이건 공개 프리미티브다.
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+
   return (
     <HStack gap={6} align="center">
       <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
-        <Box
-          className="h-full rounded-full bg-main"
-          style={{ width: `${(value / total) * 100}%` }}
-        />
+        <Box className="h-full rounded-full bg-main" style={{ width: `${percentage}%` }} />
       </Box>
       <Text size="e1" shade={6}>
         {value}/{total}
