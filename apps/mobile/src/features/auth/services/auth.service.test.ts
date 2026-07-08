@@ -1,4 +1,4 @@
-import { createMockHttpClient, createMockStorage } from '@src/shared/__tests__';
+import { createMockHttpClient, createMockTokenStore } from '@src/shared/__tests__';
 import {
   createAuthApiError,
   createAuthTokensDto,
@@ -33,14 +33,14 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   let publicHttpClient: ReturnType<typeof createMockHttpClient>;
   let authHttpClient: ReturnType<typeof createMockHttpClient>;
-  let storage: ReturnType<typeof createMockStorage>;
+  let tokenStore: ReturnType<typeof createMockTokenStore>;
   let service: AuthService;
 
   beforeEach(() => {
     publicHttpClient = createMockHttpClient();
     authHttpClient = createMockHttpClient();
-    storage = createMockStorage();
-    service = new AuthService(publicHttpClient, authHttpClient, storage);
+    tokenStore = createMockTokenStore();
+    service = new AuthService(publicHttpClient, authHttpClient, tokenStore);
   });
 
   // ── emailLogin ─────────────────────────────
@@ -59,8 +59,10 @@ describe('AuthService', () => {
         'v1/auth/login',
         expect.objectContaining({ email: 'test@example.com', password: 'password123' }),
       );
-      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', dto.refreshToken);
+      expect(tokenStore.save).toHaveBeenCalledWith({
+        accessToken: dto.accessToken,
+        refreshToken: dto.refreshToken,
+      });
       expect(result).toEqual({
         ok: true,
         value: expect.objectContaining({
@@ -112,7 +114,7 @@ describe('AuthService', () => {
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
-      expect(storage.set).not.toHaveBeenCalled();
+      expect(tokenStore.save).not.toHaveBeenCalled();
     });
 
     test('Zod 검증 실패 → ParseError throw', async () => {
@@ -140,8 +142,10 @@ describe('AuthService', () => {
 
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/exchange', input);
-      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
-      expect(storage.set).toHaveBeenCalledWith('refreshToken', dto.refreshToken);
+      expect(tokenStore.save).toHaveBeenCalledWith({
+        accessToken: dto.accessToken,
+        refreshToken: dto.refreshToken,
+      });
       expect(result.ok).toBe(true);
     });
 
@@ -180,8 +184,7 @@ describe('AuthService', () => {
 
       // Then
       expect(authHttpClient.post).toHaveBeenCalledWith('v1/auth/logout');
-      expect(storage.remove).toHaveBeenCalledWith('accessToken');
-      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ ok: true, value: undefined });
     });
 
@@ -194,8 +197,7 @@ describe('AuthService', () => {
       const result = await service.logout();
 
       // Then
-      expect(storage.remove).toHaveBeenCalledWith('accessToken');
-      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
@@ -205,8 +207,7 @@ describe('AuthService', () => {
 
       // When & Then
       await expect(service.logout()).rejects.toThrow('network error');
-      expect(storage.remove).toHaveBeenCalledWith('accessToken');
-      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -224,7 +225,9 @@ describe('AuthService', () => {
 
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/verify-email', input);
-      expect(storage.set).toHaveBeenCalledWith('accessToken', dto.accessToken);
+      expect(tokenStore.save).toHaveBeenCalledWith(
+        expect.objectContaining({ accessToken: dto.accessToken }),
+      );
       expect(result.ok).toBe(true);
     });
 
@@ -773,8 +776,7 @@ describe('AuthService', () => {
 
       // Then
       expect(authHttpClient.delete).toHaveBeenCalledWith('v1/auth/account', { body: input });
-      expect(storage.remove).toHaveBeenCalledWith('accessToken');
-      expect(storage.remove).toHaveBeenCalledWith('refreshToken');
+      expect(tokenStore.clear).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         ok: true,
         value: expect.objectContaining({
@@ -795,7 +797,7 @@ describe('AuthService', () => {
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
-      expect(storage.remove).not.toHaveBeenCalled();
+      expect(tokenStore.clear).not.toHaveBeenCalled();
     });
 
     test('Zod 검증 실패 → ParseError throw', async () => {
@@ -810,7 +812,7 @@ describe('AuthService', () => {
       // Given
       const dto = createDeleteAccountDto();
       authHttpClient.delete.mockResolvedValue({ ok: true, value: dto });
-      storage.remove.mockRejectedValueOnce(new Error('storage error'));
+      tokenStore.clear.mockRejectedValueOnce(new Error('storage error'));
 
       // When & Then
       await expect(service.deleteAccount(input)).rejects.toThrow('storage error');

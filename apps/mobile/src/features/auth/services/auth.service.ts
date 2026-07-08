@@ -35,9 +35,8 @@ import {
   type VerifyEmailInput,
 } from '@aido/validators';
 import type { HttpClient } from '@src/core/ports/http';
-import type { Storage } from '@src/core/ports/storage';
+import type { TokenStore } from '@src/core/ports/token-store';
 import { ENV } from '@src/shared/config/env';
-import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
@@ -101,12 +100,12 @@ export type AuthServiceError = ApiError | AuthError;
 export class AuthService {
   readonly #publicHttpClient: HttpClient;
   readonly #authHttpClient: HttpClient;
-  readonly #storage: Storage;
+  readonly #tokenStore: TokenStore;
 
-  constructor(publicHttpClient: HttpClient, authHttpClient: HttpClient, storage: Storage) {
+  constructor(publicHttpClient: HttpClient, authHttpClient: HttpClient, tokenStore: TokenStore) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
-    this.#storage = storage;
+    this.#tokenStore = tokenStore;
   }
 
   #getRedirectUri = (provider: OAuthStartProvider): string =>
@@ -200,17 +199,12 @@ export class AuthService {
   };
 
   #saveTokens = async (accessToken: string, refreshToken: string): Promise<void> => {
-    await Promise.all([
-      this.#storage.set(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
-      this.#storage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
-    ]);
+    await this.#tokenStore.save({ accessToken, refreshToken });
   };
 
+  /** 명시적 로그아웃/탈퇴 — 세션 만료(SessionManager.end)와 더불어 토큰을 지우는 유일한 경로. */
   #clearTokens = async (): Promise<void> => {
-    await Promise.all([
-      this.#storage.remove(STORAGE_KEYS.ACCESS_TOKEN),
-      this.#storage.remove(STORAGE_KEYS.REFRESH_TOKEN),
-    ]);
+    await this.#tokenStore.clear();
   };
 
   #parseAuthTokens = (result: { ok: true; value: AuthTokensDTO }): AuthTokens => {
