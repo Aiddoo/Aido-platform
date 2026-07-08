@@ -7,11 +7,11 @@ describe('session-expired 이벤트', () => {
     const unsubscribe = subscribeSessionExpired(listener);
 
     // When
-    emitSessionExpired('refresh-rejected-401');
+    emitSessionExpired({ reason: 'refresh-rejected' });
 
     // Then
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith('refresh-rejected-401');
+    expect(listener).toHaveBeenCalledWith({ reason: 'refresh-rejected' });
     unsubscribe();
   });
 
@@ -22,7 +22,7 @@ describe('session-expired 이벤트', () => {
     unsubscribe();
 
     // When
-    emitSessionExpired('no-refresh-token');
+    emitSessionExpired({ reason: 'tokens-missing' });
 
     // Then
     expect(listener).not.toHaveBeenCalled();
@@ -36,7 +36,7 @@ describe('session-expired 이벤트', () => {
     const unsubscribeSecond = subscribeSessionExpired(second);
 
     // When
-    emitSessionExpired('no-refresh-token');
+    emitSessionExpired({ reason: 'tokens-missing' });
 
     // Then
     expect(first).toHaveBeenCalledTimes(1);
@@ -55,7 +55,7 @@ describe('session-expired 이벤트', () => {
     const unsubscribeHealthy = subscribeSessionExpired(healthy);
 
     // When
-    emitSessionExpired('no-refresh-token');
+    emitSessionExpired({ reason: 'tokens-missing' });
 
     // Then
     expect(healthy).toHaveBeenCalledTimes(1);

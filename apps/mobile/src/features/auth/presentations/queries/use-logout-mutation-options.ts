@@ -7,8 +7,7 @@ import {
   useRevenueCatSdkManager,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { resetAuthClient } from '@src/shared/infra/http/auth-client';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 export const useLogoutMutationOptions = () => {
@@ -17,7 +16,6 @@ export const useLogoutMutationOptions = () => {
   const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
   const sdkManager = useRevenueCatSdkManager();
-  const queryClient = useQueryClient();
   const logger = useLogger();
 
   const { setStatus } = useAuth();
@@ -51,12 +49,11 @@ export const useLogoutMutationOptions = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
     // API 성공/실패 관계없이 항상 로그아웃 처리
+    // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
     onSettled: () => {
       trackEvent('auth_logout');
       analytics.setUserId(null);
       setStatus('unauthenticated');
-      queryClient.clear();
-      resetAuthClient();
     },
   });
 };

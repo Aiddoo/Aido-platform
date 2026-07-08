@@ -12,8 +12,7 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
-import { resetAuthClient } from '@src/shared/infra/http/auth-client';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 export const useDeleteAccountMutationOptions = () => {
@@ -21,7 +20,6 @@ export const useDeleteAccountMutationOptions = () => {
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
-  const queryClient = useQueryClient();
   const toast = useAppToast();
   const logger = useLogger();
   const { setStatus } = useAuth();
@@ -58,11 +56,10 @@ export const useDeleteAccountMutationOptions = () => {
 
       toast.error(error, { fallback: t('auth:toasts.deleteAccountFailed') });
     },
+    // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
     onSettled: (_data, error) => {
       if (!error) {
         setStatus('unauthenticated');
-        queryClient.clear();
-        resetAuthClient();
       }
     },
   });

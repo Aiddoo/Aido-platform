@@ -73,7 +73,7 @@ describe('track', () => {
 
   test('session_expired 이벤트를 reason과 함께 전달한다(카탈로그 경유)', () => {
     // Given
-    const params = { reason: 'refresh-rejected-401' as const };
+    const params = { reason: 'refresh-rejected' as const };
 
     // When
     track(analytics, 'session_expired', params);
