@@ -1,9 +1,9 @@
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
+import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import * as Notifications from 'expo-notifications';
 import { createContext, type PropsWithChildren, use, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
-
 import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-context';
 
@@ -59,10 +59,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
         lastResponseHandled.current = responseId;
         pendingColdStartResponse.current = null;
         handleNotificationResponse(responseToProcess).catch((e) =>
-          logger.error(
-            '[Notification] Response handling failed',
-            e instanceof Error ? e : undefined,
-          ),
+          logger.error('[Notification] Response handling failed', toError(e)),
         );
       }
     } else if (
@@ -85,7 +82,7 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       handleNotificationResponse(response).catch((e) =>
-        logger.error('[Notification] Response handling failed', e instanceof Error ? e : undefined),
+        logger.error('[Notification] Response handling failed', toError(e)),
       );
     });
 
@@ -135,15 +132,11 @@ const NativeNotificationProvider = ({ children }: PropsWithChildren) => {
     if (isAuthenticated) {
       notificationService
         .syncBadgeCount()
-        .catch((e) =>
-          logger.error('[Notification] Badge sync failed', e instanceof Error ? e : undefined),
-        );
+        .catch((e) => logger.error('[Notification] Badge sync failed', toError(e)));
     } else {
       notificationService
         .clearBadge()
-        .catch((e) =>
-          logger.error('[Notification] Badge clear failed', e instanceof Error ? e : undefined),
-        );
+        .catch((e) => logger.error('[Notification] Badge clear failed', toError(e)));
     }
   }, [isAuthenticated, notificationService, logger]);
 

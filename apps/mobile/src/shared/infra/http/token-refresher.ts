@@ -1,6 +1,7 @@
 import { refreshTokensSchema } from '@aido/validators';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
+import { errorMessageOf } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { z } from 'zod';
 import { toServerErrorCode } from './server-error-code';
@@ -54,7 +55,7 @@ export const createTokenRefresher = ({
       refreshToken = await tokenStore.readRefreshToken();
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
-      logger.warn('[TokenRefresher] 토큰 읽기 실패 (세션 보존)', { error: String(error) });
+      logger.warn('[TokenRefresher] 토큰 읽기 실패 (세션 보존)', { error: errorMessageOf(error) });
       return { kind: 'transient-failure' };
     }
 
@@ -67,7 +68,9 @@ export const createTokenRefresher = ({
       response = await requestRefresh(refreshToken);
     } catch (error) {
       // 네트워크/타임아웃 — 서버는 회전하지 않았으므로 보유 토큰은 여전히 유효하다.
-      logger.warn('[TokenRefresher] 일시적 갱신 실패 (토큰 보존)', { error: String(error) });
+      logger.warn('[TokenRefresher] 일시적 갱신 실패 (토큰 보존)', {
+        error: errorMessageOf(error),
+      });
       return { kind: 'transient-failure' };
     }
 
@@ -86,7 +89,7 @@ export const createTokenRefresher = ({
         await tokenStore.save({ accessToken, refreshToken: nextRefreshToken });
       } catch (error) {
         // 저장 실패. 서버는 회전했지만 보유 토큰은 grace(10초) 안에서 아직 통한다.
-        logger.warn('[TokenRefresher] 새 토큰 저장 실패', { error: String(error) });
+        logger.warn('[TokenRefresher] 새 토큰 저장 실패', { error: errorMessageOf(error) });
         return { kind: 'transient-failure' };
       }
       return { kind: 'refreshed' };

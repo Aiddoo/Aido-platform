@@ -4,7 +4,7 @@ import type { AiSuggestionActionInput } from '@src/features/ai/models/ai.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
+import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';
 import { t } from '@src/shared/i18n';
@@ -74,7 +74,7 @@ export const useHandleSuggestionMutationOptions = () => {
         return;
       }
 
-      logger.error('[AiSuggestion] Unexpected error', error instanceof Error ? error : undefined);
+      logger.error('[AiSuggestion] Unexpected error', toError(error));
       toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });

@@ -1,4 +1,5 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
@@ -12,10 +13,7 @@ export const useUnregisterPushTokenMutationOptions = () => {
       return unwrap(result);
     },
     onError: (error) => {
-      logger.error(
-        '[PushNotification] Failed to unregister',
-        error instanceof Error ? error : undefined,
-      );
+      logger.error('[PushNotification] Failed to unregister', toError(error));
     },
   });
 };
