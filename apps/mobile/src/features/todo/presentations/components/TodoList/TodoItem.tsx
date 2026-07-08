@@ -15,9 +15,9 @@ import { CategorySelectBottomSheet } from '../CategorySelectBottomSheet';
 import { SubTodoActionsBottomSheet } from '../SubTodoList/SubTodoActionsBottomSheet';
 import { SubTodoList } from '../SubTodoList/SubTodoList';
 import { TodoDatePickerContent } from '../TodoDatePickerContent';
+import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from '../TodoRow';
 import { TodoTimePickerContent } from '../TodoTimePickerContent';
 import { TodoActionsBottomSheet } from './TodoActionsBottomSheet';
-import { TodoList } from './TodoList';
 
 interface TodoItemProps {
   todo: TodoItemViewModel;
@@ -222,9 +222,9 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
   };
 
   return (
-    <TodoList.Item
+    <TodoRow
       left={
-        <TodoList.Checkbox
+        <TodoCheckbox
           isChecked={todo.completed}
           onCheckedChange={todoActions.toggle}
           isDisabled={todoActions.isTogglePending || isOptimistic}
@@ -232,7 +232,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
       }
       top={
         <HStack gap={4} align="center">
-          <TodoList.Label isChecked={todo.completed}>{todo.title}</TodoList.Label>
+          <TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>
           {todo.visibility === 'PRIVATE' && (
             <LockIcon width={14} height={14} colorClassName="text-gray-5" />
           )}
@@ -247,7 +247,7 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
       }
       bottom={
         todo.hasSubTodos ? (
-          <TodoList.Progress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
+          <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
         ) : undefined
       }
       right={
@@ -282,6 +282,6 @@ export function TodoItem({ todo, drag, isActive, isDragDisabled }: TodoItemProps
           />
         </SubTodoList>
       )}
-    </TodoList.Item>
+    </TodoRow>
   );
 }
