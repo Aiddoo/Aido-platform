@@ -33,7 +33,8 @@ const AuthGateLayout = () => {
   useUserIdentity();
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
-  const isLoading = status === 'loading';
+  // `locked`(키체인 잠김)는 미인증이 아니라 "아직 모름"이다 — 로그인 화면으로 내려보내지 않는다.
+  const isLoading = status === 'loading' || status === 'locked';
 
   // Stack을 항상 렌더링하여 expo-router의 navigationRef가 즉시 ready 상태가 되도록 함.
   // 이를 통해 cold start 시 push notification 탭으로 인한

@@ -2,6 +2,8 @@ import type { Analytics } from '@src/core/ports/analytics';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import type { Storage } from '@src/core/ports/storage';
+import type { TokenStore } from '@src/core/ports/token-store';
+import type { SessionManager } from '@src/core/session/session-manager';
 import type { AchievementService } from '@src/features/achievement/services/achievement.service';
 import type { AiService } from '@src/features/ai/services/ai.service';
 import type { AuthService } from '@src/features/auth/services/auth.service';
@@ -26,7 +28,11 @@ export interface DIContainer {
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
-  /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅과 부팅 검증이 공유 (single-flight) */
+  /** 토큰 키를 아는 유일한 곳 */
+  tokenStore: TokenStore;
+  /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
+  sessionManager: SessionManager;
+  /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
 
   // Services
@@ -73,6 +79,8 @@ export const useDI = (): DIContainer => {
 
 // Infrastructure Hooks
 export const useStorage = () => useDI().storage;
+export const useTokenStore = () => useDI().tokenStore;
+export const useSessionManager = () => useDI().sessionManager;
 export const useTokenRefresher = () => useDI().tokenRefresher;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;

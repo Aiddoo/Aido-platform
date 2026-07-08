@@ -5,7 +5,10 @@ export interface ErrorReporterContext {
   endpoint?: string;
   feature?: string;
   method?: string;
+  /** 클라이언트가 판단한 사유. */
   errorCode?: string;
+  /** 서버가 내려준 `@aido/errors` 코드. 클라 판단(`errorCode`)과 섞지 않는다. */
+  serverErrorCode?: string;
   statusCode?: number;
   severity?: Severity;
 }

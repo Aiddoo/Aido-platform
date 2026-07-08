@@ -1,3 +1,4 @@
+import { createSessionManager } from '@src/core/session/session-manager';
 import { AchievementService } from '@src/features/achievement/services/achievement.service';
 import { AiService } from '@src/features/ai/services/ai.service';
 import { AuthService } from '@src/features/auth/services/auth.service';
@@ -16,7 +17,6 @@ import { TodoCategoryService } from '@src/features/todo/services/todo-category.s
 import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
 import { UserService } from '@src/features/user/services/user.service';
 import { WeatherService } from '@src/features/weather/services/weather.service';
-
 import { ENV } from '@src/shared/config/env';
 import { createConsoleAnalytics, createFirebaseAnalytics } from '@src/shared/infra/analytics';
 import {
@@ -27,6 +27,7 @@ import {
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
+import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import {
   createCompositeLogger,
@@ -35,6 +36,7 @@ import {
   setGlobalLogger,
 } from '@src/shared/infra/logger';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
+import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
 
 import { type PropsWithChildren, useState } from 'react';
 import { type DIContainer, DIContext } from './di-context';
@@ -42,6 +44,7 @@ import { type DIContainer, DIContext } from './di-context';
 export const DIProvider = ({ children }: PropsWithChildren) => {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
+    const tokenStore = createSecureTokenStore(storage);
 
     // Observability — 크래시/에러/이벤트/로그는 Sentry로 일원화(네이티브 크래시 포함),
     // Firebase는 Analytics(제품 지표)만 담당. Sentry init은 앱 루트(initSentry)에서 1회.
@@ -68,11 +71,21 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const publicKyInstance = createPublicClient();
     const publicHttpClient = new KyHttpClient(publicKyInstance);
 
-    // 단일 리프레셔: 401 훅(auth-client)과 부팅 세션 검증(auth-provider)이 공유해
-    // single-flight mutex가 갈라지지 않도록 한다.
-    const tokenRefresher = createTokenRefresher(storage);
+    // 세션 종료(토큰 삭제 + 이벤트)의 유일한 소유자. 갱신기는 세션을 끝낼 수 없다.
+    const sessionManager = createSessionManager(tokenStore);
 
-    const authKyInstance = createAuthClient(storage, tokenRefresher);
+    // 단일 리프레셔: 인스턴스가 갈라지면 single-flight mutex가 분리되어
+    // 동시 회전이 서버의 토큰 패밀리를 소모한다.
+    const tokenRefresher = createTokenRefresher({
+      tokenStore,
+      requestRefresh: requestRefreshTokens,
+    });
+
+    const authKyInstance = createAuthClient({
+      tokenStore,
+      refresh: tokenRefresher,
+      endSession: (reason) => sessionManager.end(reason),
+    });
     const authHttpClient = new KyHttpClient(authKyInstance);
 
     // Achievement
@@ -82,7 +95,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
     const aiService = new AiService(authHttpClient, logger);
 
     // Auth
-    const authService = new AuthService(publicHttpClient, authHttpClient, storage);
+    const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
 
     // Friend
     const friendService = new FriendService(authHttpClient);
@@ -129,6 +142,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       logger,
       analytics,
       errorReporter,
+      tokenStore,
+      sessionManager,
       tokenRefresher,
       achievementService,
       aiService,
@@ -167,6 +182,7 @@ export {
   useMemoService,
   useNotificationService,
   useRevenueCatSdkManager,
+  useSessionManager,
   useStorage,
   useSubscriptionService,
   useSubTodoService,
@@ -174,6 +190,7 @@ export {
   useTodoNudgeService,
   useTodoService,
   useTokenRefresher,
+  useTokenStore,
   useUserService,
   useWeatherService,
 } from './di-context';
