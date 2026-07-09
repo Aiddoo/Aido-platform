@@ -110,9 +110,11 @@ const MyPageScreen = () => {
 
         <Spacing size={32} />
 
-        <Suspense fallback={null}>
-          <AccountActionButtons />
-        </Suspense>
+        <QueryErrorBoundary>
+          <Suspense fallback={null}>
+            <AccountActionButtons />
+          </Suspense>
+        </QueryErrorBoundary>
       </ScrollView>
     </StyledSafeAreaView>
   );

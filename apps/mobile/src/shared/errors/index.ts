@@ -1,6 +1,9 @@
 // Base Classes
 export { ApiError, isApiError } from './api-error';
 
+// Boundary 에러 분류 (라우트 ErrorBoundary 처리 분기)
+export { type BoundaryErrorKind, classifyBoundaryError } from './classify-boundary-error';
+
 // Infrastructure Errors
 export {
   InfraError,

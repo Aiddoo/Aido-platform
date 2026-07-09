@@ -51,9 +51,11 @@ export default function MemoScreen() {
 
   return (
     <Box className="flex-1">
-      <Suspense fallback={<Header.Loading />}>
-        <Header />
-      </Suspense>
+      <QueryErrorBoundary fallback={(props) => <Header.Error {...props} />}>
+        <Suspense fallback={<Header.Loading />}>
+          <Header />
+        </Suspense>
+      </QueryErrorBoundary>
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -119,4 +121,24 @@ function Header() {
 
 Header.Loading = function Loading() {
   return <Box px={16} mb={16} style={{ height: 44 }} />;
+};
+
+// 살아있는 세션의 일시적 401 등으로 Header 쿼리가 실패해도 앱 레벨로 새지 않게 로컬에 담는다.
+// 제목은 유지하고 생성 버튼 자리를 재시도(reset)로 바꿔 레이아웃을 흔들지 않는다.
+Header.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => void }) {
+  const { t } = useTranslation('memo');
+  return (
+    <HStack align="center" px={16} mb={16}>
+      <Box flex={1}>
+        <H3 shade={7}>{t('tab.addMemo')}</H3>
+      </Box>
+      <PressableFeedback
+        onPress={reset}
+        style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+        className="items-center justify-center rounded-full bg-gray-4"
+      >
+        <PlusIcon width={24} height={24} color="white" />
+      </PressableFeedback>
+    </HStack>
+  );
 };

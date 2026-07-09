@@ -24,6 +24,7 @@ export interface TokenRefreshHookDeps {
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
  *   바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
  * - 갱신 실패 시 원 401 응답을 그대로 반환해 ky-client가 ApiError로 일관 번역하게 한다.
+ *   이 ApiError는 화면별 `QueryErrorBoundary`가 로컬 재시도로 담는다(앱 레벨로 새지 않음).
  *
  * 세션 종료 여부는 갱신 결과(`RefreshOutcome`)만 보고 판단한다.
  * `transient-failure`(네트워크·5xx·잠긴 키체인)에서는 절대 세션을 끝내지 않는다.
