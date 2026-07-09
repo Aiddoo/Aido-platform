@@ -55,7 +55,8 @@ describe('createTokenRefreshHook', () => {
   });
 
   it('재시도 마커가 있으면 갱신 없이 응답을 반환한다 (루프 가드)', async () => {
-    // Given
+    // Given — 갱신 성공 후 재시도가 다시 401. 다시 갱신하면 무한 루프이므로 원 401을 반환하고,
+    // 화면별 QueryErrorBoundary가 로컬 재시도로 담는다.
     const response = createFakeResponse(401);
     const request = createFakeRequest({ [RETRY_MARKER_HEADER]: '1' });
 
@@ -66,6 +67,7 @@ describe('createTokenRefreshHook', () => {
     expect(result).toBe(response);
     expect(refresh).not.toHaveBeenCalled();
     expect(retry).not.toHaveBeenCalled();
+    expect(endSession).not.toHaveBeenCalled();
   });
 
   it('보낸 토큰이 저장된 토큰과 다르면(이미 회전됨) 갱신 없이 재시도한다', async () => {
@@ -148,7 +150,7 @@ describe('createTokenRefreshHook', () => {
     // When
     const result = await invokeHook(request, response);
 
-    // Then
+    // Then — 원 401을 반환(로컬 QueryErrorBoundary가 담음), 세션 종료 없음
     expect(endSession).not.toHaveBeenCalled();
     expect(retry).not.toHaveBeenCalled();
     expect(result).toBe(response);
@@ -163,7 +165,7 @@ describe('createTokenRefreshHook', () => {
     // When
     const result = await invokeHook(createFakeRequest(), response);
 
-    // Then
+    // Then — 갱신 경로로 넘어가 일시 실패로 판정되고, 세션은 끝나지 않는다
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
     expect(result).toBe(response);

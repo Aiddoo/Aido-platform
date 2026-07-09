@@ -1,5 +1,5 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { toError } from '@src/shared/errors';
+import { classifyBoundaryError, toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -26,6 +26,10 @@ export function QueryErrorBoundary({ children, fallback }: QueryErrorBoundaryPro
         <ErrorBoundary
           onReset={reset}
           onError={(error) => {
+            // 로컬에 담기는 일시적 401은 리포트하지 않는다 — 콜드스타트마다 Sentry가 울린다.
+            if (classifyBoundaryError(error) === 'auth-transition') {
+              return;
+            }
             errorReporter.captureException(toError(error), { feature: 'error_boundary' });
           }}
           fallbackRender={({ error, resetErrorBoundary }) =>
