@@ -64,6 +64,7 @@ export {
   PinFilledIcon,
   PinIcon,
   PlusIcon,
+  RefreshIcon,
   RepeatIcon,
   RobotIcon,
   RobotPixelIcon,

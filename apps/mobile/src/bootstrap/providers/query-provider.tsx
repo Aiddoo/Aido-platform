@@ -1,8 +1,8 @@
-import { isApiError, isBusinessError } from '@src/shared/errors';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { PropsWithChildren } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState, Platform } from 'react-native';
+import { shouldRetryQuery } from './query-retry';
 
 /**
  * React Native에서는 브라우저의 `visibilitychange` 이벤트가 없으므로,
@@ -29,17 +29,7 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: MIN_STALE_TIME,
       gcTime: MIN_GC_TIME,
-      retry: (failureCount, error) => {
-        if (isApiError(error) && [401, 403].includes(error.status)) {
-          return false;
-        }
-
-        if (isBusinessError(error)) {
-          return false;
-        }
-
-        return failureCount < 3;
-      },
+      retry: shouldRetryQuery,
     },
     mutations: {
       retry: false,

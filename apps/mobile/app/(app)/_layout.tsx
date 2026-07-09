@@ -1,6 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { isApiError } from '@src/shared/errors';
+import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { Stack } from 'expo-router';
@@ -48,10 +48,10 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
   const { t } = useTranslation();
 
-  // 세션이 끝난 뒤 도착한 401은 장애가 아니라 인증 전환이다. 라우트 게이트가 곧 로그인 화면으로
-  // 바꾸므로, 재시도 UI를 보여주지도 리포팅하지도 않는다.
-  // (세션이 살아있는데 401이면 진짜 문제이므로 아래 에러 화면을 그대로 보여준다.)
-  const isAuthTransition = isApiError(error) && error.status === 401 && status !== 'authenticated';
+  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
+  // 새어왔다면 컨테인먼트 구멍이므로, null 빈 화면 대신 재시도 UI를 보여주고 리포트한다.
+  const isAuthTransition =
+    status !== 'authenticated' && classifyBoundaryError(error) === 'auth-transition';
 
   // 렌더 중 부수효과 금지 — 리렌더마다 중복 캡처된다.
   useEffect(() => {

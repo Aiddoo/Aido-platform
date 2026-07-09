@@ -31,6 +31,9 @@ export const createAuthClient = ({
   clientRef.current = ky.create({
     prefixUrl: ENV.API_URL,
     timeout: 10_000,
+    // 재시도 정책은 React Query가 소유한다(`shouldRetryQuery`). ky가 401 훅 throw나 5xx를
+    // 자체 재시도하면 갱신 훅과 겹쳐 토큰 패밀리를 소모하고 재시도 횟수가 이중 계산된다.
+    retry: 0,
     headers: {
       'Content-Type': 'application/json',
       'X-Timezone': getDeviceTimezone(),
