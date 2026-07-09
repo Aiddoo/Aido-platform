@@ -3,9 +3,8 @@ import { classifyBoundaryError } from './classify-boundary-error';
 import { ServerError } from './infra-error';
 
 describe('classifyBoundaryError', () => {
-  it('401 ApiError는 auth-transition으로 분류한다 (인증 상태와 무관 — 레이스 제거)', () => {
-    // Given — 살아있는 세션의 401은 화면별 QueryErrorBoundary가 담으므로,
-    // 앱 레벨 바운더리에 도달하는 401 ApiError는 진짜 세션 종료뿐이다.
+  it('401 ApiError는 auth-transition으로 분류한다 (인증 상태와 무관 — 순수 함수)', () => {
+    // Given — status 결합 판단은 호출부(앱 레벨 바운더리)의 몫이고, 이 함수는 에러 종류만 본다.
     const error = new ApiError('AUTH_0105', '다시 로그인', 401);
 
     // When / Then

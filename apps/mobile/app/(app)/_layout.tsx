@@ -44,15 +44,14 @@ interface ErrorBoundaryProps {
 }
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  const { setStatus } = useAuth();
+  const { status, setStatus } = useAuth();
   const errorReporter = useErrorReporter();
   const { t } = useTranslation();
 
-  // 세션이 끝난 뒤 도착한 401은 장애가 아니라 인증 전환이다. 라우트 게이트가 곧 로그인 화면으로
-  // 바꾸므로, 재시도 UI를 보여주지도 리포팅하지도 않는다.
-  // 살아있는 세션의 일시적 401은 화면별 QueryErrorBoundary가 로컬 재시도로 담으므로,
-  // 여기(앱 레벨)까지 도달하는 401 ApiError는 진짜 세션 종료뿐이다(레이스 비의존 — classifyBoundaryError 참조).
-  const isAuthTransition = classifyBoundaryError(error) === 'auth-transition';
+  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
+  // 새어왔다면 컨테인먼트 구멍이므로, null 빈 화면 대신 재시도 UI를 보여주고 리포트한다.
+  const isAuthTransition =
+    status !== 'authenticated' && classifyBoundaryError(error) === 'auth-transition';
 
   // 렌더 중 부수효과 금지 — 리렌더마다 중복 캡처된다.
   useEffect(() => {

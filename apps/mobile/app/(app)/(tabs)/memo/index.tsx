@@ -12,6 +12,7 @@ import {
   HStack,
   PlusIcon,
   QueryErrorBoundary,
+  RefreshIcon,
   ScrollProgressWidget,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -135,9 +136,9 @@ Header.Error = function ErrorFallback({ reset }: { error: unknown; reset: () => 
       <PressableFeedback
         onPress={reset}
         style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-        className="items-center justify-center rounded-full bg-gray-4"
+        className="items-center justify-center rounded-full bg-gray-8"
       >
-        <PlusIcon width={24} height={24} color="white" />
+        <RefreshIcon width={20} height={20} colorClassName="text-white" />
       </PressableFeedback>
     </HStack>
   );
