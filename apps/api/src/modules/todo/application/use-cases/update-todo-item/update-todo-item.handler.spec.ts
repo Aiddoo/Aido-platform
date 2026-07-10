@@ -12,9 +12,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -82,8 +82,8 @@ describe("UpdateTodoItemHandler — 하위 항목 수정 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -108,11 +108,10 @@ describe("UpdateTodoItemHandler — 하위 항목 수정 핸들러", () => {
 		);
 
 		// Then
-		expect(todoRepository.updateItem).toHaveBeenCalledWith(
-			10,
-			{ title: "수정", completed: true },
-			expect.anything(),
-		);
+		expect(todoRepository.updateItem).toHaveBeenCalledWith(10, {
+			title: "수정",
+			completed: true,
+		});
 		expect(result.id).toBe(1);
 	});
 

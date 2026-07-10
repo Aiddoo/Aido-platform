@@ -13,9 +13,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoToggledEvent } from "../../../domain/events/todo-toggled.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -74,8 +74,8 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -113,7 +113,6 @@ describe("ToggleTodoCompleteHandler — 완료 토글 핸들러", () => {
 			1,
 			true,
 			expect.any(Date),
-			expect.anything(),
 		);
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoToggledEvent(1, "user-123", true, "Asia/Seoul"),

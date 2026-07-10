@@ -16,9 +16,9 @@ import {
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { DomainException } from "@/common/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
@@ -94,8 +94,8 @@ describe("CreateTodoHandler — 할 일 생성 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.mock<CategoryOwnershipPort>(CATEGORY_OWNERSHIP)
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
@@ -191,11 +191,10 @@ describe("CreateTodoHandler — 할 일 생성 핸들러", () => {
 		);
 
 		// Then - 인라인 항목 생성 + 응답 재조회
-		expect(todoRepository.createInlineItems).toHaveBeenCalledWith(
-			1,
-			[{ title: "하위1" }, { title: "하위2" }],
-			expect.anything(),
-		);
+		expect(todoRepository.createInlineItems).toHaveBeenCalledWith(1, [
+			{ title: "하위1" },
+			{ title: "하위2" },
+		]);
 		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(
 			1,
 			"user-123",

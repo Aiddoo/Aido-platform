@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database/prisma.types";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { now } from "@/common/date/utils/core";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type { Prisma, Todo } from "@/generated/prisma/client";
 import type {
 	FindFriendTodosParams,
@@ -78,20 +79,28 @@ function buildDateRangeFilter(
  * Prisma 행(TodoWithCategory)을 그대로 다루는 저수준 데이터 접근 객체입니다.
  * 도메인 애그리게잇 매핑은 PrismaTodoRepository, 응답 read model 매핑은
  * PrismaTodoReadRepository(+ TodoMapper)가 담당합니다.
+ *
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다(기존 `tx ?? this.database`와 등가).
  */
 @Injectable()
 export class TodoRowRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * Todo 생성
 	 */
-	async create(
-		data: Prisma.TodoCreateInput,
-		tx?: TransactionClient,
-	): Promise<TodoWithCategory> {
-		const client = tx ?? this.database;
-		return client.todo.create({
+	async create(data: Prisma.TodoCreateInput): Promise<TodoWithCategory> {
+		return this.client.todo.create({
 			data,
 			include: TODO_CATEGORY_INCLUDE,
 		});
@@ -103,10 +112,8 @@ export class TodoRowRepository {
 	async findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
 	): Promise<TodoWithCategory | null> {
-		const client = tx ?? this.database;
-		return client.todo.findFirst({
+		return this.client.todo.findFirst({
 			where: { id, userId },
 			include: TODO_CATEGORY_INCLUDE,
 		});
@@ -115,11 +122,7 @@ export class TodoRowRepository {
 	/**
 	 * 사용자의 Todo 목록 조회 (커서 기반 페이지네이션)
 	 */
-	async findManyByUserId(
-		params: FindTodosParams,
-		tx?: TransactionClient,
-	): Promise<TodoWithCategory[]> {
-		const client = tx ?? this.database;
+	async findManyByUserId(params: FindTodosParams): Promise<TodoWithCategory[]> {
 		const { userId, cursor, size, completed, categoryId, startDate, endDate } =
 			params;
 
@@ -143,7 +146,7 @@ export class TodoRowRepository {
 			where.AND = [dateFilter];
 		}
 
-		return client.todo.findMany({
+		return this.client.todo.findMany({
 			where,
 			take: size + 1, // hasNext 확인을 위해 +1
 			...(cursor != null && {
@@ -165,10 +168,8 @@ export class TodoRowRepository {
 	async update(
 		id: number,
 		data: Prisma.TodoUpdateInput,
-		tx?: TransactionClient,
 	): Promise<TodoWithCategory> {
-		const client = tx ?? this.database;
-		return client.todo.update({
+		return this.client.todo.update({
 			where: { id },
 			data,
 			include: TODO_CATEGORY_INCLUDE,
@@ -178,9 +179,8 @@ export class TodoRowRepository {
 	/**
 	 * Todo 삭제
 	 */
-	async delete(id: number, tx?: TransactionClient): Promise<Todo> {
-		const client = tx ?? this.database;
-		return client.todo.delete({
+	async delete(id: number): Promise<Todo> {
+		return this.client.todo.delete({
 			where: { id },
 		});
 	}
@@ -190,9 +190,7 @@ export class TodoRowRepository {
 	 */
 	async findPublicTodosByUserId(
 		params: FindFriendTodosParams,
-		tx?: TransactionClient,
 	): Promise<TodoWithCategory[]> {
-		const client = tx ?? this.database;
 		const { friendUserId, cursor, size, startDate, endDate } = params;
 
 		const where: Prisma.TodoWhereInput = {
@@ -206,7 +204,7 @@ export class TodoRowRepository {
 			where.AND = [dateFilter];
 		}
 
-		return client.todo.findMany({
+		return this.client.todo.findMany({
 			where,
 			take: size + 1, // hasNext 확인을 위해 +1
 			...(cursor != null && {
@@ -225,12 +223,8 @@ export class TodoRowRepository {
 	/**
 	 * 사용자의 완료된 Todo 누적 개수 조회
 	 */
-	async countCompletedByUser(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todo.count({
+	async countCompletedByUser(userId: string): Promise<number> {
+		return this.client.todo.count({
 			where: { userId, completed: true },
 		});
 	}
@@ -241,10 +235,8 @@ export class TodoRowRepository {
 	async countActiveByCategory(
 		userId: string,
 		categoryId: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todo.count({
+		return this.client.todo.count({
 			where: { userId, categoryId, completed: false },
 		});
 	}
@@ -258,10 +250,7 @@ export class TodoRowRepository {
 	async getTodayTodoStats(
 		userId: string,
 		today: Date,
-		tx?: TransactionClient,
 	): Promise<{ total: number; completed: number }> {
-		const client = tx ?? this.database;
-
 		// 오늘 날짜에 해당하는 투두 필터
 		const dateFilter = buildDateRangeFilter(today, today);
 		const where: Prisma.TodoWhereInput = {
@@ -270,8 +259,8 @@ export class TodoRowRepository {
 		};
 
 		const [total, completed] = await Promise.all([
-			client.todo.count({ where }),
-			client.todo.count({ where: { ...where, completed: true } }),
+			this.client.todo.count({ where }),
+			this.client.todo.count({ where: { ...where, completed: true } }),
 		]);
 
 		return { total, completed };
@@ -280,12 +269,8 @@ export class TodoRowRepository {
 	/**
 	 * 사용자의 Todo 최대 sortOrder 조회
 	 */
-	async getMaxSortOrder(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.todo.aggregate({
+	async getMaxSortOrder(userId: string): Promise<number> {
+		const result = await this.client.todo.aggregate({
 			where: { userId },
 			_max: { sortOrder: true },
 		});
@@ -304,10 +289,7 @@ export class TodoRowRepository {
 		fromSortOrder: number,
 		toSortOrder: number | null,
 		delta: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-
 		const where: Prisma.TodoWhereInput = {
 			userId,
 			sortOrder: {
@@ -316,7 +298,7 @@ export class TodoRowRepository {
 			},
 		};
 
-		const result = await client.todo.updateMany({
+		const result = await this.client.todo.updateMany({
 			where,
 			data: {
 				sortOrder: { increment: delta },
@@ -332,10 +314,8 @@ export class TodoRowRepository {
 	async updateSortOrder(
 		id: number,
 		sortOrder: number,
-		tx?: TransactionClient,
 	): Promise<TodoWithCategory> {
-		const client = tx ?? this.database;
-		return client.todo.update({
+		return this.client.todo.update({
 			where: { id },
 			data: { sortOrder },
 			include: TODO_CATEGORY_INCLUDE,
@@ -355,10 +335,9 @@ export class TodoRowRepository {
 	async createManyBatch(
 		dataArray: Prisma.TodoCreateManyInput[],
 		recurrenceGroupId: string,
-		tx: TransactionClient,
 	): Promise<TodoWithCategory[]> {
-		await tx.todo.createMany({ data: dataArray });
-		return tx.todo.findMany({
+		await this.client.todo.createMany({ data: dataArray });
+		return this.client.todo.findMany({
 			where: { recurrenceGroupId },
 			include: TODO_CATEGORY_INCLUDE,
 			orderBy: { sortOrder: "asc" },
@@ -371,10 +350,8 @@ export class TodoRowRepository {
 	async findManyByRecurrenceGroupId(
 		userId: string,
 		recurrenceGroupId: string,
-		tx?: TransactionClient,
 	): Promise<TodoWithCategory[]> {
-		const client = tx ?? this.database;
-		return client.todo.findMany({
+		return this.client.todo.findMany({
 			where: { userId, recurrenceGroupId },
 			include: TODO_CATEGORY_INCLUDE,
 			orderBy: { sortOrder: "asc" },
@@ -391,9 +368,8 @@ export class TodoRowRepository {
 	async createManyItems(
 		todoId: number,
 		items: { title: string }[],
-		tx: TransactionClient,
 	): Promise<void> {
-		await tx.todoItem.createMany({
+		await this.client.todoItem.createMany({
 			data: items.map((item, index) => ({
 				todoId,
 				title: item.title,
@@ -405,10 +381,8 @@ export class TodoRowRepository {
 	async createItem(
 		todoId: number,
 		data: { title: string; sortOrder: number },
-		tx?: TransactionClient,
 	): Promise<TodoItemData> {
-		const client = tx ?? this.database;
-		return client.todoItem.create({
+		return this.client.todoItem.create({
 			data: { todoId, ...data },
 			select: {
 				id: true,
@@ -424,22 +398,18 @@ export class TodoRowRepository {
 	async updateItem(
 		itemId: number,
 		data: { title?: string; completed?: boolean },
-		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.todoItem.update({ where: { id: itemId }, data });
+		await this.client.todoItem.update({ where: { id: itemId }, data });
 	}
 
-	async deleteItem(itemId: number, tx?: TransactionClient): Promise<void> {
-		const client = tx ?? this.database;
-		await client.todoItem.delete({ where: { id: itemId } });
+	async deleteItem(itemId: number): Promise<void> {
+		await this.client.todoItem.delete({ where: { id: itemId } });
 	}
 
-	async reorderItems(itemIds: number[], tx?: TransactionClient): Promise<void> {
-		const client = tx ?? this.database;
+	async reorderItems(itemIds: number[]): Promise<void> {
 		await Promise.all(
 			itemIds.map((id, index) =>
-				client.todoItem.update({
+				this.client.todoItem.update({
 					where: { id },
 					data: { sortOrder: index },
 				}),

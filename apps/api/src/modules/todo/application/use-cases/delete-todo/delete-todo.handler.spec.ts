@@ -11,9 +11,9 @@ import { TestBed } from "@suites/unit";
 import {
 	createTodoCacheMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoDeletedEvent } from "../../../domain/events/todo-deleted.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -61,8 +61,8 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoCachePort>(TODO_CACHE)
 			.impl(() => createTodoCacheMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -79,7 +79,7 @@ describe("DeleteTodoHandler — 할 일 삭제 핸들러", () => {
 		await handler.execute(new DeleteTodoCommand(1, "user-123"));
 
 		// Then - 삭제 → 이벤트(리마인더 취소는 이벤트 핸들러) → 캐시
-		expect(todoRepository.delete).toHaveBeenCalledWith(1, expect.anything());
+		expect(todoRepository.delete).toHaveBeenCalledWith(1);
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoDeletedEvent(1, "user-123"),
 		]);

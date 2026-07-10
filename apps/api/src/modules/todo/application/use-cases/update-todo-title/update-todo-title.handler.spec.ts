@@ -13,9 +13,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoUpdatedEvent } from "../../../domain/events/todo-updated.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -73,8 +73,8 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -95,11 +95,7 @@ describe("UpdateTodoTitleHandler — 할 일 제목 수정 핸들러", () => {
 		);
 
 		// Then - 영속화 + 이벤트(전이 후 완료 상태 사실 → completed=false)
-		expect(todoRepository.updateTitle).toHaveBeenCalledWith(
-			1,
-			"새 제목",
-			expect.anything(),
-		);
+		expect(todoRepository.updateTitle).toHaveBeenCalledWith(1, "새 제목");
 		expect(eventBus.publishAll).toHaveBeenCalledWith([
 			new TodoUpdatedEvent(1, "user-123", false),
 		]);

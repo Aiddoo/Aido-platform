@@ -15,9 +15,9 @@ import {
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoCreatedEvent } from "../../../domain/events/todo-created.event";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -88,8 +88,8 @@ describe("CreateRecurringTodosHandler — 반복 할 일 일괄 생성 핸들러
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.mock<CategoryOwnershipPort>(CATEGORY_OWNERSHIP)
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)

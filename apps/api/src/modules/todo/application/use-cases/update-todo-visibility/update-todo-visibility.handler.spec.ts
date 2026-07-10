@@ -12,9 +12,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
@@ -72,8 +72,8 @@ describe("UpdateTodoVisibilityHandler — 할 일 공개 범위 변경 핸들러
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -93,11 +93,7 @@ describe("UpdateTodoVisibilityHandler — 할 일 공개 범위 변경 핸들러
 		);
 
 		// Then
-		expect(todoRepository.updateVisibility).toHaveBeenCalledWith(
-			1,
-			"PRIVATE",
-			expect.anything(),
-		);
+		expect(todoRepository.updateVisibility).toHaveBeenCalledWith(1, "PRIVATE");
 		expect(result.id).toBe(1);
 	});
 

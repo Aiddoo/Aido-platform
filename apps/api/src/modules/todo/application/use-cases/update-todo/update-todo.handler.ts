@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import type { TodoPersistenceSnapshot } from "../../../domain/entities/todo.entity";
 import {
@@ -44,8 +41,8 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		@Inject(CATEGORY_OWNERSHIP)
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
@@ -63,8 +60,8 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 
 		// 2. TX 안에서 로드 → 애그리게잇 전이 → 애그리게잇 상태를 단일 소스로 영속화
 		//    (load-mutate-write를 한 트랜잭션으로 묶어 동시 수정 레이스 창 축소)
-		const events = await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		const events = await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
@@ -99,7 +96,7 @@ export class UpdateTodoHandler implements ICommandHandler<UpdateTodoCommand> {
 					patch.completedAt = snapshot.completedAt;
 				}
 			}
-			await this.todoRepository.updateDetails(id, patch, tx);
+			await this.todoRepository.updateDetails(id, patch);
 
 			return todo.pullDomainEvents();
 		});

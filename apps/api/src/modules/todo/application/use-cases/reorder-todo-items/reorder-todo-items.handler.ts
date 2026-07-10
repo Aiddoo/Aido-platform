@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -34,20 +31,16 @@ export class ReorderTodoItemsHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 	) {}
 
 	async execute(command: ReorderTodoItemsCommand): Promise<TodoResponse> {
 		const { todoId, userId, itemIds } = command;
 
 		// 1. TX 안에서 소유권 확인 → 집합 검증 → 일괄 재정렬 (원자성)
-		await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(
-				todoId,
-				userId,
-				tx,
-			);
+		await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
@@ -55,7 +48,7 @@ export class ReorderTodoItemsHandler
 			// 전체 항목 ID 집합 일치 검증은 애그리게잇 불변식 (부분 전달 방지)
 			todo.validateItemsReorder(itemIds);
 
-			await this.todoRepository.reorderItems(itemIds, tx);
+			await this.todoRepository.reorderItems(itemIds);
 		});
 
 		this.#logger.log(

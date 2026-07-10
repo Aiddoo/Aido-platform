@@ -9,11 +9,12 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
-import { createMockPrisma } from "@test/mocks";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import type {
 	FindFriendTodosParams,
@@ -23,17 +24,24 @@ import { TodoRowRepository } from "./todo-row.repository";
 
 describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 	let repository: TodoRowRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
 		// ID 카운터 리셋
 		TodoBuilder.resetIdCounter();
 
-		const { unit, unitRef } =
-			await TestBed.solitary(TodoRowRepository).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(TodoRowRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findManyByUserId", () => {
@@ -567,15 +575,15 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 
 	describe("createManyBatch", () => {
 		const recurrenceGroupId = "test-group-id";
-		const mockTx = createMockPrisma();
-		mockTx.todo.createMany.mockResolvedValue({ count: 2 });
-		mockTx.todo.findMany.mockResolvedValue([
-			TodoBuilder.create("user-1").withId(1).build(),
-			TodoBuilder.create("user-1").withId(2).build(),
-		]);
 
 		it("createMany로 일괄 INSERT 후 findMany로 조회한다", async () => {
 			// Given
+			db.todo.createMany.mockResolvedValue({ count: 2 });
+			db.todo.findMany.mockResolvedValue([
+				TodoBuilder.create("user-1").withId(1).build(),
+				TodoBuilder.create("user-1").withId(2).build(),
+			]);
+
 			const dataArray = [
 				{
 					userId: "user-1",
@@ -599,16 +607,15 @@ describe("TodoRowRepository — 할 일 행 리포지토리(DAO)", () => {
 			const result = await repository.createManyBatch(
 				dataArray,
 				recurrenceGroupId,
-				mockTx,
 			);
 
 			// Then - createMany가 전체 데이터로 호출됨
-			expect(mockTx.todo.createMany).toHaveBeenCalledWith({
+			expect(db.todo.createMany).toHaveBeenCalledWith({
 				data: dataArray,
 			});
 
 			// Then - findMany가 recurrenceGroupId로 조회됨
-			expect(mockTx.todo.findMany).toHaveBeenCalledWith({
+			expect(db.todo.findMany).toHaveBeenCalledWith({
 				where: { recurrenceGroupId },
 				include: {
 					category: {

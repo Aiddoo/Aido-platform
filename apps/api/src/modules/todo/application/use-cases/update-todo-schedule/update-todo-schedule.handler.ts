@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
 import {
@@ -36,8 +33,8 @@ export class UpdateTodoScheduleHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly eventBus: EventBus,
 	) {}
 
@@ -45,8 +42,8 @@ export class UpdateTodoScheduleHandler
 		const { id, userId, schedule } = command;
 
 		// TX 안에서 로드 → 일정 전이(VO가 날짜 불변식 보장) → 애그리게잇 상태로 영속화
-		const events = await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		const events = await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
@@ -54,16 +51,12 @@ export class UpdateTodoScheduleHandler
 			todo.reschedule(TodoSchedule.create(schedule));
 
 			const snapshot = todo.toPersistence();
-			await this.todoRepository.updateSchedule(
-				id,
-				{
-					startDate: snapshot.startDate,
-					endDate: snapshot.endDate,
-					scheduledTime: snapshot.scheduledTime,
-					isAllDay: snapshot.isAllDay,
-				},
-				tx,
-			);
+			await this.todoRepository.updateSchedule(id, {
+				startDate: snapshot.startDate,
+				endDate: snapshot.endDate,
+				scheduledTime: snapshot.scheduledTime,
+				isAllDay: snapshot.isAllDay,
+			});
 			return todo.pullDomainEvents();
 		});
 

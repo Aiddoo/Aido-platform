@@ -16,9 +16,9 @@ import {
 	createTodoCacheMock,
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
 import { TodoSchedule } from "../../../domain/value-objects/todo-schedule.vo";
@@ -81,8 +81,8 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.mock<CategoryOwnershipPort>(CATEGORY_OWNERSHIP)
 			.impl(() => createCategoryOwnershipMock())
 			.mock<TodoCachePort>(TODO_CACHE)
@@ -116,13 +116,8 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 		expect(todoRepository.countActiveByCategory).toHaveBeenCalledWith(
 			"user-123",
 			2,
-			expect.anything(),
 		);
-		expect(todoRepository.updateCategory).toHaveBeenCalledWith(
-			1,
-			2,
-			expect.anything(),
-		);
+		expect(todoRepository.updateCategory).toHaveBeenCalledWith(1, 2);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 		expect(result.id).toBe(1);
 	});
@@ -153,11 +148,7 @@ describe("ChangeTodoCategoryHandler — 할 일 카테고리 변경 핸들러", 
 
 		// Then - 카운트 조회 없이 바로 이동 + 캐시는 항상 무효화
 		expect(todoRepository.countActiveByCategory).not.toHaveBeenCalled();
-		expect(todoRepository.updateCategory).toHaveBeenCalledWith(
-			1,
-			2,
-			expect.anything(),
-		);
+		expect(todoRepository.updateCategory).toHaveBeenCalledWith(1, 2);
 		expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
 	});
 

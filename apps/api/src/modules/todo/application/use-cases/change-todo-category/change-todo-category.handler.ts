@@ -3,10 +3,7 @@ import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	CATEGORY_OWNERSHIP,
@@ -41,8 +38,8 @@ export class ChangeTodoCategoryHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		@Inject(CATEGORY_OWNERSHIP)
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
@@ -56,8 +53,8 @@ export class ChangeTodoCategoryHandler
 		await this.categoryOwnership.validateOwnership(categoryId, userId);
 
 		// 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
-		await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
@@ -69,7 +66,6 @@ export class ChangeTodoCategoryHandler
 				const activeInTarget = await this.todoRepository.countActiveByCategory(
 					userId,
 					categoryId,
-					tx,
 				);
 				if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
 					throw new ApplicationException(ErrorCode.TODO_0811, {
@@ -78,7 +74,7 @@ export class ChangeTodoCategoryHandler
 					});
 				}
 			}
-			await this.todoRepository.updateCategory(id, targetCategoryId, tx);
+			await this.todoRepository.updateCategory(id, targetCategoryId);
 		});
 
 		// 3. 캐시 무효화 (todoCount 변경)

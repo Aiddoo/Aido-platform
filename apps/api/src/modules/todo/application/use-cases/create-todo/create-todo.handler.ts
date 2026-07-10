@@ -3,10 +3,7 @@ import type { Todo as TodoResponse } from "@aido/validators";
 import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import { Todo } from "../../../domain/entities/todo.entity";
 import {
@@ -40,8 +37,8 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		@Inject(CATEGORY_OWNERSHIP)
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
@@ -71,11 +68,10 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 		);
 
 		// TX 내에서 제한 체크 + sortOrder 결정 + 생성 (race condition 방지)
-		const created = await this.txManager.run(async (tx) => {
+		const created = await this.uow.run(async () => {
 			const activeInCategory = await this.todoRepository.countActiveByCategory(
 				data.userId,
 				data.categoryId,
-				tx,
 			);
 			if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
 				throw new ApplicationException(ErrorCode.TODO_0811, {
@@ -86,19 +82,17 @@ export class CreateTodoHandler implements ICommandHandler<CreateTodoCommand> {
 
 			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
 				data.userId,
-				tx,
 			);
 
-			const todo = await this.todoRepository.create(
-				{ ...draft, sortOrder: maxSortOrder + 1 },
-				tx,
-			);
+			const todo = await this.todoRepository.create({
+				...draft,
+				sortOrder: maxSortOrder + 1,
+			});
 
 			if (data.items?.length) {
 				await this.todoRepository.createInlineItems(
 					todo.getId().getValue(),
 					data.items,
-					tx,
 				);
 			}
 

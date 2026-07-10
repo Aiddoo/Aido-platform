@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { type TransactionContext, unwrapTransaction } from "@/common/database";
 import type {
 	TodoRepositoryPort,
 	TodoUpdatePatch,
@@ -23,6 +22,7 @@ import type { TodoWithCategory } from "../persistence/todo-row.types";
  *
  * TodoRepositoryPort 구현체. 행 기반 TodoRowRepository의 쿼리를 재사용하되,
  * 행 ↔ 도메인 애그리게잇 매핑(toDomain/toPersistence)을 이 어댑터가 소유합니다.
+ * 활성 트랜잭션은 TodoRowRepository가 CLS에서 직접 읽습니다.
  */
 @Injectable()
 export class PrismaTodoRepository implements TodoRepositoryPort {
@@ -62,139 +62,79 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		});
 	}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-		tx?: TransactionContext,
-	): Promise<Todo | null> {
-		const row = await this.todoRepository.findByIdAndUserId(
-			id,
-			userId,
-			tx && unwrapTransaction(tx),
-		);
+	async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
+		const row = await this.todoRepository.findByIdAndUserId(id, userId);
 		return row ? PrismaTodoRepository.toDomain(row) : null;
 	}
 
-	async create(data: TodoCreationPlan, tx?: TransactionContext): Promise<Todo> {
-		const row = await this.todoRepository.create(
-			{
-				user: { connect: { id: data.userId } },
-				category: { connect: { id: data.categoryId } },
-				title: data.title,
-				sortOrder: data.sortOrder,
-				startDate: data.startDate,
-				endDate: data.endDate,
-				scheduledTime: data.scheduledTime,
-				isAllDay: data.isAllDay,
-				visibility: data.visibility,
-			},
-			tx && unwrapTransaction(tx),
-		);
+	async create(data: TodoCreationPlan): Promise<Todo> {
+		const row = await this.todoRepository.create({
+			user: { connect: { id: data.userId } },
+			category: { connect: { id: data.categoryId } },
+			title: data.title,
+			sortOrder: data.sortOrder,
+			startDate: data.startDate,
+			endDate: data.endDate,
+			scheduledTime: data.scheduledTime,
+			isAllDay: data.isAllDay,
+			visibility: data.visibility,
+		});
 		return PrismaTodoRepository.toDomain(row);
 	}
 
 	async createInlineItems(
 		todoId: number,
 		items: { title: string }[],
-		tx: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.createManyItems(
-			todoId,
-			items,
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.createManyItems(todoId, items);
 	}
 
 	async updateCompletion(
 		id: number,
 		completed: boolean,
 		completedAt: Date | null,
-		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.update(
-			id,
-			{ completed, completedAt },
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.update(id, { completed, completedAt });
 	}
 
-	async updateDetails(
-		id: number,
-		patch: TodoUpdatePatch,
-		tx?: TransactionContext,
-	): Promise<void> {
+	async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
 		// 스칼라 categoryId 포함 패치 — Prisma 런타임은 unchecked 스칼라 update를 허용하며
 		// 레거시 서비스도 동일 방식으로 전달했습니다(동작 보존).
-		await this.todoRepository.update(id, patch, tx && unwrapTransaction(tx));
+		await this.todoRepository.update(id, patch);
 	}
 
-	async updateTitle(
-		id: number,
-		title: string,
-		tx?: TransactionContext,
-	): Promise<void> {
-		await this.todoRepository.update(
-			id,
-			{ title },
-			tx && unwrapTransaction(tx),
-		);
+	async updateTitle(id: number, title: string): Promise<void> {
+		await this.todoRepository.update(id, { title });
 	}
 
 	async updateVisibility(
 		id: number,
 		visibility: TodoVisibility,
-		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.update(
-			id,
-			{ visibility },
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.update(id, { visibility });
 	}
 
-	async updateSchedule(
-		id: number,
-		schedule: TodoScheduleProps,
-		tx?: TransactionContext,
-	): Promise<void> {
-		await this.todoRepository.update(
-			id,
-			{
-				startDate: schedule.startDate,
-				endDate: schedule.endDate,
-				scheduledTime: schedule.scheduledTime,
-				isAllDay: schedule.isAllDay,
-			},
-			tx && unwrapTransaction(tx),
-		);
+	async updateSchedule(id: number, schedule: TodoScheduleProps): Promise<void> {
+		await this.todoRepository.update(id, {
+			startDate: schedule.startDate,
+			endDate: schedule.endDate,
+			scheduledTime: schedule.scheduledTime,
+			isAllDay: schedule.isAllDay,
+		});
 	}
 
-	async updateCategory(
-		id: number,
-		categoryId: number,
-		tx?: TransactionContext,
-	): Promise<void> {
-		await this.todoRepository.update(
-			id,
-			{ category: { connect: { id: categoryId } } },
-			tx && unwrapTransaction(tx),
-		);
+	async updateCategory(id: number, categoryId: number): Promise<void> {
+		await this.todoRepository.update(id, {
+			category: { connect: { id: categoryId } },
+		});
 	}
 
-	async delete(id: number, tx?: TransactionContext): Promise<void> {
-		await this.todoRepository.delete(id, tx && unwrapTransaction(tx));
+	async delete(id: number): Promise<void> {
+		await this.todoRepository.delete(id);
 	}
 
-	async updateSortOrder(
-		id: number,
-		sortOrder: number,
-		tx?: TransactionContext,
-	): Promise<void> {
-		await this.todoRepository.updateSortOrder(
-			id,
-			sortOrder,
-			tx && unwrapTransaction(tx),
-		);
+	async updateSortOrder(id: number, sortOrder: number): Promise<void> {
+		await this.todoRepository.updateSortOrder(id, sortOrder);
 	}
 
 	async shiftSortOrders(
@@ -202,21 +142,13 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 		from: number,
 		to: number | null,
 		delta: number,
-		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.shiftSortOrders(
-			userId,
-			from,
-			to,
-			delta,
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.shiftSortOrders(userId, from, to, delta);
 	}
 
 	async createMany(
 		items: TodoCreationPlan[],
 		recurrenceGroupId: string,
-		tx: TransactionContext,
 	): Promise<Todo[]> {
 		const rows = await this.todoRepository.createManyBatch(
 			items.map((item) => ({
@@ -232,28 +164,16 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 				recurrenceGroupId,
 			})),
 			recurrenceGroupId,
-			tx && unwrapTransaction(tx),
 		);
 		return rows.map((row) => PrismaTodoRepository.toDomain(row));
 	}
 
-	countActiveByCategory(
-		userId: string,
-		categoryId: number,
-		tx?: TransactionContext,
-	): Promise<number> {
-		return this.todoRepository.countActiveByCategory(
-			userId,
-			categoryId,
-			tx && unwrapTransaction(tx),
-		);
+	countActiveByCategory(userId: string, categoryId: number): Promise<number> {
+		return this.todoRepository.countActiveByCategory(userId, categoryId);
 	}
 
-	getMaxSortOrder(userId: string, tx?: TransactionContext): Promise<number> {
-		return this.todoRepository.getMaxSortOrder(
-			userId,
-			tx && unwrapTransaction(tx),
-		);
+	getMaxSortOrder(userId: string): Promise<number> {
+		return this.todoRepository.getMaxSortOrder(userId);
 	}
 
 	// ===== 하위 항목 (체크리스트) =====
@@ -261,38 +181,22 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	async createItem(
 		todoId: number,
 		data: { title: string; sortOrder: number },
-		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.createItem(
-			todoId,
-			data,
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.createItem(todoId, data);
 	}
 
 	async updateItem(
 		itemId: number,
 		data: { title?: string; completed?: boolean },
-		tx?: TransactionContext,
 	): Promise<void> {
-		await this.todoRepository.updateItem(
-			itemId,
-			data,
-			tx && unwrapTransaction(tx),
-		);
+		await this.todoRepository.updateItem(itemId, data);
 	}
 
-	async deleteItem(itemId: number, tx?: TransactionContext): Promise<void> {
-		await this.todoRepository.deleteItem(itemId, tx && unwrapTransaction(tx));
+	async deleteItem(itemId: number): Promise<void> {
+		await this.todoRepository.deleteItem(itemId);
 	}
 
-	async reorderItems(
-		itemIds: number[],
-		tx?: TransactionContext,
-	): Promise<void> {
-		await this.todoRepository.reorderItems(
-			itemIds,
-			tx && unwrapTransaction(tx),
-		);
+	async reorderItems(itemIds: number[]): Promise<void> {
+		await this.todoRepository.reorderItems(itemIds);
 	}
 }

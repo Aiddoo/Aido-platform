@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	planReorderRelativeTo,
@@ -39,16 +36,16 @@ export class ReorderTodoHandler implements ICommandHandler<ReorderTodoCommand> {
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 	) {}
 
 	async execute(command: ReorderTodoCommand): Promise<TodoResponse> {
 		const { id, userId, targetTodoId, position } = command;
 
 		// 1. 트랜잭션 안에서 소유권 확인 → 새 sortOrder 계산·시프트 → 영속화
-		await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
@@ -63,7 +60,6 @@ export class ReorderTodoHandler implements ICommandHandler<ReorderTodoCommand> {
 				const targetTodo = await this.todoRepository.findByIdAndUserId(
 					targetTodoId,
 					userId,
-					tx,
 				);
 				if (!targetTodo) {
 					throw new ApplicationException(ErrorCode.TODO_0810, {
@@ -76,10 +72,7 @@ export class ReorderTodoHandler implements ICommandHandler<ReorderTodoCommand> {
 					position,
 				);
 			} else {
-				const maxSortOrder = await this.todoRepository.getMaxSortOrder(
-					userId,
-					tx,
-				);
+				const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
 				plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
 			}
 
@@ -88,9 +81,8 @@ export class ReorderTodoHandler implements ICommandHandler<ReorderTodoCommand> {
 				plan.shift.from,
 				plan.shift.to,
 				plan.shift.delta,
-				tx,
 			);
-			await this.todoRepository.updateSortOrder(id, plan.newSortOrder, tx);
+			await this.todoRepository.updateSortOrder(id, plan.newSortOrder);
 
 			this.#logger.log(
 				`Todo reordered: ${id} to sortOrder ${plan.newSortOrder} for user: ${userId}`,

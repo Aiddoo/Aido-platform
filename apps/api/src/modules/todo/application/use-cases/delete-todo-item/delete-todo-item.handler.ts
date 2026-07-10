@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -34,27 +31,23 @@ export class DeleteTodoItemHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 	) {}
 
 	async execute(command: DeleteTodoItemCommand): Promise<TodoResponse> {
 		const { todoId, itemId, userId } = command;
 
 		// 1. TX 안에서 소유권·항목 존재 확인 후 삭제 (원자성)
-		await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(
-				todoId,
-				userId,
-				tx,
-			);
+		await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(todoId, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
 			}
 			// 애그리게잇이 존재를 검증하고 자식 엔티티를 제거
 			todo.removeItem(itemId);
 
-			await this.todoRepository.deleteItem(itemId, tx);
+			await this.todoRepository.deleteItem(itemId);
 		});
 
 		this.#logger.log(

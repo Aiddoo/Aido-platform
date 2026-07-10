@@ -15,9 +15,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -85,8 +85,8 @@ describe("AddTodoItemHandler — 하위 항목 추가 핸들러", () => {
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -108,11 +108,10 @@ describe("AddTodoItemHandler — 하위 항목 추가 핸들러", () => {
 		);
 
 		// Then - 애그리게잇 계획(max+1)대로 영속화
-		expect(todoRepository.createItem).toHaveBeenCalledWith(
-			1,
-			{ title: "항목C", sortOrder: 2 },
-			expect.anything(),
-		);
+		expect(todoRepository.createItem).toHaveBeenCalledWith(1, {
+			title: "항목C",
+			sortOrder: 2,
+		});
 		expect(result.id).toBe(1);
 	});
 

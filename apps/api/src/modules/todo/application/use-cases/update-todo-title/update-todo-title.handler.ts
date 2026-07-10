@@ -2,10 +2,7 @@ import { ErrorCode } from "@aido/errors";
 import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { ApplicationException } from "@/common/domain";
 import {
 	TODO_REPOSITORY,
@@ -34,8 +31,8 @@ export class UpdateTodoTitleHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly eventBus: EventBus,
 	) {}
 
@@ -43,14 +40,14 @@ export class UpdateTodoTitleHandler
 		const { id, userId, title } = command;
 
 		// TX 안에서 로드 → 애그리게잇 전이(제목 불변식) → 애그리게잇 상태로 영속화
-		const events = await this.txManager.run(async (tx) => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId, tx);
+		const events = await this.uow.run(async () => {
+			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
 			if (!todo) {
 				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
 			}
 
 			todo.updateDetails({ title });
-			await this.todoRepository.updateTitle(id, todo.toPersistence().title, tx);
+			await this.todoRepository.updateTitle(id, todo.toPersistence().title);
 			return todo.pullDomainEvents();
 		});
 

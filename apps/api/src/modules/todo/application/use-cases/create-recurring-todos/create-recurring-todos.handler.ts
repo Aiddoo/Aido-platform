@@ -3,10 +3,7 @@ import { ErrorCode } from "@aido/errors";
 import { RECURRING_TODO_LIMITS, TODO_LIMITS } from "@aido/validators";
 import { Inject, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
-import {
-	TRANSACTION_MANAGER,
-	type TransactionManagerPort,
-} from "@/common/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { parseDateOnly } from "@/common/date/utils/parse";
 import { parseLocalDateTime } from "@/common/date/utils/timezone";
 import { ApplicationException } from "@/common/domain";
@@ -52,8 +49,8 @@ export class CreateRecurringTodosHandler
 		private readonly todoRepository: TodoRepositoryPort,
 		@Inject(TODO_READ_REPOSITORY)
 		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(TRANSACTION_MANAGER)
-		private readonly txManager: TransactionManagerPort,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		@Inject(CATEGORY_OWNERSHIP)
 		private readonly categoryOwnership: CategoryOwnershipPort,
 		@Inject(TODO_CACHE)
@@ -111,11 +108,10 @@ export class CreateRecurringTodosHandler
 		// 4. TX 안에서 한도 체크 + sortOrder 결정 + 일괄 생성 (race condition 방지)
 		const recurrenceGroupId = randomUUID();
 
-		const created = await this.txManager.run(async (tx) => {
+		const created = await this.uow.run(async () => {
 			const activeInCategory = await this.todoRepository.countActiveByCategory(
 				data.userId,
 				data.categoryId,
-				tx,
 			);
 			if (activeInCategory + todoCount > TODO_LIMITS.MAX_PER_CATEGORY) {
 				throw new ApplicationException(ErrorCode.TODO_0813, {
@@ -127,7 +123,6 @@ export class CreateRecurringTodosHandler
 
 			const maxSortOrder = await this.todoRepository.getMaxSortOrder(
 				data.userId,
-				tx,
 			);
 
 			const items: TodoCreationPlan[] = matchingDates.map((dateStr, index) => ({
@@ -139,7 +134,7 @@ export class CreateRecurringTodosHandler
 					: null,
 			}));
 
-			return this.todoRepository.createMany(items, recurrenceGroupId, tx);
+			return this.todoRepository.createMany(items, recurrenceGroupId);
 		});
 
 		this.#logger.log(

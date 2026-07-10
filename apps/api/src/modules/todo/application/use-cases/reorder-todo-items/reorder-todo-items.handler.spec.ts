@@ -13,9 +13,9 @@ import { TodoBuilder } from "@test/builders";
 import {
 	createTodoReadRepositoryMock,
 	createTodoRepositoryMock,
-	createTransactionManagerMock,
+	createUnitOfWorkMock,
 } from "@test/mocks/ports";
-import { TRANSACTION_MANAGER } from "@/common/database";
+import { UNIT_OF_WORK } from "@/common/database";
 import { Todo } from "../../../domain/entities/todo.entity";
 import { TodoItem } from "../../../domain/entities/todo-item.entity";
 import { TodoId } from "../../../domain/value-objects/todo-id.vo";
@@ -83,8 +83,8 @@ describe("ReorderTodoItemsHandler — 하위 항목 순서 변경 핸들러", ()
 			.impl(() => createTodoRepositoryMock())
 			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
 			.impl(() => createTodoReadRepositoryMock())
-			.mock(TRANSACTION_MANAGER)
-			.impl(() => createTransactionManagerMock())
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		handler = unit;
@@ -106,10 +106,7 @@ describe("ReorderTodoItemsHandler — 하위 항목 순서 변경 핸들러", ()
 		);
 
 		// Then
-		expect(todoRepository.reorderItems).toHaveBeenCalledWith(
-			[3, 1, 2],
-			expect.anything(),
-		);
+		expect(todoRepository.reorderItems).toHaveBeenCalledWith([3, 1, 2]);
 		expect(result.id).toBe(1);
 	});
 
