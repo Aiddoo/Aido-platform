@@ -12,6 +12,7 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+
 import { toISOStringOrNull } from "@/shared/domain/date/utils/format";
 import { Timezone } from "@/shared/presentation/decorators";
 import {
@@ -27,10 +28,9 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import { CheerFacade } from "../application/facades/cheer.facade";
 import { CheerMapper } from "./cheer.mapper";
-import { CheerService } from "./cheer.service";
 import {
 	CheerCooldownResponseDto,
 	CheerIdParamDto,
@@ -50,7 +50,7 @@ import {
 export class CheerController {
 	readonly #logger = new Logger(CheerController.name);
 
-	constructor(private readonly cheerService: CheerService) {}
+	constructor(private readonly cheerFacade: CheerFacade) {}
 
 	@Post()
 	@ApiHeader({
@@ -87,7 +87,7 @@ export class CheerController {
 			`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`,
 		);
 
-		const cheer = await this.cheerService.sendCheer(
+		const cheer = await this.cheerFacade.sendCheer(
 			{
 				senderId: user.userId,
 				receiverId: dto.receiverId,
@@ -125,13 +125,13 @@ export class CheerController {
 		this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
 
 		const [result, totalCount, unreadCount] = await Promise.all([
-			this.cheerService.getReceivedCheers({
+			this.cheerFacade.getReceivedCheers({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.cheerService.countReceivedCheers(user.userId),
-			this.cheerService.countUnreadReceivedCheers(user.userId),
+			this.cheerFacade.countReceivedCheers(user.userId),
+			this.cheerFacade.countUnreadReceivedCheers(user.userId),
 		]);
 
 		return {
@@ -161,12 +161,12 @@ export class CheerController {
 		this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.cheerService.getSentCheers({
+			this.cheerFacade.getSentCheers({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.cheerService.countSentCheers(user.userId),
+			this.cheerFacade.countSentCheers(user.userId),
 		]);
 
 		return {
@@ -196,8 +196,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Timezone() tz: string,
 	): Promise<CheerLimitInfoDto> {
-		const limitInfo = await this.cheerService.getLimitInfo(user.userId, tz);
-
+		const limitInfo = await this.cheerFacade.getLimitInfo(user.userId, tz);
 		return CheerMapper.toLimitInfoDto(limitInfo);
 	}
 
@@ -221,7 +220,7 @@ export class CheerController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param("userId") targetUserId: string,
 	): Promise<CheerCooldownResponseDto> {
-		const cooldownInfo = await this.cheerService.getCooldownInfoForUser(
+		const cooldownInfo = await this.cheerFacade.getCooldownInfoForUser(
 			user.userId,
 			targetUserId,
 		);
@@ -252,7 +251,7 @@ export class CheerController {
 			`응원 읽음 처리: userId=${user.userId}, id=${params.id}`,
 		);
 
-		await this.cheerService.markAsRead(user.userId, params.id);
+		await this.cheerFacade.markAsRead(user.userId, params.id);
 
 		return {
 			message: "확인했습니다.",
@@ -280,7 +279,7 @@ export class CheerController {
 			`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`,
 		);
 
-		const count = await this.cheerService.markManyAsRead(
+		const count = await this.cheerFacade.markManyAsRead(
 			user.userId,
 			dto.cheerIds,
 		);

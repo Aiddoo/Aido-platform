@@ -52,6 +52,9 @@ const TARGET_DIRS = [
 	"src/follow/domain",
 	"src/follow/application",
 	"src/follow/infrastructure",
+	"src/cheer/domain",
+	"src/cheer/application",
+	"src/cheer/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

@@ -1,23 +1,17 @@
 /**
- * Cheer Mapper
- *
- * Prisma 엔티티를 DTO 형식으로 변환
+ * Cheer 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/validators). 계약 불변.
  */
-
 import type { Cheer, CheerDetail, CheerLimitInfo } from "@aido/validators";
+
 import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/shared/domain/date/utils/format";
-import type {
-	CheerWithRelations,
-	CheerLimitInfo as ServiceLimitInfo,
-} from "./types";
+
+import type { CheerWithRelations } from "../application/ports/cheer.repository.port";
+import type { CheerLimitInfo as ReaderLimitInfo } from "../application/services/cheer.reader";
 
 export abstract class CheerMapper {
-	/**
-	 * CheerWithRelations → CheerDetail DTO 형식
-	 */
 	static toDetailDto(cheer: CheerWithRelations): CheerDetail {
 		return {
 			id: cheer.id,
@@ -35,9 +29,6 @@ export abstract class CheerMapper {
 		};
 	}
 
-	/**
-	 * CheerWithRelations → 기본 Cheer DTO 형식
-	 */
 	static toDto(cheer: CheerWithRelations): Cheer {
 		return {
 			id: cheer.id,
@@ -49,17 +40,11 @@ export abstract class CheerMapper {
 		};
 	}
 
-	/**
-	 * CheerWithRelations 배열 → CheerDetail 배열
-	 */
 	static toDetailDtoList(cheers: CheerWithRelations[]): CheerDetail[] {
-		return cheers.map((cheer) => this.toDetailDto(cheer));
+		return cheers.map((cheer) => CheerMapper.toDetailDto(cheer));
 	}
 
-	/**
-	 * Service LimitInfo → DTO LimitInfo
-	 */
-	static toLimitInfoDto(limitInfo: ServiceLimitInfo): CheerLimitInfo {
+	static toLimitInfoDto(limitInfo: ReaderLimitInfo): CheerLimitInfo {
 		return {
 			dailyLimit: limitInfo.dailyLimit,
 			usedToday: limitInfo.used,

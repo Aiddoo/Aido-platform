@@ -1,47 +1,43 @@
 /**
- * CheerService 통합 테스트
+ * Cheer 모듈 통합 테스트 (Mock DB)
  *
- * @description
- * CheerService가 CheerRepository, FollowFacade, PaginationService, NotificationQueueService와 함께 올바르게 작동하는지 검증합니다.
- * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
+ * 클린아키텍처(무버스 use-case) 구조로 재작성. CheerFacade·use-case·CheerReader가
+ * PrismaCheerRepository(Mock DB)·알림/한도 어댑터·FollowFacade와 함께 DI로 조립되고
+ * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
- * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - CheerService와 CheerRepository의 통합 검증
- * - FollowFacade와의 통합 검증
- * - PaginationService와의 통합 검증
- * - NotificationQueueService와의 통합 검증
- * - BusinessException 에러 처리가 올바르게 작동하는지 검증
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test cheer.integration-spec
- * ```
+ * 실행: pnpm --filter @aido/api test cheer.integration-spec
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { CheerBuilder, UserBuilder } from "@test/builders";
+import { CheerBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CheerRepository } from "@/cheer/cheer.repository";
-import { CheerService } from "@/cheer/cheer.service";
+
+import { CheerFacade } from "@/cheer";
+import { CHEER_REPOSITORY } from "@/cheer/application/ports/cheer.repository.port";
+import { CHEER_LIMIT_READER } from "@/cheer/application/ports/cheer-limit-reader.port";
+import { CHEER_NOTIFIER } from "@/cheer/application/ports/cheer-notifier.port";
+import { CheerReader } from "@/cheer/application/services/cheer.reader";
+import { MarkCheerReadUseCase } from "@/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
+import { MarkManyCheersReadUseCase } from "@/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
+import { SendCheerUseCase } from "@/cheer/application/use-cases/send-cheer/send-cheer.use-case";
+import { CheerLimitReaderAdapter } from "@/cheer/infrastructure/adapters/cheer-limit-reader.adapter";
+import { CheerNotifierAdapter } from "@/cheer/infrastructure/adapters/cheer-notifier.adapter";
+import { PrismaCheerRepository } from "@/cheer/infrastructure/persistence/prisma-cheer.repository";
 import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification/queue";
 import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
-import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
 import { UNIT_OF_WORK } from "@/shared/application/ports";
-import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { ApplicationException } from "@/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
-describe("CheerService 통합 테스트 (Mock DB)", () => {
+describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;
-	let service: CheerService;
-	let repository: CheerRepository;
+	let facade: CheerFacade;
 
-	// Mock 데이터베이스 서비스
 	const mockCheerDb = {
 		create: jest.fn(),
 		findUnique: jest.fn(),
@@ -49,93 +45,72 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 		findMany: jest.fn(),
 		update: jest.fn(),
 		updateMany: jest.fn(),
-		delete: jest.fn(),
 		count: jest.fn(),
 	};
-
-	const mockUserDb = {
-		findUnique: jest.fn(),
-	};
-
+	const mockUserDb = { findUnique: jest.fn() };
 	const mockDatabaseService = createMockDatabaseService({
 		cheer: mockCheerDb,
 		user: mockUserDb,
 	});
 
-	// Mock FollowFacade
-	const mockFollowFacade = {
-		isMutualFriend: jest.fn(),
-	};
-
-	// Mock NotificationQueueService
-	const mockNotificationQueueService = {
-		enqueueCheerSent: jest.fn(),
-	};
-
-	// Mock CacheService
-	const mockCacheService = {
-		getSubscription: jest.fn(),
-		setSubscription: jest.fn(),
-		invalidateSubscription: jest.fn(),
-	};
-
-	// Mock EntitlementService
+	const mockFollowFacade = { isMutualFriend: jest.fn() };
+	const mockNotificationQueueService = { enqueueCheerSent: jest.fn() };
 	const mockEntitlementService = {
 		getFeatureLimit: jest.fn(),
 		getFeatureLimitInTx: jest.fn(),
-		enforceLimit: jest.fn(),
 		calculateRemaining: jest.fn(),
 	};
 
-	// 테스트 데이터
-	const mockSenderId = "user-cheer-sender-123";
-	const mockReceiverId = "user-cheer-receiver-456";
-	const mockCheerId = 1;
+	const senderId = "user-cheer-sender-123";
+	const receiverId = "user-cheer-receiver-456";
+	const cheerId = 1;
+
+	const withSenderReceiver = (b: CheerBuilder) =>
+		b
+			.withSenderInfo({
+				id: senderId,
+				userTag: "SENDER12",
+				profile: { name: "Sender User", profileImage: null },
+			})
+			.withReceiverInfo({
+				id: receiverId,
+				userTag: "RECEIVER",
+				profile: { name: "Receiver User", profileImage: null },
+			})
+			.buildWithRelations();
 
 	beforeAll(async () => {
 		suppressLogger();
 
 		module = await Test.createTestingModule({
 			providers: [
-				CheerService,
-				CheerRepository,
+				CheerFacade,
+				CheerReader,
+				SendCheerUseCase,
+				MarkCheerReadUseCase,
+				MarkManyCheersReadUseCase,
+				{ provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },
+				{ provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
+				{ provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
 				PaginationService,
-				{
-					provide: UNIT_OF_WORK,
-					useValue: createUnitOfWorkMock(),
-				},
-				{
-					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
-					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
-				},
+				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
+				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
 				{
 					provide: TypedConfigService,
 					useValue: {
-						get: jest.fn().mockReturnValue(20),
+						pagination: { defaultPageSize: 20, maxPageSize: 100 },
 					},
 				},
-				{
-					provide: FollowFacade,
-					useValue: mockFollowFacade,
-				},
+				{ provide: FollowFacade, useValue: mockFollowFacade },
 				{
 					provide: NotificationQueueService,
 					useValue: mockNotificationQueueService,
 				},
-				{
-					provide: CacheService,
-					useValue: mockCacheService,
-				},
-				{
-					provide: EntitlementService,
-					useValue: mockEntitlementService,
-				},
+				{ provide: EntitlementService, useValue: mockEntitlementService },
 			],
 		}).compile();
 
-		service = module.get<CheerService>(CheerService);
-		repository = module.get<CheerRepository>(CheerRepository);
+		facade = module.get(CheerFacade);
 	});
 
 	afterAll(async () => {
@@ -146,8 +121,6 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		CheerBuilder.resetIdCounter();
-
-		// EntitlementService 기본 mock 설정 (FREE 사용자)
 		mockEntitlementService.getFeatureLimit.mockResolvedValue({
 			dailyLimit: 3,
 			isAdmin: false,
@@ -158,600 +131,202 @@ describe("CheerService 통합 테스트 (Mock DB)", () => {
 			isAdmin: false,
 			subscriptionStatus: "FREE",
 		});
-		mockEntitlementService.enforceLimit.mockImplementation(
-			(entitlement, currentUsage, errorFactory) => {
-				if (entitlement.dailyLimit === null) return;
-				if (currentUsage < entitlement.dailyLimit) return;
-				throw errorFactory(currentUsage, entitlement.dailyLimit);
-			},
-		);
 		mockEntitlementService.calculateRemaining.mockImplementation(
-			(dailyLimit, used) => {
-				if (dailyLimit === null) return null;
-				return Math.max(0, dailyLimit - used);
-			},
+			(dailyLimit: number | null, used: number) =>
+				dailyLimit === null ? null : Math.max(0, dailyLimit - used),
 		);
 	});
 
-	describe("DI 통합 테스트", () => {
-		it("CheerService가 정상적으로 주입되어야 함", () => {
-			// Given - NestJS 테스트 모듈 설정 완료
-
-			// When - 서비스 인스턴스 확인
-
-			// Then - 서비스가 정의되어 있어야 함
-			expect(service).toBeDefined();
-			expect(service).toBeInstanceOf(CheerService);
+	describe("DI 통합", () => {
+		it("CheerFacade가 조립된다", () => {
+			expect(facade).toBeInstanceOf(CheerFacade);
 		});
-
-		it("CheerRepository가 정상적으로 주입되어야 함", () => {
-			// Given - NestJS 테스트 모듈 설정 완료
-
-			// When - 레포지토리 인스턴스 확인
-
-			// Then - 레포지토리가 정의되어 있어야 함
-			expect(repository).toBeDefined();
-			expect(repository).toBeInstanceOf(CheerRepository);
+		it("CheerRepository 포트가 주입된다", () => {
+			expect(module.get(CHEER_REPOSITORY)).toBeInstanceOf(
+				PrismaCheerRepository,
+			);
 		});
 	});
 
-	describe("응원 전송 통합 테스트", () => {
-		it("친구에게 응원을 전송해야 함", async () => {
-			// Given - 친구 관계의 두 사용자 준비
-			const mockSender = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.build();
-			const mockReceiver = UserBuilder.create()
-				.withId(mockReceiverId)
-				.verified()
-				.build();
-			const mockCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
-				.withId(mockCheerId)
-				.withMessage("축하해요!")
-				.withSenderInfo({
-					id: mockSenderId,
-					userTag: "SENDER12",
-					profile: { name: "Sender User", profileImage: null },
-				})
-				.withReceiverInfo({
-					id: mockReceiverId,
-					userTag: "RECEIVER",
-					profile: { name: "Receiver User", profileImage: null },
-				})
-				.buildWithRelations();
-
+	describe("응원 전송", () => {
+		it("친구에게 응원을 전송하고 알림을 enqueue한다", async () => {
 			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
-			mockUserDb.findUnique
-				.mockResolvedValueOnce({
-					...mockSender,
-					profile: {
-						id: "profile-1",
-						userId: mockSenderId,
-						name: "Sender User",
-						profileImage: null,
-					},
-				})
-				.mockResolvedValueOnce({
-					...mockReceiver,
-					profile: {
-						id: "profile-2",
-						userId: mockReceiverId,
-						name: "Receiver User",
-						profileImage: null,
-					},
-				});
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(null);
-			mockCheerDb.create.mockResolvedValue(mockCheer);
+			mockCheerDb.create.mockResolvedValue(
+				withSenderReceiver(
+					CheerBuilder.create(senderId, receiverId)
+						.withId(cheerId)
+						.withMessage("축하해요!"),
+				),
+			);
 
-			// When - 응원 전송
-			const result = await service.sendCheer({
-				senderId: mockSenderId,
-				receiverId: mockReceiverId,
-				message: "축하해요!",
-			});
+			const result = await facade.sendCheer(
+				{ senderId, receiverId, message: "축하해요!" },
+				"UTC",
+			);
 
-			// Then - 응원이 성공적으로 전송되어야 함
-			expect(result.id).toBe(mockCheerId);
+			expect(result.id).toBe(cheerId);
 			expect(mockFollowFacade.isMutualFriend).toHaveBeenCalledWith(
-				mockSenderId,
-				mockReceiverId,
+				senderId,
+				receiverId,
 			);
 			expect(
 				mockNotificationQueueService.enqueueCheerSent,
 			).toHaveBeenCalledWith(expect.any(Object));
 		});
 
-		it("메시지 없이도 응원을 전송해야 함", async () => {
-			// Given - 메시지 없는 응원 데이터 준비
-			const mockSender = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.build();
-			const mockReceiver = UserBuilder.create()
-				.withId(mockReceiverId)
-				.verified()
-				.build();
-			const mockCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
-				.withId(mockCheerId)
-				.withSenderInfo({
-					id: mockSenderId,
-					userTag: "SENDER12",
-					profile: { name: "Sender User", profileImage: null },
-				})
-				.withReceiverInfo({
-					id: mockReceiverId,
-					userTag: "RECEIVER",
-					profile: { name: "Receiver User", profileImage: null },
-				})
-				.buildWithRelations();
-
+		it("메시지 없이도 전송된다", async () => {
 			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
-			mockUserDb.findUnique
-				.mockResolvedValueOnce({
-					...mockSender,
-					profile: {
-						id: "profile-1",
-						userId: mockSenderId,
-						name: "Sender User",
-						profileImage: null,
-					},
-				})
-				.mockResolvedValueOnce({
-					...mockReceiver,
-					profile: {
-						id: "profile-2",
-						userId: mockReceiverId,
-						name: "Receiver User",
-						profileImage: null,
-					},
-				});
 			mockCheerDb.count.mockResolvedValue(0);
 			mockCheerDb.findFirst.mockResolvedValue(null);
-			mockCheerDb.create.mockResolvedValue(mockCheer);
+			mockCheerDb.create.mockResolvedValue(
+				withSenderReceiver(
+					CheerBuilder.create(senderId, receiverId).withId(cheerId),
+				),
+			);
 
-			// When - 메시지 없이 응원 전송
-			const result = await service.sendCheer({
-				senderId: mockSenderId,
-				receiverId: mockReceiverId,
-			});
-
-			// Then - 응원이 성공적으로 전송되어야 함
-			expect(result.id).toBe(mockCheerId);
+			const result = await facade.sendCheer({ senderId, receiverId }, "UTC");
+			expect(result.id).toBe(cheerId);
 		});
 
-		it("친구가 아니면 예외를 발생시켜야 함", async () => {
-			// Given - 친구가 아닌 상태로 설정
+		it("친구가 아니면 ApplicationException", async () => {
 			mockFollowFacade.isMutualFriend.mockResolvedValue(false);
-
-			// When & Then - 친구가 아니면 예외 발생
 			await expect(
-				service.sendCheer({
-					senderId: mockSenderId,
-					receiverId: mockReceiverId,
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.sendCheer({ senderId, receiverId }, "UTC"),
+			).rejects.toThrow(ApplicationException);
 		});
 
-		it("자기 자신에게 전송하면 예외를 발생시켜야 함", async () => {
-			// Given - 자기 자신에게 응원 전송 시도
-
-			// When & Then - 자기 자신에게 전송 시 예외 발생
+		it("자기 자신에게 전송하면 ApplicationException", async () => {
 			await expect(
-				service.sendCheer({
-					senderId: mockSenderId,
-					receiverId: mockSenderId,
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.sendCheer({ senderId, receiverId: senderId }, "UTC"),
+			).rejects.toThrow(ApplicationException);
 		});
 
-		it("일일 제한 초과시 예외를 발생시켜야 함", async () => {
-			// Given - FREE 사용자가 일일 제한에 도달한 상태
-			const mockSender = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.withSubscription("FREE")
-				.build();
-			const mockReceiver = UserBuilder.create()
-				.withId(mockReceiverId)
-				.verified()
-				.build();
-
+		it("일일 제한 초과면 ApplicationException", async () => {
 			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
-			mockUserDb.findUnique
-				.mockResolvedValueOnce({
-					...mockSender,
-					profile: {
-						id: "profile-1",
-						userId: mockSenderId,
-						name: "Sender User",
-						profileImage: null,
-					},
-				})
-				.mockResolvedValueOnce({
-					...mockReceiver,
-					profile: {
-						id: "profile-2",
-						userId: mockReceiverId,
-						name: "Receiver User",
-						profileImage: null,
-					},
-				});
 			mockCheerDb.count.mockResolvedValue(3);
-
-			// When & Then - 일일 제한 초과 시 예외 발생
 			await expect(
-				service.sendCheer({
-					senderId: mockSenderId,
-					receiverId: mockReceiverId,
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.sendCheer({ senderId, receiverId }, "UTC"),
+			).rejects.toThrow(ApplicationException);
 		});
 
-		it("쿨다운 중이면 예외를 발생시켜야 함", async () => {
-			// Given - 최근에 응원을 보낸 상태 (쿨다운 활성화)
-			const mockSender = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.build();
-			const mockReceiver = UserBuilder.create()
-				.withId(mockReceiverId)
-				.verified()
-				.build();
-			const recentCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
-				.withCreatedAt(new Date())
-				.buildWithRelations();
-
+		it("쿨다운 중이면 ApplicationException", async () => {
 			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
-			mockUserDb.findUnique
-				.mockResolvedValueOnce({
-					...mockSender,
-					profile: {
-						id: "profile-1",
-						userId: mockSenderId,
-						name: "Sender User",
-						profileImage: null,
-					},
-				})
-				.mockResolvedValueOnce({
-					...mockReceiver,
-					profile: {
-						id: "profile-2",
-						userId: mockReceiverId,
-						name: "Receiver User",
-						profileImage: null,
-					},
-				});
 			mockCheerDb.count.mockResolvedValue(0);
-			mockCheerDb.findFirst.mockResolvedValue(recentCheer);
-
-			// When & Then - 쿨다운 중이면 예외 발생
+			mockCheerDb.findFirst.mockResolvedValue(
+				CheerBuilder.create(senderId, receiverId)
+					.withCreatedAt(new Date())
+					.build(),
+			);
 			await expect(
-				service.sendCheer({
-					senderId: mockSenderId,
-					receiverId: mockReceiverId,
-				}),
-			).rejects.toThrow(BusinessException);
+				facade.sendCheer({ senderId, receiverId }, "UTC"),
+			).rejects.toThrow(ApplicationException);
 		});
 	});
 
-	describe("받은 응원 목록 조회 통합 테스트", () => {
-		it("받은 응원 목록을 조회해야 함", async () => {
-			// Given - 받은 응원 데이터 준비
-			const mockCheers = [
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(1)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(2)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-			];
-			mockCheerDb.findMany.mockResolvedValue(mockCheers);
-			mockCheerDb.count.mockResolvedValue(2);
-
-			// When - 받은 응원 목록 조회
-			const result = await service.getReceivedCheers({
-				userId: mockReceiverId,
-			});
-
-			// Then - 응원 목록과 페이지네이션 정보가 반환되어야 함
-			expect(result.items).toBeDefined();
-			expect(result.pagination).toBeDefined();
-			expect(mockCheerDb.findMany).toHaveBeenCalled();
-		});
-
-		it("받은 응원 목록에 sender.userTag가 포함되어야 함", async () => {
-			// Given - sender 정보가 포함된 응원 데이터 준비
-			const mockCheers = [
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(1)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-			];
-			mockCheerDb.findMany.mockResolvedValue(mockCheers);
+	describe("목록 조회", () => {
+		it("받은 응원 목록에 sender.userTag가 포함된다", async () => {
+			mockCheerDb.findMany.mockResolvedValue([
+				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(1)),
+			]);
 			mockCheerDb.count.mockResolvedValue(1);
 
-			// When - 받은 응원 목록 조회
-			const result = await service.getReceivedCheers({
-				userId: mockReceiverId,
-			});
-
-			// Then - sender.userTag가 포함되어야 함
-			expect(result.items[0]?.sender.userTag).toBeDefined();
+			const result = await facade.getReceivedCheers({ userId: receiverId });
 			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
-	});
 
-	describe("보낸 응원 목록 조회 통합 테스트", () => {
-		it("보낸 응원 목록을 조회해야 함", async () => {
-			// Given - 보낸 응원 데이터 준비
-			const mockCheers = [
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(1)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(2)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-			];
-			mockCheerDb.findMany.mockResolvedValue(mockCheers);
-			mockCheerDb.count.mockResolvedValue(2);
-
-			// When - 보낸 응원 목록 조회
-			const result = await service.getSentCheers({ userId: mockSenderId });
-
-			// Then - 응원 목록과 페이지네이션 정보가 반환되어야 함
-			expect(result.items).toBeDefined();
+		it("보낸 응원 목록을 조회한다", async () => {
+			mockCheerDb.findMany.mockResolvedValue([
+				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(1)),
+				withSenderReceiver(CheerBuilder.create(senderId, receiverId).withId(2)),
+			]);
+			const result = await facade.getSentCheers({ userId: senderId });
+			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
-			expect(mockCheerDb.findMany).toHaveBeenCalled();
-		});
-
-		it("보낸 응원 목록에 sender.userTag가 포함되어야 함", async () => {
-			// Given - sender 정보가 포함된 응원 데이터 준비
-			const mockCheers = [
-				CheerBuilder.create(mockSenderId, mockReceiverId)
-					.withId(1)
-					.withSenderInfo({
-						id: mockSenderId,
-						userTag: "SENDER12",
-						profile: { name: "Sender User", profileImage: null },
-					})
-					.withReceiverInfo({
-						id: mockReceiverId,
-						userTag: "RECEIVER",
-						profile: { name: "Receiver User", profileImage: null },
-					})
-					.buildWithRelations(),
-			];
-			mockCheerDb.findMany.mockResolvedValue(mockCheers);
-			mockCheerDb.count.mockResolvedValue(1);
-
-			// When - 보낸 응원 목록 조회
-			const result = await service.getSentCheers({
-				userId: mockSenderId,
-			});
-
-			// Then - sender.userTag가 포함되어야 함
-			expect(result.items[0]?.sender.userTag).toBeDefined();
-			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 	});
 
-	describe("일일 제한 정보 조회 통합 테스트", () => {
-		it("FREE 사용자의 제한 정보를 반환해야 함", async () => {
-			// Given - FREE 구독 사용자 준비
-			const mockUser = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.withSubscription("FREE")
-				.build();
-			mockUserDb.findUnique.mockResolvedValue({
-				...mockUser,
-				profile: {
-					id: "profile-1",
-					userId: mockSenderId,
-					name: "Test User",
-					profileImage: null,
-				},
-			});
+	describe("일일 제한 정보", () => {
+		it("FREE 사용자의 제한 정보", async () => {
 			mockCheerDb.count.mockResolvedValue(2);
-
-			// When - 제한 정보 조회
-			const result = await service.getLimitInfo(mockSenderId);
-
-			// Then - FREE 사용자의 제한 정보가 반환되어야 함
+			const result = await facade.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBe(3);
-			expect(result.remaining).toBe(1);
 			expect(result.used).toBe(2);
+			expect(result.remaining).toBe(1);
 		});
 
-		it("ACTIVE 사용자는 무제한이어야 함", async () => {
-			// Given - ACTIVE 구독 사용자 준비
-			mockUserDb.findUnique.mockReset();
-			mockCheerDb.count.mockReset();
-
+		it("ACTIVE 사용자는 무제한", async () => {
 			mockEntitlementService.getFeatureLimit.mockResolvedValue({
 				dailyLimit: null,
 				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
 			});
-
-			const mockUser = UserBuilder.create()
-				.withId(mockSenderId)
-				.verified()
-				.asPremium()
-				.build();
-			mockUserDb.findUnique.mockResolvedValue({
-				...mockUser,
-				profile: {
-					id: "profile-1",
-					userId: mockSenderId,
-					name: "Test User",
-					profileImage: null,
-				},
-			});
 			mockCheerDb.count.mockResolvedValue(10);
-
-			// When - 제한 정보 조회
-			const result = await service.getLimitInfo(mockSenderId);
-
-			// Then - 무제한이어야 함 (null)
+			const result = await facade.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBeNull();
 			expect(result.remaining).toBeNull();
 		});
 	});
 
-	describe("쿨다운 정보 조회 통합 테스트", () => {
-		it("쿨다운이 없으면 false를 반환해야 함", async () => {
-			// Given - 쿨다운이 없는 상태
+	describe("쿨다운 정보", () => {
+		it("기록이 없으면 비활성", async () => {
 			mockCheerDb.findFirst.mockResolvedValue(null);
-
-			// When - 쿨다운 정보 조회
-			const result = await service.getCooldownInfoForUser(
-				mockSenderId,
-				mockReceiverId,
-			);
-
-			// Then - 쿨다운이 비활성화 상태여야 함
+			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(false);
 		});
 
-		it("쿨다운 중이면 남은 시간을 반환해야 함", async () => {
-			// Given - 최근에 응원을 보낸 상태 (쿨다운 활성화)
-			const recentCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
-				.withCreatedAt(new Date())
-				.build();
-			mockCheerDb.findFirst.mockResolvedValue(recentCheer);
-
-			// When - 쿨다운 정보 조회
-			const result = await service.getCooldownInfoForUser(
-				mockSenderId,
-				mockReceiverId,
+		it("최근 응원이 있으면 활성 + 남은 시간", async () => {
+			mockCheerDb.findFirst.mockResolvedValue(
+				CheerBuilder.create(senderId, receiverId)
+					.withCreatedAt(new Date())
+					.build(),
 			);
-
-			// Then - 쿨다운이 활성화되고 남은 시간이 반환되어야 함
+			const result = await facade.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(true);
 			expect(result.remainingSeconds).toBeGreaterThan(0);
 		});
 	});
 
-	describe("읽음 처리 통합 테스트", () => {
-		it("응원을 읽음 처리해야 함", async () => {
-			// Given - 읽지 않은 응원 준비
-			const mockCheer = CheerBuilder.create(mockSenderId, mockReceiverId)
-				.withId(mockCheerId)
-				.asUnread()
-				.buildWithRelations();
-			mockCheerDb.findUnique.mockResolvedValue(mockCheer);
-			mockCheerDb.update.mockResolvedValue({
-				...mockCheer,
-				readAt: new Date(),
-			});
+	describe("읽음 처리", () => {
+		it("응원을 읽음 처리한다", async () => {
+			mockCheerDb.findUnique.mockResolvedValue(
+				CheerBuilder.create(senderId, receiverId)
+					.withId(cheerId)
+					.asUnread()
+					.build(),
+			);
+			mockCheerDb.update.mockResolvedValue({});
 
-			// When - 읽음 처리
-			await service.markAsRead(mockReceiverId, mockCheerId);
-
-			// Then - 읽음 처리가 호출되어야 함
+			await facade.markAsRead(receiverId, cheerId);
 			expect(mockCheerDb.update).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockCheerId },
-				}),
+				expect.objectContaining({ where: { id: cheerId } }),
 			);
 		});
 
-		it("존재하지 않는 응원이면 예외를 발생시켜야 함", async () => {
-			// Given - 존재하지 않는 응원 ID
+		it("존재하지 않으면 ApplicationException", async () => {
 			mockCheerDb.findUnique.mockResolvedValue(null);
-
-			// When & Then - 존재하지 않는 응원 읽음 처리 시 예외 발생
-			await expect(service.markAsRead(mockReceiverId, 999)).rejects.toThrow(
-				BusinessException,
+			await expect(facade.markAsRead(receiverId, 999)).rejects.toThrow(
+				ApplicationException,
 			);
 		});
 
-		it("다른 사용자의 응원이면 예외를 발생시켜야 함", async () => {
-			// Given - 다른 사용자의 응원
-			const mockCheer = CheerBuilder.create(mockSenderId, "other-user")
-				.withId(mockCheerId)
-				.buildWithRelations();
-			mockCheerDb.findUnique.mockResolvedValue(mockCheer);
-
-			// When & Then - 다른 사용자의 응원 읽음 처리 시 예외 발생
-			await expect(
-				service.markAsRead(mockReceiverId, mockCheerId),
-			).rejects.toThrow(BusinessException);
+		it("다른 사용자의 응원이면 ApplicationException", async () => {
+			mockCheerDb.findUnique.mockResolvedValue(
+				CheerBuilder.create(senderId, "other-user").withId(cheerId).build(),
+			);
+			await expect(facade.markAsRead(receiverId, cheerId)).rejects.toThrow(
+				ApplicationException,
+			);
 		});
 
-		it("여러 응원을 읽음 처리해야 함", async () => {
-			// Given - 여러 개의 읽지 않은 응원
+		it("여러 응원을 읽음 처리한다", async () => {
 			mockCheerDb.updateMany.mockResolvedValue({ count: 5 });
-
-			// When - 여러 응원 읽음 처리
-			const result = await service.markManyAsRead(
-				mockReceiverId,
-				[1, 2, 3, 4, 5],
-			);
-
-			// Then - 모든 응원이 읽음 처리되어야 함
+			const result = await facade.markManyAsRead(receiverId, [1, 2, 3, 4, 5]);
 			expect(result).toBe(5);
 			expect(mockCheerDb.updateMany).toHaveBeenCalledWith({
-				where: {
-					id: { in: [1, 2, 3, 4, 5] },
-					receiverId: mockReceiverId,
-					readAt: null,
-				},
-				data: {
-					readAt: expect.any(Date),
-				},
+				where: { id: { in: [1, 2, 3, 4, 5] }, receiverId, readAt: null },
+				data: { readAt: expect.any(Date) },
 			});
 		});
 	});
