@@ -1,29 +1,25 @@
 /**
- * Nudge Mapper
- *
- * Prisma 엔티티를 DTO 형식으로 변환
+ * Nudge 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/validators). 계약 불변.
  */
-
 import type {
 	Nudge,
 	NudgeDetail,
 	NudgeLimitInfo,
 	RemindNudge,
 } from "@aido/validators";
+
 import {
 	toISOString,
 	toISOStringOrNull,
 } from "@/shared/domain/date/utils/format";
+
 import type {
 	NudgeWithRelations,
 	ReminderNudgeWithRelations,
-	NudgeLimitInfo as ServiceLimitInfo,
-} from "./types";
+} from "../application/ports/nudge.repository.port";
+import type { NudgeLimitInfo as ReaderLimitInfo } from "../application/services/nudge.reader";
 
 export abstract class NudgeMapper {
-	/**
-	 * NudgeWithRelations → NudgeDetail DTO 형식
-	 */
 	static toDetailDto(nudge: NudgeWithRelations): NudgeDetail {
 		return {
 			id: nudge.id,
@@ -47,9 +43,6 @@ export abstract class NudgeMapper {
 		};
 	}
 
-	/**
-	 * NudgeWithRelations → 기본 Nudge DTO 형식
-	 */
 	static toDto(nudge: NudgeWithRelations): Nudge {
 		return {
 			id: nudge.id,
@@ -62,16 +55,10 @@ export abstract class NudgeMapper {
 		};
 	}
 
-	/**
-	 * NudgeWithRelations 배열 → NudgeDetail 배열
-	 */
 	static toDetailDtoList(nudges: NudgeWithRelations[]): NudgeDetail[] {
-		return nudges.map((nudge) => this.toDetailDto(nudge));
+		return nudges.map((nudge) => NudgeMapper.toDetailDto(nudge));
 	}
 
-	/**
-	 * ReminderNudgeWithRelations → RemindNudge DTO 형식
-	 */
 	static toRemindNudgeDto(nudge: ReminderNudgeWithRelations): RemindNudge {
 		return {
 			id: nudge.id,
@@ -82,10 +69,7 @@ export abstract class NudgeMapper {
 		};
 	}
 
-	/**
-	 * Service LimitInfo → DTO LimitInfo
-	 */
-	static toLimitInfoDto(limitInfo: ServiceLimitInfo): NudgeLimitInfo {
+	static toLimitInfoDto(limitInfo: ReaderLimitInfo): NudgeLimitInfo {
 		return {
 			dailyLimit: limitInfo.dailyLimit,
 			usedToday: limitInfo.used,

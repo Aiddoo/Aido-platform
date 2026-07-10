@@ -55,6 +55,9 @@ const TARGET_DIRS = [
 	"src/cheer/domain",
 	"src/cheer/application",
 	"src/cheer/infrastructure",
+	"src/nudge/domain",
+	"src/nudge/application",
+	"src/nudge/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

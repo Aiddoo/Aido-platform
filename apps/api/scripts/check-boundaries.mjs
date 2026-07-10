@@ -34,6 +34,7 @@ const CLEAN_MODULES = [
 	"memo",
 	"follow",
 	"cheer",
+	"nudge",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
