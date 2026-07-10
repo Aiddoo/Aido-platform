@@ -16,7 +16,7 @@ import { TestBed } from "@suites/unit";
 import { CheerBuilder } from "@test/builders";
 import { createMockPrisma } from "@test/mocks";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
-import { FollowService } from "@/follow/follow.service";
+import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification/queue";
 import {
 	EntitlementService,
@@ -32,7 +32,7 @@ import { CheerService } from "./cheer.service";
 describe("CheerService — 응원 서비스", () => {
 	let service: CheerService;
 	let cheerRepo: Mocked<CheerRepository>;
-	let followService: Mocked<FollowService>;
+	let followFacade: Mocked<FollowFacade>;
 	let paginationService: Mocked<PaginationService>;
 	let notificationQueueService: Mocked<NotificationQueueService>;
 	let entitlementService: Mocked<EntitlementService>;
@@ -58,7 +58,7 @@ describe("CheerService — 응원 서비스", () => {
 
 		service = unit;
 		cheerRepo = unitRef.get(CheerRepository);
-		followService = unitRef.get(FollowService);
+		followFacade = unitRef.get(FollowFacade);
 		paginationService = unitRef.get(PaginationService);
 		notificationQueueService = unitRef.get(NotificationQueueService);
 		entitlementService = unitRef.get(EntitlementService);
@@ -121,7 +121,7 @@ describe("CheerService — 응원 서비스", () => {
 
 		beforeEach(() => {
 			// Given - 기본 성공 시나리오 설정
-			(followService.isMutualFriend as jest.Mock).mockResolvedValue(true);
+			(followFacade.isMutualFriend as jest.Mock).mockResolvedValue(true);
 
 			// Repository 트랜잭션 메서드 mock 설정
 			const expectedCheer = CheerBuilder.create(senderId, receiverId)
@@ -152,7 +152,7 @@ describe("CheerService — 응원 서비스", () => {
 		describe("친구 관계 확인", () => {
 			it("친구가 아니면 에러를 던진다", async () => {
 				// Given
-				(followService.isMutualFriend as jest.Mock).mockResolvedValue(false);
+				(followFacade.isMutualFriend as jest.Mock).mockResolvedValue(false);
 
 				// When & Then
 				await expect(service.sendCheer(validParams)).rejects.toThrow();
@@ -163,7 +163,7 @@ describe("CheerService — 응원 서비스", () => {
 				await service.sendCheer(validParams);
 
 				// Then
-				expect(followService.isMutualFriend).toHaveBeenCalledWith(
+				expect(followFacade.isMutualFriend).toHaveBeenCalledWith(
 					validParams.senderId,
 					validParams.receiverId,
 				);

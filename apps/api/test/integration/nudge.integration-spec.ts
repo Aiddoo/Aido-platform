@@ -2,13 +2,13 @@
  * NudgeService 통합 테스트
  *
  * @description
- * NudgeService가 NudgeRepository, FollowService, PaginationService, NotificationQueueService와 함께 올바르게 작동하는지 검증합니다.
+ * NudgeService가 NudgeRepository, FollowFacade, PaginationService, NotificationQueueService와 함께 올바르게 작동하는지 검증합니다.
  * 실제 데이터베이스 대신 모킹된 DatabaseService를 사용하여 서비스 계층 통합을 테스트합니다.
  *
  * 통합 테스트의 목적:
  * - NestJS 의존성 주입이 올바르게 작동하는지 검증
  * - NudgeService와 NudgeRepository의 통합 검증
- * - FollowService와의 통합 검증
+ * - FollowFacade와의 통합 검증
  * - PaginationService와의 통합 검증
  * - NotificationQueueService와의 통합 검증
  * - BusinessException 에러 처리가 올바르게 작동하는지 검증
@@ -25,7 +25,7 @@ import { NudgeBuilder, TodoBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { FollowService } from "@/follow/follow.service";
+import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification/queue";
 import { NudgeRepository } from "@/nudge/nudge.repository";
 import { NudgeService } from "@/nudge/nudge.service";
@@ -68,8 +68,8 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 		todo: mockTodoDb,
 	});
 
-	// Mock FollowService
-	const mockFollowService = {
+	// Mock FollowFacade
+	const mockFollowFacade = {
 		isMutualFriend: jest.fn(),
 	};
 
@@ -120,8 +120,8 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 					},
 				},
 				{
-					provide: FollowService,
-					useValue: mockFollowService,
+					provide: FollowFacade,
+					useValue: mockFollowFacade,
 				},
 				{
 					provide: NotificationQueueService,
@@ -237,7 +237,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				})
 				.buildWithRelations();
 
-			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
 			mockUserDb.findUnique
 				.mockResolvedValueOnce({
 					...mockSender,
@@ -271,7 +271,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 
 			// Then - 콕 찌르기가 성공적으로 전송되어야 함
 			expect(result.id).toBe(mockNudgeId);
-			expect(mockFollowService.isMutualFriend).toHaveBeenCalledWith(
+			expect(mockFollowFacade.isMutualFriend).toHaveBeenCalledWith(
 				mockSenderId,
 				mockReceiverId,
 			);
@@ -282,7 +282,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 
 		it("친구가 아니면 예외를 발생시켜야 함", async () => {
 			// Given - 친구가 아닌 상태로 설정
-			mockFollowService.isMutualFriend.mockResolvedValue(false);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(false);
 
 			// When & Then - 친구가 아니면 예외 발생
 			await expect(
@@ -323,7 +323,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				.withStartDate(todayMidnight)
 				.build();
 
-			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
 			mockUserDb.findUnique
 				.mockResolvedValueOnce({
 					...mockSender,
@@ -378,7 +378,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				.withCreatedAt(new Date())
 				.buildWithRelations();
 
-			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
 			mockUserDb.findUnique
 				.mockResolvedValueOnce({
 					...mockSender,
@@ -420,7 +420,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				.withStartDate(yesterday)
 				.build();
 
-			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
 			mockUserDb.findUnique.mockResolvedValueOnce({
 				subscriptionStatus: "FREE",
 			});
@@ -444,7 +444,7 @@ describe("NudgeService 통합 테스트 (Mock DB)", () => {
 				.asPrivate()
 				.build();
 
-			mockFollowService.isMutualFriend.mockResolvedValue(true);
+			mockFollowFacade.isMutualFriend.mockResolvedValue(true);
 			mockTodoDb.findUnique.mockResolvedValue(mockTodo);
 
 			// When & Then - PRIVATE Todo는 은닉 처리로 예외 발생

@@ -2,7 +2,7 @@ import { CHEER_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { FollowService } from "@/follow/follow.service";
+import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification/queue";
 import {
 	EntitlementService,
@@ -31,7 +31,7 @@ export class CheerService {
 
 	constructor(
 		private readonly cheerRepository: CheerRepository,
-		private readonly followService: FollowService,
+		private readonly followFacade: FollowFacade,
 		private readonly paginationService: PaginationService,
 		private readonly notificationQueueService: NotificationQueueService,
 		@Inject(UNIT_OF_WORK)
@@ -66,7 +66,7 @@ export class CheerService {
 		}
 
 		// 2. 친구 관계 확인
-		const isFriend = await this.followService.isMutualFriend(
+		const isFriend = await this.followFacade.isMutualFriend(
 			senderId,
 			receiverId,
 		);

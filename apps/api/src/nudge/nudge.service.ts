@@ -2,7 +2,7 @@ import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { FollowService } from "@/follow/follow.service";
+import { FollowFacade } from "@/follow";
 import { NotificationQueueService } from "@/notification/queue";
 import {
 	EntitlementService,
@@ -37,7 +37,7 @@ export class NudgeService {
 
 	constructor(
 		private readonly nudgeRepository: NudgeRepository,
-		private readonly followService: FollowService,
+		private readonly followFacade: FollowFacade,
 		private readonly paginationService: PaginationService,
 		private readonly notificationQueueService: NotificationQueueService,
 		@Inject(UNIT_OF_WORK)
@@ -62,7 +62,7 @@ export class NudgeService {
 		senderId: string,
 		receiverId: string,
 	): Promise<void> {
-		const isFriend = await this.followService.isMutualFriend(
+		const isFriend = await this.followFacade.isMutualFriend(
 			senderId,
 			receiverId,
 		);

@@ -1,3 +1,2 @@
-export * from "./follow.module";
-export * from "./follow.repository";
-export * from "./follow.service";
+export { FollowFacade } from "./application/facades/follow.facade";
+export { FollowModule } from "./follow.module";

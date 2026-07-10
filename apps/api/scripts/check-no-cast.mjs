@@ -49,6 +49,9 @@ const TARGET_DIRS = [
 	"src/memo/domain",
 	"src/memo/application",
 	"src/memo/infrastructure",
+	"src/follow/domain",
+	"src/follow/application",
+	"src/follow/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

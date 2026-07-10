@@ -32,6 +32,7 @@ const CLEAN_MODULES = [
 	"weather",
 	"ai",
 	"memo",
+	"follow",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

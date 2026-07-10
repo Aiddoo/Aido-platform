@@ -13,6 +13,7 @@ import {
 	Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+
 import { UserIdParamDto } from "@/shared/presentation/dtos";
 import {
 	ApiBadRequestError,
@@ -25,8 +26,9 @@ import {
 	ApiUnauthorizedError,
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
 
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import { FollowFacade } from "../application/facades/follow.facade";
 import {
 	AcceptFriendRequestResponseDto,
 	FollowResourceLimitResponseDto,
@@ -43,52 +45,17 @@ import {
 	UserTagParamDto,
 } from "./dtos";
 import { FollowMapper } from "./follow.mapper";
-import { FollowService } from "./follow.service";
 
 /**
  * ### 친구 요청 상태 전이 다이어그램
  * ```
- * ┌──────────────────────────────────────────────────────────────────────┐
- * │                        친구 관계 상태 전이                              │
- * └──────────────────────────────────────────────────────────────────────┘
+ *   [없음]  --POST /:userTag-->  [PENDING]  --PATCH /:userId/accept-->  [ACCEPTED]
+ *   PENDING --PATCH /:userId/reject--> [삭제]
+ *   PENDING --DELETE /:userId--> [철회]
+ *   ACCEPTED --DELETE /:userId--> [친구 삭제(양방향)]
  *
- *   [없음]                    [PENDING]                   [ACCEPTED]
- *     │                          │                            │
- *     │  POST /:userId           │                            │
- *     │  (친구 요청)              │                            │
- *     ├─────────────────────────▶│                            │
- *     │                          │                            │
- *     │                          │  PATCH /:userId/accept     │
- *     │                          │  (요청 수락)                │
- *     │                          ├───────────────────────────▶│
- *     │                          │                            │
- *     │                          │  PATCH /:userId/reject     │
- *     │◀─────────────────────────┤  (요청 거절 → 삭제)         │
- *     │                          │                            │
- *     │                          │  DELETE /:userId           │
- *     │◀─────────────────────────┤  (요청 철회)                │
- *     │                          │                            │
- *     │  DELETE /:userId         │                            │
- *     │◀──────────────────────────────────────────────────────┤
- *     │  (친구 삭제)                                           │
- *     │                                                       │
- *
- * ┌──────────────────────────────────────────────────────────────────────┐
- * │                        자동 수락 케이스                               │
- * └──────────────────────────────────────────────────────────────────────┘
- *
- *   A → B (PENDING)    +    B → A (POST 요청)    =    A ↔ B (ACCEPTED)
- *
- *   상대방이 이미 나에게 친구 요청을 보낸 상태에서
- *   내가 그 상대방에게 친구 요청을 보내면 자동으로 친구가 됨
+ *   자동 수락: A→B(PENDING) + B→A(POST) = A↔B(ACCEPTED)
  * ```
- *
- * ### 상태별 설명
- * | 상태 | 설명 |
- * |------|------|
- * | 없음 | 두 사용자 간 아무 관계 없음 |
- * | PENDING | 친구 요청을 보낸 상태 (대기 중) |
- * | ACCEPTED | 양방향 친구 관계 성립 |
  */
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
@@ -96,7 +63,7 @@ import { FollowService } from "./follow.service";
 export class FollowController {
 	readonly #logger = new Logger(FollowController.name);
 
-	constructor(private readonly followService: FollowService) {}
+	constructor(private readonly followFacade: FollowFacade) {}
 
 	@Post(":userTag")
 	@ApiParam({
@@ -126,7 +93,7 @@ export class FollowController {
 	): Promise<SendFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
-		const result = await this.followService.sendRequestByTag(
+		const result = await this.followFacade.sendRequestByTag(
 			user.userId,
 			params.userTag,
 		);
@@ -170,7 +137,7 @@ export class FollowController {
 	): Promise<AcceptFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
-		const result = await this.followService.acceptRequest(
+		const result = await this.followFacade.acceptRequest(
 			user.userId,
 			params.userId,
 		);
@@ -179,8 +146,6 @@ export class FollowController {
 			`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`,
 		);
 
-		// result는 "나 -> 상대방" Follow 레코드
-		// following이 요청을 보낸 사람(상대방)의 정보
 		return {
 			message: "친구 요청을 수락했습니다.",
 			friend: FollowMapper.toFriendUser(result),
@@ -211,13 +176,11 @@ export class FollowController {
 	): Promise<RejectFriendRequestResponseDto> {
 		this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
 
-		await this.followService.rejectRequest(user.userId, params.userId);
+		await this.followFacade.rejectRequest(user.userId, params.userId);
 
 		this.#logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
 
-		return {
-			message: "친구 요청을 거절했습니다.",
-		};
+		return { message: "친구 요청을 거절했습니다." };
 	}
 
 	@Delete(":userId")
@@ -246,15 +209,13 @@ export class FollowController {
 			`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`,
 		);
 
-		await this.followService.remove(user.userId, params.userId);
+		await this.followFacade.remove(user.userId, params.userId);
 
 		this.#logger.log(
 			`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`,
 		);
 
-		return {
-			message: "친구를 삭제했습니다.",
-		};
+		return { message: "친구를 삭제했습니다." };
 	}
 
 	@Patch("friends/:followId/reorder")
@@ -286,7 +247,7 @@ export class FollowController {
 			`친구 순서 변경: user=${user.userId}, followId=${followId}`,
 		);
 
-		const result = await this.followService.reorder(followId, user.userId, dto);
+		const result = await this.followFacade.reorder(followId, user.userId, dto);
 
 		this.#logger.log(`친구 순서 변경 완료: followId=${followId}`);
 
@@ -311,7 +272,7 @@ export class FollowController {
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<FollowResourceLimitResponseDto> {
-		return this.followService.getResourceLimitInfo(user.userId);
+		return this.followFacade.getResourceLimitInfo(user.userId);
 	}
 
 	@Get("friends")
@@ -334,13 +295,13 @@ export class FollowController {
 		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followService.getFriends({
+			this.followFacade.getFriends({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 				search: query.search,
 			}),
-			this.followService.countFriends(user.userId),
+			this.followFacade.countFriends(user.userId),
 		]);
 
 		return {
@@ -369,12 +330,12 @@ export class FollowController {
 		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followService.getReceivedRequests({
+			this.followFacade.getReceivedRequests({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.followService.countReceivedRequests(user.userId),
+			this.followFacade.countReceivedRequests(user.userId),
 		]);
 
 		return {
@@ -403,12 +364,12 @@ export class FollowController {
 		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
 
 		const [result, totalCount] = await Promise.all([
-			this.followService.getSentRequests({
+			this.followFacade.getSentRequests({
 				userId: user.userId,
 				cursor: query.cursor,
 				size: query.limit,
 			}),
-			this.followService.countSentRequests(user.userId),
+			this.followFacade.countSentRequests(user.userId),
 		]);
 
 		return {
