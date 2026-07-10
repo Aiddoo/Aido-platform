@@ -9,11 +9,12 @@
  * pnpm --filter @aido/api test subscription.repository
  * ```
  */
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { asTxClient, createMockTxClient } from "@test/mocks/transaction.mock";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
 import type {
@@ -40,9 +41,13 @@ describe("SubscriptionRepository — 구독 리포지토리", () => {
 	});
 
 	beforeEach(async () => {
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 mock DB를 반환하도록 스텁합니다.
 		const { unit } = await TestBed.solitary(SubscriptionRepository)
-			.mock(DatabaseService)
-			.impl(() => mockDb)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: mockDb }))
 			.compile();
 
 		repository = unit;
@@ -66,21 +71,6 @@ describe("SubscriptionRepository — 구독 리포지토리", () => {
 				where: { revenueCatId: "otxn-123" },
 			});
 			expect(result).toEqual(subscription);
-		});
-
-		it("tx 전달 시 tx의 subscription을 사용해야 한다", async () => {
-			// Given
-			const txMock = createMockTxClient();
-			txMock.subscription.findUnique.mockResolvedValue(null);
-
-			// When
-			await repository.findByRevenueCatId("otxn-123", asTxClient(txMock));
-
-			// Then
-			expect(txMock.subscription.findUnique).toHaveBeenCalledWith({
-				where: { revenueCatId: "otxn-123" },
-			});
-			expect(mockDb.subscription.findUnique).not.toHaveBeenCalled();
 		});
 	});
 
@@ -248,27 +238,6 @@ describe("SubscriptionRepository — 구독 리포지토리", () => {
 				},
 			});
 			expect(result).toEqual(user);
-		});
-
-		it("tx 전달 시 tx의 user를 사용해야 한다", async () => {
-			// Given
-			const txMock = createMockTxClient();
-			txMock.user.findFirst.mockResolvedValue(null);
-
-			// When
-			await repository.findUserByAppUserId("user-1", asTxClient(txMock));
-
-			// Then
-			expect(txMock.user.findFirst).toHaveBeenCalledWith({
-				where: {
-					OR: [{ revenueCatUserId: "user-1" }, { id: "user-1" }],
-				},
-				select: expect.objectContaining({
-					id: true,
-					email: true,
-				}),
-			});
-			expect(mockDb.user.findFirst).not.toHaveBeenCalled();
 		});
 	});
 });

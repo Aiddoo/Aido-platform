@@ -13,11 +13,12 @@
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { SubscriptionEventBuilder } from "@test/builders";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { ILockProvider } from "@/common/lock";
 import { LOCK_PROVIDER } from "@/common/lock";
-import { DatabaseService } from "@/database/database.service";
 import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 import { SubscriptionRepository } from "./subscription.repository";
@@ -26,7 +27,7 @@ import { SubscriptionService } from "./subscription.service";
 describe("SubscriptionService — 구독 서비스", () => {
 	let service: SubscriptionService;
 	let subscriptionRepository: Mocked<SubscriptionRepository>;
-	let database: Mocked<DatabaseService>;
+	let uow: Mocked<UnitOfWorkPort>;
 	let cacheService: Mocked<CacheService>;
 	let adminNotificationQueueService: Mocked<AdminNotificationQueueService>;
 	let notificationQueueService: Mocked<NotificationQueueService>;
@@ -54,11 +55,14 @@ describe("SubscriptionService — 구독 서비스", () => {
 		const { unit, unitRef } = await TestBed.solitary(SubscriptionService)
 			.mock(LOCK_PROVIDER)
 			.impl(() => mockLockProvider)
+			// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		service = unit;
 		subscriptionRepository = unitRef.get(SubscriptionRepository);
-		database = unitRef.get(DatabaseService);
+		uow = unitRef.get(UNIT_OF_WORK);
 		cacheService = unitRef.get(CacheService);
 		adminNotificationQueueService = unitRef.get(AdminNotificationQueueService);
 		notificationQueueService = unitRef.get(NotificationQueueService);
@@ -72,11 +76,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 		subscriptionRepository.updateStatus.mockResolvedValue({} as never);
 		subscriptionRepository.updateUserSubscriptionStatus.mockResolvedValue(
 			undefined,
-		);
-
-		// $transaction passthrough
-		(database.$transaction as jest.Mock).mockImplementation(
-			(callback: (tx: unknown) => Promise<unknown>) => callback({}),
 		);
 
 		// 캐시 무효화 기본
@@ -98,7 +97,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			);
 
 			expect(subscriptionRepository.findUserByAppUserId).not.toHaveBeenCalled();
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 		});
 
 		it("Lock 획득 성공 시 처리 완료 후 release를 호출한다", async () => {
@@ -162,7 +161,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					productId: "premium_monthly",
 					status: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -171,7 +169,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -312,7 +309,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					status: "ACTIVE",
 					cancelledAt: null,
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -321,7 +317,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -397,7 +392,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					status: "CANCELLED",
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -406,7 +400,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -429,7 +422,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "CANCELLED",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -459,7 +451,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 	});
@@ -482,7 +473,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					status: "EXPIRED",
 				}),
-				expect.anything(),
 			);
 			// Then — User: 즉시 FREE, expiresAt null
 			expect(
@@ -493,7 +483,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					subscriptionStatus: "FREE",
 					subscriptionExpiresAt: null,
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -535,7 +524,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					status: "CANCELLED",
 				}),
-				expect.anything(),
 			);
 			// Then — User: ACTIVE (만료일까지 유지)
 			expect(
@@ -545,7 +533,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 			// Then — 구독 이벤트 큐 잡 등록 (취소)
 			expect(
@@ -577,7 +564,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					productId: "premium_lifetime",
 					status: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -586,7 +572,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -629,7 +614,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					status: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -638,7 +622,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -680,7 +663,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					status: "ACTIVE",
 					cancelledAt: null,
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -689,7 +671,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 	});
@@ -710,7 +691,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					status: "EXPIRED",
 				}),
-				expect.anything(),
 			);
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
@@ -720,7 +700,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 					subscriptionStatus: "FREE",
 					subscriptionExpiresAt: null,
 				}),
-				expect.anything(),
 			);
 		});
 	});
@@ -736,7 +715,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(subscriptionRepository.updateStatus).not.toHaveBeenCalled();
 			expect(
 				adminNotificationQueueService.enqueueSubscriptionEvent,
@@ -770,7 +749,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					productId: "premium_yearly",
 				}),
-				expect.anything(),
 			);
 		});
 
@@ -793,7 +771,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					subscriptionStatus: "ACTIVE",
 				}),
-				expect.anything(),
 			);
 		});
 	});
@@ -809,7 +786,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(
 				adminNotificationQueueService.enqueueSubscriptionEvent,
@@ -826,7 +803,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(
 				adminNotificationQueueService.enqueueSubscriptionEvent,
@@ -850,14 +827,10 @@ describe("SubscriptionService — 구독 서비스", () => {
 			// Then
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
-			).toHaveBeenCalledWith(
-				"user-123",
-				{
-					subscriptionStatus: "ACTIVE",
-					revenueCatUserId: "new-app-user-id",
-				},
-				expect.anything(),
-			);
+			).toHaveBeenCalledWith("user-123", {
+				subscriptionStatus: "ACTIVE",
+				revenueCatUserId: "new-app-user-id",
+			});
 		});
 
 		it("TRANSFER 이벤트는 캐시를 무효화하고 subscription.transferred 이벤트를 발행한다", async () => {
@@ -873,7 +846,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then
-			expect(database.$transaction).toHaveBeenCalled();
+			expect(uow.run).toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).toHaveBeenCalledWith(
 				"user-123",
 			);
@@ -904,25 +877,20 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then — 트랜잭션 사용 확인
-			expect(database.$transaction).toHaveBeenCalled();
+			expect(uow.run).toHaveBeenCalled();
 
-			// findUserByAppUserId 두 번째 호출 (트랜잭션 내부)에 tx 전달 확인
+			// findUserByAppUserId 두 번째 호출 (트랜잭션 내부) 확인
 			expect(subscriptionRepository.findUserByAppUserId).toHaveBeenCalledWith(
 				"new-app-user-id",
-				expect.anything(), // tx
 			);
 
-			// updateUserSubscriptionStatus에 tx 전달 확인
+			// updateUserSubscriptionStatus 호출 확인
 			expect(
 				subscriptionRepository.updateUserSubscriptionStatus,
-			).toHaveBeenCalledWith(
-				"user-123",
-				{
-					subscriptionStatus: "ACTIVE",
-					revenueCatUserId: "new-app-user-id",
-				},
-				expect.anything(), // tx
-			);
+			).toHaveBeenCalledWith("user-123", {
+				subscriptionStatus: "ACTIVE",
+				revenueCatUserId: "new-app-user-id",
+			});
 		});
 	});
 
@@ -937,7 +905,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then — DB 변경, 캐시 무효화, 큐 잡 등록 모두 없음
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(
 				adminNotificationQueueService.enqueueSubscriptionEvent,
@@ -976,7 +944,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then — DB 트랜잭션, 캐시 무효화, 큐 잡 등록 모두 없음
-			expect(database.$transaction).not.toHaveBeenCalled();
+			expect(uow.run).not.toHaveBeenCalled();
 			expect(cacheService.invalidateSubscription).not.toHaveBeenCalled();
 			expect(
 				adminNotificationQueueService.enqueueSubscriptionEvent,
@@ -1016,7 +984,7 @@ describe("SubscriptionService — 구독 서비스", () => {
 			await service.handleWebhookEvent(payload);
 
 			// Then — 정상 처리 (트랜잭션 실행)
-			expect(database.$transaction).toHaveBeenCalled();
+			expect(uow.run).toHaveBeenCalled();
 		});
 
 		it("event.id가 있으면 updateStatus 시 lastProcessedEventId가 전달된다", async () => {
@@ -1046,7 +1014,6 @@ describe("SubscriptionService — 구독 서비스", () => {
 				expect.objectContaining({
 					lastProcessedEventId: "evt-new-123",
 				}),
-				expect.anything(),
 			);
 		});
 	});

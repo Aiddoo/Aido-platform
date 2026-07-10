@@ -21,13 +21,15 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { LOCK_PROVIDER } from "@/common/lock";
-import { DatabaseService } from "@/database/database.service";
 import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 import { SubscriptionRepository } from "@/modules/subscription/subscription.repository";
@@ -98,8 +100,13 @@ describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 				SubscriptionService,
 				SubscriptionRepository,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
+				},
+				{
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: CacheService,

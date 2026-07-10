@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
-import type { TransactionClient } from "@/common/database/prisma.types";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { Prisma, type Subscription } from "@/generated/prisma/client";
 import type { SubscriptionStatus } from "@/generated/prisma/enums";
 
@@ -64,21 +65,28 @@ export interface UpdateUserSubscriptionStatusData {
  * 구독 Repository
  *
  * RevenueCat 웹훅으로부터 수신한 구독 이벤트를 DB에 반영합니다.
- * 모든 메서드는 `tx?` 파라미터를 받아 트랜잭션 내에서 사용할 수 있습니다.
+ *
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다(기존 `tx ?? this.database`와 등가).
  */
 @Injectable()
 export class SubscriptionRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * RevenueCat 거래 ID로 구독 조회
 	 */
-	async findByRevenueCatId(
-		revenueCatId: string,
-		tx?: TransactionClient,
-	): Promise<Subscription | null> {
-		const client = tx ?? this.database;
-		return client.subscription.findUnique({
+	async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
+		return this.client.subscription.findUnique({
 			where: { revenueCatId },
 		});
 	}
@@ -86,12 +94,8 @@ export class SubscriptionRepository {
 	/**
 	 * 사용자의 활성 구독 조회
 	 */
-	async findActiveByUserId(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<Subscription | null> {
-		const client = tx ?? this.database;
-		return client.subscription.findFirst({
+	async findActiveByUserId(userId: string): Promise<Subscription | null> {
+		return this.client.subscription.findFirst({
 			where: {
 				userId,
 				status: "ACTIVE",
@@ -104,12 +108,8 @@ export class SubscriptionRepository {
 	/**
 	 * 구독 생성 (INITIAL_PURCHASE용)
 	 */
-	async create(
-		data: CreateSubscriptionData,
-		tx?: TransactionClient,
-	): Promise<Subscription> {
-		const client = tx ?? this.database;
-		return client.subscription.create({
+	async create(data: CreateSubscriptionData): Promise<Subscription> {
+		return this.client.subscription.create({
 			data: {
 				user: { connect: { id: data.userId } },
 				revenueCatId: data.revenueCatId,
@@ -130,11 +130,9 @@ export class SubscriptionRepository {
 	async updateStatus(
 		revenueCatId: string,
 		data: UpdateSubscriptionStatusData,
-		tx?: TransactionClient,
 	): Promise<Subscription> {
-		const client = tx ?? this.database;
 		try {
-			return await client.subscription.update({
+			return await this.client.subscription.update({
 				where: { revenueCatId },
 				data,
 			});
@@ -157,10 +155,8 @@ export class SubscriptionRepository {
 	async updateUserSubscriptionStatus(
 		userId: string,
 		data: UpdateUserSubscriptionStatusData,
-		tx?: TransactionClient,
 	): Promise<void> {
-		const client = tx ?? this.database;
-		await client.user.update({
+		await this.client.user.update({
 			where: { id: userId },
 			data: {
 				subscriptionStatus: data.subscriptionStatus,
@@ -183,10 +179,8 @@ export class SubscriptionRepository {
 	 */
 	async findUserByAppUserId(
 		appUserId: string,
-		tx?: TransactionClient,
 	): Promise<SubscriptionUser | null> {
-		const client = tx ?? this.database;
-		return client.user.findFirst({
+		return this.client.user.findFirst({
 			where: {
 				OR: [{ revenueCatUserId: appUserId }, { id: appUserId }],
 			},

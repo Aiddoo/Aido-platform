@@ -5,13 +5,13 @@ import type {
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { subtractMilliseconds } from "@/common/date/utils/arithmetic";
 import { isAfter, isSame } from "@/common/date/utils/compare";
 import { now } from "@/common/date/utils/core";
 import { toISOString } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import { type ILockProvider, LOCK_PROVIDER } from "@/common/lock";
-import { DatabaseService } from "@/database/database.service";
 import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -73,7 +73,8 @@ export class SubscriptionService {
 
 	constructor(
 		private readonly subscriptionRepository: SubscriptionRepository,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly cacheService: CacheService,
 		private readonly adminNotificationQueueService: AdminNotificationQueueService,
 		private readonly notificationQueueService: NotificationQueueService,
@@ -202,12 +203,10 @@ export class SubscriptionService {
 		const startedAt = new Date(event.purchased_at_ms);
 		const expiresAt = new Date(event.expiration_at_ms);
 
-		const skipped = await this.database.$transaction(async (tx) => {
+		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 중복 webhook 재전송 대비
-			const existing = await this.subscriptionRepository.findByRevenueCatId(
-				transactionId,
-				tx,
-			);
+			const existing =
+				await this.subscriptionRepository.findByRevenueCatId(transactionId);
 			if (existing) {
 				this.#logger.log(
 					`Subscription already exists for transactionId=${transactionId}, skipping create`,
@@ -215,27 +214,20 @@ export class SubscriptionService {
 				return true;
 			}
 
-			await this.subscriptionRepository.create(
-				{
-					userId: user.id,
-					revenueCatId: transactionId,
-					productId: event.product_id,
-					status: "ACTIVE",
-					startedAt,
-					expiresAt,
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.create({
+				userId: user.id,
+				revenueCatId: transactionId,
+				productId: event.product_id,
+				status: "ACTIVE",
+				startedAt,
+				expiresAt,
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "ACTIVE",
-					subscriptionExpiresAt: expiresAt,
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "ACTIVE",
+				subscriptionExpiresAt: expiresAt,
+			});
 			return false;
 		});
 
@@ -284,12 +276,10 @@ export class SubscriptionService {
 
 		const expiresAt = new Date(event.expiration_at_ms);
 
-		const skipped = await this.database.$transaction(async (tx) => {
+		const skipped = await this.uow.run(async () => {
 			// 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
-			const existing = await this.subscriptionRepository.findByRevenueCatId(
-				transactionId,
-				tx,
-			);
+			const existing =
+				await this.subscriptionRepository.findByRevenueCatId(transactionId);
 			if (!existing) {
 				throw BusinessExceptions.webhookProcessingFailed({
 					reason: `Subscription not found for RENEWAL: ${transactionId}`,
@@ -306,25 +296,17 @@ export class SubscriptionService {
 				return true;
 			}
 
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					status: "ACTIVE",
-					expiresAt,
-					cancelledAt: null,
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				status: "ACTIVE",
+				expiresAt,
+				cancelledAt: null,
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "ACTIVE",
-					subscriptionExpiresAt: expiresAt,
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "ACTIVE",
+				subscriptionExpiresAt: expiresAt,
+			});
 			return false;
 		});
 
@@ -369,27 +351,21 @@ export class SubscriptionService {
 			: null;
 		const isRefund = event.cancel_reason === "CUSTOMER_SUPPORT";
 
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			// webhook expiresAt 없으면 DB 기존값 fallback
 			let expiresAt = webhookExpiresAt;
 			if (!expiresAt) {
-				const existing = await this.subscriptionRepository.findByRevenueCatId(
-					transactionId,
-					tx,
-				);
+				const existing =
+					await this.subscriptionRepository.findByRevenueCatId(transactionId);
 				expiresAt = existing?.expiresAt ?? null;
 			}
 
 			// 환불: Subscription EXPIRED, 일반 취소: Subscription CANCELLED
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					status: isRefund ? "EXPIRED" : "CANCELLED",
-					cancelledAt: now(),
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				status: isRefund ? "EXPIRED" : "CANCELLED",
+				cancelledAt: now(),
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
 			if (isRefund) {
 				// 환불: 즉시 접근 권한 회수
@@ -399,7 +375,6 @@ export class SubscriptionService {
 						subscriptionStatus: "FREE",
 						subscriptionExpiresAt: null,
 					},
-					tx,
 				);
 			} else {
 				// 일반 취소: 만료일까지 ACTIVE 유지
@@ -416,7 +391,6 @@ export class SubscriptionService {
 						subscriptionStatus: userStatus,
 						...(expiresAt && { subscriptionExpiresAt: expiresAt }),
 					},
-					tx,
 				);
 			}
 		});
@@ -452,26 +426,18 @@ export class SubscriptionService {
 			? new Date(event.expiration_at_ms)
 			: undefined;
 
-		await this.database.$transaction(async (tx) => {
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					status: "ACTIVE",
-					cancelledAt: null,
-					...(expiresAt && { expiresAt }),
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+		await this.uow.run(async () => {
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				status: "ACTIVE",
+				cancelledAt: null,
+				...(expiresAt && { expiresAt }),
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "ACTIVE",
-					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "ACTIVE",
+				...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+			});
 		});
 
 		this.#logger.log(
@@ -502,24 +468,16 @@ export class SubscriptionService {
 	): Promise<SubscriptionEventPayload> {
 		const transactionId = this.#resolveTransactionId(event);
 
-		await this.database.$transaction(async (tx) => {
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					status: "EXPIRED",
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+		await this.uow.run(async () => {
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				status: "EXPIRED",
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "FREE",
-					subscriptionExpiresAt: null,
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "FREE",
+				subscriptionExpiresAt: null,
+			});
 		});
 
 		this.#logger.log(
@@ -576,25 +534,17 @@ export class SubscriptionService {
 			? new Date(event.expiration_at_ms)
 			: undefined;
 
-		await this.database.$transaction(async (tx) => {
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					productId: event.product_id,
-					...(expiresAt && { expiresAt }),
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+		await this.uow.run(async () => {
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				productId: event.product_id,
+				...(expiresAt && { expiresAt }),
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "ACTIVE",
-					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "ACTIVE",
+				...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+			});
 		});
 
 		this.#logger.log(
@@ -628,25 +578,17 @@ export class SubscriptionService {
 			? new Date(event.expiration_at_ms)
 			: undefined;
 
-		await this.database.$transaction(async (tx) => {
-			await this.subscriptionRepository.updateStatus(
-				transactionId,
-				{
-					status: "ACTIVE",
-					...(expiresAt && { expiresAt }),
-					...(event.id && { lastProcessedEventId: event.id }),
-				},
-				tx,
-			);
+		await this.uow.run(async () => {
+			await this.subscriptionRepository.updateStatus(transactionId, {
+				status: "ACTIVE",
+				...(expiresAt && { expiresAt }),
+				...(event.id && { lastProcessedEventId: event.id }),
+			});
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: "ACTIVE",
-					...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: "ACTIVE",
+				...(expiresAt && { subscriptionExpiresAt: expiresAt }),
+			});
 		});
 
 		this.#logger.log(
@@ -680,21 +622,17 @@ export class SubscriptionService {
 
 		// revenueCatUserId를 새 appUserId로 갱신
 		// subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			const existingUser =
-				await this.subscriptionRepository.findUserByAppUserId(newAppUserId, tx);
+				await this.subscriptionRepository.findUserByAppUserId(newAppUserId);
 
 			// 이미 올바른 매핑이면 skip (idempotency)
 			if (existingUser?.id === user.id) return;
 
-			await this.subscriptionRepository.updateUserSubscriptionStatus(
-				user.id,
-				{
-					subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
-					revenueCatUserId: newAppUserId,
-				},
-				tx,
-			);
+			await this.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+				subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
+				revenueCatUserId: newAppUserId,
+			});
 		});
 
 		this.#logger.log(
