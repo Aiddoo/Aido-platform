@@ -3,15 +3,22 @@
  *
  * 자연어 투두 파싱, 월간 사용량 관리(KST 매월 1일 00:00 리셋), 권한별 제한 검증
  *
- * - Suites: 자동 Mock 생성 (DatabaseService, EntitlementService)
+ * - Suites: 자동 Mock 생성 (EntitlementService, UserRepository)
+ * - UNIT_OF_WORK: run이 콜백을 즉시 실행하는 passthrough mock
+ * - TransactionHost.tx: Prisma mock 스텁
  * - FakeAiProvider: AI_PROVIDER Symbol 토큰용 테스트 더블
  * - GWT: Given/When/Then 주석
  */
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
+import { UNIT_OF_WORK } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { FakeAiProvider } from "../../../test/mocks/fake-ai.provider";
 import { UserRepository } from "../auth/repositories/user.repository";
 import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
@@ -21,7 +28,7 @@ import { AI_PROVIDER } from "./providers/ai.provider";
 describe("AiService — AI 서비스", () => {
 	let service: AiService;
 	let fakeAiProvider: FakeAiProvider;
-	let database: Mocked<DatabaseService>;
+	let mockDb: MockPrismaClient;
 	let entitlementService: Mocked<EntitlementService>;
 	let userRepository: Mocked<UserRepository>;
 	let todoCategoryRepository: Mocked<TodoCategoryRepository>;
@@ -34,22 +41,25 @@ describe("AiService — AI 서비스", () => {
 
 	beforeEach(async () => {
 		fakeAiProvider = new FakeAiProvider();
+		mockDb = createMockPrisma();
 
 		const { unit, unitRef } = await TestBed.solitary(AiService)
 			.mock(AI_PROVIDER)
 			.impl(() => fakeAiProvider)
+			// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			// TransactionHost.tx — 리포지토리 tx 브릿지/직접 쿼리용 클라이언트 스텁
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: mockDb }))
 			.compile();
 
 		service = unit;
-		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
 		userRepository = unitRef.get(UserRepository);
 		todoCategoryRepository = unitRef.get(TodoCategoryRepository);
-
-		// $transaction passthrough
-		(database.$transaction as jest.Mock).mockImplementation(
-			(callback: (tx: unknown) => unknown) => callback(database),
-		);
 
 		// 기본: FREE 사용자 (dailyLimit: 5)
 		(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
@@ -479,7 +489,7 @@ describe("AiService — AI 서비스", () => {
 	describe("getUsage", () => {
 		it("현재 사용량을 반환한다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 3,
 				aiUsageResetAt: new Date(),
 			});
@@ -502,7 +512,7 @@ describe("AiService — AI 서비스", () => {
 			const lastMonth = new Date();
 			lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 5,
 				aiUsageResetAt: lastMonth,
 			});
@@ -517,7 +527,7 @@ describe("AiService — AI 서비스", () => {
 
 		it("사용자를 찾을 수 없으면 에러를 던진다", async () => {
 			// Given
-			(database.user.findUnique as jest.Mock).mockResolvedValue(null);
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue(null);
 
 			// When & Then
 			await expect(service.getUsage("unknown-user")).rejects.toThrow(
@@ -532,7 +542,7 @@ describe("AiService — AI 서비스", () => {
 				isAdmin: true,
 				subscriptionStatus: "FREE",
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 3,
 				aiUsageResetAt: new Date(),
 			});
@@ -554,7 +564,7 @@ describe("AiService — AI 서비스", () => {
 				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
 			});
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 10,
 				aiUsageResetAt: new Date(),
 			});
@@ -669,7 +679,7 @@ describe("AiService — AI 서비스", () => {
 			// now = KST 2026-04-18 14:00 (UTC 2026-04-18T05:00:00Z)
 			setSystemTime("2026-04-18T05:00:00.000Z");
 
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 2,
 				aiUsageResetAt: new Date("2026-04-01T00:00:00.000Z"),
 			});
@@ -685,7 +695,7 @@ describe("AiService — AI 서비스", () => {
 			// now = KST 2026-12-15 09:00 (UTC 2026-12-15T00:00:00Z)
 			setSystemTime("2026-12-15T00:00:00.000Z");
 
-			(database.user.findUnique as jest.Mock).mockResolvedValue({
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
 				aiUsageCount: 1,
 				aiUsageResetAt: new Date("2026-12-01T00:00:00.000Z"),
 			});

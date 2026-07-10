@@ -19,7 +19,10 @@ import {
 	parsedTodoDataSchema,
 } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { APICallError } from "ai";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { addMonths } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { toISOString, toIsoMonthId } from "@/common/date/utils/format";
@@ -30,7 +33,7 @@ import {
 	Feature,
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { UserRepository } from "../auth/repositories/user.repository";
 import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
 import { buildParseMemoPrompt } from "./prompts/parse-memo.prompt";
@@ -94,7 +97,11 @@ export class AiService {
 	constructor(
 		@Inject(AI_PROVIDER)
 		private readonly aiProvider: AiProvider,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 		private readonly entitlementService: EntitlementService,
 		private readonly userRepository: UserRepository,
 		private readonly todoCategoryRepository: TodoCategoryRepository,
@@ -295,7 +302,7 @@ export class AiService {
 	 * @returns 사용량 정보
 	 */
 	async getUsage(userId: string): Promise<UsageInfo> {
-		const user = await this.database.user.findUnique({
+		const user = await this.txHost.tx.user.findUnique({
 			where: { id: userId },
 			select: { aiUsageCount: true, aiUsageResetAt: true },
 		});
@@ -326,8 +333,11 @@ export class AiService {
 	async #checkAndIncrementUsage(userId: string): Promise<void> {
 		const monthlyLimit = await this.#getMonthlyLimit(userId);
 
-		await this.database.$transaction(async (tx) => {
-			const user = await this.userRepository.findAiUsage(userId, tx);
+		await this.uow.run(async () => {
+			const user = await this.userRepository.findAiUsage(
+				userId,
+				this.txHost.tx,
+			);
 
 			if (!user) {
 				throw BusinessExceptions.userNotFound(userId);
@@ -343,9 +353,12 @@ export class AiService {
 			);
 
 			if (isNewMonth) {
-				await this.userRepository.resetAndIncrementAiUsage(userId, tx);
+				await this.userRepository.resetAndIncrementAiUsage(
+					userId,
+					this.txHost.tx,
+				);
 			} else {
-				await this.userRepository.incrementAiUsage(userId, tx);
+				await this.userRepository.incrementAiUsage(userId, this.txHost.tx);
 			}
 		});
 	}
