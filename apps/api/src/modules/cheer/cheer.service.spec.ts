@@ -9,15 +9,20 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { CHEER_LIMITS } from "@aido/validators";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { CheerBuilder } from "@test/builders";
+import { createMockPrisma } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
+import { UNIT_OF_WORK } from "@/common/database";
 import {
 	EntitlementService,
 	Feature,
 } from "@/common/entitlement/entitlement.service";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -30,7 +35,6 @@ describe("CheerService — 응원 서비스", () => {
 	let followService: Mocked<FollowService>;
 	let paginationService: Mocked<PaginationService>;
 	let notificationQueueService: Mocked<NotificationQueueService>;
-	let database: Mocked<DatabaseService>;
 	let entitlementService: Mocked<EntitlementService>;
 
 	// 테스트 데이터
@@ -41,20 +45,23 @@ describe("CheerService — 응원 서비스", () => {
 		// ID 카운터 리셋
 		CheerBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(CheerService).compile();
+		const { unit, unitRef } = await TestBed.solitary(CheerService)
+			// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			// TransactionHost.tx — getFeatureLimitInTx에 전달할 클라이언트 스텁
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: createMockPrisma() }))
+			.compile();
 
 		service = unit;
 		cheerRepo = unitRef.get(CheerRepository);
 		followService = unitRef.get(FollowService);
 		paginationService = unitRef.get(PaginationService);
 		notificationQueueService = unitRef.get(NotificationQueueService);
-		database = unitRef.get(DatabaseService);
 		entitlementService = unitRef.get(EntitlementService);
-
-		// DatabaseService.$transaction passthrough mock 설정
-		(database.$transaction as jest.Mock).mockImplementation(
-			(callback: (tx: unknown) => Promise<unknown>) => callback({}),
-		);
 
 		// Repository 트랜잭션 메서드 기본 mock 설정
 		(cheerRepo.countSentSince as jest.Mock).mockResolvedValue(0);
@@ -313,14 +320,11 @@ describe("CheerService — 응원 서비스", () => {
 
 				// Then
 				expect(result).toEqual(expectedCheer);
-				expect(cheerRepo.createWithRelations).toHaveBeenCalledWith(
-					{
-						senderId: validParams.senderId,
-						receiverId: validParams.receiverId,
-						message: validParams.message,
-					},
-					expect.anything(),
-				);
+				expect(cheerRepo.createWithRelations).toHaveBeenCalledWith({
+					senderId: validParams.senderId,
+					receiverId: validParams.receiverId,
+					message: validParams.message,
+				});
 			});
 
 			it("메시지 없이도 Cheer를 생성할 수 있다", async () => {

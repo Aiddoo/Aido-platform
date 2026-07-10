@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database/prisma.types";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { USER_BRIEF_SELECT } from "@/common/database/selects";
 import { addDays } from "@/common/date/utils/arithmetic";
 import { now } from "@/common/date/utils/core";
 import { startOfDay } from "@/common/date/utils/range";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type { Cheer } from "@/generated/prisma/client";
 
 import type {
@@ -14,9 +15,22 @@ import type {
 	FindCheersParams,
 } from "./types";
 
+/**
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다(기존 `tx ?? this.database`와 등가).
+ */
 @Injectable()
 export class CheerRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	readonly #cheerInclude = {
 		sender: {
@@ -30,9 +44,8 @@ export class CheerRepository {
 	/**
 	 * ID로 Cheer 조회
 	 */
-	async findById(id: number, tx?: TransactionClient): Promise<Cheer | null> {
-		const client = tx ?? this.database;
-		return client.cheer.findUnique({
+	async findById(id: number): Promise<Cheer | null> {
+		return this.client.cheer.findUnique({
 			where: { id },
 		});
 	}
@@ -40,9 +53,8 @@ export class CheerRepository {
 	/**
 	 * Cheer 읽음 처리
 	 */
-	async markAsRead(id: number, tx?: TransactionClient): Promise<Cheer> {
-		const client = tx ?? this.database;
-		return client.cheer.update({
+	async markAsRead(id: number): Promise<Cheer> {
+		return this.client.cheer.update({
 			where: { id },
 			data: { readAt: now() },
 		});
@@ -51,13 +63,8 @@ export class CheerRepository {
 	/**
 	 * 여러 Cheer 읽음 처리
 	 */
-	async markManyAsRead(
-		ids: number[],
-		receiverId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.cheer.updateMany({
+	async markManyAsRead(ids: number[], receiverId: string): Promise<number> {
+		const result = await this.client.cheer.updateMany({
 			where: {
 				id: { in: ids },
 				receiverId,
@@ -73,12 +80,10 @@ export class CheerRepository {
 	 */
 	async findReceivedCheers(
 		params: FindCheersParams,
-		tx?: TransactionClient,
 	): Promise<CheerWithRelations[]> {
-		const client = tx ?? this.database;
 		const { userId, cursor, size } = params;
 
-		return client.cheer.findMany({
+		return this.client.cheer.findMany({
 			where: {
 				receiverId: userId,
 			},
@@ -97,12 +102,10 @@ export class CheerRepository {
 	 */
 	async findSentCheers(
 		params: FindCheersParams,
-		tx?: TransactionClient,
 	): Promise<CheerWithRelations[]> {
-		const client = tx ?? this.database;
 		const { userId, cursor, size } = params;
 
-		return client.cheer.findMany({
+		return this.client.cheer.findMany({
 			where: {
 				senderId: userId,
 			},
@@ -119,17 +122,13 @@ export class CheerRepository {
 	/**
 	 * 오늘 보낸 Cheer 수 조회 (일일 제한 체크용)
 	 */
-	async countTodayCheers(
-		params: CheckDailyLimitParams,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
+	async countTodayCheers(params: CheckDailyLimitParams): Promise<number> {
 		const { senderId, date } = params;
 
 		const dayStart = startOfDay(date);
 		const dayEnd = addDays(1, dayStart);
 
-		return client.cheer.count({
+		return this.client.cheer.count({
 			where: {
 				senderId,
 				createdAt: {
@@ -145,12 +144,10 @@ export class CheerRepository {
 	 */
 	async findLastCheerToUser(
 		params: CheckCooldownParams,
-		tx?: TransactionClient,
 	): Promise<Cheer | null> {
-		const client = tx ?? this.database;
 		const { senderId, receiverId } = params;
 
-		return client.cheer.findFirst({
+		return this.client.cheer.findFirst({
 			where: {
 				senderId,
 				receiverId,
@@ -162,9 +159,8 @@ export class CheerRepository {
 	/**
 	 * 받은 Cheer 총 개수
 	 */
-	async countReceived(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.cheer.count({
+	async countReceived(userId: string): Promise<number> {
+		return this.client.cheer.count({
 			where: { receiverId: userId },
 		});
 	}
@@ -172,9 +168,8 @@ export class CheerRepository {
 	/**
 	 * 보낸 Cheer 총 개수
 	 */
-	async countSent(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.cheer.count({
+	async countSent(userId: string): Promise<number> {
+		return this.client.cheer.count({
 			where: { senderId: userId },
 		});
 	}
@@ -182,12 +177,8 @@ export class CheerRepository {
 	/**
 	 * 읽지 않은 받은 Cheer 개수
 	 */
-	async countUnreadReceived(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.cheer.count({
+	async countUnreadReceived(userId: string): Promise<number> {
+		return this.client.cheer.count({
 			where: { receiverId: userId, readAt: null },
 		});
 	}
@@ -195,13 +186,8 @@ export class CheerRepository {
 	/**
 	 * 특정 시점 이후 보낸 Cheer 수 (트랜잭션 내 일일 제한 체크용)
 	 */
-	async countSentSince(
-		senderId: string,
-		since: Date,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		return client.cheer.count({
+	async countSentSince(senderId: string, since: Date): Promise<number> {
+		return this.client.cheer.count({
 			where: {
 				senderId,
 				createdAt: { gte: since },
@@ -212,12 +198,12 @@ export class CheerRepository {
 	/**
 	 * Cheer 생성 (관계 데이터 포함)
 	 */
-	async createWithRelations(
-		data: { senderId: string; receiverId: string; message?: string },
-		tx?: TransactionClient,
-	): Promise<CheerWithRelations> {
-		const client = tx ?? this.database;
-		return client.cheer.create({
+	async createWithRelations(data: {
+		senderId: string;
+		receiverId: string;
+		message?: string;
+	}): Promise<CheerWithRelations> {
+		return this.client.cheer.create({
 			data: {
 				sender: { connect: { id: data.senderId } },
 				receiver: { connect: { id: data.receiverId } },

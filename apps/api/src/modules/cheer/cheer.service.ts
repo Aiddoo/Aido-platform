@@ -1,5 +1,8 @@
 import { CHEER_LIMITS } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { calculateCooldown } from "@/common/date/utils/cooldown";
 import { now } from "@/common/date/utils/core";
 import { startOfDayInTimezone } from "@/common/date/utils/timezone";
@@ -10,7 +13,7 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -31,7 +34,11 @@ export class CheerService {
 		private readonly followService: FollowService,
 		private readonly paginationService: PaginationService,
 		private readonly notificationQueueService: NotificationQueueService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 		private readonly entitlementService: EntitlementService,
 	) {}
 
@@ -67,12 +74,12 @@ export class CheerService {
 			throw BusinessExceptions.cheerNotFriend(receiverId);
 		}
 
-		const cheer = await this.database.$transaction(async (tx) => {
+		const cheer = await this.uow.run(async () => {
 			// 3. 일일 제한 체크
 			const todayStart = startOfDayInTimezone(now(), tz);
 
 			const entitlement = await this.entitlementService.getFeatureLimitInTx(
-				tx,
+				this.txHost.tx,
 				senderId,
 				Feature.CHEER,
 			);
@@ -80,7 +87,6 @@ export class CheerService {
 			const used = await this.cheerRepository.countSentSince(
 				senderId,
 				todayStart,
-				tx,
 			);
 
 			this.entitlementService.enforceLimit(entitlement, used, (_used, limit) =>
@@ -88,10 +94,10 @@ export class CheerService {
 			);
 
 			// 4. 쿨다운 체크
-			const lastCheer = await this.cheerRepository.findLastCheerToUser(
-				{ senderId, receiverId },
-				tx,
-			);
+			const lastCheer = await this.cheerRepository.findLastCheerToUser({
+				senderId,
+				receiverId,
+			});
 
 			if (lastCheer) {
 				const cooldown = calculateCooldown(
@@ -107,10 +113,11 @@ export class CheerService {
 			}
 
 			// 5. Cheer 생성
-			return this.cheerRepository.createWithRelations(
-				{ senderId, receiverId, message },
-				tx,
-			);
+			return this.cheerRepository.createWithRelations({
+				senderId,
+				receiverId,
+				message,
+			});
 		});
 
 		this.#logger.log(
