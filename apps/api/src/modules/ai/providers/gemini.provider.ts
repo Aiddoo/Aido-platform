@@ -1,11 +1,12 @@
 /**
  * Google Gemini Provider
  *
- * Vercel AI SDK를 사용하여 Google Gemini 2.5 Flash-Lite 모델과 통신합니다.
+ * Vercel AI SDK를 사용하여 Google Gemini 3.1 Flash-Lite 모델과 통신합니다.
+ * (2.5-flash-lite는 2026-10-16 셧다운 — 3.1이 공식 후속 모델)
  *
- * 가격 (2026년 4월 기준, Gemini Developer API Standard / text,image,video):
- * - Input: $0.10 / 1M tokens
- * - Output: $0.40 / 1M tokens
+ * 가격 (2026년 7월 기준, Gemini Developer API Standard / text,image,video):
+ * - Input: $0.25 / 1M tokens
+ * - Output: $1.50 / 1M tokens
  * 출처: https://ai.google.dev/gemini-api/docs/pricing
  */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -23,8 +24,8 @@ import type {
 } from "./ai.provider";
 
 /** Gemini 모델 설정 */
-const GEMINI_MODEL = "gemini-2.5-flash-lite" as const;
-const DEFAULT_MAX_TOKENS = 150;
+const GEMINI_MODEL = "gemini-3.1-flash-lite" as const;
+const DEFAULT_MAX_OUTPUT_TOKENS = 150;
 const DEFAULT_TEMPERATURE = 0.1;
 const API_TIMEOUT_MS = 30_000;
 
@@ -60,10 +61,13 @@ export class GeminiProvider implements AiProvider {
 		try {
 			const { object, usage } = await generateObject({
 				model: this.#model,
-				...(options.system && { system: options.system }),
+				// AI SDK v7: system → instructions (내부 포트의 system 필드를 매핑)
+				...(options.system && { instructions: options.system }),
 				prompt: options.prompt,
 				schema: options.schema as z.ZodType<T>,
-				maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
+				// v6까지 maxTokens로 잘못 전달되어 조용히 무시되던 latent bug 수정 —
+				// 이 상한은 이번에 처음으로 실제 적용된다
+				maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
 				temperature: options.temperature ?? DEFAULT_TEMPERATURE,
 				abortSignal: AbortSignal.timeout(API_TIMEOUT_MS),
 			});

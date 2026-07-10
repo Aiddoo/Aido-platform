@@ -97,13 +97,13 @@ describe("ReportGeneratorService — 리포트 생성 서비스", () => {
 			// When -generate를 호출하면
 			await service.generate(mockParams);
 
-			// Then -prompt, schema, maxTokens, temperature가 전달되어야 한다
+			// Then -prompt, schema, maxOutputTokens, temperature가 전달되어야 한다
 			const args = mockAiProvider.generateStructured.mock.calls[0];
 			expect(args).toBeDefined();
 			const callArgs = args?.[0];
 			expect(callArgs?.prompt).toContain("아이도냥");
 			expect(callArgs?.schema).toBeDefined();
-			expect(callArgs?.maxTokens).toBe(800);
+			expect(callArgs?.maxOutputTokens).toBe(800);
 			expect(callArgs?.temperature).toBe(0.7);
 		});
 	});

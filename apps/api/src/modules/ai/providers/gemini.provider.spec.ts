@@ -131,7 +131,7 @@ describe("GeminiProvider — Gemini AI 프로바이더", () => {
 			const result = await provider.generateStructured({
 				prompt: "내일 회의",
 				schema: testSchema,
-				maxTokens: 200,
+				maxOutputTokens: 200,
 				temperature: 0.5,
 			});
 
@@ -139,7 +139,7 @@ describe("GeminiProvider — Gemini AI 프로바이더", () => {
 			expect(generateObject).toHaveBeenCalledWith(
 				expect.objectContaining({
 					prompt: "내일 회의",
-					maxTokens: 200,
+					maxOutputTokens: 200,
 					temperature: 0.5,
 				}),
 			);
@@ -148,14 +148,14 @@ describe("GeminiProvider — Gemini AI 프로바이더", () => {
 				startDate: "2025-01-26",
 				isAllDay: true,
 			});
-			expect(result.model).toBe("google:gemini-2.5-flash-lite");
+			expect(result.model).toBe("google:gemini-3.1-flash-lite");
 			expect(result.usage).toEqual({
 				input: 100,
 				output: 50,
 			});
 		});
 
-		it("기본값으로 maxTokens=150, temperature=0.1을 사용한다", async () => {
+		it("기본값으로 maxOutputTokens=150, temperature=0.1을 사용한다", async () => {
 			// Given - API 키가 설정됨
 			const { generateObject } = require("ai");
 			generateObject.mockResolvedValue({
@@ -175,7 +175,7 @@ describe("GeminiProvider — Gemini AI 프로바이더", () => {
 			// Then - 기본값이 사용됨
 			expect(generateObject).toHaveBeenCalledWith(
 				expect.objectContaining({
-					maxTokens: 150,
+					maxOutputTokens: 150,
 					temperature: 0.1,
 				}),
 			);

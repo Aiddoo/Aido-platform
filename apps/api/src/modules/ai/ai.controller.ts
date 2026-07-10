@@ -57,7 +57,7 @@ export class AiController {
 	 *     "recurrence": null
 	 *   },
 	 *   "meta": {
-	 *     "model": "google:gemini-2.5-flash-lite",
+	 *     "model": "google:gemini-3.1-flash-lite",
 	 *     "processingTimeMs": 185,
 	 *     "tokenUsage": { "input": 180, "output": 45 }
 	 *   }
@@ -248,7 +248,7 @@ if (confirmed) {
 	 *     ]
 	 *   },
 	 *   "meta": {
-	 *     "model": "google:gemini-2.5-flash-lite",
+	 *     "model": "google:gemini-3.1-flash-lite",
 	 *     "processingTimeMs": 350,
 	 *     "tokenUsage": { "input": 450, "output": 280 }
 	 *   }

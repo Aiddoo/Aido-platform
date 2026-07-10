@@ -68,5 +68,9 @@ module.exports = {
     '^@aido/validators$': '<rootDir>/../../packages/validators/src',
     '^@aido/utils$': '<rootDir>/../../packages/utils/src',
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    // ESM-only 패키지 스텁 (jest 29 CJS 런타임은 require(esm) 불가)
+    '^expo-server-sdk$': '<rootDir>/test/mocks/expo-server-sdk.mock.ts',
+    '^ai$': '<rootDir>/test/mocks/ai.mock.ts',
+    '^@ai-sdk/google$': '<rootDir>/test/mocks/ai-sdk-google.mock.ts',
   },
 };

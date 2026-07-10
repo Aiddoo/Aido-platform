@@ -20,7 +20,7 @@ describe("AiRouterProvider — 라우팅 Provider", () => {
 	const schema = z.object({ title: z.string() });
 	const sampleResult: GenerateStructuredResult<{ title: string }> = {
 		output: { title: "테스트" },
-		model: "google:gemini-2.5-flash-lite",
+		model: "google:gemini-3.1-flash-lite",
 		usage: { input: 100, output: 50 },
 	};
 
@@ -50,7 +50,7 @@ describe("AiRouterProvider — 라우팅 Provider", () => {
 
 			// Then
 			expect(mockGemini.generateStructured).toHaveBeenCalledTimes(1);
-			expect(result.model).toBe("google:gemini-2.5-flash-lite");
+			expect(result.model).toBe("google:gemini-3.1-flash-lite");
 		});
 
 		it("modelHint='default' 로 호출해도 Gemini 로 위임한다", async () => {

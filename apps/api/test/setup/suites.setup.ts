@@ -29,9 +29,8 @@ export type { Mocked } from "@suites/doubles.jest";
 export { TestBed } from "@suites/unit";
 
 /**
- * Suites + createMock 하이브리드 사용 가이드
+ * Suites 사용 가이드
  *
  * 1. 단순 서비스 테스트: Suites TestBed 사용 (자동 mock)
- * 2. Repository 테스트: createMock + Prismock 사용
- * 3. 복잡한 의존성: @golevelup/ts-jest createMock 사용
+ * 2. Repository 테스트: 자체 헬퍼(createMockPrisma 등) + Prismock 사용
  */

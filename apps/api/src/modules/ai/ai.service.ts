@@ -144,7 +144,7 @@ export class AiService {
 				system,
 				prompt,
 				schema: parsedTodoDataSchema,
-				maxTokens: 200,
+				maxOutputTokens: 200,
 				temperature: 0.1,
 			});
 
@@ -236,7 +236,7 @@ export class AiService {
 					system,
 					prompt,
 					schema: llmParsedMemoResultSchema,
-					maxTokens: 800,
+					maxOutputTokens: 800,
 					temperature: 0.1,
 				});
 

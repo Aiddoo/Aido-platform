@@ -58,7 +58,7 @@ export class ReportGeneratorService {
 			const result = await this.aiProvider.generateStructured({
 				prompt,
 				schema: getReportAiResponseSchema(locale),
-				maxTokens: REPORT_AI_MAX_TOKENS,
+				maxOutputTokens: REPORT_AI_MAX_TOKENS,
 				temperature: REPORT_AI_TEMPERATURE,
 			});
 
