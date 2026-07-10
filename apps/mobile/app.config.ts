@@ -15,7 +15,7 @@ interface EnvironmentConfig {
 
 const PROJECT_SLUG = 'aido';
 const OWNER = 'aido-team';
-const VERSION = '1.4.3';
+const VERSION = '1.4.4';
 
 const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';

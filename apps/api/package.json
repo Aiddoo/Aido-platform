@@ -48,7 +48,7 @@
 		"@nestjs/throttler": "^6.5.0",
 		"@prisma/adapter-pg": "^7.8.0",
 		"@prisma/client": "^7.8.0",
-		"@sentry/nestjs": "^10.64.0",
+		"@sentry/nestjs": "^10.65.0",
 		"ai": "^7.0.19",
 		"argon2": "^0.44.0",
 		"bullmq": "^5.80.0",

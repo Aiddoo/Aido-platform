@@ -1,5 +1,6 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import { createMockTokenStore } from '@src/shared/__tests__';
+import { TransientAuthError } from '@src/shared/errors';
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import type { RefreshOutcome } from './token-refresher';
 
@@ -140,20 +141,17 @@ describe('createTokenRefreshHook', () => {
     expect(result).toBe(response);
   });
 
-  it('일시적 갱신 실패에서는 세션을 끝내지 않는다', async () => {
+  it('일시적 갱신 실패에서는 세션을 끝내지 않고 재시도 가능한 TransientAuthError를 던진다', async () => {
     // Given — 네트워크·5xx·잠긴 키체인. 서버 장애가 로그아웃이 되면 안 된다.
     tokenStore.readAccessToken.mockResolvedValue('current-token');
     refresh.mockResolvedValue({ kind: 'transient-failure' });
     const request = createFakeRequest({ Authorization: 'Bearer current-token' });
     const response = createFakeResponse(401);
 
-    // When
-    const result = await invokeHook(request, response);
-
-    // Then — 원 401을 반환(로컬 QueryErrorBoundary가 담음), 세션 종료 없음
+    // When / Then — 원 401 대신 TransientAuthError를 던져 React Query가 자동 재시도한다
+    await expect(invokeHook(request, response)).rejects.toBeInstanceOf(TransientAuthError);
     expect(endSession).not.toHaveBeenCalled();
     expect(retry).not.toHaveBeenCalled();
-    expect(result).toBe(response);
   });
 
   it('액세스 토큰 읽기가 실패해도 갱신 경로로 넘어간다 (세션 유지)', async () => {
@@ -162,12 +160,11 @@ describe('createTokenRefreshHook', () => {
     refresh.mockResolvedValue({ kind: 'transient-failure' });
     const response = createFakeResponse(401);
 
-    // When
-    const result = await invokeHook(createFakeRequest(), response);
-
-    // Then — 갱신 경로로 넘어가 일시 실패로 판정되고, 세션은 끝나지 않는다
+    // When / Then — 갱신 경로로 넘어가 일시 실패로 판정되고, 세션은 끝나지 않는다
+    await expect(invokeHook(createFakeRequest(), response)).rejects.toBeInstanceOf(
+      TransientAuthError,
+    );
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
-    expect(result).toBe(response);
   });
 });
