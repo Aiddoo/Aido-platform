@@ -2,6 +2,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Queue } from "bullmq";
 import dayjs from "dayjs";
+import { runInBackground } from "@/common/bullmq/non-blocking-init";
 import { DatabaseService } from "@/database";
 
 import { ACCOUNT_DELETION, SECURITY_EVENT } from "../constants/auth.constants";
@@ -32,19 +33,29 @@ export class AccountPurgeJob implements OnModuleInit {
 		private readonly processor: AccountPurgeProcessor,
 	) {}
 
-	async onModuleInit(): Promise<void> {
+	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+	schedulerRegistration: Promise<void> = Promise.resolve();
+
+	onModuleInit(): void {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setPurgeJob(this);
 
-		await this.queue.upsertJobScheduler(
-			"daily-account-purge-scheduler",
-			{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
-			{ name: "purge-accounts", data: {} },
+		// Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+		this.schedulerRegistration = runInBackground(
+			this.#logger,
+			"Account purge scheduler registration",
+			async () => {
+				await this.queue.upsertJobScheduler(
+					"daily-account-purge-scheduler",
+					{ pattern: "0 3 * * *", tz: "Asia/Seoul" },
+					{ name: "purge-accounts", data: {} },
+				);
+
+				this.#logger.log("Account purge scheduler registered");
+
+				await this.#catchUpIfNeeded();
+			},
 		);
-
-		this.#logger.log("Account purge scheduler registered");
-
-		await this.#catchUpIfNeeded();
 	}
 
 	/**

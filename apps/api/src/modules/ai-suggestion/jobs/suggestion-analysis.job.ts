@@ -3,6 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Job, Queue } from "bullmq";
 import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
+import { runInBackground } from "@/common/bullmq/non-blocking-init";
 import { forEachBatch } from "@/common/database";
 import { subtractDays } from "@/common/date/utils/arithmetic";
 
@@ -36,22 +37,32 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		private readonly processor: SuggestionAnalysisProcessor,
 	) {}
 
-	async onModuleInit(): Promise<void> {
+	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+	schedulerRegistration: Promise<void> = Promise.resolve();
+
+	onModuleInit(): void {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setSuggestionJob(this);
 
-		// 구 weekly 스케줄러 제거 (마이그레이션)
-		await this.queue.removeJobScheduler("weekly-suggestion-scheduler");
+		// Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+		this.schedulerRegistration = runInBackground(
+			this.#logger,
+			"Suggestion analysis scheduler registration",
+			async () => {
+				// 구 weekly 스케줄러 제거 (마이그레이션)
+				await this.queue.removeJobScheduler("weekly-suggestion-scheduler");
 
-		await this.queue.upsertJobScheduler(
-			"daily-suggestion-scheduler",
-			{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
-			{ name: AiSuggestionJobName.DISPATCH, data: {} },
+				await this.queue.upsertJobScheduler(
+					"daily-suggestion-scheduler",
+					{ pattern: "30 7 * * *", tz: "Asia/Seoul" },
+					{ name: AiSuggestionJobName.DISPATCH, data: {} },
+				);
+
+				this.#logger.log("Suggestion analysis scheduler registered");
+
+				await this.#catchUpIfNeeded();
+			},
 		);
-
-		this.#logger.log("Suggestion analysis scheduler registered");
-
-		await this.#catchUpIfNeeded();
 	}
 
 	/**
