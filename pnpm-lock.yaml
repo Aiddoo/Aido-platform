@@ -218,9 +218,6 @@ importers:
       '@aido/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@golevelup/ts-jest':
-        specifier: ^1.2.1
-        version: 1.2.1
       '@nestjs/cli':
         specifier: ^11.0.21
         version: 11.0.23(@swc/cli@0.8.1(@swc/core@1.15.43)(chokidar@4.0.3))(@swc/core@1.15.43)(@types/node@22.19.7)
@@ -1913,9 +1910,6 @@ packages:
 
   '@firebase/webchannel-wrapper@1.0.5':
     resolution: {integrity: sha512-+uGNN7rkfn41HLO0vekTFhTxk61eKa8mTpRGLO0QSqlQdKvIoGAvLp3ppdVIWbTGYJWM6Kp0iN+PjMIOcnVqTw==}
-
-  '@golevelup/ts-jest@1.2.1':
-    resolution: {integrity: sha512-1LQ6iDkKJve1AifgVNN0C27hUfd6zZ2qiAbK8x9Mvur+sB1YGc8Z70uEJPtyHL/akA8e4IEKZWC8lkKe/WuTlw==}
 
   '@gorhom/bottom-sheet@5.2.14':
     resolution: {integrity: sha512-uLQFlDjp9z+jrOFcMSEldPqL5JdaXL3vXOh+juhwoNvXgTsEorJLjHTugXu+YccAG/0KJnShzKCrb71MHBsvJg==}
@@ -11451,8 +11445,6 @@ snapshots:
       tslib: 2.8.1
 
   '@firebase/webchannel-wrapper@1.0.5': {}
-
-  '@golevelup/ts-jest@1.2.1': {}
 
   '@gorhom/bottom-sheet@5.2.14(7c6afe6f9317dff239695b243ad697ad)':
     dependencies:
