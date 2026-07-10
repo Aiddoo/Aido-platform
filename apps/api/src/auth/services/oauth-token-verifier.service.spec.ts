@@ -1,0 +1,405 @@
+/**
+ * OAuthTokenVerifierService 단위 테스트
+ *
+ * @description
+ * Google, Kakao, Naver, Apple OAuth 토큰 검증 로직을 검증한다.
+ * 유효/만료/잘못된 토큰 처리, 프로필 파싱을 확인한다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/api test oauth-token-verifier.service.spec.ts
+ * ```
+ */
+
+import { ConfigService } from "@nestjs/config";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+
+import { OAuthTokenVerifierService } from "./oauth-token-verifier.service";
+
+// Google Auth Library 모킹
+jest.mock("google-auth-library", () => ({
+	OAuth2Client: jest.fn().mockImplementation(() => ({
+		verifyIdToken: jest.fn(),
+	})),
+}));
+
+describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
+	let service: OAuthTokenVerifierService;
+	let mockGoogleVerifyIdToken: jest.Mock;
+	let configService: Mocked<ConfigService>;
+
+	beforeEach(async () => {
+		// Google Auth Library mock 설정
+		const { OAuth2Client } = jest.requireMock("google-auth-library");
+		mockGoogleVerifyIdToken = jest.fn();
+		OAuth2Client.mockImplementation(() => ({
+			verifyIdToken: mockGoogleVerifyIdToken,
+		}));
+
+		const { unit, unitRef } = await TestBed.solitary(
+			OAuthTokenVerifierService,
+		).compile();
+
+		service = unit;
+		configService = unitRef.get(ConfigService);
+
+		// ConfigService mock 설정
+		configService.get.mockImplementation((key: string) => {
+			const config: Record<string, string> = {
+				GOOGLE_CLIENT_ID: "google-client-id",
+				APPLE_CLIENT_ID: "apple-client-id",
+			};
+			return config[key];
+		});
+	});
+
+	describe("verifyGoogleToken", () => {
+		const validGooglePayload = {
+			sub: "google-user-123",
+			email: "test@gmail.com",
+			email_verified: true,
+			name: "홍길동",
+			picture: "https://lh3.googleusercontent.com/photo.jpg",
+		};
+
+		it("유효한 Google ID Token을 검증하면 프로필을 반환한다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockResolvedValue({
+				getPayload: () => validGooglePayload,
+			});
+
+			// When
+			const result = await service.verifyGoogleToken("valid-google-token");
+
+			// Then
+			expect(result).toEqual({
+				id: "google-user-123",
+				email: "test@gmail.com",
+				emailVerified: true,
+				name: "홍길동",
+				picture: "https://lh3.googleusercontent.com/photo.jpg",
+			});
+			expect(mockGoogleVerifyIdToken).toHaveBeenCalledWith({
+				idToken: "valid-google-token",
+				audience: "google-client-id",
+			});
+		});
+
+		it("이메일이 없는 Google 프로필도 처리한다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockResolvedValue({
+				getPayload: () => ({
+					sub: "google-user-456",
+					email_verified: false,
+				}),
+			});
+
+			// When
+			const result = await service.verifyGoogleToken("valid-token");
+
+			// Then
+			expect(result).toEqual({
+				id: "google-user-456",
+				email: null,
+				emailVerified: false,
+				name: undefined,
+				picture: undefined,
+			});
+		});
+
+		it("payload가 없으면 에러를 발생시킨다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockResolvedValue({
+				getPayload: () => null,
+			});
+
+			// When & Then
+			await expect(service.verifyGoogleToken("invalid-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("만료된 토큰은 socialTokenExpired 에러를 발생시킨다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockRejectedValue(
+				new Error("Token used too late, expired"),
+			);
+
+			// When & Then
+			await expect(service.verifyGoogleToken("expired-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("잘못된 토큰은 socialTokenInvalid 에러를 발생시킨다", async () => {
+			// Given
+			mockGoogleVerifyIdToken.mockRejectedValue(new Error("Invalid signature"));
+
+			// When & Then
+			await expect(
+				service.verifyGoogleToken("malformed-token"),
+			).rejects.toThrow(BusinessException);
+		});
+	});
+
+	describe("verifyKakaoToken", () => {
+		const mockKakaoResponse = {
+			id: 12345678,
+			kakao_account: {
+				email: "test@kakao.com",
+				is_email_verified: true,
+				profile: {
+					nickname: "카카오유저",
+					profile_image_url: "https://k.kakaocdn.net/dn/profile.jpg",
+				},
+			},
+		};
+
+		beforeEach(() => {
+			global.fetch = jest.fn();
+		});
+
+		it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () => Promise.resolve(mockKakaoResponse),
+			});
+
+			// When
+			const result = await service.verifyKakaoToken("valid-kakao-token");
+
+			// Then
+			expect(result).toEqual({
+				id: "12345678",
+				email: "test@kakao.com",
+				emailVerified: true,
+				name: "카카오유저",
+				picture: "https://k.kakaocdn.net/dn/profile.jpg",
+			});
+
+			expect(global.fetch).toHaveBeenCalledWith(
+				"https://kapi.kakao.com/v2/user/me?secure_resource=true",
+				expect.objectContaining({
+					headers: {
+						Authorization: "Bearer valid-kakao-token",
+						"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+					},
+				}),
+			);
+		});
+
+		it("이메일이 없는 Kakao 계정도 처리한다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						id: 87654321,
+						kakao_account: {
+							profile: {
+								nickname: "닉네임만",
+							},
+						},
+					}),
+			});
+
+			// When
+			const result = await service.verifyKakaoToken("valid-token");
+
+			// Then
+			expect(result.email).toBeNull();
+			expect(result.emailVerified).toBe(false);
+		});
+
+		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: false,
+				status: 401,
+			});
+
+			// When & Then
+			await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: false,
+				status: 400,
+			});
+
+			// When & Then
+			await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+	});
+
+	describe("verifyNaverToken", () => {
+		const mockNaverResponse = {
+			resultcode: "00",
+			message: "success",
+			response: {
+				id: "naver-user-123",
+				email: "test@naver.com",
+				name: "네이버유저",
+				nickname: "네이버닉네임",
+				profile_image: "https://phinf.pstatic.net/profile.jpg",
+			},
+		};
+
+		beforeEach(() => {
+			global.fetch = jest.fn();
+		});
+
+		it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () => Promise.resolve(mockNaverResponse),
+			});
+
+			// When
+			const result = await service.verifyNaverToken("valid-naver-token");
+
+			// Then
+			expect(result).toEqual({
+				id: "naver-user-123",
+				email: "test@naver.com",
+				emailVerified: false, // Naver는 이메일 인증 여부를 제공하지 않으므로 항상 false
+				name: "네이버유저",
+				picture: "https://phinf.pstatic.net/profile.jpg",
+			});
+			expect(global.fetch).toHaveBeenCalledWith(
+				"https://openapi.naver.com/v1/nid/me",
+				expect.objectContaining({
+					headers: {
+						Authorization: "Bearer valid-naver-token",
+					},
+				}),
+			);
+		});
+
+		it("이름이 없으면 닉네임을 사용한다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						resultcode: "00",
+						message: "success",
+						response: {
+							id: "naver-user-456",
+							nickname: "닉네임만",
+						},
+					}),
+			});
+
+			// When
+			const result = await service.verifyNaverToken("valid-token");
+
+			// Then
+			expect(result.name).toBe("닉네임만");
+		});
+
+		it("이메일이 없으면 emailVerified는 false이다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						resultcode: "00",
+						message: "success",
+						response: {
+							id: "naver-user-789",
+							name: "이름만",
+						},
+					}),
+			});
+
+			// When
+			const result = await service.verifyNaverToken("valid-token");
+
+			// Then
+			expect(result.email).toBeNull();
+			expect(result.emailVerified).toBe(false);
+		});
+
+		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: false,
+				status: 401,
+			});
+
+			// When & Then
+			await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("resultcode가 00이 아니면 에러를 발생시킨다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						resultcode: "01",
+						message: "error",
+					}),
+			});
+
+			// When & Then
+			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("response가 없으면 에러를 발생시킨다", async () => {
+			// Given
+			(global.fetch as jest.Mock).mockResolvedValue({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						resultcode: "00",
+						message: "success",
+					}),
+			});
+
+			// When & Then
+			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+	});
+
+	// Apple 토큰 검증은 jose ESM 모듈을 사용하므로
+	// 단위 테스트가 어렵습니다. E2E 또는 통합 테스트에서 검증합니다.
+	describe("verifyAppleToken", () => {
+		it.skip("Apple 토큰 검증은 통합 테스트에서 수행합니다", () => {
+			// jose는 ESM-only 모듈이므로 Jest에서 동적 import 모킹이 어렵습니다.
+			// 실제 Apple 토큰 검증은 E2E 테스트 또는 실제 환경에서 검증합니다.
+		});
+
+		// nonce 검증 테스트 — jose ESM 모킹 제약으로 스킵
+		// verifyAppleToken 내부에서 jose.jwtVerify 호출 후 nonce를 SHA256 비교
+		it.skip("nonce가 제공되고 일치하면 검증에 성공한다", () => {
+			// expectedNonce → SHA256 해시 → payload.nonce와 비교 → 일치 시 통과
+		});
+
+		it.skip("nonce가 제공되고 불일치하면 socialTokenInvalid를 던진다", () => {
+			// expectedNonce → SHA256 해시 → payload.nonce와 불일치 → BusinessException
+		});
+
+		it.skip("nonce가 없으면 nonce 검증을 건너뛴다", () => {
+			// expectedNonce 미제공 → nonce 검증 로직 스킵 → 정상 반환
+		});
+	});
+});

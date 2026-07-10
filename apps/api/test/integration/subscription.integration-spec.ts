@@ -26,14 +26,14 @@ import { SubscriptionEventBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { UNIT_OF_WORK } from "@/common/database";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { LOCK_PROVIDER } from "@/common/lock";
-import { AdminNotificationQueueService } from "@/modules/admin-notification/queue/admin-notification-queue.service";
-import { NotificationQueueService } from "@/modules/notification/queue";
-import { SubscriptionRepository } from "@/modules/subscription/subscription.repository";
-import { SubscriptionService } from "@/modules/subscription/subscription.service";
+import { AdminNotificationQueueService } from "@/admin-notification/queue/admin-notification-queue.service";
+import { NotificationQueueService } from "@/notification/queue";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { LOCK_PROVIDER } from "@/shared/infrastructure/lock";
+import { SubscriptionRepository } from "@/subscription/subscription.repository";
+import { SubscriptionService } from "@/subscription/subscription.service";
 
 describe("SubscriptionService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

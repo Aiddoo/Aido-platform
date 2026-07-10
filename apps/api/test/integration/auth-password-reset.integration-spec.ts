@@ -22,10 +22,10 @@
 
 import type { TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { BusinessException } from "@/common/exception";
-import { DatabaseService } from "@/database/database.service";
-import { AuthService } from "@/modules/auth/services/auth.service";
-import { PasswordManagementService } from "@/modules/auth/services/password-management.service";
+import { AuthService } from "@/auth/services/auth.service";
+import { PasswordManagementService } from "@/auth/services/password-management.service";
+import { BusinessException } from "@/shared/application/exceptions";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import { FakeEmailService } from "../mocks/fake-email.service";
 import { TestDatabase } from "../setup/test-database";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory";

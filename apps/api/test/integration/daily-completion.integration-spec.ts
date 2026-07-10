@@ -23,9 +23,9 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
-import type { DatabaseService } from "@/database/database.service";
-import { DailyCompletionRepository } from "@/modules/daily-completion/daily-completion.repository";
-import { DailyCompletionService } from "@/modules/daily-completion/daily-completion.service";
+import { DailyCompletionRepository } from "@/daily-completion/daily-completion.repository";
+import { DailyCompletionService } from "@/daily-completion/daily-completion.service";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
 

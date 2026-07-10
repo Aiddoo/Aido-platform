@@ -1,0 +1,56 @@
+import { BullModule } from "@nestjs/bullmq";
+import { Module } from "@nestjs/common";
+
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+import { DatabaseModule } from "@/shared/infrastructure/database";
+
+import { DailySignupSummaryJob } from "./jobs/daily-signup-summary.job";
+import {
+	ADMIN_NOTIFIER,
+	PAYMENT_NOTIFIER,
+} from "./providers/admin-notifier.interface";
+import { DiscordWebhookProvider } from "./providers/discord-webhook.provider";
+import {
+	ADMIN_NOTIFICATION_QUEUE,
+	AdminNotificationProcessor,
+	AdminNotificationQueueService,
+} from "./queue";
+
+function isTestRuntime(config: TypedConfigService): boolean {
+	return config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
+}
+
+@Module({
+	imports: [
+		DatabaseModule,
+		BullModule.registerQueue({ name: ADMIN_NOTIFICATION_QUEUE }),
+	],
+	providers: [
+		{
+			provide: ADMIN_NOTIFIER,
+			useFactory: (config: TypedConfigService) =>
+				new DiscordWebhookProvider(
+					isTestRuntime(config) ? undefined : config.discordSignupWebhookUrl,
+				),
+			inject: [TypedConfigService],
+		},
+		{
+			provide: PAYMENT_NOTIFIER,
+			useFactory: (config: TypedConfigService) =>
+				new DiscordWebhookProvider(
+					isTestRuntime(config) ? undefined : config.discordPaymentWebhookUrl,
+				),
+			inject: [TypedConfigService],
+		},
+		AdminNotificationProcessor,
+		AdminNotificationQueueService,
+		DailySignupSummaryJob,
+	],
+	exports: [
+		ADMIN_NOTIFIER,
+		PAYMENT_NOTIFIER,
+		AdminNotificationQueueService,
+		BullModule,
+	],
+})
+export class AdminNotificationModule {}

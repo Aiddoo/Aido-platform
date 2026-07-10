@@ -1,0 +1,72 @@
+import type { InquiryCategory } from "@aido/validators";
+import { Injectable, Logger } from "@nestjs/common";
+import { EmailService } from "@/email/email.service";
+import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+import { now } from "@/shared/domain/date/utils/core";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
+
+const CATEGORY_LABELS: Record<InquiryCategory, string> = {
+	BUG_REPORT: "버그 신고",
+	FEATURE_REQUEST: "기능 요청",
+	OTHER: "기타",
+};
+
+function formatSubmittedAtKst(date: Date): string {
+	const parts = new Intl.DateTimeFormat("ko-KR", {
+		timeZone: "Asia/Seoul",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).formatToParts(date);
+
+	const getValue = (type: Intl.DateTimeFormatPartTypes) =>
+		parts.find((part) => part.type === type)?.value ?? "";
+
+	return `${getValue("year")}-${getValue("month")}-${getValue("day")} ${getValue("hour")}:${getValue("minute")} (KST)`;
+}
+
+interface CreateInquiryParams {
+	userId: string;
+	userEmail: string;
+	category: InquiryCategory;
+	content: string;
+}
+
+@Injectable()
+export class InquiryService {
+	readonly #logger = new Logger(InquiryService.name);
+
+	constructor(
+		private readonly emailService: EmailService,
+		private readonly configService: TypedConfigService,
+	) {}
+
+	async createInquiry(params: CreateInquiryParams): Promise<void> {
+		const { userId, userEmail, category, content } = params;
+		const supportEmail = this.configService.email.supportEmail;
+		const categoryLabel = CATEGORY_LABELS[category];
+		const submittedAt = formatSubmittedAtKst(now());
+
+		const result = await this.emailService.sendInquiry(supportEmail, {
+			userEmail,
+			category,
+			categoryLabel,
+			content,
+			submittedAt,
+		});
+
+		if (!result.success) {
+			throw BusinessExceptions.inquiryEmailFailed({
+				userId,
+				error: result.error,
+			});
+		}
+
+		this.#logger.log(
+			`Inquiry submitted: userId=${userId}, category=${category}`,
+		);
+	}
+}

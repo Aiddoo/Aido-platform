@@ -23,14 +23,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { UserConsentBuilder, UserPreferenceBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { EntitlementService } from "@/common/entitlement/entitlement.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
-import { TimezoneReminderQueueService } from "@/modules/scheduler/queue";
-import { UserConsentRepository } from "@/modules/user-settings/repositories/user-consent.repository";
-import { UserPreferenceRepository } from "@/modules/user-settings/repositories/user-preference.repository";
-import { UserSettingsService } from "@/modules/user-settings/services/user-settings.service";
+import { TimezoneReminderQueueService } from "@/scheduler/queue";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { UserConsentRepository } from "@/user-settings/repositories/user-consent.repository";
+import { UserPreferenceRepository } from "@/user-settings/repositories/user-preference.repository";
+import { UserSettingsService } from "@/user-settings/services/user-settings.service";
 
 describe("UserSettingsService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

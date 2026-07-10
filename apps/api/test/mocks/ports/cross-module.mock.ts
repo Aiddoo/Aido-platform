@@ -1,8 +1,8 @@
-import type { CategoryOwnershipPort } from "@/modules/todo/application/ports/category-ownership.port";
-import type { FriendPort } from "@/modules/todo/application/ports/friend.port";
-import type { StreakPort } from "@/modules/todo/application/ports/streak.port";
-import type { TodoCachePort } from "@/modules/todo/application/ports/todo-cache.port";
-import type { TodoNotificationPort } from "@/modules/todo/application/ports/todo-notification.port";
+import type { CategoryOwnershipPort } from "@/todo/application/ports/category-ownership.port";
+import type { FriendPort } from "@/todo/application/ports/friend.port";
+import type { StreakPort } from "@/todo/application/ports/streak.port";
+import type { TodoCachePort } from "@/todo/application/ports/todo-cache.port";
+import type { TodoNotificationPort } from "@/todo/application/ports/todo-notification.port";
 
 /**
  * 크로스모듈 포트 mock 팩토리 모음

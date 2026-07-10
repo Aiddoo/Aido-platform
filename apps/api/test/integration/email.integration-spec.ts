@@ -19,9 +19,9 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { TypedConfigService } from "@/common/config/services/config.service";
-import { EMAIL_CONSTANTS } from "@/modules/email/constants/email.constants";
-import { EmailService } from "@/modules/email/email.service";
+import { EMAIL_CONSTANTS } from "@/email/constants/email.constants";
+import { EmailService } from "@/email/email.service";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 // Resend 모킹용 타입
 type ResendMock = {

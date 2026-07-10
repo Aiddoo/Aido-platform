@@ -1,5 +1,5 @@
 import "./instrument";
-import "./common/date/dayjs.setup";
+import "./shared/domain/date/dayjs.setup";
 
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
@@ -8,10 +8,12 @@ import * as Sentry from "@sentry/nestjs";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
-
-import type { EnvConfig } from "@/common/config";
-import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "@/common/swagger";
-import { AdminModule } from "@/modules/admin/admin.module";
+import { AdminModule } from "@/admin/admin.module";
+import type { EnvConfig } from "@/shared/infrastructure/config";
+import {
+	SWAGGER_TAG_DESCRIPTIONS,
+	SWAGGER_TAGS,
+} from "@/shared/presentation/swagger";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {

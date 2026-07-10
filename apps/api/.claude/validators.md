@@ -111,7 +111,7 @@ export type TodoResponse = z.infer<typeof todoResponseSchema>;
 ### 2. 서버 사용 예시 (NestJS)
 
 ```typescript
-// apps/api/src/modules/todo/todo.controller.ts
+// apps/api/src/todo/todo.controller.ts
 
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -138,7 +138,7 @@ export class {Feature}Controller {
 ```
 
 ```typescript
-// apps/api/src/modules/todo/todo.service.ts
+// apps/api/src/todo/todo.service.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Create{Feature}Input, {Feature}Response } from '@aido/validators';

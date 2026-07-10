@@ -2,8 +2,8 @@ import {
 	type TransactionContext,
 	type TransactionManagerPort,
 	wrapTransaction,
-} from "@/common/database";
-import type { TransactionClient } from "@/common/database/prisma.types";
+} from "@/shared/application/ports";
+import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
 
 /**
  * TRANSACTION_MANAGER 포트 mock 팩토리

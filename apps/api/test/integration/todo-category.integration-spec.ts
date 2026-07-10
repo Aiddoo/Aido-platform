@@ -23,14 +23,14 @@ import { TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { UNIT_OF_WORK } from "@/common/database";
-import { EntitlementService } from "@/common/entitlement/entitlement.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
 import type { TodoCategory } from "@/generated/prisma/client";
-import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
-import { TodoCategoryService } from "@/modules/todo-category/todo-category.service";
-import type { TodoCategoryWithCount } from "@/modules/todo-category/types/todo-category.types";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { TodoCategoryRepository } from "@/todo-category/todo-category.repository";
+import { TodoCategoryService } from "@/todo-category/todo-category.service";
+import type { TodoCategoryWithCount } from "@/todo-category/types/todo-category.types";
 
 describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

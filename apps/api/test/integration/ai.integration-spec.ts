@@ -17,11 +17,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { ZodValidationPipe } from "nestjs-zod";
 import request from "supertest";
-
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { AiController } from "@/modules/ai/ai.controller";
-import { AiService } from "@/modules/ai/ai.service";
-import { AiUsageGuard } from "@/modules/ai/guards/ai-usage.guard";
+import { AiController } from "@/ai/ai.controller";
+import { AiService } from "@/ai/ai.service";
+import { AiUsageGuard } from "@/ai/guards/ai-usage.guard";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 
 describe("AI 통합 테스트 (Mock DB)", () => {
 	let app: INestApplication;

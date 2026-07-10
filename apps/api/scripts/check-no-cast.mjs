@@ -7,8 +7,8 @@
  * (import 별칭 `X as Y`, `as const`는 허용)
  *
  * 대상:
- * - src/modules/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
- * - src/common/domain/**
+ * - src/(*)/{domain,application,infrastructure}/** (spec 포함 — 마이그레이션된 코드 + 신규 테스트)
+ * - src/shared/domain/**
  *
  * 실행: node scripts/check-no-cast.mjs  (실패 시 exit 1)
  */
@@ -17,10 +17,10 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 const TARGET_DIRS = [
-	"src/common/domain",
-	"src/modules/todo/domain",
-	"src/modules/todo/application",
-	"src/modules/todo/infrastructure",
+	"src/shared/domain",
+	"src/todo/domain",
+	"src/todo/application",
+	"src/todo/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

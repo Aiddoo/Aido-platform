@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nestjs";
-import { resolveSentryOptions } from "./common/config/utils/sentry-options";
+import { resolveSentryOptions } from "./shared/infrastructure/config/utils/sentry-options";
 
 const options = resolveSentryOptions(process.env);
 

@@ -22,7 +22,7 @@
 
 | 항목 | 설명 |
 |------|------|
-| **파일 위치** | 테스트 대상과 같은 폴더 (`src/modules/{name}/`) |
+| **파일 위치** | 테스트 대상과 같은 폴더 (`src/{name}/`) |
 | **명명 규칙** | `{파일명}.spec.ts` |
 | **핵심 도구** | `@suites/unit` (TestBed.solitary) + `@suites/doubles.jest` (Mocked) |
 | **데이터 생성** | Builder 패턴 (`@test/builders`) |
@@ -48,8 +48,8 @@
 ```typescript
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "@suites/doubles.jest";
-import { {Feature}Service } from "@/modules/{name}/{name}.service";
-import { {Feature}Repository } from "@/modules/{name}/{name}.repository";
+import { {Feature}Service } from "@/{name}/{name}.service";
+import { {Feature}Repository } from "@/{name}/{name}.repository";
 
 describe("{Feature}Service — 기능 설명", () => {
   let service: {Feature}Service;

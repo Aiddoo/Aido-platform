@@ -13,10 +13,10 @@
 
 import { Test, type TestingModule } from "@nestjs/testing";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { TypedConfigService } from "@/common/config/services/config.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { EmailService } from "@/modules/email/email.service";
-import { InquiryService } from "@/modules/inquiry/inquiry.service";
+import { EmailService } from "@/email/email.service";
+import { InquiryService } from "@/inquiry/inquiry.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 describe("InquiryService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

@@ -1,4 +1,4 @@
-import type { UnitOfWorkPort } from "@/common/database";
+import type { UnitOfWorkPort } from "@/shared/application/ports";
 
 /**
  * UNIT_OF_WORK 포트 mock 팩토리

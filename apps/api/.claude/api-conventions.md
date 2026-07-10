@@ -31,7 +31,7 @@
 ## 1. 디렉토리 구조
 
 ```
-src/modules/{name}/
+src/{name}/
 ├── {name}.module.ts              # 모듈 정의
 ├── {name}.controller.ts          # HTTP 엔드포인트
 ├── services/
@@ -64,7 +64,7 @@ src/modules/{name}/
 ```typescript
 import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@/common/swagger';
+import { ApiDoc, ApiSuccessResponse, ApiCreatedResponse } from '@/shared/presentation/swagger';
 
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
 import { ExampleResponseDto } from './dtos';
@@ -171,8 +171,8 @@ private extractMetadata(req: Request): SessionMetadata {
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { BusinessExceptions } from '@/common/exception';
-import { DatabaseService } from '@/common/database';
+import { BusinessExceptions } from '@/shared/application/exceptions';
+import { DatabaseService } from '@/shared/application/ports';
 import { [Feature]QueueService } from '../queue';
 import { [Feature]Repository } from '../repositories';
 
@@ -310,7 +310,7 @@ this.logger.error(`Payment failed for order: ${orderId}`, error.stack);
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { DatabaseService, type TransactionClient } from '@/common/database';
+import { DatabaseService, type TransactionClient } from '@/shared/application/ports';
 
 @Injectable()
 export class [Feature]Repository {
@@ -492,15 +492,15 @@ export class {Feature}Module {}
 ## 6. Import 별칭
 
 ```typescript
-// @/common/* — 공통 모듈 (tsconfig paths: "@/*" → "src/*")
-import { DatabaseService } from '@/common/database';
-import { ApiDoc, ApiSuccessResponse } from '@/common/swagger';
-import { BusinessExceptions } from '@/common/exception';
-import { PaginationService } from '@/common/pagination';
-import { EncryptionService } from '@/common/encryption';
-import { TypedConfigService } from '@/common/config';
-import { getUserToday, toScheduledTime } from '@/common/date';
-import { Timezone } from '@/common/decorators';
+// @/shared/* — 공유 커널 (tsconfig paths: "@/*" → "src/*")
+import { DatabaseService } from '@/shared/application/ports';
+import { ApiDoc, ApiSuccessResponse } from '@/shared/presentation/swagger';
+import { BusinessExceptions } from '@/shared/application/exceptions';
+import { PaginationService } from '@/shared/application/pagination';
+import { EncryptionService } from '@/shared/infrastructure/encryption';
+import { TypedConfigService } from '@/shared/infrastructure/config';
+import { getUserToday, toScheduledTime } from '@/shared/domain/date';
+import { Timezone } from '@/shared/presentation/decorators';
 
 // Auth 데코레이터 — auth 모듈에서 import
 import { CurrentUser, type CurrentUserPayload } from '../auth/decorators';
@@ -589,7 +589,7 @@ pnpm docker:down
 
 1. `.env.example`에 변수 추가 (예시 값)
 2. `.env.development`에 실제 개발 값 추가
-3. `src/common/config/schemas/`에 Zod 검증 스키마 추가
+3. `src/shared/config/schemas/`에 Zod 검증 스키마 추가
 
 ### 필수 환경변수
 

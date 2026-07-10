@@ -3,7 +3,7 @@
  *
  * 모든 테스트에 적용되는 공통 설정
  */
-import "@/common/date/dayjs.setup";
+import "@/shared/domain/date/dayjs.setup";
 import { resetAllFixtures } from "@test/fixtures";
 
 /**

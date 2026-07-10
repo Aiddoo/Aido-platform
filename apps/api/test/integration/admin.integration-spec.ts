@@ -22,10 +22,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
-import { AdminService } from "@/modules/admin/admin.service";
-import { NotificationService } from "@/modules/notification/notification.service";
+import { AdminService } from "@/admin/admin.service";
+import { NotificationService } from "@/notification/notification.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 describe("AdminService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

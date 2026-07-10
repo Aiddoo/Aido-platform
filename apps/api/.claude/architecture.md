@@ -277,7 +277,7 @@ modules/todo/
 
 `BusinessException`은 `HttpException`을 확장한 도메인 예외 클래스. `BusinessExceptions`는 도메인별 팩토리 메서드를 제공하는 정적 클래스.
 
-**위치**: `src/common/exception/services/business-exception.service.ts`
+**위치**: `src/shared/application/exceptions/services/business-exception.service.ts`
 
 ```typescript
 // BusinessException 클래스
@@ -327,7 +327,7 @@ throw BusinessExceptions.socialAccountNotLinked(provider, providerAccountId, ema
 
 ### 2.3 GlobalExceptionFilter 3단계 처리
 
-**위치**: `src/common/exception/filters/global-exception.filter.ts`
+**위치**: `src/shared/application/exceptions/filters/global-exception.filter.ts`
 
 ```typescript
 @Catch()
@@ -495,7 +495,7 @@ BullModule.forRootAsync({
 ### 3.3 QueueService 패턴 (enqueue 담당)
 
 ```typescript
-// src/modules/{name}/queue/{name}-queue.service.ts
+// src/{name}/queue/{name}-queue.service.ts
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
@@ -525,7 +525,7 @@ export class [Feature]QueueService {
 ### 3.4 Processor 패턴 (job 처리 담당)
 
 ```typescript
-// src/modules/{name}/queue/{name}-queue.processor.ts
+// src/{name}/queue/{name}-queue.processor.ts
 import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
 import type { Job } from "bullmq";
 import { QUEUE_NAME } from "./{name}-queue.constants";
@@ -551,7 +551,7 @@ export class [Feature]Processor extends WorkerHost {
 ### 3.5 Job 패턴 (스케줄러 등록 담당)
 
 ```typescript
-// src/modules/{name}/jobs/{name}.job.ts
+// src/{name}/jobs/{name}.job.ts
 import { Injectable, type OnModuleInit } from "@nestjs/common";
 
 @Injectable()
@@ -572,7 +572,7 @@ export class [Feature]Job implements OnModuleInit {
 ### 3.6 Service에서 큐 사용 패턴
 
 ```typescript
-// src/modules/{name}/services/{name}.service.ts
+// src/{name}/services/{name}.service.ts
 @Injectable()
 export class [Feature]Service {
   constructor(
@@ -607,7 +607,7 @@ export class [Feature]Service {
 
 ### 3.8 PushProvider Strategy Pattern
 
-**위치**: `src/modules/notification/providers/`
+**위치**: `src/notification/providers/`
 
 ```typescript
 // push-provider.interface.ts
@@ -676,7 +676,7 @@ ThrottlerGuard (Rate Limiting, 글로벌)
 AdminGuard (관리자 권한, 엔드포인트별)
 ```
 
-**위치**: `src/modules/auth/guards/`
+**위치**: `src/auth/guards/`
 
 | Guard | 파일 | 역할 |
 |-------|------|------|
@@ -710,7 +710,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
 ### 4.3 LastActiveInterceptor (글로벌)
 
-**위치**: `src/modules/auth/interceptors/last-active.interceptor.ts`
+**위치**: `src/auth/interceptors/last-active.interceptor.ts`
 
 `APP_INTERCEPTOR`로 글로벌 등록. 모든 인증된 요청에서 `User.lastActiveAt`을 업데이트.
 
@@ -739,7 +739,7 @@ export class LastActiveInterceptor implements NestInterceptor {
 
 ### 4.4 OAuth 4사 자동연동 규칙
 
-**위치**: `src/modules/auth/services/oauth.service.ts`
+**위치**: `src/auth/services/oauth.service.ts`
 
 **Trusted vs Untrusted Provider:**
 
@@ -784,7 +784,7 @@ private async _handleEmailConflict(...) {
 
 ### 4.5 EncryptionService (AES-256-GCM)
 
-**위치**: `src/common/encryption/encryption.service.ts`
+**위치**: `src/shared/encryption/encryption.service.ts`
 
 | 항목 | 값 |
 |------|-----|
@@ -894,7 +894,7 @@ export class LoggerModule {
 
 ### 5.3 Strategy Pattern: CacheAdapter (Memory/Redis)
 
-**위치**: `src/common/cache/`
+**위치**: `src/shared/cache/`
 
 ```
 CacheModule.forRoot()
@@ -929,7 +929,7 @@ export type TtlValue = number | `${number}${'s' | 'm' | 'h' | 'd'}`;
 
 ### 5.4 TypedConfigService 래퍼
 
-**위치**: `src/common/config/services/config.service.ts`
+**위치**: `src/shared/config/services/config.service.ts`
 
 NestJS `ConfigService`를 타입 안전하게 래핑:
 
@@ -954,11 +954,11 @@ export class TypedConfigService {
 }
 ```
 
-> **Zod 스키마 기반 환경변수 검증**: `src/common/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
+> **Zod 스키마 기반 환경변수 검증**: `src/shared/config/schemas/` 하위에 `app.schema.ts`, `security.schema.ts`, `cache.schema.ts` 등에서 `z.object()`로 정의.
 
 ### 5.5 PaginationService (오프셋 + 커서)
 
-**위치**: `src/common/pagination/services/pagination.service.ts`
+**위치**: `src/shared/pagination/services/pagination.service.ts`
 
 **오프셋 기반:**
 
@@ -1007,7 +1007,7 @@ return paginationService.createCursorPaginatedResponse<TodoItem, string>({
 ### 6.2 @Timezone() 데코레이터 + X-Timezone 헤더
 
 ```typescript
-import { Timezone } from '@/common/decorators';
+import { Timezone } from '@/shared/presentation/decorators';
 import { ApiHeader } from '@nestjs/swagger';
 
 @ApiHeader({
@@ -1035,10 +1035,10 @@ async create(
 
 ### 6.3 날짜 유틸리티
 
-**위치**: `src/common/date/`
+**위치**: `src/shared/date/`
 
 ```typescript
-import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/common/date';
+import { todayInTimezone, parseLocalDateTime, startOfDayInTimezone, midnightInTimezone } from '@/shared/domain/date';
 
 // 사용자의 "오늘" 날짜를 UTC midnight Date로 반환
 const today = todayInTimezone(timezone);
@@ -1127,7 +1127,7 @@ providers: [
 **Auth 모듈:**
 
 ```
-src/modules/auth/
+src/auth/
 ├── auth.module.ts
 ├── controllers/
 │   ├── auth.controller.ts       # 로그인/회원가입
@@ -1168,7 +1168,7 @@ src/modules/auth/
 **Todo 모듈:**
 
 ```
-src/modules/todo/
+src/todo/
 ├── todo.module.ts
 ├── todo.controller.ts
 ├── services/

@@ -6,9 +6,9 @@
  * (architecture.md §1.4의 규칙표를 기계적으로 강제 — check-no-cast.mjs와 짝)
  *
  * 규칙:
- * 1. domain    → @nestjs/*, @/generated/*, @/common/database* 임포트 금지
- * 2. application → @/generated/*, @/common/database/prisma.types,
- *                  @/common/database/selects, 타 모듈 내부 경로 임포트 금지
+ * 1. domain    → @nestjs/*, @/generated/*, @/shared/application/ports* 임포트 금지
+ * 2. application → @/generated/*, @/shared/infrastructure/database/prisma.types,
+ *                  @/shared/infrastructure/database/selects, 타 모듈 내부 경로 임포트 금지
  * 3. 모듈 외부  → 클린아키 모듈 내부 깊은 경로 임포트 금지
  *                (배럴 index / <module>.module 만 허용)
  *
@@ -66,7 +66,7 @@ function check(file, importPath, rule) {
 }
 
 for (const module of CLEAN_MODULES) {
-	const base = `src/modules/${module}`;
+	const base = `src/${module}`;
 
 	// 1. domain: 프레임워크·ORM·DB 접근 금지
 	for (const file of collectTsFiles(`${base}/domain`)) {
@@ -80,7 +80,7 @@ for (const module of CLEAN_MODULES) {
 			if (p.startsWith("@/generated/")) {
 				check(file, p, "domain → generated Prisma 금지");
 			}
-			if (p.startsWith("@/common/database")) {
+			if (p.startsWith("@/shared/application/ports")) {
 				check(file, p, "domain → database 금지");
 			}
 		}
@@ -96,16 +96,21 @@ for (const module of CLEAN_MODULES) {
 				check(file, p, "application → generated Prisma 금지");
 			}
 			if (
-				p === "@/common/database/prisma.types" ||
-				p === "@/common/database/selects"
+				p === "@/shared/infrastructure/database/prisma.types" ||
+				p === "@/shared/infrastructure/database/selects"
 			) {
 				check(file, p, "application → Prisma 구조 타입 금지 (불투명 TransactionContext 사용)");
 			}
 			// 타 모듈 내부 접근: 상대 경로를 해석해 다른 모듈 디렉터리로 나가는지 확인
 			if (p.startsWith(".")) {
 				const resolved = relative(ROOT, resolve(dirname(file), p));
-				const crossModule = resolved.match(/^src\/modules\/([\w-]+)\//);
-				if (crossModule && crossModule[1] !== module) {
+				const crossModule = resolved.match(/^src\/([\w-]+)\//);
+				const NON_MODULE_DIRS = new Set(["shared", "generated"]);
+				if (
+					crossModule &&
+					crossModule[1] !== module &&
+					!NON_MODULE_DIRS.has(crossModule[1])
+				) {
 					check(
 						file,
 						p,
@@ -118,13 +123,13 @@ for (const module of CLEAN_MODULES) {
 
 	// 3. 모듈 외부에서 내부 깊은 경로 접근 금지 (배럴 index / <module>.module 만 허용)
 	const allowedSuffixes = new Set([
-		`src/modules/${module}`,
-		`src/modules/${module}/index`,
-		`src/modules/${module}/${module}.module`,
+		`src/${module}`,
+		`src/${module}/index`,
+		`src/${module}/${module}.module`,
 	]);
 	for (const file of collectTsFiles("src")) {
 		const rel = relative(ROOT, file);
-		if (rel.startsWith(`src/modules/${module}/`)) {
+		if (rel.startsWith(`src/${module}/`)) {
 			continue;
 		}
 		if (file.endsWith(".spec.ts")) {
@@ -138,7 +143,7 @@ for (const module of CLEAN_MODULES) {
 				resolved = `src/${p.slice(2)}`;
 			}
 			if (
-				resolved?.startsWith(`src/modules/${module}/`) &&
+				resolved?.startsWith(`src/${module}/`) &&
 				!allowedSuffixes.has(resolved)
 			) {
 				check(file, p, `외부 → ${module} 모듈 내부 임포트 금지 (배럴 사용)`);

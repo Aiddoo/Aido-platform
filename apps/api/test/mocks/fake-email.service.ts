@@ -1,9 +1,9 @@
-import type { InquiryTemplateData } from "@/modules/email/templates/inquiry.template";
+import type { InquiryTemplateData } from "@/email/templates/inquiry.template";
 import type {
 	EmailSendResult,
 	EmailTag,
 	EmailType,
-} from "@/modules/email/types/email.types";
+} from "@/email/types/email.types";
 
 /**
  * 발송된 이메일 기록

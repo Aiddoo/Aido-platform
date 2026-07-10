@@ -1,7 +1,7 @@
 import type {
 	AirQuality,
 	AirQualityProvider,
-} from "@/modules/weather/providers/air/air-quality.types";
+} from "@/weather/providers/air/air-quality.types";
 
 /**
  * 테스트용 FakeAirQualityProvider

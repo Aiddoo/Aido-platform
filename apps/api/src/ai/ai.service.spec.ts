@@ -1,0 +1,1112 @@
+/**
+ * AiService 단위 테스트 (Suites + GWT 패턴)
+ *
+ * 자연어 투두 파싱, 월간 사용량 관리(KST 매월 1일 00:00 리셋), 권한별 제한 검증
+ *
+ * - Suites: 자동 Mock 생성 (EntitlementService, UserRepository)
+ * - UNIT_OF_WORK: run이 콜백을 즉시 실행하는 passthrough mock
+ * - TransactionHost.tx: Prisma mock 스텁
+ * - FakeAiProvider: AI_PROVIDER Symbol 토큰용 테스트 더블
+ * - GWT: Given/When/Then 주석
+ */
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import type { Mocked } from "@suites/doubles.jest";
+import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
+import { FakeAiProvider } from "../../test/mocks/fake-ai.provider";
+import { UserRepository } from "../auth/repositories/user.repository";
+import { TodoCategoryRepository } from "../todo-category/todo-category.repository";
+import { AiService } from "./ai.service";
+import { AI_PROVIDER } from "./providers/ai.provider";
+
+describe("AiService — AI 서비스", () => {
+	let service: AiService;
+	let fakeAiProvider: FakeAiProvider;
+	let mockDb: MockPrismaClient;
+	let entitlementService: Mocked<EntitlementService>;
+	let userRepository: Mocked<UserRepository>;
+	let todoCategoryRepository: Mocked<TodoCategoryRepository>;
+
+	const mockUser = {
+		id: "user-1",
+		aiUsageCount: 0,
+		aiUsageResetAt: new Date(),
+	};
+
+	beforeEach(async () => {
+		fakeAiProvider = new FakeAiProvider();
+		mockDb = createMockPrisma();
+
+		const { unit, unitRef } = await TestBed.solitary(AiService)
+			.mock(AI_PROVIDER)
+			.impl(() => fakeAiProvider)
+			// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			// TransactionHost.tx — 리포지토리 tx 브릿지/직접 쿼리용 클라이언트 스텁
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: mockDb }))
+			.compile();
+
+		service = unit;
+		entitlementService = unitRef.get(EntitlementService);
+		userRepository = unitRef.get(UserRepository);
+		todoCategoryRepository = unitRef.get(TodoCategoryRepository);
+
+		// 기본: FREE 사용자 (dailyLimit: 5)
+		(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+			dailyLimit: 5,
+			isAdmin: false,
+			subscriptionStatus: "FREE",
+		});
+
+		// 기본: 카테고리 목록
+		(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+			{
+				id: 1,
+				name: "기본",
+				color: "#FF6B43",
+				sortOrder: 0,
+				_count: { todos: 0 },
+			},
+		]);
+
+		// enforceLimit — 실제 로직 위임
+		(entitlementService.enforceLimit as jest.Mock).mockImplementation(
+			(entitlement, currentUsage, errorFactory) => {
+				if (entitlement.dailyLimit === null) return;
+				if (currentUsage < entitlement.dailyLimit) return;
+				throw errorFactory(currentUsage, entitlement.dailyLimit);
+			},
+		);
+	});
+
+	afterEach(() => {
+		fakeAiProvider.clear();
+	});
+
+	describe("parseTodo", () => {
+		it("자연어를 구조화된 투두로 파싱한다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo(
+				"내일 오후 3시에 팀 미팅",
+				"user-1",
+				"Asia/Seoul",
+			);
+
+			// Then
+			expect(result.data).toMatchObject({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			expect(result.meta.model).toBe("fake:test-model");
+			expect(result.meta.processingTimeMs).toBeGreaterThanOrEqual(0);
+			expect(result.meta.tokenUsage).toEqual({ input: 150, output: 50 });
+		});
+
+		it("종일 일정을 올바르게 파싱한다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "출장",
+				startDate: "2025-01-27",
+				endDate: "2025-01-31",
+				scheduledTime: null,
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo(
+				"다음주 월~금 출장",
+				"user-1",
+				"Asia/Seoul",
+			);
+
+			// Then
+			expect(result.data.isAllDay).toBe(true);
+			expect(result.data.endDate).toBe("2025-01-31");
+			expect(result.data.scheduledTime).toBeNull();
+		});
+
+		it("사용량을 증가시킨다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 3,
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(
+				(userRepository.incrementAiUsage as jest.Mock).mock.calls[0][0],
+			).toBe("user-1");
+		});
+
+		it("달이 바뀌면 사용량을 리셋한다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+
+			// KST 기준으로 지난 달에 속하는 시각
+			const lastMonth = new Date();
+			lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 5,
+				aiUsageResetAt: lastMonth,
+			});
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
+			expect(
+				(userRepository.resetAndIncrementAiUsage as jest.Mock).mock.calls[0][0],
+			).toBe("user-1");
+		});
+
+		it("같은 달 안이면 사용량을 증가만 한다 (리셋 없음)", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+
+			// 이번 달 1일 KST — 같은 달이므로 리셋되면 안 됨
+			const earlierThisMonth = new Date();
+			earlierThisMonth.setDate(1);
+
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 2,
+				aiUsageResetAt: earlierThisMonth,
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("AI Provider가 불가용하면 AI_1301 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setAvailable(false);
+
+			// When & Then
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1301",
+			});
+		});
+
+		it("AI 파싱 실패시 AI_1302 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setInvalidResponse(new Error("Parse error"));
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+			(userRepository.decrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When & Then
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1302",
+			});
+		});
+
+		it("프롬프트가 올바르게 생성되어 전달된다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "회의",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("내일 회의", "user-1", "Asia/Seoul");
+
+			// Then
+			const prompt = fakeAiProvider.getLastPrompt();
+			expect(prompt).toBeDefined();
+			expect(prompt).toContain("내일 회의");
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("한국어 자연어 입력을 구조화된 할 일");
+		});
+
+		it("categoryId가 전달되면 결과에 포함된다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo(
+				"내일 오후 3시에 팀 미팅",
+				"user-1",
+				"Asia/Seoul",
+				42,
+			);
+
+			// Then
+			expect(result.data.categoryId).toBe(42);
+		});
+
+		it("categoryId가 없으면 결과에 undefined이다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "팀 미팅",
+				startDate: "2025-01-26",
+				scheduledTime: "15:00",
+				isAllDay: false,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo(
+				"내일 오후 3시에 팀 미팅",
+				"user-1",
+				"Asia/Seoul",
+			);
+
+			// Then — 클라이언트가 categoryId를 보내지 않고 LLM도 유추하지 못하면 undefined
+			expect(result.data.categoryId).toBeUndefined();
+		});
+
+		it("타임존이 프롬프트에 반영된다", async () => {
+			// Given
+			fakeAiProvider.setResponses([
+				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
+				{ title: "회의", startDate: "2025-01-26", isAllDay: true },
+			]);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When - 서로 다른 타임존으로 호출
+			await service.parseTodo("회의", "user-1", "Asia/Seoul");
+			const _promptKST = fakeAiProvider.getLastPrompt();
+
+			await service.parseTodo("회의", "user-1", "America/New_York");
+			const _promptNY = fakeAiProvider.getLastPrompt();
+
+			// Then - 타임존에 따라 시스템 메시지의 시간이 다르다
+			const history = fakeAiProvider.getCallHistory();
+			const systemKST = history[0]?.system;
+			const systemNY = history[1]?.system;
+			expect(systemKST).toBeDefined();
+			expect(systemNY).toBeDefined();
+			expect(systemKST).not.toBe(systemNY);
+		});
+
+		it("사용자를 찾을 수 없으면 USER_0001 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(null);
+
+			// When & Then
+			await expect(
+				service.parseTodo("테스트", "unknown-user", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+		});
+
+		it("월간 사용량 초과 시 AI_1303 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When & Then
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toThrow(BusinessException);
+			await expect(
+				service.parseTodo("테스트", "user-1", "Asia/Seoul"),
+			).rejects.toMatchObject({
+				errorCode: "AI_1303",
+			});
+		});
+
+		it("사용량 초과 시 AI Provider를 호출하지 않는다", async () => {
+			// Given
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul").catch(() => {});
+
+			// Then
+			expect(fakeAiProvider.getCallCount()).toBe(0);
+		});
+
+		it("ADMIN 사용자는 사용량 초과해도 파싱 가능하다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
+				subscriptionStatus: "FREE",
+			});
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 100,
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(result.data.title).toBe("테스트");
+		});
+
+		it("ACTIVE 구독자는 사용량 초과해도 파싱 가능하다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 100,
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(result.data.title).toBe("테스트");
+		});
+	});
+
+	describe("getUsage", () => {
+		it("현재 사용량을 반환한다", async () => {
+			// Given
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 3,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result).toMatchObject({
+				used: 3,
+				limit: 5,
+			});
+			expect(result.resetsAt).toBeDefined();
+			// ISO 8601 형식 확인
+			expect(result.resetsAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+		});
+
+		it("달이 바뀌면 0을 반환한다", async () => {
+			// Given
+			const lastMonth = new Date();
+			lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 5,
+				aiUsageResetAt: lastMonth,
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result.used).toBe(0);
+			expect(result.limit).toBe(5);
+		});
+
+		it("사용자를 찾을 수 없으면 에러를 던진다", async () => {
+			// Given
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+			// When & Then
+			await expect(service.getUsage("unknown-user")).rejects.toThrow(
+				BusinessException,
+			);
+		});
+
+		it("ADMIN 사용자는 limit이 null이다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: true,
+				subscriptionStatus: "FREE",
+			});
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 3,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result).toMatchObject({
+				used: 3,
+				limit: null,
+			});
+		});
+
+		it("ACTIVE 구독자는 limit이 null이다", async () => {
+			// Given
+			(entitlementService.getFeatureLimit as jest.Mock).mockResolvedValue({
+				dailyLimit: null,
+				isAdmin: false,
+				subscriptionStatus: "ACTIVE",
+			});
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 10,
+				aiUsageResetAt: new Date(),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then
+			expect(result).toMatchObject({
+				used: 10,
+				limit: null,
+			});
+		});
+	});
+
+	describe("월 경계 (KST 매월 1일 00:00 리셋)", () => {
+		// Helper: 고정 시각을 Date.now() 로 제공
+		const setSystemTime = (iso: string) => {
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date(iso));
+		};
+
+		afterEach(() => {
+			jest.useRealTimers();
+		});
+
+		it("같은 달 다른 날이면 리셋되지 않는다 (KST 4/1 → 4/30)", async () => {
+			// Given: now = KST 4/30 14:00 (UTC 4/30 05:00)
+			setSystemTime("2026-04-30T05:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-04-30",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 4/1 00:00 = UTC 2026-03-31T15:00:00Z
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 3,
+				aiUsageResetAt: new Date("2026-03-31T15:00:00.000Z"),
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("KST 월 말일 23:59 → 다음 달 1일 00:00 경계에서 리셋된다", async () => {
+			// Given: now = KST 5/1 00:00 (UTC 2026-04-30T15:00Z)
+			setSystemTime("2026-04-30T15:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-05-01",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 4/30 23:59 = UTC 2026-04-30T14:59:00Z (같은 날 UTC이나 KST는 다른 달)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date("2026-04-30T14:59:00.000Z"),
+			});
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.incrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("UTC는 새 달이지만 KST는 같은 달이면 리셋되지 않는다", async () => {
+			// now = UTC 2026-05-01T00:00Z = KST 2026-05-01 09:00 (둘 다 KST 5월)
+			setSystemTime("2026-05-01T00:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2026-05-01",
+				isAllDay: true,
+			});
+
+			// lastReset = UTC 2026-04-30T16:00Z = KST 2026-05-01 01:00 (KST 5월)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 1,
+				aiUsageResetAt: new Date("2026-04-30T16:00:00.000Z"),
+			});
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then — 같은 KST 5월이므로 리셋 안 됨
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(userRepository.resetAndIncrementAiUsage).not.toHaveBeenCalled();
+		});
+
+		it("getUsage: resetsAt은 KST 다음 달 1일 00:00의 UTC", async () => {
+			// now = KST 2026-04-18 14:00 (UTC 2026-04-18T05:00:00Z)
+			setSystemTime("2026-04-18T05:00:00.000Z");
+
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 2,
+				aiUsageResetAt: new Date("2026-04-01T00:00:00.000Z"),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then — KST 5/1 00:00 = UTC 2026-04-30T15:00:00Z
+			expect(result.resetsAt).toBe("2026-04-30T15:00:00.000Z");
+		});
+
+		it("getUsage: 12월 → 1월 연도 경계에서 올바르게 계산된다", async () => {
+			// now = KST 2026-12-15 09:00 (UTC 2026-12-15T00:00:00Z)
+			setSystemTime("2026-12-15T00:00:00.000Z");
+
+			(mockDb.user.findUnique as jest.Mock).mockResolvedValue({
+				aiUsageCount: 1,
+				aiUsageResetAt: new Date("2026-12-01T00:00:00.000Z"),
+			});
+
+			// When
+			const result = await service.getUsage("user-1");
+
+			// Then — KST 2027-01-01 00:00 = UTC 2026-12-31T15:00:00Z
+			expect(result.resetsAt).toBe("2026-12-31T15:00:00.000Z");
+		});
+
+		it("윤년 2월 경계: KST 2/29 → 3/1 리셋", async () => {
+			// now = KST 2024-03-01 00:00 (UTC 2024-02-29T15:00Z)
+			setSystemTime("2024-02-29T15:00:00.000Z");
+
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2024-03-01",
+				isAllDay: true,
+			});
+
+			// lastReset = KST 2024-02-29 23:00 (UTC 2024-02-29T14:00Z)
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue({
+				...mockUser,
+				aiUsageCount: 5,
+				aiUsageResetAt: new Date("2024-02-29T14:00:00.000Z"),
+			});
+			(userRepository.resetAndIncrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then — KST 2월 vs KST 3월 경계
+			expect(userRepository.resetAndIncrementAiUsage).toHaveBeenCalled();
+		});
+	});
+
+	describe("토큰 사용량 추적", () => {
+		it("결과에 토큰 사용량이 포함된다", async () => {
+			// Given
+			fakeAiProvider.setTokenUsage({ input: 200, output: 80 });
+			fakeAiProvider.setResponse({
+				title: "테스트",
+				startDate: "2025-01-26",
+				isAllDay: true,
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseTodo("테스트", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(result.meta.tokenUsage).toEqual({
+				input: 200,
+				output: 80,
+			});
+		});
+	});
+
+	describe("parseMemoToTodos", () => {
+		const memoResponse = {
+			todos: [
+				{
+					title: "버그 수정",
+					startDate: "2026-04-12",
+					endDate: null,
+					scheduledTime: "14:00",
+					isAllDay: false,
+					isRecurring: false,
+					recurrence: null,
+					items: [],
+				},
+				{
+					title: "스터디 자료 올리기",
+					startDate: "2026-04-17",
+					endDate: null,
+					scheduledTime: null,
+					isAllDay: true,
+					isRecurring: false,
+					recurrence: null,
+					items: [{ title: "슬라이드 정리" }],
+				},
+			],
+		};
+
+		it("메모를 다중 Todo+SubTodo로 파싱한다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"내일 2시까지 버그 수정. 금요일엔 스터디 자료",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.data.todos).toHaveLength(2);
+			expect(result.data.todos[0]).toMatchObject({
+				title: "버그 수정",
+				scheduledTime: "14:00",
+			});
+			expect(result.data.todos[1]).toMatchObject({
+				title: "스터디 자료 올리기",
+				items: [{ title: "슬라이드 정리" }],
+			});
+		});
+
+		it("categoryId를 모든 todo에 주입한다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"테스트 메모",
+				"user-1",
+				"Asia/Seoul",
+				42,
+			);
+
+			// Then
+			for (const todo of result.data.todos) {
+				expect(todo.categoryId).toBe(42);
+			}
+		});
+
+		it("사용량을 1 증가시킨다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseMemoToTodos("테스트", "user-1", "Asia/Seoul", 1);
+
+			// Then
+			expect(userRepository.incrementAiUsage).toHaveBeenCalled();
+			expect(
+				(userRepository.incrementAiUsage as jest.Mock).mock.calls[0][0],
+			).toBe("user-1");
+		});
+
+		it("AI 파싱 실패 시 사용량을 롤백하고 AI_1302 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setInvalidResponse(new Error("Parse error"));
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+			(userRepository.decrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When & Then
+			await expect(
+				service.parseMemoToTodos("테스트", "user-1", "Asia/Seoul", 1),
+			).rejects.toMatchObject({ errorCode: "AI_1302" });
+			expect(userRepository.decrementAiUsage).toHaveBeenCalledWith("user-1");
+		});
+
+		it("AI Provider가 불가용하면 AI_1301 에러를 던진다", async () => {
+			// Given
+			fakeAiProvider.setAvailable(false);
+
+			// When & Then
+			await expect(
+				service.parseMemoToTodos("테스트", "user-1", "Asia/Seoul", 1),
+			).rejects.toMatchObject({ errorCode: "AI_1301" });
+		});
+
+		it("프롬프트에 메모 내용이 포함된다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseMemoToTodos("장보기 목록", "user-1", "Asia/Seoul", 1);
+
+			// Then
+			const prompt = fakeAiProvider.getLastPrompt();
+			expect(prompt).toContain("장보기 목록");
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("한국어 메모를 분석");
+		});
+
+		it("AI가 유추한 categoryId를 사용한다", async () => {
+			// Given
+			(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+				{
+					id: 1,
+					name: "업무",
+					color: "#FF6B43",
+					sortOrder: 0,
+					_count: { todos: 0 },
+				},
+				{
+					id: 2,
+					name: "운동",
+					color: "#00B894",
+					sortOrder: 1,
+					_count: { todos: 0 },
+				},
+			]);
+			fakeAiProvider.setRawResponse({
+				todos: [
+					{
+						title: "보고서 작성",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 1,
+						items: [],
+					},
+					{
+						title: "헬스장 가기",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 2,
+						items: [],
+					},
+				],
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"보고서 작성, 헬스장 가기",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.data.todos[0]?.categoryId).toBe(1);
+			expect(result.data.todos[1]?.categoryId).toBe(2);
+		});
+
+		it("AI가 유효하지 않은 categoryId를 반환하면 기본값을 사용한다", async () => {
+			// Given
+			fakeAiProvider.setRawResponse({
+				todos: [
+					{
+						title: "테스트",
+						startDate: "2026-04-15",
+						endDate: null,
+						scheduledTime: null,
+						isAllDay: true,
+						isRecurring: false,
+						recurrence: null,
+						categoryId: 999,
+						items: [],
+					},
+				],
+			});
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"테스트",
+				"user-1",
+				"Asia/Seoul",
+				42,
+			);
+
+			// Then — 유효하지 않은 999 대신 요청의 기본값 42 사용
+			expect(result.data.todos[0]?.categoryId).toBe(42);
+		});
+
+		it("시스템 프롬프트에 카테고리 목록이 포함된다", async () => {
+			// Given
+			(todoCategoryRepository.findManyByUserId as jest.Mock).mockResolvedValue([
+				{
+					id: 1,
+					name: "업무",
+					color: "#FF6B43",
+					sortOrder: 0,
+					_count: { todos: 0 },
+				},
+				{
+					id: 2,
+					name: "개인",
+					color: "#00B894",
+					sortOrder: 1,
+					_count: { todos: 0 },
+				},
+			]);
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			await service.parseMemoToTodos("테스트", "user-1", "Asia/Seoul", 1);
+
+			// Then
+			const system = fakeAiProvider.getLastSystem();
+			expect(system).toContain("업무");
+			expect(system).toContain("개인");
+		});
+
+		it("6개 이상 결과는 5개로 잘린다", async () => {
+			// Given
+			const sixTodos = Array.from({ length: 6 }, (_, i) => ({
+				title: `할 일 ${i + 1}`,
+				startDate: "2026-04-11",
+				endDate: null,
+				scheduledTime: null,
+				isAllDay: true,
+				isRecurring: false,
+				recurrence: null,
+				items: [],
+			}));
+			fakeAiProvider.setRawResponse({ todos: sixTodos });
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"6개 할 일",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.data.todos).toHaveLength(5);
+			expect(result.data.todos[4]).toMatchObject({ title: "할 일 5" });
+		});
+
+		it("메타데이터에 모델명과 토큰 사용량이 포함된다", async () => {
+			// Given
+			fakeAiProvider.setTokenUsage({ input: 450, output: 280 });
+			fakeAiProvider.setRawResponse(memoResponse);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result = await service.parseMemoToTodos(
+				"테스트",
+				"user-1",
+				"Asia/Seoul",
+				1,
+			);
+
+			// Then
+			expect(result.meta.model).toBe("fake:test-model");
+			expect(result.meta.tokenUsage).toEqual({ input: 450, output: 280 });
+			expect(result.meta.processingTimeMs).toBeGreaterThanOrEqual(0);
+		});
+	});
+
+	describe("연속 요청 처리", () => {
+		it("여러 응답을 순차적으로 반환한다", async () => {
+			// Given
+			fakeAiProvider.setResponses([
+				{ title: "첫번째", startDate: "2025-01-26", isAllDay: true },
+				{ title: "두번째", startDate: "2025-01-27", isAllDay: true },
+				{ title: "세번째", startDate: "2025-01-28", isAllDay: true },
+			]);
+			(userRepository.findAiUsage as jest.Mock).mockResolvedValue(mockUser);
+			(userRepository.incrementAiUsage as jest.Mock).mockResolvedValue(
+				undefined,
+			);
+
+			// When
+			const result1 = await service.parseTodo("첫번째", "user-1", "Asia/Seoul");
+			const result2 = await service.parseTodo("두번째", "user-1", "Asia/Seoul");
+			const result3 = await service.parseTodo("세번째", "user-1", "Asia/Seoul");
+
+			// Then
+			expect(result1.data.title).toBe("첫번째");
+			expect(result2.data.title).toBe("두번째");
+			expect(result3.data.title).toBe("세번째");
+			expect(fakeAiProvider.getCallCount()).toBe(3);
+		});
+	});
+});

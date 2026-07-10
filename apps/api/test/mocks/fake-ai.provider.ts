@@ -11,7 +11,7 @@ import type {
 	GenerateStructuredOptions,
 	GenerateStructuredResult,
 	TokenUsage,
-} from "../../src/modules/ai/providers/ai.provider";
+} from "../../src/ai/providers/ai.provider";
 
 /**
  * FakeAiProvider 설정 옵션

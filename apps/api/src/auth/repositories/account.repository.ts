@@ -1,0 +1,141 @@
+import { Injectable } from "@nestjs/common";
+import type { Account, AccountProvider } from "@/generated/prisma/client";
+import { DatabaseService } from "@/shared/infrastructure/database";
+import type { TransactionClient } from "@/shared/infrastructure/database/prisma.types";
+import { EncryptionService } from "@/shared/infrastructure/encryption";
+
+@Injectable()
+export class AccountRepository {
+	constructor(
+		private readonly database: DatabaseService,
+		private readonly encryptionService: EncryptionService,
+	) {}
+
+	async findByUserIdAndProvider(
+		userId: string,
+		provider: AccountProvider,
+	): Promise<Account | null> {
+		return this.database.account.findUnique({
+			where: {
+				userId_provider: { userId, provider },
+			},
+		});
+	}
+
+	async findByProviderAccountId(
+		provider: AccountProvider,
+		providerAccountId: string,
+	): Promise<Account | null> {
+		return this.database.account.findUnique({
+			where: {
+				provider_providerAccountId: { provider, providerAccountId },
+			},
+		});
+	}
+
+	async createCredentialAccount(
+		userId: string,
+		hashedPassword: string,
+		tx?: TransactionClient,
+	): Promise<Account> {
+		const client = tx ?? this.database;
+		return client.account.create({
+			data: {
+				userId,
+				provider: "CREDENTIAL",
+				providerAccountId: userId, // userId를 사용하여 unique constraint 보장
+				password: hashedPassword,
+			},
+		});
+	}
+
+	async updatePassword(
+		userId: string,
+		hashedPassword: string,
+		tx?: TransactionClient,
+	): Promise<Account> {
+		const client = tx ?? this.database;
+		return client.account.update({
+			where: {
+				userId_provider: { userId, provider: "CREDENTIAL" },
+			},
+			data: { password: hashedPassword },
+		});
+	}
+
+	async createOAuthAccount(
+		data: {
+			userId: string;
+			provider: AccountProvider;
+			providerAccountId: string;
+			accessToken?: string;
+			refreshToken?: string;
+			accessTokenExpiresAt?: Date;
+			scope?: string;
+		},
+		tx?: TransactionClient,
+	): Promise<Account> {
+		const client = tx ?? this.database;
+		return client.account.create({
+			data: {
+				userId: data.userId,
+				provider: data.provider,
+				providerAccountId: data.providerAccountId,
+				accessToken: data.accessToken
+					? this.encryptionService.encrypt(data.accessToken)
+					: undefined,
+				refreshToken: data.refreshToken
+					? this.encryptionService.encrypt(data.refreshToken)
+					: undefined,
+				accessTokenExpiresAt: data.accessTokenExpiresAt,
+				scope: data.scope,
+			},
+		});
+	}
+
+	async updateOAuthTokens(
+		userId: string,
+		provider: AccountProvider,
+		tokens: {
+			accessToken: string;
+			refreshToken?: string;
+			accessTokenExpiresAt?: Date;
+		},
+		tx?: TransactionClient,
+	): Promise<Account> {
+		const client = tx ?? this.database;
+		return client.account.update({
+			where: {
+				userId_provider: { userId, provider },
+			},
+			data: {
+				accessToken: this.encryptionService.encrypt(tokens.accessToken),
+				...(tokens.refreshToken && {
+					refreshToken: this.encryptionService.encrypt(tokens.refreshToken),
+				}),
+				...(tokens.accessTokenExpiresAt && {
+					accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+				}),
+			},
+		});
+	}
+
+	async deleteAccount(
+		userId: string,
+		provider: AccountProvider,
+		tx?: TransactionClient,
+	): Promise<Account> {
+		const client = tx ?? this.database;
+		return client.account.delete({
+			where: {
+				userId_provider: { userId, provider },
+			},
+		});
+	}
+
+	async findAllByUserId(userId: string): Promise<Account[]> {
+		return this.database.account.findMany({
+			where: { userId },
+		});
+	}
+}

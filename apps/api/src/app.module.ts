@@ -12,46 +12,48 @@ import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-pr
 import { SentryModule } from "@sentry/nestjs/setup";
 import type Redis from "ioredis";
 import { ClsModule } from "nestjs-cls";
+import { AdminModule } from "@/admin";
+import { AdminNotificationModule } from "@/admin-notification";
+import { AiModule } from "@/ai";
+import { AiReportModule } from "@/ai-report";
+import { AiSuggestionModule } from "@/ai-suggestion";
+import { AuthModule } from "@/auth";
+import { JwtAuthGuard } from "@/auth/guards/jwt-auth.guard";
+import { LastActiveInterceptor } from "@/auth/interceptors/last-active.interceptor";
+import { CheerModule } from "@/cheer";
+import { DailyCompletionModule } from "@/daily-completion";
+import { FollowModule } from "@/follow";
+import { HealthModule } from "@/health";
+import { InquiryModule } from "@/inquiry";
+import { MemoModule } from "@/memo";
+import { NotificationModule } from "@/notification";
+import { NudgeModule } from "@/nudge";
+import { SchedulerModule } from "@/scheduler";
+import { EntitlementModule } from "@/shared/application/entitlement";
+import { PaginationModule } from "@/shared/application/pagination";
+import { CacheModule } from "@/shared/infrastructure/cache";
+import type { EnvConfig } from "@/shared/infrastructure/config";
+import { AppConfigModule } from "@/shared/infrastructure/config";
 import {
-	AppConfigModule,
-	CacheModule,
-	DedupModule,
-	EncryptionModule,
-	EntitlementModule,
-	ExceptionModule,
-	LockModule,
-	LoggerModule,
-	PaginationModule,
-	REDIS_CLIENT,
-	RedisModule,
-	ResponseModule,
-} from "@/common";
-import type { EnvConfig } from "@/common/config";
-import { THROTTLER_STORAGE, ThrottleModule } from "@/common/throttle";
-import { DatabaseModule, DatabaseService } from "@/database";
-import { AdminModule } from "@/modules/admin";
-import { AdminNotificationModule } from "@/modules/admin-notification";
-import { AiModule } from "@/modules/ai";
-import { AiReportModule } from "@/modules/ai-report";
-import { AiSuggestionModule } from "@/modules/ai-suggestion";
-import { AuthModule } from "@/modules/auth";
-import { JwtAuthGuard } from "@/modules/auth/guards/jwt-auth.guard";
-import { LastActiveInterceptor } from "@/modules/auth/interceptors/last-active.interceptor";
-import { CheerModule } from "@/modules/cheer";
-import { DailyCompletionModule } from "@/modules/daily-completion";
-import { FollowModule } from "@/modules/follow";
-import { HealthModule } from "@/modules/health";
-import { InquiryModule } from "@/modules/inquiry";
-import { MemoModule } from "@/modules/memo";
-import { NotificationModule } from "@/modules/notification";
-import { NudgeModule } from "@/modules/nudge";
-import { SchedulerModule } from "@/modules/scheduler";
-import { SubscriptionModule } from "@/modules/subscription";
-import { TodoModule } from "@/modules/todo";
-import { TodoCategoryModule } from "@/modules/todo-category";
-import { UserSettingsModule } from "@/modules/user-settings";
-import { WeatherModule } from "@/modules/weather/weather.module";
-import { WeeklyAchievementModule } from "@/modules/weekly-achievement";
+	DatabaseModule,
+	DatabaseService,
+} from "@/shared/infrastructure/database";
+import { DedupModule } from "@/shared/infrastructure/dedup";
+import { EncryptionModule } from "@/shared/infrastructure/encryption";
+import { LockModule } from "@/shared/infrastructure/lock";
+import { LoggerModule } from "@/shared/infrastructure/logging";
+import { REDIS_CLIENT, RedisModule } from "@/shared/infrastructure/redis";
+import { SharedKernelModule } from "@/shared/infrastructure/shared-kernel.module";
+import {
+	THROTTLER_STORAGE,
+	ThrottleModule,
+} from "@/shared/infrastructure/throttle";
+import { SubscriptionModule } from "@/subscription";
+import { TodoModule } from "@/todo";
+import { TodoCategoryModule } from "@/todo-category";
+import { UserSettingsModule } from "@/user-settings";
+import { WeatherModule } from "@/weather/weather.module";
+import { WeeklyAchievementModule } from "@/weekly-achievement";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
@@ -100,8 +102,7 @@ import { AppService } from "./app.service";
 		// 4. Global Modules
 		EntitlementModule,
 		LoggerModule.forRootAsync(),
-		ExceptionModule,
-		ResponseModule,
+		SharedKernelModule,
 		PaginationModule,
 		ThrottlerModule.forRootAsync({
 			imports: [ThrottleModule.forRoot()],

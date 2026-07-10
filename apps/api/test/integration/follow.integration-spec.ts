@@ -23,15 +23,15 @@ import { FollowBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { TypedConfigService } from "@/common/config/services/config.service";
-import { UNIT_OF_WORK } from "@/common/database";
-import { EntitlementService } from "@/common/entitlement/entitlement.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { PaginationService } from "@/common/pagination/services/pagination.service";
-import { FollowRepository } from "@/modules/follow/follow.repository";
-import { FollowService } from "@/modules/follow/follow.service";
-import { NotificationQueueService } from "@/modules/notification/queue";
+import { FollowRepository } from "@/follow/follow.repository";
+import { FollowService } from "@/follow/follow.service";
+import { NotificationQueueService } from "@/notification/queue";
+import { EntitlementService } from "@/shared/application/entitlement/entitlement.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { PaginationService } from "@/shared/application/pagination/services/pagination.service";
+import { UNIT_OF_WORK } from "@/shared/application/ports";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { TypedConfigService } from "@/shared/infrastructure/config/services/config.service";
 
 describe("FollowService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

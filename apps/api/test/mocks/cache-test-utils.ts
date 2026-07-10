@@ -1,16 +1,16 @@
-import type { CachedUserProfile } from "@/common/cache/cache.service";
-import {
-	type CacheStats,
-	type ICacheService,
-	parseTtl,
-	type TtlValue,
-} from "@/common/cache/interfaces/cache.interface";
 import {
 	AccountProvider,
 	SubscriptionStatus,
 	UserRole,
 	UserStatus,
 } from "@/generated/prisma/enums";
+import type { CachedUserProfile } from "@/shared/infrastructure/cache/cache.service";
+import {
+	type CacheStats,
+	type ICacheService,
+	parseTtl,
+	type TtlValue,
+} from "@/shared/infrastructure/cache/interfaces/cache.interface";
 
 /**
  * 테스트용 Mock 캐시 어댑터

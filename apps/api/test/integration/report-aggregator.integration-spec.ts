@@ -21,9 +21,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import type { DatabaseService } from "@/database/database.service";
-import { ReportAggregatorService } from "@/modules/ai-report/report-aggregator.service";
-import type { AggregateParams } from "@/modules/ai-report/types";
+import { ReportAggregatorService } from "@/ai-report/report-aggregator.service";
+import type { AggregateParams } from "@/ai-report/types";
+import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 
 import { TestDatabase } from "../setup/test-database";
 

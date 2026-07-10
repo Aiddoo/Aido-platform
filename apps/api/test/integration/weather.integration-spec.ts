@@ -17,27 +17,27 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { UserLocationBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { CacheService } from "@/common/cache/cache.service";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
+import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import {
 	AIR_QUALITY_PROVIDER,
 	type AirQualityProvider,
-} from "@/modules/weather/providers/air/air-quality.types";
+} from "@/weather/providers/air/air-quality.types";
 import {
 	LIFESTYLE_INDEX_PROVIDER,
 	type LifestyleIndexProvider,
-} from "@/modules/weather/providers/lifestyle/lifestyle-index.types";
+} from "@/weather/providers/lifestyle/lifestyle-index.types";
 import {
 	SUN_TIME_PROVIDER,
 	type SunTimeProvider,
-} from "@/modules/weather/providers/sun/sun-time.types";
+} from "@/weather/providers/sun/sun-time.types";
 import {
 	WEATHER_PROVIDER,
 	type WeatherProvider,
-} from "@/modules/weather/providers/weather-provider.interface";
-import { WeatherRepository } from "@/modules/weather/repositories/weather.repository";
-import { WeatherService } from "@/modules/weather/services/weather.service";
+} from "@/weather/providers/weather-provider.interface";
+import { WeatherRepository } from "@/weather/repositories/weather.repository";
+import { WeatherService } from "@/weather/services/weather.service";
 
 describe("WeatherService 통합 테스트 (Mock DB)", () => {
 	let module: TestingModule;

@@ -24,8 +24,8 @@ import type { Job } from "bullmq";
 import {
 	ADMIN_NOTIFIER,
 	PAYMENT_NOTIFIER,
-} from "@/modules/admin-notification/providers/admin-notifier.interface";
-import { AdminNotificationProcessor } from "@/modules/admin-notification/queue/admin-notification-queue.processor";
+} from "@/admin-notification/providers/admin-notifier.interface";
+import { AdminNotificationProcessor } from "@/admin-notification/queue/admin-notification-queue.processor";
 
 function createMockJob(name: string, data: Record<string, unknown>): Job {
 	return { name, data, id: `job-${name}` } as unknown as Job;

@@ -9,9 +9,9 @@
 import type { INestApplication } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { CacheModule } from "@/common/cache/cache.module";
-import { CacheService } from "@/common/cache/cache.service";
-import { CacheKeys } from "@/common/cache/constants/cache-keys";
+import { CacheModule } from "@/shared/infrastructure/cache/cache.module";
+import { CacheService } from "@/shared/infrastructure/cache/cache.service";
+import { CacheKeys } from "@/shared/infrastructure/cache/constants/cache-keys";
 import { createMockUserProfile, delay } from "../mocks/cache-test-utils";
 
 describe("캐시 무효화 E2E 테스트", () => {

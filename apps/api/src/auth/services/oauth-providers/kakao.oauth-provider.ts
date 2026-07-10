@@ -1,0 +1,122 @@
+import type { Logger } from "@nestjs/common";
+
+import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
+
+import type {
+	OAuthTokenVerifierService,
+	VerifiedProfile,
+} from "../oauth-token-verifier.service";
+import type {
+	ExchangedToken,
+	GenerateAuthUrlParams,
+	IOAuthProviderStrategy,
+	SocialLoginOptions,
+} from "./oauth-provider.strategy";
+
+interface OAuthConfig {
+	clientId: string | undefined;
+	clientSecret: string | undefined;
+	callbackUrl: string | undefined;
+	isConfigured: boolean;
+}
+
+/**
+ * Kakao OAuth 전략
+ *
+ * - accessToken 기반 검증
+ * - scope: profile_nickname profile_image
+ * - 토큰 교환 시 access_token 필드 사용
+ */
+export class KakaoOAuthProvider implements IOAuthProviderStrategy {
+	readonly provider = "KAKAO" as const;
+	readonly failureEmail = "kakao_unknown@social.aido.kr";
+
+	readonly #getConfig: () => OAuthConfig;
+	readonly #verifier: OAuthTokenVerifierService;
+	readonly #logger: Logger;
+
+	constructor(
+		getConfig: () => OAuthConfig,
+		verifier: OAuthTokenVerifierService,
+		logger: Logger,
+	) {
+		this.#getConfig = getConfig;
+		this.#verifier = verifier;
+		this.#logger = logger;
+	}
+
+	async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
+		const { clientId, callbackUrl, isConfigured } = this.#getConfig();
+
+		if (!isConfigured || !clientId || !callbackUrl) {
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		await params.persistState("KAKAO", params.validatedRedirectUri, {
+			mode: params.mode,
+			initiatingUserId:
+				params.mode === "link" ? params.initiatingUserId : undefined,
+		});
+
+		const urlParams = new URLSearchParams({
+			client_id: clientId,
+			redirect_uri: callbackUrl,
+			response_type: "code",
+			state: params.state,
+			scope: "profile_nickname profile_image",
+		});
+
+		return `https://kauth.kakao.com/oauth/authorize?${urlParams.toString()}`;
+	}
+
+	async exchangeCode(code: string): Promise<ExchangedToken> {
+		const { clientId, clientSecret, callbackUrl, isConfigured } =
+			this.#getConfig();
+
+		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({
+				grant_type: "authorization_code",
+				client_id: clientId,
+				client_secret: clientSecret,
+				redirect_uri: callbackUrl,
+				code,
+			}).toString(),
+		});
+
+		if (!tokenResponse.ok) {
+			const errorData = await tokenResponse.text();
+			this.#logger.error(`Kakao token exchange failed: ${errorData}`);
+			throw BusinessExceptions.invalidCredentials();
+		}
+
+		const tokenData = (await tokenResponse.json()) as {
+			access_token: string;
+			token_type: string;
+			refresh_token: string;
+			expires_in: number;
+		};
+
+		return { token: tokenData.access_token };
+	}
+
+	async verifyToken(accessToken: string): Promise<VerifiedProfile> {
+		return this.#verifier.verifyKakaoToken(accessToken);
+	}
+
+	buildLoginOptions(
+		verifiedProfile: VerifiedProfile,
+		userName?: string,
+	): SocialLoginOptions {
+		return {
+			userName: userName ?? verifiedProfile.name,
+			emailVerified: verifiedProfile.emailVerified,
+			profileImage: verifiedProfile.picture,
+		};
+	}
+}

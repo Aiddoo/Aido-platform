@@ -53,7 +53,7 @@
 
 ```
 apps/api/
-├── src/modules/{name}/
+├── src/{name}/
 │   ├── {name}.service.spec.ts          # Unit 테스트 (레거시 Service)
 │   ├── domain/
 │   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (CQRS 모듈)
@@ -185,8 +185,8 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 
 | 유형 | 예제 파일 |
 |------|----------|
-| **Unit (모범 사례)** | `src/modules/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
-| Unit (Suites) | `src/modules/notification/notification.service.spec.ts` |
+| **Unit (모범 사례)** | `src/cheer/cheer.service.spec.ts` — GWT, Builder 모두 적용 |
+| Unit (Suites) | `src/notification/notification.service.spec.ts` |
 | Integration (Mock DB) | `test/integration/cheer.integration-spec.ts` |
 | Integration (실제 DB) | `test/integration/auth-password-setup.integration-spec.ts` |
 | E2E | `test/e2e/todo.e2e-spec.ts` |
