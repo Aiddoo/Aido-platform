@@ -10,7 +10,7 @@
 import { VERIFICATION_CODE } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
-import { EmailService } from "@/email/email.service";
+import { EmailFacade } from "@/email";
 import type { VerificationType } from "@/generated/prisma/client";
 import { BusinessException } from "@/shared/application/exceptions/business-exception.service";
 import { VerificationRepository } from "../repositories/verification.repository";
@@ -19,7 +19,7 @@ import { VerificationService } from "./verification.service";
 describe("VerificationService — 인증 코드 서비스", () => {
 	let service: VerificationService;
 	let verificationRepo: Mocked<VerificationRepository>;
-	let emailService: Mocked<EmailService>;
+	let emailFacade: Mocked<EmailFacade>;
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
@@ -28,7 +28,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		service = unit;
 		verificationRepo = unitRef.get(VerificationRepository);
-		emailService = unitRef.get(EmailService);
+		emailFacade = unitRef.get(EmailFacade);
 	});
 
 	describe("createAndSendPasswordReset", () => {
@@ -49,7 +49,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailService.sendPasswordResetCode.mockResolvedValue({
+			emailFacade.sendPasswordResetCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -62,7 +62,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 			// Then
 			expect(result.code).toMatch(/^\d{6}$/);
-			expect(emailService.sendPasswordResetCode).toHaveBeenCalledWith(email, {
+			expect(emailFacade.sendPasswordResetCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -140,7 +140,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 				usedAt: null,
 				createdAt: new Date(),
 			});
-			emailService.sendPasswordSetupCode.mockResolvedValue({
+			emailFacade.sendPasswordSetupCode.mockResolvedValue({
 				success: true,
 			});
 		});
@@ -169,7 +169,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 			await service.createAndSendPasswordSetup(userId, email);
 
 			// Then
-			expect(emailService.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
+			expect(emailFacade.sendPasswordSetupCode).toHaveBeenCalledWith(email, {
 				code: expect.any(String),
 				expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 			});
@@ -239,7 +239,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
 
 		it("이메일 발송 실패해도 결과를 반환한다", async () => {
 			// Given
-			emailService.sendPasswordSetupCode.mockResolvedValue({
+			emailFacade.sendPasswordSetupCode.mockResolvedValue({
 				success: false,
 				error: "SMTP error",
 			});

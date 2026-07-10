@@ -1,7 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
 import { VERIFICATION_CODE } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
-import { EmailService } from "@/email/email.service";
+import { EmailFacade } from "@/email";
 import type { VerificationType } from "@/generated/prisma/client";
 import { BusinessExceptions } from "@/shared/application/exceptions/business-exception.service";
 import {
@@ -23,7 +23,7 @@ export class VerificationService {
 
 	constructor(
 		private readonly verificationRepository: VerificationRepository,
-		private readonly emailService: EmailService,
+		private readonly emailFacade: EmailFacade,
 	) {}
 
 	// 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
@@ -54,7 +54,7 @@ export class VerificationService {
 
 	// 이메일 발송 실패는 로그만 남기고 예외를 던지지 않음 (재발송 가능)
 	async sendVerificationEmail(email: string, code: string): Promise<void> {
-		const emailResult = await this.emailService.sendVerificationCode(email, {
+		const emailResult = await this.emailFacade.sendVerificationCode(email, {
 			code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -90,7 +90,7 @@ export class VerificationService {
 		);
 
 		// 이메일 발송
-		const emailResult = await this.emailService.sendPasswordResetCode(email, {
+		const emailResult = await this.emailFacade.sendPasswordResetCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});
@@ -128,7 +128,7 @@ export class VerificationService {
 		);
 
 		// 이메일 발송
-		const emailResult = await this.emailService.sendPasswordSetupCode(email, {
+		const emailResult = await this.emailFacade.sendPasswordSetupCode(email, {
 			code: result.code,
 			expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
 		});

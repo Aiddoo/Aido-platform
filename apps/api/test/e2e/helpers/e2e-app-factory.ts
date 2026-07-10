@@ -41,7 +41,7 @@ import {
 	AccountPurgeProcessor,
 } from "@/auth/processors/account-purge.processor";
 import { OAuthTokenVerifierService } from "@/auth/services/oauth-token-verifier.service";
-import { EmailService } from "@/email/email.service";
+import { EmailFacade } from "@/email";
 import { PUSH_PROVIDER } from "@/notification/providers/push-provider.interface";
 import { NOTIFICATION_QUEUE } from "@/notification/queue/notification-queue.constants";
 import { NotificationQueueProcessor } from "@/notification/queue/notification-queue.processor";
@@ -157,7 +157,7 @@ export async function createE2eApp(
 		)
 		.overrideProvider(DatabaseService)
 		.useValue(testDatabase.getPrisma())
-		.overrideProvider(EmailService)
+		.overrideProvider(EmailFacade)
 		.useValue(fakeEmailService)
 		.overrideProvider(OAuthTokenVerifierService)
 		.useValue(fakeOAuthTokenVerifierService)

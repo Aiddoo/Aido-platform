@@ -1,15 +1,23 @@
 import { Module } from "@nestjs/common";
-import { EmailService } from "./email.service";
+import { EmailFacade } from "./application/facades/email.facade";
+import { EMAIL_SENDER } from "./application/ports/email-sender.port";
+import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email-sender.adapter";
 
 /**
- * 이메일 모듈
+ * 이메일 모듈 (클린아키텍처, facade-only — 컨트롤러 없음)
  *
- * Resend를 통한 트랜잭셔널 이메일 발송을 담당합니다.
- * - 이메일 인증 코드
- * - 비밀번호 재설정 코드
+ * 트랜잭셔널 이메일(인증·비밀번호·문의)을 발송한다. 전송 벤더는 EMAIL_SENDER
+ * 포트로 추상화되며 현재 어댑터는 Resend다. EmailFacade를 export하여 inquiry·
+ * auth 등 소비 모듈이 주입한다.
  */
 @Module({
-	providers: [EmailService],
-	exports: [EmailService],
+	providers: [
+		EmailFacade,
+		{
+			provide: EMAIL_SENDER,
+			useClass: ResendEmailSenderAdapter,
+		},
+	],
+	exports: [EmailFacade],
 })
 export class EmailModule {}

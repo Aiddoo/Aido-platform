@@ -45,7 +45,7 @@ import { PasswordManagementService } from "@/auth/services/password-management.s
 import { SessionService } from "@/auth/services/session.service";
 import { TokenService } from "@/auth/services/token.service";
 import { VerificationService } from "@/auth/services/verification.service";
-import { EmailService } from "@/email/email.service";
+import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification/queue";
 import { BusinessException } from "@/shared/application/exceptions";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
@@ -131,7 +131,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: { tx: databaseService },
 				},
 				{
-					provide: EmailService,
+					provide: EmailFacade,
 					useClass: FakeEmailService,
 				},
 				{

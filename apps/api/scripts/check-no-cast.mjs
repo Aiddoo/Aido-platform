@@ -33,6 +33,9 @@ const TARGET_DIRS = [
 	"src/weekly-achievement/domain",
 	"src/weekly-achievement/application",
 	"src/weekly-achievement/infrastructure",
+	"src/email/domain",
+	"src/email/application",
+	"src/email/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

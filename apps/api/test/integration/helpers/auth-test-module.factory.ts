@@ -25,7 +25,7 @@ import { PasswordManagementService } from "@/auth/services/password-management.s
 import { SessionService } from "@/auth/services/session.service";
 import { TokenService } from "@/auth/services/token.service";
 import { VerificationService } from "@/auth/services/verification.service";
-import { EmailService } from "@/email/email.service";
+import { EmailFacade } from "@/email";
 import { NotificationQueueService } from "@/notification/queue";
 import { CacheService } from "@/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "@/shared/infrastructure/cache/interfaces/cache.interface";
@@ -81,7 +81,7 @@ export async function createAuthTestModule(
 				useValue: { tx: databaseService },
 			},
 			{
-				provide: EmailService,
+				provide: EmailFacade,
 				useValue: fakeEmailService,
 			},
 			{
