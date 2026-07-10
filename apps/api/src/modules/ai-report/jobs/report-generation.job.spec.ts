@@ -50,7 +50,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledTimes(2);
@@ -71,7 +72,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockProcessor.setReportJob).toHaveBeenCalledWith(job);
@@ -84,7 +86,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).toHaveBeenCalledWith(
@@ -99,7 +102,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-04-01T02:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).toHaveBeenCalledWith(
@@ -114,7 +118,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-06-01T03:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).toHaveBeenCalledTimes(2);
@@ -135,7 +140,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T00:30:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).not.toHaveBeenCalled();
@@ -146,7 +152,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).not.toHaveBeenCalled();
@@ -157,7 +164,8 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-15T10:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).not.toHaveBeenCalled();

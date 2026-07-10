@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import type Redis from "ioredis";
+import { RedisErrorLogSampler } from "@/common/redis/redis-error-log-sampler";
 import type { IPushRateLimiter } from "./push-rate-limiter.interface";
 
 /** 1시간 윈도우 내 최대 푸시 횟수 */
@@ -53,6 +54,7 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 	readonly #logger = new Logger(RedisPushRateLimiter.name);
 	readonly #redis: Redis;
 	readonly #keyPrefix = "push-rate:";
+	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
 	constructor(redis: Redis) {
 		this.#redis = redis;
@@ -76,9 +78,7 @@ export class RedisPushRateLimiter implements IPushRateLimiter {
 
 			return result === 1;
 		} catch (error) {
-			this.#logger.warn(
-				`Redis push rate limit error (fail-open): ${error instanceof Error ? error.message : error}`,
-			);
+			this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
 			// fail-open: Redis 장애 시 발송 허용
 			return false;
 		}

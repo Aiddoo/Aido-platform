@@ -51,7 +51,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
@@ -66,7 +67,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.removeJobScheduler).toHaveBeenCalledWith(
@@ -79,7 +81,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			const removeOrder =
@@ -94,7 +97,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockProcessor.setSuggestionJob).toHaveBeenCalledWith(job);
@@ -107,7 +111,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T08:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).toHaveBeenCalledWith(
@@ -122,7 +127,8 @@ describe("SuggestionAnalysisJob — AI 제안 분석 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).not.toHaveBeenCalled();

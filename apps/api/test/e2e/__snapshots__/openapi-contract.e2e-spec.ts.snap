@@ -20845,6 +20845,10 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 - \`up\`: 정상 동작 중
 - \`down\`: 서비스 이상
 
+> \`queues\`는 Redis 장애 시에도 \`up\`을 유지하고 \`degraded: true\` +
+> \`reason\`을 덧붙입니다 (Redis 다운은 태스크 재시작으로 해결되지 않으므로
+> 503을 만들지 않음). 모니터링 알람은 \`degraded\` 필드를 기준으로 합니다.
+
 ### 사용 예시
 \`\`\`bash
 curl https://api.aido.com/health

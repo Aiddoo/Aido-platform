@@ -19,7 +19,10 @@ import type { App } from "supertest/types";
 import { AppModule } from "@/app.module";
 import { InMemoryCacheAdapter } from "@/common/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
-import { REDIS_CLIENT } from "@/common/redis/redis.constants";
+import {
+	REDIS_CLIENT,
+	REDIS_COMMAND_CLIENT,
+} from "@/common/redis/redis.constants";
 import { DatabaseService } from "@/database";
 import { DailySignupSummaryJob } from "@/modules/admin-notification/jobs/daily-signup-summary.job";
 import {
@@ -141,6 +144,8 @@ export async function createE2eApp(
 		imports: [AppModule],
 	})
 		.overrideProvider(REDIS_CLIENT)
+		.useValue(redisMock)
+		.overrideProvider(REDIS_COMMAND_CLIENT)
 		.useValue(redisMock)
 		.overrideProvider(CACHE_SERVICE)
 		.useValue(

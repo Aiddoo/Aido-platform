@@ -9,9 +9,29 @@
  * pnpm --filter @aido/api test in-memory-cache.adapter
  * ```
  */
+import { describeCacheAdapterContract } from "./cache-adapter.contract";
 import { InMemoryCacheAdapter } from "./in-memory-cache.adapter";
 
 describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
+	// Redis 어댑터와 동일한 ICacheService 계약 준수 검증 (교체 가능성 증명)
+	const createdAdapters: InMemoryCacheAdapter[] = [];
+
+	describeCacheAdapterContract({
+		createAdapter: () => {
+			const adapter = new InMemoryCacheAdapter({
+				defaultTtlMs: 60_000,
+				maxItems: 100,
+			});
+			createdAdapters.push(adapter);
+			return adapter;
+		},
+		cleanup: async () => {
+			const adapter = createdAdapters.pop();
+			await adapter?.reset();
+			adapter?.onModuleDestroy();
+		},
+	});
+
 	let cache: InMemoryCacheAdapter;
 
 	beforeEach(() => {

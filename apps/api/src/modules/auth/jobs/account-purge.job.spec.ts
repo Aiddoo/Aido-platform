@@ -62,7 +62,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.upsertJobScheduler).toHaveBeenCalledWith(
@@ -77,10 +78,36 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockProcessor.setPurgeJob).toHaveBeenCalledWith(job);
+		});
+
+		it("Redis가 무응답이어도 부팅(onModuleInit)이 블로킹되지 않는다", () => {
+			// Given — Redis 다운: 등록 명령이 영원히 pending
+			(mockQueue.upsertJobScheduler as jest.Mock).mockReturnValue(
+				new Promise(() => {}),
+			);
+
+			// When — 동기 반환 (await 없이 즉시 완료돼야 부팅이 안 막힌다)
+			const result = job.onModuleInit();
+
+			// Then
+			expect(result).toBeUndefined();
+			expect(mockProcessor.setPurgeJob).toHaveBeenCalledWith(job);
+		});
+
+		it("스케줄러 등록 실패 시 로그만 남기고 throw하지 않는다", async () => {
+			// Given
+			(mockQueue.upsertJobScheduler as jest.Mock).mockRejectedValue(
+				new Error("Connection is closed."),
+			);
+
+			// When / Then — 부팅 실패로 이어지지 않아야 한다
+			job.onModuleInit();
+			await expect(job.schedulerRegistration).resolves.toBeUndefined();
 		});
 	});
 
@@ -90,7 +117,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T05:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).toHaveBeenCalledWith(
@@ -105,7 +133,8 @@ describe("AccountPurgeJob — 계정 삭제 잡", () => {
 			jest.useFakeTimers({ now: new Date("2026-03-09T02:00:00+09:00") });
 
 			// When
-			await job.onModuleInit();
+			job.onModuleInit();
+			await job.schedulerRegistration;
 
 			// Then
 			expect(mockQueue.add).not.toHaveBeenCalled();

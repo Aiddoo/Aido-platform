@@ -174,7 +174,8 @@ Build → Push to ECR → Run Migration Task → Deploy API Service
 
 | 변수 | 필수 | 기본값 | 설명 |
 |------|------|--------|------|
-| `NODE_ENV` | - | development | 실행 환경 |
+| `NODE_ENV` | - | development | 런타임 모드 (빌드 최적화 기준) |
+| `APP_ENV` | - | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
 | `PORT` | - | 8080 | API 포트 |
 | `DATABASE_URL` | Y | - | PostgreSQL 연결 URL |
 | `JWT_SECRET` | Y | - | JWT 서명 키 (min 32자) |

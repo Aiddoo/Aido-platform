@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import type Redis from "ioredis";
 import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_CLIENT } from "../redis/redis.constants";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
 import { InMemoryCacheAdapter } from "./adapters/in-memory-cache.adapter";
 import { RedisCacheAdapter } from "./adapters/redis-cache.adapter";
 import { CacheService } from "./cache.service";
@@ -59,7 +59,10 @@ export class CacheModule {
 					cleanupIntervalMs: cacheConfig.cleanupIntervalMs,
 				});
 			},
-			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
+			inject: [
+				TypedConfigService,
+				{ token: REDIS_COMMAND_CLIENT, optional: true },
+			],
 		};
 
 		return {

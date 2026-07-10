@@ -1,6 +1,7 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
+import { runInBackground } from "@/common/bullmq/non-blocking-init";
 import { CacheService } from "@/common/cache/cache.service";
 import { addDays } from "@/common/date/utils/arithmetic";
 import { todayInTimezone } from "@/common/date/utils/timezone";
@@ -59,11 +60,19 @@ export class TimezoneAwareReminderJob implements OnModuleInit {
 		private readonly weatherEvening: WeatherEveningStrategy,
 	) {}
 
-	async onModuleInit(): Promise<void> {
+	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+	schedulerRegistration: Promise<void> = Promise.resolve();
+
+	onModuleInit(): void {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setReminderJob(this);
 
-		await this.queueService.registerSweepScheduler();
+		// Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+		this.schedulerRegistration = runInBackground(
+			this.#logger,
+			"Timezone reminder sweep scheduler registration",
+			() => this.queueService.registerSweepScheduler(),
+		);
 	}
 
 	/**

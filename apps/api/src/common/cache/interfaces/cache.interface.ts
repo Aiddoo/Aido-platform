@@ -52,10 +52,23 @@ export function parseTtl(ttl: TtlValue): number {
 	return Number.parseInt(value, 10) * multipliers[unit];
 }
 
+/**
+ * 캐시 포트
+ *
+ * 장애 계약 (모든 어댑터가 지켜야 함 — fail-open):
+ * - 읽기(get/mget/has/ttl/touch)는 백엔드 장애 시 캐시 미스와 동일하게
+ *   동작한다 (get→undefined, has→false, ttl→-2, touch→false).
+ *   소비처는 미스 경로(DB 폴백)만 준비하면 장애를 따로 처리할 필요가 없다.
+ * - 쓰기(set/mset/del/reset)는 백엔드 장애 시 조용히 무시하고 절대
+ *   throw하지 않는다. TTL이 staleness의 상한이다.
+ *
+ * 이 계약을 지키는 새 어댑터는 소비처 변경 없이 교체 가능하다.
+ * 준수 여부는 `adapters/cache-adapter.contract.ts` 공유 스펙으로 검증한다.
+ */
 export interface ICacheService {
 	/**
 	 * 캐시에서 값 조회
-	 * @returns 캐시 미스 시 undefined
+	 * @returns 캐시 미스 시 undefined (백엔드 장애 시에도 undefined)
 	 */
 	get<T>(key: string): Promise<T | undefined>;
 
@@ -166,25 +179,4 @@ export interface CacheStats {
 	misses: number;
 	keys: number;
 	memoryUsage?: number; // bytes (인메모리 전용)
-}
-
-export interface CacheConfig {
-	type: "memory" | "redis";
-	defaultTtlMs: number;
-	maxItems: number;
-	cleanupIntervalMs?: number;
-	redis?: RedisConfig;
-}
-
-export interface RedisConfig {
-	host: string;
-	port: number;
-	password?: string;
-	db?: number;
-	/** 키 프리픽스 (기본값: 'aido:') */
-	keyPrefix?: string;
-	/** 연결 타임아웃 (밀리초) */
-	connectTimeout?: number;
-	/** 명령 타임아웃 (밀리초) */
-	commandTimeout?: number;
 }
