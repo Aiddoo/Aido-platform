@@ -12,15 +12,15 @@ import { FOLLOW_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { FollowBuilder } from "@test/builders";
-import { type TransactionCallback } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -33,7 +33,6 @@ describe("FollowService — 팔로우 서비스", () => {
 	let followRepo: Mocked<FollowRepository>;
 	let paginationService: Mocked<PaginationService>;
 	let entitlementService: Mocked<EntitlementService>;
-	let database: Mocked<DatabaseService>;
 	let _notificationQueueService: Mocked<NotificationQueueService>;
 	let cacheService: Mocked<CacheService>;
 
@@ -42,25 +41,20 @@ describe("FollowService — 팔로우 서비스", () => {
 	const mockTargetUserId = "user-456";
 	const mockTargetUserTag = "JOHN2026";
 
-	// Transaction mock context (테스트에서 참조 가능)
-	const mockTxContext = {};
-
 	beforeEach(async () => {
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(FollowService).compile();
+		// UNIT_OF_WORK는 Symbol 토큰이라 auto-mock이 불가 → passthrough mock 명시
+		const { unit, unitRef } = await TestBed.solitary(FollowService)
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			.compile();
 
 		service = unit;
 		followRepo = unitRef.get(FollowRepository);
 		paginationService = unitRef.get(PaginationService);
 		entitlementService = unitRef.get(EntitlementService);
-		database = unitRef.get(DatabaseService);
 		_notificationQueueService = unitRef.get(NotificationQueueService);
 		cacheService = unitRef.get(CacheService);
-
-		// DatabaseService.$transaction passthrough 구현 (tx context 전달)
-		database.$transaction.mockImplementation((callback: TransactionCallback) =>
-			callback(mockTxContext),
-		);
 
 		// 리소스 제한 기본 mock (Premium 유저 = 무제한)
 		entitlementService.getResourceLimit.mockResolvedValue({
@@ -281,14 +275,12 @@ describe("FollowService — 팔로우 서비스", () => {
 				mockTargetUserId,
 				mockUserId,
 				expect.objectContaining({ status: "ACCEPTED" }),
-				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					status: "ACCEPTED",
 					sortOrder: expect.any(Number),
 				}),
-				expect.anything(), // 트랜잭션 컨텍스트
 			);
 		});
 
@@ -480,7 +472,6 @@ describe("FollowService — 팔로우 서비스", () => {
 					status: "ACCEPTED",
 					sortOrder: expect.any(Number),
 				}),
-				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -489,7 +480,6 @@ describe("FollowService — 팔로우 서비스", () => {
 					status: "ACCEPTED",
 					sortOrder: expect.any(Number),
 				}),
-				expect.anything(), // 트랜잭션 컨텍스트
 			);
 		});
 
@@ -547,7 +537,6 @@ describe("FollowService — 팔로우 서비스", () => {
 					status: "ACCEPTED",
 					sortOrder: expect.any(Number),
 				}),
-				expect.anything(), // 트랜잭션 컨텍스트
 			);
 			expect(followRepo.create).not.toHaveBeenCalled();
 		});
@@ -643,16 +632,8 @@ describe("FollowService — 팔로우 서비스", () => {
 
 			// Then
 			expect(followRepo.delete).toHaveBeenCalledTimes(2);
-			expect(followRepo.delete).toHaveBeenNthCalledWith(
-				1,
-				myFollow.id,
-				expect.anything(), // 트랜잭션 컨텍스트
-			);
-			expect(followRepo.delete).toHaveBeenNthCalledWith(
-				2,
-				theirFollow.id,
-				expect.anything(), // 트랜잭션 컨텍스트
-			);
+			expect(followRepo.delete).toHaveBeenNthCalledWith(1, myFollow.id);
+			expect(followRepo.delete).toHaveBeenNthCalledWith(2, theirFollow.id);
 		});
 
 		it("상대방의 관계가 없어도 내 관계만 삭제된다", async () => {
@@ -673,10 +654,7 @@ describe("FollowService — 팔로우 서비스", () => {
 
 			// Then
 			expect(followRepo.delete).toHaveBeenCalledTimes(1);
-			expect(followRepo.delete).toHaveBeenCalledWith(
-				myFollow.id,
-				expect.anything(), // 트랜잭션 컨텍스트
-			);
+			expect(followRepo.delete).toHaveBeenCalledWith(myFollow.id);
 		});
 
 		it("내 관계가 없으면 FOLLOW_0907 에러를 던진다", async () => {
@@ -1129,7 +1107,6 @@ describe("FollowService — 팔로우 서비스", () => {
 			expect(followRepo.updateFollowSortOrder).toHaveBeenCalledWith(
 				"follow-1",
 				0,
-				expect.anything(),
 			);
 			expect(result).toEqual(updatedFollow);
 		});
@@ -1164,7 +1141,6 @@ describe("FollowService — 팔로우 서비스", () => {
 			// Then
 			expect(followRepo.getMaxSortOrderForFriends).toHaveBeenCalledWith(
 				mockUserId,
-				expect.anything(),
 			);
 			expect(result).toEqual(updatedFollow);
 		});

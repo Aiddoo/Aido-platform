@@ -1,27 +1,30 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { USER_BRIEF_SELECT } from "@/common/database/selects";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { type Follow, type Prisma } from "@/generated/prisma/client";
 
-import type {
-	FindFollowsParams,
-	FollowWithUser,
-	TransactionClient,
-} from "./types/follow.types";
+import type { FindFollowsParams, FollowWithUser } from "./types/follow.types";
 
 @Injectable()
 export class FollowRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 팔로우 관계 생성
 	 */
-	async create(
-		data: Prisma.FollowCreateInput,
-		tx?: TransactionClient,
-	): Promise<Follow> {
-		const client = tx ?? this.database;
-		return client.follow.create({ data });
+	async create(data: Prisma.FollowCreateInput): Promise<Follow> {
+		return this.client.follow.create({ data });
 	}
 
 	/**
@@ -30,10 +33,8 @@ export class FollowRepository {
 	async findByFollowerAndFollowing(
 		followerId: string,
 		followingId: string,
-		tx?: TransactionClient,
 	): Promise<Follow | null> {
-		const client = tx ?? this.database;
-		return client.follow.findUnique({
+		return this.client.follow.findUnique({
 			where: {
 				followerId_followingId: {
 					followerId,
@@ -46,9 +47,8 @@ export class FollowRepository {
 	/**
 	 * ID로 팔로우 관계 조회
 	 */
-	async findById(id: string, tx?: TransactionClient): Promise<Follow | null> {
-		const client = tx ?? this.database;
-		return client.follow.findUnique({
+	async findById(id: string): Promise<Follow | null> {
+		return this.client.follow.findUnique({
 			where: { id },
 		});
 	}
@@ -56,12 +56,8 @@ export class FollowRepository {
 	/**
 	 * ID로 팔로우 관계 조회 (사용자 정보 포함)
 	 */
-	async findByIdWithUser(
-		id: string,
-		tx?: TransactionClient,
-	): Promise<FollowWithUser | null> {
-		const client = tx ?? this.database;
-		return client.follow.findUnique({
+	async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
+		return this.client.follow.findUnique({
 			where: { id },
 			include: {
 				follower: {
@@ -77,13 +73,8 @@ export class FollowRepository {
 	/**
 	 * 팔로우 관계 수정
 	 */
-	async update(
-		id: string,
-		data: Prisma.FollowUpdateInput,
-		tx?: TransactionClient,
-	): Promise<Follow> {
-		const client = tx ?? this.database;
-		return client.follow.update({
+	async update(id: string, data: Prisma.FollowUpdateInput): Promise<Follow> {
+		return this.client.follow.update({
 			where: { id },
 			data,
 		});
@@ -96,10 +87,8 @@ export class FollowRepository {
 		followerId: string,
 		followingId: string,
 		data: Prisma.FollowUpdateInput,
-		tx?: TransactionClient,
 	): Promise<Follow> {
-		const client = tx ?? this.database;
-		return client.follow.update({
+		return this.client.follow.update({
 			where: {
 				followerId_followingId: {
 					followerId,
@@ -113,9 +102,8 @@ export class FollowRepository {
 	/**
 	 * 팔로우 관계 삭제
 	 */
-	async delete(id: string, tx?: TransactionClient): Promise<Follow> {
-		const client = tx ?? this.database;
-		return client.follow.delete({
+	async delete(id: string): Promise<Follow> {
+		return this.client.follow.delete({
 			where: { id },
 		});
 	}
@@ -126,10 +114,8 @@ export class FollowRepository {
 	async deleteByFollowerAndFollowing(
 		followerId: string,
 		followingId: string,
-		tx?: TransactionClient,
 	): Promise<Follow> {
-		const client = tx ?? this.database;
-		return client.follow.delete({
+		return this.client.follow.delete({
 			where: {
 				followerId_followingId: {
 					followerId,
@@ -154,7 +140,7 @@ export class FollowRepository {
 			: {};
 
 		// 내가 팔로우하고, 상대방도 나를 팔로우한 관계 (양방향 ACCEPTED)
-		return this.database.follow.findMany({
+		return this.client.follow.findMany({
 			where: {
 				followerId: userId,
 				status: "ACCEPTED",
@@ -193,10 +179,8 @@ export class FollowRepository {
 	async findAcceptedByIdAndFollowerId(
 		id: string,
 		followerId: string,
-		tx?: TransactionClient,
 	): Promise<Follow | null> {
-		const client = tx ?? this.database;
-		return client.follow.findFirst({
+		return this.client.follow.findFirst({
 			where: { id, followerId, status: "ACCEPTED" },
 		});
 	}
@@ -204,12 +188,8 @@ export class FollowRepository {
 	/**
 	 * 사용자의 ACCEPTED 팔로우 중 최대 sortOrder
 	 */
-	async getMaxSortOrderForFriends(
-		followerId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.follow.aggregate({
+	async getMaxSortOrderForFriends(followerId: string): Promise<number> {
+		const result = await this.client.follow.aggregate({
 			where: { followerId, status: "ACCEPTED" },
 			_max: { sortOrder: true },
 		});
@@ -224,10 +204,8 @@ export class FollowRepository {
 		fromSortOrder: number,
 		toSortOrder: number | null,
 		delta: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.follow.updateMany({
+		const result = await this.client.follow.updateMany({
 			where: {
 				followerId,
 				status: "ACCEPTED",
@@ -247,10 +225,8 @@ export class FollowRepository {
 	async updateFollowSortOrder(
 		id: string,
 		sortOrder: number,
-		tx?: TransactionClient,
 	): Promise<FollowWithUser> {
-		const client = tx ?? this.database;
-		return client.follow.update({
+		return this.client.follow.update({
 			where: { id },
 			data: { sortOrder },
 			include: {
@@ -265,14 +241,14 @@ export class FollowRepository {
 	 */
 	async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
 		const [myFollow, theirFollow] = await Promise.all([
-			this.database.follow.findFirst({
+			this.client.follow.findFirst({
 				where: {
 					followerId: userId,
 					followingId: targetUserId,
 					status: "ACCEPTED",
 				},
 			}),
-			this.database.follow.findFirst({
+			this.client.follow.findFirst({
 				where: {
 					followerId: targetUserId,
 					followingId: userId,
@@ -292,7 +268,7 @@ export class FollowRepository {
 	): Promise<FollowWithUser[]> {
 		const { userId, cursor, size } = params;
 
-		return this.database.follow.findMany({
+		return this.client.follow.findMany({
 			where: {
 				followingId: userId,
 				status: "PENDING",
@@ -320,7 +296,7 @@ export class FollowRepository {
 	async findSentRequests(params: FindFollowsParams): Promise<FollowWithUser[]> {
 		const { userId, cursor, size } = params;
 
-		return this.database.follow.findMany({
+		return this.client.follow.findMany({
 			where: {
 				followerId: userId,
 				status: "PENDING",
@@ -347,7 +323,7 @@ export class FollowRepository {
 	 */
 	async countMutualFriends(userId: string): Promise<number> {
 		// 내가 팔로우하고, 상대방도 나를 팔로우한 관계 수
-		return this.database.follow.count({
+		return this.client.follow.count({
 			where: {
 				followerId: userId,
 				status: "ACCEPTED",
@@ -367,7 +343,7 @@ export class FollowRepository {
 	 * 받은 친구 요청 수
 	 */
 	async countReceivedRequests(userId: string): Promise<number> {
-		return this.database.follow.count({
+		return this.client.follow.count({
 			where: {
 				followingId: userId,
 				status: "PENDING",
@@ -379,7 +355,7 @@ export class FollowRepository {
 	 * 보낸 친구 요청 수
 	 */
 	async countSentRequests(userId: string): Promise<number> {
-		return this.database.follow.count({
+		return this.client.follow.count({
 			where: {
 				followerId: userId,
 				status: "PENDING",
@@ -391,7 +367,7 @@ export class FollowRepository {
 	 * 사용자 존재 확인
 	 */
 	async userExists(userId: string): Promise<boolean> {
-		const user = await this.database.user.findUnique({
+		const user = await this.client.user.findUnique({
 			where: { id: userId },
 			select: { id: true },
 		});
@@ -403,7 +379,7 @@ export class FollowRepository {
 	 * profile.name 우선, 없으면 userTag 폴백
 	 */
 	async getUserDisplayName(userId: string): Promise<string> {
-		const user = await this.database.user.findUnique({
+		const user = await this.client.user.findUnique({
 			where: { id: userId },
 			select: {
 				userTag: true,
@@ -419,7 +395,7 @@ export class FollowRepository {
 	 * userTag로 사용자 조회
 	 */
 	async findUserByTag(userTag: string): Promise<{ id: string } | null> {
-		return this.database.user.findUnique({
+		return this.client.user.findUnique({
 			where: { userTag },
 			select: { id: true },
 		});
@@ -431,7 +407,7 @@ export class FollowRepository {
 	 * Raw SQL JOIN으로 최적화 (3단계 중첩 쿼리 대신)
 	 */
 	async getMutualFriendIds(userId: string): Promise<string[]> {
-		const result = await this.database.$queryRaw<{ followingId: string }[]>`
+		const result = await this.client.$queryRaw<{ followingId: string }[]>`
 			SELECT DISTINCT f1."followingId"
 			FROM "Follow" f1
 			INNER JOIN "Follow" f2

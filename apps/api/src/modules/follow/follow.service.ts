@@ -1,5 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import {
 	EntitlementService,
 	Resource,
@@ -7,7 +8,6 @@ import {
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
 import { type Follow, Prisma } from "@/generated/prisma/client";
 import { NotificationQueueService } from "@/modules/notification/queue";
 
@@ -17,7 +17,6 @@ import type {
 	FollowWithUser,
 	GetFollowsParams,
 	SendFollowRequestResult,
-	TransactionClient,
 } from "./types/follow.types";
 
 @Injectable()
@@ -28,7 +27,8 @@ export class FollowService {
 		private readonly followRepository: FollowRepository,
 		private readonly paginationService: PaginationService,
 		private readonly entitlementService: EntitlementService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly notificationQueueService: NotificationQueueService,
 		private readonly cacheService: CacheService,
 	) {}
@@ -132,29 +132,25 @@ export class FollowService {
 			// 상대방이 보낸 요청이 PENDING 상태면 자동 수락 (트랜잭션으로 처리)
 			let follow: Follow;
 			try {
-				follow = await this.database.$transaction(async (tx) => {
+				follow = await this.uow.run(async () => {
 					// 양쪽 모두 sortOrder 할당
 					const [maxSortUser, maxSortTarget] = await Promise.all([
-						this.followRepository.getMaxSortOrderForFriends(userId, tx),
-						this.followRepository.getMaxSortOrderForFriends(targetUserId, tx),
+						this.followRepository.getMaxSortOrderForFriends(userId),
+						this.followRepository.getMaxSortOrderForFriends(targetUserId),
 					]);
 
 					await this.followRepository.updateByFollowerAndFollowing(
 						targetUserId,
 						userId,
 						{ status: "ACCEPTED", sortOrder: maxSortTarget + 1 },
-						tx,
 					);
 
-					return this.followRepository.create(
-						{
-							follower: { connect: { id: userId } },
-							following: { connect: { id: targetUserId } },
-							status: "ACCEPTED",
-							sortOrder: maxSortUser + 1,
-						},
-						tx,
-					);
+					return this.followRepository.create({
+						follower: { connect: { id: userId } },
+						following: { connect: { id: targetUserId } },
+						status: "ACCEPTED",
+						sortOrder: maxSortUser + 1,
+					});
 				});
 			} catch (error) {
 				if (
@@ -249,49 +245,42 @@ export class FollowService {
 			userId,
 		);
 
-		if (!request || request.status !== "PENDING") {
+		if (request?.status !== "PENDING") {
 			throw BusinessExceptions.followRequestNotFound(requesterUserId);
 		}
 
-		const myFollow = await this.database.$transaction(async (tx) => {
+		const myFollow = await this.uow.run(async () => {
 			// 양쪽 모두 sortOrder 할당
 			const [maxSortUser, maxSortRequester] = await Promise.all([
-				this.followRepository.getMaxSortOrderForFriends(userId, tx),
-				this.followRepository.getMaxSortOrderForFriends(requesterUserId, tx),
+				this.followRepository.getMaxSortOrderForFriends(userId),
+				this.followRepository.getMaxSortOrderForFriends(requesterUserId),
 			]);
 
-			await this.followRepository.update(
-				request.id,
-				{ status: "ACCEPTED", sortOrder: maxSortRequester + 1 },
-				tx,
-			);
+			await this.followRepository.update(request.id, {
+				status: "ACCEPTED",
+				sortOrder: maxSortRequester + 1,
+			});
 
 			const existingReverse =
 				await this.followRepository.findByFollowerAndFollowing(
 					userId,
 					requesterUserId,
-					tx,
 				);
 
 			const createdFollow = existingReverse
-				? await this.followRepository.update(
-						existingReverse.id,
-						{ status: "ACCEPTED", sortOrder: maxSortUser + 1 },
-						tx,
-					)
-				: await this.followRepository.create(
-						{
-							follower: { connect: { id: userId } },
-							following: { connect: { id: requesterUserId } },
-							status: "ACCEPTED",
-							sortOrder: maxSortUser + 1,
-						},
-						tx,
-					);
+				? await this.followRepository.update(existingReverse.id, {
+						status: "ACCEPTED",
+						sortOrder: maxSortUser + 1,
+					})
+				: await this.followRepository.create({
+						follower: { connect: { id: userId } },
+						following: { connect: { id: requesterUserId } },
+						status: "ACCEPTED",
+						sortOrder: maxSortUser + 1,
+					});
 
 			const followWithUser = await this.followRepository.findByIdWithUser(
 				createdFollow.id,
-				tx,
 			);
 
 			if (!followWithUser) {
@@ -348,7 +337,7 @@ export class FollowService {
 			userId,
 		);
 
-		if (!request || request.status !== "PENDING") {
+		if (request?.status !== "PENDING") {
 			throw BusinessExceptions.followRequestNotFound(requesterUserId);
 		}
 
@@ -372,18 +361,17 @@ export class FollowService {
 			throw BusinessExceptions.notFriends(targetUserId);
 		}
 
-		await this.database.$transaction(async (tx) => {
-			await this.followRepository.delete(myFollow.id, tx);
+		await this.uow.run(async () => {
+			await this.followRepository.delete(myFollow.id);
 
 			const theirFollow =
 				await this.followRepository.findByFollowerAndFollowing(
 					targetUserId,
 					userId,
-					tx,
 				);
 
 			if (theirFollow) {
-				await this.followRepository.delete(theirFollow.id, tx);
+				await this.followRepository.delete(theirFollow.id);
 			}
 		});
 
@@ -569,11 +557,10 @@ export class FollowService {
 	): Promise<FollowWithUser> {
 		const { targetFollowId, position } = data;
 
-		return this.database.$transaction(async (tx) => {
+		return this.uow.run(async () => {
 			const follow = await this.followRepository.findAcceptedByIdAndFollowerId(
 				followId,
 				userId,
-				tx,
 			);
 
 			if (!follow) {
@@ -581,10 +568,7 @@ export class FollowService {
 			}
 
 			if (targetFollowId === followId) {
-				const withUser = await this.followRepository.findByIdWithUser(
-					followId,
-					tx,
-				);
+				const withUser = await this.followRepository.findByIdWithUser(followId);
 				if (!withUser) {
 					throw BusinessExceptions.friendReorderTargetNotFound(followId);
 				}
@@ -597,14 +581,12 @@ export class FollowService {
 						targetFollowId,
 						position,
 						userId,
-						tx,
 					)
-				: await this.#reorderToEdge(follow.sortOrder, position, userId, tx);
+				: await this.#reorderToEdge(follow.sortOrder, position, userId);
 
 			const updated = await this.followRepository.updateFollowSortOrder(
 				followId,
 				newSortOrder,
-				tx,
 			);
 
 			this.#logger.log(
@@ -620,12 +602,10 @@ export class FollowService {
 		targetFollowId: string,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		const target = await this.followRepository.findAcceptedByIdAndFollowerId(
 			targetFollowId,
 			userId,
-			tx,
 		);
 
 		if (!target) {
@@ -641,7 +621,6 @@ export class FollowService {
 				currentSortOrder + 1,
 				newSortOrder - 1,
 				-1,
-				tx,
 			);
 			newSortOrder -= 1;
 		} else {
@@ -650,7 +629,6 @@ export class FollowService {
 				newSortOrder,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 		}
 
@@ -661,7 +639,6 @@ export class FollowService {
 		currentSortOrder: number,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		if (position === "before") {
 			await this.followRepository.shiftFriendSortOrders(
@@ -669,21 +646,17 @@ export class FollowService {
 				0,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 			return 0;
 		}
 
-		const maxSortOrder = await this.followRepository.getMaxSortOrderForFriends(
-			userId,
-			tx,
-		);
+		const maxSortOrder =
+			await this.followRepository.getMaxSortOrderForFriends(userId);
 		await this.followRepository.shiftFriendSortOrders(
 			userId,
 			currentSortOrder + 1,
 			null,
 			-1,
-			tx,
 		);
 		return maxSortOrder;
 	}

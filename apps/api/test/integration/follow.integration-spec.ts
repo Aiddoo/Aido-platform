@@ -18,15 +18,17 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { FollowBuilder, UserBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import { DatabaseService } from "@/database/database.service";
 import { FollowRepository } from "@/modules/follow/follow.repository";
 import { FollowService } from "@/modules/follow/follow.service";
 import { NotificationQueueService } from "@/modules/notification/queue";
@@ -103,8 +105,13 @@ describe("FollowService 통합 테스트 (Mock DB)", () => {
 				FollowRepository,
 				PaginationService,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
+				},
+				{
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: TypedConfigService,
