@@ -210,4 +210,62 @@ describe("JwtStrategy — JWT 전략", () => {
 			BusinessException,
 		);
 	});
+
+	describe("캐시 장애 폴백 (Redis 다운이어도 인증은 계속된다)", () => {
+		const cacheFailure = new Error("Connection is closed.");
+		const futureDate = new Date(Date.now() + 86400000);
+
+		it("세션 캐시 읽기 실패 시 DB 조회로 폴백해 정상 인증한다", async () => {
+			// Given
+			(cacheService.getSession as jest.Mock).mockRejectedValue(cacheFailure);
+			(sessionRepo.findById as jest.Mock).mockResolvedValue({
+				id: "session-456",
+				userId: "user-123",
+				expiresAt: futureDate,
+				revokedAt: null,
+			});
+
+			// When
+			const result = await strategy.validate(validPayload);
+
+			// Then
+			expect(result.userId).toBe("user-123");
+			expect(sessionRepo.findById).toHaveBeenCalledWith("session-456");
+		});
+
+		it("세션 캐시 쓰기 실패는 무시하고 정상 인증한다", async () => {
+			// Given
+			(cacheService.getSession as jest.Mock).mockResolvedValue(null);
+			(cacheService.setSession as jest.Mock).mockRejectedValue(cacheFailure);
+			(sessionRepo.findById as jest.Mock).mockResolvedValue({
+				id: "session-456",
+				userId: "user-123",
+				expiresAt: futureDate,
+				revokedAt: null,
+			});
+
+			// When
+			const result = await strategy.validate(validPayload);
+
+			// Then
+			expect(result.userId).toBe("user-123");
+		});
+
+		it("캐시 폴백은 의도적 401(세션 무효)을 삼키지 않는다", async () => {
+			// Given — 캐시는 정상, 세션이 진짜로 폐기된 상황
+			(cacheService.getSession as jest.Mock).mockResolvedValue({
+				userId: "user-123",
+				expiresAt: futureDate,
+				revokedAt: new Date(),
+			});
+			sessionService.assertSessionValid.mockImplementation(() => {
+				throw BusinessExceptions.sessionRevoked();
+			});
+
+			// When & Then
+			await expect(strategy.validate(validPayload)).rejects.toThrow(
+				BusinessException,
+			);
+		});
+	});
 });
