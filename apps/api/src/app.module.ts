@@ -7,8 +7,11 @@ import {
 	ThrottlerModule,
 	type ThrottlerStorage,
 } from "@nestjs/throttler";
+import { ClsPluginTransactional } from "@nestjs-cls/transactional";
+import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { SentryModule } from "@sentry/nestjs/setup";
 import type Redis from "ioredis";
+import { ClsModule } from "nestjs-cls";
 import {
 	AppConfigModule,
 	CacheModule,
@@ -25,7 +28,7 @@ import {
 } from "@/common";
 import type { EnvConfig } from "@/common/config";
 import { THROTTLER_STORAGE, ThrottleModule } from "@/common/throttle";
-import { DatabaseModule } from "@/database";
+import { DatabaseModule, DatabaseService } from "@/database";
 import { AdminModule } from "@/modules/admin";
 import { AdminNotificationModule } from "@/modules/admin-notification";
 import { AiModule } from "@/modules/ai";
@@ -62,6 +65,21 @@ import { AppService } from "./app.service";
 
 		// 3. Infrastructure
 		DatabaseModule,
+		// CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
+		// TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
+		// 미들웨어/가드 마운트는 불필요. 어댑터에 옵션을 지정하지 않아
+		// 기존 database.$transaction(fn) 시맨틱을 그대로 보존한다.
+		ClsModule.forRoot({
+			global: true,
+			plugins: [
+				new ClsPluginTransactional({
+					imports: [DatabaseModule],
+					adapter: new TransactionalAdapterPrisma({
+						prismaInjectionToken: DatabaseService,
+					}),
+				}),
+			],
+		}),
 		EncryptionModule,
 		RedisModule.forRoot(),
 		CacheModule.forRoot(),

@@ -7,4 +7,5 @@
  */
 export * from "./transaction-context";
 export * from "./transaction-manager.port";
+export * from "./unit-of-work.port";
 export * from "./utils/batch-cursor.util";

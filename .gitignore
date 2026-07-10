@@ -90,3 +90,6 @@ my-docs
 
 # Turborepo
 .turbo
+
+# 마이그레이션 안전망 산출물 (로컬 전용)
+backups/
