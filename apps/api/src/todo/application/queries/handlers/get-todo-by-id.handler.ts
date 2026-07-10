@@ -7,7 +7,7 @@ import {
 	TODO_READ_REPOSITORY,
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
-import { GetTodoByIdQuery } from "./get-todo-by-id.query";
+import { GetTodoByIdQuery } from "../get-todo-by-id.query";
 
 /**
  * 단일 Todo 조회 핸들러 (read model 직접 반환)

@@ -19,5 +19,5 @@ export * from "./application/use-cases/update-todo-item/update-todo-item.command
 export * from "./application/use-cases/update-todo-schedule/update-todo-schedule.command";
 export * from "./application/use-cases/update-todo-title/update-todo-title.command";
 export * from "./application/use-cases/update-todo-visibility/update-todo-visibility.command";
-export * from "./dtos";
+export * from "./presentation/dtos";
 export * from "./todo.module";

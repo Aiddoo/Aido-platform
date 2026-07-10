@@ -8,6 +8,7 @@ import { TodoCategoryModule } from "../todo-category/todo-category.module";
 import { UserSettingsModule } from "../user-settings/user-settings.module";
 
 import { EventHandlers } from "./application/events";
+import { TodoFacade } from "./application/facades/todo.facade";
 import { CATEGORY_OWNERSHIP } from "./application/ports/category-ownership.port";
 import { FRIEND_PORT } from "./application/ports/friend.port";
 import { STREAK_PORT } from "./application/ports/streak.port";
@@ -27,7 +28,7 @@ import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter";
 import { TodoReminderAdapter } from "./infrastructure/adapters/todo-reminder.adapter";
 import { TodoRowRepository } from "./infrastructure/persistence/todo-row.repository";
-import { TodoController } from "./todo.controller";
+import { TodoController } from "./presentation/todo.controller";
 
 /**
  * Todo 모듈
@@ -71,6 +72,7 @@ import { TodoController } from "./todo.controller";
 		{ provide: STREAK_PORT, useClass: StreakAdapter },
 		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
 		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
+		TodoFacade,
 		...CommandHandlers,
 		...QueryHandlers,
 		...EventHandlers,

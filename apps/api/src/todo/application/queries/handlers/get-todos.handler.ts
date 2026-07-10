@@ -11,7 +11,7 @@ import {
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
 import type { FindTodosParams } from "../../types";
-import { GetTodosQuery } from "./get-todos.query";
+import { GetTodosQuery } from "../get-todos.query";
 
 /**
  * Todo 목록 조회 핸들러 (커서 기반 페이지네이션, read model 직접 반환)

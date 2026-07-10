@@ -3,6 +3,8 @@
  *
  * @description
  * TodoController의 엔드포인트 핸들러를 격리 테스트합니다.
+ * 컨트롤러는 TodoFacade에만 위임하므로, DTO→도메인 원시값 매핑(날짜/타임존 파싱)과
+ * 응답 래핑 책임만 검증합니다.
  *
  * 실행 명령:
  * ```bash
@@ -10,24 +12,21 @@
  * ```
  */
 import type { Todo as TodoResponse } from "@aido/validators";
-import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoBuilder } from "@test/builders";
 
 import type { CurrentUserPayload } from "@/auth/decorators";
 
-import { CreateRecurringTodosCommand } from "./application/use-cases/create-recurring-todos/create-recurring-todos.command";
-import { CreateTodoCommand } from "./application/use-cases/create-todo/create-todo.command";
-import { DeleteTodoCommand } from "./application/use-cases/delete-todo/delete-todo.command";
+import { TodoFacade } from "../application/facades/todo.facade";
+import { TodoMapper } from "../infrastructure/persistence/todo-response.mapper";
+import type { TodoWithCategory } from "../infrastructure/persistence/todo-row.types";
 import type {
 	CreateRecurringTodoDto,
 	CreateTodoDto,
 	GetTodosQueryDto,
 	TodoIdParamDto,
 } from "./dtos";
-import { TodoMapper } from "./infrastructure/persistence/todo-response.mapper";
-import type { TodoWithCategory } from "./infrastructure/persistence/todo-row.types";
 import { TodoController } from "./todo.controller";
 
 /** 응답 read model(TodoResponse) 생성 헬퍼 — 행을 매핑해 계약 형태를 보장한다 */
@@ -81,8 +80,7 @@ function makeRecurringDto(
 
 describe("TodoController — 할 일 컨트롤러", () => {
 	let controller: TodoController;
-	let mockCommandBus: Mocked<CommandBus>;
-	let mockQueryBus: Mocked<QueryBus>;
+	let mockFacade: Mocked<TodoFacade>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -95,38 +93,30 @@ describe("TodoController — 할 일 컨트롤러", () => {
 		const { unit, unitRef } = await TestBed.solitary(TodoController).compile();
 
 		controller = unit;
-		mockCommandBus = unitRef.get(CommandBus);
-		mockQueryBus = unitRef.get(QueryBus);
+		mockFacade = unitRef.get(TodoFacade);
 	});
 
 	describe("create", () => {
-		it("할 일 생성 요청을 CommandBus에 위임하고 응답 read model을 반환해야 한다", async () => {
-			// Given - 할 일 생성 DTO와 커맨드 핸들러가 반환할 응답이 준비되었을 때
+		it("할 일 생성 요청을 Facade에 위임하고 응답 read model을 반환해야 한다", async () => {
+			// Given - 할 일 생성 DTO와 Facade가 반환할 응답이 준비되었을 때
 			const dto = makeCreateTodoDto({ title: "팀 미팅" });
 			const tz = "Asia/Seoul";
 			const response = buildResponse({ title: "팀 미팅" });
-			mockCommandBus.execute.mockResolvedValue(response);
+			mockFacade.create.mockResolvedValue(response);
 
 			// When - create를 호출하면
 			const result = await controller.create(mockUser, dto, tz);
 
-			// Then - CreateTodoCommand를 디스패치하고 응답을 그대로 반환해야 한다
-			expect(mockCommandBus.execute).toHaveBeenCalledWith(
-				expect.any(CreateTodoCommand),
+			// Then - 파싱된 데이터로 Facade.create를 호출하고 응답을 그대로 반환해야 한다
+			expect(mockFacade.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUser.userId,
+					title: dto.title,
+					categoryId: dto.categoryId,
+					isAllDay: dto.isAllDay,
+					visibility: dto.visibility,
+				}),
 			);
-			const command = mockCommandBus.execute.mock.calls[0]?.[0];
-			expect(command).toBeInstanceOf(CreateTodoCommand);
-			if (command instanceof CreateTodoCommand) {
-				expect(command.data).toEqual(
-					expect.objectContaining({
-						userId: mockUser.userId,
-						title: dto.title,
-						categoryId: dto.categoryId,
-						isAllDay: dto.isAllDay,
-						visibility: dto.visibility,
-					}),
-				);
-			}
 			expect(result).toEqual({
 				message: "할 일이 생성되었습니다.",
 				todo: response,
@@ -135,8 +125,8 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("findMany", () => {
-		it("할 일 목록 조회 요청을 QueryBus에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 목록 조회 쿼리와 쿼리 핸들러 응답이 준비되었을 때
+		it("할 일 목록 조회 요청을 Facade에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 목록 조회 쿼리와 Facade 응답이 준비되었을 때
 			const query = makeGetTodosQueryDto();
 			const queryResult = {
 				items: [
@@ -149,18 +139,16 @@ describe("TodoController — 할 일 컨트롤러", () => {
 					size: 20,
 				},
 			};
-			mockQueryBus.execute.mockResolvedValue(queryResult);
+			mockFacade.findMany.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - userId를 포함한 GetTodosQuery를 디스패치하고 결과를 반환해야 한다
-			expect(mockQueryBus.execute).toHaveBeenCalledWith(
+			// Then - userId를 포함한 파라미터로 Facade.findMany를 호출하고 결과를 반환해야 한다
+			expect(mockFacade.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					params: expect.objectContaining({
-						userId: mockUser.userId,
-						size: query.size,
-					}),
+					userId: mockUser.userId,
+					size: query.size,
 				}),
 			);
 			expect(result).toEqual({
@@ -179,19 +167,17 @@ describe("TodoController — 할 일 컨트롤러", () => {
 				items: [],
 				pagination: { hasNext: false, nextCursor: null, size: 20 },
 			};
-			mockQueryBus.execute.mockResolvedValue(queryResult);
+			mockFacade.findMany.mockResolvedValue(queryResult);
 
 			// When - findMany를 호출하면
 			const result = await controller.findMany(mockUser, query);
 
-			// Then - 날짜가 parseDateOnly로 변환되어 쿼리에 전달되어야 한다
-			expect(mockQueryBus.execute).toHaveBeenCalledWith(
+			// Then - 날짜가 parseDateOnly로 변환되어 파라미터에 전달되어야 한다
+			expect(mockFacade.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					params: expect.objectContaining({
-						userId: mockUser.userId,
-						startDate: expect.any(Date),
-						endDate: expect.any(Date),
-					}),
+					userId: mockUser.userId,
+					startDate: expect.any(Date),
+					endDate: expect.any(Date),
 				}),
 			);
 			expect(result).toEqual({
@@ -202,8 +188,8 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("createRecurring", () => {
-		it("반복 할 일 생성 요청을 CommandBus에 위임하고 결과를 반환해야 한다", async () => {
-			// Given - 반복 할 일 생성 DTO와 핸들러 응답이 준비되었을 때
+		it("반복 할 일 생성 요청을 Facade에 위임하고 결과를 반환해야 한다", async () => {
+			// Given - 반복 할 일 생성 DTO와 Facade 응답이 준비되었을 때
 			const dto = makeRecurringDto();
 			const tz = "Asia/Seoul";
 			const mockTodos = [
@@ -211,7 +197,7 @@ describe("TodoController — 할 일 컨트롤러", () => {
 				buildResponse({ id: 2, title: "약 먹기" }),
 				buildResponse({ id: 3, title: "약 먹기" }),
 			];
-			mockCommandBus.execute.mockResolvedValue({
+			mockFacade.createRecurring.mockResolvedValue({
 				todos: mockTodos,
 				count: 3,
 			});
@@ -219,25 +205,18 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			// When - createRecurring을 호출하면
 			const result = await controller.createRecurring(mockUser, dto, tz);
 
-			// Then - CreateRecurringTodosCommand를 디스패치하고 응답을 반환해야 한다
-			expect(mockCommandBus.execute).toHaveBeenCalledWith(
-				expect.any(CreateRecurringTodosCommand),
+			// Then - 파싱된 데이터와 타임존으로 Facade.createRecurring을 호출하고 응답을 반환해야 한다
+			expect(mockFacade.createRecurring).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: mockUser.userId,
+					title: dto.title,
+					categoryId: dto.categoryId,
+					startDate: dto.startDate,
+					endDate: dto.endDate,
+					daysOfWeek: dto.daysOfWeek,
+				}),
+				tz,
 			);
-			const command = mockCommandBus.execute.mock.calls[0]?.[0];
-			expect(command).toBeInstanceOf(CreateRecurringTodosCommand);
-			if (command instanceof CreateRecurringTodosCommand) {
-				expect(command.data).toEqual(
-					expect.objectContaining({
-						userId: mockUser.userId,
-						title: dto.title,
-						categoryId: dto.categoryId,
-						startDate: dto.startDate,
-						endDate: dto.endDate,
-						daysOfWeek: dto.daysOfWeek,
-					}),
-				);
-				expect(command.timezone).toBe(tz);
-			}
 			expect(result).toEqual({
 				message: "반복 할 일이 3개 생성되었습니다.",
 				todos: mockTodos,
@@ -251,7 +230,7 @@ describe("TodoController — 할 일 컨트롤러", () => {
 			const mockTodos = Array.from({ length: 13 }, (_, i) =>
 				buildResponse({ id: i + 1, title: "운동하기" }),
 			);
-			mockCommandBus.execute.mockResolvedValue({
+			mockFacade.createRecurring.mockResolvedValue({
 				todos: mockTodos,
 				count: 13,
 			});
@@ -266,24 +245,19 @@ describe("TodoController — 할 일 컨트롤러", () => {
 	});
 
 	describe("delete", () => {
-		it("할 일 삭제 요청을 CommandBus에 위임하고 메시지를 반환해야 한다", async () => {
+		it("할 일 삭제 요청을 Facade에 위임하고 메시지를 반환해야 한다", async () => {
 			// Given - 삭제할 할 일 ID가 있을 때
 			const params: TodoIdParamDto = { id: 1 };
-			mockCommandBus.execute.mockResolvedValue(undefined);
+			mockFacade.deleteTodo.mockResolvedValue(undefined);
 
 			// When - delete를 호출하면
 			const result = await controller.delete(mockUser, params);
 
-			// Then - DeleteTodoCommand를 디스패치하고 메시지를 반환해야 한다
-			expect(mockCommandBus.execute).toHaveBeenCalledWith(
-				expect.any(DeleteTodoCommand),
+			// Then - id/userId로 Facade.deleteTodo를 호출하고 메시지를 반환해야 한다
+			expect(mockFacade.deleteTodo).toHaveBeenCalledWith(
+				params.id,
+				mockUser.userId,
 			);
-			const command = mockCommandBus.execute.mock.calls[0]?.[0];
-			expect(command).toBeInstanceOf(DeleteTodoCommand);
-			if (command instanceof DeleteTodoCommand) {
-				expect(command.id).toBe(params.id);
-				expect(command.userId).toBe(mockUser.userId);
-			}
 			expect(result).toEqual({
 				message: "할 일이 삭제되었습니다.",
 			});

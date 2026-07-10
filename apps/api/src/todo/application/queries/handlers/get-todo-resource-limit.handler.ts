@@ -8,7 +8,7 @@ import {
 import {
 	GetTodoResourceLimitQuery,
 	type TodoResourceLimitResult,
-} from "./get-todo-resource-limit.query";
+} from "../get-todo-resource-limit.query";
 
 /**
  * 카테고리당 활성 Todo 리소스 제한 정보 조회 핸들러

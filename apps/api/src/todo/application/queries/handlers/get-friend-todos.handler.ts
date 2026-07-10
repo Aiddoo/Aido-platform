@@ -12,7 +12,7 @@ import {
 	type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port";
 import type { FindFriendTodosParams } from "../../types";
-import { GetFriendTodosQuery } from "./get-friend-todos.query";
+import { GetFriendTodosQuery } from "../get-friend-todos.query";
 
 /**
  * 친구의 PUBLIC Todo 목록 조회 핸들러
