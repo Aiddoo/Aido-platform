@@ -1,10 +1,11 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import dayjs from "dayjs";
-import type { TransactionClient } from "@/common/database/prisma.types";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type { Prisma, RecurringSuggestion } from "@/generated/prisma/client";
 import type {
 	CategoryCompletionRate,
@@ -21,19 +22,24 @@ import type {
  */
 @Injectable()
 export class AiSuggestionRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 사용자의 대기 중인 제안 목록 조회
 	 *
 	 * status=PENDING이고 만료되지 않은 제안을 createdAt 역순으로 반환합니다.
 	 */
-	async findPendingByUserId(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<RecurringSuggestion[]> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.findMany({
+	async findPendingByUserId(userId: string): Promise<RecurringSuggestion[]> {
+		return this.client.recurringSuggestion.findMany({
 			where: {
 				userId,
 				status: "PENDING",
@@ -49,10 +55,8 @@ export class AiSuggestionRepository {
 	async findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
 	): Promise<RecurringSuggestion | null> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.findFirst({
+		return this.client.recurringSuggestion.findFirst({
 			where: { id, userId },
 		});
 	}
@@ -63,10 +67,8 @@ export class AiSuggestionRepository {
 	async updateStatus(
 		id: number,
 		status: "PENDING" | "ACCEPTED" | "DISMISSED",
-		tx?: TransactionClient,
 	): Promise<RecurringSuggestion> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.update({
+		return this.client.recurringSuggestion.update({
 			where: { id },
 			data: { status },
 		});
@@ -77,10 +79,8 @@ export class AiSuggestionRepository {
 	 */
 	async create(
 		data: Prisma.RecurringSuggestionCreateInput,
-		tx?: TransactionClient,
 	): Promise<RecurringSuggestion> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.create({ data });
+		return this.client.recurringSuggestion.create({ data });
 	}
 
 	/**
@@ -88,10 +88,8 @@ export class AiSuggestionRepository {
 	 */
 	async createMany(
 		data: Prisma.RecurringSuggestionCreateManyInput[],
-		tx?: TransactionClient,
 	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.createMany({ data });
+		return this.client.recurringSuggestion.createMany({ data });
 	}
 
 	/**
@@ -99,12 +97,8 @@ export class AiSuggestionRepository {
 	 *
 	 * 매 분석 시 기존 PENDING 제안을 교체하기 위해 사용합니다.
 	 */
-	async deletePending(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		const result = await client.recurringSuggestion.deleteMany({
+	async deletePending(userId: string): Promise<{ count: number }> {
+		const result = await this.client.recurringSuggestion.deleteMany({
 			where: { userId, status: "PENDING" },
 		});
 		return { count: result.count };
@@ -113,12 +107,8 @@ export class AiSuggestionRepository {
 	/**
 	 * 만료된 제안 삭제
 	 */
-	async deleteExpired(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<{ count: number }> {
-		const client = tx ?? this.database;
-		const result = await client.recurringSuggestion.deleteMany({
+	async deleteExpired(userId: string): Promise<{ count: number }> {
+		const result = await this.client.recurringSuggestion.deleteMany({
 			where: {
 				userId,
 				expiresAt: { lt: now() },
@@ -137,10 +127,8 @@ export class AiSuggestionRepository {
 		from: Date,
 		to: Date,
 		timezone: string,
-		tx?: TransactionClient,
 	): Promise<DayCompletionRate[]> {
-		const client = tx ?? this.database;
-		const completions = await client.dailyCompletion.findMany({
+		const completions = await this.client.dailyCompletion.findMany({
 			where: {
 				userId,
 				date: { gte: from, lte: to },
@@ -181,10 +169,8 @@ export class AiSuggestionRepository {
 		from: Date,
 		to: Date,
 		timezone: string,
-		tx?: TransactionClient,
 	): Promise<TimeCompletionRate> {
-		const client = tx ?? this.database;
-		const todos = await client.todo.findMany({
+		const todos = await this.client.todo.findMany({
 			where: {
 				userId,
 				completed: true,
@@ -227,10 +213,8 @@ export class AiSuggestionRepository {
 		userId: string,
 		from: Date,
 		to: Date,
-		tx?: TransactionClient,
 	): Promise<CategoryCompletionRate[]> {
-		const client = tx ?? this.database;
-		const todos = await client.todo.findMany({
+		const todos = await this.client.todo.findMany({
 			where: {
 				userId,
 				startDate: { gte: from, lte: to },
@@ -267,12 +251,8 @@ export class AiSuggestionRepository {
 	/**
 	 * 사용자 스트릭 정보 조회
 	 */
-	async findUserStreakInfo(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<UserStreakInfo | null> {
-		const client = tx ?? this.database;
-		const pref = await client.userPreference.findUnique({
+	async findUserStreakInfo(userId: string): Promise<UserStreakInfo | null> {
+		const pref = await this.client.userPreference.findUnique({
 			where: { userId },
 			select: { currentStreak: true, longestStreak: true },
 		});
@@ -295,10 +275,8 @@ export class AiSuggestionRepository {
 		from: Date,
 		to: Date,
 		timezone: string,
-		tx?: TransactionClient,
 	): Promise<TodoSummaryForAnalysis[]> {
-		const client = tx ?? this.database;
-		const todos = await client.todo.findMany({
+		const todos = await this.client.todo.findMany({
 			where: {
 				userId,
 				recurrenceGroupId: null,
@@ -338,10 +316,8 @@ export class AiSuggestionRepository {
 	async findRecentResponded(
 		userId: string,
 		since: Date,
-		tx?: TransactionClient,
 	): Promise<Pick<RecurringSuggestion, "title" | "status">[]> {
-		const client = tx ?? this.database;
-		return client.recurringSuggestion.findMany({
+		return this.client.recurringSuggestion.findMany({
 			where: {
 				userId,
 				status: { in: ["ACCEPTED", "DISMISSED"] },

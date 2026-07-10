@@ -3,26 +3,33 @@
  *
  * Suites + GWT 패턴 적용
  * - 쿼리 파라미터 검증
- * - tx 파라미터 위임 검증
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 
 describe("AiSuggestionRepository — AI 제안 리포지토리", () => {
 	let repository: AiSuggestionRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			AiSuggestionRepository,
-		).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(AiSuggestionRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findPendingByUserId", () => {
@@ -46,22 +53,6 @@ describe("AiSuggestionRepository — AI 제안 리포지토리", () => {
 				orderBy: { createdAt: "desc" },
 			});
 			expect(result).toEqual(mockSuggestions);
-		});
-
-		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
-			// Given -트랜잭션 클라이언트
-			const mockTx = {
-				recurringSuggestion: {
-					findMany: jest.fn().mockResolvedValue([]),
-				},
-			};
-
-			// When -tx를 전달하여 호출하면
-			await repository.findPendingByUserId("user-123", mockTx as never);
-
-			// Then -tx를 사용해야 한다
-			expect(mockTx.recurringSuggestion.findMany).toHaveBeenCalled();
-			expect(db.recurringSuggestion.findMany).not.toHaveBeenCalled();
 		});
 	});
 
@@ -182,25 +173,6 @@ describe("AiSuggestionRepository — AI 제안 리포지토리", () => {
 			});
 			expect(result).toEqual({ count: 2 });
 		});
-
-		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
-			// Given -트랜잭션 클라이언트
-			const mockTx = {
-				recurringSuggestion: {
-					createMany: jest.fn().mockResolvedValue({ count: 1 }),
-				},
-			};
-
-			// When -tx를 전달하여 호출하면
-			await repository.createMany(
-				[{ userId: "user-123", title: "운동" }] as never,
-				mockTx as never,
-			);
-
-			// Then -tx를 사용해야 한다
-			expect(mockTx.recurringSuggestion.createMany).toHaveBeenCalled();
-			expect(db.recurringSuggestion.createMany).not.toHaveBeenCalled();
-		});
 	});
 
 	describe("deletePending", () => {
@@ -218,22 +190,6 @@ describe("AiSuggestionRepository — AI 제안 리포지토리", () => {
 				where: { userId: "user-123", status: "PENDING" },
 			});
 			expect(result).toEqual({ count: 3 });
-		});
-
-		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
-			// Given -트랜잭션 클라이언트
-			const mockTx = {
-				recurringSuggestion: {
-					deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-				},
-			};
-
-			// When -tx를 전달하여 호출하면
-			await repository.deletePending("user-123", mockTx as never);
-
-			// Then -tx를 사용해야 한다
-			expect(mockTx.recurringSuggestion.deleteMany).toHaveBeenCalled();
-			expect(db.recurringSuggestion.deleteMany).not.toHaveBeenCalled();
 		});
 	});
 

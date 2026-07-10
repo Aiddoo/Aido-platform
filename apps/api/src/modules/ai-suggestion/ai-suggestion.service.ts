@@ -8,12 +8,12 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import dayjs from "dayjs";
 import { z } from "zod";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { now } from "@/common/date/utils/core";
 import { toDateString } from "@/common/date/utils/format";
 import type { SupportedLocale } from "@/common/decorators";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
 import type { Prisma } from "@/generated/prisma/client";
 import { AI_PROVIDER, type AiProvider } from "../ai/providers/ai.provider";
 import { CreateRecurringTodosCommand } from "../todo";
@@ -47,7 +47,8 @@ export class AiSuggestionService {
 		private readonly commandBus: CommandBus,
 		@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider,
 		private readonly entitlementService: EntitlementService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly contextBuilder: SuggestionContextBuilder,
 	) {}
 
@@ -276,9 +277,9 @@ export class AiSuggestionService {
 			.sort((a, b) => b.confidence - a.confidence)
 			.slice(0, AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER);
 
-		const createdCount = await this.database.$transaction(async (tx) => {
-			await this.aiSuggestionRepository.deletePending(userId, tx);
-			await this.aiSuggestionRepository.deleteExpired(userId, tx);
+		const createdCount = await this.uow.run(async () => {
+			await this.aiSuggestionRepository.deletePending(userId);
+			await this.aiSuggestionRepository.deleteExpired(userId);
 
 			const { count } = await this.aiSuggestionRepository.createMany(
 				limitedPatterns.map((pattern) => ({
@@ -297,7 +298,6 @@ export class AiSuggestionService {
 						context.todos,
 					),
 				})),
-				tx,
 			);
 			return count;
 		});

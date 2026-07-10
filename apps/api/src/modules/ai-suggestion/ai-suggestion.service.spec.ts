@@ -9,9 +9,10 @@
 import { CommandBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
 import type { RecurringSuggestion } from "@/generated/prisma/client";
 import type { AiProvider } from "../ai/providers/ai.provider";
 import { AI_PROVIDER } from "../ai/providers/ai.provider";
@@ -27,7 +28,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 	let mockCommandBus: Mocked<CommandBus>;
 	let mockAiProvider: Mocked<AiProvider>;
 	let mockEntitlementService: Mocked<EntitlementService>;
-	let mockDatabase: Mocked<DatabaseService>;
+	let mockUow: UnitOfWorkPort;
 	let mockContextBuilder: Mocked<SuggestionContextBuilder>;
 
 	const mockUserId = "user-123";
@@ -84,6 +85,9 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 				generateStructured: jest.fn(),
 				isAvailable: jest.fn().mockReturnValue(true),
 			}))
+			// UNIT_OF_WORK — run이 콜백을 즉시 실행하는 passthrough mock
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
 			.compile();
 
 		service = unit;
@@ -91,16 +95,11 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 		mockCommandBus = unitRef.get(CommandBus);
 		mockAiProvider = unitRef.get(AI_PROVIDER);
 		mockEntitlementService = unitRef.get(EntitlementService);
-		mockDatabase = unitRef.get(DatabaseService);
+		mockUow = unitRef.get(UNIT_OF_WORK);
 		mockContextBuilder = unitRef.get(SuggestionContextBuilder);
 
 		// 기본: 프리미엄 사용자
 		mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
-
-		// $transaction passthrough mock
-		mockDatabase.$transaction.mockImplementation((callback) =>
-			callback(mockRepository as never),
-		);
 	});
 
 	describe("프리미엄 체크", () => {
@@ -523,8 +522,8 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			// When -analyzeAndCreateSuggestions를 호출하면
 			await service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul");
 
-			// Then -$transaction이 호출되어야 한다
-			expect(mockDatabase.$transaction).toHaveBeenCalledTimes(1);
+			// Then -uow.run이 호출되어야 한다
+			expect(jest.mocked(mockUow.run)).toHaveBeenCalledTimes(1);
 		});
 
 		it("createMany 에러 발생 시 트랜잭션이 롤백되어야 한다", async () => {
@@ -560,12 +559,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 			mockRepository.deleteExpired.mockResolvedValue({ count: 0 });
 			mockRepository.createMany.mockRejectedValue(new Error("DB 에러"));
 
-			// $transaction이 에러를 전파하도록 설정
-			mockDatabase.$transaction.mockImplementation(async (callback) => {
-				return callback(mockRepository as never);
-			});
-
-			// When & Then: 에러가 전파되어야 한다
+			// When & Then: 에러가 전파되어야 한다 (uow.run passthrough가 에러를 그대로 전파)
 			await expect(
 				service.analyzeAndCreateSuggestions(mockUserId, "Asia/Seoul"),
 			).rejects.toThrow("DB 에러");
