@@ -238,6 +238,8 @@ export class TypedConfigService {
 			port: this.get("REDIS_PORT"),
 			password: this.get("REDIS_PASSWORD"),
 			db: this.get("REDIS_DB"),
+			commandTimeoutMs: this.get("REDIS_COMMAND_TIMEOUT_MS"),
+			connectTimeoutMs: this.get("REDIS_CONNECT_TIMEOUT_MS"),
 		};
 	}
 
