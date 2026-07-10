@@ -9,14 +9,13 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-
-import { DailyCompletionService } from "./daily-completion.service";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import { DailyCompletionFacade } from "../application/facades/daily-completion.facade";
+import type { DailyCompletionsRange } from "../domain/daily-completion";
 import {
 	DailyCompletionsRangeResponseDto,
 	GetDailyCompletionsRangeDto,
 } from "./dtos";
-import type { DailyCompletionsRangeResult } from "./types/daily-completion.types";
 
 @ApiTags(SWAGGER_TAGS.DAILY_COMPLETIONS)
 @ApiBearerAuth()
@@ -24,9 +23,7 @@ import type { DailyCompletionsRangeResult } from "./types/daily-completion.types
 export class DailyCompletionController {
 	readonly #logger = new Logger(DailyCompletionController.name);
 
-	constructor(
-		private readonly dailyCompletionService: DailyCompletionService,
-	) {}
+	constructor(private readonly dailyCompletionFacade: DailyCompletionFacade) {}
 
 	@Get()
 	@ApiQuery({
@@ -125,11 +122,11 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 			`일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
 		);
 
-		const result = await this.dailyCompletionService.getDailyCompletionsRange({
-			userId: user.userId,
-			startDate: query.startDate,
-			endDate: query.endDate,
-		});
+		const result = await this.dailyCompletionFacade.getDailyCompletions(
+			user.userId,
+			query.startDate,
+			query.endDate,
+		);
 
 		this.#logger.debug(
 			`일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
@@ -139,7 +136,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 	}
 
 	#mapToResponse(
-		result: DailyCompletionsRangeResult,
+		result: DailyCompletionsRange,
 	): DailyCompletionsRangeResponseDto {
 		return {
 			completions: result.completions.map((c) => ({

@@ -1,52 +1,44 @@
 import { Injectable } from "@nestjs/common";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-
-import { addDays } from "@/shared/domain/date/utils/arithmetic";
 import { toDateString } from "@/shared/domain/date/utils/format";
-import { startOfDay } from "@/shared/domain/date/utils/range";
 import type { DatabaseService } from "@/shared/infrastructure/database/database.service";
 import type {
-	FindTodosByDateRangeParams,
-	TodoAggregateByDate,
-	TodoCountByDate,
-} from "./types/daily-completion.types";
+	AggregateByDateRangeParams,
+	TodoCompletionRepositoryPort,
+} from "../../application/ports/todo-completion.repository.port";
+import type { TodoAggregateByDate } from "../../domain/daily-completion";
 
 /**
- * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
- * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다.
+ * TodoCompletionRepositoryPort의 Prisma 어댑터.
+ *
+ * Prisma groupBy로 DB 레벨에서 날짜별 집계를 수행한다(대량 데이터 최적화).
+ * 트랜잭션은 CLS로 전파된다 — TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환.
  */
 @Injectable()
-export class DailyCompletionRepository {
+export class PrismaTodoCompletionRepository
+	implements TodoCompletionRepositoryPort
+{
 	constructor(
 		private readonly txHost: TransactionHost<
 			TransactionalAdapterPrisma<DatabaseService>
 		>,
 	) {}
 
-	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
 		return this.txHost.tx;
 	}
 
-	/**
-	 * 날짜 범위 내 Todo를 날짜별로 집계합니다.
-	 * 성능 최적화: Prisma groupBy를 사용하여 DB 레벨에서 집계
-	 *
-	 * @param params - 조회 파라미터
-	 * @returns 날짜별 Todo 집계 결과
-	 */
-	async aggregateTodosByDateRange(
-		params: FindTodosByDateRangeParams,
+	async aggregateByDateRange(
+		params: AggregateByDateRangeParams,
 	): Promise<TodoAggregateByDate[]> {
 		const { userId, startDate, endDate } = params;
-
 		const whereClause = {
 			userId,
 			startDate: { gte: startDate, lt: endDate },
 		};
 
-		// 병렬로 전체 Todo, 완료 Todo, 카테고리 색상 집계 실행
+		// 전체·완료·카테고리 색상 집계를 병렬 실행 (waterfall 제거)
 		const [aggregations, completedAggregations, categoryColorResults] =
 			await Promise.all([
 				this.client.todo.groupBy({
@@ -69,7 +61,7 @@ export class DailyCompletionRepository {
 				}),
 			]);
 
-		// 완료 수를 Map으로 변환하여 O(1) 조회
+		// 완료 수를 Map으로 (O(1) 조회)
 		const completedMap = new Map(
 			completedAggregations.map((item) => [
 				toDateString(item.startDate),
@@ -77,7 +69,7 @@ export class DailyCompletionRepository {
 			]),
 		);
 
-		// 카테고리 색상을 날짜별로 그룹화 (Set으로 동일 색상 중복 제거)
+		// 카테고리 색상을 날짜별 Set으로 그룹화 (중복 색상 제거)
 		const colorMap = new Map<string, Set<string>>();
 		for (const item of categoryColorResults) {
 			const key = toDateString(item.startDate);
@@ -95,36 +87,5 @@ export class DailyCompletionRepository {
 				categoryColors: [...(colorMap.get(dateKey) ?? [])],
 			};
 		});
-	}
-
-	/**
-	 * 특정 날짜의 Todo 완료 현황을 조회합니다.
-	 *
-	 * @param userId - 사용자 ID
-	 * @param date - 조회할 날짜
-	 * @returns 해당 날짜의 Todo 집계 결과 또는 null
-	 */
-	async findByDate(
-		userId: string,
-		date: Date,
-	): Promise<TodoCountByDate | null> {
-		const dayStart = startOfDay(date);
-		const dayEnd = addDays(1, dayStart);
-
-		const whereClause = {
-			userId,
-			startDate: { gte: dayStart, lt: dayEnd },
-		};
-
-		const [totalCount, completedCount] = await Promise.all([
-			this.client.todo.count({ where: whereClause }),
-			this.client.todo.count({ where: { ...whereClause, completed: true } }),
-		]);
-
-		if (totalCount === 0) {
-			return null;
-		}
-
-		return { date, total: totalCount, completed: completedCount };
 	}
 }

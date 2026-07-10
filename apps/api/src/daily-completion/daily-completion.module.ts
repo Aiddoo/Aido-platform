@@ -1,31 +1,27 @@
 import { Module } from "@nestjs/common";
-
-import { DailyCompletionController } from "./daily-completion.controller";
-import { DailyCompletionRepository } from "./daily-completion.repository";
-import { DailyCompletionService } from "./daily-completion.service";
+import { CqrsModule } from "@nestjs/cqrs";
+import { DailyCompletionFacade } from "./application/facades/daily-completion.facade";
+import { TODO_COMPLETION_REPOSITORY } from "./application/ports/todo-completion.repository.port";
+import { QueryHandlers } from "./application/queries/handlers";
+import { PrismaTodoCompletionRepository } from "./infrastructure/adapters/prisma-todo-completion.repository";
+import { DailyCompletionController } from "./presentation/daily-completion.controller";
 
 /**
- * DailyCompletion 모듈
+ * DailyCompletion 모듈 (클린아키텍처, 읽기 전용)
  *
- * 일일 할 일 완료 현황 관리를 담당합니다.
- *
- * ## 주요 기능
- * - 날짜별 완료 현황 조회 (캘린더용)
- * - 완료율 및 통계 제공
- * - 물고기 아이콘 표시 데이터 제공
- *
- * ## 아키텍처
- * - Controller: HTTP 요청 처리 및 응답 변환
- * - Service: 비즈니스 로직 (집계 데이터 변환, 통계 계산)
- * - Repository: 데이터 접근 계층 (DB 집계 쿼리)
- *
- * ## 성능 최적화
- * - DB 레벨에서 groupBy를 사용한 집계
- * - Todo가 없는 날짜는 응답에서 제외
+ * 날짜별 완료 현황(캘린더 물고기 아이콘)을 조회한다. 집계는 포트로 추상화되며
+ * 현재 어댑터는 Prisma groupBy로 DB 레벨 집계를 수행한다.
  */
 @Module({
+	imports: [CqrsModule],
 	controllers: [DailyCompletionController],
-	providers: [DailyCompletionRepository, DailyCompletionService],
-	exports: [DailyCompletionService],
+	providers: [
+		DailyCompletionFacade,
+		{
+			provide: TODO_COMPLETION_REPOSITORY,
+			useClass: PrismaTodoCompletionRepository,
+		},
+		...QueryHandlers,
+	],
 })
 export class DailyCompletionModule {}

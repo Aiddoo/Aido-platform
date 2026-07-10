@@ -1,5 +1,5 @@
-export * from "./daily-completion.controller";
+/**
+ * DailyCompletion 모듈 공개 API (읽기 전용 쿼리 모듈)
+ */
 export * from "./daily-completion.module";
-export * from "./daily-completion.repository";
-export * from "./daily-completion.service";
-export * from "./dtos";
+export * from "./presentation/dtos";

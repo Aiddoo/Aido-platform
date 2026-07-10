@@ -27,6 +27,9 @@ const TARGET_DIRS = [
 	"src/admin/domain",
 	"src/admin/application",
 	"src/admin/infrastructure",
+	"src/daily-completion/domain",
+	"src/daily-completion/application",
+	"src/daily-completion/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
