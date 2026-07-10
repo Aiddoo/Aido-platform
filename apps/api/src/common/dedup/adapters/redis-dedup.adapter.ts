@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
-import { REDIS_CLIENT } from "../../redis/redis.constants";
+import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants";
+import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler";
 import type { IDedupProvider } from "../interfaces/dedup.interface";
 
 /**
@@ -17,8 +18,9 @@ export class RedisDedupAdapter implements IDedupProvider {
 	readonly #logger = new Logger(RedisDedupAdapter.name);
 	readonly #redis: Redis;
 	readonly #keyPrefix = "dedup:";
+	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
-	constructor(@Inject(REDIS_CLIENT) redis: Redis) {
+	constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
 		this.#redis = redis;
 	}
 
@@ -31,9 +33,7 @@ export class RedisDedupAdapter implements IDedupProvider {
 			const results = await this.#redis.smismember(key, ...members);
 			return new Set(members.filter((_, i) => results[i] === 1));
 		} catch (error) {
-			this.#logger.warn(
-				`Redis dedup filterMembers error (fail-open): ${error instanceof Error ? error.message : error}`,
-			);
+			this.#errorSampler.warn("DEDUP_FILTER_MEMBERS", error);
 			return new Set();
 		}
 	}
@@ -42,9 +42,7 @@ export class RedisDedupAdapter implements IDedupProvider {
 		try {
 			return (await this.#redis.sismember(this.#key(setKey), member)) === 1;
 		} catch (error) {
-			this.#logger.warn(
-				`Redis dedup isMember error (fail-open): ${error instanceof Error ? error.message : error}`,
-			);
+			this.#errorSampler.warn("DEDUP_IS_MEMBER", error);
 			return false;
 		}
 	}
@@ -64,9 +62,7 @@ export class RedisDedupAdapter implements IDedupProvider {
 			pipeline.pexpire(key, ttlMs);
 			await pipeline.exec();
 		} catch (error) {
-			this.#logger.warn(
-				`Redis dedup addMembers error (fail-open): ${error instanceof Error ? error.message : error}`,
-			);
+			this.#errorSampler.warn("DEDUP_ADD_MEMBERS", error);
 		}
 	}
 

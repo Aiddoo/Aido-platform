@@ -12,6 +12,8 @@ export const cacheSchema = z.object({
 	REDIS_PORT: z.coerce.number().int().positive().optional(),
 	REDIS_PASSWORD: z.string().optional(),
 	REDIS_DB: z.coerce.number().int().min(0).optional(),
+	REDIS_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(1500),
+	REDIS_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 export type CacheEnvConfig = z.infer<typeof cacheSchema>;

@@ -3,6 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { Job, Queue } from "bullmq";
 import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
+import { runInBackground } from "@/common/bullmq/non-blocking-init";
 import { forEachBatch } from "@/common/database";
 import { toIsoMonthId, toIsoWeekId } from "@/common/date/utils/format";
 import { DatabaseService } from "@/database/database.service";
@@ -40,30 +41,40 @@ export class ReportGenerationJob implements OnModuleInit {
 		private readonly processor: ReportGenerationProcessor,
 	) {}
 
-	async onModuleInit(): Promise<void> {
+	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+	schedulerRegistration: Promise<void> = Promise.resolve();
+
+	onModuleInit(): void {
 		// Processor에 자신을 등록 (순환 참조 방지)
 		this.processor.setReportJob(this);
 
-		await this.queue.upsertJobScheduler(
-			"weekly-report-scheduler",
-			{ pattern: "0 1 * * 1", tz: CRON_TZ },
-			{
-				name: AiReportJobName.DISPATCH,
-				data: { reportType: "WEEKLY" } satisfies AiReportJobData,
+		// Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+		this.schedulerRegistration = runInBackground(
+			this.#logger,
+			"Report generation scheduler registration",
+			async () => {
+				await this.queue.upsertJobScheduler(
+					"weekly-report-scheduler",
+					{ pattern: "0 1 * * 1", tz: CRON_TZ },
+					{
+						name: AiReportJobName.DISPATCH,
+						data: { reportType: "WEEKLY" } satisfies AiReportJobData,
+					},
+				);
+				await this.queue.upsertJobScheduler(
+					"monthly-report-scheduler",
+					{ pattern: "0 2 1 * *", tz: CRON_TZ },
+					{
+						name: AiReportJobName.DISPATCH,
+						data: { reportType: "MONTHLY" } satisfies AiReportJobData,
+					},
+				);
+
+				this.#logger.log("Report generation schedulers registered");
+
+				await this.#catchUpIfNeeded();
 			},
 		);
-		await this.queue.upsertJobScheduler(
-			"monthly-report-scheduler",
-			{ pattern: "0 2 1 * *", tz: CRON_TZ },
-			{
-				name: AiReportJobName.DISPATCH,
-				data: { reportType: "MONTHLY" } satisfies AiReportJobData,
-			},
-		);
-
-		this.#logger.log("Report generation schedulers registered");
-
-		await this.#catchUpIfNeeded();
 	}
 
 	/**

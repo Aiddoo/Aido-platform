@@ -14,7 +14,10 @@ import { Reflector } from "@nestjs/core";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { createMockExecutionContext } from "@test/mocks";
-import { BusinessException } from "@/common/exception/services/business-exception.service";
+import {
+	BusinessException,
+	BusinessExceptions,
+} from "@/common/exception/services/business-exception.service";
 
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { JwtAuthGuard } from "./jwt-auth.guard";
@@ -65,9 +68,9 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			expect(result).toBe(mockUser);
 		});
 
-		it("에러가 존재하면 BusinessException을 던져야 한다", () => {
-			// Given
-			const error = new Error("Token expired");
+		it("BusinessException(의도적 401)은 invalidToken으로 재포장해야 한다", () => {
+			// Given — validate()의 assertSessionValid/계정 상태 검증 등이 던진 예외
+			const error = BusinessExceptions.accountLocked("User");
 			const mockUser = {
 				userId: "user-1",
 				email: "test@test.com",
@@ -75,7 +78,7 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 				role: "USER",
 			};
 
-			// When & Then
+			// When & Then — 기존(변경 전) 동작 유지: 클라 계약 불변
 			expect(() => guard.handleRequest(error, mockUser)).toThrow(
 				BusinessException,
 			);
@@ -86,9 +89,9 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 			expect(() => guard.handleRequest(null, false)).toThrow(BusinessException);
 		});
 
-		it("에러 발생 시 AUTH_0101 에러 코드를 반환해야 한다", () => {
+		it("HttpException 에러 발생 시 AUTH_0101 에러 코드를 반환해야 한다", () => {
 			// Given
-			const error = new Error("Token expired");
+			const error = BusinessExceptions.accountSuspended("User");
 
 			// When & Then
 			try {
@@ -98,6 +101,19 @@ describe("JwtAuthGuard — JWT 인증 가드", () => {
 				expect(error).toBeInstanceOf(BusinessException);
 				expect((error as BusinessException).errorCode).toBe("AUTH_0101");
 			}
+		});
+
+		it("비-HttpException(인프라 오류)은 401로 위장하지 않고 그대로 rethrow해야 한다", () => {
+			// Given — DB 연결 실패 등 인프라 오류가 validate()에서 전파된 상황.
+			// 401로 위장하면 구버전 클라가 토큰을 삭제(강제 로그아웃)하므로
+			// 반드시 5xx로 흘려보내야 한다 (5xx는 토큰 보존 + Sentry 리포트).
+			const infraError = new Error("Connection terminated unexpectedly");
+
+			// When & Then
+			expect(() => guard.handleRequest(infraError, false)).toThrow(infraError);
+			expect(() => guard.handleRequest(infraError, false)).not.toThrow(
+				BusinessException,
+			);
 		});
 
 		it("에러 메시지가 없으면 기본 메시지를 사용해야 한다", () => {

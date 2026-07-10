@@ -1,9 +1,9 @@
 import type { CurrentUserPayload } from "@aido/validators";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
-import { CacheService } from "@/common/cache/cache.service";
+import { type CachedSession, CacheService } from "@/common/cache/cache.service";
 import { TypedConfigService } from "@/common/config/services/config.service";
 import { toISOStringOrNull } from "@/common/date/utils/format";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
@@ -25,6 +25,8 @@ export type { CurrentUserPayload };
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
+	readonly #logger = new Logger(JwtStrategy.name);
+
 	constructor(
 		readonly configService: TypedConfigService,
 		private readonly sessionRepository: SessionRepository,
@@ -62,8 +64,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			throw BusinessExceptions.invalidToken({ reason: "Missing sessionId" });
 		}
 
-		// 1. 캐시에서 세션 조회 (캐시-aside 패턴)
-		const cachedSession = await this.cacheService.getSession(payload.sessionId);
+		// 1. 캐시에서 세션 조회 (캐시-aside 패턴, 캐시 장애 시 미스 취급 → DB 폴백)
+		const cachedSession = await this.#getCachedSessionSafe(payload.sessionId);
 
 		if (cachedSession) {
 			// 캐시 히트: 캐시된 데이터로 유효성 검증
@@ -99,8 +101,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			this.#assertUserStatus(userStatus, userDeletedAt);
 		}
 
-		// 4. 유효한 세션을 캐시에 저장 (30초 TTL) — 사용자 상태 포함
-		await this.cacheService.setSession(payload.sessionId, {
+		// 4. 유효한 세션을 캐시에 저장 (30초 TTL) — 사용자 상태 포함.
+		//    캐시 장애 시 저장 실패는 무시 (다음 요청이 다시 DB를 탈 뿐)
+		await this.#setCachedSessionSafe(payload.sessionId, {
 			userId: session.userId,
 			expiresAt: session.expiresAt,
 			revokedAt: session.revokedAt,
@@ -117,6 +120,42 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 	}
 
 	/**
+	 * 세션 캐시 읽기 — 캐시 장애를 미스로 격리 (belt-and-suspenders)
+	 *
+	 * 캐시 어댑터 자체가 fail-open이지만, 인증은 최후 방어선이므로 전략
+	 * 레벨에서도 한 번 더 격리한다. try 안에는 캐시 I/O만 둔다 —
+	 * assertSessionValid/#assertUserStatus의 의도적 401은 절대 삼키지 않는다.
+	 */
+	async #getCachedSessionSafe(
+		sessionId: string,
+	): Promise<CachedSession | undefined> {
+		try {
+			return await this.cacheService.getSession(sessionId);
+		} catch (error) {
+			this.#logger.warn(
+				`Session cache read failed — falling back to DB: ${toMessage(error)}`,
+			);
+			return undefined;
+		}
+	}
+
+	/**
+	 * 세션 캐시 쓰기 — 실패 시 무시 (다음 요청이 다시 DB를 탈 뿐)
+	 */
+	async #setCachedSessionSafe(
+		sessionId: string,
+		session: CachedSession,
+	): Promise<void> {
+		try {
+			await this.cacheService.setSession(sessionId, session);
+		} catch (error) {
+			this.#logger.warn(
+				`Session cache write failed — skipping: ${toMessage(error)}`,
+			);
+		}
+	}
+
+	/**
 	 * 사용자 상태 검증 (Defense in Depth)
 	 *
 	 * 세션이 유효하더라도 사용자가 잠금/정지/탈퇴 상태이면 접근을 거부합니다.
@@ -129,4 +168,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 			throw BusinessExceptions.accountSuspended("User");
 		}
 	}
+}
+
+function toMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }

@@ -52,6 +52,22 @@ export class TypedConfigService {
 		return this.get("NODE_ENV");
 	}
 
+	/**
+	 * 배포 환경 (development | staging | production)
+	 *
+	 * NODE_ENV와 분리된 개념 — 개발서버도 production 빌드로 돌므로
+	 * "실제 프로덕션" 구분은 APP_ENV가 단일 진실이다.
+	 * 미설정 시 NODE_ENV 기준 폴백 (기존 배포 하위호환).
+	 */
+	get appEnv(): "development" | "staging" | "production" {
+		const appEnv = this.get("APP_ENV");
+		if (appEnv) {
+			return appEnv;
+		}
+
+		return this.isProduction ? "production" : "development";
+	}
+
 	// ============================================
 	// Database Config Helpers
 	// ============================================
@@ -238,6 +254,8 @@ export class TypedConfigService {
 			port: this.get("REDIS_PORT"),
 			password: this.get("REDIS_PASSWORD"),
 			db: this.get("REDIS_DB"),
+			commandTimeoutMs: this.get("REDIS_COMMAND_TIMEOUT_MS"),
+			connectTimeoutMs: this.get("REDIS_CONNECT_TIMEOUT_MS"),
 		};
 	}
 

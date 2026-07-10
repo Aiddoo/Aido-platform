@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import type Redis from "ioredis";
 import { TypedConfigService } from "../config/services/config.service";
-import { REDIS_CLIENT } from "../redis/redis.constants";
+import { REDIS_COMMAND_CLIENT } from "../redis/redis.constants";
 import { InMemoryLockAdapter } from "./adapters/in-memory-lock.adapter";
 import { RedisLockAdapter } from "./adapters/redis-lock.adapter";
 import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface";
@@ -49,7 +49,10 @@ export class LockModule {
 
 				return new InMemoryLockAdapter();
 			},
-			inject: [TypedConfigService, { token: REDIS_CLIENT, optional: true }],
+			inject: [
+				TypedConfigService,
+				{ token: REDIS_COMMAND_CLIENT, optional: true },
+			],
 		};
 
 		return {
