@@ -23,6 +23,14 @@ if (Platform.OS !== 'web') {
 
 const MIN_STALE_TIME = 1000 * 60 * 5; // 5 minutes
 const MIN_GC_TIME = 1000 * 60 * 6; // 6 minutes
+const MAX_RETRY_DELAY = 5000; // 재시도 백오프 상한 5초 — 죽은 서버를 과하게 두드리지 않는다
+
+/**
+ * 상한 지수 백오프: 1s → 2s → 4s → 5s → 5s → 5s.
+ * `shouldRetryQuery`의 일시 인프라 장애 6회와 합치면 재시도 창 ≈ 22초로,
+ * 서버 재시작(≈5-10초)을 덮어 재시도 화면 대신 로딩을 유지한다.
+ */
+const retryDelay = (attempt: number): number => Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +38,7 @@ const queryClient = new QueryClient({
       staleTime: MIN_STALE_TIME,
       gcTime: MIN_GC_TIME,
       retry: shouldRetryQuery,
+      retryDelay,
     },
     mutations: {
       retry: false,

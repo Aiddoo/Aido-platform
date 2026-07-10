@@ -1,5 +1,5 @@
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
-import { ApiError } from '@src/shared/errors';
+import { ApiError, TransientAuthError } from '@src/shared/errors';
 import ky, { type KyInstance } from 'ky';
 import { handleApiErrors } from './error-handler';
 import { KyHttpClient } from './ky-client';
@@ -165,5 +165,46 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
       expect(result.error.status).toBe(401);
       expect(result.error.code).toBe('AUTH_0105');
     }
+  });
+
+  it('갱신이 일시 실패(서버 재시작·네트워크)하면 로그아웃 없이 재시도 가능한 TransientAuthError를 던진다', async () => {
+    // Given — 콜드 스타트/배포 재시작: 원 요청은 401, 갱신 POST는 네트워크 실패(reject)
+    fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
+    requestRefresh.mockRejectedValue(new TypeError('Network request failed'));
+
+    // When / Then — 원 401을 ApiError로 담지 않고, 재시도 가능한 인프라 에러로 표면화한다
+    // (React Query가 5xx/네트워크와 동일하게 자동 재시도 → 재시도 화면 대신 로딩 유지).
+    await expect(http.get('todos')).rejects.toBeInstanceOf(TransientAuthError);
+    expect(endSession).not.toHaveBeenCalled(); // 세션 유지 — 강제 로그아웃 없음
+    expect(fetchMock).toHaveBeenCalledTimes(1); // 원 요청만; transient는 즉시 던지고 재시도 안 함
+  });
+
+  it('일시 실패로 던진 뒤 서버가 복귀하면 다음 시도(React Query 재시도)는 정상 복구된다', async () => {
+    // Given (1차 — 서버 다운): 401 + 갱신 네트워크 실패
+    fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
+    requestRefresh.mockRejectedValue(new TypeError('Network request failed'));
+
+    // When (1차) — TransientAuthError로 실패
+    await expect(http.get('todos')).rejects.toBeInstanceOf(TransientAuthError);
+
+    // Given (2차 — 서버 복귀): 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
+    fetchMock.mockImplementation(async (input) => {
+      const request = input as Request;
+      if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
+        return successBody({ id: 'todo-1' });
+      }
+      return errorBody(401, 'AUTH_0101', 'access token invalid');
+    });
+    requestRefresh.mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    // When (2차) / Then — 자동 복구
+    const result = await http.get<{ id: string }>('todos');
+    expect(result).toEqual({ ok: true, value: { id: 'todo-1' } });
+    expect(endSession).not.toHaveBeenCalled();
   });
 });
