@@ -233,7 +233,7 @@ export class AiSuggestionService {
 			system,
 			prompt,
 			schema: patternsSchema,
-			maxTokens: 1500,
+			maxOutputTokens: 1500,
 			temperature: 0.3,
 		});
 
@@ -247,7 +247,7 @@ export class AiSuggestionService {
 				system,
 				prompt,
 				schema: patternsSchema,
-				maxTokens: 1500,
+				maxOutputTokens: 1500,
 				temperature: AI_SUGGESTION_LIMITS.RETRY_TEMPERATURE,
 			});
 			const retryPatterns = filterWeakPatterns(

@@ -963,7 +963,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 						},
 					],
 				},
-				model: "gemini-2.5-flash-lite",
+				model: "gemini-3.1-flash-lite",
 				usage: { input: 100, output: 50 },
 			});
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });
@@ -1008,7 +1008,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 							},
 						],
 					},
-					model: "gemini-2.5-flash-lite",
+					model: "gemini-3.1-flash-lite",
 					usage: { input: 100, output: 50 },
 				})
 				.mockResolvedValueOnce({
@@ -1032,7 +1032,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 							},
 						],
 					},
-					model: "gemini-2.5-flash-lite",
+					model: "gemini-3.1-flash-lite",
 					usage: { input: 100, output: 50 },
 				});
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });
@@ -1092,7 +1092,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 						},
 					],
 				},
-				model: "gemini-2.5-flash-lite",
+				model: "gemini-3.1-flash-lite",
 				usage: { input: 100, output: 50 },
 			});
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });
@@ -1164,7 +1164,7 @@ describe("AiSuggestionService — AI 제안 서비스", () => {
 						},
 					],
 				},
-				model: "gemini-2.5-flash-lite",
+				model: "gemini-3.1-flash-lite",
 				usage: { input: 100, output: 50 },
 			});
 			mockRepository.deletePending.mockResolvedValue({ count: 0 });

@@ -35,6 +35,8 @@
 		"^@/(.*)$": "<rootDir>/../src/$1",
 		"^(\\.{1,2}/.*)\\.js$": "$1",
 		"^jose$": "<rootDir>/mocks/jose.mock.ts",
-		"^expo-server-sdk$": "<rootDir>/mocks/expo-server-sdk.mock.ts"
+		"^expo-server-sdk$": "<rootDir>/mocks/expo-server-sdk.mock.ts",
+		"^ai$": "<rootDir>/mocks/ai.mock.ts",
+		"^@ai-sdk/google$": "<rootDir>/mocks/ai-sdk-google.mock.ts"
 	}
 }
