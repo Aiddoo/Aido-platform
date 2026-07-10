@@ -9,22 +9,42 @@
  * pnpm --filter @aido/api test memo.repository
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-
-import { DatabaseService } from "@/database";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { MemoRepository } from "./memo.repository";
 
+/** memo.aggregate mock 결과 생성 (_max.sortOrder만 의미 있음) */
+function buildAggregateResult(sortOrder: number | null) {
+	return {
+		_count: undefined,
+		_avg: {},
+		_sum: {},
+		_min: {},
+		_max: { sortOrder },
+	};
+}
+
 describe("MemoRepository — 메모 리포지토리", () => {
 	let repository: MemoRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(MemoRepository).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(MemoRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findManyByUserId", () => {
@@ -32,7 +52,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("isPinned desc, sortOrder desc, id desc 순서로 정렬하여 조회해야 한다", async () => {
 			// Given - 빈 결과가 준비되었을 때
-			(db.memo.findMany as jest.Mock).mockResolvedValue([]);
+			db.memo.findMany.mockResolvedValue([]);
 
 			// When - findManyByUserId를 호출하면
 			await repository.findManyByUserId({
@@ -55,7 +75,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("take를 size + 1로 설정하여 다음 페이지 존재 여부를 확인해야 한다", async () => {
 			// Given - 빈 결과가 준비되었을 때
-			(db.memo.findMany as jest.Mock).mockResolvedValue([]);
+			db.memo.findMany.mockResolvedValue([]);
 			const size = 20;
 
 			// When - findManyByUserId를 호출하면
@@ -71,7 +91,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("커서가 없으면 skip과 cursor 없이 조회해야 한다", async () => {
 			// Given - 커서 없이 조회할 때
-			(db.memo.findMany as jest.Mock).mockResolvedValue([]);
+			db.memo.findMany.mockResolvedValue([]);
 
 			// When - cursor를 undefined로 호출하면
 			await repository.findManyByUserId({
@@ -81,14 +101,14 @@ describe("MemoRepository — 메모 리포지토리", () => {
 			});
 
 			// Then - skip과 cursor가 포함되지 않아야 한다
-			const calledArgs = (db.memo.findMany as jest.Mock).mock.calls[0][0];
-			expect(calledArgs.skip).toBeUndefined();
-			expect(calledArgs.cursor).toBeUndefined();
+			const calledArgs = db.memo.findMany.mock.calls[0]?.[0];
+			expect(calledArgs?.skip).toBeUndefined();
+			expect(calledArgs?.cursor).toBeUndefined();
 		});
 
 		it("커서가 있으면 skip: 1과 cursor를 설정하여 조회해야 한다", async () => {
 			// Given - 커서가 있을 때
-			(db.memo.findMany as jest.Mock).mockResolvedValue([]);
+			db.memo.findMany.mockResolvedValue([]);
 			const cursor = 5;
 
 			// When - cursor를 전달하여 호출하면
@@ -108,7 +128,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 		it("userId로 메모 개수를 조회해야 한다", async () => {
 			// Given - 메모 5개가 존재할 때
 			const userId = "user-123";
-			(db.memo.count as jest.Mock).mockResolvedValue(5);
+			db.memo.count.mockResolvedValue(5);
 
 			// When - countByUserId를 호출하면
 			const result = await repository.countByUserId(userId);
@@ -126,7 +146,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("gte와 lte 범위로 sortOrder를 증감해야 한다", async () => {
 			// Given - updateMany가 2개 행을 업데이트할 때
-			(db.memo.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
+			db.memo.updateMany.mockResolvedValue({ count: 2 });
 
 			// When - shiftSortOrders를 호출하면
 			const result = await repository.shiftSortOrders(userId, 3, 7, 1);
@@ -147,7 +167,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("toSortOrder가 null이면 lte 조건 없이 조회해야 한다", async () => {
 			// Given - updateMany가 3개 행을 업데이트할 때
-			(db.memo.updateMany as jest.Mock).mockResolvedValue({ count: 3 });
+			db.memo.updateMany.mockResolvedValue({ count: 3 });
 
 			// When - toSortOrder를 null로 호출하면
 			const result = await repository.shiftSortOrders(userId, 5, null, -1);
@@ -171,9 +191,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("가장 큰 sortOrder 값을 반환해야 한다", async () => {
 			// Given - 최대 sortOrder가 3일 때
-			(db.memo.aggregate as jest.Mock).mockResolvedValue({
-				_max: { sortOrder: 3 },
-			});
+			db.memo.aggregate.mockResolvedValue(buildAggregateResult(3));
 
 			// When - getMaxSortOrder를 호출하면
 			const result = await repository.getMaxSortOrder(userId);
@@ -188,9 +206,7 @@ describe("MemoRepository — 메모 리포지토리", () => {
 
 		it("메모가 없으면 -1을 반환해야 한다", async () => {
 			// Given - 메모가 없어서 _max.sortOrder가 null일 때
-			(db.memo.aggregate as jest.Mock).mockResolvedValue({
-				_max: { sortOrder: null },
-			});
+			db.memo.aggregate.mockResolvedValue(buildAggregateResult(null));
 
 			// When - getMaxSortOrder를 호출하면
 			const result = await repository.getMaxSortOrder(userId);

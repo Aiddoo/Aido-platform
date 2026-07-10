@@ -1,39 +1,37 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "@/database/database.service";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import type { DatabaseService } from "@/database/database.service";
 import type { Memo, Prisma } from "@/generated/prisma/client";
-import type { FindMemosParams, TransactionClient } from "./types";
+import type { FindMemosParams } from "./types";
 
 @Injectable()
 export class MemoRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
 
-	async create(
-		data: Prisma.MemoCreateInput,
-		tx?: TransactionClient,
-	): Promise<Memo> {
-		const client = tx ?? this.database;
-		return client.memo.create({ data });
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
 	}
 
-	async findByIdAndUserId(
-		id: number,
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<Memo | null> {
-		const client = tx ?? this.database;
-		return client.memo.findFirst({
+	async create(data: Prisma.MemoCreateInput): Promise<Memo> {
+		return this.client.memo.create({ data });
+	}
+
+	async findByIdAndUserId(id: number, userId: string): Promise<Memo | null> {
+		return this.client.memo.findFirst({
 			where: { id, userId },
 		});
 	}
 
-	async findManyByUserId(
-		params: FindMemosParams,
-		tx?: TransactionClient,
-	): Promise<Memo[]> {
+	async findManyByUserId(params: FindMemosParams): Promise<Memo[]> {
 		const { userId, cursor, size } = params;
-		const client = tx ?? this.database;
 
-		return client.memo.findMany({
+		return this.client.memo.findMany({
 			where: { userId },
 			take: size + 1,
 			...(cursor != null && {
@@ -44,34 +42,23 @@ export class MemoRepository {
 		});
 	}
 
-	async countByUserId(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.memo.count({ where: { userId } });
+	async countByUserId(userId: string): Promise<number> {
+		return this.client.memo.count({ where: { userId } });
 	}
 
-	async update(
-		id: number,
-		data: Prisma.MemoUpdateInput,
-		tx?: TransactionClient,
-	): Promise<Memo> {
-		const client = tx ?? this.database;
-		return client.memo.update({
+	async update(id: number, data: Prisma.MemoUpdateInput): Promise<Memo> {
+		return this.client.memo.update({
 			where: { id },
 			data,
 		});
 	}
 
-	async delete(id: number, tx?: TransactionClient): Promise<Memo> {
-		const client = tx ?? this.database;
-		return client.memo.delete({ where: { id } });
+	async delete(id: number): Promise<Memo> {
+		return this.client.memo.delete({ where: { id } });
 	}
 
-	async getMaxSortOrder(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.memo.aggregate({
+	async getMaxSortOrder(userId: string): Promise<number> {
+		const result = await this.client.memo.aggregate({
 			where: { userId },
 			_max: { sortOrder: true },
 		});
@@ -83,10 +70,8 @@ export class MemoRepository {
 		fromSortOrder: number,
 		toSortOrder: number | null,
 		delta: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.memo.updateMany({
+		const result = await this.client.memo.updateMany({
 			where: {
 				userId,
 				sortOrder: {
@@ -99,13 +84,8 @@ export class MemoRepository {
 		return result.count;
 	}
 
-	async updateSortOrder(
-		id: number,
-		sortOrder: number,
-		tx?: TransactionClient,
-	): Promise<Memo> {
-		const client = tx ?? this.database;
-		return client.memo.update({
+	async updateSortOrder(id: number, sortOrder: number): Promise<Memo> {
+		return this.client.memo.update({
 			where: { id },
 			data: { sortOrder },
 		});

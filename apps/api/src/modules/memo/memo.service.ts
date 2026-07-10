@@ -3,16 +3,15 @@ import {
 	type Memo as MemoResponse,
 	type Todo,
 } from "@aido/validators";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { CacheService } from "@/common/cache/cache.service";
-import type { TransactionClient } from "@/common/database/prisma.types";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import { toDateString } from "@/common/date/utils/format";
 import { toLocalTimeString } from "@/common/date/utils/timezone";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
 import type { CursorPaginatedResponse } from "@/common/pagination";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
 import { CreateRecurringTodosCommand, CreateTodoCommand } from "../todo";
 import { MemoMapper } from "./memo.mapper";
 import { MemoRepository } from "./memo.repository";
@@ -30,7 +29,8 @@ export class MemoService {
 	constructor(
 		private readonly memoRepository: MemoRepository,
 		private readonly paginationService: PaginationService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly commandBus: CommandBus,
 		private readonly cacheService: CacheService,
 	) {}
@@ -42,8 +42,8 @@ export class MemoService {
 		data: CreateMemoData,
 	): Promise<{ message: string; memo: MemoResponse }> {
 		// TX 내에서 제한 체크 + sortOrder 결정 + 생성 (race condition 방지)
-		const memo = await this.database.$transaction(async (tx) => {
-			const count = await this.memoRepository.countByUserId(data.userId, tx);
+		const memo = await this.uow.run(async () => {
+			const count = await this.memoRepository.countByUserId(data.userId);
 			if (count >= MEMO_LIMITS.MAX_PER_USER) {
 				throw BusinessExceptions.memoLimitExceeded(
 					count,
@@ -53,17 +53,13 @@ export class MemoService {
 
 			const maxSortOrder = await this.memoRepository.getMaxSortOrder(
 				data.userId,
-				tx,
 			);
 
-			return this.memoRepository.create(
-				{
-					user: { connect: { id: data.userId } },
-					content: data.content,
-					sortOrder: maxSortOrder + 1,
-				},
-				tx,
-			);
+			return this.memoRepository.create({
+				user: { connect: { id: data.userId } },
+				content: data.content,
+				sortOrder: maxSortOrder + 1,
+			});
 		});
 
 		this.#logger.log(`Memo created: ${memo.id} for user: ${data.userId}`);
@@ -192,8 +188,8 @@ export class MemoService {
 	): Promise<{ message: string; memo: MemoResponse }> {
 		const { targetMemoId, position } = data;
 
-		return this.database.$transaction(async (tx) => {
-			const memo = await this.memoRepository.findByIdAndUserId(id, userId, tx);
+		return this.uow.run(async () => {
+			const memo = await this.memoRepository.findByIdAndUserId(id, userId);
 			if (!memo) {
 				throw BusinessExceptions.memoNotFound(id);
 			}
@@ -211,14 +207,12 @@ export class MemoService {
 						targetMemoId,
 						position,
 						userId,
-						tx,
 					)
-				: await this.#reorderToEdge(memo.sortOrder, position, userId, tx);
+				: await this.#reorderToEdge(memo.sortOrder, position, userId);
 
 			const updated = await this.memoRepository.updateSortOrder(
 				id,
 				newSortOrder,
-				tx,
 			);
 
 			this.#logger.log(
@@ -379,12 +373,10 @@ export class MemoService {
 		targetMemoId: number,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		const targetMemo = await this.memoRepository.findByIdAndUserId(
 			targetMemoId,
 			userId,
-			tx,
 		);
 
 		if (!targetMemo) {
@@ -400,7 +392,6 @@ export class MemoService {
 				currentSortOrder + 1,
 				newSortOrder - 1,
 				-1,
-				tx,
 			);
 			newSortOrder -= 1;
 		} else {
@@ -409,7 +400,6 @@ export class MemoService {
 				newSortOrder,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 		}
 
@@ -420,7 +410,6 @@ export class MemoService {
 		currentSortOrder: number,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		if (position === "before") {
 			await this.memoRepository.shiftSortOrders(
@@ -428,18 +417,16 @@ export class MemoService {
 				0,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 			return 0;
 		}
 
-		const maxSortOrder = await this.memoRepository.getMaxSortOrder(userId, tx);
+		const maxSortOrder = await this.memoRepository.getMaxSortOrder(userId);
 		await this.memoRepository.shiftSortOrders(
 			userId,
 			currentSortOrder + 1,
 			null,
 			-1,
-			tx,
 		);
 		return maxSortOrder;
 	}

@@ -12,9 +12,10 @@ import { CommandBus } from "@nestjs/cqrs";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { MemoBuilder } from "@test/builders";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { PaginationService } from "@/common/pagination";
-import { DatabaseService } from "@/database/database.service";
 import { CreateRecurringTodosCommand, CreateTodoCommand } from "@/modules/todo";
 import { MemoRepository } from "./memo.repository";
 import { MemoService } from "./memo.service";
@@ -22,7 +23,6 @@ import { MemoService } from "./memo.service";
 describe("MemoService — 메모 서비스", () => {
 	let service: MemoService;
 	let memoRepo: Mocked<MemoRepository>;
-	let database: Mocked<DatabaseService>;
 	let commandBus: Mocked<CommandBus>;
 	let cacheService: Mocked<CacheService>;
 	let _paginationService: Mocked<PaginationService>;
@@ -33,19 +33,16 @@ describe("MemoService — 메모 서비스", () => {
 		// Given - ID 카운터 리셋으로 테스트 간 격리 보장
 		MemoBuilder.resetIdCounter();
 
-		const { unit, unitRef } = await TestBed.solitary(MemoService).compile();
+		const { unit, unitRef } = await TestBed.solitary(MemoService)
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			.compile();
 
 		service = unit;
 		memoRepo = unitRef.get(MemoRepository);
-		database = unitRef.get(DatabaseService);
 		commandBus = unitRef.get(CommandBus);
 		cacheService = unitRef.get(CacheService);
 		_paginationService = unitRef.get(PaginationService);
-
-		// Given - 기본 transaction mock 설정
-		(database.$transaction as jest.Mock).mockImplementation(
-			(callback: (tx: unknown) => Promise<unknown>) => callback({}),
-		);
 	});
 
 	describe("create", () => {
@@ -69,7 +66,6 @@ describe("MemoService — 메모 서비스", () => {
 			expect(result.memo).toBeDefined();
 			expect(memoRepo.create).toHaveBeenCalledWith(
 				expect.objectContaining({ sortOrder: 4 }),
-				expect.anything(),
 			);
 		});
 
