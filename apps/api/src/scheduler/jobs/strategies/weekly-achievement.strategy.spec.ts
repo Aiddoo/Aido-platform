@@ -15,7 +15,7 @@ import dayjs from "dayjs";
 import { NotificationService } from "@/notification/notification.service";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { WeeklyAchievementService } from "@/weekly-achievement/weekly-achievement.service";
+import { WeeklyAchievementFacade } from "@/weekly-achievement";
 
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy";
@@ -24,7 +24,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 	let strategy: WeeklyAchievementStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
-	let weeklyAchievementService: Mocked<WeeklyAchievementService>;
+	let weeklyAchievementFacade: Mocked<WeeklyAchievementFacade>;
 
 	const TZ = "Asia/Seoul";
 
@@ -53,7 +53,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		database = unitRef.get(DatabaseService);
 		database.userPreference.findMany.mockResolvedValue([] as never);
 		notificationService = unitRef.get(NotificationService);
-		weeklyAchievementService = unitRef.get(WeeklyAchievementService);
+		weeklyAchievementFacade = unitRef.get(WeeklyAchievementFacade);
 
 		// 기본 mock 설정
 		(database.todo.groupBy as jest.Mock).mockResolvedValue([]);
@@ -61,7 +61,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		notificationService.createAndSendBatch.mockResolvedValue(
 			undefined as never,
 		);
-		weeklyAchievementService.upsertMany.mockResolvedValue(undefined);
+		weeklyAchievementFacade.upsertMany.mockResolvedValue(undefined);
 	});
 
 	afterEach(() => {
@@ -106,7 +106,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 
 		// Then
 		const { isoYear, isoWeek } = previousIsoWeekRange(ctx.today);
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledWith([
 			expect.objectContaining({
 				year: isoYear,
 				week: isoWeek,
@@ -162,7 +162,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then — upsertMany에 두 유저 모두 포함
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith(
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledWith(
 			expect.arrayContaining([
 				expect.objectContaining({
 					userId: "user-push-on",
@@ -218,7 +218,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		await strategy.execute(ctx);
 
 		// Then
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith([
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledWith([
 			expect.objectContaining({
 				userId: "user-1",
 				totalTodos: 5,
@@ -250,7 +250,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		const result = await strategy.execute(ctx);
 
 		// Then — 기록은 두 유저 모두 저장
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledWith(
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledWith(
 			expect.arrayContaining([
 				expect.objectContaining({ userId: "user-1" }),
 				expect.objectContaining({ userId: "user-2" }),
@@ -275,7 +275,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 
 		// Then
 		expect(result).toEqual({ sent: 0 });
-		expect(weeklyAchievementService.upsertMany).not.toHaveBeenCalled();
+		expect(weeklyAchievementFacade.upsertMany).not.toHaveBeenCalled();
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});
 
@@ -292,7 +292,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
 		const result = await strategy.execute(ctx);
 
 		// Then — 기록 저장됨 + 알림 미발송
-		expect(weeklyAchievementService.upsertMany).toHaveBeenCalledTimes(1);
+		expect(weeklyAchievementFacade.upsertMany).toHaveBeenCalledTimes(1);
 		expect(result).toEqual({ sent: 0 });
 		expect(notificationService.createAndSendBatch).not.toHaveBeenCalled();
 	});

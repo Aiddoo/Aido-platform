@@ -5,7 +5,7 @@ import { fetchUserLocales } from "@/notification/templates/user-locale.util";
 import { previousIsoWeekRange } from "@/shared/domain/date/utils/range";
 import { todayInTimezone } from "@/shared/domain/date/utils/timezone";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { WeeklyAchievementService } from "@/weekly-achievement/weekly-achievement.service";
+import { WeeklyAchievementFacade } from "@/weekly-achievement";
 
 import type {
 	ITimezoneStrategy,
@@ -19,7 +19,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		private readonly weeklyAchievementService: WeeklyAchievementService,
+		private readonly weeklyAchievementFacade: WeeklyAchievementFacade,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -69,7 +69,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 		}));
 
 		// ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-		await this.weeklyAchievementService.upsertMany(records);
+		await this.weeklyAchievementFacade.upsertMany(records);
 
 		// ─── C. 알림 발송 (completed > 0 + dedup) ────
 		const notifiableUserIds = records

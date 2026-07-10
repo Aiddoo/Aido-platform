@@ -30,6 +30,9 @@ const TARGET_DIRS = [
 	"src/daily-completion/domain",
 	"src/daily-completion/application",
 	"src/daily-completion/infrastructure",
+	"src/weekly-achievement/domain",
+	"src/weekly-achievement/application",
+	"src/weekly-achievement/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

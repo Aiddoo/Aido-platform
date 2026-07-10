@@ -2,25 +2,20 @@
  * WeeklyAchievementController 컨트롤러 단위 테스트
  *
  * @description
- * WeeklyAchievementController의 엔드포인트 핸들러를 격리 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test weekly-achievement.controller
- * ```
+ * 컨트롤러가 Facade에 올바른 파라미터를 전달하고 응답을 그대로 반환하는지
+ * 격리 테스트합니다. Facade는 자동 목으로 대체됩니다.
  */
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 
-import type { CurrentUserPayload } from "../auth/decorators";
-
+import type { CurrentUserPayload } from "../../auth/decorators";
+import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
+import type { WeeklyAchievementListView } from "../application/queries/get-weekly-achievements.query";
 import { WeeklyAchievementController } from "./weekly-achievement.controller";
-import type { WeeklyAchievementListResult } from "./weekly-achievement.service";
-import { WeeklyAchievementService } from "./weekly-achievement.service";
 
 describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	let controller: WeeklyAchievementController;
-	let service: Mocked<WeeklyAchievementService>;
+	let facade: Mocked<WeeklyAchievementFacade>;
 
 	const mockUser: CurrentUserPayload = {
 		userId: "user-123",
@@ -35,13 +30,13 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 		).compile();
 
 		controller = unit;
-		service = unitRef.get(WeeklyAchievementService);
+		facade = unitRef.get(WeeklyAchievementFacade);
 	});
 
 	describe("getWeeklyAchievements", () => {
-		it("Service에 올바른 파라미터를 전달한다", async () => {
+		it("Facade에 올바른 파라미터를 전달한다", async () => {
 			// Given
-			const mockResult: WeeklyAchievementListResult = {
+			const mockResult: WeeklyAchievementListView = {
 				items: [],
 				pagination: { nextCursor: null, hasNext: false, size: 20 },
 				summary: {
@@ -52,34 +47,28 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 					averageRate: 0,
 				},
 			};
-			service.getWeeklyAchievements.mockResolvedValue(mockResult);
+			facade.getWeeklyAchievements.mockResolvedValue(mockResult);
 
 			// When
 			await controller.getWeeklyAchievements(
 				mockUser,
-				{
-					year: 2026,
-					cursor: 10,
-					size: 5,
-				},
+				{ year: 2026, cursor: 10, size: 5 },
 				undefined,
 			);
 
 			// Then
-			expect(service.getWeeklyAchievements).toHaveBeenCalledWith(
-				{
-					userId: "user-123",
-					year: 2026,
-					cursor: 10,
-					size: 5,
-				},
+			expect(facade.getWeeklyAchievements).toHaveBeenCalledWith(
+				"user-123",
+				2026,
+				10,
+				5,
 				"ko",
 			);
 		});
 
-		it("Service 응답을 그대로 반환한다", async () => {
+		it("Facade 응답을 그대로 반환한다", async () => {
 			// Given
-			const mockResult: WeeklyAchievementListResult = {
+			const mockResult: WeeklyAchievementListView = {
 				items: [
 					{
 						id: 42,
@@ -102,15 +91,12 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 					averageRate: 93,
 				},
 			};
-			service.getWeeklyAchievements.mockResolvedValue(mockResult);
+			facade.getWeeklyAchievements.mockResolvedValue(mockResult);
 
 			// When
 			const result = await controller.getWeeklyAchievements(
 				mockUser,
-				{
-					year: 2026,
-					size: 20,
-				},
+				{ year: 2026, size: 20 },
 				undefined,
 			);
 
@@ -120,9 +106,9 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 	});
 
 	describe("getWeeklyAchievement", () => {
-		it("Service에 올바른 파라미터를 전달한다", async () => {
+		it("Facade에 올바른 파라미터를 전달한다", async () => {
 			// Given
-			service.getWeeklyAchievement.mockResolvedValue({
+			facade.getWeeklyAchievement.mockResolvedValue({
 				id: 42,
 				year: 2026,
 				week: 10,
@@ -142,12 +128,10 @@ describe("WeeklyAchievementController — 주간 성취 컨트롤러", () => {
 			);
 
 			// Then
-			expect(service.getWeeklyAchievement).toHaveBeenCalledWith(
-				{
-					userId: "user-123",
-					year: 2026,
-					week: 10,
-				},
+			expect(facade.getWeeklyAchievement).toHaveBeenCalledWith(
+				"user-123",
+				2026,
+				10,
 				"ko",
 			);
 		});

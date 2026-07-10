@@ -1,28 +1,33 @@
 import { Module } from "@nestjs/common";
-
-import { WeeklyAchievementController } from "./weekly-achievement.controller";
-import { WeeklyAchievementRepository } from "./weekly-achievement.repository";
-import { WeeklyAchievementService } from "./weekly-achievement.service";
+import { CqrsModule } from "@nestjs/cqrs";
+import { WeeklyAchievementFacade } from "./application/facades/weekly-achievement.facade";
+import { WEEKLY_ACHIEVEMENT_REPOSITORY } from "./application/ports/weekly-achievement.repository.port";
+import { QueryHandlers } from "./application/queries/handlers";
+import { CommandHandlers } from "./application/use-cases";
+import { PrismaWeeklyAchievementRepository } from "./infrastructure/adapters/prisma-weekly-achievement.repository";
+import { WeeklyAchievementController } from "./presentation/weekly-achievement.controller";
 
 /**
- * WeeklyAchievement 모듈
+ * WeeklyAchievement 모듈 (클린아키텍처 + CQRS)
  *
- * 주간 할 일 달성 현황 관리를 담당합니다.
+ * 주간 할 일 달성 현황을 조회(연도별 목록·주차 상세)하고, 스케줄러 배치가 일괄
+ * upsert를 디스패치한다. 통계 계산(streak·요약·주차 라벨)은 도메인이 소유하며,
+ * 저장은 포트로 추상화된다.
  *
- * ## 주요 기능
- * - 연도별 주간 달성 목록 조회 (커서 페이지네이션)
- * - 특정 주차 상세 조회
- * - 달성 기록 upsert (스케줄러에서 호출)
- *
- * ## 아키텍처
- * - Controller: HTTP 요청 처리
- * - Service: 비즈니스 로직 (페이지네이션, 통계 계산, upsert)
- * - Repository: 데이터 접근 계층 (내부 구현)
- * - Mapper: 엔티티 → DTO 변환, 통계 계산
+ * Facade를 export하여 스케줄러(미이관 모듈)가 배럴로 주입한다.
  */
 @Module({
+	imports: [CqrsModule],
 	controllers: [WeeklyAchievementController],
-	providers: [WeeklyAchievementRepository, WeeklyAchievementService],
-	exports: [WeeklyAchievementService],
+	providers: [
+		WeeklyAchievementFacade,
+		{
+			provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
+			useClass: PrismaWeeklyAchievementRepository,
+		},
+		...QueryHandlers,
+		...CommandHandlers,
+	],
+	exports: [WeeklyAchievementFacade],
 })
 export class WeeklyAchievementModule {}

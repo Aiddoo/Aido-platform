@@ -16,7 +16,8 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import { WeeklyAchievementFacade } from "../application/facades/weekly-achievement.facade";
 
 import {
 	GetWeeklyAchievementsQueryDto,
@@ -24,7 +25,6 @@ import {
 	WeeklyAchievementListResponseDto,
 	WeeklyAchievementParamDto,
 } from "./dtos";
-import { WeeklyAchievementService } from "./weekly-achievement.service";
 
 @ApiTags(SWAGGER_TAGS.WEEKLY_ACHIEVEMENTS)
 @ApiBearerAuth()
@@ -33,7 +33,7 @@ export class WeeklyAchievementController {
 	readonly #logger = new Logger(WeeklyAchievementController.name);
 
 	constructor(
-		private readonly weeklyAchievementService: WeeklyAchievementService,
+		private readonly weeklyAchievementFacade: WeeklyAchievementFacade,
 	) {}
 
 	@Get()
@@ -103,13 +103,11 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 			`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`,
 		);
 
-		return this.weeklyAchievementService.getWeeklyAchievements(
-			{
-				userId: user.userId,
-				year: query.year,
-				cursor: query.cursor,
-				size: query.size,
-			},
+		return this.weeklyAchievementFacade.getWeeklyAchievements(
+			user.userId,
+			query.year,
+			query.cursor,
+			query.size,
 			locale ?? "ko",
 		);
 	}
@@ -159,12 +157,10 @@ GET /weekly-achievements/2026/10
 			`주간 달성 상세 조회: user=${user.userId}, year=${params.year}, week=${params.week}`,
 		);
 
-		return this.weeklyAchievementService.getWeeklyAchievement(
-			{
-				userId: user.userId,
-				year: params.year,
-				week: params.week,
-			},
+		return this.weeklyAchievementFacade.getWeeklyAchievement(
+			user.userId,
+			params.year,
+			params.week,
 			locale ?? "ko",
 		);
 	}
