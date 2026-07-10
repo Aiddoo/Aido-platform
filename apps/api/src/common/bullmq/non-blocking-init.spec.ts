@@ -38,6 +38,22 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
 		expect(logger.error).not.toHaveBeenCalled();
 	});
 
+	it("동기 throw도 호출부로 전파하지 않고 로그만 남긴다 (부트스트랩 크래시 방지)", async () => {
+		// Given — 프로미스를 반환하기 전에 동기적으로 터지는 작업
+		const logger = { error: jest.fn() };
+		const task = (): Promise<void> => {
+			throw new Error("sync boom");
+		};
+
+		// When / Then — 호출 자체가 throw하면 안 된다
+		await expect(
+			runInBackground(logger, "Scheduler registration", task),
+		).resolves.toBeUndefined();
+		expect(logger.error).toHaveBeenCalledWith(
+			expect.stringContaining("sync boom"),
+		);
+	});
+
 	it("작업 실패 시 reject하지 않고 에러 로그만 남긴다 (unhandled rejection 방지)", async () => {
 		// Given
 		const logger = { error: jest.fn() };
