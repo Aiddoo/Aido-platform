@@ -1,4 +1,10 @@
-import { ApiError, NetworkError } from '@src/shared/errors';
+import {
+  ApiError,
+  NetworkError,
+  ServerError,
+  TimeoutError,
+  TransientAuthError,
+} from '@src/shared/errors';
 import { shouldRetryQuery } from './query-retry';
 
 describe('shouldRetryQuery', () => {
@@ -20,13 +26,20 @@ describe('shouldRetryQuery', () => {
     expect(shouldRetryQuery(0, businessError)).toBe(false);
   });
 
-  it('네트워크·5xx 등은 상한(3)까지 재시도한다', () => {
-    // Given
-    const error = new NetworkError();
+  it('일시 인프라 장애(네트워크·5xx·타임아웃·토큰 갱신 일시 실패)는 넉넉한 상한(6)까지 재시도한다', () => {
+    // Given — 콜드 스타트/서버 재시작 구간에 서버 복귀를 기다린다(재시도 창 ≈ 22초)
+    const cases = [
+      new NetworkError(),
+      new ServerError(503),
+      new TimeoutError(),
+      new TransientAuthError(),
+    ];
 
     // When / Then
-    expect(shouldRetryQuery(0, error)).toBe(true);
-    expect(shouldRetryQuery(2, error)).toBe(true);
-    expect(shouldRetryQuery(3, error)).toBe(false);
+    for (const error of cases) {
+      expect(shouldRetryQuery(0, error)).toBe(true);
+      expect(shouldRetryQuery(5, error)).toBe(true);
+      expect(shouldRetryQuery(6, error)).toBe(false);
+    }
   });
 });

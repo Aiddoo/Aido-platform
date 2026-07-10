@@ -1,5 +1,6 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
+import { TransientAuthError } from '@src/shared/errors';
 import type { AfterResponseHook } from 'ky';
 import type { TokenRefresher } from './token-refresher';
 
@@ -23,11 +24,15 @@ export interface TokenRefreshHookDeps {
  *   전송하므로 훅에 전달된 request는 body가 소비되지 않은 원본이다 (POST 재시도 안전).
  * - 이미 다른 flight가 토큰을 회전한 뒤 도착한 401(stale token)은 갱신 없이
  *   바로 재시도한다 — 불필요한 갱신은 서버의 토큰 패밀리를 소모시킨다.
- * - 갱신 실패 시 원 401 응답을 그대로 반환해 ky-client가 ApiError로 일관 번역하게 한다.
- *   이 ApiError는 화면별 `QueryErrorBoundary`가 로컬 재시도로 담는다(앱 레벨로 새지 않음).
+ * - 서버가 리프레시 토큰을 거부(`session-invalid`)하거나 로컬 토큰이 없으면(`no-session`)
+ *   원 401 응답을 반환하고 세션을 종료한다.
+ * - `transient-failure`(네트워크·5xx·타임아웃·잠긴 키체인)에서는 **재시도 가능한
+ *   `TransientAuthError`를 던진다.** 세션은 유효하므로, 원 401을 반환하는 대신 인프라
+ *   에러로 표면화해 React Query가 5xx/네트워크와 동일하게 자동 재시도하게 한다
+ *   (콜드 스타트/서버 재시작 구간에 재시도 화면 대신 로딩을 유지하고 스스로 회복).
  *
  * 세션 종료 여부는 갱신 결과(`RefreshOutcome`)만 보고 판단한다.
- * `transient-failure`(네트워크·5xx·잠긴 키체인)에서는 절대 세션을 끝내지 않는다.
+ * `transient-failure`에서는 절대 세션을 끝내지 않는다.
  */
 export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterResponseHook => {
   const { tokenStore, refresh, endSession, retry } = deps;
@@ -65,7 +70,8 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
         await endSession({ reason: 'tokens-missing' });
         return response;
       case 'transient-failure':
-        return response;
+        // 세션은 유효하다 — 재시도 가능한 인프라 에러로 표면화(원 401 반환 금지).
+        throw new TransientAuthError();
     }
   };
 };

@@ -8,10 +8,12 @@ export { type BoundaryErrorKind, classifyBoundaryError } from './classify-bounda
 export {
   InfraError,
   isInfraError,
+  isTransientAuthError,
   NetworkError,
   ParseError,
   ServerError,
   TimeoutError,
+  TransientAuthError,
 } from './infra-error';
 
 // Result Type
