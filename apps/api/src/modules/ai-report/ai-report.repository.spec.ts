@@ -3,25 +3,33 @@
  *
  * Suites + GWT 패턴 적용
  * - 쿼리 파라미터 검증
- * - tx 파라미터 위임 검증
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { AiReportRepository } from "./ai-report.repository";
 
 describe("AiReportRepository — AI 리포트 리포지토리", () => {
 	let repository: AiReportRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
-		const { unit, unitRef } =
-			await TestBed.solitary(AiReportRepository).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(AiReportRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("create", () => {
@@ -50,22 +58,6 @@ describe("AiReportRepository — AI 리포트 리포지토리", () => {
 			// Then -Prisma create에 올바른 데이터를 전달해야 한다
 			expect(db.aiReport.create).toHaveBeenCalledWith({ data: createData });
 			expect(result).toEqual(mockReport);
-		});
-
-		it("트랜잭션 클라이언트가 제공되면 tx를 사용해야 한다", async () => {
-			// Given -트랜잭션 클라이언트가 있는 상태
-			const mockTx = {
-				aiReport: {
-					create: jest.fn().mockResolvedValue({ id: 1 }),
-				},
-			};
-
-			// When -tx를 전달하여 create를 호출하면
-			await repository.create({} as never, mockTx as never);
-
-			// Then -tx의 aiReport.create를 사용해야 한다
-			expect(mockTx.aiReport.create).toHaveBeenCalled();
-			expect(db.aiReport.create).not.toHaveBeenCalled();
 		});
 	});
 

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import type { TransactionClient } from "@/common/database/prisma.types";
-import { DatabaseService } from "@/database/database.service";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import type { DatabaseService } from "@/database/database.service";
 import type { AiReport, Prisma, ReportType } from "@/generated/prisma/client";
 import type { FindReportsParams } from "./types";
 
@@ -8,20 +9,28 @@ import type { FindReportsParams } from "./types";
  * AI 리포트 리포지토리
  *
  * AI 리포트 데이터의 CRUD 작업을 담당합니다.
+ *
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다.
  */
 @Injectable()
 export class AiReportRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * AI 리포트 생성
 	 */
-	async create(
-		data: Prisma.AiReportCreateInput,
-		tx?: TransactionClient,
-	): Promise<AiReport> {
-		const client = tx ?? this.database;
-		return client.aiReport.create({ data });
+	async create(data: Prisma.AiReportCreateInput): Promise<AiReport> {
+		return this.client.aiReport.create({ data });
 	}
 
 	/**
@@ -30,10 +39,8 @@ export class AiReportRepository {
 	async findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
 	): Promise<AiReport | null> {
-		const client = tx ?? this.database;
-		return client.aiReport.findFirst({
+		return this.client.aiReport.findFirst({
 			where: { id, userId },
 		});
 	}
@@ -41,13 +48,8 @@ export class AiReportRepository {
 	/**
 	 * 최신 리포트 조회 (타입별)
 	 */
-	async findLatest(
-		userId: string,
-		type: ReportType,
-		tx?: TransactionClient,
-	): Promise<AiReport | null> {
-		const client = tx ?? this.database;
-		return client.aiReport.findFirst({
+	async findLatest(userId: string, type: ReportType): Promise<AiReport | null> {
+		return this.client.aiReport.findFirst({
 			where: { userId, type },
 			orderBy: { generatedAt: "desc" },
 		});
@@ -56,11 +58,7 @@ export class AiReportRepository {
 	/**
 	 * 리포트 목록 조회
 	 */
-	async findMany(
-		params: FindReportsParams,
-		tx?: TransactionClient,
-	): Promise<AiReport[]> {
-		const client = tx ?? this.database;
+	async findMany(params: FindReportsParams): Promise<AiReport[]> {
 		const where: Prisma.AiReportWhereInput = {
 			userId: params.userId,
 		};
@@ -69,7 +67,7 @@ export class AiReportRepository {
 			where.type = params.type;
 		}
 
-		return client.aiReport.findMany({
+		return this.client.aiReport.findMany({
 			where,
 			orderBy: { generatedAt: "desc" },
 			take: params.limit,
@@ -84,10 +82,8 @@ export class AiReportRepository {
 		type: ReportType,
 		year: number,
 		period: number,
-		tx?: TransactionClient,
 	): Promise<boolean> {
-		const client = tx ?? this.database;
-		const count = await client.aiReport.count({
+		const count = await this.client.aiReport.count({
 			where: { userId, type, year, period },
 		});
 		return count > 0;

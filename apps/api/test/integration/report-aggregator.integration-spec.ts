@@ -19,8 +19,9 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { ReportAggregatorService } from "@/modules/ai-report/report-aggregator.service";
 import type { AggregateParams } from "@/modules/ai-report/types";
 
@@ -48,8 +49,9 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 			providers: [
 				ReportAggregatorService,
 				{
-					provide: DatabaseService,
-					useValue: databaseService,
+					// 서비스는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
+					provide: TransactionHost,
+					useValue: { tx: databaseService },
 				},
 			],
 		}).compile();

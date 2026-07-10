@@ -5,8 +5,10 @@ import type {
 	TimePatternItem,
 } from "@aido/validators";
 import { Injectable, Logger } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import dayjs from "dayjs";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type { AggregatedReportData, AggregateParams } from "./types";
 
 /**
@@ -32,7 +34,16 @@ const DAY_INDEX_MAP: Record<number, DayOfWeek> = {
 export class ReportAggregatorService {
 	readonly #logger = new Logger(ReportAggregatorService.name);
 
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
+	private get database() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 리포트 데이터 집계

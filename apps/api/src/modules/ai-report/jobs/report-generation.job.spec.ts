@@ -8,10 +8,13 @@
  */
 
 import { getQueueToken } from "@nestjs/bullmq";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 import type { Queue } from "bullmq";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import {
 	AI_REPORT_QUEUE,
 	ReportGenerationProcessor,
@@ -20,12 +23,20 @@ import { ReportGenerationJob } from "./report-generation.job";
 
 describe("ReportGenerationJob — 리포트 생성 잡", () => {
 	let job: ReportGenerationJob;
-	let mockDatabase: Mocked<DatabaseService>;
+	let mockDatabase: MockPrismaClient;
 	let mockQueue: Mocked<Queue>;
 	let mockProcessor: Mocked<ReportGenerationProcessor>;
 
 	beforeEach(async () => {
+		// 잡은 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		mockDatabase = createMockPrisma();
+
 		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: mockDatabase }))
 			.mock(getQueueToken(AI_REPORT_QUEUE))
 			.impl(() => ({
 				add: jest.fn().mockResolvedValue(undefined),
@@ -35,7 +46,6 @@ describe("ReportGenerationJob — 리포트 생성 잡", () => {
 			.compile();
 
 		job = unit;
-		mockDatabase = unitRef.get(DatabaseService);
 		mockQueue = unitRef.get(getQueueToken(AI_REPORT_QUEUE));
 		mockProcessor = unitRef.get(ReportGenerationProcessor);
 	});

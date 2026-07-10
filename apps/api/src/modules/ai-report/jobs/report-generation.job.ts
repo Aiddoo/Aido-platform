@@ -1,12 +1,14 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import type { Job, Queue } from "bullmq";
 import dayjs from "dayjs";
 import { AI_PER_USER_JOB_OPTS } from "@/common/bullmq/job-options";
 import { runInBackground } from "@/common/bullmq/non-blocking-init";
 import { forEachBatch } from "@/common/database";
 import { toIsoMonthId, toIsoWeekId } from "@/common/date/utils/format";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import {
 	AI_REPORT_QUEUE,
 	type AiReportGenerateData,
@@ -35,11 +37,18 @@ export class ReportGenerationJob implements OnModuleInit {
 	readonly #logger = new Logger(ReportGenerationJob.name);
 
 	constructor(
-		private readonly database: DatabaseService,
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
 		@InjectQueue(AI_REPORT_QUEUE)
 		private readonly queue: Queue<AiReportJobData>,
 		private readonly processor: ReportGenerationProcessor,
 	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
+	private get database() {
+		return this.txHost.tx;
+	}
 
 	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
 	schedulerRegistration: Promise<void> = Promise.resolve();

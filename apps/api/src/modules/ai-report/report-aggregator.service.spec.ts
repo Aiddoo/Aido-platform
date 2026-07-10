@@ -7,16 +7,18 @@
  * - 빈 데이터 처리 검증
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { ReportAggregatorService } from "./report-aggregator.service";
 import type { AggregateParams } from "./types";
 
 describe("ReportAggregatorService — 리포트 집계 서비스", () => {
 	let service: ReportAggregatorService;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	const baseParams: AggregateParams = {
 		userId: "user-123",
@@ -28,12 +30,18 @@ describe("ReportAggregatorService — 리포트 집계 서비스", () => {
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			ReportAggregatorService,
-		).compile();
+		// 서비스는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(ReportAggregatorService)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		service = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	/**
