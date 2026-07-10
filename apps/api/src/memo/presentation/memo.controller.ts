@@ -28,8 +28,9 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
 
+import { MemoFacade } from "../application/facades/memo.facade";
 import {
 	ConvertMemoToTodoDto,
 	ConvertMemoToTodoResponseDto,
@@ -47,13 +48,12 @@ import {
 	ToggleMemoPinDto,
 	UpdateMemoDto,
 } from "./dtos";
-import { MemoService } from "./memo.service";
 
 @ApiTags(SWAGGER_TAGS.MEMOS)
 @ApiBearerAuth()
 @Controller("memos")
 export class MemoController {
-	constructor(private readonly memoService: MemoService) {}
+	constructor(private readonly memoFacade: MemoFacade) {}
 
 	@Get("resource-limit")
 	@ApiDoc({
@@ -70,7 +70,7 @@ export class MemoController {
 	async getResourceLimit(
 		@CurrentUser() user: CurrentUserPayload,
 	): Promise<MemoResourceLimitResponseDto> {
-		return this.memoService.getResourceLimitInfo(user.userId);
+		return this.memoFacade.getResourceLimit(user.userId);
 	}
 
 	@Post()
@@ -97,10 +97,7 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoService.create({
-			userId: user.userId,
-			content: dto.content,
-		});
+		return this.memoFacade.create(user.userId, dto.content);
 	}
 
 	@Get()
@@ -119,7 +116,7 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Query() query: GetMemosQueryDto,
 	): Promise<MemoListResponseDto> {
-		return this.memoService.findMany({
+		return this.memoFacade.findMany({
 			userId: user.userId,
 			cursor: query.cursor,
 			size: query.size,
@@ -139,7 +136,7 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: MemoIdParamDto,
 	): Promise<MemoDetailResponseDto> {
-		return this.memoService.findOne(user.userId, params.id);
+		return this.memoFacade.findOne(user.userId, params.id);
 	}
 
 	@Patch(":id")
@@ -157,9 +154,7 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: UpdateMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoService.update(user.userId, params.id, {
-			content: dto.content,
-		});
+		return this.memoFacade.update(user.userId, params.id, dto.content);
 	}
 
 	@Patch(":id/pin")
@@ -177,7 +172,7 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: ToggleMemoPinDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoService.togglePin(user.userId, params.id, dto.isPinned);
+		return this.memoFacade.togglePin(user.userId, params.id, dto.isPinned);
 	}
 
 	@Patch(":id/reorder")
@@ -199,7 +194,7 @@ export class MemoController {
 		@Param() params: MemoIdParamDto,
 		@Body() dto: ReorderMemoDto,
 	): Promise<MemoMutationResponseDto> {
-		return this.memoService.reorder(params.id, user.userId, {
+		return this.memoFacade.reorder(params.id, user.userId, {
 			targetMemoId: dto.targetMemoId,
 			position: dto.position,
 		});
@@ -219,7 +214,7 @@ export class MemoController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Param() params: MemoIdParamDto,
 	): Promise<MemoDeleteResponseDto> {
-		return this.memoService.delete(user.userId, params.id);
+		return this.memoFacade.delete(user.userId, params.id);
 	}
 
 	@Post(":id/convert-to-todo")
@@ -259,7 +254,7 @@ export class MemoController {
 		@Body() dto: ConvertMemoToTodoDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodoResponseDto> {
-		return this.memoService.convertToTodo(user.userId, params.id, {
+		return this.memoFacade.convertToTodo(user.userId, params.id, {
 			categoryId: dto.categoryId,
 			startDate: parseDateOnly(dto.startDate),
 			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
@@ -313,7 +308,7 @@ export class MemoController {
 		@Body() dto: ConvertMemoToTodosDto,
 		@Timezone() tz: string,
 	): Promise<ConvertMemoToTodosResponseDto> {
-		return this.memoService.convertToTodos(
+		return this.memoFacade.convertToTodos(
 			user.userId,
 			params.id,
 			{
