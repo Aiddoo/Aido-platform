@@ -10,16 +10,15 @@ import {
 	SWAGGER_TAGS,
 } from "@/shared/presentation/swagger";
 
-import { CurrentUser, type CurrentUserPayload } from "../auth/decorators";
-
+import { CurrentUser, type CurrentUserPayload } from "../../auth/decorators";
+import { InquiryFacade } from "../application/facades/inquiry.facade";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./dtos";
-import { InquiryService } from "./inquiry.service";
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
 @Controller("inquiries")
 export class InquiryController {
-	constructor(private readonly inquiryService: InquiryService) {}
+	constructor(private readonly inquiryFacade: InquiryFacade) {}
 
 	@Post()
 	@ApiDoc({
@@ -44,12 +43,12 @@ export class InquiryController {
 		@CurrentUser() user: CurrentUserPayload,
 		@Body() dto: CreateInquiryDto,
 	) {
-		await this.inquiryService.createInquiry({
-			userId: user.userId,
-			userEmail: user.email,
-			category: dto.category,
-			content: dto.content,
-		});
+		await this.inquiryFacade.createInquiry(
+			user.userId,
+			user.email,
+			dto.category,
+			dto.content,
+		);
 
 		return { message: "문의가 접수되었습니다." };
 	}

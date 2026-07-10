@@ -21,6 +21,9 @@ const TARGET_DIRS = [
 	"src/todo/domain",
 	"src/todo/application",
 	"src/todo/infrastructure",
+	"src/inquiry/domain",
+	"src/inquiry/application",
+	"src/inquiry/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */
