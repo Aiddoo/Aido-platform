@@ -57,7 +57,7 @@
 		"expo-server-sdk": "^5.0.0",
 		"google-auth-library": "^10.6.2",
 		"helmet": "^8.2.0",
-		"ioredis": "^5.11.0",
+		"ioredis": "5.10.1",
 		"jose": "^6.2.3",
 		"nestjs-pino": "^4.6.1",
 		"nestjs-zod": "^5.4.0",

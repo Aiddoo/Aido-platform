@@ -21,6 +21,18 @@ import {
 const QUIT_TIMEOUT_MS = 3_000;
 
 /**
+ * 종료 처리에 필요한 최소 클라이언트 계약
+ *
+ * ioredis Redis가 구조적으로 만족하며, 테스트에서 캐스트 없이
+ * fake를 주입할 수 있도록 좁혀 둔다.
+ */
+export interface RedisLifecycleClient {
+	status: string;
+	quit(): Promise<"OK">;
+	disconnect(reconnect?: boolean): void;
+}
+
+/**
  * Redis 모듈
  *
  * 용도별로 분리된 두 ioredis 인스턴스를 제공하는 글로벌 모듈:
@@ -44,10 +56,10 @@ export class RedisModule implements OnApplicationShutdown {
 	constructor(
 		@Optional()
 		@Inject(REDIS_CLIENT)
-		private readonly bullClient: Redis | null,
+		private readonly bullClient: RedisLifecycleClient | null,
 		@Optional()
 		@Inject(REDIS_COMMAND_CLIENT)
-		private readonly commandClient: Redis | null,
+		private readonly commandClient: RedisLifecycleClient | null,
 	) {}
 
 	static forRoot(): DynamicModule {
@@ -109,7 +121,7 @@ export class RedisModule implements OnApplicationShutdown {
 	}
 
 	private async shutdownClient(
-		client: Redis | null,
+		client: RedisLifecycleClient | null,
 		name: string,
 	): Promise<void> {
 		if (!client || client.status === "end") {

@@ -10,18 +10,19 @@
  * pnpm --filter @aido/api test redis.module
  * ```
  */
-import type { ValueProvider } from "@nestjs/common";
-import type Redis from "ioredis";
+import type { Provider, ValueProvider } from "@nestjs/common";
+import Redis from "ioredis";
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants";
-import { RedisModule } from "./redis.module";
+import { type RedisLifecycleClient, RedisModule } from "./redis.module";
 
-interface FakeRedis {
-	status: string;
+interface FakeRedisClient extends RedisLifecycleClient {
 	quit: jest.Mock;
 	disconnect: jest.Mock;
 }
 
-function createFakeRedis(overrides: Partial<FakeRedis> = {}): FakeRedis {
+function createFakeClient(
+	overrides: Partial<FakeRedisClient> = {},
+): FakeRedisClient {
 	return {
 		status: "ready",
 		quit: jest.fn().mockResolvedValue("OK"),
@@ -30,60 +31,67 @@ function createFakeRedis(overrides: Partial<FakeRedis> = {}): FakeRedis {
 	};
 }
 
-function asRedis(fake: FakeRedis): Redis {
-	return fake as unknown as Redis;
+function isValueProvider(provider: Provider): provider is ValueProvider {
+	return typeof provider === "object" && "useValue" in provider;
+}
+
+function findUseValue(
+	providers: Provider[] | undefined,
+	token: symbol,
+): unknown {
+	return (providers ?? [])
+		.filter(isValueProvider)
+		.find((provider) => provider.provide === token)?.useValue;
 }
 
 describe("RedisModule — Redis 연결 모듈", () => {
 	describe("forTesting", () => {
-		it("클라이언트 하나만 주면 두 토큰 모두 같은 클라이언트를 제공한다", () => {
-			// Given
-			const client = asRedis(createFakeRedis());
+		let client: Redis;
+		let commandClient: Redis;
 
+		beforeEach(() => {
+			// lazyConnect: 명령 실행 전까지 실제 연결을 만들지 않음
+			client = new Redis({ lazyConnect: true });
+			commandClient = new Redis({ lazyConnect: true });
+		});
+
+		afterEach(() => {
+			client.disconnect();
+			commandClient.disconnect();
+		});
+
+		it("클라이언트 하나만 주면 두 토큰 모두 같은 클라이언트를 제공한다", () => {
 			// When
 			const dynamicModule = RedisModule.forTesting(client);
 
 			// Then
-			const providers = (dynamicModule.providers ?? []) as ValueProvider[];
-			const bullProvider = providers.find((p) => p.provide === REDIS_CLIENT);
-			const commandProvider = providers.find(
-				(p) => p.provide === REDIS_COMMAND_CLIENT,
+			expect(findUseValue(dynamicModule.providers, REDIS_CLIENT)).toBe(client);
+			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(
+				client,
 			);
-			expect(bullProvider?.useValue).toBe(client);
-			expect(commandProvider?.useValue).toBe(client);
 			expect(dynamicModule.exports).toEqual(
 				expect.arrayContaining([REDIS_CLIENT, REDIS_COMMAND_CLIENT]),
 			);
 		});
 
 		it("명령용 클라이언트를 따로 주면 토큰별로 다른 클라이언트를 제공한다", () => {
-			// Given
-			const bullClient = asRedis(createFakeRedis());
-			const commandClient = asRedis(createFakeRedis());
-
 			// When
-			const dynamicModule = RedisModule.forTesting(bullClient, commandClient);
+			const dynamicModule = RedisModule.forTesting(client, commandClient);
 
 			// Then
-			const providers = (dynamicModule.providers ?? []) as ValueProvider[];
-			const bullProvider = providers.find((p) => p.provide === REDIS_CLIENT);
-			const commandProvider = providers.find(
-				(p) => p.provide === REDIS_COMMAND_CLIENT,
+			expect(findUseValue(dynamicModule.providers, REDIS_CLIENT)).toBe(client);
+			expect(findUseValue(dynamicModule.providers, REDIS_COMMAND_CLIENT)).toBe(
+				commandClient,
 			);
-			expect(bullProvider?.useValue).toBe(bullClient);
-			expect(commandProvider?.useValue).toBe(commandClient);
 		});
 	});
 
 	describe("onApplicationShutdown", () => {
 		it("quit이 성공하면 disconnect를 호출하지 않는다", async () => {
 			// Given
-			const bullClient = createFakeRedis();
-			const commandClient = createFakeRedis();
-			const module = new RedisModule(
-				asRedis(bullClient),
-				asRedis(commandClient),
-			);
+			const bullClient = createFakeClient();
+			const commandClient = createFakeClient();
+			const module = new RedisModule(bullClient, commandClient);
 
 			// When
 			await module.onApplicationShutdown();
@@ -97,10 +105,10 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
 		it("quit이 reject되면 disconnect로 강제 종료한다", async () => {
 			// Given
-			const bullClient = createFakeRedis({
+			const bullClient = createFakeClient({
 				quit: jest.fn().mockRejectedValue(new Error("Connection is closed.")),
 			});
-			const module = new RedisModule(asRedis(bullClient), null);
+			const module = new RedisModule(bullClient, null);
 
 			// When
 			await module.onApplicationShutdown();
@@ -112,10 +120,10 @@ describe("RedisModule — Redis 연결 모듈", () => {
 		it("quit이 응답하지 않으면(hang) 타임아웃 후 disconnect로 폴백한다", async () => {
 			// Given — Redis 다운 중 종료: 오프라인 큐에 걸린 quit은 영원히 pending
 			jest.useFakeTimers();
-			const bullClient = createFakeRedis({
+			const bullClient = createFakeClient({
 				quit: jest.fn().mockReturnValue(new Promise(() => {})),
 			});
-			const module = new RedisModule(asRedis(bullClient), null);
+			const module = new RedisModule(bullClient, null);
 
 			// When
 			const shutdown = module.onApplicationShutdown();
@@ -129,8 +137,8 @@ describe("RedisModule — Redis 연결 모듈", () => {
 
 		it("이미 종료된(end) 클라이언트는 건드리지 않는다", async () => {
 			// Given
-			const endedClient = createFakeRedis({ status: "end" });
-			const module = new RedisModule(asRedis(endedClient), null);
+			const endedClient = createFakeClient({ status: "end" });
+			const module = new RedisModule(endedClient, null);
 
 			// When
 			await module.onApplicationShutdown();

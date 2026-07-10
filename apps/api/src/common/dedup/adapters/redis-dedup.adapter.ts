@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
-import { REDIS_CLIENT } from "../../redis/redis.constants";
+import { REDIS_COMMAND_CLIENT } from "../../redis/redis.constants";
 import type { IDedupProvider } from "../interfaces/dedup.interface";
 
 /**
@@ -18,7 +18,7 @@ export class RedisDedupAdapter implements IDedupProvider {
 	readonly #redis: Redis;
 	readonly #keyPrefix = "dedup:";
 
-	constructor(@Inject(REDIS_CLIENT) redis: Redis) {
+	constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
 		this.#redis = redis;
 	}
 

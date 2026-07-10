@@ -50,6 +50,37 @@ const THROTTLE_INCREMENT_SCRIPT = `
 `;
 
 /**
+ * Lua 스크립트 결과를 검증해 ThrottlerStorageRecord로 변환
+ *
+ * @throws 예상 형태([number x4])가 아니면 에러 — increment의 catch에서
+ *         fail-open으로 흡수된다
+ */
+function isNumberQuad(raw: unknown): raw is [number, number, number, number] {
+	return (
+		Array.isArray(raw) &&
+		raw.length === 4 &&
+		raw.every((value) => typeof value === "number")
+	);
+}
+
+function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
+	if (!isNumberQuad(raw)) {
+		throw new Error(
+			`Unexpected throttle script result: ${JSON.stringify(raw)}`,
+		);
+	}
+
+	const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = raw;
+
+	return {
+		totalHits,
+		timeToExpire,
+		isBlocked: isBlocked === 1,
+		timeToBlockExpire,
+	};
+}
+
+/**
  * Redis 기반 ThrottlerStorage
  *
  * - Lua 스크립트로 atomic increment + TTL + block 처리
@@ -76,7 +107,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 		const blockKey = `${hitKey}:blocked`;
 
 		try {
-			const result = (await this.#redis.eval(
+			const raw = await this.#redis.eval(
 				THROTTLE_INCREMENT_SCRIPT,
 				2,
 				hitKey,
@@ -84,14 +115,9 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 				ttl,
 				limit,
 				blockDuration,
-			)) as [number, number, number, number];
+			);
 
-			return {
-				totalHits: result[0],
-				timeToExpire: result[1],
-				isBlocked: result[2] === 1,
-				timeToBlockExpire: result[3],
-			};
+			return parseThrottleResult(raw);
 		} catch (error) {
 			this.#logger.warn(
 				`Redis throttle error (fail-open): ${error instanceof Error ? error.message : error}`,
