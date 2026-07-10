@@ -13,14 +13,15 @@ import { TODO_CATEGORY_LIMITS } from "@aido/validators";
 import type { Mocked } from "@suites/doubles.jest";
 import { TestBed } from "@suites/unit";
 import { TodoCategoryBuilder } from "@test/builders";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import {
 	BusinessException,
 	BusinessExceptions,
 } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
 import { Prisma } from "@/generated/prisma/client";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
@@ -31,7 +32,6 @@ describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 	let service: TodoCategoryService;
 	let todoCategoryRepo: Mocked<TodoCategoryRepository>;
 	let entitlementService: Mocked<EntitlementService>;
-	let database: Mocked<DatabaseService>;
 	let cacheService: Mocked<CacheService>;
 
 	const userId = "user-123";
@@ -41,20 +41,15 @@ describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 		TodoCategoryBuilder.resetIdCounter();
 
 		// Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } =
-			await TestBed.solitary(TodoCategoryService).compile();
+		// UNIT_OF_WORK는 Symbol 토큰이므로 passthrough mock을 직접 제공
+		const { unit, unitRef } = await TestBed.solitary(TodoCategoryService)
+			.mock(UNIT_OF_WORK)
+			.impl(() => createUnitOfWorkMock())
+			.compile();
 
 		service = unit;
 		todoCategoryRepo = unitRef.get(TodoCategoryRepository);
 		entitlementService = unitRef.get(EntitlementService);
-		database = unitRef.get(DatabaseService);
-
-		// $transaction 기본 mock 설정
-		// Note: 테스트에서는 repository mock을 트랜잭션 클라이언트로 사용
-		// 실제로는 서비스가 tx를 repository에 전달하고, mock이 tx 없이도 동작하도록 설정됨
-		database.$transaction.mockImplementation(async (callback) =>
-			callback(todoCategoryRepo as never),
-		);
 
 		cacheService = unitRef.get(CacheService);
 
@@ -420,7 +415,7 @@ describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 			await service.delete({ userId, categoryId: 1 });
 
 			// Then
-			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1, todoCategoryRepo);
+			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1);
 		});
 
 		it("마지막 카테고리 삭제 시 예외를 던져야 한다", async () => {
@@ -489,12 +484,8 @@ describe("TodoCategoryService — 할 일 카테고리 서비스", () => {
 			});
 
 			// Then
-			expect(todoCategoryRepo.moveTodosToCategory).toHaveBeenCalledWith(
-				1,
-				2,
-				todoCategoryRepo,
-			);
-			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1, todoCategoryRepo);
+			expect(todoCategoryRepo.moveTodosToCategory).toHaveBeenCalledWith(1, 2);
+			expect(todoCategoryRepo.delete).toHaveBeenCalledWith(1);
 		});
 
 		it("이동 대상 카테고리가 없으면 예외를 던져야 한다", async () => {

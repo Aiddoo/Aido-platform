@@ -8,16 +8,18 @@
  * @see https://docs.nestjs.com/recipes/suites
  */
 
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
-import { DatabaseService } from "@/database/database.service";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import type { DatabaseService } from "@/database/database.service";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
 import type { TodoCategoryWithCount } from "./types/todo-category.types";
 
 describe("TodoCategoryRepository — 할 일 카테고리 리포지토리", () => {
 	let repository: TodoCategoryRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	const mockCategory = {
 		id: 1,
@@ -36,12 +38,18 @@ describe("TodoCategoryRepository — 할 일 카테고리 리포지토리", () =
 	};
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			TodoCategoryRepository,
-		).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(TodoCategoryRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("create", () => {

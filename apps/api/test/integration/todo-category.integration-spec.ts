@@ -18,13 +18,15 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { TodoCategoryBuilder } from "@test/builders";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
+import { UNIT_OF_WORK } from "@/common/database";
 import { EntitlementService } from "@/common/entitlement/entitlement.service";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
 import type { TodoCategory } from "@/generated/prisma/client";
 import { TodoCategoryRepository } from "@/modules/todo-category/todo-category.repository";
 import { TodoCategoryService } from "@/modules/todo-category/todo-category.service";
@@ -58,6 +60,9 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 		todoCategory: mockTodoCategoryDb,
 		todo: mockTodoDb,
 	});
+
+	// UNIT_OF_WORK passthrough mock (기존 $transaction passthrough와 등가)
+	const mockUnitOfWork = createUnitOfWorkMock();
 
 	// 테스트 데이터
 	const mockUserId = "user-category-123";
@@ -97,8 +102,13 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 				TodoCategoryService,
 				TodoCategoryRepository,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					provide: UNIT_OF_WORK,
+					useValue: mockUnitOfWork,
+				},
+				{
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
 				},
 				{
 					provide: EntitlementService,
@@ -632,8 +642,8 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 				categoryId: mockCategoryId,
 			});
 
-			// Then - 트랜잭션이 사용됨
-			expect(mockDatabaseService.$transaction).toHaveBeenCalled();
+			// Then - 트랜잭션(UnitOfWork)이 사용됨
+			expect(mockUnitOfWork.run).toHaveBeenCalled();
 		});
 
 		it("reorder에서 트랜잭션이 올바르게 사용된다", async () => {
@@ -650,8 +660,8 @@ describe("TodoCategoryService 통합 테스트 (Mock DB)", () => {
 				position: "before",
 			});
 
-			// Then - 트랜잭션이 사용됨
-			expect(mockDatabaseService.$transaction).toHaveBeenCalled();
+			// Then - 트랜잭션(UnitOfWork)이 사용됨
+			expect(mockUnitOfWork.run).toHaveBeenCalled();
 		});
 	});
 });

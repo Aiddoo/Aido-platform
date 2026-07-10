@@ -1,35 +1,47 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "@/database/database.service";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import type { TransactionClient } from "@/common/database/prisma.types";
+import type { DatabaseService } from "@/database/database.service";
 import type { Prisma, TodoCategory } from "@/generated/prisma/client";
 
-import type {
-	TodoCategoryWithCount,
-	TransactionClient,
-} from "./types/todo-category.types";
+import type { TodoCategoryWithCount } from "./types/todo-category.types";
 
+/**
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다(기존 `tx ?? this.database`와 등가).
+ */
 @Injectable()
 export class TodoCategoryRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 카테고리 생성
 	 */
-	async create(
-		data: Prisma.TodoCategoryCreateInput,
-		tx?: TransactionClient,
-	): Promise<TodoCategory> {
-		const client = tx ?? this.database;
-		return client.todoCategory.create({ data });
+	async create(data: Prisma.TodoCategoryCreateInput): Promise<TodoCategory> {
+		return this.client.todoCategory.create({ data });
 	}
 
 	/**
 	 * 여러 카테고리 생성 (회원가입 시 기본 카테고리용)
+	 *
+	 * @param tx 과도기 파라미터 — auth/oauth가 아직 `$transaction(tx)`를 스레딩하므로
+	 *           해당 모듈이 CLS로 이관되기 전까지 유지합니다 (전달 시 tx 우선).
 	 */
 	async createMany(
 		data: Prisma.TodoCategoryCreateManyInput[],
 		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
+		const client = tx ?? this.client;
 		const result = await client.todoCategory.createMany({ data });
 		return result.count;
 	}
@@ -37,12 +49,8 @@ export class TodoCategoryRepository {
 	/**
 	 * ID로 카테고리 조회
 	 */
-	async findById(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<TodoCategory | null> {
-		const client = tx ?? this.database;
-		return client.todoCategory.findUnique({
+	async findById(id: number): Promise<TodoCategory | null> {
+		return this.client.todoCategory.findUnique({
 			where: { id },
 		});
 	}
@@ -53,10 +61,8 @@ export class TodoCategoryRepository {
 	async findByIdAndUserId(
 		id: number,
 		userId: string,
-		tx?: TransactionClient,
 	): Promise<TodoCategory | null> {
-		const client = tx ?? this.database;
-		return client.todoCategory.findFirst({
+		return this.client.todoCategory.findFirst({
 			where: { id, userId },
 		});
 	}
@@ -64,12 +70,8 @@ export class TodoCategoryRepository {
 	/**
 	 * 사용자의 카테고리 목록 조회 (Todo 개수 포함)
 	 */
-	async findManyByUserId(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<TodoCategoryWithCount[]> {
-		const client = tx ?? this.database;
-		return client.todoCategory.findMany({
+	async findManyByUserId(userId: string): Promise<TodoCategoryWithCount[]> {
+		return this.client.todoCategory.findMany({
 			where: { userId },
 			include: {
 				_count: {
@@ -83,9 +85,8 @@ export class TodoCategoryRepository {
 	/**
 	 * 사용자의 카테고리 개수 조회
 	 */
-	async countByUserId(userId: string, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todoCategory.count({
+	async countByUserId(userId: string): Promise<number> {
+		return this.client.todoCategory.count({
 			where: { userId },
 		});
 	}
@@ -97,10 +98,8 @@ export class TodoCategoryRepository {
 		userId: string,
 		name: string,
 		excludeId?: number,
-		tx?: TransactionClient,
 	): Promise<boolean> {
-		const client = tx ?? this.database;
-		const category = await client.todoCategory.findFirst({
+		const category = await this.client.todoCategory.findFirst({
 			where: {
 				userId,
 				name,
@@ -116,10 +115,8 @@ export class TodoCategoryRepository {
 	async update(
 		id: number,
 		data: Prisma.TodoCategoryUpdateInput,
-		tx?: TransactionClient,
 	): Promise<TodoCategory> {
-		const client = tx ?? this.database;
-		return client.todoCategory.update({
+		return this.client.todoCategory.update({
 			where: { id },
 			data,
 		});
@@ -128,9 +125,8 @@ export class TodoCategoryRepository {
 	/**
 	 * 카테고리 삭제
 	 */
-	async delete(id: number, tx?: TransactionClient): Promise<TodoCategory> {
-		const client = tx ?? this.database;
-		return client.todoCategory.delete({
+	async delete(id: number): Promise<TodoCategory> {
+		return this.client.todoCategory.delete({
 			where: { id },
 		});
 	}
@@ -138,9 +134,8 @@ export class TodoCategoryRepository {
 	/**
 	 * 카테고리의 Todo 개수 조회
 	 */
-	async getTodoCount(id: number, tx?: TransactionClient): Promise<number> {
-		const client = tx ?? this.database;
-		return client.todo.count({
+	async getTodoCount(id: number): Promise<number> {
+		return this.client.todo.count({
 			where: { categoryId: id },
 		});
 	}
@@ -151,10 +146,8 @@ export class TodoCategoryRepository {
 	async moveTodosToCategory(
 		fromCategoryId: number,
 		toCategoryId: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.todo.updateMany({
+		const result = await this.client.todo.updateMany({
 			where: { categoryId: fromCategoryId },
 			data: { categoryId: toCategoryId },
 		});
@@ -164,12 +157,8 @@ export class TodoCategoryRepository {
 	/**
 	 * 사용자의 최대 sortOrder 조회
 	 */
-	async getMaxSortOrder(
-		userId: string,
-		tx?: TransactionClient,
-	): Promise<number> {
-		const client = tx ?? this.database;
-		const result = await client.todoCategory.aggregate({
+	async getMaxSortOrder(userId: string): Promise<number> {
+		const result = await this.client.todoCategory.aggregate({
 			where: { userId },
 			_max: { sortOrder: true },
 		});
@@ -184,10 +173,7 @@ export class TodoCategoryRepository {
 		fromSortOrder: number,
 		toSortOrder: number | null,
 		delta: number,
-		tx?: TransactionClient,
 	): Promise<number> {
-		const client = tx ?? this.database;
-
 		const where: Prisma.TodoCategoryWhereInput = {
 			userId,
 			sortOrder: {
@@ -196,7 +182,7 @@ export class TodoCategoryRepository {
 			},
 		};
 
-		const result = await client.todoCategory.updateMany({
+		const result = await this.client.todoCategory.updateMany({
 			where,
 			data: {
 				sortOrder: { increment: delta },
@@ -209,12 +195,8 @@ export class TodoCategoryRepository {
 	/**
 	 * ID로 카테고리 조회 (Todo 개수 포함)
 	 */
-	async findByIdWithCount(
-		id: number,
-		tx?: TransactionClient,
-	): Promise<TodoCategoryWithCount | null> {
-		const client = tx ?? this.database;
-		return client.todoCategory.findUnique({
+	async findByIdWithCount(id: number): Promise<TodoCategoryWithCount | null> {
+		return this.client.todoCategory.findUnique({
 			where: { id },
 			include: {
 				_count: {

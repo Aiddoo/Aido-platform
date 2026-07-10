@@ -1,12 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CacheService } from "@/common/cache/cache.service";
-import type { TransactionClient } from "@/common/database/prisma.types";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
 import {
 	EntitlementService,
 	Resource,
 } from "@/common/entitlement/entitlement.service";
 import { BusinessExceptions } from "@/common/exception/services/business-exception.service";
-import { DatabaseService } from "@/database/database.service";
 import { Prisma, type TodoCategory } from "@/generated/prisma/client";
 
 import { TodoCategoryRepository } from "./todo-category.repository";
@@ -26,7 +25,8 @@ export class TodoCategoryService {
 	constructor(
 		private readonly todoCategoryRepository: TodoCategoryRepository,
 		private readonly entitlementService: EntitlementService,
-		private readonly database: DatabaseService,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
 		private readonly cacheService: CacheService,
 	) {}
 
@@ -220,12 +220,11 @@ export class TodoCategoryService {
 	async delete(params: DeleteTodoCategoryParams): Promise<void> {
 		const { userId, categoryId, moveToCategoryId } = params;
 
-		await this.database.$transaction(async (tx) => {
+		await this.uow.run(async () => {
 			// 1. 카테고리 존재 확인
 			const category = await this.todoCategoryRepository.findByIdAndUserId(
 				categoryId,
 				userId,
-				tx,
 			);
 
 			if (!category) {
@@ -233,20 +232,16 @@ export class TodoCategoryService {
 			}
 
 			// 2. 카테고리 개수 확인 (최소 1개 유지)
-			const categoryCount = await this.todoCategoryRepository.countByUserId(
-				userId,
-				tx,
-			);
+			const categoryCount =
+				await this.todoCategoryRepository.countByUserId(userId);
 
 			if (categoryCount <= 1) {
 				throw BusinessExceptions.todoCategoryMinimumRequired();
 			}
 
 			// 3. 해당 카테고리의 Todo 개수 확인
-			const todoCount = await this.todoCategoryRepository.getTodoCount(
-				categoryId,
-				tx,
-			);
+			const todoCount =
+				await this.todoCategoryRepository.getTodoCount(categoryId);
 
 			if (todoCount > 0 && !moveToCategoryId) {
 				throw BusinessExceptions.todoCategoryHasTodos(categoryId, todoCount);
@@ -263,7 +258,6 @@ export class TodoCategoryService {
 					await this.todoCategoryRepository.findByIdAndUserId(
 						moveToCategoryId,
 						userId,
-						tx,
 					);
 
 				if (!targetCategory) {
@@ -273,7 +267,6 @@ export class TodoCategoryService {
 				await this.todoCategoryRepository.moveTodosToCategory(
 					categoryId,
 					moveToCategoryId,
-					tx,
 				);
 
 				this.#logger.log(
@@ -282,7 +275,7 @@ export class TodoCategoryService {
 			}
 
 			// 4. 카테고리 삭제
-			await this.todoCategoryRepository.delete(categoryId, tx);
+			await this.todoCategoryRepository.delete(categoryId);
 
 			this.#logger.log(
 				`TodoCategory deleted: ${categoryId} for user: ${userId}`,
@@ -301,11 +294,10 @@ export class TodoCategoryService {
 	async reorder(params: ReorderTodoCategoryParams): Promise<TodoCategory> {
 		const { userId, categoryId, targetCategoryId, position } = params;
 
-		const result = await this.database.$transaction(async (tx) => {
+		const result = await this.uow.run(async () => {
 			const category = await this.todoCategoryRepository.findByIdAndUserId(
 				categoryId,
 				userId,
-				tx,
 			);
 
 			if (!category) {
@@ -322,14 +314,12 @@ export class TodoCategoryService {
 						targetCategoryId,
 						position,
 						userId,
-						tx,
 					)
-				: await this.#reorderToEdge(category.sortOrder, position, userId, tx);
+				: await this.#reorderToEdge(category.sortOrder, position, userId);
 
 			const updatedCategory = await this.todoCategoryRepository.update(
 				categoryId,
 				{ sortOrder: newSortOrder },
-				tx,
 			);
 
 			this.#logger.log(
@@ -349,12 +339,10 @@ export class TodoCategoryService {
 		targetCategoryId: number,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		const targetCategory = await this.todoCategoryRepository.findByIdAndUserId(
 			targetCategoryId,
 			userId,
-			tx,
 		);
 
 		if (!targetCategory) {
@@ -372,7 +360,6 @@ export class TodoCategoryService {
 				currentSortOrder + 1,
 				newSortOrder - 1,
 				-1,
-				tx,
 			);
 			newSortOrder -= 1;
 		} else {
@@ -381,7 +368,6 @@ export class TodoCategoryService {
 				newSortOrder,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 		}
 
@@ -392,7 +378,6 @@ export class TodoCategoryService {
 		currentSortOrder: number,
 		position: "before" | "after",
 		userId: string,
-		tx: TransactionClient,
 	): Promise<number> {
 		if (position === "before") {
 			await this.todoCategoryRepository.shiftSortOrders(
@@ -400,21 +385,17 @@ export class TodoCategoryService {
 				0,
 				currentSortOrder - 1,
 				1,
-				tx,
 			);
 			return 0;
 		}
 
-		const maxSortOrder = await this.todoCategoryRepository.getMaxSortOrder(
-			userId,
-			tx,
-		);
+		const maxSortOrder =
+			await this.todoCategoryRepository.getMaxSortOrder(userId);
 		await this.todoCategoryRepository.shiftSortOrders(
 			userId,
 			currentSortOrder + 1,
 			null,
 			-1,
-			tx,
 		);
 		return maxSortOrder;
 	}

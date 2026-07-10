@@ -23,6 +23,7 @@
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import { CacheService } from "@/common/cache/cache.service";
 import { CACHE_SERVICE } from "@/common/cache/interfaces/cache.interface";
@@ -93,6 +94,11 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				{
 					provide: DatabaseService,
 					useValue: databaseService,
+				},
+				{
+					// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
+					provide: TransactionHost,
+					useValue: { tx: databaseService },
 				},
 				{
 					provide: CacheService,
