@@ -9,24 +9,32 @@
  * pnpm --filter @aido/api test daily-completion.repository
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
 
-import { DatabaseService } from "@/database";
+import type { DatabaseService } from "@/database/database.service";
 
 import { DailyCompletionRepository } from "./daily-completion.repository";
 
 describe("DailyCompletionRepository — 일일 달성 리포지토리", () => {
 	let repository: DailyCompletionRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			DailyCompletionRepository,
-		).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+
+		const { unit } = await TestBed.solitary(DailyCompletionRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("aggregateTodosByDateRange", () => {

@@ -1,18 +1,33 @@
 import { Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
 import { addDays } from "@/common/date/utils/arithmetic";
 import { toDateString } from "@/common/date/utils/format";
 import { startOfDay } from "@/common/date/utils/range";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import type {
 	FindTodosByDateRangeParams,
 	TodoAggregateByDate,
 	TodoCountByDate,
 } from "./types/daily-completion.types";
 
+/**
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다.
+ */
 @Injectable()
 export class DailyCompletionRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 날짜 범위 내 Todo를 날짜별로 집계합니다.
@@ -34,17 +49,17 @@ export class DailyCompletionRepository {
 		// 병렬로 전체 Todo, 완료 Todo, 카테고리 색상 집계 실행
 		const [aggregations, completedAggregations, categoryColorResults] =
 			await Promise.all([
-				this.database.todo.groupBy({
+				this.client.todo.groupBy({
 					by: ["startDate"],
 					where: whereClause,
 					_count: { id: true },
 				}),
-				this.database.todo.groupBy({
+				this.client.todo.groupBy({
 					by: ["startDate"],
 					where: { ...whereClause, completed: true },
 					_count: { id: true },
 				}),
-				this.database.todo.findMany({
+				this.client.todo.findMany({
 					where: whereClause,
 					select: {
 						startDate: true,
@@ -102,8 +117,8 @@ export class DailyCompletionRepository {
 		};
 
 		const [totalCount, completedCount] = await Promise.all([
-			this.database.todo.count({ where: whereClause }),
-			this.database.todo.count({ where: { ...whereClause, completed: true } }),
+			this.client.todo.count({ where: whereClause }),
+			this.client.todo.count({ where: { ...whereClause, completed: true } }),
 		]);
 
 		if (totalCount === 0) {

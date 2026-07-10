@@ -19,11 +19,13 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 import { suppressLogger } from "@test/setup/suppress-logger";
+import { UNIT_OF_WORK } from "@/common/database";
 import { BusinessException } from "@/common/exception/services/business-exception.service";
 import { PaginationService } from "@/common/pagination/services/pagination.service";
-import { DatabaseService } from "@/database/database.service";
 import { WeeklyAchievementRepository } from "@/modules/weekly-achievement/weekly-achievement.repository";
 import { WeeklyAchievementService } from "@/modules/weekly-achievement/weekly-achievement.service";
 
@@ -75,8 +77,13 @@ describe("WeeklyAchievementService 통합 테스트 (Mock DB)", () => {
 				WeeklyAchievementRepository,
 				PaginationService,
 				{
-					provide: DatabaseService,
-					useValue: mockDatabaseService,
+					// 리포지토리는 TransactionHost.tx에서 클라이언트를 읽습니다 (mock DB 전달)
+					provide: TransactionHost,
+					useValue: { tx: mockDatabaseService },
+				},
+				{
+					provide: UNIT_OF_WORK,
+					useValue: createUnitOfWorkMock(),
 				},
 			],
 		}).compile();

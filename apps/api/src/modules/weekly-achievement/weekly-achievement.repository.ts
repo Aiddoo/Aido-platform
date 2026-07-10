@@ -1,12 +1,30 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 
-import { DatabaseService } from "@/database/database.service";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
+import type { DatabaseService } from "@/database/database.service";
 import type { WeeklyAchievement } from "@/generated/prisma/client";
 import type { UpsertWeeklyAchievementParams } from "./types/weekly-achievement.types";
 
+/**
+ * 트랜잭션은 CLS로 전파됩니다 — TransactionHost.tx가 활성 트랜잭션 클라이언트를,
+ * 활성 트랜잭션이 없으면 베이스 DatabaseService를 반환합니다.
+ */
 @Injectable()
 export class WeeklyAchievementRepository {
-	constructor(private readonly database: DatabaseService) {}
+	constructor(
+		private readonly txHost: TransactionHost<
+			TransactionalAdapterPrisma<DatabaseService>
+		>,
+		@Inject(UNIT_OF_WORK)
+		private readonly uow: UnitOfWorkPort,
+	) {}
+
+	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
+	private get client() {
+		return this.txHost.tx;
+	}
 
 	/**
 	 * 연도별 주간 달성 기록을 커서 기반 페이지네이션으로 조회합니다.
@@ -18,7 +36,7 @@ export class WeeklyAchievementRepository {
 		cursor: number | undefined,
 		take: number,
 	): Promise<WeeklyAchievement[]> {
-		return this.database.weeklyAchievement.findMany({
+		return this.client.weeklyAchievement.findMany({
 			where: { userId, year },
 			orderBy: { week: "desc" },
 			take,
@@ -37,7 +55,7 @@ export class WeeklyAchievementRepository {
 		userId: string,
 		year: number,
 	): Promise<WeeklyAchievement[]> {
-		return this.database.weeklyAchievement.findMany({
+		return this.client.weeklyAchievement.findMany({
 			where: { userId, year },
 			orderBy: [{ week: "asc" }],
 		});
@@ -51,7 +69,7 @@ export class WeeklyAchievementRepository {
 		year: number,
 		week: number,
 	): Promise<WeeklyAchievement | null> {
-		return this.database.weeklyAchievement.findUnique({
+		return this.client.weeklyAchievement.findUnique({
 			where: {
 				userId_year_week: { userId, year, week },
 			},
@@ -67,7 +85,7 @@ export class WeeklyAchievementRepository {
 		const { userId, year, week, totalTodos, completedTodos, achievedAt } =
 			params;
 
-		return this.database.weeklyAchievement.upsert({
+		return this.client.weeklyAchievement.upsert({
 			where: {
 				userId_year_week: { userId, year, week },
 			},
@@ -82,22 +100,28 @@ export class WeeklyAchievementRepository {
 	async upsertMany(paramsList: UpsertWeeklyAchievementParams[]): Promise<void> {
 		if (paramsList.length === 0) return;
 
-		await this.database.$transaction(
-			paramsList.map(
-				({ userId, year, week, totalTodos, completedTodos, achievedAt }) =>
-					this.database.weeklyAchievement.upsert({
-						where: { userId_year_week: { userId, year, week } },
-						create: {
-							userId,
-							year,
-							week,
-							totalTodos,
-							completedTodos,
-							achievedAt,
-						},
-						update: { totalTodos, completedTodos, achievedAt },
-					}),
-			),
-		);
+		await this.uow.run(async () => {
+			for (const {
+				userId,
+				year,
+				week,
+				totalTodos,
+				completedTodos,
+				achievedAt,
+			} of paramsList) {
+				await this.client.weeklyAchievement.upsert({
+					where: { userId_year_week: { userId, year, week } },
+					create: {
+						userId,
+						year,
+						week,
+						totalTodos,
+						completedTodos,
+						achievedAt,
+					},
+					update: { totalTodos, completedTodos, achievedAt },
+				});
+			}
+		});
 	}
 }

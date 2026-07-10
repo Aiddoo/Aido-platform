@@ -20,9 +20,10 @@
  */
 
 import { Test, type TestingModule } from "@nestjs/testing";
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { suppressLogger } from "@test/setup/suppress-logger";
 import dayjs from "dayjs";
-import { DatabaseService } from "@/database/database.service";
+import type { DatabaseService } from "@/database/database.service";
 import { DailyCompletionRepository } from "@/modules/daily-completion/daily-completion.repository";
 import { DailyCompletionService } from "@/modules/daily-completion/daily-completion.service";
 
@@ -49,8 +50,9 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 				DailyCompletionService,
 				DailyCompletionRepository,
 				{
-					provide: DatabaseService,
-					useValue: databaseService,
+					// 리포지토리는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
+					provide: TransactionHost,
+					useValue: { tx: databaseService },
 				},
 			],
 		}).compile();

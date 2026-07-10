@@ -9,26 +9,40 @@
  * pnpm --filter @aido/api test weekly-achievement.repository
  * ```
  */
-import type { Mocked } from "@suites/doubles.jest";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { TestBed } from "@suites/unit";
+import { createMockPrisma, type MockPrismaClient } from "@test/mocks";
+import { createUnitOfWorkMock } from "@test/mocks/ports";
 
-import { DatabaseService } from "@/database";
+import { UNIT_OF_WORK, type UnitOfWorkPort } from "@/common/database";
+import type { DatabaseService } from "@/database/database.service";
 
 import { WeeklyAchievementRepository } from "./weekly-achievement.repository";
 
 describe("WeeklyAchievementRepository — 주간 성취 리포지토리", () => {
 	let repository: WeeklyAchievementRepository;
-	let db: Mocked<DatabaseService>;
+	let db: MockPrismaClient;
+	let uow: UnitOfWorkPort;
 
 	const userId = "user-123";
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(
-			WeeklyAchievementRepository,
-		).compile();
+		// 리포지토리는 CLS TransactionHost.tx에서 클라이언트를 읽으므로
+		// tx가 Prisma mock을 반환하도록 스텁합니다.
+		db = createMockPrisma();
+		uow = createUnitOfWorkMock();
+
+		const { unit } = await TestBed.solitary(WeeklyAchievementRepository)
+			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(
+				TransactionHost,
+			)
+			.impl(() => ({ tx: db }))
+			.mock(UNIT_OF_WORK)
+			.impl(() => uow)
+			.compile();
 
 		repository = unit;
-		db = unitRef.get(DatabaseService);
 	});
 
 	describe("findByYear", () => {
@@ -141,7 +155,7 @@ describe("WeeklyAchievementRepository — 주간 성취 리포지토리", () => 
 		it("여러 기록을 트랜잭션으로 일괄 upsert한다", async () => {
 			// Given
 			const achievedAt = new Date("2026-03-08T11:00:00.000Z");
-			db.$transaction.mockResolvedValue([] as never);
+			db.weeklyAchievement.upsert.mockResolvedValue({} as never);
 
 			const paramsList = [
 				{
@@ -166,16 +180,31 @@ describe("WeeklyAchievementRepository — 주간 성취 리포지토리", () => 
 			await repository.upsertMany(paramsList);
 
 			// Then
-			expect(db.$transaction).toHaveBeenCalledTimes(1);
-			expect(db.$transaction).toHaveBeenCalledWith(expect.any(Array));
+			expect(jest.mocked(uow.run)).toHaveBeenCalledTimes(1);
+			expect(db.weeklyAchievement.upsert).toHaveBeenCalledTimes(2);
+			expect(db.weeklyAchievement.upsert).toHaveBeenNthCalledWith(1, {
+				where: {
+					userId_year_week: { userId: "user-1", year: 2026, week: 10 },
+				},
+				create: {
+					userId: "user-1",
+					year: 2026,
+					week: 10,
+					totalTodos: 15,
+					completedTodos: 14,
+					achievedAt,
+				},
+				update: { totalTodos: 15, completedTodos: 14, achievedAt },
+			});
 		});
 
-		it("빈 배열이면 $transaction을 호출하지 않는다", async () => {
+		it("빈 배열이면 트랜잭션을 시작하지 않는다", async () => {
 			// When
 			await repository.upsertMany([]);
 
 			// Then
-			expect(db.$transaction).not.toHaveBeenCalled();
+			expect(jest.mocked(uow.run)).not.toHaveBeenCalled();
+			expect(db.weeklyAchievement.upsert).not.toHaveBeenCalled();
 		});
 	});
 });
