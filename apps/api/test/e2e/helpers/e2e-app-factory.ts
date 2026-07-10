@@ -57,10 +57,10 @@ import {
 	REDIS_CLIENT,
 	REDIS_COMMAND_CLIENT,
 } from "@/shared/infrastructure/redis/redis.constants";
-import { AIR_QUALITY_PROVIDER } from "@/weather/providers/air/air-quality.types";
-import { LIFESTYLE_INDEX_PROVIDER } from "@/weather/providers/lifestyle/lifestyle-index.types";
-import { SUN_TIME_PROVIDER } from "@/weather/providers/sun/sun-time.types";
-import { WEATHER_PROVIDER } from "@/weather/providers/weather-provider.interface";
+import { AIR_QUALITY_PROVIDER } from "@/weather/application/ports/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "@/weather/application/ports/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "@/weather/application/ports/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "@/weather/application/ports/weather-provider.port";
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider";

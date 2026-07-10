@@ -1,10 +1,10 @@
 /**
- * Weather Module
+ * Weather 모듈 공개 API
  *
- * 날씨 예보, 부가 정보 조회 및 위치 관리
+ * Facade는 크로스 모듈(스케줄러·ai-suggestion) 소비용, 예보/격자 타입은 계약.
  */
 
-export * from "./providers/weather-provider.interface";
-export * from "./repositories";
-export * from "./services";
+export * from "./application/facades/weather.facade";
+export * from "./application/ports/weather-provider.port";
+export type { GridInput } from "./application/services/weather-forecast.reader";
 export * from "./weather.module";

@@ -29,6 +29,7 @@ const CLEAN_MODULES = [
 	"daily-completion",
 	"weekly-achievement",
 	"email",
+	"weather",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

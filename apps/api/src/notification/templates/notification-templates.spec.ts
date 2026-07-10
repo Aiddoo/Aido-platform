@@ -9,7 +9,7 @@
  * pnpm --filter @aido/api test notification-templates
  * ```
  */
-import type { WeatherForecast } from "@/weather/providers/weather-provider.interface";
+import type { WeatherForecast } from "@/weather";
 import {
 	fillTemplate,
 	NotificationMessageBuilder,

@@ -1,7 +1,7 @@
 /**
  * SuggestionContextBuilder 단위 테스트
  *
- * build(): 병렬 데이터 수집, WeatherService 실패 graceful degradation, 스트릭 정보 없음
+ * build(): 병렬 데이터 수집, WeatherFacade 실패 graceful degradation, 스트릭 정보 없음
  * detectMissingRoutines(): 빠뜨린 루틴 감지, 이번 주 존재 시 무시, 2회 미만 무시
  *
  * @execute pnpm --filter @aido/api test -- suggestion-context.builder.spec
@@ -12,9 +12,8 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-
+import { WeatherFacade } from "@/weather";
 import { AiReportRepository } from "../ai-report/ai-report.repository";
-import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import { SuggestionContextBuilder } from "./suggestion-context.builder";
 import type { DayCompletionRate, TodoSummaryForAnalysis } from "./types";
@@ -31,7 +30,7 @@ jest.mock("@/shared/domain/date/utils/core", () => ({
 describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 	let builder: SuggestionContextBuilder;
 	let mockRepository: Mocked<AiSuggestionRepository>;
-	let mockWeatherService: Mocked<WeatherService>;
+	let mockWeatherService: Mocked<WeatherFacade>;
 	let mockReportRepository: Mocked<AiReportRepository>;
 
 	const mockUserId = "user-123";
@@ -44,7 +43,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 
 		builder = unit;
 		mockRepository = unitRef.get(AiSuggestionRepository);
-		mockWeatherService = unitRef.get(WeatherService);
+		mockWeatherService = unitRef.get(WeatherFacade);
 		mockReportRepository = unitRef.get(AiReportRepository);
 	});
 
@@ -138,7 +137,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 			expect(Array.isArray(result.missingRoutines)).toBe(true);
 		});
 
-		it("WeatherService 실패 시 weather=null로 graceful degradation", async () => {
+		it("WeatherFacade 실패 시 weather=null로 graceful degradation", async () => {
 			// Given - weather 서비스가 에러를 던지도록 설정
 			setupDefaultMocks();
 			mockWeatherService.getForecastsByGridBatch.mockRejectedValue(

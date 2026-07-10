@@ -9,9 +9,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { subtractDays } from "@/shared/domain/date/utils/arithmetic";
 import { now } from "@/shared/domain/date/utils/core";
+import { type GridInput, WeatherFacade } from "@/weather";
 import { AiReportRepository } from "../ai-report/ai-report.repository";
-import type { GridInput } from "../weather/services/weather.service";
-import { WeatherService } from "../weather/services/weather.service";
 import { AiSuggestionRepository } from "./ai-suggestion.repository";
 import type {
 	SuggestionContext,
@@ -37,7 +36,7 @@ export class SuggestionContextBuilder {
 
 	constructor(
 		private readonly repository: AiSuggestionRepository,
-		private readonly weatherService: WeatherService,
+		private readonly weatherFacade: WeatherFacade,
 		private readonly aiReportRepository: AiReportRepository,
 	) {}
 
@@ -183,7 +182,7 @@ export class SuggestionContextBuilder {
 		if (!grid) return null;
 
 		try {
-			const forecasts = await this.weatherService.getForecastsByGridBatch(
+			const forecasts = await this.weatherFacade.getForecastsByGridBatch(
 				[grid],
 				date,
 			);

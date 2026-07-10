@@ -36,6 +36,9 @@ const TARGET_DIRS = [
 	"src/email/domain",
 	"src/email/application",
 	"src/email/infrastructure",
+	"src/weather/domain",
+	"src/weather/application",
+	"src/weather/infrastructure",
 ];
 
 /** 재귀적으로 .ts 파일 수집 */

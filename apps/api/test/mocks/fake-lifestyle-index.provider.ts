@@ -1,7 +1,7 @@
 import type {
 	LifestyleIndex,
 	LifestyleIndexProvider,
-} from "@/weather/providers/lifestyle/lifestyle-index.types";
+} from "@/weather/application/ports/lifestyle-index-provider.port";
 
 /**
  * 테스트용 FakeLifestyleIndexProvider

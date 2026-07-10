@@ -15,8 +15,8 @@ import { TestBed } from "@suites/unit";
 import dayjs from "dayjs";
 import { NotificationService } from "@/notification/notification.service";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import type { WeatherForecast } from "@/weather/providers/weather-provider.interface";
-import { WeatherService } from "@/weather/services/weather.service";
+import type { WeatherForecast } from "@/weather";
+import { WeatherFacade } from "@/weather";
 import type { TimezoneContext } from "./timezone-reminder-strategy.interface";
 import { WeatherEveningStrategy } from "./weather-evening.strategy";
 
@@ -52,7 +52,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 	let strategy: WeatherEveningStrategy;
 	let database: Mocked<DatabaseService>;
 	let notificationService: Mocked<NotificationService>;
-	let weatherService: Mocked<WeatherService>;
+	let weatherFacade: Mocked<WeatherFacade>;
 
 	beforeEach(async () => {
 		jest.spyOn(Math, "random").mockReturnValue(0);
@@ -64,7 +64,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 		strategy = unit;
 		database = unitRef.get(DatabaseService);
 		notificationService = unitRef.get(NotificationService);
-		weatherService = unitRef.get(WeatherService);
+		weatherFacade = unitRef.get(WeatherFacade);
 
 		database.user.findMany.mockResolvedValue([] as never);
 		notificationService.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
@@ -98,7 +98,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 
 		const forecastMap = new Map<string, WeatherForecast>();
 		forecastMap.set("60:127", makeForecast());
-		weatherService.getForecastsByGridBatch.mockResolvedValue(forecastMap);
+		weatherFacade.getForecastsByGridBatch.mockResolvedValue(forecastMap);
 
 		// When
 		const result = await strategy.execute(makeCtx());
@@ -106,7 +106,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 		// Then
 		expect(result).toEqual({ sent: 1 });
 		// tomorrow 날짜로 날씨 조회
-		expect(weatherService.getForecastsByGridBatch).toHaveBeenCalledWith(
+		expect(weatherFacade.getForecastsByGridBatch).toHaveBeenCalledWith(
 			expect.any(Array),
 			makeCtx().tomorrow,
 		);

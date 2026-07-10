@@ -1,7 +1,7 @@
 import type {
 	WeatherForecast,
 	WeatherProvider,
-} from "@/weather/providers/weather-provider.interface";
+} from "@/weather/application/ports/weather-provider.port";
 
 /**
  * 테스트용 FakeWeatherProvider

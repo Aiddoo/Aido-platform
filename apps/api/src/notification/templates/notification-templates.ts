@@ -5,7 +5,7 @@ import {
 	SUPPORTED_LOCALES,
 	type SupportedLocale,
 } from "@/shared/presentation/decorators";
-import type { WeatherForecast } from "@/weather/providers/weather-provider.interface";
+import type { WeatherForecast } from "@/weather";
 
 import * as en from "./locales/en";
 import * as ko from "./locales/ko";

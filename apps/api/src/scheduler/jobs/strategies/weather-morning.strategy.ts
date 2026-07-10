@@ -6,7 +6,7 @@ import {
 } from "@/notification/templates/notification-templates";
 import { createLocaleMessageCache } from "@/notification/templates/user-locale.util";
 import { DatabaseService } from "@/shared/infrastructure/database/database.service";
-import { WeatherService } from "@/weather/services/weather.service";
+import { WeatherFacade } from "@/weather";
 
 import type {
 	ITimezoneStrategy,
@@ -31,7 +31,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 	constructor(
 		private readonly database: DatabaseService,
 		private readonly notificationService: NotificationService,
-		private readonly weatherService: WeatherService,
+		private readonly weatherFacade: WeatherFacade,
 	) {}
 
 	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
@@ -129,7 +129,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 				},
 			];
 		});
-		const forecasts = await this.weatherService.getForecastsByGridBatch(
+		const forecasts = await this.weatherFacade.getForecastsByGridBatch(
 			gridInputs,
 			today,
 		);
